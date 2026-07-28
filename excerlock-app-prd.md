@@ -1,0 +1,504 @@
+# ExcerLock — Product Requirements (PRD)
+
+> Formerly "GymLock." Renamed because earning is no longer gym-only — any exercise (running, walking, cycling, swimming, gym workouts) tracked by a connected fitness app or wearable can earn screen time.
+> Feature list. **No numbers by design** — every default, range, threshold, and price is a build-time tuning decision; see "Decisions owed."
+> **Fitness-earning model resolved 2026-06-18; unified into the Condition system 2026-07-27** (grill session). The entire earn side is one primitive — **Conditions** (§3.3): states / events / rates with strict kind→reward mapping, overlap rules, a catalog-first builder, and continuous rate crediting. Apple Health is the **default** data source with direct app connections (§3.5c) as per-condition alternatives; device-recorded data only; detection is best-effort (no instant-unlock promise); ExcerLock absorbs the former WalkLock concept.
+> Locked direction: configurable rules-engine model · spend (daily allowance) + earn (exercise) + rules · shared engine reused across the screentime-framework portfolio · v1 ships the whole engine.
+
+---
+
+## 1. Product Overview
+
+A screen-time limit that exercise can raise. Your distracting apps share a daily time budget; doing a workout — at the gym, on a run, in the pool, on the bike — tops it back up. Set the budget to nothing and it becomes "phone locked until you move."
+
+- **Pitch:** "Earn your screen time."
+- **Core differentiator:** no iOS app meaningfully ties native app-blocking to *real, recorded* exercise. Existing gym apps unlock on mere *arrival* (gameable from the parking lot); ExcerLock earns on a completed workout/goal. That, plus the breadth of activities, is the moat.
+- **Business template:** Prayer Lock (a single daily action unlocks apps; tiny build; creator-led growth).
+- **Target user:** self-managing adults who want to train consistently — in whatever way they train — but doomscroll instead. NOT a parental-control app.
+
+---
+
+## 2. The Core Idea
+
+ExcerLock is a **configurable rules engine, not a single hardcoded mechanic.** Every behavior (lock-until-exercise, daily allowance, stay-unlocked vs re-lock, time banks, which activities count) is an end-user setting. Three parts:
+
+- **Spend** — a daily time budget for the locked apps.
+- **Earn** — exercise tops the budget back up (or holds it open). Earning works through user-created **Conditions** (§3.3) — ongoing states (*while walking*, *at the gym*), one-shot events (*arrived*, *hit a goal*), and dynamic rates (*steps exchange for time*) — all through one shared engine.
+- **Rules** — schedules, special days, presets, streaks.
+
+The same engine is the shared codebase for the screentime-framework portfolio. ExcerLock is the exercise-first skin, and it **absorbs the former separate WalkLock concept** — walking is simply one of its earn sources, not a second app.
+
+---
+
+## 3. Features
+
+### 3.1 Daily balance
+- Each user has a daily time balance for their locked app group.
+- It resets at a day boundary to that day's base allowance.
+- Using locked apps drains the balance in real time, as one shared pool across the whole group (not per-app).
+- When the balance runs out, shields go up on the whole group until the user earns more or the next day boundary.
+- Earning adds time to today's balance immediately.
+
+### 3.2 Base allowance (and Full-Lock mode)
+- A daily time budget the user sets.
+- **Set it to zero → "Full Lock":** apps are shielded from the day boundary until the first earn event. This folds the original "lock phone until you exercise" idea into the same engine — no separate mode, no separate code path.
+
+### 3.3 The Condition system (the unified earn engine)
+> Unified 2026-07-27 (grill session). **Condition is the single primitive of the entire earn side.** The gym visit (§3.4), fitness goals (§3.5), and Walk & Scroll (§3.5b) are not separate mechanics — they are catalog entries in this one system; those sections now describe each signal's *detection/verification*, nothing more. Every condition the user creates renders as one card on the dashboard (the "Go to gym" card = an event condition's card) — picker names and card names are the same vocabulary.
+
+**A Condition has exactly one kind, and the kind strictly determines its reward family** (no mixing — a "hybrid" desire is expressed by creating a second condition of another kind):
+
+| Kind | What it is | Reward (locked to kind) | Its settings |
+|---|---|---|---|
+| **State** | True/false right now: *currently walking*, *currently at the gym* | Shields stay lifted **while the state holds** — never banks time | Balance drain during the state (none / reduced / normal) · grace period on exit |
+| **Event** | Fires once: *arrived at gym*, *finished a run*, *hit a goal* | Payout menu: **fixed chunk** into the balance, or **unlock rest of day**, or **unlock for a set period** | Threshold (the goal) · repeatable yes/no · per-day cap · cooldown |
+| **Rate (dynamic)** | A proportional exchange: metric → screen time | **Continuous pro-rata crediting** into the balance: banked = today's metric × ratio, credited as data arrives — no chunk cliffs. The UI *displays* it as a friendly ratio ("1,000 steps = 20 min") but the engine is a pure ratio. Today's metric only — no retroactive claiming across the day boundary | The ratio · daily earn cap |
+
+**Uniqueness & overlap rules (enforced in the picker, not at save time):**
+1. A condition is unique on **(kind + signal + source + place)** — no duplicates. Threshold is *not* part of the key: one event per signal (tiered goals like "2 mi" + "5 mi" are post-v1).
+2. **Event × Rate exclusion:** an event and a rate on the *same signal + source* cannot both be active — the rate would bank time for every step and then the goal event would pay *again* for the same steps. The picker greys the blocked entry out with a one-line reason.
+3. **States conflict with nothing** — they never bank, so they can't double-pay. *Arrive at gym* (event, banks time) + *Be at the gym* (state, unlocked while there) is explicitly legal and each keeps its own settings; arrival is a moment, presence is a duration.
+4. Cross-source dedup from §3.5c still applies underneath (one physical workout must never pay twice via two sources).
+
+**The builder (catalog-first, four steps):** the user never picks an abstract kind — the picker is a menu of **human-named conditions grouped by activity**, each pre-typed internally:
+1. Pick a condition from the catalog (taken/blocked entries greyed out with the reason inline).
+2. Pick the **data source** — only shown when more than one can provide the signal (Apple Health default, connected apps per §3.5c); gym conditions pick a **place** (a saved gym) instead.
+3. Configure the one thing its kind allows: threshold (event), ratio (rate), or drain/grace (state).
+4. Reward details — events only: fixed vs rest-of-day vs set period, repeatable, caps.
+5. **Pick a banner** — the card artwork this condition wears everywhere (see §3.15 "Condition banners"): choose from the curated library (a sensible default is pre-selected per catalog entry) or upload your own photo.
+
+**The v1 catalog:**
+- **Gym (per saved gym):** *Arrive at gym* (event) · *Be at the gym* (state) · *Time at the gym* (rate: minutes present → time)
+- **Walking:** *While walking* (state) · *Steps exchange* (rate) · *Step goal* (event)
+- **Running / Cycling / Swimming (per activity):** *Distance goal* (event) · *Distance exchange* (rate)
+- **Universal effort (any activity type):** *Active-calorie goal/exchange* (event/rate) · *Active-minutes goal/exchange* (event/rate) · *Finish any workout of at least N minutes* (event)
+- **Connected-app extras (appear only when connected, §3.5c):** the above with that app as source, plus source-unique conditions — Whoop *Hit a strain target* (event), Hevy *Log a strength workout* (event, honor-system tagged), Concept2 *Row X meters* (event, machine-verified). Conditions whose signal no connected source can provide simply don't appear.
+
+**Shared economy rules:** all banked time feeds **one shared balance** — never separate wallets. Any number of conditions can be active; any one of them earning, sustains. Global caps and per-source cooldowns sit on top so nothing can be farmed.
+
+### 3.4 Signal implementation — Gym presence (location)
+> Detection layer for the gym conditions in the §3.3 catalog (*Arrive at gym* event · *Be at the gym* state · *Time at the gym* rate). This section is about how presence is sensed and verified; rewards and rules live in §3.3.
+- The underlying signal is **presence at a saved gym**, confirmed by location.
+- **Gym setup:** add gyms by map search or dropped pin (iOS caps how many locations can be monitored, so there's a ceiling); each gym has an adjustable arrival radius kept within the band where geofencing is reliable; optional Wi-Fi-network confirmation; map-POI "verified gym" vs "honor system" tags for home gyms / outdoor spots.
+- Verification details in §3.7. Reward via the shared engine (§3.3).
+
+### 3.5 Signal implementation — Fitness activities & wearables (Apple Health)
+> Detection layer for the activity conditions in the §3.3 catalog (step/distance/calorie/minutes goals and exchanges, *Finish any workout*). This section is about how activity data is read and trusted; kinds, rewards, and overlap rules live in §3.3.
+ANY exercise the user already does can feed a condition — running, walking, cycling, swimming, gym/strength workouts, or any other tracked activity.
+
+**How it's wired:**
+- **Read through Apple Health by default.** One on-device HealthKit integration surfaces Apple Watch plus most apps and wearables that already write to Apple Health (Nike Run Club, Strava, Peloton, Runkeeper, Coros, Polar, Whoop, Oura, and Garmin once the user enables Health sync). No per-app logins, no OAuth, and none of the vendor-API legal/approval landmines. Users who want or need a specific app as the source instead can wire a trigger to a **direct connection** (§3.5c).
+- **Triggers are goals, not a linear meter.** The user sets an activity goal — e.g. "run 2 miles," "burn 700 active calories," "30 active minutes," "swim 1000 m," "10,000 steps." Hitting the goal fires the reward.
+- **Same reward menu as the gym.** A satisfied goal pays out exactly like a gym visit (§3.3) — a fixed chunk, the rest of the day, or a set period, with the same caps. No separate reward logic.
+- **Universal or per-activity goals.** A goal can be set in a universal effort unit (active calories / active minutes — works for any activity type) or in an activity's natural unit (run distance, swim distance, ride distance, steps). The user picks when setting the goal.
+- **Multiple triggers at once** feed the one shared balance.
+
+**Trust / anti-cheat (default):**
+- **Device-recorded only.** Only activity a device or app actually recorded counts; manually-typed Apple Health entries are silently ignored (filtered on the entry-source flag). One filter, no fraud-detection system — earning means you actually did it.
+
+**Honesty about timing:**
+- A goal is detected when Apple Health hands us the data — reliably when the user **opens ExcerLock** (a "claim your earned time" moment that also drives an app-open), and **best-effort in the background** when iOS allows. We do **not** promise instant hands-free unlock from a workout: iOS background delivery lags and stops on force-quit. The reward's *duration* is fully configurable (§3.3); only the *detection* is best-effort — same spirit as the gym geofence.
+
+**Coverage (v1):**
+- Covered: Apple Watch and anything that syncs to Apple Health (most major running/fitness apps and wearables).
+- **Garmin** works only if the user enables Apple Health sync inside Garmin Connect — onboarding detects/coaches this.
+- **Not covered at v1:** Fitbit (doesn't write to Apple Health; would need Google's Health API + a security review — deferred) and Coros/Samsung (no clean Apple Health path). Known gap, revisit post-launch.
+
+### 3.5b Signal implementation — Live walking (Walk & Scroll sessions)
+> Detection layer for the *While walking* **state** condition in the §3.3 catalog. The session/watchdog architecture below applies to any state condition needing live re-verification.
+The pitch line: **"want to scroll? keep walking."** Locked apps are usable only while the user is *currently walking* — not standing still — and re-shield when they stop.
+
+**How a session works:**
+- The user **starts a Walk Session** from ExcerLock or from the shield screen's button (which deep-links in). Sessions are explicitly started, never ambient.
+- While walking is sustained, shields on the locked group stay lifted. When the user stops walking past a short **grace period** (so red lights and tying a shoe don't punish), shields return automatically.
+- Locked-app usage during a session drains nothing from the daily balance, or optionally drains at a reduced rate — user setting.
+
+**Detection (on-device, no special entitlement):**
+- **CMMotionActivityManager** gives near-real-time activity classification (walking / stationary / automotive, with confidence); **CMPedometer** gives live step cadence. The qualifying condition is *classified as walking AND cadence above threshold, sustained* — standing and swaying doesn't qualify; treadmill and indoor walking do (same honor-system spirit as home gyms; no attempt to require "outdoors," since indoor-vs-outdoor detection via GPS speed is too fuzzy to punish on).
+- Needs only the Motion & Fitness permission plus while-in-use location: starting the session in the foreground with continuous location updates keeps the app legitimately alive in the background (standard blue indicator) to keep verifying walking while the user is inside other apps. Battery cost is real but bounded to the session.
+- **State-change lag is honest:** iOS takes seconds to ~half a minute to admit the user stopped; the grace period absorbs it, and re-lock is never promised as instant.
+
+**Fail-safe architecture (non-negotiable):**
+- Shields are never lifted open-endedly. Unlock is granted in **short renewable increments** via a DeviceActivity schedule that auto-re-shields when it lapses; each re-verification of walking extends the window. DeviceActivity monitors run OS-side even if ExcerLock is force-quit — so killing the app mid-session caps the exploit at one increment instead of leaving apps permanently open.
+- Same design rule as geofencing (§3.8): the fuzzy parts (motion lag, classification blips) can end a session early-but-gracefully; they never produce a punishment beyond shields simply returning.
+
+**Anti-cheat posture:** cadence + motion-class + sustained duration makes phone-shaking and phone-on-the-dog annoying enough to not be worth it; same "not worth fighting" stance as §3.9.
+
+### 3.5c Direct app connections (alternative data sources)
+> Amends the 2026-06-18 "Apple Health only" decision (2026-07-27): Apple Health remains the **default and recommended** source, but a goal trigger can instead be wired to a **directly connected fitness app**. This exists for users whose data never reaches Apple Health (Fitbit owners, Garmin users who won't enable sync), users who live in one app (Strava-first runners), and cases where a vendor's API delivers activities faster than HealthKit's background lag.
+
+**The model — sources are per-trigger, same engine:**
+- When creating a goal trigger (§3.5), the user picks its **data source**: Apple Health (default) or one of their connected apps. Example: "Strava: run 2 miles today" instead of "Apple Health: run 2 miles today."
+- A connection is made once (OAuth in-app), then appears as a source option for any compatible trigger. Multiple connections can coexist; each trigger reads exactly one source.
+- **Dedup rule:** the same physical workout arriving via two sources (Strava also syncs to Health) must not pay twice — a trigger only reads its own source, and cross-source duplicate detection (same start-time window + type) guards the shared balance.
+- Payout, caps, cooldowns: identical shared engine (§3.3). Only the reading differs.
+
+**The vendor menu (honest API reality, ranked):**
+
+| Tier | App | API status | Detection logic | Anti-cheat filter |
+|---|---|---|---|---|
+| 1 | **Strava** | Open OAuth API; the flagship connection. Terms tightened in late 2024 (display/retention restrictions) — compliant use is read-activities-only, no storing beyond the day's evaluation, no AI/leaderboard use. | Fetch today's activities on app open / refresh; match type + distance/time/calories against the trigger's goal (e.g. sum of today's runs ≥ 2 mi). | Strava marks `manual` activities and `trainer`/upload source — manual entries ignored, device-recorded only, same spirit as §3.5. |
+| 1 | **Oura** | Open OAuth API, clean docs. | Daily activity + workout sessions; goals in active calories / activity time / steps. | Ring-recorded only (no manual path to speak of). |
+| 1 | **Whoop** | Open developer platform (OAuth). | Workouts with sport type, duration, strain; goals in minutes / workout-count. | Sensor-recorded by nature. |
+| 1 | **Polar** | Open AccessLink API. | Training sessions with sport, distance, duration, calories. | Device-recorded by nature. |
+| 2 | **Fitbit** | Open OAuth but mid-migration into Google; intraday data needs approval. This is the **only** route for Fitbit users (no Apple Health write), so it carries real coverage value despite the friction. | Daily steps/active minutes + logged exercises vs goal. | Fitbit flags manually logged activities — ignored. |
+| 3 | **Garmin, Suunto, Coros** | Partnership-gated programs (application/approval, not open signup). Not buildable on a whim — listed as future connections; Garmin users are still coached into Apple Health sync (§3.5 / §9) today. | (When approved: push-based activity feeds — actually excellent.) | Device-recorded by nature. |
+| — | **Nike Run Club, Peloton, Samsung Health, Google Fit** | No viable public/iOS API (NRC/Peloton unofficial only; Samsung is Android-side; Google Fit REST is deprecated). **Never** — these users are served via Apple Health sync. | — | — |
+
+**Architecture cost (must be decided, not hand-waved):** most of these OAuth token exchanges (Strava included) require a client secret, which cannot ship in the binary — so direct connections need a **token-exchange proxy** — served by the §10 backend, which ships with v1 anyway, so this is a route on an existing server rather than new infrastructure. Optional later upgrade on the same server: vendor **webhooks** (Strava push) for near-instant earn detection that beats HealthKit's lag. Scope decision owed: ship v1 with Apple Health only and add connections in v1.x, or wire the vendor routes now.
+
+**Freshness honesty:** without webhooks, a connected source is polled when ExcerLock opens or refreshes — the same "claim your earned time" moment as Health (§3.5). No instant-unlock promise here either.
+
+### 3.6 What "locked" means
+- Shields are applied to a user-selected app group via Screen Time / ManagedSettings; apps are opaque tokens to us.
+- Shields are OS-enforced: they survive force-quit, restart, and reboot.
+- One locked group in v1. Per-app/per-category budgets are later; per-location budgets are a later wedge.
+- Always exempt: Phone, Messages, Maps, ExcerLock itself, and anything Apple exempts (emergency features).
+
+### 3.7 Visit / activity verification
+- **Gym visit** is confirmed by presence: a background geofence event, or a manual check-in where the app samples your location and confirms you're inside the radius.
+- **No "dwell" requirement.** You're either at the gym or you're not. To absorb GPS glitches and quick in-and-out / app-switching, a **short presence-confirmation cooldown** runs before a visit counts (Johan's starting point: ~5 minutes — a debounce, not a "stay this long" rule). A drive-by or a momentary blip doesn't count; actually being there does.
+- **Two-tier unlock (architecture-critical):**
+  - **Manual check-in** (always available, lighter "while using" location permission): open the app at the gym, check in, earn. This tier alone is a complete product.
+  - **Auto-detect** (opt-in upgrade, "always" location permission): a background geofence logs arrival without opening the app.
+  - "Always" permission is the worst UX bottleneck on iOS, so auto-detect is pitched as a hands-free upgrade, never a requirement — and that's also the App Review story.
+- **Instant relief option:** shields can lift on arrival (so they can start their workout playlist) while the reward only books once presence is confirmed past the cooldown.
+- **Fitness-activity** earning (§3.5) verifies by goal-completion on device-recorded Apple Health data — manual entries don't count.
+
+### 3.8 Leave detection
+- iOS exit events fire late or never indoors, so anything depending on leaving (grace windows, auto re-lock) is **best-effort by design**.
+- The app never builds a punishment on top of fuzzy exit timing (e.g. it never cancels a confirmed visit because of a late exit event).
+
+### 3.9 Anti-cheat (summary)
+- Drive/walk-past a gym → short presence-confirmation cooldown.
+- Leave-and-re-enter farming → same-source cooldown.
+- Home pinned as "gym" → allowed (home gyms are real); honor-system tag; not worth fighting.
+- GPS spoofing → requires jailbreak/dev tooling; out of scope.
+- Faking activity data (manual workout entry) → **device-recorded-only filter** (§3.5); manually-typed Health entries are silently ignored. No heavier fraud system in v1.
+
+### 3.10 Schedules & special days
+- Each day is an **Active day** (full economy; missing your exercise leaves you at base allowance, which may be zero; counts toward streak), a **Rest day** (either no locking at all, or allowance-only — user's choice; never counts against the streak), or a **Custom day** (override any knob — different allowance, reward, or locked hours; "special days where specific rules apply," generalized).
+- **Lock window:** optionally the economy runs only during chosen hours of a day; outside the window there's no locking and no draining.
+
+### 3.11 One-off date overrides
+- **Sick day token:** instantly turns today into a rest day; streak preserved; logged; limited allotment that doesn't accumulate.
+- **Vacation mode:** pauses the whole app for a chosen stretch; streak frozen, not reset; takes effect only after a delay so it can't be a weak-moment escape hatch; cancellable during the delay.
+- **Holiday dates:** pre-mark calendar days as rest days (planning ahead is the opposite of a weak moment, so no delay).
+
+### 3.12 Presets
+- Named starting configurations — e.g. a strict one, a balanced one, an earn-friendly one — plus full **Custom**. A preset just sets the knobs; the user can then change anything. (The values behind each preset are a decision owed.)
+
+### 3.13 Streaks & stats
+- **Streak = consecutive active days where any condition produced meaningful activity** (2026-07-27, fits the unified §3.3): an **event** fired, OR a **rate** condition credited at least a minimum amount (a handful of steps doesn't count), OR a **state** was sustained past a minimum duration (standing in the gym doorway doesn't count). Both minimums are decisions owed. Each condition card shows whether today's streak requirement is met. Rest / custom / vacation / sick days are transparent — they neither extend nor break it. A missed active day breaks it at the day boundary unless a sick token was used.
+- **Streak policy** is a setting: hard reset vs sick-token cushion. No paid streak freezes ever — paying to not exercise inverts the product.
+- Track both current and longest streak.
+- **Ledger-based stats:** total workouts/visits, per week/month, a calendar heat map, favorite gym, activity breakdown by source, and minutes earned by source vs spent.
+- **Time reclaimed** — confessed usage minus actual locked-group usage, summed: "ExcerLock saved you N hours this month." The single most shareable number in the app.
+- **Milestones** for activity counts and streak lengths, each producing a badge + shareable image (the social-growth artifact pipeline).
+- **Weekly recap** drives a notification and a shareable card.
+
+### 3.14 Notifications
+- Trigger types: day-boundary state on an active day; balance running low; balance empty / shields up; an afternoon "no workout yet" nudge; earn verified; presence cooldown not met (neutral, not shaming); milestone unlocked; weekly recap; and an opt-in aggressive "streak in danger" last-call.
+- Rules: a cap on how many are delivered per day; no promotional pushes; no guilt language ("you failed" is banned); every notification deep-links to the relevant screen.
+
+### 3.15 App UI structure (tabs & surfaces)
+> Locked 2026-07-27 (grill session). Information architecture only — visual design stays in the separate design doc / mockups. Visual language: the Pillow-DNA orange system (`design/pillow-style-guide.md`) as realized in the `design/mockups/` chain.
+
+**Tab bar: four evenly-spaced tabs, no center button.** Home · Manage · Analysis · Settings. Explicit decision: no fifth tab — everything else lives as sheets, overlays, or flows.
+
+**Tab 1 — Home** (the lock screen; evolves the current dashboard mockup):
+- Header row with the streak flame chip.
+- Goal bar — today's progress toward the streak requirement.
+- **Lock hero** — the app's soul: closed = shields up, open = unlocked; earns play the approved unlock animation (`design/mockups/unlock-animation-v18-noconfetti-iphone.mp4`).
+- Balance stats row (time locked / screen time remaining).
+- **Today's condition cards** — every active condition, scrollable, each in its kind's card variant. Every variant is built the same way: the condition's **banner** (see "Condition banners" below) fills the card edge-to-edge, and the status layer sits on top of it:
+  - *Event card* (as mocked: banner illustration, name, Complete → "✓ Completed"; the button doubles as claim-on-detection).
+  - *State card* — live status ("While walking — ACTIVE · drain paused") with a pulsing indicator while the state holds.
+  - *Rate card* — a meter ("6,240 steps → 2h 05m banked today") with progress toward the daily cap.
+- **Edit** and **Analysis** shortcut rows (as mocked) — they simply teleport to tabs 2 and 3.
+
+**Condition banners (card artwork system):**
+- **Every condition wears a banner** — a full-bleed image behind its card, on Home *and* on its row in Manage → Conditions. Status, name, buttons, and meters are always overlaid on top, kept legible by the same dark bottom-gradient scrim the gym card mockup uses. One banner per condition, chosen in builder step 5, changeable any time from the condition's edit screen.
+- **Curated library, made in-house on Higgsfield.** The approved gym-card illustration (`design/mockups/nosparkle-v14-best.png`, the "Go to gym" card) is the **style anchor**: semi-realistic painted style — real but not photo-real, no full anime — moody lighting, works under white overlay text. The library ships with **several banners per activity family** — gym/strength (multiple: weights floor, squat rack, sunset gym…), running (road, track, trail…), swimming (pool lanes, open water…), cycling, walking — **plus a set of general/neutral banners** (abstract energy, sunrise, city motion) for universal-effort and connected-app conditions. Exact counts per family are a decision owed; production recipe (model chain, prompts, crop pipeline) lives in the design docs, with the gym card as reference input.
+- **User's own image.** The picker's last option is "Use your own photo": photo-library pick, auto-cropped to the card ratio, with the legibility scrim applied automatically so overlaid text always reads. Stored locally (no server).
+- Each catalog entry has a **sensible default banner** so skipping step 5 still looks good.
+
+**Tab 2 — Manage** (the whole economy editor), three sections:
+- **Conditions** — the list of created conditions (enable/disable, edit, delete); "add" opens the §3.3 catalog-first builder sheet.
+- **Locked apps** — the shielded app group picker (§3.6).
+- **Rules** — weekly schedule, lock window, presets, sick tokens, vacation mode, holiday dates (§3.10–3.12). Deliberately here, not in Settings: users touch these weekly.
+
+**Tab 3 — Analysis** (gamified = heat map, badges, shareable cards — no XP/levels/mascots), top to bottom:
+1. Weekly recap card, shown while fresh.
+2. **Hero number: Time Reclaimed** ("ExcerLock saved you N hours this month") — big rounded numerals, the first thing every visit shows.
+3. Screen-time trend — fat rounded bars, spent vs earned, Week/Month/Year segmented control.
+4. Streak block — current + longest, plus a **calendar heat map** whose cells show how each day's streak requirement was met (event / rate / state).
+5. Earning breakdown — banked minutes per condition ("your favorite way to earn").
+6. Milestones shelf — badges; each taps into a shareable card (the §3.13 social-artifact pipeline).
+- Explicitly excluded from v1: per-app usage breakdown inside the locked group (apps are opaque tokens; per-app budgets are out of scope anyway).
+
+**Tab 4 — Settings** (full-stack — every row below ships in the first build; grouped cards with leading icon circles, chevrons, and inline value subtitles, Pillow/reference-app style). Only things that are real and workable in ExcerLock appear — no "coming soon" rows, no promo cross-sells:
+
+- **PERMISSIONS (health panel, pinned at top)** — Screen Time / Location / Motion & Fitness / Apple Health / Notifications, each with a live status dot and a fix-it row deep-linking to the right iOS Settings pane (any one silently broken guts the product). This stays first: it's the #1 support-ticket killer.
+- **ACCOUNT**
+  - *Account* — Clerk profile: email, sign out, and **Delete account** (in-app deletion is an App Store requirement once accounts exist; deletes server record + Clerk user, schedules Adapty/PostHog erasure).
+  - *Manage Subscription* — plan + renewal date from Adapty, Restore Purchases, Redeem Code, "Manage in App Store" deep link.
+  - *Notifications* — per-type toggles (§3.14), afternoon-nudge time, per-day delivery cap.
+- **GENERAL**
+  - *App Icon* — alternate icon picker (a few variants from the icon foundry).
+  - *Appearance* — auto / light / dark segmented control.
+  - *Language* — deep link to the iOS per-app language pane (system-managed; no in-app picker to maintain).
+  - *Day boundary* (§3.2) · *Start week on* (drives the Analysis heat map) · *Units* — miles/km (run/cycle distance conditions read this).
+  - *Siri & Shortcuts* — App Intents: "How much time do I have left?", "Start a Walk & Scroll session", "Check in at the gym" (native App Intents target).
+  - *Face ID to open ExcerLock* — toggle (`expo-local-authentication`; now confirmed in, not optional).
+  - *Haptics* and *Sounds* toggles.
+- **DATA & CONNECTIONS**
+  - *Apple Health* — what we read, last-sample times per signal.
+  - *Connected apps* (§3.5c) — per-vendor connect/disconnect, last sync, dedup notice.
+  - *Export my data* — JSON of conditions, earn history, streaks (cheap goodwill + GDPR posture).
+- **SUPPORT & FEEDBACK** (fully wired, not mailto-and-pray)
+  - *Help & FAQ* — hosted help page (answers written from real PostHog drop-off + ticket patterns).
+  - *Contact support* — in-app composer → `POST /v1/support` → Resend email to the support inbox, with app version, iOS version, device, entitlement state, and permission statuses auto-attached (user-visible before send).
+  - *Report a bug* — same pipeline flagged as bug + optional screenshot attach; also fires a Sentry user-feedback event tied to the session.
+  - *Request a feature* — same pipeline flagged as idea; every submission also lands as a PostHog event so feature demand is queryable.
+  - *Send diagnostics* — one-tap diagnostic bundle (permission states, extension health, last shield events, recent HealthKit sample metadata — **no health values**, just timestamps/sources) shareable to support. Pillow's "Apple Health diagnostics" pattern: this is what kills "my run didn't count" tickets.
+- **ABOUT**
+  - *What's new* — release-notes screen fed from a small remote JSON (updatable without a release).
+  - *Rate ExcerLock* — `expo-store-review` prompt, plus a direct App Store review deep link. (Closes a known Regen gap — proactive prompt trigger is a §8 decision: e.g. after first 7-day streak or Nth celebration takeover, never after a shield.)
+  - *Share ExcerLock* — native share sheet with the referral copy.
+  - *Follow us* — social links (list owed §8).
+  - *Terms of Use* · *Privacy Policy* — required links (also on the paywall).
+- **Footer** — app version + build number. Tapping it 7× opens the **hidden debug menu** (dev/TestFlight only): experiment-flag overrides, simulated entitlement, reset onboarding, PostHog event console.
+
+Explicitly rejected from the reference screenshots as not applicable: therapy/partner promos, "Discreet Mode", profile birth-year/sex, "Fast Startup", AI rows, newsletter (revisit only if a content channel ever exists).
+
+**Non-tab surfaces (must-spec, easy to forget):**
+1. **The shield screen** — the most-seen surface in the product (what a blocked app shows). It sells, never scolds: balance state, the nearest path to unlock ("Start a walk", "Check in at gym"), and a button into ExcerLock — within iOS's custom-shield limits.
+2. **The claim/celebration takeover** — full-screen moment when an earn is detected on open; this is where the unlock animation lives.
+3. **Onboarding + hard paywall** — separate flow. **First build ships a deliberately basic onboarding** (minimal screens: value prop → usage confession → permissions primer → pick locked apps → paywall) — but it is still built on the §10.5 FLOW-array rail from day one, so every screen is funnel-instrumented and the flow is remotely re-orderable/extendable. The polished Pillow-archetype version comes later by editing the array, not rebuilding (§9 owes the design doc).
+4. **The condition-builder sheet** — modal, reachable from Manage (and anywhere the empty state offers it).
+5. **Notification deep-link map** — every §3.14 notification lands on a named tab/surface above.
+
+**Mockup follow-ups this decision creates:** re-mock the tab bar as four plain tabs (current mockup has a five-slot center-button bar); design the state-card and rate-card variants (only the event card exists today); **produce the banner library on Higgsfield** (several per activity family + generals, gym card as the style anchor).
+
+**Visual style governance:** every visual asset in the product — icons, hero illustrations, banners, mockups, share cards — is created through **`design/STYLE.md`**, the universal style constitution (four style families with proven prompt templates, fixed style-anchor images, the magenta→chroma-key pipeline with validation gates, and a per-directory FOUNDRY.md manifest law). Root `AGENTS.md`/`CLAUDE.md` force every agent to read it before generating anything visual; off-framework assets are rejected on sight.
+
+---
+
+## 4. Monetization
+
+- **Hard paywall after onboarding, no free tier.**
+- Annual plan as the anchor plus a monthly plan, with a trial on the annual plan.
+- Paywall hook: the user's own confessed usage versus the subscription cost.
+- Subscriptions via **Adapty** (single `premium` entitlement); accounts via **Clerk**; backend on a VPS — the full stack is specced in §10.
+- The paywall is a **remote Adapty paywall** (Paywall Builder / remote-config): copy, design, plans, and prices change without an app release, and **prices/trials/plan-mix are found via Adapty A/B experiments, not hardcoded guesses** (§10.3). The client renders whatever the placement returns.
+- Win-back offers are genuinely cheaper real SKUs — never fake scarcity or countdowns (§10.3).
+
+---
+
+## 5. Platform Realities & Risks
+
+- **Geofencing is best-effort.** Arrival is reasonably reliable; leaving is not. The product is designed so the unreliable parts never cause a punishment.
+- **The manual tier is the safety net.** The whole gym mechanic works on the lighter "while using" location permission; "always" permission is an upgrade, never a requirement.
+- **Fitness data flows through Apple Health (HealthKit) by default, read on-device.** Background delivery is best-effort (lags 15 min–1 hr+, stops on force-quit) → goal detection is claim-on-open + best-effort background, never a promised instant unlock. There is no server-side Apple Health API, so earning logic runs on-device then syncs. **Direct vendor connections (§3.5c) carry their own risks:** vendor terms can tighten without warning (Strava did in 2024), and partnership-gated APIs (Garmin/Suunto/Coros) can't be scheduled. (The OAuth token-exchange proxy is no longer a special cost — it rides on the §10 backend that ships anyway.) Scope them so the product is whole without them.
+- **FamilyControls entitlement:** building/testing on device needs no approval; shipping needs Apple's distribution entitlement (per bundle ID, per extension), approval time opaque. Building isn't blocked; launch is — request it the moment the bundle ID exists.
+- **Apple platform risk:** Apple has killed top screentime apps before and could sherlock these triggers. Mitigation is speed, brand, and portfolio breadth.
+- **Three technical spikes gate the build:** lifting shields from a background earn event; changing the balance threshold mid-day when an earn adds time; and sustaining background runtime + live re-shield during a Walk Session (§3.5b) — cheap to de-risk on-device since none of it waits on the distribution entitlement.
+
+---
+
+## 6. Settings (knobs that exist — values are decisions owed)
+
+Locked apps · base allowance · **the user's conditions** (each: kind-appropriate settings per §3.3 — threshold / ratio / drain+grace, reward details, repeatable, caps, source, place) · same-source cooldown · presence-confirmation cooldown · instant-relief-on-arrival · rollover (and its cap) · **Walk & Scroll session knobs** (cadence threshold · stop grace period · per-day session cap) · weekly schedule · rest-day rule · lock window · day boundary time · gyms (count + radius) · auto-detect (always location) · sick-token allowance · streak policy · vacation mode (and its delay) · per-type notification toggles · afternoon-nudge time.
+
+---
+
+## 7. Explicitly NOT in v1
+
+Android · Web · macOS · Apple Watch standalone app · per-app/per-category budgets · per-location budgets · accountability partners / social / leaderboards · in-app workout content / sets-reps coaching · AI anything · retroactive visit claims.
+
+**Infrastructure cuts (the §10 stack ships, but deliberately without):** attribution SDK · session replay · remote push notifications · any server-side computation of earning/balances (stays on-device).
+
+**Fitness-integration cuts:** partnership-gated vendor APIs (Garmin / Suunto / Coros direct — Apple Health sync covers Garmin) · no-API apps (Nike Run Club, Peloton, Samsung Health, Google Fit) · heart-rate-zone / effort-based earning (continuous HR isn't in Apple Health). **Open-API direct connections (Strava / Oura / Whoop / Polar / Fitbit, §3.5c) are specced; whether any ship in v1 vs v1.x is a scope decision owed (§8)** — the server exists regardless (§10), so the deciding cost is per-vendor integration work, not standing up infrastructure.
+
+---
+
+## 8. Decisions Owed (numbers & choices TBD — not in this PRD on purpose)
+
+- **Balance & rewards:** base-allowance default/range · reward amounts (fixed-chunk size) · duration under "unlimited" (rest-of-day vs set-period length) · rewarded-events-per-day cap · same-source cooldown length · presence-confirmation cooldown length (Johan's starting point: ~5 min) · rollover cap · default for instant-relief-on-arrival.
+- **Conditions (§3.3 — model settled; numbers owed):** default goal templates per catalog entry (a starter run/swim/cycle/steps/calorie goal) · default exchange ratios for each rate condition · rate daily earn caps · streak minimums (rate credit floor · state duration floor) · which catalog entries are pre-created for new users vs empty-start · **banner library counts per activity family + the default banner mapping per catalog entry**.
+- **Walk & Scroll (§3.5b):** cadence threshold · stop grace-period length · unlock increment length · per-day session cap · whether sessions drain the balance (none vs reduced rate) · default on/off.
+- **Direct connections (§3.5c):** ~~ship-in-v1 vs v1.x~~ **DECIDED 2026-07-28: ALL Tier-1 vendors (Strava · Oura · Whoop · Polar) ship in v1** · whether/when to add the webhook upgrade · dedup window length · per-source manual-entry filter details.
+- **Infrastructure additions:** ~~VPS provider~~ **DECIDED 2026-07-28: Azure VM** (provisioned via `az` CLI per §10.10, never the portal UI) — region/size owed.
+- **Gyms:** how many gyms a user can save · arrival radius default/band · day-boundary default time and window.
+- **Schedules:** default weekly schedule · default rest-day rule · minimum lock-window length.
+- **Tokens:** sick-token allowance · vacation-mode max length and delay length · streak-policy default.
+- **Presets:** all knob values behind each preset.
+- **Notifications:** every threshold/time · per-type default on/off · per-day delivery cap · milestone thresholds.
+- **Monetization:** price points, trial length, annual/monthly split — **all found via Adapty A/B experiments (§10.3), so what's owed is the starting hypothesis per experiment, not final numbers**.
+- **Build choices:** ~~stack~~ **DECIDED 2026-07-28: Expo + RN** (react-native-device-activity path, custom Swift modules where needed; Regen-proven) · minimum iOS version · **testing strategy DECIDED: simulator test-fix loop with all signals behind a mocked protocol boundary (every feature/screen e2e on sim, loop until functionally + visually perfect) + physical-device smoke suite for shields/geofence/motion each milestone**.
+- **Infrastructure (§10):** VPS provider + region + API domain · where Clerk sign-up sits in the flow (before vs after paywall) · the initial experiment list (first onboarding tests in PostHog, first paywall tests in Adapty) · the final v1 event-taxonomy list for the typed analytics wrapper · dashboard definitions (activation dual-metric wording).
+- **Settings page (§3.15):** review-prompt trigger (candidate: first 7-day streak or Nth celebration — never post-shield) · alternate-icon set contents · social links list · support-inbox address + help-page host · Face ID default off · diagnostic-bundle exact field list.
+
+## 9. Open Items (non-numeric)
+
+- Onboarding: detect & coach **Garmin** users to enable Apple Health sync in Garmin Connect (otherwise their data never arrives).
+- Apply for the FamilyControls **distribution** entitlement once the bundle ID exists.
+- Spike: background shield-lift from an earn event.
+- Spike: mid-day balance/threshold re-arming.
+- Verify Wi-Fi-network presence confirmation is feasible on current iOS.
+- Separate UI/design doc (onboarding flow, screen-level visual design) — the information architecture is now locked in §3.15; the design doc covers visuals, onboarding, and paywall.
+- Stand up the §10 accounts before mobile work starts — full runbook in **§10.10** (VPS + domain, Clerk app, Adapty app + ASC products, PostHog project, Sentry projects, Resend domain; CLI/MCP-first, doctor script = done).
+
+---
+
+## 10. Backend & growth infrastructure (v1 — ships with the first build)
+
+**The first build is fully hooked up to the whole growth stack — nothing "added later."** The template is Regen's production architecture (reference implementation: `/Users/johansardar/reform`; canonical rules: `reform/docs/ANALYTICS-CONVENTIONS.md`, decisions D1–D12 — those conventions apply here verbatim unless this section overrides them). One substitution: **Adapty replaces RevenueCat** everywhere RevenueCat appears in the Regen pattern. This section supersedes every earlier "no accounts and no server" statement.
+
+### 10.1 Server on a VPS
+
+A single small API server on a plain VPS, cloned from Regen's `server/` pattern:
+
+- **Stack:** Fastify + Drizzle ORM + Postgres, all on one box. No Docker, no Kubernetes.
+- **Deploy:** rsync-based `deploy.sh` → systemd unit (`excerlock-api.service`) → **Caddy** reverse proxy with automatic TLS. Same three-file deploy setup as Regen (`deploy/deploy.sh`, `Caddyfile`, service unit).
+- **Routes:** versioned under `/v1`; health endpoint for uptime checks; Clerk-JWT-verified auth on user routes.
+- **Jobs:** in-process `setInterval` cron sweeps (Regen's `jobs.ts` pattern) — no external scheduler.
+- **What the server does (and nothing more):**
+  1. **OAuth token-exchange proxy** for §3.5c direct vendor connections (client secrets never ship in the binary), plus the optional vendor webhook receivers (Strava push) later.
+  2. **Adapty webhook receiver** — mirrors subscription state into Postgres. Secret check is timing-safe: SHA-256 both sides + constant-time compare (Regen's `safeEquals` pattern in `webhooks/revenuecat.ts`, re-pointed at Adapty's webhook shape).
+  3. **Server-side PostHog events** via `posthog-node` for domain events the client can't emit trustworthily (subscription mirror updates, vendor-webhook-driven earns).
+  4. **Transactional email** via Resend.
+  5. **User record store** keyed by Clerk user id (connections, entitlement mirror, minimal profile). Earning logic itself stays **on-device** (§5) — the server never computes screen-time balances.
+
+### 10.2 Accounts & identity (Clerk)
+
+- **Auth via Clerk**, same as Regen. Clerk issues the JWT the API verifies; no hand-rolled auth.
+- **One identity spine:** Clerk user id = Adapty `customer_user_id` = PostHog `distinct_id` at identify = Postgres primary key. One id, four systems.
+- **Anonymous-first onboarding (D-rule from Regen, keep it):** the entire onboarding + paywall funnel runs **anonymous on `$device_id`** — `identify()` fires only at Clerk sign-up. This keeps funnels intact across the auth boundary and is ~5× cheaper on PostHog billing.
+- Where sign-up sits in the flow (before vs after paywall) is a decision owed (§8).
+
+### 10.3 Payments (Adapty — replaces RevenueCat)
+
+- **SDK:** `react-native-adapty` (`npx expo install react-native-adapty`; Expo-compatible, v3.x). Activated at app start with the Clerk id once known.
+- **Hard gate:** single entitlement (`premium`) checked through one pure predicate module (Regen's `paywallGate.ts` pattern) — no entitlement reads scattered through screens.
+- **Remote paywalls:** paywalls are built in **Adapty Paywall Builder** (no-code) and/or **remote-config paywalls** (JSON config, hand-built UI) — either way, paywall copy/design/price changes ship **without an app release**. Docs: https://adapty.io/docs/present-remote-config-paywalls-react-native.
+- **Remote paywall experiments:** **Adapty's built-in A/B testing owns every experiment that touches money** — price points, trial length, plan mix, paywall design (unlimited variants, real-time metrics: https://adapty.io/paywall-ab-testing/). **Never price-test via PostHog** (Regen decision D7, carried over with Adapty in RevenueCat's seat).
+- **Regen's paywall lessons, pre-baked:**
+  - The paywall **renders whatever the placement returns** — plan count, order, badges all come from Adapty config. (Regen's fixed 3-plan template silently blocked plan-count tests; don't repeat it.)
+  - Price experiments on iOS need a **separate subscription group per variant** — plan for it in App Store Connect.
+  - Win-back / decline offer = a **genuinely cheaper real SKU**. **No fake scarcity, no fake countdowns** — Cal AI was pulled from the App Store (~April 2026) for exactly that.
+- **Fallback paywalls** bundled in the binary so a first launch offline still shows a working paywall.
+- **Events:** Adapty's **native PostHog integration** forwards subscription lifecycle events (trial started/converted, renewals, cancels, refunds, billing issues — configurable names) straight into PostHog: https://adapty.io/docs/posthog. Adapty **webhooks** (18 event types: https://adapty.io/docs/webhook) hit the §10.1 receiver for the Postgres mirror.
+
+### 10.4 Analytics (PostHog)
+
+- **Both SDKs:** `posthog-react-native` in the app, `posthog-node` on the server.
+- **Typed wrapper** (clone Regen's `mobile/lib/analytics.ts`): a string-literal union of every allowed event name — untyped `capture()` calls don't compile; graceful no-op when no key is configured; `register({app: 'excerlock'})` super property; includes the **`primeDeviceIdForFlags()`** workaround (the RN SDK bug that otherwise breaks device-bucketed flag evaluation).
+- **Conventions (all from ANALYTICS-CONVENTIONS.md):** `object_action` snake_case taxonomy · **autocapture OFF** · no session replay · manual `trackScreen` on real navigation only · **single-emitter rule** — every event has exactly one emitter (client XOR server XOR Adapty-integration); subscription lifecycle belongs to Adapty, domain events to whichever side owns the truth.
+- **Dashboards from day one:** an *Onboarding & Activation* dashboard and a *Revenue* dashboard (mirror Regen's pair), with activation defined as a dual metric (e.g. "completed onboarding AND created first condition") so a vanity number can't hide a broken step.
+
+### 10.5 Onboarding funnel & drop-off analysis
+
+The full "where do users drop off" capability, Regen's exact mechanism:
+
+- **One `FLOW` array** (a `flow.ts` module) is the single source of truth for onboarding screen order. Screens are data, not hardcoded routes — which is also what makes onboarding remotely re-orderable (§10.6).
+- **Two helpers, one call site:** `trackOnboardingScreen(screen)` (fires `$screen` + `onboarding_screen_viewed {screen}`) and `trackOnboardingAnswer(screen, value)`, both called from the **single central screen renderer** — never per-screen. New screens are instrumented by existing in the array.
+- **The funnel** in PostHog is one insight: `onboarding_screen_viewed` filtered per `screen` value per step — per-screen conversion and drop-off with zero extra instrumentation. Answer distributions come free from `onboarding_answer`.
+- **Per-arm funnels free of charge:** PostHog auto-stamps `$feature/<flag>` on events, so any onboarding experiment can be broken down per variant in the same funnel with one added breakdown.
+
+### 10.6 Remote A/B testing (PostHog experiments rail)
+
+Everything **not** priced is tested through PostHog feature flags, on Regen's guard-railed rail:
+
+- **Typed flag registry** (`experiments.ts`, pure React, no SDK imports) — every flag is a typed `ExperimentFlagKey` with its variant union.
+- **One provider** (`ExperimentVariantProvider.tsx`) is the **only** file allowed to call `useFeatureFlag` — that call is what emits the `$feature_flag_called` exposure event; payload-only reads silently produce experiments with zero exposures. A **filesystem-walking guardrail test** fails CI if any other file imports the flag hook (copy Regen's test).
+- **Rules:** flags named `exp-<surface>-<slug>` / `gate-<slug>` · **bucket on `$device_id`**, never distinct_id (onboarding users are anonymous) · **never block rendering on a flag** — control renders instantly, variant applies only if the flag arrives ≤500ms · Bayesian evaluation with minimums (≥50 exposures and ≥5 conversions per arm) before any call is made.
+- **Scope for ExcerLock v1:** full remote onboarding experiments (screen order/inclusion via the FLOW array, copy, design variants), shield-screen copy tests, notification copy tests. Paywall *content/price* tests live in Adapty (§10.3); PostHog may still gate *which placement* is requested.
+
+### 10.7 Crash reporting (Sentry)
+
+Sentry on both app and server, Regen hygiene: the Sentry import is the **first import** in the app entry file; breadcrumbs and PII scrubbed in `beforeSend`; source maps uploaded on EAS builds.
+
+### 10.8 The rest of the Regen dependency set
+
+- **Notifications:** local-only in v1 (§3.14 needs no remote push). Ship Regen's `withNoPush.js`-style config plugin that strips the `aps-environment` entitlement — and it must stay **first** in the plugins array (plugins apply LIFO). Revisit only if remote push earns its way in.
+- **OTA updates:** `expo-updates` with EAS channels (preview/production) for JS-level fixes between store releases.
+- **Onboarding state:** zustand + AsyncStorage store (Regen's `onboardingStore.ts` shape) with a one-shot sync to the server at sign-up.
+- **Secrets:** all keys live in `$HOME` dotfiles referenced by path, never committed. Client-side surface is `EXPO_PUBLIC_*` (PostHog key, Adapty public key, Clerk publishable key); server secrets via systemd environment file. `.claude/settings.json` allowlists the PostHog MCP + curl to the Adapty/Clerk APIs so agents can operate the stack (Regen's convention).
+- **Deliberately NOT built (Regen's gaps, kept on purpose until earned):** no attribution SDK (until paid acquisition starts) · no session replay · no remote push · no in-house experiment stats (PostHog/Adapty do the math).
+
+### 10.9 Dependency manifest (concrete packages)
+
+Lifted from Regen's shipping `package.json`s (versions float to current at build time), plus the ExcerLock-only additions.
+
+**Mobile — Regen-proven core (same packages):**
+
+| Concern | Package |
+|---|---|
+| Screen-time blocking | **`react-native-device-activity`** — Regen already ships FamilyControls / DeviceActivity / ManagedSettings through this Expo module. This is ExcerLock's load-bearing dependency, and Regen is the existence proof that the Expo path works. |
+| Auth | `@clerk/clerk-expo` |
+| Payments | `react-native-adapty` (in Regen's `react-native-purchases` seat) |
+| Analytics / crash | `posthog-react-native` · `@sentry/react-native` |
+| Navigation | `expo-router` |
+| Custom native builds | `expo-dev-client` + `expo-build-properties` — **mandatory**: FamilyControls and every extension target mean no Expo Go, ever; all testing on dev-client builds |
+| OAuth plumbing | `expo-auth-session` + `expo-web-browser` + `expo-crypto` — used by Clerk SSO **and** reused for §3.5c vendor OAuth (Strava/Oura/…) |
+| Secret storage | `expo-secure-store` — Clerk token cache + vendor OAuth tokens live in the keychain, never AsyncStorage |
+| Notifications (local) | `expo-notifications` (with the no-push entitlement strip, §10.8) |
+| State / storage | `zustand` + `@react-native-async-storage/async-storage` |
+| OTA | `expo-updates` |
+| UI plumbing | `react-native-reanimated` (+ worklets) · `react-native-gesture-handler` · `react-native-svg` · `expo-image` · `expo-blur` · `expo-linear-gradient` · `expo-haptics` · `expo-font` / `@expo-google-fonts/*` · `expo-splash-screen` · safe-area + screens |
+| Banner own-photo (§3.15) | `expo-image-picker` |
+| Support email | `expo-mail-composer` |
+| Face ID app gate | `expo-local-authentication` — **confirmed in** (Settings toggle, §3.15) |
+| Rating prompt | `expo-store-review` — Rate row + milestone-triggered prompt (§3.15 Settings) |
+| Alternate app icons | `expo-alternate-app-icons` (App Icon picker, §3.15) |
+| Siri | App Intents = a small **native Swift target** (no JS wrapper needed) |
+| Testing | `jest-expo` + `@testing-library/react-native` — required anyway: the §10.6 flag-guardrail test runs on this |
+
+**Mobile — ExcerLock-only (Regen never needed these):**
+
+- **HealthKit:** no first-party Expo module — use `@kingstinct/react-native-healthkit` (Expo-config-plugin compatible; anchored queries + background delivery) for all §3.4/§3.5 reads.
+- **Location / geofencing:** `expo-location` + `expo-task-manager` cover gym-arrival regions and the Walk & Scroll continuous-location session (§3.5b). If region-monitoring limits bite, fall back to a small custom Swift module.
+- **Motion / cadence:** CMMotionActivity + CMPedometer cadence (§3.5b) has no good off-the-shelf wrapper — plan a **small custom Expo Module (Swift)**; `expo-sensors`' Pedometer is not enough (no live cadence/activity classification).
+- **Extensions:** the DeviceActivity monitor extension, Shield configuration/action extensions, and (if used) the report extension are **native targets** managed via config plugins — this is the main reason `expo-dev-client` is non-negotiable.
+
+**Server (Regen's exact set):** `fastify` + `@fastify/helmet` + `@fastify/rate-limit` · `drizzle-orm` + `postgres` (+ `drizzle-kit`) · `jose` (Clerk JWT verification) · `zod` (request validation) · `posthog-node` · `@sentry/node` · `dotenv` · dev/test: `tsx`, `vitest`, `@electric-sql/pglite` (in-memory Postgres for tests). Node ≥22.
+
+### 10.10 Day-zero provisioning runbook (accounts, keys, agent tooling)
+
+**None of §10 works until the accounts exist and the keys are minted.** Understand this as a build prerequisite, not an afterthought: before mobile work starts, every service below must be signed into / created, configured, and its keys landed in the right place (§9 lists it as an open item; this subsection is the how).
+
+**Rule: CLI + MCP first, browser last.** Agents doing the setup (Claude Code / Codex) must use each service's CLI, REST API (curl + dotfile key), or MCP server wherever one exists — scriptable, repeatable, auditable. The browser is the fallback reserved for the genuinely dashboard-only steps flagged ⚠️ below. One-time account *sign-ups/sign-ins* are human steps (Johan); everything after a key exists should be automated.
+
+| Service | Create / configure | Keys → where | Agent tooling |
+|---|---|---|---|
+| **Apple Developer / App Store Connect** | Bundle ID + app record · subscription group + SKUs · **FamilyControls distribution-entitlement request** (§5, file immediately) | ASC API key (`.p8`) → `~/` dotfile dir; team/app ids → EAS config | App Store Connect API via fastlane / `asc`; ⚠️ agreements/tax/banking + the entitlement request form are portal-only |
+| **Clerk** | Application (iOS native), sign-in methods, JWT template for the API | Publishable key → `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`; secret key → server env | Clerk Backend API via curl for config; ⚠️ app creation is dashboard-only |
+| **Adapty** | App · products mirroring the ASC SKUs · `premium` access level · placements · initial paywall · **PostHog integration** · **webhook → our `/v1` receiver** | Public SDK key → `EXPO_PUBLIC_ADAPTY_KEY`; secret server key + webhook secret → server env | Adapty server/API via curl where supported; ⚠️ Paywall Builder + integration config are dashboard-only |
+| **PostHog** | New **ExcerLock** project in the existing org · flags · dashboards (§10.4) · funnel insights (§10.5) | Project API key → `EXPO_PUBLIC_POSTHOG_KEY`; personal API key → server env + agent dotfile | **PostHog MCP is already wired into this dev environment** — create/manage flags, insights, dashboards, experiments through it, never the browser; allowlist in `.claude/settings.json` (Regen convention) |
+| **Sentry** | Two projects: `excerlock-mobile`, `excerlock-api` | DSNs → app config / server env; auth token (source maps) → `~/.sentryclirc` + EAS secret | `sentry-cli` + REST API; Sentry MCP available in-session |
+| **Resend** | Sending domain + DKIM/SPF DNS records · support-inbox routing | API key → server env | Resend REST API via curl; DNS via the registrar/VPS provider's CLI |
+| **VPS + DNS** | Box · domain · A/AAAA records · ssh keys · Postgres · Caddy · systemd unit | ssh key → `~/.ssh`; DB URL + all server secrets → systemd `EnvironmentFile` | Provider CLI (`hcloud` / `doctl` / equivalent) + ssh/rsync — fully scriptable, zero browser |
+| **Expo / EAS** | Project link · channels (preview/production) · **EAS secrets for every `EXPO_PUBLIC_*`** | EAS secrets store | `eas` CLI + **Expo MCP (already configured)** |
+| **Vendor OAuth apps** (§3.5c, when scoped in) | Strava/Oura/Whoop/Polar/Fitbit developer apps + redirect URIs | Client ids/secrets → **server env only** (never the binary) | ⚠️ developer-portal signups are browser-only; token flows thereafter are pure API |
+
+**Key registry (Regen's convention, restated as law):** every secret lives in a `$HOME` dotfile or the server's `EnvironmentFile`, referenced by path, never committed; client-exposed keys go through `EXPO_PUBLIC_*` via EAS secrets; an in-repo `docs/credentials.md` lists **paths and purposes only — never values**.
+
+**Definition of done:** a `scripts/check-env.ts` doctor script — one of the first things built — verifies every key is present *and live* (one cheap authenticated ping per service) and prints a per-service ✅/❌ table. Provisioning is finished when the doctor is all-green; CI runs the keyless no-op path (§10.4) so missing keys degrade, never crash.
+
+---
+
+### Changelog
+- **2026-07-28 (wayfinder charting — four build decisions locked):** Stack = **Expo + RN**; testing = **simulator loop (mocked signal boundary, Maestro e2e, loop-until-perfect) + device smoke suite** (FamilyControls does not run on simulator); repo = this folder as a **private GitHub monorepo** (also hosts the wayfinder map issues); §3.5c = **all Tier-1 vendors in v1**; VPS provider = **Azure** (az CLI). Build governance: TDD with deep, agent-navigable modules.
+- **2026-07-28 (universal visual style framework):** Created **`design/STYLE.md`** — the style constitution merging Codex's proven icon-foundry record (`prototype/assets/icons/FOUNDRY.md`, 13/13 validated assets) with the Pillow-DNA guide (`design/pillow-style-guide.md`). Four asset families: A soft-clay hero (ivory #F4F1F5 / gray #C9C4CC) · B flat white glyph (tint in code, never baked) · C painted banner (gym-card anchor, Higgsfield) · D full-screen mockup (Pillow tokens). Fixed style-anchor registry, verbatim proven prompt templates (Family A lock prompts, Family B Template B2), magenta #FF00FF → chroma-key → validation-gate pipeline, precise-object-edit correction rule (never regenerate/never rewrite working style language), and the manifest law (unlogged assets don't ship). Enforcement: root `AGENTS.md` + `CLAUDE.md` (and prototype AGENTS.md) force every agent to read STYLE.md before any visual generation; §3.15 governance note added; build-spec §6 now defers to STYLE.md.
+- **2026-07-28 (provisioning runbook):** Added §10.10 — day-zero account/key setup is an explicit build prerequisite: per-service table (App Store Connect, Clerk, Adapty, PostHog, Sentry, Resend, VPS+DNS, EAS, vendor OAuth) of what to create, which keys to mint, and where they land (EXPO_PUBLIC_* via EAS secrets / server EnvironmentFile / $HOME dotfiles, never committed). Standing rule: **agents use CLI + MCP + REST-API tooling first, browser only for flagged dashboard-only steps** (PostHog MCP and Expo MCP are already wired into the dev environment; sentry-cli, eas, fastlane/asc, provider CLIs cover the rest). Done = `scripts/check-env.ts` doctor script all-green (live ping per service); keyless builds degrade to no-op, never crash.
+- **2026-07-28 (full-stack Settings + basic v1 onboarding):** §3.15 Settings rewritten from "kept thin" to a **full-stack settings page** (Pillow-style grouped cards), everything shipping in build one and everything real — no coming-soon rows: pinned Permissions health panel · Account (Clerk profile + required in-app delete) · Manage Subscription (Adapty + restore/redeem) · Notifications · General (alternate app icons, appearance, iOS per-app language, day boundary, week start, units, Siri App Intents, Face ID gate, haptics/sounds) · Data & Connections (Health read log, vendor connections, data export) · **fully wired Support & Feedback** (help page, in-app support/bug/feature composer → `/v1/support` → Resend with auto-attached diagnostics + Sentry feedback + PostHog demand events, one-tap diagnostics bundle à la Pillow's Health diagnostics) · About (remote-JSON What's New, `expo-store-review` rating, share, socials, terms/privacy) · version footer with 7-tap hidden debug menu. Rejected from references: promos, discreet mode, profile fields, AI, newsletter. Deps added: expo-store-review, expo-alternate-app-icons, App Intents Swift target; Face ID confirmed in. **Onboarding:** first build ships a deliberately basic flow (value prop → confession → permissions → pick apps → paywall) on the §10.5 FLOW-array rail — instrumented and remotely editable from day one; polish later by editing the array.
+- **2026-07-28 (dependency manifest):** Added §10.9 — the concrete package list, diffed from Regen's shipping `package.json`s. Key finds: **`react-native-device-activity`** (Regen already ships FamilyControls/DeviceActivity through it — the existence proof for ExcerLock's Expo path); `expo-dev-client` mandatory (extensions = no Expo Go); OAuth plumbing (`expo-auth-session`/`expo-web-browser`/`expo-crypto`) shared by Clerk and §3.5c vendor connections; `expo-secure-store` for token keychain; `expo-image-picker` for banner own-photos. ExcerLock-only additions Regen never needed: `@kingstinct/react-native-healthkit`, `expo-location`+`expo-task-manager` geofencing, a small custom Swift Expo Module for CMMotionActivity/cadence, and the native extension targets. Server set copied exactly (fastify+helmet+rate-limit, drizzle+postgres, jose, zod, posthog-node, Sentry, vitest+pglite).
+- **2026-07-28 (backend & growth infrastructure):** Added **§10** — the first build ships fully wired to Regen's production growth stack, with **Adapty replacing RevenueCat** and **Clerk for auth**. VPS backend (Fastify+Drizzle+Postgres, rsync→systemd→Caddy, no Docker) serving the §3.5c token proxy, Adapty webhook mirror (timing-safe secret), server-side PostHog, Resend email, cron sweeps; one identity spine (Clerk id = Adapty customer_user_id = PostHog distinct_id), anonymous-first onboarding with identify-at-signup; Adapty remote paywalls (Paywall Builder/remote-config, fallback bundle) with **Adapty A/B owning all price/trial/plan/paywall-design experiments** (never price-test via PostHog; render-what-the-placement-returns; separate subscription group per price variant; no fake scarcity — Cal AI precedent) and native Adapty→PostHog subscription events; PostHog full drop-off analysis via the FLOW-array + two-helper onboarding instrumentation and per-`screen` funnel; remote A/B rail (typed flag registry, single exposure-emitting provider + CI guardrail test, `$device_id` bucketing, control-first ≤500ms, exp-/gate- naming, Bayesian minimums); Sentry both sides; local-only notifications via no-push plugin; expo-updates OTA; dotfile secrets convention. Reversed: §4 RevenueCat→Adapty, "no accounts and no server" deleted; §7 accounts/auth/server exclusion replaced with infrastructure cuts (no attribution SDK / session replay / remote push / server-side earning); §3.5c + §5 + §7 proxy-cost language updated (server exists anyway); §8 infrastructure decisions added.
+- **2026-07-27 (condition banners):** Every condition wears a **banner** — full-bleed card artwork behind the status layer on Home and Manage, chosen in a new builder step 5. Curated library produced in-house on Higgsfield in the gym-card style (semi-realistic painted, the approved "Go to gym" illustration is the style anchor): several banners per activity family (gym/running/swimming/cycling/walking) + general/neutral ones for universal & connected-app conditions; per-entry sensible defaults; plus a "use your own photo" option (auto-crop + auto legibility scrim, stored locally). Counts per family + default mapping added to decisions owed; banner-library production added to mockup follow-ups.
+- **2026-07-27 (grill session — UI structure):** Added §3.15. Locked: four plain tabs (Home · Manage · Analysis · Settings), no center button, explicitly no fifth tab. Home = streak chip + goal bar + lock hero (v18 unlock animation) + balance row + ALL active condition cards in three kind variants (event / state-live / rate-meter) + Edit/Analysis shortcut rows that teleport to tabs 2/3. Manage = the whole economy editor (Conditions / Locked apps / **Rules** — schedules, lock window, presets, tokens live here, not in Settings). Analysis = six blocks (recap · Time Reclaimed hero · spent-vs-earned bars · streak + requirement heat map · per-condition earning breakdown · milestones shelf w/ shareables); gamification = heat map/badges/share cards, no XP/mascots; per-app breakdown excluded. Settings thin, led by a permissions health panel + connected apps. Five non-tab surfaces named: shield screen (sells, never scolds), claim/celebration takeover, onboarding+paywall flow, condition-builder sheet, notification deep-link map. Mockup follow-ups: 4-tab bar re-mock, state/rate card variants.
+- **2026-07-27 (grill session — the Condition system):** Unified the entire earn side into one primitive. §3.3 rewritten as **the Condition system**: three kinds (state / event / rate) with a **strict kind→reward mapping** (state=sustained unlock, never banks; event=fixed chunk / rest-of-day / set period, repeatable+caps; rate=**continuous pro-rata** exchange, ratio-displayed, today-only); uniqueness on (kind+signal+source+place); **event×rate exclusion** on the same signal+source (double-pay guard); states conflict with nothing (*arrive* + *be-there* explicitly coexist); one event per signal (tiered goals post-v1); **catalog-first builder** (4 steps, invalid entries greyed inline with reasons); v1 catalog locked (gym arrive/be/time-rate · walking state/steps-rate/step-goal · run/cycle/swim goal+rate · universal calories/minutes goal+rate + any-workout · connected-app extras incl. Whoop strain, Hevy strength log, Concept2 meters). §3.4/§3.5/§3.5b recast as **signal implementations** of the catalog. §3.13 streak redefined: any kind counts via minimums (event fired / rate ≥ credit floor / state ≥ duration floor). Every condition renders as one dashboard card.
+- **2026-06-18:** Renamed GymLock → ExcerLock. Removed the Strictness & anti-bypass section (Discipline Lock, Integrity system, Emergency/SOS) at Johan's request. Replaced the "dwell" requirement with a short presence-confirmation cooldown (you're either there or not). Broadened the earn side from gym-only to any exercise.
+- **2026-07-27:** Added §3.5b **Walk & Scroll** — a live "while active" conditional unlock (apps usable only while currently walking), with the session/watchdog architecture (CMMotionActivity + cadence detection, foreground-started continuous-location sessions, DeviceActivity increment fail-safe) and its knobs in §6/§8; added a third gating spike to §5. Added §3.5c **Direct app connections** — amends "Apple Health only": Apple Health stays the default source, but triggers can be wired to Strava / Oura / Whoop / Polar / Fitbit via OAuth (tiered by API openness; Garmin/Suunto/Coros deferred as partnership-gated; NRC/Peloton/Samsung never — no API), with per-source manual-entry filters, cross-source dedup, and the honest cost: a minimal token-exchange proxy is the product's first server component; v1-vs-v1.x scope owed.
+- **2026-06-18 (post research + grill):** Finalized the fitness-earning model after research and a grilling session. Decisions: read all fitness data through **Apple Health only** (no vendor APIs); activities are user-set **goal triggers** (2 mi / 700 cal / 30 min / 10k steps) that reuse the gym's shared reward engine; multiple triggers can be active at once; **device-recorded data only** (manual entries ignored); detection is claim-on-open + best-effort background (no instant-unlock promise); **ExcerLock absorbs WalkLock**; **Fitbit / Coros / Samsung and all direct vendor APIs out for v1**. Restructured §3.3 into a shared reward engine that both the gym and fitness goals pay out through.
