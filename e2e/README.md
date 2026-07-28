@@ -11,12 +11,15 @@
 
 ```
 e2e/
+  HARNESS.md             # the test-fix-loop contract (ticket #15) — read this first
+  scenario-schema.md     # scenario/fixture schema + deep link + control server (#15)
   config.yaml            # workspace config: flow discovery, global tags (TBD)
   flows/                 # one flow per scenario; tags scope suites
     smoke-home.yaml      # ← the one existing template flow
+  scenarios/             # scenario manifests (schema: scenario-schema.md)
   baselines/             # per-screen baseline PNGs (git-committed; a baseline is a design sign-off)
-  scripts/               # odiff sweep + bless scripts (built by the harness prototype)
-  out/                   # gitignored: report.xml, artifacts/, debug/, diffs/
+  scripts/               # run-suite.sh · visual-sweep.sh · bless-baseline.sh (#15)
+  out/                   # gitignored: report.xml, artifacts/, debug/, diffs/, visual-results.tsv
 ```
 
 ## The contract (once the app exists)
