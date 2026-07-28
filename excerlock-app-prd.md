@@ -81,7 +81,7 @@ The same engine is the shared codebase for the screentime-framework portfolio. E
 ### 3.4 Signal implementation — Gym presence (location)
 > Detection layer for the gym conditions in the §3.3 catalog (*Arrive at gym* event · *Be at the gym* state · *Time at the gym* rate). This section is about how presence is sensed and verified; rewards and rules live in §3.3.
 - The underlying signal is **presence at a saved gym**, confirmed by location.
-- **Gym setup:** add gyms by map search or dropped pin (iOS caps how many locations can be monitored, so there's a ceiling); each gym has an adjustable arrival radius kept within the band where geofencing is reliable; optional Wi-Fi-network confirmation; map-POI "verified gym" vs "honor system" tags for home gyms / outdoor spots.
+- **Gym setup:** add gyms by map search or dropped pin (**cap: 5 saved gyms** — DECIDED 2026-07-28; iOS caps monitored regions at 20 per app, so 5 leaves headroom); each gym has an adjustable arrival radius — the map circle **starts at 100 m and drags 50–200 m**, the band where geofencing stays reliable; optional Wi-Fi-network confirmation; map-POI "verified gym" vs "honor system" tags for home gyms / outdoor spots.
 - Verification details in §3.7. Reward via the shared engine (§3.3).
 
 ### 3.5 Signal implementation — Fitness activities & wearables (Apple Health)
@@ -179,20 +179,21 @@ The pitch line: **"want to scroll? keep walking."** Locked apps are usable only 
 - Faking activity data (manual workout entry) → **device-recorded-only filter** (§3.5); manually-typed Health entries are silently ignored. No heavier fraud system in v1.
 
 ### 3.10 Schedules & special days
-- Each day is an **Active day** (full economy; missing your exercise leaves you at base allowance, which may be zero; counts toward streak), a **Rest day** (either no locking at all, or allowance-only — user's choice; never counts against the streak), or a **Custom day** (override any knob — different allowance, reward, or locked hours; "special days where specific rules apply," generalized).
-- **Lock window:** optionally the economy runs only during chosen hours of a day; outside the window there's no locking and no draining.
+- Each day is an **Active day** (full economy; missing your exercise leaves you at base allowance, which may be zero; counts toward streak), a **Rest day** (either no locking at all — **the default (DECIDED 2026-07-28)** — or allowance-only; user's choice; never counts against the streak), or a **Custom day** (override any knob — different allowance, reward, or locked hours; "special days where specific rules apply," generalized).
+- **Default week (DECIDED 2026-07-28): Mon–Sat Active, Sunday Rest.**
+- **Lock window:** optionally the economy runs only during chosen hours of a day; outside the window there's no locking and no draining. **No minimum length** (DECIDED 2026-07-28 — honor-system, consistent with home-gym tagging).
 
 ### 3.11 One-off date overrides
-- **Sick day token:** instantly turns today into a rest day; streak preserved; logged; limited allotment that doesn't accumulate.
-- **Vacation mode:** pauses the whole app for a chosen stretch; streak frozen, not reset; takes effect only after a delay so it can't be a weak-moment escape hatch; cancellable during the delay.
+- **Sick-day override (DECIDED 2026-07-28 — replaces the token allotment):** unlimited, friction-gated. No counter, no monthly budget; instead a deliberately **buried** override — never surfaced in normal flows, the user has to go hunting for it — that requires typing a **free-text reason**. Honesty is never checked; typing the reason *is* the friction. Using it turns today into a rest day, preserves the streak, and every use is logged with its reason.
+- ~~**Vacation mode**~~ **CUT 2026-07-28:** a pause-with-delay commitment device is dead weight — users who want out will simply disable the blocker. Planned trips use holiday dates (below), which are the streak-safe way to travel; unplanned gaps fall to the sick-day override.
 - **Holiday dates:** pre-mark calendar days as rest days (planning ahead is the opposite of a weak moment, so no delay).
 
 ### 3.12 Presets
 - Named starting configurations — e.g. a strict one, a balanced one, an earn-friendly one — plus full **Custom**. A preset just sets the knobs; the user can then change anything. (The values behind each preset are a decision owed.)
 
 ### 3.13 Streaks & stats
-- **Streak = consecutive active days where any condition produced meaningful activity** (2026-07-27, fits the unified §3.3): an **event** fired, OR a **rate** condition credited at least a minimum amount (a handful of steps doesn't count), OR a **state** was sustained past a minimum duration (standing in the gym doorway doesn't count). Both minimums are decisions owed. Each condition card shows whether today's streak requirement is met. Rest / custom / vacation / sick days are transparent — they neither extend nor break it. A missed active day breaks it at the day boundary unless a sick token was used.
-- **Streak policy** is a setting: hard reset vs sick-token cushion. No paid streak freezes ever — paying to not exercise inverts the product.
+- **Streak = consecutive active days where any condition produced meaningful activity** (2026-07-27, fits the unified §3.3): an **event** fired, OR a **rate** condition credited at least a minimum amount (a handful of steps doesn't count), OR a **state** was sustained past a minimum duration (standing in the gym doorway doesn't count). Both minimums are decisions owed. Each condition card shows whether today's streak requirement is met. Rest / custom / holiday / sick-override days are transparent — they neither extend nor break it. A missed active day breaks it at the day boundary unless the sick-day override was used.
+- **Streak policy** is a setting: **hard reset (default — DECIDED 2026-07-28)** vs auto-cushion (first missed day auto-converts to a logged rest day). By default there is no automatic rescue — saving the streak always costs the deliberate act of digging out the buried override. No paid streak freezes ever — paying to not exercise inverts the product.
 - Track both current and longest streak.
 - **Ledger-based stats:** total workouts/visits, per week/month, a calendar heat map, favorite gym, activity breakdown by source, and minutes earned by source vs spent.
 - **Time reclaimed** — confessed usage minus actual locked-group usage, summed: "ExcerLock saved you N hours this month." The single most shareable number in the app.
@@ -237,7 +238,7 @@ The pitch line: **"want to scroll? keep walking."** Locked apps are usable only 
 **Tab 2 — Manage** (the whole economy editor), three sections:
 - **Conditions** — the list of created conditions (enable/disable, edit, delete); "add" opens the §3.3 catalog-first builder sheet.
 - **Locked apps** — the shielded app group picker (§3.6).
-- **Rules** — weekly schedule, lock window, presets, sick tokens, vacation mode, holiday dates (§3.10–3.12). Deliberately here, not in Settings: users touch these weekly.
+- **Rules** — weekly schedule, lock window, presets, holiday dates (§3.10–3.12). Deliberately here, not in Settings: users touch these weekly. (The sick-day override is *not* listed here — it stays buried by design, §3.11.)
 
 **Tab 3 — Analysis** (gamified = heat map, badges, shareable cards — no XP/levels/mascots), top to bottom:
 1. Weekly recap card, shown while fresh.
@@ -256,28 +257,26 @@ The pitch line: **"want to scroll? keep walking."** Locked apps are usable only 
   - *Manage Subscription* — plan + renewal date from Adapty, Restore Purchases, Redeem Code, "Manage in App Store" deep link.
   - *Notifications* — the three push toggles (§3.14: nudge · weekly recap · streak last-call, all default OFF), afternoon-nudge time. (The 1/day delivery cap is a fixed rule, not a setting.)
 - **GENERAL**
-  - *App Icon* — alternate icon picker (a few variants from the icon foundry).
   - *Appearance* — auto / light / dark segmented control.
   - *Language* — deep link to the iOS per-app language pane (system-managed; no in-app picker to maintain).
   - *Day boundary* (§3.2) · *Start week on* (drives the Analysis heat map) · *Units* — miles/km (run/cycle distance conditions read this).
   - *Siri & Shortcuts* — App Intents: "How much time do I have left?", "Start a Walk & Scroll session", "Check in at the gym" (native App Intents target).
-  - *Face ID to open ExcerLock* — toggle (`expo-local-authentication`; now confirmed in, not optional).
   - *Haptics* and *Sounds* toggles.
 - **DATA & CONNECTIONS**
   - *Apple Health* — what we read, last-sample times per signal.
   - *Connected apps* (§3.5c) — per-vendor connect/disconnect, last sync, dedup notice.
   - *Export my data* — JSON of conditions, earn history, streaks (cheap goodwill + GDPR posture).
 - **SUPPORT & FEEDBACK** (fully wired, not mailto-and-pray)
-  - *Help & FAQ* — hosted help page (answers written from real PostHog drop-off + ticket patterns).
-  - *Contact support* — in-app composer → `POST /v1/support` → Resend email to the support inbox, with app version, iOS version, device, entitlement state, and permission statuses auto-attached (user-visible before send).
+  - *Help & FAQ* — hosted help page at **`excerlock.com/help`** (static page deployed from this monorepo; answers written from real PostHog drop-off + ticket patterns).
+  - *Contact support* — in-app composer → `POST /v1/support` → Resend email to **`support@excerlock.com`**, with app version, iOS version, device, entitlement state, and permission statuses auto-attached (user-visible before send).
   - *Report a bug* — same pipeline flagged as bug + optional screenshot attach; also fires a Sentry user-feedback event tied to the session.
   - *Request a feature* — same pipeline flagged as idea; every submission also lands as a PostHog event so feature demand is queryable.
-  - *Send diagnostics* — one-tap diagnostic bundle (permission states, extension health, last shield events, recent HealthKit sample metadata — **no health values**, just timestamps/sources) shareable to support. Pillow's "Apple Health diagnostics" pattern: this is what kills "my run didn't count" tickets.
+  - *Send diagnostics* — one-tap diagnostic bundle shareable to support (**exact field list decided — see §8 "Settings page"**; **no health values**, no locked-app names, no location coordinates — statuses and timestamps only). Pillow's "Apple Health diagnostics" pattern: this is what kills "my run didn't count" tickets.
 - **ABOUT**
   - *What's new* — release-notes screen fed from a small remote JSON (updatable without a release).
-  - *Rate ExcerLock* — `expo-store-review` prompt, plus a direct App Store review deep link. (Closes a known Regen gap — proactive prompt trigger is a §8 decision: e.g. after first 7-day streak or Nth unlock moment (v18 hero animation), never after a shield.)
+  - *Rate ExcerLock* — `expo-store-review` prompt, plus a direct App Store review deep link. (Closes a known Regen gap — **trigger decided, see §8 "Settings page"**: layered, anchored to the unlock moment, never post-shield.)
   - *Share ExcerLock* — native share sheet with the referral copy.
-  - *Follow us* — social links (list owed §8).
+  - *Follow us* — social links: **TikTok + Instagram** (accounts to be created; URLs land later via the same remote JSON as What's New — no release needed).
   - *Terms of Use* · *Privacy Policy* — required links (also on the paywall).
 - **Footer** — app version + build number. Tapping it 7× opens the **hidden debug menu** (dev/TestFlight only): experiment-flag overrides, simulated entitlement, reset onboarding, PostHog event console.
 
@@ -320,13 +319,13 @@ Explicitly rejected from the reference screenshots as not applicable: therapy/pa
 
 ## 6. Settings (knobs that exist — values are decisions owed)
 
-Locked apps · base allowance · **the user's conditions** (each: kind-appropriate settings per §3.3 — threshold / ratio / drain+grace, reward details, repeatable, caps, source, place) · same-source cooldown · presence-confirmation cooldown · instant-relief-on-arrival · rollover (and its cap) · **Walk & Scroll session knobs** (cadence threshold · stop grace period · per-day session cap) · weekly schedule · rest-day rule · lock window · day boundary time · gyms (count + radius) · auto-detect (always location) · sick-token allowance · streak policy · vacation mode (and its delay) · per-type notification toggles · afternoon-nudge time.
+Locked apps · base allowance · **the user's conditions** (each: kind-appropriate settings per §3.3 — threshold / ratio / drain+grace, reward details, repeatable, caps, source, place) · same-source cooldown · presence-confirmation cooldown · instant-relief-on-arrival · rollover (and its cap) · **Walk & Scroll session knobs** (cadence threshold · stop grace period · per-day session cap) · weekly schedule · rest-day rule · lock window (no minimum length) · day boundary (opt-in; off = midnight, on = any time) · gyms (count + radius) · auto-detect (always location) · sick-day override (buried; unlimited, reason required) · streak policy · per-type notification toggles · afternoon-nudge time.
 
 ---
 
 ## 7. Explicitly NOT in v1
 
-Android · Web · macOS · Apple Watch standalone app · per-app/per-category budgets · per-location budgets · accountability partners / social / leaderboards · in-app workout content / sets-reps coaching · AI anything · retroactive visit claims.
+Android · Web · macOS · Apple Watch standalone app · per-app/per-category budgets · per-location budgets · accountability partners / social / leaderboards · in-app workout content / sets-reps coaching · AI anything · retroactive visit claims · **vacation mode** (cut 2026-07-28 — users who want out just disable the blocker; holiday dates + the sick-day override cover real absences, §3.11).
 
 **Infrastructure cuts (the §10 stack ships, but deliberately without):** attribution SDK · session replay · remote push notifications · any server-side computation of earning/balances (stays on-device).
 
@@ -341,16 +340,22 @@ Android · Web · macOS · Apple Watch standalone app · per-app/per-category bu
 - **Walk & Scroll (§3.5b):** cadence threshold · stop grace-period length · unlock increment length · per-day session cap · whether sessions drain the balance (none vs reduced rate) · default on/off.
 - **Direct connections (§3.5c):** ~~ship-in-v1 vs v1.x~~ **DECIDED 2026-07-28: ALL Tier-1 vendors (Strava · Oura · Whoop · Polar) ship in v1** · whether/when to add the webhook upgrade · dedup window length · per-source manual-entry filter details.
 - **Infrastructure additions:** ~~VPS provider~~ **DECIDED 2026-07-28: Azure VM** (provisioned via `az` CLI per §10.10, never the portal UI) — region/size owed.
-- **Gyms:** how many gyms a user can save · arrival radius default/band · day-boundary default time and window.
-- **Schedules:** default weekly schedule · default rest-day rule · minimum lock-window length.
-- **Tokens:** sick-token allowance · vacation-mode max length and delay length · streak-policy default.
+- **Gyms: DECIDED 2026-07-28 (gyms/schedules/tokens grill).** Saved-gym cap **5** (well under the iOS 20-geofence limit) · arrival radius **starts at 100 m, draggable 50–200 m** on the §3.4 map-pin circle · **day boundary is opt-in**: off by default (day rolls at plain midnight); enabled, the user sets any time — no restricted window.
+- **Schedules: DECIDED 2026-07-28.** Default week **Mon–Sat Active, Sunday Rest** · default rest-day rule **no locking at all** (a true day off) · lock window has **no minimum length** (honor-system: users own their setup).
+- **Tokens: DECIDED 2026-07-28.** Sick tokens replaced by the **unlimited buried type-a-reason override** (§3.11) · **vacation mode cut** (§3.11/§7; holiday dates cover planned trips) · streak policy defaults to **hard reset** (§3.13).
 - **Presets:** all knob values behind each preset.
 - **Shield & celebration (§3.15 surfaces 1–2): DECIDED 2026-07-28 (grill session)** — **Shield:** four cause-keyed variants — *balance empty* ("Time's up — for now." / "A 20-min walk gets you 30 more minutes.") · *Full Lock* ("Move first, scroll after." / today's fastest unlock) · *Walk & Scroll ended* ("You stopped walking." / "Start walking again to pick up where you left off.") · *lock window/schedule* ("Apps are asleep." / "Back at 7:00 AM.") — subtitle always the user's **cheapest real unlock path** (computed from their actual conditions, written to the app-group store); **offer numbers only, never spent-time/streak/balance countdowns** (stale numbers destroy trust). Buttons: primary **"Open ExcerLock"** via the notification deep-link workaround, landing on the matching surface ("Keep walking" label on the W&S variant; reliability verification owed to the react-native-device-activity research) · secondary **"Close"** with no guilt copy · lock-window variant collapses to a single "OK". Visuals: one treatment for all four — light ivory blur background, soft-clay closed-lock icon (STYLE.md Family A, same object as the Home hero), orange primary button; no dark/red "blocked" aesthetics. Copy: fixed 4-set, remotely overridable via the PostHog flag rail (§10.6) for shield-copy tests; no client-side rotation. **Celebration: there is no takeover.** Every earn — claim-on-open included — renders *in place*: Home lock hero plays the v18 unlock animation, balance row + condition cards update dormantly; no popup/toast/interstitial/claim button; multiple pending earns = one aggregate animation; success haptic once on the unlock moment, no sound; shield itself has no haptics.
 - **Notifications:** ~~every threshold/time · per-type default on/off · per-day delivery cap · milestone thresholds~~ **DECIDED 2026-07-28 (see §3.14):** ship-silent — all types default OFF, opt-in only · three pushes exist (nudge / weekly recap / streak last-call), everything else in-app only, *earn verified* + *day-boundary* deleted · cap = 1/day target 0, ≤5 per rolling 7 days, quiet hours 22:00–07:00, open-the-app-and-today's-push-is-silenced · times: nudge 15:00 (user-adjustable) · last-call 21:00 · recap last-day-of-week 18:00 · balance-low in-app warning at 10 min · permission asked only at first toggle-ON with primer (never in onboarding) · **milestone thresholds:** streaks 3/7/14/30/60/100/180/365 days · activity counts 1/5/10/25/50/100/250/500 · time reclaimed 10/25/50/100/250/500 h (22 badges, each with a share card, in-app only).
 - **Monetization:** price points, trial length, annual/monthly split — **all found via Adapty A/B experiments (§10.3), so what's owed is the starting hypothesis per experiment, not final numbers**.
 - **Build choices:** ~~stack~~ **DECIDED 2026-07-28: Expo + RN** (react-native-device-activity path, custom Swift modules where needed; Regen-proven) · minimum iOS version · **testing strategy DECIDED: simulator test-fix loop with all signals behind a mocked protocol boundary (every feature/screen e2e on sim, loop until functionally + visually perfect) + physical-device smoke suite for shields/geofence/motion each milestone**.
-- **Infrastructure (§10):** VPS provider + region + API domain · where Clerk sign-up sits in the flow (before vs after paywall) · the initial experiment list (first onboarding tests in PostHog, first paywall tests in Adapty) · the final v1 event-taxonomy list for the typed analytics wrapper · dashboard definitions (activation dual-metric wording).
-- **Settings page (§3.15):** review-prompt trigger (candidate: first 7-day streak or Nth unlock moment — never post-shield; the celebration takeover no longer exists, so "Nth celebration" re-anchors to the Home unlock animation) · alternate-icon set contents · social links list · support-inbox address + help-page host · Face ID default off · diagnostic-bundle exact field list.
+- **Infrastructure (§10):** VPS provider + region + ~~API domain~~ **API domain DECIDED 2026-07-28: `api.excerlock.com`** · where Clerk sign-up sits in the flow (before vs after paywall) · the initial experiment list (first onboarding tests in PostHog, first paywall tests in Adapty) · the final v1 event-taxonomy list for the typed analytics wrapper · dashboard definitions (activation dual-metric wording).
+- **Settings page (§3.15):** **ALL DECIDED 2026-07-28 (Settings-finals grill):**
+  - *Review-prompt trigger* — layered, anchored to the unlock moment (v18 hero animation on Home): first ask on dismissal of the **5th unlock moment** with install age ≥ 3 days; second at the **first 7-day streak**; third at the **30-day streak** (iOS caps at 3/365 days). Suppress within 30 min of a shield being shown; stop permanently after 3 shows or once the user taps the manual Rate row.
+  - *Alternate app icons* — **CUT from v1.** No App Icon row, no `expo-alternate-app-icons`, no icon-variant foundry work.
+  - *Face ID app gate* — **CUT from v1** (not default-off — removed). No toggle, no `expo-local-authentication`.
+  - *Social links* — TikTok + Instagram only; URLs supplied later via the What's-New remote JSON.
+  - *Domain & support* — **`excerlock.com`** purchased (Namecheap) as the primary domain: support inbox **`support@excerlock.com`** (received/forwarded via Resend, no Workspace at start), help page **`excerlock.com/help`** (static, from this monorepo), API at **`api.excerlock.com`**. `excerlock.app` optional defensive buy → redirect.
+  - *Diagnostic-bundle field list* (statuses + timestamps only; never health values, locked-app names, or coordinates): **Device & app** — app version+build, iOS version, device model, locale, timezone, low-power mode, background-app-refresh. **Account & plan** — Clerk user ID, Adapty entitlement state. **Permissions** — Screen Time, Location (granted level), Motion & Fitness, Notifications, Apple Health per-signal read grants. **Blocking health** — shield active?, locked-app count, DeviceActivity monitor registered?, last shield-event timestamps. **Signal freshness** — per Health signal: last-sample time + source app; per connected vendor: last successful sync. **Economy state** — balance, today earned/spent, streak count, active conditions (kind+goal+source), last claim time, pending unclaimed earns. **Earning-relevant settings** — day boundary, week start, units, schedule/lock-window summary, vacation mode, sick tokens remaining.
 
 ## 9. Open Items (non-numeric)
 
@@ -462,9 +467,7 @@ Lifted from Regen's shipping `package.json`s (versions float to current at build
 | UI plumbing | `react-native-reanimated` (+ worklets) · `react-native-gesture-handler` · `react-native-svg` · `expo-image` · `expo-blur` · `expo-linear-gradient` · `expo-haptics` · `expo-font` / `@expo-google-fonts/*` · `expo-splash-screen` · safe-area + screens |
 | Banner own-photo (§3.15) | `expo-image-picker` |
 | Support email | `expo-mail-composer` |
-| Face ID app gate | `expo-local-authentication` — **confirmed in** (Settings toggle, §3.15) |
-| Rating prompt | `expo-store-review` — Rate row + milestone-triggered prompt (§3.15 Settings) |
-| Alternate app icons | `expo-alternate-app-icons` (App Icon picker, §3.15) |
+| Rating prompt | `expo-store-review` — Rate row + milestone-triggered prompt (§3.15 Settings; trigger decided in §8) |
 | Siri | App Intents = a small **native Swift target** (no JS wrapper needed) |
 | Testing | `jest-expo` + `@testing-library/react-native` — required anyway: the §10.6 flag-guardrail test runs on this |
 
@@ -502,6 +505,8 @@ Lifted from Regen's shipping `package.json`s (versions float to current at build
 ---
 
 ### Changelog
+- **2026-07-28 (grill session — gyms, schedules & tokens):** §8 Gyms/Schedules/Tokens DECIDED. **Gyms:** 5 saved max (iOS 20-geofence cap leaves headroom) · map-pin radius circle starts 100 m, drags 50–200 m · **day boundary reframed as opt-in** — off by default (midnight), enabled = any time, no restricted window. **Schedules:** default week Mon–Sat Active + Sunday Rest · default rest day = no locking at all · lock window has no minimum (honor-system). **Tokens reworked:** sick-token allotment **replaced** by an unlimited, deliberately buried override requiring a typed free-text reason (never verified — the typing is the friction; turns today into a rest day, preserves streak, logged with reason); **vacation mode cut from the product** (users who want out just disable the blocker; holiday dates are the streak-safe travel path) · streak policy defaults to hard reset (no automatic rescue). Ripples: §3.4 gym-setup numbers, §3.10 defaults, §3.11 rewrite, §3.13 policy default, §3.15 Rules row (override stays unlisted/buried), §6 knob list, §7 vacation-mode cut.
+- **2026-07-28 (grill session — Settings finals):** §8 "Settings page" fully DECIDED. Review prompt = layered unlock-moment trigger (5th unlock w/ install ≥3 d → 7-day streak → 30-day streak; 30-min post-shield suppression; hard stop after 3 shows or manual Rate tap). **Two features cut outright:** Face ID app gate (with `expo-local-authentication`) and alternate app icons (with `expo-alternate-app-icons`) — §3.15 rows and §10.9 dep-table rows removed, reversing the 07-28 full-stack-Settings "confirmed in" call. Socials = TikTok + Instagram, URLs later via the What's-New remote JSON. **Domain locked and purchased: `excerlock.com` (Namecheap)** — `support@excerlock.com` via Resend, help at `excerlock.com/help` (static, monorepo), **API domain = `api.excerlock.com`** (closes half the §8 infra line). Diagnostic bundle: exact 7-group field list written into §8 (device/app · account/plan · permissions · blocking health · signal freshness · economy state · earning-relevant settings; statuses+timestamps only — never health values, locked-app names, or coordinates).
 - **2026-07-28 (grill session — shield & celebration):** §3.15 surfaces 1–2 + §8 decided. **Shield:** four cause-keyed variants (balance empty / Full Lock / W&S ended / lock window), subtitle = cheapest real unlock path with offer numbers only (never spent/streak/balance numbers), primary "Open ExcerLock" deep-link workaround ("Keep walking" on W&S; lock-window = single "OK"), one visual treatment (ivory blur + Family-A clay lock + orange button), fixed copy remotely overridable for PostHog copy tests. **Celebration takeover deleted from the product:** earns render in place on Home (v18 hero animation, dormant balance/card updates, aggregate on multiple earns, success haptic only, no sound, no popup/toast/claim button). Ripples: §3.14 milestone surface reworded; review-prompt candidate re-anchored from "Nth celebration" to "Nth unlock moment" (decision still owed to the Settings grill).
 - **2026-07-28 (grill session — economy defaults):** §8 Balance & rewards fully DECIDED. Governing principle locked: **no app-chosen defaults — every economy value is user-set** (setup forces the choice; allowance is unlimited until set). Pickers: base allowance 0–4 h / 5-min steps / +∞ · fixed chunk 5–120 min / 5-min steps · set period 15 min–4 h / 15-min steps (all three payouts ship; rest-of-day & set-period are shield holidays, no drain) · per-day cap per-condition 1–10× or ∞, no global cap · same-source cooldown user-set Off–8 h / 15-min steps · rollover user-set Off–4 h cap / 30-min steps. Engine constants: presence-confirmation cooldown **app-fixed 30 s** (was "~5 min starting point"; §3.7 updated) · instant relief on arrival **always on, no setting**. New feature: **per-condition active windows** — any condition (any kind) can carry a start and/or end time, living on the condition, outside which it neither earns nor enforces (§3.3; e.g. free until 3 p.m., then locked until gym arrival).
 - **2026-07-28 (grill session — notification system):** §3.14 rewritten from trigger-type list to the decided **ship-silent** system, applying the retention playbook (`AppBuildingNotes/reports/notifications-retention-revenue-playbook.md`): all notification types default OFF; only three pushes exist (afternoon nudge · weekly recap · opt-in streak last-call) and any app open silences that day's push; balance-low/shields-up/presence-cooldown/milestone are in-app surfaces only; **earn verified and day-boundary notifications deleted**; cap 1/day (target 0) + ≤5 per rolling 7 days + quiet hours 22:00–07:00; permission asked only at first toggle-ON with a primer, never in onboarding (paywall trial-reminder deferred to the onboarding/paywall grill); milestone thresholds locked (streaks 3–365 d, counts 1–500, time reclaimed 10–500 h = 22 share-card badges); sells-not-scolds copy rules + canonical copy for all three pushes. §3.15 Notifications settings row updated to the three toggles; §8 Notifications marked DECIDED.
