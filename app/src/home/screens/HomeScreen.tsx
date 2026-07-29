@@ -17,7 +17,8 @@ import { deriveLockHero, type LiveState } from "../model/lockState";
 import { createFixtureHomeSignalFeed } from "../signals/fixtureFeed";
 import type { HomeSignalFeed } from "../signals/homeSignalFeed";
 import { useHomeSignals } from "../signals/useHomeSignals";
-import { selectActiveConditions, selectPickerContext, useHomeStore } from "../store/homeStore";
+import { selectActiveConditions, selectPickerContext } from "../store/homeState";
+import { useHomeStore } from "../store/homeStore";
 
 /** One feed for the app's lifetime — a screen remount must not restart the fixtures. */
 let appFeed: HomeSignalFeed | undefined;

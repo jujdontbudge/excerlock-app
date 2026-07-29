@@ -10,11 +10,10 @@ import { waitFor } from "@testing-library/react-native";
 
 import {
   DEFAULT_HOME_STATE,
-  HOME_STORAGE_KEY,
   selectActiveConditions,
   selectPickerContext,
-  useHomeStore,
-} from "../homeStore";
+} from "../homeState";
+import { HOME_STORAGE_KEY, useHomeStore } from "../homeStore";
 
 const NOON = 12 * 60 * 60 * 1_000;
 

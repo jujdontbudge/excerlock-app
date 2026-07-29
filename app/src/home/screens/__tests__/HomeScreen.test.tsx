@@ -8,7 +8,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { stubFeed } from "../../testing/stubFeed";
-import { DEFAULT_HOME_STATE, useHomeStore } from "../../store/homeStore";
+import { DEFAULT_HOME_STATE } from "../../store/homeState";
+import { useHomeStore } from "../../store/homeStore";
 import { HomeScreen } from "../HomeScreen";
 
 const NOON = 12 * 60 * 60 * 1_000;

@@ -52,11 +52,10 @@ export {
 export { useHomeSignals } from "./signals/useHomeSignals";
 export {
   DEFAULT_HOME_STATE,
-  HOME_STORAGE_KEY,
   selectActiveConditions,
   selectAllowance,
   selectPickerContext,
-  useHomeStore,
   type HomeStoreValues,
   type SavedPlace,
-} from "./store/homeStore";
+} from "./store/homeState";
+export { HOME_STORAGE_KEY, useHomeStore } from "./store/homeStore";

@@ -1,19 +1,8 @@
-import {
-  type ConditionSource,
-  type ConfiguredCondition,
-  type ConnectedExtraSource,
-  type ExistingCondition,
-  type PickerContext,
-  type TierOneVendorSource,
-} from "@excerlock/condition-model";
+import type { ConfiguredCondition } from "@excerlock/condition-model";
 import {
   appendEntries,
   dayIndexFor,
-  emptyJournal,
   reduceLedger,
-  UNLIMITED,
-  type Journal,
-  type LedgerConfig,
 } from "@excerlock/ledger";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
@@ -23,8 +12,13 @@ import {
   enterFullLock,
   exitFullLock,
   setBaseAllowance,
-  type AllowanceValues,
 } from "../model/allowance";
+import {
+  applyAllowance,
+  DEFAULT_HOME_STATE,
+  selectAllowance,
+  type HomeStoreValues,
+} from "./homeState";
 import { readPersistedHomeState } from "./homeStorePersistence";
 
 /**
@@ -36,49 +30,6 @@ import { readPersistedHomeState } from "./homeStorePersistence";
  * Persistence is AsyncStorage. There is no server and no native signal here;
  * ledger persistence proper belongs to `app/src/ledger` in Phase 3.
  */
-
-export interface SavedPlace {
-  readonly id: string;
-  readonly name: string;
-}
-
-export type HomeStoreValues = Readonly<{
-  conditions: readonly ConfiguredCondition[];
-  /**
-   * What Full Lock's exit puts back (`null` = nothing remembered → unlimited).
-   * It lives beside `ledgerConfig` because the allowance has exactly one owner:
-   * see `model/allowance.ts` and `lock/controller/ledgerSource.ts`.
-   */
-  allowanceBeforeFullLock: number | null;
-  /**
-   * Conditions the user switched off in Manage. Off is not deleted: the
-   * condition keeps its uniqueness key in the picker context, so its slot is
-   * still taken and turning it back on restores exactly what was built.
-   */
-  disabledConditionIds: readonly string[];
-  journal: Journal;
-  ledgerConfig: LedgerConfig;
-  connectedSources: readonly (TierOneVendorSource | ConnectedExtraSource)[];
-  savedPlaces: readonly SavedPlace[];
-}>;
-
-/**
- * A new user starts empty with no app-chosen allowance (PRD §8, decided
- * 2026-07-28). Unlimited remains in force until they choose one in Manage.
- */
-export const DEFAULT_HOME_STATE: HomeStoreValues = Object.freeze({
-  conditions: [],
-  allowanceBeforeFullLock: null,
-  disabledConditionIds: [],
-  journal: emptyJournal(),
-  ledgerConfig: Object.freeze({
-    dayBoundaryOffsetMinutes: 0,
-    baseAllowanceMinutes: UNLIMITED,
-    rollover: null,
-  }),
-  connectedSources: [],
-  savedPlaces: [],
-});
 
 type HomeStore = HomeStoreValues & {
   /** Manage's allowance picker. Zero is Full Lock — the same transition. */
@@ -220,58 +171,6 @@ export const useHomeStore = create<HomeStore>()(
     },
   ),
 );
-
-/**
- * The allowance as one value, in the shape `model/allowance.ts` transitions.
- * Store-side only: it builds a fresh object, so a component reads the two fields
- * it needs rather than selecting this.
- */
-export function selectAllowance(
-  state: Pick<HomeStoreValues, "ledgerConfig" | "allowanceBeforeFullLock">,
-): AllowanceValues {
-  return {
-    baseAllowanceMinutes: state.ledgerConfig.baseAllowanceMinutes,
-    allowanceBeforeFullLock: state.allowanceBeforeFullLock,
-  };
-}
-
-/** The allowance written back where the ledger reads it — never a second copy. */
-function applyAllowance(
-  state: Pick<HomeStoreValues, "ledgerConfig">,
-  next: AllowanceValues,
-): Partial<HomeStoreValues> {
-  return {
-    ledgerConfig: { ...state.ledgerConfig, baseAllowanceMinutes: next.baseAllowanceMinutes },
-    allowanceBeforeFullLock: next.allowanceBeforeFullLock,
-  };
-}
-
-/** The conditions that are switched on — the only ones Home renders or banks. */
-export function selectActiveConditions(
-  state: Pick<HomeStoreValues, "conditions" | "disabledConditionIds">,
-): readonly ConfiguredCondition[] {
-  return state.disabledConditionIds.length === 0
-    ? state.conditions
-    : state.conditions.filter(({ id }) => !state.disabledConditionIds.includes(id));
-}
-
-/** The context `listPickerVerdicts`/`getPickerVerdict` need to judge the catalog. */
-export function selectPickerContext(
-  state: Pick<HomeStoreValues, "conditions" | "connectedSources" | "savedPlaces">,
-): PickerContext {
-  return {
-    conditions: state.conditions.map(toExistingCondition),
-    connectedSources: state.connectedSources,
-    savedPlaceIds: state.savedPlaces.map(({ id }) => id),
-  };
-}
-
-function toExistingCondition(condition: ConfiguredCondition): ExistingCondition {
-  const { id, catalogId, source, placeId } = condition;
-  return placeId === undefined
-    ? { id, catalogId, source: source as ConditionSource }
-    : { id, catalogId, source: source as ConditionSource, placeId };
-}
 
 function toLedgerPayout(reward: Extract<ConfiguredCondition["settings"], { kind: "event" }>["reward"]) {
   switch (reward.type) {

@@ -6,7 +6,7 @@ import {
 } from "@excerlock/condition-model";
 import { UNLIMITED, type Journal, type LedgerConfig } from "@excerlock/ledger";
 
-import type { HomeStoreValues, SavedPlace } from "./homeStore";
+import type { HomeStoreValues, SavedPlace } from "./homeState";
 
 /**
  * Persisted state is untrusted: a retired catalog entry or a hand-edited blob
