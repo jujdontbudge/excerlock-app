@@ -1,4 +1,10 @@
 import type { CatalogEntry } from "./catalog-types";
+import {
+  activeWindowBoundaries,
+  DAY_MS,
+  isInsideActiveWindow,
+  validateActiveWindow,
+} from "./active-window";
 import type {
   ConfiguredCondition,
   EvaluationClock,
@@ -66,6 +72,7 @@ function eligibleRows(
     .filter(
       (row) =>
         row.atMs >= clock.dayStartMs &&
+        row.atMs < clock.dayStartMs + DAY_MS &&
         row.atMs <= clock.nowMs &&
         matchesCondition(condition, entry, row),
     )
@@ -209,11 +216,17 @@ function isRateCondition(
 function evaluateState(
   condition: StateCondition,
   rows: readonly SignalTimelineRow[],
-  nowMs: number,
+  clock: EvaluationClock,
 ): readonly (StateEnteredOutcome | StateExitedOutcome)[] {
   const outcomes: (StateEnteredOutcome | StateExitedOutcome)[] = [];
   const seenSamples = new Set<string>();
-  let active = false;
+  let rawActive = false;
+  let enforcing = false;
+  let windowActive = isInsideActiveWindow(
+    condition.activeWindow,
+    clock.dayStartMs,
+    clock.dayStartMs,
+  );
   let pendingExit:
     | { readonly atMs: number; readonly sourceEventId: string }
     | undefined;
@@ -228,33 +241,106 @@ function evaluateState(
       conditionId: condition.id,
       sourceEventId: pendingExit.sourceEventId,
     });
-    active = false;
+    enforcing = false;
     pendingExit = undefined;
   }
 
-  for (const row of rows) {
-    emitPendingExit(row.atMs);
-    if (
-      row.event !== "signalState" ||
-      seenSamples.has(row.payload.sampleId)
-    ) {
+  type StateAction =
+    | {
+        readonly atMs: number;
+        readonly type: "row";
+        readonly row: Extract<
+          SignalTimelineRow,
+          { event: "signalState" }
+        >;
+      }
+    | {
+        readonly atMs: number;
+        readonly type: "windowStart";
+      }
+    | {
+        readonly atMs: number;
+        readonly type: "windowEnd";
+      };
+
+  const actions: StateAction[] = [
+    ...rows
+      .filter(
+        (
+          row,
+        ): row is Extract<SignalTimelineRow, { event: "signalState" }> =>
+          row.event === "signalState",
+      )
+      .map((row) => ({ atMs: row.atMs, type: "row" as const, row })),
+    ...activeWindowBoundaries(
+      condition.activeWindow,
+      clock.dayStartMs,
+      clock.nowMs,
+    ).map<StateAction>((boundary) =>
+      boundary.type === "start"
+        ? { atMs: boundary.atMs, type: "windowStart" }
+        : { atMs: boundary.atMs, type: "windowEnd" },
+    ),
+  ].sort((left, right) => {
+    if (left.atMs !== right.atMs) {
+      return left.atMs - right.atMs;
+    }
+    const order = { windowEnd: 0, windowStart: 1, row: 2 } as const;
+    return order[left.type] - order[right.type];
+  });
+
+  for (const action of actions) {
+    emitPendingExit(action.atMs);
+
+    if (action.type === "windowStart") {
+      windowActive = true;
+      if (rawActive && !enforcing) {
+        outcomes.push({
+          type: "stateEntered",
+          atMs: action.atMs,
+          conditionId: condition.id,
+          sourceEventId: `${condition.id}:window-start:${action.atMs}`,
+        });
+        enforcing = true;
+      }
+      continue;
+    }
+
+    if (action.type === "windowEnd") {
+      windowActive = false;
+      pendingExit = undefined;
+      if (enforcing) {
+        outcomes.push({
+          type: "stateExited",
+          atMs: action.atMs,
+          conditionId: condition.id,
+          sourceEventId: `${condition.id}:window-end:${action.atMs}`,
+        });
+        enforcing = false;
+      }
+      continue;
+    }
+
+    const { row } = action;
+    if (seenSamples.has(row.payload.sampleId)) {
       continue;
     }
     seenSamples.add(row.payload.sampleId);
 
-    if (row.payload.active) {
-      if (pendingExit !== undefined) {
+    rawActive = row.payload.active;
+    if (rawActive) {
+      if (windowActive && pendingExit !== undefined) {
         pendingExit = undefined;
-      } else if (!active) {
+      } else if (windowActive && !enforcing) {
         outcomes.push({
           type: "stateEntered",
           atMs: row.atMs,
           conditionId: condition.id,
           sourceEventId: row.payload.sampleId,
         });
-        active = true;
+        enforcing = true;
       }
-    } else if (active && pendingExit === undefined) {
+    } else if (enforcing && pendingExit === undefined) {
       pendingExit = {
         atMs: row.atMs + condition.settings.exitGraceMs,
         sourceEventId: row.payload.sampleId,
@@ -263,7 +349,7 @@ function evaluateState(
     }
   }
 
-  emitPendingExit(nowMs);
+  emitPendingExit(clock.nowMs);
   return outcomes;
 }
 
@@ -281,13 +367,32 @@ export function evaluateCondition(
   if (clock.nowMs < clock.dayStartMs) {
     throw new Error("nowMs must be at or after dayStartMs.");
   }
+  validateActiveWindow(condition.activeWindow);
 
   const rows = eligibleRows(condition, entry, timeline, clock);
   if (isEventCondition(condition)) {
-    return evaluateEvent(condition, rows);
+    return evaluateEvent(
+      condition,
+      rows.filter((row) =>
+        isInsideActiveWindow(
+          condition.activeWindow,
+          row.atMs,
+          clock.dayStartMs,
+        ),
+      ),
+    );
   }
   if (isRateCondition(condition)) {
-    return evaluateRate(condition, rows);
+    return evaluateRate(
+      condition,
+      rows.filter((row) =>
+        isInsideActiveWindow(
+          condition.activeWindow,
+          row.atMs,
+          clock.dayStartMs,
+        ),
+      ),
+    );
   }
-  return evaluateState(condition, rows, clock.nowMs);
+  return evaluateState(condition, rows, clock);
 }

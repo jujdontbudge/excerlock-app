@@ -52,6 +52,7 @@ export type {
 } from "./picker";
 export { EVALUATION_TIMELINES } from "./fixtures/evaluation-timelines";
 export { evaluateCondition } from "./evaluate";
+export type { ActiveWindow } from "./active-window";
 export type {
   ConfiguredCondition,
   EvaluationClock,

@@ -3,6 +3,7 @@ import type {
   Signal,
 } from "./catalog-types";
 import type { CatalogId } from "./catalog";
+import type { ActiveWindow } from "./active-window";
 
 export type EventReward =
   | { readonly type: "fixedMinutes"; readonly minutes: number }
@@ -23,6 +24,7 @@ interface BaseCondition {
   readonly catalogId: CatalogId;
   readonly source: ConditionSource;
   readonly placeId?: string;
+  readonly activeWindow?: ActiveWindow;
 }
 
 export interface EventCondition extends BaseCondition {
