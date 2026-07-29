@@ -61,9 +61,10 @@ describe("SettingsScreen", () => {
     });
   });
 
-  it("mounts the real signed-out account surface and keeps support rows static", async () => {
+  it("mounts the real signed-out account surface and real support actions", async () => {
     await render(<SettingsScreen />);
 
+    // Account hydrates from storage, so this one has to be awaited.
     expect(await screen.findByText("Signed out")).toBeOnTheScreen();
     expect(screen.getByRole("button", { name: "Sign in" })).toBeEnabled();
     expect(
@@ -74,10 +75,12 @@ describe("SettingsScreen", () => {
         "Your conditions, earning history, and locks stay on this device.",
       ),
     ).toBeOnTheScreen();
-    expect(screen.getByText("Contact support")).toBeOnTheScreen();
-    expect(screen.getByText("Request a feature")).toBeOnTheScreen();
-    expect(screen.queryByRole("button", { name: "Contact support" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Request a feature" })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Contact support" }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole("button", { name: "Request a feature" }),
+    ).toBeOnTheScreen();
   });
 
   it("shows the debug-menu entry in development builds", async () => {

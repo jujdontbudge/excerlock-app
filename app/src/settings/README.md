@@ -15,8 +15,10 @@ module's exported screen.
 - Account mounts `@/account`'s real vendor-free surface: hydration,
   signed-out/signed-in state, sign-in/sign-up, sign-out, and confirmed account
   deletion. Account actions never clear or gate local earning and locking data.
-  Contact support and feature request remain static rows until their Phase-5
-  integrations exist.
+- Support & Feedback mounts the public `SupportSettingsCard`: support and feature
+  composers, feature voting, durable submission state, and explicit retry for
+  requests that were not sent. The support module's accessor remains the one
+  HTTP-adapter swap point.
 - Notifications mounts the public `@/notifications` settings card. Its three switches persist
   independently and default OFF; the first opt-in owns the permission primer/request flow, and the
   afternoon time starts at the settled 15:00 default.
