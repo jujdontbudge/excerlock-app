@@ -8,11 +8,23 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react-nativ
 
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
+  type NotificationModule,
   useNotificationPreferencesStore,
 } from "@/notifications";
-import { MockNotificationModule } from "@/notifications/MockNotificationModule";
 
 import { DEFAULT_SETTINGS, SettingsScreen, useSettingsStore } from "..";
+
+function approvedNotificationModule(): NotificationModule {
+  return {
+    getAuthorizationStatus: async () => "approved",
+    requestAuthorization: async () => "approved",
+    schedule: async () => {},
+    cancel: async () => {},
+    getScheduled: async () => [],
+    getDeliveries: async () => [],
+    subscribe: () => () => {},
+  };
+}
 
 describe("SettingsScreen", () => {
   beforeEach(async () => {
@@ -66,11 +78,9 @@ describe("SettingsScreen", () => {
   });
 
   it("surfaces the three ship-silent notification controls in Settings", async () => {
-    const notifications = new MockNotificationModule();
-    notifications.setNextAuthorizationResult("approved");
-    await notifications.requestAuthorization();
-
-    await render(<SettingsScreen notificationModule={notifications} />);
+    await render(
+      <SettingsScreen notificationModule={approvedNotificationModule()} />,
+    );
 
     expect(
       screen.getByRole("header", { name: "Notifications" }),
