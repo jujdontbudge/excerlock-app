@@ -68,7 +68,8 @@ the card the user approves is the card they get.
 - **The base allowance has one owner here.** It lives inside `ledgerConfig`, beside the journal the
   ledger consumes. Manage calls the store's setter; lock reads and subscribes through
   `lock/controller/ledgerSource.ts`. Full Lock is the same value going to zero and restoring
-  `allowanceBeforeFullLock`, not a second mode or store.
+  `allowanceBeforeFullLock`, not a second mode or store. Until the user chooses, the owner holds
+  `UNLIMITED`; the app does not invent a daily budget.
 - **Rate conditions do not bank yet.** A rate card shows what today's activity *would* be worth; only
   event payouts are written to the journal (`recordEventPayout`, idempotent per condition per ledger
   day). Continuous crediting is Phase 3's, with the ledger.

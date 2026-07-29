@@ -14,10 +14,10 @@ import { Card, PillButton, useTheme } from "@/ui";
  * The base-allowance picker (PRD §3.15 Tab 2, grid in §8): 0–4 h in 5-minute
  * steps, with Unlimited one step past the top and Full Lock at the bottom.
  *
- * It holds no state. `minutes` comes from the allowance's one owner and every
- * press hands the next value straight back, so this card and the lock surface's
- * Full Lock switch are two views of the same number rather than two copies of
- * it (`app/src/home/model/allowance.ts`).
+ * The allowance comes from its one owner; this card keeps only whether a
+ * Full-Lock confirmation is showing. Confirmed values go straight back, so this
+ * card and lock's switch are two views of one number rather than two copies
+ * (`app/src/home/model/allowance.ts`).
  */
 export function AllowanceCard({
   allowance,

@@ -50,8 +50,8 @@ day's floor.
 - **The allowance has one owner: Home's persisted `ledgerConfig`.** Its Full Lock memory lives beside
   it in the same store. This module keeps no allowance store or copy:
   `controller/ledgerSource.ts` is the visible seam that reads the value, invokes the owner's Full
-  Lock transition, and subscribes a running controller so a Manage change reconciles Screen Time
-  immediately.
+  Lock transition, and subscribes a running controller. Manage starts that controller for the
+  screen's lifetime, so a picker change reconciles the persisted Screen Time selection immediately.
 - **Nothing here schedules a lock window yet.** `getLockWindows()` is read so the surface can say
   when a shield lifts; registering windows belongs to Manage → Rules (PRD §3.10–3.11).
 - **The onboarding primer reads `PERMISSION_COPY.notDetermined`.** It primes before the ask, so the

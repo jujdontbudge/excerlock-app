@@ -26,7 +26,7 @@ one persisted owner.
 | File | Responsibility |
 | --- | --- |
 | `screens/ManageScreen.tsx` | Composes the allowance, list, builder in edit mode, and empty state. Owns two `useState`: which row is being edited, which row is asking to be deleted. |
-| `components/AllowanceCard.tsx` | Stateless 0–4 h stepper with Full Lock at zero and Unlimited past the top |
+| `components/AllowanceCard.tsx` | 0–4 h stepper with Full Lock confirmations and Unlimited past the top |
 | `model/conditionRows.ts` | One row model per condition — title, source, what it earns, on/off |
 | `components/ConditionRow.tsx` | One row: switch, earn line, and either the actions or the delete confirmation |
 | `components/RowAction.tsx` | The quiet in-row button (`PillButton` is the screen-level pill) |
@@ -54,10 +54,12 @@ or `Keep`. There is no `Alert` — a native dialog cannot be driven by a test or
 ## The allowance is not a condition
 
 The allowance card is always present, including the empty-condition state. It writes the 5-minute
-grid (0–4 h plus Unlimited) straight to Home's `ledgerConfig`; it has no local state and no mirrored
-value. Zero uses the same transition as lock's Full Lock switch, so entering remembers the prior
-non-zero allowance and exiting restores it. Home's balance and the running lock controller both
-react to that one write.
+grid (0–4 h plus Unlimited) straight to Home's `ledgerConfig`; it keeps only transient confirmation
+visibility, never a mirrored allowance. New users remain Unlimited until they choose. Crossing zero
+confirms in both directions and uses the same transition as lock's Full Lock switch, so entering
+remembers the prior non-zero allowance and exiting restores it. Manage keeps the lock controller
+running for its lifetime; Home's balance and the persisted Screen Time selection both react to the
+one write immediately.
 
 ## Owed
 
