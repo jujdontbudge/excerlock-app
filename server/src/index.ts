@@ -1,4 +1,6 @@
 import { Sentry } from "./instrument.js";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 import Fastify, {
   type FastifyInstance,
   type FastifyListenOptions,
@@ -13,7 +15,19 @@ import { userRoutes } from "./routes/user.js";
 import { vendorRoutes } from "./routes/vendors.js";
 
 export function buildServer(options: FastifyServerOptions = {}): FastifyInstance {
-  const app = Fastify(options);
+  const app = Fastify({
+    trustProxy: true,
+    ...options,
+  });
+  void app.register(helmet, {
+    contentSecurityPolicy: false,
+    frameguard: { action: "deny" },
+  });
+  void app.register(rateLimit, {
+    global: true,
+    max: config.nodeEnv === "test" ? Number.MAX_SAFE_INTEGER : 100,
+    timeWindow: "1 minute",
+  });
   void app.register(healthRoutes, { prefix: "/v1" });
   void app.register(
     async (protectedScope) => {

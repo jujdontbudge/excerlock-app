@@ -19,6 +19,7 @@ describe("GET /v1/health", () => {
     });
 
     expect(response.statusCode).toBe(200);
+    expect(response.headers["x-content-type-options"]).toBe("nosniff");
     expect(response.json()).toEqual({
       ok: true,
       version: "0.1.0",

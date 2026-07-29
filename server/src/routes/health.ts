@@ -8,9 +8,13 @@ export interface HealthResponse {
 }
 
 export const healthRoutes: FastifyPluginAsync = async (app) => {
-  app.get<{ Reply: HealthResponse }>("/health", async () => ({
-    ok: true,
-    version: config.version,
-    uptime: process.uptime(),
-  }));
+  app.get<{ Reply: HealthResponse }>(
+    "/health",
+    { config: { rateLimit: false } },
+    async () => ({
+      ok: true,
+      version: config.version,
+      uptime: process.uptime(),
+    }),
+  );
 };
