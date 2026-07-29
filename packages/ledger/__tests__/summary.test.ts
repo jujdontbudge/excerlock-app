@@ -73,6 +73,46 @@ describe('daySummaries', () => {
     expect(summaries[1]).toMatchObject({ dayIndex: 1, rolloverIn: 30, startBalance: 90, endBalance: 85 })
   })
 
+  it('attributes banked minutes to the condition that produced them', () => {
+    const [day] = daySummaries(
+      journalOf([
+        event(at(0, 8), 'gym-arrive'),
+        rate(at(0, 9), 'steps', 12.5),
+        sustained(at(0, 10), 'walking', 20),
+      ]),
+      config,
+      at(0, 23),
+    )
+
+    expect({
+      gym: day!.conditions['gym-arrive']!.earnedMinutes,
+      steps: day!.conditions.steps!.earnedMinutes,
+      walking: day!.conditions.walking!.earnedMinutes,
+      day: day!.earnedMinutes,
+    }).toEqual({ gym: 20, steps: 12.5, walking: 0, day: 32.5 })
+  })
+
+  it('attributes only the rate correction that survives the zero clamp', () => {
+    const fullLock = { ...config, baseAllowanceMinutes: 0, rollover: null }
+    const [day] = daySummaries(
+      journalOf([
+        rate(at(0, 8), 'steps', 10),
+        drain(at(0, 9), 8),
+        rate(at(0, 10), 'steps', -5),
+      ]),
+      fullLock,
+      at(0, 23),
+    )
+
+    expect({
+      rate: day!.conditions.steps!.rateMinutes,
+      attributed: day!.conditions.steps!.earnedMinutes,
+      earned: day!.earnedMinutes,
+      spent: day!.spentMinutes,
+      balance: day!.endBalance,
+    }).toEqual({ rate: 8, attributed: 8, earned: 8, spent: 8, balance: 0 })
+  })
+
   it('keeps records for every day since the first entry — gap days included (#14: kept indefinitely)', () => {
     const summaries = daySummaries(journalOf([drain(at(0, 9))]), config, at(4, 12))
     expect(summaries.map((s) => s.dayIndex)).toEqual([0, 1, 2, 3, 4])

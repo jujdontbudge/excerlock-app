@@ -37,10 +37,11 @@ npm install && npx vitest run    # self-contained; also: npm run typecheck
   beats everything, Full Lock included).
 - **Day summaries** (`daySummaries`) — one record per day since the first entry,
   gap days included, kept indefinitely by the store (#14): earned / spent /
-  usage / balances / rollover, per-condition totals, and the §3.13
-  meaningful-activity verdicts using the app-fixed streak floors (rate ≥ 15 min
-  banked, state ≥ 10 sustained min, events on fire). Feeds the Analysis heat
-  map, streaks, and Time Reclaimed (`usageMinutes` is the usage input).
+  usage / balances / rollover, per-condition totals including `earnedMinutes`,
+  and the §3.13 meaningful-activity verdicts using the app-fixed streak floors
+  (rate ≥ 15 min banked, state ≥ 10 sustained min, events on fire). Feeds the
+  Analysis heat map, streaks, per-condition earning breakdown, and Time
+  Reclaimed (`usageMinutes` is the usage input).
 
 ## Invariants
 
@@ -51,6 +52,17 @@ npm install && npx vitest run    # self-contained; also: npm run typecheck
 - At the same instant, earns apply before drains — the user is never shorted.
 - `spentMinutes` = minutes actually deducted; `usageMinutes` = everything the
   drain ladder reported, holidays and clamped remainders included.
+- `ConditionDaySummary.earnedMinutes` is the balance delta actually banked for
+  that condition: fixed-chunk + rate credits, zero for state / rest-of-day /
+  set-period outcomes. Summed across conditions, it equals the day's
+  `earnedMinutes`.
+- Per-condition caps and cooldowns are evaluated above the ledger: only accepted
+  outcomes become journal entries. Idempotent `(source, id)` application keeps a
+  replay from inflating either the balance or its attribution.
+- Rate corrections are signed journal entries. A correction can reclaim no more
+  than the balance still available or the minutes previously attributed to that
+  condition, so both the balance and attribution clamp at zero. Summary totals
+  record the applied correction, never its larger theoretical request.
 - `UNLIMITED` is `Infinity`; persistence layers must map it before JSON
   round-trips (JSON.stringify turns it into `null`).
 - Streak floors and the walk increment are exported constants, never

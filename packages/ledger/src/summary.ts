@@ -13,6 +13,12 @@ export interface ConditionDaySummary {
   eventsFired: number
   rateMinutes: Minutes
   stateSustainedMinutes: Minutes
+  /**
+   * Minutes this condition actually banked today. Always present on summaries
+   * produced by `daySummaries`; optional for compatibility with stored/manual
+   * summaries created before attribution existed.
+   */
+  earnedMinutes?: Minutes
   /** Did this condition meet the §3.13 meaningful-activity bar today? */
   meaningfulActivity: boolean
 }

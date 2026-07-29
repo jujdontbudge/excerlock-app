@@ -12,6 +12,8 @@ export interface ConditionDayTotals {
   eventsFired: number
   rateMinutes: Minutes
   stateSustainedMinutes: Minutes
+  /** Minutes this condition actually banked today. */
+  earnedMinutes: Minutes
 }
 
 export interface DayState {
@@ -53,7 +55,20 @@ function conditionTotals(
   perCondition: Record<string, ConditionDayTotals>,
   conditionId: string,
 ): ConditionDayTotals {
-  return (perCondition[conditionId] ??= { eventsFired: 0, rateMinutes: 0, stateSustainedMinutes: 0 })
+  return (perCondition[conditionId] ??= {
+    eventsFired: 0,
+    rateMinutes: 0,
+    stateSustainedMinutes: 0,
+    earnedMinutes: 0,
+  })
+}
+
+/**
+ * Rate corrections are signed. They can take back only minutes still in the
+ * shared balance and previously attributed to this condition.
+ */
+function bankedRateMinutes(requested: Minutes, balance: Minutes, attributed: Minutes): Minutes {
+  return requested < 0 ? Math.max(requested, -balance, -attributed) : requested
 }
 
 function reduceDay(
@@ -81,6 +96,7 @@ function reduceDay(
         if (payout.type === 'fixedChunk') {
           balance += payout.minutes
           earned += payout.minutes
+          totals.earnedMinutes += payout.minutes
         } else {
           const holidayEnd =
             payout.type === 'restOfDay' ? endOfDay : Math.min(entry.atMs + payout.minutes * MIN_MS, endOfDay)
@@ -89,9 +105,12 @@ function reduceDay(
         break
       }
       case 'rateCredit': {
-        conditionTotals(perCondition, entry.conditionId).rateMinutes += entry.minutes
-        balance += entry.minutes
-        earned += entry.minutes
+        const totals = conditionTotals(perCondition, entry.conditionId)
+        const banked = bankedRateMinutes(entry.minutes, balance, totals.earnedMinutes)
+        totals.rateMinutes += banked
+        totals.earnedMinutes += banked
+        balance += banked
+        earned += banked
         break
       }
       case 'stateSustained': {
