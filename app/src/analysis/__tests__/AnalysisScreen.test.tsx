@@ -1,5 +1,6 @@
 import type { ConfiguredCondition } from "@excerlock/condition-model";
-import { render, screen } from "@testing-library/react-native";
+import { daySummaries } from "@excerlock/ledger";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 import { processColor } from "react-native";
 
 import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
@@ -35,6 +36,34 @@ const fixtureProps = {
   days: FIXTURE_DAY_SUMMARIES,
   conditionNames: FIXTURE_CONDITION_NAMES,
 } as const;
+
+function multiYearHistory() {
+  const entry = (id: string, atMs: number, minutes: number) =>
+    ({
+      kind: "earn",
+      source: "history-test",
+      id,
+      atMs,
+      conditionId: stepGoal.id,
+      payout: { type: "fixedChunk", minutes },
+    }) as const;
+
+  return daySummaries(
+    {
+      entries: [
+        entry("installed", Date.UTC(2023, 10, 15, 12), 5),
+        entry("january", Date.UTC(2025, 0, 10, 12), 10),
+        entry("february", Date.UTC(2025, 1, 2, 12), 20),
+      ],
+    },
+    {
+      dayBoundaryOffsetMinutes: 0,
+      baseAllowanceMinutes: 30,
+      rollover: null,
+    },
+    Date.UTC(2025, 1, 3, 12),
+  );
+}
 
 describe("AnalysisScreen", () => {
   // Reset before, not after: an `afterEach` here runs while the tree is still
@@ -196,6 +225,37 @@ describe("AnalysisScreen", () => {
     expect(
       screen.getByLabelText("Mon 20 Jul — earned 45m, spent 44m"),
     ).toBeOnTheScreen();
+  });
+
+  it("switches the real multi-year record between distinct week, month and year windows", async () => {
+    await render(
+      <AnalysisScreen
+        days={multiYearHistory()}
+        conditionNames={{ [stepGoal.id]: "Step goal" }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Week" }).props.accessibilityState,
+    ).toEqual({ selected: true });
+    expect(screen.getAllByTestId(/^analysis-day-row-/)).toHaveLength(1);
+    expect(screen.getByTestId("earned-total")).toHaveTextContent("0m");
+
+    await fireEvent.press(screen.getByRole("button", { name: "Month" }));
+
+    expect(
+      screen.getByRole("button", { name: "Month" }).props.accessibilityState,
+    ).toEqual({ selected: true });
+    expect(screen.getAllByTestId(/^analysis-day-row-/)).toHaveLength(3);
+    expect(screen.getByTestId("earned-total")).toHaveTextContent("20m");
+
+    await fireEvent.press(screen.getByRole("button", { name: "Year" }));
+
+    expect(
+      screen.getByRole("button", { name: "Year" }).props.accessibilityState,
+    ).toEqual({ selected: true });
+    expect(screen.getAllByTestId(/^analysis-day-row-/)).toHaveLength(34);
+    expect(screen.getByTestId("earned-total")).toHaveTextContent("30m");
   });
 
   it("lists the recorded days newest first", async () => {

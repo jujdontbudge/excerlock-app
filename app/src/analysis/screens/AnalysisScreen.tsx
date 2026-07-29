@@ -1,5 +1,5 @@
 import type { DaySummary } from "@excerlock/ledger";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
 import { useHomeStore } from "@/home";
@@ -11,6 +11,7 @@ import {
   ConditionBreakdownCard,
   DayLedger,
   EarnedSpentCard,
+  PeriodControl,
   RecapCard,
   StreakCard,
   TimeReclaimedHero,
@@ -20,6 +21,7 @@ import {
   buildAnalysisView,
   conditionNameMap,
   deriveDayRecord,
+  type AnalysisPeriod,
   type Weekday,
 } from "../model";
 
@@ -64,6 +66,7 @@ export function AnalysisScreen({
   confessedDailyMinutes,
 }: AnalysisScreenProps) {
   const { spacing, typography } = useTheme();
+  const [period, setPeriod] = useState<AnalysisPeriod>("week");
   const confessed = useConfessionStore((state) => state.confessedDailyMinutes);
   const conditions = useHomeStore((state) => state.conditions);
   const journal = useHomeStore((state) => state.journal);
@@ -74,6 +77,7 @@ export function AnalysisScreen({
   );
   const view = buildAnalysisView(days ?? realDays, {
     ...(weekStartsOn === undefined ? {} : { weekStartsOn }),
+    period,
     conditionNames: conditionNames ?? conditionNameMap(conditions),
     confessedDailyMinutes:
       confessedDailyMinutes === undefined ? confessed : confessedDailyMinutes,
@@ -99,17 +103,20 @@ export function AnalysisScreen({
 
             <TimeReclaimedHero reclaimed={view.monthReclaimed} />
 
-            <EarnedSpentCard totals={view.weekTotals} caption="This week" />
-
             <SectionHeader title="Earned vs spent" />
+            <PeriodControl selected={view.period} onSelect={setPeriod} />
+            <EarnedSpentCard
+              totals={view.windowTotals}
+              caption={view.periodCaption}
+            />
             <WeekChart bars={view.bars} />
 
             <SectionHeader title="Streak" />
-            <StreakCard streak={view.streak} totals={view.weekTotals} />
+            <StreakCard streak={view.streak} totals={view.windowTotals} />
 
             <SectionHeader title="Earning breakdown" />
             <ConditionBreakdownCard
-              caption="This week"
+              caption={view.periodCaption}
               items={view.conditionBreakdown}
             />
 
