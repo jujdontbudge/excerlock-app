@@ -69,11 +69,23 @@ function validateManifest<EventName extends string, Payload>(
   manifest: FixtureManifest<EventName, Payload>,
   allowedEvents: ReadonlySet<EventName>,
 ): void {
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(manifest.name)) {
+  if (
+    typeof manifest.name !== "string" ||
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(manifest.name)
+  ) {
     throw new Error(`Invalid fixture name "${manifest.name}"; expected kebab-case`);
   }
   if (!Number.isInteger(manifest.version) || manifest.version < 1) {
     throw new Error(`Invalid fixture version for "${manifest.name}"`);
+  }
+  if (
+    typeof manifest.description !== "string" ||
+    manifest.description.trim().length === 0
+  ) {
+    throw new Error(`Invalid fixture description for "${manifest.name}"`);
+  }
+  if (!Array.isArray(manifest.timeline)) {
+    throw new Error(`Invalid fixture timeline for "${manifest.name}"`);
   }
 
   let previousAtMs = Number.NEGATIVE_INFINITY;

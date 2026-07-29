@@ -109,4 +109,31 @@ describe("TimelinePlayer", () => {
         }),
     ).toThrow("Fixture payload must contain JSON values");
   });
+
+  it("rejects malformed manifest metadata during fixture load", () => {
+    const missingName = {
+      version: 1,
+      description: "Missing its required story name.",
+      timeline: [],
+    } as unknown as FixtureManifest<TestEvent>;
+    const nonStringDescription = {
+      name: "bad-description",
+      version: 1,
+      description: 42,
+      timeline: [],
+    } as unknown as FixtureManifest<TestEvent>;
+
+    const load = (manifest: FixtureManifest<TestEvent>) =>
+      new TimelinePlayer({
+        manifest,
+        allowedEvents: ["test.changed"],
+        playback: { mode: "manual" },
+        onEvent: () => undefined,
+      });
+
+    expect(() => load(missingName)).toThrow("Invalid fixture name");
+    expect(() => load(nonStringDescription)).toThrow(
+      'Invalid fixture description for "bad-description"',
+    );
+  });
 });
