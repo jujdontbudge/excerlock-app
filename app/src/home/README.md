@@ -12,6 +12,7 @@ The route is thin by ARCHITECTURE.md §1: `app/app/(tabs)/index.tsx` is three li
 | Question | Answered by |
 | --- | --- |
 | What is my balance? Are the shields down? | `@excerlock/ledger` (`reduceLedger`, `desiredOsState`) |
+| What daily allowance did the user choose? | This module's `useHomeStore.ledgerConfig` — the one persisted owner |
 | Which conditions can I build, and from which source? | `@excerlock/condition-model` (`listPickerVerdicts`) |
 | What does this catalog entry measure, and in what unit? | `@excerlock/condition-model` (`getCatalogEntry`) |
 | How many steps have I taken? Am I walking right now? | `app/src/signals` (SignalKit providers) |
@@ -33,7 +34,10 @@ a rendering of a rule owned elsewhere — the one genuine exception is documente
 | `signals/homeSignalFeed.ts` | Flattens SignalKit's providers into one `SignalReading` |
 | `signals/fixtureFeed.ts` | Phase-2 composition root: fixture providers, real-time playback |
 | `signals/useHomeSignals.ts` | Subscribes a mounted screen to a feed |
-| `store/homeStore.ts` | Conditions + journal + which conditions are switched off, persisted to AsyncStorage |
+| `store/homeState.ts` | Owned state shape, Unlimited default, and projections used by Home/Manage/lock |
+| `store/homeStore.ts` | Mutates conditions, journal and ledger config; wires the state to AsyncStorage |
+| `store/homeStorePersistence.ts` | Validates and revives persisted store fields, including Unlimited's JSON sentinel |
+| `model/allowance.ts` | Base-allowance grid and Full Lock's zero/restore transitions |
 | `components/` | Presentational only — every one renders a model and computes nothing |
 | `builder/` | The create-condition sheet (below) |
 | `testing/stubFeed.ts` | A feed that reports one fixed reading, for screen tests |
@@ -62,6 +66,11 @@ the card the user approves is the card they get.
 ## Phase-2 boundaries
 
 - **No native, no server.** Signals are SignalKit fixtures; persistence is AsyncStorage.
+- **The base allowance has one owner here.** It lives inside `ledgerConfig`, beside the journal the
+  ledger consumes. Manage calls the store's setter; lock reads and subscribes through
+  `lock/controller/ledgerSource.ts`. Full Lock is the same value going to zero and restoring
+  `allowanceBeforeFullLock`, not a second mode or store. Until the user chooses, the owner holds
+  `UNLIMITED`; the app does not invent a daily budget.
 - **Rate conditions do not bank yet.** A rate card shows what today's activity *would* be worth; only
   event payouts are written to the journal (`recordEventPayout`, idempotent per condition per ledger
   day). Continuous crediting is Phase 3's, with the ledger.
@@ -80,6 +89,8 @@ the card the user approves is the card they get.
 `npm run test:app`. Screen tests inject a `stubFeed` and a fixed `now`, so no test depends on the wall
 clock or on fixture playback timing.
 
-One trap worth naming: **`fireEvent.press` is async in React Native Testing Library 14** and must be
-awaited. An un-awaited press leaves its `act` scope open and every state update after it is silently
-dropped — the tree keeps rendering the old step and the failure surfaces several presses later.
+Two traps worth naming: **`render` and `fireEvent.press` are async in React Native Testing Library
+14** and both must be awaited. An un-awaited press leaves its `act` scope open and every state update
+after it is silently dropped — the tree keeps rendering the old step and the failure surfaces
+several presses later. Also, do not call `unmount()` and then `render()` inside one test: it detaches
+the global `screen` for later tests. Force a real remount with a changed `key` on `rerender` instead.

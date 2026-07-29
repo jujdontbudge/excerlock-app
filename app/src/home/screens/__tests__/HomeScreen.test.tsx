@@ -8,7 +8,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { stubFeed } from "../../testing/stubFeed";
-import { DEFAULT_HOME_STATE, useHomeStore } from "../../store/homeStore";
+import { DEFAULT_HOME_STATE } from "../../store/homeState";
+import { useHomeStore } from "../../store/homeStore";
 import { HomeScreen } from "../HomeScreen";
 
 const NOON = 12 * 60 * 60 * 1_000;
@@ -79,6 +80,7 @@ describe("HomeScreen", () => {
 
   it("shows a locked hero at a zero balance once a condition exists", async () => {
     seed(stepGoal);
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
     await render(<HomeScreen feed={stubFeed()} now={now} />);
 
     expect(screen.getByTestId("lock-hero-locked")).toBeOnTheScreen();
@@ -123,6 +125,7 @@ describe("HomeScreen", () => {
 
   it("banks an event's payout in place and never reverses the card", async () => {
     seed(stepGoal);
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
     await render(<HomeScreen feed={stubFeed()} now={now} />);
 
     await press("Complete");

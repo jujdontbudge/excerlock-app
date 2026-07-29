@@ -5,6 +5,8 @@ jest.mock(
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
+import { PERMISSION_COPY } from "@/lock";
+
 import {
   ConfessionScreen,
   DEFAULT_CONFESSION,
@@ -91,7 +93,13 @@ describe("onboarding screens", () => {
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the permissions primer without requesting authorization", async () => {
+  /**
+   * The primer and the lock surface explain the same permission, so #49 put
+   * that explanation in one place. This asserts against the constant rather
+   * than against a literal: a copy edit there has to reach the primer, and a
+   * primer that grew its own words again would fail here (#53).
+   */
+  it("renders the permissions primer from the shared copy, without requesting authorization", async () => {
     const onContinue = jest.fn();
     await render(
       <PermissionsPrimerScreen
@@ -101,14 +109,10 @@ describe("onboarding screens", () => {
     );
 
     expect(
-      screen.getByRole("header", {
-        name: "Screen Time keeps your choices honest",
-      }),
+      screen.getByRole("header", { name: PERMISSION_COPY.notDetermined.title }),
     ).toBeOnTheScreen();
     expect(
-      screen.getByText(
-        "You'll choose which apps ExcerLock can pause. iOS keeps the list private.",
-      ),
+      screen.getByText(PERMISSION_COPY.notDetermined.body),
     ).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByRole("button", { name: "Continue" }));

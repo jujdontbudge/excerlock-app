@@ -1,24 +1,25 @@
-import {
-  getCatalogEntry,
-  type ConditionSource,
-  type ConfiguredCondition,
-  type ConnectedExtraSource,
-  type ExistingCondition,
-  type PickerContext,
-  type TierOneVendorSource,
-} from "@excerlock/condition-model";
+import type { ConfiguredCondition } from "@excerlock/condition-model";
 import {
   appendEntries,
   dayIndexFor,
-  emptyJournal,
   reduceLedger,
-  UNLIMITED,
-  type Journal,
-  type LedgerConfig,
 } from "@excerlock/ledger";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+
+import {
+  enterFullLock,
+  exitFullLock,
+  setBaseAllowance,
+} from "../model/allowance";
+import {
+  applyAllowance,
+  DEFAULT_HOME_STATE,
+  selectAllowance,
+  type HomeStoreValues,
+} from "./homeState";
+import { readPersistedHomeState } from "./homeStorePersistence";
 
 /**
  * The Phase-2 Home store: the conditions the user has built, the ledger journal
@@ -30,43 +31,11 @@ import { createJSONStorage, persist } from "zustand/middleware";
  * ledger persistence proper belongs to `app/src/ledger` in Phase 3.
  */
 
-export interface SavedPlace {
-  readonly id: string;
-  readonly name: string;
-}
-
-export type HomeStoreValues = Readonly<{
-  conditions: readonly ConfiguredCondition[];
-  /**
-   * Conditions the user switched off in Manage. Off is not deleted: the
-   * condition keeps its uniqueness key in the picker context, so its slot is
-   * still taken and turning it back on restores exactly what was built.
-   */
-  disabledConditionIds: readonly string[];
-  journal: Journal;
-  ledgerConfig: LedgerConfig;
-  connectedSources: readonly (TierOneVendorSource | ConnectedExtraSource)[];
-  savedPlaces: readonly SavedPlace[];
-}>;
-
-/**
- * A new user starts empty (PRD §8, decided 2026-07-28) and under Full Lock, so
- * the hero means something before the allowance editor lands in Manage.
- */
-export const DEFAULT_HOME_STATE: HomeStoreValues = Object.freeze({
-  conditions: [],
-  disabledConditionIds: [],
-  journal: emptyJournal(),
-  ledgerConfig: Object.freeze({
-    dayBoundaryOffsetMinutes: 0,
-    baseAllowanceMinutes: 0,
-    rollover: null,
-  }),
-  connectedSources: [],
-  savedPlaces: [],
-});
-
 type HomeStore = HomeStoreValues & {
+  /** Manage's allowance picker. Zero is Full Lock — the same transition. */
+  setBaseAllowanceMinutes: (minutes: number) => void;
+  /** PRD §3.2: entering Full Lock is setting the base allowance to zero. */
+  setFullLock: (on: boolean) => void;
   addCondition: (condition: ConfiguredCondition) => void;
   /** Replace a condition in place — the edit path, so the id and slot survive. */
   updateCondition: (condition: ConfiguredCondition) => void;
@@ -85,6 +54,18 @@ export const useHomeStore = create<HomeStore>()(
   persist(
     (set, get) => ({
       ...DEFAULT_HOME_STATE,
+
+      setBaseAllowanceMinutes: (minutes) => {
+        set((state) =>
+          applyAllowance(state, setBaseAllowance(selectAllowance(state), minutes)),
+        );
+      },
+
+      setFullLock: (on) => {
+        set((state) =>
+          applyAllowance(state, (on ? enterFullLock : exitFullLock)(selectAllowance(state))),
+        );
+      },
 
       addCondition: (condition) => {
         set(({ conditions }) =>
@@ -165,6 +146,7 @@ export const useHomeStore = create<HomeStore>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: ({
         conditions,
+        allowanceBeforeFullLock,
         disabledConditionIds,
         journal,
         ledgerConfig,
@@ -172,6 +154,7 @@ export const useHomeStore = create<HomeStore>()(
         savedPlaces,
       }) => ({
         conditions,
+        allowanceBeforeFullLock,
         disabledConditionIds,
         journal,
         ledgerConfig,
@@ -180,38 +163,14 @@ export const useHomeStore = create<HomeStore>()(
       }),
       merge: (persistedState, currentState) => ({
         ...currentState,
-        ...readPersisted(persistedState),
+        ...readPersistedHomeState(
+          persistedState,
+          DEFAULT_HOME_STATE.ledgerConfig.baseAllowanceMinutes,
+        ),
       }),
     },
   ),
 );
-
-/** The conditions that are switched on — the only ones Home renders or banks. */
-export function selectActiveConditions(
-  state: Pick<HomeStoreValues, "conditions" | "disabledConditionIds">,
-): readonly ConfiguredCondition[] {
-  return state.disabledConditionIds.length === 0
-    ? state.conditions
-    : state.conditions.filter(({ id }) => !state.disabledConditionIds.includes(id));
-}
-
-/** The context `listPickerVerdicts`/`getPickerVerdict` need to judge the catalog. */
-export function selectPickerContext(
-  state: Pick<HomeStoreValues, "conditions" | "connectedSources" | "savedPlaces">,
-): PickerContext {
-  return {
-    conditions: state.conditions.map(toExistingCondition),
-    connectedSources: state.connectedSources,
-    savedPlaceIds: state.savedPlaces.map(({ id }) => id),
-  };
-}
-
-function toExistingCondition(condition: ConfiguredCondition): ExistingCondition {
-  const { id, catalogId, source, placeId } = condition;
-  return placeId === undefined
-    ? { id, catalogId, source: source as ConditionSource }
-    : { id, catalogId, source: source as ConditionSource, placeId };
-}
 
 function toLedgerPayout(reward: Extract<ConfiguredCondition["settings"], { kind: "event" }>["reward"]) {
   switch (reward.type) {
@@ -222,112 +181,4 @@ function toLedgerPayout(reward: Extract<ConfiguredCondition["settings"], { kind:
     case "setPeriod":
       return { type: "setPeriod" as const, minutes: reward.durationMinutes };
   }
-}
-
-/**
- * Persisted state is untrusted: a retired catalog entry or a hand-edited blob
- * must degrade to the default rather than crash Home on launch.
- */
-function readPersisted(persistedState: unknown): Partial<HomeStoreValues> {
-  if (typeof persistedState !== "object" || persistedState === null) {
-    return {};
-  }
-
-  const stored = persistedState as Partial<Record<keyof HomeStoreValues, unknown>>;
-  // Built field by field, so the accumulator drops the `readonly` the store's
-  // public shape carries; the returned value is read-only again.
-  const values: { -readonly [K in keyof HomeStoreValues]?: HomeStoreValues[K] } = {};
-
-  if (Array.isArray(stored.conditions)) {
-    values.conditions = stored.conditions.filter(isKnownCondition);
-  }
-  if (Array.isArray(stored.disabledConditionIds)) {
-    values.disabledConditionIds = stored.disabledConditionIds.filter(
-      (id): id is string => typeof id === "string",
-    );
-  }
-  if (isJournal(stored.journal)) {
-    values.journal = stored.journal;
-  }
-  const ledgerConfig = readLedgerConfig(stored.ledgerConfig);
-  if (ledgerConfig !== undefined) {
-    values.ledgerConfig = ledgerConfig;
-  }
-  if (Array.isArray(stored.savedPlaces)) {
-    values.savedPlaces = stored.savedPlaces.filter(isSavedPlace);
-  }
-  if (Array.isArray(stored.connectedSources)) {
-    values.connectedSources = stored.connectedSources.filter(
-      (source): source is TierOneVendorSource | ConnectedExtraSource => typeof source === "string",
-    );
-  }
-
-  return values;
-}
-
-function isKnownCondition(value: unknown): value is ConfiguredCondition {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  const { id, catalogId, settings } = value as Partial<ConfiguredCondition>;
-  if (typeof id !== "string" || typeof catalogId !== "string" || settings === undefined) {
-    return false;
-  }
-  try {
-    getCatalogEntry(catalogId);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function isJournal(value: unknown): value is Journal {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    Array.isArray((value as Journal).entries)
-  );
-}
-
-/**
- * `UNLIMITED` is `Infinity`, which JSON writes as `null` — the ledger README
- * makes mapping it back the persistence layer's job.
- */
-function readLedgerConfig(value: unknown): LedgerConfig | undefined {
-  if (typeof value !== "object" || value === null) {
-    return undefined;
-  }
-
-  const { dayBoundaryOffsetMinutes, baseAllowanceMinutes, rollover } =
-    value as Partial<Record<keyof LedgerConfig, unknown>>;
-  if (typeof dayBoundaryOffsetMinutes !== "number") {
-    return undefined;
-  }
-
-  return {
-    dayBoundaryOffsetMinutes,
-    baseAllowanceMinutes:
-      typeof baseAllowanceMinutes === "number"
-        ? baseAllowanceMinutes
-        : baseAllowanceMinutes === null
-          ? UNLIMITED
-          : DEFAULT_HOME_STATE.ledgerConfig.baseAllowanceMinutes,
-    rollover: isRollover(rollover) ? rollover : null,
-  };
-}
-
-function isRollover(value: unknown): value is { capMinutes: number } {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as { capMinutes?: unknown }).capMinutes === "number"
-  );
-}
-
-function isSavedPlace(value: unknown): value is SavedPlace {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-  const { id, name } = value as Partial<SavedPlace>;
-  return typeof id === "string" && typeof name === "string";
 }

@@ -4,6 +4,7 @@ jest.mock(
 );
 
 import type { ConfiguredCondition } from "@excerlock/condition-model";
+import { UNLIMITED } from "@excerlock/ledger";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fireEvent, render, screen, within } from "@testing-library/react-native";
 
@@ -200,5 +201,101 @@ describe("ManageScreen", () => {
     await render(<ManageScreen />);
 
     expect(screen.queryByRole("header", { name: "Nothing to manage yet" })).toBeNull();
+  });
+
+  /**
+   * PRD §3.15 Tab 2 and §8: the base allowance, 0–4 h in 5-minute steps plus
+   * Unlimited. It writes to the one owner (#53) — Home's `ledgerConfig` — so
+   * every assertion here reads the value back from there and never from a copy.
+   */
+  describe("the daily allowance picker", () => {
+    const setAllowance = (minutes: number) =>
+      useHomeStore.getState().setBaseAllowanceMinutes(minutes);
+
+    const ownedAllowance = () =>
+      useHomeStore.getState().ledgerConfig.baseAllowanceMinutes;
+
+    it("shows the allowance the owner is holding", async () => {
+      setAllowance(45);
+      await render(<ManageScreen />);
+
+      expect(screen.getByTestId("manage-allowance-value")).toHaveTextContent("45m");
+    });
+
+    it("steps the allowance up and down through the owner", async () => {
+      setAllowance(30);
+      await render(<ManageScreen />);
+
+      await press("Increase daily allowance");
+      expect(ownedAllowance()).toBe(35);
+      expect(screen.getByTestId("manage-allowance-value")).toHaveTextContent("35m");
+
+      await press("Decrease daily allowance");
+      await press("Decrease daily allowance");
+      expect(ownedAllowance()).toBe(25);
+    });
+
+    it("confirms both Full Lock directions and restores what entry replaced", async () => {
+      setAllowance(5);
+      await render(<ManageScreen />);
+
+      await press("Decrease daily allowance");
+
+      expect(ownedAllowance()).toBe(5);
+      expect(screen.getByText("Turn on Full Lock?")).toBeOnTheScreen();
+
+      await press("Yes, turn it on");
+
+      expect(ownedAllowance()).toBe(0);
+      expect(useHomeStore.getState().allowanceBeforeFullLock).toBe(5);
+      expect(screen.getByTestId("manage-allowance-value")).toHaveTextContent("Full Lock");
+
+      await press("Increase daily allowance");
+
+      expect(ownedAllowance()).toBe(0);
+      expect(screen.getByText("Turn off Full Lock?")).toBeOnTheScreen();
+
+      await press("Yes, turn it off");
+
+      expect(ownedAllowance()).toBe(5);
+      expect(useHomeStore.getState().allowanceBeforeFullLock).toBeNull();
+    });
+
+    it("offers Unlimited one step past four hours", async () => {
+      setAllowance(240);
+      await render(<ManageScreen />);
+
+      await press("Increase daily allowance");
+
+      expect(ownedAllowance()).toBe(UNLIMITED);
+      expect(screen.getByTestId("manage-allowance-value")).toHaveTextContent(
+        "Unlimited",
+      );
+    });
+
+    it("keeps the chosen allowance across a remount", async () => {
+      setAllowance(0);
+      await render(<ManageScreen />);
+      await press("Increase daily allowance");
+      await press("Yes, turn it off");
+
+      // A `key` forces a real remount rather than `unmount()` + `render()`,
+      // which would detach `screen` for every test after this one (README).
+      await screen.rerender(<ManageScreen key="remounted" />);
+
+      expect(screen.getByTestId("manage-allowance-value")).toHaveTextContent(
+        "Unlimited",
+      );
+      expect(ownedAllowance()).toBe(UNLIMITED);
+    });
+
+    it("is offered before any condition exists — the allowance is not a condition", async () => {
+      await render(<ManageScreen />);
+
+      expect(screen.getByRole("header", { name: "Nothing to manage yet" })).toBeOnTheScreen();
+      expect(
+        screen.getByRole("button", { name: "Increase daily allowance" }),
+      ).toBeOnTheScreen();
+    });
   });
 });

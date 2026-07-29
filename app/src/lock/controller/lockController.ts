@@ -11,9 +11,14 @@ import {
   type ScreenTimeUnsubscribe,
 } from "@/screentime";
 
-import { isFullLock, toLedgerConfig } from "../model/fullLock";
-import { useLockStore } from "../store/lockStore";
-import { homeJournal, localNow } from "./ledgerSource";
+import {
+  homeFullLock,
+  homeJournal,
+  homeLedgerConfig,
+  localNow,
+  setHomeFullLock,
+  subscribeHomeAllowance,
+} from "./ledgerSource";
 
 /** Everything the lock surfaces render, in one immutable value. */
 export type LockSnapshot = Readonly<{
@@ -40,23 +45,19 @@ const INITIAL: LockSnapshot = Object.freeze({
   selection: null,
   shield: null,
   lockWindows: [],
-  fullLock: true,
+  fullLock: false,
 });
 
-/**
- * The lock module's one conversation with the OS.
- *
- * Every screen below it reads a `LockSnapshot` and calls one of four verbs;
- * none of them knows that a ScreenTime adapter exists, that the handle they are
- * showing is opaque, or that Full Lock is really a number. It decides nothing
- * about shields either: `@excerlock/ledger` computes the desired state and the
- * boundary reports what the OS actually did.
- */
+/** Lock's one OS conversation: screens call verbs; the ledger decides shields. */
 export class LockController {
   private readonly screenTime: ScreenTimeModule;
   private readonly journal: () => Journal;
   private readonly now: () => number;
   private readonly listeners = new Set<() => void>();
+  private activeClients = 0;
+  private allowanceReconciliation: Promise<void> = Promise.resolve();
+  private suppressAllowanceSubscription = false;
+  private unsubscribeAllowance: (() => void) | null = null;
   private unsubscribeShield: ScreenTimeUnsubscribe | null = null;
   private snapshot: LockSnapshot = INITIAL;
 
@@ -77,6 +78,13 @@ export class LockController {
 
   /** Attaches to the boundary's observable and loads the first snapshot. */
   public async start(): Promise<void> {
+    this.activeClients += 1;
+    this.unsubscribeAllowance ??= subscribeHomeAllowance(() => {
+      this.patch({ fullLock: homeFullLock() });
+      if (!this.suppressAllowanceSubscription) {
+        void this.queueAllowanceReconciliation();
+      }
+    });
     this.unsubscribeShield ??= this.screenTime.subscribe((shield) => {
       this.patch({ shield });
     });
@@ -84,6 +92,12 @@ export class LockController {
   }
 
   public stop(): void {
+    this.activeClients = Math.max(0, this.activeClients - 1);
+    if (this.activeClients > 0) {
+      return;
+    }
+    this.unsubscribeAllowance?.();
+    this.unsubscribeAllowance = null;
     this.unsubscribeShield?.();
     this.unsubscribeShield = null;
   }
@@ -112,25 +126,39 @@ export class LockController {
     return selection;
   }
 
-  /** PRD §3.2: entering Full Lock is setting the base allowance to zero. */
+  /** Full Lock is the owner's one allowance going to zero and coming back. */
   public async setFullLock(on: boolean): Promise<void> {
-    useLockStore.getState().setFullLock(on);
-    const selection = this.snapshot.shield?.selection ?? null;
-    if (selection !== null) {
-      await this.applyDesiredState(selection);
+    this.suppressAllowanceSubscription = true;
+    try {
+      setHomeFullLock(on);
+    } finally {
+      this.suppressAllowanceSubscription = false;
     }
-    await this.refresh();
+    await this.queueAllowanceReconciliation();
   }
 
   private async applyDesiredState(
     selection: ScreenTimeSelectionHandle,
   ): Promise<void> {
-    const desired = desiredOsState(
-      this.journal(),
-      toLedgerConfig(useLockStore.getState()),
-      this.now(),
-    );
+    const desired = desiredOsState(this.journal(), homeLedgerConfig(), this.now());
     await this.screenTime.reconcile(selection, desired);
+  }
+
+  /** Serialize async reconciliation; every pass reads the latest allowance. */
+  private queueAllowanceReconciliation(): Promise<void> {
+    const reconcile = async () => {
+      await this.refresh();
+      const selection = this.snapshot.shield?.selection ?? null;
+      if (selection !== null) {
+        await this.applyDesiredState(selection);
+        await this.refresh();
+      }
+    };
+    this.allowanceReconciliation = this.allowanceReconciliation.then(
+      reconcile,
+      reconcile,
+    );
+    return this.allowanceReconciliation;
   }
 
   private async refresh(): Promise<void> {
@@ -150,7 +178,7 @@ export class LockController {
       shield,
       lockWindows,
       selection,
-      fullLock: isFullLock(useLockStore.getState()),
+      fullLock: homeFullLock(),
     });
   }
 

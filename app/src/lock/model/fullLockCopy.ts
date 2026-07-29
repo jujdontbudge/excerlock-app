@@ -1,6 +1,4 @@
-import { formatMinutes } from "@/home";
-
-import type { AllowanceValues } from "./fullLock";
+import { formatMinutes, type AllowanceValues } from "@/home";
 
 /** The one irreversible-feeling switch in the module, so it always confirms. */
 export interface FullLockConfirmation {

@@ -5,8 +5,10 @@ jest.mock(
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { appendEntries, emptyJournal, type Journal } from "@excerlock/ledger";
+import { waitFor } from "@testing-library/react-native";
 
-import { DEFAULT_LOCK_STATE, useLockStore } from "../../store/lockStore";
+import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
+
 import { FakeScreenTime } from "../../testing/fakeScreenTime";
 import { LockController } from "../lockController";
 
@@ -39,7 +41,10 @@ function controllerOver(
 describe("LockController", () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
-    useLockStore.setState(DEFAULT_LOCK_STATE);
+    // The allowance has one owner (#53); the controller reads Home's copy of it
+    // through `controller/ledgerSource.ts` and keeps none of its own.
+    useHomeStore.setState(DEFAULT_HOME_STATE);
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
   });
 
   it("reports the boundary's authorization state once started", async () => {
@@ -136,6 +141,71 @@ describe("LockController", () => {
 
     expect(controller.getSnapshot().fullLock).toBe(true);
     expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
+    controller.stop();
+  });
+
+  // The case two writable copies would have broken: with a non-zero allowance,
+  // entering and exiting Full Lock have something to lose and something to put
+  // back, and every shield decision has to follow the same number.
+  it("zeroes a non-zero allowance on entering Full Lock, and restores it on exit", async () => {
+    const screenTime = new FakeScreenTime();
+    useHomeStore.getState().setBaseAllowanceMinutes(60);
+    const controller = controllerOver(screenTime);
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+
+    expect(controller.getSnapshot().fullLock).toBe(false);
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+
+    await controller.setFullLock(true);
+
+    expect(useHomeStore.getState().ledgerConfig.baseAllowanceMinutes).toBe(0);
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
+
+    await controller.setFullLock(false);
+
+    expect(useHomeStore.getState().ledgerConfig.baseAllowanceMinutes).toBe(60);
+    expect(controller.getSnapshot().fullLock).toBe(false);
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    controller.stop();
+  });
+
+  it("spends the allowance the owner holds, whoever set it", async () => {
+    const screenTime = new FakeScreenTime();
+    const controller = controllerOver(screenTime);
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
+
+    // Manage's picker writes to the same place Full Lock does.
+    useHomeStore.getState().setBaseAllowanceMinutes(30);
+    await controller.pickApps();
+
+    expect(controller.getSnapshot().fullLock).toBe(false);
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    controller.stop();
+  });
+
+  it("keeps allowance reconciliation active until every lifecycle owner stops", async () => {
+    const screenTime = new FakeScreenTime();
+    const controller = controllerOver(screenTime);
+
+    // Manage and the pushed lock route can overlap under the tab navigator.
+    await controller.start();
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
+
+    // Popping the lock route releases one owner; Manage still owns the other.
+    controller.stop();
+    useHomeStore.getState().setBaseAllowanceMinutes(30);
+
+    await waitFor(() => {
+      expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    });
     controller.stop();
   });
 

@@ -4,17 +4,16 @@ jest.mock(
 );
 
 import type { ConfiguredCondition } from "@excerlock/condition-model";
-import { remainingMinutes } from "@excerlock/ledger";
+import { remainingMinutes, UNLIMITED } from "@excerlock/ledger";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { waitFor } from "@testing-library/react-native";
 
 import {
   DEFAULT_HOME_STATE,
-  HOME_STORAGE_KEY,
   selectActiveConditions,
   selectPickerContext,
-  useHomeStore,
-} from "../homeStore";
+} from "../homeState";
+import { HOME_STORAGE_KEY, useHomeStore } from "../homeStore";
 
 const NOON = 12 * 60 * 60 * 1_000;
 
@@ -45,12 +44,12 @@ describe("useHomeStore", () => {
     useHomeStore.setState(DEFAULT_HOME_STATE);
   });
 
-  it("starts with no conditions and a Full Lock day", () => {
+  it("starts with no conditions and an unlimited allowance until the user chooses", () => {
     const state = useHomeStore.getState();
 
     expect(state.conditions).toEqual([]);
     expect(state.journal.entries).toEqual([]);
-    expect(state.ledgerConfig.baseAllowanceMinutes).toBe(0);
+    expect(state.ledgerConfig.baseAllowanceMinutes).toBe(UNLIMITED);
   });
 
   it("adds a condition", () => {
@@ -137,6 +136,7 @@ describe("useHomeStore", () => {
   });
 
   it("banks an event condition's payout into the journal", () => {
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
     useHomeStore.getState().addCondition(stepGoal);
     useHomeStore.getState().recordEventPayout("c-event", NOON);
 
@@ -145,6 +145,7 @@ describe("useHomeStore", () => {
   });
 
   it("pays an event out once per day, however many times it is recorded", () => {
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
     useHomeStore.getState().addCondition(stepGoal);
     useHomeStore.getState().recordEventPayout("c-event", NOON);
     useHomeStore.getState().recordEventPayout("c-event", NOON + 60_000);
@@ -214,6 +215,121 @@ describe("useHomeStore", () => {
     await useHomeStore.persist.rehydrate();
 
     expect(useHomeStore.getState().disabledConditionIds).toEqual(["c-event"]);
+  });
+
+  describe("the base allowance — the one owner (PRD §3.2, §3.15 tab 2)", () => {
+    it("sets the allowance the ledger spends from", () => {
+      useHomeStore.getState().setBaseAllowanceMinutes(90);
+
+      const { journal, ledgerConfig } = useHomeStore.getState();
+      expect(ledgerConfig.baseAllowanceMinutes).toBe(90);
+      expect(remainingMinutes(journal, ledgerConfig, NOON)).toBe(90);
+    });
+
+    it("accepts Unlimited as a chosen value", () => {
+      useHomeStore.getState().setBaseAllowanceMinutes(UNLIMITED);
+
+      const { journal, ledgerConfig } = useHomeStore.getState();
+      expect(remainingMinutes(journal, ledgerConfig, NOON)).toBe(UNLIMITED);
+    });
+
+    // The case two writable copies would have broken: a non-zero allowance is
+    // the only one where entering and exiting Full Lock have anything to lose.
+    it("zeroes a non-zero allowance on entering Full Lock, and restores it on exit", () => {
+      useHomeStore.getState().setBaseAllowanceMinutes(90);
+
+      useHomeStore.getState().setFullLock(true);
+
+      expect(useHomeStore.getState().ledgerConfig.baseAllowanceMinutes).toBe(0);
+      expect(useHomeStore.getState().allowanceBeforeFullLock).toBe(90);
+
+      useHomeStore.getState().setFullLock(false);
+
+      const { journal, ledgerConfig } = useHomeStore.getState();
+      expect(ledgerConfig.baseAllowanceMinutes).toBe(90);
+      expect(remainingMinutes(journal, ledgerConfig, NOON)).toBe(90);
+      expect(useHomeStore.getState().allowanceBeforeFullLock).toBeNull();
+    });
+
+    it("reads a picked zero as Full Lock, so the picker restores like the switch", () => {
+      useHomeStore.getState().setBaseAllowanceMinutes(90);
+      useHomeStore.getState().setBaseAllowanceMinutes(0);
+
+      useHomeStore.getState().setFullLock(false);
+
+      expect(useHomeStore.getState().ledgerConfig.baseAllowanceMinutes).toBe(90);
+    });
+
+    it("writes the allowance and its Full-Lock memory to storage", async () => {
+      useHomeStore.getState().setBaseAllowanceMinutes(90);
+      useHomeStore.getState().setFullLock(true);
+
+      await waitFor(async () => {
+        const stored = await AsyncStorage.getItem(HOME_STORAGE_KEY);
+        expect(stored).toContain('"allowanceBeforeFullLock":90');
+        expect(stored).toContain('"baseAllowanceMinutes":0');
+      });
+    });
+
+    it("reads the allowance back on the next launch", async () => {
+      await useHomeStore.persist.rehydrate();
+      useHomeStore.setState(DEFAULT_HOME_STATE);
+      await AsyncStorage.setItem(
+        HOME_STORAGE_KEY,
+        JSON.stringify({
+          state: {
+            ledgerConfig: {
+              dayBoundaryOffsetMinutes: 0,
+              baseAllowanceMinutes: 0,
+              rollover: null,
+            },
+            allowanceBeforeFullLock: 90,
+          },
+          version: 0,
+        }),
+      );
+
+      await useHomeStore.persist.rehydrate();
+
+      expect(useHomeStore.getState().ledgerConfig.baseAllowanceMinutes).toBe(0);
+      expect(useHomeStore.getState().allowanceBeforeFullLock).toBe(90);
+
+      // And Full Lock still lets go of exactly what the user had chosen.
+      useHomeStore.getState().setFullLock(false);
+      expect(useHomeStore.getState().ledgerConfig.baseAllowanceMinutes).toBe(90);
+    });
+
+    it("carries Unlimited through JSON as UNLIMITED, not as zero", async () => {
+      useHomeStore.getState().setBaseAllowanceMinutes(UNLIMITED);
+
+      await waitFor(async () => {
+        // `UNLIMITED` is Infinity, which JSON writes as null — the ledger README
+        // makes mapping it back this layer's job.
+        expect(await AsyncStorage.getItem(HOME_STORAGE_KEY)).toContain(
+          '"baseAllowanceMinutes":null',
+        );
+      });
+      const stored = await AsyncStorage.getItem(HOME_STORAGE_KEY);
+      useHomeStore.setState(DEFAULT_HOME_STATE);
+      await AsyncStorage.setItem(HOME_STORAGE_KEY, stored ?? "");
+
+      await useHomeStore.persist.rehydrate();
+
+      expect(useHomeStore.getState().ledgerConfig.baseAllowanceMinutes).toBe(UNLIMITED);
+    });
+
+    it("drops a hand-edited Full-Lock memory rather than restoring nonsense", async () => {
+      await useHomeStore.persist.rehydrate();
+      useHomeStore.setState(DEFAULT_HOME_STATE);
+      await AsyncStorage.setItem(
+        HOME_STORAGE_KEY,
+        JSON.stringify({ state: { allowanceBeforeFullLock: "45" }, version: 0 }),
+      );
+
+      await useHomeStore.persist.rehydrate();
+
+      expect(useHomeStore.getState().allowanceBeforeFullLock).toBeNull();
+    });
   });
 
   it("drops persisted conditions the catalog no longer knows", async () => {

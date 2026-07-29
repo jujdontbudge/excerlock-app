@@ -4,6 +4,7 @@ import { Text, View } from "react-native";
 import { Card, PillButton, SectionHeader, useTheme } from "@/ui";
 
 import type { FullLockConfirmation } from "../model/fullLockCopy";
+import { FullLockConfirmationPrompt } from "./FullLockConfirmationPrompt";
 
 type FullLockCardProps = {
   on: boolean;
@@ -41,22 +42,13 @@ export function FullLockCard({
     return (
       <Card style={{ gap: spacing.md }}>
         <SectionHeader title="Full Lock" />
-        <View style={{ gap: spacing.xs }}>
-          <Text style={typography.cardTitle}>{confirmation.title}</Text>
-          <Text style={typography.body}>{confirmation.body}</Text>
-        </View>
-        <PillButton
-          label={confirmation.confirmLabel}
-          variant="white"
-          onPress={async () => {
+        <FullLockConfirmationPrompt
+          confirmation={confirmation}
+          onConfirm={async () => {
             await onToggle();
             setConfirming(false);
           }}
-        />
-        <PillButton
-          label={confirmation.cancelLabel}
-          variant="secondary"
-          onPress={() => setConfirming(false)}
+          onCancel={() => setConfirming(false)}
         />
       </Card>
     );
