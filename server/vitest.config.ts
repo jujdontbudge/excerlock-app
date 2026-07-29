@@ -3,7 +3,12 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/__tests__/**/*.test.ts", "test/**/*.test.ts"],
-    passWithNoTests: true,
+    env: {
+      CLERK_SECRET_KEY: "",
+      DATABASE_URL: "",
+      POSTHOG_API_KEY: "",
+      SENTRY_DSN: "",
+    },
+    include: ["test/**/*.test.ts"],
   },
 });
