@@ -1,21 +1,36 @@
-export type SupportSubmission = Readonly<{
+type SupportSubmissionBase = Readonly<{
   id: string;
   kind: "support";
   title: null;
   message: string;
   createdAtMs: number;
-  status: "submitting" | "submitted";
-  error: null;
 }>;
+
+export type SupportError = Readonly<{
+  code: "service_unavailable" | "offline";
+  message: string;
+}>;
+
+export type SupportSubmission = SupportSubmissionBase &
+  (
+    | Readonly<{ status: "submitting" | "submitted"; error: null }>
+    | Readonly<{ status: "failed"; error: SupportError }>
+  );
 
 export type SupportSnapshot = Readonly<{
   submissions: readonly SupportSubmission[];
 }>;
 
-export type SubmitSupportResult = Readonly<{
-  status: "submitted";
-  submissionId: string;
-}>;
+export type SubmitSupportResult =
+  | Readonly<{
+      status: "submitted";
+      submissionId: string;
+    }>
+  | Readonly<{
+      status: "failed";
+      submissionId: string;
+      error: SupportError;
+    }>;
 
 export type SupportStateListener = (snapshot: SupportSnapshot) => void;
 export type SupportUnsubscribe = () => void;

@@ -38,4 +38,42 @@ describe("MockSupportModule", () => {
       },
     ]);
   });
+
+  it("keeps a failed support request with the truthful failure reason", async () => {
+    const mock = new MockSupportModule({
+      clock: new ManualSupportClock(2_000),
+    });
+    const support: SupportModule = mock;
+    mock.setNextSubmissionResult({
+      status: "failed",
+      code: "service_unavailable",
+      message: "Support is temporarily unavailable. This was not sent.",
+    });
+
+    await expect(
+      support.submitSupport({ message: "Please help with my balance." }),
+    ).resolves.toEqual({
+      status: "failed",
+      submissionId: "support-1",
+      error: {
+        code: "service_unavailable",
+        message: "Support is temporarily unavailable. This was not sent.",
+      },
+    });
+
+    expect((await support.getSnapshot()).submissions).toEqual([
+      {
+        id: "support-1",
+        kind: "support",
+        title: null,
+        message: "Please help with my balance.",
+        createdAtMs: 2_000,
+        status: "failed",
+        error: {
+          code: "service_unavailable",
+          message: "Support is temporarily unavailable. This was not sent.",
+        },
+      },
+    ]);
+  });
 });

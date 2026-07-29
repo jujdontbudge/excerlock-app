@@ -4,6 +4,7 @@ import {
 } from "./clock";
 import type {
   SubmitSupportResult,
+  SupportError,
   SupportModule,
   SupportSnapshot,
   SupportStateListener,
@@ -19,10 +20,19 @@ type MockSupportModuleOptions = Readonly<{
   clock?: SupportClock;
 }>;
 
+type MockSubmissionResult =
+  | "submitted"
+  | Readonly<{
+      status: "failed";
+      code: SupportError["code"];
+      message: string;
+    }>;
+
 export class MockSupportModule implements SupportModule {
   private readonly clock: SupportClock;
   private nextSupportId = 1;
   private snapshot = INITIAL_SNAPSHOT;
+  private nextSubmissionResult: MockSubmissionResult = "submitted";
   private readonly listeners = new Set<SupportStateListener>();
 
   public constructor(options: MockSupportModuleOptions = {}) {
@@ -49,6 +59,23 @@ export class MockSupportModule implements SupportModule {
       submissions: Object.freeze([...this.snapshot.submissions, submission]),
     });
     await Promise.resolve();
+    if (typeof this.nextSubmissionResult === "object") {
+      const error: SupportError = Object.freeze({
+        code: this.nextSubmissionResult.code,
+        message: this.nextSubmissionResult.message,
+      });
+      this.replaceSubmission({
+        ...submission,
+        status: "failed",
+        error,
+      });
+      return Object.freeze({
+        status: "failed",
+        submissionId: submission.id,
+        error,
+      });
+    }
+
     this.replaceSubmission({
       ...submission,
       status: "submitted",
@@ -57,6 +84,11 @@ export class MockSupportModule implements SupportModule {
       status: "submitted",
       submissionId: submission.id,
     });
+  }
+
+  /** Deterministic mock driver; not part of the app-facing interface. */
+  public setNextSubmissionResult(result: MockSubmissionResult): void {
+    this.nextSubmissionResult = result;
   }
 
   public subscribe(listener: SupportStateListener): SupportUnsubscribe {
