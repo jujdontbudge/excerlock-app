@@ -7,6 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { DesiredOsState } from "@excerlock/ledger";
 
 import { MockScreenTimeModule } from "../MockScreenTimeModule";
+import { ManualScreenTimeClock } from "../clock";
 import type { ScreenTimeModule } from "../ScreenTimeModule";
 
 describe("MockScreenTimeModule", () => {
@@ -67,6 +68,52 @@ describe("MockScreenTimeModule", () => {
     expect(await screenTime.getCurrentShieldState()).toEqual({
       selection,
       desiredOsState: shieldsDown,
+      effectiveShields: "down",
+      activeLockWindowId: null,
+    });
+  });
+
+  it("enforces a lock window at its inclusive start and exclusive end", async () => {
+    const clock = new ManualScreenTimeClock(0);
+    const mock = new MockScreenTimeModule({ clock });
+    const screenTime: ScreenTimeModule = mock;
+    mock.setNextAuthorizationResult("approved");
+    await screenTime.requestAuthorization();
+    const selection = (await screenTime.pickSelection())!;
+    await screenTime.reconcile(selection, {
+      shields: "up",
+      drainThresholds: [3, 4],
+    });
+
+    await screenTime.scheduleLockWindow(selection, {
+      id: "morning",
+      startsAtMs: 1_000,
+      endsAtMs: 2_000,
+    });
+
+    expect((await screenTime.getCurrentShieldState()).effectiveShields).toBe(
+      "down",
+    );
+
+    clock.advanceTo(999);
+    expect((await screenTime.getCurrentShieldState()).effectiveShields).toBe(
+      "down",
+    );
+
+    clock.advanceTo(1_000);
+    expect(await screenTime.getCurrentShieldState()).toMatchObject({
+      effectiveShields: "up",
+      activeLockWindowId: "morning",
+      desiredOsState: { shields: "up", drainThresholds: [3, 4] },
+    });
+
+    clock.advanceTo(1_999);
+    expect((await screenTime.getCurrentShieldState()).effectiveShields).toBe(
+      "up",
+    );
+
+    clock.advanceTo(2_000);
+    expect(await screenTime.getCurrentShieldState()).toMatchObject({
       effectiveShields: "down",
       activeLockWindowId: null,
     });

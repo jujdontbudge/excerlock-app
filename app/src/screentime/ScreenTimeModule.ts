@@ -22,6 +22,12 @@ export type CurrentShieldState = Readonly<{
   activeLockWindowId: string | null;
 }>;
 
+export type LockWindow = Readonly<{
+  id: string;
+  startsAtMs: number;
+  endsAtMs: number;
+}>;
+
 export interface ScreenTimeModule {
   getAuthorizationStatus(): Promise<ScreenTimeAuthorizationStatus>;
   requestAuthorization(): Promise<ScreenTimeAuthorizationStatus>;
@@ -30,5 +36,10 @@ export interface ScreenTimeModule {
     selection: ScreenTimeSelectionHandle,
     desiredOsState: DesiredOsState,
   ): Promise<void>;
+  scheduleLockWindow(
+    selection: ScreenTimeSelectionHandle,
+    window: LockWindow,
+  ): Promise<void>;
+  cancelLockWindow(id: string): Promise<void>;
   getCurrentShieldState(): Promise<CurrentShieldState>;
 }
