@@ -31,9 +31,17 @@ export function createAnalytics(options: AnalyticsOptions): ServerAnalytics {
       })
     : null;
 
+  void client?.register({ app: "excerlock" });
+
   return {
     capture(distinctId, event, properties = {}) {
-      client?.capture({ distinctId, event, properties });
+      // posthog-node's stateless capture path does not merge registered
+      // properties, so stamp the server super property explicitly as well.
+      client?.capture({
+        distinctId,
+        event,
+        properties: { ...properties, app: "excerlock" },
+      });
     },
     async shutdown() {
       await client?.shutdown();
