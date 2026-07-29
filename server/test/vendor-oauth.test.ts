@@ -34,6 +34,7 @@ class CapturingStateRepository implements VendorOAuthStateRepository {
     connectionId: string;
     tokens: NewVendorTokenRecord;
   }[] = [];
+  readonly deletedConnectionIds: string[] = [];
 
   async saveOAuthState(state: NewVendorOAuthStateRecord): Promise<void> {
     this.states.push(state);
@@ -87,6 +88,16 @@ class CapturingStateRepository implements VendorOAuthStateRepository {
     connection.refreshTokenCiphertext = tokens.refreshTokenCiphertext;
     connection.accessTokenExpiresAt = tokens.accessTokenExpiresAt;
     this.tokenUpdates.push({ connectionId, tokens });
+  }
+
+  async deleteConnection(connectionId: string): Promise<void> {
+    const index = this.connections.findIndex(
+      (connection) => connection.id === connectionId,
+    );
+    if (index >= 0) {
+      this.connections.splice(index, 1);
+    }
+    this.deletedConnectionIds.push(connectionId);
   }
 }
 
@@ -636,4 +647,98 @@ describe("vendor token refresh", () => {
       tokenUpdates: repository.tokenUpdates,
     }).toEqual({ requests: [], tokenUpdates: [] });
   });
+});
+
+const disconnectCases = [
+  {
+    vendor: "strava",
+    status: 200,
+    expectedRequest: {
+      method: "POST",
+      url: "https://www.strava.com/oauth/revoke",
+      authorization: `Basic ${Buffer.from("strava-id:strava-secret").toString("base64")}`,
+      form: {
+        token: "strava-access",
+        token_type_hint: "access_token",
+      },
+    },
+  },
+  {
+    vendor: "oura",
+    status: 200,
+    expectedRequest: {
+      method: "POST",
+      url: "https://api.ouraring.com/oauth/revoke?access_token=oura-access",
+    },
+  },
+  {
+    vendor: "whoop",
+    status: 204,
+    expectedRequest: {
+      method: "DELETE",
+      url: "https://api.prod.whoop.com/developer/v2/user/access",
+      authorization: "Bearer whoop-access",
+    },
+  },
+  {
+    vendor: "polar",
+    status: 204,
+    expectedRequest: {
+      method: "DELETE",
+      url: "https://www.polaraccesslink.com/v3/users/polar-external-user",
+      authorization: "Bearer polar-access",
+    },
+  },
+] as const satisfies readonly {
+  vendor: Vendor;
+  status: number;
+  expectedRequest: Record<string, unknown>;
+}[];
+
+describe("vendor disconnect", () => {
+  it.each(disconnectCases)(
+    "revokes $vendor before deleting the local connection",
+    async ({ vendor, status, expectedRequest }) => {
+      const repository = new CapturingStateRepository();
+      const cipher = requireVendorTokenCipher(environment);
+      await repository.upsertConnection({
+        id: `${vendor}-connection-id`,
+        userId: "user_123",
+        vendor,
+        externalUserId: `${vendor}-external-user`,
+        accessTokenCiphertext: cipher.encrypt(`${vendor}-access`),
+        refreshTokenCiphertext:
+          vendor === "polar"
+            ? null
+            : cipher.encrypt(`${vendor}-refresh`),
+        accessTokenExpiresAt: null,
+        scopes: "fixture-scope",
+      });
+      const http = new StubHttpClient([{ status, body: null }]);
+      const capture = vi.fn();
+      const service = createVendorOAuthService({
+        environment,
+        repository,
+        http,
+        analytics: { capture },
+      });
+
+      await expect(
+        service.disconnect("user_123", vendor),
+      ).resolves.toEqual({ vendor, connected: false });
+      expect({
+        request: observableRequest(http.requests[0] as VendorHttpRequest),
+        remainingConnections: repository.connections,
+        deletedConnectionIds: repository.deletedConnectionIds,
+        analytics: capture.mock.calls,
+      }).toEqual({
+        request: expectedRequest,
+        remainingConnections: [],
+        deletedConnectionIds: [`${vendor}-connection-id`],
+        analytics: [
+          ["user_123", "vendor_disconnected", { vendor }],
+        ],
+      });
+    },
+  );
 });

@@ -40,4 +40,5 @@ export interface VendorOAuthStateRepository {
     connectionId: string,
     tokens: NewVendorTokenRecord,
   ): Promise<void>;
+  deleteConnection(connectionId: string): Promise<void>;
 }

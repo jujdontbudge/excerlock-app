@@ -33,9 +33,19 @@ export interface RefreshedVendorTokens {
   accessTokenExpiresAt: Date;
 }
 
+export interface RevokeAccessInput {
+  http: VendorHttpClient;
+  clientId: string;
+  clientSecret: string;
+  accessToken: string;
+  refreshToken: string | null;
+  externalUserId: string;
+}
+
 export interface VendorProviderAdapter {
   exchangeCode(input: ExchangeCodeInput): Promise<ExchangedVendorTokens>;
   refreshTokens(input: RefreshTokensInput): Promise<RefreshedVendorTokens>;
+  revokeAccess(input: RevokeAccessInput): Promise<void>;
 }
 
 export function formBody(values: Readonly<Record<string, string>>): string {

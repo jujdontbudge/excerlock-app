@@ -61,4 +61,13 @@ export const polarAdapter: VendorProviderAdapter = {
   async refreshTokens() {
     throw new Error("Polar access tokens do not use a refresh grant");
   },
+
+  async revokeAccess(input) {
+    const response = await input.http.request({
+      method: "DELETE",
+      url: `https://www.polaraccesslink.com/v3/users/${encodeURIComponent(input.externalUserId)}`,
+      headers: { authorization: `Bearer ${input.accessToken}` },
+    });
+    requireSuccess("Polar", "user de-registration", response.status);
+  },
 };

@@ -72,6 +72,10 @@ export interface VendorOAuthService {
     callback: VendorOAuthCallback,
   ): Promise<{ vendor: Vendor; connected: true }>;
   getAccessToken(userId: string, vendor: Vendor): Promise<string>;
+  disconnect(
+    userId: string,
+    vendor: Vendor,
+  ): Promise<{ vendor: Vendor; connected: false }>;
 }
 
 function callbackUrl(baseUrl: string, vendor: Vendor): string {
@@ -240,6 +244,36 @@ export function createVendorOAuthService(
       );
 
       return refreshed.accessToken;
+    },
+
+    async disconnect(userId, vendor) {
+      const connection = await options.repository.findConnection(
+        userId,
+        vendor,
+      );
+      if (!connection) {
+        throw new Error(`${vendor} is not connected for this user`);
+      }
+
+      const configuration = requireVendorOAuthConfiguration(
+        options.environment,
+        vendor,
+      );
+      const cipher = requireVendorTokenCipher(options.environment);
+      await VENDOR_ADAPTERS[vendor].revokeAccess({
+        http,
+        clientId: configuration.clientId,
+        clientSecret: configuration.clientSecret,
+        accessToken: cipher.decrypt(connection.accessTokenCiphertext),
+        refreshToken: connection.refreshTokenCiphertext
+          ? cipher.decrypt(connection.refreshTokenCiphertext)
+          : null,
+        externalUserId: connection.externalUserId,
+      });
+      await options.repository.deleteConnection(connection.id);
+      analytics.capture(userId, "vendor_disconnected", { vendor });
+
+      return { vendor, connected: false };
     },
   };
 }

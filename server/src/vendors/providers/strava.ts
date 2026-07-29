@@ -74,4 +74,20 @@ export const stravaAdapter: VendorProviderAdapter = {
       accessTokenExpiresAt: new Date(parsed.data.expires_at * 1_000),
     };
   },
+
+  async revokeAccess(input) {
+    const response = await input.http.request({
+      method: "POST",
+      url: "https://www.strava.com/oauth/revoke",
+      headers: {
+        authorization: `Basic ${Buffer.from(`${input.clientId}:${input.clientSecret}`).toString("base64")}`,
+        "content-type": "application/x-www-form-urlencoded",
+      },
+      body: formBody({
+        token: input.accessToken,
+        token_type_hint: "access_token",
+      }),
+    });
+    requireSuccess("Strava", "token revocation", response.status);
+  },
 };

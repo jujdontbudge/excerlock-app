@@ -84,4 +84,14 @@ export const ouraAdapter: VendorProviderAdapter = {
       ),
     };
   },
+
+  async revokeAccess(input) {
+    const url = new URL("https://api.ouraring.com/oauth/revoke");
+    url.searchParams.set("access_token", input.accessToken);
+    const response = await input.http.request({
+      method: "POST",
+      url: url.toString(),
+    });
+    requireSuccess("Oura", "token revocation", response.status);
+  },
 };

@@ -86,4 +86,13 @@ export const whoopAdapter: VendorProviderAdapter = {
       ),
     };
   },
+
+  async revokeAccess(input) {
+    const response = await input.http.request({
+      method: "DELETE",
+      url: "https://api.prod.whoop.com/developer/v2/user/access",
+      headers: { authorization: `Bearer ${input.accessToken}` },
+    });
+    requireSuccess("WHOOP", "token revocation", response.status);
+  },
 };
