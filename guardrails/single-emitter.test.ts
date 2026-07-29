@@ -173,7 +173,10 @@ function readCaptureCalls(path: string, side: CaptureCall["side"]): CaptureCall[
           (ts.isStringLiteral(eventArgument) || ts.isNoSubstitutionTemplateLiteral(eventArgument))
             ? eventArgument.text
             : undefined;
-        calls.push({ event, file: repoRelative(path), side });
+        const call = event === undefined
+          ? { file: repoRelative(path), side }
+          : { event, file: repoRelative(path), side };
+        calls.push(call);
       }
     }
     ts.forEachChild(node, visit);

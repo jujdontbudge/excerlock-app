@@ -17,9 +17,10 @@ type PodfileProperties = {
 describe("minimum-iOS guardrail", () => {
   it("keeps deployment target 17.4 in Expo and every target config", () => {
     const config = readJson<AppConfig>(fromRoot("app", "app.json"));
-    const buildProperties = config.expo?.plugins
-      ?.filter(Array.isArray)
-      .find(([name]) => name === "expo-build-properties");
+    const buildProperties = config.expo?.plugins?.find(
+      (plugin): plugin is [string, Record<string, unknown>] =>
+        Array.isArray(plugin) && plugin[0] === "expo-build-properties",
+    );
     const deploymentTarget = buildProperties?.[1]?.ios;
 
     expect(deploymentTarget).toMatchObject({ deploymentTarget: "17.4" });
@@ -45,6 +46,7 @@ describe("minimum-iOS guardrail", () => {
     const appBuildSettings = projectFiles
       .flatMap((path) => [...readUtf8(path).matchAll(/buildSettings = \{([\s\S]*?)\n\s*\};/g)])
       .map((match) => match[1])
+      .filter((settings): settings is string => settings !== undefined)
       .filter((settings) => settings.includes("PRODUCT_BUNDLE_IDENTIFIER = \"com.johansardar.excerlock\""));
 
     expect(appBuildSettings.length).toBeGreaterThan(0);
