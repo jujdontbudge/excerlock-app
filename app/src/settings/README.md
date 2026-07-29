@@ -12,8 +12,11 @@ module's exported screen.
   user-set picker. The only accepted values are 30 seconds and 1–5 minutes.
 - Cadence (around 60–70 steps/min) and the renewable unlock increment (15 minutes) are displayed as
   read-only app-fixed facts with the reason each is fixed.
-- Account is an honest signed-out scaffold. Contact support and feature request are static rows until
-  their Phase-5 integrations exist.
+- Account mounts `@/account`'s real vendor-free surface: hydration,
+  signed-out/signed-in state, sign-in/sign-up, sign-out, and confirmed account
+  deletion. Account actions never clear or gate local earning and locking data.
+  Contact support and feature request remain static rows until their Phase-5
+  integrations exist.
 - The debug-menu entry sits inside a literal `__DEV__` branch so App Store bundles can eliminate it.
 
 `components/` owns settings-only presentation. Shared visual decisions still come from `src/ui`;
