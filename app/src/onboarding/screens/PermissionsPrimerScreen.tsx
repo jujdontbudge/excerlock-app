@@ -1,15 +1,26 @@
+import { PERMISSION_COPY } from "@/lock";
+
 import { OnboardingScaffold } from "../components/OnboardingScaffold";
 import type { OnboardingScreenProps } from "./ValuePropScreen";
 
-/** Phase 2 copy only. TODO(Phase 3): authorize FamilyControls after this primer. */
+/**
+ * The primer explains the permission the lock surface also explains, so the
+ * words come from `@/lock`'s `PERMISSION_COPY` (#49) rather than from a second
+ * set of literals here. `notDetermined` is this step by definition: onboarding
+ * primes *before* asking, and the ask itself is Phase 3's.
+ *
+ * TODO(Phase 3): authorize FamilyControls after this primer.
+ */
 export function PermissionsPrimerScreen({
   onContinue,
   onBack,
 }: OnboardingScreenProps) {
+  const { title, body } = PERMISSION_COPY.notDetermined;
+
   return (
     <OnboardingScaffold
-      title="Screen Time keeps your choices honest"
-      body="You'll choose which apps ExcerLock can pause. iOS keeps the list private."
+      title={title}
+      body={body}
       primaryLabel="Continue"
       onContinue={onContinue}
       onBack={onBack}

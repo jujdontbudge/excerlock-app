@@ -5,9 +5,8 @@ import type { ScreenTimeAuthorizationStatus } from "@/screentime";
  *
  * PRD §3.15's onboarding FLOW has a `permissions-primer` step and this surface
  * says the same thing later in Settings/Manage, so the copy lives here and both
- * read it — `onboarding/screens/PermissionsPrimerScreen.tsx` still carries its
- * own literals and should adopt `PERMISSION_COPY.notDetermined` when that
- * scaffold is made real.
+ * read it: `onboarding/screens/PermissionsPrimerScreen.tsx` renders
+ * `PERMISSION_COPY.notDetermined` (#53) and keeps no literals of its own.
  */
 export interface PermissionCopy {
   /** The health-panel dot's word (PRD §3.15, Settings permissions panel). */
