@@ -1,0 +1,12 @@
+{
+  "name": "denied-permission",
+  "version": 1,
+  "description": "Motion and Fitness authorization is denied after the fixture session starts.",
+  "timeline": [
+    {
+      "atMs": 500,
+      "event": "motion.authDenied",
+      "payload": {}
+    }
+  ]
+}

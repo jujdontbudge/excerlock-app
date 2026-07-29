@@ -1,0 +1,27 @@
+{
+  "name": "re-arm-race",
+  "version": 1,
+  "description": "An old interval ends while a newly armed ladder begins emitting.",
+  "timeline": [
+    {
+      "atMs": 1000,
+      "event": "screentime.tick",
+      "payload": { "thresholdIndex": 4 }
+    },
+    {
+      "atMs": 1100,
+      "event": "screentime.intervalEnded",
+      "payload": { "monitor": "drain-old" }
+    },
+    {
+      "atMs": 1200,
+      "event": "screentime.monitorFired",
+      "payload": { "monitor": "drain-new" }
+    },
+    {
+      "atMs": 60000,
+      "event": "screentime.tick",
+      "payload": { "thresholdIndex": 1 }
+    }
+  ]
+}

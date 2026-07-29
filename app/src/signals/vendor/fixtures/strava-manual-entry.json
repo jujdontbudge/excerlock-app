@@ -1,0 +1,29 @@
+{
+  "name": "strava-manual-entry",
+  "version": 1,
+  "description": "A scrubbed Strava activity explicitly marked as manual.",
+  "timeline": [
+    {
+      "atMs": -2000,
+      "event": "vendor.connectionChanged",
+      "payload": { "vendor": "strava", "state": "connected" }
+    },
+    {
+      "atMs": -1000,
+      "event": "vendor.activityAvailable",
+      "payload": {
+        "vendor": "strava",
+        "raw": {
+          "id": 10000000002,
+          "name": "Lunch Walk",
+          "type": "Walk",
+          "sport_type": "Walk",
+          "start_date": "2026-07-29T16:00:00Z",
+          "elapsed_time": 1200,
+          "manual": true,
+          "trainer": false
+        }
+      }
+    }
+  ]
+}
