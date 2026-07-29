@@ -222,4 +222,32 @@ describe("MockAccountModule", () => {
       },
     });
   });
+
+  it("keeps the account signed in when deletion fails", async () => {
+    const mock = new MockAccountModule();
+    const account: AccountModule = mock;
+    await account.signUp();
+    mock.setNextDeletionResult({
+      status: "failed",
+      message: "The server could not delete this account.",
+    });
+
+    await expect(account.deleteAccount()).resolves.toEqual({
+      status: "failed",
+      error: {
+        code: "account_deletion_failed",
+        message: "The server could not delete this account.",
+      },
+    });
+
+    const snapshot = await account.getSnapshot();
+    expect(snapshot.session.status).toBe("signedIn");
+    expect(snapshot.intent).toEqual({
+      status: "idle",
+      error: {
+        code: "account_deletion_failed",
+        message: "The server could not delete this account.",
+      },
+    });
+  });
 });

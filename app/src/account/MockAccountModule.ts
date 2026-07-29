@@ -37,6 +37,7 @@ export class MockAccountModule implements AccountModule {
   private nextSignInResult: MockAuthenticationResult = "authenticated";
   private nextSignUpResult: MockAuthenticationResult = "authenticated";
   private nextSignOutResult: MockSessionEndResult = "succeeded";
+  private nextDeletionResult: MockSessionEndResult = "succeeded";
   private readonly listeners = new Set<AccountStateListener>();
 
   public constructor(options: MockAccountModuleOptions = {}) {
@@ -162,6 +163,18 @@ export class MockAccountModule implements AccountModule {
     });
     await Promise.resolve();
 
+    if (typeof this.nextDeletionResult === "object") {
+      const error: AccountError = Object.freeze({
+        code: "account_deletion_failed",
+        message: this.nextDeletionResult.message,
+      });
+      this.publish({
+        ...this.snapshot,
+        intent: Object.freeze({ status: "idle", error }),
+      });
+      return Object.freeze({ status: "failed", error });
+    }
+
     this.publish({
       session: Object.freeze({ status: "signedOut" }),
       intent: Object.freeze({ status: "idle", error: null }),
@@ -182,6 +195,11 @@ export class MockAccountModule implements AccountModule {
   /** Deterministic mock driver; not part of the app-facing interface. */
   public setNextSignOutResult(result: MockSessionEndResult): void {
     this.nextSignOutResult = result;
+  }
+
+  /** Deterministic mock driver; not part of the app-facing interface. */
+  public setNextDeletionResult(result: MockSessionEndResult): void {
+    this.nextDeletionResult = result;
   }
 
   public subscribe(listener: AccountStateListener): AccountUnsubscribe {
