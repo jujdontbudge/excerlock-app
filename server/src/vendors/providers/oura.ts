@@ -57,4 +57,31 @@ export const ouraAdapter: VendorProviderAdapter = {
       scopes: input.grantedScope ?? "daily workout",
     };
   },
+
+  async refreshTokens(input) {
+    const response = await input.http.request({
+      method: "POST",
+      url: "https://api.ouraring.com/oauth/token",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: formBody({
+        grant_type: "refresh_token",
+        refresh_token: input.refreshToken,
+        client_id: input.clientId,
+        client_secret: input.clientSecret,
+      }),
+    });
+    requireSuccess("Oura", "token refresh", response.status);
+    const tokens = tokenResponseSchema.safeParse(response.body);
+    if (!tokens.success) {
+      throw invalidResponse("Oura", "token refresh");
+    }
+
+    return {
+      accessToken: tokens.data.access_token,
+      refreshToken: tokens.data.refresh_token,
+      accessTokenExpiresAt: new Date(
+        input.now.getTime() + tokens.data.expires_in * 1_000,
+      ),
+    };
+  },
 };

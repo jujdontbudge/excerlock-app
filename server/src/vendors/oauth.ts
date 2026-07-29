@@ -14,6 +14,7 @@ import { VENDOR_ADAPTERS } from "./providers/index.js";
 import type {
   NewVendorConnectionRecord,
   NewVendorOAuthStateRecord,
+  NewVendorTokenRecord,
   VendorOAuthStateRepository,
 } from "./repository.js";
 import type { Vendor } from "./types.js";
@@ -70,6 +71,7 @@ export interface VendorOAuthService {
     vendor: Vendor,
     callback: VendorOAuthCallback,
   ): Promise<{ vendor: Vendor; connected: true }>;
+  getAccessToken(userId: string, vendor: Vendor): Promise<string>;
 }
 
 function callbackUrl(baseUrl: string, vendor: Vendor): string {
@@ -189,6 +191,55 @@ export function createVendorOAuthService(
       analytics.capture(state.userId, "vendor_connected", { vendor });
 
       return { vendor, connected: true };
+    },
+
+    async getAccessToken(userId, vendor) {
+      const connection = await options.repository.findConnection(
+        userId,
+        vendor,
+      );
+      if (!connection) {
+        throw new Error(`${vendor} is not connected for this user`);
+      }
+
+      const cipher = requireVendorTokenCipher(options.environment);
+      const currentAccessToken = cipher.decrypt(
+        connection.accessTokenCiphertext,
+      );
+      const checkedAt = now();
+      if (
+        connection.accessTokenExpiresAt === null ||
+        connection.accessTokenExpiresAt.getTime() >
+          checkedAt.getTime() + 60_000
+      ) {
+        return currentAccessToken;
+      }
+      if (!connection.refreshTokenCiphertext) {
+        throw new Error(`${vendor} must be reconnected; no refresh token exists`);
+      }
+
+      const configuration = requireVendorOAuthConfiguration(
+        options.environment,
+        vendor,
+      );
+      const refreshed = await VENDOR_ADAPTERS[vendor].refreshTokens({
+        http,
+        clientId: configuration.clientId,
+        clientSecret: configuration.clientSecret,
+        refreshToken: cipher.decrypt(connection.refreshTokenCiphertext),
+        now: checkedAt,
+      });
+      const encryptedTokens: NewVendorTokenRecord = {
+        accessTokenCiphertext: cipher.encrypt(refreshed.accessToken),
+        refreshTokenCiphertext: cipher.encrypt(refreshed.refreshToken),
+        accessTokenExpiresAt: refreshed.accessTokenExpiresAt,
+      };
+      await options.repository.updateConnectionTokens(
+        connection.id,
+        encryptedTokens,
+      );
+
+      return refreshed.accessToken;
     },
   };
 }

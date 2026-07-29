@@ -17,6 +17,7 @@ export type {
 export type {
   NewVendorConnectionRecord,
   NewVendorOAuthStateRecord,
+  NewVendorTokenRecord,
   VendorOAuthStateRepository,
 } from "./repository.js";
 export { createTokenCipher, type TokenCipher } from "./tokenCipher.js";

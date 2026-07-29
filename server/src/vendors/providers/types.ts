@@ -19,8 +19,23 @@ export interface ExchangedVendorTokens {
   scopes: string;
 }
 
+export interface RefreshTokensInput {
+  http: VendorHttpClient;
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+  now: Date;
+}
+
+export interface RefreshedVendorTokens {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresAt: Date;
+}
+
 export interface VendorProviderAdapter {
   exchangeCode(input: ExchangeCodeInput): Promise<ExchangedVendorTokens>;
+  refreshTokens(input: RefreshTokensInput): Promise<RefreshedVendorTokens>;
 }
 
 export function formBody(values: Readonly<Record<string, string>>): string {

@@ -18,6 +18,12 @@ export interface NewVendorConnectionRecord {
   scopes: string;
 }
 
+export interface NewVendorTokenRecord {
+  accessTokenCiphertext: string;
+  refreshTokenCiphertext: string;
+  accessTokenExpiresAt: Date;
+}
+
 export interface VendorOAuthStateRepository {
   saveOAuthState(state: NewVendorOAuthStateRecord): Promise<void>;
   consumeOAuthState(
@@ -26,4 +32,12 @@ export interface VendorOAuthStateRepository {
     now: Date,
   ): Promise<NewVendorOAuthStateRecord | null>;
   upsertConnection(connection: NewVendorConnectionRecord): Promise<void>;
+  findConnection(
+    userId: string,
+    vendor: Vendor,
+  ): Promise<NewVendorConnectionRecord | null>;
+  updateConnectionTokens(
+    connectionId: string,
+    tokens: NewVendorTokenRecord,
+  ): Promise<void>;
 }

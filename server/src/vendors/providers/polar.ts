@@ -57,4 +57,8 @@ export const polarAdapter: VendorProviderAdapter = {
       scopes: "accesslink.read_all",
     };
   },
+
+  async refreshTokens() {
+    throw new Error("Polar access tokens do not use a refresh grant");
+  },
 };

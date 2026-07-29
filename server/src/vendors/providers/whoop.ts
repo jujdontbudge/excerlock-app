@@ -58,4 +58,32 @@ export const whoopAdapter: VendorProviderAdapter = {
       scopes: tokens.data.scope ?? input.grantedScope ?? "",
     };
   },
+
+  async refreshTokens(input) {
+    const response = await input.http.request({
+      method: "POST",
+      url: "https://api.prod.whoop.com/oauth/oauth2/token",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: formBody({
+        grant_type: "refresh_token",
+        refresh_token: input.refreshToken,
+        client_id: input.clientId,
+        client_secret: input.clientSecret,
+        scope: "offline",
+      }),
+    });
+    requireSuccess("WHOOP", "token refresh", response.status);
+    const tokens = tokenResponseSchema.safeParse(response.body);
+    if (!tokens.success) {
+      throw invalidResponse("WHOOP", "token refresh");
+    }
+
+    return {
+      accessToken: tokens.data.access_token,
+      refreshToken: tokens.data.refresh_token,
+      accessTokenExpiresAt: new Date(
+        input.now.getTime() + tokens.data.expires_in * 1_000,
+      ),
+    };
+  },
 };

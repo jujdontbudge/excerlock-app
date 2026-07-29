@@ -6,6 +6,7 @@ import {
   requireVendorTokenCipher,
   type NewVendorConnectionRecord,
   type NewVendorOAuthStateRecord,
+  type NewVendorTokenRecord,
   type Vendor,
   type VendorHttpClient,
   type VendorHttpRequest,
@@ -29,6 +30,10 @@ const environment = parseEnv({
 class CapturingStateRepository implements VendorOAuthStateRepository {
   readonly states: NewVendorOAuthStateRecord[] = [];
   readonly connections: NewVendorConnectionRecord[] = [];
+  readonly tokenUpdates: {
+    connectionId: string;
+    tokens: NewVendorTokenRecord;
+  }[] = [];
 
   async saveOAuthState(state: NewVendorOAuthStateRecord): Promise<void> {
     this.states.push(state);
@@ -54,6 +59,34 @@ class CapturingStateRepository implements VendorOAuthStateRepository {
     connection: NewVendorConnectionRecord,
   ): Promise<void> {
     this.connections.push(connection);
+  }
+
+  async findConnection(
+    userId: string,
+    vendor: Vendor,
+  ): Promise<NewVendorConnectionRecord | null> {
+    return (
+      this.connections.find(
+        (connection) =>
+          connection.userId === userId && connection.vendor === vendor,
+      ) ?? null
+    );
+  }
+
+  async updateConnectionTokens(
+    connectionId: string,
+    tokens: NewVendorTokenRecord,
+  ): Promise<void> {
+    const connection = this.connections.find(
+      (candidate) => candidate.id === connectionId,
+    );
+    if (!connection) {
+      throw new Error("Connection not found");
+    }
+    connection.accessTokenCiphertext = tokens.accessTokenCiphertext;
+    connection.refreshTokenCiphertext = tokens.refreshTokenCiphertext;
+    connection.accessTokenExpiresAt = tokens.accessTokenExpiresAt;
+    this.tokenUpdates.push({ connectionId, tokens });
   }
 }
 
@@ -444,5 +477,163 @@ describe("vendor OAuth callback", () => {
       connections: [],
       analytics: [],
     });
+  });
+});
+
+const refreshCases = [
+  {
+    vendor: "strava",
+    response: {
+      status: 200,
+      body: {
+        access_token: "strava-next-access",
+        refresh_token: "strava-next-refresh",
+        expires_at: 1_785_524_400,
+        expires_in: 86_400,
+      },
+    },
+    expectedExpiresAt: new Date("2026-07-31T19:00:00.000Z"),
+    expectedRequest: {
+      method: "POST",
+      url: "https://www.strava.com/oauth/token",
+      form: {
+        client_id: "strava-id",
+        client_secret: "strava-secret",
+        grant_type: "refresh_token",
+        refresh_token: "strava-old-refresh",
+      },
+    },
+  },
+  {
+    vendor: "oura",
+    response: {
+      status: 200,
+      body: {
+        access_token: "oura-next-access",
+        refresh_token: "oura-next-refresh",
+        expires_in: 86_400,
+      },
+    },
+    expectedExpiresAt: new Date("2026-07-31T19:00:00.000Z"),
+    expectedRequest: {
+      method: "POST",
+      url: "https://api.ouraring.com/oauth/token",
+      form: {
+        grant_type: "refresh_token",
+        refresh_token: "oura-old-refresh",
+        client_id: "oura-id",
+        client_secret: "oura-secret",
+      },
+    },
+  },
+  {
+    vendor: "whoop",
+    response: {
+      status: 200,
+      body: {
+        access_token: "whoop-next-access",
+        refresh_token: "whoop-next-refresh",
+        expires_in: 3_600,
+        scope: "offline",
+        token_type: "bearer",
+      },
+    },
+    expectedExpiresAt: new Date("2026-07-30T20:00:00.000Z"),
+    expectedRequest: {
+      method: "POST",
+      url: "https://api.prod.whoop.com/oauth/oauth2/token",
+      form: {
+        grant_type: "refresh_token",
+        refresh_token: "whoop-old-refresh",
+        client_id: "whoop-id",
+        client_secret: "whoop-secret",
+        scope: "offline",
+      },
+    },
+  },
+] as const satisfies readonly {
+  vendor: Exclude<Vendor, "polar">;
+  response: VendorHttpResponse;
+  expectedExpiresAt: Date;
+  expectedRequest: Record<string, unknown>;
+}[];
+
+describe("vendor token refresh", () => {
+  it.each(refreshCases)(
+    "atomically stores the rotated $vendor token pair",
+    async ({ vendor, response, expectedExpiresAt, expectedRequest }) => {
+      const repository = new CapturingStateRepository();
+      const cipher = requireVendorTokenCipher(environment);
+      await repository.upsertConnection({
+        id: `${vendor}-connection-id`,
+        userId: "user_123",
+        vendor,
+        externalUserId: `${vendor}-external-user`,
+        accessTokenCiphertext: cipher.encrypt(`${vendor}-old-access`),
+        refreshTokenCiphertext: cipher.encrypt(`${vendor}-old-refresh`),
+        accessTokenExpiresAt: new Date("2026-07-30T18:00:00.000Z"),
+        scopes: "fixture-scope",
+      });
+      const http = new StubHttpClient([response]);
+      const service = createVendorOAuthService({
+        environment,
+        repository,
+        http,
+        now: () => new Date("2026-07-30T19:00:00.000Z"),
+      });
+
+      const accessToken = await service.getAccessToken("user_123", vendor);
+
+      const stored = repository.connections[0];
+      expect({
+        accessToken,
+        storedAccessToken: cipher.decrypt(
+          stored?.accessTokenCiphertext ?? "",
+        ),
+        storedRefreshToken: cipher.decrypt(
+          stored?.refreshTokenCiphertext ?? "",
+        ),
+        storedExpiresAt: stored?.accessTokenExpiresAt,
+        updateCount: repository.tokenUpdates.length,
+        request: observableRequest(http.requests[0] as VendorHttpRequest),
+      }).toEqual({
+        accessToken: `${vendor}-next-access`,
+        storedAccessToken: `${vendor}-next-access`,
+        storedRefreshToken: `${vendor}-next-refresh`,
+        storedExpiresAt: expectedExpiresAt,
+        updateCount: 1,
+        request: expectedRequest,
+      });
+    },
+  );
+
+  it("returns Polar's non-expiring token without a refresh request", async () => {
+    const repository = new CapturingStateRepository();
+    const cipher = requireVendorTokenCipher(environment);
+    await repository.upsertConnection({
+      id: "polar-connection-id",
+      userId: "user_123",
+      vendor: "polar",
+      externalUserId: "24680",
+      accessTokenCiphertext: cipher.encrypt("polar-access"),
+      refreshTokenCiphertext: null,
+      accessTokenExpiresAt: null,
+      scopes: "accesslink.read_all",
+    });
+    const http = new StubHttpClient([]);
+    const service = createVendorOAuthService({
+      environment,
+      repository,
+      http,
+      now: () => new Date("2026-07-30T19:00:00.000Z"),
+    });
+
+    await expect(
+      service.getAccessToken("user_123", "polar"),
+    ).resolves.toBe("polar-access");
+    expect({
+      requests: http.requests,
+      tokenUpdates: repository.tokenUpdates,
+    }).toEqual({ requests: [], tokenUpdates: [] });
   });
 });

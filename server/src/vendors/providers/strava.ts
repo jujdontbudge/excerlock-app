@@ -16,6 +16,12 @@ const tokenResponseSchema = z.object({
   scope: z.string().optional(),
 });
 
+const refreshResponseSchema = z.object({
+  access_token: z.string().min(1),
+  refresh_token: z.string().min(1),
+  expires_at: z.number().int().positive(),
+});
+
 export const stravaAdapter: VendorProviderAdapter = {
   async exchangeCode(input) {
     const response = await input.http.request({
@@ -41,6 +47,31 @@ export const stravaAdapter: VendorProviderAdapter = {
       accessTokenExpiresAt: new Date(parsed.data.expires_at * 1_000),
       externalUserId: String(parsed.data.athlete.id),
       scopes: parsed.data.scope ?? input.grantedScope ?? "",
+    };
+  },
+
+  async refreshTokens(input) {
+    const response = await input.http.request({
+      method: "POST",
+      url: "https://www.strava.com/oauth/token",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: formBody({
+        client_id: input.clientId,
+        client_secret: input.clientSecret,
+        grant_type: "refresh_token",
+        refresh_token: input.refreshToken,
+      }),
+    });
+    requireSuccess("Strava", "token refresh", response.status);
+    const parsed = refreshResponseSchema.safeParse(response.body);
+    if (!parsed.success) {
+      throw invalidResponse("Strava", "token refresh");
+    }
+
+    return {
+      accessToken: parsed.data.access_token,
+      refreshToken: parsed.data.refresh_token,
+      accessTokenExpiresAt: new Date(parsed.data.expires_at * 1_000),
     };
   },
 };
