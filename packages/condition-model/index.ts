@@ -51,3 +51,17 @@ export type {
   PickerVerdict,
 } from "./picker";
 export { EVALUATION_TIMELINES } from "./fixtures/evaluation-timelines";
+export { evaluateCondition } from "./evaluate";
+export type {
+  EvaluationClock,
+  EvaluationOutcome,
+  EventCondition,
+  EventFiredOutcome,
+  EventReward,
+  EventSettings,
+  SignalDeltaPayload,
+  SignalOccurrencePayload,
+  SignalSnapshotPayload,
+  SignalStatePayload,
+  SignalTimelineRow,
+} from "./evaluation-types";

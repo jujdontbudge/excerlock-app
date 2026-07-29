@@ -1,4 +1,4 @@
-import type { SignalTimelineRow } from "../index";
+import type { SignalTimelineRow } from "../evaluation-types";
 
 export const EVALUATION_TIMELINES = {
   stepGoalCrossing: [
