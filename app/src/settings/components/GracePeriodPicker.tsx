@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { PillButton, useTheme } from "@/ui";
 
@@ -13,7 +13,7 @@ type GracePeriodPickerProps = {
   onChange: (seconds: GracePeriodSeconds) => void;
 };
 
-export function formatGracePeriod(seconds: GracePeriodSeconds): string {
+function formatGracePeriod(seconds: GracePeriodSeconds): string {
   if (seconds === 30) {
     return "30 seconds";
   }
@@ -28,17 +28,23 @@ export function GracePeriodPicker({ value, onChange }: GracePeriodPickerProps) {
     label: formatGracePeriod(seconds),
     seconds,
   }));
+  const selectedLabel =
+    value === null ? "Choose a grace period" : formatGracePeriod(value);
 
   return (
     <View style={{ gap: spacing.md }}>
       <SettingsRow
         title="Stop grace period"
-        value={value === null ? "Choose a grace period" : formatGracePeriod(value)}
-        valueTestID="grace-period-value"
+        value={selectedLabel}
+        valueAccessibilityLabel={
+          value === null
+            ? "No grace period selected"
+            : `Selected grace period: ${selectedLabel}`
+        }
         description="How long walking may pause before locked apps are shielded again."
       />
       <View style={{ gap: spacing.sm }}>
-        {[options.slice(0, 3), options.slice(3)].map((row) => (
+        {[options.slice(0, 2), options.slice(2, 4), options.slice(4)].map((row) => (
           <View key={row[0].seconds} style={[styles.optionRow, { gap: spacing.sm }]}>
             {row.map((option) => (
               <PillButton
@@ -56,7 +62,7 @@ export function GracePeriodPicker({ value, onChange }: GracePeriodPickerProps) {
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
   option: { flex: 1 },
   optionRow: { flexDirection: "row" },
-} as const;
+});

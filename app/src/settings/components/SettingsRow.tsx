@@ -1,22 +1,28 @@
-import { Text, View, type StyleProp, type ViewStyle } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 
 import { useTheme } from "@/ui";
 
 type SettingsRowProps = {
   title: string;
   value?: string;
+  valueAccessibilityLabel?: string;
   description?: string;
   style?: StyleProp<ViewStyle>;
-  valueTestID?: string;
 };
 
 /** A static settings fact or scaffold row. Interactive rows will wrap this later. */
 export function SettingsRow({
   title,
   value,
+  valueAccessibilityLabel,
   description,
   style,
-  valueTestID,
 }: SettingsRowProps) {
   const { colors, spacing, typography } = useTheme();
 
@@ -26,7 +32,7 @@ export function SettingsRow({
         <Text style={[typography.cardTitle, styles.title]}>{title}</Text>
         {value === undefined ? null : (
           <Text
-            testID={valueTestID}
+            accessibilityLabel={valueAccessibilityLabel}
             style={[typography.body, { color: colors.textPrimary, textAlign: "right" }]}
           >
             {value}
@@ -40,11 +46,11 @@ export function SettingsRow({
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
   heading: {
     alignItems: "flex-start",
     flexDirection: "row",
     justifyContent: "space-between",
   },
   title: { flex: 1 },
-} as const;
+});

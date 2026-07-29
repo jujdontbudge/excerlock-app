@@ -36,7 +36,9 @@ describe("SettingsScreen", () => {
     fireEvent.press(screen.getByRole("button", { name: "2 minutes" }));
 
     await waitFor(() => {
-      expect(screen.getByTestId("grace-period-value")).toHaveTextContent("2 minutes");
+      expect(
+        screen.getByLabelText("Selected grace period: 2 minutes"),
+      ).toBeOnTheScreen();
     });
   });
 
