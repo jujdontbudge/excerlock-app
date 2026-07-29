@@ -1,4 +1,16 @@
+export { OnboardingFlow } from "./OnboardingFlow";
 export { FLOW, type FlowEntry } from "./flow";
+export { OnboardingCompletionGate } from "./components/OnboardingCompletionGate";
+export { ConfessionScreen } from "./screens/ConfessionScreen";
+export { MirrorScreen } from "./screens/MirrorScreen";
+export { PaywallScreen } from "./screens/PaywallScreen";
+export { PickAppsScreen } from "./screens/PickAppsScreen";
+export { PermissionsPrimerScreen } from "./screens/PermissionsPrimerScreen";
+export { SignUpScreen } from "./screens/SignUpScreen";
+export {
+  ValuePropScreen,
+  type OnboardingScreenProps,
+} from "./screens/ValuePropScreen";
 export {
   CONFESSION_STORAGE_KEY,
   DEFAULT_CONFESSION,
