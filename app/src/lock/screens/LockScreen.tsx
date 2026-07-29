@@ -5,6 +5,7 @@ import { localWallClockNow } from "@/home";
 import { Screen, useTheme } from "@/ui";
 
 import { FullLockCard } from "../components/FullLockCard";
+import { LockWindowsCard } from "../components/LockWindowsCard";
 import { LockedAppsCard } from "../components/LockedAppsCard";
 import { LockStatusCard } from "../components/LockStatusCard";
 import { PermissionPanel } from "../components/PermissionPanel";
@@ -48,6 +49,7 @@ export function LockScreen({
     lockWindows,
     fullLock,
     precedence,
+    recurringWindows,
   } =
     useLockSnapshot(controller);
   const allowance = useHomeAllowance();
@@ -85,6 +87,11 @@ export function LockScreen({
           selection={selection}
           canPick={authorization === "approved"}
           onPick={() => void controller.pickApps()}
+        />
+        <LockWindowsCard
+          windows={recurringWindows}
+          onSave={(window) => controller.saveRecurringLockWindow(window)}
+          onDelete={(id) => controller.deleteRecurringLockWindow(id)}
         />
         <FullLockCard
           on={fullLock}

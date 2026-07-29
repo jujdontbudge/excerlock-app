@@ -11,6 +11,7 @@ import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 
 import { LockController } from "../controller/lockController";
 import { LockScreen } from "../screens/LockScreen";
+import { LockScheduleStore } from "../store/lockScheduleStore";
 import { FakeScreenTime } from "../testing/fakeScreenTime";
 
 /** The allowance has one owner (#53); this screen reads and writes only that. */
@@ -34,6 +35,7 @@ async function mount(screenTime: FakeScreenTime, openSettings?: () => void) {
     screenTime,
     journal: () => emptyJournal(),
     now: () => NOW,
+    scheduleStore: new LockScheduleStore(),
   });
   const utils = await render(
     <LockScreen controller={controller} openSettings={openSettings} />,
@@ -249,6 +251,82 @@ describe("LockScreen", () => {
       expect(
         screen.getByText("Choose your apps to put Full Lock to work."),
       ).toBeOnTheScreen();
+    });
+  });
+
+  describe("recurring lock windows", () => {
+    it("creates, edits, and deletes a persisted days-and-time rule", async () => {
+      await mount(new FakeScreenTime());
+
+      expect(screen.getByText("No lock windows yet.")).toBeOnTheScreen();
+      await press("Add lock window");
+      await press("Monday");
+      await press("Wednesday");
+      await fireEvent.changeText(screen.getByLabelText("Start time"), "22:00");
+      await fireEvent.changeText(screen.getByLabelText("End time"), "06:00");
+      await press("Save lock window");
+
+      expect(screen.getByText("Mon, Wed")).toBeOnTheScreen();
+      expect(
+        screen.getByText("10:00 PM–6:00 AM · ends next day"),
+      ).toBeOnTheScreen();
+
+      await press("Edit Mon, Wed 10:00 PM–6:00 AM");
+      await press("Wednesday");
+      await press("Friday");
+      await fireEvent.changeText(screen.getByLabelText("End time"), "07:00");
+      await press("Save lock window");
+
+      expect(screen.queryByText("Mon, Wed")).toBeNull();
+      expect(screen.getByText("Mon, Fri")).toBeOnTheScreen();
+      expect(
+        screen.getByText("10:00 PM–7:00 AM · ends next day"),
+      ).toBeOnTheScreen();
+
+      await press("Delete Mon, Fri 10:00 PM–7:00 AM");
+      expect(screen.getByText("Delete this lock window?")).toBeOnTheScreen();
+      await press("Yes, delete window");
+
+      expect(screen.getByText("No lock windows yet.")).toBeOnTheScreen();
+    });
+
+    it("keeps an overlapping rule in the editor with an explicit error", async () => {
+      await mount(new FakeScreenTime());
+      await press("Add lock window");
+      await press("Monday");
+      await fireEvent.changeText(screen.getByLabelText("Start time"), "09:00");
+      await fireEvent.changeText(screen.getByLabelText("End time"), "11:00");
+      await press("Save lock window");
+
+      await press("Add lock window");
+      await press("Monday");
+      await fireEvent.changeText(screen.getByLabelText("Start time"), "10:00");
+      await fireEvent.changeText(screen.getByLabelText("End time"), "12:00");
+      await press("Save lock window");
+
+      expect(
+        screen.getByText(
+          "That overlaps an existing lock window. Choose different days or times.",
+        ),
+      ).toBeOnTheScreen();
+      expect(screen.getByLabelText("Start time")).toHaveProp("value", "10:00");
+      expect(screen.getAllByText("Mon")).toHaveLength(1);
+    });
+
+    it("rejects an equal start and end instead of guessing all-day or zero-time", async () => {
+      await mount(new FakeScreenTime());
+      await press("Add lock window");
+      await press("Tuesday");
+      await fireEvent.changeText(screen.getByLabelText("Start time"), "09:00");
+      await fireEvent.changeText(screen.getByLabelText("End time"), "09:00");
+      await press("Save lock window");
+
+      expect(
+        screen.getByText(
+          "Start and end must differ. For all-day locking, choose 00:00–23:59.",
+        ),
+      ).toBeOnTheScreen();
+      expect(screen.getByLabelText("Start time")).toBeOnTheScreen();
     });
   });
 });
