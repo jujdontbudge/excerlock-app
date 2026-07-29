@@ -2,9 +2,18 @@ import {
   SystemSupportClock,
   type SupportClock,
 } from "./clock";
+import {
+  appendFeatureRequest,
+  applyFeatureVote,
+  EMPTY_SUPPORT_SNAPSHOT,
+  makeFeatureSubmission,
+  makeSupportSubmission,
+  nextNumericId,
+  replaceSubmission,
+  saveSubmission,
+} from "./mockState";
 import { createMockSupportPersistence } from "./mockStore";
 import type {
-  FeatureRequest,
   SubmitSupportResult,
   SupportError,
   SupportModule,
@@ -15,11 +24,6 @@ import type {
   VoteOnFeatureRequestResult,
 } from "./SupportModule";
 import type { StateStorage } from "zustand/middleware";
-
-const INITIAL_SNAPSHOT: SupportSnapshot = Object.freeze({
-  submissions: Object.freeze([]),
-  featureRequests: Object.freeze([]),
-});
 
 type MockSupportModuleOptions = Readonly<{
   clock?: SupportClock;
@@ -46,7 +50,7 @@ export class MockSupportModule implements SupportModule {
   private readonly ready: Promise<void>;
   private nextSupportId = 1;
   private nextFeatureId = 1;
-  private snapshot = INITIAL_SNAPSHOT;
+  private snapshot = EMPTY_SUPPORT_SNAPSHOT;
   private nextSubmissionResult: MockSubmissionResult = "submitted";
   private online = true;
   private readonly listeners = new Set<SupportStateListener>();
@@ -70,15 +74,11 @@ export class MockSupportModule implements SupportModule {
     request: Readonly<{ message: string }>,
   ): Promise<SubmitSupportResult> {
     await this.ready;
-    const submission: SupportSubmission = Object.freeze({
-      id: `support-${this.nextSupportId++}`,
-      kind: "support",
-      title: null,
-      message: request.message.trim(),
-      createdAtMs: this.clock.nowMs(),
-      status: "submitting",
-      error: null,
-    });
+    const submission = makeSupportSubmission(
+      `support-${this.nextSupportId++}`,
+      request.message,
+      this.clock.nowMs(),
+    );
     return this.attemptSubmission(submission);
   }
 
@@ -87,30 +87,13 @@ export class MockSupportModule implements SupportModule {
   ): Promise<SubmitSupportResult> {
     await this.ready;
     const submissionId = `feature-${this.nextFeatureId++}`;
-    const submission: SupportSubmission = Object.freeze({
-      id: submissionId,
-      kind: "feature",
-      title: request.title.trim(),
-      message: request.message.trim(),
-      createdAtMs: this.clock.nowMs(),
-      status: "submitting",
-      error: null,
-    });
-    const featureRequest: FeatureRequest = Object.freeze({
-      id: submissionId,
-      title: submission.title,
-      message: submission.message,
-      voteCount: 0,
-      hasVoted: false,
+    const { submission, featureRequest } = makeFeatureSubmission(
       submissionId,
-    });
-    await this.publish({
-      ...this.snapshot,
-      featureRequests: Object.freeze([
-        ...this.snapshot.featureRequests,
-        featureRequest,
-      ]),
-    });
+      request.title,
+      request.message,
+      this.clock.nowMs(),
+    );
+    await this.publish(appendFeatureRequest(this.snapshot, featureRequest));
     return this.attemptSubmission(submission);
   }
 
@@ -141,38 +124,9 @@ export class MockSupportModule implements SupportModule {
     featureRequestId: string,
   ): Promise<VoteOnFeatureRequestResult> {
     await this.ready;
-    const featureRequest = this.snapshot.featureRequests.find(
-      (candidate) => candidate.id === featureRequestId,
-    );
-    if (featureRequest === undefined) {
-      throw new Error(`Unknown feature request: ${featureRequestId}`);
-    }
-    if (featureRequest.hasVoted) {
-      return Object.freeze({
-        status: "alreadyVoted",
-        featureRequestId,
-        voteCount: featureRequest.voteCount,
-      });
-    }
-
-    const votedFeatureRequest: FeatureRequest = Object.freeze({
-      ...featureRequest,
-      voteCount: featureRequest.voteCount + 1,
-      hasVoted: true,
-    });
-    await this.publish({
-      ...this.snapshot,
-      featureRequests: Object.freeze(
-        this.snapshot.featureRequests.map((current) =>
-          current.id === featureRequestId ? votedFeatureRequest : current,
-        ),
-      ),
-    });
-    return Object.freeze({
-      status: "voted",
-      featureRequestId,
-      voteCount: votedFeatureRequest.voteCount,
-    });
+    const vote = applyFeatureVote(this.snapshot, featureRequestId);
+    await this.publish(vote.snapshot);
+    return vote.result;
   }
 
   private async attemptSubmission(
@@ -236,29 +190,11 @@ export class MockSupportModule implements SupportModule {
   }
 
   private async replaceSubmission(submission: SupportSubmission): Promise<void> {
-    await this.publish({
-      ...this.snapshot,
-      submissions: Object.freeze(
-        this.snapshot.submissions.map((current) =>
-          current.id === submission.id ? Object.freeze(submission) : current,
-        ),
-      ),
-    });
+    await this.publish(replaceSubmission(this.snapshot, submission));
   }
 
   private async saveSubmission(submission: SupportSubmission): Promise<void> {
-    const exists = this.snapshot.submissions.some(
-      (current) => current.id === submission.id,
-    );
-    if (exists) {
-      await this.replaceSubmission(submission);
-      return;
-    }
-
-    await this.publish({
-      ...this.snapshot,
-      submissions: Object.freeze([...this.snapshot.submissions, submission]),
-    });
+    await this.publish(saveSubmission(this.snapshot, submission));
   }
 
   private async publish(snapshot: SupportSnapshot): Promise<void> {
@@ -266,22 +202,4 @@ export class MockSupportModule implements SupportModule {
     await this.persistence.save(this.snapshot);
     this.listeners.forEach((listener) => listener(this.snapshot));
   }
-}
-
-function nextNumericId(
-  submissions: readonly SupportSubmission[],
-  kind: SupportSubmission["kind"],
-): number {
-  return (
-    submissions.reduce((largest, submission) => {
-      if (submission.kind !== kind) {
-        return largest;
-      }
-      const numericId = Number.parseInt(
-        submission.id.slice(`${kind}-`.length),
-        10,
-      );
-      return Number.isFinite(numericId) ? Math.max(largest, numericId) : largest;
-    }, 0) + 1
-  );
 }
