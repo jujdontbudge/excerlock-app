@@ -1,4 +1,5 @@
 export { getAccountModule } from "./accessor";
+export { AccountSettingsCard } from "./AccountSettingsCard";
 export type {
   AccountDeletionResult,
   AccountError,
