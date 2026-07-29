@@ -1,7 +1,7 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseEnv } from "../src/env.js";
-import { createVendorWebhookRoutes } from "../src/routes/vendors.js";
+import { createVendorWebhookRoutes } from "../src/routes/vendorWebhooks.js";
 import type { Vendor } from "../src/vendors/index.js";
 import type { VendorWebhookService } from "../src/webhooks/index.js";
 

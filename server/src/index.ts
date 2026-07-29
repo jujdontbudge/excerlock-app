@@ -15,8 +15,8 @@ import { userRoutes } from "./routes/user.js";
 import {
   vendorPublicRoutes,
   vendorRoutes,
-  vendorWebhookRoutes,
 } from "./routes/vendors.js";
+import { vendorWebhookRoutes } from "./routes/vendorWebhooks.js";
 
 export function buildServer(options: FastifyServerOptions = {}): FastifyInstance {
   const app = Fastify({
