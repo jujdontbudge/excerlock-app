@@ -26,10 +26,11 @@ export const FIXTURE_LEDGER_CONFIG = {
   rolloverCapMinutes: 60,
 } as const;
 
-/** The fixture's three conditions — one of each kind, so every streak floor is exercised. */
+/** The fixture's conditions exercise every kind and both banked reward families. */
 export const FIXTURE_CONDITIONS = {
   gym: { id: "gym-visit", label: "Gym visit" },
   run: { id: "morning-run", label: "Morning run" },
+  steps: { id: "steps-exchange", label: "Steps exchange" },
   desk: { id: "standing-desk", label: "Standing desk" },
 } as const;
 
@@ -45,6 +46,8 @@ type Row = {
   gymEvents?: number;
   /** Minutes of running credited (rate condition). */
   runMinutes?: number;
+  /** Minutes credited by a second rate condition on standing-desk days. */
+  stepsMinutes?: number;
   /** Sustained standing minutes (state condition). */
   deskMinutes?: number;
 };
@@ -59,24 +62,24 @@ const ROWS: readonly Row[] = [
   { earned: 22, spent: 44, runMinutes: 22 },
   { earned: 45, spent: 70, gymEvents: 1 },
   { earned: 0, spent: 43 },
-  { earned: 13, spent: 40, deskMinutes: 26 },
+  { earned: 13, spent: 40, stepsMinutes: 13, deskMinutes: 26 },
   { earned: 45, spent: 55, gymEvents: 1 },
   { earned: 31, spent: 61, runMinutes: 31 },
   { earned: 0, spent: 53 },
   // Week 2 — Mon 13 Jul → Sun 19 Jul, every day meaningful
   { earned: 18, spent: 40, runMinutes: 18 },
   { earned: 45, spent: 62, gymEvents: 1 },
-  { earned: 11, spent: 51, deskMinutes: 22 },
+  { earned: 11, spent: 51, stepsMinutes: 11, deskMinutes: 22 },
   { earned: 26, spent: 58, runMinutes: 26 },
   { earned: 61, spent: 70, gymEvents: 1, runMinutes: 16 },
   { earned: 40, spent: 65, runMinutes: 40 },
-  { earned: 17, spent: 72, deskMinutes: 34 },
+  { earned: 17, spent: 72, stepsMinutes: 17, deskMinutes: 34 },
   // Week 3 — Mon 20 Jul → Sun 26 Jul (today)
   { earned: 45, spent: 44, gymEvents: 1 },
   { earned: 0, spent: 71 },
   { earned: 24, spent: 34, runMinutes: 24 },
   { earned: 45, spent: 60, gymEvents: 1 },
-  { earned: 9, spent: 62, deskMinutes: 18 },
+  { earned: 9, spent: 62, stepsMinutes: 9, deskMinutes: 18 },
   { earned: 78, spent: 56, gymEvents: 1, runMinutes: 33 },
   { earned: 20, spent: 47, runMinutes: 20 },
 ];
@@ -90,6 +93,7 @@ function condition(totals: Partial<ConditionDaySummary>): ConditionDaySummary {
     eventsFired,
     rateMinutes,
     stateSustainedMinutes,
+    earnedMinutes: totals.earnedMinutes ?? 0,
     // The same predicate `summary.ts` applies, read off the package's own floors.
     meaningfulActivity:
       eventsFired > 0 ||
@@ -101,9 +105,20 @@ function condition(totals: Partial<ConditionDaySummary>): ConditionDaySummary {
 function conditionsFor(row: Row): Record<string, ConditionDaySummary> {
   const conditions: Record<string, ConditionDaySummary> = {};
   if (row.gymEvents !== undefined)
-    conditions[FIXTURE_CONDITIONS.gym.id] = condition({ eventsFired: row.gymEvents });
+    conditions[FIXTURE_CONDITIONS.gym.id] = condition({
+      eventsFired: row.gymEvents,
+      earnedMinutes: row.gymEvents * 45,
+    });
   if (row.runMinutes !== undefined)
-    conditions[FIXTURE_CONDITIONS.run.id] = condition({ rateMinutes: row.runMinutes });
+    conditions[FIXTURE_CONDITIONS.run.id] = condition({
+      rateMinutes: row.runMinutes,
+      earnedMinutes: row.runMinutes,
+    });
+  if (row.stepsMinutes !== undefined)
+    conditions[FIXTURE_CONDITIONS.steps.id] = condition({
+      rateMinutes: row.stepsMinutes,
+      earnedMinutes: row.stepsMinutes,
+    });
   if (row.deskMinutes !== undefined)
     conditions[FIXTURE_CONDITIONS.desk.id] = condition({
       stateSustainedMinutes: row.deskMinutes,
