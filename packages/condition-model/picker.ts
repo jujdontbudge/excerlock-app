@@ -78,6 +78,7 @@ export interface PickerVerdict extends ConditionSelection {
   readonly name: string;
   readonly coverage: PickerCoverage;
   readonly isRecommended: boolean;
+  readonly isDefaultSource: boolean;
   readonly status: PickerStatus;
   readonly reason?: PickerReason;
 }
@@ -186,6 +187,7 @@ function withReason(
     name: entry.name,
     coverage,
     isRecommended: coverage === "promoted",
+    isDefaultSource: entry.baseSources.includes(selection.source),
     status,
     reason,
   };
@@ -298,6 +300,7 @@ export function getPickerVerdict(
     name: entry.name,
     coverage: sourceCoverage.status,
     isRecommended: sourceCoverage.status === "promoted",
+    isDefaultSource: entry.baseSources.includes(selection.source),
     status: "available",
   };
 }
