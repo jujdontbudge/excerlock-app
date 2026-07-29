@@ -82,11 +82,13 @@ function eligibleRows(
 function evaluateEvent(
   condition: EventCondition,
   rows: readonly SignalTimelineRow[],
+  clock: EvaluationClock,
 ): readonly EventFiredOutcome[] {
   const outcomes: EventFiredOutcome[] = [];
   const seenOccurrences = new Set<string>();
   const seenSamples = new Set<string>();
-  let cumulativeValue = 0;
+  let rawCumulativeValue = 0;
+  let earnedCumulativeValue = 0;
   let lastFireAtMs: number | null = null;
 
   for (const row of rows) {
@@ -98,16 +100,27 @@ function evaluateEvent(
         continue;
       }
       seenSamples.add(row.payload.sampleId);
-      const priorValue = cumulativeValue;
-      cumulativeValue =
+      const signalDelta =
         row.event === "signalSnapshot"
-          ? row.payload.value
-          : cumulativeValue + row.payload.delta;
+          ? row.payload.value - rawCumulativeValue
+          : row.payload.delta;
+      rawCumulativeValue += signalDelta;
+      if (
+        !isInsideActiveWindow(
+          condition.activeWindow,
+          row.atMs,
+          clock.dayStartMs,
+        )
+      ) {
+        continue;
+      }
+      const priorValue = earnedCumulativeValue;
+      earnedCumulativeValue += signalDelta;
       const threshold = condition.settings.threshold;
       if (
         threshold !== undefined &&
         priorValue < threshold &&
-        cumulativeValue >= threshold &&
+        earnedCumulativeValue >= threshold &&
         canFire(condition, outcomes.length, lastFireAtMs, row.atMs)
       ) {
         outcomes.push(
@@ -123,6 +136,15 @@ function evaluateEvent(
         continue;
       }
       seenOccurrences.add(row.payload.occurrenceId);
+      if (
+        !isInsideActiveWindow(
+          condition.activeWindow,
+          row.atMs,
+          clock.dayStartMs,
+        )
+      ) {
+        continue;
+      }
       const threshold = condition.settings.threshold;
       const meetsThreshold =
         threshold === undefined ||
@@ -163,6 +185,7 @@ function rateOutcome(
 function evaluateRate(
   condition: RateCondition,
   rows: readonly SignalTimelineRow[],
+  clock: EvaluationClock,
 ): readonly RateCreditOutcome[] {
   const outcomes: RateCreditOutcome[] = [];
   const seenSamples = new Set<string>();
@@ -186,7 +209,14 @@ function evaluateRate(
         : row.payload.delta;
     cumulativeValue += signalDelta;
 
-    if (signalDelta !== 0) {
+    if (
+      signalDelta !== 0 &&
+      isInsideActiveWindow(
+        condition.activeWindow,
+        row.atMs,
+        clock.dayStartMs,
+      )
+    ) {
       outcomes.push(
         rateOutcome(
           condition,
@@ -371,28 +401,10 @@ export function evaluateCondition(
 
   const rows = eligibleRows(condition, entry, timeline, clock);
   if (isEventCondition(condition)) {
-    return evaluateEvent(
-      condition,
-      rows.filter((row) =>
-        isInsideActiveWindow(
-          condition.activeWindow,
-          row.atMs,
-          clock.dayStartMs,
-        ),
-      ),
-    );
+    return evaluateEvent(condition, rows, clock);
   }
   if (isRateCondition(condition)) {
-    return evaluateRate(
-      condition,
-      rows.filter((row) =>
-        isInsideActiveWindow(
-          condition.activeWindow,
-          row.atMs,
-          clock.dayStartMs,
-        ),
-      ),
-    );
+    return evaluateRate(condition, rows, clock);
   }
   return evaluateState(condition, rows, clock);
 }
