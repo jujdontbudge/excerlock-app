@@ -1,9 +1,10 @@
 # Analysis
 
 **Contract.** `analysis` owns the Analysis tab: it turns a run of `DaySummary` records into the readings
-that tab shows — this week's earned-versus-spent balance, the streak, the day-by-day ledger and the bar
-chart over them. It hides *how* a window is sliced, summed, ordered and formatted; the screen only lays
-out. It computes no ledger math of its own and owns no store.
+that tab shows — the weekly recap, the Time Reclaimed hero, this week's earned-versus-spent balance, the
+streak, the day-by-day ledger and the bar chart over them. It hides *how* a window is sliced, summed,
+ordered and formatted; the screen only lays out. It computes no ledger math of its own and owns no
+store: the one store it touches is onboarding's confession, and it only ever reads it.
 
 **Invariants.**
 
@@ -18,19 +19,28 @@ out. It computes no ledger math of its own and owns no store.
   totals return zeros, `buildAnalysisView().isEmpty` is `true`. Nothing throws on day zero.
 - **No clock.** "Today" is the last summary on record and weekday arithmetic runs off `dayIndex`, so
   every render is deterministic and every test is stable. Nothing here calls `Date.now()`.
+- **The confession is read, never written.** `confessed_daily_minutes` (#43) is a fixed
+  life-before-ExcerLock snapshot — PRD §3.13 forbids editing it, because a tunable baseline turns the
+  hero into a vanity dial. `AnalysisScreen` subscribes to `useConfessionStore`; every layer below it
+  takes the baseline as a plain argument, so the whole model stays pure and store-free.
 - **Sells, never scolds** (PRD §3.15 Tab 3). A day with no activity reads "No activity" — no red, no ✗.
   A negative earned-versus-spent difference is phrased as drawn from the daily allowance, because that
-  is what it is.
+  is what it is. The same applies to the arithmetic: Time Reclaimed clamps per day, and where the clamp
+  hides something the card states it as a number rather than a verdict (below).
 
 ## Layout
 
 | Path | Responsibility |
 |---|---|
-| `model/calendar.ts` | weekday arithmetic over `dayIndex` + the day labels |
+| `model/calendar.ts` | weekday arithmetic over `dayIndex` + the day and date-range labels |
 | `model/format.ts` | the one minute/day-count formatting surface |
-| `model/selectors.ts` | `selectToday` · `selectWeek` · `selectStreak` · `selectTotals` · `selectBars` |
+| `model/selectors.ts` | `selectToday` · `selectWeek` · `selectPreviousWeek` · `selectMonth` · `selectStreak` · `selectTotals` · `selectBars` |
+| `model/timeReclaimed.ts` | `selectTimeReclaimed` — the PRD §3.13 formula over any window |
+| `model/recap.ts` | `buildRecap` — the weekly recap's five rows |
 | `model/view.ts` | `buildAnalysisView` — the single read the screen performs |
 | `fixtures/daySummaries.ts` | three weeks of derived, self-consistent `DaySummary` records |
+| `components/RecapCard.tsx` | the week in five rows, led by its Time Reclaimed and delta |
+| `components/TimeReclaimedHero.tsx` | the month's hero numeral and what sits under it |
 | `components/EarnedSpentCard.tsx` | earned vs spent vs the difference, for a window |
 | `components/StreakCard.tsx` | current streak · best ever · active days |
 | `components/WeekChart.tsx` | the earned/spent bar pairs, built from `View`s |
@@ -53,20 +63,70 @@ five-day run. Three quiet days burn the balance to exactly zero.
 
 Swapping in the real feed is one prop: `<AnalysisScreen days={…} />`.
 
+There is deliberately **no confession fixture**. The baseline comes from the real store, so a build where
+onboarding was skipped renders the hero's `unconfessed` state — which is exactly what that user sees in
+the app. `<AnalysisScreen confessedDailyMinutes={240} />` overrides it for a demo or a test.
+
+## Time Reclaimed, and the day you went over
+
+The formula is the PRD's, decided 2026-07-28: per-day saved = `max(0, confessed_daily_minutes − that
+day's locked-group usage)`, summed over the window — month for the hero, week for the recap, all-time
+for the milestone ladder. The clamp is deliberate: one blowout day never subtracts from the number.
+
+A clamp hides something, so `selectTimeReclaimed` keeps what it hid. `overMinutes` is the mirror sum,
+`netMinutes` is the signed truth, and `overDays` counts the days that ran over. The hero shows the
+clamped number and, whenever a day went over, one line of plain arithmetic under it — *"8 of 21 days ran
+over that average; the window is +1h 42m on balance"* — with the identical sentence, sign and all, when
+that balance is negative. A user who spent more than they confessed sees a fact, not a zero that
+pretends and not a scolding.
+
+Three inputs are not numbers and are handled as states rather than defaults:
+
+| Input | Status | What the surface says |
+|---|---|---|
+| Onboarding skipped | `unconfessed` | no numeral at all — what is missing, plus the usage it *can* report |
+| A confession of zero (or nonsense) | `noBaseline` | "nothing to reclaim against" — never `−usage`, which would be a scolding dressed as arithmetic |
+| Confession on record | `measured` | the formula, plus the over-days line when there is one |
+
 ## Not built yet
 
-The PRD's Analysis tab has six blocks (§3.15 Tab 3). This build ships blocks 3 and 4 (partially) plus
-the day ledger. Still owed, each blocked on something this module does not own:
+The PRD's Analysis tab has six blocks (§3.15 Tab 3). This build ships blocks 1 and 2 (#51), 3 and 4
+(partially, #38) plus the day ledger. Still owed, each with the specific input it waits on:
 
-- **Weekly recap card** and **Time Reclaimed hero** — need `confessed_daily_minutes` from onboarding.
-- **Week/Month/Year segmented control** — needs more than one window of real data.
-- **Requirement heat map** (six cell states, kind glyphs, tap-for-detail) — needs the schedule store to
-  tell rest days from missed ones.
-- **Rest-day-transparent streaks** — same reason; `selectStreak` is the naive per-day chain until then.
-- **Per-condition earning breakdown** — needs condition names, which live in the condition store.
-- **Milestones shelf** — needs the 22 badge assets (`design/STYLE.md`).
+- **Recap · Share button** — needs the on-device share-card renderer (PRD §3.13: 9:16 + 1:1 templates,
+  aggregates-and-dates privacy floor). No module owns it yet; `RecapCard` has the three facts the card
+  wants.
+- **Recap · 72-hour freshness** — needs the §3.14 recap moment (last day of week, 18:00) and therefore a
+  clock. This module has none by invariant, so the card renders whenever there is a week to recap.
+- **Recap row ② denominator** — should be the week's *scheduled* active days; needs the **schedule
+  store**. Until it exists the denominator is days on record, so a rest day dilutes the ratio.
+- **Recap row ③ top source** ("most from Gym visits") — needs condition **names** from the condition
+  store (`@/home`'s `useHomeStore`). The count is here; the attribution is not.
+- **Week/Month/Year segmented control** — needs the real `ledgerStore` feed. The fixture is 21 days
+  inside one calendar month, so Month and Year would draw the same window as Week.
+- **Requirement heat map** (six cell states, kind glyphs, tap-for-detail) — needs the **schedule store**
+  to tell rest days from missed ones.
+- **Rest-day-transparent streaks** — same schedule store; `selectStreak` is the naive per-day chain
+  until then.
+- **Per-condition earning breakdown** — needs two things: condition **names** (condition store) and
+  **per-condition earned minutes**, which `ConditionDaySummary` does not carry — it records
+  `eventsFired` / `rateMinutes` / `stateSustainedMinutes`, not attributed payout. That is a
+  `packages/ledger` change, not a change here.
+- **Milestones shelf** — needs the 22 **badge assets** (`design/STYLE.md`) and the unlock state (which
+  badges are new, for the tab dot). The three ladders' inputs now all exist:
+  `selectTimeReclaimed(days, baseline)` over the whole record, `selectStreak`, and the activity count.
 
 ## Tests
 
 `npm run test:app` from the repository root, or `npm run test --workspace app -- analysis` for this
 module. Selector, fixture-coherence, formatting, view-model and render tests live in `__tests__/`.
+
+Three traps, all paid for here:
+
+- `AnalysisScreen` reaches the confession store, so **its test file must mock
+  `@react-native-async-storage/async-storage`** (the trap `app/src/manage/README.md` names). Every other
+  test in this module takes the baseline as an argument and needs no mock.
+- Reset that store in **`beforeEach`, never `afterEach`** — a describe-level `afterEach` runs before
+  RNTL's cleanup, so the update lands on a still-mounted tree and React warns about `act`.
+- `toHaveTextContent("…")` matches the node's **whole** text, so an assertion against one phrase inside
+  a longer sentence has to be a regex.
