@@ -12,8 +12,10 @@ module's exported screen.
   user-set picker. The only accepted values are 30 seconds and 1–5 minutes.
 - Cadence (around 60–70 steps/min) and the renewable unlock increment (15 minutes) are displayed as
   read-only app-fixed facts with the reason each is fixed.
-- Account is an honest signed-out scaffold. Contact support and feature request are static rows until
-  their Phase-5 integrations exist.
+- Account is an honest signed-out scaffold. Support & Feedback mounts the public
+  `SupportSettingsCard`: support and feature composers, feature voting, durable
+  submission state, and explicit retry for requests that were not sent. The
+  support module's accessor remains the one HTTP-adapter swap point.
 - Notifications mounts the public `@/notifications` settings card. Its three switches persist
   independently and default OFF; the first opt-in owns the permission primer/request flow, and the
   afternoon time starts at the settled 15:00 default.
