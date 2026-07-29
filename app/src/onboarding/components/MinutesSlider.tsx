@@ -99,6 +99,7 @@ export function MinutesSlider({ value, onChange }: MinutesSliderProps) {
           now: value,
           text: formatDailyMinutes(value),
         }}
+        hitSlop={{ top: spacing.gutter, bottom: spacing.gutter }}
         onAccessibilityAction={handleAccessibilityAction}
         onLayout={handleLayout}
         onPress={handlePress}
