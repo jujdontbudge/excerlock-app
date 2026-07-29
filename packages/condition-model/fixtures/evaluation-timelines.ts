@@ -137,4 +137,46 @@ export const EVALUATION_TIMELINES = {
       },
     },
   ],
+  walkingWithGrace: [
+    {
+      atMs: 1_000,
+      event: "signalState",
+      payload: {
+        sampleId: "walking-start",
+        signal: "walking",
+        source: "motion",
+        active: true,
+      },
+    },
+    {
+      atMs: 5_000,
+      event: "signalState",
+      payload: {
+        sampleId: "walking-stop-a",
+        signal: "walking",
+        source: "motion",
+        active: false,
+      },
+    },
+    {
+      atMs: 7_000,
+      event: "signalState",
+      payload: {
+        sampleId: "walking-resume",
+        signal: "walking",
+        source: "motion",
+        active: true,
+      },
+    },
+    {
+      atMs: 10_000,
+      event: "signalState",
+      payload: {
+        sampleId: "walking-stop-b",
+        signal: "walking",
+        source: "motion",
+        active: false,
+      },
+    },
+  ],
 } as const satisfies Readonly<Record<string, readonly SignalTimelineRow[]>>;
