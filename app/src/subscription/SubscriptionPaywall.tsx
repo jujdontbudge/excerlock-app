@@ -63,6 +63,17 @@ export function SubscriptionPaywall({
     paywall.products.find((product) => product.id === selectedProductId) ??
     paywall.products.find((product) => product.isDefault) ??
     paywall.products[0];
+  const isPurchasing = snapshot.intent.status === "purchasing";
+
+  const handlePurchase = async () => {
+    if (selectedProduct === undefined) {
+      return;
+    }
+    const result = await subscription.purchase(selectedProduct.id);
+    if (result.status === "purchased") {
+      onEntitled();
+    }
+  };
 
   return (
     <Screen edges={["top", "right", "bottom", "left"]}>
@@ -106,8 +117,9 @@ export function SubscriptionPaywall({
 
         <View style={{ gap: spacing.md }}>
           <PillButton
-            label={purchaseLabel(selectedProduct)}
-            onPress={() => undefined}
+            disabled={selectedProduct === undefined || isPurchasing}
+            label={isPurchasing ? "Purchasing…" : purchaseLabel(selectedProduct)}
+            onPress={handlePurchase}
             trailingIcon="arrowRight"
             variant="white"
           />

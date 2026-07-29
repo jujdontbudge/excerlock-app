@@ -85,4 +85,31 @@ describe("SubscriptionPaywall", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Continue" }));
     expect(onEntitled).toHaveBeenCalledTimes(1);
   });
+
+  it("purchases the selected plan and continues after entitlement unlocks", async () => {
+    const onEntitled = jest.fn();
+    await render(
+      <SubscriptionPaywall
+        placement="onboarding"
+        confessedDailyMinutes={300}
+        onEntitled={onEntitled}
+        subscription={new MockSubscriptionModule()}
+      />,
+    );
+    await screen.findByRole("header", {
+      name: "Unlock the full ExcerLock plan",
+    });
+
+    await fireEvent.press(
+      screen.getByRole("radio", { name: "Monthly, $9.99 / month" }),
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Continue with monthly" }),
+    );
+
+    expect(onEntitled).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("header", { name: "Your ExcerLock plan is active" }),
+    ).toBeOnTheScreen();
+  });
 });
