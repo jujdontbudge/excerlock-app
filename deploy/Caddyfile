@@ -1,0 +1,6 @@
+# Caddy obtains and renews the public certificate automatically after the
+# api.excerlock.com A record points at this box and ports 80/443 are reachable.
+api.excerlock.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:3000
+}
