@@ -60,12 +60,12 @@ function Figure({
   value: string;
   tint: string;
 }) {
-  const { spacing, typography } = useTheme();
+  const { radius, spacing, typography } = useTheme();
 
   return (
     <View style={[styles.figure, { gap: spacing.xs }]}>
       <View style={[styles.legend, { gap: spacing.sm }]}>
-        <View style={[styles.swatch, { backgroundColor: tint }]} />
+        <View style={[styles.swatch, { backgroundColor: tint, borderRadius: radius.pill }]} />
         <Text style={typography.caption}>{label}</Text>
       </View>
       <Text testID={testID} style={typography.numeric}>
@@ -80,5 +80,5 @@ const styles = StyleSheet.create({
   figure: { flex: 1 },
   legend: { alignItems: "center", flexDirection: "row" },
   row: { flexDirection: "row" },
-  swatch: { borderRadius: 3, height: 6, width: 6 },
+  swatch: { height: 6, width: 6 },
 });

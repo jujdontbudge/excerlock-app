@@ -55,7 +55,7 @@ function Reading({
     <View style={[styles.reading, { gap: spacing.xs }]}>
       <Text
         testID={testID}
-        style={[typography.hero, styles.readingValue, tint === undefined ? null : { color: tint }]}
+        style={[typography.screenTitle, tint === undefined ? null : { color: tint }]}
       >
         {value}
       </Text>
@@ -66,6 +66,5 @@ function Reading({
 
 const styles = StyleSheet.create({
   reading: { flex: 1 },
-  readingValue: { fontSize: 48, lineHeight: 54 },
   row: { alignItems: "flex-end", flexDirection: "row" },
 });

@@ -24,7 +24,7 @@ export function DayLedger({ days }: DayLedgerProps) {
 }
 
 function DayRow({ day }: { day: DaySummary }) {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, radius, spacing, typography } = useTheme();
   const quiet = !day.meaningfulActivity;
 
   return (
@@ -32,7 +32,10 @@ function DayRow({ day }: { day: DaySummary }) {
       <View
         style={[
           styles.marker,
-          { backgroundColor: quiet ? colors.pillSecondary : colors.primary },
+          {
+            backgroundColor: quiet ? colors.pillSecondary : colors.primary,
+            borderRadius: radius.pill,
+          },
         ]}
       />
 
@@ -64,6 +67,6 @@ function DayRow({ day }: { day: DaySummary }) {
 const styles = StyleSheet.create({
   amounts: { alignItems: "flex-end" },
   label: { flex: 1 },
-  marker: { borderRadius: 5, height: 10, marginTop: 5, width: 10 },
+  marker: { height: 10, marginTop: 5, width: 10 },
   row: { flexDirection: "row" },
 });

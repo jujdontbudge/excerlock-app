@@ -20,7 +20,7 @@ type WeekChartProps = {
  * The segmented Week/Month/Year control arrives with the real store.
  */
 export function WeekChart({ bars }: WeekChartProps) {
-  const { colors, spacing } = useTheme();
+  const { colors, spacing, typography } = useTheme();
 
   return (
     <Card testID="week-chart">
@@ -34,11 +34,9 @@ export function WeekChart({ bars }: WeekChartProps) {
           <Text
             key={bar.dayIndex}
             style={[
+              typography.caption,
               styles.tick,
-              {
-                color: bar.meaningfulActivity ? colors.textPrimary : colors.textTertiary,
-                fontSize: 11,
-              },
+              { color: bar.meaningfulActivity ? colors.textPrimary : colors.textTertiary },
             ]}
           >
             {bar.label}
@@ -65,15 +63,18 @@ function Column({ bar }: { bar: Bar }) {
 }
 
 function Ink({ fraction, minutes, color }: { fraction: number; minutes: number; color: string }) {
+  const { radius } = useTheme();
   const height = minutes === 0 ? 0 : Math.max(MINIMUM_INK, fraction * TRACK_HEIGHT);
 
-  return <View style={[styles.ink, { backgroundColor: color, height }]} />;
+  return (
+    <View style={[styles.ink, { backgroundColor: color, borderRadius: radius.pill, height }]} />
+  );
 }
 
 const styles = StyleSheet.create({
   axis: { flexDirection: "row" },
   column: { alignItems: "flex-end", flex: 1, flexDirection: "row", height: "100%" },
-  ink: { borderRadius: 4, flex: 1 },
+  ink: { flex: 1 },
   plot: { alignItems: "flex-end", flexDirection: "row" },
-  tick: { flex: 1, fontWeight: "600", textAlign: "center" },
+  tick: { flex: 1, textAlign: "center" },
 });
