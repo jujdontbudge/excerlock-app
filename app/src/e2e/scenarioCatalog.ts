@@ -9,5 +9,9 @@ const SCENARIOS: Readonly<Record<(typeof SCENARIO_NAMES)[number], ScenarioManife
 };
 
 export function getScenarioManifest(name: string): ScenarioManifest {
-  return SCENARIOS[name as (typeof SCENARIO_NAMES)[number]];
+  const scenario = SCENARIOS[name as (typeof SCENARIO_NAMES)[number]];
+  if (scenario === undefined) {
+    throw new Error(`Unknown E2E scenario "${name}"`);
+  }
+  return scenario;
 }

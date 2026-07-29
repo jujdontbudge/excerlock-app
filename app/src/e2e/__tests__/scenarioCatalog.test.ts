@@ -19,4 +19,10 @@ describe("bundled E2E scenario catalog", () => {
       },
     });
   });
+
+  it("rejects unknown scenario names instead of falling back", () => {
+    expect(() => getScenarioManifest("not-bundled")).toThrow(
+      'Unknown E2E scenario "not-bundled"',
+    );
+  });
 });
