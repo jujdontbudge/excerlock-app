@@ -1,4 +1,5 @@
 export { getSupportModule } from "./accessor";
+export { SupportSettingsCard } from "./components/SupportSettingsCard";
 export type {
   FeatureRequest,
   SubmitSupportResult,
