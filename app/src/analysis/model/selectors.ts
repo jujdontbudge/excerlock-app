@@ -1,6 +1,6 @@
 import type { DaySummary } from "@excerlock/ledger";
 
-import { weekdayInitial, weekOffset, type Weekday } from "./calendar";
+import { sameMonth, weekdayInitial, weekOffset, type Weekday } from "./calendar";
 
 /**
  * Pure reads over an ascending, contiguous run of `DaySummary` records. Every
@@ -57,6 +57,33 @@ export function selectWeek(
 
   const firstDayIndex = today.dayIndex - weekOffset(today, weekStartsOn);
   return days.filter((day) => day.dayIndex >= firstDayIndex && day.dayIndex <= today.dayIndex);
+}
+
+/**
+ * The week before the one containing today — the recap's delta window (PRD §3.13
+ * row ①). Partial when the record does not reach the whole way back, empty when
+ * it does not reach at all: a first week has nothing to compare against, and
+ * that is a fact the recap states rather than a zero it invents.
+ */
+export function selectPreviousWeek(
+  days: DayRange,
+  { weekStartsOn = DEFAULT_WEEK_STARTS_ON }: { weekStartsOn?: Weekday } = {},
+): DaySummary[] {
+  const week = selectWeek(days, { weekStartsOn });
+  if (week.length === 0) return [];
+
+  const lastDayIndex = week[0].dayIndex - 1;
+  return days.filter(
+    (day) => day.dayIndex >= lastDayIndex - 6 && day.dayIndex <= lastDayIndex,
+  );
+}
+
+/** The calendar month containing today — the Time Reclaimed hero's window (PRD §3.13). */
+export function selectMonth(days: DayRange): DaySummary[] {
+  const today = selectToday(days);
+  if (today === null) return [];
+
+  return days.filter((day) => sameMonth(day, today));
 }
 
 /**

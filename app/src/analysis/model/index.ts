@@ -1,8 +1,24 @@
-export { dayLabel, weekdayIndex, weekdayInitial, weekOffset, type Weekday } from "./calendar";
-export { formatDayCount, formatMinutes, formatSignedMinutes } from "./format";
+export {
+  dayLabel,
+  dayRangeLabel,
+  sameMonth,
+  weekdayIndex,
+  weekdayInitial,
+  weekOffset,
+  type Weekday,
+} from "./calendar";
+export {
+  formatDayCount,
+  formatDays,
+  formatMinutes,
+  formatSignedMinutes,
+  heroReading,
+} from "./format";
 export {
   DEFAULT_WEEK_STARTS_ON,
   selectBars,
+  selectMonth,
+  selectPreviousWeek,
   selectStreak,
   selectToday,
   selectTotals,
@@ -12,4 +28,6 @@ export {
   type Streak,
   type Totals,
 } from "./selectors";
+export { buildRecap, type Recap } from "./recap";
+export { selectTimeReclaimed, type TimeReclaimed } from "./timeReclaimed";
 export { buildAnalysisView, type AnalysisView } from "./view";

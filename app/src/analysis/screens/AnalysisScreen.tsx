@@ -1,13 +1,16 @@
 import type { DaySummary } from "@excerlock/ledger";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
+import { useConfessionStore } from "@/onboarding";
 import { Screen, SectionHeader, useTheme } from "@/ui";
 
 import {
   AnalysisEmpty,
   DayLedger,
   EarnedSpentCard,
+  RecapCard,
   StreakCard,
+  TimeReclaimedHero,
   WeekChart,
 } from "../components";
 import { FIXTURE_DAY_SUMMARIES } from "../fixtures";
@@ -21,22 +24,35 @@ type AnalysisScreenProps = {
   days?: readonly DaySummary[];
   /** The *Start week on* setting (PRD §3.15 Tab 4). Monday until Settings owns it. */
   weekStartsOn?: Weekday;
+  /**
+   * The onboarding confession (#43). Left out, it comes from the confession
+   * store — this module reads it and never writes it, because the baseline is a
+   * fixed life-before-ExcerLock snapshot (PRD §3.13).
+   */
+  confessedDailyMinutes?: number | null;
 };
 
 /**
- * Analysis — this week's earned-versus-spent balance, the streak, and the day
- * ledger under it. The PRD's remaining blocks (weekly recap, Time Reclaimed
- * hero, the requirement heat map, per-condition breakdown, milestones shelf)
- * need the store, the schedule and the badge art; they land on top of this.
+ * Analysis — the weekly recap, the Time Reclaimed hero, this week's
+ * earned-versus-spent balance, the streak, and the day ledger under it. The
+ * PRD's remaining blocks (the Week/Month/Year control, the requirement heat map,
+ * the per-condition breakdown, the milestones shelf) need windows, the schedule,
+ * the condition store and the badge art; they land on top of this.
  *
  * All reading is done by `buildAnalysisView` — this file only lays out.
  */
 export function AnalysisScreen({
   days = FIXTURE_DAY_SUMMARIES,
   weekStartsOn,
+  confessedDailyMinutes,
 }: AnalysisScreenProps) {
   const { spacing, typography } = useTheme();
-  const view = buildAnalysisView(days, weekStartsOn === undefined ? {} : { weekStartsOn });
+  const confessed = useConfessionStore((state) => state.confessedDailyMinutes);
+  const view = buildAnalysisView(days, {
+    ...(weekStartsOn === undefined ? {} : { weekStartsOn }),
+    confessedDailyMinutes:
+      confessedDailyMinutes === undefined ? confessed : confessedDailyMinutes,
+  });
 
   return (
     <Screen testID="analysis-screen">
@@ -54,6 +70,10 @@ export function AnalysisScreen({
           <AnalysisEmpty />
         ) : (
           <>
+            {view.recap === null ? null : <RecapCard recap={view.recap} />}
+
+            <TimeReclaimedHero reclaimed={view.monthReclaimed} />
+
             <EarnedSpentCard totals={view.weekTotals} caption="This week" />
 
             <SectionHeader title="Earned vs spent" />

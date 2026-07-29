@@ -1,4 +1,10 @@
-import { formatDayCount, formatMinutes, formatSignedMinutes } from "../model/format";
+import {
+  formatDayCount,
+  formatDays,
+  formatMinutes,
+  formatSignedMinutes,
+  heroReading,
+} from "../model/format";
 
 describe("formatMinutes", () => {
   it.each([
@@ -25,9 +31,33 @@ describe("formatSignedMinutes", () => {
   });
 });
 
+describe("heroReading", () => {
+  it("splits a big number into the numeral and its unit", () => {
+    expect(heroReading(3882)).toEqual({ value: "64", unit: "h" });
+    expect(heroReading(60)).toEqual({ value: "1", unit: "h" });
+  });
+
+  it("stays in minutes below the first hour", () => {
+    expect(heroReading(45)).toEqual({ value: "45", unit: "m" });
+    expect(heroReading(0)).toEqual({ value: "0", unit: "m" });
+  });
+
+  it("never renders a negative hero", () => {
+    expect(heroReading(-120)).toEqual({ value: "0", unit: "m" });
+  });
+});
+
 describe("formatDayCount", () => {
   it("reads as a fraction of the days on record", () => {
     expect(formatDayCount(5, 7)).toBe("5 of 7 days");
     expect(formatDayCount(1, 1)).toBe("1 of 1 day");
+  });
+});
+
+describe("formatDays", () => {
+  it("counts a window without breaking grammar on one", () => {
+    expect(formatDays(21)).toBe("21 days");
+    expect(formatDays(1)).toBe("1 day");
+    expect(formatDays(0)).toBe("0 days");
   });
 });
