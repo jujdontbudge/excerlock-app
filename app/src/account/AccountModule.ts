@@ -14,7 +14,7 @@ export type AccountSession =
   | SignedInAccountSession;
 
 export type AccountError = Readonly<{
-  code: "sign_in_failed" | "sign_up_failed";
+  code: "sign_in_failed" | "sign_out_failed" | "sign_up_failed";
   message: string;
 }>;
 
@@ -38,7 +38,9 @@ export type AuthenticationResult =
   | Readonly<{ status: "cancelled" }>
   | Readonly<{ status: "failed"; error: AccountError }>;
 
-export type SignOutResult = Readonly<{ status: "signedOut" }>;
+export type SignOutResult =
+  | Readonly<{ status: "signedOut" }>
+  | Readonly<{ status: "failed"; error: AccountError }>;
 export type AccountDeletionResult = Readonly<{ status: "deleted" }>;
 
 export type AccountStateListener = (snapshot: AccountSnapshot) => void;

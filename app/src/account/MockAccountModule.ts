@@ -27,12 +27,16 @@ type MockAuthenticationResult =
   | "authenticated"
   | "cancelled"
   | Readonly<{ status: "failed"; message: string }>;
+type MockSessionEndResult =
+  | "succeeded"
+  | Readonly<{ status: "failed"; message: string }>;
 
 export class MockAccountModule implements AccountModule {
   private readonly clock: AccountClock;
   private snapshot = INITIAL_SNAPSHOT;
   private nextSignInResult: MockAuthenticationResult = "authenticated";
   private nextSignUpResult: MockAuthenticationResult = "authenticated";
+  private nextSignOutResult: MockSessionEndResult = "succeeded";
   private readonly listeners = new Set<AccountStateListener>();
 
   public constructor(options: MockAccountModuleOptions = {}) {
@@ -132,6 +136,18 @@ export class MockAccountModule implements AccountModule {
     });
     await Promise.resolve();
 
+    if (typeof this.nextSignOutResult === "object") {
+      const error: AccountError = Object.freeze({
+        code: "sign_out_failed",
+        message: this.nextSignOutResult.message,
+      });
+      this.publish({
+        ...this.snapshot,
+        intent: Object.freeze({ status: "idle", error }),
+      });
+      return Object.freeze({ status: "failed", error });
+    }
+
     this.publish({
       session: Object.freeze({ status: "signedOut" }),
       intent: Object.freeze({ status: "idle", error: null }),
@@ -161,6 +177,11 @@ export class MockAccountModule implements AccountModule {
   /** Deterministic mock driver; not part of the app-facing interface. */
   public setNextSignUpResult(result: MockAuthenticationResult): void {
     this.nextSignUpResult = result;
+  }
+
+  /** Deterministic mock driver; not part of the app-facing interface. */
+  public setNextSignOutResult(result: MockSessionEndResult): void {
+    this.nextSignOutResult = result;
   }
 
   public subscribe(listener: AccountStateListener): AccountUnsubscribe {

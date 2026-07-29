@@ -194,4 +194,32 @@ describe("MockAccountModule", () => {
       status: "signedOut",
     });
   });
+
+  it("keeps the session when sign out fails", async () => {
+    const mock = new MockAccountModule();
+    const account: AccountModule = mock;
+    await account.signIn();
+    mock.setNextSignOutResult({
+      status: "failed",
+      message: "Sign out could not finish.",
+    });
+
+    await expect(account.signOut()).resolves.toEqual({
+      status: "failed",
+      error: {
+        code: "sign_out_failed",
+        message: "Sign out could not finish.",
+      },
+    });
+
+    const snapshot = await account.getSnapshot();
+    expect(snapshot.session.status).toBe("signedIn");
+    expect(snapshot.intent).toEqual({
+      status: "idle",
+      error: {
+        code: "sign_out_failed",
+        message: "Sign out could not finish.",
+      },
+    });
+  });
 });
