@@ -3,13 +3,17 @@ jest.mock(
   () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
-import { FLOW_SCREENS } from "@excerlock/analytics-events";
+import {
+  FLOW_SCREENS,
+  type FlowScreen,
+} from "@excerlock/analytics-events";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import {
   analytics,
   createRecordingSink,
   noopSink,
+  type AnalyticsSignal,
   type RecordingSink,
 } from "../../analytics";
 import {
@@ -21,6 +25,19 @@ import {
 } from "..";
 
 const CONFESSED_DAILY_MINUTES = 330;
+
+function expectedStepViewSignals(
+  flowScreen: FlowScreen,
+): AnalyticsSignal[] {
+  return [
+    { kind: "screen", screen: flowScreen, props: {} },
+    {
+      kind: "capture",
+      event: "onboarding_screen_viewed",
+      props: { screen: flowScreen },
+    },
+  ];
+}
 
 describe("onboarding analytics", () => {
   let recordingSink: RecordingSink;
@@ -56,12 +73,7 @@ describe("onboarding analytics", () => {
     expect(onComplete).toHaveBeenCalledTimes(1);
     expect(recordingSink.signals).toEqual(
       FLOW_SCREENS.flatMap((flowScreen) => [
-        { kind: "screen", screen: flowScreen, props: {} },
-        {
-          kind: "capture",
-          event: "onboarding_screen_viewed",
-          props: { screen: flowScreen },
-        },
+        ...expectedStepViewSignals(flowScreen),
         ...(flowScreen === "confession"
           ? [
               {
@@ -88,14 +100,9 @@ describe("onboarding analytics", () => {
       <OnboardingFlow onComplete={jest.fn()} />,
     );
 
-    expect(recordingSink.signals).toEqual([
-      { kind: "screen", screen: firstScreen, props: {} },
-      {
-        kind: "capture",
-        event: "onboarding_screen_viewed",
-        props: { screen: firstScreen },
-      },
-    ]);
+    expect(recordingSink.signals).toEqual(
+      expectedStepViewSignals(firstScreen),
+    );
   });
 
   it("does not emit duplicate step views when back navigation revisits them", async () => {
@@ -110,14 +117,7 @@ describe("onboarding analytics", () => {
     );
 
     expect(recordingSink.signals).toEqual(
-      FLOW_SCREENS.slice(0, 2).flatMap((flowScreen) => [
-        { kind: "screen", screen: flowScreen, props: {} },
-        {
-          kind: "capture",
-          event: "onboarding_screen_viewed",
-          props: { screen: flowScreen },
-        },
-      ]),
+      FLOW_SCREENS.slice(0, 2).flatMap(expectedStepViewSignals),
     );
   });
 });
