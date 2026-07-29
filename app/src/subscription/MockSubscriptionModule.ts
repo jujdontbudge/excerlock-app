@@ -29,6 +29,7 @@ type MockSubscriptionModuleOptions = Readonly<{
 export class MockSubscriptionModule implements SubscriptionModule {
   private readonly clock: SubscriptionClock;
   private snapshot = INITIAL_SNAPSHOT;
+  private nextPurchaseResult: "purchased" | "cancelled" = "purchased";
   private readonly listeners = new Set<SubscriptionStateListener>();
 
   public constructor(options: MockSubscriptionModuleOptions = {}) {
@@ -72,6 +73,14 @@ export class MockSubscriptionModule implements SubscriptionModule {
     });
     await Promise.resolve();
 
+    if (this.nextPurchaseResult === "cancelled") {
+      this.publish({
+        ...this.snapshot,
+        intent: Object.freeze({ status: "idle", error: null }),
+      });
+      return Object.freeze({ status: "cancelled" });
+    }
+
     const purchasedAtMs = this.clock.nowMs();
     const entitlement: PremiumEntitlement = Object.freeze({
       status: "active",
@@ -85,6 +94,11 @@ export class MockSubscriptionModule implements SubscriptionModule {
       intent: Object.freeze({ status: "idle", error: null }),
     });
     return Object.freeze({ status: "purchased", entitlement });
+  }
+
+  /** Deterministic mock driver; not part of the app-facing interface. */
+  public setNextPurchaseResult(result: "purchased" | "cancelled"): void {
+    this.nextPurchaseResult = result;
   }
 
   public subscribe(

@@ -76,4 +76,19 @@ describe("MockSubscriptionModule", () => {
     expect(snapshot.intent).toEqual({ status: "idle", error: null });
     expect(isPremiumEntitled(snapshot)).toBe(true);
   });
+
+  it("leaves access locked when the user cancels purchase", async () => {
+    const mock = new MockSubscriptionModule();
+    const subscription: SubscriptionModule = mock;
+    await subscription.loadPaywall("onboarding");
+    mock.setNextPurchaseResult("cancelled");
+
+    await expect(
+      subscription.purchase("excerlock_annual"),
+    ).resolves.toEqual({ status: "cancelled" });
+
+    const snapshot = await subscription.getSnapshot();
+    expect(snapshot.intent).toEqual({ status: "idle", error: null });
+    expect(isPremiumEntitled(snapshot)).toBe(false);
+  });
 });
