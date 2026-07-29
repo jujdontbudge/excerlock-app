@@ -7,6 +7,23 @@ export interface NewVendorOAuthStateRecord {
   expiresAt: Date;
 }
 
+export interface NewVendorConnectionRecord {
+  id: string;
+  userId: string;
+  vendor: Vendor;
+  externalUserId: string;
+  accessTokenCiphertext: string;
+  refreshTokenCiphertext: string | null;
+  accessTokenExpiresAt: Date | null;
+  scopes: string;
+}
+
 export interface VendorOAuthStateRepository {
   saveOAuthState(state: NewVendorOAuthStateRecord): Promise<void>;
+  consumeOAuthState(
+    stateHash: string,
+    vendor: Vendor,
+    now: Date,
+  ): Promise<NewVendorOAuthStateRecord | null>;
+  upsertConnection(connection: NewVendorConnectionRecord): Promise<void>;
 }

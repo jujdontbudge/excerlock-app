@@ -1,7 +1,18 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { Environment } from "../env.js";
-import { requireVendorOAuthConfiguration } from "./configuration.js";
+import type { ServerAnalytics } from "../services/analytics.js";
+import { analytics as defaultAnalytics } from "../services/analytics.js";
+import {
+  requireVendorOAuthConfiguration,
+  requireVendorTokenCipher,
+} from "./configuration.js";
+import {
+  fetchVendorHttpClient,
+  type VendorHttpClient,
+} from "./http.js";
+import { VENDOR_ADAPTERS } from "./providers/index.js";
 import type {
+  NewVendorConnectionRecord,
   NewVendorOAuthStateRecord,
   VendorOAuthStateRepository,
 } from "./repository.js";
@@ -40,10 +51,23 @@ export interface VendorOAuthServiceOptions {
   repository: VendorOAuthStateRepository;
   now?: () => Date;
   randomState?: () => string;
+  randomId?: () => string;
+  http?: VendorHttpClient;
+  analytics?: Pick<ServerAnalytics, "capture">;
+}
+
+export interface VendorOAuthCallback {
+  code: string;
+  state: string;
+  scope?: string;
 }
 
 export interface VendorOAuthService {
   beginConnection(userId: string, vendor: Vendor): Promise<string>;
+  completeConnection(
+    vendor: Vendor,
+    callback: VendorOAuthCallback,
+  ): Promise<{ vendor: Vendor; connected: true }>;
 }
 
 function callbackUrl(baseUrl: string, vendor: Vendor): string {
@@ -66,6 +90,9 @@ export function createVendorOAuthService(
   const now = options.now ?? (() => new Date());
   const generateState =
     options.randomState ?? (() => randomBytes(32).toString("base64url"));
+  const generateId = options.randomId ?? randomUUID;
+  const http = options.http ?? fetchVendorHttpClient;
+  const analytics = options.analytics ?? defaultAnalytics;
 
   return {
     async beginConnection(userId, vendor) {
@@ -97,6 +124,53 @@ export function createVendorOAuthService(
       }
 
       return authorizationUrl.toString();
+    },
+
+    async completeConnection(vendor, callback) {
+      const completedAt = now();
+      const state = await options.repository.consumeOAuthState(
+        hashState(callback.state),
+        vendor,
+        completedAt,
+      );
+      if (!state) {
+        throw new Error("OAuth state is invalid, expired, or already used");
+      }
+      if (!callback.code) {
+        throw new Error("OAuth callback is missing its authorization code");
+      }
+
+      const configuration = requireVendorOAuthConfiguration(
+        options.environment,
+        vendor,
+      );
+      const tokens = await VENDOR_ADAPTERS[vendor].exchangeCode({
+        http,
+        clientId: configuration.clientId,
+        clientSecret: configuration.clientSecret,
+        code: callback.code,
+        redirectUri: callbackUrl(configuration.callbackBaseUrl, vendor),
+        userId: state.userId,
+        grantedScope: callback.scope,
+        now: completedAt,
+      });
+      const cipher = requireVendorTokenCipher(options.environment);
+      const connection: NewVendorConnectionRecord = {
+        id: generateId(),
+        userId: state.userId,
+        vendor,
+        externalUserId: tokens.externalUserId,
+        accessTokenCiphertext: cipher.encrypt(tokens.accessToken),
+        refreshTokenCiphertext: tokens.refreshToken
+          ? cipher.encrypt(tokens.refreshToken)
+          : null,
+        accessTokenExpiresAt: tokens.accessTokenExpiresAt,
+        scopes: tokens.scopes,
+      };
+      await options.repository.upsertConnection(connection);
+      analytics.capture(state.userId, "vendor_connected", { vendor });
+
+      return { vendor, connected: true };
     },
   };
 }

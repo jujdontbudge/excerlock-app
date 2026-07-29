@@ -1,15 +1,21 @@
 import { createHash } from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { parseEnv } from "../src/env.js";
 import {
   createVendorOAuthService,
+  requireVendorTokenCipher,
+  type NewVendorConnectionRecord,
   type NewVendorOAuthStateRecord,
   type Vendor,
+  type VendorHttpClient,
+  type VendorHttpRequest,
+  type VendorHttpResponse,
   type VendorOAuthStateRepository,
 } from "../src/vendors/index.js";
 
 const environment = parseEnv({
   VENDOR_OAUTH_CALLBACK_BASE_URL: "https://api.excerlock.com/",
+  VENDOR_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString("base64"),
   STRAVA_CLIENT_ID: "strava-id",
   STRAVA_CLIENT_SECRET: "strava-secret",
   OURA_CLIENT_ID: "oura-id",
@@ -22,9 +28,47 @@ const environment = parseEnv({
 
 class CapturingStateRepository implements VendorOAuthStateRepository {
   readonly states: NewVendorOAuthStateRecord[] = [];
+  readonly connections: NewVendorConnectionRecord[] = [];
 
   async saveOAuthState(state: NewVendorOAuthStateRecord): Promise<void> {
     this.states.push(state);
+  }
+
+  async consumeOAuthState(
+    stateHash: string,
+    vendor: Vendor,
+    now: Date,
+  ): Promise<NewVendorOAuthStateRecord | null> {
+    const index = this.states.findIndex(
+      (state) => state.stateHash === stateHash && state.vendor === vendor,
+    );
+    if (index < 0) {
+      return null;
+    }
+
+    const [state] = this.states.splice(index, 1);
+    return state && state.expiresAt > now ? state : null;
+  }
+
+  async upsertConnection(
+    connection: NewVendorConnectionRecord,
+  ): Promise<void> {
+    this.connections.push(connection);
+  }
+}
+
+class StubHttpClient implements VendorHttpClient {
+  readonly requests: VendorHttpRequest[] = [];
+
+  constructor(private readonly responses: readonly VendorHttpResponse[]) {}
+
+  async request(request: VendorHttpRequest): Promise<VendorHttpResponse> {
+    this.requests.push(request);
+    const response = this.responses[this.requests.length - 1];
+    if (!response) {
+      throw new Error(`Unexpected HTTP request to ${request.url}`);
+    }
+    return response;
   }
 }
 
@@ -113,6 +157,240 @@ describe("vendor OAuth connect", () => {
             vendor,
             expiresAt: new Date("2026-07-29T19:10:00.000Z"),
           },
+        ],
+      });
+    },
+  );
+});
+
+const callbackCases = [
+  {
+    vendor: "strava",
+    responses: [
+      {
+        status: 200,
+        body: {
+          token_type: "Bearer",
+          access_token: "strava-access",
+          refresh_token: "strava-refresh",
+          expires_at: 1_785_350_400,
+          expires_in: 21_600,
+          athlete: { id: 12345 },
+          scope: "activity:read_all",
+        },
+      },
+    ],
+    externalUserId: "12345",
+    expiresAt: new Date("2026-07-29T18:40:00.000Z"),
+    scopes: "activity:read_all",
+    expectedRequests: [
+      {
+        method: "POST",
+        url: "https://www.strava.com/oauth/token",
+        form: {
+          client_id: "strava-id",
+          client_secret: "strava-secret",
+          code: "auth-code",
+          grant_type: "authorization_code",
+        },
+      },
+    ],
+  },
+  {
+    vendor: "oura",
+    responses: [
+      {
+        status: 200,
+        body: {
+          token_type: "bearer",
+          access_token: "oura-access",
+          refresh_token: "oura-refresh",
+          expires_in: 86_400,
+        },
+      },
+      { status: 200, body: { id: "oura-user-id" } },
+    ],
+    externalUserId: "oura-user-id",
+    expiresAt: new Date("2026-07-30T19:00:00.000Z"),
+    scopes: "daily workout",
+    expectedRequests: [
+      {
+        method: "POST",
+        url: "https://api.ouraring.com/oauth/token",
+        form: {
+          grant_type: "authorization_code",
+          code: "auth-code",
+          redirect_uri: "https://api.excerlock.com/v1/vendors/oura/callback",
+          client_id: "oura-id",
+          client_secret: "oura-secret",
+        },
+      },
+      {
+        method: "GET",
+        url: "https://api.ouraring.com/v2/usercollection/personal_info",
+        authorization: "Bearer oura-access",
+      },
+    ],
+  },
+  {
+    vendor: "whoop",
+    responses: [
+      {
+        status: 200,
+        body: {
+          token_type: "bearer",
+          access_token: "whoop-access",
+          refresh_token: "whoop-refresh",
+          expires_in: 3_600,
+          scope: "offline read:workout read:cycles read:profile",
+        },
+      },
+      { status: 200, body: { user_id: 67890 } },
+    ],
+    externalUserId: "67890",
+    expiresAt: new Date("2026-07-29T20:00:00.000Z"),
+    scopes: "offline read:workout read:cycles read:profile",
+    expectedRequests: [
+      {
+        method: "POST",
+        url: "https://api.prod.whoop.com/oauth/oauth2/token",
+        form: {
+          grant_type: "authorization_code",
+          code: "auth-code",
+          client_id: "whoop-id",
+          client_secret: "whoop-secret",
+          redirect_uri:
+            "https://api.excerlock.com/v1/vendors/whoop/callback",
+        },
+      },
+      {
+        method: "GET",
+        url: "https://api.prod.whoop.com/developer/v2/user/profile/basic",
+        authorization: "Bearer whoop-access",
+      },
+    ],
+  },
+  {
+    vendor: "polar",
+    responses: [
+      {
+        status: 200,
+        body: {
+          access_token: "polar-access",
+          token_type: "bearer",
+          expires_in: 31_535_999,
+          x_user_id: 24680,
+        },
+      },
+      { status: 201, body: { "polar-user-id": 24680 } },
+    ],
+    externalUserId: "24680",
+    expiresAt: null,
+    scopes: "accesslink.read_all",
+    expectedRequests: [
+      {
+        method: "POST",
+        url: "https://polarremote.com/v2/oauth2/token",
+        form: {
+          grant_type: "authorization_code",
+          code: "auth-code",
+          redirect_uri: "https://api.excerlock.com/v1/vendors/polar/callback",
+        },
+        authorization: `Basic ${Buffer.from("polar-id:polar-secret").toString("base64")}`,
+      },
+      {
+        method: "POST",
+        url: "https://www.polaraccesslink.com/v3/users",
+        json: { "member-id": "user_123" },
+        authorization: "Bearer polar-access",
+      },
+    ],
+  },
+] as const satisfies readonly {
+  vendor: Vendor;
+  responses: readonly VendorHttpResponse[];
+  externalUserId: string;
+  expiresAt: Date | null;
+  scopes: string;
+  expectedRequests: readonly Record<string, unknown>[];
+}[];
+
+function observableRequest(request: VendorHttpRequest): Record<string, unknown> {
+  const contentType = request.headers?.["content-type"];
+  return {
+    method: request.method,
+    url: request.url,
+    ...(request.headers?.authorization
+      ? { authorization: request.headers.authorization }
+      : {}),
+    ...(contentType === "application/x-www-form-urlencoded"
+      ? { form: Object.fromEntries(new URLSearchParams(request.body)) }
+      : {}),
+    ...(contentType === "application/json"
+      ? { json: JSON.parse(request.body ?? "null") as unknown }
+      : {}),
+  };
+}
+
+describe("vendor OAuth callback", () => {
+  it.each(callbackCases)(
+    "exchanges and encrypts the documented $vendor token response",
+    async ({
+      vendor,
+      responses,
+      externalUserId,
+      expiresAt,
+      scopes,
+      expectedRequests,
+    }) => {
+      const repository = new CapturingStateRepository();
+      const http = new StubHttpClient(responses);
+      const capture = vi.fn();
+      const service = createVendorOAuthService({
+        environment,
+        repository,
+        http,
+        analytics: { capture },
+        now: () => new Date("2026-07-29T19:00:00.000Z"),
+        randomState: () => `${vendor}-state-12345678`,
+        randomId: () => `${vendor}-connection-id`,
+      });
+      const state = new URL(
+        await service.beginConnection("user_123", vendor),
+      ).searchParams.get("state");
+
+      await service.completeConnection(vendor, {
+        code: "auth-code",
+        state: state ?? "",
+        scope: scopes,
+      });
+
+      const connection = repository.connections[0];
+      expect(connection).toBeDefined();
+      const cipher = requireVendorTokenCipher(environment);
+      expect({
+        ...connection,
+        accessTokenCiphertext: cipher.decrypt(
+          connection?.accessTokenCiphertext ?? "",
+        ),
+        refreshTokenCiphertext: connection?.refreshTokenCiphertext
+          ? cipher.decrypt(connection.refreshTokenCiphertext)
+          : null,
+        requests: http.requests.map(observableRequest),
+        analytics: capture.mock.calls,
+      }).toEqual({
+        id: `${vendor}-connection-id`,
+        userId: "user_123",
+        vendor,
+        externalUserId,
+        accessTokenCiphertext: `${vendor}-access`,
+        refreshTokenCiphertext:
+          vendor === "polar" ? null : `${vendor}-refresh`,
+        accessTokenExpiresAt: expiresAt,
+        scopes,
+        requests: expectedRequests,
+        analytics: [
+          ["user_123", "vendor_connected", { vendor }],
         ],
       });
     },
