@@ -20,12 +20,13 @@ one persisted owner.
 | What is this condition called, and what does it pay? | `@/home` — `toConditionCards`, via `model/conditionRows.ts` |
 | How do I change one? | `@/home` — `ConditionBuilderSheet` + `draftFromCondition` |
 | Can I build a new one here? | No. The empty state points at Home. |
+| Which days are active, rest, holiday, or overridden? | `@/schedule` — `ScheduleRulesCard` + its own persisted store |
 
 ## Layout
 
 | File | Responsibility |
 | --- | --- |
-| `screens/ManageScreen.tsx` | Composes the allowance, list, builder in edit mode, and empty state. Owns two `useState`: which row is being edited, which row is asking to be deleted. |
+| `screens/ManageScreen.tsx` | Composes the allowance, schedule rules, condition list, builder in edit mode, and empty state. Owns two `useState`: which row is being edited, which row is asking to be deleted. |
 | `components/AllowanceCard.tsx` | 0–4 h stepper with Full Lock confirmations and Unlimited past the top |
 | `model/conditionRows.ts` | One row model per condition — title, source, what it earns, on/off |
 | `components/ConditionRow.tsx` | One row: switch, earn line, and either the actions or the delete confirmation |
