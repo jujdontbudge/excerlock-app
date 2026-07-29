@@ -1,3 +1,5 @@
+import { dayIndexFor } from "@excerlock/ledger";
+
 import type {
   OverrideDirection,
   ScheduleRules,
@@ -35,6 +37,29 @@ export type ClassifyScheduleDayInput = Readonly<{
   dayIndex: number;
   schedule?: ScheduleRules;
 }>;
+
+export type ClassifyScheduleAtInput = Readonly<{
+  /**
+   * Local wall-clock milliseconds, after the app edge has absorbed timezone
+   * and DST. This is the timestamp convention required by the ledger.
+   */
+  localWallClockMs: number;
+  dayBoundaryOffsetMinutes: number;
+  schedule?: ScheduleRules;
+}>;
+
+/** Classifies a moment by first asking the ledger which configured day owns it. */
+export function classifyScheduleAt(
+  input: ClassifyScheduleAtInput,
+): ScheduleDay {
+  return classifyScheduleDay({
+    dayIndex: dayIndexFor(
+      input.localWallClockMs,
+      input.dayBoundaryOffsetMinutes,
+    ),
+    schedule: input.schedule,
+  });
+}
 
 /**
  * The one schedule precedence law:
