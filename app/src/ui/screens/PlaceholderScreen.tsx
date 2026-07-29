@@ -7,6 +7,7 @@ type PlaceholderScreenProps = {
   title: string;
   /** One line saying what will live here once the surface is built. */
   summary?: string;
+  testID?: string;
 };
 
 /**
@@ -14,11 +15,15 @@ type PlaceholderScreenProps = {
  * shell is navigable end to end, and so the surface already sits on the brand
  * gradient when its content lands.
  */
-export function PlaceholderScreen({ title, summary }: PlaceholderScreenProps) {
+export function PlaceholderScreen({
+  title,
+  summary,
+  testID = "placeholder-screen",
+}: PlaceholderScreenProps) {
   const { spacing, typography } = useTheme();
 
   return (
-    <Screen testID="placeholder-screen" style={[styles.content, { padding: spacing.gutter }]}>
+    <Screen testID={testID} style={[styles.content, { padding: spacing.gutter }]}>
       <Text accessibilityRole="header" style={typography.screenTitle}>
         {title}
       </Text>

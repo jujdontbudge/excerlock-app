@@ -6,6 +6,7 @@ export function ManageScreen() {
     <PlaceholderScreen
       title="Manage"
       summary="Your conditions, apps and rules will live here. The condition builder opens from this tab."
+      testID="manage-screen"
     />
   );
 }
