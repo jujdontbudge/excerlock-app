@@ -4,6 +4,7 @@ import { Card, useTheme } from "@/ui";
 
 import type { Weekday } from "../model/scheduleRules";
 import { useScheduleStore } from "../store/scheduleStore";
+import { DayOverrideEditor } from "./DayOverrideEditor";
 import { HolidayEditor } from "./HolidayEditor";
 
 const WEEKDAYS: readonly Readonly<{
@@ -71,6 +72,8 @@ export function ScheduleRulesCard() {
       </View>
 
       <HolidayEditor />
+
+      <DayOverrideEditor />
     </Card>
   );
 }

@@ -63,4 +63,41 @@ describe("ScheduleRulesCard", () => {
 
     expect(useScheduleStore.getState().holidays).toEqual([]);
   });
+
+  it("lets one date override its normal rule in either direction", async () => {
+    await render(<ScheduleRulesCard />);
+
+    await fireEvent.changeText(
+      screen.getByLabelText("Override date"),
+      "2026-12-31",
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Make this date rest" }),
+    );
+
+    expect(useScheduleStore.getState().overrides).toEqual([
+      { dayIndex: 20_818, direction: "rest" },
+    ]);
+
+    await fireEvent.changeText(
+      screen.getByLabelText("Override date"),
+      "2026-12-31",
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Make this date active" }),
+    );
+
+    expect(useScheduleStore.getState().overrides).toEqual([
+      { dayIndex: 20_818, direction: "active" },
+    ]);
+    expect(screen.getByText("2026-12-31 · Active override")).toBeOnTheScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", {
+        name: "Remove override for 2026-12-31",
+      }),
+    );
+
+    expect(useScheduleStore.getState().overrides).toEqual([]);
+  });
 });
