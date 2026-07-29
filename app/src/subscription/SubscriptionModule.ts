@@ -27,6 +27,16 @@ export type PremiumEntitlement =
       renewsAtMs: number;
     }>;
 
+export type SubscriptionError = Readonly<{
+  code: "purchase_failed" | "restore_failed" | "no_previous_purchase";
+  message: string;
+}>;
+
+export type SubscriptionIntentState =
+  | Readonly<{ status: "idle"; error: SubscriptionError | null }>
+  | Readonly<{ status: "purchasing"; error: null }>
+  | Readonly<{ status: "restoring"; error: null }>;
+
 export type SubscriptionPaywallState =
   | Readonly<{ status: "idle" }>
   | Readonly<{ status: "loading"; placement: PaywallPlacement }>
@@ -35,7 +45,13 @@ export type SubscriptionPaywallState =
 export type SubscriptionSnapshot = Readonly<{
   entitlement: PremiumEntitlement;
   paywall: SubscriptionPaywallState;
+  intent: SubscriptionIntentState;
 }>;
+
+export type PurchaseResult =
+  | Readonly<{ status: "purchased"; entitlement: PremiumEntitlement }>
+  | Readonly<{ status: "cancelled" }>
+  | Readonly<{ status: "failed"; error: SubscriptionError }>;
 
 export type SubscriptionStateListener = (
   snapshot: SubscriptionSnapshot,
@@ -45,5 +61,6 @@ export type SubscriptionUnsubscribe = () => void;
 export interface SubscriptionModule {
   getSnapshot(): Promise<SubscriptionSnapshot>;
   loadPaywall(placement: PaywallPlacement): Promise<void>;
+  purchase(productId: string): Promise<PurchaseResult>;
   subscribe(listener: SubscriptionStateListener): SubscriptionUnsubscribe;
 }

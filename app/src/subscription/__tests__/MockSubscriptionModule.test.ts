@@ -7,6 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { MockSubscriptionModule } from "../MockSubscriptionModule";
 import type { SubscriptionModule } from "../SubscriptionModule";
+import { ManualSubscriptionClock } from "../clock";
 import { isPremiumEntitled } from "../entitlement";
 
 describe("MockSubscriptionModule", () => {
@@ -46,5 +47,33 @@ describe("MockSubscriptionModule", () => {
       },
     });
     expect(isPremiumEntitled(snapshot)).toBe(false);
+  });
+
+  it("turns a successful purchase intent into premium entitlement", async () => {
+    const clock = new ManualSubscriptionClock(1_000);
+    const subscription: SubscriptionModule = new MockSubscriptionModule({
+      clock,
+    });
+    const observedIntents: string[] = [];
+    subscription.subscribe((snapshot) => {
+      observedIntents.push(snapshot.intent.status);
+    });
+    await subscription.loadPaywall("onboarding");
+    observedIntents.length = 0;
+
+    await expect(
+      subscription.purchase("excerlock_annual"),
+    ).resolves.toMatchObject({ status: "purchased" });
+
+    expect(observedIntents).toEqual(["purchasing", "idle"]);
+    const snapshot = await subscription.getSnapshot();
+    expect(snapshot.entitlement).toEqual({
+      status: "active",
+      productId: "excerlock_annual",
+      purchasedAtMs: 1_000,
+      renewsAtMs: 31_536_001_000,
+    });
+    expect(snapshot.intent).toEqual({ status: "idle", error: null });
+    expect(isPremiumEntitled(snapshot)).toBe(true);
   });
 });
