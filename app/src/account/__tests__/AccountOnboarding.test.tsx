@@ -62,4 +62,34 @@ describe("AccountOnboarding", () => {
     ).toBeEnabled();
     expect(screen.queryByRole("alert")).not.toBeOnTheScreen();
   });
+
+  it("shows failed sign up and stays retryable", async () => {
+    const account = new MockAccountModule();
+    account.setNextSignUpResult({
+      status: "failed",
+      message: "Account creation is temporarily unavailable.",
+    });
+    const onAuthenticated = jest.fn();
+    await render(
+      <AccountOnboarding
+        account={account}
+        onAuthenticated={onAuthenticated}
+      />,
+    );
+    await screen.findByRole("header", { name: "Create your account" });
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Create account" }),
+    );
+
+    expect(onAuthenticated).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("alert", {
+        name: "Account creation is temporarily unavailable.",
+      }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole("button", { name: "Create account" }),
+    ).toBeEnabled();
+  });
 });
