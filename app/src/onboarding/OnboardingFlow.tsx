@@ -1,5 +1,5 @@
 import type { FlowScreen } from "@excerlock/analytics-events";
-import { useEffect, type ComponentType } from "react";
+import { useEffect, useRef, type ComponentType } from "react";
 
 import { flowTracker } from "../analytics";
 import { FLOW } from "./flow";
@@ -37,8 +37,14 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const back = useOnboardingStore((state) => state.back);
   const ScreenComponent = SCREEN_BY_STEP[currentStep];
   const isFinalStep = currentStep === FLOW.at(-1)?.screen;
+  const viewedSteps = useRef(new Set<FlowScreen>());
 
   useEffect(() => {
+    if (viewedSteps.current.has(currentStep)) {
+      return;
+    }
+
+    viewedSteps.current.add(currentStep);
     flowTracker.trackOnboardingScreen(currentStep);
   }, [currentStep]);
 

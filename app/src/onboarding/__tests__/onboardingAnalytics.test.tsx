@@ -97,4 +97,27 @@ describe("onboarding analytics", () => {
       },
     ]);
   });
+
+  it("does not emit duplicate step views when back navigation revisits them", async () => {
+    await render(<OnboardingFlow onComplete={jest.fn()} />);
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Get started" }),
+    );
+    await fireEvent.press(screen.getByRole("button", { name: "Back" }));
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Get started" }),
+    );
+
+    expect(recordingSink.signals).toEqual(
+      FLOW_SCREENS.slice(0, 2).flatMap((flowScreen) => [
+        { kind: "screen", screen: flowScreen, props: {} },
+        {
+          kind: "capture",
+          event: "onboarding_screen_viewed",
+          props: { screen: flowScreen },
+        },
+      ]),
+    );
+  });
 });
