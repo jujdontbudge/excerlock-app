@@ -5,6 +5,7 @@ import { ScrollView, Text, View } from "react-native";
 import { PillButton, Screen, useTheme } from "@/ui";
 
 import { getSubscriptionModule } from "./accessor";
+import { EntitledSubscription } from "./EntitledSubscription";
 import { formatConfessedDailyUsage } from "./formatUsage";
 import { PaywallProductOption } from "./PaywallProductOption";
 import type {
@@ -24,7 +25,7 @@ type SubscriptionPaywallProps = {
 export function SubscriptionPaywall({
   placement,
   confessedDailyMinutes,
-  onEntitled: _onEntitled,
+  onEntitled,
   onBack,
   subscription = getSubscriptionModule(),
 }: SubscriptionPaywallProps) {
@@ -34,11 +35,13 @@ export function SubscriptionPaywall({
     null,
   );
 
-  if (
-    snapshot === null ||
-    snapshot.entitlement.status === "active" ||
-    snapshot.paywall.status !== "ready"
-  ) {
+  if (snapshot?.entitlement.status === "active") {
+    return (
+      <EntitledSubscription onContinue={onEntitled} onBack={onBack} />
+    );
+  }
+
+  if (snapshot === null || snapshot.paywall.status !== "ready") {
     return (
       <Screen edges={["top", "right", "bottom", "left"]}>
         <View

@@ -4,7 +4,7 @@ jest.mock(
 );
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { MockSubscriptionModule } from "../MockSubscriptionModule";
 import { SubscriptionPaywall } from "../SubscriptionPaywall";
@@ -56,5 +56,33 @@ describe("SubscriptionPaywall", () => {
     expect(
       screen.getByRole("button", { name: "Restore Purchases" }),
     ).toBeEnabled();
+  });
+
+  it("renders entitled access instead of offering another purchase", async () => {
+    const subscription = new MockSubscriptionModule();
+    await subscription.loadPaywall("onboarding");
+    await subscription.purchase("excerlock_annual");
+    const onEntitled = jest.fn();
+    await render(
+      <SubscriptionPaywall
+        placement="onboarding"
+        confessedDailyMinutes={300}
+        onEntitled={onEntitled}
+        subscription={subscription}
+      />,
+    );
+
+    expect(
+      await screen.findByRole("header", {
+        name: "Your ExcerLock plan is active",
+      }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText("Premium access is unlocked.")).toBeOnTheScreen();
+    expect(
+      screen.queryByRole("button", { name: "Start free trial" }),
+    ).not.toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByRole("button", { name: "Continue" }));
+    expect(onEntitled).toHaveBeenCalledTimes(1);
   });
 });
