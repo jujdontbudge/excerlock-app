@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 
 import {
@@ -8,6 +8,7 @@ import {
   selectPickerContext,
   useHomeStore,
 } from "@/home";
+import { getLockController, type LockController } from "@/lock";
 import { Screen, SectionHeader, useTheme } from "@/ui";
 
 import { AllowanceCard } from "../components/AllowanceCard";
@@ -23,7 +24,14 @@ import { toConditionRows } from "../model/conditionRows";
  * save all belong to Home's store; editing re-opens Home's builder on the
  * condition rather than growing a second one here.
  */
-export function ManageScreen() {
+export interface ManageScreenProps {
+  /** Injected by the cross-module owner round-trip test. */
+  lockController?: LockController;
+}
+
+export function ManageScreen({
+  lockController = getLockController(),
+}: ManageScreenProps = {}) {
   const { spacing, typography } = useTheme();
 
   const conditions = useHomeStore((state) => state.conditions);
@@ -33,9 +41,13 @@ export function ManageScreen() {
   const baseAllowanceMinutes = useHomeStore(
     (state) => state.ledgerConfig.baseAllowanceMinutes,
   );
+  const allowanceBeforeFullLock = useHomeStore(
+    (state) => state.allowanceBeforeFullLock,
+  );
   const setBaseAllowanceMinutes = useHomeStore(
     (state) => state.setBaseAllowanceMinutes,
   );
+  const setFullLock = useHomeStore((state) => state.setFullLock);
   const updateCondition = useHomeStore((state) => state.updateCondition);
   const removeCondition = useHomeStore((state) => state.removeCondition);
   const setConditionEnabled = useHomeStore((state) => state.setConditionEnabled);
@@ -43,6 +55,13 @@ export function ManageScreen() {
   /** Ids rather than conditions: the store stays the one copy of both. */
   const [editingId, setEditingId] = useState<string>();
   const [confirmingId, setConfirmingId] = useState<string>();
+
+  // Manage writes the allowance, so its lifetime keeps the lock reader active
+  // and the persisted Screen Time selection reconciled on every change.
+  useEffect(() => {
+    void lockController.start();
+    return () => lockController.stop();
+  }, [lockController]);
 
   const placeNames = useMemo(
     () => Object.fromEntries(savedPlaces.map(({ id, name }) => [id, name])),
@@ -85,8 +104,9 @@ export function ManageScreen() {
               subtitle="What the day starts with, before any condition pays out."
             />
             <AllowanceCard
-              minutes={baseAllowanceMinutes}
+              allowance={{ baseAllowanceMinutes, allowanceBeforeFullLock }}
               onChange={setBaseAllowanceMinutes}
+              onFullLockChange={setFullLock}
             />
           </View>
 

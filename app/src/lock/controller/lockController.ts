@@ -45,7 +45,7 @@ const INITIAL: LockSnapshot = Object.freeze({
   selection: null,
   shield: null,
   lockWindows: [],
-  fullLock: true,
+  fullLock: false,
 });
 
 /**
@@ -149,11 +149,12 @@ export class LockController {
   /** Serialize async reconciliation; every pass reads the latest allowance. */
   private queueAllowanceReconciliation(): Promise<void> {
     const reconcile = async () => {
+      await this.refresh();
       const selection = this.snapshot.shield?.selection ?? null;
       if (selection !== null) {
         await this.applyDesiredState(selection);
+        await this.refresh();
       }
-      await this.refresh();
     };
     this.allowanceReconciliation = this.allowanceReconciliation.then(
       reconcile,

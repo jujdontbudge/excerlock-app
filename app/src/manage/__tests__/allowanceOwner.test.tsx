@@ -60,17 +60,19 @@ describe("the one owner of the base allowance", () => {
 
   it("carries an allowance set in Manage into Home's balance and the lock state", async () => {
     const screenTime = new FakeScreenTime();
+    useHomeStore.getState().setBaseAllowanceMinutes(30);
     const controller = await lockOver(screenTime);
+    await controller.setFullLock(true);
+    controller.stop();
 
-    // A new user starts at Full Lock: zero balance, shields up, no free time.
+    // Full Lock is an explicit choice: zero balance, shields up, no free time.
     expect(homeHero().balanceMinutes).toBe(0);
     expect(homeHero().status).toBe("locked");
     expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
 
-    await render(<ManageScreen />);
-    for (let press_ = 0; press_ < 6; press_ += 1) {
-      await press("Increase daily allowance");
-    }
+    await render(<ManageScreen lockController={controller} />);
+    await press("Increase daily allowance");
+    await press("Yes, turn it off");
 
     // One write in Manage; both readers moved.
     expect(useHomeStore.getState().ledgerConfig.baseAllowanceMinutes).toBe(30);
@@ -87,12 +89,12 @@ describe("the one owner of the base allowance", () => {
 
   it("gives a Manage-set allowance back after a Full Lock round trip", async () => {
     const screenTime = new FakeScreenTime();
+    useHomeStore.getState().setBaseAllowanceMinutes(25);
     const controller = await lockOver(screenTime);
+    controller.stop();
 
-    await render(<ManageScreen />);
-    for (let press_ = 0; press_ < 6; press_ += 1) {
-      await press("Increase daily allowance");
-    }
+    await render(<ManageScreen lockController={controller} />);
+    await press("Increase daily allowance");
     expect(homeHero().balanceMinutes).toBe(30);
 
     // Full Lock is that same number going to zero (PRD §3.2), not a mode.

@@ -43,6 +43,7 @@ describe("LockController", () => {
     // The allowance has one owner (#53); the controller reads Home's copy of it
     // through `controller/ledgerSource.ts` and keeps none of its own.
     useHomeStore.setState(DEFAULT_HOME_STATE);
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
   });
 
   it("reports the boundary's authorization state once started", async () => {

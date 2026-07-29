@@ -57,6 +57,7 @@ describe("LockScreen", () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
     useHomeStore.setState(DEFAULT_HOME_STATE);
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
   });
 
   describe("permission flow", () => {

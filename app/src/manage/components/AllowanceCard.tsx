@@ -1,7 +1,14 @@
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { allowanceLabel, BASE_ALLOWANCE_RANGE, stepBaseAllowance } from "@/home";
-import { Card, useTheme } from "@/ui";
+import {
+  allowanceLabel,
+  BASE_ALLOWANCE_RANGE,
+  stepBaseAllowance,
+  type AllowanceValues,
+} from "@/home";
+import { fullLockConfirmation } from "@/lock";
+import { Card, PillButton, useTheme } from "@/ui";
 
 /**
  * The base-allowance picker (PRD §3.15 Tab 2, grid in §8): 0–4 h in 5-minute
@@ -13,13 +20,54 @@ import { Card, useTheme } from "@/ui";
  * it (`app/src/home/model/allowance.ts`).
  */
 export function AllowanceCard({
-  minutes,
+  allowance,
   onChange,
+  onFullLockChange,
 }: {
-  minutes: number;
+  allowance: AllowanceValues;
   onChange: (minutes: number) => void;
+  onFullLockChange: (on: boolean) => Promise<void> | void;
 }) {
   const { colors, spacing, typography } = useTheme();
+  const { baseAllowanceMinutes: minutes } = allowance;
+  const [pendingFullLock, setPendingFullLock] = useState<boolean | null>(null);
+
+  const chooseStep = (direction: 1 | -1) => {
+    const next = stepBaseAllowance(minutes, direction);
+    if (next === minutes) {
+      return;
+    }
+    if ((minutes === 0) !== (next === 0)) {
+      setPendingFullLock(next === 0);
+      return;
+    }
+    onChange(next);
+  };
+
+  if (pendingFullLock !== null) {
+    const confirmation = fullLockConfirmation(allowance, pendingFullLock);
+    return (
+      <Card>
+        <View style={{ gap: spacing.md }}>
+          <Text style={typography.cardTitle}>{confirmation.title}</Text>
+          <Text style={typography.body}>{confirmation.body}</Text>
+          <PillButton
+            label={confirmation.confirmLabel}
+            variant="white"
+            onPress={async () => {
+              await onFullLockChange(pendingFullLock);
+              setPendingFullLock(null);
+            }}
+          />
+          <PillButton
+            label={confirmation.cancelLabel}
+            variant="secondary"
+            onPress={() => setPendingFullLock(null)}
+          />
+        </View>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -33,7 +81,7 @@ export function AllowanceCard({
           <StepButton
             label="Decrease daily allowance"
             glyph="−"
-            onPress={() => onChange(stepBaseAllowance(minutes, -1))}
+            onPress={() => chooseStep(-1)}
           />
           <Text
             testID="manage-allowance-value"
@@ -44,7 +92,7 @@ export function AllowanceCard({
           <StepButton
             label="Increase daily allowance"
             glyph="+"
-            onPress={() => onChange(stepBaseAllowance(minutes, 1))}
+            onPress={() => chooseStep(1)}
           />
           <Text
             style={[styles.hint, typography.caption, { color: colors.textTertiary }]}

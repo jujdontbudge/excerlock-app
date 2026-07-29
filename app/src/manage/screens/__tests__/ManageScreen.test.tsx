@@ -235,15 +235,30 @@ describe("ManageScreen", () => {
       expect(ownedAllowance()).toBe(25);
     });
 
-    it("names the bottom of the grid Full Lock, and remembers what it replaced", async () => {
+    it("confirms both Full Lock directions and restores what entry replaced", async () => {
       setAllowance(5);
       await render(<ManageScreen />);
 
       await press("Decrease daily allowance");
 
+      expect(ownedAllowance()).toBe(5);
+      expect(screen.getByText("Turn on Full Lock?")).toBeOnTheScreen();
+
+      await press("Yes, turn it on");
+
       expect(ownedAllowance()).toBe(0);
       expect(useHomeStore.getState().allowanceBeforeFullLock).toBe(5);
       expect(screen.getByTestId("manage-allowance-value")).toHaveTextContent("Full Lock");
+
+      await press("Increase daily allowance");
+
+      expect(ownedAllowance()).toBe(0);
+      expect(screen.getByText("Turn off Full Lock?")).toBeOnTheScreen();
+
+      await press("Yes, turn it off");
+
+      expect(ownedAllowance()).toBe(5);
+      expect(useHomeStore.getState().allowanceBeforeFullLock).toBeNull();
     });
 
     it("offers Unlimited one step past four hours", async () => {
@@ -259,15 +274,19 @@ describe("ManageScreen", () => {
     });
 
     it("keeps the chosen allowance across a remount", async () => {
+      setAllowance(0);
       await render(<ManageScreen />);
       await press("Increase daily allowance");
+      await press("Yes, turn it off");
 
       // A `key` forces a real remount rather than `unmount()` + `render()`,
       // which would detach `screen` for every test after this one (README).
       await screen.rerender(<ManageScreen key="remounted" />);
 
-      expect(screen.getByTestId("manage-allowance-value")).toHaveTextContent("5m");
-      expect(ownedAllowance()).toBe(5);
+      expect(screen.getByTestId("manage-allowance-value")).toHaveTextContent(
+        "Unlimited",
+      );
+      expect(ownedAllowance()).toBe(UNLIMITED);
     });
 
     it("is offered before any condition exists — the allowance is not a condition", async () => {

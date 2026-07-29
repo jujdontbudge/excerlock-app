@@ -45,12 +45,12 @@ describe("useHomeStore", () => {
     useHomeStore.setState(DEFAULT_HOME_STATE);
   });
 
-  it("starts with no conditions and a Full Lock day", () => {
+  it("starts with no conditions and an unlimited allowance until the user chooses", () => {
     const state = useHomeStore.getState();
 
     expect(state.conditions).toEqual([]);
     expect(state.journal.entries).toEqual([]);
-    expect(state.ledgerConfig.baseAllowanceMinutes).toBe(0);
+    expect(state.ledgerConfig.baseAllowanceMinutes).toBe(UNLIMITED);
   });
 
   it("adds a condition", () => {
@@ -137,6 +137,7 @@ describe("useHomeStore", () => {
   });
 
   it("banks an event condition's payout into the journal", () => {
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
     useHomeStore.getState().addCondition(stepGoal);
     useHomeStore.getState().recordEventPayout("c-event", NOON);
 
@@ -145,6 +146,7 @@ describe("useHomeStore", () => {
   });
 
   it("pays an event out once per day, however many times it is recorded", () => {
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
     useHomeStore.getState().addCondition(stepGoal);
     useHomeStore.getState().recordEventPayout("c-event", NOON);
     useHomeStore.getState().recordEventPayout("c-event", NOON + 60_000);

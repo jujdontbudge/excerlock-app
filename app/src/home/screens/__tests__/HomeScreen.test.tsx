@@ -79,6 +79,7 @@ describe("HomeScreen", () => {
 
   it("shows a locked hero at a zero balance once a condition exists", async () => {
     seed(stepGoal);
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
     await render(<HomeScreen feed={stubFeed()} now={now} />);
 
     expect(screen.getByTestId("lock-hero-locked")).toBeOnTheScreen();
@@ -123,6 +124,7 @@ describe("HomeScreen", () => {
 
   it("banks an event's payout in place and never reverses the card", async () => {
     seed(stepGoal);
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
     await render(<HomeScreen feed={stubFeed()} now={now} />);
 
     await press("Complete");

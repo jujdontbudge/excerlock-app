@@ -11,6 +11,7 @@ import {
   dayIndexFor,
   emptyJournal,
   reduceLedger,
+  UNLIMITED,
   type Journal,
   type LedgerConfig,
 } from "@excerlock/ledger";
@@ -62,8 +63,8 @@ export type HomeStoreValues = Readonly<{
 }>;
 
 /**
- * A new user starts empty (PRD §8, decided 2026-07-28) and under Full Lock, so
- * the hero means something before they choose an allowance in Manage.
+ * A new user starts empty with no app-chosen allowance (PRD §8, decided
+ * 2026-07-28). Unlimited remains in force until they choose one in Manage.
  */
 export const DEFAULT_HOME_STATE: HomeStoreValues = Object.freeze({
   conditions: [],
@@ -72,7 +73,7 @@ export const DEFAULT_HOME_STATE: HomeStoreValues = Object.freeze({
   journal: emptyJournal(),
   ledgerConfig: Object.freeze({
     dayBoundaryOffsetMinutes: 0,
-    baseAllowanceMinutes: 0,
+    baseAllowanceMinutes: UNLIMITED,
     rollover: null,
   }),
   connectedSources: [],
