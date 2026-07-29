@@ -1,5 +1,6 @@
 import {
   formatDayCount,
+  formatDays,
   formatMinutes,
   formatSignedMinutes,
   heroReading,
@@ -50,5 +51,13 @@ describe("formatDayCount", () => {
   it("reads as a fraction of the days on record", () => {
     expect(formatDayCount(5, 7)).toBe("5 of 7 days");
     expect(formatDayCount(1, 1)).toBe("1 of 1 day");
+  });
+});
+
+describe("formatDays", () => {
+  it("counts a window without breaking grammar on one", () => {
+    expect(formatDays(21)).toBe("21 days");
+    expect(formatDays(1)).toBe("1 day");
+    expect(formatDays(0)).toBe("0 days");
   });
 });

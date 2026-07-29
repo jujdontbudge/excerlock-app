@@ -7,7 +7,13 @@ export {
   weekOffset,
   type Weekday,
 } from "./calendar";
-export { formatDayCount, formatMinutes, formatSignedMinutes, heroReading } from "./format";
+export {
+  formatDayCount,
+  formatDays,
+  formatMinutes,
+  formatSignedMinutes,
+  heroReading,
+} from "./format";
 export {
   DEFAULT_WEEK_STARTS_ON,
   selectBars,

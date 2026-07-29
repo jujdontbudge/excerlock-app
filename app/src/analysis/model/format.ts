@@ -33,6 +33,11 @@ export function formatSignedMinutes(minutes: number): string {
   return `${rounded > 0 ? "+" : "−"}${formatMinutes(Math.abs(rounded))}`;
 }
 
+/** `21 days` · `1 day` — a window's length in prose. */
+export function formatDays(count: number): string {
+  return `${count} ${count === 1 ? "day" : "days"}`;
+}
+
 /** `5 of 7 days` — the active-days reading (PRD §3.13 recap row ②). */
 export function formatDayCount(active: number, total: number): string {
   return `${active} of ${total} ${total === 1 ? "day" : "days"}`;
