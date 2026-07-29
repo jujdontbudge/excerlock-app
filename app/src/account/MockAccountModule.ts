@@ -2,6 +2,9 @@ import {
   SystemAccountClock,
   type AccountClock,
 } from "./clock";
+import type { StateStorage } from "zustand/middleware";
+
+import { createMockAccountPersistence } from "./mockStore";
 import type {
   AccountDeletionResult,
   AccountModule,
@@ -21,6 +24,7 @@ const INITIAL_SNAPSHOT: AccountSnapshot = Object.freeze({
 
 type MockAccountModuleOptions = Readonly<{
   clock?: AccountClock;
+  storage?: StateStorage<Promise<void>>;
 }>;
 
 type MockAuthenticationResult =
@@ -33,6 +37,8 @@ type MockSessionEndResult =
 
 export class MockAccountModule implements AccountModule {
   private readonly clock: AccountClock;
+  private readonly persistence: ReturnType<typeof createMockAccountPersistence>;
+  private readonly ready: Promise<void>;
   private snapshot = INITIAL_SNAPSHOT;
   private nextSignInResult: MockAuthenticationResult = "authenticated";
   private nextSignUpResult: MockAuthenticationResult = "authenticated";
@@ -42,13 +48,22 @@ export class MockAccountModule implements AccountModule {
 
   public constructor(options: MockAccountModuleOptions = {}) {
     this.clock = options.clock ?? new SystemAccountClock();
+    this.persistence = createMockAccountPersistence(options.storage);
+    this.ready = this.persistence.rehydrate().then(() => {
+      this.snapshot = Object.freeze({
+        ...this.snapshot,
+        session: this.persistence.getState().session,
+      });
+    });
   }
 
   public async getSnapshot(): Promise<AccountSnapshot> {
+    await this.ready;
     return this.snapshot;
   }
 
   public async signIn(): Promise<AuthenticationResult> {
+    await this.ready;
     this.publish({
       ...this.snapshot,
       intent: Object.freeze({ status: "signingIn", error: null }),
@@ -82,6 +97,7 @@ export class MockAccountModule implements AccountModule {
         email: "member@excerlock.test",
       }),
     });
+    await this.persistence.update({ session });
     this.publish({
       session,
       intent: Object.freeze({ status: "idle", error: null }),
@@ -90,6 +106,7 @@ export class MockAccountModule implements AccountModule {
   }
 
   public async signUp(): Promise<AuthenticationResult> {
+    await this.ready;
     this.publish({
       ...this.snapshot,
       intent: Object.freeze({ status: "signingUp", error: null }),
@@ -123,6 +140,7 @@ export class MockAccountModule implements AccountModule {
         email: "new-member@excerlock.test",
       }),
     });
+    await this.persistence.update({ session });
     this.publish({
       session,
       intent: Object.freeze({ status: "idle", error: null }),
@@ -131,6 +149,7 @@ export class MockAccountModule implements AccountModule {
   }
 
   public async signOut(): Promise<SignOutResult> {
+    await this.ready;
     this.publish({
       ...this.snapshot,
       intent: Object.freeze({ status: "signingOut", error: null }),
@@ -149,14 +168,17 @@ export class MockAccountModule implements AccountModule {
       return Object.freeze({ status: "failed", error });
     }
 
+    const session = Object.freeze({ status: "signedOut" as const });
+    await this.persistence.update({ session });
     this.publish({
-      session: Object.freeze({ status: "signedOut" }),
+      session,
       intent: Object.freeze({ status: "idle", error: null }),
     });
     return Object.freeze({ status: "signedOut" });
   }
 
   public async deleteAccount(): Promise<AccountDeletionResult> {
+    await this.ready;
     this.publish({
       ...this.snapshot,
       intent: Object.freeze({ status: "deleting", error: null }),
@@ -175,8 +197,10 @@ export class MockAccountModule implements AccountModule {
       return Object.freeze({ status: "failed", error });
     }
 
+    const session = Object.freeze({ status: "signedOut" as const });
+    await this.persistence.update({ session });
     this.publish({
-      session: Object.freeze({ status: "signedOut" }),
+      session,
       intent: Object.freeze({ status: "idle", error: null }),
     });
     return Object.freeze({ status: "deleted" });

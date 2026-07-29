@@ -250,4 +250,27 @@ describe("MockAccountModule", () => {
       },
     });
   });
+
+  it("persists the signed-in session across a module remount", async () => {
+    const first = new MockAccountModule({
+      clock: new ManualAccountClock(3_000),
+    });
+    await first.signUp();
+
+    const remounted: AccountModule = new MockAccountModule({
+      clock: new ManualAccountClock(9_000),
+    });
+
+    expect(await remounted.getSnapshot()).toEqual({
+      session: {
+        status: "signedIn",
+        authenticatedAtMs: 3_000,
+        user: {
+          id: "mock_new_user",
+          email: "new-member@excerlock.test",
+        },
+      },
+      intent: { status: "idle", error: null },
+    });
+  });
 });
