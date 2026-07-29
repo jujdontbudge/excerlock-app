@@ -8,7 +8,10 @@ import type { DesiredOsState } from "@excerlock/ledger";
 
 import { MockScreenTimeModule } from "../MockScreenTimeModule";
 import { ManualScreenTimeClock } from "../clock";
-import type { ScreenTimeModule } from "../ScreenTimeModule";
+import type {
+  ScreenTimeModule,
+  ScreenTimeSelectionHandle,
+} from "../ScreenTimeModule";
 
 describe("MockScreenTimeModule", () => {
   beforeEach(async () => {
@@ -151,6 +154,74 @@ describe("MockScreenTimeModule", () => {
       drainThresholds: [],
     });
     expect(observed).toEqual(["up", "down"]);
+  });
+
+  it("describes a selection by count only, never by identifier", async () => {
+    const mock = new MockScreenTimeModule();
+    const screenTime: ScreenTimeModule = mock;
+    mock.setNextAuthorizationResult("approved");
+    await screenTime.requestAuthorization();
+
+    mock.setNextSelectionContents({ applicationCount: 4, categoryCount: 2 });
+    const selection = (await screenTime.pickSelection())!;
+
+    await expect(screenTime.describeSelection(selection)).resolves.toEqual({
+      handle: selection,
+      displayName: "4 apps · 2 categories",
+      applicationCount: 4,
+      categoryCount: 2,
+    });
+
+    mock.setNextSelectionContents({ applicationCount: 1, categoryCount: 0 });
+    const single = (await screenTime.pickSelection())!;
+    await expect(screenTime.describeSelection(single)).resolves.toMatchObject({
+      displayName: "1 app",
+    });
+
+    mock.setNextSelectionContents({ applicationCount: 0, categoryCount: 1 });
+    const category = (await screenTime.pickSelection())!;
+    await expect(screenTime.describeSelection(category)).resolves.toMatchObject({
+      displayName: "1 category",
+    });
+  });
+
+  it("returns no description for a handle it did not issue", async () => {
+    const screenTime: ScreenTimeModule = new MockScreenTimeModule();
+
+    await expect(
+      screenTime.describeSelection("never-issued" as ScreenTimeSelectionHandle),
+    ).resolves.toBeNull();
+  });
+
+  it("reports its scheduled lock windows in start order", async () => {
+    const mock = new MockScreenTimeModule({
+      clock: new ManualScreenTimeClock(0),
+    });
+    const screenTime: ScreenTimeModule = mock;
+    mock.setNextAuthorizationResult("approved");
+    await screenTime.requestAuthorization();
+    const selection = (await screenTime.pickSelection())!;
+
+    await screenTime.scheduleLockWindow(selection, {
+      id: "night",
+      startsAtMs: 5_000,
+      endsAtMs: 6_000,
+    });
+    await screenTime.scheduleLockWindow(selection, {
+      id: "morning",
+      startsAtMs: 1_000,
+      endsAtMs: 2_000,
+    });
+
+    await expect(screenTime.getLockWindows()).resolves.toEqual([
+      { id: "morning", startsAtMs: 1_000, endsAtMs: 2_000 },
+      { id: "night", startsAtMs: 5_000, endsAtMs: 6_000 },
+    ]);
+
+    await screenTime.cancelLockWindow("morning");
+    await expect(screenTime.getLockWindows()).resolves.toEqual([
+      { id: "night", startsAtMs: 5_000, endsAtMs: 6_000 },
+    ]);
   });
 
   it("restores authorization, selection, desired state, and lock windows", async () => {

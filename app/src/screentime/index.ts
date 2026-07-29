@@ -5,6 +5,7 @@ export type {
   ScreenTimeAuthorizationStatus,
   ScreenTimeModule,
   ScreenTimeSelectionHandle,
+  ScreenTimeSelectionSummary,
   ScreenTimeUnsubscribe,
   ShieldStateListener,
 } from "./ScreenTimeModule";

@@ -8,8 +8,14 @@ import type {
   ScreenTimeAuthorizationStatus,
   ScreenTimeModule,
   ScreenTimeSelectionHandle,
+  ScreenTimeSelectionSummary,
   ShieldStateListener,
 } from "./ScreenTimeModule";
+import {
+  DEFAULT_SELECTION_CONTENTS,
+  summarizeSelection,
+  type SelectionContents,
+} from "./selectionSummary";
 import {
   SystemScreenTimeClock,
   type CancelScheduledClockTask,
@@ -39,6 +45,7 @@ export class MockScreenTimeModule implements ScreenTimeModule {
   private readonly persistence: ReturnType<typeof createMockScreenTimePersistence>;
   private readonly ready: Promise<void>;
   private nextAuthorizationResult: AuthorizationDecision = "approved";
+  private nextSelectionContents: SelectionContents = DEFAULT_SELECTION_CONTENTS;
   private scheduledClockTasks: CancelScheduledClockTask[] = [];
   private readonly shieldStateListeners = new Set<ShieldStateListener>();
   private currentShieldState: CurrentShieldState = DEFAULT_SHIELD_STATE;
@@ -78,8 +85,22 @@ export class MockScreenTimeModule implements ScreenTimeModule {
     const handle = `mock-screen-time-selection:${state.nextSelectionNumber}`;
     await this.persistence.update({
       nextSelectionNumber: state.nextSelectionNumber + 1,
+      selectionContents: {
+        ...state.selectionContents,
+        [handle]: this.nextSelectionContents,
+      },
     });
     return handle as ScreenTimeSelectionHandle;
+  }
+
+  public async describeSelection(
+    selection: ScreenTimeSelectionHandle,
+  ): Promise<ScreenTimeSelectionSummary | null> {
+    await this.ready;
+    const contents = this.persistence.getState().selectionContents[selection];
+    return contents === undefined
+      ? null
+      : summarizeSelection(selection, contents);
   }
 
   public async reconcile(
@@ -140,6 +161,15 @@ export class MockScreenTimeModule implements ScreenTimeModule {
     this.refreshCurrentShieldState();
   }
 
+  public async getLockWindows(): Promise<readonly LockWindow[]> {
+    await this.ready;
+    return this.persistence
+      .getState()
+      .lockWindows.map(({ id, startsAtMs, endsAtMs }) =>
+        Object.freeze({ id, startsAtMs, endsAtMs }),
+      );
+  }
+
   public async getCurrentShieldState(): Promise<CurrentShieldState> {
     await this.ready;
     return this.currentShieldState;
@@ -153,6 +183,11 @@ export class MockScreenTimeModule implements ScreenTimeModule {
   /** Deterministic mock driver; not part of the app-facing interface. */
   public setNextAuthorizationResult(result: AuthorizationDecision): void {
     this.nextAuthorizationResult = result;
+  }
+
+  /** Deterministic mock driver: what the next `pickSelection()` returns. */
+  public setNextSelectionContents(contents: SelectionContents): void {
+    this.nextSelectionContents = contents;
   }
 
   private refreshCurrentShieldState(): void {
