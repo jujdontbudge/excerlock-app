@@ -15,6 +15,7 @@ import { userRoutes } from "./routes/user.js";
 import {
   vendorPublicRoutes,
   vendorRoutes,
+  vendorWebhookRoutes,
 } from "./routes/vendors.js";
 
 export function buildServer(options: FastifyServerOptions = {}): FastifyInstance {
@@ -33,6 +34,7 @@ export function buildServer(options: FastifyServerOptions = {}): FastifyInstance
   });
   void app.register(healthRoutes, { prefix: "/v1" });
   void app.register(vendorPublicRoutes, { prefix: "/v1" });
+  void app.register(vendorWebhookRoutes, { prefix: "/v1" });
   void app.register(
     async (protectedScope) => {
       protectedScope.addHook("onRequest", requireAuth);

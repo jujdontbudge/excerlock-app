@@ -9,6 +9,10 @@ export {
   type VendorWebhookService,
   type VendorWebhookServiceOptions,
 } from "./service.js";
+export {
+  requireVendorWebhookConfiguration,
+  type VendorWebhookConfiguration,
+} from "./configuration.js";
 export type {
   NewVendorWebhookEventRecord,
   VendorEventCursor,

@@ -4,6 +4,7 @@ import type {
   FastifyRequest,
 } from "fastify";
 import { config } from "../config.js";
+import type { Environment } from "../env.js";
 import {
   createDrizzleVendorRepository,
   createVendorOAuthService,
@@ -13,6 +14,17 @@ import {
   type VendorOAuthService,
 } from "../vendors/index.js";
 import {
+  createVendorWebhookService,
+  requireVendorWebhookConfiguration,
+  verifyOuraWebhook,
+  verifyPolarWebhook,
+  verifyStravaChallenge,
+  verifyStravaSubscription,
+  verifyWhoopWebhook,
+  type VendorWebhookConfiguration,
+  type VendorWebhookService,
+} from "../webhooks/index.js";
+import {
   sendNotImplemented,
   type NotImplementedResponse,
 } from "./notImplemented.js";
@@ -21,8 +33,18 @@ interface VendorRouteDependencies {
   service?: VendorOAuthService;
 }
 
+interface VendorWebhookRouteDependencies {
+  environment?: Environment;
+  service?: VendorWebhookService;
+}
+
 interface VendorParams {
   vendor: string;
+}
+
+interface RawJsonBody {
+  rawBody: string;
+  payload: Record<string, unknown>;
 }
 
 interface OAuthCallbackQuery {
@@ -31,6 +53,14 @@ interface OAuthCallbackQuery {
   scope?: string;
   error?: string;
   error_description?: string;
+}
+
+interface WebhookChallengeQuery {
+  "hub.mode"?: string;
+  "hub.challenge"?: string;
+  "hub.verify_token"?: string;
+  challenge?: string;
+  verification_token?: string;
 }
 
 function defaultService(): VendorOAuthService {
@@ -42,6 +72,17 @@ function defaultService(): VendorOAuthService {
 
 function getService(dependencies: VendorRouteDependencies): VendorOAuthService {
   return dependencies.service ?? defaultService();
+}
+
+function getWebhookService(
+  dependencies: VendorWebhookRouteDependencies,
+): VendorWebhookService {
+  return (
+    dependencies.service ??
+    createVendorWebhookService({
+      repository: createDrizzleVendorRepository(),
+    })
+  );
 }
 
 async function requireRouteUserId(
@@ -101,6 +142,198 @@ async function sendVendorRouteError(
       message,
     },
   });
+}
+
+function readHeader(
+  headers: FastifyRequest["headers"],
+  name: string,
+): string | null {
+  const value = headers[name];
+  return typeof value === "string" ? value : null;
+}
+
+function verifyWebhookRequest(
+  configuration: VendorWebhookConfiguration,
+  body: RawJsonBody,
+  request: FastifyRequest,
+): boolean {
+  switch (configuration.vendor) {
+    case "strava":
+      return verifyStravaSubscription(
+        body.payload,
+        configuration.subscriptionId,
+      );
+    case "oura": {
+      const timestamp = readHeader(request.headers, "x-oura-timestamp");
+      const signature = readHeader(request.headers, "x-oura-signature");
+      return Boolean(
+        timestamp &&
+          signature &&
+          verifyOuraWebhook({
+            rawBody: body.rawBody,
+            timestamp,
+            signature,
+            clientSecret: configuration.clientSecret,
+          }),
+      );
+    }
+    case "whoop": {
+      const timestamp = readHeader(
+        request.headers,
+        "x-whoop-signature-timestamp",
+      );
+      const signature = readHeader(
+        request.headers,
+        "x-whoop-signature",
+      );
+      return Boolean(
+        timestamp &&
+          signature &&
+          verifyWhoopWebhook({
+            rawBody: body.rawBody,
+            timestamp,
+            signature,
+            clientSecret: configuration.clientSecret,
+          }),
+      );
+    }
+    case "polar": {
+      const signature = readHeader(
+        request.headers,
+        "polar-webhook-signature",
+      );
+      return Boolean(
+        signature &&
+          verifyPolarWebhook({
+            rawBody: body.rawBody,
+            signature,
+            signatureSecret: configuration.signatureSecret,
+          }),
+      );
+    }
+  }
+}
+
+async function sendWebhookUnauthorized(reply: FastifyReply): Promise<void> {
+  await reply.code(401).send({
+    error: {
+      code: "WEBHOOK_VERIFICATION_FAILED",
+      message: "Vendor webhook verification failed",
+    },
+  });
+}
+
+export function createVendorWebhookRoutes(
+  dependencies: VendorWebhookRouteDependencies = {},
+): FastifyPluginAsync {
+  return async (app) => {
+    app.removeContentTypeParser("application/json");
+    app.addContentTypeParser<Buffer>(
+      "application/json",
+      { parseAs: "buffer", bodyLimit: 262_144 },
+      (_request, buffer, done) => {
+        const rawBody = buffer.toString("utf8");
+        try {
+          const payload: unknown = JSON.parse(rawBody);
+          if (
+            typeof payload !== "object" ||
+            payload === null ||
+            Array.isArray(payload)
+          ) {
+            throw new Error("Webhook JSON body must be an object");
+          }
+          done(null, {
+            rawBody,
+            payload: payload as Record<string, unknown>,
+          });
+        } catch (error) {
+          done(
+            error instanceof Error
+              ? error
+              : new Error("Webhook JSON body is invalid"),
+          );
+        }
+      },
+    );
+
+    app.get<{
+      Params: VendorParams;
+      Querystring: WebhookChallengeQuery;
+    }>("/vendors/:vendor/webhook", async (request, reply) => {
+      const vendor = await requireRouteVendor(request.params.vendor, reply);
+      if (!vendor) {
+        return;
+      }
+
+      try {
+        const environment = dependencies.environment ?? config;
+        const configuration = requireVendorWebhookConfiguration(
+          environment,
+          vendor,
+        );
+        if (
+          configuration.vendor === "strava" &&
+          request.query["hub.mode"] === "subscribe" &&
+          request.query["hub.challenge"] &&
+          request.query["hub.verify_token"] &&
+          verifyStravaChallenge(
+            request.query["hub.verify_token"],
+            configuration.verifyToken,
+          )
+        ) {
+          return { "hub.challenge": request.query["hub.challenge"] };
+        }
+        if (
+          configuration.vendor === "oura" &&
+          request.query.challenge &&
+          request.query.verification_token &&
+          verifyStravaChallenge(
+            request.query.verification_token,
+            configuration.verifyToken,
+          )
+        ) {
+          return { challenge: request.query.challenge };
+        }
+        await sendWebhookUnauthorized(reply);
+      } catch (error) {
+        await sendVendorRouteError(reply, error);
+      }
+    });
+
+    app.post<{ Params: VendorParams; Body: RawJsonBody }>(
+      "/vendors/:vendor/webhook",
+      async (request, reply) => {
+        const vendor = await requireRouteVendor(
+          request.params.vendor,
+          reply,
+        );
+        if (!vendor) {
+          return;
+        }
+
+        try {
+          const environment = dependencies.environment ?? config;
+          const configuration = requireVendorWebhookConfiguration(
+            environment,
+            vendor,
+          );
+          if (
+            !verifyWebhookRequest(configuration, request.body, request)
+          ) {
+            await sendWebhookUnauthorized(reply);
+            return;
+          }
+
+          const result = await getWebhookService(
+            dependencies,
+          ).recordVerified(vendor, request.body.rawBody);
+          return { accepted: true, ...result };
+        } catch (error) {
+          await sendVendorRouteError(reply, error);
+        }
+      },
+    );
+  };
 }
 
 export function createVendorPublicRoutes(
@@ -196,4 +429,5 @@ export function createVendorProtectedRoutes(
 }
 
 export const vendorPublicRoutes = createVendorPublicRoutes();
+export const vendorWebhookRoutes = createVendorWebhookRoutes();
 export const vendorRoutes = createVendorProtectedRoutes();
