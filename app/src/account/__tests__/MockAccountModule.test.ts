@@ -41,4 +41,16 @@ describe("MockAccountModule", () => {
     });
     expect(observed).toEqual(["signedOut:signingIn", "signedIn:idle"]);
   });
+
+  it("leaves the user signed out when sign in is cancelled", async () => {
+    const mock = new MockAccountModule();
+    const account: AccountModule = mock;
+    mock.setNextSignInResult("cancelled");
+
+    await expect(account.signIn()).resolves.toEqual({ status: "cancelled" });
+    expect(await account.getSnapshot()).toEqual({
+      session: { status: "signedOut" },
+      intent: { status: "idle", error: null },
+    });
+  });
 });

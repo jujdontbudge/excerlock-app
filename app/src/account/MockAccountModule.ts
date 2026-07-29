@@ -20,9 +20,12 @@ type MockAccountModuleOptions = Readonly<{
   clock?: AccountClock;
 }>;
 
+type MockSignInResult = "authenticated" | "cancelled";
+
 export class MockAccountModule implements AccountModule {
   private readonly clock: AccountClock;
   private snapshot = INITIAL_SNAPSHOT;
+  private nextSignInResult: MockSignInResult = "authenticated";
   private readonly listeners = new Set<AccountStateListener>();
 
   public constructor(options: MockAccountModuleOptions = {}) {
@@ -40,6 +43,14 @@ export class MockAccountModule implements AccountModule {
     });
     await Promise.resolve();
 
+    if (this.nextSignInResult === "cancelled") {
+      this.publish({
+        ...this.snapshot,
+        intent: Object.freeze({ status: "idle", error: null }),
+      });
+      return Object.freeze({ status: "cancelled" });
+    }
+
     const session: SignedInAccountSession = Object.freeze({
       status: "signedIn",
       authenticatedAtMs: this.clock.nowMs(),
@@ -53,6 +64,11 @@ export class MockAccountModule implements AccountModule {
       intent: Object.freeze({ status: "idle", error: null }),
     });
     return Object.freeze({ status: "authenticated", session });
+  }
+
+  /** Deterministic mock driver; not part of the app-facing interface. */
+  public setNextSignInResult(result: MockSignInResult): void {
+    this.nextSignInResult = result;
   }
 
   public subscribe(listener: AccountStateListener): AccountUnsubscribe {

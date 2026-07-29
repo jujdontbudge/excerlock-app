@@ -27,10 +27,12 @@ export type AccountSnapshot = Readonly<{
   intent: AccountIntentState;
 }>;
 
-export type AuthenticationResult = Readonly<{
-  status: "authenticated";
-  session: SignedInAccountSession;
-}>;
+export type AuthenticationResult =
+  | Readonly<{
+      status: "authenticated";
+      session: SignedInAccountSession;
+    }>
+  | Readonly<{ status: "cancelled" }>;
 
 export type AccountStateListener = (snapshot: AccountSnapshot) => void;
 export type AccountUnsubscribe = () => void;
