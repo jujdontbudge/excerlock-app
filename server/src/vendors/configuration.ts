@@ -1,4 +1,5 @@
 import type { Environment } from "../env.js";
+import { createTokenCipher, type TokenCipher } from "./tokenCipher.js";
 import type { Vendor } from "./types.js";
 
 export interface VendorOAuthConfiguration {
@@ -76,4 +77,25 @@ export function requireVendorOAuthConfiguration(
   ) as [string, string, string];
 
   return { clientId, clientSecret, callbackBaseUrl };
+}
+
+export function requireVendorTokenCipher(
+  environment: Environment,
+): TokenCipher {
+  const encodedKey = environment.vendorTokenEncryptionKey;
+  if (!encodedKey) {
+    throw new Error(
+      "Vendor token encryption is not configured; missing VENDOR_TOKEN_ENCRYPTION_KEY",
+    );
+  }
+
+  const key = Buffer.from(encodedKey, "base64");
+  const canonicalKey = key.toString("base64");
+  if (key.byteLength !== 32 || canonicalKey !== encodedKey) {
+    throw new Error(
+      "VENDOR_TOKEN_ENCRYPTION_KEY must be canonical base64 for exactly 32 bytes",
+    );
+  }
+
+  return createTokenCipher(key);
 }

@@ -1,5 +1,6 @@
 export {
   requireVendorOAuthConfiguration,
+  requireVendorTokenCipher,
   type VendorOAuthConfiguration,
 } from "./configuration.js";
 export { createTokenCipher, type TokenCipher } from "./tokenCipher.js";
