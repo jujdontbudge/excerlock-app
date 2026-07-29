@@ -98,4 +98,20 @@ describe("resolveLockPrecedence", () => {
       cause: "activeWindow",
     });
   });
+
+  it("does not make walking charge balance outside configured lock hours", () => {
+    expect(
+      resolveLockPrecedence(
+        input({
+          earnedBalanceMinutes: 30,
+          activeWindow: false,
+          walking: true,
+        }),
+      ),
+    ).toEqual({
+      shields: "down",
+      drainsBalance: false,
+      cause: "walking",
+    });
+  });
 });

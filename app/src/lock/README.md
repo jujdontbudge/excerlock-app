@@ -29,6 +29,8 @@ Two consequences worth naming, because they look like missing features until you
 | `screens/LockScreen.tsx` | Composes the five cards. Owns no state of its own. |
 | `controller/lockController.ts` | The module's one conversation with the OS — reference-counted screen lifetimes, one immutable `LockSnapshot` |
 | `controller/ledgerSource.ts` | The visible wiring seam: reads/subscribes to Home's journal, ledger config and allowance |
+| `controller/lockPolicy.ts` | Composes Ledger's balance/ladder with the pure precedence decision |
+| `controller/scheduleRegistration.ts` | Reconciles only recurrence-owned concrete ScreenTime registrations |
 | `hooks/useLockSnapshot.ts` | Binds a mounted screen to the controller's observable |
 | `model/lockStatus.ts` | The current-lock-state view model — what, why, when it flips |
 | `model/lockPrecedence.ts` | The one pure balance × window × Full Lock × walking decision |
@@ -53,7 +55,8 @@ day's floor.
 
 `resolveLockPrecedence()` is the only place that settles the four requested inputs. Its order is:
 
-1. verified walking opens the apps (and still drains while balance remains);
+1. verified walking opens the apps (and still drains while balance remains whenever the scheduled
+   economy applies);
 2. outside every configured lock window, apps are open and balance does not drain;
 3. remaining balance opens the apps inside a window, or all day when no windows exist;
 4. with no remaining balance, Full Lock is the cause before an active window; otherwise the active

@@ -30,10 +30,11 @@ export interface LockPrecedenceDecision {
 /**
  * The complete conflict policy for balance, schedules, Full Lock, and walking.
  *
- * Walking wins first. A configured schedule limits when the economy applies,
- * so outside it there is no shielding or draining. Inside it (or when there is
- * no schedule), remaining balance opens the apps. Full Lock is only the
- * zero-base explanation: an earn still opens the apps exactly as the PRD says.
+ * Walking wins access first. A configured schedule still limits when the
+ * economy drains, so outside it there is no shielding or charging even during
+ * a walk. Inside it (or when there is no schedule), remaining balance opens the
+ * apps. Full Lock is only the zero-base explanation: an earn still opens the
+ * apps exactly as the PRD says.
  */
 export function resolveLockPrecedence({
   earnedBalanceMinutes,
@@ -44,7 +45,11 @@ export function resolveLockPrecedence({
   const drainsBalance = earnedBalanceMinutes > 0;
 
   if (walking) {
-    return { shields: "down", drainsBalance, cause: "walking" };
+    return {
+      shields: "down",
+      drainsBalance: activeWindow === false ? false : drainsBalance,
+      cause: "walking",
+    };
   }
   if (activeWindow === false) {
     return {

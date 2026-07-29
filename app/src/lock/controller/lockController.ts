@@ -1,9 +1,4 @@
-import {
-  desiredOsState,
-  reduceLedger,
-  type DesiredOsState,
-  type Journal,
-} from "@excerlock/ledger";
+import type { Journal } from "@excerlock/ledger";
 
 import {
   getScreenTimeModule,
@@ -22,25 +17,19 @@ import {
   homeLedgerConfig,
   localNow,
   setHomeFullLock,
-  subscribeHomeAllowance,
+  subscribeHomeLedgerInputs,
 } from "./ledgerSource";
-import {
-  resolveLockPrecedence,
-  type LockPrecedenceDecision,
-} from "../model/lockPrecedence";
+import type { LockPrecedenceDecision } from "../model/lockPrecedence";
 import type {
   RecurringLockWindow,
   SaveRecurringLockWindowResult,
 } from "../model/recurringLockWindow";
 import {
-  isRecurringLockWindowActive,
-  materializeLockWindows,
-  RECURRING_WINDOW_ID_PREFIX,
-} from "../model/windowOccurrences";
-import {
   getLockScheduleStore,
   type LockScheduleStore,
 } from "../store/lockScheduleStore";
+import { desiredLockState } from "./lockPolicy";
+import { syncScheduleRegistrations } from "./scheduleRegistration";
 
 /** Everything the lock surfaces render, in one immutable value. */
 export type LockSnapshot = Readonly<{
@@ -91,9 +80,9 @@ export class LockController {
   private readonly walking: () => boolean;
   private readonly listeners = new Set<() => void>();
   private activeClients = 0;
-  private allowanceReconciliation: Promise<void> = Promise.resolve();
+  private reconciliation: Promise<void> = Promise.resolve();
   private suppressAllowanceSubscription = false;
-  private unsubscribeAllowance: (() => void) | null = null;
+  private unsubscribeLedgerInputs: (() => void) | null = null;
   private unsubscribeSchedule: (() => void) | null = null;
   private unsubscribeShield: ScreenTimeUnsubscribe | null = null;
   private snapshot: LockSnapshot = INITIAL;
@@ -127,10 +116,10 @@ export class LockController {
         recurringWindows: this.scheduleStore.getSnapshot().windows,
       });
     });
-    this.unsubscribeAllowance ??= subscribeHomeAllowance(() => {
+    this.unsubscribeLedgerInputs ??= subscribeHomeLedgerInputs(() => {
       this.patch({ fullLock: homeFullLock() });
       if (!this.suppressAllowanceSubscription) {
-        void this.queueAllowanceReconciliation();
+        void this.queueReconciliation();
       }
     });
     this.unsubscribeShield ??= this.screenTime.subscribe((shield) => {
@@ -139,14 +128,14 @@ export class LockController {
         shield.activeLockWindowId;
       this.patch({ shield });
       if (activeWindowChanged) {
-        void this.queueAllowanceReconciliation();
+        void this.queueReconciliation();
       }
     });
     await this.refresh();
     const selection = this.snapshot.shield?.selection ?? null;
     if (selection !== null) {
       await this.syncConcreteWindows(selection);
-      await this.queueAllowanceReconciliation();
+      await this.queueReconciliation();
     }
   }
 
@@ -155,8 +144,8 @@ export class LockController {
     if (this.activeClients > 0) {
       return;
     }
-    this.unsubscribeAllowance?.();
-    this.unsubscribeAllowance = null;
+    this.unsubscribeLedgerInputs?.();
+    this.unsubscribeLedgerInputs = null;
     this.unsubscribeSchedule?.();
     this.unsubscribeSchedule = null;
     this.unsubscribeShield?.();
@@ -199,7 +188,7 @@ export class LockController {
     } finally {
       this.suppressAllowanceSubscription = false;
     }
-    await this.queueAllowanceReconciliation();
+    await this.queueReconciliation();
   }
 
   public async saveRecurringLockWindow(
@@ -213,7 +202,7 @@ export class LockController {
     const selection = this.snapshot.shield?.selection ?? null;
     if (selection !== null) {
       await this.syncConcreteWindows(selection);
-      await this.queueAllowanceReconciliation();
+      await this.queueReconciliation();
     }
     return result;
   }
@@ -229,14 +218,14 @@ export class LockController {
     const selection = this.snapshot.shield?.selection ?? null;
     if (selection !== null) {
       await this.syncConcreteWindows(selection);
-      await this.queueAllowanceReconciliation();
+      await this.queueReconciliation();
     }
     return true;
   }
 
   /** Test/UI await point for a boundary-driven start or end transition. */
   public whenReconciled(): Promise<void> {
-    return this.allowanceReconciliation;
+    return this.reconciliation;
   }
 
   private async applyDesiredState(
@@ -247,67 +236,31 @@ export class LockController {
     await this.screenTime.reconcile(selection, desired);
   }
 
-  private desiredState(): {
-    readonly decision: LockPrecedenceDecision;
-    readonly desired: DesiredOsState;
-  } {
-    const journal = this.journal();
-    const config = homeLedgerConfig();
-    const atMs = this.now();
-    const ledgerDesired = desiredOsState(journal, config, atMs);
-    const days = reduceLedger(journal, config, atMs);
-    const today = days[days.length - 1]!;
-    const holidayActive = today.holidays.some(
-      ({ startMs, endMs }) => atMs >= startMs && atMs < endMs,
-    );
-    const definitions = this.scheduleStore.getSnapshot().windows;
-    const decision = resolveLockPrecedence({
-      earnedBalanceMinutes: holidayActive
-        ? Number.POSITIVE_INFINITY
-        : today.balance,
-      activeWindow:
-        definitions.length === 0
-          ? null
-          : isRecurringLockWindowActive(definitions, atMs),
+  private desiredState() {
+    return desiredLockState({
+      journal: this.journal(),
+      config: homeLedgerConfig(),
+      atMs: this.now(),
+      definitions: this.scheduleStore.getSnapshot().windows,
       fullLock: homeFullLock(),
       walking: this.walking(),
     });
-    return {
-      decision,
-      desired: {
-        shields: decision.shields,
-        drainThresholds: decision.drainsBalance
-          ? ledgerDesired.drainThresholds
-          : [],
-      },
-    };
   }
 
   private async syncConcreteWindows(
     selection: ScreenTimeSelectionHandle,
   ): Promise<void> {
-    const desired = materializeLockWindows(
-      this.scheduleStore.getSnapshot().windows,
-      this.now(),
-    );
-    const desiredIds = new Set(desired.map(({ id }) => id));
-    const existing = await this.screenTime.getLockWindows();
-    await Promise.all(
-      existing
-        .filter(
-          ({ id }) =>
-            id.startsWith(RECURRING_WINDOW_ID_PREFIX) && !desiredIds.has(id),
-        )
-        .map(({ id }) => this.screenTime.cancelLockWindow(id)),
-    );
-    for (const window of desired) {
-      await this.screenTime.scheduleLockWindow(selection, window);
-    }
+    await syncScheduleRegistrations({
+      screenTime: this.screenTime,
+      selection,
+      definitions: this.scheduleStore.getSnapshot().windows,
+      atMs: this.now(),
+    });
     await this.refresh();
   }
 
-  /** Serialize async reconciliation; every pass reads the latest allowance. */
-  private queueAllowanceReconciliation(): Promise<void> {
+  /** Serialize async reconciliation; every pass reads the latest inputs. */
+  private queueReconciliation(): Promise<void> {
     const reconcile = async () => {
       await this.refresh();
       const selection = this.snapshot.shield?.selection ?? null;
@@ -316,11 +269,11 @@ export class LockController {
         await this.refresh();
       }
     };
-    this.allowanceReconciliation = this.allowanceReconciliation.then(
+    this.reconciliation = this.reconciliation.then(
       reconcile,
       reconcile,
     );
-    return this.allowanceReconciliation;
+    return this.reconciliation;
   }
 
   private async refresh(): Promise<void> {

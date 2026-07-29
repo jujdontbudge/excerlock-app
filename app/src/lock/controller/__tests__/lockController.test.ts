@@ -228,7 +228,7 @@ describe("LockController", () => {
     controller.stop();
   });
 
-  it("keeps allowance reconciliation active until every lifecycle owner stops", async () => {
+  it("keeps ledger reconciliation active until every lifecycle owner stops", async () => {
     const screenTime = new FakeScreenTime();
     const controller = controllerOver(screenTime);
 
@@ -258,6 +258,27 @@ describe("LockController", () => {
     await controller.pickApps();
 
     expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    controller.stop();
+  });
+
+  it("reconciles when an earn changes Home's owned journal", async () => {
+    const screenTime = new FakeScreenTime();
+    const controller = new LockController({
+      screenTime,
+      now: () => NOW,
+      scheduleStore: new LockScheduleStore(),
+    });
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
+
+    useHomeStore.setState({ journal: earnedToday(30) });
+
+    await waitFor(() => {
+      expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    });
+    expect(controller.getSnapshot().precedence.cause).toBe("earnedBalance");
     controller.stop();
   });
 

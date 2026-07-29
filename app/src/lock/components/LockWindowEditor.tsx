@@ -62,9 +62,7 @@ export function LockWindowEditor({
       return;
     }
     if (startMinute === endMinute) {
-      setError(
-        "Start and end must differ. For all-day locking, choose 00:00–23:59.",
-      );
+      setError("Start and end must differ. Choose a non-zero time range.");
       return;
     }
 
@@ -84,7 +82,7 @@ export function LockWindowEditor({
         : result.error === "noDays"
           ? "Choose at least one day."
           : result.error === "emptyInterval"
-            ? "Start and end must differ. For all-day locking, choose 00:00–23:59."
+            ? "Start and end must differ. Choose a non-zero time range."
             : "Use 24-hour times in HH:MM format, like 09:30.",
     );
   };
