@@ -4,7 +4,7 @@ export type JsonValue =
   | { readonly [key: string]: JsonValue }
   | readonly JsonValue[];
 
-export interface TimelineRow<EventName extends string, Payload extends JsonValue = JsonValue> {
+export interface TimelineRow<EventName extends string, Payload = JsonValue> {
   readonly atMs: number;
   readonly event: EventName;
   readonly payload: Payload;
@@ -12,7 +12,7 @@ export interface TimelineRow<EventName extends string, Payload extends JsonValue
 
 export interface FixtureManifest<
   EventName extends string,
-  Payload extends JsonValue = JsonValue,
+  Payload = JsonValue,
 > {
   readonly name: string;
   readonly version: number;
@@ -33,7 +33,7 @@ export type TimelinePlayback = AutoPlayback | ManualPlayback;
 
 export interface TimelinePlayerOptions<
   EventName extends string,
-  Payload extends JsonValue,
+  Payload,
 > {
   readonly manifest: FixtureManifest<EventName, Payload>;
   readonly allowedEvents: readonly EventName[];
@@ -41,7 +41,7 @@ export interface TimelinePlayerOptions<
   readonly onEvent: (row: TimelineRow<EventName, Payload>) => void;
 }
 
-function validateManifest<EventName extends string, Payload extends JsonValue>(
+function validateManifest<EventName extends string, Payload>(
   manifest: FixtureManifest<EventName, Payload>,
   allowedEvents: ReadonlySet<EventName>,
 ): void {
@@ -69,7 +69,7 @@ function validateManifest<EventName extends string, Payload extends JsonValue>(
 
 export class TimelinePlayer<
   EventName extends string,
-  Payload extends JsonValue = JsonValue,
+  Payload = JsonValue,
 > {
   private nextRowIndex = 0;
   private readonly manifest: FixtureManifest<EventName, Payload>;

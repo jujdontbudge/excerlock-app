@@ -1,0 +1,27 @@
+{
+  "name": "stop-for-good",
+  "version": 1,
+  "description": "Walking ends and cadence disappears for longer than the stop grace period.",
+  "timeline": [
+    {
+      "atMs": 1000,
+      "event": "motion.activityChange",
+      "payload": { "activity": "walking", "confidence": "high" }
+    },
+    {
+      "atMs": 2000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 3, "cadence": 1.7 }
+    },
+    {
+      "atMs": 10000,
+      "event": "motion.activityChange",
+      "payload": { "activity": "stationary", "confidence": "high" }
+    },
+    {
+      "atMs": 11000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 17, "cadence": null }
+    }
+  ]
+}
