@@ -14,7 +14,7 @@ export type AccountSession =
   | SignedInAccountSession;
 
 export type AccountError = Readonly<{
-  code: "sign_in_failed";
+  code: "sign_in_failed" | "sign_up_failed";
   message: string;
 }>;
 

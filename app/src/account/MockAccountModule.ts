@@ -96,6 +96,17 @@ export class MockAccountModule implements AccountModule {
       });
       return Object.freeze({ status: "cancelled" });
     }
+    if (typeof this.nextSignUpResult === "object") {
+      const error: AccountError = Object.freeze({
+        code: "sign_up_failed",
+        message: this.nextSignUpResult.message,
+      });
+      this.publish({
+        ...this.snapshot,
+        intent: Object.freeze({ status: "idle", error }),
+      });
+      return Object.freeze({ status: "failed", error });
+    }
 
     const session: SignedInAccountSession = Object.freeze({
       status: "signedIn",

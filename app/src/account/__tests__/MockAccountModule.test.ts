@@ -115,4 +115,31 @@ describe("MockAccountModule", () => {
       intent: { status: "idle", error: null },
     });
   });
+
+  it("surfaces sign-up failure without creating a session", async () => {
+    const mock = new MockAccountModule();
+    const account: AccountModule = mock;
+    mock.setNextSignUpResult({
+      status: "failed",
+      message: "Account creation is temporarily unavailable.",
+    });
+
+    await expect(account.signUp()).resolves.toEqual({
+      status: "failed",
+      error: {
+        code: "sign_up_failed",
+        message: "Account creation is temporarily unavailable.",
+      },
+    });
+    expect(await account.getSnapshot()).toEqual({
+      session: { status: "signedOut" },
+      intent: {
+        status: "idle",
+        error: {
+          code: "sign_up_failed",
+          message: "Account creation is temporarily unavailable.",
+        },
+      },
+    });
+  });
 });
