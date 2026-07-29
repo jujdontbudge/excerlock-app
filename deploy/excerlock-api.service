@@ -1,0 +1,36 @@
+[Unit]
+Description=ExcerLock API server
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+
+[Service]
+Type=simple
+User=excerlock
+Group=excerlock
+WorkingDirectory=/opt/excerlock/server
+EnvironmentFile=/etc/excerlock/env
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=3
+UMask=0077
+
+# The API needs outbound network access and the local Postgres socket, but no
+# elevated privileges, home-directory access, devices, or kernel mutation.
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=full
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target
