@@ -1,5 +1,9 @@
-import { FIXTURE_DAY_SUMMARIES } from "../fixtures";
+import { FIXTURE_CONDITIONS, FIXTURE_DAY_SUMMARIES } from "../fixtures";
 import { buildAnalysisView } from "../model";
+
+const CONDITION_NAMES = Object.fromEntries(
+  Object.values(FIXTURE_CONDITIONS).map(({ id, label }) => [id, label]),
+);
 
 describe("buildAnalysisView", () => {
   it("hands the screen a whole week, its totals, its bars and its rows", () => {
@@ -49,6 +53,31 @@ describe("buildAnalysisView", () => {
     const view = buildAnalysisView(FIXTURE_DAY_SUMMARIES, { confessedDailyMinutes: 240 });
 
     expect(view.recap).toMatchObject({ rangeLabel: "20–26 Jul", deltaMinutes: 44 });
+  });
+
+  it("carries this week's per-condition earning breakdown", () => {
+    const view = buildAnalysisView(FIXTURE_DAY_SUMMARIES, {
+      conditionNames: CONDITION_NAMES,
+    });
+
+    expect(view.conditionBreakdown).toEqual([
+      expect.objectContaining({
+        conditionId: FIXTURE_CONDITIONS.gym.id,
+        earnedMinutes: 135,
+      }),
+      expect.objectContaining({
+        conditionId: FIXTURE_CONDITIONS.run.id,
+        earnedMinutes: 77,
+      }),
+      expect.objectContaining({
+        conditionId: FIXTURE_CONDITIONS.steps.id,
+        earnedMinutes: 9,
+      }),
+      expect.objectContaining({
+        conditionId: FIXTURE_CONDITIONS.desk.id,
+        earnedMinutes: 0,
+      }),
+    ]);
   });
 
   it("is empty, not zeroed, before the first day is recorded", () => {
