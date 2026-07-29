@@ -10,6 +10,7 @@ import type {
   AccountUnsubscribe,
   AuthenticationResult,
   SignedInAccountSession,
+  SignOutResult,
 } from "./AccountModule";
 
 const INITIAL_SNAPSHOT: AccountSnapshot = Object.freeze({
@@ -121,6 +122,20 @@ export class MockAccountModule implements AccountModule {
       intent: Object.freeze({ status: "idle", error: null }),
     });
     return Object.freeze({ status: "authenticated", session });
+  }
+
+  public async signOut(): Promise<SignOutResult> {
+    this.publish({
+      ...this.snapshot,
+      intent: Object.freeze({ status: "signingOut", error: null }),
+    });
+    await Promise.resolve();
+
+    this.publish({
+      session: Object.freeze({ status: "signedOut" }),
+      intent: Object.freeze({ status: "idle", error: null }),
+    });
+    return Object.freeze({ status: "signedOut" });
   }
 
   /** Deterministic mock driver; not part of the app-facing interface. */

@@ -3,7 +3,11 @@ jest.mock(
   () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
+import type { ConfiguredCondition } from "@excerlock/condition-model";
+import { remainingMinutes } from "@excerlock/ledger";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 
 import { MockAccountModule } from "../MockAccountModule";
 import type { AccountModule } from "../AccountModule";
@@ -12,6 +16,7 @@ import { ManualAccountClock } from "../clock";
 describe("MockAccountModule", () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
+    useHomeStore.setState(DEFAULT_HOME_STATE);
   });
 
   it("starts signed out and signs in through an observable intent", async () => {
@@ -141,5 +146,34 @@ describe("MockAccountModule", () => {
         },
       },
     });
+  });
+
+  it("signs out without clearing local earning data", async () => {
+    const account: AccountModule = new MockAccountModule();
+    const stepGoal: ConfiguredCondition = {
+      id: "signed-out-earn",
+      catalogId: "steps-goal",
+      source: "appleHealth",
+      settings: {
+        kind: "event",
+        threshold: 10_000,
+        reward: { type: "fixedMinutes", minutes: 30 },
+        repeatable: false,
+        perDayCap: null,
+        cooldownMs: 0,
+      },
+    };
+    const atMs = 12 * 60 * 60 * 1_000;
+    await account.signUp();
+    useHomeStore.getState().addCondition(stepGoal);
+    useHomeStore.getState().recordEventPayout(stepGoal.id, atMs);
+
+    await expect(account.signOut()).resolves.toEqual({ status: "signedOut" });
+
+    expect((await account.getSnapshot()).session).toEqual({
+      status: "signedOut",
+    });
+    const { journal, ledgerConfig } = useHomeStore.getState();
+    expect(remainingMinutes(journal, ledgerConfig, atMs)).toBe(30);
   });
 });

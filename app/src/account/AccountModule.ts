@@ -21,7 +21,8 @@ export type AccountError = Readonly<{
 export type AccountIntentState =
   | Readonly<{ status: "idle"; error: AccountError | null }>
   | Readonly<{ status: "signingIn"; error: null }>
-  | Readonly<{ status: "signingUp"; error: null }>;
+  | Readonly<{ status: "signingUp"; error: null }>
+  | Readonly<{ status: "signingOut"; error: null }>;
 
 export type AccountSnapshot = Readonly<{
   session: AccountSession;
@@ -36,6 +37,8 @@ export type AuthenticationResult =
   | Readonly<{ status: "cancelled" }>
   | Readonly<{ status: "failed"; error: AccountError }>;
 
+export type SignOutResult = Readonly<{ status: "signedOut" }>;
+
 export type AccountStateListener = (snapshot: AccountSnapshot) => void;
 export type AccountUnsubscribe = () => void;
 
@@ -43,5 +46,6 @@ export interface AccountModule {
   getSnapshot(): Promise<AccountSnapshot>;
   signIn(): Promise<AuthenticationResult>;
   signUp(): Promise<AuthenticationResult>;
+  signOut(): Promise<SignOutResult>;
   subscribe(listener: AccountStateListener): AccountUnsubscribe;
 }
