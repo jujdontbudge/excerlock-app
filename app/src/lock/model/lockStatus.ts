@@ -4,6 +4,7 @@ import type {
   ScreenTimeSelectionSummary,
 } from "@/screentime";
 
+import type { LockPrecedenceDecision } from "./lockPrecedence";
 import { formatWallClockTime } from "./wallClock";
 
 export type LockStatus = "unlocked" | "locked" | "unconfigured";
@@ -23,7 +24,7 @@ export interface LockStatusInput {
   readonly shield: CurrentShieldState | null;
   readonly lockWindows: readonly LockWindow[];
   readonly selection: ScreenTimeSelectionSummary | null;
-  readonly fullLock: boolean;
+  readonly precedence: LockPrecedenceDecision;
   /** Local wall-clock ms. Nothing in this module reads a clock itself. */
   readonly atMs: number;
 }
@@ -45,7 +46,7 @@ export function deriveLockStatus({
   shield,
   lockWindows,
   selection,
-  fullLock,
+  precedence,
   atMs,
 }: LockStatusInput): LockStatusModel {
   if (shield === null || selection === null) {
@@ -58,9 +59,7 @@ export function deriveLockStatus({
       status: "unlocked" as const,
       scope,
       headline: "Your apps are open.",
-      reason: fullLock
-        ? "Full Lock is on, and you have already earned today."
-        : "You have time left on today's balance.",
+      reason: unlockedReason(precedence),
       nextChange: nextWindowLabel(lockWindows, atMs),
     });
   }
@@ -68,45 +67,61 @@ export function deriveLockStatus({
   return Object.freeze({
     status: "locked" as const,
     scope,
-    ...lockedCause({ shield, lockWindows, fullLock }),
+    ...lockedCause({ shield, lockWindows, precedence }),
   });
+}
+
+function unlockedReason(precedence: LockPrecedenceDecision): string {
+  switch (precedence.cause) {
+    case "walking":
+      return "Walking is holding your apps open.";
+    case "outsideWindow":
+      return "You're outside your lock hours.";
+    default:
+      return "You have time left on today's balance.";
+  }
 }
 
 function lockedCause({
   shield,
   lockWindows,
-  fullLock,
+  precedence,
 }: {
   shield: CurrentShieldState;
   lockWindows: readonly LockWindow[];
-  fullLock: boolean;
+  precedence: LockPrecedenceDecision;
 }): Pick<LockStatusModel, "headline" | "reason" | "nextChange"> {
-  if (shield.activeLockWindowId !== null) {
-    const active = lockWindows.find(
-      ({ id }) => id === shield.activeLockWindowId,
-    );
-    return {
-      headline: "Apps are asleep.",
-      reason: "A lock window is running.",
-      nextChange:
-        active === undefined
-          ? "When the lock window ends."
-          : `Back at ${formatWallClockTime(active.endsAtMs)}.`,
-    };
-  }
+  const cause =
+    precedence.cause === "activeWindow"
+      ? {
+          headline: "Apps are asleep.",
+          reason: "A lock window is running.",
+          nextChange: "When the lock window ends.",
+        }
+      : precedence.cause === "fullLock"
+        ? {
+            headline: "Move first, scroll after.",
+            reason: "Full Lock is on — your day starts at zero.",
+            nextChange: "Your first earn today opens them.",
+          }
+        : {
+            headline: "Time's up — for now.",
+            reason: "Today's balance is empty.",
+            nextChange: "Earn more time to open them.",
+          };
 
-  if (fullLock) {
-    return {
-      headline: "Move first, scroll after.",
-      reason: "Full Lock is on — your day starts at zero.",
-      nextChange: "Your first earn today opens them.",
-    };
+  if (shield.activeLockWindowId === null) {
+    return cause;
   }
-
+  const active = lockWindows.find(
+    ({ id }) => id === shield.activeLockWindowId,
+  );
   return {
-    headline: "Time's up — for now.",
-    reason: "Today's balance is empty.",
-    nextChange: "Earn more time to open them.",
+    ...cause,
+    nextChange:
+      active === undefined
+        ? "When the lock window ends."
+        : `Back at ${formatWallClockTime(active.endsAtMs)}.`,
   };
 }
 

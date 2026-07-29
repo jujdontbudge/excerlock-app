@@ -40,15 +40,15 @@ export function setHomeFullLock(on: boolean): void {
 }
 
 /**
- * Tells a running lock controller when either half of the owned allowance
+ * Tells a running lock controller when the owned journal or ledger config
  * changes. The values stay in Home; this seam exposes only the change signal
  * needed to reconcile the Screen Time boundary immediately.
  */
-export function subscribeHomeAllowance(onChange: () => void): () => void {
+export function subscribeHomeLedgerInputs(onChange: () => void): () => void {
   return useHomeStore.subscribe((state, previousState) => {
     if (
-      state.ledgerConfig.baseAllowanceMinutes !==
-        previousState.ledgerConfig.baseAllowanceMinutes ||
+      state.journal !== previousState.journal ||
+      state.ledgerConfig !== previousState.ledgerConfig ||
       state.allowanceBeforeFullLock !== previousState.allowanceBeforeFullLock
     ) {
       onChange();
