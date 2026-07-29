@@ -78,13 +78,24 @@ function evaluateEvent(
 ): readonly EventFiredOutcome[] {
   const outcomes: EventFiredOutcome[] = [];
   const seenOccurrences = new Set<string>();
+  const seenSamples = new Set<string>();
   let cumulativeValue = 0;
   let lastFireAtMs: number | null = null;
 
   for (const row of rows) {
-    if (row.event === "signalSnapshot") {
+    if (
+      row.event === "signalSnapshot" ||
+      row.event === "signalDelta"
+    ) {
+      if (seenSamples.has(row.payload.sampleId)) {
+        continue;
+      }
+      seenSamples.add(row.payload.sampleId);
       const priorValue = cumulativeValue;
-      cumulativeValue = row.payload.value;
+      cumulativeValue =
+        row.event === "signalSnapshot"
+          ? row.payload.value
+          : cumulativeValue + row.payload.delta;
       const threshold = condition.settings.threshold;
       if (
         threshold !== undefined &&
