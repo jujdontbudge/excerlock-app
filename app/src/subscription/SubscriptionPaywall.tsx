@@ -8,6 +8,7 @@ import { PillButton, Screen, useTheme } from "@/ui";
 import { getSubscriptionModule } from "./accessor";
 import { EntitledSubscription } from "./EntitledSubscription";
 import { formatConfessedDailyUsage } from "./formatUsage";
+import { PaywallLoadError } from "./PaywallLoadError";
 import { PaywallProductOption } from "./PaywallProductOption";
 import type {
   SubscriptionModule,
@@ -58,6 +59,16 @@ export function SubscriptionPaywall({
   if (snapshot?.entitlement.status === "active") {
     return (
       <EntitledSubscription onContinue={onEntitled} onBack={onBack} />
+    );
+  }
+
+  if (snapshot?.paywall.status === "error") {
+    return (
+      <PaywallLoadError
+        message={snapshot.paywall.error.message}
+        onRetry={() => subscription.loadPaywall(placement)}
+        onBack={onBack}
+      />
     );
   }
 

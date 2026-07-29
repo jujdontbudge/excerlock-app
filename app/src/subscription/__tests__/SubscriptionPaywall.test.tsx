@@ -59,6 +59,39 @@ describe("SubscriptionPaywall", () => {
     ).toBeEnabled();
   });
 
+  it("renders a retryable paywall loading error", async () => {
+    const subscription = new MockSubscriptionModule();
+    subscription.setNextPaywallResult({
+      status: "failed",
+      message: "Plans are temporarily unavailable.",
+    });
+    await render(
+      <SubscriptionPaywall
+        placement="onboarding"
+        confessedDailyMinutes={300}
+        onEntitled={jest.fn()}
+        subscription={subscription}
+      />,
+    );
+
+    expect(
+      await screen.findByRole("header", { name: "Plans couldn't load" }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole("alert", {
+        name: "Plans are temporarily unavailable.",
+      }),
+    ).toBeOnTheScreen();
+
+    subscription.setNextPaywallResult("ready");
+    await fireEvent.press(screen.getByRole("button", { name: "Try again" }));
+    expect(
+      await screen.findByRole("header", {
+        name: "Unlock the full ExcerLock plan",
+      }),
+    ).toBeOnTheScreen();
+  });
+
   it("renders entitled access instead of offering another purchase", async () => {
     const subscription = new MockSubscriptionModule();
     await subscription.loadPaywall("onboarding");
