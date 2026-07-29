@@ -25,6 +25,20 @@ const envSchema = z.object({
   SENTRY_DSN: optionalString,
   CLERK_SECRET_KEY: optionalString,
   POSTHOG_API_KEY: optionalString,
+  VENDOR_OAUTH_CALLBACK_BASE_URL: optionalString,
+  VENDOR_TOKEN_ENCRYPTION_KEY: optionalString,
+  STRAVA_CLIENT_ID: optionalString,
+  STRAVA_CLIENT_SECRET: optionalString,
+  STRAVA_WEBHOOK_VERIFY_TOKEN: optionalString,
+  STRAVA_WEBHOOK_SUBSCRIPTION_ID: optionalString,
+  OURA_CLIENT_ID: optionalString,
+  OURA_CLIENT_SECRET: optionalString,
+  OURA_WEBHOOK_VERIFY_TOKEN: optionalString,
+  WHOOP_CLIENT_ID: optionalString,
+  WHOOP_CLIENT_SECRET: optionalString,
+  POLAR_CLIENT_ID: optionalString,
+  POLAR_CLIENT_SECRET: optionalString,
+  POLAR_WEBHOOK_SIGNATURE_SECRET: optionalString,
   POSTHOG_HOST: z.preprocess(
     blankToUndefined,
     z.string().url().default(DEFAULT_POSTHOG_HOST).catch(DEFAULT_POSTHOG_HOST),
@@ -40,6 +54,20 @@ export interface Environment {
   clerkSecretKey: string | undefined;
   posthogApiKey: string | undefined;
   posthogHost: string;
+  vendorOAuthCallbackBaseUrl: string | undefined;
+  vendorTokenEncryptionKey: string | undefined;
+  stravaClientId: string | undefined;
+  stravaClientSecret: string | undefined;
+  stravaWebhookVerifyToken: string | undefined;
+  stravaWebhookSubscriptionId: string | undefined;
+  ouraClientId: string | undefined;
+  ouraClientSecret: string | undefined;
+  ouraWebhookVerifyToken: string | undefined;
+  whoopClientId: string | undefined;
+  whoopClientSecret: string | undefined;
+  polarClientId: string | undefined;
+  polarClientSecret: string | undefined;
+  polarWebhookSignatureSecret: string | undefined;
 }
 
 export function parseEnv(
@@ -56,5 +84,19 @@ export function parseEnv(
     clerkSecretKey: parsed.CLERK_SECRET_KEY,
     posthogApiKey: parsed.POSTHOG_API_KEY,
     posthogHost: parsed.POSTHOG_HOST,
+    vendorOAuthCallbackBaseUrl: parsed.VENDOR_OAUTH_CALLBACK_BASE_URL,
+    vendorTokenEncryptionKey: parsed.VENDOR_TOKEN_ENCRYPTION_KEY,
+    stravaClientId: parsed.STRAVA_CLIENT_ID,
+    stravaClientSecret: parsed.STRAVA_CLIENT_SECRET,
+    stravaWebhookVerifyToken: parsed.STRAVA_WEBHOOK_VERIFY_TOKEN,
+    stravaWebhookSubscriptionId: parsed.STRAVA_WEBHOOK_SUBSCRIPTION_ID,
+    ouraClientId: parsed.OURA_CLIENT_ID,
+    ouraClientSecret: parsed.OURA_CLIENT_SECRET,
+    ouraWebhookVerifyToken: parsed.OURA_WEBHOOK_VERIFY_TOKEN,
+    whoopClientId: parsed.WHOOP_CLIENT_ID,
+    whoopClientSecret: parsed.WHOOP_CLIENT_SECRET,
+    polarClientId: parsed.POLAR_CLIENT_ID,
+    polarClientSecret: parsed.POLAR_CLIENT_SECRET,
+    polarWebhookSignatureSecret: parsed.POLAR_WEBHOOK_SIGNATURE_SECRET,
   };
 }

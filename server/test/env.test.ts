@@ -12,6 +12,20 @@ describe("parseEnv", () => {
       clerkSecretKey: undefined,
       posthogApiKey: undefined,
       posthogHost: "https://us.i.posthog.com",
+      vendorOAuthCallbackBaseUrl: undefined,
+      vendorTokenEncryptionKey: undefined,
+      stravaClientId: undefined,
+      stravaClientSecret: undefined,
+      stravaWebhookVerifyToken: undefined,
+      stravaWebhookSubscriptionId: undefined,
+      ouraClientId: undefined,
+      ouraClientSecret: undefined,
+      ouraWebhookVerifyToken: undefined,
+      whoopClientId: undefined,
+      whoopClientSecret: undefined,
+      polarClientId: undefined,
+      polarClientSecret: undefined,
+      polarWebhookSignatureSecret: undefined,
     });
   });
 
@@ -36,6 +50,20 @@ describe("parseEnv", () => {
       clerkSecretKey: "sk_test_example",
       posthogApiKey: undefined,
       posthogHost: "https://eu.i.posthog.com",
+      vendorOAuthCallbackBaseUrl: undefined,
+      vendorTokenEncryptionKey: undefined,
+      stravaClientId: undefined,
+      stravaClientSecret: undefined,
+      stravaWebhookVerifyToken: undefined,
+      stravaWebhookSubscriptionId: undefined,
+      ouraClientId: undefined,
+      ouraClientSecret: undefined,
+      ouraWebhookVerifyToken: undefined,
+      whoopClientId: undefined,
+      whoopClientSecret: undefined,
+      polarClientId: undefined,
+      polarClientSecret: undefined,
+      polarWebhookSignatureSecret: undefined,
     });
   });
 

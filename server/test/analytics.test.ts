@@ -134,15 +134,30 @@ describe("server analytics", () => {
     analytics.capture("user_123", "support_request_submitted", {
       category: "bug",
     });
+    analytics.vendorConnected("user_123", "strava");
 
     expect(postHog.register).toHaveBeenCalledWith({ app: "excerlock" });
-    expect(postHog.capture).toHaveBeenCalledWith({
-      distinctId: "user_123",
-      event: "support_request_submitted",
-      properties: {
-        app: "excerlock",
-        category: "bug",
-      },
-    });
+    expect(postHog.capture.mock.calls).toEqual([
+      [
+        {
+          distinctId: "user_123",
+          event: "support_request_submitted",
+          properties: {
+            app: "excerlock",
+            category: "bug",
+          },
+        },
+      ],
+      [
+        {
+          distinctId: "user_123",
+          event: "vendor_connected",
+          properties: {
+            app: "excerlock",
+            vendor: "strava",
+          },
+        },
+      ],
+    ]);
   });
 });

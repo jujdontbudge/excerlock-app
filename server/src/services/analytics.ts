@@ -14,7 +14,15 @@ export interface AnalyticsOptions {
   host: string;
 }
 
-export interface ServerAnalytics {
+type AnalyticsVendor = PropsOf<"vendor_connected">["vendor"];
+
+export interface VendorAnalytics {
+  vendorConnected(distinctId: string, vendor: AnalyticsVendor): void;
+  vendorDisconnected(distinctId: string, vendor: AnalyticsVendor): void;
+  vendorEarnRecorded(distinctId: string, vendor: AnalyticsVendor): void;
+}
+
+export interface ServerAnalytics extends VendorAnalytics {
   capture<Event extends ServerEventName>(
     distinctId: string,
     event: Event,
@@ -34,15 +42,30 @@ export function createAnalytics(options: AnalyticsOptions): ServerAnalytics {
 
   void client?.register({ app: "excerlock" });
 
+  function forwardCapture<Event extends ServerEventName>(
+    distinctId: string,
+    event: Event,
+    properties?: PropsOf<Event>,
+  ): void {
+    // posthog-node's stateless capture path does not merge registered
+    // properties, so stamp the server super property explicitly as well.
+    client?.capture({
+      distinctId,
+      event,
+      properties: { ...properties, app: "excerlock" },
+    });
+  }
+
   return {
-    capture(distinctId, event, properties) {
-      // posthog-node's stateless capture path does not merge registered
-      // properties, so stamp the server super property explicitly as well.
-      client?.capture({
-        distinctId,
-        event,
-        properties: { ...properties, app: "excerlock" },
-      });
+    capture: forwardCapture,
+    vendorConnected(distinctId, vendor) {
+      forwardCapture(distinctId, "vendor_connected", { vendor });
+    },
+    vendorDisconnected(distinctId, vendor) {
+      forwardCapture(distinctId, "vendor_disconnected", { vendor });
+    },
+    vendorEarnRecorded(distinctId, vendor) {
+      forwardCapture(distinctId, "vendor_earn_recorded", { vendor });
     },
     async shutdown() {
       await client?.shutdown();
