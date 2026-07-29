@@ -1,7 +1,6 @@
-import {
-  SystemSupportClock,
-  type SupportClock,
-} from "./clock";
+import type { StateStorage } from "zustand/middleware";
+
+import { SystemSupportClock, type SupportClock } from "./clock";
 import {
   appendFeatureRequest,
   applyFeatureVote,
@@ -23,7 +22,6 @@ import type {
   SupportUnsubscribe,
   VoteOnFeatureRequestResult,
 } from "./SupportModule";
-import type { StateStorage } from "zustand/middleware";
 
 type MockSupportModuleOptions = Readonly<{
   clock?: SupportClock;
@@ -70,9 +68,9 @@ export class MockSupportModule implements SupportModule {
     return this.snapshot;
   }
 
-  public async submitSupport(
-    request: Readonly<{ message: string }>,
-  ): Promise<SubmitSupportResult> {
+  public async submitSupport(request: Readonly<{
+    message: string;
+  }>): Promise<SubmitSupportResult> {
     await this.ready;
     const submission = makeSupportSubmission(
       `support-${this.nextSupportId++}`,
@@ -97,9 +95,7 @@ export class MockSupportModule implements SupportModule {
     return this.attemptSubmission(submission);
   }
 
-  public async retrySubmission(
-    submissionId: string,
-  ): Promise<SubmitSupportResult> {
+  public async retrySubmission(submissionId: string): Promise<SubmitSupportResult> {
     await this.ready;
     const submission = this.snapshot.submissions.find(
       (candidate) => candidate.id === submissionId,
@@ -120,9 +116,7 @@ export class MockSupportModule implements SupportModule {
     );
   }
 
-  public async voteOnFeatureRequest(
-    featureRequestId: string,
-  ): Promise<VoteOnFeatureRequestResult> {
+  public async voteOnFeatureRequest(featureRequestId: string): Promise<VoteOnFeatureRequestResult> {
     await this.ready;
     const vote = applyFeatureVote(this.snapshot, featureRequestId);
     await this.publish(vote.snapshot);
