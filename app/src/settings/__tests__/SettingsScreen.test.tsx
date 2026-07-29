@@ -61,14 +61,16 @@ describe("SettingsScreen", () => {
     });
   });
 
-  it("scaffolds signed-out account and non-functional support rows", async () => {
+  it("keeps the signed-out account scaffold and mounts real support actions", async () => {
     await render(<SettingsScreen />);
 
     expect(screen.getByText("Signed out")).toBeOnTheScreen();
-    expect(screen.getByText("Contact support")).toBeOnTheScreen();
-    expect(screen.getByText("Request a feature")).toBeOnTheScreen();
-    expect(screen.queryByRole("button", { name: "Contact support" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Request a feature" })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Contact support" }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole("button", { name: "Request a feature" }),
+    ).toBeOnTheScreen();
   });
 
   it("shows the debug-menu entry in development builds", async () => {

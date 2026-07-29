@@ -4,6 +4,7 @@ import {
   NotificationSettingsCard,
   type NotificationModule,
 } from "@/notifications";
+import { SupportSettingsCard, type SupportModule } from "@/support";
 import { Card, Screen, SectionHeader, useTheme } from "@/ui";
 
 import { GracePeriodPicker } from "../components/GracePeriodPicker";
@@ -13,12 +14,14 @@ import { useSettingsStore } from "../store/settingsStore";
 export type SettingsScreenProps = Readonly<{
   notificationModule?: NotificationModule;
   openNotificationSettings?: () => void;
+  supportModule?: SupportModule;
 }>;
 
 /** Phase-2 Settings surface: real local choices plus honest integration scaffolds. */
 export function SettingsScreen({
   notificationModule,
   openNotificationSettings,
+  supportModule,
 }: SettingsScreenProps = {}) {
   const { spacing, typography } = useTheme();
   const gracePeriod = useSettingsStore(
@@ -87,16 +90,7 @@ export function SettingsScreen({
 
         <View style={{ gap: spacing.md }}>
           <SectionHeader title="Support & Feedback" />
-          <Card style={{ gap: spacing.lg }}>
-            <SettingsRow
-              title="Contact support"
-              description="Get help from the ExcerLock team."
-            />
-            <SettingsRow
-              title="Request a feature"
-              description="Share an idea that would make ExcerLock better."
-            />
-          </Card>
+          <SupportSettingsCard module={supportModule} />
         </View>
 
         {__DEV__ ? (
