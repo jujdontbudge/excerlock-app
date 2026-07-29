@@ -147,6 +147,25 @@ describe('daySummaries', () => {
     expect(atFloor.conditions['steps']!.meaningfulActivity).toBe(true)
   })
 
+  it('keeps the first rate-floor crossing after a correction and requalification', () => {
+    const [day] = daySummaries(
+      journalOf([
+        rate(at(0, 8), 'steps', 8),
+        rate(at(0, 9), 'steps', 7),
+        rate(at(0, 10), 'steps', -10),
+        rate(at(0, 11), 'steps', 10),
+      ]),
+      config,
+      at(0, 23),
+    )
+
+    expect(day!.conditions.steps).toMatchObject({
+      rateMinutes: 15,
+      firstQualifiedAtMs: at(0, 9),
+      meaningfulActivity: true,
+    })
+  })
+
   it('sustained states qualify only at the app-fixed 10-minute floor', () => {
     expect(STATE_STREAK_FLOOR_MINUTES).toBe(10)
     const below = daySummaries(journalOf([sustained(at(0, 8), 'walking', 9)]), config, at(0, 23))[0]!

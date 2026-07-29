@@ -1,5 +1,6 @@
 import { dayEndMs, dayIndexFor, dayStartMs, MIN_MS } from './day'
 import { entryKey } from './journal'
+import { RATE_STREAK_FLOOR_MINUTES } from './qualification'
 import type { Journal, JournalEntry, LedgerConfig, Minutes } from './types'
 
 /** A shield holiday: [startMs, endMs) during which shields are down and the balance does not drain. */
@@ -111,6 +112,9 @@ function reduceDay(
         const totals = conditionTotals(perCondition, entry.conditionId)
         const banked = bankedRateMinutes(entry.minutes, balance, totals.earnedMinutes)
         totals.rateMinutes += banked
+        if (totals.rateMinutes >= RATE_STREAK_FLOOR_MINUTES) {
+          totals.firstQualifiedAtMs ??= entry.atMs
+        }
         totals.earnedMinutes += banked
         balance += banked
         earned += banked

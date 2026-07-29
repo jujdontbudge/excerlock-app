@@ -1,13 +1,14 @@
 import { reduceLedger, type Holiday } from './reduce'
+import {
+  RATE_STREAK_FLOOR_MINUTES,
+  STATE_STREAK_FLOOR_MINUTES,
+} from './qualification'
 import type { Journal, LedgerConfig, Minutes } from './types'
 
-/**
- * App-fixed streak floors (PRD §3.13 / §8 — integrity constants, never user-set):
- * a rate condition day is meaningful at ≥ 15 banked minutes, a state condition
- * day at ≥ 10 sustained minutes. Events are meaningful the moment they fire.
- */
-export const RATE_STREAK_FLOOR_MINUTES = 15
-export const STATE_STREAK_FLOOR_MINUTES = 10
+export {
+  RATE_STREAK_FLOOR_MINUTES,
+  STATE_STREAK_FLOOR_MINUTES,
+} from './qualification'
 
 export interface ConditionDaySummary {
   eventsFired: number
