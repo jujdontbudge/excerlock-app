@@ -7,6 +7,21 @@ import {
 } from "../src/webhooks/index.js";
 import type { Vendor } from "../src/vendors/index.js";
 
+function createWebhookAnalyticsSpy() {
+  const capture = vi.fn();
+  return {
+    capture,
+    analytics: {
+      vendorDisconnected(userId: string, vendor: Vendor) {
+        capture(userId, "vendor_disconnected", { vendor });
+      },
+      vendorEarnRecorded(userId: string, vendor: Vendor) {
+        capture(userId, "vendor_earn_recorded", { vendor });
+      },
+    },
+  };
+}
+
 class MemoryWebhookRepository implements VendorWebhookRepository {
   readonly events: NewVendorWebhookEventRecord[] = [];
   readonly deletedConnectionIds: string[] = [];
@@ -53,10 +68,10 @@ describe("notify-only vendor webhook ingestion", () => {
       vendor: "whoop",
       externalUserId: "67890",
     });
-    const capture = vi.fn();
+    const { analytics, capture } = createWebhookAnalyticsSpy();
     const service = createVendorWebhookService({
       repository,
-      analytics: { capture },
+      analytics,
       now: () => new Date("2026-07-29T19:00:00.000Z"),
       randomId: () => "webhook-event-id",
     });
@@ -100,10 +115,10 @@ describe("notify-only vendor webhook ingestion", () => {
       vendor: "strava",
       externalUserId: "12345",
     });
-    const capture = vi.fn();
+    const { analytics, capture } = createWebhookAnalyticsSpy();
     const service = createVendorWebhookService({
       repository,
-      analytics: { capture },
+      analytics,
       now: () => new Date("2026-07-29T19:00:00.000Z"),
       randomId: () => "deauthorization-event-id",
     });

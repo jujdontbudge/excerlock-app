@@ -27,6 +27,21 @@ const environment = parseEnv({
   POLAR_CLIENT_SECRET: "polar-secret",
 });
 
+function createOAuthAnalyticsSpy() {
+  const capture = vi.fn();
+  return {
+    capture,
+    analytics: {
+      vendorConnected(userId: string, vendor: Vendor) {
+        capture(userId, "vendor_connected", { vendor });
+      },
+      vendorDisconnected(userId: string, vendor: Vendor) {
+        capture(userId, "vendor_disconnected", { vendor });
+      },
+    },
+  };
+}
+
 class CapturingStateRepository implements VendorOAuthStateRepository {
   readonly states: NewVendorOAuthStateRecord[] = [];
   readonly connections: NewVendorConnectionRecord[] = [];
@@ -389,12 +404,12 @@ describe("vendor OAuth callback", () => {
     }) => {
       const repository = new CapturingStateRepository();
       const http = new StubHttpClient(responses);
-      const capture = vi.fn();
+      const { analytics, capture } = createOAuthAnalyticsSpy();
       const service = createVendorOAuthService({
         environment,
         repository,
         http,
-        analytics: { capture },
+        analytics,
         now: () => new Date("2026-07-29T19:00:00.000Z"),
         randomState: () => `${vendor}-state-12345678`,
         randomId: () => `${vendor}-connection-id`,
@@ -443,12 +458,12 @@ describe("vendor OAuth callback", () => {
   it("rejects missing, denied, and replayed callbacks before token exchange", async () => {
     const repository = new CapturingStateRepository();
     const http = new StubHttpClient([]);
-    const capture = vi.fn();
+    const { analytics, capture } = createOAuthAnalyticsSpy();
     const service = createVendorOAuthService({
       environment,
       repository,
       http,
-      analytics: { capture },
+      analytics,
       now: () => new Date("2026-07-29T19:00:00.000Z"),
       randomState: () => "strava-state-12345678",
     });
@@ -498,12 +513,12 @@ describe("vendor OAuth callback", () => {
         body: { message: "invalid authorization code" },
       },
     ]);
-    const capture = vi.fn();
+    const { analytics, capture } = createOAuthAnalyticsSpy();
     const service = createVendorOAuthService({
       environment,
       repository,
       http,
-      analytics: { capture },
+      analytics,
       now: () => new Date("2026-07-29T19:00:00.000Z"),
       randomState: () => "strava-state-12345678",
     });
@@ -764,12 +779,12 @@ describe("vendor disconnect", () => {
         scopes: "fixture-scope",
       });
       const http = new StubHttpClient([{ status, body: null }]);
-      const capture = vi.fn();
+      const { analytics, capture } = createOAuthAnalyticsSpy();
       const service = createVendorOAuthService({
         environment,
         repository,
         http,
-        analytics: { capture },
+        analytics,
       });
 
       await expect(
