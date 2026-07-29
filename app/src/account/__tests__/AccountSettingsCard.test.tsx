@@ -174,4 +174,30 @@ describe("AccountSettingsCard", () => {
     const { journal, ledgerConfig } = useHomeStore.getState();
     expect(remainingMinutes(journal, ledgerConfig, atMs)).toBe(30);
   });
+
+  it("clears the deletion confirmation after deleting the account", async () => {
+    const account = new MockAccountModule();
+    await account.signUp();
+    await render(<AccountSettingsCard account={account} />);
+    await screen.findByText("Signed in");
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Delete account" }),
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Delete account forever" }),
+    );
+    await screen.findByText("Signed out");
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Create account" }),
+    );
+
+    expect(await screen.findByText("Signed in")).toBeOnTheScreen();
+    expect(
+      screen.queryByRole("header", {
+        name: "Delete your account forever?",
+      }),
+    ).not.toBeOnTheScreen();
+  });
 });

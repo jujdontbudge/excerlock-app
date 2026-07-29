@@ -17,6 +17,13 @@ export function AccountSettingsCard({
   const { colors, spacing, typography } = useTheme();
   const snapshot = useAccountSnapshot(account);
   const [confirmingDeletion, setConfirmingDeletion] = useState(false);
+  const deleteAccount = () => {
+    void account.deleteAccount().then((result) => {
+      if (result.status === "deleted") {
+        setConfirmingDeletion(false);
+      }
+    });
+  };
 
   if (snapshot === null) {
     return (
@@ -68,7 +75,7 @@ export function AccountSettingsCard({
           <PillButton
             disabled={isBusy}
             label={isDeleting ? "Deleting account…" : "Delete account forever"}
-            onPress={() => account.deleteAccount()}
+            onPress={deleteAccount}
             variant="secondary"
           />
         </Card>
