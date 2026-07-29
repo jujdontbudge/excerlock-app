@@ -196,7 +196,9 @@ export function selectActiveConditions(
 }
 
 /** The context `listPickerVerdicts`/`getPickerVerdict` need to judge the catalog. */
-export function selectPickerContext(state: HomeStoreValues): PickerContext {
+export function selectPickerContext(
+  state: Pick<HomeStoreValues, "conditions" | "connectedSources" | "savedPlaces">,
+): PickerContext {
   return {
     conditions: state.conditions.map(toExistingCondition),
     connectedSources: state.connectedSources,

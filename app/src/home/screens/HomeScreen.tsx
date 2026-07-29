@@ -59,8 +59,8 @@ export function HomeScreen({ feed = sharedFeed(), now = localWallClockNow }: Hom
     [savedPlaces],
   );
   const pickerContext = useMemo(
-    () => selectPickerContext({ conditions, journal, ledgerConfig, savedPlaces, connectedSources }),
-    [conditions, journal, ledgerConfig, savedPlaces, connectedSources],
+    () => selectPickerContext({ conditions, savedPlaces, connectedSources }),
+    [conditions, savedPlaces, connectedSources],
   );
 
   // A condition switched off in Manage keeps its slot in the picker context but
