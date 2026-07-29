@@ -34,10 +34,10 @@ describe("notification preferences", () => {
     }
   });
 
-  it("leaves the nudge time unset, like every other user-set picker", () => {
+  it("starts the adjustable nudge time at the settled 15:00 default", () => {
     expect(
       useNotificationPreferencesStore.getState().afternoonNudgeMinuteOfDay,
-    ).toBeNull();
+    ).toBe(15 * 60);
     expect(AFTERNOON_NUDGE_MINUTE_OPTIONS.every((minute) => minute >= 12 * 60)).toBe(
       true,
     );
@@ -119,6 +119,6 @@ describe("notification preferences", () => {
     );
     expect(state.enabled.weeklyRecap).toBe(false);
     expect(state.enabled.streakLastCall).toBe(true);
-    expect(state.afternoonNudgeMinuteOfDay).toBeNull();
+    expect(state.afternoonNudgeMinuteOfDay).toBe(15 * 60);
   });
 });

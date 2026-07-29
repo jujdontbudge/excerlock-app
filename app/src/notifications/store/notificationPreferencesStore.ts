@@ -17,8 +17,8 @@ import { NOTIFICATION_TYPE_IDS, type NotificationTypeId } from "../model/catalog
 /**
  * The afternoon-nudge wheel. PRD §6 lists "afternoon-nudge time" as a user-set
  * knob and owes no number, so this is the module's picker: the hours an
- * afternoon nudge can honestly be, on the hour. It starts unset — the same
- * no-defaults rule the grace-period picker follows.
+ * afternoon nudge can honestly be, on the hour. The settled default is 15:00;
+ * the notification itself remains silent until its independent toggle is on.
  */
 export const AFTERNOON_NUDGE_MINUTE_OPTIONS = [
   13 * 60,
@@ -33,7 +33,7 @@ export type AfternoonNudgeMinute = (typeof AFTERNOON_NUDGE_MINUTE_OPTIONS)[numbe
 
 export type NotificationPreferences = Readonly<{
   enabled: Readonly<Record<NotificationTypeId, boolean>>;
-  afternoonNudgeMinuteOfDay: AfternoonNudgeMinute | null;
+  afternoonNudgeMinuteOfDay: AfternoonNudgeMinute;
 }>;
 
 const ALL_SILENT: Readonly<Record<NotificationTypeId, boolean>> = Object.freeze(
@@ -46,7 +46,7 @@ const ALL_SILENT: Readonly<Record<NotificationTypeId, boolean>> = Object.freeze(
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences =
   Object.freeze({
     enabled: ALL_SILENT,
-    afternoonNudgeMinuteOfDay: null,
+    afternoonNudgeMinuteOfDay: 15 * 60,
   });
 
 export const NOTIFICATION_PREFERENCES_STORAGE_KEY =
@@ -88,7 +88,9 @@ function readPersistedPreferences(persistedState: unknown): NotificationPreferen
   const minute = Reflect.get(persistedState, "afternoonNudgeMinuteOfDay");
   return {
     enabled: readPersistedEnabled(Reflect.get(persistedState, "enabled")),
-    afternoonNudgeMinuteOfDay: isAfternoonNudgeMinute(minute) ? minute : null,
+    afternoonNudgeMinuteOfDay: isAfternoonNudgeMinute(minute)
+      ? minute
+      : DEFAULT_NOTIFICATION_PREFERENCES.afternoonNudgeMinuteOfDay,
   };
 }
 

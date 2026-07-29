@@ -104,7 +104,7 @@ describe("the streak last-call trigger", () => {
   });
 
   it("lands in the evening, clear of quiet hours", () => {
-    expect(STREAK_LAST_CALL_MINUTE_OF_DAY).toBe(20 * 60);
+    expect(STREAK_LAST_CALL_MINUTE_OF_DAY).toBe(21 * 60);
     expect(STREAK_LAST_CALL_MINUTE_OF_DAY).toBeLessThan(22 * 60);
   });
 });

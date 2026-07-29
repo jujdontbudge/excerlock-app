@@ -33,11 +33,10 @@ export type NotificationWeekFacts = Readonly<{
 export const WEEKLY_RECAP_MINUTE_OF_DAY = 18 * 60;
 
 /**
- * App-fixed, not user-set. The PRD says "in the evening"; 20:00 is late enough
- * to be a last call and leaves two clear hours before quiet hours start, so the
- * user can still act on it.
+ * App-fixed, not user-set. The settled notification summary fixes this at
+ * 21:00, leaving one clear hour before quiet hours start.
  */
-export const STREAK_LAST_CALL_MINUTE_OF_DAY = 20 * 60;
+export const STREAK_LAST_CALL_MINUTE_OF_DAY = 21 * 60;
 
 const EPOCH_DAY_WEEKDAY = 4; // 1970-01-01 was a Thursday.
 
