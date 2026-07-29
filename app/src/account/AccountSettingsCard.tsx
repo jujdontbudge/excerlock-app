@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Text, View } from "react-native";
 
 import { Card, PillButton, useTheme } from "@/ui";
@@ -15,6 +16,7 @@ export function AccountSettingsCard({
 }: AccountSettingsCardProps) {
   const { colors, spacing, typography } = useTheme();
   const snapshot = useAccountSnapshot(account);
+  const [confirmingDeletion, setConfirmingDeletion] = useState(false);
 
   if (snapshot === null) {
     return (
@@ -28,6 +30,47 @@ export function AccountSettingsCard({
     const isSigningOut = snapshot.intent.status === "signingOut";
     const isDeleting = snapshot.intent.status === "deleting";
     const isBusy = snapshot.intent.status !== "idle";
+
+    if (confirmingDeletion) {
+      return (
+        <Card style={{ gap: spacing.md }}>
+          <Text accessibilityRole="header" style={typography.cardTitle}>
+            Delete your account forever?
+          </Text>
+          <Text style={typography.body}>
+            Your Clerk account and ExcerLock server record will be permanently
+            deleted. Adapty and PostHog erasure will be scheduled.
+          </Text>
+          <Text style={typography.body}>
+            Your conditions, earning history, lock choices, and settings remain
+            on this device.
+          </Text>
+          <Text style={typography.body}>This cannot be undone.</Text>
+          {snapshot.intent.status === "idle" &&
+          snapshot.intent.error !== null ? (
+            <Text
+              accessibilityLabel={snapshot.intent.error.message}
+              accessibilityRole="alert"
+              style={[typography.body, { color: colors.danger }]}
+            >
+              {snapshot.intent.error.message}
+            </Text>
+          ) : null}
+          <PillButton
+            disabled={isBusy}
+            label="Keep my account"
+            onPress={() => setConfirmingDeletion(false)}
+            variant="white"
+          />
+          <PillButton
+            disabled={isBusy}
+            label={isDeleting ? "Deleting account…" : "Delete account forever"}
+            onPress={() => account.deleteAccount()}
+            variant="secondary"
+          />
+        </Card>
+      );
+    }
 
     return (
       <Card style={{ gap: spacing.md }}>
@@ -54,6 +97,7 @@ export function AccountSettingsCard({
         <PillButton
           disabled={isBusy}
           label={isDeleting ? "Deleting account…" : "Delete account"}
+          onPress={() => setConfirmingDeletion(true)}
           variant="secondary"
         />
       </Card>
