@@ -6,7 +6,12 @@ jest.mock(
 import type { ConfiguredCondition } from "@excerlock/condition-model";
 import { remainingMinutes } from "@excerlock/ledger";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react-native";
 
 import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 
@@ -34,6 +39,28 @@ describe("AccountSettingsCard", () => {
     expect(
       screen.getByRole("button", { name: "Create account" }),
     ).toBeEnabled();
+  });
+
+  it("renders loading until the persistent session is hydrated", async () => {
+    let finishHydration: (value: string | null) => void = () => undefined;
+    const storage = {
+      getItem: () =>
+        new Promise<string | null>((resolve) => {
+          finishHydration = resolve;
+        }),
+      setItem: async () => undefined,
+      removeItem: async () => undefined,
+    };
+    const account = new MockAccountModule({ storage });
+
+    await render(<AccountSettingsCard account={account} />);
+
+    expect(screen.getByText("Loading account…")).toBeOnTheScreen();
+
+    await act(async () => {
+      finishHydration(null);
+    });
+    expect(await screen.findByText("Signed out")).toBeOnTheScreen();
   });
 
   it("renders the signed-in identity and session controls", async () => {
