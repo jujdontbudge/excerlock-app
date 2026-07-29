@@ -1,6 +1,8 @@
+import type { ConfiguredCondition } from "@excerlock/condition-model";
 import { render, screen } from "@testing-library/react-native";
 import { processColor } from "react-native";
 
+import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 import { useConfessionStore } from "@/onboarding";
 import { gradients } from "@/ui";
 
@@ -12,11 +14,26 @@ jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
+const stepGoal: ConfiguredCondition = {
+  id: "saved-step-goal",
+  catalogId: "steps-goal",
+  source: "appleHealth",
+  settings: {
+    kind: "event",
+    threshold: 10_000,
+    reward: { type: "fixedMinutes", minutes: 30 },
+    repeatable: false,
+    perDayCap: null,
+    cooldownMs: 0,
+  },
+};
+
 describe("AnalysisScreen", () => {
   // Reset before, not after: an `afterEach` here runs while the tree is still
   // mounted, and the store update lands outside `act`.
   beforeEach(() => {
     useConfessionStore.setState({ confessedDailyMinutes: null });
+    useHomeStore.setState(DEFAULT_HOME_STATE);
   });
 
   it("sits on the brand gradient under the screen title", async () => {
@@ -75,6 +92,46 @@ describe("AnalysisScreen", () => {
     expect(screen.getByTestId("streak-current")).toHaveTextContent("5");
     expect(screen.getByTestId("streak-longest")).toHaveTextContent("8");
     expect(screen.getByTestId("streak-active-days")).toHaveTextContent(/^6 of 7 days\b/);
+  });
+
+  it("shows what each condition banked this week", async () => {
+    await render(<AnalysisScreen />);
+
+    expect(
+      screen.getByRole("header", { name: "Earning breakdown" }),
+    ).toBeOnTheScreen();
+    expect(screen.getByTestId("condition-earning-gym-visit")).toHaveTextContent(
+      /^Gym visit2h 15m$/,
+    );
+    expect(
+      screen.getByTestId("condition-earning-standing-desk"),
+    ).toHaveTextContent(/^Standing desk0m$/);
+  });
+
+  it("joins real ledger condition ids to their names in the condition store", async () => {
+    useHomeStore.setState({ ...DEFAULT_HOME_STATE, conditions: [stepGoal] });
+    const source = FIXTURE_DAY_SUMMARIES[14];
+    const day = {
+      ...source,
+      earnedMinutes: 30,
+      conditions: {
+        [stepGoal.id]: {
+          eventsFired: 1,
+          rateMinutes: 0,
+          stateSustainedMinutes: 0,
+          earnedMinutes: 30,
+          meaningfulActivity: true,
+        },
+      },
+      meaningfulActivity: true,
+      meaningfulConditionCount: 1,
+    };
+
+    await render(<AnalysisScreen days={[day]} />);
+
+    expect(
+      screen.getByTestId(`condition-earning-${stepGoal.id}`),
+    ).toHaveTextContent(/^Step goal30m$/);
   });
 
   it("draws one earned/spent bar pair per day of the week", async () => {

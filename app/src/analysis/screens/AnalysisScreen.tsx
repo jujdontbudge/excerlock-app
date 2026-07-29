@@ -1,11 +1,13 @@
 import type { DaySummary } from "@excerlock/ledger";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
+import { useHomeStore } from "@/home";
 import { useConfessionStore } from "@/onboarding";
 import { Screen, SectionHeader, useTheme } from "@/ui";
 
 import {
   AnalysisEmpty,
+  ConditionBreakdownCard,
   DayLedger,
   EarnedSpentCard,
   RecapCard,
@@ -13,8 +15,15 @@ import {
   TimeReclaimedHero,
   WeekChart,
 } from "../components";
-import { FIXTURE_DAY_SUMMARIES } from "../fixtures";
-import { buildAnalysisView, type Weekday } from "../model";
+import {
+  FIXTURE_CONDITION_NAMES,
+  FIXTURE_DAY_SUMMARIES,
+} from "../fixtures";
+import {
+  buildAnalysisView,
+  conditionNameMap,
+  type Weekday,
+} from "../model";
 
 type AnalysisScreenProps = {
   /**
@@ -24,6 +33,8 @@ type AnalysisScreenProps = {
   days?: readonly DaySummary[];
   /** The *Start week on* setting (PRD §3.15 Tab 4). Monday until Settings owns it. */
   weekStartsOn?: Weekday;
+  /** Current display names keyed by the condition ids persisted in the ledger. */
+  conditionNames?: Readonly<Record<string, string>>;
   /**
    * The onboarding confession (#43). Left out, it comes from the confession
    * store — this module reads it and never writes it, because the baseline is a
@@ -34,22 +45,30 @@ type AnalysisScreenProps = {
 
 /**
  * Analysis — the weekly recap, the Time Reclaimed hero, this week's
- * earned-versus-spent balance, the streak, and the day ledger under it. The
+ * earned-versus-spent balance, the streak, per-condition earnings and the day ledger under it. The
  * PRD's remaining blocks (the Week/Month/Year control, the requirement heat map,
- * the per-condition breakdown, the milestones shelf) need windows, the schedule,
- * the condition store and the badge art; they land on top of this.
+ * and the milestones shelf) need the real feed, schedule/chronology inputs and
+ * the badge art; they land on top of this.
  *
- * All reading is done by `buildAnalysisView` — this file only lays out.
+ * All numerical reading is done by `buildAnalysisView`; this file joins current
+ * store-backed condition names and lays the result out.
  */
 export function AnalysisScreen({
-  days = FIXTURE_DAY_SUMMARIES,
+  days,
   weekStartsOn,
+  conditionNames,
   confessedDailyMinutes,
 }: AnalysisScreenProps) {
   const { spacing, typography } = useTheme();
   const confessed = useConfessionStore((state) => state.confessedDailyMinutes);
-  const view = buildAnalysisView(days, {
+  const conditions = useHomeStore((state) => state.conditions);
+  const view = buildAnalysisView(days ?? FIXTURE_DAY_SUMMARIES, {
     ...(weekStartsOn === undefined ? {} : { weekStartsOn }),
+    conditionNames:
+      conditionNames ??
+      (days === undefined
+        ? FIXTURE_CONDITION_NAMES
+        : conditionNameMap(conditions)),
     confessedDailyMinutes:
       confessedDailyMinutes === undefined ? confessed : confessedDailyMinutes,
   });
@@ -81,6 +100,12 @@ export function AnalysisScreen({
 
             <SectionHeader title="Streak" />
             <StreakCard streak={view.streak} totals={view.weekTotals} />
+
+            <SectionHeader title="Earning breakdown" />
+            <ConditionBreakdownCard
+              caption="This week"
+              items={view.conditionBreakdown}
+            />
 
             <SectionHeader title="Day ledger" />
             <DayLedger days={view.ledger} />

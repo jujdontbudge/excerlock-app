@@ -45,6 +45,17 @@ describe("fixture day summaries", () => {
     }
   });
 
+  it("attributes every banked minute to the condition that produced it", () => {
+    for (const day of FIXTURE_DAY_SUMMARIES) {
+      const attributed = Object.values(day.conditions).reduce(
+        (total, condition) => total + (condition.earnedMinutes ?? Number.NaN),
+        0,
+      );
+
+      expect(attributed).toBe(day.earnedMinutes);
+    }
+  });
+
   it("tells a story with earning days, burn-to-zero days and gaps", () => {
     const zeroBalanceDays = FIXTURE_DAY_SUMMARIES.filter((day) => day.endBalance === 0);
     const quietDays = FIXTURE_DAY_SUMMARIES.filter((day) => day.earnedMinutes === 0);

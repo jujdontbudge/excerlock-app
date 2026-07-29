@@ -1,6 +1,10 @@
 import type { DaySummary } from "@excerlock/ledger";
 
 import type { Weekday } from "./calendar";
+import {
+  selectConditionBreakdown,
+  type ConditionBreakdownItem,
+} from "./conditionBreakdown";
 import { buildRecap, type Recap } from "./recap";
 import {
   DEFAULT_WEEK_STARTS_ON,
@@ -33,6 +37,8 @@ export type AnalysisView = {
   streak: Streak;
   /** One bar pair per day of the week, ascending — the chart's whole input. */
   bars: Bar[];
+  /** Banked minutes per condition over this week, highest recorded total first. */
+  conditionBreakdown: ConditionBreakdownItem[];
   /** The same week's days, newest first — the ledger list's whole input. */
   ledger: DaySummary[];
   /** The hero's window: Time Reclaimed over the calendar month (PRD §3.13). */
@@ -49,6 +55,8 @@ type AnalysisViewOptions = {
    * a first-class state, not a missing value to paper over.
    */
   confessedDailyMinutes?: number | null;
+  /** Current condition names keyed by the immutable ids stored in day summaries. */
+  conditionNames?: Readonly<Record<string, string>>;
 };
 
 export function buildAnalysisView(
@@ -56,6 +64,7 @@ export function buildAnalysisView(
   {
     weekStartsOn = DEFAULT_WEEK_STARTS_ON,
     confessedDailyMinutes = null,
+    conditionNames = {},
   }: AnalysisViewOptions = {},
 ): AnalysisView {
   const week = selectWeek(days, { weekStartsOn });
@@ -68,6 +77,7 @@ export function buildAnalysisView(
     allTimeTotals: selectTotals(days),
     streak: selectStreak(days),
     bars: selectBars(week),
+    conditionBreakdown: selectConditionBreakdown(week, conditionNames),
     ledger: [...week].reverse(),
     monthReclaimed: selectTimeReclaimed(selectMonth(days), confessedDailyMinutes),
     recap: buildRecap(days, { confessedDailyMinutes, weekStartsOn }),
