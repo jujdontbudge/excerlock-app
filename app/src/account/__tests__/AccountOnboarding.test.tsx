@@ -39,4 +39,27 @@ describe("AccountOnboarding", () => {
 
     expect(onAuthenticated).toHaveBeenCalledTimes(1);
   });
+
+  it("stays on the required step when sign up is cancelled", async () => {
+    const account = new MockAccountModule();
+    account.setNextSignUpResult("cancelled");
+    const onAuthenticated = jest.fn();
+    await render(
+      <AccountOnboarding
+        account={account}
+        onAuthenticated={onAuthenticated}
+      />,
+    );
+    await screen.findByRole("header", { name: "Create your account" });
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Create account" }),
+    );
+
+    expect(onAuthenticated).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", { name: "Create account" }),
+    ).toBeEnabled();
+    expect(screen.queryByRole("alert")).not.toBeOnTheScreen();
+  });
 });
