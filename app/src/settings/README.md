@@ -14,6 +14,9 @@ module's exported screen.
   read-only app-fixed facts with the reason each is fixed.
 - Account is an honest signed-out scaffold. Contact support and feature request are static rows until
   their Phase-5 integrations exist.
+- Notifications mounts the public `@/notifications` settings card. Its three switches persist
+  independently and default OFF; the first opt-in owns the permission primer/request flow, and the
+  afternoon time starts at the settled 15:00 default.
 - The debug-menu entry sits inside a literal `__DEV__` branch so App Store bundles can eliminate it.
 
 `components/` owns settings-only presentation. Shared visual decisions still come from `src/ui`;
