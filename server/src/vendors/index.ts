@@ -9,6 +9,7 @@ export {
   type VendorOAuthService,
   type VendorOAuthServiceOptions,
 } from "./oauth.js";
+export { createDrizzleVendorRepository } from "./drizzleRepository.js";
 export type {
   VendorHttpClient,
   VendorHttpRequest,
