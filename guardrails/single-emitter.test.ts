@@ -150,7 +150,11 @@ function isTestFile(path: string): boolean {
 }
 
 function isTypedAnalyticsWrapper(file: string): boolean {
-  return file.startsWith("app/src/analytics/") || file === "server/src/analytics.ts";
+  return (
+    file.startsWith("app/src/analytics/") ||
+    file === "server/src/analytics.ts" ||
+    file === "server/src/services/analytics.ts"
+  );
 }
 
 function readCaptureCalls(path: string, side: CaptureCall["side"]): CaptureCall[] {
