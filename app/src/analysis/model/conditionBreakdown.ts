@@ -1,10 +1,23 @@
 import type { DaySummary } from "@excerlock/ledger";
 
-export type ConditionBreakdownItem = {
+type ConditionBreakdownBase = {
   conditionId: string;
   name: string;
-  status: "recorded";
+};
+
+export type ConditionBreakdownItem =
+  | (ConditionBreakdownBase & {
+      status: "recorded";
+      earnedMinutes: number;
+    })
+  | (ConditionBreakdownBase & {
+      status: "notRecorded";
+      earnedMinutes: null;
+    });
+
+type AccumulatedEarnings = {
   earnedMinutes: number;
+  hasMissingAttribution: boolean;
 };
 
 /**
@@ -16,26 +29,39 @@ export function selectConditionBreakdown(
   days: readonly DaySummary[],
   conditionNames: Readonly<Record<string, string>>,
 ): ConditionBreakdownItem[] {
-  const totals = new Map<string, number>();
+  const totals = new Map<string, AccumulatedEarnings>();
 
   for (const day of days) {
     for (const [conditionId, condition] of Object.entries(day.conditions)) {
-      totals.set(
-        conditionId,
-        (totals.get(conditionId) ?? 0) + (condition.earnedMinutes ?? 0),
-      );
+      const accumulated = totals.get(conditionId) ?? {
+        earnedMinutes: 0,
+        hasMissingAttribution: false,
+      };
+      totals.set(conditionId, {
+        earnedMinutes: accumulated.earnedMinutes + (condition.earnedMinutes ?? 0),
+        hasMissingAttribution:
+          accumulated.hasMissingAttribution || condition.earnedMinutes === undefined,
+      });
     }
   }
 
   return [...totals.entries()]
-    .map(([conditionId, earnedMinutes]) => ({
-      conditionId,
-      name: conditionNames[conditionId] ?? conditionId,
-      status: "recorded" as const,
-      earnedMinutes,
-    }))
+    .map(([conditionId, accumulated]): ConditionBreakdownItem => {
+      const base = {
+        conditionId,
+        name: conditionNames[conditionId] ?? conditionId,
+      };
+      return accumulated.hasMissingAttribution
+        ? { ...base, status: "notRecorded", earnedMinutes: null }
+        : {
+            ...base,
+            status: "recorded",
+            earnedMinutes: accumulated.earnedMinutes,
+          };
+    })
     .sort(
       (left, right) =>
-        right.earnedMinutes - left.earnedMinutes || left.name.localeCompare(right.name),
+        (right.earnedMinutes ?? -1) - (left.earnedMinutes ?? -1) ||
+        left.name.localeCompare(right.name),
     );
 }

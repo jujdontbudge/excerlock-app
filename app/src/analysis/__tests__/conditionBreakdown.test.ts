@@ -68,4 +68,44 @@ describe("selectConditionBreakdown", () => {
       ],
     });
   });
+
+  it("keeps missing historical attribution distinct from a recorded zero", () => {
+    const source = FIXTURE_DAY_SUMMARIES[14];
+    const gym = source.conditions[FIXTURE_CONDITIONS.gym.id];
+    const { earnedMinutes: _missing, ...legacyGym } = gym;
+    const legacyDay = {
+      ...source,
+      conditions: {
+        ...source.conditions,
+        [FIXTURE_CONDITIONS.gym.id]: legacyGym,
+      },
+    };
+
+    const breakdown = selectConditionBreakdown(
+      [legacyDay, ...FIXTURE_DAY_SUMMARIES.slice(15)],
+      CONDITION_NAMES,
+    );
+
+    expect({
+      missing: breakdown.find(
+        ({ conditionId }) => conditionId === FIXTURE_CONDITIONS.gym.id,
+      ),
+      zero: breakdown.find(
+        ({ conditionId }) => conditionId === FIXTURE_CONDITIONS.desk.id,
+      ),
+    }).toEqual({
+      missing: {
+        conditionId: FIXTURE_CONDITIONS.gym.id,
+        name: FIXTURE_CONDITIONS.gym.label,
+        status: "notRecorded",
+        earnedMinutes: null,
+      },
+      zero: {
+        conditionId: FIXTURE_CONDITIONS.desk.id,
+        name: FIXTURE_CONDITIONS.desk.label,
+        status: "recorded",
+        earnedMinutes: 0,
+      },
+    });
+  });
 });
