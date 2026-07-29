@@ -136,6 +136,121 @@ describe("condition active windows", () => {
     ]);
   });
 
+  it("uses an outside snapshot as the baseline instead of crediting pre-window totals", () => {
+    const condition: RateCondition = {
+      id: "steps-exchange",
+      catalogId: "steps-rate",
+      source: "appleHealth",
+      activeWindow: { startMinute: 60, endMinute: 120 },
+      settings: {
+        kind: "rate",
+        reward: { type: "proportionalCredit", minutesPerUnit: 0.02 },
+      },
+    };
+    const rows: SignalTimelineRow[] = [
+      {
+        atMs: 59 * MINUTE_MS,
+        event: "signalSnapshot",
+        payload: {
+          sampleId: "baseline",
+          signal: "steps",
+          source: "appleHealth",
+          value: 1_000,
+        },
+      },
+      {
+        atMs: 61 * MINUTE_MS,
+        event: "signalSnapshot",
+        payload: {
+          sampleId: "inside",
+          signal: "steps",
+          source: "appleHealth",
+          value: 1_200,
+        },
+      },
+    ];
+
+    expect(
+      evaluateCondition(condition, rows, {
+        dayStartMs: 0,
+        nowMs: 90 * MINUTE_MS,
+      }),
+    ).toEqual([
+      {
+        type: "rateCredit",
+        atMs: 61 * MINUTE_MS,
+        conditionId: "steps-exchange",
+        sourceEventId: "inside",
+        signalDelta: 200,
+        deltaMinutes: 4,
+      },
+    ]);
+  });
+
+  it("counts only in-window movement toward a cumulative event threshold", () => {
+    const condition: EventCondition = {
+      id: "step-goal",
+      catalogId: "steps-goal",
+      source: "appleHealth",
+      activeWindow: { startMinute: 60, endMinute: 120 },
+      settings: {
+        kind: "event",
+        threshold: 500,
+        reward: { type: "fixedMinutes", minutes: 20 },
+        repeatable: false,
+        perDayCap: 1,
+        cooldownMs: 0,
+      },
+    };
+    const rows: SignalTimelineRow[] = [
+      {
+        atMs: 59 * MINUTE_MS,
+        event: "signalSnapshot",
+        payload: {
+          sampleId: "baseline",
+          signal: "steps",
+          source: "appleHealth",
+          value: 1_000,
+        },
+      },
+      {
+        atMs: 61 * MINUTE_MS,
+        event: "signalSnapshot",
+        payload: {
+          sampleId: "below",
+          signal: "steps",
+          source: "appleHealth",
+          value: 1_400,
+        },
+      },
+      {
+        atMs: 62 * MINUTE_MS,
+        event: "signalSnapshot",
+        payload: {
+          sampleId: "crossing",
+          signal: "steps",
+          source: "appleHealth",
+          value: 1_600,
+        },
+      },
+    ];
+
+    expect(
+      evaluateCondition(condition, rows, {
+        dayStartMs: 0,
+        nowMs: 90 * MINUTE_MS,
+      }),
+    ).toEqual([
+      {
+        type: "eventFired",
+        atMs: 62 * MINUTE_MS,
+        conditionId: "step-goal",
+        sourceEventId: "crossing",
+        reward: { type: "fixedMinutes", minutes: 20 },
+      },
+    ]);
+  });
+
   it("enters a live state at window start and exits at window end without grace", () => {
     const condition: StateCondition = {
       id: "while-walking",
