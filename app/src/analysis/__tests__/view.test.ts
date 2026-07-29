@@ -27,6 +27,30 @@ describe("buildAnalysisView", () => {
     expect(buildAnalysisView(FIXTURE_DAY_SUMMARIES.slice(14)).streak.longest).toBe(5);
   });
 
+  it("reads Time Reclaimed over the calendar month, not the week", () => {
+    const view = buildAnalysisView(FIXTURE_DAY_SUMMARIES, { confessedDailyMinutes: 240 });
+
+    // All 21 fixture days are July 2026: 21 × 240 − 1158 minutes of usage.
+    expect(view.monthReclaimed).toMatchObject({
+      status: "measured",
+      dayCount: 21,
+      reclaimedMinutes: 3882,
+    });
+  });
+
+  it("has no baseline until onboarding provides one", () => {
+    const view = buildAnalysisView(FIXTURE_DAY_SUMMARIES);
+
+    expect(view.monthReclaimed.status).toBe("unconfessed");
+    expect(view.recap?.reclaimed.status).toBe("unconfessed");
+  });
+
+  it("carries the recap for the week containing today", () => {
+    const view = buildAnalysisView(FIXTURE_DAY_SUMMARIES, { confessedDailyMinutes: 240 });
+
+    expect(view.recap).toMatchObject({ rangeLabel: "20–26 Jul", deltaMinutes: 44 });
+  });
+
   it("is empty, not zeroed, before the first day is recorded", () => {
     const view = buildAnalysisView([]);
 
@@ -35,5 +59,7 @@ describe("buildAnalysisView", () => {
     expect(view.week).toEqual([]);
     expect(view.bars).toEqual([]);
     expect(view.ledger).toEqual([]);
+    expect(view.recap).toBeNull();
+    expect(view.monthReclaimed.dayCount).toBe(0);
   });
 });

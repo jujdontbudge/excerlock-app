@@ -1,9 +1,11 @@
 import type { DaySummary } from "@excerlock/ledger";
 
 import type { Weekday } from "./calendar";
+import { buildRecap, type Recap } from "./recap";
 import {
   DEFAULT_WEEK_STARTS_ON,
   selectBars,
+  selectMonth,
   selectStreak,
   selectToday,
   selectTotals,
@@ -13,6 +15,7 @@ import {
   type Streak,
   type Totals,
 } from "./selectors";
+import { selectTimeReclaimed, type TimeReclaimed } from "./timeReclaimed";
 
 /**
  * The one read the Analysis screen performs. The screen asks for a view and
@@ -32,11 +35,28 @@ export type AnalysisView = {
   bars: Bar[];
   /** The same week's days, newest first — the ledger list's whole input. */
   ledger: DaySummary[];
+  /** The hero's window: Time Reclaimed over the calendar month (PRD §3.13). */
+  monthReclaimed: TimeReclaimed;
+  /** The week's recap. `null` before anything is recorded. */
+  recap: Recap | null;
+};
+
+type AnalysisViewOptions = {
+  weekStartsOn?: Weekday;
+  /**
+   * `confessed_daily_minutes` from onboarding (#43) — the fixed
+   * life-before-ExcerLock baseline. `null` when onboarding was skipped, which is
+   * a first-class state, not a missing value to paper over.
+   */
+  confessedDailyMinutes?: number | null;
 };
 
 export function buildAnalysisView(
   days: DayRange,
-  { weekStartsOn = DEFAULT_WEEK_STARTS_ON }: { weekStartsOn?: Weekday } = {},
+  {
+    weekStartsOn = DEFAULT_WEEK_STARTS_ON,
+    confessedDailyMinutes = null,
+  }: AnalysisViewOptions = {},
 ): AnalysisView {
   const week = selectWeek(days, { weekStartsOn });
 
@@ -49,5 +69,7 @@ export function buildAnalysisView(
     streak: selectStreak(days),
     bars: selectBars(week),
     ledger: [...week].reverse(),
+    monthReclaimed: selectTimeReclaimed(selectMonth(days), confessedDailyMinutes),
+    recap: buildRecap(days, { confessedDailyMinutes, weekStartsOn }),
   };
 }
