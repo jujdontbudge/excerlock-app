@@ -22,4 +22,4 @@ export type {
   VendorOAuthStateRepository,
 } from "./repository.js";
 export { createTokenCipher, type TokenCipher } from "./tokenCipher.js";
-export { VENDORS, type Vendor } from "./types.js";
+export { isVendor, VENDORS, type Vendor } from "./types.js";

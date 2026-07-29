@@ -12,7 +12,10 @@ import { config } from "./config.js";
 import { healthRoutes } from "./routes/health.js";
 import { supportRoutes } from "./routes/support.js";
 import { userRoutes } from "./routes/user.js";
-import { vendorRoutes } from "./routes/vendors.js";
+import {
+  vendorPublicRoutes,
+  vendorRoutes,
+} from "./routes/vendors.js";
 
 export function buildServer(options: FastifyServerOptions = {}): FastifyInstance {
   const app = Fastify({
@@ -29,6 +32,7 @@ export function buildServer(options: FastifyServerOptions = {}): FastifyInstance
     timeWindow: "1 minute",
   });
   void app.register(healthRoutes, { prefix: "/v1" });
+  void app.register(vendorPublicRoutes, { prefix: "/v1" });
   void app.register(
     async (protectedScope) => {
       protectedScope.addHook("onRequest", requireAuth);
