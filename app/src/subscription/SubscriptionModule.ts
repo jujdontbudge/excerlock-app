@@ -15,6 +15,7 @@ export type SubscriptionPaywall = Readonly<{
   placement: PaywallPlacement;
   title: string;
   body: string;
+  valueStatement: string;
   products: readonly SubscriptionProduct[];
 }>;
 
