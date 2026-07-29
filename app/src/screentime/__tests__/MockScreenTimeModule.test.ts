@@ -152,4 +152,34 @@ describe("MockScreenTimeModule", () => {
     });
     expect(observed).toEqual(["up", "down"]);
   });
+
+  it("restores authorization, selection, desired state, and lock windows", async () => {
+    const first = new MockScreenTimeModule({
+      clock: new ManualScreenTimeClock(1_000),
+    });
+    first.setNextAuthorizationResult("approved");
+    await first.requestAuthorization();
+    const selection = (await first.pickSelection())!;
+    await first.reconcile(selection, {
+      shields: "up",
+      drainThresholds: [8, 9],
+    });
+    await first.scheduleLockWindow(selection, {
+      id: "persisted-window",
+      startsAtMs: 500,
+      endsAtMs: 1_500,
+    });
+
+    const restored: ScreenTimeModule = new MockScreenTimeModule({
+      clock: new ManualScreenTimeClock(1_000),
+    });
+
+    await expect(restored.getAuthorizationStatus()).resolves.toBe("approved");
+    await expect(restored.getCurrentShieldState()).resolves.toEqual({
+      selection,
+      desiredOsState: { shields: "up", drainThresholds: [8, 9] },
+      effectiveShields: "up",
+      activeLockWindowId: "persisted-window",
+    });
+  });
 });

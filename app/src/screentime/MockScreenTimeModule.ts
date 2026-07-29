@@ -1,4 +1,5 @@
 import type { DesiredOsState } from "@excerlock/ledger";
+import type { StateStorage } from "zustand/middleware";
 
 import type {
   CurrentShieldState,
@@ -14,6 +15,10 @@ import {
   type CancelScheduledClockTask,
   type ScreenTimeClock,
 } from "./clock";
+import {
+  createMockScreenTimePersistence,
+  type ScheduledLockWindow,
+} from "./mockStore";
 
 type AuthorizationDecision = Exclude<
   ScreenTimeAuthorizationStatus,
@@ -32,21 +37,18 @@ function copyDesiredOsState(state: DesiredOsState): DesiredOsState {
   });
 }
 
-type ScheduledLockWindow = LockWindow & {
-  readonly selection: ScreenTimeSelectionHandle;
-};
-
 type MockScreenTimeModuleOptions = Readonly<{
   clock?: ScreenTimeClock;
+  storage?: StateStorage<Promise<void>>;
 }>;
 
 export class MockScreenTimeModule implements ScreenTimeModule {
   private readonly clock: ScreenTimeClock;
-  private authorizationStatus: ScreenTimeAuthorizationStatus =
-    "notDetermined";
+  private readonly persistence: ReturnType<
+    typeof createMockScreenTimePersistence
+  >;
+  private readonly ready: Promise<void>;
   private nextAuthorizationResult: AuthorizationDecision = "approved";
-  private nextSelectionNumber = 1;
-  private lockWindows: ScheduledLockWindow[] = [];
   private scheduledClockTasks: CancelScheduledClockTask[] = [];
   private readonly shieldStateListeners = new Set<ShieldStateListener>();
   private currentShieldState: CurrentShieldState = Object.freeze({
@@ -58,27 +60,40 @@ export class MockScreenTimeModule implements ScreenTimeModule {
 
   public constructor(options: MockScreenTimeModuleOptions = {}) {
     this.clock = options.clock ?? new SystemScreenTimeClock();
+    this.persistence = createMockScreenTimePersistence(options.storage);
+    this.ready = this.persistence.rehydrate().then(() => {
+      this.armLockWindowBoundaries();
+      this.refreshCurrentShieldState();
+    });
   }
 
   public async getAuthorizationStatus(): Promise<ScreenTimeAuthorizationStatus> {
-    return this.authorizationStatus;
+    await this.ready;
+    return this.persistence.getState().authorizationStatus;
   }
 
   public async requestAuthorization(): Promise<ScreenTimeAuthorizationStatus> {
-    if (this.authorizationStatus === "notDetermined") {
-      this.authorizationStatus = this.nextAuthorizationResult;
+    await this.ready;
+    if (this.persistence.getState().authorizationStatus === "notDetermined") {
+      await this.persistence.update({
+        authorizationStatus: this.nextAuthorizationResult,
+      });
     }
 
-    return this.authorizationStatus;
+    return this.persistence.getState().authorizationStatus;
   }
 
   public async pickSelection(): Promise<ScreenTimeSelectionHandle | null> {
-    if (this.authorizationStatus !== "approved") {
+    await this.ready;
+    const state = this.persistence.getState();
+    if (state.authorizationStatus !== "approved") {
       throw new Error("Screen Time authorization is required before selection");
     }
 
-    const handle = `mock-screen-time-selection:${this.nextSelectionNumber}`;
-    this.nextSelectionNumber += 1;
+    const handle = `mock-screen-time-selection:${state.nextSelectionNumber}`;
+    await this.persistence.update({
+      nextSelectionNumber: state.nextSelectionNumber + 1,
+    });
     return handle as ScreenTimeSelectionHandle;
   }
 
@@ -86,20 +101,31 @@ export class MockScreenTimeModule implements ScreenTimeModule {
     selection: ScreenTimeSelectionHandle,
     desiredOsState: DesiredOsState,
   ): Promise<void> {
+    await this.ready;
     const desired = copyDesiredOsState(desiredOsState);
-    this.setCurrentShieldState(selection, desired);
+    const state = this.persistence.getState();
+    if (
+      state.selection === selection &&
+      this.desiredOsStatesEqual(state.desiredOsState, desired)
+    ) {
+      return;
+    }
+    await this.persistence.update({ selection, desiredOsState: desired });
+    this.refreshCurrentShieldState();
   }
 
   public async scheduleLockWindow(
     selection: ScreenTimeSelectionHandle,
     window: LockWindow,
   ): Promise<void> {
+    await this.ready;
     this.assertValidLockWindow(window);
     const scheduled: ScheduledLockWindow = Object.freeze({
       ...window,
       selection,
     });
-    const existing = this.lockWindows.find((candidate) => candidate.id === window.id);
+    const lockWindows = this.persistence.getState().lockWindows;
+    const existing = lockWindows.find((candidate) => candidate.id === window.id);
     if (
       existing?.selection === selection &&
       existing.startsAtMs === window.startsAtMs &&
@@ -108,25 +134,29 @@ export class MockScreenTimeModule implements ScreenTimeModule {
       return;
     }
 
-    this.lockWindows = [
-      ...this.lockWindows.filter((candidate) => candidate.id !== window.id),
+    const nextLockWindows = [
+      ...lockWindows.filter((candidate) => candidate.id !== window.id),
       scheduled,
     ].sort((left, right) => left.startsAtMs - right.startsAtMs);
+    await this.persistence.update({ lockWindows: nextLockWindows });
     this.armLockWindowBoundaries();
     this.refreshCurrentShieldState();
   }
 
   public async cancelLockWindow(id: string): Promise<void> {
-    const remaining = this.lockWindows.filter((window) => window.id !== id);
-    if (remaining.length === this.lockWindows.length) {
+    await this.ready;
+    const lockWindows = this.persistence.getState().lockWindows;
+    const remaining = lockWindows.filter((window) => window.id !== id);
+    if (remaining.length === lockWindows.length) {
       return;
     }
-    this.lockWindows = remaining;
+    await this.persistence.update({ lockWindows: remaining });
     this.armLockWindowBoundaries();
     this.refreshCurrentShieldState();
   }
 
   public async getCurrentShieldState(): Promise<CurrentShieldState> {
+    await this.ready;
     return this.currentShieldState;
   }
 
@@ -144,7 +174,7 @@ export class MockScreenTimeModule implements ScreenTimeModule {
     selection: ScreenTimeSelectionHandle | null,
     desiredOsState: DesiredOsState,
   ): void {
-    const selectionWindows = this.lockWindows.filter(
+    const selectionWindows = this.persistence.getState().lockWindows.filter(
       (window) => window.selection === selection,
     );
     const nowMs = this.clock.nowMs();
@@ -170,17 +200,15 @@ export class MockScreenTimeModule implements ScreenTimeModule {
   }
 
   private refreshCurrentShieldState(): void {
-    this.setCurrentShieldState(
-      this.currentShieldState.selection,
-      this.currentShieldState.desiredOsState,
-    );
+    const state = this.persistence.getState();
+    this.setCurrentShieldState(state.selection, state.desiredOsState);
   }
 
   private armLockWindowBoundaries(): void {
     this.scheduledClockTasks.forEach((cancel) => cancel());
     this.scheduledClockTasks = [];
     const nowMs = this.clock.nowMs();
-    this.lockWindows.forEach((window) => {
+    this.persistence.getState().lockWindows.forEach((window) => {
       [window.startsAtMs, window.endsAtMs]
         .filter((atMs) => atMs > nowMs)
         .forEach((atMs) => {
@@ -210,12 +238,19 @@ export class MockScreenTimeModule implements ScreenTimeModule {
       left.selection === right.selection &&
       left.effectiveShields === right.effectiveShields &&
       left.activeLockWindowId === right.activeLockWindowId &&
-      left.desiredOsState.shields === right.desiredOsState.shields &&
-      left.desiredOsState.drainThresholds.length ===
-        right.desiredOsState.drainThresholds.length &&
-      left.desiredOsState.drainThresholds.every(
-        (threshold, index) =>
-          threshold === right.desiredOsState.drainThresholds[index],
+      this.desiredOsStatesEqual(left.desiredOsState, right.desiredOsState)
+    );
+  }
+
+  private desiredOsStatesEqual(
+    left: DesiredOsState,
+    right: DesiredOsState,
+  ): boolean {
+    return (
+      left.shields === right.shields &&
+      left.drainThresholds.length === right.drainThresholds.length &&
+      left.drainThresholds.every(
+        (threshold, index) => threshold === right.drainThresholds[index],
       )
     );
   }
