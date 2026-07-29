@@ -41,7 +41,14 @@ export function LockScreen({
   now = localWallClockNow,
 }: LockScreenProps = {}) {
   const { spacing, typography } = useTheme();
-  const { authorization, selection, shield, lockWindows, fullLock } =
+  const {
+    authorization,
+    selection,
+    shield,
+    lockWindows,
+    fullLock,
+    precedence,
+  } =
     useLockSnapshot(controller);
   const allowance = useHomeAllowance();
 
@@ -49,7 +56,7 @@ export function LockScreen({
     shield,
     lockWindows,
     selection,
-    fullLock,
+    precedence,
     atMs: now(),
   });
 

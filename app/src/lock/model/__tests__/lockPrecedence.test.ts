@@ -90,4 +90,12 @@ describe("resolveLockPrecedence", () => {
       cause: "emptyBalance",
     });
   });
+
+  it("names an active window when it is the temporal reason zero balance is enforced", () => {
+    expect(resolveLockPrecedence(input({ activeWindow: true }))).toEqual({
+      shields: "up",
+      drainsBalance: false,
+      cause: "activeWindow",
+    });
+  });
 });

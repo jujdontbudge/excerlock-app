@@ -156,7 +156,7 @@ describe("LockScreen", () => {
       expect(screen.getByText("Your first earn today opens them.")).toBeOnTheScreen();
     });
 
-    it("re-renders from the boundary's observable when a lock window opens", async () => {
+    it("keeps Full Lock as the cause when a lock window opens over it", async () => {
       const screenTime = new FakeScreenTime();
       await authorizedScreen(screenTime);
       await press("Choose apps");
@@ -171,8 +171,11 @@ describe("LockScreen", () => {
         });
       });
 
-      expect(screen.getByText("Apps are asleep.")).toBeOnTheScreen();
-      expect(screen.getByText("A lock window is running.")).toBeOnTheScreen();
+      expect(screen.getByText("Move first, scroll after.")).toBeOnTheScreen();
+      expect(
+        screen.getByText("Full Lock is on — your day starts at zero."),
+      ).toBeOnTheScreen();
+      expect(screen.getByText("Back at 10:00 AM.")).toBeOnTheScreen();
     });
   });
 

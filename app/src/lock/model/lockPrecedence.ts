@@ -17,6 +17,7 @@ export type LockPrecedenceCause =
   | "outsideWindow"
   | "earnedBalance"
   | "fullLock"
+  | "activeWindow"
   | "emptyBalance";
 
 export interface LockPrecedenceDecision {
@@ -59,9 +60,16 @@ export function resolveLockPrecedence({
       cause: "earnedBalance",
     };
   }
+  if (fullLock) {
+    return {
+      shields: "up",
+      drainsBalance: false,
+      cause: "fullLock",
+    };
+  }
   return {
     shields: "up",
     drainsBalance: false,
-    cause: fullLock ? "fullLock" : "emptyBalance",
+    cause: activeWindow === true ? "activeWindow" : "emptyBalance",
   };
 }

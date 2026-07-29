@@ -4,6 +4,7 @@ import type {
   ScreenTimeSelectionSummary,
 } from "@/screentime";
 
+import type { LockPrecedenceDecision } from "../lockPrecedence";
 import { deriveLockStatus, type LockStatusInput } from "../lockStatus";
 
 const HANDLE = "selection-1" as ScreenTimeSelectionHandle;
@@ -32,9 +33,20 @@ function input(overrides: Partial<LockStatusInput> = {}): LockStatusInput {
     shield: shield(),
     lockWindows: [],
     selection: SELECTION,
-    fullLock: false,
+    precedence: decision("emptyBalance"),
     atMs: 0,
     ...overrides,
+  };
+}
+
+function decision(
+  cause: LockPrecedenceDecision["cause"],
+  shields: LockPrecedenceDecision["shields"] = "up",
+): LockPrecedenceDecision {
+  return {
+    cause,
+    shields,
+    drainsBalance: cause === "earnedBalance",
   };
 }
 
@@ -66,7 +78,9 @@ describe("deriveLockStatus", () => {
   });
 
   it("distinguishes Full Lock from a balance that ran out", () => {
-    const model = deriveLockStatus(input({ fullLock: true }));
+    const model = deriveLockStatus(
+      input({ precedence: decision("fullLock") }),
+    );
 
     expect(model.headline).toBe("Move first, scroll after.");
     expect(model.reason).toBe("Full Lock is on — your day starts at zero.");
@@ -78,6 +92,7 @@ describe("deriveLockStatus", () => {
       input({
         atMs: at(23, 30),
         shield: shield({ activeLockWindowId: "night" }),
+        precedence: decision("activeWindow"),
         lockWindows: [
           { id: "night", startsAtMs: at(22), endsAtMs: at(31) },
         ],
@@ -91,7 +106,10 @@ describe("deriveLockStatus", () => {
 
   it("falls back gracefully when the active window is no longer registered", () => {
     const model = deriveLockStatus(
-      input({ shield: shield({ activeLockWindowId: "vanished" }) }),
+      input({
+        shield: shield({ activeLockWindowId: "vanished" }),
+        precedence: decision("activeWindow"),
+      }),
     );
 
     expect(model.reason).toBe("A lock window is running.");
@@ -106,6 +124,7 @@ describe("deriveLockStatus", () => {
           effectiveShields: "down",
           desiredOsState: { shields: "down", drainThresholds: [] },
         }),
+        precedence: decision("earnedBalance", "down"),
         lockWindows: [
           { id: "night", startsAtMs: at(22), endsAtMs: at(31) },
           { id: "past", startsAtMs: at(1), endsAtMs: at(2) },
@@ -125,6 +144,7 @@ describe("deriveLockStatus", () => {
           effectiveShields: "down",
           desiredOsState: { shields: "down", drainThresholds: [] },
         }),
+        precedence: decision("earnedBalance", "down"),
       }),
     );
 
@@ -134,15 +154,30 @@ describe("deriveLockStatus", () => {
   it("credits an earn that beat Full Lock", () => {
     const model = deriveLockStatus(
       input({
-        fullLock: true,
         shield: shield({
           effectiveShields: "down",
           desiredOsState: { shields: "down", drainThresholds: [] },
         }),
+        precedence: decision("earnedBalance", "down"),
       }),
     );
 
     expect(model.status).toBe("unlocked");
-    expect(model.reason).toBe("Full Lock is on, and you have already earned today.");
+    expect(model.reason).toBe("You have time left on today's balance.");
+  });
+
+  it("credits walking rather than an active lock window when both are true", () => {
+    const model = deriveLockStatus(
+      input({
+        shield: shield({
+          effectiveShields: "down",
+          activeLockWindowId: "night",
+          desiredOsState: { shields: "down", drainThresholds: [] },
+        }),
+        precedence: decision("walking", "down"),
+      }),
+    );
+
+    expect(model.reason).toBe("Walking is holding your apps open.");
   });
 });
