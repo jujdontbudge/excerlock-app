@@ -40,4 +40,37 @@ describe("schedule store", () => {
       overrides: [{ dayIndex: 20_655, direction: "active" }],
     });
   });
+
+  it("validates and canonicalizes untrusted values during hydration", async () => {
+    await AsyncStorage.setItem(
+      SCHEDULE_STORAGE_KEY,
+      JSON.stringify({
+        state: {
+          recurringRestWeekdays: [6, 0, 0, -1, 7, "1"],
+          holidays: [
+            { startDayIndex: 12, endDayIndex: 14 },
+            { startDayIndex: 12, endDayIndex: 14 },
+            { startDayIndex: 20, endDayIndex: 19 },
+            { startDayIndex: 30.5, endDayIndex: 31 },
+            "next week",
+          ],
+          overrides: [
+            { dayIndex: 15, direction: "active" },
+            { dayIndex: 15, direction: "rest" },
+            { dayIndex: 16, direction: "pause" },
+            { dayIndex: 17.5, direction: "rest" },
+          ],
+        },
+        version: 0,
+      }),
+    );
+
+    await useScheduleStore.persist.rehydrate();
+
+    expect(useScheduleStore.getState()).toMatchObject({
+      recurringRestWeekdays: [0, 6],
+      holidays: [{ startDayIndex: 12, endDayIndex: 14 }],
+      overrides: [{ dayIndex: 15, direction: "rest" }],
+    });
+  });
 });
