@@ -12,6 +12,7 @@ export {
   canAdvance,
   configureForm,
   draftCondition,
+  draftFromCondition,
   EMPTY_DRAFT,
   FIXED_CHUNK_RANGE,
   GRACE_OPTIONS_MS,

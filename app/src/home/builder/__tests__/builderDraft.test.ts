@@ -1,4 +1,4 @@
-import type { PickerContext } from "@excerlock/condition-model";
+import type { ConfiguredCondition, PickerContext } from "@excerlock/condition-model";
 
 import { builderCatalog, findOption } from "../builderCatalog";
 import {
@@ -6,6 +6,7 @@ import {
   canAdvance,
   configureForm,
   draftCondition,
+  draftFromCondition,
   EMPTY_DRAFT,
   FIXED_CHUNK_RANGE,
   SET_PERIOD_RANGE,
@@ -209,5 +210,90 @@ describe("draftCondition", () => {
         exitGraceMs: 120_000,
       },
     });
+  });
+});
+
+describe("draftFromCondition", () => {
+  it("re-opens an event condition on the configure step with its values", () => {
+    const draft = draftFromCondition({
+      id: "c-event",
+      catalogId: "steps-goal",
+      source: "appleHealth",
+      settings: {
+        kind: "event",
+        threshold: 10_000,
+        reward: { type: "fixedMinutes", minutes: 30 },
+        repeatable: false,
+        perDayCap: null,
+        cooldownMs: 0,
+      },
+    });
+
+    expect(draft).toEqual({
+      step: "configure",
+      catalogId: "steps-goal",
+      source: "appleHealth",
+      hasSourceChoice: false,
+      threshold: 10_000,
+      reward: { type: "fixedMinutes", minutes: 30 },
+    });
+  });
+
+  it("restores the ratio the rate wheel showed, not the engine's per-unit rate", () => {
+    const draft = draftFromCondition({
+      id: "c-rate",
+      catalogId: "steps-rate",
+      source: "appleHealth",
+      settings: { kind: "rate", reward: { type: "proportionalCredit", minutesPerUnit: 0.02 } },
+    });
+
+    expect(draft).toMatchObject({ step: "configure", catalogId: "steps-rate", rateMinutes: 20 });
+  });
+
+  it("keeps the condition's place", () => {
+    const draft = draftFromCondition({
+      id: "c-state",
+      catalogId: "gym-presence",
+      source: "location",
+      placeId: "gym-1",
+      settings: { kind: "state", reward: { type: "sustainedUnlock" }, exitGraceMs: 120_000 },
+    });
+
+    expect(draft).toMatchObject({ placeId: "gym-1", exitGraceMs: 120_000 });
+  });
+
+  it("round-trips every kind back through draftCondition unchanged", () => {
+    const conditions: readonly ConfiguredCondition[] = [
+      {
+        id: "c-event",
+        catalogId: "steps-goal",
+        source: "appleHealth",
+        settings: {
+          kind: "event",
+          threshold: 10_000,
+          reward: { type: "setPeriod", durationMinutes: 45 },
+          repeatable: false,
+          perDayCap: null,
+          cooldownMs: 0,
+        },
+      },
+      {
+        id: "c-rate",
+        catalogId: "steps-rate",
+        source: "appleHealth",
+        settings: { kind: "rate", reward: { type: "proportionalCredit", minutesPerUnit: 0.02 } },
+      },
+      {
+        id: "c-state",
+        catalogId: "gym-presence",
+        source: "location",
+        placeId: "gym-1",
+        settings: { kind: "state", reward: { type: "sustainedUnlock" }, exitGraceMs: 120_000 },
+      },
+    ];
+
+    for (const condition of conditions) {
+      expect(draftCondition(draftFromCondition(condition), condition.id)).toEqual(condition);
+    }
   });
 });

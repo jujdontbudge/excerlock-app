@@ -194,6 +194,45 @@ export function configureForm(catalogId: CatalogId): ConfigureForm {
 }
 
 /**
+ * `draftCondition`'s inverse: the draft that re-opens an existing condition for
+ * editing. It lands on the configure step because the catalog entry and the
+ * source are what the condition *is* — changing either makes a different
+ * condition, which is a create, not an edit.
+ */
+export function draftFromCondition(condition: ConfiguredCondition): BuilderDraft {
+  const base = {
+    step: "configure" as const,
+    catalogId: condition.catalogId,
+    source: condition.source,
+    ...(condition.placeId === undefined ? {} : { placeId: condition.placeId }),
+    hasSourceChoice: false,
+  };
+  const form = configureForm(condition.catalogId);
+
+  switch (condition.settings.kind) {
+    case "event":
+      return {
+        ...base,
+        ...(condition.settings.threshold === undefined
+          ? {}
+          : { threshold: condition.settings.threshold }),
+        reward: condition.settings.reward,
+      };
+    case "rate":
+      return {
+        ...base,
+        // The wheel holds minutes per quantum; the engine holds minutes per unit.
+        rateMinutes:
+          form.kind === "rate"
+            ? condition.settings.reward.minutesPerUnit * form.quantum.value
+            : condition.settings.reward.minutesPerUnit,
+      };
+    case "state":
+      return { ...base, exitGraceMs: condition.settings.exitGraceMs };
+  }
+}
+
+/**
  * The condition a complete draft would save — also what the preview step renders,
  * so the card the user approves is the card they get.
  */
