@@ -79,4 +79,42 @@ describe("SupportSettingsCard", () => {
     });
     expect(screen.queryByText("Not sent")).toBeNull();
   });
+
+  it("submits a feature request and lets the user vote once", async () => {
+    const support = new MockSupportModule();
+    await render(<SupportSettingsCard module={support} />);
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Request a feature" }),
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText("Feature title"),
+      "Home Screen widget",
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText("What would make ExcerLock better?"),
+      "Show my balance without opening the app.",
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Submit feature request" }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Vote for Home Screen widget" }),
+      ).toBeOnTheScreen();
+    });
+    expect(screen.getByText("0 votes")).toBeOnTheScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Vote for Home Screen widget" }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("1 vote")).toBeOnTheScreen();
+    });
+    expect(
+      screen.getByRole("button", { name: "Voted for Home Screen widget" }),
+    ).toBeDisabled();
+  });
 });

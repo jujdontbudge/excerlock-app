@@ -6,29 +6,46 @@ import { PillButton, Screen, useTheme } from "@/ui";
 import type { SupportModule } from "../SupportModule";
 
 export function SupportComposer({
+  kind,
   support,
   visible,
   onClose,
 }: {
+  kind: "support" | "feature";
   support: SupportModule;
   visible: boolean;
   onClose: () => void;
 }) {
   const { colors, radius, spacing, typography } = useTheme();
+  const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isFeature = kind === "feature";
 
   const close = () => {
+    setTitle("");
     setMessage("");
     onClose();
   };
   const submit = async () => {
     const trimmedMessage = message.trim();
-    if (trimmedMessage.length === 0 || isSubmitting) {
+    const trimmedTitle = title.trim();
+    if (
+      trimmedMessage.length === 0 ||
+      (isFeature && trimmedTitle.length === 0) ||
+      isSubmitting
+    ) {
       return;
     }
     setIsSubmitting(true);
-    await support.submitSupport({ message: trimmedMessage });
+    if (isFeature) {
+      await support.submitFeatureRequest({
+        title: trimmedTitle,
+        message: trimmedMessage,
+      });
+    } else {
+      await support.submitSupport({ message: trimmedMessage });
+    }
     setIsSubmitting(false);
     close();
   };
@@ -54,17 +71,44 @@ export function SupportComposer({
         >
           <View style={{ gap: spacing.md }}>
             <Text accessibilityRole="header" style={typography.title}>
-              Contact support
+              {isFeature ? "Request a feature" : "Contact support"}
             </Text>
             <Text style={typography.body}>
-              Tell us what happened. Your request stays visible here if it
-              cannot be sent.
+              {isFeature
+                ? "Share the idea and vote for it after saving."
+                : "Tell us what happened. Your request stays visible here if it cannot be sent."}
             </Text>
+            {isFeature ? (
+              <TextInput
+                accessibilityLabel="Feature title"
+                onChangeText={setTitle}
+                placeholder="Feature title"
+                placeholderTextColor={colors.textTertiary}
+                style={[
+                  typography.body,
+                  {
+                    backgroundColor: colors.cardElevated,
+                    borderRadius: radius.md,
+                    color: colors.textPrimary,
+                    padding: spacing.md,
+                  },
+                ]}
+                value={title}
+              />
+            ) : null}
             <TextInput
-              accessibilityLabel="How can we help?"
+              accessibilityLabel={
+                isFeature
+                  ? "What would make ExcerLock better?"
+                  : "How can we help?"
+              }
               multiline
               onChangeText={setMessage}
-              placeholder="How can we help?"
+              placeholder={
+                isFeature
+                  ? "What would make ExcerLock better?"
+                  : "How can we help?"
+              }
               placeholderTextColor={colors.textTertiary}
               style={[
                 typography.body,
@@ -82,8 +126,18 @@ export function SupportComposer({
           </View>
           <View style={{ gap: spacing.sm }}>
             <PillButton
-              disabled={message.trim().length === 0 || isSubmitting}
-              label={isSubmitting ? "Sending…" : "Send support request"}
+              disabled={
+                message.trim().length === 0 ||
+                (isFeature && title.trim().length === 0) ||
+                isSubmitting
+              }
+              label={
+                isSubmitting
+                  ? "Sending…"
+                  : isFeature
+                    ? "Submit feature request"
+                    : "Send support request"
+              }
               onPress={() => void submit()}
               variant="white"
             />
