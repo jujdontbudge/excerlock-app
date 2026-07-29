@@ -1,0 +1,306 @@
+import type {
+  ActiveMinutesSignalStrategy,
+  CatalogEntry,
+  PickerRange,
+  PickerUnit,
+  RatePicker,
+} from "./catalog-types";
+
+export const EMPTY_START_CONDITIONS = [] as const;
+
+export const STREAK_FLOORS = {
+  rateCreditMinutes: 15,
+  stateSustainedMinutes: 10,
+} as const;
+
+export const ACTIVE_MINUTES_SIGNAL: ActiveMinutesSignalStrategy = {
+  strategy: "watchExerciseTimeElseWorkoutDuration",
+  watchSignal: "appleExerciseTime",
+  fallbackSignal: "recordedWorkoutDuration",
+  combination: "exclusive",
+};
+
+const RATE_MINUTES: PickerRange = {
+  min: 5,
+  max: 60,
+  step: 5,
+  unit: "minute",
+};
+
+function range(
+  min: number,
+  max: number,
+  step: number,
+  unit: PickerUnit,
+): PickerRange {
+  return { min, max, step, unit };
+}
+
+function rate(
+  value: number,
+  unit: PickerUnit,
+  imperialQuantum?: { readonly value: number; readonly unit: PickerUnit },
+): RatePicker {
+  return {
+    type: "rate",
+    initialValue: null,
+    quantum: { value, unit },
+    ...(imperialQuantum === undefined ? {} : { imperialQuantum }),
+    minutes: RATE_MINUTES,
+  };
+}
+
+const catalog = [
+  {
+    id: "gym-arrival",
+    name: "Arrive at gym",
+    activity: "gym",
+    kind: "event",
+    signal: "gymArrival",
+    baseSources: ["location"],
+    placeRequired: true,
+    picker: { type: "thresholdlessEvent", initialValue: null },
+  },
+  {
+    id: "gym-presence",
+    name: "Be at the gym",
+    activity: "gym",
+    kind: "state",
+    signal: "gymPresence",
+    baseSources: ["location"],
+    placeRequired: true,
+    picker: { type: "stateGrace", initialValue: null },
+  },
+  {
+    id: "gym-time-rate",
+    name: "Time at the gym",
+    activity: "gym",
+    kind: "rate",
+    signal: "gymMinutes",
+    baseSources: ["location"],
+    placeRequired: true,
+    picker: rate(10, "minute"),
+  },
+  {
+    id: "walking-state",
+    name: "While walking",
+    activity: "walking",
+    kind: "state",
+    signal: "walking",
+    baseSources: ["motion"],
+    placeRequired: false,
+    picker: {
+      type: "stateGrace",
+      initialValue: null,
+      optionsMs: [30_000, 60_000, 120_000, 180_000, 240_000, 300_000],
+    },
+  },
+  {
+    id: "steps-rate",
+    name: "Steps exchange",
+    activity: "walking",
+    kind: "rate",
+    signal: "steps",
+    baseSources: ["appleHealth"],
+    placeRequired: false,
+    picker: rate(1_000, "step"),
+  },
+  {
+    id: "steps-goal",
+    name: "Step goal",
+    activity: "walking",
+    kind: "event",
+    signal: "steps",
+    baseSources: ["appleHealth"],
+    placeRequired: false,
+    picker: {
+      type: "threshold",
+      initialValue: null,
+      range: range(1_000, 30_000, 500, "step"),
+    },
+  },
+  {
+    id: "run-distance-goal",
+    name: "Distance goal",
+    activity: "running",
+    kind: "event",
+    signal: "runDistance",
+    baseSources: ["appleHealth"],
+    placeRequired: false,
+    picker: {
+      type: "threshold",
+      initialValue: null,
+      range: range(1, 42, 0.5, "kilometer"),
+      imperialRange: range(1, 26, 0.5, "mile"),
+    },
+  },
+  {
+    id: "run-distance-rate",
+    name: "Distance exchange",
+    activity: "running",
+    kind: "rate",
+    signal: "runDistance",
+    baseSources: ["appleHealth"],
+    placeRequired: false,
+    picker: rate(1, "kilometer", { value: 1, unit: "mile" }),
+  },
+  {
+    id: "cycle-distance-goal",
+    name: "Distance goal",
+    activity: "cycling",
+    kind: "event",
+    signal: "cycleDistance",
+    baseSources: ["appleHealth"],
+    placeRequired: false,
+    picker: {
+      type: "threshold",
+      initialValue: null,
+      range: range(5, 200, 5, "kilometer"),
+      imperialRange: range(3, 120, 3, "mile"),
+    },
+  },
+  {
+    id: "cycle-distance-rate",
+    name: "Distance exchange",
+    activity: "cycling",
+    kind: "rate",
+    signal: "cycleDistance",
+    baseSources: ["appleHealth"],
+    placeRequired: false,
+    picker: rate(5, "kilometer", { value: 3, unit: "mile" }),
+  },
+  {
+    id: "swim-distance-goal",
+    name: "Distance goal",
+    activity: "swimming",
+    kind: "event",
+    signal: "swimDistance",
+    baseSources: ["appleHealth"],
+    placeRequired: false,
+    picker: {
+      type: "threshold",
+      initialValue: null,
+      range: range(100, 5_000, 100, "meter"),
+    },
+  },
+  {
+    id: "swim-distance-rate",
+    name: "Distance exchange",
+    activity: "swimming",
+    kind: "rate",
+    signal: "swimDistance",
+    baseSources: ["appleHealth"],
+    placeRequired: false,
+    picker: rate(100, "meter", { value: 100, unit: "yard" }),
+  },
+  {
+    id: "active-calories-goal",
+    name: "Active-calorie goal",
+    activity: "universal",
+    kind: "event",
+    signal: "activeCalories",
+    baseSources: ["appleHealth"],
+    placeRequired: false,
+    picker: {
+      type: "threshold",
+      initialValue: null,
+      range: range(50, 2_000, 50, "kilocalorie"),
+    },
+  },
+  {
+    id: "active-calories-rate",
+    name: "Active-calorie exchange",
+    activity: "universal",
+    kind: "rate",
+    signal: "activeCalories",
+    baseSources: ["appleHealth"],
+    placeRequired: false,
+    picker: rate(100, "kilocalorie"),
+  },
+  {
+    id: "active-minutes-goal",
+    name: "Active-minutes goal",
+    activity: "universal",
+    kind: "event",
+    signal: "activeMinutes",
+    baseSources: ["appleHealth"],
+    placeRequired: false,
+    picker: {
+      type: "threshold",
+      initialValue: null,
+      range: range(10, 180, 5, "minute"),
+    },
+    signalStrategy: ACTIVE_MINUTES_SIGNAL,
+  },
+  {
+    id: "active-minutes-rate",
+    name: "Active-minutes exchange",
+    activity: "universal",
+    kind: "rate",
+    signal: "activeMinutes",
+    baseSources: ["appleHealth"],
+    placeRequired: false,
+    picker: rate(10, "minute"),
+    signalStrategy: ACTIVE_MINUTES_SIGNAL,
+  },
+  {
+    id: "workout-duration-goal",
+    name: "Finish any workout",
+    activity: "universal",
+    kind: "event",
+    signal: "workoutDuration",
+    baseSources: ["appleHealth"],
+    placeRequired: false,
+    picker: {
+      type: "threshold",
+      initialValue: null,
+      range: range(10, 120, 5, "minute"),
+    },
+  },
+  {
+    id: "whoop-strain-goal",
+    name: "Hit a strain target",
+    activity: "connected",
+    kind: "event",
+    signal: "whoopStrain",
+    baseSources: ["whoop"],
+    placeRequired: false,
+    picker: {
+      type: "threshold",
+      initialValue: null,
+      range: range(5, 20, 1, "strain"),
+    },
+    requiresConnection: true,
+  },
+  {
+    id: "hevy-strength-workout",
+    name: "Log a strength workout",
+    activity: "connected",
+    kind: "event",
+    signal: "strengthWorkout",
+    baseSources: ["hevy"],
+    placeRequired: false,
+    picker: { type: "thresholdlessEvent", initialValue: null },
+    requiresConnection: true,
+    verification: "honorSystem",
+  },
+  {
+    id: "concept2-row-distance-goal",
+    name: "Row X meters",
+    activity: "connected",
+    kind: "event",
+    signal: "rowDistance",
+    baseSources: ["concept2"],
+    placeRequired: false,
+    picker: {
+      type: "threshold",
+      initialValue: null,
+      range: range(500, 10_000, 500, "meter"),
+    },
+    requiresConnection: true,
+    verification: "machineVerified",
+  },
+] as const satisfies readonly CatalogEntry[];
+
+export const CONDITION_CATALOG: readonly CatalogEntry[] = catalog;
+export type CatalogId = (typeof catalog)[number]["id"];
