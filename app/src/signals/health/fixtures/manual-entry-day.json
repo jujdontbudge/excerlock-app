@@ -1,0 +1,36 @@
+{
+  "name": "manual-entry-day",
+  "version": 1,
+  "description": "A device-recorded sample beside a manually entered Health sample.",
+  "timeline": [
+    {
+      "atMs": -1800000,
+      "event": "health.samplesAdded",
+      "payload": {
+        "signal": "steps",
+        "samples": [
+          {
+            "value": 750,
+            "startISO": "2026-07-29T08:00:00-04:00",
+            "endISO": "2026-07-29T08:20:00-04:00",
+            "sourceRevision": {
+              "name": "iPhone",
+              "bundleIdentifier": "com.apple.health"
+            },
+            "wasUserEntered": false
+          },
+          {
+            "value": 5000,
+            "startISO": "2026-07-29T08:21:00-04:00",
+            "endISO": "2026-07-29T08:22:00-04:00",
+            "sourceRevision": {
+              "name": "Health",
+              "bundleIdentifier": "com.apple.health"
+            },
+            "wasUserEntered": true
+          }
+        ]
+      }
+    }
+  ]
+}
