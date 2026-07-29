@@ -22,6 +22,13 @@ export {
   type BuilderStep,
   type ConfigureForm,
 } from "./builder/builderDraft";
+export {
+  allowanceLabel,
+  BASE_ALLOWANCE_RANGE,
+  isFullLock,
+  stepBaseAllowance,
+  type AllowanceValues,
+} from "./model/allowance";
 export { localWallClockNow } from "./model/clock";
 export {
   toConditionCards,
@@ -47,6 +54,7 @@ export {
   DEFAULT_HOME_STATE,
   HOME_STORAGE_KEY,
   selectActiveConditions,
+  selectAllowance,
   selectPickerContext,
   useHomeStore,
   type HomeStoreValues,

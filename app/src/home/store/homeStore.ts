@@ -20,6 +20,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import {
+  enterFullLock,
+  exitFullLock,
+  setBaseAllowance,
+  type AllowanceValues,
+} from "../model/allowance";
+
 /**
  * The Phase-2 Home store: the conditions the user has built, the ledger journal
  * their earns land in, and the day's configuration. It orchestrates only —
@@ -38,6 +45,12 @@ export interface SavedPlace {
 export type HomeStoreValues = Readonly<{
   conditions: readonly ConfiguredCondition[];
   /**
+   * What Full Lock's exit puts back (`null` = nothing remembered → unlimited).
+   * It lives beside `ledgerConfig` because the allowance has exactly one owner:
+   * see `model/allowance.ts` and `lock/controller/ledgerSource.ts`.
+   */
+  allowanceBeforeFullLock: number | null;
+  /**
    * Conditions the user switched off in Manage. Off is not deleted: the
    * condition keeps its uniqueness key in the picker context, so its slot is
    * still taken and turning it back on restores exactly what was built.
@@ -55,6 +68,7 @@ export type HomeStoreValues = Readonly<{
  */
 export const DEFAULT_HOME_STATE: HomeStoreValues = Object.freeze({
   conditions: [],
+  allowanceBeforeFullLock: null,
   disabledConditionIds: [],
   journal: emptyJournal(),
   ledgerConfig: Object.freeze({
@@ -67,6 +81,10 @@ export const DEFAULT_HOME_STATE: HomeStoreValues = Object.freeze({
 });
 
 type HomeStore = HomeStoreValues & {
+  /** Manage's allowance picker. Zero is Full Lock — the same transition. */
+  setBaseAllowanceMinutes: (minutes: number) => void;
+  /** PRD §3.2: entering Full Lock is setting the base allowance to zero. */
+  setFullLock: (on: boolean) => void;
   addCondition: (condition: ConfiguredCondition) => void;
   /** Replace a condition in place — the edit path, so the id and slot survive. */
   updateCondition: (condition: ConfiguredCondition) => void;
@@ -85,6 +103,18 @@ export const useHomeStore = create<HomeStore>()(
   persist(
     (set, get) => ({
       ...DEFAULT_HOME_STATE,
+
+      setBaseAllowanceMinutes: (minutes) => {
+        set((state) =>
+          applyAllowance(state, setBaseAllowance(selectAllowance(state), minutes)),
+        );
+      },
+
+      setFullLock: (on) => {
+        set((state) =>
+          applyAllowance(state, (on ? enterFullLock : exitFullLock)(selectAllowance(state))),
+        );
+      },
 
       addCondition: (condition) => {
         set(({ conditions }) =>
@@ -165,6 +195,7 @@ export const useHomeStore = create<HomeStore>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: ({
         conditions,
+        allowanceBeforeFullLock,
         disabledConditionIds,
         journal,
         ledgerConfig,
@@ -172,6 +203,7 @@ export const useHomeStore = create<HomeStore>()(
         savedPlaces,
       }) => ({
         conditions,
+        allowanceBeforeFullLock,
         disabledConditionIds,
         journal,
         ledgerConfig,
@@ -185,6 +217,31 @@ export const useHomeStore = create<HomeStore>()(
     },
   ),
 );
+
+/**
+ * The allowance as one value, in the shape `model/allowance.ts` transitions.
+ * Store-side only: it builds a fresh object, so a component reads the two fields
+ * it needs rather than selecting this.
+ */
+export function selectAllowance(
+  state: Pick<HomeStoreValues, "ledgerConfig" | "allowanceBeforeFullLock">,
+): AllowanceValues {
+  return {
+    baseAllowanceMinutes: state.ledgerConfig.baseAllowanceMinutes,
+    allowanceBeforeFullLock: state.allowanceBeforeFullLock,
+  };
+}
+
+/** The allowance written back where the ledger reads it — never a second copy. */
+function applyAllowance(
+  state: Pick<HomeStoreValues, "ledgerConfig">,
+  next: AllowanceValues,
+): Partial<HomeStoreValues> {
+  return {
+    ledgerConfig: { ...state.ledgerConfig, baseAllowanceMinutes: next.baseAllowanceMinutes },
+    allowanceBeforeFullLock: next.allowanceBeforeFullLock,
+  };
+}
 
 /** The conditions that are switched on — the only ones Home renders or banks. */
 export function selectActiveConditions(
@@ -240,6 +297,9 @@ function readPersisted(persistedState: unknown): Partial<HomeStoreValues> {
 
   if (Array.isArray(stored.conditions)) {
     values.conditions = stored.conditions.filter(isKnownCondition);
+  }
+  if (typeof stored.allowanceBeforeFullLock === "number") {
+    values.allowanceBeforeFullLock = stored.allowanceBeforeFullLock;
   }
   if (Array.isArray(stored.disabledConditionIds)) {
     values.disabledConditionIds = stored.disabledConditionIds.filter(
