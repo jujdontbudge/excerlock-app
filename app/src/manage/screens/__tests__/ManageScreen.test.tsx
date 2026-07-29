@@ -69,6 +69,16 @@ describe("ManageScreen", () => {
     useHomeStore.setState(DEFAULT_HOME_STATE);
   });
 
+  it("mounts schedule rules where weekly controls belong", async () => {
+    await render(<ManageScreen />);
+
+    expect(screen.getByRole("header", { name: "Your rules" })).toBeOnTheScreen();
+    expect(screen.getByTestId("schedule-rules-card")).toBeOnTheScreen();
+    expect(screen.getByText("Weekly schedule")).toBeOnTheScreen();
+    expect(screen.getByText("Holiday dates")).toBeOnTheScreen();
+    expect(screen.getByText("One-day override")).toBeOnTheScreen();
+  });
+
   it("lists every saved condition with what it earns", async () => {
     seed(stepGoal, walking, stepsExchange);
     await render(<ManageScreen />);
