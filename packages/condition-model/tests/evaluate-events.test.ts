@@ -174,4 +174,44 @@ describe("event condition evaluation", () => {
       },
     ]);
   });
+
+  it("crosses cumulative event thresholds from signal deltas", () => {
+    const rows: SignalTimelineRow[] = [
+      {
+        atMs: 1_000,
+        event: "signalDelta",
+        payload: {
+          sampleId: "delta-a",
+          signal: "steps",
+          source: "appleHealth",
+          delta: 2_000,
+        },
+      },
+      {
+        atMs: 2_000,
+        event: "signalDelta",
+        payload: {
+          sampleId: "delta-b",
+          signal: "steps",
+          source: "appleHealth",
+          delta: 3_500,
+        },
+      },
+    ];
+
+    expect(
+      evaluateCondition(eventCondition(), rows, {
+        dayStartMs: 0,
+        nowMs: 3_000,
+      }),
+    ).toEqual([
+      {
+        type: "eventFired",
+        atMs: 2_000,
+        conditionId: "step-goal",
+        sourceEventId: "delta-b",
+        reward: { type: "fixedMinutes", minutes: 20 },
+      },
+    ]);
+  });
 });
