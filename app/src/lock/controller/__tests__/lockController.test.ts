@@ -5,6 +5,7 @@ jest.mock(
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { appendEntries, emptyJournal, type Journal } from "@excerlock/ledger";
+import { waitFor } from "@testing-library/react-native";
 
 import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 
@@ -184,6 +185,27 @@ describe("LockController", () => {
 
     expect(controller.getSnapshot().fullLock).toBe(false);
     expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    controller.stop();
+  });
+
+  it("keeps allowance reconciliation active until every lifecycle owner stops", async () => {
+    const screenTime = new FakeScreenTime();
+    const controller = controllerOver(screenTime);
+
+    // Manage and the pushed lock route can overlap under the tab navigator.
+    await controller.start();
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
+
+    // Popping the lock route releases one owner; Manage still owns the other.
+    controller.stop();
+    useHomeStore.getState().setBaseAllowanceMinutes(30);
+
+    await waitFor(() => {
+      expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    });
     controller.stop();
   });
 

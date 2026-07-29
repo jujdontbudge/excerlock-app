@@ -48,20 +48,13 @@ const INITIAL: LockSnapshot = Object.freeze({
   fullLock: false,
 });
 
-/**
- * The lock module's one conversation with the OS.
- *
- * Every screen below it reads a `LockSnapshot` and calls one of four verbs;
- * none of them knows that a ScreenTime adapter exists, that the handle they are
- * showing is opaque, or that Full Lock is really a number. It decides nothing
- * about shields either: `@excerlock/ledger` computes the desired state and the
- * boundary reports what the OS actually did.
- */
+/** Lock's one OS conversation: screens call verbs; the ledger decides shields. */
 export class LockController {
   private readonly screenTime: ScreenTimeModule;
   private readonly journal: () => Journal;
   private readonly now: () => number;
   private readonly listeners = new Set<() => void>();
+  private activeClients = 0;
   private allowanceReconciliation: Promise<void> = Promise.resolve();
   private suppressAllowanceSubscription = false;
   private unsubscribeAllowance: (() => void) | null = null;
@@ -85,6 +78,7 @@ export class LockController {
 
   /** Attaches to the boundary's observable and loads the first snapshot. */
   public async start(): Promise<void> {
+    this.activeClients += 1;
     this.unsubscribeAllowance ??= subscribeHomeAllowance(() => {
       this.patch({ fullLock: homeFullLock() });
       if (!this.suppressAllowanceSubscription) {
@@ -98,6 +92,10 @@ export class LockController {
   }
 
   public stop(): void {
+    this.activeClients = Math.max(0, this.activeClients - 1);
+    if (this.activeClients > 0) {
+      return;
+    }
     this.unsubscribeAllowance?.();
     this.unsubscribeAllowance = null;
     this.unsubscribeShield?.();
