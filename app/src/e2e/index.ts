@@ -1,2 +1,10 @@
 export { getScenarioManifest, SCENARIO_NAMES } from "./scenarioCatalog";
-export type { ScenarioManifest } from "./scenarioTypes";
+export { parseScenarioManifest } from "./parseScenarioManifest";
+export type {
+  ScenarioClock,
+  ScenarioCondition,
+  ScenarioConditionSource,
+  ScenarioManifest,
+  ScenarioTimelineRow,
+  ScenarioVendorState,
+} from "./scenarioTypes";
