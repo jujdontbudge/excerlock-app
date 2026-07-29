@@ -7,8 +7,11 @@ import {
   stepBaseAllowance,
   type AllowanceValues,
 } from "@/home";
-import { fullLockConfirmation } from "@/lock";
-import { Card, PillButton, useTheme } from "@/ui";
+import {
+  fullLockConfirmation,
+  FullLockConfirmationPrompt,
+} from "@/lock";
+import { Card, useTheme } from "@/ui";
 
 /**
  * The base-allowance picker (PRD §3.15 Tab 2, grid in §8): 0–4 h in 5-minute
@@ -48,23 +51,14 @@ export function AllowanceCard({
     const confirmation = fullLockConfirmation(allowance, pendingFullLock);
     return (
       <Card>
-        <View style={{ gap: spacing.md }}>
-          <Text style={typography.cardTitle}>{confirmation.title}</Text>
-          <Text style={typography.body}>{confirmation.body}</Text>
-          <PillButton
-            label={confirmation.confirmLabel}
-            variant="white"
-            onPress={async () => {
-              await onFullLockChange(pendingFullLock);
-              setPendingFullLock(null);
-            }}
-          />
-          <PillButton
-            label={confirmation.cancelLabel}
-            variant="secondary"
-            onPress={() => setPendingFullLock(null)}
-          />
-        </View>
+        <FullLockConfirmationPrompt
+          confirmation={confirmation}
+          onConfirm={async () => {
+            await onFullLockChange(pendingFullLock);
+            setPendingFullLock(null);
+          }}
+          onCancel={() => setPendingFullLock(null)}
+        />
       </Card>
     );
   }

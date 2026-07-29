@@ -1,4 +1,5 @@
 export { LockScreen, type LockScreenProps } from "./screens/LockScreen";
+export { FullLockConfirmationPrompt } from "./components/FullLockConfirmationPrompt";
 export {
   getLockController,
   LockController,
