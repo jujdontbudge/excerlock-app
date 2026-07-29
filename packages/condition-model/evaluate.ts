@@ -408,3 +408,13 @@ export function evaluateCondition(
   }
   return evaluateState(condition, rows, clock);
 }
+
+export function evaluateConditions(
+  conditions: readonly ConfiguredCondition[],
+  timeline: readonly SignalTimelineRow[],
+  clock: EvaluationClock,
+): readonly EvaluationOutcome[] {
+  return conditions
+    .flatMap((condition) => evaluateCondition(condition, timeline, clock))
+    .sort((left, right) => left.atMs - right.atMs);
+}

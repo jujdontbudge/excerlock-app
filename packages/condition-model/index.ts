@@ -51,7 +51,7 @@ export type {
   PickerVerdict,
 } from "./picker";
 export { EVALUATION_TIMELINES } from "./fixtures/evaluation-timelines";
-export { evaluateCondition } from "./evaluate";
+export { evaluateCondition, evaluateConditions } from "./evaluate";
 export type { ActiveWindow } from "./active-window";
 export type {
   ConfiguredCondition,
