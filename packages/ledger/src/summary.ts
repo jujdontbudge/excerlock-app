@@ -1,4 +1,8 @@
-import { reduceLedger, type Holiday } from './reduce'
+import {
+  reduceLedger,
+  type ConditionDayTotals,
+  type Holiday,
+} from './reduce'
 import {
   RATE_STREAK_FLOOR_MINUTES,
   STATE_STREAK_FLOOR_MINUTES,
@@ -43,6 +47,10 @@ export interface DaySummary {
   /** Total locked-group usage (holiday + clamped usage included) — the Time-Reclaimed input. */
   usageMinutes: Minutes
   holidays: readonly Holiday[]
+  /**
+   * Per-condition totals in first-qualified order. Identical timestamps use
+   * condition id as a stable tie-break; conditions that never qualified follow.
+   */
   conditions: Readonly<Record<string, ConditionDaySummary>>
   /** Any condition met its bar today (the streak's per-day predicate). */
   meaningfulActivity: boolean
@@ -62,12 +70,24 @@ function isMeaningful(totals: {
   )
 }
 
+function compareConditions(
+  [conditionIdA, totalsA]: [string, ConditionDayTotals],
+  [conditionIdB, totalsB]: [string, ConditionDayTotals],
+): number {
+  const firstA = totalsA.firstQualifiedAtMs
+  const firstB = totalsB.firstQualifiedAtMs
+  if (firstA === undefined && firstB !== undefined) return 1
+  if (firstA !== undefined && firstB === undefined) return -1
+  if (firstA !== undefined && firstB !== undefined && firstA !== firstB) return firstA - firstB
+  return conditionIdA < conditionIdB ? -1 : conditionIdA > conditionIdB ? 1 : 0
+}
+
 /** Per-day summary records from the first journal entry through `throughMs`, gap days included. */
 export function daySummaries(journal: Journal, config: LedgerConfig, throughMs: number): DaySummary[] {
   return reduceLedger(journal, config, throughMs).map((day) => {
     const conditions: Record<string, ConditionDaySummary> = {}
     let meaningfulConditionCount = 0
-    for (const [conditionId, totals] of Object.entries(day.perCondition)) {
+    for (const [conditionId, totals] of Object.entries(day.perCondition).sort(compareConditions)) {
       const meaningfulActivity = isMeaningful(totals)
       if (meaningfulActivity) meaningfulConditionCount += 1
       conditions[conditionId] = { ...totals, meaningfulActivity }

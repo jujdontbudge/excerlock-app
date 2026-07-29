@@ -193,6 +193,33 @@ describe('daySummaries', () => {
     expect(days[1]!.conditions.stretching).not.toHaveProperty('firstQualifiedAtMs')
   })
 
+  it('orders identical qualification timestamps by condition id and preserves boundary zero', () => {
+    const atBoundary = at(0, 0)
+    const zCondition: JournalEntry = {
+      ...event(atBoundary, 'z-condition'),
+      id: 'a-entry',
+    }
+    const aCondition: JournalEntry = {
+      ...event(atBoundary, 'a-condition'),
+      id: 'z-entry',
+    }
+    const pending: JournalEntry = {
+      ...rate(atBoundary, 'pending', 14),
+      id: 'm-entry',
+    }
+
+    const summarize = (entries: JournalEntry[]) =>
+      daySummaries(journalOf(entries), config, at(0, 23))[0]!
+    const forward = summarize([zCondition, aCondition, pending])
+    const reversed = summarize([pending, aCondition, zCondition])
+
+    expect(Object.keys(forward.conditions)).toEqual(['a-condition', 'z-condition', 'pending'])
+    expect(Object.keys(reversed.conditions)).toEqual(Object.keys(forward.conditions))
+    expect(forward.conditions['a-condition']!.firstQualifiedAtMs).toBe(0)
+    expect(forward.conditions['z-condition']!.firstQualifiedAtMs).toBe(0)
+    expect(forward.conditions.pending).not.toHaveProperty('firstQualifiedAtMs')
+  })
+
   it('counts a condition once per day regardless of how many times it fires (activity definition §3.13)', () => {
     const [day] = daySummaries(
       journalOf([event(at(0, 8), 'gym-arrive'), event(at(0, 18), 'gym-arrive'), event(at(0, 12), 'run')]),
