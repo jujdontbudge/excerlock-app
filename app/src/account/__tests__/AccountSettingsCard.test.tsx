@@ -3,8 +3,12 @@ jest.mock(
   () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
+import type { ConfiguredCondition } from "@excerlock/condition-model";
+import { remainingMinutes } from "@excerlock/ledger";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fireEvent, render, screen } from "@testing-library/react-native";
+
+import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 
 import { AccountSettingsCard } from "../AccountSettingsCard";
 import { MockAccountModule } from "../MockAccountModule";
@@ -12,6 +16,7 @@ import { MockAccountModule } from "../MockAccountModule";
 describe("AccountSettingsCard", () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
+    useHomeStore.setState(DEFAULT_HOME_STATE);
   });
 
   it("renders signed out without implying core features are gated", async () => {
@@ -78,5 +83,41 @@ describe("AccountSettingsCard", () => {
       screen.queryByRole("header", { name: "Delete your account forever?" }),
     ).not.toBeOnTheScreen();
     expect((await account.getSnapshot()).session.status).toBe("signedIn");
+  });
+
+  it("deletes only after confirmation and leaves local earns on device", async () => {
+    const account = new MockAccountModule();
+    const condition: ConfiguredCondition = {
+      id: "deletion-local-earn",
+      catalogId: "steps-goal",
+      source: "appleHealth",
+      settings: {
+        kind: "event",
+        threshold: 10_000,
+        reward: { type: "fixedMinutes", minutes: 30 },
+        repeatable: false,
+        perDayCap: null,
+        cooldownMs: 0,
+      },
+    };
+    const atMs = 12 * 60 * 60 * 1_000;
+    await account.signUp();
+    useHomeStore.getState().addCondition(condition);
+    useHomeStore.getState().recordEventPayout(condition.id, atMs);
+    await render(<AccountSettingsCard account={account} />);
+    await screen.findByText("Signed in");
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Delete account" }),
+    );
+    expect((await account.getSnapshot()).session.status).toBe("signedIn");
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Delete account forever" }),
+    );
+
+    expect(await screen.findByText("Signed out")).toBeOnTheScreen();
+    const { journal, ledgerConfig } = useHomeStore.getState();
+    expect(remainingMinutes(journal, ledgerConfig, atMs)).toBe(30);
   });
 });
