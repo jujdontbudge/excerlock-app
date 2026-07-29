@@ -1,4 +1,7 @@
 # Server composition root
 
-Future `index.ts`, Sentry-first `instrument.ts`, `env.ts`, `config.ts`, and `auth.ts` files compose the
-server modules here. Business rules stay behind the neighboring module boundaries.
+Contract: future Sentry-first instrumentation, environment, configuration, and auth files compose the
+neighboring server modules. Invariants: business rules remain behind those public module boundaries.
+
+Fixtures: none; integration fixtures belong to the called module or `server/test`. Test with
+`npm run test:server` from the repository root.

@@ -19,6 +19,7 @@
     "test:guardrails": "npm run prebuild:guardrails --workspace app && vitest run --config guardrails/vitest.config.ts"
   },
   "devDependencies": {
+    "typescript": "~6.0.3",
     "vitest": "^4.1.10"
   }
 }

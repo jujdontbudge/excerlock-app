@@ -1,18 +1,15 @@
-import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 type PlaceholderScreenProps = {
-  children?: ReactNode;
   title: string;
 };
 
-export function PlaceholderScreen({ children, title }: PlaceholderScreenProps) {
+export function PlaceholderScreen({ title }: PlaceholderScreenProps) {
   return (
     <View style={styles.container}>
       <Text accessibilityRole="header" style={styles.title}>
         {title}
       </Text>
-      {children}
     </View>
   );
 }

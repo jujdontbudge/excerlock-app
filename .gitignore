@@ -2,6 +2,13 @@
 node_modules/
 coverage/
 *.tsbuildinfo
+*.log
+dist/
+build/
+.env
+.env.*
+plans/sessions/
+.expo/
 
 # Expo generated state and native projects (Continuous Native Generation).
 app/.expo/

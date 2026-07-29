@@ -1,3 +1,3 @@
-import { AnalysisScreen } from "@/ledger/screens/AnalysisScreen";
+import { AnalysisScreen } from "@/ledger";
 
 export default AnalysisScreen;

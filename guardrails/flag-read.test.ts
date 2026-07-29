@@ -5,10 +5,14 @@ import { fromRoot, readUtf8, repoRelative, walkFiles } from "./repo-files";
 describe("flag-read guardrail", () => {
   it("keeps useFeatureFlag inside ExperimentVariantProvider", () => {
     const offenders = walkFiles(
-      fromRoot("app", "src"),
-      new Set([".ts", ".tsx"]),
+      fromRoot("app"),
+      new Set([".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx"]),
     )
-      .filter((path) => !path.endsWith("ExperimentVariantProvider.tsx"))
+      .filter(
+        (path) =>
+          repoRelative(path) !==
+          "app/src/experiments/ExperimentVariantProvider.tsx",
+      )
       .filter((path) => /\buseFeatureFlag\b/.test(readUtf8(path)))
       .map(repoRelative);
 

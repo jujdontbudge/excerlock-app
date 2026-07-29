@@ -1,4 +1,4 @@
-import { PlaceholderScreen } from "@/ui/screens/PlaceholderScreen";
+import { PlaceholderScreen } from "@/ui";
 
 export function SettingsScreen() {
   return <PlaceholderScreen title="Settings" />;

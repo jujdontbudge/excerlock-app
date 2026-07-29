@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react-native";
 
-import { HomeScreen } from "../screens/HomeScreen";
+import { HomeScreen } from "..";
 
 describe("HomeScreen", () => {
   it("identifies the scaffolded Home surface", async () => {
