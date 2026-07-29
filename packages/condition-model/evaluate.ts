@@ -1,15 +1,18 @@
 import type { CatalogEntry } from "./catalog-types";
 import type {
+  ConfiguredCondition,
   EvaluationClock,
   EvaluationOutcome,
   EventCondition,
   EventFiredOutcome,
+  RateCondition,
+  RateCreditOutcome,
   SignalTimelineRow,
 } from "./evaluation-types";
 import { getCatalogEntry } from "./picker";
 
 function matchesCondition(
-  condition: EventCondition,
+  condition: ConfiguredCondition,
   entry: CatalogEntry,
   row: SignalTimelineRow,
 ): boolean {
@@ -50,22 +53,13 @@ function eventOutcome(
   };
 }
 
-export function evaluateCondition(
-  condition: EventCondition,
+function eligibleRows(
+  condition: ConfiguredCondition,
+  entry: CatalogEntry,
   timeline: readonly SignalTimelineRow[],
   clock: EvaluationClock,
-): readonly EvaluationOutcome[] {
-  const entry = getCatalogEntry(condition.catalogId);
-  if (entry.kind !== condition.settings.kind) {
-    throw new Error(
-      `Condition ${condition.id} configures ${condition.settings.kind} settings for a ${entry.kind} catalog entry.`,
-    );
-  }
-  if (clock.nowMs < clock.dayStartMs) {
-    throw new Error("nowMs must be at or after dayStartMs.");
-  }
-
-  const rows = timeline
+): SignalTimelineRow[] {
+  return timeline
     .filter(
       (row) =>
         row.atMs >= clock.dayStartMs &&
@@ -73,7 +67,12 @@ export function evaluateCondition(
         matchesCondition(condition, entry, row),
     )
     .sort((left, right) => left.atMs - right.atMs);
+}
 
+function evaluateEvent(
+  condition: EventCondition,
+  rows: readonly SignalTimelineRow[],
+): readonly EventFiredOutcome[] {
   const outcomes: EventFiredOutcome[] = [];
   const seenOccurrences = new Set<string>();
   let cumulativeValue = 0;
@@ -121,4 +120,89 @@ export function evaluateCondition(
   }
 
   return outcomes;
+}
+
+function rateOutcome(
+  condition: RateCondition,
+  atMs: number,
+  sourceEventId: string,
+  signalDelta: number,
+): RateCreditOutcome {
+  return {
+    type: "rateCredit",
+    atMs,
+    conditionId: condition.id,
+    sourceEventId,
+    signalDelta,
+    deltaMinutes:
+      signalDelta * condition.settings.reward.minutesPerUnit,
+  };
+}
+
+function evaluateRate(
+  condition: RateCondition,
+  rows: readonly SignalTimelineRow[],
+): readonly RateCreditOutcome[] {
+  const outcomes: RateCreditOutcome[] = [];
+  const seenSamples = new Set<string>();
+  let cumulativeValue = 0;
+
+  for (const row of rows) {
+    if (
+      row.event !== "signalSnapshot" &&
+      row.event !== "signalDelta"
+    ) {
+      continue;
+    }
+    if (seenSamples.has(row.payload.sampleId)) {
+      continue;
+    }
+    seenSamples.add(row.payload.sampleId);
+
+    const signalDelta =
+      row.event === "signalSnapshot"
+        ? row.payload.value - cumulativeValue
+        : row.payload.delta;
+    cumulativeValue += signalDelta;
+
+    if (signalDelta !== 0) {
+      outcomes.push(
+        rateOutcome(
+          condition,
+          row.atMs,
+          row.payload.sampleId,
+          signalDelta,
+        ),
+      );
+    }
+  }
+
+  return outcomes;
+}
+
+function isEventCondition(
+  condition: ConfiguredCondition,
+): condition is EventCondition {
+  return condition.settings.kind === "event";
+}
+
+export function evaluateCondition(
+  condition: ConfiguredCondition,
+  timeline: readonly SignalTimelineRow[],
+  clock: EvaluationClock,
+): readonly EvaluationOutcome[] {
+  const entry = getCatalogEntry(condition.catalogId);
+  if (entry.kind !== condition.settings.kind) {
+    throw new Error(
+      `Condition ${condition.id} configures ${condition.settings.kind} settings for a ${entry.kind} catalog entry.`,
+    );
+  }
+  if (clock.nowMs < clock.dayStartMs) {
+    throw new Error("nowMs must be at or after dayStartMs.");
+  }
+
+  const rows = eligibleRows(condition, entry, timeline, clock);
+  return isEventCondition(condition)
+    ? evaluateEvent(condition, rows)
+    : evaluateRate(condition, rows);
 }

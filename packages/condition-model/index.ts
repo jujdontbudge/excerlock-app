@@ -53,12 +53,16 @@ export type {
 export { EVALUATION_TIMELINES } from "./fixtures/evaluation-timelines";
 export { evaluateCondition } from "./evaluate";
 export type {
+  ConfiguredCondition,
   EvaluationClock,
   EvaluationOutcome,
   EventCondition,
   EventFiredOutcome,
   EventReward,
   EventSettings,
+  RateCondition,
+  RateCreditOutcome,
+  RateSettings,
   SignalDeltaPayload,
   SignalOccurrencePayload,
   SignalSnapshotPayload,

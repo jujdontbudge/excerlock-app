@@ -18,13 +18,30 @@ export interface EventSettings {
   readonly cooldownMs: number;
 }
 
-export interface EventCondition {
+interface BaseCondition {
   readonly id: string;
   readonly catalogId: CatalogId;
   readonly source: ConditionSource;
   readonly placeId?: string;
+}
+
+export interface EventCondition extends BaseCondition {
   readonly settings: EventSettings;
 }
+
+export interface RateSettings {
+  readonly kind: "rate";
+  readonly reward: {
+    readonly type: "proportionalCredit";
+    readonly minutesPerUnit: number;
+  };
+}
+
+export interface RateCondition extends BaseCondition {
+  readonly settings: RateSettings;
+}
+
+export type ConfiguredCondition = EventCondition | RateCondition;
 
 interface SignalPayload {
   readonly signal: Signal;
@@ -87,4 +104,13 @@ export interface EventFiredOutcome {
   readonly reward: EventReward;
 }
 
-export type EvaluationOutcome = EventFiredOutcome;
+export interface RateCreditOutcome {
+  readonly type: "rateCredit";
+  readonly atMs: number;
+  readonly conditionId: string;
+  readonly sourceEventId: string;
+  readonly signalDelta: number;
+  readonly deltaMinutes: number;
+}
+
+export type EvaluationOutcome = EventFiredOutcome | RateCreditOutcome;
