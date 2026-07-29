@@ -64,7 +64,7 @@ export type HomeStoreValues = Readonly<{
 
 /**
  * A new user starts empty (PRD §8, decided 2026-07-28) and under Full Lock, so
- * the hero means something before the allowance editor lands in Manage.
+ * the hero means something before they choose an allowance in Manage.
  */
 export const DEFAULT_HOME_STATE: HomeStoreValues = Object.freeze({
   conditions: [],

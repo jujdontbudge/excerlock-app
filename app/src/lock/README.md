@@ -28,14 +28,12 @@ Two consequences worth naming, because they look like missing features until you
 | --- | --- |
 | `screens/LockScreen.tsx` | Composes the four cards. Owns no state of its own. |
 | `controller/lockController.ts` | The module's one conversation with the OS — four verbs, one immutable `LockSnapshot` |
-| `controller/ledgerSource.ts` | The Phase-2 wiring seam: where the journal and the clock come from |
+| `controller/ledgerSource.ts` | The visible wiring seam: reads/subscribes to Home's journal, ledger config and allowance |
 | `hooks/useLockSnapshot.ts` | Binds a mounted screen to the controller's observable |
 | `model/lockStatus.ts` | The current-lock-state view model — what, why, when it flips |
-| `model/fullLock.ts` | Full Lock as an allowance number, and its two transitions |
 | `model/permissionCopy.ts` | The permissions primer copy, per authorization state |
 | `model/fullLockCopy.ts` | The confirmation sheet's copy, written from the allowance |
 | `model/wallClock.ts` | The one place a lock-window timestamp becomes "7:00 AM" |
-| `store/lockStore.ts` | The base allowance, persisted to AsyncStorage |
 | `components/` | Presentational only — every one renders a model and computes nothing |
 | `testing/fakeScreenTime.ts` | An in-memory `ScreenTimeModule` for this module's tests |
 
@@ -49,16 +47,15 @@ day's floor.
 
 ## Phase-2 boundaries
 
-- **The allowance has two owners today.** `store/lockStore.ts` holds `baseAllowanceMinutes` because
-  Home's `ledgerConfig` carries the same value with no setter and belongs to another module. Both
-  default to Full Lock, so they agree until someone edits one. **When Manage's allowance picker
-  lands (PRD §8 — 0 h–4 h in 5-min steps, plus Unlimited), these must collapse to one owner** and
-  `controller/ledgerSource.ts` becomes its reader. That file is the only place the coupling lives.
+- **The allowance has one owner: Home's persisted `ledgerConfig`.** Its Full Lock memory lives beside
+  it in the same store. This module keeps no allowance store or copy:
+  `controller/ledgerSource.ts` is the visible seam that reads the value, invokes the owner's Full
+  Lock transition, and subscribes a running controller so a Manage change reconciles Screen Time
+  immediately.
 - **Nothing here schedules a lock window yet.** `getLockWindows()` is read so the surface can say
   when a shield lifts; registering windows belongs to Manage → Rules (PRD §3.10–3.11).
-- **The onboarding primer still carries its own literals.**
-  `onboarding/screens/PermissionsPrimerScreen.tsx` is a Phase-2 scaffold; `PERMISSION_COPY` is
-  exported so it can adopt this copy — and the real authorization call — when it is made real.
+- **The onboarding primer reads `PERMISSION_COPY.notDetermined`.** It primes before the ask, so the
+  real authorization call itself remains Phase 3 work without duplicating these words.
 - **The shield screen itself is not this module.** PRD §3.15 surface 1 (what a *blocked app* shows)
   is a native Shield extension. This is the in-app surface that explains and controls it.
 

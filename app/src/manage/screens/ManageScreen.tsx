@@ -16,8 +16,8 @@ import { ManageEmpty } from "../components/ManageEmpty";
 import { toConditionRows } from "../model/conditionRows";
 
 /**
- * Tab 2. Every saved condition, its switch, and the two edits Manage owns:
- * change it, or delete it.
+ * Tab 2. The daily allowance plus every saved condition, its switch, and its
+ * two row edits: change it, or delete it.
  *
  * It creates nothing and computes nothing. The conditions, the switch and the
  * save all belong to Home's store; editing re-opens Home's builder on the
