@@ -1,5 +1,9 @@
 export { getNotificationModule } from "./accessor";
 export {
+  NotificationSettingsCard,
+  type NotificationSettingsCardProps,
+} from "./components/NotificationSettingsCard";
+export {
   NotificationScheduler,
   buildDayPlan,
   type NotificationPlanningInput,
