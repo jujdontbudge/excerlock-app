@@ -31,4 +31,33 @@ describe("ConditionBreakdownCard", () => {
       /^Standing desk0m$/,
     );
   });
+
+  it("renders missing historical attribution as not recorded, never as zero", async () => {
+    await render(
+      <ConditionBreakdownCard
+        caption="This week"
+        items={[
+          {
+            conditionId: "legacy-gym",
+            name: "Gym visit",
+            status: "notRecorded",
+            earnedMinutes: null,
+          },
+          {
+            conditionId: "walking",
+            name: "While walking",
+            status: "recorded",
+            earnedMinutes: 0,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByTestId("condition-earning-legacy-gym")).toHaveTextContent(
+      /^Gym visitnot recorded$/,
+    );
+    expect(screen.getByTestId("condition-earning-walking")).toHaveTextContent(
+      /^While walking0m$/,
+    );
+  });
 });

@@ -17,7 +17,7 @@ export function ConditionBreakdownCard({
   items,
   caption,
 }: ConditionBreakdownCardProps) {
-  const { spacing, typography } = useTheme();
+  const { colors, spacing, typography } = useTheme();
 
   return (
     <Card testID="condition-breakdown-card" style={{ gap: spacing.md }}>
@@ -30,8 +30,15 @@ export function ConditionBreakdownCard({
           style={styles.row}
         >
           <Text style={[typography.cardTitle, styles.name]}>{item.name}</Text>
-          <Text style={typography.numeric}>
-            {item.status === "recorded" ? formatMinutes(item.earnedMinutes) : null}
+          <Text
+            style={[
+              item.status === "recorded" ? typography.numeric : typography.body,
+              item.status === "notRecorded" ? { color: colors.textTertiary } : null,
+            ]}
+          >
+            {item.status === "recorded"
+              ? formatMinutes(item.earnedMinutes)
+              : "not recorded"}
           </Text>
         </View>
       ))}
