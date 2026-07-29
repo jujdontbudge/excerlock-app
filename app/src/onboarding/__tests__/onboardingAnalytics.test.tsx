@@ -77,4 +77,24 @@ describe("onboarding analytics", () => {
       ]),
     );
   });
+
+  it("does not emit a duplicate step view when the flow re-renders", async () => {
+    const firstScreen = FLOW_SCREENS[0];
+    const renderedFlow = await render(
+      <OnboardingFlow onComplete={jest.fn()} />,
+    );
+
+    await renderedFlow.rerender(
+      <OnboardingFlow onComplete={jest.fn()} />,
+    );
+
+    expect(recordingSink.signals).toEqual([
+      { kind: "screen", screen: firstScreen, props: {} },
+      {
+        kind: "capture",
+        event: "onboarding_screen_viewed",
+        props: { screen: firstScreen },
+      },
+    ]);
+  });
 });
