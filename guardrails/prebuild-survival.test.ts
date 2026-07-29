@@ -55,7 +55,13 @@ function readProjectTargets(project: string): ProjectTarget[] {
     ),
   ];
 
-  return targetHeaders.map(([, targetId, name]) => {
+  return targetHeaders.flatMap((header) => {
+    const targetId = header[1];
+    const name = header[2];
+    if (!targetId || !name) {
+      return [];
+    }
+
     const target = projectObject(project, targetId);
     const configurationListId = target.match(/buildConfigurationList = ([A-F0-9]+) /)?.[1];
     const configurationList = configurationListId
@@ -63,7 +69,10 @@ function readProjectTargets(project: string): ProjectTarget[] {
       : "";
     const configurationIds = [
       ...configurationList.matchAll(/^\t\t\t\t([A-F0-9]+) \/\*/gm),
-    ].map((match) => match[1]);
+    ].flatMap((match) => {
+      const configurationId = match[1];
+      return configurationId ? [configurationId] : [];
+    });
 
     return {
       name,
@@ -73,7 +82,10 @@ function readProjectTargets(project: string): ProjectTarget[] {
           ...projectObject(project, id).matchAll(
             /CODE_SIGN_ENTITLEMENTS = "?([^";]+\.entitlements)"?;/g,
           ),
-        ].map((match) => match[1]),
+        ].flatMap((match) => {
+          const entitlement = match[1];
+          return entitlement ? [entitlement] : [];
+        }),
       })),
     };
   });

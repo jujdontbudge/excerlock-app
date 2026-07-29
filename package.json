@@ -8,7 +8,8 @@
   "workspaces": [
     "app",
     "server",
-    "packages/*"
+    "packages/*",
+    "guardrails"
   ],
   "scripts": {
     "test": "npm run test:unit && npm run test:guardrails",
