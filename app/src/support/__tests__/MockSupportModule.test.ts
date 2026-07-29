@@ -76,4 +76,46 @@ describe("MockSupportModule", () => {
       },
     ]);
   });
+
+  it("saves an offline request as failed until the user explicitly retries it", async () => {
+    const mock = new MockSupportModule({
+      clock: new ManualSupportClock(3_000),
+    });
+    const support: SupportModule = mock;
+    mock.setOnline(false);
+
+    await expect(
+      support.submitSupport({ message: "My permission status looks wrong." }),
+    ).resolves.toEqual({
+      status: "failed",
+      submissionId: "support-1",
+      error: {
+        code: "offline",
+        message:
+          "You're offline. This wasn't sent. It is saved here so you can try again.",
+      },
+    });
+    expect((await support.getSnapshot()).submissions[0]).toMatchObject({
+      id: "support-1",
+      status: "failed",
+      error: { code: "offline" },
+    });
+
+    mock.setOnline(true);
+    await expect(support.retrySubmission("support-1")).resolves.toEqual({
+      status: "submitted",
+      submissionId: "support-1",
+    });
+    expect((await support.getSnapshot()).submissions).toEqual([
+      {
+        id: "support-1",
+        kind: "support",
+        title: null,
+        message: "My permission status looks wrong.",
+        createdAtMs: 3_000,
+        status: "submitted",
+        error: null,
+      },
+    ]);
+  });
 });

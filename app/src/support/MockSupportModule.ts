@@ -28,11 +28,18 @@ type MockSubmissionResult =
       message: string;
     }>;
 
+const OFFLINE_ERROR: SupportError = Object.freeze({
+  code: "offline",
+  message:
+    "You're offline. This wasn't sent. It is saved here so you can try again.",
+});
+
 export class MockSupportModule implements SupportModule {
   private readonly clock: SupportClock;
   private nextSupportId = 1;
   private snapshot = INITIAL_SNAPSHOT;
   private nextSubmissionResult: MockSubmissionResult = "submitted";
+  private online = true;
   private readonly listeners = new Set<SupportStateListener>();
 
   public constructor(options: MockSupportModuleOptions = {}) {
@@ -55,10 +62,48 @@ export class MockSupportModule implements SupportModule {
       status: "submitting",
       error: null,
     });
-    this.publish({
-      submissions: Object.freeze([...this.snapshot.submissions, submission]),
-    });
+    return this.attemptSubmission(submission);
+  }
+
+  public async retrySubmission(
+    submissionId: string,
+  ): Promise<SubmitSupportResult> {
+    const submission = this.snapshot.submissions.find(
+      (candidate) => candidate.id === submissionId,
+    );
+    if (submission === undefined) {
+      throw new Error(`Unknown support submission: ${submissionId}`);
+    }
+    if (submission.status === "submitted") {
+      return Object.freeze({ status: "submitted", submissionId });
+    }
+
+    return this.attemptSubmission(
+      Object.freeze({
+        ...submission,
+        status: "submitting",
+        error: null,
+      }),
+    );
+  }
+
+  private async attemptSubmission(
+    submission: SupportSubmission,
+  ): Promise<SubmitSupportResult> {
+    this.saveSubmission(submission);
     await Promise.resolve();
+    if (!this.online) {
+      this.replaceSubmission({
+        ...submission,
+        status: "failed",
+        error: OFFLINE_ERROR,
+      });
+      return Object.freeze({
+        status: "failed",
+        submissionId: submission.id,
+        error: OFFLINE_ERROR,
+      });
+    }
     if (typeof this.nextSubmissionResult === "object") {
       const error: SupportError = Object.freeze({
         code: this.nextSubmissionResult.code,
@@ -91,6 +136,11 @@ export class MockSupportModule implements SupportModule {
     this.nextSubmissionResult = result;
   }
 
+  /** Deterministic mock driver; not part of the app-facing interface. */
+  public setOnline(online: boolean): void {
+    this.online = online;
+  }
+
   public subscribe(listener: SupportStateListener): SupportUnsubscribe {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -103,6 +153,20 @@ export class MockSupportModule implements SupportModule {
           current.id === submission.id ? Object.freeze(submission) : current,
         ),
       ),
+    });
+  }
+
+  private saveSubmission(submission: SupportSubmission): void {
+    const exists = this.snapshot.submissions.some(
+      (current) => current.id === submission.id,
+    );
+    if (exists) {
+      this.replaceSubmission(submission);
+      return;
+    }
+
+    this.publish({
+      submissions: Object.freeze([...this.snapshot.submissions, submission]),
     });
   }
 

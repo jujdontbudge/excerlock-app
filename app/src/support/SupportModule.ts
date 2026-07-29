@@ -38,5 +38,6 @@ export type SupportUnsubscribe = () => void;
 export interface SupportModule {
   getSnapshot(): Promise<SupportSnapshot>;
   submitSupport(request: Readonly<{ message: string }>): Promise<SubmitSupportResult>;
+  retrySubmission(submissionId: string): Promise<SubmitSupportResult>;
   subscribe(listener: SupportStateListener): SupportUnsubscribe;
 }
