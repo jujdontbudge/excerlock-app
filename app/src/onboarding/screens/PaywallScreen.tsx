@@ -1,33 +1,22 @@
-import { Text, View } from "react-native";
+import { SubscriptionPaywall } from "@/subscription";
 
-import { Card, useTheme } from "@/ui";
-
-import { OnboardingScaffold } from "../components/OnboardingScaffold";
+import { useConfessionStore } from "../store/confessionStore";
 import type { OnboardingScreenProps } from "./ValuePropScreen";
 
-/** Phase 2 scaffold. TODO(Phase 5): render and purchase the remote Adapty placement. */
+/** The onboarding rail supplies navigation and confession; subscription owns the surface. */
 export function PaywallScreen({
   onContinue,
   onBack,
 }: OnboardingScreenProps) {
-  const { spacing, typography } = useTheme();
+  const confessedDailyMinutes = useConfessionStore(
+    (state) => state.confessedDailyMinutes,
+  );
 
   return (
-    <OnboardingScaffold
-      title="Unlock the full ExcerLock plan"
-      body="Choose the plan that helps you turn intention into a daily habit."
-      content={
-        <Card style={{ alignSelf: "stretch" }}>
-          <View style={{ gap: spacing.sm }}>
-            <Text style={typography.cardTitle}>Annual and monthly plans</Text>
-            <Text style={typography.body}>
-              Trial available on the annual plan
-            </Text>
-          </View>
-        </Card>
-      }
-      primaryLabel="Start free trial"
-      onContinue={onContinue}
+    <SubscriptionPaywall
+      placement="onboarding"
+      confessedDailyMinutes={confessedDailyMinutes}
+      onEntitled={onContinue}
       onBack={onBack}
     />
   );
