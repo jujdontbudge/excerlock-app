@@ -3,6 +3,7 @@ import {
   type AccountClock,
 } from "./clock";
 import type {
+  AccountDeletionResult,
   AccountModule,
   AccountError,
   AccountSnapshot,
@@ -136,6 +137,20 @@ export class MockAccountModule implements AccountModule {
       intent: Object.freeze({ status: "idle", error: null }),
     });
     return Object.freeze({ status: "signedOut" });
+  }
+
+  public async deleteAccount(): Promise<AccountDeletionResult> {
+    this.publish({
+      ...this.snapshot,
+      intent: Object.freeze({ status: "deleting", error: null }),
+    });
+    await Promise.resolve();
+
+    this.publish({
+      session: Object.freeze({ status: "signedOut" }),
+      intent: Object.freeze({ status: "idle", error: null }),
+    });
+    return Object.freeze({ status: "deleted" });
   }
 
   /** Deterministic mock driver; not part of the app-facing interface. */

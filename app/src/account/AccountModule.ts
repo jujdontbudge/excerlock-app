@@ -22,7 +22,8 @@ export type AccountIntentState =
   | Readonly<{ status: "idle"; error: AccountError | null }>
   | Readonly<{ status: "signingIn"; error: null }>
   | Readonly<{ status: "signingUp"; error: null }>
-  | Readonly<{ status: "signingOut"; error: null }>;
+  | Readonly<{ status: "signingOut"; error: null }>
+  | Readonly<{ status: "deleting"; error: null }>;
 
 export type AccountSnapshot = Readonly<{
   session: AccountSession;
@@ -38,6 +39,7 @@ export type AuthenticationResult =
   | Readonly<{ status: "failed"; error: AccountError }>;
 
 export type SignOutResult = Readonly<{ status: "signedOut" }>;
+export type AccountDeletionResult = Readonly<{ status: "deleted" }>;
 
 export type AccountStateListener = (snapshot: AccountSnapshot) => void;
 export type AccountUnsubscribe = () => void;
@@ -47,5 +49,6 @@ export interface AccountModule {
   signIn(): Promise<AuthenticationResult>;
   signUp(): Promise<AuthenticationResult>;
   signOut(): Promise<SignOutResult>;
+  deleteAccount(): Promise<AccountDeletionResult>;
   subscribe(listener: AccountStateListener): AccountUnsubscribe;
 }

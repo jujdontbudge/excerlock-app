@@ -176,4 +176,22 @@ describe("MockAccountModule", () => {
     const { journal, ledgerConfig } = useHomeStore.getState();
     expect(remainingMinutes(journal, ledgerConfig, atMs)).toBe(30);
   });
+
+  it("deletes the signed-in account through an observable intent", async () => {
+    const account: AccountModule = new MockAccountModule();
+    await account.signUp();
+    const observed: string[] = [];
+    account.subscribe((snapshot) => {
+      observed.push(`${snapshot.session.status}:${snapshot.intent.status}`);
+    });
+
+    await expect(account.deleteAccount()).resolves.toEqual({
+      status: "deleted",
+    });
+
+    expect(observed).toEqual(["signedIn:deleting", "signedOut:idle"]);
+    expect((await account.getSnapshot()).session).toEqual({
+      status: "signedOut",
+    });
+  });
 });
