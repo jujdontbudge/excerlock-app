@@ -1,0 +1,29 @@
+{
+  "name": "strava-trainer-ride",
+  "version": 1,
+  "description": "A scrubbed Strava virtual trainer ride.",
+  "timeline": [
+    {
+      "atMs": -2000,
+      "event": "vendor.connectionChanged",
+      "payload": { "vendor": "strava", "state": "connected" }
+    },
+    {
+      "atMs": -1000,
+      "event": "vendor.activityAvailable",
+      "payload": {
+        "vendor": "strava",
+        "raw": {
+          "id": 10000000003,
+          "name": "Trainer Ride",
+          "type": "Ride",
+          "sport_type": "VirtualRide",
+          "start_date": "2026-07-29T10:00:00Z",
+          "elapsed_time": 2700,
+          "manual": false,
+          "trainer": true
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "none-connected",
+  "version": 1,
+  "description": "All Tier-1 vendors are disconnected and no activities are available.",
+  "timeline": [
+    {
+      "atMs": 0,
+      "event": "vendor.connectionChanged",
+      "payload": { "vendor": "strava", "state": "disconnected" }
+    },
+    {
+      "atMs": 0,
+      "event": "vendor.connectionChanged",
+      "payload": { "vendor": "oura", "state": "disconnected" }
+    },
+    {
+      "atMs": 0,
+      "event": "vendor.connectionChanged",
+      "payload": { "vendor": "whoop", "state": "disconnected" }
+    },
+    {
+      "atMs": 0,
+      "event": "vendor.connectionChanged",
+      "payload": { "vendor": "polar", "state": "disconnected" }
+    }
+  ]
+}

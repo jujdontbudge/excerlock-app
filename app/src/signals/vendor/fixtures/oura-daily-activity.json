@@ -1,0 +1,27 @@
+{
+  "name": "oura-daily-activity",
+  "version": 1,
+  "description": "A scrubbed Oura daily-activity record.",
+  "timeline": [
+    {
+      "atMs": -2000,
+      "event": "vendor.connectionChanged",
+      "payload": { "vendor": "oura", "state": "connected" }
+    },
+    {
+      "atMs": -1000,
+      "event": "vendor.activityAvailable",
+      "payload": {
+        "vendor": "oura",
+        "raw": {
+          "id": "activity-scrubbed-1",
+          "day": "2026-07-29",
+          "score": 84,
+          "steps": 8120,
+          "active_calories": 510,
+          "equivalent_walking_distance": 7400
+        }
+      }
+    }
+  ]
+}
