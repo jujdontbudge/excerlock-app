@@ -121,4 +121,30 @@ describe("MockSubscriptionModule", () => {
     });
     expect(isPremiumEntitled(snapshot)).toBe(false);
   });
+
+  it("restores a previous premium entitlement", async () => {
+    const mock = new MockSubscriptionModule();
+    const subscription: SubscriptionModule = mock;
+    mock.setNextRestoreResult({
+      status: "restored",
+      entitlement: {
+        status: "active",
+        productId: "excerlock_annual",
+        purchasedAtMs: 500,
+        renewsAtMs: 31_536_000_500,
+      },
+    });
+    const observedIntents: string[] = [];
+    subscription.subscribe((snapshot) => {
+      observedIntents.push(snapshot.intent.status);
+    });
+
+    await expect(subscription.restore()).resolves.toMatchObject({
+      status: "restored",
+      entitlement: { productId: "excerlock_annual" },
+    });
+
+    expect(observedIntents).toEqual(["restoring", "idle"]);
+    expect(isPremiumEntitled(await subscription.getSnapshot())).toBe(true);
+  });
 });

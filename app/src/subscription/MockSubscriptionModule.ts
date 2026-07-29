@@ -6,8 +6,9 @@ import {
 } from "./clock";
 import { FALLBACK_ONBOARDING_PAYWALL } from "./fallbackPaywall";
 import type {
-  PremiumEntitlement,
+  ActivePremiumEntitlement,
   PurchaseResult,
+  RestoreResult,
   SubscriptionError,
   SubscriptionModule,
   SubscriptionSnapshot,
@@ -32,10 +33,21 @@ type MockPurchaseResult =
   | "cancelled"
   | Readonly<{ status: "failed"; message: string }>;
 
+type MockRestoreResult =
+  | Readonly<{
+      status: "restored";
+      entitlement: ActivePremiumEntitlement;
+    }>
+  | Readonly<{ status: "notFound" }>
+  | Readonly<{ status: "failed"; message: string }>;
+
 export class MockSubscriptionModule implements SubscriptionModule {
   private readonly clock: SubscriptionClock;
   private snapshot = INITIAL_SNAPSHOT;
   private nextPurchaseResult: MockPurchaseResult = "purchased";
+  private nextRestoreResult: MockRestoreResult = Object.freeze({
+    status: "notFound",
+  });
   private readonly listeners = new Set<SubscriptionStateListener>();
 
   public constructor(options: MockSubscriptionModuleOptions = {}) {
@@ -99,7 +111,7 @@ export class MockSubscriptionModule implements SubscriptionModule {
     }
 
     const purchasedAtMs = this.clock.nowMs();
-    const entitlement: PremiumEntitlement = Object.freeze({
+    const entitlement: ActivePremiumEntitlement = Object.freeze({
       status: "active",
       productId,
       purchasedAtMs,
@@ -113,9 +125,54 @@ export class MockSubscriptionModule implements SubscriptionModule {
     return Object.freeze({ status: "purchased", entitlement });
   }
 
+  public async restore(): Promise<RestoreResult> {
+    this.publish({
+      ...this.snapshot,
+      intent: Object.freeze({ status: "restoring", error: null }),
+    });
+    await Promise.resolve();
+
+    if (this.nextRestoreResult.status === "restored") {
+      const entitlement = Object.freeze({
+        ...this.nextRestoreResult.entitlement,
+      });
+      this.publish({
+        ...this.snapshot,
+        entitlement,
+        intent: Object.freeze({ status: "idle", error: null }),
+      });
+      return Object.freeze({ status: "restored", entitlement });
+    }
+
+    const error: SubscriptionError = Object.freeze({
+      code:
+        this.nextRestoreResult.status === "notFound"
+          ? "no_previous_purchase"
+          : "restore_failed",
+      message:
+        this.nextRestoreResult.status === "notFound"
+          ? "No previous purchase was found."
+          : this.nextRestoreResult.message,
+    });
+    this.publish({
+      ...this.snapshot,
+      intent: Object.freeze({ status: "idle", error }),
+    });
+    return Object.freeze({
+      status:
+        this.nextRestoreResult.status === "notFound" ? "notFound" : "failed",
+      error,
+    });
+  }
+
   /** Deterministic mock driver; not part of the app-facing interface. */
   public setNextPurchaseResult(result: MockPurchaseResult): void {
     this.nextPurchaseResult = result;
+  }
+
+  /** Deterministic mock driver; not part of the app-facing interface. */
+  public setNextRestoreResult(result: MockRestoreResult): void {
+    this.nextRestoreResult = result;
   }
 
   public subscribe(
