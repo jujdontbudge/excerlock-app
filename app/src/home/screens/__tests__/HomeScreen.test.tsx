@@ -110,6 +110,17 @@ describe("HomeScreen", () => {
     expect(screen.getByText("6,240 steps → 2h 4m banked today")).toBeOnTheScreen();
   });
 
+  it("leaves a condition switched off in Manage off the dashboard", async () => {
+    seed(stepGoal, walking);
+    useHomeStore.getState().setConditionEnabled("c-event", false);
+    await render(
+      <HomeScreen feed={stubFeed({ totals: { steps: 6_240 }, activeSignals: [] })} now={now} />,
+    );
+
+    expect(screen.getAllByTestId("condition-card")).toHaveLength(1);
+    expect(screen.queryByText("6,240 of 10,000 steps")).toBeNull();
+  });
+
   it("banks an event's payout in place and never reverses the card", async () => {
     seed(stepGoal);
     await render(<HomeScreen feed={stubFeed()} now={now} />);

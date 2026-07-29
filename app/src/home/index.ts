@@ -12,6 +12,7 @@ export {
   canAdvance,
   configureForm,
   draftCondition,
+  draftFromCondition,
   EMPTY_DRAFT,
   FIXED_CHUNK_RANGE,
   GRACE_OPTIONS_MS,
@@ -45,6 +46,7 @@ export { useHomeSignals } from "./signals/useHomeSignals";
 export {
   DEFAULT_HOME_STATE,
   HOME_STORAGE_KEY,
+  selectActiveConditions,
   selectPickerContext,
   useHomeStore,
   type HomeStoreValues,

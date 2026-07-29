@@ -33,7 +33,7 @@ a rendering of a rule owned elsewhere — the one genuine exception is documente
 | `signals/homeSignalFeed.ts` | Flattens SignalKit's providers into one `SignalReading` |
 | `signals/fixtureFeed.ts` | Phase-2 composition root: fixture providers, real-time playback |
 | `signals/useHomeSignals.ts` | Subscribes a mounted screen to a feed |
-| `store/homeStore.ts` | Conditions + journal, persisted to AsyncStorage |
+| `store/homeStore.ts` | Conditions + journal + which conditions are switched off, persisted to AsyncStorage |
 | `components/` | Presentational only — every one renders a model and computes nothing |
 | `builder/` | The create-condition sheet (below) |
 | `testing/stubFeed.ts` | A feed that reports one fixed reading, for screen tests |
@@ -49,9 +49,14 @@ groups, orders and drops `hidden` — so promoted / weak / impossible coverage, 
 "connect Strava first" all render straight from the picker's own verdicts and reasons.
 
 `builder/builderDraft.ts` is the whole flow as a pure reducer, which is why the sheet is a renderer
-rather than a state machine. **No picker is ever pre-filled** (PRD §8, decided 2026-07-28): a draft
-carries `undefined` until the user chooses, and `canAdvance` will not leave the configure step until
-`draftCondition` can produce a complete condition. The preview step renders that exact condition, so
+rather than a state machine. `draftFromCondition` is its inverse — the draft that re-opens a *saved*
+condition on the configure step — and with the sheet's `initialDraft` prop it is how Manage (#45)
+edits through this surface instead of forking a second builder. The sheet reads `initialDraft` once,
+on mount, and `Back` never goes behind the step it opened on.
+
+**No picker is ever pre-filled** (PRD §8, decided 2026-07-28): a draft carries `undefined` until the
+user chooses, and `canAdvance` will not leave the configure step until `draftCondition` can produce a
+complete condition. The preview step renders that exact condition, so
 the card the user approves is the card they get.
 
 ## Phase-2 boundaries
@@ -63,6 +68,10 @@ the card the user approves is the card they get.
 - **Builder step 5 — the condition's banner — is owed.** The 21-banner library does not exist, so every
   condition wears the default card treatment. Repeatability, per-day cap and cooldown save their
   decided "off" values rather than offering controls.
+- **A condition switched off in Manage leaves the dashboard.** `disabledConditionIds` lives in this
+  store; `selectActiveConditions` is what the cards are built from, and `recordEventPayout` refuses a
+  switched-off condition. Off is not deleted — the condition keeps its uniqueness key in the picker
+  context, so its catalog slot stays taken.
 - **Screen-time spend is whatever the journal holds.** Nothing reports usage yet, so `spentLabel` is 0
   until the shield module lands.
 
