@@ -128,10 +128,7 @@ export class LockController {
     return selection;
   }
 
-  /**
-   * PRD §3.2: entering Full Lock is setting the base allowance to zero — the
-   * one number, at its one owner, going down and coming back.
-   */
+  /** Full Lock is the owner's one allowance going to zero and coming back. */
   public async setFullLock(on: boolean): Promise<void> {
     this.suppressAllowanceSubscription = true;
     try {
@@ -149,11 +146,7 @@ export class LockController {
     await this.screenTime.reconcile(selection, desired);
   }
 
-  /**
-   * Store writes are synchronous but the Screen Time boundary is not. Chaining
-   * reconciliations keeps rapid picker presses ordered and makes every pass read
-   * the owner's latest value rather than racing stale desired states.
-   */
+  /** Serialize async reconciliation; every pass reads the latest allowance. */
   private queueAllowanceReconciliation(): Promise<void> {
     const reconcile = async () => {
       const selection = this.snapshot.shield?.selection ?? null;

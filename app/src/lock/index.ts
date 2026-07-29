@@ -18,3 +18,4 @@ export {
 } from "./model/lockStatus";
 export { PERMISSION_COPY, type PermissionCopy } from "./model/permissionCopy";
 export { formatWallClockTime } from "./model/wallClock";
+export { FakeScreenTime } from "./testing/fakeScreenTime";

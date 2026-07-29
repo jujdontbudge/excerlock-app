@@ -14,8 +14,7 @@ import {
 } from "@testing-library/react-native";
 
 import { DEFAULT_HOME_STATE, deriveLockHero, useHomeStore } from "@/home";
-import { LockController } from "@/lock";
-import { FakeScreenTime } from "@/lock/testing/fakeScreenTime";
+import { FakeScreenTime, LockController } from "@/lock";
 
 import { ManageScreen } from "../screens/ManageScreen";
 

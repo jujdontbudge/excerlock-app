@@ -35,6 +35,7 @@ a rendering of a rule owned elsewhere — the one genuine exception is documente
 | `signals/fixtureFeed.ts` | Phase-2 composition root: fixture providers, real-time playback |
 | `signals/useHomeSignals.ts` | Subscribes a mounted screen to a feed |
 | `store/homeStore.ts` | Conditions + journal + ledger config (including the one base-allowance owner), persisted to AsyncStorage |
+| `store/homeStorePersistence.ts` | Validates and revives persisted store fields, including Unlimited's JSON sentinel |
 | `model/allowance.ts` | Base-allowance grid and Full Lock's zero/restore transitions |
 | `components/` | Presentational only — every one renders a model and computes nothing |
 | `builder/` | The create-condition sheet (below) |
