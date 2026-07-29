@@ -158,4 +158,29 @@ describe("MockSupportModule", () => {
       ],
     });
   });
+
+  it("counts one vote and handles a double vote without incrementing again", async () => {
+    const support: SupportModule = new MockSupportModule();
+    await support.submitFeatureRequest({
+      title: "Home Screen widget",
+      message: "Show my balance without opening the app.",
+    });
+
+    await expect(support.voteOnFeatureRequest("feature-1")).resolves.toEqual({
+      status: "voted",
+      featureRequestId: "feature-1",
+      voteCount: 1,
+    });
+    await expect(support.voteOnFeatureRequest("feature-1")).resolves.toEqual({
+      status: "alreadyVoted",
+      featureRequestId: "feature-1",
+      voteCount: 1,
+    });
+
+    expect((await support.getSnapshot()).featureRequests[0]).toMatchObject({
+      id: "feature-1",
+      voteCount: 1,
+      hasVoted: true,
+    });
+  });
 });

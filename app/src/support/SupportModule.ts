@@ -45,6 +45,12 @@ export type SubmitSupportResult =
       error: SupportError;
     }>;
 
+export type VoteOnFeatureRequestResult = Readonly<{
+  status: "voted" | "alreadyVoted";
+  featureRequestId: string;
+  voteCount: number;
+}>;
+
 export type SupportStateListener = (snapshot: SupportSnapshot) => void;
 export type SupportUnsubscribe = () => void;
 
@@ -54,6 +60,9 @@ export interface SupportModule {
   submitFeatureRequest(
     request: Readonly<{ title: string; message: string }>,
   ): Promise<SubmitSupportResult>;
+  voteOnFeatureRequest(
+    featureRequestId: string,
+  ): Promise<VoteOnFeatureRequestResult>;
   retrySubmission(submissionId: string): Promise<SubmitSupportResult>;
   subscribe(listener: SupportStateListener): SupportUnsubscribe;
 }

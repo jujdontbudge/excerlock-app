@@ -11,6 +11,7 @@ import type {
   SupportStateListener,
   SupportSubmission,
   SupportUnsubscribe,
+  VoteOnFeatureRequestResult,
 } from "./SupportModule";
 
 const INITIAL_SNAPSHOT: SupportSnapshot = Object.freeze({
@@ -119,6 +120,43 @@ export class MockSupportModule implements SupportModule {
         error: null,
       }),
     );
+  }
+
+  public async voteOnFeatureRequest(
+    featureRequestId: string,
+  ): Promise<VoteOnFeatureRequestResult> {
+    const featureRequest = this.snapshot.featureRequests.find(
+      (candidate) => candidate.id === featureRequestId,
+    );
+    if (featureRequest === undefined) {
+      throw new Error(`Unknown feature request: ${featureRequestId}`);
+    }
+    if (featureRequest.hasVoted) {
+      return Object.freeze({
+        status: "alreadyVoted",
+        featureRequestId,
+        voteCount: featureRequest.voteCount,
+      });
+    }
+
+    const votedFeatureRequest: FeatureRequest = Object.freeze({
+      ...featureRequest,
+      voteCount: featureRequest.voteCount + 1,
+      hasVoted: true,
+    });
+    this.publish({
+      ...this.snapshot,
+      featureRequests: Object.freeze(
+        this.snapshot.featureRequests.map((current) =>
+          current.id === featureRequestId ? votedFeatureRequest : current,
+        ),
+      ),
+    });
+    return Object.freeze({
+      status: "voted",
+      featureRequestId,
+      voteCount: votedFeatureRequest.voteCount,
+    });
   }
 
   private async attemptSubmission(
