@@ -34,6 +34,13 @@ export const FIXTURE_CONDITIONS = {
   desk: { id: "standing-desk", label: "Standing desk" },
 } as const;
 
+export const FIXTURE_CONDITION_NAMES: Readonly<Record<string, string>> =
+  Object.freeze(
+    Object.fromEntries(
+      Object.values(FIXTURE_CONDITIONS).map(({ id, label }) => [id, label]),
+    ),
+  );
+
 /** Monday 6 July 2026 — the fixture's first day, so day 21 lands on a Sunday. */
 const FIRST_DAY_INDEX = Date.UTC(2026, 6, 6) / DAY_MS;
 

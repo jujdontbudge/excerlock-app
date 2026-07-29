@@ -6,6 +6,7 @@ import { Screen, SectionHeader, useTheme } from "@/ui";
 
 import {
   AnalysisEmpty,
+  ConditionBreakdownCard,
   DayLedger,
   EarnedSpentCard,
   RecapCard,
@@ -13,7 +14,10 @@ import {
   TimeReclaimedHero,
   WeekChart,
 } from "../components";
-import { FIXTURE_DAY_SUMMARIES } from "../fixtures";
+import {
+  FIXTURE_CONDITION_NAMES,
+  FIXTURE_DAY_SUMMARIES,
+} from "../fixtures";
 import { buildAnalysisView, type Weekday } from "../model";
 
 type AnalysisScreenProps = {
@@ -24,6 +28,8 @@ type AnalysisScreenProps = {
   days?: readonly DaySummary[];
   /** The *Start week on* setting (PRD §3.15 Tab 4). Monday until Settings owns it. */
   weekStartsOn?: Weekday;
+  /** Current display names keyed by the condition ids persisted in the ledger. */
+  conditionNames?: Readonly<Record<string, string>>;
   /**
    * The onboarding confession (#43). Left out, it comes from the confession
    * store — this module reads it and never writes it, because the baseline is a
@@ -42,14 +48,18 @@ type AnalysisScreenProps = {
  * All reading is done by `buildAnalysisView` — this file only lays out.
  */
 export function AnalysisScreen({
-  days = FIXTURE_DAY_SUMMARIES,
+  days,
   weekStartsOn,
+  conditionNames,
   confessedDailyMinutes,
 }: AnalysisScreenProps) {
   const { spacing, typography } = useTheme();
   const confessed = useConfessionStore((state) => state.confessedDailyMinutes);
-  const view = buildAnalysisView(days, {
+  const view = buildAnalysisView(days ?? FIXTURE_DAY_SUMMARIES, {
     ...(weekStartsOn === undefined ? {} : { weekStartsOn }),
+    conditionNames:
+      conditionNames ??
+      (days === undefined ? FIXTURE_CONDITION_NAMES : {}),
     confessedDailyMinutes:
       confessedDailyMinutes === undefined ? confessed : confessedDailyMinutes,
   });
@@ -81,6 +91,12 @@ export function AnalysisScreen({
 
             <SectionHeader title="Streak" />
             <StreakCard streak={view.streak} totals={view.weekTotals} />
+
+            <SectionHeader title="Earning breakdown" />
+            <ConditionBreakdownCard
+              caption="This week"
+              items={view.conditionBreakdown}
+            />
 
             <SectionHeader title="Day ledger" />
             <DayLedger days={view.ledger} />

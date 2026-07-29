@@ -77,6 +77,20 @@ describe("AnalysisScreen", () => {
     expect(screen.getByTestId("streak-active-days")).toHaveTextContent(/^6 of 7 days\b/);
   });
 
+  it("shows what each condition banked this week", async () => {
+    await render(<AnalysisScreen />);
+
+    expect(
+      screen.getByRole("header", { name: "Earning breakdown" }),
+    ).toBeOnTheScreen();
+    expect(screen.getByTestId("condition-earning-gym-visit")).toHaveTextContent(
+      /^Gym visit2h 15m$/,
+    );
+    expect(
+      screen.getByTestId("condition-earning-standing-desk"),
+    ).toHaveTextContent(/^Standing desk0m$/);
+  });
+
   it("draws one earned/spent bar pair per day of the week", async () => {
     await render(<AnalysisScreen />);
 
