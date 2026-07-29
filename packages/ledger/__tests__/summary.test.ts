@@ -174,6 +174,25 @@ describe('daySummaries', () => {
     expect(atFloor.conditions['walking']!.meaningfulActivity).toBe(true)
   })
 
+  it('records state qualification within the configured ledger day and omits non-qualifiers', () => {
+    const shiftedConfig = { ...config, dayBoundaryOffsetMinutes: 4 * 60 }
+    const days = daySummaries(
+      journalOf([
+        sustained(at(0, 3, 59), 'walking', 10),
+        sustained(at(0, 4), 'walking', 4),
+        sustained(at(0, 4), 'stretching', 9),
+        sustained(at(0, 5), 'walking', 6),
+      ]),
+      shiftedConfig,
+      at(0, 23),
+    )
+
+    expect(days.map((day) => day.dayIndex)).toEqual([-1, 0])
+    expect(days[0]!.conditions.walking!.firstQualifiedAtMs).toBe(at(0, 3, 59))
+    expect(days[1]!.conditions.walking!.firstQualifiedAtMs).toBe(at(0, 5))
+    expect(days[1]!.conditions.stretching).not.toHaveProperty('firstQualifiedAtMs')
+  })
+
   it('counts a condition once per day regardless of how many times it fires (activity definition §3.13)', () => {
     const [day] = daySummaries(
       journalOf([event(at(0, 8), 'gym-arrive'), event(at(0, 18), 'gym-arrive'), event(at(0, 12), 'run')]),
