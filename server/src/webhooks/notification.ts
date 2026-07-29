@@ -5,6 +5,7 @@ export interface ParsedVendorNotification {
   externalUserId: string;
   eventType: string;
   deliveryKey: string;
+  disconnectsConnection: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -75,6 +76,23 @@ export function parseVendorNotification(
   switch (vendor) {
     case "strava": {
       const objectType = requiredString(parsed, "object_type");
+      if (objectType === "athlete") {
+        const updates = parsed.updates;
+        if (
+          requiredString(parsed, "aspect_type") !== "update" ||
+          !isRecord(updates) ||
+          (updates.authorized !== false &&
+            updates.authorized !== "false")
+        ) {
+          return null;
+        }
+        return {
+          externalUserId: requiredIdentifier(parsed, "owner_id"),
+          eventType: "athlete.deauthorize",
+          deliveryKey: deliveryKey(parsed),
+          disconnectsConnection: true,
+        };
+      }
       if (objectType !== "activity") {
         return null;
       }
@@ -82,6 +100,7 @@ export function parseVendorNotification(
         externalUserId: requiredIdentifier(parsed, "owner_id"),
         eventType: `${objectType}.${requiredString(parsed, "aspect_type")}`,
         deliveryKey: deliveryKey(parsed),
+        disconnectsConnection: false,
       };
     }
     case "oura": {
@@ -93,6 +112,7 @@ export function parseVendorNotification(
         externalUserId: requiredIdentifier(parsed, "user_id"),
         eventType: `${dataType}.${requiredString(parsed, "event_type")}`,
         deliveryKey: deliveryKey(parsed),
+        disconnectsConnection: false,
       };
     }
     case "whoop": {
@@ -104,6 +124,7 @@ export function parseVendorNotification(
         externalUserId: requiredIdentifier(parsed, "user_id"),
         eventType,
         deliveryKey: deliveryKey(parsed),
+        disconnectsConnection: false,
       };
     }
     case "polar": {
@@ -118,6 +139,7 @@ export function parseVendorNotification(
         externalUserId: requiredIdentifier(parsed, "user_id"),
         eventType,
         deliveryKey: deliveryKey(parsed),
+        disconnectsConnection: false,
       };
     }
   }

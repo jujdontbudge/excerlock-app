@@ -9,15 +9,16 @@ import type { Vendor } from "../src/vendors/index.js";
 
 class MemoryWebhookRepository implements VendorWebhookRepository {
   readonly events: NewVendorWebhookEventRecord[] = [];
+  readonly deletedConnectionIds: string[] = [];
   private readonly deliveryKeys = new Map<string, string>();
 
-  constructor(private readonly connection: VendorWebhookConnection) {}
+  constructor(private connection: VendorWebhookConnection | null) {}
 
   async findConnectionByExternalUserId(
     vendor: Vendor,
     externalUserId: string,
   ): Promise<VendorWebhookConnection | null> {
-    return this.connection.vendor === vendor &&
+    return this.connection?.vendor === vendor &&
       this.connection.externalUserId === externalUserId
       ? this.connection
       : null;
@@ -34,6 +35,11 @@ class MemoryWebhookRepository implements VendorWebhookRepository {
     this.deliveryKeys.set(uniquenessKey, event.id);
     this.events.push(event);
     return { inserted: true, eventId: event.id };
+  }
+
+  async deleteConnection(connectionId: string): Promise<void> {
+    this.deletedConnectionIds.push(connectionId);
+    this.connection = null;
   }
 }
 
@@ -81,6 +87,62 @@ describe("notify-only vendor webhook ingestion", () => {
       ],
       analytics: [
         ["user_123", "vendor_earn_recorded", { vendor: "whoop" }],
+      ],
+    });
+  });
+
+  it("records Strava deauthorization, disconnects once, and records no earning", async () => {
+    const rawPayload =
+      '{"aspect_type":"update","event_time":1785351600,"object_id":12345,"object_type":"athlete","owner_id":12345,"subscription_id":120475,"updates":{"authorized":"false"}}';
+    const repository = new MemoryWebhookRepository({
+      id: "strava-connection-id",
+      userId: "user_123",
+      vendor: "strava",
+      externalUserId: "12345",
+    });
+    const capture = vi.fn();
+    const service = createVendorWebhookService({
+      repository,
+      analytics: { capture },
+      now: () => new Date("2026-07-29T19:00:00.000Z"),
+      randomId: () => "deauthorization-event-id",
+    });
+
+    const first = await service.recordVerified("strava", rawPayload);
+    const replay = await service.recordVerified("strava", rawPayload);
+
+    expect({
+      first,
+      replay,
+      events: repository.events,
+      deletedConnectionIds: repository.deletedConnectionIds,
+      analytics: capture.mock.calls,
+    }).toEqual({
+      first: {
+        recorded: true,
+        eventId: "deauthorization-event-id",
+      },
+      replay: { recorded: false, eventId: null },
+      events: [
+        {
+          id: "deauthorization-event-id",
+          userId: "user_123",
+          vendor: "strava",
+          externalUserId: "12345",
+          deliveryKey:
+            "43bcbaad75a1630cf303b7986609b79bda45e0b10754e53bb577647de9d26f85",
+          eventType: "athlete.deauthorize",
+          rawPayload,
+          receivedAt: new Date("2026-07-29T19:00:00.000Z"),
+        },
+      ],
+      deletedConnectionIds: ["strava-connection-id"],
+      analytics: [
+        [
+          "user_123",
+          "vendor_disconnected",
+          { vendor: "strava" },
+        ],
       ],
     });
   });

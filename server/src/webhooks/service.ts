@@ -57,11 +57,20 @@ export function createVendorWebhookService(
       };
       const inserted = await options.repository.insertWebhookEvent(event);
       if (inserted.inserted) {
-        analytics.capture(
-          connection.userId,
-          "vendor_earn_recorded",
-          { vendor },
-        );
+        if (notification.disconnectsConnection) {
+          await options.repository.deleteConnection(connection.id);
+          analytics.capture(
+            connection.userId,
+            "vendor_disconnected",
+            { vendor },
+          );
+        } else {
+          analytics.capture(
+            connection.userId,
+            "vendor_earn_recorded",
+            { vendor },
+          );
+        }
       }
 
       return {

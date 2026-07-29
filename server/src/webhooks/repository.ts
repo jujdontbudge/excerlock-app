@@ -33,6 +33,7 @@ export interface VendorWebhookRepository {
   insertWebhookEvent(
     event: NewVendorWebhookEventRecord,
   ): Promise<{ inserted: boolean; eventId: string }>;
+  deleteConnection(connectionId: string): Promise<void>;
 }
 
 export interface VendorEventFeedRepository {
