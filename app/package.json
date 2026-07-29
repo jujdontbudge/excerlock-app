@@ -48,7 +48,8 @@
     "lint": "expo lint",
     "prebuild:guardrails": "EXPO_NO_GIT_STATUS=1 expo prebuild --platform ios --clean --no-install",
     "prebuild:ios": "expo prebuild --platform ios --no-install",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "jest": {
     "preset": "jest-expo"
