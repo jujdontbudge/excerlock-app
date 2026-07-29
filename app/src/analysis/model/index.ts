@@ -12,6 +12,7 @@ export {
   selectConditionBreakdown,
   type ConditionBreakdownItem,
 } from "./conditionBreakdown";
+export { deriveDayRecord } from "./dayRecord";
 export {
   formatDayCount,
   formatDays,
