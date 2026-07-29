@@ -1,10 +1,12 @@
 import type { PaywallPlacement } from "@excerlock/analytics-events";
+import type { StateStorage } from "zustand/middleware";
 
 import {
   SystemSubscriptionClock,
   type SubscriptionClock,
 } from "./clock";
 import { FALLBACK_ONBOARDING_PAYWALL } from "./fallbackPaywall";
+import { createMockSubscriptionPersistence } from "./mockStore";
 import type {
   ActivePremiumEntitlement,
   PurchaseResult,
@@ -26,6 +28,7 @@ const INITIAL_SNAPSHOT: SubscriptionSnapshot = Object.freeze({
 
 type MockSubscriptionModuleOptions = Readonly<{
   clock?: SubscriptionClock;
+  storage?: StateStorage<Promise<void>>;
 }>;
 
 type MockPurchaseResult =
@@ -43,6 +46,10 @@ type MockRestoreResult =
 
 export class MockSubscriptionModule implements SubscriptionModule {
   private readonly clock: SubscriptionClock;
+  private readonly persistence: ReturnType<
+    typeof createMockSubscriptionPersistence
+  >;
+  private readonly ready: Promise<void>;
   private snapshot = INITIAL_SNAPSHOT;
   private nextPurchaseResult: MockPurchaseResult = "purchased";
   private nextRestoreResult: MockRestoreResult = Object.freeze({
@@ -52,13 +59,23 @@ export class MockSubscriptionModule implements SubscriptionModule {
 
   public constructor(options: MockSubscriptionModuleOptions = {}) {
     this.clock = options.clock ?? new SystemSubscriptionClock();
+    this.persistence = createMockSubscriptionPersistence(options.storage);
+    this.ready = this.persistence.rehydrate().then(() => {
+      this.snapshot = Object.freeze({
+        ...this.snapshot,
+        entitlement: this.persistence.getState().entitlement,
+      });
+    });
   }
 
   public async getSnapshot(): Promise<SubscriptionSnapshot> {
+    await this.ready;
+    await this.expireEntitlementIfNeeded();
     return this.snapshot;
   }
 
   public async loadPaywall(placement: PaywallPlacement): Promise<void> {
+    await this.ready;
     this.publish({
       ...this.snapshot,
       paywall: Object.freeze({ status: "loading", placement }),
@@ -74,6 +91,7 @@ export class MockSubscriptionModule implements SubscriptionModule {
   }
 
   public async purchase(productId: string): Promise<PurchaseResult> {
+    await this.ready;
     const paywall =
       this.snapshot.paywall.status === "ready"
         ? this.snapshot.paywall.paywall
@@ -117,6 +135,7 @@ export class MockSubscriptionModule implements SubscriptionModule {
       purchasedAtMs,
       renewsAtMs: purchasedAtMs + product.durationDays * MS_PER_DAY,
     });
+    await this.persistence.update({ entitlement });
     this.publish({
       ...this.snapshot,
       entitlement,
@@ -126,6 +145,7 @@ export class MockSubscriptionModule implements SubscriptionModule {
   }
 
   public async restore(): Promise<RestoreResult> {
+    await this.ready;
     this.publish({
       ...this.snapshot,
       intent: Object.freeze({ status: "restoring", error: null }),
@@ -136,6 +156,7 @@ export class MockSubscriptionModule implements SubscriptionModule {
       const entitlement = Object.freeze({
         ...this.nextRestoreResult.entitlement,
       });
+      await this.persistence.update({ entitlement });
       this.publish({
         ...this.snapshot,
         entitlement,
@@ -185,5 +206,18 @@ export class MockSubscriptionModule implements SubscriptionModule {
   private publish(snapshot: SubscriptionSnapshot): void {
     this.snapshot = Object.freeze(snapshot);
     this.listeners.forEach((listener) => listener(this.snapshot));
+  }
+
+  private async expireEntitlementIfNeeded(): Promise<void> {
+    if (
+      this.snapshot.entitlement.status !== "active" ||
+      this.snapshot.entitlement.renewsAtMs > this.clock.nowMs()
+    ) {
+      return;
+    }
+
+    const entitlement = Object.freeze({ status: "inactive" as const });
+    await this.persistence.update({ entitlement });
+    this.publish({ ...this.snapshot, entitlement });
   }
 }

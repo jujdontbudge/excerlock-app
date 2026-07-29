@@ -123,7 +123,9 @@ describe("MockSubscriptionModule", () => {
   });
 
   it("restores a previous premium entitlement", async () => {
-    const mock = new MockSubscriptionModule();
+    const mock = new MockSubscriptionModule({
+      clock: new ManualSubscriptionClock(1_000),
+    });
     const subscription: SubscriptionModule = mock;
     mock.setNextRestoreResult({
       status: "restored",
@@ -146,5 +148,25 @@ describe("MockSubscriptionModule", () => {
 
     expect(observedIntents).toEqual(["restoring", "idle"]);
     expect(isPremiumEntitled(await subscription.getSnapshot())).toBe(true);
+  });
+
+  it("persists entitlement across remount and expires it on the injected clock", async () => {
+    const purchasedAtMs = 10_000;
+    const renewalAtMs = purchasedAtMs + 30 * 24 * 60 * 60 * 1_000;
+    const first = new MockSubscriptionModule({
+      clock: new ManualSubscriptionClock(purchasedAtMs),
+    });
+    await first.loadPaywall("onboarding");
+    await first.purchase("excerlock_monthly");
+
+    const restored: SubscriptionModule = new MockSubscriptionModule({
+      clock: new ManualSubscriptionClock(renewalAtMs - 1),
+    });
+    expect(isPremiumEntitled(await restored.getSnapshot())).toBe(true);
+
+    const expired: SubscriptionModule = new MockSubscriptionModule({
+      clock: new ManualSubscriptionClock(renewalAtMs),
+    });
+    expect(isPremiumEntitled(await expired.getSnapshot())).toBe(false);
   });
 });
