@@ -45,12 +45,13 @@ type AnalysisScreenProps = {
 
 /**
  * Analysis — the weekly recap, the Time Reclaimed hero, this week's
- * earned-versus-spent balance, the streak, and the day ledger under it. The
+ * earned-versus-spent balance, the streak, per-condition earnings and the day ledger under it. The
  * PRD's remaining blocks (the Week/Month/Year control, the requirement heat map,
- * the per-condition breakdown, the milestones shelf) need windows, the schedule,
- * the condition store and the badge art; they land on top of this.
+ * and the milestones shelf) need the real feed, schedule/chronology inputs and
+ * the badge art; they land on top of this.
  *
- * All reading is done by `buildAnalysisView` — this file only lays out.
+ * All numerical reading is done by `buildAnalysisView`; this file joins current
+ * store-backed condition names and lays the result out.
  */
 export function AnalysisScreen({
   days,
