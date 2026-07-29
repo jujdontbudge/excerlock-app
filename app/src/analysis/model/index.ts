@@ -22,5 +22,6 @@ export {
   type Streak,
   type Totals,
 } from "./selectors";
+export { buildRecap, type Recap } from "./recap";
 export { selectTimeReclaimed, type TimeReclaimed } from "./timeReclaimed";
 export { buildAnalysisView, type AnalysisView } from "./view";
