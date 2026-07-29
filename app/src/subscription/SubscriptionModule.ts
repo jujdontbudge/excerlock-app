@@ -11,7 +11,7 @@ export type SubscriptionProduct = Readonly<{
   isDefault: boolean;
 }>;
 
-export type SubscriptionPaywall = Readonly<{
+export type SubscriptionPaywallConfig = Readonly<{
   placement: PaywallPlacement;
   title: string;
   body: string;
@@ -31,7 +31,11 @@ export type PremiumEntitlement =
   | ActivePremiumEntitlement;
 
 export type SubscriptionError = Readonly<{
-  code: "purchase_failed" | "restore_failed" | "no_previous_purchase";
+  code:
+    | "paywall_load_failed"
+    | "purchase_failed"
+    | "restore_failed"
+    | "no_previous_purchase";
   message: string;
 }>;
 
@@ -43,7 +47,12 @@ export type SubscriptionIntentState =
 export type SubscriptionPaywallState =
   | Readonly<{ status: "idle" }>
   | Readonly<{ status: "loading"; placement: PaywallPlacement }>
-  | Readonly<{ status: "ready"; paywall: SubscriptionPaywall }>;
+  | Readonly<{
+      status: "error";
+      placement: PaywallPlacement;
+      error: SubscriptionError;
+    }>
+  | Readonly<{ status: "ready"; paywall: SubscriptionPaywallConfig }>;
 
 export type SubscriptionSnapshot = Readonly<{
   entitlement: PremiumEntitlement;

@@ -49,6 +49,32 @@ describe("MockSubscriptionModule", () => {
     expect(isPremiumEntitled(snapshot)).toBe(false);
   });
 
+  it("surfaces a failed paywall load without changing entitlement", async () => {
+    const mock = new MockSubscriptionModule();
+    const subscription: SubscriptionModule = mock;
+    mock.setNextPaywallResult({
+      status: "failed",
+      message: "Plans are temporarily unavailable.",
+    });
+    const observedPaywallStates: string[] = [];
+    subscription.subscribe((snapshot) => {
+      observedPaywallStates.push(snapshot.paywall.status);
+    });
+
+    await subscription.loadPaywall("onboarding");
+
+    expect(observedPaywallStates).toEqual(["loading", "error"]);
+    expect((await subscription.getSnapshot()).paywall).toEqual({
+      status: "error",
+      placement: "onboarding",
+      error: {
+        code: "paywall_load_failed",
+        message: "Plans are temporarily unavailable.",
+      },
+    });
+    expect(isPremiumEntitled(await subscription.getSnapshot())).toBe(false);
+  });
+
   it("turns a successful purchase intent into premium entitlement", async () => {
     const clock = new ManualSubscriptionClock(1_000);
     const subscription: SubscriptionModule = new MockSubscriptionModule({

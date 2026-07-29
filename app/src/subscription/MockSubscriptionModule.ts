@@ -36,6 +36,10 @@ type MockPurchaseResult =
   | "cancelled"
   | Readonly<{ status: "failed"; message: string }>;
 
+type MockPaywallResult =
+  | "ready"
+  | Readonly<{ status: "failed"; message: string }>;
+
 type MockRestoreResult =
   | Readonly<{
       status: "restored";
@@ -51,6 +55,7 @@ export class MockSubscriptionModule implements SubscriptionModule {
   >;
   private readonly ready: Promise<void>;
   private snapshot = INITIAL_SNAPSHOT;
+  private nextPaywallResult: MockPaywallResult = "ready";
   private nextPurchaseResult: MockPurchaseResult = "purchased";
   private nextRestoreResult: MockRestoreResult = Object.freeze({
     status: "notFound",
@@ -81,11 +86,30 @@ export class MockSubscriptionModule implements SubscriptionModule {
       paywall: Object.freeze({ status: "loading", placement }),
     });
     await Promise.resolve();
+    if (typeof this.nextPaywallResult === "object") {
+      const error: SubscriptionError = Object.freeze({
+        code: "paywall_load_failed",
+        message: this.nextPaywallResult.message,
+      });
+      this.publish({
+        ...this.snapshot,
+        paywall: Object.freeze({
+          status: "error",
+          placement,
+          error,
+        }),
+      });
+      return;
+    }
+
     this.publish({
       ...this.snapshot,
       paywall: Object.freeze({
         status: "ready",
-        paywall: FALLBACK_ONBOARDING_PAYWALL,
+        paywall: Object.freeze({
+          ...FALLBACK_ONBOARDING_PAYWALL,
+          placement,
+        }),
       }),
     });
   }
@@ -184,6 +208,11 @@ export class MockSubscriptionModule implements SubscriptionModule {
         this.nextRestoreResult.status === "notFound" ? "notFound" : "failed",
       error,
     });
+  }
+
+  /** Deterministic mock driver; not part of the app-facing interface. */
+  public setNextPaywallResult(result: MockPaywallResult): void {
+    this.nextPaywallResult = result;
   }
 
   /** Deterministic mock driver; not part of the app-facing interface. */

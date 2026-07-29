@@ -1,5 +1,5 @@
 import type {
-  SubscriptionPaywall,
+  SubscriptionPaywallConfig,
   SubscriptionProduct,
 } from "./SubscriptionModule";
 
@@ -26,10 +26,11 @@ const FALLBACK_PRODUCTS: readonly SubscriptionProduct[] = Object.freeze([
   }),
 ]);
 
-export const FALLBACK_ONBOARDING_PAYWALL: SubscriptionPaywall = Object.freeze({
-  placement: "onboarding",
-  title: "Unlock the full ExcerLock plan",
-  body: "Choose the plan that helps you turn intention into a daily habit.",
-  valueStatement: "The annual plan is about $5 a month.",
-  products: FALLBACK_PRODUCTS,
-});
+export const FALLBACK_ONBOARDING_PAYWALL: SubscriptionPaywallConfig =
+  Object.freeze({
+    placement: "onboarding",
+    title: "Unlock the full ExcerLock plan",
+    body: "Choose the plan that helps you turn intention into a daily habit.",
+    valueStatement: "The annual plan is about $5 a month.",
+    products: FALLBACK_PRODUCTS,
+  });

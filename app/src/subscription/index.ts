@@ -9,7 +9,7 @@ export type {
   SubscriptionError,
   SubscriptionIntentState,
   SubscriptionModule,
-  SubscriptionPaywall,
+  SubscriptionPaywallConfig,
   SubscriptionPaywallState,
   SubscriptionProduct,
   SubscriptionSnapshot,
