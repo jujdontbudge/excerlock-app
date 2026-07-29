@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/node";
+import "dotenv/config";
 
 const dsn = process.env.SENTRY_DSN?.trim();
 

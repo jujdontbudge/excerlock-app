@@ -5,6 +5,7 @@ import Fastify, {
   type FastifyServerOptions,
 } from "fastify";
 import { pathToFileURL } from "node:url";
+import { config } from "./config.js";
 import { healthRoutes } from "./routes/health.js";
 
 export function buildServer(options: FastifyServerOptions = {}): FastifyInstance {
@@ -15,7 +16,7 @@ export function buildServer(options: FastifyServerOptions = {}): FastifyInstance
 
 export async function listenServer(
   app: FastifyInstance = buildServer(),
-  options: FastifyListenOptions = { host: "0.0.0.0", port: 3000 },
+  options: FastifyListenOptions = { host: config.host, port: config.port },
 ): Promise<FastifyInstance> {
   await app.listen(options);
   return app;

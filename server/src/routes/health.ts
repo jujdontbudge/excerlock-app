@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { config } from "../config.js";
 
 export interface HealthResponse {
   ok: true;
@@ -9,7 +10,7 @@ export interface HealthResponse {
 export const healthRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Reply: HealthResponse }>("/health", async () => ({
     ok: true,
-    version: "0.1.0",
+    version: config.version,
     uptime: process.uptime(),
   }));
 };
