@@ -29,7 +29,7 @@ export function SubscriptionPaywall({
   onBack,
   subscription = getSubscriptionModule(),
 }: SubscriptionPaywallProps) {
-  const { spacing, typography } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   const snapshot = useSubscriptionSnapshot(subscription, placement);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
     null,
@@ -113,6 +113,16 @@ export function SubscriptionPaywall({
           <Text style={typography.body}>
             Trial available on the annual plan
           </Text>
+          {snapshot.intent.status === "idle" &&
+          snapshot.intent.error !== null ? (
+            <Text
+              accessibilityLabel={snapshot.intent.error.message}
+              accessibilityRole="alert"
+              style={[typography.body, { color: colors.danger }]}
+            >
+              {snapshot.intent.error.message}
+            </Text>
+          ) : null}
         </View>
 
         <View style={{ gap: spacing.md }}>

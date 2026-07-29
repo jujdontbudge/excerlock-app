@@ -112,4 +112,38 @@ describe("SubscriptionPaywall", () => {
       screen.getByRole("header", { name: "Your ExcerLock plan is active" }),
     ).toBeOnTheScreen();
   });
+
+  it("shows purchase failure and keeps the paywall locked", async () => {
+    const subscription = new MockSubscriptionModule();
+    subscription.setNextPurchaseResult({
+      status: "failed",
+      message: "The App Store is unavailable.",
+    });
+    const onEntitled = jest.fn();
+    await render(
+      <SubscriptionPaywall
+        placement="onboarding"
+        confessedDailyMinutes={300}
+        onEntitled={onEntitled}
+        subscription={subscription}
+      />,
+    );
+    await screen.findByRole("header", {
+      name: "Unlock the full ExcerLock plan",
+    });
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Start free trial" }),
+    );
+
+    expect(
+      screen.getByRole("alert", {
+        name: "The App Store is unavailable.",
+      }),
+    ).toBeOnTheScreen();
+    expect(onEntitled).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", { name: "Start free trial" }),
+    ).toBeEnabled();
+  });
 });
