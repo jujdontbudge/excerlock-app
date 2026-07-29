@@ -4,6 +4,8 @@ import { FIXTURE_DAY_SUMMARIES } from "../fixtures";
 import { weekdayIndex } from "../model/calendar";
 import {
   selectBars,
+  selectMonth,
+  selectPreviousWeek,
   selectStreak,
   selectToday,
   selectTotals,
@@ -72,6 +74,44 @@ describe("selectWeek", () => {
 
   it("is empty with no days", () => {
     expect(selectWeek([])).toEqual([]);
+  });
+});
+
+describe("selectPreviousWeek", () => {
+  it("returns the seven days before this week — the recap's delta window", () => {
+    const previous = selectPreviousWeek(FIXTURE_DAY_SUMMARIES);
+
+    expect(previous).toHaveLength(7);
+    expect(previous).toEqual(FIXTURE_DAY_SUMMARIES.slice(7, 14));
+    expect(previous.at(-1)?.dayIndex).toBe(selectWeek(FIXTURE_DAY_SUMMARIES)[0].dayIndex - 1);
+  });
+
+  it("is empty when the record does not reach back that far", () => {
+    expect(selectPreviousWeek(FIXTURE_DAY_SUMMARIES.slice(14))).toEqual([]);
+    expect(selectPreviousWeek([])).toEqual([]);
+  });
+
+  it("returns whatever part of that week was recorded", () => {
+    // Records from Wed 15 Jul on: the week before this one holds only its last five days.
+    expect(selectPreviousWeek(FIXTURE_DAY_SUMMARIES.slice(9))).toHaveLength(5);
+  });
+});
+
+describe("selectMonth", () => {
+  it("returns the calendar month containing today — the hero's window", () => {
+    // The whole fixture is July 2026.
+    expect(selectMonth(FIXTURE_DAY_SUMMARIES)).toHaveLength(21);
+  });
+
+  it("stops at the month boundary", () => {
+    // Epoch days 29–32 are 30 Jan, 31 Jan, 1 Feb and 2 Feb 1970.
+    const month = selectMonth([day(29), day(30), day(31), day(32)]);
+
+    expect(month.map((each) => each.dayIndex)).toEqual([31, 32]);
+  });
+
+  it("is empty with no days", () => {
+    expect(selectMonth([])).toEqual([]);
   });
 });
 

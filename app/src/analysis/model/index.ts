@@ -1,8 +1,18 @@
-export { dayLabel, weekdayIndex, weekdayInitial, weekOffset, type Weekday } from "./calendar";
-export { formatDayCount, formatMinutes, formatSignedMinutes } from "./format";
+export {
+  dayLabel,
+  dayRangeLabel,
+  sameMonth,
+  weekdayIndex,
+  weekdayInitial,
+  weekOffset,
+  type Weekday,
+} from "./calendar";
+export { formatDayCount, formatMinutes, formatSignedMinutes, heroReading } from "./format";
 export {
   DEFAULT_WEEK_STARTS_ON,
   selectBars,
+  selectMonth,
+  selectPreviousWeek,
   selectStreak,
   selectToday,
   selectTotals,

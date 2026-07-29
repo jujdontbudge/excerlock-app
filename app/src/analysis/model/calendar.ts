@@ -36,6 +36,34 @@ export function dayLabel(day: Pick<DaySummary, "dayIndex" | "dayStartMs">): stri
   return `${WEEKDAY_NAMES[weekdayIndex(day)]} ${at.getUTCDate()} ${MONTH_NAMES[at.getUTCMonth()]}`;
 }
 
+/** True when two days fall in the same calendar month — the Time Reclaimed hero's window. */
+export function sameMonth(
+  a: Pick<DaySummary, "dayStartMs">,
+  b: Pick<DaySummary, "dayStartMs">,
+): boolean {
+  const [first, second] = [new Date(a.dayStartMs), new Date(b.dayStartMs)];
+  return (
+    first.getUTCFullYear() === second.getUTCFullYear() &&
+    first.getUTCMonth() === second.getUTCMonth()
+  );
+}
+
+/** "20–26 Jul" · "31 Jan – 2 Feb" · "20 Jul" — the recap card's date range (PRD §3.13). */
+export function dayRangeLabel(
+  first: Pick<DaySummary, "dayIndex" | "dayStartMs">,
+  last: Pick<DaySummary, "dayIndex" | "dayStartMs">,
+): string {
+  const from = new Date(first.dayStartMs);
+  const to = new Date(last.dayStartMs);
+  const month = (at: Date) => MONTH_NAMES[at.getUTCMonth()];
+
+  if (first.dayIndex === last.dayIndex) return `${to.getUTCDate()} ${month(to)}`;
+  if (sameMonth(first, last)) {
+    return `${from.getUTCDate()}–${to.getUTCDate()} ${month(to)}`;
+  }
+  return `${from.getUTCDate()} ${month(from)} – ${to.getUTCDate()} ${month(to)}`;
+}
+
 /**
  * How many days into its week this day sits, given which weekday starts the week.
  * `weekStartsOn` is the *Start week on* setting; it defaults to Monday.
