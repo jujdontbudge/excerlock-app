@@ -12,6 +12,7 @@ import type {
   ScreenTimeAuthorizationStatus,
   ScreenTimeSelectionHandle,
 } from "./ScreenTimeModule";
+import { readSelectionContents, type SelectionContents } from "./selectionSummary";
 
 export const MOCK_SCREENTIME_STORAGE_KEY = "excerlock.screentime.mock.v1";
 
@@ -25,6 +26,8 @@ export type MockPersistedState = {
   desiredOsState: DesiredOsState;
   lockWindows: ScheduledLockWindow[];
   nextSelectionNumber: number;
+  /** What each issued handle holds, so a summary survives a relaunch. */
+  selectionContents: Record<string, SelectionContents>;
 };
 
 const DEFAULT_PERSISTED_STATE: MockPersistedState = {
@@ -33,6 +36,7 @@ const DEFAULT_PERSISTED_STATE: MockPersistedState = {
   desiredOsState: { shields: "down", drainThresholds: [] },
   lockWindows: [],
   nextSelectionNumber: 1,
+  selectionContents: {},
 };
 
 class AwaitableStateStorage implements StateStorage<Promise<void>> {
@@ -78,6 +82,7 @@ export function createMockScreenTimePersistence(
         desiredOsState: state.desiredOsState,
         lockWindows: state.lockWindows,
         nextSelectionNumber: state.nextSelectionNumber,
+        selectionContents: state.selectionContents,
       }),
       merge: (persistedState, currentState) =>
         readPersistedState(persistedState, currentState),
@@ -126,7 +131,24 @@ function readPersistedState(
       Number.isInteger(nextSelectionNumber) && nextSelectionNumber > 0
         ? nextSelectionNumber
         : fallback.nextSelectionNumber,
+    selectionContents: readSelectionContentsMap(
+      Reflect.get(persistedState, "selectionContents"),
+    ),
   };
+}
+
+function readSelectionContentsMap(
+  value: unknown,
+): Record<string, SelectionContents> {
+  if (typeof value !== "object" || value === null) {
+    return {};
+  }
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([handle, contents]) => {
+      const parsed = readSelectionContents(contents);
+      return parsed === null ? [] : [[handle, parsed] as const];
+    }),
+  );
 }
 
 function isAuthorizationStatus(

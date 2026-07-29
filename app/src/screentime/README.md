@@ -12,10 +12,13 @@ Callers import only `index.ts` and obtain the adapter through
 
 - Screen Time authorization status and request (`notDetermined | approved |
   denied`).
-- the system picker, returning an opaque `ScreenTimeSelectionHandle`;
+- the system picker, returning an opaque `ScreenTimeSelectionHandle`, plus
+  `describeSelection(handle)` — the adapter-composed `ScreenTimeSelectionSummary`
+  a caller may render;
 - one idempotent `reconcile(selection, desiredOsState)` operation that applies
   or clears shields from the `DesiredOsState` computed by `@excerlock/ledger`;
-- concrete lock windows with `[startsAtMs, endsAtMs)` boundaries;
+- concrete lock windows with `[startsAtMs, endsAtMs)` boundaries, readable back
+  through `getLockWindows()` so a caller can say when a shield lifts;
 - a current shield-state snapshot and change subscription.
 
 The module never calculates balance, Full Lock, holidays, or drain thresholds.
@@ -29,6 +32,14 @@ categories. It must never contain, expose, log, or derive raw bundle IDs or app
 names. Apple does not reveal those identifiers through FamilyControls. Only a
 ScreenTime adapter may create or persist a handle; callers may only retain it
 and pass it back to this interface.
+
+The same law governs the summary. `ScreenTimeSelectionSummary.displayName` is
+composed **by the adapter, from counts** ("4 apps · 2 categories") — never from
+a bundle identifier or an app name, because FamilyControls renders those only
+inside its own `Label` view and never hands the string to the process. A caller
+that wants to name the locked group therefore prints this line and nothing else.
+`describeSelection` answers `null` for a handle this adapter did not issue, so a
+stale persisted token degrades into "choose your apps" rather than a crash.
 
 ## Mock and clock
 
