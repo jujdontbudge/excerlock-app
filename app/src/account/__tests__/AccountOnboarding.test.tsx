@@ -92,4 +92,21 @@ describe("AccountOnboarding", () => {
       screen.getByRole("button", { name: "Create account" }),
     ).toBeEnabled();
   });
+
+  it("lets an existing user sign in to complete the account step", async () => {
+    const onAuthenticated = jest.fn();
+    await render(
+      <AccountOnboarding
+        account={new MockAccountModule()}
+        onAuthenticated={onAuthenticated}
+      />,
+    );
+    await screen.findByRole("header", { name: "Create your account" });
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Sign in instead" }),
+    );
+
+    expect(onAuthenticated).toHaveBeenCalledTimes(1);
+  });
 });
