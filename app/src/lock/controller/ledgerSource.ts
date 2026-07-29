@@ -40,6 +40,23 @@ export function setHomeFullLock(on: boolean): void {
 }
 
 /**
+ * Tells a running lock controller when either half of the owned allowance
+ * changes. The values stay in Home; this seam exposes only the change signal
+ * needed to reconcile the Screen Time boundary immediately.
+ */
+export function subscribeHomeAllowance(onChange: () => void): () => void {
+  return useHomeStore.subscribe((state, previousState) => {
+    if (
+      state.ledgerConfig.baseAllowanceMinutes !==
+        previousState.ledgerConfig.baseAllowanceMinutes ||
+      state.allowanceBeforeFullLock !== previousState.allowanceBeforeFullLock
+    ) {
+      onChange();
+    }
+  });
+}
+
+/**
  * The allowance a mounted lock screen renders. Two primitive selectors rather
  * than one object selector: zustand compares snapshots by identity, so a
  * selector that built a value would re-render forever.

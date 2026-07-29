@@ -5,7 +5,13 @@ jest.mock(
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { emptyJournal, UNLIMITED } from "@excerlock/ledger";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
 
 import { DEFAULT_HOME_STATE, deriveLockHero, useHomeStore } from "@/home";
 import { LockController } from "@/lock";
@@ -73,9 +79,10 @@ describe("the one owner of the base allowance", () => {
     expect(homeHero().status).toBe("unlocked");
     expect(homeHero().balance).toEqual({ value: "30", unit: "min left" });
 
-    await controller.pickApps();
-    expect(controller.getSnapshot().fullLock).toBe(false);
-    expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    await waitFor(() => {
+      expect(controller.getSnapshot().fullLock).toBe(false);
+      expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    });
     controller.stop();
   });
 
@@ -90,7 +97,9 @@ describe("the one owner of the base allowance", () => {
     expect(homeHero().balanceMinutes).toBe(30);
 
     // Full Lock is that same number going to zero (PRD §3.2), not a mode.
-    await controller.setFullLock(true);
+    await act(async () => {
+      await controller.setFullLock(true);
+    });
     expect(useHomeStore.getState().ledgerConfig.baseAllowanceMinutes).toBe(0);
     expect(homeHero().balanceMinutes).toBe(0);
     expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
@@ -100,7 +109,9 @@ describe("the one owner of the base allowance", () => {
       );
     });
 
-    await controller.setFullLock(false);
+    await act(async () => {
+      await controller.setFullLock(false);
+    });
 
     // The 30 minutes Manage chose come back — not the zero a stale second copy
     // would have restored, and not the unlimited an unset one would have.
@@ -115,12 +126,16 @@ describe("the one owner of the base allowance", () => {
 
   it("survives the JSON round trip that turns Unlimited into null", async () => {
     await render(<ManageScreen />);
-    useHomeStore.getState().setBaseAllowanceMinutes(UNLIMITED);
+    await act(async () => {
+      useHomeStore.getState().setBaseAllowanceMinutes(UNLIMITED);
+    });
 
     // `JSON.stringify(Infinity)` is `null` (packages/ledger/README.md), so the
     // rehydrate path has to read that back as UNLIMITED rather than as zero —
     // otherwise a relaunch silently locks a user who chose no limit at all.
-    await useHomeStore.persist.rehydrate();
+    await act(async () => {
+      await useHomeStore.persist.rehydrate();
+    });
 
     expect(useHomeStore.getState().ledgerConfig.baseAllowanceMinutes).toBe(UNLIMITED);
     expect(homeHero().balance).toEqual({ value: "∞", unit: "no limit set" });

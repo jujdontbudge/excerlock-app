@@ -17,6 +17,7 @@ import {
   homeLedgerConfig,
   localNow,
   setHomeFullLock,
+  subscribeHomeAllowance,
 } from "./ledgerSource";
 
 /** Everything the lock surfaces render, in one immutable value. */
@@ -61,6 +62,9 @@ export class LockController {
   private readonly journal: () => Journal;
   private readonly now: () => number;
   private readonly listeners = new Set<() => void>();
+  private allowanceReconciliation: Promise<void> = Promise.resolve();
+  private suppressAllowanceSubscription = false;
+  private unsubscribeAllowance: (() => void) | null = null;
   private unsubscribeShield: ScreenTimeUnsubscribe | null = null;
   private snapshot: LockSnapshot = INITIAL;
 
@@ -81,6 +85,12 @@ export class LockController {
 
   /** Attaches to the boundary's observable and loads the first snapshot. */
   public async start(): Promise<void> {
+    this.unsubscribeAllowance ??= subscribeHomeAllowance(() => {
+      this.patch({ fullLock: homeFullLock() });
+      if (!this.suppressAllowanceSubscription) {
+        void this.queueAllowanceReconciliation();
+      }
+    });
     this.unsubscribeShield ??= this.screenTime.subscribe((shield) => {
       this.patch({ shield });
     });
@@ -88,6 +98,8 @@ export class LockController {
   }
 
   public stop(): void {
+    this.unsubscribeAllowance?.();
+    this.unsubscribeAllowance = null;
     this.unsubscribeShield?.();
     this.unsubscribeShield = null;
   }
@@ -121,12 +133,13 @@ export class LockController {
    * one number, at its one owner, going down and coming back.
    */
   public async setFullLock(on: boolean): Promise<void> {
-    setHomeFullLock(on);
-    const selection = this.snapshot.shield?.selection ?? null;
-    if (selection !== null) {
-      await this.applyDesiredState(selection);
+    this.suppressAllowanceSubscription = true;
+    try {
+      setHomeFullLock(on);
+    } finally {
+      this.suppressAllowanceSubscription = false;
     }
-    await this.refresh();
+    await this.queueAllowanceReconciliation();
   }
 
   private async applyDesiredState(
@@ -134,6 +147,26 @@ export class LockController {
   ): Promise<void> {
     const desired = desiredOsState(this.journal(), homeLedgerConfig(), this.now());
     await this.screenTime.reconcile(selection, desired);
+  }
+
+  /**
+   * Store writes are synchronous but the Screen Time boundary is not. Chaining
+   * reconciliations keeps rapid picker presses ordered and makes every pass read
+   * the owner's latest value rather than racing stale desired states.
+   */
+  private queueAllowanceReconciliation(): Promise<void> {
+    const reconcile = async () => {
+      const selection = this.snapshot.shield?.selection ?? null;
+      if (selection !== null) {
+        await this.applyDesiredState(selection);
+      }
+      await this.refresh();
+    };
+    this.allowanceReconciliation = this.allowanceReconciliation.then(
+      reconcile,
+      reconcile,
+    );
+    return this.allowanceReconciliation;
   }
 
   private async refresh(): Promise<void> {
