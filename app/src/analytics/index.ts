@@ -1,4 +1,5 @@
 /** AnalyticsKit — the app's only analytics surface. See README.md for the law. */
+export { analytics, flowTracker } from "./analytics";
 export { createAnalyticsKit } from "./AnalyticsKit";
 export type { AnalyticsKit, TrackArgs } from "./AnalyticsKit";
 export { createFlowTracker } from "./flowTracker";
