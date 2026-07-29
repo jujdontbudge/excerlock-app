@@ -8,6 +8,9 @@ import type {
   RateCondition,
   RateCreditOutcome,
   SignalTimelineRow,
+  StateCondition,
+  StateEnteredOutcome,
+  StateExitedOutcome,
 } from "./evaluation-types";
 import { getCatalogEntry } from "./picker";
 
@@ -186,6 +189,73 @@ function isEventCondition(
   return condition.settings.kind === "event";
 }
 
+function isRateCondition(
+  condition: ConfiguredCondition,
+): condition is RateCondition {
+  return condition.settings.kind === "rate";
+}
+
+function evaluateState(
+  condition: StateCondition,
+  rows: readonly SignalTimelineRow[],
+  nowMs: number,
+): readonly (StateEnteredOutcome | StateExitedOutcome)[] {
+  const outcomes: (StateEnteredOutcome | StateExitedOutcome)[] = [];
+  const seenSamples = new Set<string>();
+  let active = false;
+  let pendingExit:
+    | { readonly atMs: number; readonly sourceEventId: string }
+    | undefined;
+
+  function emitPendingExit(throughMs: number): void {
+    if (pendingExit === undefined || pendingExit.atMs > throughMs) {
+      return;
+    }
+    outcomes.push({
+      type: "stateExited",
+      atMs: pendingExit.atMs,
+      conditionId: condition.id,
+      sourceEventId: pendingExit.sourceEventId,
+    });
+    active = false;
+    pendingExit = undefined;
+  }
+
+  for (const row of rows) {
+    emitPendingExit(row.atMs);
+    if (
+      row.event !== "signalState" ||
+      seenSamples.has(row.payload.sampleId)
+    ) {
+      continue;
+    }
+    seenSamples.add(row.payload.sampleId);
+
+    if (row.payload.active) {
+      if (pendingExit !== undefined) {
+        pendingExit = undefined;
+      } else if (!active) {
+        outcomes.push({
+          type: "stateEntered",
+          atMs: row.atMs,
+          conditionId: condition.id,
+          sourceEventId: row.payload.sampleId,
+        });
+        active = true;
+      }
+    } else if (active && pendingExit === undefined) {
+      pendingExit = {
+        atMs: row.atMs + condition.settings.exitGraceMs,
+        sourceEventId: row.payload.sampleId,
+      };
+      emitPendingExit(row.atMs);
+    }
+  }
+
+  emitPendingExit(nowMs);
+  return outcomes;
+}
+
 export function evaluateCondition(
   condition: ConfiguredCondition,
   timeline: readonly SignalTimelineRow[],
@@ -202,7 +272,11 @@ export function evaluateCondition(
   }
 
   const rows = eligibleRows(condition, entry, timeline, clock);
-  return isEventCondition(condition)
-    ? evaluateEvent(condition, rows)
-    : evaluateRate(condition, rows);
+  if (isEventCondition(condition)) {
+    return evaluateEvent(condition, rows);
+  }
+  if (isRateCondition(condition)) {
+    return evaluateRate(condition, rows);
+  }
+  return evaluateState(condition, rows, clock.nowMs);
 }

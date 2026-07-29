@@ -68,4 +68,8 @@ export type {
   SignalSnapshotPayload,
   SignalStatePayload,
   SignalTimelineRow,
+  StateCondition,
+  StateEnteredOutcome,
+  StateExitedOutcome,
+  StateSettings,
 } from "./evaluation-types";

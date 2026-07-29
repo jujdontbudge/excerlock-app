@@ -41,7 +41,20 @@ export interface RateCondition extends BaseCondition {
   readonly settings: RateSettings;
 }
 
-export type ConfiguredCondition = EventCondition | RateCondition;
+export interface StateSettings {
+  readonly kind: "state";
+  readonly reward: { readonly type: "sustainedUnlock" };
+  readonly exitGraceMs: number;
+}
+
+export interface StateCondition extends BaseCondition {
+  readonly settings: StateSettings;
+}
+
+export type ConfiguredCondition =
+  | EventCondition
+  | RateCondition
+  | StateCondition;
 
 interface SignalPayload {
   readonly signal: Signal;
@@ -113,4 +126,22 @@ export interface RateCreditOutcome {
   readonly deltaMinutes: number;
 }
 
-export type EvaluationOutcome = EventFiredOutcome | RateCreditOutcome;
+export interface StateEnteredOutcome {
+  readonly type: "stateEntered";
+  readonly atMs: number;
+  readonly conditionId: string;
+  readonly sourceEventId: string;
+}
+
+export interface StateExitedOutcome {
+  readonly type: "stateExited";
+  readonly atMs: number;
+  readonly conditionId: string;
+  readonly sourceEventId: string;
+}
+
+export type EvaluationOutcome =
+  | EventFiredOutcome
+  | RateCreditOutcome
+  | StateEnteredOutcome
+  | StateExitedOutcome;
