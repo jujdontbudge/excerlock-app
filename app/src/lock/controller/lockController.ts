@@ -11,9 +11,13 @@ import {
   type ScreenTimeUnsubscribe,
 } from "@/screentime";
 
-import { isFullLock, toLedgerConfig } from "../model/fullLock";
-import { useLockStore } from "../store/lockStore";
-import { homeJournal, localNow } from "./ledgerSource";
+import {
+  homeFullLock,
+  homeJournal,
+  homeLedgerConfig,
+  localNow,
+  setHomeFullLock,
+} from "./ledgerSource";
 
 /** Everything the lock surfaces render, in one immutable value. */
 export type LockSnapshot = Readonly<{
@@ -112,9 +116,12 @@ export class LockController {
     return selection;
   }
 
-  /** PRD §3.2: entering Full Lock is setting the base allowance to zero. */
+  /**
+   * PRD §3.2: entering Full Lock is setting the base allowance to zero — the
+   * one number, at its one owner, going down and coming back.
+   */
   public async setFullLock(on: boolean): Promise<void> {
-    useLockStore.getState().setFullLock(on);
+    setHomeFullLock(on);
     const selection = this.snapshot.shield?.selection ?? null;
     if (selection !== null) {
       await this.applyDesiredState(selection);
@@ -125,11 +132,7 @@ export class LockController {
   private async applyDesiredState(
     selection: ScreenTimeSelectionHandle,
   ): Promise<void> {
-    const desired = desiredOsState(
-      this.journal(),
-      toLedgerConfig(useLockStore.getState()),
-      this.now(),
-    );
+    const desired = desiredOsState(this.journal(), homeLedgerConfig(), this.now());
     await this.screenTime.reconcile(selection, desired);
   }
 
@@ -150,7 +153,7 @@ export class LockController {
       shield,
       lockWindows,
       selection,
-      fullLock: isFullLock(useLockStore.getState()),
+      fullLock: homeFullLock(),
     });
   }
 

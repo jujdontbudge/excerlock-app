@@ -12,10 +12,10 @@ import {
   getLockController,
   type LockController,
 } from "../controller/lockController";
+import { useHomeAllowance } from "../controller/ledgerSource";
 import { useLockSnapshot } from "../hooks/useLockSnapshot";
 import { fullLockConfirmation } from "../model/fullLockCopy";
 import { deriveLockStatus } from "../model/lockStatus";
-import { useLockStore } from "../store/lockStore";
 
 export interface LockScreenProps {
   /** Injected by tests and by the Phase-3 composition root. */
@@ -43,10 +43,7 @@ export function LockScreen({
   const { spacing, typography } = useTheme();
   const { authorization, selection, shield, lockWindows, fullLock } =
     useLockSnapshot(controller);
-  const baseAllowanceMinutes = useLockStore((state) => state.baseAllowanceMinutes);
-  const allowanceBeforeFullLock = useLockStore(
-    (state) => state.allowanceBeforeFullLock,
-  );
+  const allowance = useHomeAllowance();
 
   const status = deriveLockStatus({
     shield,
@@ -85,10 +82,7 @@ export function LockScreen({
         <FullLockCard
           on={fullLock}
           hasSelection={selection !== null}
-          confirmation={fullLockConfirmation(
-            { baseAllowanceMinutes, allowanceBeforeFullLock },
-            !fullLock,
-          )}
+          confirmation={fullLockConfirmation(allowance, !fullLock)}
           onToggle={() => controller.setFullLock(!fullLock)}
         />
       </ScrollView>

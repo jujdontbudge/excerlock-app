@@ -1,17 +1,57 @@
-import type { Journal } from "@excerlock/ledger";
+import type { Journal, LedgerConfig } from "@excerlock/ledger";
 
-import { localWallClockNow, useHomeStore } from "@/home";
+import {
+  isFullLock,
+  localWallClockNow,
+  selectAllowance,
+  useHomeStore,
+  type AllowanceValues,
+} from "@/home";
 
 /**
- * The Phase-2 wiring seam, kept to one file so the coupling is visible.
+ * The wiring seam, kept to one file so the coupling is visible.
  *
- * The desired shield state is a ledger answer, and the ledger needs the journal
- * the user's earns land in — which Home owns today. Lock reads it and writes
- * nothing back. When the allowance picker lands in Manage (PRD §3.15, tab 2),
- * `baseAllowanceMinutes` gets one owner and this file becomes its reader too.
+ * The desired shield state is a ledger answer, and the ledger needs both the
+ * journal the user's earns land in and the day's config — Home owns both. Since
+ * #53 that includes `baseAllowanceMinutes`: **the allowance has one owner**
+ * (`home/model/allowance.ts`) and this module reads it. Nothing under `lock/`
+ * keeps a copy; the one write it makes is Full Lock's own transition, which is
+ * that same number going to zero and back (PRD §3.2).
  */
 export function homeJournal(): Journal {
   return useHomeStore.getState().journal;
+}
+
+export function homeLedgerConfig(): LedgerConfig {
+  return useHomeStore.getState().ledgerConfig;
+}
+
+export function homeAllowance(): AllowanceValues {
+  return selectAllowance(useHomeStore.getState());
+}
+
+export function homeFullLock(): boolean {
+  return isFullLock(homeAllowance());
+}
+
+/** Full Lock's two transitions, run by the owner rather than mirrored here. */
+export function setHomeFullLock(on: boolean): void {
+  useHomeStore.getState().setFullLock(on);
+}
+
+/**
+ * The allowance a mounted lock screen renders. Two primitive selectors rather
+ * than one object selector: zustand compares snapshots by identity, so a
+ * selector that built a value would re-render forever.
+ */
+export function useHomeAllowance(): AllowanceValues {
+  const baseAllowanceMinutes = useHomeStore(
+    (state) => state.ledgerConfig.baseAllowanceMinutes,
+  );
+  const allowanceBeforeFullLock = useHomeStore(
+    (state) => state.allowanceBeforeFullLock,
+  );
+  return { baseAllowanceMinutes, allowanceBeforeFullLock };
 }
 
 export function localNow(): number {

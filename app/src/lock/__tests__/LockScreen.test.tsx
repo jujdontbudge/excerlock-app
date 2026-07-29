@@ -4,13 +4,19 @@ jest.mock(
 );
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { emptyJournal } from "@excerlock/ledger";
+import { emptyJournal, UNLIMITED } from "@excerlock/ledger";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+
+import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 
 import { LockController } from "../controller/lockController";
 import { LockScreen } from "../screens/LockScreen";
-import { DEFAULT_LOCK_STATE, useLockStore } from "../store/lockStore";
 import { FakeScreenTime } from "../testing/fakeScreenTime";
+
+/** The allowance has one owner (#53); this screen reads and writes only that. */
+function baseAllowanceMinutes(): number {
+  return useHomeStore.getState().ledgerConfig.baseAllowanceMinutes;
+}
 
 const NOW = 10 * 86_400_000 + 9 * 3_600_000;
 
@@ -50,7 +56,7 @@ async function authorizedScreen(screenTime = new FakeScreenTime()) {
 describe("LockScreen", () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
-    useLockStore.setState(DEFAULT_LOCK_STATE);
+    useHomeStore.setState(DEFAULT_HOME_STATE);
   });
 
   describe("permission flow", () => {
@@ -189,7 +195,7 @@ describe("LockScreen", () => {
       await press("Yes, turn it off");
 
       expect(screen.getByText("Your apps are open.")).toBeOnTheScreen();
-      expect(useLockStore.getState().baseAllowanceMinutes).toBeNull();
+      expect(baseAllowanceMinutes()).toBe(UNLIMITED);
       expect(screen.queryByText("Turn off Full Lock?")).toBeNull();
     });
 
@@ -203,7 +209,7 @@ describe("LockScreen", () => {
       await press("Keep it on");
 
       expect(screen.queryByText("Turn off Full Lock?")).toBeNull();
-      expect(useLockStore.getState().baseAllowanceMinutes).toBe(0);
+      expect(baseAllowanceMinutes()).toBe(0);
       expect(screen.getByText("Move first, scroll after.")).toBeOnTheScreen();
     });
 
@@ -227,7 +233,7 @@ describe("LockScreen", () => {
       await press("Yes, turn it on");
 
       expect(screen.getByText("Move first, scroll after.")).toBeOnTheScreen();
-      expect(useLockStore.getState().baseAllowanceMinutes).toBe(0);
+      expect(baseAllowanceMinutes()).toBe(0);
     });
 
     it("waits for a chosen app group before offering the switch", async () => {
