@@ -3,6 +3,7 @@ import {
   type SupportClock,
 } from "./clock";
 import type {
+  FeatureRequest,
   SubmitSupportResult,
   SupportError,
   SupportModule,
@@ -14,6 +15,7 @@ import type {
 
 const INITIAL_SNAPSHOT: SupportSnapshot = Object.freeze({
   submissions: Object.freeze([]),
+  featureRequests: Object.freeze([]),
 });
 
 type MockSupportModuleOptions = Readonly<{
@@ -37,6 +39,7 @@ const OFFLINE_ERROR: SupportError = Object.freeze({
 export class MockSupportModule implements SupportModule {
   private readonly clock: SupportClock;
   private nextSupportId = 1;
+  private nextFeatureId = 1;
   private snapshot = INITIAL_SNAPSHOT;
   private nextSubmissionResult: MockSubmissionResult = "submitted";
   private online = true;
@@ -61,6 +64,37 @@ export class MockSupportModule implements SupportModule {
       createdAtMs: this.clock.nowMs(),
       status: "submitting",
       error: null,
+    });
+    return this.attemptSubmission(submission);
+  }
+
+  public async submitFeatureRequest(
+    request: Readonly<{ title: string; message: string }>,
+  ): Promise<SubmitSupportResult> {
+    const submissionId = `feature-${this.nextFeatureId++}`;
+    const submission: SupportSubmission = Object.freeze({
+      id: submissionId,
+      kind: "feature",
+      title: request.title.trim(),
+      message: request.message.trim(),
+      createdAtMs: this.clock.nowMs(),
+      status: "submitting",
+      error: null,
+    });
+    const featureRequest: FeatureRequest = Object.freeze({
+      id: submissionId,
+      title: submission.title,
+      message: submission.message,
+      voteCount: 0,
+      hasVoted: false,
+      submissionId,
+    });
+    this.publish({
+      ...this.snapshot,
+      featureRequests: Object.freeze([
+        ...this.snapshot.featureRequests,
+        featureRequest,
+      ]),
     });
     return this.attemptSubmission(submission);
   }
@@ -148,6 +182,7 @@ export class MockSupportModule implements SupportModule {
 
   private replaceSubmission(submission: SupportSubmission): void {
     this.publish({
+      ...this.snapshot,
       submissions: Object.freeze(
         this.snapshot.submissions.map((current) =>
           current.id === submission.id ? Object.freeze(submission) : current,
@@ -166,6 +201,7 @@ export class MockSupportModule implements SupportModule {
     }
 
     this.publish({
+      ...this.snapshot,
       submissions: Object.freeze([...this.snapshot.submissions, submission]),
     });
   }

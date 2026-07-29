@@ -118,4 +118,44 @@ describe("MockSupportModule", () => {
       },
     ]);
   });
+
+  it("submits a feature request and exposes its submission state", async () => {
+    const support: SupportModule = new MockSupportModule({
+      clock: new ManualSupportClock(4_000),
+    });
+
+    await expect(
+      support.submitFeatureRequest({
+        title: "Apple Watch complication",
+        message: "Show today's balance on my watch face.",
+      }),
+    ).resolves.toEqual({
+      status: "submitted",
+      submissionId: "feature-1",
+    });
+
+    expect(await support.getSnapshot()).toEqual({
+      submissions: [
+        {
+          id: "feature-1",
+          kind: "feature",
+          title: "Apple Watch complication",
+          message: "Show today's balance on my watch face.",
+          createdAtMs: 4_000,
+          status: "submitted",
+          error: null,
+        },
+      ],
+      featureRequests: [
+        {
+          id: "feature-1",
+          title: "Apple Watch complication",
+          message: "Show today's balance on my watch face.",
+          voteCount: 0,
+          hasVoted: false,
+          submissionId: "feature-1",
+        },
+      ],
+    });
+  });
 });
