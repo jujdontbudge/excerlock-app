@@ -48,6 +48,17 @@ export function sameMonth(
   );
 }
 
+/** True when two ledger days fall in the same calendar year. */
+export function sameYear(
+  a: Pick<DaySummary, "dayStartMs">,
+  b: Pick<DaySummary, "dayStartMs">,
+): boolean {
+  return (
+    new Date(a.dayStartMs).getUTCFullYear() ===
+    new Date(b.dayStartMs).getUTCFullYear()
+  );
+}
+
 /** "20–26 Jul" · "31 Jan – 2 Feb" · "20 Jul" — the recap card's date range (PRD §3.13). */
 export function dayRangeLabel(
   first: Pick<DaySummary, "dayIndex" | "dayStartMs">,

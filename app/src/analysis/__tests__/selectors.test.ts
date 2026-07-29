@@ -5,6 +5,7 @@ import { weekdayIndex } from "../model/calendar";
 import {
   selectBars,
   selectMonth,
+  selectPeriod,
   selectPreviousWeek,
   selectStreak,
   selectToday,
@@ -12,11 +13,13 @@ import {
   selectWeek,
 } from "../model/selectors";
 
+const DAY_MS = 86_400_000;
+
 /** A throwaway summary — only the fields the selector under test reads are meaningful. */
 function day(dayIndex: number, patch: Partial<DaySummary> = {}): DaySummary {
   return {
     dayIndex,
-    dayStartMs: dayIndex * 86_400_000,
+    dayStartMs: dayIndex * DAY_MS,
     baseAllowance: 30,
     rolloverIn: 0,
     startBalance: 30,
@@ -36,6 +39,15 @@ function day(dayIndex: number, patch: Partial<DaySummary> = {}): DaySummary {
 function streakDays(pattern: readonly boolean[]): DaySummary[] {
   return pattern.map((meaningful, index) =>
     day(index, { meaningfulActivity: meaningful, meaningfulConditionCount: meaningful ? 1 : 0 }),
+  );
+}
+
+function daysFrom(firstDateMs: number, lastDateMs: number): DaySummary[] {
+  const firstDayIndex = firstDateMs / DAY_MS;
+  const lastDayIndex = lastDateMs / DAY_MS;
+  return Array.from(
+    { length: lastDayIndex - firstDayIndex + 1 },
+    (_, offset) => day(firstDayIndex + offset),
   );
 }
 
@@ -112,6 +124,19 @@ describe("selectMonth", () => {
 
   it("is empty with no days", () => {
     expect(selectMonth([])).toEqual([]);
+  });
+});
+
+describe("selectPeriod", () => {
+  it("makes week, month and year distinct over a real multi-year record", () => {
+    const history = daysFrom(
+      Date.UTC(2023, 10, 15),
+      Date.UTC(2025, 1, 3),
+    );
+
+    expect(selectPeriod(history, "week")).toHaveLength(1);
+    expect(selectPeriod(history, "month")).toHaveLength(3);
+    expect(selectPeriod(history, "year")).toHaveLength(34);
   });
 });
 
