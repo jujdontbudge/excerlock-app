@@ -1,0 +1,27 @@
+/**
+ * Minute formatting for every Analysis surface. One place, so "1h 05m" never
+ * appears next to "65 min" on the same screen.
+ */
+
+/** `0m` · `45m` · `1h` · `2h 5m`. Always the shortest true reading. */
+export function formatMinutes(minutes: number): string {
+  const whole = Math.max(0, Math.round(minutes));
+  const hours = Math.floor(whole / 60);
+  const rest = whole % 60;
+
+  if (hours === 0) return `${rest}m`;
+  if (rest === 0) return `${hours}h`;
+  return `${hours}h ${rest}m`;
+}
+
+/** `+45m` · `−1h 10m`. The sign carries the meaning, so it is never dropped. */
+export function formatSignedMinutes(minutes: number): string {
+  const rounded = Math.round(minutes);
+  if (rounded === 0) return "0m";
+  return `${rounded > 0 ? "+" : "−"}${formatMinutes(Math.abs(rounded))}`;
+}
+
+/** `5 of 7 days` — the active-days reading (PRD §3.13 recap row ②). */
+export function formatDayCount(active: number, total: number): string {
+  return `${active} of ${total} ${total === 1 ? "day" : "days"}`;
+}
