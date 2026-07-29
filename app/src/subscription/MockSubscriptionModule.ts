@@ -8,6 +8,7 @@ import { FALLBACK_ONBOARDING_PAYWALL } from "./fallbackPaywall";
 import type {
   PremiumEntitlement,
   PurchaseResult,
+  SubscriptionError,
   SubscriptionModule,
   SubscriptionSnapshot,
   SubscriptionStateListener,
@@ -26,10 +27,15 @@ type MockSubscriptionModuleOptions = Readonly<{
   clock?: SubscriptionClock;
 }>;
 
+type MockPurchaseResult =
+  | "purchased"
+  | "cancelled"
+  | Readonly<{ status: "failed"; message: string }>;
+
 export class MockSubscriptionModule implements SubscriptionModule {
   private readonly clock: SubscriptionClock;
   private snapshot = INITIAL_SNAPSHOT;
-  private nextPurchaseResult: "purchased" | "cancelled" = "purchased";
+  private nextPurchaseResult: MockPurchaseResult = "purchased";
   private readonly listeners = new Set<SubscriptionStateListener>();
 
   public constructor(options: MockSubscriptionModuleOptions = {}) {
@@ -80,6 +86,17 @@ export class MockSubscriptionModule implements SubscriptionModule {
       });
       return Object.freeze({ status: "cancelled" });
     }
+    if (typeof this.nextPurchaseResult === "object") {
+      const error: SubscriptionError = Object.freeze({
+        code: "purchase_failed",
+        message: this.nextPurchaseResult.message,
+      });
+      this.publish({
+        ...this.snapshot,
+        intent: Object.freeze({ status: "idle", error }),
+      });
+      return Object.freeze({ status: "failed", error });
+    }
 
     const purchasedAtMs = this.clock.nowMs();
     const entitlement: PremiumEntitlement = Object.freeze({
@@ -97,7 +114,7 @@ export class MockSubscriptionModule implements SubscriptionModule {
   }
 
   /** Deterministic mock driver; not part of the app-facing interface. */
-  public setNextPurchaseResult(result: "purchased" | "cancelled"): void {
+  public setNextPurchaseResult(result: MockPurchaseResult): void {
     this.nextPurchaseResult = result;
   }
 

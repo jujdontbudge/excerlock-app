@@ -91,4 +91,34 @@ describe("MockSubscriptionModule", () => {
     expect(snapshot.intent).toEqual({ status: "idle", error: null });
     expect(isPremiumEntitled(snapshot)).toBe(false);
   });
+
+  it("surfaces a failed purchase without granting entitlement", async () => {
+    const mock = new MockSubscriptionModule();
+    const subscription: SubscriptionModule = mock;
+    await subscription.loadPaywall("onboarding");
+    mock.setNextPurchaseResult({
+      status: "failed",
+      message: "The App Store is unavailable.",
+    });
+
+    await expect(
+      subscription.purchase("excerlock_annual"),
+    ).resolves.toEqual({
+      status: "failed",
+      error: {
+        code: "purchase_failed",
+        message: "The App Store is unavailable.",
+      },
+    });
+
+    const snapshot = await subscription.getSnapshot();
+    expect(snapshot.intent).toEqual({
+      status: "idle",
+      error: {
+        code: "purchase_failed",
+        message: "The App Store is unavailable.",
+      },
+    });
+    expect(isPremiumEntitled(snapshot)).toBe(false);
+  });
 });
