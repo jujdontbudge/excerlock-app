@@ -57,9 +57,11 @@ export interface VendorOAuthServiceOptions {
 }
 
 export interface VendorOAuthCallback {
-  code: string;
+  code?: string;
   state: string;
   scope?: string;
+  error?: string;
+  errorDescription?: string;
 }
 
 export interface VendorOAuthService {
@@ -127,6 +129,10 @@ export function createVendorOAuthService(
     },
 
     async completeConnection(vendor, callback) {
+      if (!callback.state) {
+        throw new Error("OAuth callback is missing its state");
+      }
+
       const completedAt = now();
       const state = await options.repository.consumeOAuthState(
         hashState(callback.state),
@@ -135,6 +141,18 @@ export function createVendorOAuthService(
       );
       if (!state) {
         throw new Error("OAuth state is invalid, expired, or already used");
+      }
+      if (callback.error) {
+        const vendorLabel =
+          vendor === "whoop"
+            ? "WHOOP"
+            : `${vendor[0]?.toUpperCase()}${vendor.slice(1)}`;
+        const description = callback.errorDescription
+          ? ` (${callback.errorDescription})`
+          : "";
+        throw new Error(
+          `${vendorLabel} authorization failed: ${callback.error}${description}`,
+        );
       }
       if (!callback.code) {
         throw new Error("OAuth callback is missing its authorization code");

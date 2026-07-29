@@ -395,4 +395,54 @@ describe("vendor OAuth callback", () => {
       });
     },
   );
+
+  it("rejects missing, denied, and replayed callbacks before token exchange", async () => {
+    const repository = new CapturingStateRepository();
+    const http = new StubHttpClient([]);
+    const capture = vi.fn();
+    const service = createVendorOAuthService({
+      environment,
+      repository,
+      http,
+      analytics: { capture },
+      now: () => new Date("2026-07-29T19:00:00.000Z"),
+      randomState: () => "strava-state-12345678",
+    });
+
+    await expect(
+      service.completeConnection("strava", {
+        code: "auth-code",
+        state: "",
+      }),
+    ).rejects.toThrow("OAuth callback is missing its state");
+
+    const state = new URL(
+      await service.beginConnection("user_123", "strava"),
+    ).searchParams.get("state");
+    await expect(
+      service.completeConnection("strava", {
+        error: "access_denied",
+        errorDescription: "The athlete declined access",
+        state: state ?? "",
+      }),
+    ).rejects.toThrow(
+      "Strava authorization failed: access_denied (The athlete declined access)",
+    );
+    await expect(
+      service.completeConnection("strava", {
+        code: "auth-code",
+        state: state ?? "",
+      }),
+    ).rejects.toThrow("OAuth state is invalid, expired, or already used");
+
+    expect({
+      requests: http.requests,
+      connections: repository.connections,
+      analytics: capture.mock.calls,
+    }).toEqual({
+      requests: [],
+      connections: [],
+      analytics: [],
+    });
+  });
 });
