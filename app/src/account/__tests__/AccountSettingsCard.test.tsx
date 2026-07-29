@@ -156,6 +156,9 @@ describe("AccountSettingsCard", () => {
     };
     const atMs = 12 * 60 * 60 * 1_000;
     await account.signUp();
+    // Unlimited is the default allowance; a strict zero base makes the balance
+    // below exactly what this earn banked.
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
     useHomeStore.getState().addCondition(condition);
     useHomeStore.getState().recordEventPayout(condition.id, atMs);
     await render(<AccountSettingsCard account={account} />);

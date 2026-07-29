@@ -42,6 +42,9 @@ describe("account local-first law", () => {
     };
     const atMs = 12 * 60 * 60 * 1_000;
 
+    // The default allowance is unlimited, so choose a strict zero base first:
+    // then the balance is exactly what this earn banked, and nothing else.
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
     useHomeStore.getState().addCondition(condition);
     useHomeStore.getState().recordEventPayout(condition.id, atMs);
 
