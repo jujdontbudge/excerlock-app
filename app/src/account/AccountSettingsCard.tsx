@@ -42,8 +42,11 @@ export function AccountSettingsCard({
             deleted. Adapty and PostHog erasure will be scheduled.
           </Text>
           <Text style={typography.body}>
-            Your conditions, earning history, lock choices, and settings remain
-            on this device.
+            All on-device data—including conditions, earning history, lock
+            choices, and settings—remains on this device.
+          </Text>
+          <Text style={typography.body}>
+            Deleting your account does not cancel an App Store subscription.
           </Text>
           <Text style={typography.body}>This cannot be undone.</Text>
           {snapshot.intent.status === "idle" &&

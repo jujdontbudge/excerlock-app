@@ -119,7 +119,12 @@ describe("AccountSettingsCard", () => {
     ).toBeOnTheScreen();
     expect(
       screen.getByText(
-        "Your conditions, earning history, lock choices, and settings remain on this device.",
+        "All on-device data—including conditions, earning history, lock choices, and settings—remains on this device.",
+      ),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        "Deleting your account does not cancel an App Store subscription.",
       ),
     ).toBeOnTheScreen();
     expect(screen.getByText("This cannot be undone.")).toBeOnTheScreen();

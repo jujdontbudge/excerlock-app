@@ -47,8 +47,9 @@ Deletion has no silent path. Settings first explains that:
 
 - the Clerk account and ExcerLock server record are permanently destroyed;
 - Adapty and PostHog erasure is scheduled;
-- conditions, earning history, lock choices, and settings remain on the
-  device;
+- all on-device data, including conditions, earning history, lock choices, and
+  settings, remains on the device;
+- deleting the account does not cancel an App Store subscription;
 - deletion is irreversible.
 
 The user must then choose `Delete account forever` or `Keep my account`.
