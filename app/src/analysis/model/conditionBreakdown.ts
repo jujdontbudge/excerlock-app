@@ -1,3 +1,7 @@
+import {
+  getCatalogEntry,
+  type ConfiguredCondition,
+} from "@excerlock/condition-model";
 import type { DaySummary } from "@excerlock/ledger";
 
 type ConditionBreakdownBase = {
@@ -19,6 +23,15 @@ type AccumulatedEarnings = {
   earnedMinutes: number;
   hasMissingAttribution: boolean;
 };
+
+/** Resolve the mutable display names for the immutable ids stored in the ledger. */
+export function conditionNameMap(
+  conditions: readonly Pick<ConfiguredCondition, "id" | "catalogId">[],
+): Readonly<Record<string, string>> {
+  return Object.fromEntries(
+    conditions.map(({ id, catalogId }) => [id, getCatalogEntry(catalogId).name]),
+  );
+}
 
 /**
  * Banked minutes grouped by ledger condition id over exactly the supplied

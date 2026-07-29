@@ -1,6 +1,7 @@
 import type { DaySummary } from "@excerlock/ledger";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
+import { useHomeStore } from "@/home";
 import { useConfessionStore } from "@/onboarding";
 import { Screen, SectionHeader, useTheme } from "@/ui";
 
@@ -18,7 +19,11 @@ import {
   FIXTURE_CONDITION_NAMES,
   FIXTURE_DAY_SUMMARIES,
 } from "../fixtures";
-import { buildAnalysisView, type Weekday } from "../model";
+import {
+  buildAnalysisView,
+  conditionNameMap,
+  type Weekday,
+} from "../model";
 
 type AnalysisScreenProps = {
   /**
@@ -55,11 +60,14 @@ export function AnalysisScreen({
 }: AnalysisScreenProps) {
   const { spacing, typography } = useTheme();
   const confessed = useConfessionStore((state) => state.confessedDailyMinutes);
+  const conditions = useHomeStore((state) => state.conditions);
   const view = buildAnalysisView(days ?? FIXTURE_DAY_SUMMARIES, {
     ...(weekStartsOn === undefined ? {} : { weekStartsOn }),
     conditionNames:
       conditionNames ??
-      (days === undefined ? FIXTURE_CONDITION_NAMES : {}),
+      (days === undefined
+        ? FIXTURE_CONDITION_NAMES
+        : conditionNameMap(conditions)),
     confessedDailyMinutes:
       confessedDailyMinutes === undefined ? confessed : confessedDailyMinutes,
   });
