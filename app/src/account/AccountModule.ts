@@ -32,7 +32,8 @@ export type AuthenticationResult =
       status: "authenticated";
       session: SignedInAccountSession;
     }>
-  | Readonly<{ status: "cancelled" }>;
+  | Readonly<{ status: "cancelled" }>
+  | Readonly<{ status: "failed"; error: AccountError }>;
 
 export type AccountStateListener = (snapshot: AccountSnapshot) => void;
 export type AccountUnsubscribe = () => void;

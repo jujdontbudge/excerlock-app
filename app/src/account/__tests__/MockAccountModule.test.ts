@@ -53,4 +53,31 @@ describe("MockAccountModule", () => {
       intent: { status: "idle", error: null },
     });
   });
+
+  it("surfaces sign-in failure without creating a session", async () => {
+    const mock = new MockAccountModule();
+    const account: AccountModule = mock;
+    mock.setNextSignInResult({
+      status: "failed",
+      message: "Sign in is temporarily unavailable.",
+    });
+
+    await expect(account.signIn()).resolves.toEqual({
+      status: "failed",
+      error: {
+        code: "sign_in_failed",
+        message: "Sign in is temporarily unavailable.",
+      },
+    });
+    expect(await account.getSnapshot()).toEqual({
+      session: { status: "signedOut" },
+      intent: {
+        status: "idle",
+        error: {
+          code: "sign_in_failed",
+          message: "Sign in is temporarily unavailable.",
+        },
+      },
+    });
+  });
 });

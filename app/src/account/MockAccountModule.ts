@@ -4,6 +4,7 @@ import {
 } from "./clock";
 import type {
   AccountModule,
+  AccountError,
   AccountSnapshot,
   AccountStateListener,
   AccountUnsubscribe,
@@ -20,7 +21,10 @@ type MockAccountModuleOptions = Readonly<{
   clock?: AccountClock;
 }>;
 
-type MockSignInResult = "authenticated" | "cancelled";
+type MockSignInResult =
+  | "authenticated"
+  | "cancelled"
+  | Readonly<{ status: "failed"; message: string }>;
 
 export class MockAccountModule implements AccountModule {
   private readonly clock: AccountClock;
@@ -49,6 +53,17 @@ export class MockAccountModule implements AccountModule {
         intent: Object.freeze({ status: "idle", error: null }),
       });
       return Object.freeze({ status: "cancelled" });
+    }
+    if (typeof this.nextSignInResult === "object") {
+      const error: AccountError = Object.freeze({
+        code: "sign_in_failed",
+        message: this.nextSignInResult.message,
+      });
+      this.publish({
+        ...this.snapshot,
+        intent: Object.freeze({ status: "idle", error }),
+      });
+      return Object.freeze({ status: "failed", error });
     }
 
     const session: SignedInAccountSession = Object.freeze({
