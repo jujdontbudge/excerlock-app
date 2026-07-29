@@ -1,6 +1,7 @@
 import type { FlowScreen } from "@excerlock/analytics-events";
-import type { ComponentType } from "react";
+import { useEffect, type ComponentType } from "react";
 
+import { flowTracker } from "../analytics";
 import { FLOW } from "./flow";
 import { ConfessionScreen } from "./screens/ConfessionScreen";
 import { MirrorScreen } from "./screens/MirrorScreen";
@@ -12,6 +13,7 @@ import {
   ValuePropScreen,
   type OnboardingScreenProps,
 } from "./screens/ValuePropScreen";
+import { useConfessionStore } from "./store/confessionStore";
 import { useOnboardingStore } from "./store/onboardingStore";
 
 const SCREEN_BY_STEP = {
@@ -36,7 +38,23 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const ScreenComponent = SCREEN_BY_STEP[currentStep];
   const isFinalStep = currentStep === FLOW.at(-1)?.screen;
 
+  useEffect(() => {
+    flowTracker.trackOnboardingScreen(currentStep);
+  }, [currentStep]);
+
   const handleContinue = () => {
+    if (currentStep === "confession") {
+      const confessedDailyMinutes =
+        useConfessionStore.getState().confessedDailyMinutes;
+
+      if (confessedDailyMinutes !== null) {
+        flowTracker.trackOnboardingAnswer(
+          currentStep,
+          confessedDailyMinutes,
+        );
+      }
+    }
+
     advance();
 
     if (isFinalStep) {
