@@ -46,6 +46,7 @@ export { useHomeSignals } from "./signals/useHomeSignals";
 export {
   DEFAULT_HOME_STATE,
   HOME_STORAGE_KEY,
+  selectActiveConditions,
   selectPickerContext,
   useHomeStore,
   type HomeStoreValues,

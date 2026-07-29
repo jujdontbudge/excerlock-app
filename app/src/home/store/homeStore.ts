@@ -37,6 +37,12 @@ export interface SavedPlace {
 
 export type HomeStoreValues = Readonly<{
   conditions: readonly ConfiguredCondition[];
+  /**
+   * Conditions the user switched off in Manage. Off is not deleted: the
+   * condition keeps its uniqueness key in the picker context, so its slot is
+   * still taken and turning it back on restores exactly what was built.
+   */
+  disabledConditionIds: readonly string[];
   journal: Journal;
   ledgerConfig: LedgerConfig;
   connectedSources: readonly (TierOneVendorSource | ConnectedExtraSource)[];
@@ -49,6 +55,7 @@ export type HomeStoreValues = Readonly<{
  */
 export const DEFAULT_HOME_STATE: HomeStoreValues = Object.freeze({
   conditions: [],
+  disabledConditionIds: [],
   journal: emptyJournal(),
   ledgerConfig: Object.freeze({
     dayBoundaryOffsetMinutes: 0,
@@ -61,7 +68,10 @@ export const DEFAULT_HOME_STATE: HomeStoreValues = Object.freeze({
 
 type HomeStore = HomeStoreValues & {
   addCondition: (condition: ConfiguredCondition) => void;
+  /** Replace a condition in place — the edit path, so the id and slot survive. */
+  updateCondition: (condition: ConfiguredCondition) => void;
   removeCondition: (conditionId: string) => void;
+  setConditionEnabled: (conditionId: string, enabled: boolean) => void;
   /** Bank an event condition's payout. Idempotent per condition per ledger day. */
   recordEventPayout: (conditionId: string, atMs: number) => void;
   /** Conditions the ledger paid out on the day containing `atMs`. */
@@ -84,16 +94,39 @@ export const useHomeStore = create<HomeStore>()(
         );
       },
 
-      removeCondition: (conditionId) => {
+      updateCondition: (condition) => {
         set(({ conditions }) => ({
+          conditions: conditions.map((existing) =>
+            existing.id === condition.id ? condition : existing,
+          ),
+        }));
+      },
+
+      removeCondition: (conditionId) => {
+        set(({ conditions, disabledConditionIds }) => ({
           conditions: conditions.filter(({ id }) => id !== conditionId),
+          disabledConditionIds: disabledConditionIds.filter((id) => id !== conditionId),
+        }));
+      },
+
+      setConditionEnabled: (conditionId, enabled) => {
+        set(({ disabledConditionIds }) => ({
+          disabledConditionIds: enabled
+            ? disabledConditionIds.filter((id) => id !== conditionId)
+            : disabledConditionIds.includes(conditionId)
+              ? disabledConditionIds
+              : [...disabledConditionIds, conditionId],
         }));
       },
 
       recordEventPayout: (conditionId, atMs) => {
-        const { conditions, journal, ledgerConfig } = get();
+        const { conditions, disabledConditionIds, journal, ledgerConfig } = get();
         const condition = conditions.find(({ id }) => id === conditionId);
         if (condition === undefined || condition.settings.kind !== "event") {
+          return;
+        }
+        // A switched-off condition earns nothing, whoever asks.
+        if (disabledConditionIds.includes(conditionId)) {
           return;
         }
 
@@ -130,8 +163,16 @@ export const useHomeStore = create<HomeStore>()(
     {
       name: HOME_STORAGE_KEY,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: ({ conditions, journal, ledgerConfig, connectedSources, savedPlaces }) => ({
+      partialize: ({
         conditions,
+        disabledConditionIds,
+        journal,
+        ledgerConfig,
+        connectedSources,
+        savedPlaces,
+      }) => ({
+        conditions,
+        disabledConditionIds,
         journal,
         ledgerConfig,
         connectedSources,
@@ -144,6 +185,15 @@ export const useHomeStore = create<HomeStore>()(
     },
   ),
 );
+
+/** The conditions that are switched on — the only ones Home renders or banks. */
+export function selectActiveConditions(
+  state: Pick<HomeStoreValues, "conditions" | "disabledConditionIds">,
+): readonly ConfiguredCondition[] {
+  return state.disabledConditionIds.length === 0
+    ? state.conditions
+    : state.conditions.filter(({ id }) => !state.disabledConditionIds.includes(id));
+}
 
 /** The context `listPickerVerdicts`/`getPickerVerdict` need to judge the catalog. */
 export function selectPickerContext(state: HomeStoreValues): PickerContext {
@@ -188,6 +238,11 @@ function readPersisted(persistedState: unknown): Partial<HomeStoreValues> {
 
   if (Array.isArray(stored.conditions)) {
     values.conditions = stored.conditions.filter(isKnownCondition);
+  }
+  if (Array.isArray(stored.disabledConditionIds)) {
+    values.disabledConditionIds = stored.disabledConditionIds.filter(
+      (id): id is string => typeof id === "string",
+    );
   }
   if (isJournal(stored.journal)) {
     values.journal = stored.journal;

@@ -17,7 +17,7 @@ import { deriveLockHero, type LiveState } from "../model/lockState";
 import { createFixtureHomeSignalFeed } from "../signals/fixtureFeed";
 import type { HomeSignalFeed } from "../signals/homeSignalFeed";
 import { useHomeSignals } from "../signals/useHomeSignals";
-import { selectPickerContext, useHomeStore } from "../store/homeStore";
+import { selectActiveConditions, selectPickerContext, useHomeStore } from "../store/homeStore";
 
 /** One feed for the app's lifetime — a screen remount must not restart the fixtures. */
 let appFeed: HomeSignalFeed | undefined;
@@ -43,6 +43,7 @@ export function HomeScreen({ feed = sharedFeed(), now = localWallClockNow }: Hom
   const [builderOpen, setBuilderOpen] = useState(false);
 
   const conditions = useHomeStore((state) => state.conditions);
+  const disabledConditionIds = useHomeStore((state) => state.disabledConditionIds);
   const journal = useHomeStore((state) => state.journal);
   const ledgerConfig = useHomeStore((state) => state.ledgerConfig);
   const savedPlaces = useHomeStore((state) => state.savedPlaces);
@@ -62,8 +63,10 @@ export function HomeScreen({ feed = sharedFeed(), now = localWallClockNow }: Hom
     [conditions, journal, ledgerConfig, savedPlaces, connectedSources],
   );
 
+  // A condition switched off in Manage keeps its slot in the picker context but
+  // leaves the dashboard entirely — an off condition has nothing to show today.
   const cards = toConditionCards({
-    conditions,
+    conditions: selectActiveConditions({ conditions, disabledConditionIds }),
     reading,
     firedConditionIds: firedConditionIds(atMs),
     placeNames,
