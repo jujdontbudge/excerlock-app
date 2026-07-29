@@ -2,6 +2,7 @@ import {
   SystemSupportClock,
   type SupportClock,
 } from "./clock";
+import { createMockSupportPersistence } from "./mockStore";
 import type {
   FeatureRequest,
   SubmitSupportResult,
@@ -13,6 +14,7 @@ import type {
   SupportUnsubscribe,
   VoteOnFeatureRequestResult,
 } from "./SupportModule";
+import type { StateStorage } from "zustand/middleware";
 
 const INITIAL_SNAPSHOT: SupportSnapshot = Object.freeze({
   submissions: Object.freeze([]),
@@ -21,6 +23,7 @@ const INITIAL_SNAPSHOT: SupportSnapshot = Object.freeze({
 
 type MockSupportModuleOptions = Readonly<{
   clock?: SupportClock;
+  storage?: StateStorage<Promise<void>>;
 }>;
 
 type MockSubmissionResult =
@@ -39,6 +42,8 @@ const OFFLINE_ERROR: SupportError = Object.freeze({
 
 export class MockSupportModule implements SupportModule {
   private readonly clock: SupportClock;
+  private readonly persistence: ReturnType<typeof createMockSupportPersistence>;
+  private readonly ready: Promise<void>;
   private nextSupportId = 1;
   private nextFeatureId = 1;
   private snapshot = INITIAL_SNAPSHOT;
@@ -48,15 +53,23 @@ export class MockSupportModule implements SupportModule {
 
   public constructor(options: MockSupportModuleOptions = {}) {
     this.clock = options.clock ?? new SystemSupportClock();
+    this.persistence = createMockSupportPersistence(options.storage);
+    this.ready = this.persistence.load().then((snapshot) => {
+      this.snapshot = snapshot;
+      this.nextSupportId = nextNumericId(snapshot.submissions, "support");
+      this.nextFeatureId = nextNumericId(snapshot.submissions, "feature");
+    });
   }
 
   public async getSnapshot(): Promise<SupportSnapshot> {
+    await this.ready;
     return this.snapshot;
   }
 
   public async submitSupport(
     request: Readonly<{ message: string }>,
   ): Promise<SubmitSupportResult> {
+    await this.ready;
     const submission: SupportSubmission = Object.freeze({
       id: `support-${this.nextSupportId++}`,
       kind: "support",
@@ -72,6 +85,7 @@ export class MockSupportModule implements SupportModule {
   public async submitFeatureRequest(
     request: Readonly<{ title: string; message: string }>,
   ): Promise<SubmitSupportResult> {
+    await this.ready;
     const submissionId = `feature-${this.nextFeatureId++}`;
     const submission: SupportSubmission = Object.freeze({
       id: submissionId,
@@ -90,7 +104,7 @@ export class MockSupportModule implements SupportModule {
       hasVoted: false,
       submissionId,
     });
-    this.publish({
+    await this.publish({
       ...this.snapshot,
       featureRequests: Object.freeze([
         ...this.snapshot.featureRequests,
@@ -103,6 +117,7 @@ export class MockSupportModule implements SupportModule {
   public async retrySubmission(
     submissionId: string,
   ): Promise<SubmitSupportResult> {
+    await this.ready;
     const submission = this.snapshot.submissions.find(
       (candidate) => candidate.id === submissionId,
     );
@@ -125,6 +140,7 @@ export class MockSupportModule implements SupportModule {
   public async voteOnFeatureRequest(
     featureRequestId: string,
   ): Promise<VoteOnFeatureRequestResult> {
+    await this.ready;
     const featureRequest = this.snapshot.featureRequests.find(
       (candidate) => candidate.id === featureRequestId,
     );
@@ -144,7 +160,7 @@ export class MockSupportModule implements SupportModule {
       voteCount: featureRequest.voteCount + 1,
       hasVoted: true,
     });
-    this.publish({
+    await this.publish({
       ...this.snapshot,
       featureRequests: Object.freeze(
         this.snapshot.featureRequests.map((current) =>
@@ -162,10 +178,10 @@ export class MockSupportModule implements SupportModule {
   private async attemptSubmission(
     submission: SupportSubmission,
   ): Promise<SubmitSupportResult> {
-    this.saveSubmission(submission);
+    await this.saveSubmission(submission);
     await Promise.resolve();
     if (!this.online) {
-      this.replaceSubmission({
+      await this.replaceSubmission({
         ...submission,
         status: "failed",
         error: OFFLINE_ERROR,
@@ -181,7 +197,7 @@ export class MockSupportModule implements SupportModule {
         code: this.nextSubmissionResult.code,
         message: this.nextSubmissionResult.message,
       });
-      this.replaceSubmission({
+      await this.replaceSubmission({
         ...submission,
         status: "failed",
         error,
@@ -193,9 +209,10 @@ export class MockSupportModule implements SupportModule {
       });
     }
 
-    this.replaceSubmission({
+    await this.replaceSubmission({
       ...submission,
       status: "submitted",
+      error: null,
     });
     return Object.freeze({
       status: "submitted",
@@ -218,8 +235,8 @@ export class MockSupportModule implements SupportModule {
     return () => this.listeners.delete(listener);
   }
 
-  private replaceSubmission(submission: SupportSubmission): void {
-    this.publish({
+  private async replaceSubmission(submission: SupportSubmission): Promise<void> {
+    await this.publish({
       ...this.snapshot,
       submissions: Object.freeze(
         this.snapshot.submissions.map((current) =>
@@ -229,23 +246,42 @@ export class MockSupportModule implements SupportModule {
     });
   }
 
-  private saveSubmission(submission: SupportSubmission): void {
+  private async saveSubmission(submission: SupportSubmission): Promise<void> {
     const exists = this.snapshot.submissions.some(
       (current) => current.id === submission.id,
     );
     if (exists) {
-      this.replaceSubmission(submission);
+      await this.replaceSubmission(submission);
       return;
     }
 
-    this.publish({
+    await this.publish({
       ...this.snapshot,
       submissions: Object.freeze([...this.snapshot.submissions, submission]),
     });
   }
 
-  private publish(snapshot: SupportSnapshot): void {
+  private async publish(snapshot: SupportSnapshot): Promise<void> {
     this.snapshot = Object.freeze(snapshot);
+    await this.persistence.save(this.snapshot);
     this.listeners.forEach((listener) => listener(this.snapshot));
   }
+}
+
+function nextNumericId(
+  submissions: readonly SupportSubmission[],
+  kind: SupportSubmission["kind"],
+): number {
+  return (
+    submissions.reduce((largest, submission) => {
+      if (submission.kind !== kind) {
+        return largest;
+      }
+      const numericId = Number.parseInt(
+        submission.id.slice(`${kind}-`.length),
+        10,
+      );
+      return Number.isFinite(numericId) ? Math.max(largest, numericId) : largest;
+    }, 0) + 1
+  );
 }

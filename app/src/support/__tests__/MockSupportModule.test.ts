@@ -119,6 +119,34 @@ describe("MockSupportModule", () => {
     ]);
   });
 
+  it("restores an unsent offline request after the module remounts", async () => {
+    const first = new MockSupportModule({
+      clock: new ManualSupportClock(3_500),
+    });
+    first.setOnline(false);
+    await first.submitSupport({
+      message: "Keep this request until I can retry it.",
+    });
+
+    const restored: SupportModule = new MockSupportModule();
+
+    expect((await restored.getSnapshot()).submissions).toEqual([
+      {
+        id: "support-1",
+        kind: "support",
+        title: null,
+        message: "Keep this request until I can retry it.",
+        createdAtMs: 3_500,
+        status: "failed",
+        error: {
+          code: "offline",
+          message:
+            "You're offline. This wasn't sent. It is saved here so you can try again.",
+        },
+      },
+    ]);
+  });
+
   it("submits a feature request and exposes its submission state", async () => {
     const support: SupportModule = new MockSupportModule({
       clock: new ManualSupportClock(4_000),
