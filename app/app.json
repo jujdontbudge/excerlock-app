@@ -7,7 +7,7 @@
     "scheme": "excerlock",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.excerlock.app",
+      "bundleIdentifier": "com.johansardar.excerlock",
       "supportsTablet": false
     },
     "android": {

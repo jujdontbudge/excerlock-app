@@ -45,7 +45,7 @@ describe("minimum-iOS guardrail", () => {
     const appBuildSettings = projectFiles
       .flatMap((path) => [...readUtf8(path).matchAll(/buildSettings = \{([\s\S]*?)\n\s*\};/g)])
       .map((match) => match[1])
-      .filter((settings) => settings.includes("PRODUCT_BUNDLE_IDENTIFIER = \"com.excerlock.app\""));
+      .filter((settings) => settings.includes("PRODUCT_BUNDLE_IDENTIFIER = \"com.johansardar.excerlock\""));
 
     expect(appBuildSettings.length).toBeGreaterThan(0);
     expect(

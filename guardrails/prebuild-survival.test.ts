@@ -82,7 +82,7 @@ function readProjectTargets(project: string): ProjectTarget[] {
 describe("prebuild-survival guardrail", () => {
   it("keeps every declared native target and entitlement in the generated Xcode project", () => {
     const appConfig = readJson<AppConfig>(fromRoot("app", "app.json"));
-    expect(appConfig.expo?.ios?.bundleIdentifier).toBe("com.excerlock.app");
+    expect(appConfig.expo?.ios?.bundleIdentifier).toBe("com.johansardar.excerlock");
 
     const targetManifest = readJson<NativeTargetsManifest>(
       fromRoot("guardrails", "native-targets.json"),
@@ -121,7 +121,7 @@ describe("prebuild-survival guardrail", () => {
       "The guardrail suite requires a clean Expo iOS prebuild before its filesystem assertions",
     ).toBeGreaterThan(0);
     const project = projectFiles.map(readUtf8).join("\n");
-    expect(project).toContain('PRODUCT_BUNDLE_IDENTIFIER = "com.excerlock.app";');
+    expect(project).toContain('PRODUCT_BUNDLE_IDENTIFIER = "com.johansardar.excerlock";');
 
     const projectTargets = readProjectTargets(project);
     const requiredTargets = targetManifest.targets.filter(({ status }) => status === "required");
