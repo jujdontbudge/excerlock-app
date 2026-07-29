@@ -118,4 +118,38 @@ describe("MockScreenTimeModule", () => {
       activeLockWindowId: null,
     });
   });
+
+  it("notifies subscribers once per shield change and stops after unsubscribe", async () => {
+    const mock = new MockScreenTimeModule();
+    const screenTime: ScreenTimeModule = mock;
+    mock.setNextAuthorizationResult("approved");
+    await screenTime.requestAuthorization();
+    const selection = (await screenTime.pickSelection())!;
+    const observed: string[] = [];
+    const unsubscribe = screenTime.subscribe((state) => {
+      observed.push(state.effectiveShields);
+    });
+
+    await screenTime.reconcile(selection, {
+      shields: "up",
+      drainThresholds: [],
+    });
+    await screenTime.reconcile(selection, {
+      shields: "up",
+      drainThresholds: [],
+    });
+    await screenTime.reconcile(selection, {
+      shields: "down",
+      drainThresholds: [],
+    });
+
+    expect(observed).toEqual(["up", "down"]);
+
+    unsubscribe();
+    await screenTime.reconcile(selection, {
+      shields: "up",
+      drainThresholds: [],
+    });
+    expect(observed).toEqual(["up", "down"]);
+  });
 });

@@ -3,9 +3,11 @@ import type { DesiredOsState } from "@excerlock/ledger";
 import type {
   CurrentShieldState,
   LockWindow,
+  ScreenTimeUnsubscribe,
   ScreenTimeAuthorizationStatus,
   ScreenTimeModule,
   ScreenTimeSelectionHandle,
+  ShieldStateListener,
 } from "./ScreenTimeModule";
 import {
   SystemScreenTimeClock,
@@ -46,6 +48,7 @@ export class MockScreenTimeModule implements ScreenTimeModule {
   private nextSelectionNumber = 1;
   private lockWindows: ScheduledLockWindow[] = [];
   private scheduledClockTasks: CancelScheduledClockTask[] = [];
+  private readonly shieldStateListeners = new Set<ShieldStateListener>();
   private currentShieldState: CurrentShieldState = Object.freeze({
     selection: null,
     desiredOsState: SHIELDS_DOWN,
@@ -127,6 +130,11 @@ export class MockScreenTimeModule implements ScreenTimeModule {
     return this.currentShieldState;
   }
 
+  public subscribe(listener: ShieldStateListener): ScreenTimeUnsubscribe {
+    this.shieldStateListeners.add(listener);
+    return () => this.shieldStateListeners.delete(listener);
+  }
+
   /** Deterministic mock driver; not part of the app-facing interface. */
   public setNextAuthorizationResult(result: AuthorizationDecision): void {
     this.nextAuthorizationResult = result;
@@ -158,6 +166,7 @@ export class MockScreenTimeModule implements ScreenTimeModule {
       return;
     }
     this.currentShieldState = next;
+    this.shieldStateListeners.forEach((listener) => listener(next));
   }
 
   private refreshCurrentShieldState(): void {

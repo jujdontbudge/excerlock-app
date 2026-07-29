@@ -28,6 +28,9 @@ export type LockWindow = Readonly<{
   endsAtMs: number;
 }>;
 
+export type ShieldStateListener = (state: CurrentShieldState) => void;
+export type ScreenTimeUnsubscribe = () => void;
+
 export interface ScreenTimeModule {
   getAuthorizationStatus(): Promise<ScreenTimeAuthorizationStatus>;
   requestAuthorization(): Promise<ScreenTimeAuthorizationStatus>;
@@ -42,4 +45,5 @@ export interface ScreenTimeModule {
   ): Promise<void>;
   cancelLockWindow(id: string): Promise<void>;
   getCurrentShieldState(): Promise<CurrentShieldState>;
+  subscribe(listener: ShieldStateListener): ScreenTimeUnsubscribe;
 }
