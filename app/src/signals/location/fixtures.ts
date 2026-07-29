@@ -1,7 +1,7 @@
 import gymEnterExitJson from "./fixtures/gym-enter-exit.json";
 import quietJson from "./fixtures/quiet.json";
 import regionBlipJson from "./fixtures/region-blip.json";
-import type { LocationFixtureManifest } from "./FixtureLocationProvider";
+import type { LocationFixtureManifest } from "./fixtureManifest";
 
 export const LOCATION_FIXTURE_NAMES = [
   "gym-enter-exit",

@@ -1,7 +1,5 @@
 import {
   TimelinePlayer,
-  type FixtureManifest,
-  type JsonValue,
   type TimelinePlayback,
   type TimelineRow,
 } from "../timeline";
@@ -14,89 +12,17 @@ import type {
   VendorRateLimit,
   VendorUnsubscribe,
 } from "./VendorProvider";
-
-export const VENDORS = ["strava", "oura", "whoop", "polar"] as const;
-
-export const VENDOR_FIXTURE_EVENTS = [
-  "vendor.activityAvailable",
-  "vendor.connectionChanged",
-  "vendor.rateLimited",
-] as const;
-
-export type VendorFixtureEvent = (typeof VENDOR_FIXTURE_EVENTS)[number];
-
-export interface VendorActivityAvailablePayload {
-  readonly vendor: Vendor;
-  readonly raw: JsonValue;
-}
-
-export interface VendorConnectionChangedPayload {
-  readonly vendor: Vendor;
-  readonly state: VendorConnectionState;
-}
-
-export interface VendorRateLimitedPayload {
-  readonly vendor: Vendor;
-  readonly retryAfterS: number;
-}
-
-export type VendorFixturePayload =
-  | VendorActivityAvailablePayload
-  | VendorConnectionChangedPayload
-  | VendorRateLimitedPayload;
-
-export type VendorTimelineRow =
-  | TimelineRow<"vendor.activityAvailable", VendorActivityAvailablePayload>
-  | TimelineRow<"vendor.connectionChanged", VendorConnectionChangedPayload>
-  | TimelineRow<"vendor.rateLimited", VendorRateLimitedPayload>;
-
-export interface VendorFixtureManifest
-  extends Omit<
-    FixtureManifest<VendorFixtureEvent, VendorFixturePayload>,
-    "timeline"
-  > {
-  readonly timeline: readonly VendorTimelineRow[];
-}
-
-function isVendor(value: unknown): value is Vendor {
-  return VENDORS.includes(value as Vendor);
-}
-
-function assertActivityPayload(
-  payload: VendorFixturePayload,
-): asserts payload is VendorActivityAvailablePayload {
-  if (!isVendor((payload as Partial<VendorActivityAvailablePayload>).vendor)) {
-    throw new Error("Invalid payload for vendor.activityAvailable");
-  }
-}
-
-function assertConnectionPayload(
-  payload: VendorFixturePayload,
-): asserts payload is VendorConnectionChangedPayload {
-  const candidate = payload as Partial<VendorConnectionChangedPayload>;
-  if (
-    !isVendor(candidate.vendor) ||
-    !["disconnected", "connecting", "connected", "error"].includes(
-      candidate.state ?? "",
-    )
-  ) {
-    throw new Error("Invalid payload for vendor.connectionChanged");
-  }
-}
-
-function assertRateLimitPayload(
-  payload: VendorFixturePayload,
-): asserts payload is VendorRateLimitedPayload {
-  const candidate = payload as Partial<VendorRateLimitedPayload>;
-  if (
-    !isVendor(candidate.vendor) ||
-    typeof candidate.retryAfterS !== "number" ||
-    !Number.isFinite(candidate.retryAfterS) ||
-    candidate.retryAfterS < 0
-  ) {
-    throw new Error("Invalid payload for vendor.rateLimited");
-  }
-}
+import {
+  VENDORS,
+  VENDOR_FIXTURE_EVENTS,
+  assertVendorActivityPayload,
+  assertVendorConnectionPayload,
+  assertVendorRateLimitPayload,
+  validateVendorFixtureRow,
+  type VendorFixtureEvent,
+  type VendorFixtureManifest,
+  type VendorFixturePayload,
+} from "./fixtureManifest";
 
 export class FixtureVendorProvider implements VendorProvider {
   private readonly activities = new Map<Vendor, VendorActivity[]>();
@@ -128,6 +54,7 @@ export class FixtureVendorProvider implements VendorProvider {
       manifest: fixture,
       allowedEvents: VENDOR_FIXTURE_EVENTS,
       playback,
+      validateRow: validateVendorFixtureRow,
       onEvent: (row) => this.apply(row),
     });
   }
@@ -186,7 +113,7 @@ export class FixtureVendorProvider implements VendorProvider {
     row: TimelineRow<VendorFixtureEvent, VendorFixturePayload>,
   ): void {
     if (row.event === "vendor.activityAvailable") {
-      assertActivityPayload(row.payload);
+      assertVendorActivityPayload(row.payload);
       const activity: VendorActivity = {
         vendor: row.payload.vendor,
         atMs: row.atMs,
@@ -200,7 +127,7 @@ export class FixtureVendorProvider implements VendorProvider {
     }
 
     if (row.event === "vendor.connectionChanged") {
-      assertConnectionPayload(row.payload);
+      assertVendorConnectionPayload(row.payload);
       this.connections.set(row.payload.vendor, row.payload.state);
       const change: VendorConnectionChange = {
         vendor: row.payload.vendor,
@@ -211,7 +138,7 @@ export class FixtureVendorProvider implements VendorProvider {
       return;
     }
 
-    assertRateLimitPayload(row.payload);
+    assertVendorRateLimitPayload(row.payload);
     const rateLimit: VendorRateLimit = {
       vendor: row.payload.vendor,
       atMs: row.atMs,

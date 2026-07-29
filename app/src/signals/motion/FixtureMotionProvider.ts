@@ -1,67 +1,27 @@
 import {
   TimelinePlayer,
-  type FixtureManifest,
   type TimelinePlayback,
   type TimelineRow,
 } from "../timeline";
 import type {
-  ActivityClass,
   ActivitySample,
   CadenceSample,
   MotionAuthStatus,
   MotionAvailability,
-  MotionConfidence,
   MotionProvider,
   Unsubscribe,
 } from "./MotionProvider";
-
-export const MOTION_FIXTURE_EVENTS = [
-  "motion.activityChange",
-  "motion.pedometerUpdate",
-  "motion.authDenied",
-] as const;
-
-export type MotionFixtureEvent = (typeof MOTION_FIXTURE_EVENTS)[number];
-
-export interface MotionActivityChangePayload {
-  readonly activity: "walking" | "stationary" | "automotive";
-  readonly confidence: MotionConfidence;
-}
-
-export interface MotionPedometerUpdatePayload {
-  readonly steps: number;
-  readonly cadence: number | null;
-}
-
-export type MotionFixturePayload =
-  | MotionActivityChangePayload
-  | MotionPedometerUpdatePayload
-  | Record<string, never>;
-
-export type MotionTimelineRow =
-  | TimelineRow<"motion.activityChange", MotionActivityChangePayload>
-  | TimelineRow<"motion.pedometerUpdate", MotionPedometerUpdatePayload>
-  | TimelineRow<"motion.authDenied", Record<string, never>>;
-
-export interface MotionFixtureManifest
-  extends Omit<
-    FixtureManifest<MotionFixtureEvent, MotionFixturePayload>,
-    "timeline"
-  > {
-  readonly timeline: readonly MotionTimelineRow[];
-}
-
-export class MotionFixtureError extends Error {
-  public constructor(
-    public readonly code:
-      | "ERR_MOTION_DENIED"
-      | "ERR_MOTION_RESTRICTED"
-      | "ERR_MOTION_UNAVAILABLE",
-  ) {
-    super(code);
-    this.name = "MotionFixtureError";
-  }
-}
+import {
+  MOTION_FIXTURE_EVENTS,
+  assertMotionActivityPayload,
+  assertMotionPedometerPayload,
+  validateMotionFixtureRow,
+  type MotionFixtureEvent,
+  type MotionFixtureManifest,
+  type MotionFixturePayload,
+} from "./fixtureManifest";
+import { MotionFixtureError } from "./MotionFixtureError";
+import { activitySampleAt } from "./fixtureActivity";
 
 const FIXTURE_AVAILABILITY: MotionAvailability = {
   activity: true,
@@ -69,41 +29,12 @@ const FIXTURE_AVAILABILITY: MotionAvailability = {
   stepCounting: true,
 };
 
-function isFiniteNonNegative(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0;
-}
-
-function assertActivityPayload(
-  payload: MotionFixturePayload,
-): asserts payload is MotionActivityChangePayload {
-  const candidate = payload as Partial<MotionActivityChangePayload>;
-  if (
-    !["walking", "stationary", "automotive"].includes(
-      candidate.activity ?? "",
-    ) ||
-    !["low", "medium", "high"].includes(candidate.confidence ?? "")
-  ) {
-    throw new Error("Invalid payload for motion.activityChange");
-  }
-}
-
-function assertPedometerPayload(
-  payload: MotionFixturePayload,
-): asserts payload is MotionPedometerUpdatePayload {
-  const candidate = payload as Partial<MotionPedometerUpdatePayload>;
-  if (
-    !isFiniteNonNegative(candidate.steps) ||
-    (candidate.cadence !== null && !isFiniteNonNegative(candidate.cadence))
-  ) {
-    throw new Error("Invalid payload for motion.pedometerUpdate");
-  }
-}
-
 export class FixtureMotionProvider implements MotionProvider {
   private readonly activityCallbacks = new Set<
     (sample: ActivitySample) => void
   >();
   private readonly activitySamples: ActivitySample[] = [];
+  private readonly appliedActivityTimes = new Set<number>();
   private readonly cadenceCallbacks = new Set<(sample: CadenceSample) => void>();
   private readonly cadenceSamples: CadenceSample[] = [];
   private readonly player: TimelinePlayer<
@@ -124,6 +55,7 @@ export class FixtureMotionProvider implements MotionProvider {
       manifest: fixture,
       allowedEvents: MOTION_FIXTURE_EVENTS,
       playback,
+      validateRow: validateMotionFixtureRow,
       onEvent: (row) => this.apply(row),
     });
   }
@@ -230,13 +162,12 @@ export class FixtureMotionProvider implements MotionProvider {
     }
 
     if (row.event === "motion.activityChange") {
-      assertActivityPayload(row.payload);
-      const sample: ActivitySample = {
-        classes: [row.payload.activity as ActivityClass],
-        confidence: row.payload.confidence,
-        startedAt: row.atMs,
-        receivedAt: row.atMs,
-      };
+      if (this.appliedActivityTimes.has(row.atMs)) {
+        return;
+      }
+      assertMotionActivityPayload(row.payload);
+      this.appliedActivityTimes.add(row.atMs);
+      const sample = activitySampleAt(this.fixture, row.atMs);
       this.activitySamples.push(sample);
       if (this.started) {
         this.activityCallbacks.forEach((callback) => callback(sample));
@@ -244,7 +175,7 @@ export class FixtureMotionProvider implements MotionProvider {
       return;
     }
 
-    assertPedometerPayload(row.payload);
+    assertMotionPedometerPayload(row.payload);
     const sample: CadenceSample = {
       stepsPerSecond: row.payload.cadence,
       cumulativeSteps: row.payload.steps,

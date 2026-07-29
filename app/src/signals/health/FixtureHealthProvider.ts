@@ -1,6 +1,5 @@
 import {
   TimelinePlayer,
-  type FixtureManifest,
   type TimelinePlayback,
   type TimelineRow,
 } from "../timeline";
@@ -13,105 +12,20 @@ import type {
   HealthSignal,
   HealthUnsubscribe,
 } from "./HealthProvider";
-
-export const HEALTH_SIGNALS = [
-  "steps",
-  "activeEnergy",
-  "appleExerciseTime",
-  "walkingRunningDistance",
-  "cyclingDistance",
-  "swimmingDistance",
-  "workout",
-] as const satisfies readonly HealthSignal[];
-
-export const HEALTH_FIXTURE_EVENTS = [
-  "health.samplesAdded",
-  "health.backgroundWake",
-  "health.authChanged",
-] as const;
-
-export type HealthFixtureEvent = (typeof HEALTH_FIXTURE_EVENTS)[number];
-
-export interface HealthSamplesAddedPayload {
-  readonly signal: HealthSignal;
-  readonly samples: readonly HealthSample[];
-}
-
-export interface HealthBackgroundWakePayload {
-  readonly signal: HealthSignal;
-}
-
-export interface HealthAuthChangedPayload {
-  readonly status: HealthAuthorizationStatus;
-}
-
-export type HealthFixturePayload =
-  | HealthSamplesAddedPayload
-  | HealthBackgroundWakePayload
-  | HealthAuthChangedPayload;
-
-export type HealthTimelineRow =
-  | TimelineRow<"health.samplesAdded", HealthSamplesAddedPayload>
-  | TimelineRow<"health.backgroundWake", HealthBackgroundWakePayload>
-  | TimelineRow<"health.authChanged", HealthAuthChangedPayload>;
-
-export interface HealthFixtureManifest
-  extends Omit<
-    FixtureManifest<HealthFixtureEvent, HealthFixturePayload>,
-    "timeline"
-  > {
-  readonly timeline: readonly HealthTimelineRow[];
-}
+import {
+  HEALTH_FIXTURE_EVENTS,
+  assertHealthAuthPayload,
+  assertHealthSamplesPayload,
+  assertHealthWakePayload,
+  validateHealthFixtureRow,
+  type HealthFixtureEvent,
+  type HealthFixtureManifest,
+  type HealthFixturePayload,
+} from "./fixtureManifest";
 
 interface StoredSample {
   readonly sequence: number;
   readonly sample: HealthSample;
-}
-
-function isHealthSignal(value: unknown): value is HealthSignal {
-  return HEALTH_SIGNALS.includes(value as HealthSignal);
-}
-
-function assertSamplesPayload(
-  payload: HealthFixturePayload,
-): asserts payload is HealthSamplesAddedPayload {
-  const candidate = payload as Partial<HealthSamplesAddedPayload>;
-  if (!isHealthSignal(candidate.signal) || !Array.isArray(candidate.samples)) {
-    throw new Error("Invalid payload for health.samplesAdded");
-  }
-  candidate.samples.forEach((sample) => {
-    if (
-      typeof sample.value !== "number" ||
-      !Number.isFinite(sample.value) ||
-      typeof sample.startISO !== "string" ||
-      typeof sample.endISO !== "string" ||
-      typeof sample.wasUserEntered !== "boolean"
-    ) {
-      throw new Error("Invalid sample in health.samplesAdded");
-    }
-  });
-}
-
-function assertSignalPayload(
-  payload: HealthFixturePayload,
-  event: "health.backgroundWake",
-): asserts payload is HealthBackgroundWakePayload {
-  if (!isHealthSignal((payload as Partial<HealthBackgroundWakePayload>).signal)) {
-    throw new Error(`Invalid payload for ${event}`);
-  }
-}
-
-function assertAuthPayload(
-  payload: HealthFixturePayload,
-): asserts payload is HealthAuthChangedPayload {
-  const status = (payload as Partial<HealthAuthChangedPayload>).status;
-  if (
-    !["notDetermined", "restricted", "denied", "authorized"].includes(
-      status ?? "",
-    )
-  ) {
-    throw new Error("Invalid payload for health.authChanged");
-  }
 }
 
 export class FixtureHealthProvider implements HealthProvider {
@@ -140,6 +54,7 @@ export class FixtureHealthProvider implements HealthProvider {
       manifest: fixture,
       allowedEvents: HEALTH_FIXTURE_EVENTS,
       playback,
+      validateRow: validateHealthFixtureRow,
       onEvent: (row) => this.apply(row),
     });
   }
@@ -215,7 +130,7 @@ export class FixtureHealthProvider implements HealthProvider {
     row: TimelineRow<HealthFixtureEvent, HealthFixturePayload>,
   ): void {
     if (row.event === "health.samplesAdded") {
-      assertSamplesPayload(row.payload);
+      assertHealthSamplesPayload(row.payload);
       const existing = this.samples.get(row.payload.signal) ?? [];
       const startSequence = existing.length;
       existing.push(
@@ -234,7 +149,7 @@ export class FixtureHealthProvider implements HealthProvider {
     }
 
     if (row.event === "health.backgroundWake") {
-      assertSignalPayload(row.payload, row.event);
+      assertHealthWakePayload(row.payload);
       this.emitChange({
         signal: row.payload.signal,
         reason: "backgroundWake",
@@ -243,7 +158,7 @@ export class FixtureHealthProvider implements HealthProvider {
       return;
     }
 
-    assertAuthPayload(row.payload);
+    assertHealthAuthPayload(row.payload);
     this.authorizationStatus = row.payload.status;
     this.authorizationCallbacks.forEach((callback) =>
       callback(this.authorizationStatus),

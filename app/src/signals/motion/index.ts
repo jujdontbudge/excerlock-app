@@ -1,9 +1,10 @@
+export { FixtureMotionProvider } from "./FixtureMotionProvider";
+export { MotionFixtureError } from "./MotionFixtureError";
 export {
-  FixtureMotionProvider,
-  MOTION_FIXTURE_EVENTS,
-  MotionFixtureError,
-} from "./FixtureMotionProvider";
-export { WALK_CADENCE_THRESHOLD_STEPS_PER_MINUTE } from "./constants";
+  WALK_CADENCE_FRESHNESS_MS,
+  WALK_CADENCE_THRESHOLD_STEPS_PER_MINUTE,
+  WALK_REQUIRED_QUALIFYING_CADENCE_SAMPLES,
+} from "./constants";
 export {
   getMotionFixture,
   MOTION_FIXTURE_NAMES,
@@ -17,7 +18,8 @@ export type {
   MotionFixturePayload,
   MotionPedometerUpdatePayload,
   MotionTimelineRow,
-} from "./FixtureMotionProvider";
+} from "./fixtureManifest";
+export { MOTION_FIXTURE_EVENTS } from "./fixtureManifest";
 export type { MotionFixtureName } from "./fixtures";
 export type {
   ActivityClass,

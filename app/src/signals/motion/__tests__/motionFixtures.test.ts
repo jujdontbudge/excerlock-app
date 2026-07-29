@@ -52,4 +52,27 @@ describe("canonical motion fixtures", () => {
   ] as const)("%s produces the expected walk verdict", async (name, atMs, phase) => {
     expect((await playFixture(name, atMs)).phase).toBe(phase);
   });
+
+  it.each([
+    ["steady-walk", 4_000],
+    ["red-light", 4_000],
+    ["stop-for-good", 4_000],
+    ["drive-off", 4_000],
+    ["late-classification", 32_000],
+  ] as const)("%s establishes sustained walking before its transition", async (
+    name,
+    atMs,
+  ) => {
+    expect((await playFixture(name, atMs)).phase).toBe("verified");
+  });
+
+  it("represents drive-off as simultaneous walking and automotive activity", async () => {
+    const provider = new FixtureMotionProvider(MOTION_FIXTURES["drive-off"]);
+    await provider.start();
+    provider.advanceTo(10_000);
+
+    expect(await provider.queryActivity(10_000, 10_000)).toEqual([
+      expect.objectContaining({ classes: ["walking", "automotive"] }),
+    ]);
+  });
 });

@@ -1,7 +1,7 @@
 import reArmRaceJson from "./fixtures/re-arm-race.json";
 import tickLadderBasicJson from "./fixtures/tick-ladder-basic.json";
 import tickLadderJitterJson from "./fixtures/tick-ladder-jitter.json";
-import type { ScreenTimeFixtureManifest } from "./FixtureScreenTimeProvider";
+import type { ScreenTimeFixtureManifest } from "./fixtureManifest";
 
 export const SCREENTIME_FIXTURE_NAMES = [
   "tick-ladder-basic",

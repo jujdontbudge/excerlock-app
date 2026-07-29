@@ -41,4 +41,26 @@ describe("SignalKit fixture catalog", () => {
       'Unknown motion fixture "unknown-story"',
     );
   });
+
+  it("rejects invented payload fields before a future row can play", () => {
+    expect(
+      () =>
+        new FixtureMotionProvider({
+          name: "invalid-future-payload",
+          version: 1,
+          description: "A future motion row with a field outside the schema.",
+          timeline: [
+            {
+              atMs: 10_000,
+              event: "motion.pedometerUpdate",
+              payload: {
+                steps: 10,
+                cadence: 1.7,
+                invented: true,
+              },
+            },
+          ],
+        } as never),
+    ).toThrow("Invalid payload fields for motion.pedometerUpdate");
+  });
 });

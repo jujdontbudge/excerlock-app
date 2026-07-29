@@ -5,7 +5,7 @@ import stravaManualEntryJson from "./fixtures/strava-manual-entry.json";
 import stravaMorningRunJson from "./fixtures/strava-morning-run.json";
 import stravaTrainerRideJson from "./fixtures/strava-trainer-ride.json";
 import whoopPendingScoreJson from "./fixtures/whoop-pending-score.json";
-import type { VendorFixtureManifest } from "./FixtureVendorProvider";
+import type { VendorFixtureManifest } from "./fixtureManifest";
 
 export const VENDOR_FIXTURE_NAMES = [
   "strava-morning-run",

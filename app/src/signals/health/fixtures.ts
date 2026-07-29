@@ -2,7 +2,7 @@ import backgroundWakeReplayJson from "./fixtures/background-wake-replay.json";
 import dayMixedSourcesJson from "./fixtures/day-mixed-sources.json";
 import dayStepsApproaching5kJson from "./fixtures/day-steps-approaching-5k.json";
 import manualEntryDayJson from "./fixtures/manual-entry-day.json";
-import type { HealthFixtureManifest } from "./FixtureHealthProvider";
+import type { HealthFixtureManifest } from "./fixtureManifest";
 
 export const HEALTH_FIXTURE_NAMES = [
   "day-mixed-sources",

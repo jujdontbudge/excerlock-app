@@ -1,6 +1,5 @@
 import {
   TimelinePlayer,
-  type FixtureManifest,
   type TimelinePlayback,
   type TimelineRow,
 } from "../timeline";
@@ -10,79 +9,16 @@ import type {
   ScreenTimeProvider,
   ScreenTimeUnsubscribe,
 } from "./ScreenTimeProvider";
-
-export const SCREENTIME_FIXTURE_EVENTS = [
-  "screentime.tick",
-  "screentime.monitorFired",
-  "screentime.intervalEnded",
-  "screentime.authChanged",
-] as const;
-
-export type ScreenTimeFixtureEvent =
-  (typeof SCREENTIME_FIXTURE_EVENTS)[number];
-
-export interface ScreenTimeTickPayload {
-  readonly thresholdIndex: number;
-}
-
-export interface ScreenTimeMonitorPayload {
-  readonly monitor: string;
-}
-
-export interface ScreenTimeAuthChangedPayload {
-  readonly status: ScreenTimeAuthorizationStatus;
-}
-
-export type ScreenTimeFixturePayload =
-  | ScreenTimeTickPayload
-  | ScreenTimeMonitorPayload
-  | ScreenTimeAuthChangedPayload;
-
-export type ScreenTimeTimelineRow =
-  | TimelineRow<"screentime.tick", ScreenTimeTickPayload>
-  | TimelineRow<"screentime.monitorFired", ScreenTimeMonitorPayload>
-  | TimelineRow<"screentime.intervalEnded", ScreenTimeMonitorPayload>
-  | TimelineRow<"screentime.authChanged", ScreenTimeAuthChangedPayload>;
-
-export interface ScreenTimeFixtureManifest
-  extends Omit<
-    FixtureManifest<ScreenTimeFixtureEvent, ScreenTimeFixturePayload>,
-    "timeline"
-  > {
-  readonly timeline: readonly ScreenTimeTimelineRow[];
-}
-
-function assertTickPayload(
-  payload: ScreenTimeFixturePayload,
-): asserts payload is ScreenTimeTickPayload {
-  const thresholdIndex = (payload as Partial<ScreenTimeTickPayload>)
-    .thresholdIndex;
-  if (
-    !Number.isInteger(thresholdIndex) ||
-    thresholdIndex === undefined ||
-    thresholdIndex < 0
-  ) {
-    throw new Error("Invalid payload for screentime.tick");
-  }
-}
-
-function assertMonitorPayload(
-  payload: ScreenTimeFixturePayload,
-  event: "screentime.monitorFired" | "screentime.intervalEnded",
-): asserts payload is ScreenTimeMonitorPayload {
-  if (typeof (payload as Partial<ScreenTimeMonitorPayload>).monitor !== "string") {
-    throw new Error(`Invalid payload for ${event}`);
-  }
-}
-
-function assertAuthPayload(
-  payload: ScreenTimeFixturePayload,
-): asserts payload is ScreenTimeAuthChangedPayload {
-  const status = (payload as Partial<ScreenTimeAuthChangedPayload>).status;
-  if (!["notDetermined", "denied", "approved"].includes(status ?? "")) {
-    throw new Error("Invalid payload for screentime.authChanged");
-  }
-}
+import {
+  SCREENTIME_FIXTURE_EVENTS,
+  assertScreenTimeAuthPayload,
+  assertScreenTimeMonitorPayload,
+  assertScreenTimeTickPayload,
+  validateScreenTimeFixtureRow,
+  type ScreenTimeFixtureEvent,
+  type ScreenTimeFixtureManifest,
+  type ScreenTimeFixturePayload,
+} from "./fixtureManifest";
 
 export class FixtureScreenTimeProvider implements ScreenTimeProvider {
   private readonly authorizationCallbacks = new Set<
@@ -107,6 +43,7 @@ export class FixtureScreenTimeProvider implements ScreenTimeProvider {
       manifest: fixture,
       allowedEvents: SCREENTIME_FIXTURE_EVENTS,
       playback,
+      validateRow: validateScreenTimeFixtureRow,
       onEvent: (row) => this.apply(row),
     });
   }
@@ -161,7 +98,7 @@ export class FixtureScreenTimeProvider implements ScreenTimeProvider {
     row: TimelineRow<ScreenTimeFixtureEvent, ScreenTimeFixturePayload>,
   ): void {
     if (row.event === "screentime.authChanged") {
-      assertAuthPayload(row.payload);
+      assertScreenTimeAuthPayload(row.payload);
       this.authorizationStatus = row.payload.status;
       this.authorizationCallbacks.forEach((callback) =>
         callback(this.authorizationStatus),
@@ -171,14 +108,14 @@ export class FixtureScreenTimeProvider implements ScreenTimeProvider {
 
     let event: ScreenTimeEvent;
     if (row.event === "screentime.tick") {
-      assertTickPayload(row.payload);
+      assertScreenTimeTickPayload(row.payload);
       event = {
         type: "tick",
         atMs: row.atMs,
         thresholdIndex: row.payload.thresholdIndex,
       };
     } else {
-      assertMonitorPayload(row.payload, row.event);
+      assertScreenTimeMonitorPayload(row.payload, row.event);
       event = {
         type:
           row.event === "screentime.monitorFired"

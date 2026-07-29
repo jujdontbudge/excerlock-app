@@ -1,9 +1,4 @@
-import {
-  TimelinePlayer,
-  type FixtureManifest,
-  type TimelinePlayback,
-  type TimelineRow,
-} from "../timeline";
+import { TimelinePlayer, type TimelinePlayback, type TimelineRow } from "../timeline";
 import type {
   GeofenceRegion,
   LocationAuthorizationStatus,
@@ -12,105 +7,22 @@ import type {
   LocationUnsubscribe,
   RegionTransition,
 } from "./LocationProvider";
-
-export const LOCATION_FIXTURE_EVENTS = [
-  "location.enterRegion",
-  "location.exitRegion",
-  "location.update",
-  "location.authChanged",
-] as const;
-
-export type LocationFixtureEvent = (typeof LOCATION_FIXTURE_EVENTS)[number];
-
-export interface LocationRegionPayload {
-  readonly regionId: string;
-}
-
-export interface LocationUpdatePayload {
-  readonly lat: number;
-  readonly lon: number;
-  readonly accuracy: number;
-}
-
-export interface LocationAuthChangedPayload {
-  readonly status: LocationAuthorizationStatus;
-}
-
-export type LocationFixturePayload =
-  | LocationRegionPayload
-  | LocationUpdatePayload
-  | LocationAuthChangedPayload;
-
-export type LocationTimelineRow =
-  | TimelineRow<"location.enterRegion", LocationRegionPayload>
-  | TimelineRow<"location.exitRegion", LocationRegionPayload>
-  | TimelineRow<"location.update", LocationUpdatePayload>
-  | TimelineRow<"location.authChanged", LocationAuthChangedPayload>;
-
-export interface LocationFixtureManifest
-  extends Omit<
-    FixtureManifest<LocationFixtureEvent, LocationFixturePayload>,
-    "timeline"
-  > {
-  readonly timeline: readonly LocationTimelineRow[];
-}
-
-function assertRegionPayload(
-  payload: LocationFixturePayload,
-  event: "location.enterRegion" | "location.exitRegion",
-): asserts payload is LocationRegionPayload {
-  if (
-    typeof (payload as Partial<LocationRegionPayload>).regionId !== "string"
-  ) {
-    throw new Error(`Invalid payload for ${event}`);
-  }
-}
-
-function assertUpdatePayload(
-  payload: LocationFixturePayload,
-): asserts payload is LocationUpdatePayload {
-  const candidate = payload as Partial<LocationUpdatePayload>;
-  if (
-    typeof candidate.lat !== "number" ||
-    !Number.isFinite(candidate.lat) ||
-    candidate.lat < -90 ||
-    candidate.lat > 90 ||
-    typeof candidate.lon !== "number" ||
-    !Number.isFinite(candidate.lon) ||
-    candidate.lon < -180 ||
-    candidate.lon > 180 ||
-    typeof candidate.accuracy !== "number" ||
-    !Number.isFinite(candidate.accuracy) ||
-    candidate.accuracy < 0
-  ) {
-    throw new Error("Invalid payload for location.update");
-  }
-}
-
-function assertAuthPayload(
-  payload: LocationFixturePayload,
-): asserts payload is LocationAuthChangedPayload {
-  const status = (payload as Partial<LocationAuthChangedPayload>).status;
-  if (
-    ![
-      "notDetermined",
-      "restricted",
-      "denied",
-      "authorizedWhenInUse",
-      "authorizedAlways",
-    ].includes(status ?? "")
-  ) {
-    throw new Error("Invalid payload for location.authChanged");
-  }
-}
+import {
+  LOCATION_FIXTURE_EVENTS,
+  assertLocationAuthPayload,
+  assertLocationRegionPayload,
+  assertLocationUpdatePayload,
+  validateLocationFixtureRow,
+  type LocationFixtureEvent,
+  type LocationFixtureManifest,
+  type LocationFixturePayload,
+} from "./fixtureManifest";
 
 export class FixtureLocationProvider implements LocationProvider {
-  private readonly authorizationCallbacks = new Set<
-    (status: LocationAuthorizationStatus) => void
-  >();
-  private readonly locationCallbacks = new Set<
-    (sample: LocationSample) => void
-  >();
+  private readonly authorizationCallbacks =
+    new Set<(status: LocationAuthorizationStatus) => void>();
+  private readonly locationCallbacks =
+    new Set<(sample: LocationSample) => void>();
   private readonly monitoredRegions = new Map<string, GeofenceRegion>();
   private readonly player: TimelinePlayer<
     LocationFixtureEvent,
@@ -136,6 +48,7 @@ export class FixtureLocationProvider implements LocationProvider {
       manifest: fixture,
       allowedEvents: LOCATION_FIXTURE_EVENTS,
       playback,
+      validateRow: validateLocationFixtureRow,
       onEvent: (row) => this.apply(row),
     });
   }
@@ -152,15 +65,11 @@ export class FixtureLocationProvider implements LocationProvider {
     return this.authorizationStatus;
   }
 
-  public async startMonitoringRegions(
-    regions: readonly GeofenceRegion[],
-  ): Promise<void> {
+  public async startMonitoringRegions(regions: readonly GeofenceRegion[]): Promise<void> {
     regions.forEach((region) => this.monitoredRegions.set(region.id, region));
   }
 
-  public async stopMonitoringRegions(
-    regionIds?: readonly string[],
-  ): Promise<void> {
+  public async stopMonitoringRegions(regionIds?: readonly string[]): Promise<void> {
     if (regionIds === undefined) {
       this.monitoredRegions.clear();
       return;
@@ -246,14 +155,12 @@ export class FixtureLocationProvider implements LocationProvider {
     this.player.dispose();
   }
 
-  private apply(
-    row: TimelineRow<LocationFixtureEvent, LocationFixturePayload>,
-  ): void {
+  private apply(row: TimelineRow<LocationFixtureEvent, LocationFixturePayload>): void {
     if (
       row.event === "location.enterRegion" ||
       row.event === "location.exitRegion"
     ) {
-      assertRegionPayload(row.payload, row.event);
+      assertLocationRegionPayload(row.payload, row.event);
       const type = row.event === "location.enterRegion" ? "enter" : "exit";
       this.presence.set(row.payload.regionId, type === "enter");
       if (this.monitoredRegions.has(row.payload.regionId)) {
@@ -268,7 +175,7 @@ export class FixtureLocationProvider implements LocationProvider {
     }
 
     if (row.event === "location.update") {
-      assertUpdatePayload(row.payload);
+      assertLocationUpdatePayload(row.payload);
       this.lastLocation = { ...row.payload, atMs: row.atMs };
       this.locationCallbacks.forEach((callback) =>
         callback(this.lastLocation as LocationSample),
@@ -276,7 +183,7 @@ export class FixtureLocationProvider implements LocationProvider {
       return;
     }
 
-    assertAuthPayload(row.payload);
+    assertLocationAuthPayload(row.payload);
     this.authorizationStatus = row.payload.status;
     if (
       this.authorizationStatus !== "authorizedWhenInUse" &&

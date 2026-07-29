@@ -1,8 +1,8 @@
+export { FixtureHealthProvider } from "./FixtureHealthProvider";
 export {
-  FixtureHealthProvider,
   HEALTH_FIXTURE_EVENTS,
   HEALTH_SIGNALS,
-} from "./FixtureHealthProvider";
+} from "./fixtureManifest";
 export type {
   HealthAuthChangedPayload,
   HealthBackgroundWakePayload,
@@ -11,7 +11,7 @@ export type {
   HealthFixturePayload,
   HealthSamplesAddedPayload,
   HealthTimelineRow,
-} from "./FixtureHealthProvider";
+} from "./fixtureManifest";
 export {
   getHealthFixture,
   HEALTH_FIXTURE_NAMES,

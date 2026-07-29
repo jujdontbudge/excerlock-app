@@ -5,7 +5,7 @@ import redLightJson from "./fixtures/red-light.json";
 import shakyCheatJson from "./fixtures/shaky-cheat.json";
 import steadyWalkJson from "./fixtures/steady-walk.json";
 import stopForGoodJson from "./fixtures/stop-for-good.json";
-import type { MotionFixtureManifest } from "./FixtureMotionProvider";
+import type { MotionFixtureManifest } from "./fixtureManifest";
 
 export const MOTION_FIXTURE_NAMES = [
   "steady-walk",

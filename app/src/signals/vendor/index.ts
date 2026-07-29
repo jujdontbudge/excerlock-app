@@ -1,8 +1,8 @@
+export { FixtureVendorProvider } from "./FixtureVendorProvider";
 export {
-  FixtureVendorProvider,
-  VENDOR_FIXTURE_EVENTS,
   VENDORS,
-} from "./FixtureVendorProvider";
+  VENDOR_FIXTURE_EVENTS,
+} from "./fixtureManifest";
 export type {
   VendorActivityAvailablePayload,
   VendorConnectionChangedPayload,
@@ -11,7 +11,7 @@ export type {
   VendorFixturePayload,
   VendorRateLimitedPayload,
   VendorTimelineRow,
-} from "./FixtureVendorProvider";
+} from "./fixtureManifest";
 export {
   getVendorFixture,
   VENDOR_FIXTURE_NAMES,

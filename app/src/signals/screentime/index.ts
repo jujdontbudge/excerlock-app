@@ -1,7 +1,5 @@
-export {
-  FixtureScreenTimeProvider,
-  SCREENTIME_FIXTURE_EVENTS,
-} from "./FixtureScreenTimeProvider";
+export { FixtureScreenTimeProvider } from "./FixtureScreenTimeProvider";
+export { SCREENTIME_FIXTURE_EVENTS } from "./fixtureManifest";
 export type {
   ScreenTimeAuthChangedPayload,
   ScreenTimeFixtureEvent,
@@ -10,7 +8,7 @@ export type {
   ScreenTimeMonitorPayload,
   ScreenTimeTickPayload,
   ScreenTimeTimelineRow,
-} from "./FixtureScreenTimeProvider";
+} from "./fixtureManifest";
 export {
   getScreenTimeFixture,
   SCREENTIME_FIXTURE_NAMES,

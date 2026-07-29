@@ -14,6 +14,11 @@
       "payload": { "steps": 3, "cadence": 1.7 }
     },
     {
+      "atMs": 4000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 7, "cadence": 1.7 }
+    },
+    {
       "atMs": 10000,
       "event": "motion.activityChange",
       "payload": { "activity": "stationary", "confidence": "high" }

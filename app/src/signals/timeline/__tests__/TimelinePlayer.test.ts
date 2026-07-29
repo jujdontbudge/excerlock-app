@@ -136,4 +136,32 @@ describe("TimelinePlayer", () => {
       'Invalid fixture description for "bad-description"',
     );
   });
+
+  it("runs provider payload validation for future rows during load", () => {
+    const manifest: FixtureManifest<TestEvent> = {
+      name: "future-invalid",
+      version: 1,
+      description: "A future row whose domain payload is invalid.",
+      timeline: [
+        {
+          atMs: 10_000,
+          event: "test.changed",
+          payload: { wrongField: true },
+        },
+      ],
+    };
+
+    expect(
+      () =>
+        new TimelinePlayer({
+          manifest,
+          allowedEvents: ["test.changed"],
+          playback: { mode: "manual" },
+          validateRow: () => {
+            throw new Error("Invalid test.changed payload");
+          },
+          onEvent: () => undefined,
+        }),
+    ).toThrow("Invalid test.changed payload");
+  });
 });

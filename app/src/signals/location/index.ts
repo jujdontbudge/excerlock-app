@@ -1,7 +1,5 @@
-export {
-  FixtureLocationProvider,
-  LOCATION_FIXTURE_EVENTS,
-} from "./FixtureLocationProvider";
+export { FixtureLocationProvider } from "./FixtureLocationProvider";
+export { LOCATION_FIXTURE_EVENTS } from "./fixtureManifest";
 export type {
   LocationAuthChangedPayload,
   LocationFixtureEvent,
@@ -10,7 +8,7 @@ export type {
   LocationRegionPayload,
   LocationTimelineRow,
   LocationUpdatePayload,
-} from "./FixtureLocationProvider";
+} from "./fixtureManifest";
 export {
   getLocationFixture,
   LOCATION_FIXTURE_NAMES,

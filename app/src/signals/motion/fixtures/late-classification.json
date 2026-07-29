@@ -22,6 +22,16 @@
       "atMs": 30000,
       "event": "motion.pedometerUpdate",
       "payload": { "steps": 51, "cadence": 1.7 }
+    },
+    {
+      "atMs": 32000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 54, "cadence": 1.7 }
+    },
+    {
+      "atMs": 40000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 68, "cadence": 1.7 }
     }
   ]
 }
