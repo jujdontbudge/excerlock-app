@@ -143,6 +143,7 @@ describe("picker verdicts", () => {
       status: "available",
       coverage: "promoted",
       isRecommended: true,
+      isDefaultSource: true,
     });
   });
 
@@ -156,6 +157,21 @@ describe("picker verdicts", () => {
       status: "available",
       coverage: "weak",
       isRecommended: false,
+      isDefaultSource: false,
+    });
+  });
+
+  it("distinguishes a promoted vendor pairing from the default source", () => {
+    expect(
+      getPickerVerdict(candidate("active-minutes-goal", "polar"), {
+        ...emptyContext,
+        connectedSources: ["polar"],
+      }),
+    ).toMatchObject({
+      status: "available",
+      coverage: "promoted",
+      isRecommended: true,
+      isDefaultSource: false,
     });
   });
 
