@@ -63,6 +63,14 @@ function conditionTotals(
   })
 }
 
+/**
+ * Rate corrections are signed. They can take back only minutes still in the
+ * shared balance and previously attributed to this condition.
+ */
+function bankedRateMinutes(requested: Minutes, balance: Minutes, attributed: Minutes): Minutes {
+  return requested < 0 ? Math.max(requested, -balance, -attributed) : requested
+}
+
 function reduceDay(
   dayIndex: number,
   entries: readonly JournalEntry[],
@@ -98,10 +106,11 @@ function reduceDay(
       }
       case 'rateCredit': {
         const totals = conditionTotals(perCondition, entry.conditionId)
-        totals.rateMinutes += entry.minutes
-        totals.earnedMinutes += entry.minutes
-        balance += entry.minutes
-        earned += entry.minutes
+        const banked = bankedRateMinutes(entry.minutes, balance, totals.earnedMinutes)
+        totals.rateMinutes += banked
+        totals.earnedMinutes += banked
+        balance += banked
+        earned += banked
         break
       }
       case 'stateSustained': {
