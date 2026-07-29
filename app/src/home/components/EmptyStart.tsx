@@ -1,28 +1,17 @@
-import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
-import { PillButton, Screen } from "../components";
-import { Glyph } from "../icons";
-import { useTheme } from "../theme";
-
-type HomeScreenProps = {
-  /**
-   * Opens the condition builder. Defaults to the Manage tab, which is where the
-   * builder sheet will be reachable from (PRD §3.15 non-tab surface 4).
-   */
-  onCreateFirstCondition?: () => void;
-};
+import { Glyph, PillButton, useTheme } from "@/ui";
 
 /**
- * Home in its empty-start state. ExcerLock pre-creates zero conditions (PRD §8
- * Conditions, decided 2026-07-28) — until the user builds one there is no
- * balance, no lock hero and no condition card, only the invitation to build.
+ * Home before the first condition exists. ExcerLock pre-creates zero conditions
+ * (PRD §8, decided 2026-07-28), so this is a designed moment rather than an
+ * error state: no balance, no hero, no card — only the invitation to build one.
  */
-export function HomeScreen({ onCreateFirstCondition = openBuilder }: HomeScreenProps) {
+export function EmptyStart({ onCreate }: { onCreate: () => void }) {
   const { colors, radius, spacing, typography } = useTheme();
 
   return (
-    <Screen testID="home-screen" style={[styles.content, { padding: spacing.gutter }]}>
+    <View testID="home-empty-start" style={[styles.content, { padding: spacing.gutter }]}>
       <View
         style={[
           styles.chip,
@@ -39,7 +28,7 @@ export function HomeScreen({ onCreateFirstCondition = openBuilder }: HomeScreenP
         style={[
           typography.body,
           styles.centred,
-          { marginTop: spacing.sm, marginBottom: spacing.xl },
+          { color: colors.textPrimary, marginTop: spacing.sm, marginBottom: spacing.xl },
         ]}
       >
         ExcerLock starts empty. Build the first condition that decides how you earn your screen time.
@@ -49,15 +38,11 @@ export function HomeScreen({ onCreateFirstCondition = openBuilder }: HomeScreenP
         label="Create your first condition"
         variant="white"
         trailingIcon="arrowRight"
-        onPress={onCreateFirstCondition}
+        onPress={onCreate}
         style={styles.cta}
       />
-    </Screen>
+    </View>
   );
-}
-
-function openBuilder() {
-  router.navigate("/manage");
 }
 
 const styles = StyleSheet.create({

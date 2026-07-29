@@ -34,8 +34,10 @@ it contains no domain calculation and no store.
 | `icons/Glyph.tsx` | draws one glyph cropped to its ink and tinted |
 | `navigation/tabs.ts` | the four approved tabs and the tab-bar chrome |
 | `navigation/TabBarIcon.tsx` | a tab's glyph at the navigator's tint |
-| `screens/HomeScreen.tsx` | Home, empty-start state |
 | `screens/PlaceholderScreen.tsx` | themed scaffold for an unbuilt tab |
+
+Home no longer lives here: `app/src/home` owns the dashboard, its empty start and the condition
+builder (ticket #40), and it is the only consumer of the reserved `gradients.dashboard`.
 
 ## Where the tokens come from
 

@@ -1,0 +1,76 @@
+# `app/src/home` — the Home dashboard
+
+Tab 1. The lock hero, today's condition cards, and the builder that creates them.
+
+The route is thin by ARCHITECTURE.md §1: `app/app/(tabs)/index.tsx` is three lines that re-export
+`HomeScreen`. Everything below is this module's.
+
+## The one rule
+
+**Home decides nothing.** Every number, verdict and unit it shows is computed somewhere else:
+
+| Question | Answered by |
+| --- | --- |
+| What is my balance? Are the shields down? | `@excerlock/ledger` (`reduceLedger`, `desiredOsState`) |
+| Which conditions can I build, and from which source? | `@excerlock/condition-model` (`listPickerVerdicts`) |
+| What does this catalog entry measure, and in what unit? | `@excerlock/condition-model` (`getCatalogEntry`) |
+| How many steps have I taken? Am I walking right now? | `app/src/signals` (SignalKit providers) |
+
+This module composes those three and formats the result. When something looks like a rule here, it is
+a rendering of a rule owned elsewhere — the one genuine exception is documented in `model/lockState.ts`
+(a live state condition holds the shields open, which the ledger cannot see).
+
+## Layout
+
+| File | Responsibility |
+| --- | --- |
+| `screens/HomeScreen.tsx` | Composes hero + cards + builder. Owns one `useState`: is the sheet open. |
+| `model/lockState.ts` | The hero's view model — status, balance, headline, the one detail line |
+| `model/conditionCards.ts` | One card model per condition, in its kind's variant |
+| `model/duration.ts` | Every string with a number in it. Nothing else formats. |
+| `model/reading.ts` | `SignalReading` — today's totals plus what is true right now |
+| `model/clock.ts` | The single conversion to the local wall-clock ms the ledger wants |
+| `signals/homeSignalFeed.ts` | Flattens SignalKit's providers into one `SignalReading` |
+| `signals/fixtureFeed.ts` | Phase-2 composition root: fixture providers, real-time playback |
+| `signals/useHomeSignals.ts` | Subscribes a mounted screen to a feed |
+| `store/homeStore.ts` | Conditions + journal, persisted to AsyncStorage |
+| `components/` | Presentational only — every one renders a model and computes nothing |
+| `builder/` | The create-condition sheet (below) |
+| `testing/stubFeed.ts` | A feed that reports one fixed reading, for screen tests |
+
+## The builder
+
+`builder/ConditionBuilderSheet.tsx` walks **catalog → source → configure → preview → save**. The source
+step only appears when more than one source can supply the signal; a single selectable source is chosen
+for the user.
+
+Availability is not this module's call. `builder/builderCatalog.ts` reads `listPickerVerdicts` and only
+groups, orders and drops `hidden` — so promoted / weak / impossible coverage, "already taken" and
+"connect Strava first" all render straight from the picker's own verdicts and reasons.
+
+`builder/builderDraft.ts` is the whole flow as a pure reducer, which is why the sheet is a renderer
+rather than a state machine. **No picker is ever pre-filled** (PRD §8, decided 2026-07-28): a draft
+carries `undefined` until the user chooses, and `canAdvance` will not leave the configure step until
+`draftCondition` can produce a complete condition. The preview step renders that exact condition, so
+the card the user approves is the card they get.
+
+## Phase-2 boundaries
+
+- **No native, no server.** Signals are SignalKit fixtures; persistence is AsyncStorage.
+- **Rate conditions do not bank yet.** A rate card shows what today's activity *would* be worth; only
+  event payouts are written to the journal (`recordEventPayout`, idempotent per condition per ledger
+  day). Continuous crediting is Phase 3's, with the ledger.
+- **Builder step 5 — the condition's banner — is owed.** The 21-banner library does not exist, so every
+  condition wears the default card treatment. Repeatability, per-day cap and cooldown save their
+  decided "off" values rather than offering controls.
+- **Screen-time spend is whatever the journal holds.** Nothing reports usage yet, so `spentLabel` is 0
+  until the shield module lands.
+
+## Tests
+
+`npm run test:app`. Screen tests inject a `stubFeed` and a fixed `now`, so no test depends on the wall
+clock or on fixture playback timing.
+
+One trap worth naming: **`fireEvent.press` is async in React Native Testing Library 14** and must be
+awaited. An un-awaited press leaves its `act` scope open and every state update after it is silently
+dropped — the tree keeps rendering the old step and the failure surfaces several presses later.

@@ -1,3 +1,3 @@
-import { HomeScreen } from "@/ui";
+import { HomeScreen } from "@/home";
 
 export default HomeScreen;
