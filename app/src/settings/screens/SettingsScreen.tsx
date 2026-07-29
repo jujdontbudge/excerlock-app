@@ -1,5 +1,6 @@
 import { ScrollView, Text, View } from "react-native";
 
+import { AccountSettingsCard } from "@/account";
 import {
   NotificationSettingsCard,
   type NotificationModule,
@@ -15,7 +16,7 @@ export type SettingsScreenProps = Readonly<{
   openNotificationSettings?: () => void;
 }>;
 
-/** Phase-2 Settings surface: real local choices plus honest integration scaffolds. */
+/** Settings surface: real local choices plus owned integration boundaries. */
 export function SettingsScreen({
   notificationModule,
   openNotificationSettings,
@@ -65,13 +66,7 @@ export function SettingsScreen({
 
         <View style={{ gap: spacing.md }}>
           <SectionHeader title="Account" />
-          <Card>
-            <SettingsRow
-              title="Account"
-              value="Signed out"
-              description="Account details will appear here after you sign in."
-            />
-          </Card>
+          <AccountSettingsCard />
         </View>
 
         <View style={{ gap: spacing.md }}>

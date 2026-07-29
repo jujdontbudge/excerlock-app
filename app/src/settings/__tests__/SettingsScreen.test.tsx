@@ -61,10 +61,19 @@ describe("SettingsScreen", () => {
     });
   });
 
-  it("scaffolds signed-out account and non-functional support rows", async () => {
+  it("mounts the real signed-out account surface and keeps support rows static", async () => {
     await render(<SettingsScreen />);
 
-    expect(screen.getByText("Signed out")).toBeOnTheScreen();
+    expect(await screen.findByText("Signed out")).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Create account" }),
+    ).toBeEnabled();
+    expect(
+      screen.getByText(
+        "Your conditions, earning history, and locks stay on this device.",
+      ),
+    ).toBeOnTheScreen();
     expect(screen.getByText("Contact support")).toBeOnTheScreen();
     expect(screen.getByText("Request a feature")).toBeOnTheScreen();
     expect(screen.queryByRole("button", { name: "Contact support" })).toBeNull();

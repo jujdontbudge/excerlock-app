@@ -156,18 +156,21 @@ describe("onboarding screens", () => {
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the post-purchase sign-up scaffold without creating an account", async () => {
+  it("renders the shared post-purchase account surface", async () => {
     const onContinue = jest.fn();
     await render(<SignUpScreen onContinue={onContinue} onBack={jest.fn()} />);
 
     expect(
-      screen.getByRole("header", { name: "Create your account" }),
+      await screen.findByRole("header", { name: "Create your account" }),
     ).toBeOnTheScreen();
     expect(
       screen.getByText(
-        "Save your plan and keep your progress available across devices.",
+        "Save your plan and connect account-backed services. Your earning and locking data stays on this device.",
       ),
     ).toBeOnTheScreen();
+    expect(
+      screen.getByRole("button", { name: "Sign in instead" }),
+    ).toBeEnabled();
 
     await fireEvent.press(
       screen.getByRole("button", { name: "Create account" }),
