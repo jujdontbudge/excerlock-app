@@ -15,27 +15,19 @@ import {
   type CancelScheduledClockTask,
   type ScreenTimeClock,
 } from "./clock";
+import { createMockScreenTimePersistence } from "./mockStore";
 import {
-  createMockScreenTimePersistence,
-  type ScheduledLockWindow,
-} from "./mockStore";
+  DEFAULT_SHIELD_STATE,
+  deriveShieldState,
+  desiredOsStatesEqual,
+  freezeDesiredOsState,
+  shieldStatesEqual,
+} from "./shieldState";
 
 type AuthorizationDecision = Exclude<
   ScreenTimeAuthorizationStatus,
   "notDetermined"
 >;
-
-const SHIELDS_DOWN: DesiredOsState = Object.freeze({
-  shields: "down",
-  drainThresholds: [],
-});
-
-function copyDesiredOsState(state: DesiredOsState): DesiredOsState {
-  return Object.freeze({
-    shields: state.shields,
-    drainThresholds: [...state.drainThresholds],
-  });
-}
 
 type MockScreenTimeModuleOptions = Readonly<{
   clock?: ScreenTimeClock;
@@ -44,19 +36,12 @@ type MockScreenTimeModuleOptions = Readonly<{
 
 export class MockScreenTimeModule implements ScreenTimeModule {
   private readonly clock: ScreenTimeClock;
-  private readonly persistence: ReturnType<
-    typeof createMockScreenTimePersistence
-  >;
+  private readonly persistence: ReturnType<typeof createMockScreenTimePersistence>;
   private readonly ready: Promise<void>;
   private nextAuthorizationResult: AuthorizationDecision = "approved";
   private scheduledClockTasks: CancelScheduledClockTask[] = [];
   private readonly shieldStateListeners = new Set<ShieldStateListener>();
-  private currentShieldState: CurrentShieldState = Object.freeze({
-    selection: null,
-    desiredOsState: SHIELDS_DOWN,
-    effectiveShields: "down",
-    activeLockWindowId: null,
-  });
+  private currentShieldState: CurrentShieldState = DEFAULT_SHIELD_STATE;
 
   public constructor(options: MockScreenTimeModuleOptions = {}) {
     this.clock = options.clock ?? new SystemScreenTimeClock();
@@ -102,11 +87,11 @@ export class MockScreenTimeModule implements ScreenTimeModule {
     desiredOsState: DesiredOsState,
   ): Promise<void> {
     await this.ready;
-    const desired = copyDesiredOsState(desiredOsState);
+    const desired = freezeDesiredOsState(desiredOsState);
     const state = this.persistence.getState();
     if (
       state.selection === selection &&
-      this.desiredOsStatesEqual(state.desiredOsState, desired)
+      desiredOsStatesEqual(state.desiredOsState, desired)
     ) {
       return;
     }
@@ -120,7 +105,7 @@ export class MockScreenTimeModule implements ScreenTimeModule {
   ): Promise<void> {
     await this.ready;
     this.assertValidLockWindow(window);
-    const scheduled: ScheduledLockWindow = Object.freeze({
+    const scheduled = Object.freeze({
       ...window,
       selection,
     });
@@ -170,38 +155,19 @@ export class MockScreenTimeModule implements ScreenTimeModule {
     this.nextAuthorizationResult = result;
   }
 
-  private setCurrentShieldState(
-    selection: ScreenTimeSelectionHandle | null,
-    desiredOsState: DesiredOsState,
-  ): void {
-    const selectionWindows = this.persistence.getState().lockWindows.filter(
-      (window) => window.selection === selection,
+  private refreshCurrentShieldState(): void {
+    const state = this.persistence.getState();
+    const next = deriveShieldState(
+      state.selection,
+      state.desiredOsState,
+      state.lockWindows,
+      this.clock.nowMs(),
     );
-    const nowMs = this.clock.nowMs();
-    const activeWindow = selectionWindows.find(
-      (window) => nowMs >= window.startsAtMs && nowMs < window.endsAtMs,
-    );
-    const effectiveShields =
-      selectionWindows.length === 0 || activeWindow
-        ? desiredOsState.shields
-        : "down";
-
-    const next: CurrentShieldState = Object.freeze({
-      selection,
-      desiredOsState,
-      effectiveShields,
-      activeLockWindowId: activeWindow?.id ?? null,
-    });
-    if (this.shieldStatesEqual(this.currentShieldState, next)) {
+    if (shieldStatesEqual(this.currentShieldState, next)) {
       return;
     }
     this.currentShieldState = next;
     this.shieldStateListeners.forEach((listener) => listener(next));
-  }
-
-  private refreshCurrentShieldState(): void {
-    const state = this.persistence.getState();
-    this.setCurrentShieldState(state.selection, state.desiredOsState);
   }
 
   private armLockWindowBoundaries(): void {
@@ -228,30 +194,5 @@ export class MockScreenTimeModule implements ScreenTimeModule {
     ) {
       throw new Error("Lock window must have an id and a non-empty finite interval");
     }
-  }
-
-  private shieldStatesEqual(
-    left: CurrentShieldState,
-    right: CurrentShieldState,
-  ): boolean {
-    return (
-      left.selection === right.selection &&
-      left.effectiveShields === right.effectiveShields &&
-      left.activeLockWindowId === right.activeLockWindowId &&
-      this.desiredOsStatesEqual(left.desiredOsState, right.desiredOsState)
-    );
-  }
-
-  private desiredOsStatesEqual(
-    left: DesiredOsState,
-    right: DesiredOsState,
-  ): boolean {
-    return (
-      left.shields === right.shields &&
-      left.drainThresholds.length === right.drainThresholds.length &&
-      left.drainThresholds.every(
-        (threshold, index) => threshold === right.drainThresholds[index],
-      )
-    );
   }
 }

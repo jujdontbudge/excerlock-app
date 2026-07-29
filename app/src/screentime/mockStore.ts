@@ -183,4 +183,3 @@ function readLockWindows(value: unknown): ScheduledLockWindow[] {
       : [];
   });
 }
-

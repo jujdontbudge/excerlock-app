@@ -21,7 +21,6 @@ export class SystemScreenTimeClock implements ScreenTimeClock {
     return () => clearTimeout(timer);
   }
 }
-
 type ManualClockTask = {
   readonly id: number;
   readonly atMs: number;
@@ -80,4 +79,3 @@ export class ManualScreenTimeClock implements ScreenTimeClock {
     this.currentTimeMs = atMs;
   }
 }
-

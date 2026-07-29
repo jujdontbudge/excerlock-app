@@ -11,4 +11,3 @@ export function getScreenTimeModule(): ScreenTimeModule {
   screenTimeModule ??= new MockScreenTimeModule();
   return screenTimeModule;
 }
-

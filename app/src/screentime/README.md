@@ -37,8 +37,8 @@ the production interface and adds deterministic driver controls only for its
 own tests. Its clock is injected; scheduling logic never reads `Date.now()`.
 State persists under a versioned AsyncStorage key using the same Zustand
 persistence pattern as settings. Observable state is emitted only when the
-effective shield state changes, so idempotent reconciliation does not cause
-spurious renders.
+shield snapshot changes, so idempotent reconciliation does not cause spurious
+renders.
 
 The mock class is deliberately not exported from `index.ts`. No app module may
 import it directly. `getScreenTimeModule()` is the single Phase-3 swap point and
@@ -61,4 +61,3 @@ From the repository root:
 ```sh
 npm run test:app -- --runTestsByPath src/screentime/__tests__/MockScreenTimeModule.test.ts
 ```
-
