@@ -41,6 +41,30 @@ export interface TimelinePlayerOptions<
   readonly onEvent: (row: TimelineRow<EventName, Payload>) => void;
 }
 
+export function isJsonValue(value: unknown): value is JsonValue {
+  if (
+    value === null ||
+    typeof value === "boolean" ||
+    typeof value === "string"
+  ) {
+    return true;
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value);
+  }
+  if (Array.isArray(value)) {
+    return value.every(isJsonValue);
+  }
+  if (typeof value !== "object") {
+    return false;
+  }
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) {
+    return false;
+  }
+  return Object.values(value).every(isJsonValue);
+}
+
 function validateManifest<EventName extends string, Payload>(
   manifest: FixtureManifest<EventName, Payload>,
   allowedEvents: ReadonlySet<EventName>,
@@ -62,6 +86,11 @@ function validateManifest<EventName extends string, Payload>(
     }
     if (!allowedEvents.has(row.event)) {
       throw new Error(`Unknown fixture event "${row.event}" in "${manifest.name}"`);
+    }
+    if (!isJsonValue(row.payload)) {
+      throw new Error(
+        `Fixture payload must contain JSON values at row ${index} in "${manifest.name}"`,
+      );
     }
     previousAtMs = row.atMs;
   });

@@ -84,4 +84,29 @@ describe("TimelinePlayer", () => {
     player.dispose();
     jest.useRealTimers();
   });
+
+  it("rejects non-JSON payload values during fixture load", () => {
+    const manifest = {
+      name: "invalid-json",
+      version: 1,
+      description: "An invalid payload must fail before playback.",
+      timeline: [
+        {
+          atMs: 0,
+          event: "test.changed",
+          payload: { invalid: undefined },
+        },
+      ],
+    } as unknown as FixtureManifest<TestEvent>;
+
+    expect(
+      () =>
+        new TimelinePlayer({
+          manifest,
+          allowedEvents: ["test.changed"],
+          playback: { mode: "manual" },
+          onEvent: () => undefined,
+        }),
+    ).toThrow("Fixture payload must contain JSON values");
+  });
 });
