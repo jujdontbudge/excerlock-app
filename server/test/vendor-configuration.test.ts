@@ -4,6 +4,7 @@ import {
   requireVendorOAuthConfiguration,
   requireVendorTokenCipher,
 } from "../src/vendors/index.js";
+import { requireVendorWebhookConfiguration } from "../src/webhooks/index.js";
 
 describe("vendor configuration", () => {
   it("fails loudly on first use and names every missing OAuth setting", () => {
@@ -19,6 +20,19 @@ describe("vendor configuration", () => {
   it("fails loudly when token encryption is first used without its key", () => {
     expect(() => requireVendorTokenCipher(parseEnv({}))).toThrow(
       "Vendor token encryption is not configured; missing VENDOR_TOKEN_ENCRYPTION_KEY",
+    );
+  });
+
+  it("fails loudly and names every missing webhook setting", () => {
+    expect(() =>
+      requireVendorWebhookConfiguration(parseEnv({}), "strava"),
+    ).toThrow(
+      "strava webhooks are not configured; missing STRAVA_WEBHOOK_VERIFY_TOKEN, STRAVA_WEBHOOK_SUBSCRIPTION_ID",
+    );
+    expect(() =>
+      requireVendorWebhookConfiguration(parseEnv({}), "polar"),
+    ).toThrow(
+      "polar webhooks are not configured; missing POLAR_WEBHOOK_SIGNATURE_SECRET",
     );
   });
 });

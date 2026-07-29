@@ -489,6 +489,55 @@ describe("vendor OAuth callback", () => {
       analytics: [],
     });
   });
+
+  it("surfaces an upstream callback exchange error without storing a connection", async () => {
+    const repository = new CapturingStateRepository();
+    const http = new StubHttpClient([
+      {
+        status: 401,
+        body: { message: "invalid authorization code" },
+      },
+    ]);
+    const capture = vi.fn();
+    const service = createVendorOAuthService({
+      environment,
+      repository,
+      http,
+      analytics: { capture },
+      now: () => new Date("2026-07-29T19:00:00.000Z"),
+      randomState: () => "strava-state-12345678",
+    });
+    const state = new URL(
+      await service.beginConnection("user_123", "strava"),
+    ).searchParams.get("state");
+
+    await expect(
+      service.completeConnection("strava", {
+        code: "rejected-code",
+        state: state ?? "",
+      }),
+    ).rejects.toThrow(
+      "Strava token exchange failed with upstream HTTP 401",
+    );
+    expect({
+      request: observableRequest(http.requests[0] as VendorHttpRequest),
+      connections: repository.connections,
+      analytics: capture.mock.calls,
+    }).toEqual({
+      request: {
+        method: "POST",
+        url: "https://www.strava.com/oauth/token",
+        form: {
+          client_id: "strava-id",
+          client_secret: "strava-secret",
+          code: "rejected-code",
+          grant_type: "authorization_code",
+        },
+      },
+      connections: [],
+      analytics: [],
+    });
+  });
 });
 
 const refreshCases = [
