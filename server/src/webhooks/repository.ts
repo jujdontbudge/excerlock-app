@@ -18,6 +18,13 @@ export interface NewVendorWebhookEventRecord {
   receivedAt: Date;
 }
 
+export type VendorWebhookEventRecord = NewVendorWebhookEventRecord;
+
+export interface VendorEventCursor {
+  receivedAt: Date;
+  id: string;
+}
+
 export interface VendorWebhookRepository {
   findConnectionByExternalUserId(
     vendor: Vendor,
@@ -26,4 +33,12 @@ export interface VendorWebhookRepository {
   insertWebhookEvent(
     event: NewVendorWebhookEventRecord,
   ): Promise<{ inserted: boolean; eventId: string }>;
+}
+
+export interface VendorEventFeedRepository {
+  listWebhookEvents(
+    userId: string,
+    after: VendorEventCursor | null,
+    limit: number,
+  ): Promise<readonly VendorWebhookEventRecord[]>;
 }
