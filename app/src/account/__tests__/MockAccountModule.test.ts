@@ -80,4 +80,27 @@ describe("MockAccountModule", () => {
       },
     });
   });
+
+  it("signs up a new account through an observable intent", async () => {
+    const account: AccountModule = new MockAccountModule({
+      clock: new ManualAccountClock(2_000),
+    });
+    const observed: string[] = [];
+    account.subscribe((snapshot) => {
+      observed.push(`${snapshot.session.status}:${snapshot.intent.status}`);
+    });
+
+    await expect(account.signUp()).resolves.toMatchObject({
+      status: "authenticated",
+      session: {
+        status: "signedIn",
+        authenticatedAtMs: 2_000,
+        user: {
+          id: "mock_new_user",
+          email: "new-member@excerlock.test",
+        },
+      },
+    });
+    expect(observed).toEqual(["signedOut:signingUp", "signedIn:idle"]);
+  });
 });

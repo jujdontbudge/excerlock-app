@@ -20,7 +20,8 @@ export type AccountError = Readonly<{
 
 export type AccountIntentState =
   | Readonly<{ status: "idle"; error: AccountError | null }>
-  | Readonly<{ status: "signingIn"; error: null }>;
+  | Readonly<{ status: "signingIn"; error: null }>
+  | Readonly<{ status: "signingUp"; error: null }>;
 
 export type AccountSnapshot = Readonly<{
   session: AccountSession;
@@ -41,5 +42,6 @@ export type AccountUnsubscribe = () => void;
 export interface AccountModule {
   getSnapshot(): Promise<AccountSnapshot>;
   signIn(): Promise<AuthenticationResult>;
+  signUp(): Promise<AuthenticationResult>;
   subscribe(listener: AccountStateListener): AccountUnsubscribe;
 }

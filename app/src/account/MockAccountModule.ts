@@ -81,6 +81,28 @@ export class MockAccountModule implements AccountModule {
     return Object.freeze({ status: "authenticated", session });
   }
 
+  public async signUp(): Promise<AuthenticationResult> {
+    this.publish({
+      ...this.snapshot,
+      intent: Object.freeze({ status: "signingUp", error: null }),
+    });
+    await Promise.resolve();
+
+    const session: SignedInAccountSession = Object.freeze({
+      status: "signedIn",
+      authenticatedAtMs: this.clock.nowMs(),
+      user: Object.freeze({
+        id: "mock_new_user",
+        email: "new-member@excerlock.test",
+      }),
+    });
+    this.publish({
+      session,
+      intent: Object.freeze({ status: "idle", error: null }),
+    });
+    return Object.freeze({ status: "authenticated", session });
+  }
+
   /** Deterministic mock driver; not part of the app-facing interface. */
   public setNextSignInResult(result: MockSignInResult): void {
     this.nextSignInResult = result;
