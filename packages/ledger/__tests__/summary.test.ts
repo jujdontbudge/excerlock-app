@@ -73,6 +73,25 @@ describe('daySummaries', () => {
     expect(summaries[1]).toMatchObject({ dayIndex: 1, rolloverIn: 30, startBalance: 90, endBalance: 85 })
   })
 
+  it('attributes banked minutes to the condition that produced them', () => {
+    const [day] = daySummaries(
+      journalOf([
+        event(at(0, 8), 'gym-arrive'),
+        rate(at(0, 9), 'steps', 12.5),
+        sustained(at(0, 10), 'walking', 20),
+      ]),
+      config,
+      at(0, 23),
+    )
+
+    expect({
+      gym: day!.conditions['gym-arrive']!.earnedMinutes,
+      steps: day!.conditions.steps!.earnedMinutes,
+      walking: day!.conditions.walking!.earnedMinutes,
+      day: day!.earnedMinutes,
+    }).toEqual({ gym: 20, steps: 12.5, walking: 0, day: 32.5 })
+  })
+
   it('keeps records for every day since the first entry — gap days included (#14: kept indefinitely)', () => {
     const summaries = daySummaries(journalOf([drain(at(0, 9))]), config, at(4, 12))
     expect(summaries.map((s) => s.dayIndex)).toEqual([0, 1, 2, 3, 4])
