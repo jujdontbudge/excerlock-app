@@ -124,6 +124,20 @@ describe('daySummaries', () => {
     expect(day!.meaningfulActivity).toBe(true)
   })
 
+  it('records the first qualifying event outcome, not the first journal entry or latest firing', () => {
+    const [day] = daySummaries(
+      journalOf([
+        drain(at(0, 7)),
+        event(at(0, 8), 'gym-arrive'),
+        event(at(0, 9), 'gym-arrive'),
+      ]),
+      config,
+      at(0, 23),
+    )
+
+    expect(day!.conditions['gym-arrive']!.firstQualifiedAtMs).toBe(at(0, 8))
+  })
+
   it('rate credits qualify only at the app-fixed 15-minute floor', () => {
     expect(RATE_STREAK_FLOOR_MINUTES).toBe(15)
     const below = daySummaries(journalOf([rate(at(0, 8), 'steps', 14.9)]), config, at(0, 23))[0]!

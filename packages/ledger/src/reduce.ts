@@ -14,6 +14,8 @@ export interface ConditionDayTotals {
   stateSustainedMinutes: Minutes
   /** Minutes this condition actually banked today. */
   earnedMinutes: Minutes
+  /** Local wall-clock timestamp when this condition first met its daily activity bar. */
+  firstQualifiedAtMs?: number
 }
 
 export interface DayState {
@@ -92,6 +94,7 @@ function reduceDay(
       case 'earn': {
         const totals = conditionTotals(perCondition, entry.conditionId)
         totals.eventsFired += 1
+        totals.firstQualifiedAtMs ??= entry.atMs
         const { payout } = entry
         if (payout.type === 'fixedChunk') {
           balance += payout.minutes

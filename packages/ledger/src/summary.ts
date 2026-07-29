@@ -19,6 +19,12 @@ export interface ConditionDaySummary {
    * summaries created before attribution existed.
    */
   earnedMinutes?: Minutes
+  /**
+   * Local wall-clock timestamp of this condition's first qualifying outcome.
+   * Present for qualifying conditions produced by `daySummaries`; optional for
+   * compatibility with stored/manual summaries created before this existed.
+   */
+  firstQualifiedAtMs?: number
   /** Did this condition meet the §3.13 meaningful-activity bar today? */
   meaningfulActivity: boolean
 }
