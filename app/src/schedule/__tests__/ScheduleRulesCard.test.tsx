@@ -34,4 +34,33 @@ describe("ScheduleRulesCard", () => {
       "Rest",
     );
   });
+
+  it("lets the user add and remove a planned holiday date range", async () => {
+    await render(<ScheduleRulesCard />);
+
+    await fireEvent.changeText(
+      screen.getByLabelText("Holiday start date"),
+      "2026-12-30",
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText("Holiday end date"),
+      "2027-01-02",
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Add holiday" }),
+    );
+
+    expect(useScheduleStore.getState().holidays).toEqual([
+      { startDayIndex: 20_817, endDayIndex: 20_820 },
+    ]);
+    expect(screen.getByText("2026-12-30 – 2027-01-02")).toBeOnTheScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", {
+        name: "Remove holiday 2026-12-30 to 2027-01-02",
+      }),
+    );
+
+    expect(useScheduleStore.getState().holidays).toEqual([]);
+  });
 });

@@ -4,6 +4,7 @@ import { Card, useTheme } from "@/ui";
 
 import type { Weekday } from "../model/scheduleRules";
 import { useScheduleStore } from "../store/scheduleStore";
+import { HolidayEditor } from "./HolidayEditor";
 
 const WEEKDAYS: readonly Readonly<{
   index: Weekday;
@@ -68,6 +69,8 @@ export function ScheduleRulesCard() {
           );
         })}
       </View>
+
+      <HolidayEditor />
     </Card>
   );
 }
