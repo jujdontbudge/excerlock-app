@@ -1,3 +1,3 @@
-import { ManageScreen } from "@/conditions";
+import { ManageScreen } from "@/manage";
 
 export default ManageScreen;
