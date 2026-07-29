@@ -10,6 +10,7 @@ import {
 } from "@/home";
 import { Screen, SectionHeader, useTheme } from "@/ui";
 
+import { AllowanceCard } from "../components/AllowanceCard";
 import { ConditionRow } from "../components/ConditionRow";
 import { ManageEmpty } from "../components/ManageEmpty";
 import { toConditionRows } from "../model/conditionRows";
@@ -29,6 +30,12 @@ export function ManageScreen() {
   const disabledConditionIds = useHomeStore((state) => state.disabledConditionIds);
   const savedPlaces = useHomeStore((state) => state.savedPlaces);
   const connectedSources = useHomeStore((state) => state.connectedSources);
+  const baseAllowanceMinutes = useHomeStore(
+    (state) => state.ledgerConfig.baseAllowanceMinutes,
+  );
+  const setBaseAllowanceMinutes = useHomeStore(
+    (state) => state.setBaseAllowanceMinutes,
+  );
   const updateCondition = useHomeStore((state) => state.updateCondition);
   const removeCondition = useHomeStore((state) => state.removeCondition);
   const setConditionEnabled = useHomeStore((state) => state.setConditionEnabled);
@@ -57,22 +64,35 @@ export function ManageScreen() {
   return (
     <>
       <Screen testID="manage-screen">
-        {rows.length === 0 ? (
-          <ManageEmpty onGoHome={() => router.navigate("/")} />
-        ) : (
-          <ScrollView
-            contentContainerStyle={{
-              gap: spacing.lg,
-              paddingBottom: spacing.xxl * 2,
-              paddingHorizontal: spacing.gutter,
-              paddingTop: spacing.lg,
-            }}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text accessibilityRole="header" style={typography.title}>
-              Manage
-            </Text>
+        <ScrollView
+          contentContainerStyle={{
+            gap: spacing.lg,
+            paddingBottom: spacing.xxl * 2,
+            paddingHorizontal: spacing.gutter,
+            paddingTop: spacing.lg,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text accessibilityRole="header" style={typography.title}>
+            Manage
+          </Text>
 
+          {/* The allowance is not a condition, so it is offered from the first
+              launch — before anything has been built to earn on top of it. */}
+          <View style={{ gap: spacing.md }}>
+            <SectionHeader
+              title="Your economy"
+              subtitle="What the day starts with, before any condition pays out."
+            />
+            <AllowanceCard
+              minutes={baseAllowanceMinutes}
+              onChange={setBaseAllowanceMinutes}
+            />
+          </View>
+
+          {rows.length === 0 ? (
+            <ManageEmpty onGoHome={() => router.navigate("/")} />
+          ) : (
             <View style={{ gap: spacing.md }}>
               <SectionHeader
                 title="Your conditions"
@@ -91,8 +111,8 @@ export function ManageScreen() {
                 />
               ))}
             </View>
-          </ScrollView>
-        )}
+          )}
+        </ScrollView>
       </Screen>
 
       {/* Home's builder, re-opened on the condition: same steps, same preview,
