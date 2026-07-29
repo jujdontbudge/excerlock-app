@@ -1,10 +1,12 @@
-node_modules/
-.expo/
 .DS_Store
-*.log
-dist/
-build/
-.env
-.env.*
-plans/sessions/
+node_modules/
+coverage/
+*.tsbuildinfo
+
+# Expo generated state and native projects (Continuous Native Generation).
+app/.expo/
+app/android/
+app/ios/
+
+# Maestro output is local-only; baselines remain tracked.
 e2e/out/
