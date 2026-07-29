@@ -27,7 +27,7 @@ Two consequences worth naming, because they look like missing features until you
 | File | Responsibility |
 | --- | --- |
 | `screens/LockScreen.tsx` | Composes the four cards. Owns no state of its own. |
-| `controller/lockController.ts` | The module's one conversation with the OS — four verbs, one immutable `LockSnapshot` |
+| `controller/lockController.ts` | The module's one conversation with the OS — reference-counted screen lifetimes, one immutable `LockSnapshot` |
 | `controller/ledgerSource.ts` | The visible wiring seam: reads/subscribes to Home's journal, ledger config and allowance |
 | `hooks/useLockSnapshot.ts` | Binds a mounted screen to the controller's observable |
 | `model/lockStatus.ts` | The current-lock-state view model — what, why, when it flips |
@@ -52,6 +52,7 @@ day's floor.
   `controller/ledgerSource.ts` is the visible seam that reads the value, invokes the owner's Full
   Lock transition, and subscribes a running controller. Manage starts that controller for the
   screen's lifetime, so a picker change reconciles the persisted Screen Time selection immediately.
+  Start/stop ownership is reference-counted because the tab and pushed lock route can overlap.
 - **Nothing here schedules a lock window yet.** `getLockWindows()` is read so the surface can say
   when a shield lifts; registering windows belongs to Manage → Rules (PRD §3.10–3.11).
 - **The onboarding primer reads `PERMISSION_COPY.notDetermined`.** It primes before the ask, so the
