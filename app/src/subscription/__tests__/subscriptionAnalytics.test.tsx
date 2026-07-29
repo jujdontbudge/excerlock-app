@@ -30,7 +30,7 @@ describe("subscription analytics ownership", () => {
     analytics.installSink(noopSink);
   });
 
-  it("emits client funnel intents and no Adapty-owned lifecycle event", async () => {
+  it("emits no Adapty-owned lifecycle event", async () => {
     await render(
       <SubscriptionPaywall
         placement="onboarding"
@@ -47,11 +47,10 @@ describe("subscription analytics ownership", () => {
     );
 
     const emittedNames = recordingSink.eventNames();
-    expect(emittedNames).toEqual(["paywall_viewed", "purchase_started"]);
+    const adaptyOwnedEvents = new Set<string>(eventsOwnedBy("adapty"));
+    expect([...adaptyOwnedEvents]).toHaveLength(10);
     expect(
-      emittedNames.filter((event) =>
-        eventsOwnedBy("adapty").includes(event as never),
-      ),
+      emittedNames.filter((event) => adaptyOwnedEvents.has(event)),
     ).toEqual([]);
   });
 });

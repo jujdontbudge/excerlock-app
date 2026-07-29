@@ -1,8 +1,7 @@
 import type { PaywallPlacement } from "@excerlock/analytics-events";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 
-import { analytics } from "@/analytics";
 import { PillButton, Screen, useTheme } from "@/ui";
 
 import { getSubscriptionModule } from "./accessor";
@@ -33,28 +32,9 @@ export function SubscriptionPaywall({
 }: SubscriptionPaywallProps) {
   const { colors, spacing, typography } = useTheme();
   const snapshot = useSubscriptionSnapshot(subscription, placement);
-  const trackedPlacement = useRef<PaywallPlacement | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
     null,
   );
-
-  useEffect(() => {
-    if (
-      snapshot?.entitlement.status !== "inactive" ||
-      snapshot.paywall.status !== "ready" ||
-      trackedPlacement.current === placement
-    ) {
-      return;
-    }
-
-    trackedPlacement.current = placement;
-    analytics.track("paywall_viewed", {
-      placement,
-      has_trial: snapshot.paywall.paywall.products.some(
-        (product) => product.trialDays > 0,
-      ),
-    });
-  }, [placement, snapshot]);
 
   if (snapshot?.entitlement.status === "active") {
     return (
@@ -102,10 +82,6 @@ export function SubscriptionPaywall({
     if (selectedProduct === undefined) {
       return;
     }
-    analytics.track("purchase_started", {
-      placement,
-      plan_id: selectedProduct.id,
-    });
     const result = await subscription.purchase(selectedProduct.id);
     if (result.status === "purchased") {
       onEntitled();

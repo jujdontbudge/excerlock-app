@@ -66,15 +66,12 @@ The SDK and keys are intentionally absent until tickets #22/#24.
 
 ## Analytics ownership
 
-The surface emits only the client-owned funnel events:
-
-- `paywall_viewed` when a locked offer becomes visible;
-- `purchase_started` immediately before the purchase intent.
-
-It emits no purchase outcome or subscription-lifecycle event. The ten events
-owned by `adapty` in `@excerlock/analytics-events` come only from Adapty's native
-PostHog integration in Phase 5. Purchase success is app logic here only because
-it changes the entitlement snapshot.
+This boundary emits no purchase outcome or subscription-lifecycle event. The
+ten events owned by `adapty` in `@excerlock/analytics-events` come only from
+Adapty's native PostHog integration in Phase 5. Purchase success is app logic
+here only because it changes the entitlement snapshot; it is never translated
+into a client-owned lifecycle event. The onboarding rail keeps its existing
+flow instrumentation independently of subscription state.
 
 ## Test
 
