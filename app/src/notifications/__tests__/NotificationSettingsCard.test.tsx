@@ -119,4 +119,35 @@ describe("NotificationSettingsCard permission flow", () => {
     await fireEvent.press(screen.getByRole("button", { name: "Open Settings" }));
     expect(openSettings).toHaveBeenCalledTimes(1);
   });
+
+  it("surfaces every independent switch and the adjustable nudge time", async () => {
+    const module = new MockNotificationModule();
+    module.setNextAuthorizationResult("approved");
+    await module.requestAuthorization();
+    useNotificationPreferencesStore.setState({
+      enabled: {
+        afternoonNudge: true,
+        weeklyRecap: true,
+        streakLastCall: true,
+      },
+    });
+    await render(<NotificationSettingsCard module={module} />);
+    await waitFor(() => {
+      expect(screen.getByLabelText("Notifications access: On")).toBeOnTheScreen();
+    });
+
+    expect(screen.getByLabelText("Afternoon nudge")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Weekly recap")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Streak last call")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Selected nudge time: 3:00 PM")).toBeOnTheScreen();
+
+    await toggle("weeklyRecap", false);
+    await fireEvent.press(screen.getByRole("button", { name: "4:00 PM" }));
+
+    const state = useNotificationPreferencesStore.getState();
+    expect(state.enabled.afternoonNudge).toBe(true);
+    expect(state.enabled.weeklyRecap).toBe(false);
+    expect(state.enabled.streakLastCall).toBe(true);
+    expect(state.afternoonNudgeMinuteOfDay).toBe(16 * 60);
+  });
 });

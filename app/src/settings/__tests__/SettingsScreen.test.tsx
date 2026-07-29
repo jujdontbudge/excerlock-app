@@ -6,12 +6,19 @@ jest.mock(
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  useNotificationPreferencesStore,
+} from "@/notifications";
+import { MockNotificationModule } from "@/notifications/MockNotificationModule";
+
 import { DEFAULT_SETTINGS, SettingsScreen, useSettingsStore } from "..";
 
 describe("SettingsScreen", () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
     useSettingsStore.setState(DEFAULT_SETTINGS);
+    useNotificationPreferencesStore.setState(DEFAULT_NOTIFICATION_PREFERENCES);
   });
 
   it("shows the grace control and explains the app-fixed walking values", async () => {
@@ -33,7 +40,7 @@ describe("SettingsScreen", () => {
   it("lets the user choose and see an allowed grace period", async () => {
     await render(<SettingsScreen />);
 
-    fireEvent.press(screen.getByRole("button", { name: "2 minutes" }));
+    await fireEvent.press(screen.getByRole("button", { name: "2 minutes" }));
 
     await waitFor(() => {
       expect(
@@ -56,5 +63,21 @@ describe("SettingsScreen", () => {
     await render(<SettingsScreen />);
 
     expect(screen.getByText("Debug menu")).toBeOnTheScreen();
+  });
+
+  it("surfaces the three ship-silent notification controls in Settings", async () => {
+    const notifications = new MockNotificationModule();
+    notifications.setNextAuthorizationResult("approved");
+    await notifications.requestAuthorization();
+
+    await render(<SettingsScreen notificationModule={notifications} />);
+
+    expect(
+      screen.getByRole("header", { name: "Notifications" }),
+    ).toBeOnTheScreen();
+    expect(screen.getByLabelText("Afternoon nudge")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Weekly recap")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Streak last call")).toBeOnTheScreen();
+    expect(screen.getByLabelText("Selected nudge time: 3:00 PM")).toBeOnTheScreen();
   });
 });

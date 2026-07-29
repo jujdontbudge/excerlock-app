@@ -12,6 +12,7 @@ import type {
   NotificationModule,
 } from "../NotificationModule";
 import { useNotificationPreferencesStore } from "../store/notificationPreferencesStore";
+import { AfternoonNudgeTimePicker } from "./AfternoonNudgeTimePicker";
 
 const STATUS_COPY: Readonly<
   Record<
@@ -167,6 +168,8 @@ export function NotificationSettingsCard({
             </View>
           </View>
         ))}
+
+        <AfternoonNudgeTimePicker />
       </Card>
 
       {pendingTypeId === null ? null : (
