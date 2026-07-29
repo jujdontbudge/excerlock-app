@@ -25,9 +25,37 @@ export function AccountSettingsCard({
   }
 
   if (snapshot.session.status === "signedIn") {
+    const isSigningOut = snapshot.intent.status === "signingOut";
+    const isDeleting = snapshot.intent.status === "deleting";
+    const isBusy = snapshot.intent.status !== "idle";
+
     return (
       <Card style={{ gap: spacing.md }}>
-        <Text style={typography.cardTitle}>{snapshot.session.user.email}</Text>
+        <View style={{ gap: spacing.xs }}>
+          <Text style={typography.cardTitle}>Signed in</Text>
+          <Text style={typography.body}>{snapshot.session.user.email}</Text>
+        </View>
+        {snapshot.intent.status === "idle" &&
+        snapshot.intent.error !== null ? (
+          <Text
+            accessibilityLabel={snapshot.intent.error.message}
+            accessibilityRole="alert"
+            style={[typography.body, { color: colors.danger }]}
+          >
+            {snapshot.intent.error.message}
+          </Text>
+        ) : null}
+        <PillButton
+          disabled={isBusy}
+          label={isSigningOut ? "Signing out…" : "Sign out"}
+          onPress={() => account.signOut()}
+          variant="secondary"
+        />
+        <PillButton
+          disabled={isBusy}
+          label={isDeleting ? "Deleting account…" : "Delete account"}
+          variant="secondary"
+        />
       </Card>
     );
   }

@@ -30,4 +30,18 @@ describe("AccountSettingsCard", () => {
       screen.getByRole("button", { name: "Create account" }),
     ).toBeEnabled();
   });
+
+  it("renders the signed-in identity and session controls", async () => {
+    const account = new MockAccountModule();
+    await account.signUp();
+
+    await render(<AccountSettingsCard account={account} />);
+
+    expect(await screen.findByText("Signed in")).toBeOnTheScreen();
+    expect(screen.getByText("new-member@excerlock.test")).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Delete account" }),
+    ).toBeEnabled();
+  });
 });
