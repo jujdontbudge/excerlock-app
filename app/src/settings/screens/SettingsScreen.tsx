@@ -1,13 +1,25 @@
 import { ScrollView, Text, View } from "react-native";
 
+import {
+  NotificationSettingsCard,
+  type NotificationModule,
+} from "@/notifications";
 import { Card, Screen, SectionHeader, useTheme } from "@/ui";
 
 import { GracePeriodPicker } from "../components/GracePeriodPicker";
 import { SettingsRow } from "../components/SettingsRow";
 import { useSettingsStore } from "../store/settingsStore";
 
+export type SettingsScreenProps = Readonly<{
+  notificationModule?: NotificationModule;
+  openNotificationSettings?: () => void;
+}>;
+
 /** Phase-2 Settings surface: real local choices plus honest integration scaffolds. */
-export function SettingsScreen() {
+export function SettingsScreen({
+  notificationModule,
+  openNotificationSettings,
+}: SettingsScreenProps = {}) {
   const { spacing, typography } = useTheme();
   const gracePeriod = useSettingsStore(
     (state) => state.walkAndScrollGracePeriodSeconds,
@@ -60,6 +72,17 @@ export function SettingsScreen() {
               description="Account details will appear here after you sign in."
             />
           </Card>
+        </View>
+
+        <View style={{ gap: spacing.md }}>
+          <SectionHeader
+            title="Notifications"
+            subtitle="Every type starts off. Turn on only what helps."
+          />
+          <NotificationSettingsCard
+            module={notificationModule}
+            openSettings={openNotificationSettings}
+          />
         </View>
 
         <View style={{ gap: spacing.md }}>
