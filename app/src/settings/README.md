@@ -1,7 +1,31 @@
 # Settings
 
-Contract: owns settings-domain logic for permission health, exports, and support composition. Expo Router
-files only mount screens from this module.
+Contract: owns settings-domain state and screens. Expo Router files stay thin and only mount this
+module's exported screen.
 
-Fixtures: permission and support states arrive with their first tests. Test with
-`npm run test --workspace app -- settings`.
+## Current Phase-2 surface
+
+- `store/settingsStore.ts` is the typed Zustand + AsyncStorage boundary. It persists only settings
+  values under `excerlock.settings.v1`; actions never enter storage, and hydrated values are validated
+  before they reach runtime state.
+- Walk & Scroll stop grace is deliberately `null` until the user chooses it, matching the PRD's empty
+  user-set picker. The only accepted values are 30 seconds and 1–5 minutes.
+- Cadence (around 60–70 steps/min) and the renewable unlock increment (15 minutes) are displayed as
+  read-only app-fixed facts with the reason each is fixed.
+- Account is an honest signed-out scaffold. Contact support and feature request are static rows until
+  their Phase-5 integrations exist.
+- The debug-menu entry sits inside a literal `__DEV__` branch so App Store bundles can eliminate it.
+
+`components/` owns settings-only presentation. Shared visual decisions still come from `src/ui`;
+Settings consumes `Screen`, `Card`, `PillButton`, `SectionHeader`, and theme tokens without forking
+them.
+
+## Tests
+
+From the repository root:
+
+- `npm run test:app`
+- `npm run test:guardrails`
+
+The render suite exercises the public screen behavior. The store suite exercises defaults, persistence,
+hydration, and invalid-storage fallback with AsyncStorage mocked only at the native boundary.
