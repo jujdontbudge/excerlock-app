@@ -4,11 +4,17 @@ jest.mock(
 );
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { appendEntries, emptyJournal, type Journal } from "@excerlock/ledger";
+import {
+  appendEntries,
+  emptyJournal,
+  type Journal,
+} from "@excerlock/ledger";
 import { waitFor } from "@testing-library/react-native";
 
 import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 
+import { weekdayForWallClock } from "../../model/recurringLockWindow";
+import { LockScheduleStore } from "../../store/lockScheduleStore";
 import { FakeScreenTime } from "../../testing/fakeScreenTime";
 import { LockController } from "../lockController";
 
@@ -27,15 +33,49 @@ function earnedToday(minutes: number): Journal {
   ]).journal;
 }
 
+function spentToday(minutes: number): Journal {
+  return appendEntries(emptyJournal(), [
+    {
+      kind: "drainTick",
+      source: "test",
+      id: "drain-1",
+      atMs: NOW - 60_000,
+      minutes,
+    },
+  ]).journal;
+}
+
 function controllerOver(
   screenTime: FakeScreenTime,
   journal: Journal = emptyJournal(),
+  options: {
+    scheduleStore?: LockScheduleStore;
+    walking?: () => boolean;
+    now?: () => number;
+  } = {},
 ): LockController {
   return new LockController({
     screenTime,
     journal: () => journal,
-    now: () => NOW,
+    now: options.now ?? (() => NOW),
+    ...options,
   });
+}
+
+function activeDefinition(
+  id = "current",
+  overrides: Partial<{
+    startMinute: number;
+    endMinute: number;
+  }> = {},
+) {
+  return {
+    id,
+    days: [weekdayForWallClock(NOW)] as const,
+    startMinute: 8 * 60,
+    endMinute: 10 * 60,
+    ...overrides,
+  };
 }
 
 describe("LockController", () => {
@@ -221,7 +261,7 @@ describe("LockController", () => {
     controller.stop();
   });
 
-  it("follows the boundary's observable when a lock window opens", async () => {
+  it("keeps apps open when an earned balance meets an active lock window", async () => {
     const screenTime = new FakeScreenTime();
     const controller = controllerOver(screenTime, earnedToday(30));
     await controller.start();
@@ -238,7 +278,7 @@ describe("LockController", () => {
       endsAtMs: NOW + 2,
     });
 
-    expect(seen).toEqual(["up"]);
+    expect(seen).toEqual(["down"]);
     expect(controller.getSnapshot().shield?.activeLockWindowId).toBe("night");
     controller.stop();
   });
@@ -259,5 +299,160 @@ describe("LockController", () => {
     });
 
     expect(controller.getSnapshot()).toBe(before);
+  });
+
+  it("materializes persisted recurrence for the chosen group, then resyncs edits and deletion", async () => {
+    const screenTime = new FakeScreenTime();
+    const scheduleStore = new LockScheduleStore();
+    const controller = controllerOver(screenTime, emptyJournal(), {
+      scheduleStore,
+    });
+    await controller.start();
+
+    await expect(
+      controller.saveRecurringLockWindow(activeDefinition()),
+    ).resolves.toMatchObject({ ok: true });
+    expect(await screenTime.getLockWindows()).toEqual([]);
+
+    await controller.requestAuthorization();
+    await controller.pickApps();
+
+    const first = await screenTime.getLockWindows();
+    expect(first.length).toBeGreaterThan(0);
+    expect(
+      first.every(
+        ({ startsAtMs, endsAtMs }) =>
+          endsAtMs - startsAtMs === 2 * 60 * 60_000,
+      ),
+    ).toBe(true);
+
+    await controller.saveRecurringLockWindow({
+      ...activeDefinition(),
+      endMinute: 11 * 60,
+    });
+
+    const edited = await screenTime.getLockWindows();
+    expect(edited.length).toBeGreaterThan(0);
+    expect(
+      edited.every(
+        ({ startsAtMs, endsAtMs }) =>
+          endsAtMs - startsAtMs === 3 * 60 * 60_000,
+      ),
+    ).toBe(true);
+
+    await expect(controller.deleteRecurringLockWindow("current")).resolves.toBe(
+      true,
+    );
+    expect(await screenTime.getLockWindows()).toEqual([]);
+    controller.stop();
+  });
+
+  it("enters Full Lock while a lock window is active", async () => {
+    useHomeStore.getState().setBaseAllowanceMinutes(60);
+    const screenTime = new FakeScreenTime();
+    const scheduleStore = new LockScheduleStore();
+    await scheduleStore.load();
+    await scheduleStore.save(activeDefinition());
+    const controller = controllerOver(screenTime, emptyJournal(), {
+      scheduleStore,
+    });
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+    screenTime.enterLockWindow((await screenTime.getLockWindows())[0]!);
+
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+
+    await controller.setFullLock(true);
+
+    expect(controller.getSnapshot().precedence.cause).toBe("fullLock");
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
+    controller.stop();
+  });
+
+  it("raises shields when a window starts during Full Lock", async () => {
+    let currentTime = NOW;
+    const screenTime = new FakeScreenTime();
+    const scheduleStore = new LockScheduleStore();
+    await scheduleStore.load();
+    await scheduleStore.save(
+      activeDefinition("current", {
+        startMinute: 10 * 60,
+        endMinute: 11 * 60,
+      }),
+    );
+    const controller = controllerOver(screenTime, emptyJournal(), {
+      scheduleStore,
+      now: () => currentTime,
+    });
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+    const concrete = (await screenTime.getLockWindows())[0]!;
+
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+
+    currentTime = NOW + 60 * 60_000;
+    screenTime.enterLockWindow(concrete);
+    await controller.whenReconciled();
+
+    expect(controller.getSnapshot().precedence.cause).toBe("fullLock");
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
+    controller.stop();
+  });
+
+  it("opens without draining when a window ends at zero balance", async () => {
+    let currentTime = NOW;
+    useHomeStore.getState().setBaseAllowanceMinutes(30);
+    const screenTime = new FakeScreenTime();
+    const scheduleStore = new LockScheduleStore();
+    await scheduleStore.load();
+    await scheduleStore.save(activeDefinition());
+    const controller = controllerOver(screenTime, spentToday(30), {
+      scheduleStore,
+      now: () => currentTime,
+    });
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+    screenTime.enterLockWindow((await screenTime.getLockWindows())[0]!);
+    await controller.whenReconciled();
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
+
+    currentTime = NOW + 60 * 60_000;
+    screenTime.exitLockWindow();
+    await controller.whenReconciled();
+
+    expect(controller.getSnapshot().precedence).toMatchObject({
+      shields: "down",
+      drainsBalance: false,
+      cause: "outsideWindow",
+    });
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    controller.stop();
+  });
+
+  it("keeps an active window open when verified walking beats Full Lock", async () => {
+    const screenTime = new FakeScreenTime();
+    const scheduleStore = new LockScheduleStore();
+    await scheduleStore.load();
+    await scheduleStore.save(activeDefinition());
+    const controller = controllerOver(screenTime, emptyJournal(), {
+      scheduleStore,
+      walking: () => true,
+    });
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+    screenTime.enterLockWindow((await screenTime.getLockWindows())[0]!);
+    await controller.whenReconciled();
+
+    expect(controller.getSnapshot().precedence).toMatchObject({
+      shields: "down",
+      drainsBalance: false,
+      cause: "walking",
+    });
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    controller.stop();
   });
 });

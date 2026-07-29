@@ -89,10 +89,10 @@ export class FakeScreenTime implements ScreenTimeModule {
       selection,
       desiredOsState,
       effectiveShields:
-        this.shield.activeLockWindowId === null ||
-        desiredOsState.shields === "up"
+        this.lockWindows.length === 0 ||
+        this.shield.activeLockWindowId !== null
           ? desiredOsState.shields
-          : this.shield.effectiveShields,
+          : "down",
     });
   }
 
@@ -104,11 +104,34 @@ export class FakeScreenTime implements ScreenTimeModule {
       ...this.lockWindows.filter(({ id }) => id !== window.id),
       window,
     ].sort((left, right) => left.startsAtMs - right.startsAtMs);
-    void selection;
+    if (this.shield.selection === selection) {
+      this.emit({
+        ...this.shield,
+        effectiveShields:
+          this.shield.activeLockWindowId === null
+            ? "down"
+            : this.shield.desiredOsState.shields,
+      });
+    }
   }
 
   public async cancelLockWindow(id: string): Promise<void> {
     this.lockWindows = this.lockWindows.filter((window) => window.id !== id);
+    if (this.shield.activeLockWindowId === id) {
+      this.emit({
+        ...this.shield,
+        activeLockWindowId: null,
+        effectiveShields:
+          this.lockWindows.length === 0
+            ? this.shield.desiredOsState.shields
+            : "down",
+      });
+    } else if (this.lockWindows.length === 0) {
+      this.emit({
+        ...this.shield,
+        effectiveShields: this.shield.desiredOsState.shields,
+      });
+    }
   }
 
   public async getLockWindows(): Promise<readonly LockWindow[]> {
@@ -129,8 +152,20 @@ export class FakeScreenTime implements ScreenTimeModule {
     this.lockWindows = [...this.lockWindows, window];
     this.emit({
       ...this.shield,
-      effectiveShields: "up",
+      effectiveShields: this.shield.desiredOsState.shields,
       activeLockWindowId: window.id,
+    });
+  }
+
+  /** Driver: the concrete boundary ended and the schedule is now outside. */
+  public exitLockWindow(): void {
+    this.emit({
+      ...this.shield,
+      effectiveShields:
+        this.lockWindows.length === 0
+          ? this.shield.desiredOsState.shields
+          : "down",
+      activeLockWindowId: null,
     });
   }
 
