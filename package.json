@@ -16,7 +16,7 @@
     "test:packages": "vitest run --config vitest.packages.config.ts",
     "test:server": "npm run test --workspace server --if-present",
     "test:app": "npm run test --workspace app --if-present",
-    "test:guardrails": "vitest run --config guardrails/vitest.config.ts"
+    "test:guardrails": "npm run prebuild:guardrails --workspace app && vitest run --config guardrails/vitest.config.ts"
   },
   "devDependencies": {
     "vitest": "^4.1.10"

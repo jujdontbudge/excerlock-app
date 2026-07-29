@@ -25,6 +25,15 @@ describe("prebuild-survival guardrail", () => {
     const appConfig = readJson<AppConfig>(fromRoot("app", "app.json"));
     expect(appConfig.expo?.ios?.bundleIdentifier).toBe("com.excerlock.app");
 
+    const projectFiles = walkFiles(fromRoot("app", "ios"), new Set(["project.pbxproj"]));
+    expect(
+      projectFiles.length,
+      "The guardrail suite requires a clean Expo iOS prebuild before its filesystem assertions",
+    ).toBeGreaterThan(0);
+    const project = projectFiles.map(readUtf8).join("\n");
+    expect(project).toContain('PRODUCT_BUNDLE_IDENTIFIER = "com.excerlock.app";');
+    expect(project).toContain('productType = "com.apple.product-type.application";');
+
     const packageJson = readJson<PackageJson>(fromRoot("app", "package.json"));
     const dependencies = packageJson.dependencies ?? {};
     const expectsRndaTargets = "react-native-device-activity" in dependencies;
@@ -41,16 +50,6 @@ describe("prebuild-survival guardrail", () => {
       ...(expectsAppIntents ? ["app-intents"] as const : []),
     ];
 
-    if (expectedExtensions.length === 0) {
-      return;
-    }
-
-    const projectFiles = walkFiles(fromRoot("app", "ios"), new Set(["project.pbxproj"]));
-    expect(
-      projectFiles.length,
-      "Native extensions are configured, but app/ios is absent; run a clean Expo prebuild before guardrails",
-    ).toBeGreaterThan(0);
-    const project = projectFiles.map(readUtf8).join("\n");
     const missingTargets = expectedExtensions.filter(
       (target) => !extensionTargetPatterns[target].test(project),
     );

@@ -1,11 +1,17 @@
 import { describe, expect, it } from "vitest";
 
+import { existsSync } from "node:fs";
+
 import { fromRoot, readJson, readUtf8, repoRelative, walkFiles } from "./repo-files";
 
 type AppConfig = {
   expo?: {
     plugins?: Array<string | [string, Record<string, unknown>]>;
   };
+};
+
+type PodfileProperties = {
+  "ios.deploymentTarget"?: string;
 };
 
 describe("minimum-iOS guardrail", () => {
@@ -27,5 +33,24 @@ describe("minimum-iOS guardrail", () => {
       .map(repoRelative);
 
     expect(offenders, "Every native target config must explicitly retain iOS 17.4").toEqual([]);
+
+    const podfilePropertiesPath = fromRoot("app", "ios", "Podfile.properties.json");
+    expect(
+      existsSync(podfilePropertiesPath),
+      "The min-iOS guardrail requires a clean Expo iOS prebuild",
+    ).toBe(true);
+    expect(readJson<PodfileProperties>(podfilePropertiesPath)["ios.deploymentTarget"]).toBe("17.4");
+
+    const projectFiles = walkFiles(fromRoot("app", "ios"), new Set(["project.pbxproj"]));
+    const appBuildSettings = projectFiles
+      .flatMap((path) => [...readUtf8(path).matchAll(/buildSettings = \{([\s\S]*?)\n\s*\};/g)])
+      .map((match) => match[1])
+      .filter((settings) => settings.includes("PRODUCT_BUNDLE_IDENTIFIER = \"com.excerlock.app\""));
+
+    expect(appBuildSettings.length).toBeGreaterThan(0);
+    expect(
+      appBuildSettings.every((settings) => settings.includes("IPHONEOS_DEPLOYMENT_TARGET = 17.4")),
+      "Every generated ExcerLock application build configuration must target iOS 17.4",
+    ).toBe(true);
   });
 });
