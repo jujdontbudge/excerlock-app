@@ -1,0 +1,72 @@
+# `app/src/lock` — the shield & lock surface
+
+Screen Time permission, the locked app group, what is shielded right now, and Full Lock.
+
+The route is thin by ARCHITECTURE.md §1: `app/app/locked-apps.tsx` is two lines that re-export
+`LockScreen`. It is reachable as Manage's "Locked apps" section (PRD §3.15, tab 2) once that tab
+is built.
+
+## The one rule
+
+**Everything goes through `app/src/screentime`.** No file here imports `MockScreenTimeModule`, and
+none may: `getScreenTimeModule()` is the single Phase-3 swap point, so replacing the mock with
+FamilyControls / ManagedSettings / DeviceActivity changes nothing in this module.
+
+Two consequences worth naming, because they look like missing features until you know why:
+
+- **The module never sees an app name or a bundle ID.** A selection is an opaque handle. The only
+  description of it that exists is `describeSelection`'s `ScreenTimeSelectionSummary`, whose
+  `displayName` the *adapter* composes from counts. `LockedAppsCard` prints that line and nothing
+  else — see the opaque-handle law in `app/src/screentime/README.md`.
+- **The module never decides whether shields are up.** `@excerlock/ledger`'s `desiredOsState` says
+  what the OS *should* do; the boundary's observable says what it *is* doing. The lock-state
+  surface renders the second and reconciles the first.
+
+## Layout
+
+| File | Responsibility |
+| --- | --- |
+| `screens/LockScreen.tsx` | Composes the four cards. Owns no state of its own. |
+| `controller/lockController.ts` | The module's one conversation with the OS — four verbs, one immutable `LockSnapshot` |
+| `controller/ledgerSource.ts` | The Phase-2 wiring seam: where the journal and the clock come from |
+| `hooks/useLockSnapshot.ts` | Binds a mounted screen to the controller's observable |
+| `model/lockStatus.ts` | The current-lock-state view model — what, why, when it flips |
+| `model/fullLock.ts` | Full Lock as an allowance number, and its two transitions |
+| `model/permissionCopy.ts` | The permissions primer copy, per authorization state |
+| `model/fullLockCopy.ts` | The confirmation sheet's copy, written from the allowance |
+| `model/wallClock.ts` | The one place a lock-window timestamp becomes "7:00 AM" |
+| `store/lockStore.ts` | The base allowance, persisted to AsyncStorage |
+| `components/` | Presentational only — every one renders a model and computes nothing |
+| `testing/fakeScreenTime.ts` | An in-memory `ScreenTimeModule` for this module's tests |
+
+## Full Lock is a number
+
+PRD §3.2 folds "lock my phone until I exercise" into a base allowance of zero rather than a mode,
+so there is no Full Lock flag anywhere here either — only `baseAllowanceMinutes === 0`. Entering
+remembers the allowance it replaced so exit restores it instead of inventing one, and both
+directions confirm: turning it on gives up the day's screen time, turning it off gives up the
+day's floor.
+
+## Phase-2 boundaries
+
+- **The allowance has two owners today.** `store/lockStore.ts` holds `baseAllowanceMinutes` because
+  Home's `ledgerConfig` carries the same value with no setter and belongs to another module. Both
+  default to Full Lock, so they agree until someone edits one. **When Manage's allowance picker
+  lands (PRD §8 — 0 h–4 h in 5-min steps, plus Unlimited), these must collapse to one owner** and
+  `controller/ledgerSource.ts` becomes its reader. That file is the only place the coupling lives.
+- **Nothing here schedules a lock window yet.** `getLockWindows()` is read so the surface can say
+  when a shield lifts; registering windows belongs to Manage → Rules (PRD §3.10–3.11).
+- **The onboarding primer still carries its own literals.**
+  `onboarding/screens/PermissionsPrimerScreen.tsx` is a Phase-2 scaffold; `PERMISSION_COPY` is
+  exported so it can adopt this copy — and the real authorization call — when it is made real.
+- **The shield screen itself is not this module.** PRD §3.15 surface 1 (what a *blocked app* shows)
+  is a native Shield extension. This is the in-app surface that explains and controls it.
+
+## Tests
+
+`npm run test:app`. Screen tests inject a `LockController` over `testing/fakeScreenTime.ts` and a
+fixed `now`, so nothing depends on the wall clock or on the persistent mock.
+
+The trap `app/src/home/README.md` names applies here too, doubled: **`render` and `fireEvent.press`
+are both async in RNTL 14 and both must be awaited.** An un-awaited `render` returns a promise
+whose queries do not exist yet; an un-awaited press silently drops every state update after it.
