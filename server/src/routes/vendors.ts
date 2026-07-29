@@ -14,6 +14,7 @@ import {
   type VendorOAuthService,
 } from "../vendors/index.js";
 import {
+  createVendorEventFeed,
   createVendorWebhookService,
   requireVendorWebhookConfiguration,
   verifyOuraWebhook,
@@ -22,6 +23,7 @@ import {
   verifyStravaSubscription,
   verifyWhoopWebhook,
   type VendorWebhookConfiguration,
+  type VendorEventFeed,
   type VendorWebhookService,
 } from "../webhooks/index.js";
 import {
@@ -30,6 +32,7 @@ import {
 } from "./notImplemented.js";
 
 interface VendorRouteDependencies {
+  eventFeed?: VendorEventFeed;
   service?: VendorOAuthService;
 }
 
@@ -63,6 +66,11 @@ interface WebhookChallengeQuery {
   verification_token?: string;
 }
 
+interface VendorEventQuery {
+  cursor?: string;
+  limit?: string;
+}
+
 function defaultService(): VendorOAuthService {
   return createVendorOAuthService({
     environment: config,
@@ -72,6 +80,15 @@ function defaultService(): VendorOAuthService {
 
 function getService(dependencies: VendorRouteDependencies): VendorOAuthService {
   return dependencies.service ?? defaultService();
+}
+
+function getEventFeed(
+  dependencies: VendorRouteDependencies,
+): VendorEventFeed {
+  return (
+    dependencies.eventFeed ??
+    createVendorEventFeed(createDrizzleVendorRepository())
+  );
 }
 
 function getWebhookService(
@@ -381,6 +398,31 @@ export function createVendorProtectedRoutes(
     app.get<{ Reply: NotImplementedResponse }>(
       "/vendors",
       async (_request, reply) => sendNotImplemented(reply, "Vendors"),
+    );
+
+    app.get<{ Querystring: VendorEventQuery }>(
+      "/vendors/events",
+      async (request, reply) => {
+        const userId = await requireRouteUserId(request, reply);
+        if (!userId) {
+          return;
+        }
+
+        const cursor = request.query.cursor ?? null;
+        const limit =
+          request.query.limit === undefined
+            ? 50
+            : Number(request.query.limit);
+        try {
+          return await getEventFeed(dependencies).readSince(
+            userId,
+            cursor,
+            limit,
+          );
+        } catch (error) {
+          await sendVendorRouteError(reply, error);
+        }
+      },
     );
 
     app.get<{ Params: VendorParams }>(

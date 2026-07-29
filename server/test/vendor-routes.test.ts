@@ -5,6 +5,7 @@ import {
   createVendorPublicRoutes,
 } from "../src/routes/vendors.js";
 import type { VendorOAuthService } from "../src/vendors/index.js";
+import type { VendorEventFeed } from "../src/webhooks/index.js";
 
 let app: FastifyInstance | undefined;
 
@@ -107,6 +108,60 @@ describe("vendor OAuth routes", () => {
         ],
         disconnect: [["user_123", "strava"]],
       },
+    });
+  });
+
+  it("reads the authenticated device's vendor notifications since a cursor", async () => {
+    const readSince = vi.fn(async () => ({
+      events: [
+        {
+          id: "event-2",
+          vendor: "whoop" as const,
+          eventType: "workout.updated",
+          receivedAt: "2026-07-29T19:00:01.000Z",
+          payload: { id: "workout-1" },
+        },
+      ],
+      nextCursor: "cursor-2",
+    }));
+    const eventFeed: VendorEventFeed = { readSince };
+    app = Fastify({ logger: false });
+    await app.register(
+      async (protectedScope) => {
+        protectedScope.addHook("onRequest", async (request) => {
+          request.clerkIdentity = { userId: "user_123", roles: [] };
+        });
+        await protectedScope.register(
+          createVendorProtectedRoutes({ eventFeed }),
+        );
+      },
+      { prefix: "/v1" },
+    );
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/vendors/events?cursor=cursor-1&limit=25",
+    });
+
+    expect({
+      status: response.statusCode,
+      body: response.json(),
+      calls: readSince.mock.calls,
+    }).toEqual({
+      status: 200,
+      body: {
+        events: [
+          {
+            id: "event-2",
+            vendor: "whoop",
+            eventType: "workout.updated",
+            receivedAt: "2026-07-29T19:00:01.000Z",
+            payload: { id: "workout-1" },
+          },
+        ],
+        nextCursor: "cursor-2",
+      },
+      calls: [["user_123", "cursor-1", 25]],
     });
   });
 });
