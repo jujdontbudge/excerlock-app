@@ -25,3 +25,10 @@ export type {
   ThresholdlessEventPicker,
   TierOneVendorSource,
 } from "./catalog-types";
+export { VENDOR_COVERAGE, VENDOR_SIGNALS } from "./coverage";
+export type {
+  VendorCoverageCell,
+  VendorCoverageMatrix,
+  VendorCoverageStatus,
+  VendorSignal,
+} from "./coverage";
