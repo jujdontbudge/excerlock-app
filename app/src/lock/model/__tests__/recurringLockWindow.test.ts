@@ -176,4 +176,27 @@ describe("recurring lock windows", () => {
       120 * MINUTE_MS,
     );
   });
+
+  it("does not duplicate or shift a window when fall DST repeats an epoch hour", () => {
+    const sunday = window({
+      id: "fall-sunday",
+      days: ["sunday"],
+      startMinute: 90,
+      endMinute: 150,
+    });
+
+    expect(
+      materializeLockWindows(
+        [sunday],
+        wallTime(2026, 11, 1, 0),
+        1,
+      ),
+    ).toEqual([
+      {
+        id: `recurring:fall-sunday:${wallTime(2026, 11, 1, 1, 30)}`,
+        startsAtMs: wallTime(2026, 11, 1, 1, 30),
+        endsAtMs: wallTime(2026, 11, 1, 2, 30),
+      },
+    ]);
+  });
 });
