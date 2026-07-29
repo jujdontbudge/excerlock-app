@@ -5,12 +5,25 @@ import Fastify, {
   type FastifyServerOptions,
 } from "fastify";
 import { pathToFileURL } from "node:url";
+import { requireAuth } from "./auth.js";
 import { config } from "./config.js";
 import { healthRoutes } from "./routes/health.js";
+import { supportRoutes } from "./routes/support.js";
+import { userRoutes } from "./routes/user.js";
+import { vendorRoutes } from "./routes/vendors.js";
 
 export function buildServer(options: FastifyServerOptions = {}): FastifyInstance {
   const app = Fastify(options);
   void app.register(healthRoutes, { prefix: "/v1" });
+  void app.register(
+    async (protectedScope) => {
+      protectedScope.addHook("onRequest", requireAuth);
+      await protectedScope.register(supportRoutes);
+      await protectedScope.register(userRoutes);
+      await protectedScope.register(vendorRoutes);
+    },
+    { prefix: "/v1" },
+  );
   return app;
 }
 
