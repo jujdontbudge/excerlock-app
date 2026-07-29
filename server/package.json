@@ -11,11 +11,13 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
-    "test": "vitest run",
+    "test": "npm run typecheck:test && vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:test": "tsc -p tsconfig.test.json --noEmit",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@excerlock/analytics-events": "0.1.0",
     "@fastify/helmet": "^13.1.0",
     "@fastify/rate-limit": "^11.2.0",
     "@sentry/node": "^10.69.0",
