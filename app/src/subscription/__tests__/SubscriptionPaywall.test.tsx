@@ -8,6 +8,7 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { MockSubscriptionModule } from "../MockSubscriptionModule";
 import { SubscriptionPaywall } from "../SubscriptionPaywall";
+import { ManualSubscriptionClock } from "../clock";
 
 describe("SubscriptionPaywall", () => {
   beforeEach(async () => {
@@ -145,5 +146,41 @@ describe("SubscriptionPaywall", () => {
     expect(
       screen.getByRole("button", { name: "Start free trial" }),
     ).toBeEnabled();
+  });
+
+  it("restores premium access and continues", async () => {
+    const subscription = new MockSubscriptionModule({
+      clock: new ManualSubscriptionClock(1_000),
+    });
+    subscription.setNextRestoreResult({
+      status: "restored",
+      entitlement: {
+        status: "active",
+        productId: "excerlock_annual",
+        purchasedAtMs: 1,
+        renewsAtMs: 2_000,
+      },
+    });
+    const onEntitled = jest.fn();
+    await render(
+      <SubscriptionPaywall
+        placement="onboarding"
+        confessedDailyMinutes={300}
+        onEntitled={onEntitled}
+        subscription={subscription}
+      />,
+    );
+    await screen.findByRole("header", {
+      name: "Unlock the full ExcerLock plan",
+    });
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Restore Purchases" }),
+    );
+
+    expect(onEntitled).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("header", { name: "Your ExcerLock plan is active" }),
+    ).toBeOnTheScreen();
   });
 });

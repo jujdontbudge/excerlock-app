@@ -64,6 +64,8 @@ export function SubscriptionPaywall({
     paywall.products.find((product) => product.isDefault) ??
     paywall.products[0];
   const isPurchasing = snapshot.intent.status === "purchasing";
+  const isRestoring = snapshot.intent.status === "restoring";
+  const isBusy = snapshot.intent.status !== "idle";
 
   const handlePurchase = async () => {
     if (selectedProduct === undefined) {
@@ -71,6 +73,13 @@ export function SubscriptionPaywall({
     }
     const result = await subscription.purchase(selectedProduct.id);
     if (result.status === "purchased") {
+      onEntitled();
+    }
+  };
+
+  const handleRestore = async () => {
+    const result = await subscription.restore();
+    if (result.status === "restored") {
       onEntitled();
     }
   };
@@ -127,15 +136,16 @@ export function SubscriptionPaywall({
 
         <View style={{ gap: spacing.md }}>
           <PillButton
-            disabled={selectedProduct === undefined || isPurchasing}
+            disabled={selectedProduct === undefined || isBusy}
             label={isPurchasing ? "Purchasing…" : purchaseLabel(selectedProduct)}
             onPress={handlePurchase}
             trailingIcon="arrowRight"
             variant="white"
           />
           <PillButton
-            label="Restore Purchases"
-            onPress={() => undefined}
+            disabled={isBusy}
+            label={isRestoring ? "Restoring…" : "Restore Purchases"}
+            onPress={handleRestore}
             variant="secondary"
           />
           {onBack === undefined ? null : (
