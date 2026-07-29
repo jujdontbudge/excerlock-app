@@ -1,12 +1,13 @@
+import type {
+  PropsOf,
+  ServerEventName,
+} from "@excerlock/analytics-events";
 import { PostHog } from "posthog-node";
 import { config } from "../config.js";
 
-export type ServerAnalyticsEvent =
-  | "support_submitted"
-  | "vendor_connected"
-  | "vendor_disconnected"
-  | "vendor_webhook_received"
-  | "entitlement_mirror_updated";
+export type {
+  ServerEventName as ServerAnalyticsEvent,
+} from "@excerlock/analytics-events";
 
 export interface AnalyticsOptions {
   apiKey: string | undefined;
@@ -14,10 +15,10 @@ export interface AnalyticsOptions {
 }
 
 export interface ServerAnalytics {
-  capture(
+  capture<Event extends ServerEventName>(
     distinctId: string,
-    event: ServerAnalyticsEvent,
-    properties?: Record<string, unknown>,
+    event: Event,
+    properties?: PropsOf<Event>,
   ): void;
   shutdown(): Promise<void>;
 }
@@ -34,7 +35,7 @@ export function createAnalytics(options: AnalyticsOptions): ServerAnalytics {
   void client?.register({ app: "excerlock" });
 
   return {
-    capture(distinctId, event, properties = {}) {
+    capture(distinctId, event, properties) {
       // posthog-node's stateless capture path does not merge registered
       // properties, so stamp the server super property explicitly as well.
       client?.capture({

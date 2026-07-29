@@ -21,6 +21,14 @@ stay behind the server composition and service boundaries.
 - Earning and screen-time balance computation are always on-device and never
   implemented in this package.
 
+## Analytics
+
+`src/services/analytics.ts` is the server's only PostHog `capture()` forwarder.
+Its public wrapper accepts only `ServerEventName` entries from
+`@excerlock/analytics-events`, and each event payload is typed by the registry's
+`PropsOf<Event>`. It remains inert without `POSTHOG_API_KEY` and stamps
+`app: "excerlock"` on configured captures.
+
 ## Fixtures
 
 None. HTTP behavior is exercised in process through `fastify.inject()`.
