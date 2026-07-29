@@ -1,12 +1,24 @@
 import { render, screen } from "@testing-library/react-native";
 import { processColor } from "react-native";
 
+import { useConfessionStore } from "@/onboarding";
 import { gradients } from "@/ui";
 
 import { AnalysisScreen } from "..";
 import { FIXTURE_DAY_SUMMARIES } from "../fixtures";
 
+// The screen reads the confession store, which persists through AsyncStorage.
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
+
 describe("AnalysisScreen", () => {
+  // Reset before, not after: an `afterEach` here runs while the tree is still
+  // mounted, and the store update lands outside `act`.
+  beforeEach(() => {
+    useConfessionStore.setState({ confessedDailyMinutes: null });
+  });
+
   it("sits on the brand gradient under the screen title", async () => {
     await render(<AnalysisScreen />);
 
@@ -14,6 +26,38 @@ describe("AnalysisScreen", () => {
     expect(screen.getByTestId("analysis-screen").props.colors).toEqual(
       gradients.screen.colors.map((hex) => processColor(hex)),
     );
+  });
+
+  it("leads with the recap and the Time Reclaimed hero, in that order", async () => {
+    await render(<AnalysisScreen confessedDailyMinutes={240} />);
+
+    // 21 July days against a 4h/day confession.
+    expect(screen.getByTestId("time-reclaimed-value")).toHaveTextContent("64");
+    expect(screen.getByTestId("recap-reclaimed")).toHaveTextContent(/^21h 46m$/);
+    expect(screen.getByTestId("recap-delta")).toHaveTextContent(/^44m more than last week$/);
+  });
+
+  it("takes the baseline from the onboarding confession when it has one", async () => {
+    useConfessionStore.setState({ confessedDailyMinutes: 240 });
+
+    await render(<AnalysisScreen />);
+
+    expect(screen.getByTestId("time-reclaimed-value")).toHaveTextContent("64");
+  });
+
+  it("says what is missing when onboarding was skipped, rather than showing a zero", async () => {
+    await render(<AnalysisScreen />);
+
+    expect(screen.queryByTestId("time-reclaimed-value")).toBeNull();
+    expect(screen.getByTestId("time-reclaimed-hero")).toHaveTextContent(/daily average/);
+    expect(screen.getByTestId("recap-usage")).toHaveTextContent(/^6h 14m$/);
+  });
+
+  it("keeps the hero truthful when the month ran over the confession", async () => {
+    await render(<AnalysisScreen confessedDailyMinutes={30} />);
+
+    expect(screen.getByTestId("time-reclaimed-net")).toHaveTextContent(/−8h 48m on balance/);
+    expect(screen.queryByText(/fail|too much|should have/i)).toBeNull();
   });
 
   it("leads with this week's earned-versus-spent balance", async () => {
@@ -75,5 +119,8 @@ describe("AnalysisScreen", () => {
     expect(screen.queryByTestId("earned-total")).toBeNull();
     expect(screen.queryByTestId("streak-current")).toBeNull();
     expect(screen.queryAllByTestId(/^analysis-bar-/)).toEqual([]);
+    // Nothing recorded means no recap and no hero — not a zeroed one.
+    expect(screen.queryByTestId("recap-card")).toBeNull();
+    expect(screen.queryByTestId("time-reclaimed-hero")).toBeNull();
   });
 });
