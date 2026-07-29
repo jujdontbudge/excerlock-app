@@ -32,3 +32,21 @@ export type {
   VendorCoverageStatus,
   VendorSignal,
 } from "./coverage";
+export {
+  conditionUniquenessKey,
+  conditionsOverlap,
+  getCatalogEntry,
+  getPickerVerdict,
+  listPickerVerdicts,
+} from "./picker";
+export type {
+  ConditionOverlap,
+  ConditionSelection,
+  ExistingCondition,
+  PickerContext,
+  PickerCoverage,
+  PickerReason,
+  PickerReasonCode,
+  PickerStatus,
+  PickerVerdict,
+} from "./picker";
