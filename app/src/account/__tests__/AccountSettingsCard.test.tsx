@@ -63,6 +63,28 @@ describe("AccountSettingsCard", () => {
     expect(await screen.findByText("Signed out")).toBeOnTheScreen();
   });
 
+  it("renders an authentication error and keeps both intents retryable", async () => {
+    const account = new MockAccountModule();
+    account.setNextSignInResult({
+      status: "failed",
+      message: "Sign in is temporarily unavailable.",
+    });
+    await render(<AccountSettingsCard account={account} />);
+    await screen.findByText("Signed out");
+
+    await fireEvent.press(screen.getByRole("button", { name: "Sign in" }));
+
+    expect(
+      screen.getByRole("alert", {
+        name: "Sign in is temporarily unavailable.",
+      }),
+    ).toBeOnTheScreen();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Create account" }),
+    ).toBeEnabled();
+  });
+
   it("renders the signed-in identity and session controls", async () => {
     const account = new MockAccountModule();
     await account.signUp();
