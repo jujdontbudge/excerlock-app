@@ -1,0 +1,29 @@
+{
+  "name": "canonical-day",
+  "description": "One full ledger day, boundary 04:00: Full Lock morning, gym-arrival chunk earn, step rate credits, drain ticks incl. a clamped final tick, a set-period holiday, a sustained walk segment. Day 1 checks rollover.",
+  "config": {
+    "dayBoundaryOffsetMinutes": 240,
+    "baseAllowanceMinutes": 0,
+    "rollover": { "capMinutes": 30 }
+  },
+  "entries": [
+    { "kind": "earn", "source": "location", "id": "gym-visit-1", "atMs": 25200000, "conditionId": "gym-arrive", "payout": { "type": "fixedChunk", "minutes": 30 } },
+    { "kind": "rateCredit", "source": "health", "id": "steps-anchor-1", "atMs": 32400000, "conditionId": "steps-exchange", "minutes": 10 },
+    { "kind": "rateCredit", "source": "health", "id": "steps-anchor-2", "atMs": 43200000, "conditionId": "steps-exchange", "minutes": 6 },
+    { "kind": "drainTick", "source": "screentime", "id": "tick-1", "atMs": 36000000, "minutes": 20 },
+    { "kind": "earn", "source": "health", "id": "run-goal-1", "atMs": 50400000, "conditionId": "run-goal", "payout": { "type": "setPeriod", "minutes": 60 } },
+    { "kind": "drainTick", "source": "screentime", "id": "tick-2", "atMs": 52200000, "minutes": 15 },
+    { "kind": "stateSustained", "source": "motion", "id": "walk-session-1", "atMs": 61200000, "conditionId": "while-walking", "minutes": 12 },
+    { "kind": "drainTick", "source": "screentime", "id": "tick-3", "atMs": 68400000, "minutes": 40 }
+  ],
+  "expect": {
+    "day0": {
+      "earnedMinutes": 46,
+      "spentMinutes": 46,
+      "usageMinutes": 75,
+      "endBalance": 0,
+      "meaningfulConditionCount": 4
+    },
+    "day1": { "rolloverIn": 0, "startBalance": 0 }
+  }
+}
