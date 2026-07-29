@@ -10,6 +10,7 @@ import {
   canAdvance,
   draftCondition,
   EMPTY_DRAFT,
+  type BuilderDraft,
   type BuilderStep,
 } from "./builderDraft";
 import { CatalogStep } from "./steps/CatalogStep";
@@ -36,6 +37,7 @@ export function ConditionBuilderSheet({
   visible,
   context,
   placeNames,
+  initialDraft = EMPTY_DRAFT,
   onSave,
   onClose,
   createId = () => `condition-${Date.now()}`,
@@ -43,12 +45,19 @@ export function ConditionBuilderSheet({
   visible: boolean;
   context: PickerContext;
   placeNames?: Readonly<Record<string, string>>;
+  /**
+   * Where the sheet opens. Creating starts on the empty draft; editing starts
+   * on `draftFromCondition`, which lands on the configure step — so the sheet
+   * reads it once, on mount, and a caller that edits a second condition must
+   * mount a second sheet (a `key` on the condition's id).
+   */
+  initialDraft?: BuilderDraft;
   onSave: (condition: ConfiguredCondition) => void;
   onClose: () => void;
   createId?: () => string;
 }) {
   const { colors, spacing, typography } = useTheme();
-  const [draft, dispatch] = useReducer(builderReducer, EMPTY_DRAFT);
+  const [draft, dispatch] = useReducer(builderReducer, initialDraft);
   const groups = useMemo(() => builderCatalog(context), [context]);
   const option = draft.catalogId === undefined ? undefined : findOption(groups, draft.catalogId);
   const preview = draftCondition(draft, "preview");
@@ -113,7 +122,8 @@ export function ConditionBuilderSheet({
         </ScrollView>
 
         <View style={[styles.footer, { gap: spacing.md, padding: spacing.gutter }]}>
-          {draft.step === "catalog" ? null : (
+          {/* Back retraces the steps the sheet opened on — never behind them. */}
+          {draft.step === initialDraft.step ? null : (
             <PillButton
               label="Back"
               variant="secondary"
