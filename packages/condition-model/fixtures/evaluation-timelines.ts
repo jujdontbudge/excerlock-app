@@ -85,4 +85,56 @@ export const EVALUATION_TIMELINES = {
       },
     },
   ],
+  stepRateUpdates: [
+    {
+      atMs: 1_000,
+      event: "signalSnapshot",
+      payload: {
+        sampleId: "rate-snapshot-a",
+        signal: "steps",
+        source: "appleHealth",
+        value: 500,
+      },
+    },
+    {
+      atMs: 2_000,
+      event: "signalDelta",
+      payload: {
+        sampleId: "rate-delta-a",
+        signal: "steps",
+        source: "appleHealth",
+        delta: 250,
+      },
+    },
+    {
+      atMs: 2_100,
+      event: "signalDelta",
+      payload: {
+        sampleId: "rate-delta-a",
+        signal: "steps",
+        source: "appleHealth",
+        delta: 250,
+      },
+    },
+    {
+      atMs: 3_000,
+      event: "signalSnapshot",
+      payload: {
+        sampleId: "rate-snapshot-b",
+        signal: "steps",
+        source: "appleHealth",
+        value: 1_000,
+      },
+    },
+    {
+      atMs: 4_000,
+      event: "signalDelta",
+      payload: {
+        sampleId: "rate-correction",
+        signal: "steps",
+        source: "appleHealth",
+        delta: -100,
+      },
+    },
+  ],
 } as const satisfies Readonly<Record<string, readonly SignalTimelineRow[]>>;
