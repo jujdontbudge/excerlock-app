@@ -16,6 +16,8 @@ export type SubscriptionPaywallConfig = Readonly<{
   title: string;
   body: string;
   valueStatement: string;
+  plansTitle: string;
+  trialStatement: string | null;
   products: readonly SubscriptionProduct[];
 }>;
 

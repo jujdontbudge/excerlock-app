@@ -32,5 +32,7 @@ export const FALLBACK_ONBOARDING_PAYWALL: SubscriptionPaywallConfig =
     title: "Unlock the full ExcerLock plan",
     body: "Choose the plan that helps you turn intention into a daily habit.",
     valueStatement: "The annual plan is about $5 a month.",
+    plansTitle: "Annual and monthly plans",
+    trialStatement: "Trial available on the annual plan",
     products: FALLBACK_PRODUCTS,
   });

@@ -12,7 +12,7 @@ Callers import only `index.ts` and obtain the adapter through
 - a snapshot containing entitlement, paywall-loading, and purchase/restore
   intent state;
 - `loadPaywall(placement)`, whose ready value preserves the returned product
-  count, order, prices, trials, badges, and default selection;
+  count, order, prices, trials, badges, surrounding copy, and default selection;
 - `purchase(productId)` with purchased, cancelled, and failed outcomes;
 - `restore()` with restored, not-found, and failed outcomes;
 - snapshot change subscription for renderers.

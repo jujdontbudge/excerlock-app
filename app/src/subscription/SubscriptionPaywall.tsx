@@ -121,7 +121,7 @@ export function SubscriptionPaywall({
         </View>
 
         <View style={{ gap: spacing.md }}>
-          <Text style={typography.cardTitle}>Annual and monthly plans</Text>
+          <Text style={typography.cardTitle}>{paywall.plansTitle}</Text>
           {paywall.products.map((product) => (
             <PaywallProductOption
               key={product.id}
@@ -130,9 +130,9 @@ export function SubscriptionPaywall({
               onSelect={() => setSelectedProductId(product.id)}
             />
           ))}
-          <Text style={typography.body}>
-            Trial available on the annual plan
-          </Text>
+          {paywall.trialStatement === null ? null : (
+            <Text style={typography.body}>{paywall.trialStatement}</Text>
+          )}
           {snapshot.intent.status === "idle" &&
           snapshot.intent.error !== null ? (
             <Text
