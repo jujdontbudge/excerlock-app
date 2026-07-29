@@ -60,4 +60,13 @@ describe("ConditionBreakdownCard", () => {
       /^While walking0m$/,
     );
   });
+
+  it("has an honest empty state when no condition appears in the window", async () => {
+    await render(<ConditionBreakdownCard caption="This week" items={[]} />);
+
+    expect(
+      screen.getByRole("header", { name: "No condition earnings yet" }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText(/banks time/)).toBeOnTheScreen();
+  });
 });
