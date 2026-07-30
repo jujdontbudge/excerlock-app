@@ -11,6 +11,8 @@ import {
   createHomeSignalFeed,
   installHomeAppRuntime,
 } from "@/home";
+import { installSubscriptionModule } from "@/subscription/accessor";
+import { MockSubscriptionModule } from "@/subscription/MockSubscriptionModule";
 
 import { E2EScenarioGate } from "./E2EScenarioGate";
 import type { LoadedScenario } from "./scenarioDeepLink";
@@ -26,6 +28,8 @@ export function E2ERuntimeRoot({
   const url = useLinkingURL();
   const router = useRouter();
   const uninstallHomeRuntime = useRef<(() => void) | null>(null);
+  const uninstallSubscriptionModule =
+    useRef<(() => void) | null>(null);
 
   const handleLoaded = useCallback(
     (loaded: LoadedScenario) => {
@@ -35,6 +39,13 @@ export function E2ERuntimeRoot({
         feed: createHomeSignalFeed({ health, motion }),
         now: () => loaded.composition.clock.nowMs(),
       });
+      uninstallSubscriptionModule.current?.();
+      uninstallSubscriptionModule.current =
+        installSubscriptionModule(
+          new MockSubscriptionModule({
+            clock: loaded.composition.clock,
+          }),
+        );
       router.replace("/");
     },
     [router],
@@ -43,6 +54,7 @@ export function E2ERuntimeRoot({
   useEffect(
     () => () => {
       uninstallHomeRuntime.current?.();
+      uninstallSubscriptionModule.current?.();
     },
     [],
   );

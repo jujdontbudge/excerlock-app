@@ -14,6 +14,7 @@ import {
   DEFAULT_ONBOARDING_PROGRESS,
   useOnboardingStore,
 } from "@/onboarding";
+import { MOCK_SUBSCRIPTION_STORAGE_KEY } from "@/subscription/mockStore";
 
 import type {
   ScenarioCondition,
@@ -52,6 +53,7 @@ export async function loadScenarioState(
     ...DEFAULT_ONBOARDING_PROGRESS,
     isComplete: scenario.state.onboarding === "complete",
   });
+  await preloadEntitlement(scenario);
 
   return Object.freeze({
     scenarioName: scenario.name,
@@ -61,6 +63,28 @@ export async function loadScenarioState(
     ]),
     vendors: Object.freeze({ ...scenario.state.vendors }),
   });
+}
+
+async function preloadEntitlement(
+  scenario: ScenarioManifest,
+): Promise<void> {
+  const purchasedAtMs = Date.parse(scenario.clock.now);
+  const entitlement =
+    scenario.state.entitlement === "premium"
+      ? {
+          status: "active" as const,
+          productId: "e2e-premium",
+          purchasedAtMs,
+          renewsAtMs: purchasedAtMs + 366 * 24 * 60 * 60 * 1_000,
+        }
+      : { status: "inactive" as const };
+  await AsyncStorage.setItem(
+    MOCK_SUBSCRIPTION_STORAGE_KEY,
+    JSON.stringify({
+      state: { entitlement },
+      version: 1,
+    }),
+  );
 }
 
 function toConfiguredCondition(

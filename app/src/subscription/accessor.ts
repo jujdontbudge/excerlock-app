@@ -11,3 +11,17 @@ export function getSubscriptionModule(): SubscriptionModule {
   subscriptionModule ??= new MockSubscriptionModule();
   return subscriptionModule;
 }
+
+/** Composition-root injection for build-selected adapter implementations. */
+export function installSubscriptionModule(
+  module: SubscriptionModule,
+): () => void {
+  const previous = subscriptionModule;
+  subscriptionModule = module;
+
+  return () => {
+    if (subscriptionModule === module) {
+      subscriptionModule = previous;
+    }
+  };
+}

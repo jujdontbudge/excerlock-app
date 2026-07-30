@@ -18,6 +18,7 @@ import { render, screen, waitFor } from "@testing-library/react-native";
 import { Text } from "react-native";
 
 import { getHomeAppRuntime } from "@/home";
+import { getSubscriptionModule } from "@/subscription";
 
 import { E2ERuntimeRoot } from "../E2ERuntimeRoot";
 
@@ -47,6 +48,13 @@ describe("E2E runtime composition root", () => {
         swimDistance: 0,
         workoutDuration: 0,
       },
+    });
+    expect(
+      (await getSubscriptionModule().getSnapshot()).entitlement,
+    ).toMatchObject({
+      status: "active",
+      productId: "e2e-premium",
+      purchasedAtMs: Date.parse("2026-07-29T09:41:00-04:00"),
     });
   });
 });
