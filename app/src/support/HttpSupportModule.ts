@@ -53,6 +53,11 @@ const TIMEOUT_ERROR: SupportError = Object.freeze({
   message:
     "The request timed out. This wasn't sent. It is saved here so you can try again.",
 });
+const SERVICE_UNAVAILABLE_ERROR: SupportError = Object.freeze({
+  code: "service_unavailable",
+  message:
+    "Support is temporarily unavailable. This wasn't sent. It is saved here so you can try again.",
+});
 
 export class HttpSupportModule implements SupportModule {
   private readonly baseUrl: string;
@@ -106,6 +111,9 @@ export class HttpSupportModule implements SupportModule {
         submission,
         isAbortError(error) ? TIMEOUT_ERROR : OFFLINE_ERROR,
       );
+    }
+    if (response.status >= 500) {
+      return this.failSubmission(submission, SERVICE_UNAVAILABLE_ERROR);
     }
     const responseBody = await response.json();
     const submissionId = readSubmissionId(response.status, responseBody);

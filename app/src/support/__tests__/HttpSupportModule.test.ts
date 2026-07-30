@@ -140,4 +140,37 @@ describe("HttpSupportModule", () => {
       jest.useRealTimers();
     }
   });
+
+  it("keeps a request retryable when the server is unavailable", async () => {
+    const support = new HttpSupportModule({
+      baseUrl: "https://api.example.test",
+      clock: new ManualSupportClock(4_000),
+      fetch: jest.fn().mockResolvedValue({
+        status: 503,
+        json: async () => ({
+          error: {
+            code: "SERVICE_UNAVAILABLE",
+            message: "Database unavailable",
+          },
+        }),
+      }),
+      getAccessToken: async () => "clerk-jwt",
+    });
+
+    await expect(
+      support.submitSupport({ message: "Please retry this later." }),
+    ).resolves.toEqual({
+      status: "failed",
+      submissionId: "local-support-4000-1",
+      error: {
+        code: "service_unavailable",
+        message:
+          "Support is temporarily unavailable. This wasn't sent. It is saved here so you can try again.",
+      },
+    });
+    expect((await support.getSnapshot()).submissions[0]).toMatchObject({
+      status: "failed",
+      error: { code: "service_unavailable" },
+    });
+  });
 });
