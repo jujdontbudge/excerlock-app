@@ -50,6 +50,11 @@ outside the slot by type. Ticket #74 owns the actual asset and its
 shelf/entry point is not built here, so only the template is ready for that
 future caller.
 
+`MilestoneShareCardPreviewSheet` and the existing recap
+`ShareCardPreviewSheet` are narrow wrappers over one preview frame. The frame
+owns the ratio toggle and explicit native handoff; opening either wrapper never
+captures or shares by itself.
+
 `RecapShareCard` renders the three public facts only. Analysis row ③ may still
 say `"7 earns · most from Gym visit"` inside the app, but `RecapShareAction`
 projects only the count (`7`) for the public artifact.
@@ -95,8 +100,10 @@ remain runtime-unverified outside the mocked boundary tests.
 | `accessor.ts` | sole adapter composition/swap point |
 | `components/ShareCardFrame.tsx` | governed gradient capture target |
 | `components/MilestoneShareCard.tsx` | badge-slot milestone template |
+| `components/MilestoneShareCardPreviewSheet.tsx` | milestone preview wrapper |
 | `components/RecapShareCard.tsx` | three-fact recap template |
 | `components/ShareCardPreviewSheet.tsx` | preview, ratio chooser, and handoff action |
+| `components/ShareCardPreviewSheetFrame.tsx` | shared preview and explicit handoff mechanics |
 
 ## Tests
 

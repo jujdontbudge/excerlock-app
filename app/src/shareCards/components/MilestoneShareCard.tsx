@@ -1,3 +1,4 @@
+import type { RefObject } from "react";
 import {
   Image,
   StyleSheet,
@@ -17,17 +18,19 @@ type MilestoneShareCardProps = Readonly<{
   ratio: ShareCardRatio;
   /** Badge ticket #74 supplies this art; this renderer never invents it. */
   badgeArt: ImageRequireSource;
+  captureTargetRef?: RefObject<View | null>;
 }>;
 
 export function MilestoneShareCard({
   input,
   ratio,
   badgeArt,
+  captureTargetRef,
 }: MilestoneShareCardProps) {
   const { spacing, typography } = useTheme();
 
   return (
-    <ShareCardFrame ratio={ratio}>
+    <ShareCardFrame ref={captureTargetRef} ratio={ratio}>
       <View style={[styles.hero, { gap: spacing.sm }]}>
         <View style={styles.badge}>
           <Image
