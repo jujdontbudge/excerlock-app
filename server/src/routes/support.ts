@@ -19,7 +19,7 @@ import { sendSupportRouteError } from "./supportRouteError.js";
 
 interface SupportRouteDependencies {
   featureRequests: FeatureRequestService;
-  service: SupportSubmissionService;
+  submissions: SupportSubmissionService;
   votes: FeatureRequestVoteService;
 }
 
@@ -100,7 +100,10 @@ export function createSupportRoutes(
       }
 
       try {
-        const result = await dependencies.service.submit(userId, parsed.data);
+        const result = await dependencies.submissions.submit(
+          userId,
+          parsed.data,
+        );
         return reply.code(201).send(result);
       } catch (error) {
         await sendSupportRouteError(reply, error);
@@ -110,7 +113,7 @@ export function createSupportRoutes(
 }
 
 export const supportRoutes = createSupportRoutes({
-  service: {
+  submissions: {
     submit(userId, input) {
       return createSupportSubmissionService({
         analytics,

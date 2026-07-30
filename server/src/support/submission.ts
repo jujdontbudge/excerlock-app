@@ -55,9 +55,16 @@ export function createSupportSubmissionService(
       }
 
       const submissionId = randomId();
-      const featureRequestId =
-        input.category === "feature" ? randomId() : null;
       const createdAt = now();
+      const featureRequest =
+        input.category === "feature"
+          ? {
+              id: randomId(),
+              title: input.title,
+              message: input.message,
+              createdAt,
+            }
+          : null;
       const submission: NewSupportSubmissionRecord = {
         id: submissionId,
         userId,
@@ -65,22 +72,14 @@ export function createSupportSubmissionService(
         title: input.category === "feature" ? input.title : null,
         message: input.message,
         createdAt,
-        featureRequest:
-          input.category === "feature"
-            ? {
-                id: featureRequestId!,
-                title: input.title,
-                message: input.message,
-                createdAt,
-              }
-            : null,
+        featureRequest,
       };
 
       await options.repository.insertSupportSubmission(submission);
       options.analytics.supportRequestSubmitted(userId, input.category);
 
-      return featureRequestId
-        ? { submissionId, featureRequestId }
+      return featureRequest
+        ? { submissionId, featureRequestId: featureRequest.id }
         : { submissionId };
     },
   };

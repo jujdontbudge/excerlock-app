@@ -35,7 +35,7 @@ describe("support routes", () => {
     });
     await app.register(
       createSupportRoutes({
-        service,
+        submissions: service,
         featureRequests,
         votes: unusedVoteService(),
       }),
@@ -85,7 +85,7 @@ describe("support routes", () => {
     });
     await app.register(
       createSupportRoutes({
-        service,
+        submissions: service,
         featureRequests,
         votes: unusedVoteService(),
       }),
@@ -139,7 +139,7 @@ describe("support routes", () => {
     });
     await app.register(
       createSupportRoutes({
-        service,
+        submissions: service,
         featureRequests,
         votes: unusedVoteService(),
       }),
@@ -199,7 +199,7 @@ describe("support routes", () => {
     });
     await app.register(
       createSupportRoutes({
-        service,
+        submissions: service,
         featureRequests,
         votes: { vote },
       }),
@@ -265,7 +265,11 @@ describe("support routes", () => {
       request.clerkIdentity = { userId: "user_123", roles: [] };
     });
     await app.register(
-      createSupportRoutes({ service, featureRequests, votes }),
+      createSupportRoutes({
+        submissions: service,
+        featureRequests,
+        votes,
+      }),
       { prefix: "/v1" },
     );
 
