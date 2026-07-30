@@ -32,11 +32,6 @@ describe("GET /v1/health", () => {
 describe("planned v1 routes", () => {
   it.each([
     {
-      method: "POST" as const,
-      url: "/v1/support",
-      message: "Support API is not implemented",
-    },
-    {
       method: "GET" as const,
       url: "/v1/user",
       message: "User API is not implemented",
@@ -56,6 +51,29 @@ describe("planned v1 routes", () => {
       error: {
         code: "NOT_IMPLEMENTED",
         message,
+      },
+    });
+  });
+});
+
+describe("POST /v1/support", () => {
+  it("is a real authenticated route instead of a 501 stub", async () => {
+    app = buildServer({ logger: false });
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/support",
+      payload: {
+        category: "support",
+        message: "Please help with my balance.",
+      },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toEqual({
+      error: {
+        code: "UNAUTHORIZED",
+        message: "A verified Clerk user is required",
       },
     });
   });

@@ -5,6 +5,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import type { SupportCategory } from "@excerlock/analytics-events";
 import type { Vendor } from "../vendors/types.js";
 
 /**
@@ -20,6 +21,69 @@ export const users = pgTable("users", {
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+export const supportRequests = pgTable("support_requests", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  category: text("category").$type<SupportCategory>().notNull(),
+  title: text("title"),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const featureRequests = pgTable(
+  "feature_requests",
+  {
+    id: text("id").primaryKey(),
+    supportRequestId: text("support_request_id")
+      .notNull()
+      .references(() => supportRequests.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("feature_requests_support_request_unique").on(
+      table.supportRequestId,
+    ),
+    index("feature_requests_created_at_index").on(table.createdAt, table.id),
+  ],
+);
+
+export const featureRequestVotes = pgTable(
+  "feature_request_votes",
+  {
+    id: text("id").primaryKey(),
+    featureRequestId: text("feature_request_id")
+      .notNull()
+      .references(() => featureRequests.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("feature_request_votes_request_user_unique").on(
+      table.featureRequestId,
+      table.userId,
+    ),
+  ],
+);
+
+export type SupportRequest = typeof supportRequests.$inferSelect;
+export type NewSupportRequest = typeof supportRequests.$inferInsert;
+export type FeatureRequest = typeof featureRequests.$inferSelect;
+export type NewFeatureRequest = typeof featureRequests.$inferInsert;
+export type FeatureRequestVote = typeof featureRequestVotes.$inferSelect;
+export type NewFeatureRequestVote = typeof featureRequestVotes.$inferInsert;
 
 export const vendorConnections = pgTable(
   "vendor_connections",

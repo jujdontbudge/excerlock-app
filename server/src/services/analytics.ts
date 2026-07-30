@@ -15,6 +15,15 @@ export interface AnalyticsOptions {
 }
 
 type AnalyticsVendor = PropsOf<"vendor_connected">["vendor"];
+type AnalyticsSupportCategory =
+  PropsOf<"support_request_submitted">["category"];
+
+export interface SupportAnalytics {
+  supportRequestSubmitted(
+    distinctId: string,
+    category: AnalyticsSupportCategory,
+  ): void;
+}
 
 export interface VendorAnalytics {
   vendorConnected(distinctId: string, vendor: AnalyticsVendor): void;
@@ -22,7 +31,7 @@ export interface VendorAnalytics {
   vendorEarnRecorded(distinctId: string, vendor: AnalyticsVendor): void;
 }
 
-export interface ServerAnalytics extends VendorAnalytics {
+export interface ServerAnalytics extends SupportAnalytics, VendorAnalytics {
   capture<Event extends ServerEventName>(
     distinctId: string,
     event: Event,
@@ -58,6 +67,11 @@ export function createAnalytics(options: AnalyticsOptions): ServerAnalytics {
 
   return {
     capture: forwardCapture,
+    supportRequestSubmitted(distinctId, category) {
+      forwardCapture(distinctId, "support_request_submitted", {
+        category,
+      });
+    },
     vendorConnected(distinctId, vendor) {
       forwardCapture(distinctId, "vendor_connected", { vendor });
     },

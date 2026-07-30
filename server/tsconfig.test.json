@@ -4,6 +4,11 @@
     "noEmit": true,
     "rootDir": ".."
   },
-  "include": ["src/**/*.ts", "test/analytics.test.ts", "test/vendor*.test.ts"],
+  "include": [
+    "src/**/*.ts",
+    "test/analytics.test.ts",
+    "test/support*.test.ts",
+    "test/vendor*.test.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

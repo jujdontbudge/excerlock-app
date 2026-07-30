@@ -22,6 +22,10 @@ behind `index.ts`; consumers do not deep-import them.
 - `vendor_webhook_events` retains the exact thin callback notification. Its
   `(vendor, delivery_key)` unique index makes replays idempotent, while
   `(user_id, received_at, id)` supports stable device cursor reads.
+- `support_requests` stores the submitted category and content.
+  Feature-category submissions create one linked `feature_requests` row.
+- `feature_request_votes` has a unique `(feature_request_id, user_id)` index,
+  making retry and double-tap votes idempotent at the database boundary.
 - This schema stores account and integration transport state only.
 - Earning and screen-time balance logic never runs or persists here.
 

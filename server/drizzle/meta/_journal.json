@@ -8,6 +8,13 @@
       "when": 1785352840196,
       "tag": "0000_nice_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785381108197,
+      "tag": "0001_brave_echo",
+      "breakpoints": true
     }
   ]
 }

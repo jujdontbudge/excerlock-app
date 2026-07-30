@@ -6,6 +6,8 @@ Self-contained Node 22+ Fastify API skeleton for the ExcerLock VPS backend.
 
 - Public liveness is exposed at `GET /v1/health`.
 - User-facing APIs live under `/v1` and pass through the Clerk auth boundary.
+- Support submissions persist through `POST /v1/support`; feature requests are
+  listed and voted on through `/v1/feature-requests`.
 - OAuth callbacks and signed vendor webhook receivers are the intentionally
   public exceptions; connect, disconnect, and cursor reads require Clerk.
 - Drizzle/Postgres, Sentry, and PostHog initialize lazily or no-op when their
@@ -22,6 +24,8 @@ stay behind the server composition and service boundaries.
 - The server stores account/integration state and proxies trusted services.
 - Vendor webhooks are notify-only: the server records thin raw notifications
   but does not fetch or interpret activity details in the webhook path.
+- Support and feature persistence records submitted content and votes only.
+  A database unique index allows one vote per user and feature request.
 - Earning and screen-time balance computation are always on-device and never
   implemented in this package.
 

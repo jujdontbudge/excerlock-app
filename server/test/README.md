@@ -1,7 +1,10 @@
 # Server test support
 
-Contract: hides shared integration-test support, including the future PGlite harness. Invariants: module
-behavior tests remain beside source under `__tests__/`; this directory contains no production behavior.
+Contract: hides shared integration-test support, including the postgres-js
+execution boundary used to exercise real Drizzle SQL generation. Invariants:
+fixtures contain no production behavior and database doubles respond only at
+the external driver seam.
 
-Fixtures: PGlite lifecycle support arrives with the first database test. Run all consumers with
-`npm run test:server` from the repository root.
+Fixtures: `postgresJsTestDatabase.ts` records statements, parameters, and
+transaction entry without requiring a live Postgres process. Run all consumers
+with `npm run test:server` from the repository root.
