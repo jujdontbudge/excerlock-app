@@ -70,7 +70,7 @@ type AnalysisViewOptions = {
   /** Current condition names keyed by the immutable ids stored in day summaries. */
   conditionNames?: Readonly<Record<string, string>>;
   /** Schedule's one precedence law, injected so this pure view owns no store. */
-  classifyRequirementDay?: RequirementDayClassifier;
+  classifyDay?: RequirementDayClassifier;
   /** The caller's explicit current ledger day when it extends past the record. */
   throughDayIndex?: number;
 };
@@ -82,7 +82,7 @@ export function buildAnalysisView(
     period = "week",
     confessedDailyMinutes = null,
     conditionNames = {},
-    classifyRequirementDay,
+    classifyDay,
     throughDayIndex,
   }: AnalysisViewOptions = {},
 ): AnalysisView {
@@ -96,7 +96,9 @@ export function buildAnalysisView(
     window,
     windowTotals: selectTotals(window),
     allTimeTotals: selectTotals(days),
-    streak: selectStreak(days),
+    streak: selectStreak(days, {
+      ...(classifyDay === undefined ? {} : { classifyDay }),
+    }),
     bars: selectBars(window),
     conditionBreakdown: selectConditionBreakdown(window, conditionNames),
     ledger: [...window].reverse(),
@@ -104,9 +106,9 @@ export function buildAnalysisView(
     recap: buildRecap(days, { confessedDailyMinutes, weekStartsOn }),
     requirementHeatMap: buildRequirementHeatMap(days, {
       weekStartsOn,
-      ...(classifyRequirementDay === undefined
+      ...(classifyDay === undefined
         ? {}
-        : { classifyDay: classifyRequirementDay }),
+        : { classifyDay }),
       ...(throughDayIndex === undefined ? {} : { throughDayIndex }),
       conditionNames,
     }),
