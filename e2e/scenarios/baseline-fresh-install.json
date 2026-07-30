@@ -1,7 +1,7 @@
 {
   "name": "baseline-fresh-install",
   "version": 1,
-  "description": "Onboarding complete with a clean ledger, no conditions, and no connected vendors.",
+  "description": "Coverage baseline with a clean ledger, one walking condition, and no connected vendors.",
   "clock": {
     "now": "2026-07-29T09:41:00-04:00",
     "playback": "manual"
@@ -13,7 +13,17 @@
       "baseAllowanceMinutes": 45,
       "journal": []
     },
-    "conditions": [],
+    "conditions": [
+      {
+        "kind": "state",
+        "signal": "walking",
+        "source": "motion",
+        "reward": {
+          "type": "sustainedUnlock"
+        },
+        "exitGraceMs": 120000
+      }
+    ],
     "shield": {
       "armedMonitors": []
     },
