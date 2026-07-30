@@ -81,6 +81,21 @@ describe("AnalysisScreen", () => {
     );
   });
 
+  it("defaults to the real Home journal rather than the Phase 2 fixture", async () => {
+    setRealHistory([
+      historyEntry("real-first-day", Date.UTC(2025, 0, 1, 12), 5),
+    ]);
+
+    await render(<AnalysisScreen />);
+
+    const rows = screen.getAllByTestId(/^analysis-day-row-/);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent(/^Wed 1 Jan/);
+    expect(
+      screen.getByTestId(`condition-earning-${stepGoal.id}`),
+    ).toHaveTextContent(/^Step goal5m$/);
+  });
+
   it("derives the real journal through the injected instant using the configured day boundary", async () => {
     const beforeBoundary = Date.UTC(2025, 0, 5, 3, 30);
     const afterBoundary = Date.UTC(2025, 0, 5, 4, 30);
