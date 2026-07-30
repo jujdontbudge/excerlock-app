@@ -12,7 +12,7 @@ env:
     link: excerlock://e2e/scenario/${SCENARIO}
 - runFlow:
     when:
-      visible: 'Open in "ExcerLock"'
+      visible: 'Open in .ExcerLock.\?'
     commands:
       - tapOn: Open
 

@@ -17,7 +17,7 @@ env:
     link: excerlock://e2e/scenario/${SCENARIO}?overrides=${SCENARIO_OVERRIDES}
 - runFlow:
     when:
-      visible: 'Open in "ExcerLock"'
+      visible: 'Open in .ExcerLock.\?'
     commands:
       - tapOn: Open
 
