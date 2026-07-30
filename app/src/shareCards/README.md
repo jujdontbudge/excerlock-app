@@ -20,6 +20,14 @@ location, locked-app name, health reading, account identifier, user name, or
 photo. The `ExcerLock` wordmark is rendered by each template and cannot be
 removed through input data.
 
+The three necessary text readings are opaque after construction. Callers use
+`createRecapShareCardInput` or `createMilestoneShareCardInput`; those constructors
+accept only the short date-range grammar (`20–26 Jul`), a milestone name whose
+number matches its hero (`30-Day Streak`), and a month-plus-year unlock date
+(`July 2026`). Appending a source, location, or identity throws before the value
+can become a template input. Aggregate readings are finite non-negative
+integers, and active days cannot exceed scheduled active days.
+
 `__typechecks__/inputTypeLaw.ts` gives every forbidden category its own compiler
 control. The source-name control was run once without `@ts-expect-error`; the
 compiler rejected `topSourceName: "Gym visit"` because that field does not exist
@@ -35,10 +43,12 @@ gradient and constrains the rendered card to `SHARE_CARD_FORMATS`: 1080×1920
 Story or 1080×1080 Feed. The preview scales that same target to the available
 screen space; its toggle changes the actual target ratio, not merely a label.
 
-`MilestoneShareCard` accepts badge art as an injected React element. Ticket #74
-owns that asset and its `design/STYLE.md` process; this module creates no badge
-art. The milestone shelf/entry point is not built here, so only the template is
-ready for that future caller.
+`MilestoneShareCard` accepts badge art as an injected bundled-image module id,
+not an arbitrary React element or URI. That keeps text and user-photo sources
+outside the slot by type. Ticket #74 owns the actual asset and its
+`design/STYLE.md` process; this module creates no badge art. The milestone
+shelf/entry point is not built here, so only the template is ready for that
+future caller.
 
 `RecapShareCard` renders the three public facts only. Analysis row ③ may still
 say `"7 earns · most from Gym visit"` inside the app, but `RecapShareAction`
@@ -68,7 +78,7 @@ unavailable.
 
 | Path | Responsibility |
 |---|---|
-| `ShareCardInput.ts` | privacy-safe recap and milestone projection types |
+| `ShareCardInput.ts` | privacy-safe projection types and their validating constructors |
 | `ShareCardFormat.ts` | Story/Feed output geometry |
 | `ShareCardModule.ts` | capture + native-share interface and result types |
 | `MockShareCardModule.ts` | deterministic, explicitly simulated adapter |
@@ -86,7 +96,8 @@ From the repository root:
 npm run test:app -- shareCards
 ```
 
-The suite covers both templates at both ratios, wordmark/content laws, the
-compile-time privacy boundary, the deterministic boundary/accessor, preview
-toggle behavior, and capture-to-handoff behavior. Analysis' `RecapCard` suite
-covers the full rich-recap projection and live Share button.
+The suite covers both templates at both ratios, wordmark/content laws, runtime
+text validation, compile-time field/text/user-photo controls, the deterministic
+boundary/accessor, preview toggle behavior, rest-week wording, and
+capture-to-handoff behavior. Analysis' `RecapCard` suite covers the full
+rich-recap projection and live Share button.
