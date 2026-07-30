@@ -33,7 +33,7 @@ export type Totals = {
 };
 
 export type Streak = {
-  /** The run of meaningful days ending on the last day on record. */
+  /** The meaningful run carried through the last day on record. */
   current: number;
   longest: number;
 };
