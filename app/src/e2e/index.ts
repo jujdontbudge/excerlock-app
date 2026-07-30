@@ -4,6 +4,10 @@ export {
   type FixtureProviderComposition,
   type FixtureProviders,
 } from "./fixtureProviderComposition";
+export {
+  loadScenarioState,
+  type LoadedScenarioState,
+} from "./loadScenarioState";
 export { parseScenarioManifest } from "./parseScenarioManifest";
 export {
   PinnedScenarioClock,
