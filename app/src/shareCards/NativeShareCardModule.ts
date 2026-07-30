@@ -1,3 +1,4 @@
+import * as Sharing from "expo-sharing";
 import { PixelRatio } from "react-native";
 import { captureRef } from "react-native-view-shot";
 
@@ -36,6 +37,10 @@ export class NativeShareCardModule implements ShareCardModule {
   public async presentShareSheet(
     _card: CapturedShareCard,
   ): Promise<ShareCardHandoffResult> {
+    if (!(await Sharing.isAvailableAsync())) {
+      throw new Error("Native sharing is unavailable.");
+    }
+
     throw new Error("Native share-sheet handoff is not implemented.");
   }
 }

@@ -1,3 +1,4 @@
+import * as Sharing from "expo-sharing";
 import { createRef } from "react";
 import { PixelRatio, type View } from "react-native";
 import { captureRef } from "react-native-view-shot";
@@ -8,12 +9,21 @@ jest.mock("react-native-view-shot", () => ({
   captureRef: jest.fn(),
 }));
 
+jest.mock("expo-sharing", () => ({
+  isAvailableAsync: jest.fn(),
+  shareAsync: jest.fn(),
+}));
+
 const mockCaptureRef = jest.mocked(captureRef);
+const mockIsAvailableAsync = jest.mocked(Sharing.isAvailableAsync);
+const mockShareAsync = jest.mocked(Sharing.shareAsync);
 
 describe("NativeShareCardModule", () => {
   beforeEach(() => {
     jest.spyOn(PixelRatio, "get").mockReturnValue(3);
     mockCaptureRef.mockReset();
+    mockIsAvailableAsync.mockReset();
+    mockShareAsync.mockReset();
   });
 
   afterEach(() => {
@@ -69,4 +79,21 @@ describe("NativeShareCardModule", () => {
       });
     },
   );
+
+  it("does not present a share sheet when native sharing is unavailable", async () => {
+    mockIsAvailableAsync.mockResolvedValueOnce(false);
+    const module = new NativeShareCardModule();
+
+    await expect(
+      module.presentShareSheet({
+        fileUri: "file:///tmp/recap-feed.png",
+        mediaType: "image/png",
+        template: "recap",
+        ratio: "feed",
+        width: 1_080,
+        height: 1_080,
+      }),
+    ).rejects.toThrow("Native sharing is unavailable.");
+    expect(mockShareAsync).not.toHaveBeenCalled();
+  });
 });
