@@ -60,6 +60,70 @@ describe("HttpSupportModule", () => {
     ]);
   });
 
+  it("submits a feature request and keeps the server-owned identifiers", async () => {
+    const fetch = jest.fn().mockResolvedValue({
+      status: 201,
+      json: async () => ({
+        submissionId: "server-submission-feature-1",
+        featureRequestId: "server-feature-1",
+      }),
+    });
+    const support = new HttpSupportModule({
+      baseUrl: "https://api.example.test",
+      clock: new ManualSupportClock(1_500),
+      fetch,
+      getAccessToken: async () => "clerk-jwt",
+    });
+
+    await expect(
+      support.submitFeatureRequest({
+        title: "Home Screen widget",
+        message: "Show my balance without opening the app.",
+      }),
+    ).resolves.toEqual({
+      status: "submitted",
+      submissionId: "server-submission-feature-1",
+    });
+
+    expect(fetch).toHaveBeenCalledWith("https://api.example.test/v1/support", {
+      body: JSON.stringify({
+        category: "feature",
+        title: "Home Screen widget",
+        message: "Show my balance without opening the app.",
+      }),
+      headers: {
+        Accept: "application/json",
+        Authorization: "Bearer clerk-jwt",
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+      signal: expect.any(Object),
+    });
+    expect(await support.getSnapshot()).toEqual({
+      submissions: [
+        {
+          id: "server-submission-feature-1",
+          kind: "feature",
+          title: "Home Screen widget",
+          message: "Show my balance without opening the app.",
+          createdAtMs: 1_500,
+          status: "submitted",
+          error: null,
+        },
+      ],
+      featureRequests: [
+        {
+          id: "server-feature-1",
+          title: "Home Screen widget",
+          message: "Show my balance without opening the app.",
+          voteCount: 0,
+          hasVoted: false,
+          submissionId: "server-submission-feature-1",
+        },
+      ],
+    });
+  });
+
   it("saves an offline request and reports that it was not sent", async () => {
     const support = new HttpSupportModule({
       baseUrl: "https://api.example.test",

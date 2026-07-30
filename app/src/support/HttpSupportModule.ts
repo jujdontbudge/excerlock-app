@@ -2,7 +2,9 @@ import type { StateStorage } from "zustand/middleware";
 
 import { SystemSupportClock, type SupportClock } from "./clock";
 import {
+  appendFeatureRequest,
   EMPTY_SUPPORT_SNAPSHOT,
+  makeFeatureSubmission,
   makeSupportSubmission,
   saveSubmission,
 } from "./mockState";
@@ -108,9 +110,22 @@ export class HttpSupportModule implements SupportModule {
   }
 
   public async submitFeatureRequest(
-    _request: Readonly<{ title: string; message: string }>,
+    request: Readonly<{ title: string; message: string }>,
   ): Promise<SubmitSupportResult> {
-    throw new Error("Feature submission is not implemented");
+    await this.ready;
+    const { submission, featureRequest } = makeFeatureSubmission(
+      this.localId("feature"),
+      request.title,
+      request.message,
+      this.clock.nowMs(),
+    );
+    await this.publish(
+      saveSubmission(
+        appendFeatureRequest(this.snapshot, featureRequest),
+        submission,
+      ),
+    );
+    return this.attemptSubmission(submission);
   }
 
   public async retrySubmission(
@@ -168,10 +183,10 @@ export class HttpSupportModule implements SupportModule {
     try {
       response = await this.postSupport({
         category: submission.kind,
-        message: submission.message,
         ...(submission.kind === "feature"
           ? { title: submission.title }
           : {}),
+        message: submission.message,
       });
     } catch (error) {
       return this.failSubmission(
@@ -186,15 +201,43 @@ export class HttpSupportModule implements SupportModule {
       return this.failSubmission(submission, REQUEST_REJECTED_ERROR);
     }
     const responseBody = await response.json();
-    const submissionId = readSubmissionId(response.status, responseBody);
+    const receipt = readSubmissionReceipt(
+      response.status,
+      responseBody,
+      submission.kind,
+    );
     const submitted: SupportSubmission = Object.freeze({
       ...submission,
-      id: submissionId,
+      id: receipt.submissionId,
       status: "submitted",
       error: null,
     });
-    await this.replaceSubmission(submission.id, submitted);
-    return Object.freeze({ status: "submitted", submissionId });
+    await this.publish(
+      Object.freeze({
+        ...this.snapshot,
+        submissions: Object.freeze(
+          this.snapshot.submissions.map((candidate) =>
+            candidate.id === submission.id ? submitted : candidate,
+          ),
+        ),
+        featureRequests: Object.freeze(
+          this.snapshot.featureRequests.map((featureRequest) =>
+            featureRequest.submissionId === submission.id &&
+            receipt.featureRequestId !== null
+              ? Object.freeze({
+                  ...featureRequest,
+                  id: receipt.featureRequestId,
+                  submissionId: receipt.submissionId,
+                })
+              : featureRequest,
+          ),
+        ),
+      }),
+    );
+    return Object.freeze({
+      status: "submitted",
+      submissionId: receipt.submissionId,
+    });
   }
 
   private async postSupport(body: Readonly<Record<string, string>>) {
@@ -260,7 +303,11 @@ export class HttpSupportModule implements SupportModule {
   }
 }
 
-function readSubmissionId(status: number, value: unknown): string {
+function readSubmissionReceipt(
+  status: number,
+  value: unknown,
+  kind: SupportSubmission["kind"],
+): Readonly<{ submissionId: string; featureRequestId: string | null }> {
   if (
     status !== 201 ||
     typeof value !== "object" ||
@@ -271,7 +318,21 @@ function readSubmissionId(status: number, value: unknown): string {
   ) {
     throw new Error("Support server returned an invalid submission response");
   }
-  return value.submissionId;
+  if (
+    kind === "feature" &&
+    (!("featureRequestId" in value) ||
+      typeof value.featureRequestId !== "string" ||
+      value.featureRequestId.trim().length === 0)
+  ) {
+    throw new Error("Support server returned an invalid submission response");
+  }
+  return Object.freeze({
+    submissionId: value.submissionId,
+    featureRequestId:
+      kind === "feature" && "featureRequestId" in value
+        ? (value.featureRequestId as string)
+        : null,
+  });
 }
 
 function isAbortError(error: unknown): boolean {
