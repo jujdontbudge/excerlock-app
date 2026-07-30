@@ -41,6 +41,10 @@ HTTP failures are explicit:
 - a `4xx` remains visible but is not retryable as the same request;
 - an invalid success receipt fails closed instead of leaving `Sending…`.
 
+An unsent feature remains in submission history but is not presented as
+votable. Vote failures resolve as explicit results and never change the visible
+count without a valid server receipt.
+
 ## Mock and HTTP swap point
 
 `HttpSupportModule` is the production adapter. It posts support and feature
