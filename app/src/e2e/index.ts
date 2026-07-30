@@ -10,6 +10,10 @@ export {
 } from "./loadScenarioState";
 export { parseScenarioManifest } from "./parseScenarioManifest";
 export {
+  loadScenarioDeepLink,
+  type LoadedScenario,
+} from "./scenarioDeepLink";
+export {
   PinnedScenarioClock,
   type E2EClock,
 } from "./scenarioClock";
