@@ -104,10 +104,11 @@ describe("MilestonesShelf", () => {
   it("starts one staggered scale-in sequence for all pending unlocks", async () => {
     const start = jest.fn();
     const stop = jest.fn();
+    const reset = jest.fn();
     const spring = jest.spyOn(Animated, "spring");
     const stagger = jest
       .spyOn(Animated, "stagger")
-      .mockReturnValue({ start, stop } as Animated.CompositeAnimation);
+      .mockReturnValue({ reset, start, stop });
 
     await render(
       <MilestonesShelf
