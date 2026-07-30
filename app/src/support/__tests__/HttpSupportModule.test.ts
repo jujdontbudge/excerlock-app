@@ -206,4 +206,55 @@ describe("HttpSupportModule", () => {
       error: { code: "request_rejected" },
     });
   });
+
+  it("restores an offline request after restart and retries it manually", async () => {
+    const first = new HttpSupportModule({
+      baseUrl: "https://api.example.test",
+      clock: new ManualSupportClock(6_000),
+      fetch: jest
+        .fn()
+        .mockRejectedValue(new TypeError("Network request failed")),
+      getAccessToken: async () => "clerk-jwt",
+    });
+    await first.submitSupport({
+      message: "Keep this through an app restart.",
+    });
+
+    const retryFetch = jest.fn().mockResolvedValue({
+      status: 201,
+      json: async () => ({ submissionId: "server-submission-2" }),
+    });
+    const restored = new HttpSupportModule({
+      baseUrl: "https://api.example.test",
+      fetch: retryFetch,
+      getAccessToken: async () => "fresh-clerk-jwt",
+    });
+
+    expect((await restored.getSnapshot()).submissions[0]).toMatchObject({
+      id: "local-support-6000-1",
+      message: "Keep this through an app restart.",
+      status: "failed",
+      error: { code: "offline" },
+    });
+    await expect(
+      restored.retrySubmission("local-support-6000-1"),
+    ).resolves.toEqual({
+      status: "submitted",
+      submissionId: "server-submission-2",
+    });
+    expect(retryFetch).toHaveBeenCalledWith(
+      "https://api.example.test/v1/support",
+      expect.objectContaining({
+        body: JSON.stringify({
+          category: "support",
+          message: "Keep this through an app restart.",
+        }),
+      }),
+    );
+    expect((await restored.getSnapshot()).submissions[0]).toMatchObject({
+      id: "server-submission-2",
+      status: "submitted",
+      error: null,
+    });
+  });
 });

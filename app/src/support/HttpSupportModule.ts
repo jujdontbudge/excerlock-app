@@ -104,12 +104,74 @@ export class HttpSupportModule implements SupportModule {
       this.clock.nowMs(),
     );
     await this.publish(saveSubmission(this.snapshot, submission));
+    return this.attemptSubmission(submission);
+  }
 
+  public async submitFeatureRequest(
+    _request: Readonly<{ title: string; message: string }>,
+  ): Promise<SubmitSupportResult> {
+    throw new Error("Feature submission is not implemented");
+  }
+
+  public async retrySubmission(
+    submissionId: string,
+  ): Promise<SubmitSupportResult> {
+    await this.ready;
+    const submission = this.snapshot.submissions.find(
+      (candidate) => candidate.id === submissionId,
+    );
+    if (submission === undefined) {
+      throw new Error(`Unknown support submission: ${submissionId}`);
+    }
+    if (submission.status === "submitted") {
+      return Object.freeze({ status: "submitted", submissionId });
+    }
+    if (
+      submission.status === "failed" &&
+      submission.error.code === "request_rejected"
+    ) {
+      return Object.freeze({
+        status: "failed",
+        submissionId,
+        error: submission.error,
+      });
+    }
+
+    const retrying: SupportSubmission = Object.freeze({
+      ...submission,
+      status: "submitting",
+      error: null,
+    });
+    await this.replaceSubmission(submission.id, retrying);
+    return this.attemptSubmission(retrying);
+  }
+
+  public async voteOnFeatureRequest(
+    _featureRequestId: string,
+  ): Promise<VoteOnFeatureRequestResult> {
+    throw new Error("Feature voting is not implemented");
+  }
+
+  public subscribe(listener: SupportStateListener): SupportUnsubscribe {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private localId(kind: SupportSubmission["kind"]): string {
+    return `local-${kind}-${this.clock.nowMs()}-${this.nextLocalId++}`;
+  }
+
+  private async attemptSubmission(
+    submission: SupportSubmission,
+  ): Promise<SubmitSupportResult> {
     let response: SupportHttpResponse;
     try {
       response = await this.postSupport({
-        category: "support",
+        category: submission.kind,
         message: submission.message,
+        ...(submission.kind === "feature"
+          ? { title: submission.title }
+          : {}),
       });
     } catch (error) {
       return this.failSubmission(
@@ -133,33 +195,6 @@ export class HttpSupportModule implements SupportModule {
     });
     await this.replaceSubmission(submission.id, submitted);
     return Object.freeze({ status: "submitted", submissionId });
-  }
-
-  public async submitFeatureRequest(
-    _request: Readonly<{ title: string; message: string }>,
-  ): Promise<SubmitSupportResult> {
-    throw new Error("Feature submission is not implemented");
-  }
-
-  public async retrySubmission(
-    _submissionId: string,
-  ): Promise<SubmitSupportResult> {
-    throw new Error("Support retry is not implemented");
-  }
-
-  public async voteOnFeatureRequest(
-    _featureRequestId: string,
-  ): Promise<VoteOnFeatureRequestResult> {
-    throw new Error("Feature voting is not implemented");
-  }
-
-  public subscribe(listener: SupportStateListener): SupportUnsubscribe {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  }
-
-  private localId(kind: SupportSubmission["kind"]): string {
-    return `local-${kind}-${this.clock.nowMs()}-${this.nextLocalId++}`;
   }
 
   private async postSupport(body: Readonly<Record<string, string>>) {
