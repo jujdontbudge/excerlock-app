@@ -41,4 +41,22 @@ describe("RecapShareCard", () => {
     expect(screen.getByText("ExcerLock")).toBeOnTheScreen();
     expect(screen.queryByText(/most from|gym visit/i)).toBeNull();
   });
+
+  it("calls a week with no scheduled active days a Rest week", async () => {
+    await render(
+      <RecapShareCard
+        input={createRecapShareCardInput({
+          reclaimedMinutes: 420,
+          activeDays: 0,
+          scheduledActiveDays: 0,
+          earnCount: 0,
+          weekDateRange: "20–26 Jul",
+        })}
+        ratio="feed"
+      />,
+    );
+
+    expect(screen.getByTestId("share-active-days")).toHaveTextContent(/^Rest week$/);
+    expect(screen.queryByText(/0 of 0/)).toBeNull();
+  });
 });

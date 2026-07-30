@@ -36,7 +36,9 @@ export function RecapShareCard({
 
       <View style={[styles.facts, { gap: spacing.md }]}>
         <Text testID="share-active-days" style={typography.numeric}>
-          {input.activeDays} of {input.scheduledActiveDays} active days
+          {input.scheduledActiveDays === 0
+            ? "Rest week"
+            : `${input.activeDays} of ${input.scheduledActiveDays} active days`}
         </Text>
         <Text testID="share-earn-count" style={typography.numeric}>
           {input.earnCount} {input.earnCount === 1 ? "earn" : "earns"}
