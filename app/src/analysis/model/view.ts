@@ -103,7 +103,11 @@ export function buildAnalysisView(
     conditionBreakdown: selectConditionBreakdown(window, conditionNames),
     ledger: [...window].reverse(),
     monthReclaimed: selectTimeReclaimed(selectMonth(days), confessedDailyMinutes),
-    recap: buildRecap(days, { confessedDailyMinutes, weekStartsOn }),
+    recap: buildRecap(days, {
+      confessedDailyMinutes,
+      weekStartsOn,
+      ...(classifyDay === undefined ? {} : { classifyDay }),
+    }),
     requirementHeatMap: buildRequirementHeatMap(days, {
       weekStartsOn,
       ...(classifyDay === undefined

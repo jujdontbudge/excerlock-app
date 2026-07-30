@@ -211,6 +211,16 @@ describe("AnalysisScreen", () => {
     expect(screen.getByTestId("streak-current")).toHaveTextContent(/^2$/);
   });
 
+  it("uses scheduled-active days for the visible recap denominator", async () => {
+    useScheduleStore.setState({ recurringRestWeekdays: [2] });
+
+    await render(<AnalysisScreen {...fixtureProps} />);
+
+    expect(screen.getByTestId("recap-active-days")).toHaveTextContent(
+      /^6 of 6 days$/,
+    );
+  });
+
   it("uses the real schedule classification for requirement cells", async () => {
     useScheduleStore.setState({ recurringRestWeekdays: [2] });
     const monday = FIXTURE_DAY_SUMMARIES[14];
