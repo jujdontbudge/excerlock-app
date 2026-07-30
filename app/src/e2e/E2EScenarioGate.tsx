@@ -41,12 +41,6 @@ export function E2EScenarioGate({
 
   useEffect(() => {
     let cancelled = false;
-    // This build exists only to run flows, so say out loud which URL reached
-    // the gate. A flow that lands on Unmatched Route is otherwise
-    // indistinguishable from one where the gate never saw the link at all.
-    console.log(
-      `[E2E] gate url=${String(url)} scenario=${String(matchScenarioDeepLink(url))}`,
-    );
     if (!isScenarioDeepLink(url)) {
       setState({ status: "idle", url });
       return;

@@ -6,9 +6,12 @@ jest.mock(
 
 const mockReplace = jest.fn();
 
+// The gate reads both linking sources, because on the simulator only React
+// Native's delivered the cold-launch URL. Here the Expo-module hook is the
+// empty one, which is exactly the arrangement that broke the flows.
 jest.mock("expo-linking", () => ({
-  useLinkingURL: () =>
-    "excerlock://e2e/scenario/baseline-fresh-install",
+  useLinkingURL: () => null,
+  useURL: () => "excerlock://e2e/scenario/baseline-fresh-install",
 }));
 jest.mock("expo-router", () => ({
   useRouter: () => ({ replace: mockReplace }),

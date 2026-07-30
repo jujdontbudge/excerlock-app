@@ -1,4 +1,3 @@
-import { useLinkingURL } from "expo-linking";
 import { useRouter } from "expo-router";
 import {
   useCallback,
@@ -16,6 +15,7 @@ import {
 } from "@/subscription/accessor";
 
 import { E2EScenarioGate } from "./E2EScenarioGate";
+import { useScenarioUrl } from "./scenarioUrlSource";
 import type { LoadedScenario } from "./scenarioDeepLink";
 
 export type E2ERuntimeRootProps = Readonly<{
@@ -26,7 +26,7 @@ export type E2ERuntimeRootProps = Readonly<{
 export function E2ERuntimeRoot({
   children,
 }: E2ERuntimeRootProps) {
-  const url = useLinkingURL();
+  const url = useScenarioUrl();
   const router = useRouter();
   const uninstallHomeRuntime = useRef<(() => void) | null>(null);
   const uninstallSubscriptionModule =
