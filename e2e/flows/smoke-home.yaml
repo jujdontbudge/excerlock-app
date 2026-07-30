@@ -1,66 +1,39 @@
-# ============================================================================
-# TEMPLATE — the app does not exist yet. Do not expect this flow to run.
-# Placeholder values marked TBD:
-#   appId            → ios.bundleIdentifier of the e2e simulator build (TBD)
-#   deep-link scheme → excerlock:// assumed; confirm when the app registers it
-#   testIDs          → tab-bar testID convention below is the proposal the app
-#                      build should adopt (tab-<name>, screen-<name>)
-# Pattern documented in docs/research/e2e-loop.md (ticket #20).
-# ============================================================================
-appId: com.excerlock.app # TBD — replace with real bundle identifier
+appId: com.johansardar.excerlock
+name: Home — walking holds zero-balance apps open
 tags:
   - smoke
   - home
+  - walking
+  - zero-balance
 env:
-  SCENARIO: baseline-fresh-install # fixture scenario the mock boundary loads
+  # One bundled scenario. This patch changes two supported axes: the clock
+  # replays the walking fixture and the balance starts at zero.
+  SCENARIO: baseline-fresh-install
+  SCENARIO_OVERRIDES: "%7B%22clock%22%3A%7B%22playback%22%3A%22auto%22%2C%22speed%22%3A60%7D%2C%22state%22%3A%7B%22ledger%22%3A%7B%22baseAllowanceMinutes%22%3A0%7D%7D%7D"
 ---
-# Launch clean and load the named mock scenario via deep link.
 - launchApp:
     clearState: true
 - openLink:
-    link: excerlock://e2e/scenario/${SCENARIO}
-# First-ever deep link on a fresh sim shows an iOS confirm dialog once.
+    link: excerlock://e2e/scenario/${SCENARIO}?overrides=${SCENARIO_OVERRIDES}
 - runFlow:
     when:
       visible: 'Open in "ExcerLock"'
     commands:
       - tapOn: Open
 
-# Tab bar is the app's spine: Home / Manage / Analysis / Settings.
 - extendedWaitUntil:
     visible:
-      id: tab-home
+      id: home-screen
     timeout: 10000
-
-# --- Home ---
-- tapOn:
-    id: tab-home
+- assertNotVisible:
+    id: screen-e2e-error
+- extendedWaitUntil:
+    visible:
+      id: lock-hero-unlocked
+    timeout: 10000
 - assertVisible:
-    id: screen-home
-# TODO(app): assert balance card renders for ${SCENARIO}
-
-# --- Manage ---
-- tapOn:
-    id: tab-manage
-- assertVisible:
-    id: screen-manage
-
-# --- Analysis ---
-- tapOn:
-    id: tab-analysis
-- assertVisible:
-    id: screen-analysis
-
-# --- Settings ---
-- tapOn:
-    id: tab-settings
-- assertVisible:
-    id: screen-settings
-
-# --- Visual gate (enable once baselines are blessed; see e2e/README.md) ---
-# - tapOn:
-#     id: tab-home
-# - waitForAnimationToEnd
-# - assertScreenshot:
-#     path: ../baselines/home-default.png
-#     thresholdPercentage: 99.5
+    id: lock-hero-balance
+- assertVisible: "Active · apps unlocked"
+- assertVisible: "While walking is holding your apps open"
+- waitForAnimationToEnd
+- takeScreenshot: home-walking-zero-balance

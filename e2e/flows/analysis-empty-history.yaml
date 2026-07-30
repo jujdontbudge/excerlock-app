@@ -1,0 +1,32 @@
+appId: com.johansardar.excerlock
+name: Analysis — empty history
+tags:
+  - analysis
+  - empty-history
+env:
+  SCENARIO: baseline-fresh-install
+---
+- launchApp:
+    clearState: true
+- openLink:
+    link: excerlock://e2e/scenario/${SCENARIO}
+- runFlow:
+    when:
+      visible: 'Open in "ExcerLock"'
+    commands:
+      - tapOn: Open
+
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- assertNotVisible:
+    id: screen-e2e-error
+- tapOn: Analysis
+- assertVisible:
+    id: analysis-screen
+- assertVisible:
+    id: analysis-empty
+- assertVisible: Nothing to analyse yet
+- waitForAnimationToEnd
+- takeScreenshot: analysis-empty-history

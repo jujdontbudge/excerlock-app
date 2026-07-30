@@ -1,0 +1,48 @@
+appId: com.johansardar.excerlock
+name: Paywall — free tier purchases monthly
+tags:
+  - paywall
+  - free
+env:
+  SCENARIO: baseline-fresh-install
+  SCENARIO_OVERRIDES: "%7B%22state%22%3A%7B%22onboarding%22%3A%22fresh%22%2C%22entitlement%22%3A%22free%22%7D%7D"
+---
+- launchApp:
+    clearState: true
+- openLink:
+    link: excerlock://e2e/scenario/${SCENARIO}?overrides=${SCENARIO_OVERRIDES}
+- runFlow:
+    when:
+      visible: 'Open in "ExcerLock"'
+    commands:
+      - tapOn: Open
+
+- extendedWaitUntil:
+    visible: Earn your screen time
+    timeout: 10000
+- assertNotVisible:
+    id: screen-e2e-error
+- tapOn: Get started
+- tapOn: Continue
+- tapOn: Take it back
+- tapOn: Continue
+- tapOn: Choose apps
+
+- extendedWaitUntil:
+    visible: Unlock the full ExcerLock plan
+    timeout: 10000
+- assertVisible: Annual and monthly plans
+- assertVisible: "Annual, $59.99 / year"
+- assertVisible: "Monthly, $9.99 / month"
+- assertVisible: Start free trial
+- tapOn: Restore Purchases
+- assertVisible: No previous purchase was found.
+- tapOn: "Monthly, $9.99 / month"
+- assertVisible: Continue with monthly
+- waitForAnimationToEnd
+- takeScreenshot: paywall-free-monthly
+- tapOn: Continue with monthly
+
+- extendedWaitUntil:
+    visible: Create your account
+    timeout: 10000

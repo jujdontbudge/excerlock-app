@@ -1,0 +1,75 @@
+appId: com.johansardar.excerlock
+name: Settings — notifications and support
+tags:
+  - settings
+  - notifications
+  - support
+env:
+  SCENARIO: baseline-fresh-install
+---
+- launchApp:
+    clearState: true
+- openLink:
+    link: excerlock://e2e/scenario/${SCENARIO}
+- runFlow:
+    when:
+      visible: 'Open in "ExcerLock"'
+    commands:
+      - tapOn: Open
+
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- assertNotVisible:
+    id: screen-e2e-error
+- tapOn: Settings
+- assertVisible:
+    id: settings-screen
+
+- scrollUntilVisible:
+    element:
+      id: notification-settings-card
+    direction: DOWN
+- extendedWaitUntil:
+    visible: "Notifications access: Not set up"
+    timeout: 10000
+- tapOn:
+    id: notification-toggle-afternoonNudge
+- assertVisible:
+    id: notification-permission-primer
+- assertVisible: Choose what helps
+- tapOn: Allow notifications
+- extendedWaitUntil:
+    visible: Notifications are on
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      text: Contact support
+    direction: DOWN
+- tapOn: Contact support
+- assertVisible:
+    id: support-composer
+- tapOn: How can we help?
+- inputText: E2E support request
+- hideKeyboard
+- tapOn: Send support request
+- assertVisible: E2E support request
+- assertVisible: Sent
+
+- tapOn: Request a feature
+- assertVisible:
+    id: support-composer
+- tapOn: Feature title
+- inputText: E2E dashboard
+- tapOn: What would make ExcerLock better?
+- inputText: Show the deterministic E2E state.
+- hideKeyboard
+- tapOn: Submit feature request
+- assertVisible: E2E dashboard
+- assertVisible: Vote for E2E dashboard
+- tapOn: Vote for E2E dashboard
+- assertVisible: Voted for E2E dashboard
+- waitForAnimationToEnd
+- takeScreenshot: settings-support-history
