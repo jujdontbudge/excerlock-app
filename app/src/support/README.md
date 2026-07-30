@@ -10,6 +10,7 @@ adapter through `getSupportModule()`, or mount `SupportSettingsCard`.
 
 - support and feature submission;
 - one vote per feature request, with an explicit `alreadyVoted` result;
+- background refresh of the server-authoritative feature-request list;
 - manual retry for failed submissions;
 - a snapshot of submissions and feature requests;
 - snapshot change subscription for renderers.
@@ -22,32 +23,49 @@ again`.
 ## Offline decision: save, report, and retry manually
 
 Offline and failed sends are **not automatically queued**. They are saved under
-`excerlock.support.mock.v1`, reported truthfully as not sent, and retried only
-after the user taps `Try again`. This keeps support work independent from core
-app behavior and avoids implying that a background send will happen when no
-such worker exists.
+the legacy `excerlock.support.mock.v1` key, reported truthfully as not sent,
+and retried only after the user taps `Try again`. The key name is intentionally
+unchanged so requests created with the mock survive the HTTP swap. This keeps
+support work independent from core app behavior and avoids implying that a
+background send will happen when no such worker exists.
 
-The mock awaits every persistence write before resolving an action. A
-submission that was persisted as `submitting` before an app interruption is
-restored as `failed` with an interruption explanation, never as a request that
-is still sending forever. Persisted values are validated before crossing the
-boundary.
+Both adapters await every persistence write before resolving an action. A
+submission persisted as `submitting` before an app interruption is restored as
+`failed` with an interruption explanation, never as a request that is still
+sending forever. Persisted values are validated before crossing the boundary.
+
+HTTP failures are explicit:
+
+- offline and timeout failures remain manually retryable;
+- a `5xx` remains manually retryable as temporary server unavailability;
+- a `4xx` remains visible but is not retryable as the same request;
+- an invalid success receipt fails closed instead of leaving `Sending…`.
+
+An unsent feature remains in submission history but is not presented as
+votable. Vote failures resolve as explicit results and never change the visible
+count without a valid server receipt.
 
 ## Mock and HTTP swap point
+
+`HttpSupportModule` is the production adapter. It posts support and feature
+requests to `POST /v1/support`, refreshes from `GET /v1/feature-requests`, and
+votes through `POST /v1/feature-requests/:featureRequestId/votes`. Server
+identifiers and vote counts replace local placeholders only after a valid
+server receipt.
 
 `MockSupportModule` is deterministic and persistent. Its online state, next
 submission result, and clock are test drivers only; none cross the public
 interface. The mock class is deliberately not exported from `index.ts`.
 
-`getSupportModule()` is the single composition root. The real HTTP client will
-replace the constructor in `accessor.ts` without changing Settings or other
-callers.
+`getSupportModule()` is the single composition root and constructs the HTTP
+adapter. `EXPO_PUBLIC_API_URL` supplies its base URL using Expo's public
+build-time configuration; it is a host, not a secret. A missing value degrades
+to the same saved offline behavior rather than crashing.
 
-The audited server contract currently exposes only `POST /v1/support`, whose
-route returns the shared `501 Not Implemented` response. It exposes no decided
-feature-list or vote route in `server/src/routes/support.ts`. This app module
-therefore does not invent an endpoint or an HTTP payload. The persistent mock
-remains the composition root until those server route shapes exist.
+The HTTP adapter accepts an async access-token provider and sends a bearer token
+when one exists. The composition root is currently keyless because the app's
+separate Clerk adapter has not landed; it embeds no credential and lets the
+protected server route return its defined `401` rejection.
 
 ## Analytics ownership
 
@@ -64,6 +82,8 @@ From the repository root:
 npm run test:app -- support
 ```
 
-The boundary suite covers successful and failed sends, offline/manual retry,
-remount persistence, feature submission, voting and double-vote handling. The
-renderer suite covers truthful state display and the Settings composer flows.
+The boundary suite covers authenticated route payloads, feature refresh and
+voting, offline/manual retry, timeout, `5xx`, `4xx`, malformed receipts, and
+remount persistence. The renderer suite covers truthful state display and the
+Settings composer flows. `supportAnalytics.test.tsx` guards the server-owned
+analytics boundary.

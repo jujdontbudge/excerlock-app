@@ -68,6 +68,10 @@ export class MockSupportModule implements SupportModule {
     return this.snapshot;
   }
 
+  public async refreshFeatureRequests(): Promise<void> {
+    await this.ready;
+  }
+
   public async submitSupport(request: Readonly<{
     message: string;
   }>): Promise<SubmitSupportResult> {

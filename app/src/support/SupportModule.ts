@@ -9,7 +9,11 @@ type SupportSubmissionContent =
   | Readonly<{ kind: "feature"; title: string }>;
 
 export type SupportError = Readonly<{
-  code: "service_unavailable" | "offline";
+  code:
+    | "service_unavailable"
+    | "offline"
+    | "request_rejected"
+    | "timeout";
   message: string;
 }>;
 
@@ -45,17 +49,24 @@ export type SubmitSupportResult =
       error: SupportError;
     }>;
 
-export type VoteOnFeatureRequestResult = Readonly<{
-  status: "voted" | "alreadyVoted";
-  featureRequestId: string;
-  voteCount: number;
-}>;
+export type VoteOnFeatureRequestResult =
+  | Readonly<{
+      status: "voted" | "alreadyVoted";
+      featureRequestId: string;
+      voteCount: number;
+    }>
+  | Readonly<{
+      status: "failed";
+      featureRequestId: string;
+      error: SupportError;
+    }>;
 
 export type SupportStateListener = (snapshot: SupportSnapshot) => void;
 export type SupportUnsubscribe = () => void;
 
 export interface SupportModule {
   getSnapshot(): Promise<SupportSnapshot>;
+  refreshFeatureRequests(): Promise<void>;
   submitSupport(request: Readonly<{ message: string }>): Promise<SubmitSupportResult>;
   submitFeatureRequest(
     request: Readonly<{ title: string; message: string }>,

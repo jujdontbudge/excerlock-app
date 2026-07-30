@@ -80,6 +80,42 @@ describe("SupportSettingsCard", () => {
     expect(screen.queryByText("Not sent")).toBeNull();
   });
 
+  it("keeps a rejected request visible without offering the same request again", async () => {
+    const support = new MockSupportModule();
+    support.setNextSubmissionResult({
+      status: "failed",
+      code: "request_rejected",
+      message:
+        "The server couldn't accept this request. It wasn't sent. Check it and submit a new request.",
+    });
+    await render(<SupportSettingsCard module={support} />);
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Contact support" }),
+    );
+    await fireEvent.changeText(
+      screen.getByLabelText("How can we help?"),
+      "The server rejected this.",
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Send support request" }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Not sent")).toBeOnTheScreen();
+    });
+    expect(
+      screen.getByText(
+        "The server couldn't accept this request. It wasn't sent. Check it and submit a new request.",
+      ),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole("button", {
+        name: "Try again: The server rejected this.",
+      }),
+    ).toBeNull();
+  });
+
   it("submits a feature request and lets the user vote once", async () => {
     const support = new MockSupportModule();
     await render(<SupportSettingsCard module={support} />);

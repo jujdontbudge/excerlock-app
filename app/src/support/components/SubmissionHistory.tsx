@@ -54,11 +54,13 @@ export function SubmissionHistory({
           {submission.status === "failed" ? (
             <>
               <Text style={typography.body}>{submission.error.message}</Text>
-              <PillButton
-                label={`Try again: ${submission.kind === "feature" ? submission.title : submission.message}`}
-                onPress={() => void support.retrySubmission(submission.id)}
-                variant="secondary"
-              />
+              {submission.error.code !== "request_rejected" ? (
+                <PillButton
+                  label={`Try again: ${submission.kind === "feature" ? submission.title : submission.message}`}
+                  onPress={() => void support.retrySubmission(submission.id)}
+                  variant="secondary"
+                />
+              ) : null}
             </>
           ) : null}
         </View>
