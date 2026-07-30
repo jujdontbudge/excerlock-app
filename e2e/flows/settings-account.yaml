@@ -36,6 +36,8 @@ env:
     element:
       text: Signed out
     direction: DOWN
+    # Tab bar floats over content, so centre the row before tapping it.
+    centerElement: true
 - assertVisible: Signed out
 - tapOn: Sign in
 - assertVisible: Signed in
@@ -51,6 +53,8 @@ env:
     element:
       text: member@excerlock.test
     direction: DOWN
+    # Tab bar floats over content, so centre the row before tapping it.
+    centerElement: true
 - assertVisible: Signed in
 - tapOn: Sign out
 - assertVisible: Signed out

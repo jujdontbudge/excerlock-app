@@ -37,7 +37,9 @@ env:
 - tapOn: Increase goal
 - assertVisible: "1,000 steps"
 - tapOn: Fixed minutes
-- assertVisible: 5 minutes
+# The builder renders the reward as "5 min" (and its range as "5 min - 120 min"),
+# matching the compact duration format used across the app.
+- assertVisible: "5 min"
 - tapOn: Preview
 
 - assertVisible: Preview

@@ -27,14 +27,20 @@ env:
 - tapOn: "Manage, tab.*"
 - assertVisible:
     id: manage-screen
+# The app renders durations compactly everywhere -- "45m" here, "4h 0m" in the
+# range label below it, "45m of screen time left" on Home. "45 minutes" is a
+# string the app never produces, so bind the assertion to the value element and
+# its real text rather than to a free-floating phrase.
 - assertVisible:
     id: manage-allowance-value
-- assertVisible: 45 minutes
+    text: "45m"
 
 - scrollUntilVisible:
     element:
       id: schedule-rules-card
     direction: DOWN
+    # Tab bar floats over content, so centre the card before acting on it.
+    centerElement: true
 - tapOn: Monday rest day
 - assertVisible:
     id: schedule-weekday-status-1
@@ -44,6 +50,8 @@ env:
     element:
       id: manage-row-e2e-condition-1
     direction: DOWN
+    # Tab bar floats over content, so centre the card before acting on it.
+    centerElement: true
 - tapOn:
     id: manage-toggle-e2e-condition-1
 - assertVisible:

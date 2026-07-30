@@ -2,7 +2,7 @@ import type { ConfiguredCondition, PickerContext } from "@excerlock/condition-mo
 import { useMemo, useReducer } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { PillButton, Screen, useTheme } from "@/ui";
+import { FLOATING_TAB_BAR_HEIGHT, PillButton, Screen, useTheme } from "@/ui";
 
 import { builderCatalog, findOption } from "./builderCatalog";
 import {
@@ -121,7 +121,18 @@ export function ConditionBuilderSheet({
           ) : null}
         </ScrollView>
 
-        <View style={[styles.footer, { gap: spacing.md, padding: spacing.gutter }]}>
+        {/* The tab bar floats over this sheet, so the actions must sit above
+            it — otherwise a tap on "Preview" lands on a tab and switches away. */}
+        <View
+          style={[
+            styles.footer,
+            {
+              gap: spacing.md,
+              padding: spacing.gutter,
+              paddingBottom: spacing.gutter + FLOATING_TAB_BAR_HEIGHT,
+            },
+          ]}
+        >
           {/* Back retraces the steps the sheet opened on — never behind them. */}
           {draft.step === initialDraft.step ? null : (
             <PillButton

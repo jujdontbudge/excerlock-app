@@ -23,6 +23,19 @@ export const TAB_ROUTES = [
  * Bar chrome for the four-plain-tab shell: no bar background at all, so each
  * screen's own gradient runs unbroken to the bottom edge behind the glyphs.
  */
+/**
+ * Height the floating tab bar occupies over the content beneath it.
+ *
+ * `tabBarStyle.position` is `absolute` so the gradient shows through, which
+ * means the bar draws ON TOP of whatever a screen renders at its bottom edge.
+ * Anything a user must tap down there has to reserve this much room or the tap
+ * lands on a tab instead: observed 2026-07-30 on the simulator, where tapping
+ * the condition builder's "Preview" button switched to the Analysis tab.
+ *
+ * This is the bar itself; add the bottom safe-area inset on top of it.
+ */
+export const FLOATING_TAB_BAR_HEIGHT = 49;
+
 export function tabScreenOptions() {
   return {
     headerShown: false,

@@ -33,8 +33,10 @@ env:
     element:
       id: notification-settings-card
     direction: DOWN
+    # Tab bar floats over content, so centre the row before tapping it.
+    centerElement: true
 - extendedWaitUntil:
-    visible: "Notifications access: Not set up"
+    visible: "Notifications are not set up"
     timeout: 10000
 - tapOn:
     id: notification-toggle-afternoonNudge
@@ -50,6 +52,8 @@ env:
     element:
       text: Contact support
     direction: DOWN
+    # Tab bar floats over content, so centre the row before tapping it.
+    centerElement: true
 - tapOn: Contact support
 - assertVisible:
     id: support-composer

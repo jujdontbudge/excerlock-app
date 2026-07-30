@@ -41,7 +41,9 @@ env:
 - assertVisible: Nothing is locked yet
 - tapOn: Allow Screen Time
 - extendedWaitUntil:
-    visible: "Screen Time access: On"
+    # The card reads "Screen Time is on" with an "On" status pill beside it;
+    # "Screen Time access: On" is a string the app never renders.
+    visible: "Screen Time is on"
     timeout: 10000
 - tapOn: Choose apps
 - scrollUntilVisible:
