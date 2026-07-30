@@ -176,6 +176,17 @@ export function selectTotals(days: DayRange): Totals {
   };
 }
 
+/**
+ * One activity is one condition-day that met the meaningful bar. The ledger
+ * already deflates repeated events inside a condition-day into this count.
+ */
+export function selectActivityCount(days: DayRange): number {
+  return days.reduce(
+    (sum, day) => sum + day.meaningfulConditionCount,
+    0,
+  );
+}
+
 /** One earned/spent bar pair per day, pre-scaled so the view only lays out flex heights. */
 export function selectBars(days: DayRange): Bar[] {
   const peak = days.reduce(
