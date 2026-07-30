@@ -11,6 +11,9 @@ export {
   type FeatureRequestService,
 } from "./featureRequests.js";
 export {
+  createDrizzleSupportSubmissionRepository,
+} from "./drizzleRepository.js";
+export {
   createFeatureRequestVoteService,
   type FeatureRequestVoteResult,
   type FeatureRequestVoteService,
