@@ -24,3 +24,5 @@ both preserves the share card's month and keeps time outside every pure read.
 `useMilestoneUnlockAnimation.ts` owns the visit's single native-driver scale-in
 sequence. Pending badges receive stable scale values in catalog order and enter
 with the completion animation's spring physics, staggered 120 ms apart.
+The Analysis route advances the visit key from Expo Router's focus boundary, so
+an unlock discovered while the mounted tab is open waits for the next return.
