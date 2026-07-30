@@ -16,14 +16,13 @@
 #      artifact bundles in out/artifacts/ (screenshot + view hierarchy)
 #   2  environment not ready (maestro / pinned sim / build missing)
 #
-# TEMPLATE — the app does not exist yet. Placeholders below are TBD.
 # ============================================================================
 set -euo pipefail
 
-# ---- app identifiers (TBD until the app scaffold lands) --------------------
-APP_BUNDLE_ID="${APP_BUNDLE_ID:-com.excerlock.app}" # TBD: real bundle id
-APP_BINARY="${APP_BINARY:-}"                        # TBD: path to ExcerLock.app (e2e profile build); empty = skip install
-SIM_NAME="${SIM_NAME:-ExcerLock-E2E}"               # pinned device (HARNESS.md §6.1)
+# ---- app identifiers --------------------------------------------------------
+APP_BUNDLE_ID="${APP_BUNDLE_ID:-com.johansardar.excerlock}"
+APP_BINARY="${APP_BINARY:-}"          # release-style e2e .app; empty = use installed build
+SIM_NAME="${SIM_NAME:-ExcerLock-E2E}" # pinned device (HARNESS.md §6.1)
 
 E2E_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="$E2E_DIR/out"
@@ -34,11 +33,23 @@ EXCLUDE_TAGS="visual,wip"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --tags)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo "run-suite.sh: --tags requires a value" >&2
+        exit 2
+      fi
       INCLUDE_TAGS="$2"
       shift 2
       ;;
     --flow)
-      TARGET="$2"
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        echo "run-suite.sh: --flow requires a value" >&2
+        exit 2
+      fi
+      case "$2" in
+        /*) TARGET="$2" ;;
+        flows/*) TARGET="$E2E_DIR/$2" ;;
+        *) TARGET="$E2E_DIR/flows/$2" ;;
+      esac
       shift 2
       ;;
     --with-visual)
@@ -59,6 +70,14 @@ if ! command -v maestro >/dev/null 2>&1; then
 fi
 if ! command -v jq >/dev/null 2>&1; then
   echo "run-suite.sh: jq not found" >&2
+  exit 2
+fi
+if ! command -v xcrun >/dev/null 2>&1; then
+  echo "run-suite.sh: xcrun not found (Xcode command-line tools are required)" >&2
+  exit 2
+fi
+if [[ ! -e "$TARGET" ]]; then
+  echo "run-suite.sh: flow target '$TARGET' does not exist" >&2
   exit 2
 fi
 
@@ -84,6 +103,10 @@ if [[ -n "$APP_BINARY" ]]; then
     exit 2
   fi
   xcrun simctl install "$E2E_UDID" "$APP_BINARY"
+fi
+if ! xcrun simctl get_app_container "$E2E_UDID" "$APP_BUNDLE_ID" app >/dev/null 2>&1; then
+  echo "run-suite.sh: '$APP_BUNDLE_ID' is not installed — set APP_BINARY to a release-style e2e simulator build" >&2
+  exit 2
 fi
 
 # ---- run --------------------------------------------------------------------
