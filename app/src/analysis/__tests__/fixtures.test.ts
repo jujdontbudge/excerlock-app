@@ -45,6 +45,23 @@ describe("fixture day summaries", () => {
     }
   });
 
+  it("timestamps qualifying fixture conditions without inventing a zero", () => {
+    for (const day of FIXTURE_DAY_SUMMARIES) {
+      for (const condition of Object.values(day.conditions)) {
+        if (condition.meaningfulActivity) {
+          expect(condition.firstQualifiedAtMs).toBeGreaterThanOrEqual(
+            day.dayStartMs,
+          );
+          expect(condition.firstQualifiedAtMs).toBeLessThan(
+            day.dayStartMs + DAY_MS,
+          );
+        } else {
+          expect(condition.firstQualifiedAtMs).toBeUndefined();
+        }
+      }
+    }
+  });
+
   it("attributes every banked minute to the condition that produced it", () => {
     for (const day of FIXTURE_DAY_SUMMARIES) {
       const attributed = Object.values(day.conditions).reduce(
