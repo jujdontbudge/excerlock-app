@@ -124,6 +124,20 @@ describe('daySummaries', () => {
     expect(day!.meaningfulActivity).toBe(true)
   })
 
+  it('records the first qualifying event outcome, not the first journal entry or latest firing', () => {
+    const [day] = daySummaries(
+      journalOf([
+        drain(at(0, 7)),
+        event(at(0, 8), 'gym-arrive'),
+        event(at(0, 9), 'gym-arrive'),
+      ]),
+      config,
+      at(0, 23),
+    )
+
+    expect(day!.conditions['gym-arrive']!.firstQualifiedAtMs).toBe(at(0, 8))
+  })
+
   it('rate credits qualify only at the app-fixed 15-minute floor', () => {
     expect(RATE_STREAK_FLOOR_MINUTES).toBe(15)
     const below = daySummaries(journalOf([rate(at(0, 8), 'steps', 14.9)]), config, at(0, 23))[0]!
@@ -133,12 +147,77 @@ describe('daySummaries', () => {
     expect(atFloor.conditions['steps']!.meaningfulActivity).toBe(true)
   })
 
+  it('keeps the first rate-floor crossing after a correction and requalification', () => {
+    const [day] = daySummaries(
+      journalOf([
+        rate(at(0, 8), 'steps', 8),
+        rate(at(0, 9), 'steps', 7),
+        rate(at(0, 10), 'steps', -10),
+        rate(at(0, 11), 'steps', 10),
+      ]),
+      config,
+      at(0, 23),
+    )
+
+    expect(day!.conditions.steps).toMatchObject({
+      rateMinutes: 15,
+      firstQualifiedAtMs: at(0, 9),
+      meaningfulActivity: true,
+    })
+  })
+
   it('sustained states qualify only at the app-fixed 10-minute floor', () => {
     expect(STATE_STREAK_FLOOR_MINUTES).toBe(10)
     const below = daySummaries(journalOf([sustained(at(0, 8), 'walking', 9)]), config, at(0, 23))[0]!
     const atFloor = daySummaries(journalOf([sustained(at(0, 8), 'walking', 4), sustained(at(0, 9), 'walking', 6)]), config, at(0, 23))[0]!
     expect(below.meaningfulActivity).toBe(false)
     expect(atFloor.conditions['walking']!.meaningfulActivity).toBe(true)
+  })
+
+  it('records state qualification within the configured ledger day and omits non-qualifiers', () => {
+    const shiftedConfig = { ...config, dayBoundaryOffsetMinutes: 4 * 60 }
+    const days = daySummaries(
+      journalOf([
+        sustained(at(0, 3, 59), 'walking', 10),
+        sustained(at(0, 4), 'walking', 4),
+        sustained(at(0, 4), 'stretching', 9),
+        sustained(at(0, 5), 'walking', 6),
+      ]),
+      shiftedConfig,
+      at(0, 23),
+    )
+
+    expect(days.map((day) => day.dayIndex)).toEqual([-1, 0])
+    expect(days[0]!.conditions.walking!.firstQualifiedAtMs).toBe(at(0, 3, 59))
+    expect(days[1]!.conditions.walking!.firstQualifiedAtMs).toBe(at(0, 5))
+    expect(days[1]!.conditions.stretching).not.toHaveProperty('firstQualifiedAtMs')
+  })
+
+  it('orders identical qualification timestamps by condition id and preserves boundary zero', () => {
+    const atBoundary = at(0, 0)
+    const zCondition: JournalEntry = {
+      ...event(atBoundary, 'z-condition'),
+      id: 'a-entry',
+    }
+    const aCondition: JournalEntry = {
+      ...event(atBoundary, 'a-condition'),
+      id: 'z-entry',
+    }
+    const pending: JournalEntry = {
+      ...rate(atBoundary, 'pending', 14),
+      id: 'm-entry',
+    }
+
+    const summarize = (entries: JournalEntry[]) =>
+      daySummaries(journalOf(entries), config, at(0, 23))[0]!
+    const forward = summarize([zCondition, aCondition, pending])
+    const reversed = summarize([pending, aCondition, zCondition])
+
+    expect(Object.keys(forward.conditions)).toEqual(['a-condition', 'z-condition', 'pending'])
+    expect(Object.keys(reversed.conditions)).toEqual(Object.keys(forward.conditions))
+    expect(forward.conditions['a-condition']!.firstQualifiedAtMs).toBe(0)
+    expect(forward.conditions['z-condition']!.firstQualifiedAtMs).toBe(0)
+    expect(forward.conditions.pending).not.toHaveProperty('firstQualifiedAtMs')
   })
 
   it('counts a condition once per day regardless of how many times it fires (activity definition §3.13)', () => {

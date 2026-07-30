@@ -1,5 +1,9 @@
 import { dayEndMs, dayIndexFor, dayStartMs, MIN_MS } from './day'
 import { entryKey } from './journal'
+import {
+  RATE_STREAK_FLOOR_MINUTES,
+  STATE_STREAK_FLOOR_MINUTES,
+} from './qualification'
 import type { Journal, JournalEntry, LedgerConfig, Minutes } from './types'
 
 /** A shield holiday: [startMs, endMs) during which shields are down and the balance does not drain. */
@@ -14,6 +18,8 @@ export interface ConditionDayTotals {
   stateSustainedMinutes: Minutes
   /** Minutes this condition actually banked today. */
   earnedMinutes: Minutes
+  /** Local wall-clock timestamp when this condition first met its daily activity bar. */
+  firstQualifiedAtMs?: number
 }
 
 export interface DayState {
@@ -92,6 +98,7 @@ function reduceDay(
       case 'earn': {
         const totals = conditionTotals(perCondition, entry.conditionId)
         totals.eventsFired += 1
+        totals.firstQualifiedAtMs ??= entry.atMs
         const { payout } = entry
         if (payout.type === 'fixedChunk') {
           balance += payout.minutes
@@ -108,13 +115,20 @@ function reduceDay(
         const totals = conditionTotals(perCondition, entry.conditionId)
         const banked = bankedRateMinutes(entry.minutes, balance, totals.earnedMinutes)
         totals.rateMinutes += banked
+        if (totals.rateMinutes >= RATE_STREAK_FLOOR_MINUTES) {
+          totals.firstQualifiedAtMs ??= entry.atMs
+        }
         totals.earnedMinutes += banked
         balance += banked
         earned += banked
         break
       }
       case 'stateSustained': {
-        conditionTotals(perCondition, entry.conditionId).stateSustainedMinutes += entry.minutes
+        const totals = conditionTotals(perCondition, entry.conditionId)
+        totals.stateSustainedMinutes += entry.minutes
+        if (totals.stateSustainedMinutes >= STATE_STREAK_FLOOR_MINUTES) {
+          totals.firstQualifiedAtMs ??= entry.atMs
+        }
         break
       }
       case 'drainTick': {

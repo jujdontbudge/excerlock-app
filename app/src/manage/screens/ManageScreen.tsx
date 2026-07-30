@@ -9,6 +9,7 @@ import {
   useHomeStore,
 } from "@/home";
 import { getLockController, type LockController } from "@/lock";
+import { ScheduleRulesCard } from "@/schedule";
 import { Screen, SectionHeader, useTheme } from "@/ui";
 
 import { AllowanceCard } from "../components/AllowanceCard";
@@ -108,6 +109,14 @@ export function ManageScreen({
               onChange={setBaseAllowanceMinutes}
               onFullLockChange={setFullLock}
             />
+          </View>
+
+          <View style={{ gap: spacing.md }}>
+            <SectionHeader
+              title="Your rules"
+              subtitle="Choose training days, planned time away, and exceptions."
+            />
+            <ScheduleRulesCard />
           </View>
 
           {rows.length === 0 ? (

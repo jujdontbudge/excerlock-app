@@ -1,13 +1,18 @@
-import { reduceLedger, type Holiday } from './reduce'
+import {
+  reduceLedger,
+  type ConditionDayTotals,
+  type Holiday,
+} from './reduce'
+import {
+  RATE_STREAK_FLOOR_MINUTES,
+  STATE_STREAK_FLOOR_MINUTES,
+} from './qualification'
 import type { Journal, LedgerConfig, Minutes } from './types'
 
-/**
- * App-fixed streak floors (PRD §3.13 / §8 — integrity constants, never user-set):
- * a rate condition day is meaningful at ≥ 15 banked minutes, a state condition
- * day at ≥ 10 sustained minutes. Events are meaningful the moment they fire.
- */
-export const RATE_STREAK_FLOOR_MINUTES = 15
-export const STATE_STREAK_FLOOR_MINUTES = 10
+export {
+  RATE_STREAK_FLOOR_MINUTES,
+  STATE_STREAK_FLOOR_MINUTES,
+} from './qualification'
 
 export interface ConditionDaySummary {
   eventsFired: number
@@ -19,6 +24,12 @@ export interface ConditionDaySummary {
    * summaries created before attribution existed.
    */
   earnedMinutes?: Minutes
+  /**
+   * Local wall-clock timestamp of this condition's first qualifying outcome.
+   * Present for qualifying conditions produced by `daySummaries`; optional for
+   * compatibility with stored/manual summaries created before this existed.
+   */
+  firstQualifiedAtMs?: number
   /** Did this condition meet the §3.13 meaningful-activity bar today? */
   meaningfulActivity: boolean
 }
@@ -36,6 +47,10 @@ export interface DaySummary {
   /** Total locked-group usage (holiday + clamped usage included) — the Time-Reclaimed input. */
   usageMinutes: Minutes
   holidays: readonly Holiday[]
+  /**
+   * Per-condition totals in first-qualified order. Identical timestamps use
+   * condition id as a stable tie-break; conditions that never qualified follow.
+   */
   conditions: Readonly<Record<string, ConditionDaySummary>>
   /** Any condition met its bar today (the streak's per-day predicate). */
   meaningfulActivity: boolean
@@ -55,12 +70,24 @@ function isMeaningful(totals: {
   )
 }
 
+function compareConditions(
+  [conditionIdA, totalsA]: [string, ConditionDayTotals],
+  [conditionIdB, totalsB]: [string, ConditionDayTotals],
+): number {
+  const firstA = totalsA.firstQualifiedAtMs
+  const firstB = totalsB.firstQualifiedAtMs
+  if (firstA === undefined && firstB !== undefined) return 1
+  if (firstA !== undefined && firstB === undefined) return -1
+  if (firstA !== undefined && firstB !== undefined && firstA !== firstB) return firstA - firstB
+  return conditionIdA < conditionIdB ? -1 : conditionIdA > conditionIdB ? 1 : 0
+}
+
 /** Per-day summary records from the first journal entry through `throughMs`, gap days included. */
 export function daySummaries(journal: Journal, config: LedgerConfig, throughMs: number): DaySummary[] {
   return reduceLedger(journal, config, throughMs).map((day) => {
     const conditions: Record<string, ConditionDaySummary> = {}
     let meaningfulConditionCount = 0
-    for (const [conditionId, totals] of Object.entries(day.perCondition)) {
+    for (const [conditionId, totals] of Object.entries(day.perCondition).sort(compareConditions)) {
       const meaningfulActivity = isMeaningful(totals)
       if (meaningfulActivity) meaningfulConditionCount += 1
       conditions[conditionId] = { ...totals, meaningfulActivity }
