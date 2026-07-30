@@ -69,7 +69,10 @@ export function createRecapShareCardInput(
   }
 
   return Object.freeze({
-    ...candidate,
+    reclaimedMinutes: candidate.reclaimedMinutes,
+    activeDays: candidate.activeDays,
+    scheduledActiveDays: candidate.scheduledActiveDays,
+    earnCount: candidate.earnCount,
     weekDateRange: candidate.weekDateRange as ShareCardWeekDateRange,
   });
 }
@@ -90,8 +93,8 @@ export function createMilestoneShareCardInput(
   }
 
   return Object.freeze({
-    ...candidate,
     milestoneName: candidate.milestoneName as ShareCardMilestoneName,
+    achievementNumber: candidate.achievementNumber,
     unlockMonth: candidate.unlockMonth as ShareCardUnlockMonth,
   });
 }
