@@ -136,6 +136,23 @@ test("Onboarding flow covers every rail screen with premium entitlement", async 
   assert.match(flow, /takeScreenshot: onboarding-premium-paywall/);
 });
 
+test("Paywall flow covers free entitlement and a monthly purchase", async () => {
+  const flow = await read("flows/paywall-free-tier.yaml");
+
+  assert.match(flow, new RegExp(`^appId: ${APP_ID}$`, "m"));
+  assert.match(flow, new RegExp(`^  SCENARIO: ${BUNDLED_SCENARIO}$`, "m"));
+  assert.match(
+    flow,
+    /excerlock:\/\/e2e\/scenario\/\$\{SCENARIO\}\?overrides=\$\{SCENARIO_OVERRIDES\}/,
+  );
+  assert.match(flow, /Unlock the full ExcerLock plan/);
+  assert.match(flow, /Annual, \$59\.99 \/ year/);
+  assert.match(flow, /Monthly, \$9\.99 \/ month/);
+  assert.match(flow, /Continue with monthly/);
+  assert.match(flow, /takeScreenshot: paywall-free-monthly/);
+  assert.match(flow, /Create your account/);
+});
+
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
