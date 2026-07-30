@@ -17,12 +17,17 @@ type MilestoneBadgeButtonProps = Readonly<{
   badge: MilestoneBadge;
   isNew: boolean;
   onPress: () => void;
+  unlockSequence: Readonly<{
+    index: number;
+    total: number;
+  }> | null;
 }>;
 
 export function MilestoneBadgeButton({
   badge,
   isNew,
   onPress,
+  unlockSequence,
 }: MilestoneBadgeButtonProps) {
   const { colors, typography } = useTheme();
   const unlocked = badge.state === "unlocked";
@@ -46,7 +51,7 @@ export function MilestoneBadgeButton({
         .filter(Boolean)
         .join(", ");
 
-  return (
+  const button = (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
@@ -92,6 +97,17 @@ export function MilestoneBadgeButton({
         {badge.thresholdLabel}
       </Text>
     </Pressable>
+  );
+
+  return unlockSequence === null ? (
+    button
+  ) : (
+    <View
+      accessible
+      accessibilityLabel={`New milestone ${unlockSequence.index + 1} of ${unlockSequence.total}`}
+    >
+      {button}
+    </View>
   );
 }
 

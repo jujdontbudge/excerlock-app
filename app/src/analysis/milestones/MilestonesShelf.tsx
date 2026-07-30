@@ -28,6 +28,7 @@ import { useMilestoneUnlockStore } from "./unlockStore";
 type MilestonesShelfProps = Readonly<{
   metrics: MilestoneMetrics;
   shareCardModule?: ShareCardModule;
+  unlockSequence?: readonly MilestoneId[];
 }>;
 
 type SelectedShare = Readonly<{
@@ -38,6 +39,7 @@ type SelectedShare = Readonly<{
 export function MilestonesShelf({
   metrics,
   shareCardModule,
+  unlockSequence = [],
 }: MilestonesShelfProps) {
   const { spacing, typography } = useTheme();
   const rows = buildMilestoneRows(metrics);
@@ -79,6 +81,15 @@ export function MilestonesShelf({
               <MilestoneBadgeButton
                 key={badge.id}
                 badge={badge}
+                unlockSequence={
+                  isMilestoneId(badge.id) &&
+                  unlockSequence.includes(badge.id)
+                    ? {
+                        index: unlockSequence.indexOf(badge.id),
+                        total: unlockSequence.length,
+                      }
+                    : null
+                }
                 isNew={
                   isMilestoneId(badge.id) &&
                   records[badge.id]?.isNew === true

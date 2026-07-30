@@ -33,6 +33,10 @@ import {
 } from "../model";
 import type { AnalysisClock } from "../clock";
 import { MilestonesShelf } from "../milestones/MilestonesShelf";
+import {
+  useMilestoneUnlockMoment,
+  type MilestoneHaptics,
+} from "../milestones/unlockMoment";
 
 export type AnalysisScreenProps = {
   /**
@@ -64,6 +68,10 @@ export type AnalysisScreenProps = {
   schedule?: ScheduleRules;
   /** Optional deterministic milestone capture/share boundary for render tests. */
   milestoneShareCardModule?: ShareCardModule;
+  /** Native success feedback boundary; there is intentionally no sound edge. */
+  milestoneHaptics?: MilestoneHaptics;
+  /** Changes once for each focused Analysis visit. */
+  milestoneUnlockVisitKey?: number;
 };
 
 /**
@@ -84,10 +92,16 @@ export function AnalysisScreen({
   conditionNames,
   confessedDailyMinutes,
   schedule,
+  milestoneHaptics,
   milestoneShareCardModule,
+  milestoneUnlockVisitKey = 0,
 }: AnalysisScreenProps) {
   const { spacing, typography } = useTheme();
   const [period, setPeriod] = useState<AnalysisPeriod>("week");
+  const unlockSequence = useMilestoneUnlockMoment(
+    milestoneUnlockVisitKey,
+    milestoneHaptics,
+  );
   const confessed = useConfessionStore((state) => state.confessedDailyMinutes);
   const conditions = useHomeStore((state) => state.conditions);
   const journal = useHomeStore((state) => state.journal);
@@ -169,6 +183,7 @@ export function AnalysisScreen({
         <SectionHeader title="Milestones" />
         <MilestonesShelf
           metrics={view.milestoneMetrics}
+          unlockSequence={unlockSequence}
           shareCardModule={milestoneShareCardModule}
         />
 

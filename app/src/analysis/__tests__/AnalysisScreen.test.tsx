@@ -6,12 +6,14 @@ import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 import { useConfessionStore } from "@/onboarding";
 import { useScheduleStore } from "@/schedule";
 import { gradients } from "@/ui";
+import { MockShareCardModule } from "@/shareCards";
 
 import { AnalysisScreen } from "..";
 import {
   FIXTURE_CONDITION_NAMES,
   FIXTURE_DAY_SUMMARIES,
 } from "../fixtures";
+import { useMilestoneUnlockStore } from "../milestones/unlockStore";
 
 // The screen reads the confession store, which persists through AsyncStorage.
 jest.mock("@react-native-async-storage/async-storage", () =>
@@ -77,6 +79,7 @@ describe("AnalysisScreen", () => {
       holidays: [],
       overrides: [],
     });
+    useMilestoneUnlockStore.setState({ records: {} });
   });
 
   it("sits on the brand gradient under the screen title", async () => {
@@ -319,6 +322,55 @@ describe("AnalysisScreen", () => {
     expect(
       screen.getByRole("header", { name: "Time Reclaimed" }),
     ).toBeOnTheScreen();
+  });
+
+  it("claims pending unlocks as one quiet sequence without opening or sharing anything", async () => {
+    const haptics = { success: jest.fn().mockResolvedValue(undefined) };
+    const shareCards = new MockShareCardModule();
+    const unlockedAtMs = Date.UTC(2026, 6, 26, 18);
+    useMilestoneUnlockStore
+      .getState()
+      .discoverUnlocks(["streak-3", "activity-1"], unlockedAtMs);
+
+    const view = await render(
+      <AnalysisScreen
+        {...fixtureProps}
+        confessedDailyMinutes={240}
+        milestoneHaptics={haptics}
+        milestoneShareCardModule={shareCards}
+      />,
+    );
+
+    expect(
+      await screen.findByLabelText("New milestone 1 of 2"),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByLabelText("New milestone 2 of 2"),
+    ).toBeOnTheScreen();
+    expect(haptics.success).toHaveBeenCalledTimes(1);
+    expect(
+      useMilestoneUnlockStore.getState().records["streak-3"]?.pending,
+    ).toBe(false);
+    expect(
+      screen.queryByRole("header", { name: "Share your milestone" }),
+    ).toBeNull();
+    expect(shareCards.getCapturedCards()).toEqual([]);
+    expect(shareCards.getPresentedCards()).toEqual([]);
+
+    await view.rerender(
+      <AnalysisScreen
+        key="remounted-analysis"
+        {...fixtureProps}
+        confessedDailyMinutes={240}
+        milestoneHaptics={haptics}
+        milestoneShareCardModule={shareCards}
+      />,
+    );
+
+    expect(haptics.success).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("header", { name: "Share your milestone" }),
+    ).toBeNull();
   });
 
   it("joins real ledger condition ids to their names in the condition store", async () => {
