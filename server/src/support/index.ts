@@ -7,6 +7,12 @@ export {
   type SupportSubmissionServiceOptions,
 } from "./submission.js";
 export {
+  createFeatureRequestService,
+  type FeatureRequestService,
+} from "./featureRequests.js";
+export {
+  type FeatureRequestRecord,
+  type FeatureRequestRepository,
   type NewFeatureRequestRecord,
   type NewSupportSubmissionRecord,
   type SupportSubmissionRepository,

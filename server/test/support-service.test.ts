@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  createFeatureRequestService,
   createSupportSubmissionService,
+  type FeatureRequestRecord,
+  type FeatureRequestRepository,
   type NewSupportSubmissionRecord,
   type SupportSubmissionRepository,
   SupportUserNotFoundError,
@@ -19,6 +22,20 @@ class MemorySupportSubmissionRepository
     submission: NewSupportSubmissionRecord,
   ): Promise<void> {
     this.submissions.push(submission);
+  }
+}
+
+class MemoryFeatureRequestRepository implements FeatureRequestRepository {
+  constructor(
+    private readonly featureRequests: readonly FeatureRequestRecord[],
+  ) {}
+
+  async userExists(userId: string): Promise<boolean> {
+    return userId === "user_123";
+  }
+
+  async listFeatureRequests(): Promise<readonly FeatureRequestRecord[]> {
+    return this.featureRequests;
   }
 }
 
@@ -74,5 +91,36 @@ describe("support submission service", () => {
     ).rejects.toEqual(new SupportUserNotFoundError("missing_user"));
     expect(repository.submissions).toEqual([]);
     expect(supportRequestSubmitted).not.toHaveBeenCalled();
+  });
+});
+
+describe("feature request service", () => {
+  it("lists feature requests with the current user's vote state", async () => {
+    const repository = new MemoryFeatureRequestRepository([
+      {
+        id: "feature-request-id",
+        submissionId: "support-request-id",
+        title: "Home Screen widget",
+        message: "Show my balance without opening the app.",
+        voteCount: 3,
+        hasVoted: true,
+        createdAt: new Date("2026-07-29T21:00:00.000Z"),
+      },
+    ]);
+    const service = createFeatureRequestService({ repository });
+
+    await expect(service.list("user_123")).resolves.toEqual({
+      featureRequests: [
+        {
+          id: "feature-request-id",
+          submissionId: "support-request-id",
+          title: "Home Screen widget",
+          message: "Show my balance without opening the app.",
+          voteCount: 3,
+          hasVoted: true,
+          createdAt: new Date("2026-07-29T21:00:00.000Z"),
+        },
+      ],
+    });
   });
 });
