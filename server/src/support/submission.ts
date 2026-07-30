@@ -4,6 +4,7 @@ import type {
   NewSupportSubmissionRecord,
   SupportSubmissionRepository,
 } from "./repository.js";
+import { SupportUserNotFoundError } from "./errors.js";
 
 export type SupportSubmissionInput =
   | Readonly<{
@@ -50,7 +51,7 @@ export function createSupportSubmissionService(
   return {
     async submit(userId, input) {
       if (!(await options.repository.userExists(userId))) {
-        throw new Error(`Unknown user: ${userId}`);
+        throw new SupportUserNotFoundError(userId);
       }
 
       const submissionId = randomId();

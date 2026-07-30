@@ -11,3 +11,4 @@ export {
   type NewSupportSubmissionRecord,
   type SupportSubmissionRepository,
 } from "./repository.js";
+export { SupportUserNotFoundError } from "./errors.js";

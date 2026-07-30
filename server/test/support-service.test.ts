@@ -3,6 +3,7 @@ import {
   createSupportSubmissionService,
   type NewSupportSubmissionRecord,
   type SupportSubmissionRepository,
+  SupportUserNotFoundError,
 } from "../src/support/index.js";
 
 class MemorySupportSubmissionRepository
@@ -55,5 +56,23 @@ describe("support submission service", () => {
     expect(supportRequestSubmitted.mock.calls).toEqual([
       ["user_123", "support"],
     ]);
+  });
+
+  it("rejects an unknown user without persisting or emitting", async () => {
+    const repository = new MemorySupportSubmissionRepository();
+    const supportRequestSubmitted = vi.fn();
+    const service = createSupportSubmissionService({
+      repository,
+      analytics: { supportRequestSubmitted },
+    });
+
+    await expect(
+      service.submit("missing_user", {
+        category: "bug",
+        message: "Permission status is wrong.",
+      }),
+    ).rejects.toEqual(new SupportUserNotFoundError("missing_user"));
+    expect(repository.submissions).toEqual([]);
+    expect(supportRequestSubmitted).not.toHaveBeenCalled();
   });
 });
