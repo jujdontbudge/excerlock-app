@@ -4,6 +4,7 @@ import { buildAnalysisView } from "../model";
 const CONDITION_NAMES = Object.fromEntries(
   Object.values(FIXTURE_CONDITIONS).map(({ id, label }) => [id, label]),
 );
+const RECAP_MOMENT = Date.UTC(2026, 6, 26, 18);
 
 describe("buildAnalysisView", () => {
   it("hands the screen a whole week, its totals, its bars and its rows", () => {
@@ -43,16 +44,38 @@ describe("buildAnalysisView", () => {
   });
 
   it("has no baseline until onboarding provides one", () => {
-    const view = buildAnalysisView(FIXTURE_DAY_SUMMARIES);
+    const view = buildAnalysisView(FIXTURE_DAY_SUMMARIES, {
+      nowMs: RECAP_MOMENT,
+    });
 
     expect(view.monthReclaimed.status).toBe("unconfessed");
     expect(view.recap?.reclaimed.status).toBe("unconfessed");
   });
 
   it("carries the recap for the week containing today", () => {
-    const view = buildAnalysisView(FIXTURE_DAY_SUMMARIES, { confessedDailyMinutes: 240 });
+    const view = buildAnalysisView(FIXTURE_DAY_SUMMARIES, {
+      nowMs: RECAP_MOMENT,
+      confessedDailyMinutes: 240,
+    });
 
     expect(view.recap).toMatchObject({ rangeLabel: "20–26 Jul", deltaMinutes: 44 });
+  });
+
+  it("moves the recap moment with the Start-week-on setting", () => {
+    const nowMs = Date.UTC(2026, 6, 26, 17, 59);
+    const mondayStart = buildAnalysisView(FIXTURE_DAY_SUMMARIES, {
+      nowMs,
+      confessedDailyMinutes: 240,
+      weekStartsOn: 1,
+    });
+    const sundayStart = buildAnalysisView(FIXTURE_DAY_SUMMARIES, {
+      nowMs,
+      confessedDailyMinutes: 240,
+      weekStartsOn: 0,
+    });
+
+    expect(mondayStart.recap).toBeNull();
+    expect(sundayStart.recap).toMatchObject({ rangeLabel: "19–25 Jul" });
   });
 
   it("carries this week's per-condition earning breakdown", () => {

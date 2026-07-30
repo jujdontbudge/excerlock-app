@@ -48,5 +48,10 @@ export {
   type Totals,
 } from "./selectors";
 export { buildRecap, type Recap } from "./recap";
+export {
+  RECAP_FRESHNESS_MS,
+  RECAP_MINUTE_OF_DAY,
+  selectFreshRecap,
+} from "./recapFreshness";
 export { selectTimeReclaimed, type TimeReclaimed } from "./timeReclaimed";
 export { buildAnalysisView, type AnalysisView } from "./view";

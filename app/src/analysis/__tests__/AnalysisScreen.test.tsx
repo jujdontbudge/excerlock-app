@@ -35,6 +35,7 @@ const stepGoal: ConfiguredCondition = {
 const fixtureProps = {
   days: FIXTURE_DAY_SUMMARIES,
   conditionNames: FIXTURE_CONDITION_NAMES,
+  clock: { nowMs: () => Date.UTC(2026, 6, 26, 18) },
 } as const;
 
 function historyEntry(id: string, atMs: number, minutes: number) {
@@ -145,6 +146,28 @@ describe("AnalysisScreen", () => {
     ).toHaveTextContent(/^Step goal30m$/);
   });
 
+  it("generates a recap for an install that is only two days old", async () => {
+    const installedAtMs = Date.UTC(2026, 6, 24, 18);
+    const recapMomentMs = Date.UTC(2026, 6, 26, 18);
+    setRealHistory([
+      historyEntry("first-install-entry", installedAtMs, 5),
+    ]);
+
+    await render(
+      <AnalysisScreen
+        clock={{ nowMs: () => recapMomentMs }}
+        confessedDailyMinutes={240}
+      />,
+    );
+
+    expect(screen.getByTestId("recap-card")).toHaveTextContent(
+      /WEEKLY RECAP · 24–26 Jul/,
+    );
+    expect(screen.getByTestId("recap-delta")).toHaveTextContent(
+      /^Your first week on record$/,
+    );
+  });
+
   it("leads with the recap and the Time Reclaimed hero, in that order", async () => {
     await render(
       <AnalysisScreen {...fixtureProps} confessedDailyMinutes={240} />,
@@ -205,6 +228,8 @@ describe("AnalysisScreen", () => {
       <AnalysisScreen
         days={FIXTURE_DAY_SUMMARIES.slice(14, 17)}
         conditionNames={FIXTURE_CONDITION_NAMES}
+        clock={{ nowMs: () => Date.UTC(2026, 6, 22, 18) }}
+        weekStartsOn={4}
       />,
     );
 
