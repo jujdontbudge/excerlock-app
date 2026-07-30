@@ -43,9 +43,9 @@ describe("RecapCard", () => {
   });
 
   it("breaks level top sources by first-qualified time, including zero", async () => {
-    const source = FIXTURE_DAY_SUMMARIES.at(-1)!;
+    const templateDay = FIXTURE_DAY_SUMMARIES.at(-1)!;
     const tiedDay = {
-      ...source,
+      ...templateDay,
       dayIndex: 0,
       dayStartMs: 0,
       earnedMinutes: 60,
@@ -82,6 +82,36 @@ describe("RecapCard", () => {
 
     expect(screen.getByTestId("recap-activities")).toHaveTextContent(
       /^2 earns · most from Step goal$/,
+    );
+  });
+
+  it("does not claim a top source when its attribution was not recorded", async () => {
+    const templateDay = FIXTURE_DAY_SUMMARIES.at(-1)!;
+    const legacyDay = {
+      ...templateDay,
+      conditions: {
+        "legacy-steps": {
+          eventsFired: 1,
+          rateMinutes: 0,
+          stateSustainedMinutes: 0,
+          meaningfulActivity: true,
+          firstQualifiedAtMs: 0,
+        },
+      },
+      meaningfulActivity: true,
+      meaningfulConditionCount: 1,
+    };
+    const legacyRecap = buildRecap([legacyDay], {
+      confessedDailyMinutes: 240,
+      conditionNames: conditionNameMap([
+        { id: "legacy-steps", catalogId: "steps-goal" },
+      ]),
+    })!;
+
+    await render(<RecapCard recap={legacyRecap} />);
+
+    expect(screen.getByTestId("recap-activities")).toHaveTextContent(
+      /^1 earns$/,
     );
   });
 

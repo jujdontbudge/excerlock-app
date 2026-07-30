@@ -82,6 +82,7 @@ export function buildRecap(
   const reclaimed = selectTimeReclaimed(week, confessedDailyMinutes);
   const previousReclaimed = selectTimeReclaimed(previousWeek, confessedDailyMinutes);
   const totals = selectTotals(week);
+  const topSource = selectConditionBreakdown(week, conditionNames)[0];
 
   return {
     rangeLabel: dayRangeLabel(week[0], week.at(-1)!),
@@ -94,7 +95,7 @@ export function buildRecap(
     dayCount: scheduledActiveWeek.length,
     activityCount: week.reduce((sum, day) => sum + day.meaningfulConditionCount, 0),
     topSourceName:
-      selectConditionBreakdown(week, conditionNames)[0]?.name ?? null,
+      topSource?.status === "recorded" ? topSource.name : null,
     earnedMinutes: totals.earnedMinutes,
     spentMinutes: totals.spentMinutes,
     streak: selectStreak(days, { classifyDay }),
