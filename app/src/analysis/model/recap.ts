@@ -1,4 +1,5 @@
 import { dayRangeLabel, type Weekday } from "./calendar";
+import { selectConditionBreakdown } from "./conditionBreakdown";
 import {
   DEFAULT_WEEK_STARTS_ON,
   selectPreviousWeek,
@@ -16,11 +17,10 @@ import { selectTimeReclaimed, type TimeReclaimed } from "./timeReclaimed";
  * card renders, computed once:
  *
  * ① the week's Time Reclaimed, with a delta against last week · ② active days ·
- * ③ activity count · ④ earned versus spent · ⑤ the streak as the week closes.
+ * ③ activity count + top earning source · ④ earned versus spent · ⑤ the streak
+ * as the week closes.
  *
  * Row ② counts meaningful scheduled-active days against scheduled-active days.
- * Row ③'s "most from Gym visits" remains separate rendering work; its condition
- * names and attribution inputs are described in the module README.
  */
 export type Recap = {
   /** "20–26 Jul" — the week this recap covers. */
@@ -38,6 +38,8 @@ export type Recap = {
   dayCount: number;
   /** ③ One activity = one condition-day that met the bar (PRD §3.13). */
   activityCount: number;
+  /** ③ Display name of the highest-attributed condition in this recap week. */
+  topSourceName: string | null;
   /** ④ */
   earnedMinutes: number;
   spentMinutes: number;
@@ -51,6 +53,8 @@ type RecapOptions = {
   weekStartsOn?: Weekday;
   /** Schedule's precedence result for each ledger day. */
   classifyDay?: StreakDayClassifier;
+  /** Current display names keyed by the immutable ids stored in day summaries. */
+  conditionNames?: Readonly<Record<string, string>>;
 };
 
 const ALL_DAYS_SCHEDULED_ACTIVE: StreakDayClassifier = () => ({
@@ -65,6 +69,7 @@ export function buildRecap(
     confessedDailyMinutes,
     weekStartsOn = DEFAULT_WEEK_STARTS_ON,
     classifyDay = ALL_DAYS_SCHEDULED_ACTIVE,
+    conditionNames = {},
   }: RecapOptions,
 ): Recap | null {
   const week = selectWeek(days, { weekStartsOn });
@@ -88,6 +93,8 @@ export function buildRecap(
     activeDays: scheduledActiveWeek.filter((day) => day.meaningfulActivity).length,
     dayCount: scheduledActiveWeek.length,
     activityCount: week.reduce((sum, day) => sum + day.meaningfulConditionCount, 0),
+    topSourceName:
+      selectConditionBreakdown(week, conditionNames)[0]?.name ?? null,
     earnedMinutes: totals.earnedMinutes,
     spentMinutes: totals.spentMinutes,
     streak: selectStreak(days, { classifyDay }),

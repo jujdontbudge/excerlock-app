@@ -6,7 +6,10 @@ import {
 } from "@/schedule";
 
 import { RecapCard } from "../components";
-import { FIXTURE_DAY_SUMMARIES } from "../fixtures";
+import {
+  FIXTURE_CONDITION_NAMES,
+  FIXTURE_DAY_SUMMARIES,
+} from "../fixtures";
 import { buildRecap } from "../model";
 
 jest.mock("@react-native-async-storage/async-storage", () =>
@@ -16,7 +19,11 @@ jest.mock("@react-native-async-storage/async-storage", () =>
 const recap = (
   days: readonly (typeof FIXTURE_DAY_SUMMARIES)[number][],
   confessedDailyMinutes: number | null,
-) => buildRecap(days, { confessedDailyMinutes })!;
+) =>
+  buildRecap(days, {
+    confessedDailyMinutes,
+    conditionNames: FIXTURE_CONDITION_NAMES,
+  })!;
 
 describe("RecapCard", () => {
   it("renders the PRD's five rows for the week it covers", async () => {
@@ -28,7 +35,9 @@ describe("RecapCard", () => {
     expect(screen.getByTestId("recap-delta")).toHaveTextContent(/^44m more than last week$/);
     // ② ③ ④ ⑤
     expect(screen.getByTestId("recap-active-days")).toHaveTextContent(/^6 of 7 days$/);
-    expect(screen.getByTestId("recap-activities")).toHaveTextContent(/^7$/);
+    expect(screen.getByTestId("recap-activities")).toHaveTextContent(
+      /^7 earns · most from Gym visit$/,
+    );
     expect(screen.getByTestId("recap-earned-spent")).toHaveTextContent(/^3h 41m · 6h 14m$/);
     expect(screen.getByTestId("recap-streak")).toHaveTextContent(/^5 days$/);
   });
@@ -64,7 +73,9 @@ describe("RecapCard", () => {
     expect(screen.getByTestId("recap-usage")).toHaveTextContent(/^6h 14m$/);
     expect(screen.getByTestId("recap-delta")).toHaveTextContent(/daily average/);
     // The rest of the week is unaffected by the missing baseline.
-    expect(screen.getByTestId("recap-activities")).toHaveTextContent(/^7$/);
+    expect(screen.getByTestId("recap-activities")).toHaveTextContent(
+      /^7 earns · most from Gym visit$/,
+    );
   });
 
   it("reads a week that closed without a streak plainly", async () => {

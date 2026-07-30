@@ -117,6 +117,7 @@ export function buildAnalysisView(
             nowMs,
             confessedDailyMinutes,
             weekStartsOn,
+            conditionNames,
             ...(classifyDay === undefined ? {} : { classifyDay }),
           }),
     requirementHeatMap: buildRequirementHeatMap(days, {

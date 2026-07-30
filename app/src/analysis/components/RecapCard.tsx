@@ -65,7 +65,11 @@ export function RecapCard({ recap }: RecapCardProps) {
               : formatDayCount(recap.activeDays, recap.dayCount)
           }
         />
-        <Row label="Activities" testID="recap-activities" value={String(recap.activityCount)} />
+        <Row
+          label="Activities"
+          testID="recap-activities"
+          value={activityLine(recap)}
+        />
         <Row
           label="Earned · spent"
           testID="recap-earned-spent"
@@ -79,6 +83,14 @@ export function RecapCard({ recap }: RecapCardProps) {
       </View>
     </Card>
   );
+}
+
+/** Row ③: the earn count and its highest-attributed ledger source. */
+function activityLine(recap: Recap): string {
+  const count = `${recap.activityCount} earns`;
+  return recap.topSourceName === null
+    ? count
+    : `${count} · most from ${recap.topSourceName}`;
 }
 
 /** Row ①'s second line: the delta, both directions, in the same neutral phrasing. */
