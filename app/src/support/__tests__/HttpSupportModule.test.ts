@@ -349,6 +349,43 @@ describe("HttpSupportModule", () => {
     500,
   );
 
+  it(
+    "times out a hung server receipt instead of leaving it sending",
+    async () => {
+      jest.useFakeTimers();
+      try {
+        const support = new HttpSupportModule({
+          baseUrl: "https://api.example.test",
+          clock: new ManualSupportClock(3_750),
+          fetch: jest.fn().mockResolvedValue({
+            status: 201,
+            json: () => new Promise<never>(() => undefined),
+          }),
+          getAccessToken: async () => "clerk-jwt",
+          requestTimeoutMs: 25,
+        });
+
+        const result = support.submitSupport({
+          message: "Do not wait forever for the receipt.",
+        });
+        await jest.advanceTimersByTimeAsync(25);
+
+        await expect(result).resolves.toEqual({
+          status: "failed",
+          submissionId: "local-support-3750-1",
+          error: {
+            code: "timeout",
+            message:
+              "The request timed out. This wasn't sent. It is saved here so you can try again.",
+          },
+        });
+      } finally {
+        jest.useRealTimers();
+      }
+    },
+    500,
+  );
+
   it("keeps a request retryable when the server is unavailable", async () => {
     const support = new HttpSupportModule({
       baseUrl: "https://api.example.test",

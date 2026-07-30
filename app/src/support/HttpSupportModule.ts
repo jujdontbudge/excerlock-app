@@ -21,9 +21,14 @@ import type {
   VoteOnFeatureRequestResult,
 } from "./SupportModule";
 
-type SupportHttpResponse = Readonly<{
+type RawSupportHttpResponse = Readonly<{
   status: number;
   json(): Promise<unknown>;
+}>;
+
+type SupportHttpResponse = Readonly<{
+  status: number;
+  body: unknown;
 }>;
 
 type SupportFetch = (
@@ -34,7 +39,7 @@ type SupportFetch = (
     method: "GET" | "POST";
     signal: AbortSignal;
   }>,
-) => Promise<SupportHttpResponse>;
+) => Promise<RawSupportHttpResponse>;
 
 export type HttpSupportModuleOptions = Readonly<{
   baseUrl: string;
@@ -105,7 +110,7 @@ export class HttpSupportModule implements SupportModule {
       if (response.status !== 200) {
         return;
       }
-      const featureRequests = readFeatureRequests(await response.json());
+      const featureRequests = readFeatureRequests(response.body);
       const pending = this.snapshot.featureRequests.filter(
         (featureRequest) => {
           const submission = this.snapshot.submissions.find(
@@ -198,7 +203,7 @@ export class HttpSupportModule implements SupportModule {
       `/v1/feature-requests/${encodeURIComponent(featureRequestId)}/votes`,
       "POST",
     );
-    const result = readFeatureVote(response.status, await response.json());
+    const result = readFeatureVote(response.status, response.body);
     await this.publish(
       Object.freeze({
         ...this.snapshot,
@@ -255,7 +260,7 @@ export class HttpSupportModule implements SupportModule {
     try {
       receipt = readSubmissionReceipt(
         response.status,
-        await response.json(),
+        response.body,
         submission.kind,
       );
     } catch {
@@ -314,7 +319,7 @@ export class HttpSupportModule implements SupportModule {
     });
     try {
       const token = await Promise.race([this.getAccessToken(), timedOut]);
-      return await Promise.race([
+      const response = await Promise.race([
         this.fetch(`${this.baseUrl}${path}`, {
           ...(body === undefined ? {} : { body: JSON.stringify(body) }),
           headers: {
@@ -329,6 +334,18 @@ export class HttpSupportModule implements SupportModule {
         }),
         timedOut,
       ]);
+      let responseBody: unknown = null;
+      if (response.status < 400) {
+        try {
+          responseBody = await Promise.race([response.json(), timedOut]);
+        } catch (error) {
+          if (isAbortError(error)) {
+            throw error;
+          }
+          responseBody = null;
+        }
+      }
+      return Object.freeze({ status: response.status, body: responseBody });
     } finally {
       clearTimeout(timeout!);
     }
