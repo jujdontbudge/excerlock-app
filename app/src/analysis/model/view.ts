@@ -1,5 +1,6 @@
 import type { DaySummary } from "@excerlock/ledger";
 
+import { selectMilestoneMetrics } from "../milestones/metrics";
 import type { MilestoneMetrics } from "../milestones/progress";
 import type { Weekday } from "./calendar";
 import {
@@ -15,7 +16,6 @@ import {
 } from "./requirementHeatMap";
 import {
   DEFAULT_WEEK_STARTS_ON,
-  selectActivityCount,
   selectBars,
   selectMonth,
   selectPeriod,
@@ -101,10 +101,6 @@ export function buildAnalysisView(
   const streak = selectStreak(days, {
     ...(classifyDay === undefined ? {} : { classifyDay }),
   });
-  const allTimeReclaimed = selectTimeReclaimed(
-    days,
-    confessedDailyMinutes,
-  );
 
   return {
     isEmpty: days.length === 0,
@@ -137,12 +133,11 @@ export function buildAnalysisView(
       ...(throughDayIndex === undefined ? {} : { throughDayIndex }),
       conditionNames,
     }),
-    milestoneMetrics: {
-      currentStreakDays: streak.current,
-      longestStreakDays: streak.longest,
-      activityCount: selectActivityCount(days),
-      timeReclaimedMinutes: allTimeReclaimed.reclaimedMinutes,
-    },
+    milestoneMetrics: selectMilestoneMetrics(
+      days,
+      confessedDailyMinutes,
+      { ...(classifyDay === undefined ? {} : { classifyDay }) },
+    ),
   };
 }
 
