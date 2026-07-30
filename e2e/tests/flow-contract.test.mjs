@@ -63,3 +63,21 @@ test("Analysis flow covers the empty-history state", async () => {
   assert.match(flow, /Nothing to analyse yet/);
   assert.match(flow, /takeScreenshot: analysis-empty-history/);
 });
+
+test("Analysis flow covers recorded history and period controls", async () => {
+  const flow = await read("flows/analysis-recorded-history.yaml");
+
+  assert.match(flow, new RegExp(`^appId: ${APP_ID}$`, "m"));
+  assert.match(flow, new RegExp(`^  SCENARIO: ${BUNDLED_SCENARIO}$`, "m"));
+  assert.match(
+    flow,
+    /excerlock:\/\/e2e\/scenario\/\$\{SCENARIO\}\?overrides=\$\{SCENARIO_OVERRIDES\}/,
+  );
+  assert.match(flow, /id: earned-spent-card/);
+  assert.match(flow, /id: earned-total/);
+  assert.match(flow, /id: spent-total/);
+  assert.match(flow, /tapOn: Month/);
+  assert.match(flow, /id: condition-breakdown-card/);
+  assert.match(flow, /id: day-ledger/);
+  assert.match(flow, /takeScreenshot: analysis-recorded-history/);
+});

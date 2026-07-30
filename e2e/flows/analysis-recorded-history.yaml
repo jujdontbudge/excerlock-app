@@ -1,0 +1,52 @@
+appId: com.johansardar.excerlock
+name: Analysis — recorded history and period controls
+tags:
+  - analysis
+  - recorded-history
+env:
+  SCENARIO: baseline-fresh-install
+  SCENARIO_OVERRIDES: "%7B%22state%22%3A%7B%22ledger%22%3A%7B%22journal%22%3A%5B%7B%22kind%22%3A%22earn%22%2C%22source%22%3A%22condition%22%2C%22id%22%3A%22earn-1%22%2C%22atMs%22%3A1785325260000%2C%22conditionId%22%3A%22e2e-condition-1%22%2C%22payout%22%3A%7B%22type%22%3A%22fixedChunk%22%2C%22minutes%22%3A30%7D%7D%2C%7B%22kind%22%3A%22drainTick%22%2C%22source%22%3A%22screentime%22%2C%22id%22%3A%22tick-1%22%2C%22atMs%22%3A1785328860000%2C%22minutes%22%3A10%7D%5D%7D%7D%7D"
+---
+- launchApp:
+    clearState: true
+- openLink:
+    link: excerlock://e2e/scenario/${SCENARIO}?overrides=${SCENARIO_OVERRIDES}
+- runFlow:
+    when:
+      visible: 'Open in "ExcerLock"'
+    commands:
+      - tapOn: Open
+
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- assertNotVisible:
+    id: screen-e2e-error
+- tapOn: Analysis
+- assertVisible:
+    id: analysis-screen
+- assertNotVisible:
+    id: analysis-empty
+- scrollUntilVisible:
+    element:
+      id: earned-spent-card
+    direction: DOWN
+- assertVisible:
+    id: earned-total
+- assertVisible:
+    id: spent-total
+- tapOn: Month
+
+- scrollUntilVisible:
+    element:
+      id: condition-breakdown-card
+    direction: DOWN
+- assertVisible:
+    id: condition-earning-e2e-condition-1
+- scrollUntilVisible:
+    element:
+      id: day-ledger
+    direction: DOWN
+- waitForAnimationToEnd
+- takeScreenshot: analysis-recorded-history
