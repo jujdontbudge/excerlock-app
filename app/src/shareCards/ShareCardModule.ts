@@ -22,12 +22,12 @@ export type CapturedShareCard = Readonly<{
 }>;
 
 export type ShareCardHandoffResult = Readonly<{
-  /** `simulated` is the honest result while the dependency-blocked mock is installed. */
+  /** `simulated` is reserved for deterministic mock handoffs. */
   status: "simulated" | "presented" | "dismissed";
   fileUri: string;
 }>;
 
-/** Vendor-free boundary for the two dependency-blocked native operations. */
+/** Vendor-free boundary for the two native operations. */
 export interface ShareCardModule {
   captureCard(request: CaptureShareCardRequest): Promise<CapturedShareCard>;
   presentShareSheet(card: CapturedShareCard): Promise<ShareCardHandoffResult>;

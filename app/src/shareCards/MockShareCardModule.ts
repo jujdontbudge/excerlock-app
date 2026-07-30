@@ -6,7 +6,7 @@ import type {
   ShareCardModule,
 } from "./ShareCardModule";
 
-/** Deterministic local boundary used until Expo can add the native libraries. */
+/** Deterministic boundary retained for tests and E2E builds. */
 export class MockShareCardModule implements ShareCardModule {
   private readonly captured: CapturedShareCard[] = [];
   private readonly presented: CapturedShareCard[] = [];
