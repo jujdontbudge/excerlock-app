@@ -39,8 +39,8 @@ export type AnalysisScreenProps = {
    */
   days?: readonly DaySummary[];
   /**
-   * Local-wall-clock cutoff passed to `daySummaries`. Analysis never reads a
-   * clock. Without this prop, it stops at the latest journal event.
+   * Explicit local-wall-clock cutoff passed to `daySummaries`. Without a
+   * cutoff or injected clock, projection stops at the latest journal event.
    */
   throughMs?: number;
   /**

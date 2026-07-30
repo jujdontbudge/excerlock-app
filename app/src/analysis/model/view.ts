@@ -53,7 +53,7 @@ export type AnalysisView = {
   ledger: DaySummary[];
   /** The hero's window: Time Reclaimed over the calendar month (PRD §3.13). */
   monthReclaimed: TimeReclaimed;
-  /** The week's recap. `null` before anything is recorded. */
+  /** The newest generated recap while fresh; otherwise `null`. */
   recap: Recap | null;
   /** Whole-week columns for the requirement history, including honest padding. */
   requirementHeatMap: RequirementHeatMap;
