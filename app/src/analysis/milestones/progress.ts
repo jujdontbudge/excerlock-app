@@ -78,6 +78,17 @@ export function unlockedMilestoneIds(
   );
 }
 
+export function progressForMilestone(
+  milestone: MilestoneDefinition,
+  metrics: MilestoneMetrics,
+): MilestoneProgress {
+  return makeProgress(
+    milestone.kind,
+    progressReading(milestone.kind, metrics),
+    milestone.threshold,
+  );
+}
+
 function achievedReading(
   kind: MilestoneKind,
   metrics: MilestoneMetrics,
