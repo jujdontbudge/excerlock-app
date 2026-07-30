@@ -35,12 +35,13 @@ export class NativeShareCardModule implements ShareCardModule {
   }
 
   public async presentShareSheet(
-    _card: CapturedShareCard,
+    card: CapturedShareCard,
   ): Promise<ShareCardHandoffResult> {
     if (!(await Sharing.isAvailableAsync())) {
       throw new Error("Native sharing is unavailable.");
     }
 
-    throw new Error("Native share-sheet handoff is not implemented.");
+    await Sharing.shareAsync(card.fileUri, { UTI: "public.png" });
+    return Object.freeze({ status: "presented", fileUri: card.fileUri });
   }
 }

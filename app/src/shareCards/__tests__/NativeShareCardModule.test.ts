@@ -96,4 +96,28 @@ describe("NativeShareCardModule", () => {
     ).rejects.toThrow("Native sharing is unavailable.");
     expect(mockShareAsync).not.toHaveBeenCalled();
   });
+
+  it("hands the captured PNG directly to the native share sheet", async () => {
+    mockIsAvailableAsync.mockResolvedValueOnce(true);
+    mockShareAsync.mockResolvedValueOnce();
+    const module = new NativeShareCardModule();
+
+    await expect(
+      module.presentShareSheet({
+        fileUri: "file:///tmp/recap-story.png",
+        mediaType: "image/png",
+        template: "recap",
+        ratio: "story",
+        width: 1_080,
+        height: 1_920,
+      }),
+    ).resolves.toEqual({
+      status: "presented",
+      fileUri: "file:///tmp/recap-story.png",
+    });
+    expect(mockShareAsync).toHaveBeenCalledWith(
+      "file:///tmp/recap-story.png",
+      { UTI: "public.png" },
+    );
+  });
 });
