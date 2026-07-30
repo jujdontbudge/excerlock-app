@@ -251,12 +251,16 @@ export class HttpSupportModule implements SupportModule {
     if (response.status >= 400) {
       return this.failSubmission(submission, REQUEST_REJECTED_ERROR);
     }
-    const responseBody = await response.json();
-    const receipt = readSubmissionReceipt(
-      response.status,
-      responseBody,
-      submission.kind,
-    );
+    let receipt: ReturnType<typeof readSubmissionReceipt>;
+    try {
+      receipt = readSubmissionReceipt(
+        response.status,
+        await response.json(),
+        submission.kind,
+      );
+    } catch {
+      return this.failSubmission(submission, SERVICE_UNAVAILABLE_ERROR);
+    }
     const submitted: SupportSubmission = Object.freeze({
       ...submission,
       id: receipt.submissionId,

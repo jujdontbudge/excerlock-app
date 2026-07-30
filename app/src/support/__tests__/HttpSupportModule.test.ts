@@ -379,6 +379,34 @@ describe("HttpSupportModule", () => {
     });
   });
 
+  it("keeps a request retryable when the server receipt is invalid", async () => {
+    const support = new HttpSupportModule({
+      baseUrl: "https://api.example.test",
+      clock: new ManualSupportClock(5_500),
+      fetch: jest.fn().mockResolvedValue({
+        status: 201,
+        json: async () => ({ persisted: true }),
+      }),
+      getAccessToken: async () => "clerk-jwt",
+    });
+
+    await expect(
+      support.submitSupport({ message: "Do not leave this sending." }),
+    ).resolves.toEqual({
+      status: "failed",
+      submissionId: "local-support-5500-1",
+      error: {
+        code: "service_unavailable",
+        message:
+          "Support is temporarily unavailable. This wasn't sent. It is saved here so you can try again.",
+      },
+    });
+    expect((await support.getSnapshot()).submissions[0]).toMatchObject({
+      status: "failed",
+      error: { code: "service_unavailable" },
+    });
+  });
+
   it("restores an offline request after restart and retries it manually", async () => {
     const first = new HttpSupportModule({
       baseUrl: "https://api.example.test",
