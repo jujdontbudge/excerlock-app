@@ -9,6 +9,7 @@ import {
 import { createMockSupportPersistence } from "./mockStore";
 import type {
   SubmitSupportResult,
+  SupportError,
   SupportModule,
   SupportSnapshot,
   SupportStateListener,
@@ -41,6 +42,11 @@ export type HttpSupportModuleOptions = Readonly<{
 }>;
 
 const REQUEST_TIMEOUT_MS = 10_000;
+const OFFLINE_ERROR: SupportError = Object.freeze({
+  code: "offline",
+  message:
+    "You're offline. This wasn't sent. It is saved here so you can try again.",
+});
 
 export class HttpSupportModule implements SupportModule {
   private readonly baseUrl: string;
@@ -81,10 +87,15 @@ export class HttpSupportModule implements SupportModule {
     );
     await this.publish(saveSubmission(this.snapshot, submission));
 
-    const response = await this.postSupport({
-      category: "support",
-      message: submission.message,
-    });
+    let response: SupportHttpResponse;
+    try {
+      response = await this.postSupport({
+        category: "support",
+        message: submission.message,
+      });
+    } catch {
+      return this.failSubmission(submission, OFFLINE_ERROR);
+    }
     const responseBody = await response.json();
     const submissionId = readSubmissionId(response.status, responseBody);
     const submitted: SupportSubmission = Object.freeze({
@@ -158,6 +169,23 @@ export class HttpSupportModule implements SupportModule {
         ),
       }),
     );
+  }
+
+  private async failSubmission(
+    submission: SupportSubmission,
+    error: SupportError,
+  ): Promise<SubmitSupportResult> {
+    const failed: SupportSubmission = Object.freeze({
+      ...submission,
+      status: "failed",
+      error,
+    });
+    await this.replaceSubmission(submission.id, failed);
+    return Object.freeze({
+      status: "failed",
+      submissionId: submission.id,
+      error,
+    });
   }
 
   private async publish(snapshot: SupportSnapshot): Promise<void> {

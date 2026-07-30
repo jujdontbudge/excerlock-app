@@ -59,4 +59,40 @@ describe("HttpSupportModule", () => {
       },
     ]);
   });
+
+  it("saves an offline request and reports that it was not sent", async () => {
+    const support = new HttpSupportModule({
+      baseUrl: "https://api.example.test",
+      clock: new ManualSupportClock(2_000),
+      fetch: jest
+        .fn()
+        .mockRejectedValue(new TypeError("Network request failed")),
+      getAccessToken: async () => "clerk-jwt",
+    });
+
+    await expect(
+      support.submitSupport({ message: "Please keep this request." }),
+    ).resolves.toEqual({
+      status: "failed",
+      submissionId: "local-support-2000-1",
+      error: {
+        code: "offline",
+        message:
+          "You're offline. This wasn't sent. It is saved here so you can try again.",
+      },
+    });
+    expect((await support.getSnapshot()).submissions[0]).toEqual({
+      id: "local-support-2000-1",
+      kind: "support",
+      title: null,
+      message: "Please keep this request.",
+      createdAtMs: 2_000,
+      status: "failed",
+      error: {
+        code: "offline",
+        message:
+          "You're offline. This wasn't sent. It is saved here so you can try again.",
+      },
+    });
+  });
 });
