@@ -1,5 +1,10 @@
 import type { DaySummary } from "@excerlock/ledger";
 
+import {
+  classifyScheduleDay,
+  type ScheduleRules,
+} from "@/schedule";
+
 import { FIXTURE_DAY_SUMMARIES } from "../fixtures";
 import { weekdayIndex } from "../model/calendar";
 import {
@@ -12,6 +17,10 @@ import {
   selectTotals,
   selectWeek,
 } from "../model/selectors";
+
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 
 const DAY_MS = 86_400_000;
 
@@ -141,6 +150,25 @@ describe("selectPeriod", () => {
 });
 
 describe("selectStreak", () => {
+  it("continues across a scheduled rest day without counting it", () => {
+    const monday = Date.UTC(2026, 6, 20) / DAY_MS;
+    const schedule: ScheduleRules = {
+      recurringRestWeekdays: [2],
+      holidays: [],
+      overrides: [],
+    };
+    const days = [true, false, true].map((meaningfulActivity, offset) =>
+      day(monday + offset, { meaningfulActivity }),
+    );
+
+    expect(
+      selectStreak(days, {
+        classifyDay: (dayIndex) =>
+          classifyScheduleDay({ dayIndex, schedule }),
+      }),
+    ).toEqual({ current: 2, longest: 2 });
+  });
+
   it("counts the run of meaningful days ending today", () => {
     expect(selectStreak(streakDays([true, true, false, true, true, true])).current).toBe(3);
   });
