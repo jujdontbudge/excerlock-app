@@ -13,7 +13,7 @@ export type MilestoneHaptics = Readonly<{
  * while the tab stays focused remain pending for the following visit.
  */
 export function useMilestoneUnlockMoment(
-  visitKey: number,
+  visitKey: number | null,
   haptics?: MilestoneHaptics,
 ): readonly MilestoneId[] {
   const [sequence, setSequence] = useState<readonly MilestoneId[]>([]);
@@ -22,7 +22,7 @@ export function useMilestoneUnlockMoment(
   hapticsRef.current = haptics;
 
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!isHydrated || visitKey === null) return;
 
     const pending = useMilestoneUnlockStore.getState().claimPending();
     setSequence(pending);

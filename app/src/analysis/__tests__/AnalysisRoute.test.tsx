@@ -22,13 +22,21 @@ describe("AnalysisRoute", () => {
     useMilestoneUnlockStore.setState({ records: {} });
   });
 
-  it("claims unlocks discovered while mounted only after Analysis is visited again", async () => {
+  it("claims unlocks only on focused Analysis visits, including the first", async () => {
     useMilestoneUnlockStore
       .getState()
       .discoverUnlocks(["streak-3"], Date.UTC(2026, 6, 30, 12));
 
     await render(<AnalysisRoute />);
 
+    expect(mockFocusCallback).toBeDefined();
+    expect(
+      useMilestoneUnlockStore.getState().records["streak-3"]?.pending,
+    ).toBe(true);
+
+    await act(async () => {
+      mockFocusCallback?.();
+    });
     await waitFor(() => {
       expect(
         useMilestoneUnlockStore.getState().records["streak-3"]?.pending,
@@ -44,7 +52,6 @@ describe("AnalysisRoute", () => {
       useMilestoneUnlockStore.getState().records["activity-1"]?.pending,
     ).toBe(true);
 
-    expect(mockFocusCallback).toBeDefined();
     await act(async () => {
       mockFocusCallback?.();
     });

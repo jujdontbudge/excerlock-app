@@ -71,7 +71,7 @@ export type AnalysisScreenProps = {
   /** Native success feedback boundary; there is intentionally no sound edge. */
   milestoneHaptics?: MilestoneHaptics;
   /** Changes once for each focused Analysis visit. */
-  milestoneUnlockVisitKey?: number;
+  milestoneUnlockVisitKey?: number | null;
 };
 
 /**

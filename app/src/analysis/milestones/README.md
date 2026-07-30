@@ -28,3 +28,5 @@ sequence. Pending badges receive stable scale values in catalog order and enter
 with the completion animation's spring physics, staggered 120 ms apart.
 The Analysis route advances the visit key from Expo Router's focus boundary, so
 an unlock discovered while the mounted tab is open waits for the next return.
+Its initial key is inert; focus itself is the sole production claim trigger,
+preventing a mount claim and focus claim from cancelling the first animation.

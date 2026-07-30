@@ -7,11 +7,11 @@ import {
 } from "@/analysis";
 
 export default function AnalysisRoute() {
-  const [unlockVisitKey, setUnlockVisitKey] = useState(0);
+  const [unlockVisitKey, setUnlockVisitKey] = useState<number | null>(null);
 
   useFocusEffect(
     useCallback(() => {
-      setUnlockVisitKey((visit) => visit + 1);
+      setUnlockVisitKey((visit) => (visit ?? 0) + 1);
     }, []),
   );
 
