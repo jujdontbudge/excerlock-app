@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -14,6 +15,7 @@ import type {
   RequirementHeatMapCell,
   RequirementMetKind,
 } from "../model";
+import { formatMinutes } from "../model";
 
 type RequirementHeatMapCardProps = {
   heatMap: RequirementHeatMap;
@@ -24,6 +26,10 @@ export function RequirementHeatMapCard({
   heatMap,
 }: RequirementHeatMapCardProps) {
   const { spacing, typography } = useTheme();
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
+  const selectedCell = heatMap.weeks
+    .flat()
+    .find(({ dayIndex }) => dayIndex === selectedDayIndex);
 
   return (
     <Card testID="requirement-heat-map-card" style={{ gap: spacing.md }}>
@@ -45,16 +51,33 @@ export function RequirementHeatMapCard({
             style={{ gap: spacing.xs }}
           >
             {week.map((cell) => (
-              <RequirementCell key={cell.dayIndex} cell={cell} />
+              <RequirementCell
+                key={cell.dayIndex}
+                cell={cell}
+                selected={cell.dayIndex === selectedDayIndex}
+                onSelect={() => setSelectedDayIndex(cell.dayIndex)}
+              />
             ))}
           </View>
         ))}
       </ScrollView>
+
+      {selectedCell === undefined ? null : (
+        <RequirementDayDetailPanel cell={selectedCell} />
+      )}
     </Card>
   );
 }
 
-function RequirementCell({ cell }: { cell: RequirementHeatMapCell }) {
+function RequirementCell({
+  cell,
+  selected,
+  onSelect,
+}: {
+  cell: RequirementHeatMapCell;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   const { colors, radius, spacing } = useTheme();
   const metKind = kindForState(cell.state);
   const backgroundColor =
@@ -71,6 +94,8 @@ function RequirementCell({ cell }: { cell: RequirementHeatMapCell }) {
       testID={`requirement-cell-${cell.dayIndex}`}
       accessibilityRole="button"
       accessibilityLabel={cellAccessibilityLabel(cell)}
+      accessibilityState={{ selected }}
+      onPress={onSelect}
       style={[
         styles.cell,
         {
@@ -85,6 +110,42 @@ function RequirementCell({ cell }: { cell: RequirementHeatMapCell }) {
         <KindGlyph kind={metKind} dayIndex={cell.dayIndex} />
       )}
     </Pressable>
+  );
+}
+
+function RequirementDayDetailPanel({
+  cell,
+}: {
+  cell: RequirementHeatMapCell;
+}) {
+  const { colors, radius, spacing, typography } = useTheme();
+
+  return (
+    <View
+      testID="requirement-day-detail"
+      style={{
+        backgroundColor: colors.cardElevated,
+        borderRadius: radius.md,
+        gap: spacing.xs,
+        padding: spacing.md,
+      }}
+    >
+      <Text style={typography.cardTitle}>{cell.label}</Text>
+      <Text style={typography.body}>{requirementStatusLabel(cell)}</Text>
+
+      {cell.state === "blank" ? null : (
+        <>
+          <Text style={typography.body}>
+            {formatMinutes(cell.detail.earnedMinutes)} earned
+          </Text>
+          {cell.detail.qualifiedConditions.map(({ conditionId, kind, name }) => (
+            <Text key={conditionId} style={typography.caption}>
+              {`${name} · ${kindLabel(kind)}`}
+            </Text>
+          ))}
+        </>
+      )}
+    </View>
   );
 }
 
@@ -190,6 +251,40 @@ function cellAccessibilityLabel(cell: RequirementHeatMapCell): string {
           : "future day"
       }`;
   }
+}
+
+function requirementStatusLabel(cell: RequirementHeatMapCell): string {
+  switch (cell.state) {
+    case "metByEvent":
+      return "Requirement met by event";
+    case "metByRate":
+      return "Requirement met by rate";
+    case "metByState":
+      return "Requirement met by state";
+    case "missed":
+      return "No qualifying activity";
+    case "rest":
+      return sentenceCase(inactiveDayLabel(cell.detail.scheduleDay));
+    case "blank":
+      return cell.blankReason === "beforeHistory"
+        ? "Before history began"
+        : "Future day";
+  }
+}
+
+function kindLabel(kind: RequirementMetKind): string {
+  switch (kind) {
+    case "event":
+      return "Event";
+    case "rate":
+      return "Rate";
+    case "state":
+      return "State";
+  }
+}
+
+function sentenceCase(value: string): string {
+  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 }
 
 function inactiveDayLabel(

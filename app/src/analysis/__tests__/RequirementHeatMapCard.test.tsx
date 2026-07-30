@@ -1,4 +1,8 @@
-import { render, screen } from "@testing-library/react-native";
+import {
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react-native";
 
 import { RequirementHeatMapCard } from "../components";
 import type {
@@ -126,5 +130,19 @@ describe("RequirementHeatMapCard", () => {
     expect(screen.getByTestId("requirement-kind-event-1")).toBeOnTheScreen();
     expect(screen.getByTestId("requirement-kind-rate-2")).toBeOnTheScreen();
     expect(screen.getByTestId("requirement-kind-state-3")).toBeOnTheScreen();
+  });
+
+  it("opens the selected day detail with what qualified and what was earned", async () => {
+    await render(<RequirementHeatMapCard heatMap={HEAT_MAP} />);
+
+    const eventCell = screen.getByRole("button", {
+      name: "Mon 6 Jul, requirement met by event",
+    });
+    await fireEvent.press(eventCell);
+
+    expect(eventCell.props.accessibilityState).toEqual({ selected: true });
+    expect(screen.getByTestId("requirement-day-detail")).toHaveTextContent(
+      /^Mon 6 JulRequirement met by event30m earnedGym visit · Event$/,
+    );
   });
 });
