@@ -1,5 +1,4 @@
 import type { ConfiguredCondition } from "@excerlock/condition-model";
-import { daySummaries } from "@excerlock/ledger";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { processColor } from "react-native";
 
@@ -37,32 +36,32 @@ const fixtureProps = {
   conditionNames: FIXTURE_CONDITION_NAMES,
 } as const;
 
-function multiYearHistory() {
-  const entry = (id: string, atMs: number, minutes: number) =>
-    ({
-      kind: "earn",
-      source: "history-test",
-      id,
-      atMs,
-      conditionId: stepGoal.id,
-      payout: { type: "fixedChunk", minutes },
-    }) as const;
+function historyEntry(id: string, atMs: number, minutes: number) {
+  return {
+    kind: "earn",
+    source: "history-test",
+    id,
+    atMs,
+    conditionId: stepGoal.id,
+    payout: { type: "fixedChunk", minutes },
+  } as const;
+}
 
-  return daySummaries(
-    {
-      entries: [
-        entry("installed", Date.UTC(2023, 10, 15, 12), 5),
-        entry("january", Date.UTC(2025, 0, 10, 12), 10),
-        entry("february", Date.UTC(2025, 1, 2, 12), 20),
-      ],
-    },
-    {
-      dayBoundaryOffsetMinutes: 0,
-      baseAllowanceMinutes: 30,
-      rollover: null,
-    },
-    Date.UTC(2025, 1, 3, 12),
-  );
+const historyConfig = {
+  dayBoundaryOffsetMinutes: 0,
+  baseAllowanceMinutes: 30,
+  rollover: null,
+} as const;
+
+function setRealHistory(
+  entries: readonly ReturnType<typeof historyEntry>[],
+) {
+  useHomeStore.setState({
+    ...DEFAULT_HOME_STATE,
+    conditions: [stepGoal],
+    journal: { entries: [...entries] },
+    ledgerConfig: historyConfig,
+  });
 }
 
 describe("AnalysisScreen", () => {
@@ -228,12 +227,13 @@ describe("AnalysisScreen", () => {
   });
 
   it("switches the real multi-year record between distinct week, month and year windows", async () => {
-    await render(
-      <AnalysisScreen
-        days={multiYearHistory()}
-        conditionNames={{ [stepGoal.id]: "Step goal" }}
-      />,
-    );
+    setRealHistory([
+      historyEntry("installed", Date.UTC(2023, 10, 15, 12), 5),
+      historyEntry("january", Date.UTC(2025, 0, 10, 12), 10),
+      historyEntry("february", Date.UTC(2025, 1, 2, 12), 20),
+    ]);
+
+    await render(<AnalysisScreen throughMs={Date.UTC(2025, 1, 3, 12)} />);
 
     expect(
       screen.getByRole("button", { name: "Week" }).props.accessibilityState,
@@ -256,6 +256,23 @@ describe("AnalysisScreen", () => {
     ).toEqual({ selected: true });
     expect(screen.getAllByTestId(/^analysis-day-row-/)).toHaveLength(34);
     expect(screen.getByTestId("earned-total")).toHaveTextContent("30m");
+  });
+
+  it("keeps a three-day history honest when the user asks for Year", async () => {
+    setRealHistory([
+      historyEntry("first-day", Date.UTC(2025, 0, 1, 12), 5),
+    ]);
+
+    await render(<AnalysisScreen throughMs={Date.UTC(2025, 0, 3, 12)} />);
+    await fireEvent.press(screen.getByRole("button", { name: "Year" }));
+
+    expect(
+      screen.getByRole("button", { name: "Year" }).props.accessibilityState,
+    ).toEqual({ selected: true });
+    expect(screen.getAllByTestId(/^analysis-day-row-/)).toHaveLength(3);
+    expect(screen.getByTestId("earned-total")).toHaveTextContent("5m");
+    expect(screen.getAllByText("No activity")).toHaveLength(2);
+    expect(screen.queryByText(/missed|failed|should have/i)).toBeNull();
   });
 
   it("lists the recorded days newest first", async () => {
