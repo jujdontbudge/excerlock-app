@@ -25,4 +25,7 @@ export {
   type PersistedFeatureRequestVote,
   type SupportSubmissionRepository,
 } from "./repository.js";
-export { SupportUserNotFoundError } from "./errors.js";
+export {
+  FeatureRequestNotFoundError,
+  SupportUserNotFoundError,
+} from "./errors.js";

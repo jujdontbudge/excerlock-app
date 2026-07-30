@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { SupportUserNotFoundError } from "./errors.js";
+import {
+  FeatureRequestNotFoundError,
+  SupportUserNotFoundError,
+} from "./errors.js";
 import type { FeatureRequestVoteRepository } from "./repository.js";
 
 export interface FeatureRequestVoteResult {
@@ -36,7 +39,7 @@ export function createFeatureRequestVoteService(options: {
         createdAt: now(),
       });
       if (!persisted) {
-        throw new Error(`Unknown feature request: ${featureRequestId}`);
+        throw new FeatureRequestNotFoundError(featureRequestId);
       }
 
       return {

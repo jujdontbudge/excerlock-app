@@ -3,6 +3,7 @@ import {
   createFeatureRequestService,
   createFeatureRequestVoteService,
   createSupportSubmissionService,
+  FeatureRequestNotFoundError,
   type FeatureRequestRecord,
   type FeatureRequestRepository,
   type FeatureRequestVoteRepository,
@@ -184,5 +185,17 @@ describe("feature request service", () => {
         createdAt: new Date("2026-07-29T21:05:00.000Z"),
       },
     ]);
+  });
+
+  it("rejects a vote for a nonexistent feature request", async () => {
+    const repository = new MemoryFeatureRequestVoteRepository();
+    const service = createFeatureRequestVoteService({ repository });
+
+    await expect(
+      service.vote("user_123", "missing-feature-request"),
+    ).rejects.toEqual(
+      new FeatureRequestNotFoundError("missing-feature-request"),
+    );
+    expect(repository.votes).toEqual([]);
   });
 });
