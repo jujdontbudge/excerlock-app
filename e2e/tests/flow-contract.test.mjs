@@ -51,3 +51,15 @@ test("Manage flow changes the allowance and condition state", async () => {
   assert.match(flow, /id: manage-switch-label-e2e-condition-1/);
   assert.match(flow, /takeScreenshot: manage-condition-enabled/);
 });
+
+test("Analysis flow covers the empty-history state", async () => {
+  const flow = await read("flows/analysis-empty-history.yaml");
+
+  assert.match(flow, new RegExp(`^appId: ${APP_ID}$`, "m"));
+  assert.match(flow, new RegExp(`^  SCENARIO: ${BUNDLED_SCENARIO}$`, "m"));
+  assert.match(flow, /excerlock:\/\/e2e\/scenario\/\$\{SCENARIO\}/);
+  assert.match(flow, /id: analysis-screen/);
+  assert.match(flow, /id: analysis-empty/);
+  assert.match(flow, /Nothing to analyse yet/);
+  assert.match(flow, /takeScreenshot: analysis-empty-history/);
+});
