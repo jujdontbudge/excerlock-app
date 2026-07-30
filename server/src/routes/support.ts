@@ -1,14 +1,19 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
+import { analytics } from "../services/analytics.js";
+import {
+  createDrizzleFeatureRequestRepository,
+  createDrizzleFeatureRequestVoteRepository,
+  createDrizzleSupportSubmissionRepository,
+  createFeatureRequestService,
+  createFeatureRequestVoteService,
+  createSupportSubmissionService,
+} from "../support/index.js";
 import type {
   FeatureRequestService,
   FeatureRequestVoteService,
   SupportSubmissionService,
 } from "../support/index.js";
-import {
-  sendNotImplemented,
-  type NotImplementedResponse,
-} from "./notImplemented.js";
 import { requireRouteUserId } from "./vendorRouteSupport.js";
 import { sendSupportRouteError } from "./supportRouteError.js";
 
@@ -104,8 +109,27 @@ export function createSupportRoutes(
   };
 }
 
-export const supportRoutes: FastifyPluginAsync = async (app) => {
-  app.post<{ Reply: NotImplementedResponse }>("/support", async (_request, reply) =>
-    sendNotImplemented(reply, "Support"),
-  );
-};
+export const supportRoutes = createSupportRoutes({
+  service: {
+    submit(userId, input) {
+      return createSupportSubmissionService({
+        analytics,
+        repository: createDrizzleSupportSubmissionRepository(),
+      }).submit(userId, input);
+    },
+  },
+  featureRequests: {
+    list(userId) {
+      return createFeatureRequestService({
+        repository: createDrizzleFeatureRequestRepository(),
+      }).list(userId);
+    },
+  },
+  votes: {
+    vote(userId, featureRequestId) {
+      return createFeatureRequestVoteService({
+        repository: createDrizzleFeatureRequestVoteRepository(),
+      }).vote(userId, featureRequestId);
+    },
+  },
+});
