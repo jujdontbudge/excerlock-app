@@ -7,6 +7,7 @@ import {
   selectWeek,
   type DayRange,
   type Streak,
+  type StreakDayClassifier,
 } from "./selectors";
 import { selectTimeReclaimed, type TimeReclaimed } from "./timeReclaimed";
 
@@ -49,17 +50,31 @@ type RecapOptions = {
   /** `confessed_daily_minutes` from onboarding; `null` when it was skipped. */
   confessedDailyMinutes: number | null;
   weekStartsOn?: Weekday;
+  /** Schedule's precedence result for each ledger day. */
+  classifyDay?: StreakDayClassifier;
 };
+
+const ALL_DAYS_SCHEDULED_ACTIVE: StreakDayClassifier = () => ({
+  kind: "scheduledActive",
+  isActive: true,
+});
 
 /** The recap for the week containing today. `null` before anything is recorded. */
 export function buildRecap(
   days: DayRange,
-  { confessedDailyMinutes, weekStartsOn = DEFAULT_WEEK_STARTS_ON }: RecapOptions,
+  {
+    confessedDailyMinutes,
+    weekStartsOn = DEFAULT_WEEK_STARTS_ON,
+    classifyDay = ALL_DAYS_SCHEDULED_ACTIVE,
+  }: RecapOptions,
 ): Recap | null {
   const week = selectWeek(days, { weekStartsOn });
   if (week.length === 0) return null;
 
   const previousWeek = selectPreviousWeek(days, { weekStartsOn });
+  const scheduledActiveWeek = week.filter((day) =>
+    classifyDay(day.dayIndex).isActive,
+  );
   const reclaimed = selectTimeReclaimed(week, confessedDailyMinutes);
   const previousReclaimed = selectTimeReclaimed(previousWeek, confessedDailyMinutes);
   const totals = selectTotals(week);
@@ -71,8 +86,8 @@ export function buildRecap(
       previousWeek.length === 0 || reclaimed.status !== "measured"
         ? null
         : reclaimed.reclaimedMinutes - previousReclaimed.reclaimedMinutes,
-    activeDays: totals.activeDays,
-    dayCount: totals.dayCount,
+    activeDays: scheduledActiveWeek.filter((day) => day.meaningfulActivity).length,
+    dayCount: scheduledActiveWeek.length,
     activityCount: week.reduce((sum, day) => sum + day.meaningfulConditionCount, 0),
     earnedMinutes: totals.earnedMinutes,
     spentMinutes: totals.spentMinutes,

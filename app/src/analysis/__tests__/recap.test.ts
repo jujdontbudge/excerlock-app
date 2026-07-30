@@ -1,10 +1,34 @@
+import {
+  classifyScheduleDay,
+  type ScheduleRules,
+} from "@/schedule";
+
 import { FIXTURE_DAY_SUMMARIES } from "../fixtures";
 import { buildRecap } from "../model";
+
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 
 /** Week 3 used 374 minutes; week 2 used 418. A 4h/day confession is the baseline. */
 const BASELINE = 240;
 
 describe("buildRecap", () => {
+  it("counts qualifying scheduled-active days against scheduled-active days", () => {
+    const schedule: ScheduleRules = {
+      recurringRestWeekdays: [2],
+      holidays: [],
+      overrides: [],
+    };
+    const recap = buildRecap(FIXTURE_DAY_SUMMARIES, {
+      confessedDailyMinutes: BASELINE,
+      classifyDay: (dayIndex) =>
+        classifyScheduleDay({ dayIndex, schedule }),
+    });
+
+    expect(recap).toMatchObject({ activeDays: 6, dayCount: 6 });
+  });
+
   it("builds the PRD's five rows over the week containing today", () => {
     const recap = buildRecap(FIXTURE_DAY_SUMMARIES, { confessedDailyMinutes: BASELINE });
 
