@@ -27,4 +27,38 @@ describe("E2E scenario gate", () => {
     );
     expect(screen.queryByText("Normal app")).not.toBeOnTheScreen();
   });
+
+  it.each([
+    [
+      "an invalid manifest override",
+      { version: 0 },
+      /Invalid E2E scenario manifest: version/,
+    ],
+    [
+      "an unknown fixture override",
+      { providers: { health: { fixture: "missing" } } },
+      /Unknown health fixture "missing"/,
+    ],
+  ])(
+    "shows the named loader error for %s",
+    async (_label, overrides, expectedError) => {
+      const encoded = encodeURIComponent(JSON.stringify(overrides));
+      await render(
+        <E2EScenarioGate
+          url={`excerlock://e2e/scenario/baseline-fresh-install?overrides=${encoded}`}
+        >
+          <Text>Normal app</Text>
+        </E2EScenarioGate>,
+      );
+
+      const errorScreen =
+        await screen.findByTestId("screen-e2e-error");
+
+      expect(errorScreen).toHaveTextContent(
+        /scenario "baseline-fresh-install"/,
+      );
+      expect(errorScreen).toHaveTextContent(expectedError);
+      expect(screen.queryByText("Normal app")).not.toBeOnTheScreen();
+    },
+  );
 });
