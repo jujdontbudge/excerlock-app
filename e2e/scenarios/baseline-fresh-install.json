@@ -1,0 +1,45 @@
+{
+  "name": "baseline-fresh-install",
+  "version": 1,
+  "description": "Onboarding complete with a clean ledger, no conditions, and no connected vendors.",
+  "clock": {
+    "now": "2026-07-29T09:41:00-04:00",
+    "playback": "manual"
+  },
+  "state": {
+    "onboarding": "complete",
+    "entitlement": "premium",
+    "ledger": {
+      "baseAllowanceMinutes": 45,
+      "journal": []
+    },
+    "conditions": [],
+    "shield": {
+      "armedMonitors": []
+    },
+    "vendors": {
+      "strava": "disconnected",
+      "oura": "disconnected",
+      "whoop": "disconnected",
+      "polar": "disconnected"
+    }
+  },
+  "providers": {
+    "health": {
+      "fixture": "background-wake-replay"
+    },
+    "motion": {
+      "fixture": "steady-walk"
+    },
+    "location": {
+      "fixture": "quiet"
+    },
+    "screentime": {
+      "fixture": "tick-ladder-basic"
+    },
+    "vendor": {
+      "fixture": "none-connected"
+    }
+  },
+  "timeline": []
+}

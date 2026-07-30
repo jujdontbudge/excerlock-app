@@ -50,6 +50,11 @@ The mock class and clock are deliberately not exported from `index.ts`. No app
 module may import them directly. `getSubscriptionModule()` is the single
 Phase-5 swap point and returns the mock today.
 
+The build-gated E2E/debug composition root calls
+`installFixtureSubscriptionModule()` in `accessor.ts` to seed `free` or
+`premium` through that same boundary and a pinned clock. The mock class and its
+persistence details stay private to this module.
+
 ## Phase-5 Adapty swap
 
 Phase 5 changes the constructor in `accessor.ts` to an Adapty-backed
