@@ -6,8 +6,16 @@ import {
 } from "react-native";
 
 import { Card, useTheme } from "@/ui";
+import {
+  createMilestoneShareCardInput,
+  MilestoneShareCardPreviewSheet,
+  type ShareCardModule,
+} from "@/shareCards";
 
-import { type MilestoneId } from "./catalog";
+import {
+  isMilestoneId,
+  type MilestoneId,
+} from "./catalog";
 import { MilestoneBadgeButton } from "./MilestoneBadgeButton";
 import {
   buildMilestoneRows,
@@ -15,22 +23,42 @@ import {
   type MilestoneBadge,
   type MilestoneMetrics,
 } from "./progress";
+import { useMilestoneUnlockStore } from "./unlockStore";
 
 type MilestonesShelfProps = Readonly<{
   metrics: MilestoneMetrics;
+  shareCardModule?: ShareCardModule;
 }>;
 
-export function MilestonesShelf({ metrics }: MilestonesShelfProps) {
+type SelectedShare = Readonly<{
+  badge: MilestoneBadge;
+  unlockedAtMs: number;
+}>;
+
+export function MilestonesShelf({
+  metrics,
+  shareCardModule,
+}: MilestonesShelfProps) {
   const { spacing, typography } = useTheme();
   const rows = buildMilestoneRows(metrics);
+  const records = useMilestoneUnlockStore((state) => state.records);
+  const markTapped = useMilestoneUnlockStore((state) => state.markTapped);
   const [selectedLockedId, setSelectedLockedId] =
     useState<MilestoneId | null>(null);
+  const [selectedShare, setSelectedShare] =
+    useState<SelectedShare | null>(null);
   const selected = rows
     .flatMap(({ badges }) => badges)
     .find(({ id }) => id === selectedLockedId);
 
   const pressBadge = (badge: MilestoneBadge) => {
-    if (badge.state !== "unlocked") {
+    if (badge.state === "unlocked") {
+      if (!isMilestoneId(badge.id)) return;
+      const record = records[badge.id];
+      if (record === undefined) return;
+      markTapped(badge.id);
+      setSelectedShare({ badge, unlockedAtMs: record.unlockedAtMs });
+    } else {
       setSelectedLockedId(badge.id as MilestoneId);
     }
   };
@@ -51,6 +79,10 @@ export function MilestonesShelf({ metrics }: MilestonesShelfProps) {
               <MilestoneBadgeButton
                 key={badge.id}
                 badge={badge}
+                isNew={
+                  isMilestoneId(badge.id) &&
+                  records[badge.id]?.isNew === true
+                }
                 onPress={() => pressBadge(badge)}
               />
             ))}
@@ -60,6 +92,20 @@ export function MilestonesShelf({ metrics }: MilestonesShelfProps) {
 
       {selected === undefined ? null : (
         <ProgressDetail badge={selected} metrics={metrics} />
+      )}
+
+      {selectedShare === null ? null : (
+        <MilestoneShareCardPreviewSheet
+          visible
+          badgeArt={selectedShare.badge.badgeArt}
+          input={createMilestoneShareCardInput({
+            milestoneName: selectedShare.badge.milestoneName,
+            achievementNumber: selectedShare.badge.threshold,
+            unlockMonth: unlockMonth(selectedShare.unlockedAtMs),
+          })}
+          shareCardModule={shareCardModule}
+          onClose={() => setSelectedShare(null)}
+        />
       )}
     </Card>
   );
@@ -119,4 +165,24 @@ function progressContext(
     case "timeReclaimed":
       return "Measured against your onboarding baseline";
   }
+}
+
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+
+function unlockMonth(unlockedAtMs: number): string {
+  const instant = new Date(unlockedAtMs);
+  return `${MONTHS[instant.getMonth()]} ${instant.getFullYear()}`;
 }

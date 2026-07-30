@@ -4,7 +4,14 @@ import {
   screen,
 } from "@testing-library/react-native";
 
+import { MockShareCardModule } from "@/shareCards";
+
 import { MilestonesShelf } from "../MilestonesShelf";
+import { useMilestoneUnlockStore } from "../unlockStore";
+
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 
 const metrics = {
   currentStreakDays: 22,
@@ -14,6 +21,10 @@ const metrics = {
 } as const;
 
 describe("MilestonesShelf", () => {
+  beforeEach(() => {
+    useMilestoneUnlockStore.setState({ records: {} });
+  });
+
   it("renders all three visible ladders with locked, unlocked and next-up art", async () => {
     await render(<MilestonesShelf metrics={metrics} />);
 
@@ -52,5 +63,36 @@ describe("MilestonesShelf", () => {
     expect(screen.getByTestId("milestone-progress-detail")).toHaveTextContent(
       /^30-Day Streak22 of 30 daysCurrent streak · best 22 days$/,
     );
+  });
+
+  it("opens the existing share preview for an unlocked badge and acknowledges New", async () => {
+    const shareCards = new MockShareCardModule();
+    useMilestoneUnlockStore
+      .getState()
+      .discoverUnlocks(["streak-3"], Date.UTC(2026, 6, 29, 12));
+    useMilestoneUnlockStore.getState().claimPending();
+
+    await render(
+      <MilestonesShelf
+        metrics={metrics}
+        shareCardModule={shareCards}
+      />,
+    );
+
+    expect(screen.getByTestId("milestone-new-streak-3")).toHaveTextContent(
+      /^New$/,
+    );
+    await fireEvent.press(
+      screen.getByRole("button", { name: "3 days, unlocked" }),
+    );
+
+    expect(
+      screen.getByRole("header", { name: "Share your milestone" }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText("3-Day Streak")).toBeOnTheScreen();
+    expect(screen.getByText("July 2026")).toBeOnTheScreen();
+    expect(screen.queryByTestId("milestone-new-streak-3")).toBeNull();
+    expect(shareCards.getCapturedCards()).toEqual([]);
+    expect(shareCards.getPresentedCards()).toEqual([]);
   });
 });

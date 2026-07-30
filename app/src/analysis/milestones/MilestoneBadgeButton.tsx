@@ -15,11 +15,13 @@ export const LOCKED_BADGE_TINT = "#7E7781";
 
 type MilestoneBadgeButtonProps = Readonly<{
   badge: MilestoneBadge;
+  isNew: boolean;
   onPress: () => void;
 }>;
 
 export function MilestoneBadgeButton({
   badge,
+  isNew,
   onPress,
 }: MilestoneBadgeButtonProps) {
   const { colors, typography } = useTheme();
@@ -57,6 +59,18 @@ export function MilestoneBadgeButton({
       style={styles.button}
       testID={`milestone-badge-${badge.id}`}
     >
+      {isNew ? (
+        <Text
+          testID={`milestone-new-${badge.id}`}
+          style={[
+            typography.caption,
+            styles.newGlint,
+            { backgroundColor: colors.primary },
+          ]}
+        >
+          New
+        </Text>
+      ) : null}
       {badge.progress === null ? (
         <View style={styles.artWell}>{art}</View>
       ) : (
@@ -91,4 +105,13 @@ const styles = StyleSheet.create({
   },
   button: { alignItems: "center", width: 76 },
   label: { minHeight: 34, textAlign: "center" },
+  newGlint: {
+    borderRadius: 8,
+    overflow: "hidden",
+    paddingHorizontal: 5,
+    position: "absolute",
+    right: 0,
+    top: 0,
+    zIndex: 1,
+  },
 });
