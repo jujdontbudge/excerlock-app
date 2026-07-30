@@ -1,6 +1,9 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import type { SupportSubmissionService } from "../support/index.js";
+import type {
+  FeatureRequestService,
+  SupportSubmissionService,
+} from "../support/index.js";
 import {
   sendNotImplemented,
   type NotImplementedResponse,
@@ -9,6 +12,7 @@ import { requireRouteUserId } from "./vendorRouteSupport.js";
 import { sendSupportRouteError } from "./supportRouteError.js";
 
 interface SupportRouteDependencies {
+  featureRequests: FeatureRequestService;
   service: SupportSubmissionService;
 }
 
@@ -32,6 +36,19 @@ export function createSupportRoutes(
   dependencies: SupportRouteDependencies,
 ): FastifyPluginAsync {
   return async (app) => {
+    app.get("/feature-requests", async (request, reply) => {
+      const userId = await requireRouteUserId(request, reply);
+      if (!userId) {
+        return;
+      }
+
+      try {
+        return await dependencies.featureRequests.list(userId);
+      } catch (error) {
+        await sendSupportRouteError(reply, error);
+      }
+    });
+
     app.post<{ Body: unknown }>("/support", async (request, reply) => {
       const userId = await requireRouteUserId(request, reply);
       if (!userId) {
