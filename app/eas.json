@@ -1,0 +1,13 @@
+{
+  "build": {
+    "e2e": {
+      "withoutCredentials": true,
+      "env": {
+        "EXPO_PUBLIC_E2E": "1"
+      },
+      "ios": {
+        "simulator": true
+      }
+    }
+  }
+}
