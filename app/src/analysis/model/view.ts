@@ -5,7 +5,8 @@ import {
   selectConditionBreakdown,
   type ConditionBreakdownItem,
 } from "./conditionBreakdown";
-import { buildRecap, type Recap } from "./recap";
+import type { Recap } from "./recap";
+import { selectFreshRecap } from "./recapFreshness";
 import {
   buildRequirementHeatMap,
   type RequirementDayClassifier,
@@ -59,6 +60,11 @@ export type AnalysisView = {
 };
 
 type AnalysisViewOptions = {
+  /**
+   * Local wall-clock milliseconds supplied by the module edge. Without an
+   * explicit instant there is no honest freshness verdict, so no recap.
+   */
+  nowMs?: number;
   weekStartsOn?: Weekday;
   period?: AnalysisPeriod;
   /**
@@ -78,6 +84,7 @@ type AnalysisViewOptions = {
 export function buildAnalysisView(
   days: DayRange,
   {
+    nowMs,
     weekStartsOn = DEFAULT_WEEK_STARTS_ON,
     period = "week",
     confessedDailyMinutes = null,
@@ -103,11 +110,15 @@ export function buildAnalysisView(
     conditionBreakdown: selectConditionBreakdown(window, conditionNames),
     ledger: [...window].reverse(),
     monthReclaimed: selectTimeReclaimed(selectMonth(days), confessedDailyMinutes),
-    recap: buildRecap(days, {
-      confessedDailyMinutes,
-      weekStartsOn,
-      ...(classifyDay === undefined ? {} : { classifyDay }),
-    }),
+    recap:
+      nowMs === undefined
+        ? null
+        : selectFreshRecap(days, {
+            nowMs,
+            confessedDailyMinutes,
+            weekStartsOn,
+            ...(classifyDay === undefined ? {} : { classifyDay }),
+          }),
     requirementHeatMap: buildRequirementHeatMap(days, {
       weekStartsOn,
       ...(classifyDay === undefined
