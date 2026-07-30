@@ -1,4 +1,5 @@
 import {
+  Animated,
   Image,
   Pressable,
   StyleSheet,
@@ -19,6 +20,7 @@ type MilestoneBadgeButtonProps = Readonly<{
   onPress: () => void;
   unlockSequence: Readonly<{
     index: number;
+    scale: Animated.Value;
     total: number;
   }> | null;
 }>;
@@ -102,12 +104,14 @@ export function MilestoneBadgeButton({
   return unlockSequence === null ? (
     button
   ) : (
-    <View
+    <Animated.View
       accessible
       accessibilityLabel={`New milestone ${unlockSequence.index + 1} of ${unlockSequence.total}`}
+      style={{ transform: [{ scale: unlockSequence.scale }] }}
+      testID={`milestone-unlock-animation-${badge.id}`}
     >
       {button}
-    </View>
+    </Animated.View>
   );
 }
 

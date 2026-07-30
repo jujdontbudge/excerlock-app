@@ -24,6 +24,7 @@ import {
   type MilestoneMetrics,
 } from "./progress";
 import { useMilestoneUnlockStore } from "./unlockStore";
+import { useMilestoneUnlockAnimation } from "./useMilestoneUnlockAnimation";
 
 type MilestonesShelfProps = Readonly<{
   metrics: MilestoneMetrics;
@@ -43,6 +44,7 @@ export function MilestonesShelf({
 }: MilestonesShelfProps) {
   const { spacing, typography } = useTheme();
   const rows = buildMilestoneRows(metrics);
+  const unlockScales = useMilestoneUnlockAnimation(unlockSequence);
   const records = useMilestoneUnlockStore((state) => state.records);
   const markTapped = useMilestoneUnlockStore((state) => state.markTapped);
   const [selectedLockedId, setSelectedLockedId] =
@@ -84,8 +86,9 @@ export function MilestonesShelf({
                 unlockSequence={
                   isMilestoneId(badge.id) &&
                   unlockSequence.includes(badge.id)
-                    ? {
+                      ? {
                         index: unlockSequence.indexOf(badge.id),
+                        scale: unlockScales.get(badge.id)!,
                         total: unlockSequence.length,
                       }
                     : null

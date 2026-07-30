@@ -3,6 +3,7 @@ import {
   render,
   screen,
 } from "@testing-library/react-native";
+import { Animated } from "react-native";
 
 import { MockShareCardModule } from "@/shareCards";
 
@@ -23,6 +24,10 @@ const metrics = {
 describe("MilestonesShelf", () => {
   beforeEach(() => {
     useMilestoneUnlockStore.setState({ records: {} });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it("renders all three visible ladders with locked, unlocked and next-up art", async () => {
@@ -94,5 +99,42 @@ describe("MilestonesShelf", () => {
     expect(screen.queryByTestId("milestone-new-streak-3")).toBeNull();
     expect(shareCards.getCapturedCards()).toEqual([]);
     expect(shareCards.getPresentedCards()).toEqual([]);
+  });
+
+  it("starts one staggered scale-in sequence for all pending unlocks", async () => {
+    const start = jest.fn();
+    const stop = jest.fn();
+    const spring = jest.spyOn(Animated, "spring");
+    const stagger = jest
+      .spyOn(Animated, "stagger")
+      .mockReturnValue({ start, stop } as Animated.CompositeAnimation);
+
+    await render(
+      <MilestonesShelf
+        metrics={metrics}
+        unlockSequence={["streak-3", "activity-1"]}
+      />,
+    );
+
+    expect(spring).toHaveBeenCalledTimes(2);
+    expect(spring.mock.calls.map(([, config]) => config)).toEqual([
+      expect.objectContaining({
+        damping: 13,
+        stiffness: 210,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      expect.objectContaining({
+        damping: 13,
+        stiffness: 210,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]);
+    expect(stagger).toHaveBeenCalledWith(
+      120,
+      spring.mock.results.map(({ value }) => value),
+    );
+    expect(start).toHaveBeenCalledTimes(1);
   });
 });
