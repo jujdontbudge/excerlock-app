@@ -10,7 +10,7 @@ import {
   FIXTURE_CONDITION_NAMES,
   FIXTURE_DAY_SUMMARIES,
 } from "../fixtures";
-import { buildRecap } from "../model";
+import { buildRecap, conditionNameMap } from "../model";
 
 jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
@@ -40,6 +40,49 @@ describe("RecapCard", () => {
     );
     expect(screen.getByTestId("recap-earned-spent")).toHaveTextContent(/^3h 41m · 6h 14m$/);
     expect(screen.getByTestId("recap-streak")).toHaveTextContent(/^5 days$/);
+  });
+
+  it("breaks level top sources by first-qualified time, including zero", async () => {
+    const source = FIXTURE_DAY_SUMMARIES.at(-1)!;
+    const tiedDay = {
+      ...source,
+      dayIndex: 0,
+      dayStartMs: 0,
+      earnedMinutes: 60,
+      conditions: {
+        "later-gym": {
+          eventsFired: 1,
+          rateMinutes: 0,
+          stateSustainedMinutes: 0,
+          earnedMinutes: 30,
+          meaningfulActivity: true,
+          firstQualifiedAtMs: 10,
+        },
+        "first-steps": {
+          eventsFired: 1,
+          rateMinutes: 0,
+          stateSustainedMinutes: 0,
+          earnedMinutes: 30,
+          meaningfulActivity: true,
+          firstQualifiedAtMs: 0,
+        },
+      },
+      meaningfulActivity: true,
+      meaningfulConditionCount: 2,
+    };
+    const tiedRecap = buildRecap([tiedDay], {
+      confessedDailyMinutes: 240,
+      conditionNames: conditionNameMap([
+        { id: "later-gym", catalogId: "gym-arrival" },
+        { id: "first-steps", catalogId: "steps-goal" },
+      ]),
+    })!;
+
+    await render(<RecapCard recap={tiedRecap} />);
+
+    expect(screen.getByTestId("recap-activities")).toHaveTextContent(
+      /^2 earns · most from Step goal$/,
+    );
   });
 
   it("states a down week as a fact and nothing more", async () => {
