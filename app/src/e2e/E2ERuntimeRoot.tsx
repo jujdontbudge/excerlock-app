@@ -11,8 +11,9 @@ import {
   createHomeSignalFeed,
   installHomeAppRuntime,
 } from "@/home";
-import { installSubscriptionModule } from "@/subscription/accessor";
-import { MockSubscriptionModule } from "@/subscription/MockSubscriptionModule";
+import {
+  installFixtureSubscriptionModule,
+} from "@/subscription/accessor";
 
 import { E2EScenarioGate } from "./E2EScenarioGate";
 import type { LoadedScenario } from "./scenarioDeepLink";
@@ -41,11 +42,10 @@ export function E2ERuntimeRoot({
       });
       uninstallSubscriptionModule.current?.();
       uninstallSubscriptionModule.current =
-        installSubscriptionModule(
-          new MockSubscriptionModule({
-            clock: loaded.composition.clock,
-          }),
-        );
+        installFixtureSubscriptionModule({
+          entitlement: loaded.state.entitlement,
+          clock: loaded.composition.clock,
+        });
       router.replace("/");
     },
     [router],
