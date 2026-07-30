@@ -1,9 +1,16 @@
-import { render, screen } from "@testing-library/react-native";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react-native";
 
 import {
   classifyScheduleDay,
   type ScheduleRules,
 } from "@/schedule";
+import { MockShareCardModule } from "@/shareCards";
 
 import { RecapCard } from "../components";
 import {
@@ -185,5 +192,35 @@ describe("RecapCard", () => {
       /^Rest week$/,
     );
     expect(screen.queryByText(/missed|failed|should have/i)).toBeNull();
+  });
+
+  it("projects the full recap into a privacy-safe card and runs the mocked share flow", async () => {
+    const shareCards = new MockShareCardModule();
+    await render(
+      <RecapCard
+        recap={recap(FIXTURE_DAY_SUMMARIES, 240)}
+        shareCardModule={shareCards}
+      />,
+    );
+
+    await fireEvent.press(screen.getByRole("button", { name: "Share" }));
+    const canvas = screen.getByTestId("share-card-canvas");
+    const card = within(canvas);
+    expect(card.getByTestId("share-reclaimed")).toHaveTextContent(/^21h 46m$/);
+    expect(card.getByTestId("share-active-days")).toHaveTextContent(/^6 of 7 active days$/);
+    expect(card.getByTestId("share-earn-count")).toHaveTextContent(/^7 earns$/);
+    // Negative control witnessed 2026-07-30: a temporary projection appended
+    // `topSourceName`, and this exact assertion rejected the rendered
+    // "20–26 Jul · Gym visit" leak. The recap row may name a source; the share
+    // card may not.
+    expect(card.queryByText(/Gym visit/i)).toBeNull();
+
+    await fireEvent.press(screen.getByRole("button", { name: "Feed · 1:1" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Share card" }));
+    await waitFor(() => expect(shareCards.getPresentedCards()).toHaveLength(1));
+    expect(shareCards.getPresentedCards()[0]).toMatchObject({
+      template: "recap",
+      ratio: "feed",
+    });
   });
 });

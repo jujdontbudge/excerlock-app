@@ -66,6 +66,7 @@ Schedule's rules and onboarding's confession.
 | `model/view.ts` | `buildAnalysisView` — the single read the screen performs |
 | `fixtures/daySummaries.ts` | three weeks of derived, self-consistent `DaySummary` records for tests and E2E |
 | `components/RecapCard.tsx` | the week in five rows, led by its Time Reclaimed and delta |
+| `components/RecapShareAction.tsx` | projects a full recap into the privacy-safe share-card input and opens its preview |
 | `components/RequirementHeatMapCard.tsx` | accessible requirement cells, kind glyphs and selectable day detail |
 | `components/TimeReclaimedHero.tsx` | the month's hero numeral and what sits under it |
 | `components/EarnedSpentCard.tsx` | earned vs spent vs the difference, for a window |
@@ -153,12 +154,15 @@ The PRD's Analysis tab has six blocks (§3.15 Tab 3). This build ships blocks 1 
 (#38/#65), block 4's readings + requirement heat map (#38/#67), block 5 (#56), plus the day ledger.
 Still owed:
 
-- **Recap · Share button** — needs the on-device share-card renderer (PRD §3.13: 9:16 + 1:1 templates,
-  aggregates-and-dates privacy floor). No module owns it yet; `RecapCard` has the three facts the card
-  wants.
 - **Milestones shelf** — needs the 22 **badge assets** (`design/STYLE.md`) and the unlock state (which
   badges are new, for the tab dot). The three ladders' inputs now all exist:
   `selectTimeReclaimed(days, baseline)` over the whole record, `selectStreak`, and the activity count.
+
+The Recap **Share** button now projects the five-row in-app recap into
+`@/shareCards`' aggregate/date-only input and opens the 9:16/1:1 preview. The
+capture and iOS-share operations still use that module's explicit deterministic
+mock while Expo MCP is unavailable; real file capture and the native sheet are
+not built or claimed here.
 
 ## Tests
 

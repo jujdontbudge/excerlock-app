@@ -1,11 +1,14 @@
 import { StyleSheet, Text, View } from "react-native";
 
 import { Card, useTheme } from "@/ui";
+import type { ShareCardModule } from "@/shareCards";
 
 import { formatDayCount, formatDays, formatMinutes, type Recap } from "../model";
+import { RecapShareAction } from "./RecapShareAction";
 
 type RecapCardProps = {
   recap: Recap;
+  shareCardModule?: ShareCardModule;
 };
 
 /**
@@ -17,12 +20,11 @@ type RecapCardProps = {
  * still recaps — it reports the usage it can see rather than a zero it cannot
  * justify — and a week that ran over the confessed average says so outright.
  *
- * Two things the PRD asks of this card are not here, because their inputs are
- * not: the **Share** button (needs the on-device share-card renderer) and the
- * 72-hour freshness window (needs the §3.14 recap moment and a clock, which this
- * module deliberately does not have). Both are listed in the module README.
+ * Share crosses a narrow aggregate/date projection before its public card is
+ * rendered, so row ③'s source name cannot reach that capture target. The
+ * capture/native-share boundary is currently the deterministic local mock.
  */
-export function RecapCard({ recap }: RecapCardProps) {
+export function RecapCard({ recap, shareCardModule }: RecapCardProps) {
   const { colors, spacing, typography } = useTheme();
   const measured = recap.reclaimed.status === "measured";
 
@@ -81,6 +83,8 @@ export function RecapCard({ recap }: RecapCardProps) {
           value={recap.streak.current === 0 ? "None running" : formatDays(recap.streak.current)}
         />
       </View>
+
+      <RecapShareAction recap={recap} shareCardModule={shareCardModule} />
     </Card>
   );
 }
