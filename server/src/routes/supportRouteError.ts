@@ -1,5 +1,8 @@
 import type { FastifyReply } from "fastify";
-import { SupportUserNotFoundError } from "../support/index.js";
+import {
+  FeatureRequestNotFoundError,
+  SupportUserNotFoundError,
+} from "../support/index.js";
 
 export async function sendSupportRouteError(
   reply: FastifyReply,
@@ -10,6 +13,16 @@ export async function sendSupportRouteError(
       error: {
         code: error.code,
         message: "The authenticated user does not exist",
+      },
+    });
+    return;
+  }
+
+  if (error instanceof FeatureRequestNotFoundError) {
+    await reply.code(404).send({
+      error: {
+        code: error.code,
+        message: "The feature request does not exist",
       },
     });
     return;

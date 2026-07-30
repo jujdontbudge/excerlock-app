@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createSupportRoutes } from "../src/routes/support.js";
 import {
+  FeatureRequestNotFoundError,
   type FeatureRequestService,
   type FeatureRequestVoteService,
   type SupportSubmissionService,
@@ -242,6 +243,48 @@ describe("support routes", () => {
         ["user_123", "feature-request-id"],
         ["user_123", "feature-request-id"],
       ],
+    });
+  });
+
+  it("returns a defined response for a vote on a nonexistent feature request", async () => {
+    const service: SupportSubmissionService = {
+      submit: vi.fn(),
+    };
+    const featureRequests: FeatureRequestService = {
+      list: vi.fn(async () => ({ featureRequests: [] })),
+    };
+    const votes: FeatureRequestVoteService = {
+      vote: vi.fn(async () => {
+        throw new FeatureRequestNotFoundError(
+          "missing-feature-request",
+        );
+      }),
+    };
+    app = Fastify({ logger: false });
+    app.addHook("onRequest", async (request) => {
+      request.clerkIdentity = { userId: "user_123", roles: [] };
+    });
+    await app.register(
+      createSupportRoutes({ service, featureRequests, votes }),
+      { prefix: "/v1" },
+    );
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/feature-requests/missing-feature-request/votes",
+    });
+
+    expect({
+      status: response.statusCode,
+      body: response.json(),
+    }).toEqual({
+      status: 404,
+      body: {
+        error: {
+          code: "FEATURE_REQUEST_NOT_FOUND",
+          message: "The feature request does not exist",
+        },
+      },
     });
   });
 });
