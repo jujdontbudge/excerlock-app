@@ -209,6 +209,7 @@ describe("AnalysisScreen", () => {
     );
 
     expect(screen.getByTestId("streak-current")).toHaveTextContent(/^2$/);
+    expect(screen.getByTestId("recap-streak")).toHaveTextContent(/^2 days$/);
   });
 
   it("uses scheduled-active days for the visible recap denominator", async () => {

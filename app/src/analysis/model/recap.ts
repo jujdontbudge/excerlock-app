@@ -91,6 +91,6 @@ export function buildRecap(
     activityCount: week.reduce((sum, day) => sum + day.meaningfulConditionCount, 0),
     earnedMinutes: totals.earnedMinutes,
     spentMinutes: totals.spentMinutes,
-    streak: selectStreak(days),
+    streak: selectStreak(days, { classifyDay }),
   };
 }
