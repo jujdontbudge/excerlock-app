@@ -147,7 +147,9 @@ function readFeatureRequest(value: unknown): readonly FeatureRequest[] {
 function readError(value: unknown): SupportError | null {
   if (
     !isRecord(value) ||
-    (value.code !== "offline" && value.code !== "service_unavailable") ||
+    (value.code !== "offline" &&
+      value.code !== "service_unavailable" &&
+      value.code !== "timeout") ||
     !isNonEmptyString(value.message)
   ) {
     return null;

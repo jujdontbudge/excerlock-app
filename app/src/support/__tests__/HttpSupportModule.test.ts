@@ -95,4 +95,49 @@ describe("HttpSupportModule", () => {
       },
     });
   });
+
+  it("times out a hung request instead of leaving it sending", async () => {
+    jest.useFakeTimers();
+    try {
+      const fetch = jest.fn(
+        (
+          _url: string,
+          { signal }: Readonly<{ signal: AbortSignal }>,
+        ) =>
+          new Promise<never>((_resolve, reject) => {
+            signal.addEventListener("abort", () => {
+              reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+            });
+          }),
+      );
+      const support = new HttpSupportModule({
+        baseUrl: "https://api.example.test",
+        clock: new ManualSupportClock(3_000),
+        fetch,
+        getAccessToken: async () => "clerk-jwt",
+        requestTimeoutMs: 25,
+      });
+
+      const result = support.submitSupport({
+        message: "Do not leave this on a spinner.",
+      });
+      await jest.advanceTimersByTimeAsync(25);
+
+      await expect(result).resolves.toEqual({
+        status: "failed",
+        submissionId: "local-support-3000-1",
+        error: {
+          code: "timeout",
+          message:
+            "The request timed out. This wasn't sent. It is saved here so you can try again.",
+        },
+      });
+      expect((await support.getSnapshot()).submissions[0]).toMatchObject({
+        status: "failed",
+        error: { code: "timeout" },
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });

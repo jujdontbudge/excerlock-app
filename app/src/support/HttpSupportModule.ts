@@ -38,6 +38,7 @@ export type HttpSupportModuleOptions = Readonly<{
   clock?: SupportClock;
   fetch?: SupportFetch;
   getAccessToken(): Promise<string | null>;
+  requestTimeoutMs?: number;
   storage?: StateStorage<Promise<void>>;
 }>;
 
@@ -46,6 +47,11 @@ const OFFLINE_ERROR: SupportError = Object.freeze({
   code: "offline",
   message:
     "You're offline. This wasn't sent. It is saved here so you can try again.",
+});
+const TIMEOUT_ERROR: SupportError = Object.freeze({
+  code: "timeout",
+  message:
+    "The request timed out. This wasn't sent. It is saved here so you can try again.",
 });
 
 export class HttpSupportModule implements SupportModule {
@@ -56,6 +62,7 @@ export class HttpSupportModule implements SupportModule {
   private readonly listeners = new Set<SupportStateListener>();
   private readonly persistence: ReturnType<typeof createMockSupportPersistence>;
   private readonly ready: Promise<void>;
+  private readonly requestTimeoutMs: number;
   private nextLocalId = 1;
   private snapshot = EMPTY_SUPPORT_SNAPSHOT;
 
@@ -65,6 +72,7 @@ export class HttpSupportModule implements SupportModule {
     this.fetch = options.fetch ?? globalThis.fetch;
     this.getAccessToken = options.getAccessToken;
     this.persistence = createMockSupportPersistence(options.storage);
+    this.requestTimeoutMs = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
     this.ready = this.persistence.load().then((snapshot) => {
       this.snapshot = snapshot;
       this.nextLocalId = snapshot.submissions.length + 1;
@@ -93,8 +101,11 @@ export class HttpSupportModule implements SupportModule {
         category: "support",
         message: submission.message,
       });
-    } catch {
-      return this.failSubmission(submission, OFFLINE_ERROR);
+    } catch (error) {
+      return this.failSubmission(
+        submission,
+        isAbortError(error) ? TIMEOUT_ERROR : OFFLINE_ERROR,
+      );
     }
     const responseBody = await response.json();
     const submissionId = readSubmissionId(response.status, responseBody);
@@ -138,7 +149,10 @@ export class HttpSupportModule implements SupportModule {
   private async postSupport(body: Readonly<Record<string, string>>) {
     const token = await this.getAccessToken();
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timeout = setTimeout(
+      () => controller.abort(),
+      this.requestTimeoutMs,
+    );
     try {
       return await this.fetch(`${this.baseUrl}/v1/support`, {
         body: JSON.stringify(body),
@@ -207,4 +221,8 @@ function readSubmissionId(status: number, value: unknown): string {
     throw new Error("Support server returned an invalid submission response");
   }
   return value.submissionId;
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
 }
