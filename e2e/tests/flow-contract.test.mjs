@@ -81,3 +81,18 @@ test("Analysis flow covers recorded history and period controls", async () => {
   assert.match(flow, /id: day-ledger/);
   assert.match(flow, /takeScreenshot: analysis-recorded-history/);
 });
+
+test("Settings flow covers persisted grace and signed-out versus signed-in", async () => {
+  const flow = await read("flows/settings-account.yaml");
+
+  assert.match(flow, new RegExp(`^appId: ${APP_ID}$`, "m"));
+  assert.match(flow, new RegExp(`^  SCENARIO: ${BUNDLED_SCENARIO}$`, "m"));
+  assert.match(flow, /id: settings-screen/);
+  assert.match(flow, /No grace period selected/);
+  assert.match(flow, /Selected grace period: 2 minutes/);
+  assert.match(flow, /Signed out/);
+  assert.match(flow, /tapOn: Sign in/);
+  assert.match(flow, /member@excerlock\.test/);
+  assert.match(flow, /tapOn: Sign out/);
+  assert.match(flow, /takeScreenshot: settings-signed-out/);
+});
