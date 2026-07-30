@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ScrollView,
   Text,
@@ -49,19 +49,36 @@ export function MilestonesShelf({
   const markTapped = useMilestoneUnlockStore((state) => state.markTapped);
   const [selectedLockedId, setSelectedLockedId] =
     useState<MilestoneId | null>(null);
+  const [requestedShareId, setRequestedShareId] =
+    useState<MilestoneId | null>(null);
   const [selectedShare, setSelectedShare] =
     useState<SelectedShare | null>(null);
-  const selected = rows
-    .flatMap(({ badges }) => badges)
+  const badges = rows.flatMap((row) => row.badges);
+  const selected = badges
     .find(({ id }) => id === selectedLockedId);
+  const requestedShareBadge = badges.find(
+    ({ id }) => id === requestedShareId,
+  );
+
+  useEffect(() => {
+    if (requestedShareId === null || requestedShareBadge === undefined) {
+      return;
+    }
+    const record = records[requestedShareId];
+    if (record === undefined) return;
+
+    markTapped(requestedShareId);
+    setSelectedShare({
+      badge: requestedShareBadge,
+      unlockedAtMs: record.unlockedAtMs,
+    });
+    setRequestedShareId(null);
+  }, [markTapped, records, requestedShareBadge, requestedShareId]);
 
   const pressBadge = (badge: MilestoneBadge) => {
     if (badge.state === "unlocked") {
       if (!isMilestoneId(badge.id)) return;
-      const record = records[badge.id];
-      if (record === undefined) return;
-      markTapped(badge.id);
-      setSelectedShare({ badge, unlockedAtMs: record.unlockedAtMs });
+      setRequestedShareId(badge.id);
     } else {
       setSelectedLockedId(badge.id as MilestoneId);
     }

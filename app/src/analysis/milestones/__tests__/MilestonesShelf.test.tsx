@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -99,6 +100,28 @@ describe("MilestonesShelf", () => {
     expect(screen.queryByTestId("milestone-new-streak-3")).toBeNull();
     expect(shareCards.getCapturedCards()).toEqual([]);
     expect(shareCards.getPresentedCards()).toEqual([]);
+  });
+
+  it("honors an unlocked tap when its persisted record finishes arriving", async () => {
+    await render(<MilestonesShelf metrics={metrics} />);
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "3 days, unlocked" }),
+    );
+    expect(
+      screen.queryByRole("header", { name: "Share your milestone" }),
+    ).toBeNull();
+
+    await act(async () => {
+      useMilestoneUnlockStore
+        .getState()
+        .discoverUnlocks(["streak-3"], Date.UTC(2026, 6, 29, 12));
+    });
+
+    expect(
+      await screen.findByRole("header", { name: "Share your milestone" }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText("July 2026")).toBeOnTheScreen();
   });
 
   it("starts one staggered scale-in sequence for all pending unlocks", async () => {
