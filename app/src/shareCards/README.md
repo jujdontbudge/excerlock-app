@@ -62,17 +62,26 @@ projects only the count (`7`) for the public artifact.
    returns typed PNG-file metadata;
 2. `presentShareSheet` receives that file and reports the handoff outcome.
 
+`NativeShareCardModule` captures the mounted `ShareCardFrame` with
+`react-native-view-shot`. It divides the 1080×1920 Story or 1080×1080 Feed
+target by `PixelRatio.get()` for `captureRef`'s logical size options, requests a
+PNG `tmpfile`, and returns the same local file URI. It gates outbound sharing on
+`Sharing.isAvailableAsync()` and passes that URI directly to
+`Sharing.shareAsync(fileUri, { UTI: "public.png" })`. No `expo-sharing` config
+plugin is installed because this module sends shares out; it does not add a
+share extension for receiving them.
+
 `MockShareCardModule` is deterministic. It returns a `mock://` PNG URI, records
 both operations for tests, and reports `status: "simulated"`. It does not create
-an image file and does not open a native share sheet.
+an image file and does not open a native share sheet. It remains the injected
+boundary for tests and E2E builds.
 
-`getShareCardModule()` in `accessor.ts` is the one module-level composition root
-and the one-line swap point for the real adapter. The remaining slice is
-honestly **not built**: install an approved view-capture library and native
-sharing library through Expo MCP after its authorization is restored, implement
-the adapter, and replace the accessor's `new MockShareCardModule()` constructor.
-No dependency or `package.json` change belongs to this ticket while Expo MCP is
-unavailable.
+`getShareCardModule()` in `accessor.ts` is the sole module-level composition root
+and now returns one `NativeShareCardModule` instance.
+
+This adapter has not been run on a real device or simulator in this lane.
+Native rendered-PNG dimensions and iOS share-sheet presentation therefore
+remain runtime-unverified outside the mocked boundary tests.
 
 ## Layout
 
@@ -81,6 +90,7 @@ unavailable.
 | `ShareCardInput.ts` | privacy-safe projection types and their validating constructors |
 | `ShareCardFormat.ts` | Story/Feed output geometry |
 | `ShareCardModule.ts` | capture + native-share interface and result types |
+| `NativeShareCardModule.ts` | production view capture + outbound native sharing adapter |
 | `MockShareCardModule.ts` | deterministic, explicitly simulated adapter |
 | `accessor.ts` | sole adapter composition/swap point |
 | `components/ShareCardFrame.tsx` | governed gradient capture target |
@@ -97,7 +107,8 @@ npm run test:app -- shareCards
 ```
 
 The suite covers both templates at both ratios, wordmark/content laws, runtime
-text validation, compile-time field/text/user-photo controls, the deterministic
-boundary/accessor, preview toggle behavior, rest-week wording, and
-capture-to-handoff behavior. Analysis' `RecapCard` suite covers the full
-rich-recap projection and live Share button.
+text validation, compile-time field/text/user-photo controls, exact logical
+capture sizing at both ratios, native availability and handoff calls, the
+deterministic mock, the production accessor, preview toggle behavior,
+rest-week wording, and capture-to-handoff behavior. Analysis' `RecapCard` suite
+covers the full rich-recap projection and live Share button.

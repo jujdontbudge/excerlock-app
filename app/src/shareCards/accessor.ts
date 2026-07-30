@@ -1,13 +1,10 @@
-import { MockShareCardModule } from "./MockShareCardModule";
+import { NativeShareCardModule } from "./NativeShareCardModule";
 import type { ShareCardModule } from "./ShareCardModule";
 
 let shareCardModule: ShareCardModule | undefined;
 
-/**
- * The share-card composition root. Replacing this constructor is the one-line
- * swap when Expo can install the real capture and native-share adapter.
- */
+/** The sole composition root for the production share-card adapter. */
 export function getShareCardModule(): ShareCardModule {
-  shareCardModule ??= new MockShareCardModule();
+  shareCardModule ??= new NativeShareCardModule();
   return shareCardModule;
 }
