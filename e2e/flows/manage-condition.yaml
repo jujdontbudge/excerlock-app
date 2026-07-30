@@ -22,7 +22,9 @@ env:
     timeout: 10000
 - assertNotVisible:
     id: screen-e2e-error
-- tapOn: Manage
+# iOS exposes a tab as "Manage, tab, N of 4" and Maestro matches text as a
+# FULL match, so a bare "Manage" never matches the tab bar.
+- tapOn: "Manage, tab.*"
 - assertVisible:
     id: manage-screen
 - assertVisible:

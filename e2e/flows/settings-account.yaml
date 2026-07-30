@@ -23,7 +23,9 @@ env:
     timeout: 10000
 - assertNotVisible:
     id: screen-e2e-error
-- tapOn: Settings
+# iOS exposes a tab as "Settings, tab, N of 4" and Maestro matches text as a
+# FULL match, so a bare "Settings" never matches the tab bar.
+- tapOn: "Settings, tab.*"
 - assertVisible:
     id: settings-screen
 - assertVisible: No grace period selected
@@ -41,7 +43,7 @@ env:
 
 # Restart the process without clearing persisted state.
 - launchApp
-- tapOn: Settings
+- tapOn: "Settings, tab.*"
 - assertVisible:
     id: settings-screen
 - assertVisible: "Selected grace period: 2 minutes"
