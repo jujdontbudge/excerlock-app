@@ -192,6 +192,16 @@ describe("selectStreak", () => {
     ).toEqual({ current: 1, longest: 3 });
   });
 
+  it("keeps the original all-active behavior when no schedule exists", () => {
+    const days = streakDays([true, false, true]);
+
+    expect(
+      selectStreak(days, {
+        classifyDay: (dayIndex) => classifyScheduleDay({ dayIndex }),
+      }),
+    ).toEqual({ current: 1, longest: 1 });
+  });
+
   it("counts the run of meaningful days ending today", () => {
     expect(selectStreak(streakDays([true, true, false, true, true, true])).current).toBe(3);
   });
