@@ -23,6 +23,8 @@ export {
 } from "./format";
 export {
   buildRequirementHeatMap,
+  type QualifiedConditionDetail,
+  type RequirementDayDetail,
   type RequirementDayClassifier,
   type RequirementHeatMap,
   type RequirementHeatMapCell,

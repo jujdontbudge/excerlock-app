@@ -141,4 +141,54 @@ describe("buildRequirementHeatMap", () => {
       "blank",
     ]);
   });
+
+  it("pads a mid-week first history with honest before-history and future cells", () => {
+    const wednesday = {
+      ...day(MONDAY + 2, {
+        gym: condition({
+          eventsFired: 1,
+          earnedMinutes: 25,
+          firstQualifiedAtMs: 30,
+          meaningfulActivity: true,
+        }),
+      }),
+      earnedMinutes: 25,
+    };
+    const thursday = day(MONDAY + 3, {});
+
+    const cells = buildRequirementHeatMap([wednesday, thursday], {
+      throughDayIndex: MONDAY + 3,
+      conditionNames: { gym: "Gym visit" },
+    }).weeks[0];
+
+    expect(cells).toMatchObject([
+      { state: "blank", blankReason: "beforeHistory" },
+      { state: "blank", blankReason: "beforeHistory" },
+      {
+        state: "metByEvent",
+        label: "Wed 8 Jul",
+        detail: {
+          earnedMinutes: 25,
+          qualifiedConditions: [
+            {
+              conditionId: "gym",
+              kind: "event",
+              name: "Gym visit",
+            },
+          ],
+        },
+      },
+      {
+        state: "missed",
+        label: "Thu 9 Jul",
+        detail: {
+          earnedMinutes: 0,
+          qualifiedConditions: [],
+        },
+      },
+      { state: "blank", blankReason: "future" },
+      { state: "blank", blankReason: "future" },
+      { state: "blank", blankReason: "future" },
+    ]);
+  });
 });

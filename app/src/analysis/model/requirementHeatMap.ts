@@ -1,4 +1,5 @@
 import {
+  DAY_MS,
   RATE_STREAK_FLOOR_MINUTES,
   STATE_STREAK_FLOOR_MINUTES,
   type ConditionDaySummary,
@@ -7,25 +8,46 @@ import {
 
 import type { ScheduleDay } from "@/schedule";
 
-import { weekOffset, type Weekday } from "./calendar";
+import { dayLabel, weekOffset, type Weekday } from "./calendar";
 import { DEFAULT_WEEK_STARTS_ON } from "./selectors";
 
 export type RequirementMetKind = "event" | "rate" | "state";
 
+export type QualifiedConditionDetail = Readonly<{
+  conditionId: string;
+  name: string;
+  kind: RequirementMetKind;
+  firstQualifiedAtMs: number;
+}>;
+
+export type RequirementDayDetail = Readonly<{
+  earnedMinutes: number;
+  qualifiedConditions: readonly QualifiedConditionDetail[];
+  scheduleDay: ScheduleDay;
+}>;
+
+type ObservedRequirementCell = Readonly<{
+  dayIndex: number;
+  label: string;
+  detail: RequirementDayDetail;
+}>;
+
 export type RequirementHeatMapCell =
-  | Readonly<{
-      dayIndex: number;
+  | (ObservedRequirementCell &
+      Readonly<{
       state: "metByEvent" | "metByRate" | "metByState";
       qualifiedConditionId: string;
-    }>
+      }>)
   | Readonly<{
       dayIndex: number;
+      label: string;
       state: "blank";
+      blankReason: "beforeHistory" | "future";
     }>
-  | Readonly<{
-      dayIndex: number;
+  | (ObservedRequirementCell &
+      Readonly<{
       state: "missed" | "rest";
-    }>;
+      }>);
 
 export type RequirementHeatMap = Readonly<{
   weeks: readonly (readonly RequirementHeatMapCell[])[];
@@ -37,6 +59,7 @@ type RequirementHeatMapOptions = Readonly<{
   weekStartsOn?: Weekday;
   throughDayIndex?: number;
   classifyDay?: RequirementDayClassifier;
+  conditionNames?: Readonly<Record<string, string>>;
 }>;
 
 const ALL_DAYS_SCHEDULED_ACTIVE: RequirementDayClassifier = () => ({
@@ -54,6 +77,7 @@ export function buildRequirementHeatMap(
     weekStartsOn = DEFAULT_WEEK_STARTS_ON,
     throughDayIndex = days.at(-1)?.dayIndex,
     classifyDay = ALL_DAYS_SCHEDULED_ACTIVE,
+    conditionNames = {},
   }: RequirementHeatMapOptions = {},
 ): RequirementHeatMap {
   const first = days[0];
@@ -70,23 +94,46 @@ export function buildRequirementHeatMap(
 
   for (let dayIndex = firstGridDay; dayIndex <= lastGridDay; dayIndex += 1) {
     const day = dayByIndex.get(dayIndex);
-    const winner = day === undefined ? undefined : firstQualifiedCondition(day);
+    const label = dayLabel({
+      dayIndex,
+      dayStartMs: day?.dayStartMs ?? dayIndex * DAY_MS,
+    });
     if (dayIndex < first.dayIndex || dayIndex > throughDayIndex) {
-      cells.push({ dayIndex, state: "blank" });
+      cells.push({
+        dayIndex,
+        label,
+        state: "blank",
+        blankReason:
+          dayIndex < first.dayIndex ? "beforeHistory" : "future",
+      });
       continue;
     }
 
     const scheduleDay = classifyDay(dayIndex);
+    const qualifiedConditions =
+      day === undefined
+        ? []
+        : qualifiedConditionDetails(day, conditionNames);
+    const winner = qualifiedConditions[0];
+    const observed = {
+      dayIndex,
+      label,
+      detail: {
+        earnedMinutes: day?.earnedMinutes ?? 0,
+        qualifiedConditions,
+        scheduleDay,
+      },
+    };
     if (!scheduleDay.isActive) {
-      cells.push({ dayIndex, state: "rest" });
+      cells.push({ ...observed, state: "rest" });
       continue;
     }
 
     cells.push(
       winner === undefined
-        ? { dayIndex, state: "missed" }
+        ? { ...observed, state: "missed" }
         : {
-            dayIndex,
+            ...observed,
             state: metState(winner.kind),
             qualifiedConditionId: winner.conditionId,
           },
@@ -101,34 +148,28 @@ export function buildRequirementHeatMap(
   };
 }
 
-type QualifiedCondition = Readonly<{
-  conditionId: string;
-  kind: RequirementMetKind;
-  firstQualifiedAtMs: number;
-}>;
-
-function firstQualifiedCondition(
+function qualifiedConditionDetails(
   day: Pick<DaySummary, "conditions">,
-): QualifiedCondition | undefined {
-  let winner: QualifiedCondition | undefined;
-
-  for (const [conditionId, condition] of Object.entries(day.conditions)) {
-    const { firstQualifiedAtMs } = condition;
-    const kind = qualifiedKind(condition);
-    if (firstQualifiedAtMs === undefined || kind === undefined) continue;
-
-    const candidate = { conditionId, kind, firstQualifiedAtMs };
-    if (
-      winner === undefined ||
-      candidate.firstQualifiedAtMs < winner.firstQualifiedAtMs ||
-      (candidate.firstQualifiedAtMs === winner.firstQualifiedAtMs &&
-        candidate.conditionId.localeCompare(winner.conditionId) < 0)
-    ) {
-      winner = candidate;
-    }
-  }
-
-  return winner;
+  conditionNames: Readonly<Record<string, string>>,
+): QualifiedConditionDetail[] {
+  return Object.entries(day.conditions)
+    .flatMap(([conditionId, condition]): QualifiedConditionDetail[] => {
+      const { firstQualifiedAtMs } = condition;
+      const kind = qualifiedKind(condition);
+      return firstQualifiedAtMs === undefined || kind === undefined
+        ? []
+        : [{
+            conditionId,
+            name: conditionNames[conditionId] ?? conditionId,
+            kind,
+            firstQualifiedAtMs,
+          }];
+    })
+    .sort(
+      (left, right) =>
+        left.firstQualifiedAtMs - right.firstQualifiedAtMs ||
+        left.conditionId.localeCompare(right.conditionId),
+    );
 }
 
 function qualifiedKind(
