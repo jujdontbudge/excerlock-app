@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   createFeatureRequestService,
+  createFeatureRequestVoteService,
   createSupportSubmissionService,
   type FeatureRequestRecord,
   type FeatureRequestRepository,
+  type FeatureRequestVoteRepository,
+  type NewFeatureRequestVoteRecord,
   type NewSupportSubmissionRecord,
   type SupportSubmissionRepository,
   SupportUserNotFoundError,
@@ -36,6 +39,32 @@ class MemoryFeatureRequestRepository implements FeatureRequestRepository {
 
   async listFeatureRequests(): Promise<readonly FeatureRequestRecord[]> {
     return this.featureRequests;
+  }
+}
+
+class MemoryFeatureRequestVoteRepository
+  implements FeatureRequestVoteRepository
+{
+  readonly votes: NewFeatureRequestVoteRecord[] = [];
+  private readonly uniquenessKeys = new Set<string>();
+
+  async userExists(userId: string): Promise<boolean> {
+    return userId === "user_123";
+  }
+
+  async recordFeatureRequestVote(vote: NewFeatureRequestVoteRecord) {
+    if (vote.featureRequestId !== "feature-request-id") {
+      return null;
+    }
+
+    const uniquenessKey = `${vote.featureRequestId}:${vote.userId}`;
+    if (this.uniquenessKeys.has(uniquenessKey)) {
+      return { status: "alreadyVoted" as const, voteCount: 1 };
+    }
+
+    this.uniquenessKeys.add(uniquenessKey);
+    this.votes.push(vote);
+    return { status: "voted" as const, voteCount: 1 };
   }
 }
 
@@ -122,5 +151,38 @@ describe("feature request service", () => {
         },
       ],
     });
+  });
+
+  it("records one vote and treats a retry as an idempotent no-op", async () => {
+    const repository = new MemoryFeatureRequestVoteRepository();
+    const ids = ["vote-1", "vote-retry"][Symbol.iterator]();
+    const service = createFeatureRequestVoteService({
+      repository,
+      now: () => new Date("2026-07-29T21:05:00.000Z"),
+      randomId: () => ids.next().value!,
+    });
+
+    await expect(
+      service.vote("user_123", "feature-request-id"),
+    ).resolves.toEqual({
+      status: "voted",
+      featureRequestId: "feature-request-id",
+      voteCount: 1,
+    });
+    await expect(
+      service.vote("user_123", "feature-request-id"),
+    ).resolves.toEqual({
+      status: "alreadyVoted",
+      featureRequestId: "feature-request-id",
+      voteCount: 1,
+    });
+    expect(repository.votes).toEqual([
+      {
+        id: "vote-1",
+        featureRequestId: "feature-request-id",
+        userId: "user_123",
+        createdAt: new Date("2026-07-29T21:05:00.000Z"),
+      },
+    ]);
   });
 });

@@ -11,10 +11,18 @@ export {
   type FeatureRequestService,
 } from "./featureRequests.js";
 export {
+  createFeatureRequestVoteService,
+  type FeatureRequestVoteResult,
+  type FeatureRequestVoteService,
+} from "./votes.js";
+export {
   type FeatureRequestRecord,
   type FeatureRequestRepository,
+  type FeatureRequestVoteRepository,
   type NewFeatureRequestRecord,
+  type NewFeatureRequestVoteRecord,
   type NewSupportSubmissionRecord,
+  type PersistedFeatureRequestVote,
   type SupportSubmissionRepository,
 } from "./repository.js";
 export { SupportUserNotFoundError } from "./errors.js";

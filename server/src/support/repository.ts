@@ -40,3 +40,22 @@ export interface FeatureRequestRepository {
     userId: string,
   ): Promise<readonly FeatureRequestRecord[]>;
 }
+
+export interface NewFeatureRequestVoteRecord {
+  id: string;
+  featureRequestId: string;
+  userId: string;
+  createdAt: Date;
+}
+
+export interface PersistedFeatureRequestVote {
+  status: "voted" | "alreadyVoted";
+  voteCount: number;
+}
+
+export interface FeatureRequestVoteRepository {
+  userExists(userId: string): Promise<boolean>;
+  recordFeatureRequestVote(
+    vote: NewFeatureRequestVoteRecord,
+  ): Promise<PersistedFeatureRequestVote | null>;
+}
