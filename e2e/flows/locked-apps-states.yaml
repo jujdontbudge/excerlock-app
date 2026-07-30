@@ -1,0 +1,96 @@
+appId: com.johansardar.excerlock
+name: Locked apps — shield causes, active window, and Full Lock
+tags:
+  - locked-apps
+  - shields
+  - full-lock
+  - active-window
+env:
+  SCENARIO: baseline-fresh-install
+  SCENARIO_OVERRIDES: "%7B%22state%22%3A%7B%22ledger%22%3A%7B%22baseAllowanceMinutes%22%3A5%2C%22journal%22%3A%5B%7B%22kind%22%3A%22drainTick%22%2C%22source%22%3A%22screentime%22%2C%22id%22%3A%22empty-balance%22%2C%22atMs%22%3A1785332400000%2C%22minutes%22%3A5%7D%5D%7D%7D%7D"
+---
+- launchApp:
+    clearState: true
+- openLink:
+    link: excerlock://e2e/scenario/${SCENARIO}?overrides=${SCENARIO_OVERRIDES}
+- runFlow:
+    when:
+      visible: 'Open in "ExcerLock"'
+    commands:
+      - tapOn: Open
+
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- assertNotVisible:
+    id: screen-e2e-error
+- openLink:
+    link: excerlock://locked-apps
+- runFlow:
+    when:
+      visible: 'Open in "ExcerLock"'
+    commands:
+      - tapOn: Open
+- extendedWaitUntil:
+    visible:
+      id: lock-screen
+    timeout: 10000
+
+- assertVisible: Pick what ExcerLock can pause.
+- assertVisible: Nothing is locked yet
+- tapOn: Allow Screen Time
+- extendedWaitUntil:
+    visible: "Screen Time access: On"
+    timeout: 10000
+- tapOn: Choose apps
+- scrollUntilVisible:
+    element:
+      text: "Time's up — for now."
+    direction: UP
+- assertVisible: Today's balance is empty.
+- assertVisible: "4 apps · 2 categories"
+- waitForAnimationToEnd
+- takeScreenshot: locked-apps-empty-balance
+
+- scrollUntilVisible:
+    element:
+      text: Add lock window
+    direction: DOWN
+- tapOn: Add lock window
+- tapOn: Monday
+- tapOn: Tuesday
+- tapOn: Wednesday
+- tapOn: Thursday
+- tapOn: Friday
+- tapOn: Saturday
+- tapOn: Sunday
+- tapOn: Start time
+- inputText: 23:59
+- tapOn: End time
+- inputText: 23:58
+- hideKeyboard
+- tapOn: Save lock window
+- scrollUntilVisible:
+    element:
+      text: Apps are asleep.
+    direction: UP
+- assertVisible: A lock window is running.
+- waitForAnimationToEnd
+- takeScreenshot: locked-apps-active-window
+
+- scrollUntilVisible:
+    element:
+      text: Full Lock is off
+    direction: DOWN
+- tapOn: Turn on Full Lock
+- assertVisible: Turn on Full Lock?
+- tapOn: Yes, turn it on
+- assertVisible: Full Lock is on
+- waitForAnimationToEnd
+- takeScreenshot: locked-apps-full-lock
+- scrollUntilVisible:
+    element:
+      text: Move first, scroll after.
+    direction: UP
+- assertVisible: Full Lock is on — your day starts at zero.

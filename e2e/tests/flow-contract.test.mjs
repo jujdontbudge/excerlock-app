@@ -153,6 +153,23 @@ test("Paywall flow covers free entitlement and a monthly purchase", async () => 
   assert.match(flow, /Create your account/);
 });
 
+test("Locked-apps flow covers shields, an active window, and Full Lock", async () => {
+  const flow = await read("flows/locked-apps-states.yaml");
+
+  assert.match(flow, new RegExp(`^appId: ${APP_ID}$`, "m"));
+  assert.match(flow, new RegExp(`^  SCENARIO: ${BUNDLED_SCENARIO}$`, "m"));
+  assert.match(flow, /openLink:\n    link: excerlock:\/\/locked-apps/);
+  assert.match(flow, /id: lock-screen/);
+  assert.match(flow, /Time's up — for now\./);
+  assert.match(flow, /Add lock window/);
+  assert.match(flow, /Apps are asleep\./);
+  assert.match(flow, /Full Lock is off/);
+  assert.match(flow, /Yes, turn it on/);
+  assert.match(flow, /Full Lock is on/);
+  assert.match(flow, /Move first, scroll after\./);
+  assert.match(flow, /takeScreenshot: locked-apps-full-lock/);
+});
+
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
