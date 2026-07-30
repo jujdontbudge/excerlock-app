@@ -17,3 +17,4 @@ app/ios/
 
 # Maestro output is local-only; baselines remain tracked.
 e2e/out/
+.env*.local

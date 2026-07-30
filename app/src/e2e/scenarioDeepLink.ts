@@ -8,6 +8,7 @@ import {
 } from "./loadScenarioState";
 import { parseScenarioManifest } from "./parseScenarioManifest";
 import { getScenarioManifest } from "./scenarioCatalog";
+import { matchScenarioDeepLink } from "./scenarioUrl";
 import type { ScenarioManifest } from "./scenarioTypes";
 
 export type LoadedScenario = Readonly<{
@@ -45,12 +46,12 @@ type ScenarioSelection = Readonly<{
 function parseScenarioSelection(
   url: string,
 ): ScenarioSelection | null {
-  const prefix = "excerlock://e2e/scenario/";
-  if (!url.startsWith(prefix)) {
+  const selected = matchScenarioDeepLink(url);
+  if (selected === null) {
     return null;
   }
 
-  const [pathAndQuery] = url.slice(prefix.length).split("#", 1);
+  const [pathAndQuery] = selected.split("#", 1);
   const [encodedName, query = ""] = pathAndQuery?.split("?", 2) ?? [];
   if (
     encodedName === undefined ||

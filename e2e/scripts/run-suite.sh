@@ -93,6 +93,38 @@ if [[ ! -e "$TARGET" ]]; then
   exit 2
 fi
 
+# The build must actually carry the E2E scenario route, not merely exist.
+# app/app/_layout.tsx registers it only when EXPO_PUBLIC_E2E === "1" at BUNDLE
+# time, and that is a Metro-time inlining, so a binary built without it looks
+# completely normal until every flow dies on Expo Router's Unmatched Route
+# screen with an assertion error naming a testID -- ten failures pointing
+# nowhere near the cause. Observed 2026-07-30. Fail here instead, as an
+# environment problem, which is what it is.
+#
+# Note main.jsbundle is Hermes BYTECODE: grep needs -a or it silently reports
+# nothing on a binary file. `settings-screen` is the control -- if the control
+# is missing too, the bundle is unreadable rather than merely non-E2E, and the
+# check must say so instead of blaming the E2E flag.
+if [[ -n "$APP_BINARY" ]]; then
+  BUNDLE="$APP_BINARY/main.jsbundle"
+  if [[ -f "$BUNDLE" ]]; then
+    if ! grep -q -a -F "settings-screen" "$BUNDLE"; then
+      echo "run-suite.sh: cannot read testIDs in $BUNDLE - refusing to judge the E2E flag from it" >&2
+      exit 2
+    fi
+    if ! grep -q -a -F "e2e/scenario" "$BUNDLE"; then
+      echo "run-suite.sh: $APP_BINARY has no E2E scenario route - it was bundled without EXPO_PUBLIC_E2E=1" >&2
+      echo "  Rebuild with 'EXPO_PUBLIC_E2E=1' in app/.env.local: Expo inlines EXPO_PUBLIC_* from" >&2
+      echo "  .env files, and app/.env.local survives 'expo prebuild --clean' (which deletes app/ios" >&2
+      echo "  entirely, taking any .xcode.env.local with it)." >&2
+      echo "  Then purge the Metro cache -- 'rm -rf \$TMPDIR/metro-*' -- because the transform cache" >&2
+      echo "  does NOT key on EXPO_PUBLIC_* values, so a rebuild silently reuses a bundle in which" >&2
+      echo "  EXPO_PUBLIC_E2E was undefined. Verified 2026-07-30 by exporting twice." >&2
+      exit 2
+    fi
+  fi
+fi
+
 E2E_UDID="${E2E_UDID:-$(xcrun simctl list devices --json |
   jq -r --arg n "$SIM_NAME" '.devices[][] | select(.name == $n) | .udid' | head -n 1)}"
 if [[ -z "$E2E_UDID" ]]; then

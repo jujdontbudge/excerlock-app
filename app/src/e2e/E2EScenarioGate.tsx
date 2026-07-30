@@ -10,8 +10,7 @@ import {
   loadScenarioDeepLink,
   type LoadedScenario,
 } from "./scenarioDeepLink";
-
-const SCENARIO_PREFIX = "excerlock://e2e/scenario/";
+import { matchScenarioDeepLink } from "./scenarioUrl";
 
 type GateState =
   | Readonly<{ status: "idle"; url: string | null }>
@@ -42,6 +41,12 @@ export function E2EScenarioGate({
 
   useEffect(() => {
     let cancelled = false;
+    // This build exists only to run flows, so say out loud which URL reached
+    // the gate. A flow that lands on Unmatched Route is otherwise
+    // indistinguishable from one where the gate never saw the link at all.
+    console.log(
+      `[E2E] gate url=${String(url)} scenario=${String(matchScenarioDeepLink(url))}`,
+    );
     if (!isScenarioDeepLink(url)) {
       setState({ status: "idle", url });
       return;
@@ -114,13 +119,11 @@ export function E2EScenarioGate({
 }
 
 function isScenarioDeepLink(url: string | null): url is string {
-  return url?.startsWith(SCENARIO_PREFIX) === true;
+  return matchScenarioDeepLink(url) !== null;
 }
 
 function scenarioName(url: string): string {
-  const encoded = url
-    .slice(SCENARIO_PREFIX.length)
-    .split(/[?#]/, 1)[0];
+  const encoded = (matchScenarioDeepLink(url) ?? "").split(/[?#]/, 1)[0];
   try {
     return decodeURIComponent(encoded ?? "");
   } catch {
