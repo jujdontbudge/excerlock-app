@@ -38,7 +38,7 @@ test("run-suite resolves one flow and invokes Maestro with loop artifacts", asyn
       join(bin, "maestro"),
       `#!/bin/sh
 if [ "\${1:-}" = "--version" ]; then
-  printf '2.7.0\\n'
+  printf '%s\\n' "\${MAESTRO_VERSION:-2.7.0}"
   exit 0
 fi
 printf '%s\\n' "$@" > "$MAESTRO_LOG"
@@ -54,7 +54,17 @@ exit 0
     ),
   ]);
 
-  const result = await run(join(e2e, "scripts", "run-suite.sh"), {
+  const script = join(e2e, "scripts", "run-suite.sh");
+  const unsupported = await run(script, {
+    E2E_UDID: "SIM-UDID",
+    MAESTRO_LOG: log,
+    MAESTRO_VERSION: "2.6.1",
+    PATH: `${bin}:${process.env.PATH ?? ""}`,
+  });
+  assert.equal(unsupported.code, 2);
+  assert.match(unsupported.stderr, /Maestro CLI 2\.7\.0 or newer is required/);
+
+  const result = await run(script, {
     E2E_UDID: "SIM-UDID",
     MAESTRO_LOG: log,
     PATH: `${bin}:${process.env.PATH ?? ""}`,

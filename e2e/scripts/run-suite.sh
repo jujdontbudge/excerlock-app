@@ -68,6 +68,18 @@ if ! command -v maestro >/dev/null 2>&1; then
   echo "run-suite.sh: maestro CLI not found (need >= 2.7.0; brew install mobile-dev-inc/tap/maestro)" >&2
   exit 2
 fi
+MAESTRO_VERSION="$(maestro --version 2>/dev/null | tail -n 1)"
+MAESTRO_VERSION="${MAESTRO_VERSION#v}"
+MAESTRO_VERSION="${MAESTRO_VERSION%%-*}"
+IFS=. read -r MAESTRO_MAJOR MAESTRO_MINOR MAESTRO_PATCH <<< "$MAESTRO_VERSION"
+if [[ ! "$MAESTRO_MAJOR" =~ ^[0-9]+$ ||
+      ! "$MAESTRO_MINOR" =~ ^[0-9]+$ ||
+      ! "$MAESTRO_PATCH" =~ ^[0-9]+$ ]] ||
+   (( MAESTRO_MAJOR < 2 ||
+      (MAESTRO_MAJOR == 2 && MAESTRO_MINOR < 7) )); then
+  echo "run-suite.sh: Maestro CLI 2.7.0 or newer is required (found '$MAESTRO_VERSION')" >&2
+  exit 2
+fi
 if ! command -v jq >/dev/null 2>&1; then
   echo "run-suite.sh: jq not found" >&2
   exit 2
