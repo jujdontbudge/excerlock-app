@@ -85,11 +85,20 @@ describe("RecapCard", () => {
     );
   });
 
-  it("does not claim a top source when its attribution was not recorded", async () => {
+  it("does not claim a top source when any attribution was not recorded", async () => {
     const templateDay = FIXTURE_DAY_SUMMARIES.at(-1)!;
     const legacyDay = {
       ...templateDay,
+      earnedMinutes: 10,
       conditions: {
+        "recorded-gym": {
+          eventsFired: 1,
+          rateMinutes: 0,
+          stateSustainedMinutes: 0,
+          earnedMinutes: 10,
+          meaningfulActivity: true,
+          firstQualifiedAtMs: 10,
+        },
         "legacy-steps": {
           eventsFired: 1,
           rateMinutes: 0,
@@ -99,11 +108,12 @@ describe("RecapCard", () => {
         },
       },
       meaningfulActivity: true,
-      meaningfulConditionCount: 1,
+      meaningfulConditionCount: 2,
     };
     const legacyRecap = buildRecap([legacyDay], {
       confessedDailyMinutes: 240,
       conditionNames: conditionNameMap([
+        { id: "recorded-gym", catalogId: "gym-arrival" },
         { id: "legacy-steps", catalogId: "steps-goal" },
       ]),
     })!;
@@ -111,7 +121,7 @@ describe("RecapCard", () => {
     await render(<RecapCard recap={legacyRecap} />);
 
     expect(screen.getByTestId("recap-activities")).toHaveTextContent(
-      /^1 earns$/,
+      /^2 earns$/,
     );
   });
 

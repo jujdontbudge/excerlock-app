@@ -82,7 +82,12 @@ export function buildRecap(
   const reclaimed = selectTimeReclaimed(week, confessedDailyMinutes);
   const previousReclaimed = selectTimeReclaimed(previousWeek, confessedDailyMinutes);
   const totals = selectTotals(week);
-  const topSource = selectConditionBreakdown(week, conditionNames)[0];
+  const conditionBreakdown = selectConditionBreakdown(week, conditionNames);
+  const topSourceName = conditionBreakdown.some(
+    ({ status }) => status === "notRecorded",
+  )
+    ? null
+    : conditionBreakdown[0]?.name ?? null;
 
   return {
     rangeLabel: dayRangeLabel(week[0], week.at(-1)!),
@@ -94,8 +99,7 @@ export function buildRecap(
     activeDays: scheduledActiveWeek.filter((day) => day.meaningfulActivity).length,
     dayCount: scheduledActiveWeek.length,
     activityCount: week.reduce((sum, day) => sum + day.meaningfulConditionCount, 0),
-    topSourceName:
-      topSource?.status === "recorded" ? topSource.name : null,
+    topSourceName,
     earnedMinutes: totals.earnedMinutes,
     spentMinutes: totals.spentMinutes,
     streak: selectStreak(days, { classifyDay }),
