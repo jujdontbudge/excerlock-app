@@ -30,8 +30,9 @@ import {
   type AnalysisPeriod,
   type Weekday,
 } from "../model";
+import type { AnalysisClock } from "../clock";
 
-type AnalysisScreenProps = {
+export type AnalysisScreenProps = {
   /**
    * Optional deterministic record override for tests and E2E fixtures.
    * Production derives this from Home's journal.
@@ -42,6 +43,11 @@ type AnalysisScreenProps = {
    * clock. Without this prop, it stops at the latest journal event.
    */
   throughMs?: number;
+  /**
+   * Time enters Analysis only through this edge dependency. Its value extends
+   * the real ledger through quiet days and drives recap generation/freshness.
+   */
+  clock?: AnalysisClock;
   /** The *Start week on* setting (PRD §3.15 Tab 4). Monday until Settings owns it. */
   weekStartsOn?: Weekday;
   /** Current display names keyed by the condition ids persisted in the ledger. */
@@ -69,6 +75,7 @@ type AnalysisScreenProps = {
 export function AnalysisScreen({
   days,
   throughMs,
+  clock,
   weekStartsOn,
   conditionNames,
   confessedDailyMinutes,
@@ -90,11 +97,14 @@ export function AnalysisScreen({
     [holidays, overrides, recurringRestWeekdays],
   );
   const activeSchedule = schedule ?? storedSchedule;
+  const nowMs = clock?.nowMs();
+  const recordThroughMs = throughMs ?? nowMs;
   const realDays = useMemo(
-    () => deriveDayRecord(journal, ledgerConfig, throughMs),
-    [journal, ledgerConfig, throughMs],
+    () => deriveDayRecord(journal, ledgerConfig, recordThroughMs),
+    [journal, ledgerConfig, recordThroughMs],
   );
   const view = buildAnalysisView(days ?? realDays, {
+    ...(nowMs === undefined ? {} : { nowMs }),
     ...(weekStartsOn === undefined ? {} : { weekStartsOn }),
     period,
     conditionNames: conditionNames ?? conditionNameMap(conditions),
@@ -103,9 +113,12 @@ export function AnalysisScreen({
     classifyDay: (dayIndex) =>
       classifyScheduleDay({ dayIndex, schedule: activeSchedule }),
     throughDayIndex:
-      throughMs === undefined
+      recordThroughMs === undefined
         ? undefined
-        : dayIndexFor(throughMs, ledgerConfig.dayBoundaryOffsetMinutes),
+        : dayIndexFor(
+            recordThroughMs,
+            ledgerConfig.dayBoundaryOffsetMinutes,
+          ),
   });
 
   return (

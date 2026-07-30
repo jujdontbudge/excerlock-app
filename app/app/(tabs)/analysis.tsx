@@ -1,3 +1,8 @@
-import { AnalysisScreen } from "@/analysis";
+import {
+  AnalysisScreen,
+  systemAnalysisClock,
+} from "@/analysis";
 
-export default AnalysisScreen;
+export default function AnalysisRoute() {
+  return <AnalysisScreen clock={systemAnalysisClock} />;
+}
