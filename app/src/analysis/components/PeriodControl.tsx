@@ -50,12 +50,10 @@ export function PeriodControl({
             style={[
               styles.option,
               {
-                backgroundColor: isSelected
-                  ? colors.primary
-                  : "transparent",
                 borderRadius: radius.pill,
                 paddingVertical: spacing.sm,
               },
+              isSelected ? { backgroundColor: colors.primary } : null,
             ]}
           >
             <Text

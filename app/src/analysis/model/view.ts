@@ -24,8 +24,9 @@ import { selectTimeReclaimed, type TimeReclaimed } from "./timeReclaimed";
 
 /**
  * The one read the Analysis screen performs. The screen asks for a view and
- * lays it out; it never slices, sums or sorts. Swapping the fixture for the real
- * `ledgerStore` therefore changes one prop and nothing else.
+ * lays it out; it never slices, sums or sorts. Home's journal is projected into
+ * this input before the view is built; deterministic tests may inject the same
+ * `DaySummary` shape directly.
  */
 export type AnalysisView = {
   /** True before the first day is recorded — the day-zero user (PRD §8 Conditions). */
@@ -38,11 +39,11 @@ export type AnalysisView = {
   windowTotals: Totals;
   allTimeTotals: Totals;
   streak: Streak;
-  /** One bar pair per day of the week, ascending — the chart's whole input. */
+  /** One bar pair per day of the selected window, ascending. */
   bars: Bar[];
-  /** Banked minutes per condition over this week, highest recorded total first. */
+  /** Banked minutes per condition over the selected window, highest first. */
   conditionBreakdown: ConditionBreakdownItem[];
-  /** The same week's days, newest first — the ledger list's whole input. */
+  /** The selected window's days, newest first. */
   ledger: DaySummary[];
   /** The hero's window: Time Reclaimed over the calendar month (PRD §3.13). */
   monthReclaimed: TimeReclaimed;
