@@ -156,8 +156,6 @@ Still owed:
 - **Recap · Share button** — needs the on-device share-card renderer (PRD §3.13: 9:16 + 1:1 templates,
   aggregates-and-dates privacy floor). No module owns it yet; `RecapCard` has the three facts the card
   wants.
-- **Recap row ③ top source** ("most from Gym visits") — its name and attribution inputs now exist in
-  `conditionNameMap` + `selectConditionBreakdown`; adding the row remains recap rendering work.
 - **Milestones shelf** — needs the 22 **badge assets** (`design/STYLE.md`) and the unlock state (which
   badges are new, for the tab dot). The three ladders' inputs now all exist:
   `selectTimeReclaimed(days, baseline)` over the whole record, `selectStreak`, and the activity count.
