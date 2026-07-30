@@ -1,0 +1,83 @@
+import {
+  DAY_MS,
+  type ConditionDaySummary,
+  type DaySummary,
+} from "@excerlock/ledger";
+
+import { buildRequirementHeatMap } from "../model";
+
+const MONDAY = Date.UTC(2026, 6, 6) / DAY_MS;
+
+function condition(
+  values: Partial<ConditionDaySummary>,
+): ConditionDaySummary {
+  return {
+    eventsFired: 0,
+    rateMinutes: 0,
+    stateSustainedMinutes: 0,
+    earnedMinutes: 0,
+    meaningfulActivity: false,
+    ...values,
+  };
+}
+
+function day(
+  dayIndex: number,
+  conditions: Readonly<Record<string, ConditionDaySummary>>,
+): DaySummary {
+  const meaningfulConditionCount = Object.values(conditions).filter(
+    ({ meaningfulActivity }) => meaningfulActivity,
+  ).length;
+
+  return {
+    dayIndex,
+    dayStartMs: dayIndex * DAY_MS,
+    baseAllowance: 30,
+    rolloverIn: 0,
+    startBalance: 30,
+    endBalance: 30,
+    earnedMinutes: 0,
+    spentMinutes: 0,
+    usageMinutes: 0,
+    holidays: [],
+    conditions,
+    meaningfulActivity: meaningfulConditionCount > 0,
+    meaningfulConditionCount,
+  };
+}
+
+describe("buildRequirementHeatMap", () => {
+  it("chooses the smallest defined first-qualified instant, including zero", () => {
+    const summary = day(MONDAY, {
+      "later-state": condition({
+        stateSustainedMinutes: 10,
+        firstQualifiedAtMs: 20,
+        meaningfulActivity: true,
+      }),
+      "absent-event": condition({
+        eventsFired: 1,
+        meaningfulActivity: true,
+      }),
+      "boundary-rate": condition({
+        rateMinutes: 15,
+        firstQualifiedAtMs: 0,
+        meaningfulActivity: true,
+      }),
+      "later-event": condition({
+        eventsFired: 1,
+        firstQualifiedAtMs: 10,
+        meaningfulActivity: true,
+      }),
+    });
+
+    expect(
+      buildRequirementHeatMap([summary], {
+        throughDayIndex: MONDAY,
+      }).weeks[0]?.[0],
+    ).toMatchObject({
+      dayIndex: MONDAY,
+      state: "metByRate",
+      qualifiedConditionId: "boundary-rate",
+    });
+  });
+});
