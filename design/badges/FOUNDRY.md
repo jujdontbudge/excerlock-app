@@ -7,9 +7,9 @@ decision on ticket #74.
 
 ## Production status
 
-**5 of 22 complete and validated.**
+**6 of 22 complete and validated.**
 
-- Streaks: **3 · 7 · 14 · 30 · 60** · 100 · 180 · 365 days
+- Streaks: **3 · 7 · 14 · 30 · 60 · 100** · 180 · 365 days
 - Activities: 1 · 5 · 10 · 25 · 50 · 100 · 250 · 500
 - Time Reclaimed: 10 · 25 · 50 · 100 · 250 · 500 hours
 
@@ -63,6 +63,7 @@ asset rather than assumed.
 | `streak-14-days.png` | RGBA / 1024×1024 | `0,0,0,0` | 0 | 397,347 | 0.378940 | `[174,68,851,954]` | Pass — clean edge, no fringe or box | Pass |
 | `streak-30-days.png` | RGBA / 1024×1024 | `0,0,0,0` | 0 | 376,275 | 0.358844 | `[143,128,880,953]` | Pass — clean edge, no fringe or box | Pass |
 | `streak-60-days.png` | RGBA / 1024×1024 | `0,0,0,0` | 0 | 393,077 | 0.374867 | `[117,148,916,949]` | Pass — clean edge, no fringe or box | Pass |
+| `streak-100-days.png` | RGBA / 1024×1024 | `0,0,0,0` | 0 | 371,417 | 0.354211 | `[130,84,893,949]` | Pass — clean edge, no fringe or box | Pass |
 
 ## Generation log
 
@@ -174,6 +175,51 @@ Constraints: the subject must be opaque and confidently solid-filled, not hollow
 
 ```text
 Use case: precise-object-edit. Image 1 is the strict edit target. Images 2 and 3 remain strict material and shading references. Change only the outer flame silhouette: add one new small rounded connected flame tongue at the far lower-left outer edge and one matching tongue at the far lower-right outer edge, producing seven clearly separated outer points total: one tall center point plus three progressively shorter points on each side. Keep the existing five points, inner recessed flame, broad rounded base, exact ivory clay material, soft light-gray shading, matte lighting, centered scale, generous padding, and perfectly flat uniform solid magenta #FF00FF background unchanged. No numeral, number, day label, threshold mark, text, separate pieces, shadow, glow, logo, or watermark. Change nothing else.
+```
+
+### Streak 100 days, attempt 1 — rejected
+
+- **Output:** `design/badges/_rejected/streak-100-days-attempt-1.png`
+- **Template used:** Family A canonical soft-clay hero template
+- **Reference images passed:**
+  `prototype/assets/icons/lock-body.png`,
+  `prototype/assets/icons/lock-shackle.png`
+- **Rejection reason:** the high-rank crest stopped at two prominent stepped
+  tongues per side instead of the requested three. Its otherwise correct
+  material, palette, backdrop, and tall silhouette were preserved through a
+  precise edit.
+
+**Verbatim prompt**
+
+```text
+Use case: new-asset-with-style-reference
+Asset type: 1024 × 1024 ExcerLock iOS milestone badge: STREAK 100 DAYS.
+Input images: Image 1 and Image 2 are strict material and shading references; match their ivory clay surface, soft neutral light-gray shading, gentle rounded volume, and matte finish exactly. Do not copy either padlock silhouette or keyhole.
+Primary request: Create one single centered compact high-rank flame crest badge — a tall central flame rising from wide stepped flame shoulders with three bold rounded tongues along each side and one broad shallow double-flame recess shaded light gray, all joined into one solid front-facing symmetrical silhouette with no pedestal or separate pieces. The subject must read instantly at 40 pt display size.
+Scene/backdrop: perfectly flat, uniform solid magenta #FF00FF filling every background pixel to every corner, solely for chroma-key removal. No gradient, texture, shadow, glow, vignette, floor, reflection, particles, or lighting variation in the background.
+Style/medium: soft matte 3D clay-like render; ivory white #F4F1F5 surfaces with soft neutral light-gray shading (#C9C4CC) and gentle rounded volume; recessed details are shaded soft light gray, never dark holes; no gloss, no metal, no hard shadows.
+Color palette: ivory white #F4F1F5 and soft neutral light-gray #C9C4CC only in the subject. Do not use cyan, blue, teal, pink, gold, red, gray outside the listed light-gray, black, orange, or magenta in the subject.
+Composition/framing: one centered subject with generous even padding; every subject pixel well separated from all four edges; strong readable silhouette at 40 pt.
+Constraints: the subject must be opaque and confidently solid-filled, not hollow wire art and not merely thickened outlines. Crisp clean outer edge for chroma keying. The badge is front-facing and symmetrical. No numeral, number, day label, or threshold mark. No outer halo, bloom, cast shadow, energy field, black box, text, UI, frame, face, character, logo, or watermark. One subject only.
+```
+
+### Streak 100 days, precise correction — accepted
+
+- **Final path:** `design/badges/streak-100-days.png`
+- **Opaque output:** `design/badges/streak-100-days-opaque.png`
+- **Template used:** `precise-object-edit` on attempt 1
+- **Edit target:** `design/badges/_rejected/streak-100-days-attempt-1.png`
+- **Reference images passed:**
+  `prototype/assets/icons/lock-body.png`,
+  `prototype/assets/icons/lock-shackle.png`
+- **Validation:** accepted; see the table row above. At 40 pt the three
+  prominent stepped tongues per side remain distinct; the tiny outer base curl
+  reads as the connected foot of the silhouette.
+
+**Verbatim prompt**
+
+```text
+Use case: precise-object-edit. Image 1 is the strict edit target. Images 2 and 3 remain strict material and shading references. Change only the outer crest silhouette: add one new small rounded connected flame tongue at the far lower-left outer edge and one matching tongue at the far lower-right outer edge, so the tall central flame has three progressively shorter stepped tongues on each side. Keep the existing tall center flame, four existing side tongues, inner recessed flame, broad rounded base, exact ivory clay material, soft light-gray shading, matte lighting, centered scale, generous padding, and perfectly flat uniform solid magenta #FF00FF background unchanged. No numeral, number, day label, threshold mark, text, separate pieces, shadow, glow, logo, or watermark. Change nothing else.
 ```
 
 ### Streak 14 days — accepted
