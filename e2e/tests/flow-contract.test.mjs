@@ -112,3 +112,30 @@ test("Settings flow covers notification opt-in and support submissions", async (
   assert.match(flow, /Vote for E2E dashboard/);
   assert.match(flow, /takeScreenshot: settings-support-history/);
 });
+
+test("Onboarding flow covers every rail screen with premium entitlement", async () => {
+  const flow = await read("flows/onboarding-premium.yaml");
+
+  assert.match(flow, new RegExp(`^appId: ${APP_ID}$`, "m"));
+  assert.match(flow, new RegExp(`^  SCENARIO: ${BUNDLED_SCENARIO}$`, "m"));
+  assert.match(
+    flow,
+    /excerlock:\/\/e2e\/scenario\/\$\{SCENARIO\}\?overrides=\$\{SCENARIO_OVERRIDES\}/,
+  );
+  [
+    "Earn your screen time",
+    "How much time do you spend on your phone each day?",
+    "That's ~76 days a year",
+    "Screen Time keeps your choices honest",
+    "Pick the apps that can wait",
+    "Your ExcerLock plan is active",
+    "Create your account",
+  ].forEach((copy) => assert.match(flow, new RegExp(escapeRegExp(copy))));
+  assert.match(flow, /tapOn: Create account/);
+  assert.match(flow, /id: home-screen/);
+  assert.match(flow, /takeScreenshot: onboarding-premium-paywall/);
+});
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
