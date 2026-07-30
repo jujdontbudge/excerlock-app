@@ -6,8 +6,11 @@ import {
 } from "@/schedule";
 
 import { RecapCard } from "../components";
-import { FIXTURE_DAY_SUMMARIES } from "../fixtures";
-import { buildRecap } from "../model";
+import {
+  FIXTURE_CONDITION_NAMES,
+  FIXTURE_DAY_SUMMARIES,
+} from "../fixtures";
+import { buildRecap, conditionNameMap } from "../model";
 
 jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
@@ -16,7 +19,11 @@ jest.mock("@react-native-async-storage/async-storage", () =>
 const recap = (
   days: readonly (typeof FIXTURE_DAY_SUMMARIES)[number][],
   confessedDailyMinutes: number | null,
-) => buildRecap(days, { confessedDailyMinutes })!;
+) =>
+  buildRecap(days, {
+    confessedDailyMinutes,
+    conditionNames: FIXTURE_CONDITION_NAMES,
+  })!;
 
 describe("RecapCard", () => {
   it("renders the PRD's five rows for the week it covers", async () => {
@@ -28,9 +35,94 @@ describe("RecapCard", () => {
     expect(screen.getByTestId("recap-delta")).toHaveTextContent(/^44m more than last week$/);
     // ② ③ ④ ⑤
     expect(screen.getByTestId("recap-active-days")).toHaveTextContent(/^6 of 7 days$/);
-    expect(screen.getByTestId("recap-activities")).toHaveTextContent(/^7$/);
+    expect(screen.getByTestId("recap-activities")).toHaveTextContent(
+      /^7 earns · most from Gym visit$/,
+    );
     expect(screen.getByTestId("recap-earned-spent")).toHaveTextContent(/^3h 41m · 6h 14m$/);
     expect(screen.getByTestId("recap-streak")).toHaveTextContent(/^5 days$/);
+  });
+
+  it("breaks level top sources by first-qualified time, including zero", async () => {
+    const templateDay = FIXTURE_DAY_SUMMARIES.at(-1)!;
+    const tiedDay = {
+      ...templateDay,
+      dayIndex: 0,
+      dayStartMs: 0,
+      earnedMinutes: 60,
+      conditions: {
+        "later-gym": {
+          eventsFired: 1,
+          rateMinutes: 0,
+          stateSustainedMinutes: 0,
+          earnedMinutes: 30,
+          meaningfulActivity: true,
+          firstQualifiedAtMs: 10,
+        },
+        "first-steps": {
+          eventsFired: 1,
+          rateMinutes: 0,
+          stateSustainedMinutes: 0,
+          earnedMinutes: 30,
+          meaningfulActivity: true,
+          firstQualifiedAtMs: 0,
+        },
+      },
+      meaningfulActivity: true,
+      meaningfulConditionCount: 2,
+    };
+    const tiedRecap = buildRecap([tiedDay], {
+      confessedDailyMinutes: 240,
+      conditionNames: conditionNameMap([
+        { id: "later-gym", catalogId: "gym-arrival" },
+        { id: "first-steps", catalogId: "steps-goal" },
+      ]),
+    })!;
+
+    await render(<RecapCard recap={tiedRecap} />);
+
+    expect(screen.getByTestId("recap-activities")).toHaveTextContent(
+      /^2 earns · most from Step goal$/,
+    );
+  });
+
+  it("does not claim a top source when any attribution was not recorded", async () => {
+    const templateDay = FIXTURE_DAY_SUMMARIES.at(-1)!;
+    const legacyDay = {
+      ...templateDay,
+      earnedMinutes: 10,
+      conditions: {
+        "recorded-gym": {
+          eventsFired: 1,
+          rateMinutes: 0,
+          stateSustainedMinutes: 0,
+          earnedMinutes: 10,
+          meaningfulActivity: true,
+          firstQualifiedAtMs: 10,
+        },
+        "legacy-steps": {
+          eventsFired: 1,
+          rateMinutes: 0,
+          stateSustainedMinutes: 0,
+          meaningfulActivity: true,
+          firstQualifiedAtMs: 0,
+        },
+      },
+      meaningfulActivity: true,
+      meaningfulConditionCount: 2,
+    };
+    const legacyRecap = buildRecap([legacyDay], {
+      confessedDailyMinutes: 240,
+      conditionNames: conditionNameMap([
+        { id: "recorded-gym", catalogId: "gym-arrival" },
+        { id: "legacy-steps", catalogId: "steps-goal" },
+      ]),
+    })!;
+
+    await render(<RecapCard recap={legacyRecap} />);
+
+    expect(screen.getByTestId("recap-activities")).toHaveTextContent(
+      /^2 earns$/,
+    );
   });
 
   it("states a down week as a fact and nothing more", async () => {
@@ -64,7 +156,9 @@ describe("RecapCard", () => {
     expect(screen.getByTestId("recap-usage")).toHaveTextContent(/^6h 14m$/);
     expect(screen.getByTestId("recap-delta")).toHaveTextContent(/daily average/);
     // The rest of the week is unaffected by the missing baseline.
-    expect(screen.getByTestId("recap-activities")).toHaveTextContent(/^7$/);
+    expect(screen.getByTestId("recap-activities")).toHaveTextContent(
+      /^7 earns · most from Gym visit$/,
+    );
   });
 
   it("reads a week that closed without a streak plainly", async () => {

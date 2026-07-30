@@ -19,6 +19,7 @@ type FreshRecapOptions = {
   confessedDailyMinutes: number | null;
   weekStartsOn?: Weekday;
   classifyDay?: StreakDayClassifier;
+  conditionNames?: Readonly<Record<string, string>>;
 };
 
 /**
@@ -33,6 +34,7 @@ export function selectFreshRecap(
     confessedDailyMinutes,
     weekStartsOn = DEFAULT_WEEK_STARTS_ON,
     classifyDay,
+    conditionNames = {},
   }: FreshRecapOptions,
 ): Recap | null {
   const currentDayIndex = Math.floor(nowMs / DAY_MS);
@@ -55,6 +57,7 @@ export function selectFreshRecap(
   return buildRecap(recapDays, {
     confessedDailyMinutes,
     weekStartsOn,
+    conditionNames,
     ...(classifyDay === undefined ? {} : { classifyDay }),
   });
 }
