@@ -1,5 +1,5 @@
 import type { ConfiguredCondition } from "@excerlock/condition-model";
-import { render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 import { processColor } from "react-native";
 
 import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
@@ -7,7 +7,10 @@ import { useConfessionStore } from "@/onboarding";
 import { gradients } from "@/ui";
 
 import { AnalysisScreen } from "..";
-import { FIXTURE_DAY_SUMMARIES } from "../fixtures";
+import {
+  FIXTURE_CONDITION_NAMES,
+  FIXTURE_DAY_SUMMARIES,
+} from "../fixtures";
 
 // The screen reads the confession store, which persists through AsyncStorage.
 jest.mock("@react-native-async-storage/async-storage", () =>
@@ -28,6 +31,39 @@ const stepGoal: ConfiguredCondition = {
   },
 };
 
+const fixtureProps = {
+  days: FIXTURE_DAY_SUMMARIES,
+  conditionNames: FIXTURE_CONDITION_NAMES,
+} as const;
+
+function historyEntry(id: string, atMs: number, minutes: number) {
+  return {
+    kind: "earn",
+    source: "history-test",
+    id,
+    atMs,
+    conditionId: stepGoal.id,
+    payout: { type: "fixedChunk", minutes },
+  } as const;
+}
+
+const historyConfig = {
+  dayBoundaryOffsetMinutes: 0,
+  baseAllowanceMinutes: 30,
+  rollover: null,
+} as const;
+
+function setRealHistory(
+  entries: readonly ReturnType<typeof historyEntry>[],
+) {
+  useHomeStore.setState({
+    ...DEFAULT_HOME_STATE,
+    conditions: [stepGoal],
+    journal: { entries: [...entries] },
+    ledgerConfig: historyConfig,
+  });
+}
+
 describe("AnalysisScreen", () => {
   // Reset before, not after: an `afterEach` here runs while the tree is still
   // mounted, and the store update lands outside `act`.
@@ -45,8 +81,68 @@ describe("AnalysisScreen", () => {
     );
   });
 
+  it("defaults to the real Home journal rather than the Phase 2 fixture", async () => {
+    setRealHistory([
+      historyEntry("real-first-day", Date.UTC(2025, 0, 1, 12), 5),
+    ]);
+
+    await render(<AnalysisScreen />);
+
+    const rows = screen.getAllByTestId(/^analysis-day-row-/);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent(/^Wed 1 Jan/);
+    expect(
+      screen.getByTestId(`condition-earning-${stepGoal.id}`),
+    ).toHaveTextContent(/^Step goal5m$/);
+  });
+
+  it("derives the real journal through the injected instant using the configured day boundary", async () => {
+    const beforeBoundary = Date.UTC(2025, 0, 5, 3, 30);
+    const afterBoundary = Date.UTC(2025, 0, 5, 4, 30);
+    useHomeStore.setState({
+      ...DEFAULT_HOME_STATE,
+      conditions: [stepGoal],
+      journal: {
+        entries: [
+          {
+            kind: "drainTick",
+            source: "screen-time",
+            id: "before-boundary",
+            atMs: beforeBoundary,
+            minutes: 5,
+          },
+          {
+            kind: "earn",
+            source: "health",
+            id: "after-boundary",
+            atMs: afterBoundary,
+            conditionId: stepGoal.id,
+            payout: { type: "fixedChunk", minutes: 30 },
+          },
+        ],
+      },
+      ledgerConfig: {
+        dayBoundaryOffsetMinutes: 4 * 60,
+        baseAllowanceMinutes: 30,
+        rollover: null,
+      },
+    });
+
+    await render(<AnalysisScreen throughMs={afterBoundary} />);
+
+    const rows = screen.getAllByTestId(/^analysis-day-row-/);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent(/^Sun 5 Jan/);
+    expect(rows[1]).toHaveTextContent(/^Sat 4 Jan/);
+    expect(
+      screen.getByTestId(`condition-earning-${stepGoal.id}`),
+    ).toHaveTextContent(/^Step goal30m$/);
+  });
+
   it("leads with the recap and the Time Reclaimed hero, in that order", async () => {
-    await render(<AnalysisScreen confessedDailyMinutes={240} />);
+    await render(
+      <AnalysisScreen {...fixtureProps} confessedDailyMinutes={240} />,
+    );
 
     // 21 July days against a 4h/day confession.
     expect(screen.getByTestId("time-reclaimed-value")).toHaveTextContent("64");
@@ -57,13 +153,13 @@ describe("AnalysisScreen", () => {
   it("takes the baseline from the onboarding confession when it has one", async () => {
     useConfessionStore.setState({ confessedDailyMinutes: 240 });
 
-    await render(<AnalysisScreen />);
+    await render(<AnalysisScreen {...fixtureProps} />);
 
     expect(screen.getByTestId("time-reclaimed-value")).toHaveTextContent("64");
   });
 
   it("says what is missing when onboarding was skipped, rather than showing a zero", async () => {
-    await render(<AnalysisScreen />);
+    await render(<AnalysisScreen {...fixtureProps} />);
 
     expect(screen.queryByTestId("time-reclaimed-value")).toBeNull();
     expect(screen.getByTestId("time-reclaimed-hero")).toHaveTextContent(/daily average/);
@@ -71,14 +167,16 @@ describe("AnalysisScreen", () => {
   });
 
   it("keeps the hero truthful when the month ran over the confession", async () => {
-    await render(<AnalysisScreen confessedDailyMinutes={30} />);
+    await render(
+      <AnalysisScreen {...fixtureProps} confessedDailyMinutes={30} />,
+    );
 
     expect(screen.getByTestId("time-reclaimed-net")).toHaveTextContent(/−8h 48m on balance/);
     expect(screen.queryByText(/fail|too much|should have/i)).toBeNull();
   });
 
   it("leads with this week's earned-versus-spent balance", async () => {
-    await render(<AnalysisScreen />);
+    await render(<AnalysisScreen {...fixtureProps} />);
 
     // Week 3 of the fixture: 221 min earned against 374 min spent.
     expect(screen.getByTestId("earned-total")).toHaveTextContent("3h 41m");
@@ -87,7 +185,7 @@ describe("AnalysisScreen", () => {
   });
 
   it("shows the current streak against the best one", async () => {
-    await render(<AnalysisScreen />);
+    await render(<AnalysisScreen {...fixtureProps} />);
 
     expect(screen.getByTestId("streak-current")).toHaveTextContent("5");
     expect(screen.getByTestId("streak-longest")).toHaveTextContent("8");
@@ -95,7 +193,7 @@ describe("AnalysisScreen", () => {
   });
 
   it("shows what each condition banked this week", async () => {
-    await render(<AnalysisScreen />);
+    await render(<AnalysisScreen {...fixtureProps} />);
 
     expect(
       screen.getByRole("header", { name: "Earning breakdown" }),
@@ -135,7 +233,7 @@ describe("AnalysisScreen", () => {
   });
 
   it("draws one earned/spent bar pair per day of the week", async () => {
-    await render(<AnalysisScreen />);
+    await render(<AnalysisScreen {...fixtureProps} />);
 
     expect(screen.getAllByTestId(/^analysis-bar-/)).toHaveLength(7);
     expect(
@@ -143,8 +241,57 @@ describe("AnalysisScreen", () => {
     ).toBeOnTheScreen();
   });
 
+  it("switches the real multi-year record between distinct week, month and year windows", async () => {
+    setRealHistory([
+      historyEntry("installed", Date.UTC(2023, 10, 15, 12), 5),
+      historyEntry("january", Date.UTC(2025, 0, 10, 12), 10),
+      historyEntry("february", Date.UTC(2025, 1, 2, 12), 20),
+    ]);
+
+    await render(<AnalysisScreen throughMs={Date.UTC(2025, 1, 3, 12)} />);
+
+    expect(
+      screen.getByRole("button", { name: "Week" }).props.accessibilityState,
+    ).toEqual({ selected: true });
+    expect(screen.getAllByTestId(/^analysis-day-row-/)).toHaveLength(1);
+    expect(screen.getByTestId("earned-total")).toHaveTextContent("0m");
+
+    await fireEvent.press(screen.getByRole("button", { name: "Month" }));
+
+    expect(
+      screen.getByRole("button", { name: "Month" }).props.accessibilityState,
+    ).toEqual({ selected: true });
+    expect(screen.getAllByTestId(/^analysis-day-row-/)).toHaveLength(3);
+    expect(screen.getByTestId("earned-total")).toHaveTextContent("20m");
+
+    await fireEvent.press(screen.getByRole("button", { name: "Year" }));
+
+    expect(
+      screen.getByRole("button", { name: "Year" }).props.accessibilityState,
+    ).toEqual({ selected: true });
+    expect(screen.getAllByTestId(/^analysis-day-row-/)).toHaveLength(34);
+    expect(screen.getByTestId("earned-total")).toHaveTextContent("30m");
+  });
+
+  it("keeps a three-day history honest when the user asks for Year", async () => {
+    setRealHistory([
+      historyEntry("first-day", Date.UTC(2025, 0, 1, 12), 5),
+    ]);
+
+    await render(<AnalysisScreen throughMs={Date.UTC(2025, 0, 3, 12)} />);
+    await fireEvent.press(screen.getByRole("button", { name: "Year" }));
+
+    expect(
+      screen.getByRole("button", { name: "Year" }).props.accessibilityState,
+    ).toEqual({ selected: true });
+    expect(screen.getAllByTestId(/^analysis-day-row-/)).toHaveLength(3);
+    expect(screen.getByTestId("earned-total")).toHaveTextContent("5m");
+    expect(screen.getAllByText("No activity")).toHaveLength(2);
+    expect(screen.queryByText(/missed|failed|should have/i)).toBeNull();
+  });
+
   it("lists the recorded days newest first", async () => {
-    await render(<AnalysisScreen />);
+    await render(<AnalysisScreen {...fixtureProps} />);
 
     const rows = screen.getAllByTestId(/^analysis-day-row-/);
 
@@ -156,7 +303,7 @@ describe("AnalysisScreen", () => {
   });
 
   it("reads a quiet day without scolding it", async () => {
-    await render(<AnalysisScreen />);
+    await render(<AnalysisScreen {...fixtureProps} />);
 
     // Tue 21 Jul earned nothing and burned the balance to zero. Stated, never shamed.
     expect(screen.getByText("No activity")).toBeOnTheScreen();

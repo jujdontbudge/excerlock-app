@@ -2,6 +2,7 @@ export { AnalysisEmpty } from "./AnalysisEmpty";
 export { ConditionBreakdownCard } from "./ConditionBreakdownCard";
 export { DayLedger } from "./DayLedger";
 export { EarnedSpentCard } from "./EarnedSpentCard";
+export { PeriodControl } from "./PeriodControl";
 export { RecapCard } from "./RecapCard";
 export { StreakCard } from "./StreakCard";
 export { TimeReclaimedHero } from "./TimeReclaimedHero";

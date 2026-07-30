@@ -15,9 +15,9 @@ type WeekChartProps = {
 
 /**
  * Earned against spent, one pair of fat rounded bars per day (PRD §3.15 Tab 3
- * block 3). Built from plain Views on purpose: a week of two-bar columns is
- * layout, not a charting problem, and no chart library enters the app for it.
- * The segmented Week/Month/Year control arrives with the real store.
+ * block 3). Built from plain Views on purpose: the selected window's two-bar
+ * columns are layout, not a charting problem, and no chart library enters the
+ * app for it.
  */
 export function WeekChart({ bars }: WeekChartProps) {
   const { colors, spacing, typography } = useTheme();

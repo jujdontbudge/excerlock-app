@@ -1,17 +1,18 @@
 # Analysis
 
-**Contract.** `analysis` owns the Analysis tab: it turns a run of `DaySummary` records into the readings
-that tab shows — the weekly recap, the Time Reclaimed hero, this week's earned-versus-spent balance, the
-streak, the per-condition earning breakdown, the day-by-day ledger and the bar chart over them. It hides
-*how* a window is sliced, summed, ordered and formatted; the screen only lays out. It computes no ledger
-math of its own and owns no store: the two stores it touches are onboarding's confession and Home's
-condition names, and it only ever reads them.
+**Contract.** `analysis` owns the Analysis tab: it projects Home's real journal through the ledger's
+`daySummaries()` read model, then turns that ascending `DaySummary` record into the readings the tab
+shows — the weekly recap, the Time Reclaimed hero, the selected Week/Month/Year trend, the streak, the
+per-condition earning breakdown and the day-by-day ledger. It hides *how* a window is projected, sliced,
+summed, ordered and formatted; the screen only lays out. It computes no ledger math of its own and owns
+no store: it only reads Home's journal/config/condition names and onboarding's confession.
 
 **Invariants.**
 
-- **Reads day summaries, never a journal.** `DaySummary` comes from `@excerlock/ledger` — balance, drain,
-  earn, rollover and the §3.13 meaningful-activity verdicts are already decided there and are never
-  recomputed here. `packages/` is not modified by this module.
+- **One journal adapter, no duplicate ledger.** `model/dayRecord.ts` is the only journal-facing seam and
+  delegates directly to `daySummaries(journal, ledgerConfig, throughMs)`. Balance, drain, earn, rollover
+  and the §3.13 meaningful-activity verdicts are decided by `@excerlock/ledger` and are never recomputed
+  here. The real `ledgerConfig`, including `dayBoundaryOffsetMinutes`, crosses that seam unchanged.
 - **Every visual decision comes from `@/ui`.** `Screen`, `Card`, `SectionHeader`, `Glyph` and the theme
   tokens. No colour, radius, font size or gradient is declared in this directory.
 - **No chart library.** The week chart is two flex-height `View`s per day (ticket #38). A week of
@@ -21,15 +22,16 @@ condition names, and it only ever reads them.
 - **Missing attribution is not zero.** `ConditionDaySummary.earnedMinutes` is optional so summaries
   written before ledger attribution can live forever. If any record for a condition lacks it, that
   condition's window reads `not recorded`; an explicit `0` remains `0m`.
-- **No clock.** "Today" is the last summary on record and weekday arithmetic runs off `dayIndex`, so
-  every render is deterministic and every test is stable. Nothing here calls `Date.now()`.
+- **No clock.** `AnalysisScreen` accepts `throughMs` when its caller has a render instant; otherwise the
+  latest journal event is the deterministic cutoff. "Today" is the last summary on record and weekday
+  arithmetic runs off `dayIndex`. Nothing here calls `Date.now()`.
 - **The confession is read, never written.** `confessed_daily_minutes` (#43) is a fixed
   life-before-ExcerLock snapshot — PRD §3.13 forbids editing it, because a tunable baseline turns the
   hero into a vanity dial. `AnalysisScreen` subscribes to `useConfessionStore`; every layer below it
   takes the baseline as a plain argument, so the whole model stays pure and store-free.
 - **Condition names are joined, never copied into the ledger.** Summaries persist immutable condition
   ids. `AnalysisScreen` reads `useHomeStore`, resolves the current catalog names and passes a plain map
-  into the model; fixture renders use the fixture's equivalent map.
+  into the model; fixture tests pass the fixture's equivalent map explicitly.
 - **Sells, never scolds** (PRD §3.15 Tab 3). A day with no activity reads "No activity" — no red, no ✗.
   A negative earned-versus-spent difference is phrased as drawn from the daily allowance, because that
   is what it is. The same applies to the arithmetic: Time Reclaimed clamps per day, and where the clamp
@@ -41,27 +43,29 @@ condition names, and it only ever reads them.
 |---|---|
 | `model/calendar.ts` | weekday arithmetic over `dayIndex` + the day and date-range labels |
 | `model/conditionBreakdown.ts` | joins condition ids to names and totals optional attributed earnings without turning missing history into zero |
+| `model/dayRecord.ts` | the sole Home-journal adapter; delegates to `daySummaries()` with the real config and an injected cutoff |
 | `model/format.ts` | the one minute/day-count formatting surface |
-| `model/selectors.ts` | `selectToday` · `selectWeek` · `selectPreviousWeek` · `selectMonth` · `selectStreak` · `selectTotals` · `selectBars` |
+| `model/selectors.ts` | `selectToday` · Week/Month/Year period selection · streaks · totals · bars |
 | `model/timeReclaimed.ts` | `selectTimeReclaimed` — the PRD §3.13 formula over any window |
 | `model/recap.ts` | `buildRecap` — the weekly recap's five rows |
 | `model/view.ts` | `buildAnalysisView` — the single read the screen performs |
-| `fixtures/daySummaries.ts` | three weeks of derived, self-consistent `DaySummary` records |
+| `fixtures/daySummaries.ts` | three weeks of derived, self-consistent `DaySummary` records for tests and E2E |
 | `components/RecapCard.tsx` | the week in five rows, led by its Time Reclaimed and delta |
 | `components/TimeReclaimedHero.tsx` | the month's hero numeral and what sits under it |
 | `components/EarnedSpentCard.tsx` | earned vs spent vs the difference, for a window |
 | `components/ConditionBreakdownCard.tsx` | per-condition banked minutes, legacy `not recorded`, and the no-earnings state |
 | `components/StreakCard.tsx` | current streak · best ever · active days |
-| `components/WeekChart.tsx` | the earned/spent bar pairs, built from `View`s |
+| `components/PeriodControl.tsx` | accessible Week/Month/Year selection |
+| `components/WeekChart.tsx` | the selected window's earned/spent bar pairs, built from `View`s |
 | `components/DayLedger.tsx` | one row per recorded day, newest first |
 | `components/AnalysisEmpty.tsx` | the day-zero state |
-| `screens/AnalysisScreen.tsx` | the tab; `app/app/(tabs)/analysis.tsx` is a two-line route over it |
+| `screens/AnalysisScreen.tsx` | joins the read-only stores, owns selected-period UI state and lays out the tab |
 
 ## The fixture
 
-Phase 2 builds UI on mocks (ARCHITECTURE §6). `FIXTURE_DAY_SUMMARIES` is 21 days — Mon 6 Jul through
-Sun 26 Jul 2026, three whole Monday-to-Sunday weeks — for a user on a 4 AM boundary with a 30 min/day
-allowance and a 60-minute rollover cap.
+`FIXTURE_DAY_SUMMARIES` remains for unit/render tests and E2E scenarios. It is never the production
+default. The fixture is 21 days — Mon 6 Jul through Sun 26 Jul 2026, three whole Monday-to-Sunday weeks
+— for a user on a 4 AM boundary with a 30 min/day allowance and a 60-minute rollover cap.
 
 Only the story is authored: earned minutes, spent minutes and each day's condition activity. Balances,
 rollover, meaningful-activity verdicts and the requirement that condition attribution sums to the day's
@@ -71,7 +75,9 @@ to produce. The shape: week 1 finds its feet, week 2 is a clean eight-day run ca
 Monday, week 3 stumbles once and then reaches today on a five-day run. Three quiet days burn the balance
 to exactly zero.
 
-Swapping in the real feed is one prop: `<AnalysisScreen days={…} />`.
+Production renders Home's real journal when `days` is omitted. Tests and E2E can still inject a
+deterministic record with `<AnalysisScreen days={…} />`; they can pass `throughMs` to extend the real
+journal through quiet gap days without introducing a clock into this module.
 
 There is deliberately **no confession fixture**. The baseline comes from the real store, so a build where
 onboarding was skipped renders the hero's `unconfessed` state — which is exactly what that user sees in
@@ -112,8 +118,6 @@ The PRD's Analysis tab has six blocks (§3.15 Tab 3). This build ships blocks 1 
   store**. Until it exists the denominator is days on record, so a rest day dilutes the ratio.
 - **Recap row ③ top source** ("most from Gym visits") — its name and attribution inputs now exist in
   `conditionNameMap` + `selectConditionBreakdown`; adding the row remains recap rendering work.
-- **Week/Month/Year segmented control** — needs the real `ledgerStore` feed. The fixture is 21 days
-  inside one calendar month, so Month and Year would draw the same window as Week.
 - **Requirement heat map** (six cell states, kind glyphs, tap-for-detail) — still blocked. It needs a
   **schedule store** to classify active/missed vs rest/holiday/override days, plus the **timestamp of
   each condition's first qualifying outcome** to apply the PRD's first-met tie-break. `DaySummary`

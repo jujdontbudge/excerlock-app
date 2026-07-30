@@ -10,10 +10,11 @@ import {
   DEFAULT_WEEK_STARTS_ON,
   selectBars,
   selectMonth,
+  selectPeriod,
   selectStreak,
   selectToday,
   selectTotals,
-  selectWeek,
+  type AnalysisPeriod,
   type Bar,
   type DayRange,
   type Streak,
@@ -23,23 +24,26 @@ import { selectTimeReclaimed, type TimeReclaimed } from "./timeReclaimed";
 
 /**
  * The one read the Analysis screen performs. The screen asks for a view and
- * lays it out; it never slices, sums or sorts. Swapping the fixture for the real
- * `ledgerStore` therefore changes one prop and nothing else.
+ * lays it out; it never slices, sums or sorts. Home's journal is projected into
+ * this input before the view is built; deterministic tests may inject the same
+ * `DaySummary` shape directly.
  */
 export type AnalysisView = {
   /** True before the first day is recorded — the day-zero user (PRD §8 Conditions). */
   isEmpty: boolean;
   today: DaySummary | null;
-  /** The calendar week containing today, ascending. */
-  week: DaySummary[];
-  weekTotals: Totals;
+  period: AnalysisPeriod;
+  periodCaption: string;
+  /** The selected calendar window containing today, ascending. */
+  window: DaySummary[];
+  windowTotals: Totals;
   allTimeTotals: Totals;
   streak: Streak;
-  /** One bar pair per day of the week, ascending — the chart's whole input. */
+  /** One bar pair per day of the selected window, ascending. */
   bars: Bar[];
-  /** Banked minutes per condition over this week, highest recorded total first. */
+  /** Banked minutes per condition over the selected window, highest first. */
   conditionBreakdown: ConditionBreakdownItem[];
-  /** The same week's days, newest first — the ledger list's whole input. */
+  /** The selected window's days, newest first. */
   ledger: DaySummary[];
   /** The hero's window: Time Reclaimed over the calendar month (PRD §3.13). */
   monthReclaimed: TimeReclaimed;
@@ -49,6 +53,7 @@ export type AnalysisView = {
 
 type AnalysisViewOptions = {
   weekStartsOn?: Weekday;
+  period?: AnalysisPeriod;
   /**
    * `confessed_daily_minutes` from onboarding (#43) — the fixed
    * life-before-ExcerLock baseline. `null` when onboarding was skipped, which is
@@ -63,23 +68,37 @@ export function buildAnalysisView(
   days: DayRange,
   {
     weekStartsOn = DEFAULT_WEEK_STARTS_ON,
+    period = "week",
     confessedDailyMinutes = null,
     conditionNames = {},
   }: AnalysisViewOptions = {},
 ): AnalysisView {
-  const week = selectWeek(days, { weekStartsOn });
+  const window = selectPeriod(days, period, { weekStartsOn });
 
   return {
     isEmpty: days.length === 0,
     today: selectToday(days),
-    week,
-    weekTotals: selectTotals(week),
+    period,
+    periodCaption: periodCaption(period),
+    window,
+    windowTotals: selectTotals(window),
     allTimeTotals: selectTotals(days),
     streak: selectStreak(days),
-    bars: selectBars(week),
-    conditionBreakdown: selectConditionBreakdown(week, conditionNames),
-    ledger: [...week].reverse(),
+    bars: selectBars(window),
+    conditionBreakdown: selectConditionBreakdown(window, conditionNames),
+    ledger: [...window].reverse(),
     monthReclaimed: selectTimeReclaimed(selectMonth(days), confessedDailyMinutes),
     recap: buildRecap(days, { confessedDailyMinutes, weekStartsOn }),
   };
+}
+
+function periodCaption(period: AnalysisPeriod): string {
+  switch (period) {
+    case "week":
+      return "This week";
+    case "month":
+      return "This month";
+    case "year":
+      return "This year";
+  }
 }
