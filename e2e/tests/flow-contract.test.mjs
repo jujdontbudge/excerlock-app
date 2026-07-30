@@ -165,6 +165,8 @@ test("Paywall flow covers free entitlement and a monthly purchase", async () => 
   assert.match(flow, /Unlock the full ExcerLock plan/);
   assert.match(flow, /Annual, \$59\.99 \/ year/);
   assert.match(flow, /Monthly, \$9\.99 \/ month/);
+  assert.match(flow, /Restore Purchases/);
+  assert.match(flow, /No previous purchase was found\./);
   assert.match(flow, /Continue with monthly/);
   assert.match(flow, /takeScreenshot: paywall-free-monthly/);
   assert.match(flow, /Create your account/);

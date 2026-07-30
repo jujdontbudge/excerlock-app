@@ -35,6 +35,8 @@ env:
 - assertVisible: "Annual, $59.99 / year"
 - assertVisible: "Monthly, $9.99 / month"
 - assertVisible: Start free trial
+- tapOn: Restore Purchases
+- assertVisible: No previous purchase was found.
 - tapOn: "Monthly, $9.99 / month"
 - assertVisible: Continue with monthly
 - waitForAnimationToEnd
