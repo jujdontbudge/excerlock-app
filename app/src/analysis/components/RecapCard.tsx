@@ -59,7 +59,11 @@ export function RecapCard({ recap }: RecapCardProps) {
         <Row
           label="Active days"
           testID="recap-active-days"
-          value={formatDayCount(recap.activeDays, recap.dayCount)}
+          value={
+            recap.dayCount === 0
+              ? "Rest week"
+              : formatDayCount(recap.activeDays, recap.dayCount)
+          }
         />
         <Row label="Activities" testID="recap-activities" value={String(recap.activityCount)} />
         <Row
