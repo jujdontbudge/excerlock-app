@@ -160,4 +160,26 @@ describe("server analytics", () => {
       ],
     ]);
   });
+
+  it("forwards one authoritative support submission event", () => {
+    const analytics = createAnalytics({
+      apiKey: "phc_test",
+      host: "https://us.i.posthog.com",
+    });
+
+    analytics.supportRequestSubmitted("user_123", "feature");
+
+    expect(postHog.capture.mock.calls).toEqual([
+      [
+        {
+          distinctId: "user_123",
+          event: "support_request_submitted",
+          properties: {
+            app: "excerlock",
+            category: "feature",
+          },
+        },
+      ],
+    ]);
+  });
 });
