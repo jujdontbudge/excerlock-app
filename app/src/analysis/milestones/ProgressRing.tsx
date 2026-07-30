@@ -16,7 +16,7 @@ export function ProgressRing({
   accessibilityLabel,
   children,
 }: ProgressRingProps) {
-  const { colors } = useTheme();
+  const { colors, radius } = useTheme();
   const completed = Math.round(
     Math.min(1, Math.max(0, fraction)) * SEGMENT_COUNT,
   );
@@ -39,6 +39,7 @@ export function ProgressRing({
               {
                 backgroundColor:
                   index < completed ? colors.primary : colors.cardElevated,
+                borderRadius: radius.pill,
               },
             ]}
           />
@@ -62,7 +63,6 @@ const styles = StyleSheet.create({
   ring: { height: 68, width: 68 },
   segment: {
     alignSelf: "center",
-    borderRadius: 1,
     height: 3,
     width: 2,
   },

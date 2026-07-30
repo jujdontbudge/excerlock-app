@@ -31,7 +31,7 @@ export function MilestoneBadgeButton({
   onPress,
   unlockSequence,
 }: MilestoneBadgeButtonProps) {
-  const { colors, typography } = useTheme();
+  const { colors, radius, typography } = useTheme();
   const unlocked = badge.state === "unlocked";
   const art = (
     <Image
@@ -72,7 +72,10 @@ export function MilestoneBadgeButton({
           style={[
             typography.caption,
             styles.newGlint,
-            { backgroundColor: colors.primary },
+            {
+              backgroundColor: colors.primary,
+              borderRadius: radius.pill,
+            },
           ]}
         >
           New
@@ -126,7 +129,6 @@ const styles = StyleSheet.create({
   button: { alignItems: "center", width: 76 },
   label: { minHeight: 34, textAlign: "center" },
   newGlint: {
-    borderRadius: 8,
     overflow: "hidden",
     paddingHorizontal: 5,
     position: "absolute",

@@ -3,10 +3,11 @@
 **Contract.** `analysis` owns the Analysis tab: it projects Home's real journal through the ledger's
 `daySummaries()` read model, then turns that ascending `DaySummary` record into the readings the tab
 shows — the weekly recap, the Time Reclaimed hero, the selected Week/Month/Year trend, the streak, the
-requirement heat map, the per-condition earning breakdown and the day-by-day ledger. It hides *how* a
-window is projected, sliced, summed, ordered and formatted; the screen only lays out. It computes no
-ledger math of its own and owns no store: it only reads Home's journal/config/condition names,
-Schedule's rules and onboarding's confession.
+requirement heat map, the per-condition earning breakdown, the milestone shelf and the day-by-day
+ledger. It hides *how* a window is projected, sliced, summed, ordered and formatted; the screen only
+lays out. It computes no ledger math of its own. The tab reads Home's journal/config/condition names,
+Schedule's rules and onboarding's confession; its `milestones` submodule separately owns the one
+persisted UI-state record that prevents unlock announcements from replaying.
 
 **Invariants.**
 
@@ -76,6 +77,7 @@ Schedule's rules and onboarding's confession.
 | `components/WeekChart.tsx` | the selected window's earned/spent bar pairs, built from `View`s |
 | `components/DayLedger.tsx` | one row per recorded day, newest first |
 | `components/AnalysisEmpty.tsx` | the day-zero state |
+| `milestones/` | the fixed badge ladders, persisted announcement lifecycle, focus-triggered unlock moment and share/progress presentation |
 | `screens/AnalysisScreen.tsx` | samples the injected clock, joins the read-only stores, owns selected-period UI state and lays out the tab |
 
 ## The fixture
@@ -148,15 +150,11 @@ tint; blank padding has no fill. Every cell is an accessibility button with a st
 Selecting one opens its dated detail inside the card: requirement status, earned minutes and every
 qualifying condition in first-met order.
 
-## Not built yet
+## Analysis blocks
 
-The PRD's Analysis tab has six blocks (§3.15 Tab 3). This build ships blocks 1 and 2 (#51), block 3
-(#38/#65), block 4's readings + requirement heat map (#38/#67), block 5 (#56), plus the day ledger.
-Still owed:
-
-- **Milestones shelf** — needs the 22 **badge assets** (`design/STYLE.md`) and the unlock state (which
-  badges are new, for the tab dot). The three ladders' inputs now all exist:
-  `selectTimeReclaimed(days, baseline)` over the whole record, `selectStreak`, and the activity count.
+All six PRD §3.15 Analysis blocks now ship. The milestone block projects the existing all-record
+`selectTimeReclaimed(days, baseline)`, `selectStreak`, and activity-count readings into the fixed
+22-badge shelf. Its own README documents the persisted unlock-announcement lifecycle and rendering law.
 
 The Recap **Share** button now projects the five-row in-app recap into
 `@/shareCards`' aggregate/date-only input and opens the 9:16/1:1 preview. The

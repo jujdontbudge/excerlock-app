@@ -77,8 +77,7 @@ export type AnalysisScreenProps = {
 /**
  * Analysis — the weekly recap, the Time Reclaimed hero, the selected period's
  * earned-versus-spent trend, the streak + requirement history, per-condition
- * earnings and the day ledger under it. The milestones shelf remains separate
- * badge-art and unlock-state work.
+ * earnings, milestone shelf and the day ledger under it.
  *
  * This file projects Home's real journal, joins current condition names and
  * lays out the view. All numerical reading after projection is done by

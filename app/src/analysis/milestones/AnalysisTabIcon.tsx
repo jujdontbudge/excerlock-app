@@ -1,7 +1,7 @@
 import type { ColorValue } from "react-native";
 import { View } from "react-native";
 
-import { colors, TabBarIcon } from "@/ui";
+import { colors, radius, TabBarIcon } from "@/ui";
 
 import { MILESTONES } from "./catalog";
 import { useMilestoneUnlockStore } from "./unlockStore";
@@ -30,7 +30,7 @@ export function AnalysisTabIcon({
           style={{
             backgroundColor: colors.primary,
             borderColor: colors.bgNight,
-            borderRadius: 5,
+            borderRadius: radius.pill,
             borderWidth: 1.5,
             height: 9,
             position: "absolute",

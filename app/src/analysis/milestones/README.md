@@ -30,3 +30,25 @@ The Analysis route advances the visit key from Expo Router's focus boundary, so
 an unlock discovered while the mounted tab is open waits for the next return.
 Its initial key is inert; focus itself is the sole production claim trigger,
 preventing a mount claim and focus claim from cancelling the first animation.
+
+## Layout
+
+| Path | Responsibility |
+|---|---|
+| `catalog.ts` | fixed typed ladders and accepted plain-PNG render inputs |
+| `progress.ts` | pure complete-shelf projection and next-up readings |
+| `unlockStore.ts` | persisted `pending` / `isNew` announcement lifecycle |
+| `unlockHydration.ts` | shared persisted-state readiness gate |
+| `MilestoneDiscovery.tsx` | records newly achieved ids only after hydration |
+| `LiveMilestoneDiscovery.tsx` | composition-root adapter from real stores/selectors |
+| `AnalysisTabIcon.tsx` | pending indicator dot |
+| `MilestonesShelf.tsx` | three-row shelf layout and locked/unlocked routing |
+| `MilestoneProgressDetail.tsx` | locked-badge progress presentation |
+| `useMilestoneShareRequest.ts` | queues an unlocked tap until its persisted timestamp arrives |
+| `MilestoneSharePreview.tsx` | privacy-safe projection into the existing share preview |
+| `useMilestoneUnlockAnimation.ts` | one staggered scale-in sequence per focused visit |
+
+`MilestoneHaptics` remains an injected boundary. The app workspace currently has
+no native success-haptics dependency, and ticket #75 forbids adding one, so the
+production route cannot bind that boundary in this lane; tests cover its exactly-once
+contract without claiming device verification.
