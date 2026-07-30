@@ -303,6 +303,24 @@ describe("AnalysisScreen", () => {
     ).toHaveTextContent(/^Standing desk0m$/);
   });
 
+  it("renders the complete milestone shelf from the real all-record selectors", async () => {
+    await render(
+      <AnalysisScreen {...fixtureProps} confessedDailyMinutes={240} />,
+    );
+
+    expect(
+      screen.getByRole("header", { name: "Milestones" }),
+    ).toBeOnTheScreen();
+    expect(screen.getAllByTestId(/^milestone-badge-/)).toHaveLength(22);
+    expect(screen.getByRole("header", { name: "Streaks" })).toBeOnTheScreen();
+    expect(
+      screen.getByRole("header", { name: "Activities" }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole("header", { name: "Time Reclaimed" }),
+    ).toBeOnTheScreen();
+  });
+
   it("joins real ledger condition ids to their names in the condition store", async () => {
     useHomeStore.setState({ ...DEFAULT_HOME_STATE, conditions: [stepGoal] });
     const source = FIXTURE_DAY_SUMMARIES[14];

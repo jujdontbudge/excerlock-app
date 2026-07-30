@@ -10,6 +10,7 @@ import {
   type ScheduleRules,
 } from "@/schedule";
 import { Screen, SectionHeader, useTheme } from "@/ui";
+import type { ShareCardModule } from "@/shareCards";
 
 import {
   AnalysisEmpty,
@@ -31,6 +32,7 @@ import {
   type Weekday,
 } from "../model";
 import type { AnalysisClock } from "../clock";
+import { MilestonesShelf } from "../milestones/MilestonesShelf";
 
 export type AnalysisScreenProps = {
   /**
@@ -60,6 +62,8 @@ export type AnalysisScreenProps = {
   confessedDailyMinutes?: number | null;
   /** Deterministic schedule override for tests; production reads Schedule's store. */
   schedule?: ScheduleRules;
+  /** Optional deterministic milestone capture/share boundary for render tests. */
+  milestoneShareCardModule?: ShareCardModule;
 };
 
 /**
@@ -80,6 +84,7 @@ export function AnalysisScreen({
   conditionNames,
   confessedDailyMinutes,
   schedule,
+  milestoneShareCardModule,
 }: AnalysisScreenProps) {
   const { spacing, typography } = useTheme();
   const [period, setPeriod] = useState<AnalysisPeriod>("week");
@@ -158,7 +163,17 @@ export function AnalysisScreen({
               caption={view.periodCaption}
               items={view.conditionBreakdown}
             />
+          </>
+        )}
 
+        <SectionHeader title="Milestones" />
+        <MilestonesShelf
+          metrics={view.milestoneMetrics}
+          shareCardModule={milestoneShareCardModule}
+        />
+
+        {view.isEmpty ? null : (
+          <>
             <SectionHeader title="Day ledger" />
             <DayLedger days={view.ledger} />
           </>
