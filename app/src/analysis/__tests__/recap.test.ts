@@ -29,6 +29,15 @@ describe("buildRecap", () => {
     expect(recap).toMatchObject({ activeDays: 6, dayCount: 6 });
   });
 
+  it("keeps every recorded day in the denominator when no schedule exists", () => {
+    const recap = buildRecap(FIXTURE_DAY_SUMMARIES, {
+      confessedDailyMinutes: BASELINE,
+      classifyDay: (dayIndex) => classifyScheduleDay({ dayIndex }),
+    });
+
+    expect(recap).toMatchObject({ activeDays: 6, dayCount: 7 });
+  });
+
   it("builds the PRD's five rows over the week containing today", () => {
     const recap = buildRecap(FIXTURE_DAY_SUMMARIES, { confessedDailyMinutes: BASELINE });
 
