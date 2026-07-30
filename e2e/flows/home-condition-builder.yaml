@@ -1,0 +1,52 @@
+appId: com.johansardar.excerlock
+name: Home — build and save a condition
+tags:
+  - home
+  - condition-builder
+env:
+  SCENARIO: baseline-fresh-install
+---
+- launchApp:
+    clearState: true
+- openLink:
+    link: excerlock://e2e/scenario/${SCENARIO}
+- runFlow:
+    when:
+      visible: 'Open in "ExcerLock"'
+    commands:
+      - tapOn: Open
+
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- assertNotVisible:
+    id: screen-e2e-error
+- tapOn: Add condition
+- assertVisible:
+    id: condition-builder
+- assertVisible: Pick a condition
+- scrollUntilVisible:
+    element:
+      text: Step goal
+    direction: DOWN
+- tapOn: Step goal
+
+- assertVisible: Set it up
+- assertVisible: Not set
+- tapOn: Increase goal
+- assertVisible: "1,000 steps"
+- tapOn: Fixed minutes
+- assertVisible: 5 minutes
+- tapOn: Preview
+
+- assertVisible: Preview
+- assertVisible: Step goal
+- tapOn: Save condition
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- assertVisible: Step goal
+- waitForAnimationToEnd
+- takeScreenshot: home-condition-created

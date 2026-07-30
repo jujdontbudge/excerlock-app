@@ -39,6 +39,20 @@ test("Home flow loads the bundled scenario and covers zero-balance walking", asy
   );
 });
 
+test("Home flow builds and saves a condition", async () => {
+  const flow = await read("flows/home-condition-builder.yaml");
+
+  assert.match(flow, new RegExp(`^appId: ${APP_ID}$`, "m"));
+  assert.match(flow, new RegExp(`^  SCENARIO: ${BUNDLED_SCENARIO}$`, "m"));
+  assert.match(flow, /id: condition-builder/);
+  assert.match(flow, /Step goal/);
+  assert.match(flow, /Increase goal/);
+  assert.match(flow, /Fixed minutes/);
+  assert.match(flow, /tapOn: Preview/);
+  assert.match(flow, /tapOn: Save condition/);
+  assert.match(flow, /takeScreenshot: home-condition-created/);
+});
+
 test("Manage flow changes the allowance and condition state", async () => {
   const flow = await read("flows/manage-condition.yaml");
 
