@@ -52,7 +52,11 @@ export const MILESTONE_LADDERS = [
   },
 ] as const;
 
-export const MILESTONES = MILESTONE_LADDERS.flatMap(({ badges }) => badges);
+export const MILESTONES = [
+  ...STREAKS,
+  ...ACTIVITIES,
+  ...TIME_RECLAIMED,
+] as const;
 
 export type MilestoneId = (typeof MILESTONES)[number]["id"];
 
@@ -63,7 +67,10 @@ export function isMilestoneId(value: unknown): value is MilestoneId {
   );
 }
 
-function streak(threshold: number, badgeArt: ImageRequireSource) {
+function streak<const Threshold extends number>(
+  threshold: Threshold,
+  badgeArt: ImageRequireSource,
+) {
   return {
     id: `streak-${threshold}`,
     kind: "streak",
@@ -74,7 +81,10 @@ function streak(threshold: number, badgeArt: ImageRequireSource) {
   } as const satisfies MilestoneDefinition;
 }
 
-function activity(threshold: number, badgeArt: ImageRequireSource) {
+function activity<const Threshold extends number>(
+  threshold: Threshold,
+  badgeArt: ImageRequireSource,
+) {
   return {
     id: `activity-${threshold}`,
     kind: "activity",
@@ -85,7 +95,10 @@ function activity(threshold: number, badgeArt: ImageRequireSource) {
   } as const satisfies MilestoneDefinition;
 }
 
-function timeReclaimed(threshold: number, badgeArt: ImageRequireSource) {
+function timeReclaimed<const Threshold extends number>(
+  threshold: Threshold,
+  badgeArt: ImageRequireSource,
+) {
   return {
     id: `time-reclaimed-${threshold}`,
     kind: "timeReclaimed",

@@ -15,3 +15,8 @@ alpha mask and geometry exactly.
 which streak badges stay unlocked, while the current streak drives the next
 streak ring. Activities and Time Reclaimed are cumulative all-time readings.
 Only the first locked badge in each row is `nextUp`.
+
+`unlockStore.ts` persists one record per discovered badge. `pending` is consumed
+once by the next Analysis visit; `isNew` survives that visit and is cleared only
+when the badge is tapped. The discovery caller supplies `unlockedAtMs`, which
+both preserves the share card's month and keeps time outside every pure read.
