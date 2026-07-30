@@ -11,9 +11,24 @@ import {
   useHomeStore,
 } from "@/home";
 import {
+  DEFAULT_CONFESSION,
   DEFAULT_ONBOARDING_PROGRESS,
+  useConfessionStore,
   useOnboardingStore,
 } from "@/onboarding";
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  useNotificationPreferencesStore,
+} from "@/notifications";
+import {
+  ALL_DAYS_ACTIVE,
+  useScheduleStore,
+} from "@/schedule";
+import type { Vendor } from "@/signals";
+import {
+  DEFAULT_SETTINGS,
+  useSettingsStore,
+} from "@/settings";
 import { MOCK_SUBSCRIPTION_STORAGE_KEY } from "@/subscription/mockStore";
 
 import type {
@@ -22,7 +37,6 @@ import type {
   ScenarioManifest,
   ScenarioVendorState,
 } from "./scenarioTypes";
-import type { Vendor } from "@/signals";
 
 export type LoadedScenarioState = Readonly<{
   scenarioName: string;
@@ -36,6 +50,12 @@ export async function loadScenarioState(
 ): Promise<LoadedScenarioState> {
   await AsyncStorage.clear();
 
+  useConfessionStore.setState(DEFAULT_CONFESSION);
+  useNotificationPreferencesStore.setState(
+    DEFAULT_NOTIFICATION_PREFERENCES,
+  );
+  useScheduleStore.setState(ALL_DAYS_ACTIVE);
+  useSettingsStore.setState(DEFAULT_SETTINGS);
   useHomeStore.setState({
     ...DEFAULT_HOME_STATE,
     conditions: scenario.state.conditions.map(toConfiguredCondition),

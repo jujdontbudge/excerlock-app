@@ -8,9 +8,23 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 import {
+  DEFAULT_CONFESSION,
   DEFAULT_ONBOARDING_PROGRESS,
+  useConfessionStore,
   useOnboardingStore,
 } from "@/onboarding";
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  useNotificationPreferencesStore,
+} from "@/notifications";
+import {
+  ALL_DAYS_ACTIVE,
+  useScheduleStore,
+} from "@/schedule";
+import {
+  DEFAULT_SETTINGS,
+  useSettingsStore,
+} from "@/settings";
 
 import {
   getScenarioManifest,
@@ -63,6 +77,12 @@ describe("E2E scenario state loader", () => {
     await AsyncStorage.clear();
     useHomeStore.setState(DEFAULT_HOME_STATE);
     useOnboardingStore.setState(DEFAULT_ONBOARDING_PROGRESS);
+    useConfessionStore.setState(DEFAULT_CONFESSION);
+    useNotificationPreferencesStore.setState(
+      DEFAULT_NOTIFICATION_PREFERENCES,
+    );
+    useScheduleStore.setState(ALL_DAYS_ACTIVE);
+    useSettingsStore.setState(DEFAULT_SETTINGS);
   });
 
   it("resets and preloads the complete deterministic app state", async () => {
@@ -71,6 +91,23 @@ describe("E2E scenario state loader", () => {
       savedPlaces: [{ id: "stale", name: "Old gym" }],
     });
     useOnboardingStore.setState({ isComplete: false });
+    useConfessionStore.setState({ confessedDailyMinutes: 300 });
+    useNotificationPreferencesStore.setState({
+      enabled: {
+        afternoonNudge: true,
+        streakLastCall: true,
+        weeklyRecap: true,
+      },
+      afternoonNudgeMinuteOfDay: 13 * 60,
+    });
+    useScheduleStore.setState({
+      recurringRestWeekdays: [0],
+      holidays: [],
+      overrides: [],
+    });
+    useSettingsStore.setState({
+      walkAndScrollGracePeriodSeconds: 60,
+    });
 
     const loaded = await loadScenarioState(statefulScenario());
 
@@ -111,6 +148,16 @@ describe("E2E scenario state loader", () => {
     expect(useOnboardingStore.getState()).toMatchObject({
       isComplete: true,
     });
+    expect(useConfessionStore.getState()).toMatchObject(
+      DEFAULT_CONFESSION,
+    );
+    expect(useNotificationPreferencesStore.getState()).toMatchObject(
+      DEFAULT_NOTIFICATION_PREFERENCES,
+    );
+    expect(useScheduleStore.getState()).toMatchObject(
+      ALL_DAYS_ACTIVE,
+    );
+    expect(useSettingsStore.getState()).toMatchObject(DEFAULT_SETTINGS);
     expect(loaded).toMatchObject({
       scenarioName: "baseline-fresh-install",
       entitlement: "premium",
