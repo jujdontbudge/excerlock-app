@@ -191,4 +191,23 @@ describe("buildRequirementHeatMap", () => {
       { state: "blank", blankReason: "future" },
     ]);
   });
+
+  it("starts each column on the configured first weekday", () => {
+    const wednesday = day(MONDAY + 2, {});
+
+    expect(
+      buildRequirementHeatMap([wednesday], {
+        throughDayIndex: MONDAY + 2,
+        weekStartsOn: 0,
+      }).weeks[0]?.map(({ label }) => label),
+    ).toEqual([
+      "Sun 5 Jul",
+      "Mon 6 Jul",
+      "Tue 7 Jul",
+      "Wed 8 Jul",
+      "Thu 9 Jul",
+      "Fri 10 Jul",
+      "Sat 11 Jul",
+    ]);
+  });
 });

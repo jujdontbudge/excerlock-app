@@ -374,5 +374,6 @@ describe("AnalysisScreen", () => {
     // Nothing recorded means no recap and no hero — not a zeroed one.
     expect(screen.queryByTestId("recap-card")).toBeNull();
     expect(screen.queryByTestId("time-reclaimed-hero")).toBeNull();
+    expect(screen.queryByTestId("requirement-heat-map-card")).toBeNull();
   });
 });

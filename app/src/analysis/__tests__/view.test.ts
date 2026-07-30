@@ -90,5 +90,6 @@ describe("buildAnalysisView", () => {
     expect(view.ledger).toEqual([]);
     expect(view.recap).toBeNull();
     expect(view.monthReclaimed.dayCount).toBe(0);
+    expect(view.requirementHeatMap.weeks).toEqual([]);
   });
 });
