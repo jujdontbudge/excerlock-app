@@ -1,15 +1,15 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
-import { ShareCardPreviewSheet } from "..";
+import { createRecapShareCardInput, ShareCardPreviewSheet } from "..";
 import { MockShareCardModule } from "../MockShareCardModule";
 
-const input = {
+const input = createRecapShareCardInput({
   reclaimedMinutes: 1_306,
   activeDays: 6,
   scheduledActiveDays: 7,
   earnCount: 7,
   weekDateRange: "20–26 Jul",
-} as const;
+});
 
 function aspectRatio(): unknown {
   const style = screen.getByTestId("share-card-canvas").props.style as unknown[];

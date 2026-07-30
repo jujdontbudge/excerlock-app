@@ -1,14 +1,18 @@
 import { render, screen } from "@testing-library/react-native";
 
-import { RecapShareCard, type ShareCardRatio } from "..";
+import {
+  createRecapShareCardInput,
+  RecapShareCard,
+  type ShareCardRatio,
+} from "..";
 
-const input = {
+const input = createRecapShareCardInput({
   reclaimedMinutes: 1_306,
   activeDays: 6,
   scheduledActiveDays: 7,
   earnCount: 7,
   weekDateRange: "20–26 Jul",
-} as const;
+});
 
 function flatten(style: unknown): Record<string, unknown> {
   if (Array.isArray(style)) {

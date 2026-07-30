@@ -1,5 +1,10 @@
-import type { ReactElement } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import {
+  Image,
+  StyleSheet,
+  Text,
+  View,
+  type ImageSourcePropType,
+} from "react-native";
 
 import { useTheme } from "@/ui";
 
@@ -11,7 +16,7 @@ type MilestoneShareCardProps = Readonly<{
   input: MilestoneShareCardInput;
   ratio: ShareCardRatio;
   /** Badge ticket #74 supplies this art; this renderer never invents it. */
-  badgeArt: ReactElement;
+  badgeArt: ImageSourcePropType;
 }>;
 
 export function MilestoneShareCard({
@@ -24,7 +29,15 @@ export function MilestoneShareCard({
   return (
     <ShareCardFrame ratio={ratio}>
       <View style={[styles.hero, { gap: spacing.sm }]}>
-        <View style={styles.badge}>{badgeArt}</View>
+        <View style={styles.badge}>
+          <Image
+            accessibilityLabel={`${input.milestoneName} badge`}
+            resizeMode="contain"
+            source={badgeArt}
+            style={styles.badgeArt}
+            testID="milestone-badge-art"
+          />
+        </View>
         <Text style={typography.hero}>{input.achievementNumber}</Text>
         <Text style={typography.title}>{input.milestoneName}</Text>
       </View>
@@ -39,6 +52,7 @@ export function MilestoneShareCard({
 
 const styles = StyleSheet.create({
   badge: { alignItems: "center", flex: 1, justifyContent: "center", width: "100%" },
+  badgeArt: { height: "100%", width: "100%" },
   footer: { alignItems: "center" },
   hero: { alignItems: "center", flex: 1, justifyContent: "center" },
 });

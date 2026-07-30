@@ -10,6 +10,13 @@ export {
 export type {
   MilestoneShareCardInput,
   RecapShareCardInput,
+  ShareCardMilestoneName,
+  ShareCardUnlockMonth,
+  ShareCardWeekDateRange,
+} from "./ShareCardInput";
+export {
+  createMilestoneShareCardInput,
+  createRecapShareCardInput,
 } from "./ShareCardInput";
 export type {
   CapturedShareCard,

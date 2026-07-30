@@ -1,13 +1,16 @@
 import { render, screen } from "@testing-library/react-native";
-import { View } from "react-native";
 
-import { MilestoneShareCard, type ShareCardRatio } from "..";
+import {
+  createMilestoneShareCardInput,
+  MilestoneShareCard,
+  type ShareCardRatio,
+} from "..";
 
-const input = {
+const input = createMilestoneShareCardInput({
   milestoneName: "30-Day Streak",
   achievementNumber: 30,
   unlockMonth: "July 2026",
-} as const;
+});
 
 function flatten(style: unknown): Record<string, unknown> {
   if (Array.isArray(style)) {
@@ -28,14 +31,14 @@ describe("MilestoneShareCard", () => {
       <MilestoneShareCard
         input={input}
         ratio={ratio}
-        badgeArt={<View testID="injected-badge-art" />}
+        badgeArt={{ uri: "test://approved-badge.png" }}
       />,
     );
 
     expect(flatten(screen.getByTestId("share-card-canvas").props.style).aspectRatio).toBe(
       aspectRatio,
     );
-    expect(screen.getByTestId("injected-badge-art")).toBeOnTheScreen();
+    expect(screen.getByTestId("milestone-badge-art")).toBeOnTheScreen();
     expect(screen.getByText("30-Day Streak")).toBeOnTheScreen();
     expect(screen.getByText(/^30$/)).toBeOnTheScreen();
     expect(screen.getByText("July 2026")).toBeOnTheScreen();

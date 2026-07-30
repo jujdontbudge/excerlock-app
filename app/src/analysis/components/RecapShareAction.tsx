@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View } from "react-native";
 
 import {
+  createRecapShareCardInput,
   ShareCardPreviewSheet,
   type RecapShareCardInput,
   type ShareCardModule,
@@ -39,11 +40,11 @@ export function RecapShareAction({ recap, module }: RecapShareActionProps) {
 function projectRecapForSharing(recap: Recap): RecapShareCardInput | null {
   if (recap.reclaimed.status !== "measured") return null;
 
-  return {
+  return createRecapShareCardInput({
     reclaimedMinutes: recap.reclaimed.reclaimedMinutes,
     activeDays: recap.activeDays,
     scheduledActiveDays: recap.dayCount,
     earnCount: recap.activityCount,
     weekDateRange: recap.rangeLabel,
-  };
+  });
 }

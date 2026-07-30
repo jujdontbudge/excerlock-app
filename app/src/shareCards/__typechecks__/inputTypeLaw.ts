@@ -1,20 +1,40 @@
-import type {
-  MilestoneShareCardInput,
-  RecapShareCardInput,
+import {
+  createMilestoneShareCardInput,
+  createRecapShareCardInput,
+  type MilestoneShareCardInput,
+  type RecapShareCardInput,
 } from "..";
 
-const recap: RecapShareCardInput = {
+const recap: RecapShareCardInput = createRecapShareCardInput({
   reclaimedMinutes: 1_306,
   activeDays: 6,
   scheduledActiveDays: 7,
   earnCount: 7,
   weekDateRange: "20–26 Jul",
-};
+});
 
-const milestone: MilestoneShareCardInput = {
+const milestone: MilestoneShareCardInput = createMilestoneShareCardInput({
   milestoneName: "30-Day Streak",
   achievementNumber: 30,
   unlockMonth: "July 2026",
+});
+
+const forbiddenDateText: RecapShareCardInput = {
+  ...recap,
+  // @ts-expect-error plain strings have not crossed the date-only constructor.
+  weekDateRange: "20–26 Jul · Gym visit",
+};
+
+const forbiddenMilestoneText: MilestoneShareCardInput = {
+  ...milestone,
+  // @ts-expect-error plain strings have not crossed the milestone-name constructor.
+  milestoneName: "30-Day Streak · Johan",
+};
+
+const forbiddenUnlockText: MilestoneShareCardInput = {
+  ...milestone,
+  // @ts-expect-error plain strings have not crossed the month-only constructor.
+  unlockMonth: "July 2026 · Downtown Fitness",
 };
 
 const forbiddenSource: RecapShareCardInput = {
@@ -59,6 +79,9 @@ const forbiddenIdentity: MilestoneShareCardInput = {
 void [
   recap,
   milestone,
+  forbiddenDateText,
+  forbiddenMilestoneText,
+  forbiddenUnlockText,
   forbiddenSource,
   forbiddenGym,
   forbiddenLocation,
