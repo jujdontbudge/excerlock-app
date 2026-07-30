@@ -19,13 +19,14 @@ inside `e2e/` instead of editing the app's static scenario catalog.
 | Surface | Flow | Scenario selection | State or feature exercised |
 |---|---|---|---|
 | Home | `smoke-home.yaml` | `baseline-fresh-install` + clock/balance patch | Walking, zero balance, shields down |
-| Manage | `manage-condition.yaml` | `baseline-fresh-install` | Allowance change, condition off/on |
+| Home | `home-condition-builder.yaml` | `baseline-fresh-install` | Build, configure, preview, and save a condition |
+| Manage | `manage-condition.yaml` | `baseline-fresh-install` | Allowance change, weekly schedule, condition off/on |
 | Analysis | `analysis-empty-history.yaml` | `baseline-fresh-install` | Empty history |
 | Analysis | `analysis-recorded-history.yaml` | baseline + journal patch | Earned/spent totals, periods, breakdown, day ledger |
 | Settings | `settings-account.yaml` | `baseline-fresh-install` | Grace persistence, signed out/in/out |
 | Settings | `settings-notifications-support.yaml` | `baseline-fresh-install` | Notification opt-in, support, feature request and vote |
 | Onboarding | `onboarding-premium.yaml` | baseline + fresh patch | Every onboarding rail screen, premium entitlement |
-| Paywall | `paywall-free-tier.yaml` | baseline + fresh/free patch | Free plans, monthly selection and purchase |
+| Paywall | `paywall-free-tier.yaml` | baseline + fresh/free patch | Free plans, empty restore, monthly selection and purchase |
 | Locked apps | `locked-apps-states.yaml` | baseline + drained-ledger patch | Shield selection, zero balance, active window, Full Lock |
 
 Each functional checkpoint is followed by a named `takeScreenshot` capture.
