@@ -173,4 +173,37 @@ describe("HttpSupportModule", () => {
       error: { code: "service_unavailable" },
     });
   });
+
+  it("keeps a rejected request visible without marking it retryable", async () => {
+    const support = new HttpSupportModule({
+      baseUrl: "https://api.example.test",
+      clock: new ManualSupportClock(5_000),
+      fetch: jest.fn().mockResolvedValue({
+        status: 400,
+        json: async () => ({
+          error: {
+            code: "INVALID_SUPPORT_REQUEST",
+            message: "Message is too long",
+          },
+        }),
+      }),
+      getAccessToken: async () => "clerk-jwt",
+    });
+
+    await expect(
+      support.submitSupport({ message: "The server rejected this." }),
+    ).resolves.toEqual({
+      status: "failed",
+      submissionId: "local-support-5000-1",
+      error: {
+        code: "request_rejected",
+        message:
+          "The server couldn't accept this request. It wasn't sent. Check it and submit a new request.",
+      },
+    });
+    expect((await support.getSnapshot()).submissions[0]).toMatchObject({
+      status: "failed",
+      error: { code: "request_rejected" },
+    });
+  });
 });

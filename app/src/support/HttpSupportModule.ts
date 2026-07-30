@@ -58,6 +58,11 @@ const SERVICE_UNAVAILABLE_ERROR: SupportError = Object.freeze({
   message:
     "Support is temporarily unavailable. This wasn't sent. It is saved here so you can try again.",
 });
+const REQUEST_REJECTED_ERROR: SupportError = Object.freeze({
+  code: "request_rejected",
+  message:
+    "The server couldn't accept this request. It wasn't sent. Check it and submit a new request.",
+});
 
 export class HttpSupportModule implements SupportModule {
   private readonly baseUrl: string;
@@ -114,6 +119,9 @@ export class HttpSupportModule implements SupportModule {
     }
     if (response.status >= 500) {
       return this.failSubmission(submission, SERVICE_UNAVAILABLE_ERROR);
+    }
+    if (response.status >= 400) {
+      return this.failSubmission(submission, REQUEST_REJECTED_ERROR);
     }
     const responseBody = await response.json();
     const submissionId = readSubmissionId(response.status, responseBody);

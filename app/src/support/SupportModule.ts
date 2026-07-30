@@ -9,7 +9,11 @@ type SupportSubmissionContent =
   | Readonly<{ kind: "feature"; title: string }>;
 
 export type SupportError = Readonly<{
-  code: "service_unavailable" | "offline" | "timeout";
+  code:
+    | "service_unavailable"
+    | "offline"
+    | "request_rejected"
+    | "timeout";
   message: string;
 }>;
 
