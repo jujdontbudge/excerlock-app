@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  createDrizzleFeatureRequestRepository,
   createDrizzleFeatureRequestVoteRepository,
   createDrizzleSupportSubmissionRepository,
 } from "../src/support/index.js";
@@ -118,5 +119,51 @@ describe("feature request vote repository", () => {
         'insert into "feature_request_votes" ("id", "feature_request_id", "user_id", "created_at") values ($1, $2, $3, $4) on conflict ("feature_request_id","user_id") do nothing returning "id"',
       ],
     });
+  });
+});
+
+describe("feature request list repository", () => {
+  it("returns counts and user vote state from one aggregate query", async () => {
+    const database = createPostgresJsTestDatabase((sql) => {
+      if (sql.includes('from "feature_requests" left join')) {
+        return [
+          [
+            "feature-request-id",
+            "support-request-id",
+            "Home Screen widget",
+            "Show my balance without opening the app.",
+            3,
+            true,
+            "2026-07-29T21:00:00.000Z",
+          ],
+        ];
+      }
+      return [];
+    });
+    const repository = createDrizzleFeatureRequestRepository(database.db);
+
+    await expect(
+      repository.listFeatureRequests("user_123"),
+    ).resolves.toEqual([
+      {
+        id: "feature-request-id",
+        submissionId: "support-request-id",
+        title: "Home Screen widget",
+        message: "Show my balance without opening the app.",
+        voteCount: 3,
+        hasVoted: true,
+        createdAt: new Date("2026-07-29T21:00:00.000Z"),
+      },
+    ]);
+    expect(database.queries).toHaveLength(1);
+    expect(database.queries[0]).toEqual({
+      sql: expect.stringContaining(
+        'coalesce(bool_or("feature_request_votes"."user_id" = $1), false)',
+      ),
+      params: ["user_123"],
+    });
+    expect(database.queries[0]?.sql).toContain(
+      'order by "feature_requests"."created_at" desc, "feature_requests"."id" desc',
+    );
   });
 });

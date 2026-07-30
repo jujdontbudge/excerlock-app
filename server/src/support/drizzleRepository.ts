@@ -1,4 +1,4 @@
-import { count, eq } from "drizzle-orm";
+import { count, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../db/client.js";
 import {
   featureRequestVotes,
@@ -7,6 +7,7 @@ import {
   users,
 } from "../db/schema.js";
 import type {
+  FeatureRequestRepository,
   FeatureRequestVoteRepository,
   SupportSubmissionRepository,
 } from "./repository.js";
@@ -116,6 +117,48 @@ export function createDrizzleFeatureRequestVoteRepository(
           voteCount: tally.voteCount,
         };
       });
+    },
+  };
+}
+
+export function createDrizzleFeatureRequestRepository(
+  configuredDatabase: SupportDatabase | null = getDb(),
+): FeatureRequestRepository {
+  const database = requireDatabase(configuredDatabase);
+
+  return {
+    userExists: (userId) => userExists(database, userId),
+
+    async listFeatureRequests(userId) {
+      return database
+        .select({
+          id: featureRequests.id,
+          submissionId: featureRequests.supportRequestId,
+          title: featureRequests.title,
+          message: featureRequests.message,
+          voteCount: count(featureRequestVotes.id),
+          hasVoted: sql<boolean>`coalesce(bool_or(${featureRequestVotes.userId} = ${userId}), false)`,
+          createdAt: featureRequests.createdAt,
+        })
+        .from(featureRequests)
+        .leftJoin(
+          featureRequestVotes,
+          eq(
+            featureRequestVotes.featureRequestId,
+            featureRequests.id,
+          ),
+        )
+        .groupBy(
+          featureRequests.id,
+          featureRequests.supportRequestId,
+          featureRequests.title,
+          featureRequests.message,
+          featureRequests.createdAt,
+        )
+        .orderBy(
+          desc(featureRequests.createdAt),
+          desc(featureRequests.id),
+        );
     },
   };
 }
