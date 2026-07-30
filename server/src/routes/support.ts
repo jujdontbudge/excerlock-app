@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import type {
   FeatureRequestService,
+  FeatureRequestVoteService,
   SupportSubmissionService,
 } from "../support/index.js";
 import {
@@ -14,6 +15,11 @@ import { sendSupportRouteError } from "./supportRouteError.js";
 interface SupportRouteDependencies {
   featureRequests: FeatureRequestService;
   service: SupportSubmissionService;
+  votes: FeatureRequestVoteService;
+}
+
+interface FeatureRequestParams {
+  featureRequestId: string;
 }
 
 const supportSubmissionBody = z.discriminatedUnion("category", [
@@ -48,6 +54,28 @@ export function createSupportRoutes(
         await sendSupportRouteError(reply, error);
       }
     });
+
+    app.post<{ Params: FeatureRequestParams }>(
+      "/feature-requests/:featureRequestId/votes",
+      async (request, reply) => {
+        const userId = await requireRouteUserId(request, reply);
+        if (!userId) {
+          return;
+        }
+
+        try {
+          const result = await dependencies.votes.vote(
+            userId,
+            request.params.featureRequestId,
+          );
+          return reply
+            .code(result.status === "voted" ? 201 : 200)
+            .send(result);
+        } catch (error) {
+          await sendSupportRouteError(reply, error);
+        }
+      },
+    );
 
     app.post<{ Body: unknown }>("/support", async (request, reply) => {
       const userId = await requireRouteUserId(request, reply);

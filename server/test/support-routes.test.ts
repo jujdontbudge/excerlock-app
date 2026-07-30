@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createSupportRoutes } from "../src/routes/support.js";
 import {
   type FeatureRequestService,
+  type FeatureRequestVoteService,
   type SupportSubmissionService,
   SupportUserNotFoundError,
 } from "../src/support/index.js";
@@ -13,6 +14,10 @@ afterEach(async () => {
   await app?.close();
   app = undefined;
 });
+
+function unusedVoteService(): FeatureRequestVoteService {
+  return { vote: vi.fn() };
+}
 
 describe("support routes", () => {
   it("accepts and persists an authenticated support request", async () => {
@@ -27,9 +32,14 @@ describe("support routes", () => {
     app.addHook("onRequest", async (request) => {
       request.clerkIdentity = { userId: "user_123", roles: [] };
     });
-    await app.register(createSupportRoutes({ service, featureRequests }), {
-      prefix: "/v1",
-    });
+    await app.register(
+      createSupportRoutes({
+        service,
+        featureRequests,
+        votes: unusedVoteService(),
+      }),
+      { prefix: "/v1" },
+    );
 
     const response = await app.inject({
       method: "POST",
@@ -72,9 +82,14 @@ describe("support routes", () => {
     app.addHook("onRequest", async (request) => {
       request.clerkIdentity = { userId: "missing_user", roles: [] };
     });
-    await app.register(createSupportRoutes({ service, featureRequests }), {
-      prefix: "/v1",
-    });
+    await app.register(
+      createSupportRoutes({
+        service,
+        featureRequests,
+        votes: unusedVoteService(),
+      }),
+      { prefix: "/v1" },
+    );
 
     const response = await app.inject({
       method: "POST",
@@ -121,9 +136,14 @@ describe("support routes", () => {
     app.addHook("onRequest", async (request) => {
       request.clerkIdentity = { userId: "user_123", roles: [] };
     });
-    await app.register(createSupportRoutes({ service, featureRequests }), {
-      prefix: "/v1",
-    });
+    await app.register(
+      createSupportRoutes({
+        service,
+        featureRequests,
+        votes: unusedVoteService(),
+      }),
+      { prefix: "/v1" },
+    );
 
     const response = await app.inject({
       method: "GET",
@@ -150,6 +170,78 @@ describe("support routes", () => {
         ],
       },
       calls: [["user_123"]],
+    });
+  });
+
+  it("records a first vote and returns a duplicate retry as a no-op", async () => {
+    const service: SupportSubmissionService = {
+      submit: vi.fn(),
+    };
+    const featureRequests: FeatureRequestService = {
+      list: vi.fn(async () => ({ featureRequests: [] })),
+    };
+    const vote = vi
+      .fn<FeatureRequestVoteService["vote"]>()
+      .mockResolvedValueOnce({
+        status: "voted",
+        featureRequestId: "feature-request-id",
+        voteCount: 1,
+      })
+      .mockResolvedValueOnce({
+        status: "alreadyVoted",
+        featureRequestId: "feature-request-id",
+        voteCount: 1,
+      });
+    app = Fastify({ logger: false });
+    app.addHook("onRequest", async (request) => {
+      request.clerkIdentity = { userId: "user_123", roles: [] };
+    });
+    await app.register(
+      createSupportRoutes({
+        service,
+        featureRequests,
+        votes: { vote },
+      }),
+      { prefix: "/v1" },
+    );
+
+    const first = await app.inject({
+      method: "POST",
+      url: "/v1/feature-requests/feature-request-id/votes",
+    });
+    const duplicate = await app.inject({
+      method: "POST",
+      url: "/v1/feature-requests/feature-request-id/votes",
+    });
+
+    expect({
+      first: { status: first.statusCode, body: first.json() },
+      duplicate: {
+        status: duplicate.statusCode,
+        body: duplicate.json(),
+      },
+      calls: vote.mock.calls,
+    }).toEqual({
+      first: {
+        status: 201,
+        body: {
+          status: "voted",
+          featureRequestId: "feature-request-id",
+          voteCount: 1,
+        },
+      },
+      duplicate: {
+        status: 200,
+        body: {
+          status: "alreadyVoted",
+          featureRequestId: "feature-request-id",
+          voteCount: 1,
+        },
+      },
+      calls: [
+        ["user_123", "feature-request-id"],
+        ["user_123", "feature-request-id"],
+      ],
     });
   });
 });
