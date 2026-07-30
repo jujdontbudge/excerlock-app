@@ -172,6 +172,66 @@ describe("HttpSupportModule", () => {
     ]);
   });
 
+  it("records the server-authoritative feature vote", async () => {
+    const fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({
+          featureRequests: [
+            {
+              id: "server-feature-3",
+              submissionId: "server-submission-feature-3",
+              title: "Weekly summary",
+              message: "Show the last seven days in one view.",
+              voteCount: 3,
+              hasVoted: false,
+              createdAt: "2026-07-29T21:00:00.000Z",
+            },
+          ],
+        }),
+      })
+      .mockResolvedValueOnce({
+        status: 201,
+        json: async () => ({
+          status: "voted",
+          featureRequestId: "server-feature-3",
+          voteCount: 4,
+        }),
+      });
+    const support = new HttpSupportModule({
+      baseUrl: "https://api.example.test",
+      fetch,
+      getAccessToken: async () => "clerk-jwt",
+    });
+    await support.refreshFeatureRequests();
+
+    await expect(
+      support.voteOnFeatureRequest("server-feature-3"),
+    ).resolves.toEqual({
+      status: "voted",
+      featureRequestId: "server-feature-3",
+      voteCount: 4,
+    });
+
+    expect(fetch).toHaveBeenLastCalledWith(
+      "https://api.example.test/v1/feature-requests/server-feature-3/votes",
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: "Bearer clerk-jwt",
+        },
+        method: "POST",
+        signal: expect.any(Object),
+      },
+    );
+    expect((await support.getSnapshot()).featureRequests[0]).toMatchObject({
+      id: "server-feature-3",
+      voteCount: 4,
+      hasVoted: true,
+    });
+  });
+
   it("saves an offline request and reports that it was not sent", async () => {
     const support = new HttpSupportModule({
       baseUrl: "https://api.example.test",

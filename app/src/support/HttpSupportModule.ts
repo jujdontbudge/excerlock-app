@@ -191,9 +191,31 @@ export class HttpSupportModule implements SupportModule {
   }
 
   public async voteOnFeatureRequest(
-    _featureRequestId: string,
+    featureRequestId: string,
   ): Promise<VoteOnFeatureRequestResult> {
-    throw new Error("Feature voting is not implemented");
+    await this.ready;
+    const response = await this.request(
+      `/v1/feature-requests/${encodeURIComponent(featureRequestId)}/votes`,
+      "POST",
+    );
+    const result = readFeatureVote(response.status, await response.json());
+    await this.publish(
+      Object.freeze({
+        ...this.snapshot,
+        featureRequests: Object.freeze(
+          this.snapshot.featureRequests.map((featureRequest) =>
+            featureRequest.id === result.featureRequestId
+              ? Object.freeze({
+                  ...featureRequest,
+                  voteCount: result.voteCount,
+                  hasVoted: true,
+                })
+              : featureRequest,
+          ),
+        ),
+      }),
+    );
+    return result;
   }
 
   public subscribe(listener: SupportStateListener): SupportUnsubscribe {
@@ -418,6 +440,32 @@ function readFeatureRequests(value: unknown): readonly FeatureRequest[] {
       });
     }),
   );
+}
+
+function readFeatureVote(
+  status: number,
+  value: unknown,
+): VoteOnFeatureRequestResult {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("status" in value) ||
+    (value.status !== "voted" && value.status !== "alreadyVoted") ||
+    (value.status === "voted" ? status !== 201 : status !== 200) ||
+    !("featureRequestId" in value) ||
+    typeof value.featureRequestId !== "string" ||
+    value.featureRequestId.trim().length === 0 ||
+    !("voteCount" in value) ||
+    !Number.isInteger(value.voteCount) ||
+    (value.voteCount as number) < 0
+  ) {
+    throw new Error("Support server returned an invalid feature vote response");
+  }
+  return Object.freeze({
+    status: value.status,
+    featureRequestId: value.featureRequestId,
+    voteCount: value.voteCount as number,
+  });
 }
 
 function isAbortError(error: unknown): boolean {
