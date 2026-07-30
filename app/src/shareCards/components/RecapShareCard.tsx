@@ -1,3 +1,4 @@
+import type { RefObject } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/ui";
@@ -9,13 +10,18 @@ import { ShareCardFrame } from "./ShareCardFrame";
 type RecapShareCardProps = Readonly<{
   input: RecapShareCardInput;
   ratio: ShareCardRatio;
+  captureTargetRef?: RefObject<View | null>;
 }>;
 
-export function RecapShareCard({ input, ratio }: RecapShareCardProps) {
+export function RecapShareCard({
+  input,
+  ratio,
+  captureTargetRef,
+}: RecapShareCardProps) {
   const { colors, spacing, typography } = useTheme();
 
   return (
-    <ShareCardFrame ratio={ratio}>
+    <ShareCardFrame ref={captureTargetRef} ratio={ratio}>
       <Text style={typography.caption}>{input.weekDateRange}</Text>
 
       <View style={[styles.hero, { gap: spacing.sm }]}>

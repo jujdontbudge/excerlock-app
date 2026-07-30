@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import { ShareCardPreviewSheet } from "..";
+import { MockShareCardModule } from "../MockShareCardModule";
 
 const input = {
   reclaimedMinutes: 1_306,
@@ -33,5 +34,32 @@ describe("ShareCardPreviewSheet", () => {
 
     await fireEvent.press(screen.getByRole("button", { name: "Close" }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("captures the selected format and hands its file to the mocked share seam", async () => {
+    const module = new MockShareCardModule();
+    await render(
+      <ShareCardPreviewSheet
+        visible
+        input={input}
+        module={module}
+        onClose={jest.fn()}
+      />,
+    );
+
+    await fireEvent.press(screen.getByRole("button", { name: "Feed · 1:1" }));
+    await fireEvent.press(screen.getByRole("button", { name: "Share card" }));
+
+    await waitFor(() => {
+      expect(module.getCapturedCards()).toHaveLength(1);
+      expect(module.getPresentedCards()).toHaveLength(1);
+    });
+    expect(module.getCapturedCards()[0]).toMatchObject({
+      template: "recap",
+      ratio: "feed",
+      width: 1_080,
+      height: 1_080,
+    });
+    expect(screen.getByText("Prepared with the local share mock.")).toBeOnTheScreen();
   });
 });

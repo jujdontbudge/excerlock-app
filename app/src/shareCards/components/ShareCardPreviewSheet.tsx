@@ -1,30 +1,59 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal, StyleSheet, Text, View } from "react-native";
 
 import { PillButton, Screen, useTheme } from "@/ui";
 
 import type { RecapShareCardInput } from "../ShareCardInput";
 import type { ShareCardRatio } from "../ShareCardFormat";
+import { getShareCardModule } from "../accessor";
+import type {
+  ShareCardHandoffResult,
+  ShareCardModule,
+} from "../ShareCardModule";
 import { RecapShareCard } from "./RecapShareCard";
 
 type ShareCardPreviewSheetProps = Readonly<{
   visible: boolean;
   input: RecapShareCardInput;
+  module?: ShareCardModule;
   onClose: () => void;
 }>;
+
+type HandoffStatus = "idle" | "working" | ShareCardHandoffResult["status"] | "failed";
 
 /** The local preview and 9:16/1:1 chooser; native handoff is a separate seam. */
 export function ShareCardPreviewSheet({
   visible,
   input,
+  module = getShareCardModule(),
   onClose,
 }: ShareCardPreviewSheetProps) {
   const { spacing, typography } = useTheme();
   const [ratio, setRatio] = useState<ShareCardRatio>("story");
+  const [handoffStatus, setHandoffStatus] = useState<HandoffStatus>("idle");
+  const captureTargetRef = useRef<View>(null);
 
   useEffect(() => {
-    if (visible) setRatio("story");
+    if (visible) {
+      setRatio("story");
+      setHandoffStatus("idle");
+    }
   }, [visible]);
+
+  const shareCard = async () => {
+    setHandoffStatus("working");
+    try {
+      const captured = await module.captureCard({
+        target: captureTargetRef,
+        template: "recap",
+        ratio,
+      });
+      const result = await module.presentShareSheet(captured);
+      setHandoffStatus(result.status);
+    } catch {
+      setHandoffStatus("failed");
+    }
+  };
 
   return (
     <Modal
@@ -54,7 +83,11 @@ export function ShareCardPreviewSheet({
             <View
               style={ratio === "story" ? styles.storyPreview : styles.feedPreview}
             >
-              <RecapShareCard input={input} ratio={ratio} />
+              <RecapShareCard
+                captureTargetRef={captureTargetRef}
+                input={input}
+                ratio={ratio}
+              />
             </View>
           </View>
 
@@ -71,6 +104,25 @@ export function ShareCardPreviewSheet({
               variant={ratio === "feed" ? "primary" : "secondary"}
               style={styles.ratioAction}
             />
+          </View>
+
+          <View style={{ gap: spacing.sm }}>
+            <PillButton
+              label={handoffStatus === "working" ? "Preparing card…" : "Share card"}
+              disabled={handoffStatus === "working"}
+              onPress={() => void shareCard()}
+              variant="white"
+            />
+            {handoffStatus === "simulated" ? (
+              <Text style={typography.caption}>
+                Prepared with the local share mock.
+              </Text>
+            ) : null}
+            {handoffStatus === "failed" ? (
+              <Text style={typography.caption}>
+                The card could not be prepared. Try again.
+              </Text>
+            ) : null}
           </View>
         </View>
       </Screen>
