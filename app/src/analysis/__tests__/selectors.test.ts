@@ -169,6 +169,29 @@ describe("selectStreak", () => {
     ).toEqual({ current: 2, longest: 2 });
   });
 
+  it("keeps holidays and rest overrides transparent but breaks on a missed active override", () => {
+    const monday = Date.UTC(2026, 6, 20) / DAY_MS;
+    const schedule: ScheduleRules = {
+      recurringRestWeekdays: [6],
+      holidays: [{ startDayIndex: monday + 1, endDayIndex: monday + 1 }],
+      overrides: [
+        { dayIndex: monday + 3, direction: "rest" },
+        { dayIndex: monday + 5, direction: "active" },
+      ],
+    };
+    const days = [true, false, true, false, true, false, true].map(
+      (meaningfulActivity, offset) =>
+        day(monday + offset, { meaningfulActivity }),
+    );
+
+    expect(
+      selectStreak(days, {
+        classifyDay: (dayIndex) =>
+          classifyScheduleDay({ dayIndex, schedule }),
+      }),
+    ).toEqual({ current: 1, longest: 3 });
+  });
+
   it("counts the run of meaningful days ending today", () => {
     expect(selectStreak(streakDays([true, true, false, true, true, true])).current).toBe(3);
   });
