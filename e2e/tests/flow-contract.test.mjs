@@ -96,3 +96,19 @@ test("Settings flow covers persisted grace and signed-out versus signed-in", asy
   assert.match(flow, /tapOn: Sign out/);
   assert.match(flow, /takeScreenshot: settings-signed-out/);
 });
+
+test("Settings flow covers notification opt-in and support submissions", async () => {
+  const flow = await read("flows/settings-notifications-support.yaml");
+
+  assert.match(flow, new RegExp(`^appId: ${APP_ID}$`, "m"));
+  assert.match(flow, new RegExp(`^  SCENARIO: ${BUNDLED_SCENARIO}$`, "m"));
+  assert.match(flow, /id: notification-settings-card/);
+  assert.match(flow, /id: notification-toggle-afternoonNudge/);
+  assert.match(flow, /id: notification-permission-primer/);
+  assert.match(flow, /Allow notifications/);
+  assert.match(flow, /id: support-composer/);
+  assert.match(flow, /Send support request/);
+  assert.match(flow, /Submit feature request/);
+  assert.match(flow, /Vote for E2E dashboard/);
+  assert.match(flow, /takeScreenshot: settings-support-history/);
+});
