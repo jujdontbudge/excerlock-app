@@ -232,6 +232,49 @@ describe("HttpSupportModule", () => {
     });
   });
 
+  it("reports an offline vote without changing the feature count", async () => {
+    const fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({
+          featureRequests: [
+            {
+              id: "server-feature-offline-vote",
+              submissionId: "server-submission-offline-vote",
+              title: "Watch complication",
+              message: "Show my balance on my watch.",
+              voteCount: 2,
+              hasVoted: false,
+              createdAt: "2026-07-29T21:00:00.000Z",
+            },
+          ],
+        }),
+      })
+      .mockRejectedValueOnce(new TypeError("Network request failed"));
+    const support = new HttpSupportModule({
+      baseUrl: "https://api.example.test",
+      fetch,
+      getAccessToken: async () => "clerk-jwt",
+    });
+    await support.refreshFeatureRequests();
+
+    await expect(
+      support.voteOnFeatureRequest("server-feature-offline-vote"),
+    ).resolves.toEqual({
+      status: "failed",
+      featureRequestId: "server-feature-offline-vote",
+      error: {
+        code: "offline",
+        message: "You're offline. Your vote wasn't sent. You can try again.",
+      },
+    });
+    expect((await support.getSnapshot()).featureRequests[0]).toMatchObject({
+      voteCount: 2,
+      hasVoted: false,
+    });
+  });
+
   it("saves an offline request and reports that it was not sent", async () => {
     const support = new HttpSupportModule({
       baseUrl: "https://api.example.test",

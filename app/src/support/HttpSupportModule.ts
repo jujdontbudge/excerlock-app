@@ -61,6 +61,22 @@ const REQUEST_REJECTED_ERROR: SupportError = Object.freeze({
   message:
     "The server couldn't accept this request. It wasn't sent. Check it and submit a new request.",
 });
+const OFFLINE_VOTE_ERROR: SupportError = Object.freeze({
+  code: "offline",
+  message: "You're offline. Your vote wasn't sent. You can try again.",
+});
+const TIMEOUT_VOTE_ERROR: SupportError = Object.freeze({
+  code: "timeout",
+  message: "The vote timed out. It wasn't counted. You can try again.",
+});
+const SERVICE_UNAVAILABLE_VOTE_ERROR: SupportError = Object.freeze({
+  code: "service_unavailable",
+  message: "Voting is temporarily unavailable. Your vote wasn't counted.",
+});
+const VOTE_REJECTED_ERROR: SupportError = Object.freeze({
+  code: "request_rejected",
+  message: "The server couldn't accept this vote. It wasn't counted.",
+});
 
 export class HttpSupportModule implements SupportModule {
   private readonly clock: SupportClock;
@@ -183,11 +199,38 @@ export class HttpSupportModule implements SupportModule {
     featureRequestId: string,
   ): Promise<VoteOnFeatureRequestResult> {
     await this.ready;
-    const response = await this.http.request(
-      `/v1/feature-requests/${encodeURIComponent(featureRequestId)}/votes`,
-      "POST",
-    );
-    const result = readFeatureVote(response.status, response.body);
+    let response: SupportHttpResponse;
+    try {
+      response = await this.http.request(
+        `/v1/feature-requests/${encodeURIComponent(featureRequestId)}/votes`,
+        "POST",
+      );
+    } catch (error) {
+      return failedFeatureVote(
+        featureRequestId,
+        isSupportRequestTimeout(error)
+          ? TIMEOUT_VOTE_ERROR
+          : OFFLINE_VOTE_ERROR,
+      );
+    }
+    if (response.status >= 500) {
+      return failedFeatureVote(
+        featureRequestId,
+        SERVICE_UNAVAILABLE_VOTE_ERROR,
+      );
+    }
+    if (response.status >= 400) {
+      return failedFeatureVote(featureRequestId, VOTE_REJECTED_ERROR);
+    }
+    let result: ReturnType<typeof readFeatureVote>;
+    try {
+      result = readFeatureVote(response.status, response.body);
+    } catch {
+      return failedFeatureVote(
+        featureRequestId,
+        SERVICE_UNAVAILABLE_VOTE_ERROR,
+      );
+    }
     await this.publish(
       Object.freeze({
         ...this.snapshot,
@@ -354,4 +397,15 @@ function completeFeatureSubmission(
     );
   }
   return Object.freeze(completed);
+}
+
+function failedFeatureVote(
+  featureRequestId: string,
+  error: SupportError,
+): VoteOnFeatureRequestResult {
+  return Object.freeze({
+    status: "failed",
+    featureRequestId,
+    error,
+  });
 }

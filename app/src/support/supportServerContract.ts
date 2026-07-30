@@ -1,12 +1,17 @@
 import type {
   FeatureRequest,
   SupportSubmission,
-  VoteOnFeatureRequestResult,
 } from "./SupportModule";
 
 export type SupportSubmissionReceipt = Readonly<{
   submissionId: string;
   featureRequestId: string | null;
+}>;
+
+export type FeatureVoteReceipt = Readonly<{
+  status: "voted" | "alreadyVoted";
+  featureRequestId: string;
+  voteCount: number;
 }>;
 
 export function readSubmissionReceipt(
@@ -94,7 +99,7 @@ export function readFeatureRequests(
 export function readFeatureVote(
   status: number,
   value: unknown,
-): VoteOnFeatureRequestResult {
+): FeatureVoteReceipt {
   if (
     typeof value !== "object" ||
     value === null ||

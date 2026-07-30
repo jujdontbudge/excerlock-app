@@ -49,11 +49,17 @@ export type SubmitSupportResult =
       error: SupportError;
     }>;
 
-export type VoteOnFeatureRequestResult = Readonly<{
-  status: "voted" | "alreadyVoted";
-  featureRequestId: string;
-  voteCount: number;
-}>;
+export type VoteOnFeatureRequestResult =
+  | Readonly<{
+      status: "voted" | "alreadyVoted";
+      featureRequestId: string;
+      voteCount: number;
+    }>
+  | Readonly<{
+      status: "failed";
+      featureRequestId: string;
+      error: SupportError;
+    }>;
 
 export type SupportStateListener = (snapshot: SupportSnapshot) => void;
 export type SupportUnsubscribe = () => void;
