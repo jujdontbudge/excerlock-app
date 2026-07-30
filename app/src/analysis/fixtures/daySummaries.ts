@@ -101,6 +101,9 @@ function condition(totals: Partial<ConditionDaySummary>): ConditionDaySummary {
     rateMinutes,
     stateSustainedMinutes,
     earnedMinutes: totals.earnedMinutes ?? 0,
+    ...(totals.firstQualifiedAtMs === undefined
+      ? {}
+      : { firstQualifiedAtMs: totals.firstQualifiedAtMs }),
     // The same predicate `summary.ts` applies, read off the package's own floors.
     meaningfulActivity:
       eventsFired > 0 ||
@@ -109,26 +112,43 @@ function condition(totals: Partial<ConditionDaySummary>): ConditionDaySummary {
   };
 }
 
-function conditionsFor(row: Row): Record<string, ConditionDaySummary> {
+function conditionsFor(
+  row: Row,
+  dayStartMs: number,
+): Record<string, ConditionDaySummary> {
   const conditions: Record<string, ConditionDaySummary> = {};
   if (row.gymEvents !== undefined)
     conditions[FIXTURE_CONDITIONS.gym.id] = condition({
       eventsFired: row.gymEvents,
       earnedMinutes: row.gymEvents * 45,
+      firstQualifiedAtMs:
+        row.gymEvents > 0 ? dayStartMs + 9 * 60 * MIN_MS : undefined,
     });
   if (row.runMinutes !== undefined)
     conditions[FIXTURE_CONDITIONS.run.id] = condition({
       rateMinutes: row.runMinutes,
       earnedMinutes: row.runMinutes,
+      firstQualifiedAtMs:
+        row.runMinutes >= RATE_STREAK_FLOOR_MINUTES
+          ? dayStartMs + 7 * 60 * MIN_MS
+          : undefined,
     });
   if (row.stepsMinutes !== undefined)
     conditions[FIXTURE_CONDITIONS.steps.id] = condition({
       rateMinutes: row.stepsMinutes,
       earnedMinutes: row.stepsMinutes,
+      firstQualifiedAtMs:
+        row.stepsMinutes >= RATE_STREAK_FLOOR_MINUTES
+          ? dayStartMs + 10 * 60 * MIN_MS
+          : undefined,
     });
   if (row.deskMinutes !== undefined)
     conditions[FIXTURE_CONDITIONS.desk.id] = condition({
       stateSustainedMinutes: row.deskMinutes,
+      firstQualifiedAtMs:
+        row.deskMinutes >= STATE_STREAK_FLOOR_MINUTES
+          ? dayStartMs + 8 * 60 * MIN_MS
+          : undefined,
     });
   return conditions;
 }
@@ -140,18 +160,20 @@ function buildDaySummaries(rows: readonly Row[]): DaySummary[] {
 
   return rows.map((row, offset) => {
     const dayIndex = FIRST_DAY_INDEX + offset;
+    const dayStartMs =
+      dayIndex * DAY_MS + dayBoundaryOffsetMinutes * MIN_MS;
     const startBalance = baseAllowanceMinutes + rolloverIn;
     // The ledger clamps at zero; the rows are authored never to overspend, and
     // `__tests__/fixtures.test.ts` holds them to it.
     const endBalance = Math.max(0, startBalance + row.earned - row.spent);
-    const conditions = conditionsFor(row);
+    const conditions = conditionsFor(row, dayStartMs);
     const meaningfulConditionCount = Object.values(conditions).filter(
       (c) => c.meaningfulActivity,
     ).length;
 
     const summary: DaySummary = {
       dayIndex,
-      dayStartMs: dayIndex * DAY_MS + dayBoundaryOffsetMinutes * MIN_MS,
+      dayStartMs,
       baseAllowance: baseAllowanceMinutes,
       rolloverIn,
       startBalance,

@@ -22,6 +22,15 @@ export {
   heroReading,
 } from "./format";
 export {
+  buildRequirementHeatMap,
+  type QualifiedConditionDetail,
+  type RequirementDayDetail,
+  type RequirementDayClassifier,
+  type RequirementHeatMap,
+  type RequirementHeatMapCell,
+  type RequirementMetKind,
+} from "./requirementHeatMap";
+export {
   DEFAULT_WEEK_STARTS_ON,
   selectBars,
   selectMonth,

@@ -1,9 +1,14 @@
-import type { DaySummary } from "@excerlock/ledger";
+import { dayIndexFor, type DaySummary } from "@excerlock/ledger";
 import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
 import { useHomeStore } from "@/home";
 import { useConfessionStore } from "@/onboarding";
+import {
+  classifyScheduleDay,
+  useScheduleStore,
+  type ScheduleRules,
+} from "@/schedule";
 import { Screen, SectionHeader, useTheme } from "@/ui";
 
 import {
@@ -13,6 +18,7 @@ import {
   EarnedSpentCard,
   PeriodControl,
   RecapCard,
+  RequirementHeatMapCard,
   StreakCard,
   TimeReclaimedHero,
   WeekChart,
@@ -46,13 +52,15 @@ type AnalysisScreenProps = {
    * fixed life-before-ExcerLock snapshot (PRD §3.13).
    */
   confessedDailyMinutes?: number | null;
+  /** Deterministic schedule override for tests; production reads Schedule's store. */
+  schedule?: ScheduleRules;
 };
 
 /**
  * Analysis — the weekly recap, the Time Reclaimed hero, the selected period's
- * earned-versus-spent trend, the streak, per-condition earnings and the day
- * ledger under it. The PRD's remaining heat map and milestones shelf still need
- * schedule/chronology inputs and badge art.
+ * earned-versus-spent trend, the streak + requirement history, per-condition
+ * earnings and the day ledger under it. The milestones shelf remains separate
+ * badge-art and unlock-state work.
  *
  * This file projects Home's real journal, joins current condition names and
  * lays out the view. All numerical reading after projection is done by
@@ -64,6 +72,7 @@ export function AnalysisScreen({
   weekStartsOn,
   conditionNames,
   confessedDailyMinutes,
+  schedule,
 }: AnalysisScreenProps) {
   const { spacing, typography } = useTheme();
   const [period, setPeriod] = useState<AnalysisPeriod>("week");
@@ -71,6 +80,16 @@ export function AnalysisScreen({
   const conditions = useHomeStore((state) => state.conditions);
   const journal = useHomeStore((state) => state.journal);
   const ledgerConfig = useHomeStore((state) => state.ledgerConfig);
+  const recurringRestWeekdays = useScheduleStore(
+    (state) => state.recurringRestWeekdays,
+  );
+  const holidays = useScheduleStore((state) => state.holidays);
+  const overrides = useScheduleStore((state) => state.overrides);
+  const storedSchedule = useMemo<ScheduleRules>(
+    () => ({ recurringRestWeekdays, holidays, overrides }),
+    [holidays, overrides, recurringRestWeekdays],
+  );
+  const activeSchedule = schedule ?? storedSchedule;
   const realDays = useMemo(
     () => deriveDayRecord(journal, ledgerConfig, throughMs),
     [journal, ledgerConfig, throughMs],
@@ -81,6 +100,12 @@ export function AnalysisScreen({
     conditionNames: conditionNames ?? conditionNameMap(conditions),
     confessedDailyMinutes:
       confessedDailyMinutes === undefined ? confessed : confessedDailyMinutes,
+    classifyRequirementDay: (dayIndex) =>
+      classifyScheduleDay({ dayIndex, schedule: activeSchedule }),
+    throughDayIndex:
+      throughMs === undefined
+        ? undefined
+        : dayIndexFor(throughMs, ledgerConfig.dayBoundaryOffsetMinutes),
   });
 
   return (
@@ -113,6 +138,7 @@ export function AnalysisScreen({
 
             <SectionHeader title="Streak" />
             <StreakCard streak={view.streak} totals={view.windowTotals} />
+            <RequirementHeatMapCard heatMap={view.requirementHeatMap} />
 
             <SectionHeader title="Earning breakdown" />
             <ConditionBreakdownCard

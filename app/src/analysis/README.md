@@ -3,9 +3,10 @@
 **Contract.** `analysis` owns the Analysis tab: it projects Home's real journal through the ledger's
 `daySummaries()` read model, then turns that ascending `DaySummary` record into the readings the tab
 shows — the weekly recap, the Time Reclaimed hero, the selected Week/Month/Year trend, the streak, the
-per-condition earning breakdown and the day-by-day ledger. It hides *how* a window is projected, sliced,
-summed, ordered and formatted; the screen only lays out. It computes no ledger math of its own and owns
-no store: it only reads Home's journal/config/condition names and onboarding's confession.
+requirement heat map, the per-condition earning breakdown and the day-by-day ledger. It hides *how* a
+window is projected, sliced, summed, ordered and formatted; the screen only lays out. It computes no
+ledger math of its own and owns no store: it only reads Home's journal/config/condition names,
+Schedule's rules and onboarding's confession.
 
 **Invariants.**
 
@@ -25,6 +26,14 @@ no store: it only reads Home's journal/config/condition names and onboarding's c
 - **No clock.** `AnalysisScreen` accepts `throughMs` when its caller has a render instant; otherwise the
   latest journal event is the deterministic cutoff. "Today" is the last summary on record and weekday
   arithmetic runs off `dayIndex`. Nothing here calls `Date.now()`.
+- **Heat-map chronology is data, not object order.** A cell compares defined
+  `ConditionDaySummary.firstQualifiedAtMs` values directly. `0` is a real qualifying instant;
+  `undefined` means the condition never qualified. Equal instants use condition id as an explicit
+  stable tie-break, never the insertion order of the `conditions` record.
+- **Schedule classification stays owned by Schedule.** `AnalysisScreen` injects
+  `classifyScheduleDay`; the pure view never repeats override → holiday → recurring rest → active
+  precedence. Inactive classifications win over activity for the cell, so a rest day can never look
+  like a missed active day.
 - **The confession is read, never written.** `confessed_daily_minutes` (#43) is a fixed
   life-before-ExcerLock snapshot — PRD §3.13 forbids editing it, because a tunable baseline turns the
   hero into a vanity dial. `AnalysisScreen` subscribes to `useConfessionStore`; every layer below it
@@ -45,12 +54,14 @@ no store: it only reads Home's journal/config/condition names and onboarding's c
 | `model/conditionBreakdown.ts` | joins condition ids to names and totals optional attributed earnings without turning missing history into zero |
 | `model/dayRecord.ts` | the sole Home-journal adapter; delegates to `daySummaries()` with the real config and an injected cutoff |
 | `model/format.ts` | the one minute/day-count formatting surface |
+| `model/requirementHeatMap.ts` | six-state whole-week columns, first-qualified attribution and honest before-history/future padding |
 | `model/selectors.ts` | `selectToday` · Week/Month/Year period selection · streaks · totals · bars |
 | `model/timeReclaimed.ts` | `selectTimeReclaimed` — the PRD §3.13 formula over any window |
 | `model/recap.ts` | `buildRecap` — the weekly recap's five rows |
 | `model/view.ts` | `buildAnalysisView` — the single read the screen performs |
 | `fixtures/daySummaries.ts` | three weeks of derived, self-consistent `DaySummary` records for tests and E2E |
 | `components/RecapCard.tsx` | the week in five rows, led by its Time Reclaimed and delta |
+| `components/RequirementHeatMapCard.tsx` | accessible requirement cells, kind glyphs and selectable day detail |
 | `components/TimeReclaimedHero.tsx` | the month's hero numeral and what sits under it |
 | `components/EarnedSpentCard.tsx` | earned vs spent vs the difference, for a window |
 | `components/ConditionBreakdownCard.tsx` | per-condition banked minutes, legacy `not recorded`, and the no-earnings state |
@@ -71,9 +82,10 @@ Only the story is authored: earned minutes, spent minutes and each day's conditi
 rollover, meaningful-activity verdicts and the requirement that condition attribution sums to the day's
 banked total are held to the identities `packages/ledger` guarantees by
 `__tests__/fixtures.test.ts` — so the fixture can never drift into a state the real ledger would refuse
-to produce. The shape: week 1 finds its feet, week 2 is a clean eight-day run carrying into week 3's
-Monday, week 3 stumbles once and then reaches today on a five-day run. Three quiet days burn the balance
-to exactly zero.
+to produce. Qualifying fixture conditions also carry plausible within-day first-met times; conditions
+below their meaningful-activity floor deliberately have no timestamp. The shape: week 1 finds its feet,
+week 2 is a clean eight-day run carrying into week 3's Monday, week 3 stumbles once and then reaches
+today on a five-day run. Three quiet days burn the balance to exactly zero.
 
 Production renders Home's real journal when `days` is omitted. Tests and E2E can still inject a
 deterministic record with `<AnalysisScreen days={…} />`; they can pass `throughMs` to extend the real
@@ -104,26 +116,38 @@ Three inputs are not numbers and are handled as states rather than defaults:
 | A confession of zero (or nonsense) | `noBaseline` | "nothing to reclaim against" — never `−usage`, which would be a scolding dressed as arithmetic |
 | Confession on record | `measured` | the formula, plus the over-days line when there is one |
 
+## Requirement heat map
+
+The heat map is the whole record grouped into seven-day columns. `weekStartsOn` chooses the first row
+in every column. The first column is padded with `beforeHistory` blanks and the current column with
+`future` blanks; neither becomes a missed day. With no history, `buildAnalysisView()` returns no heat-map
+columns and `AnalysisScreen` keeps the existing invitation-only empty state.
+
+The six cell states are `metByEvent` · `metByRate` · `metByState` · `missed` · `rest` · `blank`.
+Met cells share the primary fill and differ by their white event check, rate bars or state pulse-dot.
+Missed active days are neutral and empty; rest, holiday and inactive-override days use a separate faint
+tint; blank padding has no fill. Every cell is an accessibility button with a state-specific label.
+Selecting one opens its dated detail inside the card: requirement status, earned minutes and every
+qualifying condition in first-met order.
+
 ## Not built yet
 
-The PRD's Analysis tab has six blocks (§3.15 Tab 3). This build ships blocks 1 and 2 (#51), 3 and 4
-(partially, #38), block 5 (#56), plus the day ledger. Still owed:
+The PRD's Analysis tab has six blocks (§3.15 Tab 3). This build ships blocks 1 and 2 (#51), block 3
+(#38/#65), block 4's readings + requirement heat map (#38/#67), block 5 (#56), plus the day ledger.
+Still owed:
 
 - **Recap · Share button** — needs the on-device share-card renderer (PRD §3.13: 9:16 + 1:1 templates,
   aggregates-and-dates privacy floor). No module owns it yet; `RecapCard` has the three facts the card
   wants.
 - **Recap · 72-hour freshness** — needs the §3.14 recap moment (last day of week, 18:00) and therefore a
   clock. This module has none by invariant, so the card renders whenever there is a week to recap.
-- **Recap row ② denominator** — should be the week's *scheduled* active days; needs the **schedule
-  store**. Until it exists the denominator is days on record, so a rest day dilutes the ratio.
+- **Recap row ② denominator** — should be the week's *scheduled* active days. Schedule's classifier is
+  now available, but wiring it into recap arithmetic is separate work; today the denominator is days
+  on record, so a rest day still dilutes the ratio.
 - **Recap row ③ top source** ("most from Gym visits") — its name and attribution inputs now exist in
   `conditionNameMap` + `selectConditionBreakdown`; adding the row remains recap rendering work.
-- **Requirement heat map** (six cell states, kind glyphs, tap-for-detail) — still blocked. It needs a
-  **schedule store** to classify active/missed vs rest/holiday/override days, plus the **timestamp of
-  each condition's first qualifying outcome** to apply the PRD's first-met tie-break. `DaySummary`
-  carries neither input; its condition values are aggregate totals only.
-- **Rest-day-transparent streaks** — same schedule store; `selectStreak` is the naive per-day chain
-  until then.
+- **Rest-day-transparent streaks** — Schedule's classifier is now available, but `selectStreak` remains
+  the naive per-day chain until that separate follow-up.
 - **Milestones shelf** — needs the 22 **badge assets** (`design/STYLE.md`) and the unlock state (which
   badges are new, for the tab dot). The three ladders' inputs now all exist:
   `selectTimeReclaimed(days, baseline)` over the whole record, `selectStreak`, and the activity count.
@@ -135,10 +159,10 @@ module. Selector, fixture-coherence, formatting, view-model and render tests liv
 
 RNTL and storage traps, all paid for here:
 
-- `AnalysisScreen` reaches the confession and Home stores, so **its test file must mock
-  `@react-native-async-storage/async-storage`** (the trap `app/src/manage/README.md` names). Every other
-  test in this module takes plain inputs and needs no mock.
-- Reset both stores in **`beforeEach`, never `afterEach`** — a describe-level `afterEach` runs before
+- `AnalysisScreen` reaches the confession, Home and Schedule stores, so **its test file must mock
+  `@react-native-async-storage/async-storage`** (the trap `app/src/manage/README.md` names). A pure test
+  that imports Schedule's public index to exercise the real classifier needs the same boundary mock.
+- Reset all three stores in **`beforeEach`, never `afterEach`** — a describe-level `afterEach` runs before
   RNTL's cleanup, so the update lands on a still-mounted tree and React warns about `act`.
 - RNTL 14's `render` and `fireEvent.press` are both async; await either one when used. Never
   `unmount()` and then `render()` in the same test, because that detaches `screen` for later tests.
