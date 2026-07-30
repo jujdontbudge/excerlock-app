@@ -1,5 +1,10 @@
 import type { DaySummary } from "@excerlock/ledger";
 
+import {
+  classifyScheduleDay,
+  type ScheduleRules,
+} from "@/schedule";
+
 import { FIXTURE_DAY_SUMMARIES } from "../fixtures";
 import { weekdayIndex } from "../model/calendar";
 import {
@@ -12,6 +17,10 @@ import {
   selectTotals,
   selectWeek,
 } from "../model/selectors";
+
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 
 const DAY_MS = 86_400_000;
 
@@ -141,6 +150,58 @@ describe("selectPeriod", () => {
 });
 
 describe("selectStreak", () => {
+  it("continues across a scheduled rest day without counting it", () => {
+    const monday = Date.UTC(2026, 6, 20) / DAY_MS;
+    const schedule: ScheduleRules = {
+      recurringRestWeekdays: [2],
+      holidays: [],
+      overrides: [],
+    };
+    const days = [true, false, true].map((meaningfulActivity, offset) =>
+      day(monday + offset, { meaningfulActivity }),
+    );
+
+    expect(
+      selectStreak(days, {
+        classifyDay: (dayIndex) =>
+          classifyScheduleDay({ dayIndex, schedule }),
+      }),
+    ).toEqual({ current: 2, longest: 2 });
+  });
+
+  it("keeps holidays and rest overrides transparent but breaks on a missed active override", () => {
+    const monday = Date.UTC(2026, 6, 20) / DAY_MS;
+    const schedule: ScheduleRules = {
+      recurringRestWeekdays: [6],
+      holidays: [{ startDayIndex: monday + 1, endDayIndex: monday + 1 }],
+      overrides: [
+        { dayIndex: monday + 3, direction: "rest" },
+        { dayIndex: monday + 5, direction: "active" },
+      ],
+    };
+    const days = [true, false, true, false, true, false, true].map(
+      (meaningfulActivity, offset) =>
+        day(monday + offset, { meaningfulActivity }),
+    );
+
+    expect(
+      selectStreak(days, {
+        classifyDay: (dayIndex) =>
+          classifyScheduleDay({ dayIndex, schedule }),
+      }),
+    ).toEqual({ current: 1, longest: 3 });
+  });
+
+  it("keeps the original all-active behavior when no schedule exists", () => {
+    const days = streakDays([true, false, true]);
+
+    expect(
+      selectStreak(days, {
+        classifyDay: (dayIndex) => classifyScheduleDay({ dayIndex }),
+      }),
+    ).toEqual({ current: 1, longest: 1 });
+  });
+
   it("counts the run of meaningful days ending today", () => {
     expect(selectStreak(streakDays([true, true, false, true, true, true])).current).toBe(3);
   });

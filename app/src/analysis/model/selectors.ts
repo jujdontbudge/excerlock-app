@@ -1,5 +1,7 @@
 import type { DaySummary } from "@excerlock/ledger";
 
+import type { ScheduleDay } from "@/schedule";
+
 import {
   sameMonth,
   sameYear,
@@ -31,10 +33,12 @@ export type Totals = {
 };
 
 export type Streak = {
-  /** The run of meaningful days ending on the last day on record. */
+  /** The meaningful run carried through the last day on record. */
   current: number;
   longest: number;
 };
+
+export type StreakDayClassifier = (dayIndex: number) => ScheduleDay;
 
 export type Bar = {
   dayIndex: number;
@@ -117,20 +121,36 @@ export function selectPeriod(
   }
 }
 
+const ALL_DAYS_SCHEDULED_ACTIVE: StreakDayClassifier = () => ({
+  kind: "scheduledActive",
+  isActive: true,
+});
+
 /**
- * Current and longest runs of meaningful days. A gap in the record breaks a run:
- * summaries are contiguous by construction, so a jump means days we never saw.
- *
- * This is the naive streak — rest-day transparency and the sick-day override need
- * schedule knowledge, which lives above the ledger (packages/ledger README).
+ * Current and longest runs of meaningful scheduled-active days. Scheduled rest
+ * days are transparent: they preserve a run without adding a day to it. A gap
+ * in the record still breaks a run because it represents days we never saw.
  */
-export function selectStreak(days: DayRange): Streak {
+export function selectStreak(
+  days: DayRange,
+  {
+    classifyDay = ALL_DAYS_SCHEDULED_ACTIVE,
+  }: { classifyDay?: StreakDayClassifier } = {},
+): Streak {
   let current = 0;
   let longest = 0;
 
   days.forEach((day, index) => {
     const previous = index === 0 ? null : days[index - 1];
     const continues = previous !== null && previous.dayIndex === day.dayIndex - 1;
+
+    if (!continues && previous !== null) {
+      current = 0;
+    }
+    if (!classifyDay(day.dayIndex).isActive) {
+      return;
+    }
+
     current = day.meaningfulActivity ? (continues ? current : 0) + 1 : 0;
     longest = Math.max(longest, current);
   });

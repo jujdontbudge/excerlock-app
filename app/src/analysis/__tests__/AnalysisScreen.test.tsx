@@ -198,6 +198,30 @@ describe("AnalysisScreen", () => {
     expect(screen.getByTestId("streak-active-days")).toHaveTextContent(/^6 of 7 days\b/);
   });
 
+  it("keeps the visible streak running across a rest day from the schedule store", async () => {
+    useScheduleStore.setState({ recurringRestWeekdays: [2] });
+
+    await render(
+      <AnalysisScreen
+        days={FIXTURE_DAY_SUMMARIES.slice(14, 17)}
+        conditionNames={FIXTURE_CONDITION_NAMES}
+      />,
+    );
+
+    expect(screen.getByTestId("streak-current")).toHaveTextContent(/^2$/);
+    expect(screen.getByTestId("recap-streak")).toHaveTextContent(/^2 days$/);
+  });
+
+  it("uses scheduled-active days for the visible recap denominator", async () => {
+    useScheduleStore.setState({ recurringRestWeekdays: [2] });
+
+    await render(<AnalysisScreen {...fixtureProps} />);
+
+    expect(screen.getByTestId("recap-active-days")).toHaveTextContent(
+      /^6 of 6 days$/,
+    );
+  });
+
   it("uses the real schedule classification for requirement cells", async () => {
     useScheduleStore.setState({ recurringRestWeekdays: [2] });
     const monday = FIXTURE_DAY_SUMMARIES[14];

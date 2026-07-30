@@ -1,8 +1,17 @@
 import { render, screen } from "@testing-library/react-native";
 
+import {
+  classifyScheduleDay,
+  type ScheduleRules,
+} from "@/schedule";
+
 import { RecapCard } from "../components";
 import { FIXTURE_DAY_SUMMARIES } from "../fixtures";
 import { buildRecap } from "../model";
+
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 
 const recap = (
   days: readonly (typeof FIXTURE_DAY_SUMMARIES)[number][],
@@ -62,5 +71,25 @@ describe("RecapCard", () => {
     await render(<RecapCard recap={recap(FIXTURE_DAY_SUMMARIES.slice(0, 7), 240)} />);
 
     expect(screen.getByTestId("recap-streak")).toHaveTextContent(/^None running$/);
+  });
+
+  it("reads an entirely restful schedule as a rest week", async () => {
+    const schedule: ScheduleRules = {
+      recurringRestWeekdays: [0, 1, 2, 3, 4, 5, 6],
+      holidays: [],
+      overrides: [],
+    };
+    const restfulRecap = buildRecap(FIXTURE_DAY_SUMMARIES, {
+      confessedDailyMinutes: 240,
+      classifyDay: (dayIndex) =>
+        classifyScheduleDay({ dayIndex, schedule }),
+    })!;
+
+    await render(<RecapCard recap={restfulRecap} />);
+
+    expect(screen.getByTestId("recap-active-days")).toHaveTextContent(
+      /^Rest week$/,
+    );
+    expect(screen.queryByText(/missed|failed|should have/i)).toBeNull();
   });
 });

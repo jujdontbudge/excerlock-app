@@ -32,8 +32,8 @@ Schedule's rules and onboarding's confession.
   stable tie-break, never the insertion order of the `conditions` record.
 - **Schedule classification stays owned by Schedule.** `AnalysisScreen` injects
   `classifyScheduleDay`; the pure view never repeats override → holiday → recurring rest → active
-  precedence. Inactive classifications win over activity for the cell, so a rest day can never look
-  like a missed active day.
+  precedence. The same classification drives heat-map cells, streak continuity and recap row ②.
+  Without a schedule, Schedule's local-first fallback classifies every day as active.
 - **The confession is read, never written.** `confessed_daily_minutes` (#43) is a fixed
   life-before-ExcerLock snapshot — PRD §3.13 forbids editing it, because a tunable baseline turns the
   hero into a vanity dial. `AnalysisScreen` subscribes to `useConfessionStore`; every layer below it
@@ -55,9 +55,9 @@ Schedule's rules and onboarding's confession.
 | `model/dayRecord.ts` | the sole Home-journal adapter; delegates to `daySummaries()` with the real config and an injected cutoff |
 | `model/format.ts` | the one minute/day-count formatting surface |
 | `model/requirementHeatMap.ts` | six-state whole-week columns, first-qualified attribution and honest before-history/future padding |
-| `model/selectors.ts` | `selectToday` · Week/Month/Year period selection · streaks · totals · bars |
+| `model/selectors.ts` | `selectToday` · Week/Month/Year period selection · schedule-aware streaks · totals · bars |
 | `model/timeReclaimed.ts` | `selectTimeReclaimed` — the PRD §3.13 formula over any window |
-| `model/recap.ts` | `buildRecap` — the weekly recap's five rows |
+| `model/recap.ts` | `buildRecap` — the weekly recap's five rows, including its scheduled-active denominator |
 | `model/view.ts` | `buildAnalysisView` — the single read the screen performs |
 | `fixtures/daySummaries.ts` | three weeks of derived, self-consistent `DaySummary` records for tests and E2E |
 | `components/RecapCard.tsx` | the week in five rows, led by its Time Reclaimed and delta |
@@ -116,6 +116,18 @@ Three inputs are not numbers and are handled as states rather than defaults:
 | A confession of zero (or nonsense) | `noBaseline` | "nothing to reclaim against" — never `−usage`, which would be a scolding dressed as arithmetic |
 | Confession on record | `measured` | the formula, plus the over-days line when there is one |
 
+## Schedule-aware streaks and recap
+
+`selectStreak` counts meaningful scheduled-active days. Rest, holiday and inactive-override days are
+transparent: they neither increment nor break the run. A missed scheduled-active day does break it,
+including an active override on a recurring rest day. The default classifier treats every day as
+scheduled-active, preserving the original per-day chain when no schedule exists.
+
+Recap row ② applies that same classifier to the current recorded week. Its numerator is meaningful
+scheduled-active days and its denominator is scheduled-active days, so deliberately scheduled rest
+never dilutes the ratio. When the whole recorded week is restful, `RecapCard` says `Rest week` rather
+than dividing by zero or presenting the week as a failure.
+
 ## Requirement heat map
 
 The heat map is the whole record grouped into seven-day columns. `weekStartsOn` chooses the first row
@@ -141,13 +153,8 @@ Still owed:
   wants.
 - **Recap · 72-hour freshness** — needs the §3.14 recap moment (last day of week, 18:00) and therefore a
   clock. This module has none by invariant, so the card renders whenever there is a week to recap.
-- **Recap row ② denominator** — should be the week's *scheduled* active days. Schedule's classifier is
-  now available, but wiring it into recap arithmetic is separate work; today the denominator is days
-  on record, so a rest day still dilutes the ratio.
 - **Recap row ③ top source** ("most from Gym visits") — its name and attribution inputs now exist in
   `conditionNameMap` + `selectConditionBreakdown`; adding the row remains recap rendering work.
-- **Rest-day-transparent streaks** — Schedule's classifier is now available, but `selectStreak` remains
-  the naive per-day chain until that separate follow-up.
 - **Milestones shelf** — needs the 22 **badge assets** (`design/STYLE.md`) and the unlock state (which
   badges are new, for the tab dot). The three ladders' inputs now all exist:
   `selectTimeReclaimed(days, baseline)` over the whole record, `selectStreak`, and the activity count.

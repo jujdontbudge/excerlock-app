@@ -100,7 +100,7 @@ export function AnalysisScreen({
     conditionNames: conditionNames ?? conditionNameMap(conditions),
     confessedDailyMinutes:
       confessedDailyMinutes === undefined ? confessed : confessedDailyMinutes,
-    classifyRequirementDay: (dayIndex) =>
+    classifyDay: (dayIndex) =>
       classifyScheduleDay({ dayIndex, schedule: activeSchedule }),
     throughDayIndex:
       throughMs === undefined
