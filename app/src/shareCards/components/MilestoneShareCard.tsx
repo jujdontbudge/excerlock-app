@@ -3,7 +3,7 @@ import {
   StyleSheet,
   Text,
   View,
-  type ImageSourcePropType,
+  type ImageRequireSource,
 } from "react-native";
 
 import { useTheme } from "@/ui";
@@ -16,7 +16,7 @@ type MilestoneShareCardProps = Readonly<{
   input: MilestoneShareCardInput;
   ratio: ShareCardRatio;
   /** Badge ticket #74 supplies this art; this renderer never invents it. */
-  badgeArt: ImageSourcePropType;
+  badgeArt: ImageRequireSource;
 }>;
 
 export function MilestoneShareCard({

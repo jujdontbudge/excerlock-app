@@ -31,7 +31,7 @@ describe("MilestoneShareCard", () => {
       <MilestoneShareCard
         input={input}
         ratio={ratio}
-        badgeArt={{ uri: "test://approved-badge.png" }}
+        badgeArt={1}
       />,
     );
 

@@ -1,6 +1,9 @@
+import { createElement } from "react";
+
 import {
   createMilestoneShareCardInput,
   createRecapShareCardInput,
+  MilestoneShareCard,
   type MilestoneShareCardInput,
   type RecapShareCardInput,
 } from "..";
@@ -76,6 +79,9 @@ const forbiddenIdentity: MilestoneShareCardInput = {
   userName: "Johan",
 };
 
+// @ts-expect-error badge art must be a bundled asset id, never a user-photo URI.
+const forbiddenUserPhoto = createElement(MilestoneShareCard, { input: milestone, ratio: "feed", badgeArt: { uri: "file:///user-photo.png" } });
+
 void [
   recap,
   milestone,
@@ -88,4 +94,5 @@ void [
   forbiddenApp,
   forbiddenHealthValue,
   forbiddenIdentity,
+  forbiddenUserPhoto,
 ];
