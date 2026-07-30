@@ -125,6 +125,8 @@ function RequirementDayDetailPanel({
   return (
     <View
       testID="requirement-day-detail"
+      accessible
+      accessibilityLabel={detailAccessibilityLabel(cell)}
       style={{
         backgroundColor: colors.cardElevated,
         borderRadius: radius.md,
@@ -151,6 +153,24 @@ function RequirementDayDetailPanel({
       )}
     </View>
   );
+}
+
+function detailAccessibilityLabel(
+  cell: RequirementHeatMapCell,
+): string {
+  const parts = [
+    cell.label,
+    cellPresentation(cell).detailStatus,
+  ];
+  if (cell.state !== "blank") {
+    parts.push(`${formatMinutes(cell.detail.earnedMinutes)} earned`);
+    parts.push(
+      ...cell.detail.qualifiedConditions.map(
+        ({ kind, name }) => `${name}, ${kindLabel(kind)}`,
+      ),
+    );
+  }
+  return `${parts.join(". ")}.`;
 }
 
 function KindGlyph({

@@ -141,6 +141,11 @@ describe("RequirementHeatMapCard", () => {
     await fireEvent.press(eventCell);
 
     expect(eventCell.props.accessibilityState).toEqual({ selected: true });
+    expect(
+      screen.getByLabelText(
+        "Mon 6 Jul. Requirement met by event. 30m earned. Gym visit, Event.",
+      ),
+    ).toBeOnTheScreen();
     expect(screen.getByTestId("requirement-day-detail")).toHaveTextContent(
       /^Mon 6 JulRequirement met by event30m earnedGym visit · Event$/,
     );
