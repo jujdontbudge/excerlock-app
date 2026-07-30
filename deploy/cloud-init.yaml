@@ -1,6 +1,6 @@
 #cloud-config
-# ExcerLock API box — first-boot config (PRD §10.1 stack: Node 22 + Postgres + Caddy,
-# rsync → systemd deploys, no Docker). Rendered by deploy/azure-provision.sh, which
+# ExcerLock API box -- first-boot config (PRD Sec. 10.1 stack: Node 22 + Postgres + Caddy,
+# rsync -> systemd deploys, no Docker). Rendered by deploy/azure-provision.sh, which
 # substitutes %DOMAIN% into the Caddyfile before passing this as --custom-data.
 # Cloud-init runs ONCE on first boot; later changes belong to the deploy script.
 
@@ -15,6 +15,11 @@ packages:
   - rsync
   - postgresql
   - postgresql-contrib
+  # deploy.sh runs `npm ci` on this box, so any dependency without an arm64
+  # prebuilt binary has to compile here. Cheap to install, expensive to discover
+  # missing mid-deploy.
+  - build-essential
+  - python3
 
 users:
   - default
@@ -25,7 +30,7 @@ users:
     lock_passwd: true
 
 write_files:
-  # Secrets land here at deploy time (§10.10: EnvironmentFile, never committed).
+  # Secrets land here at deploy time (Sec. 10.10: EnvironmentFile, never committed).
   - path: /etc/excerlock/excerlock-api.env
     owner: root:root
     permissions: "0600"
@@ -34,14 +39,14 @@ write_files:
       PORT=3000
       # Local socket + peer auth: unix user `excerlock` maps to the same-name PG role.
       DATABASE_URL=postgres://excerlock@/excerlock?host=/var/run/postgresql
-      # Filled in by the provisioning runbook (PRD §10.10) — values never committed:
+      # Filled in by the provisioning runbook (PRD Sec. 10.10) -- values never committed:
       # CLERK_SECRET_KEY=
       # ADAPTY_SECRET_KEY=
       # ADAPTY_WEBHOOK_SECRET=
       # POSTHOG_API_KEY=
       # RESEND_API_KEY=
       # SENTRY_DSN=
-      # STRAVA_CLIENT_ID= / STRAVA_CLIENT_SECRET=  (and Oura/Whoop/Polar, §3.5c)
+      # STRAVA_CLIENT_ID= / STRAVA_CLIENT_SECRET=  (and Oura/Whoop/Polar, Sec. 3.5c)
 
   - path: /etc/systemd/system/excerlock-api.service
     owner: root:root
@@ -69,7 +74,7 @@ write_files:
       WantedBy=multi-user.target
 
   # %DOMAIN% is replaced by azure-provision.sh (falls back to ":80" = plain HTTP
-  # on the bare IP until a real domain is set — Caddy mints TLS automatically
+  # on the bare IP until a real domain is set -- Caddy mints TLS automatically
   # once a domain with a live A record is in place).
   - path: /etc/caddy/Caddyfile
     owner: root:root
@@ -80,16 +85,22 @@ write_files:
       }
 
 runcmd:
-  # Node 22 (NodeSource) — PRD §10.9 server set runs on Node 22 LTS.
+  # Node 22 (NodeSource) -- PRD Sec. 10.9 server set runs on Node 22 LTS.
   - mkdir -p /etc/apt/keyrings
   - curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
   - echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
-  # Caddy (official cloudsmith apt repo) — auto-TLS reverse proxy.
+  # Caddy (official cloudsmith apt repo) -- auto-TLS reverse proxy.
   - curl -fsSL https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor -o /etc/apt/keyrings/caddy-stable.gpg
   - curl -fsSL "https://dl.cloudsmith.io/public/caddy/stable/config.deb.txt?distro=ubuntu&codename=noble" -o /etc/apt/sources.list.d/caddy-stable.list
   - sed -i 's|signed-by=/usr/share/keyrings/caddy-stable-archive-keyring.gpg|signed-by=/etc/apt/keyrings/caddy-stable.gpg|g' /etc/apt/sources.list.d/caddy-stable.list
   - apt-get update
-  - apt-get install -y nodejs caddy
+  # write_files already planted /etc/caddy/Caddyfile, so dpkg sees a conffile it
+  # did not install and stops on the interactive "*** Caddyfile (Y/I/N/O/D/Z)?"
+  # prompt. That aborts `dpkg --configure caddy`, which means the `caddy` system
+  # user is never created, which makes caddy.service die with 217/USER. Observed
+  # on the first westus boot, 2026-07-30. --force-confold keeps OUR Caddyfile,
+  # which is the intent, and makes the install genuinely non-interactive.
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::=--force-confold -o Dpkg::Options::=--force-confdef nodejs caddy
   # App dirs (rsync target for deploy.sh).
   - mkdir -p /opt/excerlock/server
   - chown -R excerlock:excerlock /opt/excerlock

@@ -17,7 +17,6 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "@excerlock/analytics-events": "0.1.0",
     "@fastify/helmet": "^13.1.0",
     "@fastify/rate-limit": "^11.2.0",
     "@sentry/node": "^10.69.0",
@@ -30,6 +29,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@excerlock/analytics-events": "0.1.0",
     "@types/node": "^26.1.2",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.23.1",

@@ -185,8 +185,29 @@ fi
 log "Sync built server and package manifests"
 run_command rsync "${RSYNC_OPTIONS[@]}" --delete \
   "${SERVER_DIR}/dist/" "${DEPLOY_HOST}:${REMOTE_DIR}/dist/"
+
+# The box gets a production-pruned package.json, never the workspace one.
+# server/package.json declares dev-only workspace siblings such as
+# @excerlock/analytics-events, which is `private: true` and therefore absent
+# from the public registry. `npm ci` resolves devDependencies even under
+# --omit=dev, so shipping the manifest verbatim made the remote install die with
+# E404 on 2026-07-30. Dropping devDependencies also makes the manifest agree
+# with server/package-lock.json, whose root entry lists production deps only.
+PRUNED_MANIFEST="$(mktemp -t excerlock-package.XXXXXX)"
+trap 'rm -f "$PRUNED_MANIFEST"' EXIT
+if "$DRY_RUN"; then
+  print_command prune-dev-dependencies "${SERVER_DIR}/package.json" "$PRUNED_MANIFEST"
+else
+  node -e '
+    const fs = require("fs");
+    const pkg = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    delete pkg.devDependencies;
+    fs.writeFileSync(process.argv[2], JSON.stringify(pkg, null, 2) + "\n");
+  ' "${SERVER_DIR}/package.json" "$PRUNED_MANIFEST"
+fi
 run_command rsync "${RSYNC_OPTIONS[@]}" \
-  "${SERVER_DIR}/package.json" \
+  "$PRUNED_MANIFEST" "${DEPLOY_HOST}:${REMOTE_DIR}/package.json"
+run_command rsync "${RSYNC_OPTIONS[@]}" \
   "${SERVER_DIR}/package-lock.json" \
   "${DEPLOY_HOST}:${REMOTE_DIR}/"
 

@@ -5,6 +5,31 @@ locally, rsync the compiled output and package manifests to one Azure VM,
 install production dependencies there, and restart a hardened systemd service
 behind Caddy. There is no Docker layer.
 
+## Current deployment (ticket #23, 2026-07-30)
+
+The box exists and the API is serving.
+
+| | |
+|---|---|
+| Public IP | `52.157.13.109` (static) |
+| SSH | `ssh johan@52.157.13.109` |
+| Region / size | `westus` · `Standard_B2pls_v2` (2 vCPU / 4 GiB, **ARM64**) |
+| Resource group | `excerlock`, subscription `Azure for Students` |
+| Stack | Ubuntu 24.04 arm64 · Node 22.23.2 · Postgres 16 · Caddy 2.11.4 |
+| Health | `curl http://127.0.0.1:3000/v1/health` on the box → `{"ok":true,...}` |
+
+The region/size pair is forced by subscription policy, not preference — see
+"What the subscription actually allows" in `docs/research/azure-vps.md` before
+changing either. `VM_SIZE` and `IMAGE` must always agree on CPU architecture.
+
+**Not yet done, and blocked on ticket #22 (domain + keys), not on this box:**
+`deploy/Caddyfile` declares the vhost `api.excerlock.com`, so Caddy answers only
+that hostname and cannot mint a certificate until an A record points at the IP
+above. Until then the service is reachable publicly only as a `308` redirect,
+and `/etc/excerlock/env` holds the non-secret baseline (`NODE_ENV`, `HOST`,
+`PORT`, `DATABASE_URL`) with every vendor secret still absent — `server/src/env.ts`
+makes them all optional, which is why the API boots and answers health anyway.
+
 ## 1. Provision the VM
 
 One-time human prerequisites are an authenticated Azure CLI subscription and an

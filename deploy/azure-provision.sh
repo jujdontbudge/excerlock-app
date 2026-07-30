@@ -16,11 +16,24 @@ set -euo pipefail
 
 # ── Parameters (override via env) ────────────────────────────────────────────
 RG="${RG:-excerlock}"                     # resource group
-LOCATION="${LOCATION:-eastus2}"           # region (see azure-vps.md rationale)
+# Region, size and image are pinned together: the Azure-for-Students subscription
+# constrains all three at once (measured 2026-07-30, see azure-vps.md "What the
+# subscription actually allows"). An "Allowed resource deployment regions" policy
+# limits deployment to mexicocentral/canadacentral/westus/norwayeast/eastus2, and
+# within those `az vm list-skus` reports NO unrestricted x86 burstable size at
+# all -- eastus2 fails B-series with SkuNotAvailable (Capacity Restrictions).
+# The only burstable left is the Ampere ARM64 Bpsv2 family, in westus.
+#
+# Standard_B2pls_v2 keeps the exact 2 vCPU / 4 GiB burstable shape azure-vps.md
+# reasoned about, at ~$21/mo instead of ~$70/mo for the nearest available x86
+# (non-burstable D2als_v7). ARM64 is safe for this stack: Node 22, Postgres and
+# Caddy all ship arm64 builds for Ubuntu 24.04, and deploy.sh rsyncs transpiled
+# `dist/` then runs `npm ci` ON the box, so native deps resolve per-architecture.
+LOCATION="${LOCATION:-westus}"            # region (see azure-vps.md rationale)
 VM_NAME="${VM_NAME:-excerlock-api}"
-VM_SIZE="${VM_SIZE:-Standard_B2als_v2}"   # 2 vCPU / 4 GiB burstable, ~$27/mo
+VM_SIZE="${VM_SIZE:-Standard_B2pls_v2}"   # 2 vCPU / 4 GiB burstable ARM64, ~$21/mo
 OS_DISK_SIZE_GB="${OS_DISK_SIZE_GB:-64}"  # Standard SSD, Postgres shares the OS disk
-IMAGE="${IMAGE:-Canonical:ubuntu-24_04-lts:server:latest}"
+IMAGE="${IMAGE:-Canonical:ubuntu-24_04-lts:server-arm64:latest}"  # must match VM_SIZE's arch
 ADMIN_USER="${ADMIN_USER:-johan}"
 SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/id_ed25519.pub}"
 DOMAIN="${DOMAIN:-}"                      # e.g. api.excerlock.app (Caddyfile + DNS record)
@@ -44,6 +57,14 @@ command -v az >/dev/null || die "az CLI not found — brew install azure-cli"
 az account show >/dev/null 2>&1 || die "not logged in — run: az login && az account set --subscription <id>"
 [ -f "$SSH_KEY_PATH" ] || die "ssh public key not found at $SSH_KEY_PATH (set SSH_KEY_PATH or ssh-keygen -t ed25519)"
 [ -f "$CLOUD_INIT_SRC" ] || die "cloud-init.yaml not found next to this script"
+# az CLI encodes --custom-data as latin-1, so a single non-ASCII byte anywhere in
+# cloud-init.yaml aborts `az vm create` client-side with an opaque codec error
+# ("'latin-1' codec can't encode character ... in position N"). An em dash in a
+# comment cost a full provisioning run on 2026-07-30. Fail loudly instead.
+if LC_ALL=C grep -qP '[^\x00-\x7F]' "$CLOUD_INIT_SRC" 2>/dev/null; then
+  die "cloud-init.yaml contains non-ASCII characters, which az CLI cannot encode into --custom-data. Offending lines:
+$(LC_ALL=C grep -nP '[^\x00-\x7F]' "$CLOUD_INIT_SRC")"
+fi
 if [ -n "$DNS_ZONE" ] && [ -z "$DOMAIN" ]; then die "DNS_ZONE set but DOMAIN empty"; fi
 
 log "subscription: $(az account show --query name -o tsv) · rg=$RG · $LOCATION · $VM_SIZE"
@@ -57,6 +78,10 @@ az group create --name "$RG" --location "$LOCATION" --output none
 log "network security group $NSG"
 if ! az network nsg show -g "$RG" -n "$NSG" >/dev/null 2>&1; then
   az network nsg create -g "$RG" -n "$NSG" --location "$LOCATION" --output none
+  # `create` returning is not the same as the NSG being readable: the rule
+  # creates below raced a stale ARM replica and died with ResourceNotFound on
+  # 2026-07-30. Block until the resource actually reads back.
+  az network nsg wait -g "$RG" -n "$NSG" --created --output none
 fi
 
 nsg_rule() { # name port priority
@@ -75,7 +100,11 @@ nsg_rule Allow-HTTPS 443 1020
 #       required since Azure retired default outbound access) ────────────────
 log "static public IP $PIP"
 if ! az network public-ip show -g "$RG" -n "$PIP" >/dev/null 2>&1; then
-  az network public-ip create -g "$RG" -n "$PIP" \
+  # --location is explicit here (and on the vnet/nic below): these commands
+  # otherwise inherit the RESOURCE GROUP's region, not $LOCATION, so pointing an
+  # existing RG at a new region would silently strand the network in the old one
+  # and fail VM create with a cross-region mismatch.
+  az network public-ip create -g "$RG" -n "$PIP" --location "$LOCATION" \
     --sku Standard --allocation-method Static --version IPv4 --output none
 fi
 PUBLIC_IP="$(az network public-ip show -g "$RG" -n "$PIP" --query ipAddress -o tsv)"
@@ -83,7 +112,7 @@ PUBLIC_IP="$(az network public-ip show -g "$RG" -n "$PIP" --query ipAddress -o t
 # ── 4. VNet + subnet ─────────────────────────────────────────────────────────
 log "vnet $VNET"
 if ! az network vnet show -g "$RG" -n "$VNET" >/dev/null 2>&1; then
-  az network vnet create -g "$RG" -n "$VNET" \
+  az network vnet create -g "$RG" -n "$VNET" --location "$LOCATION" \
     --address-prefixes 10.10.0.0/16 \
     --subnet-name "$SUBNET" --subnet-prefixes 10.10.0.0/24 --output none
 fi
@@ -91,7 +120,7 @@ fi
 # ── 5. NIC wired to subnet + NSG + public IP ─────────────────────────────────
 log "nic $NIC"
 if ! az network nic show -g "$RG" -n "$NIC" >/dev/null 2>&1; then
-  az network nic create -g "$RG" -n "$NIC" \
+  az network nic create -g "$RG" -n "$NIC" --location "$LOCATION" \
     --vnet-name "$VNET" --subnet "$SUBNET" \
     --network-security-group "$NSG" --public-ip-address "$PIP" --output none
 fi

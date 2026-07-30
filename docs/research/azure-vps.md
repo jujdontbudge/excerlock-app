@@ -29,6 +29,19 @@ Credit model note: below the baseline (≈30 % per vCPU) the VM banks credits; b
 - API latency to end users barely matters: the client talks to this server rarely (OAuth exchange, occasional syncs); webhook senders (Adapty, Strava et al.) are US-hosted.
 - `eastus2` is in Azure's cheapest US price tier, has full Bsv2/Basv2 availability and the deepest capacity pools. Fallbacks if a size is capacity-constrained at create time: `eastus`, `centralus` (same price tier).
 
+## What the subscription actually allows (measured 2026-07-30, ticket #23)
+
+The section above reasons about Azure's public catalogue. The **Azure for Students** subscription we deploy on (`bcfb0381-…`, University of Illinois tenant) is narrower on both axes, and provisioning failed twice before this was understood:
+
+- **Region.** A subscription-scoped policy assignment, *"Allowed resource deployment regions"*, permits only `mexicocentral`, `canadacentral`, `westus`, `norwayeast`, `eastus2`. Anything else fails with `RequestDisallowedByAzure` — that killed a `northcentralus` attempt after `az vm list-skus` had reported the size available there.
+- **Size.** Inside those regions there is **no unrestricted x86 burstable size at all**. `eastus2` rejects the whole B family with `SkuNotAvailable` ("Capacity Restrictions"); the other allowed regions expose only the Ampere **ARM64** `Bpsv2` family as burstable. Every x86 option left is a non-burstable D/F size at roughly triple the price.
+
+**Resulting deployment: `Standard_B2pls_v2` (2 vCPU / 4 GiB, ARM64) in `westus`, ~$21/mo** — the same burstable shape this document argues for, one price tier cheaper than `B2als_v2`, versus ~$70/mo for the nearest available x86 (`D2als_v7`).
+
+ARM64 is safe for the §10.1 stack: Node 22, Postgres and Caddy all ship arm64 builds for Ubuntu 24.04, and `deploy/deploy.sh` rsyncs only transpiled `dist/` and then runs `npm ci` **on the box**, so native dependencies resolve per-architecture. The VM image must track the size's architecture — `Canonical:ubuntu-24_04-lts:server-arm64:latest`.
+
+Re-check with `az vm list-skus -l <region> --resource-type virtualMachines --all` before assuming a size is obtainable; the public catalogue is not the subscription's catalogue. If the x86 B-series ever opens up in an allowed region, `VM_SIZE` + `IMAGE` are the only two knobs to change.
+
 ## Disk
 
 **64 GiB Standard SSD (E6) OS disk, ≈ $4.80/mo.** One disk, no data disk: Postgres data lives on the OS disk — at our scale (user records, token store, subscription mirror; **no** raw vendor data per #18, **no** server-side balances per §10.1) the DB is megabytes, not gigabytes. Standard SSD is fine for this I/O; Premium SSD (P6, ~$10/mo) is the knob if p99 write latency ever shows up in Sentry. Default Ubuntu images come with a 30 GiB disk; 64 GiB buys log/WAL headroom for pennies.
