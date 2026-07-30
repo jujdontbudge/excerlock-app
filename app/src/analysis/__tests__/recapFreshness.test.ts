@@ -31,4 +31,21 @@ describe("selectFreshRecap", () => {
     expect(atHour71).toMatchObject({ rangeLabel: "20–26 Jul" });
     expect(atHour73).toBeNull();
   });
+
+  it("never reaches Date.now from the selector", () => {
+    const ambientNow = jest.spyOn(Date, "now").mockImplementation(() => {
+      throw new Error("selectFreshRecap reached the ambient clock");
+    });
+
+    try {
+      expect(
+        selectFreshRecap(FIXTURE_DAY_SUMMARIES, {
+          nowMs: Date.UTC(2026, 6, 26, 18),
+          confessedDailyMinutes: BASELINE,
+        }),
+      ).toMatchObject({ rangeLabel: "20–26 Jul" });
+    } finally {
+      ambientNow.mockRestore();
+    }
+  });
 });
