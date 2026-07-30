@@ -54,8 +54,15 @@ describe("support database schema", () => {
       ...columnNames(featureRequests),
       ...columnNames(featureRequestVotes),
     ];
-    expect(allColumns).not.toEqual(
-      expect.arrayContaining(["minutes", "earnings", "ledger", "shield"]),
-    );
+    // One assertion per forbidden name, deliberately. `arrayContaining` matches
+    // only when *every* listed element is present, so a single negated call
+    // would still pass with a `minutes` column as long as the other three were
+    // absent — the notify-only law would read as enforced while being broken.
+    for (const forbidden of ["minutes", "earnings", "ledger", "shield"]) {
+      expect(
+        allColumns.filter((column) => column.includes(forbidden)),
+        `Support tables must never carry ${forbidden}: the server does not compute earning or locking state`,
+      ).toEqual([]);
+    }
   });
 });
