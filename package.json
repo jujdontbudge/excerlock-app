@@ -13,12 +13,13 @@
   ],
   "scripts": {
     "test": "npm run typecheck && npm run test:unit && npm run test:guardrails",
-    "test:unit": "npm run test:packages && npm run test:server && npm run test:app",
+    "test:unit": "npm run test:packages && npm run test:server && npm run test:app && npm run test:e2e-contract",
     "test:packages": "vitest run --config vitest.packages.config.ts",
     "test:server": "npm run test --workspace server --if-present",
     "test:app": "npm run test --workspace app --if-present",
     "test:guardrails": "npm run prebuild:guardrails --workspace app && vitest run --config guardrails/vitest.config.ts",
-    "typecheck": "npm run typecheck --workspaces"
+    "typecheck": "npm run typecheck --workspaces",
+    "test:e2e-contract": "node --test e2e/tests/*.test.mjs"
   },
   "devDependencies": {
     "typescript": "~6.0.3",
