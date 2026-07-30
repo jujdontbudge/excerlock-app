@@ -6,6 +6,7 @@ import {
   type NotImplementedResponse,
 } from "./notImplemented.js";
 import { requireRouteUserId } from "./vendorRouteSupport.js";
+import { sendSupportRouteError } from "./supportRouteError.js";
 
 interface SupportRouteDependencies {
   service: SupportSubmissionService;
@@ -48,8 +49,12 @@ export function createSupportRoutes(
         });
       }
 
-      const result = await dependencies.service.submit(userId, parsed.data);
-      return reply.code(201).send(result);
+      try {
+        const result = await dependencies.service.submit(userId, parsed.data);
+        return reply.code(201).send(result);
+      } catch (error) {
+        await sendSupportRouteError(reply, error);
+      }
     });
   };
 }
