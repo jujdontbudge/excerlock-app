@@ -16,6 +16,7 @@ export function useSupportSnapshot(
     };
     const unsubscribe = support.subscribe(apply);
     void support.getSnapshot().then(apply);
+    void support.refreshFeatureRequests();
 
     return () => {
       isMounted = false;

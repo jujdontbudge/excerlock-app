@@ -124,6 +124,54 @@ describe("HttpSupportModule", () => {
     });
   });
 
+  it("loads the authoritative feature request list", async () => {
+    const fetch = jest.fn().mockResolvedValue({
+      status: 200,
+      json: async () => ({
+        featureRequests: [
+          {
+            id: "server-feature-2",
+            submissionId: "server-submission-feature-2",
+            title: "Lock screen balance",
+            message: "Show today's balance on the Lock Screen.",
+            voteCount: 3,
+            hasVoted: true,
+            createdAt: "2026-07-29T21:00:00.000Z",
+          },
+        ],
+      }),
+    });
+    const support = new HttpSupportModule({
+      baseUrl: "https://api.example.test",
+      fetch,
+      getAccessToken: async () => "clerk-jwt",
+    });
+
+    await support.refreshFeatureRequests();
+
+    expect(fetch).toHaveBeenCalledWith(
+      "https://api.example.test/v1/feature-requests",
+      {
+        headers: {
+          Accept: "application/json",
+          Authorization: "Bearer clerk-jwt",
+        },
+        method: "GET",
+        signal: expect.any(Object),
+      },
+    );
+    expect((await support.getSnapshot()).featureRequests).toEqual([
+      {
+        id: "server-feature-2",
+        submissionId: "server-submission-feature-2",
+        title: "Lock screen balance",
+        message: "Show today's balance on the Lock Screen.",
+        voteCount: 3,
+        hasVoted: true,
+      },
+    ]);
+  });
+
   it("saves an offline request and reports that it was not sent", async () => {
     const support = new HttpSupportModule({
       baseUrl: "https://api.example.test",

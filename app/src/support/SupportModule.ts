@@ -60,6 +60,7 @@ export type SupportUnsubscribe = () => void;
 
 export interface SupportModule {
   getSnapshot(): Promise<SupportSnapshot>;
+  refreshFeatureRequests(): Promise<void>;
   submitSupport(request: Readonly<{ message: string }>): Promise<SubmitSupportResult>;
   submitFeatureRequest(
     request: Readonly<{ title: string; message: string }>,

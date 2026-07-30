@@ -10,6 +10,7 @@ import {
 } from "./mockState";
 import { createMockSupportPersistence } from "./mockStore";
 import type {
+  FeatureRequest,
   SubmitSupportResult,
   SupportError,
   SupportModule,
@@ -94,6 +95,34 @@ export class HttpSupportModule implements SupportModule {
   public async getSnapshot(): Promise<SupportSnapshot> {
     await this.ready;
     return this.snapshot;
+  }
+
+  public async refreshFeatureRequests(): Promise<void> {
+    await this.ready;
+    let response: SupportHttpResponse;
+    try {
+      response = await this.request("/v1/feature-requests", "GET");
+      if (response.status !== 200) {
+        return;
+      }
+      const featureRequests = readFeatureRequests(await response.json());
+      const pending = this.snapshot.featureRequests.filter(
+        (featureRequest) => {
+          const submission = this.snapshot.submissions.find(
+            (candidate) => candidate.id === featureRequest.submissionId,
+          );
+          return submission !== undefined && submission.status !== "submitted";
+        },
+      );
+      await this.publish(
+        Object.freeze({
+          ...this.snapshot,
+          featureRequests: Object.freeze([...pending, ...featureRequests]),
+        }),
+      );
+    } catch {
+      // Keep the persisted list; feature discovery never blocks local support.
+    }
   }
 
   public async submitSupport(request: Readonly<{
@@ -241,6 +270,14 @@ export class HttpSupportModule implements SupportModule {
   }
 
   private async postSupport(body: Readonly<Record<string, string>>) {
+    return this.request("/v1/support", "POST", body);
+  }
+
+  private async request(
+    path: string,
+    method: "GET" | "POST",
+    body?: Readonly<Record<string, string>>,
+  ): Promise<SupportHttpResponse> {
     const token = await this.getAccessToken();
     const controller = new AbortController();
     const timeout = setTimeout(
@@ -248,14 +285,14 @@ export class HttpSupportModule implements SupportModule {
       this.requestTimeoutMs,
     );
     try {
-      return await this.fetch(`${this.baseUrl}/v1/support`, {
-        body: JSON.stringify(body),
+      return await this.fetch(`${this.baseUrl}${path}`, {
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         headers: {
           Accept: "application/json",
           ...(token === null ? {} : { Authorization: `Bearer ${token}` }),
-          "Content-Type": "application/json",
+          ...(body === undefined ? {} : { "Content-Type": "application/json" }),
         },
-        method: "POST",
+        method,
         signal: controller.signal,
       });
     } finally {
@@ -333,6 +370,54 @@ function readSubmissionReceipt(
         ? (value.featureRequestId as string)
         : null,
   });
+}
+
+function readFeatureRequests(value: unknown): readonly FeatureRequest[] {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    !("featureRequests" in value) ||
+    !Array.isArray(value.featureRequests)
+  ) {
+    throw new Error("Support server returned an invalid feature request list");
+  }
+  return Object.freeze(
+    value.featureRequests.map((featureRequest) => {
+      if (
+        typeof featureRequest !== "object" ||
+        featureRequest === null ||
+        !("id" in featureRequest) ||
+        typeof featureRequest.id !== "string" ||
+        featureRequest.id.trim().length === 0 ||
+        !("submissionId" in featureRequest) ||
+        typeof featureRequest.submissionId !== "string" ||
+        featureRequest.submissionId.trim().length === 0 ||
+        !("title" in featureRequest) ||
+        typeof featureRequest.title !== "string" ||
+        featureRequest.title.trim().length === 0 ||
+        !("message" in featureRequest) ||
+        typeof featureRequest.message !== "string" ||
+        featureRequest.message.trim().length === 0 ||
+        !("voteCount" in featureRequest) ||
+        !Number.isInteger(featureRequest.voteCount) ||
+        (featureRequest.voteCount as number) < 0 ||
+        !("hasVoted" in featureRequest) ||
+        typeof featureRequest.hasVoted !== "boolean"
+      ) {
+        throw new Error(
+          "Support server returned an invalid feature request list",
+        );
+      }
+      return Object.freeze({
+        id: featureRequest.id.trim(),
+        submissionId: featureRequest.submissionId.trim(),
+        title: featureRequest.title.trim(),
+        message: featureRequest.message.trim(),
+        voteCount: featureRequest.voteCount as number,
+        hasVoted: featureRequest.hasVoted,
+      });
+    }),
+  );
 }
 
 function isAbortError(error: unknown): boolean {
