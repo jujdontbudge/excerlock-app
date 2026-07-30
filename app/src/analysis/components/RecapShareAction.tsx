@@ -13,10 +13,13 @@ import type { Recap } from "../model";
 
 type RecapShareActionProps = Readonly<{
   recap: Recap;
-  module?: ShareCardModule;
+  shareCardModule?: ShareCardModule;
 }>;
 
-export function RecapShareAction({ recap, module }: RecapShareActionProps) {
+export function RecapShareAction({
+  recap,
+  shareCardModule,
+}: RecapShareActionProps) {
   const { spacing } = useTheme();
   const [visible, setVisible] = useState(false);
   const input = projectRecapForSharing(recap);
@@ -29,7 +32,7 @@ export function RecapShareAction({ recap, module }: RecapShareActionProps) {
       <ShareCardPreviewSheet
         visible={visible}
         input={input}
-        {...(module === undefined ? {} : { module })}
+        {...(shareCardModule === undefined ? {} : { shareCardModule })}
         onClose={() => setVisible(false)}
       />
     </View>

@@ -4,7 +4,10 @@ import { Modal, StyleSheet, Text, View } from "react-native";
 import { PillButton, Screen, useTheme } from "@/ui";
 
 import type { RecapShareCardInput } from "../ShareCardInput";
-import type { ShareCardRatio } from "../ShareCardFormat";
+import {
+  SHARE_CARD_FORMATS,
+  type ShareCardRatio,
+} from "../ShareCardFormat";
 import { getShareCardModule } from "../accessor";
 import type {
   ShareCardHandoffResult,
@@ -15,7 +18,7 @@ import { RecapShareCard } from "./RecapShareCard";
 type ShareCardPreviewSheetProps = Readonly<{
   visible: boolean;
   input: RecapShareCardInput;
-  module?: ShareCardModule;
+  shareCardModule?: ShareCardModule;
   onClose: () => void;
 }>;
 
@@ -25,7 +28,7 @@ type HandoffStatus = "idle" | "working" | ShareCardHandoffResult["status"] | "fa
 export function ShareCardPreviewSheet({
   visible,
   input,
-  module = getShareCardModule(),
+  shareCardModule = getShareCardModule(),
   onClose,
 }: ShareCardPreviewSheetProps) {
   const { spacing, typography } = useTheme();
@@ -43,12 +46,12 @@ export function ShareCardPreviewSheet({
   const shareCard = async () => {
     setHandoffStatus("working");
     try {
-      const captured = await module.captureCard({
+      const captured = await shareCardModule.captureCard({
         target: captureTargetRef,
         template: "recap",
         ratio,
       });
-      const result = await module.presentShareSheet(captured);
+      const result = await shareCardModule.presentShareSheet(captured);
       setHandoffStatus(result.status);
     } catch {
       setHandoffStatus("failed");
@@ -81,7 +84,10 @@ export function ShareCardPreviewSheet({
 
           <View style={[styles.previewWell, { marginVertical: spacing.md }]}>
             <View
-              style={ratio === "story" ? styles.storyPreview : styles.feedPreview}
+              style={[
+                ratio === "story" ? styles.storyPreview : styles.feedPreview,
+                { aspectRatio: SHARE_CARD_FORMATS[ratio].aspectRatio },
+              ]}
             >
               <RecapShareCard
                 captureTargetRef={captureTargetRef}
@@ -132,11 +138,11 @@ export function ShareCardPreviewSheet({
 
 const styles = StyleSheet.create({
   controls: { flexDirection: "row" },
-  feedPreview: { aspectRatio: 1, width: "100%" },
+  feedPreview: { width: "100%" },
   header: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
   headerAction: { alignSelf: "flex-end" },
   previewWell: { alignItems: "center", flex: 1, justifyContent: "center" },
   ratioAction: { flex: 1 },
   sheet: { flex: 1 },
-  storyPreview: { aspectRatio: 9 / 16, height: "100%" },
+  storyPreview: { height: "100%" },
 });

@@ -10,7 +10,7 @@ import {
   classifyScheduleDay,
   type ScheduleRules,
 } from "@/schedule";
-import { MockShareCardModule } from "@/shareCards/MockShareCardModule";
+import { MockShareCardModule } from "@/shareCards";
 
 import { RecapCard } from "../components";
 import {

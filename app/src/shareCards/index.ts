@@ -1,4 +1,5 @@
 export { MilestoneShareCard } from "./components/MilestoneShareCard";
+export { MockShareCardModule } from "./MockShareCardModule";
 export { RecapShareCard } from "./components/RecapShareCard";
 export { ShareCardPreviewSheet } from "./components/ShareCardPreviewSheet";
 export { getShareCardModule } from "./accessor";

@@ -84,7 +84,7 @@ export function RecapCard({ recap, shareCardModule }: RecapCardProps) {
         />
       </View>
 
-      <RecapShareAction recap={recap} module={shareCardModule} />
+      <RecapShareAction recap={recap} shareCardModule={shareCardModule} />
     </Card>
   );
 }

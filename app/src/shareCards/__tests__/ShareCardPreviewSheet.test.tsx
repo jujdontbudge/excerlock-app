@@ -42,7 +42,7 @@ describe("ShareCardPreviewSheet", () => {
       <ShareCardPreviewSheet
         visible
         input={input}
-        module={module}
+        shareCardModule={module}
         onClose={jest.fn()}
       />,
     );
