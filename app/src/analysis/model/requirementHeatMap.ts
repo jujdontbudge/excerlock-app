@@ -35,8 +35,8 @@ type ObservedRequirementCell = Readonly<{
 export type RequirementHeatMapCell =
   | (ObservedRequirementCell &
       Readonly<{
-      state: "metByEvent" | "metByRate" | "metByState";
-      qualifiedConditionId: string;
+        state: "metByEvent" | "metByRate" | "metByState";
+        qualifiedConditionId: string;
       }>)
   | Readonly<{
       dayIndex: number;
@@ -46,7 +46,7 @@ export type RequirementHeatMapCell =
     }>
   | (ObservedRequirementCell &
       Readonly<{
-      state: "missed" | "rest";
+        state: "missed" | "rest";
       }>);
 
 export type RequirementHeatMap = Readonly<{
@@ -158,12 +158,14 @@ function qualifiedConditionDetails(
       const kind = qualifiedKind(condition);
       return firstQualifiedAtMs === undefined || kind === undefined
         ? []
-        : [{
-            conditionId,
-            name: conditionNames[conditionId] ?? conditionId,
-            kind,
-            firstQualifiedAtMs,
-          }];
+        : [
+            {
+              conditionId,
+              name: conditionNames[conditionId] ?? conditionId,
+              kind,
+              firstQualifiedAtMs,
+            },
+          ];
     })
     .sort(
       (left, right) =>
@@ -177,7 +179,9 @@ function qualifiedKind(
 ): RequirementMetKind | undefined {
   if (condition.eventsFired > 0) return "event";
   if (condition.rateMinutes >= RATE_STREAK_FLOOR_MINUTES) return "rate";
-  if (condition.stateSustainedMinutes >= STATE_STREAK_FLOOR_MINUTES) return "state";
+  if (condition.stateSustainedMinutes >= STATE_STREAK_FLOOR_MINUTES) {
+    return "state";
+  }
   return undefined;
 }
 

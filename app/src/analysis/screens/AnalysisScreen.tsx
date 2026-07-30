@@ -1,7 +1,4 @@
-import {
-  dayIndexFor,
-  type DaySummary,
-} from "@excerlock/ledger";
+import { dayIndexFor, type DaySummary } from "@excerlock/ledger";
 import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text } from "react-native";
 
@@ -61,9 +58,9 @@ type AnalysisScreenProps = {
 
 /**
  * Analysis — the weekly recap, the Time Reclaimed hero, the selected period's
- * earned-versus-spent trend, the streak, per-condition earnings and the day
- * ledger under it. The PRD's remaining heat map and milestones shelf still need
- * schedule/chronology inputs and badge art.
+ * earned-versus-spent trend, the streak + requirement history, per-condition
+ * earnings and the day ledger under it. The milestones shelf remains separate
+ * badge-art and unlock-state work.
  *
  * This file projects Home's real journal, joins current condition names and
  * lays out the view. All numerical reading after projection is done by
@@ -108,10 +105,7 @@ export function AnalysisScreen({
     throughDayIndex:
       throughMs === undefined
         ? undefined
-        : dayIndexFor(
-            throughMs,
-            ledgerConfig.dayBoundaryOffsetMinutes,
-          ),
+        : dayIndexFor(throughMs, ledgerConfig.dayBoundaryOffsetMinutes),
   });
 
   return (

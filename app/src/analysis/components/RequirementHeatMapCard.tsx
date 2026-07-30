@@ -10,18 +10,18 @@ import {
 import type { ScheduleDay } from "@/schedule";
 import { Card, useTheme } from "@/ui";
 
-import type {
-  RequirementHeatMap,
-  RequirementHeatMapCell,
-  RequirementMetKind,
+import {
+  formatMinutes,
+  type RequirementHeatMap,
+  type RequirementHeatMapCell,
+  type RequirementMetKind,
 } from "../model";
-import { formatMinutes } from "../model";
 
 type RequirementHeatMapCardProps = {
   heatMap: RequirementHeatMap;
 };
 
-/** Whole-week requirement cells. Day detail is added at this same interaction seam. */
+/** Whole-week requirement cells with an accessible selectable day detail. */
 export function RequirementHeatMapCard({
   heatMap,
 }: RequirementHeatMapCardProps) {
@@ -79,7 +79,8 @@ function RequirementCell({
   onSelect: () => void;
 }) {
   const { colors, radius, spacing } = useTheme();
-  const metKind = kindForState(cell.state);
+  const presentation = cellPresentation(cell);
+  const metKind = presentation.kind;
   const backgroundColor =
     metKind === undefined
       ? cell.state === "missed"
@@ -93,7 +94,8 @@ function RequirementCell({
     <Pressable
       testID={`requirement-cell-${cell.dayIndex}`}
       accessibilityRole="button"
-      accessibilityLabel={cellAccessibilityLabel(cell)}
+      accessibilityLabel={`${cell.label}, ${presentation.accessibilityStatus}`}
+      accessibilityHint="Shows this day's requirement detail"
       accessibilityState={{ selected }}
       onPress={onSelect}
       style={[
@@ -131,7 +133,9 @@ function RequirementDayDetailPanel({
       }}
     >
       <Text style={typography.cardTitle}>{cell.label}</Text>
-      <Text style={typography.body}>{requirementStatusLabel(cell)}</Text>
+      <Text style={typography.body}>
+        {cellPresentation(cell).detailStatus}
+      </Text>
 
       {cell.state === "blank" ? null : (
         <>
@@ -194,11 +198,11 @@ function KindGlyph({
           testID={testID}
           style={{
             alignItems: "center",
-            backgroundColor: colors.onPrimary,
+            borderColor: colors.onPrimary,
             borderRadius: radius.pill,
+            borderWidth: StyleSheet.hairlineWidth,
             height: spacing.md,
             justifyContent: "center",
-            opacity: 0.45,
             width: spacing.md,
           }}
         >
@@ -215,60 +219,54 @@ function KindGlyph({
   }
 }
 
-function kindForState(
-  state: RequirementHeatMapCell["state"],
-): RequirementMetKind | undefined {
-  switch (state) {
-    case "metByEvent":
-      return "event";
-    case "metByRate":
-      return "rate";
-    case "metByState":
-      return "state";
-    case "missed":
-    case "rest":
-    case "blank":
-      return undefined;
-  }
-}
+type CellPresentation = Readonly<{
+  accessibilityStatus: string;
+  detailStatus: string;
+  kind?: RequirementMetKind;
+}>;
 
-function cellAccessibilityLabel(cell: RequirementHeatMapCell): string {
+function cellPresentation(cell: RequirementHeatMapCell): CellPresentation {
   switch (cell.state) {
     case "metByEvent":
-      return `${cell.label}, requirement met by event`;
+      return {
+        accessibilityStatus: "requirement met by event",
+        detailStatus: "Requirement met by event",
+        kind: "event",
+      };
     case "metByRate":
-      return `${cell.label}, requirement met by rate`;
+      return {
+        accessibilityStatus: "requirement met by rate",
+        detailStatus: "Requirement met by rate",
+        kind: "rate",
+      };
     case "metByState":
-      return `${cell.label}, requirement met by state`;
+      return {
+        accessibilityStatus: "requirement met by state",
+        detailStatus: "Requirement met by state",
+        kind: "state",
+      };
     case "missed":
-      return `${cell.label}, no qualifying activity`;
+      return {
+        accessibilityStatus: "no qualifying activity",
+        detailStatus: "No qualifying activity",
+      };
     case "rest":
-      return `${cell.label}, ${inactiveDayLabel(cell.detail.scheduleDay)}`;
-    case "blank":
-      return `${cell.label}, ${
-        cell.blankReason === "beforeHistory"
-          ? "before history began"
-          : "future day"
-      }`;
-  }
-}
-
-function requirementStatusLabel(cell: RequirementHeatMapCell): string {
-  switch (cell.state) {
-    case "metByEvent":
-      return "Requirement met by event";
-    case "metByRate":
-      return "Requirement met by rate";
-    case "metByState":
-      return "Requirement met by state";
-    case "missed":
-      return "No qualifying activity";
-    case "rest":
-      return sentenceCase(inactiveDayLabel(cell.detail.scheduleDay));
+      return {
+        accessibilityStatus: inactiveDayLabel(cell.detail.scheduleDay),
+        detailStatus: sentenceCase(
+          inactiveDayLabel(cell.detail.scheduleDay),
+        ),
+      };
     case "blank":
       return cell.blankReason === "beforeHistory"
-        ? "Before history began"
-        : "Future day";
+        ? {
+            accessibilityStatus: "before history began",
+            detailStatus: "Before history began",
+          }
+        : {
+            accessibilityStatus: "future day",
+            detailStatus: "Future day",
+          };
   }
 }
 
@@ -287,9 +285,7 @@ function sentenceCase(value: string): string {
   return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 }
 
-function inactiveDayLabel(
-  scheduleDay: ScheduleDay,
-): string {
+function inactiveDayLabel(scheduleDay: ScheduleDay): string {
   switch (scheduleDay.kind) {
     case "rest":
       return "rest day";
