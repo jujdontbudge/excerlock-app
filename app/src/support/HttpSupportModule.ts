@@ -9,8 +9,13 @@ import {
   saveSubmission,
 } from "./mockState";
 import { createMockSupportPersistence } from "./mockStore";
+import {
+  isSupportRequestTimeout,
+  SupportHttpClient,
+  type SupportFetch,
+  type SupportHttpResponse,
+} from "./SupportHttpClient";
 import type {
-  FeatureRequest,
   SubmitSupportResult,
   SupportError,
   SupportModule,
@@ -20,26 +25,12 @@ import type {
   SupportUnsubscribe,
   VoteOnFeatureRequestResult,
 } from "./SupportModule";
-
-type RawSupportHttpResponse = Readonly<{
-  status: number;
-  json(): Promise<unknown>;
-}>;
-
-type SupportHttpResponse = Readonly<{
-  status: number;
-  body: unknown;
-}>;
-
-type SupportFetch = (
-  url: string,
-  init: Readonly<{
-    body?: string;
-    headers: Readonly<Record<string, string>>;
-    method: "GET" | "POST";
-    signal: AbortSignal;
-  }>,
-) => Promise<RawSupportHttpResponse>;
+import {
+  readFeatureRequests,
+  readFeatureVote,
+  readSubmissionReceipt,
+  type SupportSubmissionReceipt,
+} from "./supportServerContract";
 
 export type HttpSupportModuleOptions = Readonly<{
   baseUrl: string;
@@ -73,24 +64,23 @@ const REQUEST_REJECTED_ERROR: SupportError = Object.freeze({
 });
 
 export class HttpSupportModule implements SupportModule {
-  private readonly baseUrl: string;
   private readonly clock: SupportClock;
-  private readonly fetch: SupportFetch;
-  private readonly getAccessToken: () => Promise<string | null>;
+  private readonly http: SupportHttpClient;
   private readonly listeners = new Set<SupportStateListener>();
   private readonly persistence: ReturnType<typeof createMockSupportPersistence>;
   private readonly ready: Promise<void>;
-  private readonly requestTimeoutMs: number;
   private nextLocalId = 1;
   private snapshot = EMPTY_SUPPORT_SNAPSHOT;
 
   public constructor(options: HttpSupportModuleOptions) {
-    this.baseUrl = options.baseUrl.replace(/\/+$/, "");
     this.clock = options.clock ?? new SystemSupportClock();
-    this.fetch = options.fetch ?? globalThis.fetch;
-    this.getAccessToken = options.getAccessToken;
+    this.http = new SupportHttpClient({
+      baseUrl: options.baseUrl,
+      fetch: options.fetch ?? globalThis.fetch,
+      getAccessToken: options.getAccessToken,
+      requestTimeoutMs: options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS,
+    });
     this.persistence = createMockSupportPersistence(options.storage);
-    this.requestTimeoutMs = options.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
     this.ready = this.persistence.load().then((snapshot) => {
       this.snapshot = snapshot;
       this.nextLocalId = snapshot.submissions.length + 1;
@@ -106,7 +96,7 @@ export class HttpSupportModule implements SupportModule {
     await this.ready;
     let response: SupportHttpResponse;
     try {
-      response = await this.request("/v1/feature-requests", "GET");
+      response = await this.http.request("/v1/feature-requests", "GET");
       if (response.status !== 200) {
         return;
       }
@@ -199,7 +189,7 @@ export class HttpSupportModule implements SupportModule {
     featureRequestId: string,
   ): Promise<VoteOnFeatureRequestResult> {
     await this.ready;
-    const response = await this.request(
+    const response = await this.http.request(
       `/v1/feature-requests/${encodeURIComponent(featureRequestId)}/votes`,
       "POST",
     );
@@ -247,7 +237,7 @@ export class HttpSupportModule implements SupportModule {
     } catch (error) {
       return this.failSubmission(
         submission,
-        isAbortError(error) ? TIMEOUT_ERROR : OFFLINE_ERROR,
+        isSupportRequestTimeout(error) ? TIMEOUT_ERROR : OFFLINE_ERROR,
       );
     }
     if (response.status >= 500) {
@@ -256,7 +246,7 @@ export class HttpSupportModule implements SupportModule {
     if (response.status >= 400) {
       return this.failSubmission(submission, REQUEST_REJECTED_ERROR);
     }
-    let receipt: ReturnType<typeof readSubmissionReceipt>;
+    let receipt: SupportSubmissionReceipt;
     try {
       receipt = readSubmissionReceipt(
         response.status,
@@ -301,54 +291,7 @@ export class HttpSupportModule implements SupportModule {
   }
 
   private async postSupport(body: Readonly<Record<string, string>>) {
-    return this.request("/v1/support", "POST", body);
-  }
-
-  private async request(
-    path: string,
-    method: "GET" | "POST",
-    body?: Readonly<Record<string, string>>,
-  ): Promise<SupportHttpResponse> {
-    const controller = new AbortController();
-    let timeout: ReturnType<typeof setTimeout>;
-    const timedOut = new Promise<never>((_resolve, reject) => {
-      timeout = setTimeout(() => {
-        controller.abort();
-        reject(createTimeoutError());
-      }, this.requestTimeoutMs);
-    });
-    try {
-      const token = await Promise.race([this.getAccessToken(), timedOut]);
-      const response = await Promise.race([
-        this.fetch(`${this.baseUrl}${path}`, {
-          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-          headers: {
-            Accept: "application/json",
-            ...(token === null ? {} : { Authorization: `Bearer ${token}` }),
-            ...(body === undefined
-              ? {}
-              : { "Content-Type": "application/json" }),
-          },
-          method,
-          signal: controller.signal,
-        }),
-        timedOut,
-      ]);
-      let responseBody: unknown = null;
-      if (response.status < 400) {
-        try {
-          responseBody = await Promise.race([response.json(), timedOut]);
-        } catch (error) {
-          if (isAbortError(error)) {
-            throw error;
-          }
-          responseBody = null;
-        }
-      }
-      return Object.freeze({ status: response.status, body: responseBody });
-    } finally {
-      clearTimeout(timeout!);
-    }
+    return this.http.request("/v1/support", "POST", body);
   }
 
   private async replaceSubmission(
@@ -389,120 +332,4 @@ export class HttpSupportModule implements SupportModule {
     await this.persistence.save(this.snapshot);
     this.listeners.forEach((listener) => listener(this.snapshot));
   }
-}
-
-function readSubmissionReceipt(
-  status: number,
-  value: unknown,
-  kind: SupportSubmission["kind"],
-): Readonly<{ submissionId: string; featureRequestId: string | null }> {
-  if (
-    status !== 201 ||
-    typeof value !== "object" ||
-    value === null ||
-    !("submissionId" in value) ||
-    typeof value.submissionId !== "string" ||
-    value.submissionId.trim().length === 0
-  ) {
-    throw new Error("Support server returned an invalid submission response");
-  }
-  if (
-    kind === "feature" &&
-    (!("featureRequestId" in value) ||
-      typeof value.featureRequestId !== "string" ||
-      value.featureRequestId.trim().length === 0)
-  ) {
-    throw new Error("Support server returned an invalid submission response");
-  }
-  return Object.freeze({
-    submissionId: value.submissionId,
-    featureRequestId:
-      kind === "feature" && "featureRequestId" in value
-        ? (value.featureRequestId as string)
-        : null,
-  });
-}
-
-function readFeatureRequests(value: unknown): readonly FeatureRequest[] {
-  if (
-    typeof value !== "object" ||
-    value === null ||
-    !("featureRequests" in value) ||
-    !Array.isArray(value.featureRequests)
-  ) {
-    throw new Error("Support server returned an invalid feature request list");
-  }
-  return Object.freeze(
-    value.featureRequests.map((featureRequest) => {
-      if (
-        typeof featureRequest !== "object" ||
-        featureRequest === null ||
-        !("id" in featureRequest) ||
-        typeof featureRequest.id !== "string" ||
-        featureRequest.id.trim().length === 0 ||
-        !("submissionId" in featureRequest) ||
-        typeof featureRequest.submissionId !== "string" ||
-        featureRequest.submissionId.trim().length === 0 ||
-        !("title" in featureRequest) ||
-        typeof featureRequest.title !== "string" ||
-        featureRequest.title.trim().length === 0 ||
-        !("message" in featureRequest) ||
-        typeof featureRequest.message !== "string" ||
-        featureRequest.message.trim().length === 0 ||
-        !("voteCount" in featureRequest) ||
-        !Number.isInteger(featureRequest.voteCount) ||
-        (featureRequest.voteCount as number) < 0 ||
-        !("hasVoted" in featureRequest) ||
-        typeof featureRequest.hasVoted !== "boolean"
-      ) {
-        throw new Error(
-          "Support server returned an invalid feature request list",
-        );
-      }
-      return Object.freeze({
-        id: featureRequest.id.trim(),
-        submissionId: featureRequest.submissionId.trim(),
-        title: featureRequest.title.trim(),
-        message: featureRequest.message.trim(),
-        voteCount: featureRequest.voteCount as number,
-        hasVoted: featureRequest.hasVoted,
-      });
-    }),
-  );
-}
-
-function readFeatureVote(
-  status: number,
-  value: unknown,
-): VoteOnFeatureRequestResult {
-  if (
-    typeof value !== "object" ||
-    value === null ||
-    !("status" in value) ||
-    (value.status !== "voted" && value.status !== "alreadyVoted") ||
-    (value.status === "voted" ? status !== 201 : status !== 200) ||
-    !("featureRequestId" in value) ||
-    typeof value.featureRequestId !== "string" ||
-    value.featureRequestId.trim().length === 0 ||
-    !("voteCount" in value) ||
-    !Number.isInteger(value.voteCount) ||
-    (value.voteCount as number) < 0
-  ) {
-    throw new Error("Support server returned an invalid feature vote response");
-  }
-  return Object.freeze({
-    status: value.status,
-    featureRequestId: value.featureRequestId,
-    voteCount: value.voteCount as number,
-  });
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === "AbortError";
-}
-
-function createTimeoutError(): Error {
-  return Object.assign(new Error("Support request timed out"), {
-    name: "AbortError",
-  });
 }
