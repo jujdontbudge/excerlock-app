@@ -304,25 +304,33 @@ export class HttpSupportModule implements SupportModule {
     method: "GET" | "POST",
     body?: Readonly<Record<string, string>>,
   ): Promise<SupportHttpResponse> {
-    const token = await this.getAccessToken();
     const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      this.requestTimeoutMs,
-    );
+    let timeout: ReturnType<typeof setTimeout>;
+    const timedOut = new Promise<never>((_resolve, reject) => {
+      timeout = setTimeout(() => {
+        controller.abort();
+        reject(createTimeoutError());
+      }, this.requestTimeoutMs);
+    });
     try {
-      return await this.fetch(`${this.baseUrl}${path}`, {
-        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-        headers: {
-          Accept: "application/json",
-          ...(token === null ? {} : { Authorization: `Bearer ${token}` }),
-          ...(body === undefined ? {} : { "Content-Type": "application/json" }),
-        },
-        method,
-        signal: controller.signal,
-      });
+      const token = await Promise.race([this.getAccessToken(), timedOut]);
+      return await Promise.race([
+        this.fetch(`${this.baseUrl}${path}`, {
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+          headers: {
+            Accept: "application/json",
+            ...(token === null ? {} : { Authorization: `Bearer ${token}` }),
+            ...(body === undefined
+              ? {}
+              : { "Content-Type": "application/json" }),
+          },
+          method,
+          signal: controller.signal,
+        }),
+        timedOut,
+      ]);
     } finally {
-      clearTimeout(timeout);
+      clearTimeout(timeout!);
     }
   }
 
@@ -474,4 +482,10 @@ function readFeatureVote(
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
+}
+
+function createTimeoutError(): Error {
+  return Object.assign(new Error("Support request timed out"), {
+    name: "AbortError",
+  });
 }

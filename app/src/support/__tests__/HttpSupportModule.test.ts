@@ -313,6 +313,42 @@ describe("HttpSupportModule", () => {
     }
   });
 
+  it(
+    "times out a hung access-token request before sending",
+    async () => {
+      jest.useFakeTimers();
+      try {
+        const fetch = jest.fn();
+        const support = new HttpSupportModule({
+          baseUrl: "https://api.example.test",
+          clock: new ManualSupportClock(3_500),
+          fetch,
+          getAccessToken: () => new Promise<never>(() => undefined),
+          requestTimeoutMs: 25,
+        });
+
+        const result = support.submitSupport({
+          message: "Do not wait forever for authentication.",
+        });
+        await jest.advanceTimersByTimeAsync(25);
+
+        await expect(result).resolves.toEqual({
+          status: "failed",
+          submissionId: "local-support-3500-1",
+          error: {
+            code: "timeout",
+            message:
+              "The request timed out. This wasn't sent. It is saved here so you can try again.",
+          },
+        });
+        expect(fetch).not.toHaveBeenCalled();
+      } finally {
+        jest.useRealTimers();
+      }
+    },
+    500,
+  );
+
   it("keeps a request retryable when the server is unavailable", async () => {
     const support = new HttpSupportModule({
       baseUrl: "https://api.example.test",
