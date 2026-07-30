@@ -5,6 +5,8 @@ import {
   type DaySummary,
 } from "@excerlock/ledger";
 
+import type { ScheduleDay } from "@/schedule";
+
 import { weekOffset, type Weekday } from "./calendar";
 import { DEFAULT_WEEK_STARTS_ON } from "./selectors";
 
@@ -19,16 +21,28 @@ export type RequirementHeatMapCell =
   | Readonly<{
       dayIndex: number;
       state: "blank";
+    }>
+  | Readonly<{
+      dayIndex: number;
+      state: "missed" | "rest";
     }>;
 
 export type RequirementHeatMap = Readonly<{
   weeks: readonly (readonly RequirementHeatMapCell[])[];
 }>;
 
+export type RequirementDayClassifier = (dayIndex: number) => ScheduleDay;
+
 type RequirementHeatMapOptions = Readonly<{
   weekStartsOn?: Weekday;
   throughDayIndex?: number;
+  classifyDay?: RequirementDayClassifier;
 }>;
+
+const ALL_DAYS_SCHEDULED_ACTIVE: RequirementDayClassifier = () => ({
+  kind: "scheduledActive",
+  isActive: true,
+});
 
 /**
  * Builds whole week columns around the recorded run. Blank padding preserves
@@ -39,6 +53,7 @@ export function buildRequirementHeatMap(
   {
     weekStartsOn = DEFAULT_WEEK_STARTS_ON,
     throughDayIndex = days.at(-1)?.dayIndex,
+    classifyDay = ALL_DAYS_SCHEDULED_ACTIVE,
   }: RequirementHeatMapOptions = {},
 ): RequirementHeatMap {
   const first = days[0];
@@ -56,9 +71,20 @@ export function buildRequirementHeatMap(
   for (let dayIndex = firstGridDay; dayIndex <= lastGridDay; dayIndex += 1) {
     const day = dayByIndex.get(dayIndex);
     const winner = day === undefined ? undefined : firstQualifiedCondition(day);
+    if (dayIndex < first.dayIndex || dayIndex > throughDayIndex) {
+      cells.push({ dayIndex, state: "blank" });
+      continue;
+    }
+
+    const scheduleDay = classifyDay(dayIndex);
+    if (!scheduleDay.isActive) {
+      cells.push({ dayIndex, state: "rest" });
+      continue;
+    }
+
     cells.push(
-      dayIndex < first.dayIndex || dayIndex > throughDayIndex || winner === undefined
-        ? { dayIndex, state: "blank" }
+      winner === undefined
+        ? { dayIndex, state: "missed" }
         : {
             dayIndex,
             state: metState(winner.kind),

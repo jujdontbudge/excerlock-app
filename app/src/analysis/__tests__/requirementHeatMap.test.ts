@@ -4,7 +4,13 @@ import {
   type DaySummary,
 } from "@excerlock/ledger";
 
+import { classifyScheduleDay } from "@/schedule";
+
 import { buildRequirementHeatMap } from "../model";
+
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
 
 const MONDAY = Date.UTC(2026, 6, 6) / DAY_MS;
 
@@ -79,5 +85,60 @@ describe("buildRequirementHeatMap", () => {
       state: "metByRate",
       qualifiedConditionId: "boundary-rate",
     });
+  });
+
+  it("keeps all six requirement states visually addressable in the week", () => {
+    const schedule = {
+      recurringRestWeekdays: [5],
+      holidays: [],
+      overrides: [],
+    } as const;
+    const summaries = [
+      day(MONDAY, {
+        event: condition({
+          eventsFired: 1,
+          firstQualifiedAtMs: 10,
+          meaningfulActivity: true,
+        }),
+      }),
+      day(MONDAY + 1, {
+        rate: condition({
+          rateMinutes: 15,
+          firstQualifiedAtMs: 20,
+          meaningfulActivity: true,
+        }),
+      }),
+      day(MONDAY + 2, {
+        state: condition({
+          stateSustainedMinutes: 10,
+          firstQualifiedAtMs: 30,
+          meaningfulActivity: true,
+        }),
+      }),
+      day(MONDAY + 3, {}),
+      day(MONDAY + 4, {
+        "rest-day-event": condition({
+          eventsFired: 1,
+          firstQualifiedAtMs: 40,
+          meaningfulActivity: true,
+        }),
+      }),
+    ];
+
+    expect(
+      buildRequirementHeatMap(summaries, {
+        throughDayIndex: MONDAY + 4,
+        classifyDay: (dayIndex) =>
+          classifyScheduleDay({ dayIndex, schedule }),
+      }).weeks[0]?.map(({ state }) => state),
+    ).toEqual([
+      "metByEvent",
+      "metByRate",
+      "metByState",
+      "missed",
+      "rest",
+      "blank",
+      "blank",
+    ]);
   });
 });
