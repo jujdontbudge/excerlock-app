@@ -29,6 +29,19 @@ env:
     id: manage-allowance-value
 - assertVisible: 45 minutes
 
+- scrollUntilVisible:
+    element:
+      id: schedule-rules-card
+    direction: DOWN
+- tapOn: Monday rest day
+- assertVisible:
+    id: schedule-weekday-status-1
+    text: Rest
+
+- scrollUntilVisible:
+    element:
+      id: manage-row-e2e-condition-1
+    direction: DOWN
 - tapOn:
     id: manage-toggle-e2e-condition-1
 - assertVisible:

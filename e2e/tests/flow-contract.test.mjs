@@ -63,6 +63,9 @@ test("Manage flow changes the allowance and condition state", async () => {
   assert.match(flow, /id: manage-allowance-value/);
   assert.match(flow, /id: manage-toggle-e2e-condition-1/);
   assert.match(flow, /id: manage-switch-label-e2e-condition-1/);
+  assert.match(flow, /id: schedule-rules-card/);
+  assert.match(flow, /Monday rest day/);
+  assert.match(flow, /id: schedule-weekday-status-1/);
   assert.match(flow, /takeScreenshot: manage-condition-enabled/);
 });
 
