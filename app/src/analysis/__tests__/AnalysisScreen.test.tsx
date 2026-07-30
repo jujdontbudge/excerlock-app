@@ -1,5 +1,11 @@
 import type { ConfiguredCondition } from "@excerlock/condition-model";
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
 import { processColor } from "react-native";
 
 import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
@@ -371,6 +377,53 @@ describe("AnalysisScreen", () => {
     expect(
       screen.queryByRole("header", { name: "Share your milestone" }),
     ).toBeNull();
+  });
+
+  it("waits for persisted unlocks to hydrate before claiming the current visit", async () => {
+    let hydrated = false;
+    let finishHydration: (() => void) | undefined;
+    const hasHydrated = jest
+      .spyOn(useMilestoneUnlockStore.persist, "hasHydrated")
+      .mockImplementation(() => hydrated);
+    const onFinishHydration = jest
+      .spyOn(useMilestoneUnlockStore.persist, "onFinishHydration")
+      .mockImplementation((listener) => {
+        finishHydration = listener as () => void;
+        return jest.fn();
+      });
+    const haptics = { success: jest.fn().mockResolvedValue(undefined) };
+    useMilestoneUnlockStore
+      .getState()
+      .discoverUnlocks(["streak-3"], Date.UTC(2026, 6, 26, 18));
+
+    await render(
+      <AnalysisScreen
+        {...fixtureProps}
+        confessedDailyMinutes={240}
+        milestoneHaptics={haptics}
+      />,
+    );
+
+    expect(
+      useMilestoneUnlockStore.getState().records["streak-3"]?.pending,
+    ).toBe(true);
+    expect(haptics.success).not.toHaveBeenCalled();
+    expect(finishHydration).toBeDefined();
+
+    hydrated = true;
+    await act(async () => {
+      finishHydration?.();
+    });
+
+    await waitFor(() => {
+      expect(
+        useMilestoneUnlockStore.getState().records["streak-3"]?.pending,
+      ).toBe(false);
+    });
+    expect(haptics.success).toHaveBeenCalledTimes(1);
+
+    hasHydrated.mockRestore();
+    onFinishHydration.mockRestore();
   });
 
   it("joins real ledger condition ids to their names in the condition store", async () => {

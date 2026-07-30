@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo } from "react";
 
 import {
   buildMilestoneRows,
@@ -6,28 +6,13 @@ import {
   type MilestoneMetrics,
 } from "./progress";
 import { useMilestoneUnlockStore } from "./unlockStore";
+import { useMilestoneUnlockHydration } from "./unlockHydration";
 
 type MilestoneDiscoveryProps = Readonly<{
   metrics: MilestoneMetrics;
   /** Supplied by the live-data boundary so discovery never owns a clock. */
   unlockedAtMs: number;
 }>;
-
-function subscribeToHydration(onStoreChange: () => void): () => void {
-  const unsubscribeHydrate =
-    useMilestoneUnlockStore.persist.onHydrate(onStoreChange);
-  const unsubscribeFinish =
-    useMilestoneUnlockStore.persist.onFinishHydration(onStoreChange);
-
-  return () => {
-    unsubscribeHydrate();
-    unsubscribeFinish();
-  };
-}
-
-function getHydrationSnapshot(): boolean {
-  return useMilestoneUnlockStore.persist.hasHydrated();
-}
 
 /**
  * Records achievements only after persisted state is known, preventing a
@@ -37,11 +22,7 @@ export function MilestoneDiscovery({
   metrics,
   unlockedAtMs,
 }: MilestoneDiscoveryProps) {
-  const isHydrated = useSyncExternalStore(
-    subscribeToHydration,
-    getHydrationSnapshot,
-    () => false,
-  );
+  const isHydrated = useMilestoneUnlockHydration();
   const discoverUnlocks = useMilestoneUnlockStore(
     (state) => state.discoverUnlocks,
   );

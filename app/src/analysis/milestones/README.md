@@ -20,6 +20,8 @@ Only the first locked badge in each row is `nextUp`.
 once by the next Analysis visit; `isNew` survives that visit and is cleared only
 when the badge is tapped. The discovery caller supplies `unlockedAtMs`, which
 both preserves the share card's month and keeps time outside every pure read.
+`unlockHydration.ts` is the shared AsyncStorage hydration gate: neither live
+discovery nor a visit claim can act on an incomplete persisted snapshot.
 
 `useMilestoneUnlockAnimation.ts` owns the visit's single native-driver scale-in
 sequence. Pending badges receive stable scale values in catalog order and enter
