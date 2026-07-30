@@ -23,9 +23,12 @@ Schedule's rules and onboarding's confession.
 - **Missing attribution is not zero.** `ConditionDaySummary.earnedMinutes` is optional so summaries
   written before ledger attribution can live forever. If any record for a condition lacks it, that
   condition's window reads `not recorded`; an explicit `0` remains `0m`.
-- **No clock.** `AnalysisScreen` accepts `throughMs` when its caller has a render instant; otherwise the
-  latest journal event is the deterministic cutoff. "Today" is the last summary on record and weekday
-  arithmetic runs off `dayIndex`. Nothing here calls `Date.now()`.
+- **The clock stops at the screen boundary.** The Analysis route injects an `AnalysisClock`;
+  `AnalysisScreen` samples it and passes only local wall-clock milliseconds into the pure view. That
+  instant drives both quiet-day journal projection and recap freshness. Selectors never call
+  `Date.now()` or import a clock; weekday arithmetic still runs only from `dayIndex`. Tests without a
+  clock keep the latest journal event as their deterministic cutoff, and `throughMs` remains an
+  explicit projection override.
 - **Heat-map chronology is data, not object order.** A cell compares defined
   `ConditionDaySummary.firstQualifiedAtMs` values directly. `0` is a real qualifying instant;
   `undefined` means the condition never qualified. Equal instants use condition id as an explicit
@@ -50,6 +53,7 @@ Schedule's rules and onboarding's confession.
 
 | Path | Responsibility |
 |---|---|
+| `clock.ts` | the injected Analysis time contract + the app route's local-wall-clock implementation |
 | `model/calendar.ts` | weekday arithmetic over `dayIndex` + the day and date-range labels |
 | `model/conditionBreakdown.ts` | joins condition ids to names and totals optional attributed earnings without turning missing history into zero |
 | `model/dayRecord.ts` | the sole Home-journal adapter; delegates to `daySummaries()` with the real config and an injected cutoff |
@@ -58,6 +62,7 @@ Schedule's rules and onboarding's confession.
 | `model/selectors.ts` | `selectToday` · Week/Month/Year period selection · schedule-aware streaks · totals · bars |
 | `model/timeReclaimed.ts` | `selectTimeReclaimed` — the PRD §3.13 formula over any window |
 | `model/recap.ts` | `buildRecap` — the weekly recap's five rows, including its scheduled-active denominator |
+| `model/recapFreshness.ts` | chooses the newest generated recap at the Start-week-on-aligned 18:00 moment and expires it after 72 hours |
 | `model/view.ts` | `buildAnalysisView` — the single read the screen performs |
 | `fixtures/daySummaries.ts` | three weeks of derived, self-consistent `DaySummary` records for tests and E2E |
 | `components/RecapCard.tsx` | the week in five rows, led by its Time Reclaimed and delta |
@@ -70,7 +75,7 @@ Schedule's rules and onboarding's confession.
 | `components/WeekChart.tsx` | the selected window's earned/spent bar pairs, built from `View`s |
 | `components/DayLedger.tsx` | one row per recorded day, newest first |
 | `components/AnalysisEmpty.tsx` | the day-zero state |
-| `screens/AnalysisScreen.tsx` | joins the read-only stores, owns selected-period UI state and lays out the tab |
+| `screens/AnalysisScreen.tsx` | samples the injected clock, joins the read-only stores, owns selected-period UI state and lays out the tab |
 
 ## The fixture
 
@@ -89,7 +94,7 @@ today on a five-day run. Three quiet days burn the balance to exactly zero.
 
 Production renders Home's real journal when `days` is omitted. Tests and E2E can still inject a
 deterministic record with `<AnalysisScreen days={…} />`; they can pass `throughMs` to extend the real
-journal through quiet gap days without introducing a clock into this module.
+journal to an explicit cutoff, or inject an `AnalysisClock` to exercise generation and freshness.
 
 There is deliberately **no confession fixture**. The baseline comes from the real store, so a build where
 onboarding was skipped renders the hero's `unconfessed` state — which is exactly what that user sees in
@@ -151,8 +156,6 @@ Still owed:
 - **Recap · Share button** — needs the on-device share-card renderer (PRD §3.13: 9:16 + 1:1 templates,
   aggregates-and-dates privacy floor). No module owns it yet; `RecapCard` has the three facts the card
   wants.
-- **Recap · 72-hour freshness** — needs the §3.14 recap moment (last day of week, 18:00) and therefore a
-  clock. This module has none by invariant, so the card renders whenever there is a week to recap.
 - **Recap row ③ top source** ("most from Gym visits") — its name and attribution inputs now exist in
   `conditionNameMap` + `selectConditionBreakdown`; adding the row remains recap rendering work.
 - **Milestones shelf** — needs the 22 **badge assets** (`design/STYLE.md`) and the unlock state (which
