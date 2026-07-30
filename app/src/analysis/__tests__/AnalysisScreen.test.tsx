@@ -4,6 +4,7 @@ import { processColor } from "react-native";
 
 import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 import { useConfessionStore } from "@/onboarding";
+import { useScheduleStore } from "@/schedule";
 import { gradients } from "@/ui";
 
 import { AnalysisScreen } from "..";
@@ -70,6 +71,11 @@ describe("AnalysisScreen", () => {
   beforeEach(() => {
     useConfessionStore.setState({ confessedDailyMinutes: null });
     useHomeStore.setState(DEFAULT_HOME_STATE);
+    useScheduleStore.setState({
+      recurringRestWeekdays: [],
+      holidays: [],
+      overrides: [],
+    });
   });
 
   it("sits on the brand gradient under the screen title", async () => {
@@ -190,6 +196,48 @@ describe("AnalysisScreen", () => {
     expect(screen.getByTestId("streak-current")).toHaveTextContent("5");
     expect(screen.getByTestId("streak-longest")).toHaveTextContent("8");
     expect(screen.getByTestId("streak-active-days")).toHaveTextContent(/^6 of 7 days\b/);
+  });
+
+  it("uses the real schedule classification for requirement cells", async () => {
+    useScheduleStore.setState({ recurringRestWeekdays: [2] });
+    const monday = FIXTURE_DAY_SUMMARIES[14];
+    const tuesday = FIXTURE_DAY_SUMMARIES[15];
+    const gym = monday.conditions["gym-visit"]!;
+
+    await render(
+      <AnalysisScreen
+        days={[
+          {
+            ...monday,
+            conditions: {
+              ...monday.conditions,
+              "gym-visit": {
+                ...gym,
+                firstQualifiedAtMs: 0,
+              },
+            },
+          },
+          tuesday,
+        ]}
+        conditionNames={FIXTURE_CONDITION_NAMES}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", {
+        name: "Mon 20 Jul, requirement met by event",
+      }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole("button", {
+        name: "Tue 21 Jul, rest day",
+      }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole("button", {
+        name: "Tue 21 Jul, no qualifying activity",
+      }),
+    ).toBeNull();
   });
 
   it("shows what each condition banked this week", async () => {

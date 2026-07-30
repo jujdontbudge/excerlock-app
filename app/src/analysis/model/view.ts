@@ -7,6 +7,11 @@ import {
 } from "./conditionBreakdown";
 import { buildRecap, type Recap } from "./recap";
 import {
+  buildRequirementHeatMap,
+  type RequirementDayClassifier,
+  type RequirementHeatMap,
+} from "./requirementHeatMap";
+import {
   DEFAULT_WEEK_STARTS_ON,
   selectBars,
   selectMonth,
@@ -49,6 +54,8 @@ export type AnalysisView = {
   monthReclaimed: TimeReclaimed;
   /** The week's recap. `null` before anything is recorded. */
   recap: Recap | null;
+  /** Whole-week columns for the requirement history, including honest padding. */
+  requirementHeatMap: RequirementHeatMap;
 };
 
 type AnalysisViewOptions = {
@@ -62,6 +69,10 @@ type AnalysisViewOptions = {
   confessedDailyMinutes?: number | null;
   /** Current condition names keyed by the immutable ids stored in day summaries. */
   conditionNames?: Readonly<Record<string, string>>;
+  /** Schedule's one precedence law, injected so this pure view owns no store. */
+  classifyRequirementDay?: RequirementDayClassifier;
+  /** The caller's explicit current ledger day when it extends past the record. */
+  throughDayIndex?: number;
 };
 
 export function buildAnalysisView(
@@ -71,6 +82,8 @@ export function buildAnalysisView(
     period = "week",
     confessedDailyMinutes = null,
     conditionNames = {},
+    classifyRequirementDay,
+    throughDayIndex,
   }: AnalysisViewOptions = {},
 ): AnalysisView {
   const window = selectPeriod(days, period, { weekStartsOn });
@@ -89,6 +102,14 @@ export function buildAnalysisView(
     ledger: [...window].reverse(),
     monthReclaimed: selectTimeReclaimed(selectMonth(days), confessedDailyMinutes),
     recap: buildRecap(days, { confessedDailyMinutes, weekStartsOn }),
+    requirementHeatMap: buildRequirementHeatMap(days, {
+      weekStartsOn,
+      ...(classifyRequirementDay === undefined
+        ? {}
+        : { classifyDay: classifyRequirementDay }),
+      ...(throughDayIndex === undefined ? {} : { throughDayIndex }),
+      conditionNames,
+    }),
   };
 }
 
