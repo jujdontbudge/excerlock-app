@@ -1,6 +1,8 @@
 import {
+  isMilestoneId,
   MILESTONE_LADDERS,
   type MilestoneDefinition,
+  type MilestoneId,
   type MilestoneKind,
 } from "./catalog";
 
@@ -70,11 +72,12 @@ export function buildMilestoneRows(
 
 export function unlockedMilestoneIds(
   rows: readonly MilestoneRow[],
-): readonly MilestoneBadge["id"][] {
+): readonly MilestoneId[] {
   return rows.flatMap(({ badges }) =>
     badges
       .filter(({ state }) => state === "unlocked")
-      .map(({ id }) => id),
+      .map(({ id }) => id)
+      .filter(isMilestoneId),
   );
 }
 
