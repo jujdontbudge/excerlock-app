@@ -122,6 +122,64 @@ describe("support submission service", () => {
     expect(repository.submissions).toEqual([]);
     expect(supportRequestSubmitted).not.toHaveBeenCalled();
   });
+
+  it("persists a feature submission and emits one feature-category event", async () => {
+    const repository = new MemorySupportSubmissionRepository();
+    const supportRequestSubmitted = vi.fn();
+    const ids = ["support-request-id", "feature-request-id"][
+      Symbol.iterator
+    ]();
+    const service = createSupportSubmissionService({
+      repository,
+      analytics: { supportRequestSubmitted },
+      now: () => new Date("2026-07-29T21:00:00.000Z"),
+      randomId: () => ids.next().value!,
+    });
+
+    await expect(
+      service.submit("user_123", {
+        category: "feature",
+        title: "Home Screen widget",
+        message: "Show my balance without opening the app.",
+      }),
+    ).resolves.toEqual({
+      submissionId: "support-request-id",
+      featureRequestId: "feature-request-id",
+    });
+    expect(repository.submissions[0]).toMatchObject({
+      id: "support-request-id",
+      category: "feature",
+      featureRequest: {
+        id: "feature-request-id",
+        title: "Home Screen widget",
+      },
+    });
+    expect(supportRequestSubmitted.mock.calls).toEqual([
+      ["user_123", "feature"],
+    ]);
+  });
+
+  it("does not emit analytics when persistence fails", async () => {
+    const supportRequestSubmitted = vi.fn();
+    const repository: SupportSubmissionRepository = {
+      userExists: vi.fn(async () => true),
+      insertSupportSubmission: vi.fn(async () => {
+        throw new Error("database unavailable");
+      }),
+    };
+    const service = createSupportSubmissionService({
+      repository,
+      analytics: { supportRequestSubmitted },
+    });
+
+    await expect(
+      service.submit("user_123", {
+        category: "support",
+        message: "Please help with my balance.",
+      }),
+    ).rejects.toThrow("database unavailable");
+    expect(supportRequestSubmitted).not.toHaveBeenCalled();
+  });
 });
 
 describe("feature request service", () => {
