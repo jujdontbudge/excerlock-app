@@ -1,6 +1,12 @@
 import type { DaySummary } from "@excerlock/ledger";
 
-import { sameMonth, weekdayInitial, weekOffset, type Weekday } from "./calendar";
+import {
+  sameMonth,
+  sameYear,
+  weekdayInitial,
+  weekOffset,
+  type Weekday,
+} from "./calendar";
 
 /**
  * Pure reads over an ascending, contiguous run of `DaySummary` records. Every
@@ -11,6 +17,7 @@ import { sameMonth, weekdayInitial, weekOffset, type Weekday } from "./calendar"
 export const DEFAULT_WEEK_STARTS_ON: Weekday = 1; // Monday.
 
 export type DayRange = readonly DaySummary[];
+export type AnalysisPeriod = "week" | "month" | "year";
 
 export type Totals = {
   earnedMinutes: number;
@@ -84,6 +91,30 @@ export function selectMonth(days: DayRange): DaySummary[] {
   if (today === null) return [];
 
   return days.filter((day) => sameMonth(day, today));
+}
+
+/** The calendar year containing today — partial in the user's first year. */
+export function selectYear(days: DayRange): DaySummary[] {
+  const today = selectToday(days);
+  if (today === null) return [];
+
+  return days.filter((day) => sameYear(day, today));
+}
+
+/** The record slice behind the Week / Month / Year trend control. */
+export function selectPeriod(
+  days: DayRange,
+  period: AnalysisPeriod,
+  { weekStartsOn = DEFAULT_WEEK_STARTS_ON }: { weekStartsOn?: Weekday } = {},
+): DaySummary[] {
+  switch (period) {
+    case "week":
+      return selectWeek(days, { weekStartsOn });
+    case "month":
+      return selectMonth(days);
+    case "year":
+      return selectYear(days);
+  }
 }
 
 /**

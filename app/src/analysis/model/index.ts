@@ -2,6 +2,7 @@ export {
   dayLabel,
   dayRangeLabel,
   sameMonth,
+  sameYear,
   weekdayIndex,
   weekdayInitial,
   weekOffset,
@@ -12,6 +13,7 @@ export {
   selectConditionBreakdown,
   type ConditionBreakdownItem,
 } from "./conditionBreakdown";
+export { deriveDayRecord } from "./dayRecord";
 export {
   formatDayCount,
   formatDays,
@@ -23,11 +25,14 @@ export {
   DEFAULT_WEEK_STARTS_ON,
   selectBars,
   selectMonth,
+  selectPeriod,
   selectPreviousWeek,
   selectStreak,
   selectToday,
   selectTotals,
   selectWeek,
+  selectYear,
+  type AnalysisPeriod,
   type Bar,
   type DayRange,
   type Streak,
