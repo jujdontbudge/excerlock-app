@@ -11,21 +11,13 @@ import { EmptyStart } from "../components/EmptyStart";
 import { LockHero } from "../components/LockHero";
 import { ShortcutRow } from "../components/ShortcutRow";
 import { StatsRow } from "../components/StatsRow";
-import { localWallClockNow } from "../model/clock";
 import { toConditionCards } from "../model/conditionCards";
 import { deriveLockHero, type LiveState } from "../model/lockState";
-import { createFixtureHomeSignalFeed } from "../signals/fixtureFeed";
+import { getHomeAppRuntime } from "../signals/appRuntime";
 import type { HomeSignalFeed } from "../signals/homeSignalFeed";
 import { useHomeSignals } from "../signals/useHomeSignals";
 import { selectActiveConditions, selectPickerContext } from "../store/homeState";
 import { useHomeStore } from "../store/homeStore";
-
-/** One feed for the app's lifetime — a screen remount must not restart the fixtures. */
-let appFeed: HomeSignalFeed | undefined;
-function sharedFeed(): HomeSignalFeed {
-  appFeed ??= createFixtureHomeSignalFeed();
-  return appFeed;
-}
 
 export interface HomeScreenProps {
   /** Injected by tests and by the Phase-3 composition root. */
@@ -39,7 +31,13 @@ export interface HomeScreenProps {
  * and owns none of their rules: balances come from `@excerlock/ledger`, card and
  * picker rules from `@excerlock/condition-model`, live values from SignalKit.
  */
-export function HomeScreen({ feed = sharedFeed(), now = localWallClockNow }: HomeScreenProps = {}) {
+export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
+  const appRuntime =
+    feed === undefined || now === undefined
+      ? getHomeAppRuntime()
+      : undefined;
+  const signalFeed = feed ?? appRuntime!.feed;
+  const currentTime = now ?? appRuntime!.now;
   const { spacing } = useTheme();
   const [builderOpen, setBuilderOpen] = useState(false);
 
@@ -53,8 +51,8 @@ export function HomeScreen({ feed = sharedFeed(), now = localWallClockNow }: Hom
   const recordEventPayout = useHomeStore((state) => state.recordEventPayout);
   const firedConditionIds = useHomeStore((state) => state.firedConditionIds);
 
-  const reading = useHomeSignals(feed);
-  const atMs = now();
+  const reading = useHomeSignals(signalFeed);
+  const atMs = currentTime();
   const placeNames = useMemo(
     () => Object.fromEntries(savedPlaces.map(({ id, name }) => [id, name])),
     [savedPlaces],

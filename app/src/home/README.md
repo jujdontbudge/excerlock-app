@@ -32,6 +32,7 @@ a rendering of a rule owned elsewhere — the one genuine exception is documente
 | `model/reading.ts` | `SignalReading` — today's totals plus what is true right now |
 | `model/clock.ts` | The single conversion to the local wall-clock ms the ledger wants |
 | `signals/homeSignalFeed.ts` | Flattens SignalKit's providers into one `SignalReading` |
+| `signals/appRuntime.ts` | Holds the one build-selected feed and clock installed by the app composition root |
 | `signals/fixtureFeed.ts` | Phase-2 composition root: fixture providers, real-time playback |
 | `signals/useHomeSignals.ts` | Subscribes a mounted screen to a feed |
 | `store/homeState.ts` | Owned state shape, Unlimited default, and projections used by Home/Manage/lock |

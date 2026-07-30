@@ -59,8 +59,8 @@ export function E2EScenarioGate({
         }
         loadedRef.current?.composition.dispose();
         loadedRef.current = loaded;
-        setState({ status: "ready", url, loaded });
         onLoaded?.(loaded);
+        setState({ status: "ready", url, loaded });
       },
       (error: unknown) => {
         if (!cancelled) {

@@ -49,6 +49,11 @@ export {
   type HomeSignalFeed,
   type HomeSignalProviders,
 } from "./signals/homeSignalFeed";
+export {
+  getHomeAppRuntime,
+  installHomeAppRuntime,
+  type HomeAppRuntime,
+} from "./signals/appRuntime";
 export { useHomeSignals } from "./signals/useHomeSignals";
 export {
   DEFAULT_HOME_STATE,
