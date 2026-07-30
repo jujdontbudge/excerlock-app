@@ -38,3 +38,16 @@ test("Home flow loads the bundled scenario and covers zero-balance walking", asy
     "the bundled scenario should include the walking condition exercised by Home",
   );
 });
+
+test("Manage flow changes the allowance and condition state", async () => {
+  const flow = await read("flows/manage-condition.yaml");
+
+  assert.match(flow, new RegExp(`^appId: ${APP_ID}$`, "m"));
+  assert.match(flow, new RegExp(`^  SCENARIO: ${BUNDLED_SCENARIO}$`, "m"));
+  assert.match(flow, /excerlock:\/\/e2e\/scenario\/\$\{SCENARIO\}/);
+  assert.match(flow, /id: manage-screen/);
+  assert.match(flow, /id: manage-allowance-value/);
+  assert.match(flow, /id: manage-toggle-e2e-condition-1/);
+  assert.match(flow, /id: manage-switch-label-e2e-condition-1/);
+  assert.match(flow, /takeScreenshot: manage-condition-enabled/);
+});

@@ -1,0 +1,44 @@
+appId: com.johansardar.excerlock
+name: Manage — edits allowance and condition state
+tags:
+  - manage
+  - conditions
+env:
+  SCENARIO: baseline-fresh-install
+---
+- launchApp:
+    clearState: true
+- openLink:
+    link: excerlock://e2e/scenario/${SCENARIO}
+- runFlow:
+    when:
+      visible: 'Open in "ExcerLock"'
+    commands:
+      - tapOn: Open
+
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- assertNotVisible:
+    id: screen-e2e-error
+- tapOn: Manage
+- assertVisible:
+    id: manage-screen
+- assertVisible:
+    id: manage-allowance-value
+- assertVisible: 45 minutes
+
+- tapOn:
+    id: manage-toggle-e2e-condition-1
+- assertVisible:
+    id: manage-switch-label-e2e-condition-1
+- assertVisible: "Off"
+- tapOn:
+    id: manage-toggle-e2e-condition-1
+- assertVisible: "On"
+
+- tapOn: Increase daily allowance
+- assertVisible: 50 minutes
+- waitForAnimationToEnd
+- takeScreenshot: manage-condition-enabled
