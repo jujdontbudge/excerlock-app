@@ -2,7 +2,6 @@ import type { StateStorage } from "zustand/middleware";
 
 import { SystemSupportClock, type SupportClock } from "./clock";
 import {
-  appendFeatureRequest,
   EMPTY_SUPPORT_SNAPSHOT,
   makeFeatureSubmission,
   makeSupportSubmission,
@@ -137,18 +136,13 @@ export class HttpSupportModule implements SupportModule {
     request: Readonly<{ title: string; message: string }>,
   ): Promise<SubmitSupportResult> {
     await this.ready;
-    const { submission, featureRequest } = makeFeatureSubmission(
+    const { submission } = makeFeatureSubmission(
       this.localId("feature"),
       request.title,
       request.message,
       this.clock.nowMs(),
     );
-    await this.publish(
-      saveSubmission(
-        appendFeatureRequest(this.snapshot, featureRequest),
-        submission,
-      ),
-    );
+    await this.publish(saveSubmission(this.snapshot, submission));
     return this.attemptSubmission(submission);
   }
 
@@ -270,17 +264,10 @@ export class HttpSupportModule implements SupportModule {
             candidate.id === submission.id ? submitted : candidate,
           ),
         ),
-        featureRequests: Object.freeze(
-          this.snapshot.featureRequests.map((featureRequest) =>
-            featureRequest.submissionId === submission.id &&
-            receipt.featureRequestId !== null
-              ? Object.freeze({
-                  ...featureRequest,
-                  id: receipt.featureRequestId,
-                  submissionId: receipt.submissionId,
-                })
-              : featureRequest,
-          ),
+        featureRequests: completeFeatureSubmission(
+          this.snapshot.featureRequests,
+          submission,
+          receipt,
         ),
       }),
     );
@@ -332,4 +319,39 @@ export class HttpSupportModule implements SupportModule {
     await this.persistence.save(this.snapshot);
     this.listeners.forEach((listener) => listener(this.snapshot));
   }
+}
+
+function completeFeatureSubmission(
+  featureRequests: SupportSnapshot["featureRequests"],
+  submission: SupportSubmission,
+  receipt: SupportSubmissionReceipt,
+): SupportSnapshot["featureRequests"] {
+  if (submission.kind !== "feature" || receipt.featureRequestId === null) {
+    return featureRequests;
+  }
+  let replacedLocalFeature = false;
+  const completed = featureRequests.map((featureRequest) => {
+    if (featureRequest.submissionId !== submission.id) {
+      return featureRequest;
+    }
+    replacedLocalFeature = true;
+    return Object.freeze({
+      ...featureRequest,
+      id: receipt.featureRequestId!,
+      submissionId: receipt.submissionId,
+    });
+  });
+  if (!replacedLocalFeature) {
+    completed.push(
+      Object.freeze({
+        id: receipt.featureRequestId,
+        submissionId: receipt.submissionId,
+        title: submission.title,
+        message: submission.message,
+        voteCount: 0,
+        hasVoted: false,
+      }),
+    );
+  }
+  return Object.freeze(completed);
 }

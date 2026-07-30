@@ -268,6 +268,53 @@ describe("HttpSupportModule", () => {
     });
   });
 
+  it("does not expose an unsent feature request as votable", async () => {
+    const fetch = jest
+      .fn()
+      .mockRejectedValueOnce(new TypeError("Network request failed"))
+      .mockResolvedValueOnce({
+        status: 201,
+        json: async () => ({
+          submissionId: "server-submission-feature-retry",
+          featureRequestId: "server-feature-retry",
+        }),
+      });
+    const support = new HttpSupportModule({
+      baseUrl: "https://api.example.test",
+      clock: new ManualSupportClock(2_500),
+      fetch,
+      getAccessToken: async () => "clerk-jwt",
+    });
+
+    const failed = await support.submitFeatureRequest({
+      title: "Calendar view",
+      message: "Show my earned minutes by day.",
+    });
+
+    expect(failed).toMatchObject({
+      status: "failed",
+      error: { code: "offline" },
+    });
+    expect((await support.getSnapshot()).featureRequests).toEqual([]);
+
+    await expect(
+      support.retrySubmission(failed.submissionId),
+    ).resolves.toEqual({
+      status: "submitted",
+      submissionId: "server-submission-feature-retry",
+    });
+    expect((await support.getSnapshot()).featureRequests).toEqual([
+      {
+        id: "server-feature-retry",
+        submissionId: "server-submission-feature-retry",
+        title: "Calendar view",
+        message: "Show my earned minutes by day.",
+        voteCount: 0,
+        hasVoted: false,
+      },
+    ]);
+  });
+
   it("times out a hung request instead of leaving it sending", async () => {
     jest.useFakeTimers();
     try {
