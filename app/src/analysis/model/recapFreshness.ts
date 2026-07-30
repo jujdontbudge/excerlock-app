@@ -10,6 +10,8 @@ import {
 
 /** PRD §3.13: the recap is generated at 18:00 local wall-clock time. */
 export const RECAP_MINUTE_OF_DAY = 18 * 60;
+/** PRD §3.13: the generated recap stays atop Analysis for 72 hours. */
+export const RECAP_FRESHNESS_MS = 72 * 60 * MIN_MS;
 
 type FreshRecapOptions = {
   /** Local wall-clock milliseconds, injected by the module edge. */
@@ -34,19 +36,21 @@ export function selectFreshRecap(
   }: FreshRecapOptions,
 ): Recap | null {
   const currentDayIndex = Math.floor(nowMs / DAY_MS);
-  const minuteOfDay = Math.floor(
-    (nowMs - currentDayIndex * DAY_MS) / MIN_MS,
-  );
+  const offset = weekOffset({ dayIndex: currentDayIndex }, weekStartsOn);
+  const currentWeekEndDayIndex = currentDayIndex + (6 - offset);
+  const currentWeekMomentMs =
+    currentWeekEndDayIndex * DAY_MS + RECAP_MINUTE_OF_DAY * MIN_MS;
+  const recapDayIndex =
+    nowMs >= currentWeekMomentMs
+      ? currentWeekEndDayIndex
+      : currentWeekEndDayIndex - 7;
+  const generatedAtMs =
+    recapDayIndex * DAY_MS + RECAP_MINUTE_OF_DAY * MIN_MS;
 
-  if (
-    weekOffset({ dayIndex: currentDayIndex }, weekStartsOn) !== 6 ||
-    minuteOfDay < RECAP_MINUTE_OF_DAY
-  ) {
-    return null;
-  }
+  if (nowMs >= generatedAtMs + RECAP_FRESHNESS_MS) return null;
 
-  const recapDays = days.filter((day) => day.dayIndex <= currentDayIndex);
-  if (recapDays.at(-1)?.dayIndex !== currentDayIndex) return null;
+  const recapDays = days.filter((day) => day.dayIndex <= recapDayIndex);
+  if (recapDays.at(-1)?.dayIndex !== recapDayIndex) return null;
 
   return buildRecap(recapDays, {
     confessedDailyMinutes,
