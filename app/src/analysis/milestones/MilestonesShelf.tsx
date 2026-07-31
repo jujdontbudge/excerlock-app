@@ -77,51 +77,51 @@ export function MilestonesShelf({
             style={{ gap: spacing.sm }}
             testID={`milestone-row-${kind}`}
           >
-          <Text accessibilityRole="header" style={typography.cardTitle}>
-            {title}
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: spacing.sm }}
-          >
-            {badges.map((badge) => (
-              <MilestoneBadgeButton
-                key={badge.id}
-                badge={badge}
-                unlockSequence={
-                  isMilestoneId(badge.id) &&
-                  unlockSequence.includes(badge.id)
-                    ? {
-                        index: unlockSequence.indexOf(badge.id),
-                        ready: unlockReady,
-                        scale: unlockScales.get(badge.id)!,
-                        total: unlockSequence.length,
-                      }
-                    : null
-                }
-                isNew={
-                  isMilestoneId(badge.id) &&
-                  records[badge.id]?.isNew === true
-                }
-                onPress={() => pressBadge(badge)}
-              />
-            ))}
-          </ScrollView>
+            <Text accessibilityRole="header" style={typography.cardTitle}>
+              {title}
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: spacing.sm }}
+            >
+              {badges.map((badge) => (
+                <MilestoneBadgeButton
+                  key={badge.id}
+                  badge={badge}
+                  unlockSequence={
+                    isMilestoneId(badge.id) &&
+                    unlockSequence.includes(badge.id)
+                      ? {
+                          index: unlockSequence.indexOf(badge.id),
+                          ready: unlockReady,
+                          scale: unlockScales.get(badge.id)!,
+                          total: unlockSequence.length,
+                        }
+                      : null
+                  }
+                  isNew={
+                    isMilestoneId(badge.id) &&
+                    records[badge.id]?.isNew === true
+                  }
+                  onPress={() => pressBadge(badge)}
+                />
+              ))}
+            </ScrollView>
           </View>
         ))}
 
-      {selected === undefined ? null : (
-        <MilestoneProgressDetail badge={selected} metrics={metrics} />
-      )}
+        {selected === undefined ? null : (
+          <MilestoneProgressDetail badge={selected} metrics={metrics} />
+        )}
 
-      {selection === null ? null : (
-        <MilestoneSharePreview
-          selection={selection}
-          shareCardModule={shareCardModule}
-          onClose={closeShare}
-        />
-      )}
+        {selection === null ? null : (
+          <MilestoneSharePreview
+            selection={selection}
+            shareCardModule={shareCardModule}
+            onClose={closeShare}
+          />
+        )}
       </Card>
     </View>
   );

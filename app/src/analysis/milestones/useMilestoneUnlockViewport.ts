@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type {
   LayoutChangeEvent,
   NativeScrollEvent,
@@ -28,7 +28,10 @@ export function useMilestoneUnlockViewport(
   const viewport = useRef<VerticalFrame>({ height: 0, y: 0 });
   const shelf = useRef<VerticalFrame | null>(null);
   const rows = useRef<Partial<Record<MilestoneKind, VerticalFrame>>>({});
-  const targetKinds = targetKindsFor(sequence);
+  const targetKinds = useMemo(
+    () => targetKindsFor(sequence),
+    [sequenceKey],
+  );
 
   const revealIfVisible = useCallback(() => {
     if (sequenceKey.length === 0 || readyKey === sequenceKey) return;
