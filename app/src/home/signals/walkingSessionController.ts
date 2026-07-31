@@ -34,6 +34,10 @@ const IDLE: WalkingSessionSnapshot = Object.freeze({
 
 /** Explicit-session owner for live walking verification and its keep-alive. */
 export class WalkingSessionController {
+  private location:
+    | Pick<LocationProvider, "startWalkKeepAlive" | "stopWalkKeepAlive">
+    | undefined;
+  private motion: MotionProvider | undefined;
   private snapshot: WalkingSessionSnapshot = IDLE;
 
   public constructor(
@@ -55,6 +59,27 @@ export class WalkingSessionController {
       return false;
     }
 
-    return false;
+    if (this.snapshot.active) {
+      return this.snapshot.conditionId === conditionId;
+    }
+
+    const motion = this.dependencies.createMotion();
+    const location = this.dependencies.getLocation();
+    await location.startWalkKeepAlive();
+    try {
+      await motion.start();
+    } catch (error) {
+      await location.stopWalkKeepAlive().catch(() => undefined);
+      throw error;
+    }
+
+    this.motion = motion;
+    this.location = location;
+    this.snapshot = Object.freeze({
+      active: true,
+      conditionId,
+      walking: false,
+    });
+    return true;
   }
 }
