@@ -5,8 +5,15 @@ import type {
 } from "./ShieldContentPublisher";
 
 export interface ShieldOfferSource {
-  current(cause: ShieldCause): string;
+  current(
+    cause: ShieldCause,
+    context: ShieldOfferContext,
+  ): string | Promise<string>;
 }
+
+export type ShieldOfferContext = Readonly<{
+  lockWindowEndsAtMs?: number;
+}>;
 
 /** #87 installs the PostHog flag payload behind this vendor-free seam. */
 export interface ShieldCopySource {
@@ -30,11 +37,17 @@ export class ShieldContentCoordinator {
     private readonly options: ShieldContentCoordinatorOptions,
   ) {}
 
-  public async publish(cause: ShieldCause): Promise<void> {
-    const routeHomeAvailable = await this.options.routeHomeSource.available();
+  public async publish(
+    cause: ShieldCause,
+    context: ShieldOfferContext = {},
+  ): Promise<void> {
+    const [routeHomeAvailable, offerSubtitle] = await Promise.all([
+      this.options.routeHomeSource.available(),
+      this.options.offerSource.current(cause, context),
+    ]);
     this.options.publisher.publish({
       cause,
-      offerSubtitle: this.options.offerSource.current(cause),
+      offerSubtitle,
       routeHomeAvailable,
       copyOverrides: this.options.copySource.current(),
     });

@@ -7,7 +7,10 @@ describe("ShieldContentCoordinator", () => {
     const coordinator = new ShieldContentCoordinator({
       publisher: { publish },
       offerSource: {
-        current: () => "A 10-min walk gets you 15 more minutes.",
+        current: async (_cause, context) => {
+          expect(context).toEqual({ lockWindowEndsAtMs: 123 });
+          return "A 10-min walk gets you 15 more minutes.";
+        },
       },
       copySource: {
         current: () => ({ fullLock: { title: "Remote full-lock title" } }),
@@ -17,7 +20,7 @@ describe("ShieldContentCoordinator", () => {
       },
     });
 
-    await coordinator.publish("fullLock");
+    await coordinator.publish("fullLock", { lockWindowEndsAtMs: 123 });
 
     expect(publish).toHaveBeenCalledWith({
       cause: "fullLock",
