@@ -15,7 +15,7 @@ import { installScreenTimeAppRuntime } from "@/screentime";
 import {
   installFixtureSubscriptionModule,
 } from "@/subscription/accessor";
-import { installFixtureSupportModule } from "@/support/accessor";
+import { installFixtureSupportModule } from "@/support";
 
 import { E2EScenarioGate } from "./E2EScenarioGate";
 import { useScenarioUrl } from "./scenarioUrlSource";
