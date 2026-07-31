@@ -7,7 +7,7 @@ import {
 } from "react";
 import { Modal, StyleSheet, Text, View } from "react-native";
 
-import { PillButton, Screen, useTheme } from "@/ui";
+import { DismissalBlur, PillButton, Screen, useTheme } from "@/ui";
 
 import {
   SHARE_CARD_FORMATS,
@@ -50,7 +50,7 @@ export function ShareCardPreviewSheetFrame({
   onClose,
   renderCard,
 }: ShareCardPreviewSheetFrameProps) {
-  const { spacing, typography } = useTheme();
+  const { radius, spacing, typography } = useTheme();
   const [ratio, setRatio] = useState<ShareCardRatio>("story");
   const [handoffStatus, setHandoffStatus] =
     useState<HandoffStatus>("idle");
@@ -80,78 +80,95 @@ export function ShareCardPreviewSheetFrame({
 
   return (
     <Modal
-      animationType="slide"
-      presentationStyle="fullScreen"
+      animationType="fade"
+      presentationStyle="overFullScreen"
+      transparent
       visible={visible}
       onRequestClose={onClose}
     >
-      <Screen
-        edges={["top", "bottom", "left", "right"]}
-        style={[styles.sheet, { gap: spacing.md, padding: spacing.gutter }]}
-      >
-        <View accessibilityViewIsModal style={styles.sheet}>
-          <View style={[styles.header, { gap: spacing.md }]}>
-            <Text accessibilityRole="header" style={typography.sheetTitle}>
-              {title}
-            </Text>
-            <PillButton
-              label="Close"
-              onPress={onClose}
-              variant="secondary"
-              style={styles.headerAction}
-            />
-          </View>
+      <View style={styles.modal}>
+        <DismissalBlur
+          accessibilityLabel={`Dismiss ${title}`}
+          onDismiss={onClose}
+        />
+        <View
+          style={[
+            styles.panel,
+            {
+              borderTopLeftRadius: radius.xl,
+              borderTopRightRadius: radius.xl,
+            },
+          ]}
+        >
+          <Screen
+            edges={["top", "bottom", "left", "right"]}
+            style={[styles.sheet, { gap: spacing.md, padding: spacing.gutter }]}
+          >
+            <View accessibilityViewIsModal style={styles.sheet}>
+              <View style={[styles.header, { gap: spacing.md }]}>
+                <Text accessibilityRole="header" style={typography.sheetTitle}>
+                  {title}
+                </Text>
+                <PillButton
+                  label="Close"
+                  onPress={onClose}
+                  variant="secondary"
+                  style={styles.headerAction}
+                />
+              </View>
 
-          <View style={[styles.previewWell, { marginVertical: spacing.md }]}>
-            <View
-              style={[
-                ratio === "story" ? styles.storyPreview : styles.feedPreview,
-                { aspectRatio: SHARE_CARD_FORMATS[ratio].aspectRatio },
-              ]}
-            >
-              {renderCard(ratio, captureTargetRef)}
+              <View style={[styles.previewWell, { marginVertical: spacing.md }]}>
+                <View
+                  style={[
+                    ratio === "story" ? styles.storyPreview : styles.feedPreview,
+                    { aspectRatio: SHARE_CARD_FORMATS[ratio].aspectRatio },
+                  ]}
+                >
+                  {renderCard(ratio, captureTargetRef)}
+                </View>
+              </View>
+
+              <View style={[styles.controls, { gap: spacing.sm }]}>
+                <PillButton
+                  label="Story · 9:16"
+                  onPress={() => setRatio("story")}
+                  variant={ratio === "story" ? "primary" : "secondary"}
+                  style={styles.ratioAction}
+                />
+                <PillButton
+                  label="Feed · 1:1"
+                  onPress={() => setRatio("feed")}
+                  variant={ratio === "feed" ? "primary" : "secondary"}
+                  style={styles.ratioAction}
+                />
+              </View>
+
+              <View style={{ gap: spacing.sm }}>
+                <PillButton
+                  label={
+                    handoffStatus === "working"
+                      ? "Preparing card…"
+                      : "Share card"
+                  }
+                  disabled={handoffStatus === "working"}
+                  onPress={() => void shareCard()}
+                  variant="white"
+                />
+                {handoffStatus === "simulated" ? (
+                  <Text style={typography.caption}>
+                    Prepared with the local share mock.
+                  </Text>
+                ) : null}
+                {handoffStatus === "failed" ? (
+                  <Text style={typography.caption}>
+                    The card could not be prepared. Try again.
+                  </Text>
+                ) : null}
+              </View>
             </View>
-          </View>
-
-          <View style={[styles.controls, { gap: spacing.sm }]}>
-            <PillButton
-              label="Story · 9:16"
-              onPress={() => setRatio("story")}
-              variant={ratio === "story" ? "primary" : "secondary"}
-              style={styles.ratioAction}
-            />
-            <PillButton
-              label="Feed · 1:1"
-              onPress={() => setRatio("feed")}
-              variant={ratio === "feed" ? "primary" : "secondary"}
-              style={styles.ratioAction}
-            />
-          </View>
-
-          <View style={{ gap: spacing.sm }}>
-            <PillButton
-              label={
-                handoffStatus === "working"
-                  ? "Preparing card…"
-                  : "Share card"
-              }
-              disabled={handoffStatus === "working"}
-              onPress={() => void shareCard()}
-              variant="white"
-            />
-            {handoffStatus === "simulated" ? (
-              <Text style={typography.caption}>
-                Prepared with the local share mock.
-              </Text>
-            ) : null}
-            {handoffStatus === "failed" ? (
-              <Text style={typography.caption}>
-                The card could not be prepared. Try again.
-              </Text>
-            ) : null}
-          </View>
+          </Screen>
         </View>
-      </Screen>
+      </View>
     </Modal>
   );
 }
@@ -165,6 +182,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   headerAction: { alignSelf: "flex-end" },
+  modal: { flex: 1, justifyContent: "flex-end" },
+  panel: { height: "94%", overflow: "hidden" },
   previewWell: {
     alignItems: "center",
     flex: 1,

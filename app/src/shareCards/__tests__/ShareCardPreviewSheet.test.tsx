@@ -36,6 +36,17 @@ describe("ShareCardPreviewSheet", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("closes from the preview sheet's blurred background", async () => {
+    const onClose = jest.fn();
+    await render(<ShareCardPreviewSheet visible input={input} onClose={onClose} />);
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Dismiss Share your week" }),
+    );
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("captures the selected format and hands its file to the mocked share seam", async () => {
     const module = new MockShareCardModule();
     await render(
