@@ -56,3 +56,24 @@ that boundary once through `getMilestoneHaptics()` and `expo-haptics`; the unloc
 moment invokes `success()` once only when the visit claims a non-empty pending
 sequence. The adapter requests notification-style success feedback and owns no
 sound API.
+
+## Simulator judgment — 2026-07-31
+
+Ticket #78 was watched in a production development build on the iOS 26.4
+`ExcerLock-E2E` simulator with a deterministic three-day journal. The visit
+unlocked `streak-3` and `activity-1` together.
+
+The default unlock moment does **not** read well. Analysis opens at the top of
+its scroll view while the milestone shelf is below the fold, so the complete
+120 ms staggered scale-in finishes offscreen. By the time the shelf is reached,
+the spring sequence is over. The configured damping and stiffness therefore
+cannot honestly be called successful as a user-visible moment on this path.
+
+The orange `New` treatment is immediately legible on both unlocked badges once
+the shelf is reached, but it reads as a persistent label rather than a glint or
+shimmer. No popup or share-sheet takeover appeared.
+
+The simulator cannot establish that tactile feedback feels right on physical
+hardware. The native build compiled and linked Expo Haptics; automated tests
+cover one success notification for this two-badge sequence and no notification
+for an empty visit. Physical-device haptic feel remains unverified.
