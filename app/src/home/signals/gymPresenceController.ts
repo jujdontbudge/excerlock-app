@@ -1,7 +1,7 @@
 import type { ConfiguredCondition } from "@excerlock/condition-model";
 
 import {
-  AsyncStorageGymVisitLog,
+  createAsyncStorageGymVisitLog,
   getLocationProvider,
   type AppLocationProvider,
   type GymVisit,
@@ -211,7 +211,7 @@ export class GymPresenceController {
 }
 
 let sharedController: GymPresenceController | undefined;
-const confirmedVisitLog = new AsyncStorageGymVisitLog();
+const confirmedVisitLog = createAsyncStorageGymVisitLog();
 
 /** The production controller stays lazy: empty-start never selects location. */
 export function getGymPresenceController(): GymPresenceController {
