@@ -43,6 +43,14 @@
           "NSHealthShareUsageDescription": "ExcerLock reads your activity to detect completed fitness conditions on this device.",
           "NSHealthUpdateUsageDescription": false
         }
+      ],
+      [
+        "expo-location",
+        {
+          "isIosBackgroundLocationEnabled": true,
+          "locationWhenInUsePermission": "Allow ExcerLock to check whether you are at a saved gym and keep a Walk Session active.",
+          "locationAlwaysAndWhenInUsePermission": "Allow ExcerLock to detect arrivals at saved gyms when you opt into auto-detect."
+        }
       ]
     ],
     "experiments": {
