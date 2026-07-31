@@ -1,4 +1,5 @@
 export { FixtureHealthProvider } from "./FixtureHealthProvider";
+export { HealthKitHealthProvider } from "./HealthKitHealthProvider";
 export {
   HEALTH_FIXTURE_EVENTS,
   HEALTH_SIGNALS,
