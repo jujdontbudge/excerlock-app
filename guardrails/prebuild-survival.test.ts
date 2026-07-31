@@ -28,6 +28,9 @@ type NativeTargetsManifest = {
 
 type ProjectTarget = {
   configurations: Array<{
+    bundleIdentifier?: string;
+    deploymentTarget?: string;
+    developmentTeam?: string;
     entitlements: string[];
     id: string;
   }>;
@@ -79,6 +82,15 @@ function readProjectTargets(project: string): ProjectTarget[] {
       name,
       configurations: configurationIds.map((id) => ({
         id,
+        bundleIdentifier: projectObject(project, id).match(
+          /PRODUCT_BUNDLE_IDENTIFIER = "?([^";]+)"?;/,
+        )?.[1],
+        deploymentTarget: projectObject(project, id).match(
+          /IPHONEOS_DEPLOYMENT_TARGET = "?([^";]+)"?;/,
+        )?.[1],
+        developmentTeam: projectObject(project, id).match(
+          /DEVELOPMENT_TEAM = "?([^";]+)"?;/,
+        )?.[1],
         entitlements: [
           ...projectObject(project, id).matchAll(
             /CODE_SIGN_ENTITLEMENTS = "?([^";]+\.entitlements)"?;/g,
@@ -116,6 +128,9 @@ describe("prebuild-survival guardrail", () => {
         Array.isArray(plugin) && plugin[0] === "react-native-device-activity",
     );
     const rndaGeneratesTargets = rndaPlugin?.[1]?.copyToTargetFolder !== false;
+    expect(appConfig.expo?.plugins?.at(-1)).toBe(
+      "./plugins/withScreenTimeExtensionValidation",
+    );
     const appIntentsHasSource = walkFiles(fromRoot("app", "targets", "app-intents")).some(
       (path) => !path.endsWith("README.md") && !path.endsWith(".gitkeep"),
     );
@@ -179,6 +194,41 @@ describe("prebuild-survival guardrail", () => {
     expect(
       missingEntitlements,
       "A required native target build configuration lost its CODE_SIGN_ENTITLEMENTS setting or generated file",
+    ).toEqual([]);
+
+    const expectedExtensionSettings = [
+      {
+        bundleIdentifier: "com.johansardar.excerlock.monitor",
+        name: /^DeviceActivityMonitorExtension$/,
+      },
+      {
+        bundleIdentifier: "com.johansardar.excerlock.shield",
+        name: /^ShieldConfiguration$/,
+      },
+      {
+        bundleIdentifier: "com.johansardar.excerlock.shieldaction",
+        name: /^ShieldAction$/,
+      },
+    ];
+    const invalidExtensionConfigurations = expectedExtensionSettings.flatMap(
+      ({ bundleIdentifier, name }) => {
+        const target = projectTargets.find(({ name: targetName }) =>
+          name.test(targetName),
+        );
+        return (target?.configurations ?? [])
+          .filter(
+            (configuration) =>
+              configuration.bundleIdentifier !== bundleIdentifier ||
+              configuration.deploymentTarget !== "17.4" ||
+              configuration.developmentTeam !== "AX3C2B78YD",
+          )
+          .map(({ id }) => ({ configuration: id, target: target?.name }));
+      },
+    );
+
+    expect(
+      invalidExtensionConfigurations,
+      "A Screen Time extension lost its canonical bundle id, iOS 17.4 floor, or team",
     ).toEqual([]);
   });
 });

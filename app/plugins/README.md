@@ -1,7 +1,13 @@
-# Expo config plugins
+# Local Expo config plugins
 
-Contract: hides native project mutation behind Expo Continuous Native Generation inputs. Invariants:
-`withNoPush` remains first in `app.json`, and generated files are never edited as source.
+`withNoPush` is the first plugin by product law and owns the local-only
+notification entitlement boundary.
 
-Fixtures: the clean generated iOS project is the filesystem fixture. Test with
-`npm run test:guardrails` from the repository root.
+`withScreenTimeExtensionValidation` uses Expo's finalized iOS mod, which runs
+after every Xcode mutation. The installed
+`react-native-device-activity` plugin already delegates target generation to
+`@kingstinct/expo-apple-targets`, so this repo does not duplicate that
+generator. Instead, the final plugin makes clean prebuild fail immediately if
+the monitor, shield configuration, or shield action target is absent or loses
+its canonical App ID, iOS 17.4 deployment target, Apple team, or entitlements
+file.
