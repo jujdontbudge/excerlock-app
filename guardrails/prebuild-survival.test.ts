@@ -52,7 +52,7 @@ function projectObject(project: string, id: string): string {
 function readProjectTargets(project: string): ProjectTarget[] {
   const targetHeaders = [
     ...project.matchAll(
-      /^\t\t([A-F0-9]+) \/\* ([^*]+) \*\/ = \{\n\t\t\tisa = PBXNativeTarget;/gm,
+      /^\t\t([A-Z0-9]+) \/\* ([^*]+) \*\/ = \{\n\t\t\tisa = PBXNativeTarget;/gm,
     ),
   ];
 
@@ -64,12 +64,12 @@ function readProjectTargets(project: string): ProjectTarget[] {
     }
 
     const target = projectObject(project, targetId);
-    const configurationListId = target.match(/buildConfigurationList = ([A-F0-9]+) /)?.[1];
+    const configurationListId = target.match(/buildConfigurationList = ([A-Z0-9]+) /)?.[1];
     const configurationList = configurationListId
       ? projectObject(project, configurationListId)
       : "";
     const configurationIds = [
-      ...configurationList.matchAll(/^\t\t\t\t([A-F0-9]+) \/\*/gm),
+      ...configurationList.matchAll(/^\t\t\t\t([A-Z0-9]+) \/\*/gm),
     ].flatMap((match) => {
       const configurationId = match[1];
       return configurationId ? [configurationId] : [];
