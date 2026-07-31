@@ -4,9 +4,7 @@ import {
 } from "@excerlock/condition-model";
 
 import {
-  createExcerlockMotionModuleClient,
   getLocationProvider,
-  NativeMotionProvider,
   WalkVerifier,
   WALK_CADENCE_FRESHNESS_MS,
   type LocationProvider,
@@ -15,6 +13,7 @@ import {
 } from "@/signals";
 import { useHomeStore } from "../store/homeStore";
 import { localWallClockNow } from "../model/clock";
+import { createWalkingMotionRuntime } from "./walkingMotionRuntime";
 
 const DAY_MS = 86_400_000;
 
@@ -258,12 +257,16 @@ let sharedController: WalkingSessionController | undefined;
 
 /** App-lifetime session; both sensor adapters remain lazy until start(). */
 export function getWalkingSessionController(): WalkingSessionController {
+  let sessionNow = Date.now;
   sharedController ??= new WalkingSessionController({
-    createMotion: () =>
-      new NativeMotionProvider(createExcerlockMotionModuleClient()),
+    createMotion: () => {
+      const runtime = createWalkingMotionRuntime();
+      sessionNow = runtime.now;
+      return runtime.provider;
+    },
     getLocation: () => getLocationProvider(),
     getState: () => useHomeStore.getState(),
-    now: Date.now,
+    now: () => sessionNow(),
     wallClockNow: localWallClockNow,
   });
   return sharedController;
