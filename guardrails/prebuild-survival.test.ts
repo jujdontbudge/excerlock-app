@@ -28,9 +28,9 @@ type NativeTargetsManifest = {
 
 type ProjectTarget = {
   configurations: Array<{
-    bundleIdentifier?: string;
-    deploymentTarget?: string;
-    developmentTeam?: string;
+    bundleIdentifier: string | undefined;
+    deploymentTarget: string | undefined;
+    developmentTeam: string | undefined;
     entitlements: string[];
     id: string;
   }>;
