@@ -3,7 +3,7 @@
 > **Status: simulator-verified.** On 2026-07-31, the Release configuration built
 > with Xcode 26.4.1 (17E202) and ran on the pinned iOS 26.4 `ExcerLock-E2E`
 > simulator with Maestro 2.7.0. The suite reported
-> **10/10 Flows Passed in 6m 49s**; the runner returned exit code 0. Screenshots
+> **10/10 Flows Passed in 6m 34s**; the runner returned exit code 0. Screenshots
 > were captured but have not been visually reviewed,
 > approved, or blessed.
 
