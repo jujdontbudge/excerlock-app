@@ -13,6 +13,11 @@ export type HealthKitObjectType =
   | "HKQuantityTypeIdentifierStepCount"
   | "HKWorkoutTypeIdentifier";
 
+export type HealthKitQuantityType = Exclude<
+  HealthKitObjectType,
+  "HKWorkoutTypeIdentifier"
+>;
+
 export interface HealthKitQuery {
   readonly anchor: string | null;
   readonly from?: Date;
@@ -32,7 +37,7 @@ export interface HealthKitClient {
     types: readonly HealthKitObjectType[],
   ): Promise<void>;
   queryQuantity(
-    identifier: HealthKitObjectType,
+    identifier: HealthKitQuantityType,
     unit: string,
     query: HealthKitQuery,
   ): Promise<HealthKitSamplePage>;

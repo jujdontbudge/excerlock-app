@@ -1,10 +1,13 @@
 import type { HealthSignal } from "./HealthProvider";
-import type { HealthKitObjectType } from "./HealthKitClient";
+import type {
+  HealthKitObjectType,
+  HealthKitQuantityType,
+} from "./HealthKitClient";
 
 type QuantityHealthSignal = Exclude<HealthSignal, "workout">;
 
 export interface HealthKitQuantityDefinition {
-  readonly type: HealthKitObjectType;
+  readonly type: HealthKitQuantityType;
   readonly unit: string;
 }
 
