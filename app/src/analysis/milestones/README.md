@@ -69,6 +69,14 @@ its scroll view while the milestone shelf is below the fold, so the complete
 the spring sequence is over. The configured damping and stiffness therefore
 cannot honestly be called successful as a user-visible moment on this path.
 
+A second recording isolated the motion with a layout-stable three-day fixture.
+The shelf was scrolled into frame first; completing the next activity on Home
+then crossed `streak-3` and `activity-5` together before returning to Analysis.
+Both badges were already full-size in the first visible Analysis frame. The
+native animation had run during tab presentation, so neither the stagger nor
+the spring was perceptible even with the shelf pre-positioned. This is a timing
+and visibility failure, not evidence that the physics need numeric tuning.
+
 The orange `New` treatment is immediately legible on both unlocked badges once
 the shelf is reached, but it reads as a persistent label rather than a glint or
 shimmer. No popup or share-sheet takeover appeared.
