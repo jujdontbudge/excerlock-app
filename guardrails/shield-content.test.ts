@@ -68,4 +68,19 @@ describe("Screen Time shield content", () => {
       /localizedDisplayName|application\.token|webDomain\.domain/,
     );
   });
+
+  it("routes only the primary shield action through a silent local notification", () => {
+    const targetRoot = fromRoot("app", "targets", "ShieldAction");
+    const swift = walkFiles(targetRoot, new Set([".swift"]))
+      .map(readUtf8)
+      .join("\n");
+
+    expect(swift).toContain("UNUserNotificationCenter");
+    expect(swift).toContain('"url": deepLink');
+    expect(swift).toContain("action == .primaryButtonPressed");
+    expect(swift).toContain("content.sound = nil");
+    expect(swift).not.toMatch(
+      /localizedDisplayName|Application\(token:|WebDomain\(token:|application\.token|webDomain\.domain/,
+    );
+  });
 });

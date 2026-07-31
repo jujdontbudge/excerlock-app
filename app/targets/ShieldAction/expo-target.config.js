@@ -9,4 +9,5 @@ module.exports = (config) => ({
   appleTeamId: "AX3C2B78YD",
   bundleIdentifier: "com.johansardar.excerlock.shieldaction",
   deploymentTarget: "17.4",
+  frameworks: ["ManagedSettings", "UserNotifications"],
 });
