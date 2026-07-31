@@ -16,6 +16,7 @@ export function runHealthProviderContract(
   describe(`${implementation} HealthProvider contract`, () => {
     it("replays anchored samples, excludes manual entries from totals, and emits future wakes", async () => {
       const harness = createHarness();
+      await harness.provider.requestAuth();
       const initial = await harness.provider.getNewSamples("steps", null);
       const changes: HealthChange[] = [];
       harness.provider.onChange("steps", (change) => changes.push(change));
