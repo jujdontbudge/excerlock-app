@@ -60,6 +60,35 @@ describe("NativeLocationProvider gym limits", () => {
   });
 });
 
+describe("NativeLocationProvider permission timing", () => {
+  it("manual check-in samples once with foreground permission only", async () => {
+    const client = new ContractLocationClient("notDetermined");
+    const provider = new NativeLocationProvider(client);
+    const transitions: RegionTransition[] = [];
+    provider.on("region", (transition) => transitions.push(transition));
+
+    await expect(
+      provider.checkIn({
+        id: "gym-a",
+        latitude: 40.741,
+        longitude: -73.989,
+        radiusMeters: 100,
+      }),
+    ).resolves.toBe(true);
+
+    expect(client.foregroundAuthorizationRequests).toBe(1);
+    expect(client.backgroundAuthorizationRequests).toBe(0);
+    expect(client.currentLocationRequests).toBe(1);
+    expect(provider.getAuthorizationStatus()).toBe("authorizedWhenInUse");
+    expect(provider.isInsideRegion("gym-a")).toBe(true);
+    expect(transitions).toEqual([
+      { type: "enter", regionId: "gym-a", atMs: 1_000 },
+    ]);
+
+    provider.dispose();
+  });
+});
+
 class ContractLocationClient implements NativeLocationClient {
   private readonly locationListeners = new Set<(sample: LocationSample) => void>();
   private readonly presenceListeners = new Set<(transition: RegionTransition) => void>();
@@ -67,18 +96,34 @@ class ContractLocationClient implements NativeLocationClient {
   private locationDelivered = false;
   private exitDelivered = false;
   private walkActive = false;
+  private authorizationStatus: LocationAuthorizationStatus;
+  public backgroundAuthorizationRequests = 0;
+  public currentLocationRequests = 0;
+  public foregroundAuthorizationRequests = 0;
   public readonly startedRegions: GeofenceRegion[][] = [];
 
+  public constructor(
+    authorizationStatus: LocationAuthorizationStatus = "authorizedAlways",
+  ) {
+    this.authorizationStatus = authorizationStatus;
+  }
+
   public getAuthorizationStatus(): LocationAuthorizationStatus {
-    return "authorizedAlways";
+    return this.authorizationStatus;
   }
 
   public async requestForegroundAuthorization(): Promise<LocationAuthorizationStatus> {
-    return "authorizedAlways";
+    this.foregroundAuthorizationRequests += 1;
+    if (this.authorizationStatus === "notDetermined") {
+      this.authorizationStatus = "authorizedWhenInUse";
+    }
+    return this.authorizationStatus;
   }
 
   public async requestBackgroundAuthorization(): Promise<LocationAuthorizationStatus> {
-    return "authorizedAlways";
+    this.backgroundAuthorizationRequests += 1;
+    this.authorizationStatus = "authorizedAlways";
+    return this.authorizationStatus;
   }
 
   public getCachedRegionPresence(regionId: string): boolean | null {
@@ -90,6 +135,7 @@ class ContractLocationClient implements NativeLocationClient {
   }
 
   public async getCurrentLocation(): Promise<LocationSample> {
+    this.currentLocationRequests += 1;
     return sample;
   }
 

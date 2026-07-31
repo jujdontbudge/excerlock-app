@@ -1,5 +1,6 @@
 import type { NativeLocationClient } from "./NativeLocationClient";
 import { assertGymRegionsAllowed } from "./gymRegions";
+import { isSampleInsideRegion } from "./regionPresence";
 import type {
   GeofenceRegion,
   LocationAuthorizationStatus,
@@ -103,6 +104,33 @@ export class NativeLocationProvider implements LocationProvider {
 
   public getLastLocation(): LocationSample | null {
     return this.lastLocation;
+  }
+
+  /** Foreground-only manual check-in; this never requests background access. */
+  public async checkIn(region: GeofenceRegion): Promise<boolean> {
+    assertGymRegionsAllowed([region]);
+    const authorization = await this.requestAuthorization();
+    if (
+      authorization !== "authorizedWhenInUse" &&
+      authorization !== "authorizedAlways"
+    ) {
+      throw new Error("Location authorization is required for manual check-in");
+    }
+
+    const sample = await this.client.getCurrentLocation();
+    this.lastLocation = sample;
+    this.locationCallbacks.forEach((callback) => callback(sample));
+    const inside = isSampleInsideRegion(sample, region);
+    this.presence.set(region.id, inside);
+    if (inside) {
+      const transition: RegionTransition = {
+        type: "enter",
+        regionId: region.id,
+        atMs: sample.atMs,
+      };
+      this.regionCallbacks.forEach((callback) => callback(transition));
+    }
+    return inside;
   }
 
   public async startWalkKeepAlive(): Promise<void> {
