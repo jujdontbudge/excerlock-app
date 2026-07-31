@@ -39,7 +39,7 @@ describe("AnalyticsKit transport wiring", () => {
 });
 
 describe("AnalyticsKit.track", () => {
-  it("forwards the event name and its exact payload", () => {
+  it("keeps health sources and workout metrics out of analytics properties", () => {
     const sink = createRecordingSink();
     const kit = createAnalyticsKit(sink);
 
@@ -50,19 +50,17 @@ describe("AnalyticsKit.track", () => {
       payout: "rate_credit",
       minutes_earned: 12,
     });
+
+    expect(sink.captured()).toEqual([{ event: "earn_claimed", props: {} }]);
+  });
+
+  it("forwards the event name and its exact payload", () => {
+    const sink = createRecordingSink();
+    const kit = createAnalyticsKit(sink);
+
     kit.track("paywall_viewed", { placement: "onboarding", has_trial: true });
 
     expect(sink.captured()).toEqual([
-      {
-        event: "earn_claimed",
-        props: {
-          kind: "rate",
-          signal: "steps",
-          source: "healthkit",
-          payout: "rate_credit",
-          minutes_earned: 12,
-        },
-      },
       { event: "paywall_viewed", props: { placement: "onboarding", has_trial: true } },
     ]);
   });
