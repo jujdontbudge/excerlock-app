@@ -233,3 +233,16 @@ export function getGymPresenceController(): GymPresenceController {
   });
   return sharedController;
 }
+
+/** Installs fixture composition before E2E app surfaces mount. */
+export function installGymPresenceController(
+  controller: GymPresenceController,
+): () => void {
+  const previous = sharedController;
+  sharedController = controller;
+  return () => {
+    if (sharedController === controller) {
+      sharedController = previous;
+    }
+  };
+}

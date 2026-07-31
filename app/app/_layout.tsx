@@ -7,28 +7,28 @@ import "@/signals/location/registerLocationTasks";
 import { ThemeProvider } from "@/ui";
 import { NativeScreenTimePickerHost } from "@/screentime/native/NativeScreenTimePickerHost";
 import { NativeShieldNotificationResponseHost } from "@/notifications";
-import { GymPresenceRuntimeHost } from "@/home/signals/GymPresenceRuntimeHost";
-import { WalkingSessionRuntimeHost } from "@/home/signals/WalkingSessionRuntimeHost";
+import { SignalRuntimeHosts } from "@/home/signals/SignalRuntimeHosts";
 
 export default function RootLayout() {
-  const navigation = (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: "transparent" },
-      }}
-    />
+  const runtime = (
+    <>
+      <NativeScreenTimePickerHost />
+      <NativeShieldNotificationResponseHost />
+      <SignalRuntimeHosts />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: "transparent" },
+        }}
+      />
+    </>
   );
 
   return (
     <SafeAreaProvider>
       <ThemeProvider>
         <StatusBar style="light" />
-        <NativeScreenTimePickerHost />
-        <NativeShieldNotificationResponseHost />
-        <GymPresenceRuntimeHost />
-        <WalkingSessionRuntimeHost />
-        {withBuildRuntime(navigation)}
+        {withBuildRuntime(runtime)}
       </ThemeProvider>
     </SafeAreaProvider>
   );

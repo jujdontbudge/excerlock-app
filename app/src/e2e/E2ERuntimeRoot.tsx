@@ -15,7 +15,12 @@ import {
   installWalkingSessionController,
   WalkingSessionController,
 } from "@/home/signals/walkingSessionController";
+import {
+  GymPresenceController,
+  installGymPresenceController,
+} from "@/home/signals/gymPresenceController";
 import { installLockAppRuntime } from "@/lock";
+import { useSettingsStore } from "@/settings/store/settingsStore";
 import { installScreenTimeAppRuntime } from "@/screentime";
 import {
   installFixtureSubscriptionModule,
@@ -39,6 +44,7 @@ export function E2ERuntimeRoot({
   const uninstallHomeRuntime = useRef<(() => void) | null>(null);
   const uninstallLockRuntime = useRef<(() => void) | null>(null);
   const uninstallWalkingSession = useRef<(() => void) | null>(null);
+  const uninstallGymPresence = useRef<(() => void) | null>(null);
   const uninstallScreenTimeRuntime = useRef<(() => void) | null>(null);
   const uninstallSubscriptionModule =
     useRef<(() => void) | null>(null);
@@ -70,6 +76,25 @@ export function E2ERuntimeRoot({
           wallClockNow: () => loaded.composition.clock.nowMs(),
         }),
       );
+      uninstallGymPresence.current?.();
+      uninstallGymPresence.current = installGymPresenceController(
+        new GymPresenceController({
+          getState: () => ({
+            ...useHomeStore.getState(),
+            autoDetectEnabled:
+              useSettingsStore.getState().gymAutoDetectEnabled,
+          }),
+          getLocation: () => location,
+          now: () => loaded.composition.clock.nowMs(),
+          recordEventPayout: (conditionId, atMs) => {
+            useHomeStore.getState().recordEventPayout(conditionId, atMs);
+          },
+          setAutoDetectEnabled: (enabled) => {
+            useSettingsStore.getState().setGymAutoDetectEnabled(enabled);
+          },
+          toLedgerTime: () => loaded.composition.clock.nowMs(),
+        }),
+      );
       uninstallSubscriptionModule.current?.();
       uninstallSubscriptionModule.current =
         installFixtureSubscriptionModule({
@@ -90,6 +115,7 @@ export function E2ERuntimeRoot({
       uninstallHomeRuntime.current?.();
       uninstallLockRuntime.current?.();
       uninstallWalkingSession.current?.();
+      uninstallGymPresence.current?.();
       uninstallScreenTimeRuntime.current?.();
       uninstallSubscriptionModule.current?.();
       uninstallSupportModule.current?.();
