@@ -103,6 +103,67 @@ runHealthProviderContract("HealthKitHealthProvider", () => {
   };
 });
 
+describe("HealthKitHealthProvider active minutes", () => {
+  it("picks Watch exercise time or recorded workouts independently per day", async () => {
+    let now = new Date("2026-07-29T12:00:00-04:00");
+    const provider = new HealthKitHealthProvider(
+      new HybridHealthKitClient(),
+      () => now,
+    );
+
+    expect(await provider.getTodayTotal("appleExerciseTime")).toBe(18);
+
+    now = new Date("2026-07-30T12:00:00-04:00");
+    expect(await provider.getTodayTotal("appleExerciseTime")).toBe(35);
+
+    provider.dispose();
+  });
+});
+
+class HybridHealthKitClient implements HealthKitClient {
+  public getAuthorizationStatus(): HealthAuthorizationStatus {
+    return "authorized";
+  }
+
+  public async requestAuthorization(): Promise<HealthAuthorizationStatus> {
+    return "authorized";
+  }
+
+  public async configureBackgroundDelivery(): Promise<void> {}
+
+  public async queryQuantity(
+    identifier: HealthKitObjectType,
+    _unit: string,
+    query: HealthKitQuery,
+  ): Promise<HealthKitSamplePage> {
+    if (String(identifier) !== "HKQuantityTypeIdentifierAppleExerciseTime") {
+      return { samples: [], anchor: `${identifier}:0` };
+    }
+    return page("appleExerciseTime", exerciseSamples, query);
+  }
+
+  public async queryWorkouts(
+    query: HealthKitQuery,
+  ): Promise<HealthKitSamplePage> {
+    return page("workout", workoutSamples, query);
+  }
+
+  public subscribe(): () => void {
+    return () => undefined;
+  }
+}
+
+const exerciseSamples: readonly HealthSample[] = [
+  sample(18, "2026-07-29T08:00:00-04:00", false),
+];
+
+const workoutSamples: readonly HealthSample[] = [
+  sample(45, "2026-07-29T07:00:00-04:00", false),
+  sample(20, "2026-07-30T07:00:00-04:00", false),
+  sample(15, "2026-07-30T09:00:00-04:00", false),
+  sample(100, "2026-07-30T10:00:00-04:00", true),
+];
+
 function page(
   signal: HealthSignal,
   samples: readonly HealthSample[],
@@ -122,5 +183,19 @@ function page(
   return {
     samples: query.anchor === null ? inRange : samples.slice(sequence),
     anchor: `${signal}:${samples.length}`,
+  };
+}
+
+function sample(
+  value: number,
+  startISO: string,
+  wasUserEntered: boolean,
+): HealthSample {
+  return {
+    value,
+    startISO,
+    endISO: startISO,
+    sourceRevision: { bundleIdentifier: "com.apple.health" },
+    wasUserEntered,
   };
 }

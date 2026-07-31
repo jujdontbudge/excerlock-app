@@ -12,6 +12,8 @@ import type {
 } from "./HealthKitClient";
 
 const STEPS_TYPE: HealthKitObjectType = "HKQuantityTypeIdentifierStepCount";
+const EXERCISE_TIME_TYPE: HealthKitObjectType =
+  "HKQuantityTypeIdentifierAppleExerciseTime";
 
 export class HealthKitHealthProvider implements HealthProvider {
   private readonly authorizationCallbacks = new Set<
@@ -61,22 +63,34 @@ export class HealthKitHealthProvider implements HealthProvider {
   }
 
   public async getTodayTotal(signal: HealthSignal): Promise<number> {
-    if (signal !== "steps") {
-      return 0;
-    }
     const now = this.now();
     const from = new Date(now);
     from.setHours(0, 0, 0, 0);
-    const result = await this.client.queryQuantity(STEPS_TYPE, "count", {
+    const query = {
       anchor: null,
       from,
       to: now,
-    });
-    return result.samples.reduce(
-      (total, sample) =>
-        sample.wasUserEntered ? total : total + sample.value,
-      0,
-    );
+    } as const;
+    if (signal === "appleExerciseTime") {
+      const exerciseTime = await this.client.queryQuantity(
+        EXERCISE_TIME_TYPE,
+        "min",
+        query,
+      );
+      const recordedExerciseTime = exerciseTime.samples.filter(
+        (sample) => !sample.wasUserEntered,
+      );
+      if (recordedExerciseTime.length > 0) {
+        return sum(recordedExerciseTime);
+      }
+      return sum((await this.client.queryWorkouts(query)).samples);
+    }
+    if (signal === "steps") {
+      return sum(
+        (await this.client.queryQuantity(STEPS_TYPE, "count", query)).samples,
+      );
+    }
+    return 0;
   }
 
   public onChange(
@@ -157,4 +171,12 @@ export class HealthKitHealthProvider implements HealthProvider {
     this.authorizationStatus = status;
     this.authorizationCallbacks.forEach((callback) => callback(status));
   }
+}
+
+function sum(samples: Awaited<ReturnType<HealthKitClient["queryWorkouts"]>>["samples"]): number {
+  return samples.reduce(
+    (total, sample) =>
+      sample.wasUserEntered ? total : total + sample.value,
+    0,
+  );
 }

@@ -5,6 +5,7 @@ import type {
 } from "./HealthProvider";
 
 export type HealthKitObjectType =
+  | "HKQuantityTypeIdentifierAppleExerciseTime"
   | "HKQuantityTypeIdentifierStepCount"
   | "HKWorkoutTypeIdentifier";
 
