@@ -24,6 +24,7 @@ import { getHomeAppRuntime } from "@/home";
 import { getLockAppRuntime } from "@/lock";
 import { getScreenTimeAppRuntime } from "@/screentime";
 import { getSubscriptionModule } from "@/subscription";
+import { getSupportModule } from "@/support";
 
 import { E2ERuntimeRoot } from "../E2ERuntimeRoot";
 
@@ -66,6 +67,18 @@ describe("E2E runtime composition root", () => {
       status: "active",
       productId: "e2e-premium",
       purchasedAtMs: Date.parse("2026-07-29T09:41:00-04:00"),
+    });
+    await expect(
+      getSupportModule().submitSupport({ message: "Scenario support" }),
+    ).resolves.toMatchObject({ status: "submitted" });
+    await expect(getSupportModule().getSnapshot()).resolves.toMatchObject({
+      submissions: [
+        expect.objectContaining({
+          message: "Scenario support",
+          createdAtMs: Date.parse("2026-07-29T09:41:00-04:00"),
+          status: "submitted",
+        }),
+      ],
     });
   });
 });

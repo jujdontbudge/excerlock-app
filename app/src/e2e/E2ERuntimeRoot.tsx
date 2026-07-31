@@ -15,6 +15,7 @@ import { installScreenTimeAppRuntime } from "@/screentime";
 import {
   installFixtureSubscriptionModule,
 } from "@/subscription/accessor";
+import { installFixtureSupportModule } from "@/support/accessor";
 
 import { E2EScenarioGate } from "./E2EScenarioGate";
 import { useScenarioUrl } from "./scenarioUrlSource";
@@ -35,6 +36,7 @@ export function E2ERuntimeRoot({
   const uninstallScreenTimeRuntime = useRef<(() => void) | null>(null);
   const uninstallSubscriptionModule =
     useRef<(() => void) | null>(null);
+  const uninstallSupportModule = useRef<(() => void) | null>(null);
 
   const handleLoaded = useCallback(
     (loaded: LoadedScenario) => {
@@ -58,6 +60,10 @@ export function E2ERuntimeRoot({
           entitlement: loaded.state.entitlement,
           clock: loaded.composition.clock,
         });
+      uninstallSupportModule.current?.();
+      uninstallSupportModule.current = installFixtureSupportModule({
+        clock: loaded.composition.clock,
+      });
       router.replace("/");
     },
     [router],
@@ -69,6 +75,7 @@ export function E2ERuntimeRoot({
       uninstallLockRuntime.current?.();
       uninstallScreenTimeRuntime.current?.();
       uninstallSubscriptionModule.current?.();
+      uninstallSupportModule.current?.();
     },
     [],
   );

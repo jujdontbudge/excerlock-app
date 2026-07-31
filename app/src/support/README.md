@@ -58,9 +58,11 @@ submission result, and clock are test drivers only; none cross the public
 interface. The mock class is deliberately not exported from `index.ts`.
 
 `getSupportModule()` is the single composition root and constructs the HTTP
-adapter. `EXPO_PUBLIC_API_URL` supplies its base URL using Expo's public
-build-time configuration; it is a host, not a secret. A missing value degrades
-to the same saved offline behavior rather than crashing.
+adapter. The E2E composition root replaces it with the deterministic online
+mock and the selected scenario clock; production screens still consume only
+the public `SupportModule` interface. `EXPO_PUBLIC_API_URL` supplies its base
+URL using Expo's public build-time configuration; it is a host, not a secret. A
+missing value degrades to the same saved offline behavior rather than crashing.
 
 The HTTP adapter accepts an async access-token provider and sends a bearer token
 when one exists. The composition root is currently keyless because the app's
