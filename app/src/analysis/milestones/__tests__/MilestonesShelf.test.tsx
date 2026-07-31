@@ -53,6 +53,11 @@ describe("MilestonesShelf", () => {
       screen.getByLabelText("22/30 days milestone progress"),
     ).toBeOnTheScreen();
     expect(
+      screen.getByRole("progressbar", {
+        name: "22/30 days milestone progress",
+      }),
+    ).toHaveAccessibilityValue({ min: 0, max: 100, now: 73 });
+    expect(
       screen.queryByLabelText("22/60 days milestone progress"),
     ).toBeNull();
   });

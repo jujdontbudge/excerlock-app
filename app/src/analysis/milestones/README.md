@@ -16,6 +16,12 @@ which streak badges stay unlocked, while the current streak drives the next
 streak ring. Activities and Time Reclaimed are cumulative all-time readings.
 Only the first locked badge in each row is `nextUp`.
 
+`ProgressRing.tsx` is the one SVG drawing surface in the shelf. It uses
+`react-native-svg` for a continuous, dynamically clipped circular stroke around
+the next-up badge and exposes the same fraction as an accessible progressbar.
+Static badge art remains PNG; SVG is reserved for the element-level progress
+control it is suited to.
+
 `unlockStore.ts` persists one record per discovered badge. `pending` is consumed
 once by the next Analysis visit; `isNew` survives that visit and is cleared only
 when the badge is tapped. The discovery caller supplies `unlockedAtMs`, which
@@ -37,6 +43,7 @@ preventing a mount claim and focus claim from cancelling the first animation.
 |---|---|
 | `catalog.ts` | fixed typed ladders and accepted plain-PNG render inputs |
 | `progress.ts` | pure complete-shelf projection and next-up readings |
+| `ProgressRing.tsx` | dynamic SVG stroke + accessible progress value for each next-up badge |
 | `unlockStore.ts` | persisted `pending` / `isNew` announcement lifecycle |
 | `unlockHydration.ts` | shared persisted-state readiness gate |
 | `MilestoneDiscovery.tsx` | records newly achieved ids only after hydration |
