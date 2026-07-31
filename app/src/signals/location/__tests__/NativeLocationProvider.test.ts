@@ -6,6 +6,7 @@ import type {
 } from "..";
 import type { NativeLocationClient } from "../NativeLocationClient";
 import { NativeLocationProvider } from "../NativeLocationProvider";
+import { GYM_RADIUS_METERS } from "../gymRegions";
 import { runLocationProviderContract } from "../testing/providerContract";
 
 runLocationProviderContract("NativeLocationProvider", () => {
@@ -33,6 +34,26 @@ describe("NativeLocationProvider gym limits", () => {
     await expect(provider.startMonitoringRegions(regions)).rejects.toThrow(
       "At most 5 saved gyms can be monitored",
     );
+    expect(client.startedRegions).toEqual([]);
+
+    provider.dispose();
+  });
+
+  it("keeps saved-gym radii within the 50–200 m product range", async () => {
+    expect(GYM_RADIUS_METERS).toEqual({ default: 100, min: 50, max: 200 });
+
+    const client = new ContractLocationClient();
+    const provider = new NativeLocationProvider(client);
+    await expect(
+      provider.startMonitoringRegions([
+        {
+          id: "too-tight",
+          latitude: 40.741,
+          longitude: -73.989,
+          radiusMeters: 49,
+        },
+      ]),
+    ).rejects.toThrow("Gym radius must be between 50 and 200 meters");
     expect(client.startedRegions).toEqual([]);
 
     provider.dispose();
