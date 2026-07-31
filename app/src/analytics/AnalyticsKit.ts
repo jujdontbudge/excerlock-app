@@ -5,7 +5,7 @@ import type {
 } from "@excerlock/analytics-events";
 
 import { noopSink } from "./noopSink";
-import { mayTransmitAnalyticsProperties } from "./privacyPolicy";
+import { sanitizeAnalyticsProperties } from "./privacyPolicy";
 import type { AnalyticsPayload, AnalyticsSink } from "./sink";
 import { SUPER_PROPERTIES } from "./superProperties";
 
@@ -55,7 +55,7 @@ export function createAnalyticsKit(initialSink: AnalyticsSink = noopSink): Analy
       const [payload] = props as [AnalyticsPayload?];
       sink.capture(
         event,
-        mayTransmitAnalyticsProperties(event) ? (payload ?? NO_PROPS) : NO_PROPS,
+        sanitizeAnalyticsProperties(event, payload ?? NO_PROPS),
       );
     },
     trackScreen(screen) {

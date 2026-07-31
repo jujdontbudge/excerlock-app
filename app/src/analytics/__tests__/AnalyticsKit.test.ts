@@ -54,6 +54,30 @@ describe("AnalyticsKit.track", () => {
     expect(sink.captured()).toEqual([{ event: "earn_claimed", props: {} }]);
   });
 
+  it("drops undeclared health, motion, and location values at the transport boundary", () => {
+    const sink = createRecordingSink();
+    const kit = createAnalyticsKit(sink);
+    const untypedTrack = kit.track as (
+      event: "paywall_viewed",
+      props: Record<string, string | number | boolean>,
+    ) => void;
+
+    untypedTrack("paywall_viewed", {
+      placement: "onboarding",
+      has_trial: true,
+      activity_type: "run",
+      latitude: 40.7128,
+      motion_state: "walking",
+    });
+
+    expect(sink.captured()).toEqual([
+      {
+        event: "paywall_viewed",
+        props: { placement: "onboarding", has_trial: true },
+      },
+    ]);
+  });
+
   it("forwards the event name and its exact payload", () => {
     const sink = createRecordingSink();
     const kit = createAnalyticsKit(sink);
