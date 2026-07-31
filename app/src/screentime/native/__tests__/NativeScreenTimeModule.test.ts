@@ -12,6 +12,7 @@ import type { NativeSelectionPicker } from "../NativeSelectionPicker";
 import { NATIVE_SCREENTIME_STORAGE_KEY } from "../nativeStore";
 
 type ControlledDeviceActivityApi = DeviceActivityApi & {
+  getFamilyActivitySelectionId(id: string): string | undefined;
   setShieldActive(active: boolean): void;
 };
 
@@ -40,6 +41,9 @@ function createDeviceActivityApi(
     stopMonitoring: jest.fn(),
     isShieldActive: jest.fn(() => shieldActive),
     onDeviceActivityMonitorEvent: jest.fn(() => ({ remove: jest.fn() })),
+    getFamilyActivitySelectionId: jest.fn(
+      () => "opaque-apple-selection-token",
+    ),
     setShieldActive(active) {
       shieldActive = active;
     },
@@ -252,13 +256,13 @@ describe("NativeScreenTimeModule", () => {
       },
       [
         {
-          familyActivitySelection: selection,
+          familyActivitySelection: "opaque-apple-selection-token",
           threshold: { minute: 15, second: 0 },
           eventName: "excerlock.balance-rung.0",
           includesPastActivity: true,
         },
         {
-          familyActivitySelection: selection,
+          familyActivitySelection: "opaque-apple-selection-token",
           threshold: { minute: 30, second: 30 },
           eventName: "excerlock.balance-rung.1",
           includesPastActivity: true,
@@ -267,6 +271,31 @@ describe("NativeScreenTimeModule", () => {
     );
     expect(deviceActivity.startMonitoring).not.toHaveBeenCalledWith(
       "excerlock.unlock-lease.v1",
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it("fails closed when the persisted picker token is unavailable", async () => {
+    const deviceActivity = createDeviceActivityApi(2);
+    deviceActivity.getFamilyActivitySelectionId = jest.fn(() => undefined);
+    const screenTime = new NativeScreenTimeModule({
+      deviceActivity,
+      picker: createPicker({ applicationCount: 1, categoryCount: 0 }),
+    });
+    const selection = (await screenTime.pickSelection())!;
+
+    await expect(
+      screenTime.reconcile(selection, {
+        shields: "down",
+        drainThresholds: [1],
+      }),
+    ).rejects.toThrow("persisted FamilyActivity selection is unavailable");
+    expect(deviceActivity.blockSelection).toHaveBeenCalledWith({
+      activitySelectionId: selection,
+    });
+    expect(deviceActivity.startMonitoring).not.toHaveBeenCalledWith(
+      "excerlock.balance-drain.v1",
       expect.anything(),
       expect.anything(),
     );

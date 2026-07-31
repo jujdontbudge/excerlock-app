@@ -6,6 +6,7 @@ import type { DeviceActivityApi } from "./deviceActivityTypes";
 export const deviceActivityApi: DeviceActivityApi = {
   authorizationStatus: DeviceActivity.getAuthorizationStatus,
   requestAuthorization: DeviceActivity.requestAuthorization,
+  getFamilyActivitySelectionId: DeviceActivity.getFamilyActivitySelectionId,
   blockSelection: DeviceActivity.blockSelection,
   unblockSelection: DeviceActivity.unblockSelection,
   configureActions: DeviceActivity.configureActions,

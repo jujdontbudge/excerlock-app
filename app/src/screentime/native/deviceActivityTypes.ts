@@ -12,6 +12,7 @@ export type DeviceActivityEvent = Readonly<{
 export type DeviceActivityApi = Readonly<{
   authorizationStatus(): DeviceActivityAuthorizationStatus;
   requestAuthorization(forMember: "individual" | "child"): Promise<void>;
+  getFamilyActivitySelectionId(id: string): string | undefined;
   blockSelection(selection: { activitySelectionId: string }): void;
   unblockSelection(selection: { activitySelectionId: string }): void;
   configureActions(input: {

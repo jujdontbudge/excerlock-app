@@ -198,8 +198,14 @@ export class NativeShieldScheduler {
     thresholds: DesiredOsState["drainThresholds"],
   ): Promise<void> {
     this.deviceActivity.stopMonitoring([BALANCE_DRAIN_MONITOR]);
+    const familyActivitySelection =
+      this.deviceActivity.getFamilyActivitySelectionId(selection);
+    if (familyActivitySelection === undefined) {
+      this.deviceActivity.blockSelection({ activitySelectionId: selection });
+      throw new Error("The persisted FamilyActivity selection is unavailable");
+    }
     const events = thresholds.map((threshold, index) => ({
-      familyActivitySelection: selection,
+      familyActivitySelection,
       threshold: usageThresholdComponents(threshold),
       eventName: balanceRungEventName(index),
       includesPastActivity: true,
