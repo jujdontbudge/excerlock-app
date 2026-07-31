@@ -1,11 +1,11 @@
-/**
- * Reserved first-pass config plugin for the push-capability removal required by the native target set.
- * Phase 0 keeps the ordering seam executable; the native mutation arrives with those targets.
- *
- * @param {import("expo/config").ExpoConfig} config
- */
+const { withEntitlementsPlist } = require("expo/config-plugins");
+
+/** @param {import("expo/config").ExpoConfig} config */
 function withNoPush(config) {
-  return config;
+  return withEntitlementsPlist(config, (modConfig) => {
+    delete modConfig.modResults["aps-environment"];
+    return modConfig;
+  });
 }
 
 module.exports = withNoPush;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { fromRoot, readJson } from "./repo-files";
+import { fromRoot, readJson, readUtf8 } from "./repo-files";
 
 type AppConfig = {
   expo?: {
@@ -18,5 +18,13 @@ describe("Expo plugin-order guardrail", () => {
       firstPluginName,
       "withNoPush must remain first because Expo config plugins apply in LIFO order",
     ).toBe("./plugins/withNoPush");
+  });
+
+  it("keeps the clean-prebuild host app free of remote-push entitlement", () => {
+    const entitlements = readUtf8(
+      fromRoot("app", "ios", "ExcerLock", "ExcerLock.entitlements"),
+    );
+
+    expect(entitlements).not.toContain("aps-environment");
   });
 });

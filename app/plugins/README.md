@@ -1,7 +1,9 @@
 # Local Expo config plugins
 
 `withNoPush` is the first plugin by product law and owns the local-only
-notification entitlement boundary.
+notification entitlement boundary. Expo applies entitlements mods in LIFO
+order, so it deletes `aps-environment` after `expo-notifications` adds its
+automatic native configuration.
 
 `withScreenTimeExtensionValidation` uses Expo's finalized iOS mod, which runs
 after every Xcode mutation. The installed
