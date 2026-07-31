@@ -55,6 +55,8 @@ export interface LockControllerOptions {
   scheduleStore?: LockScheduleStore;
   /** Verified Walk & Scroll state; Phase 3 injects its live provider. */
   walking?: () => boolean;
+  /** Reconcile immediately when the verified session changes. */
+  subscribeWalking?: (listener: () => void) => () => void;
   /** Review suppression boundary: called only on down → up transitions. */
   onShieldShown?: (atMs: number) => void | Promise<void>;
 }
@@ -81,6 +83,7 @@ export class LockController {
   private readonly now: () => number;
   private readonly scheduleStore: LockScheduleStore;
   private readonly walking: () => boolean;
+  private readonly subscribeWalking: (listener: () => void) => () => void;
   private readonly onShieldShown: (atMs: number) => void | Promise<void>;
   private readonly listeners = new Set<() => void>();
   private activeClients = 0;
@@ -89,6 +92,7 @@ export class LockController {
   private unsubscribeLedgerInputs: (() => void) | null = null;
   private unsubscribeSchedule: (() => void) | null = null;
   private unsubscribeShield: ScreenTimeUnsubscribe | null = null;
+  private unsubscribeWalking: (() => void) | null = null;
   private snapshot: LockSnapshot = INITIAL;
 
   public constructor(options: LockControllerOptions = {}) {
@@ -97,6 +101,7 @@ export class LockController {
     this.now = options.now ?? lockAppNow;
     this.scheduleStore = options.scheduleStore ?? getLockScheduleStore();
     this.walking = options.walking ?? (() => false);
+    this.subscribeWalking = options.subscribeWalking ?? (() => () => {});
     this.onShieldShown = options.onShieldShown ?? ((atMs) => reviewCoordinator.noteShieldShown(atMs));
   }
 
@@ -136,6 +141,9 @@ export class LockController {
         void this.queueReconciliation();
       }
     });
+    this.unsubscribeWalking ??= this.subscribeWalking(() => {
+      void this.queueReconciliation();
+    });
     await this.refresh();
     const selection = this.snapshot.shield?.selection ?? null;
     if (selection !== null) {
@@ -155,6 +163,8 @@ export class LockController {
     this.unsubscribeSchedule = null;
     this.unsubscribeShield?.();
     this.unsubscribeShield = null;
+    this.unsubscribeWalking?.();
+    this.unsubscribeWalking = null;
   }
 
   public async requestAuthorization(): Promise<ScreenTimeAuthorizationStatus> {

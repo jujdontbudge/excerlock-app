@@ -52,6 +52,7 @@ function controllerOver(
   options: {
     scheduleStore?: LockScheduleStore;
     walking?: () => boolean;
+    subscribeWalking?: (listener: () => void) => () => void;
     now?: () => number;
   } = {},
 ): LockController {
@@ -519,6 +520,37 @@ describe("LockController", () => {
     expect(controller.getSnapshot().precedence).toMatchObject({
       shields: "down",
       drainsBalance: false,
+      cause: "walking",
+    });
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    controller.stop();
+  });
+
+  it("reconciles Full Lock when a verified walking session changes live", async () => {
+    let walking = false;
+    let publishWalking = () => {};
+    const screenTime = new FakeScreenTime();
+    const controller = controllerOver(screenTime, emptyJournal(), {
+      walking: () => walking,
+      subscribeWalking: (listener) => {
+        publishWalking = listener;
+        return () => {
+          publishWalking = () => {};
+        };
+      },
+    });
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
+
+    walking = true;
+    publishWalking();
+    await controller.whenReconciled();
+
+    expect(controller.getSnapshot().precedence).toMatchObject({
+      shields: "down",
       cause: "walking",
     });
     expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
