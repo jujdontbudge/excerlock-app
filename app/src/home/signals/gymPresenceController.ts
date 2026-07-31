@@ -94,6 +94,17 @@ export class GymPresenceController {
     return true;
   }
 
+  /** Explicit opt-out; leaves the complete manual check-in tier available. */
+  public async disableAutoDetect(): Promise<void> {
+    this.dependencies.setAutoDetectEnabled?.(false);
+    if (this.monitoring) {
+      await this.dependencies.getLocation().stopMonitoringRegions();
+      this.monitoring = false;
+    }
+    this.unsubscribeRegion?.();
+    this.unsubscribeRegion = undefined;
+  }
+
   /**
    * Restores an earlier opt-in without prompting. A missing Always grant is a
    * quiet no-op; only enableAutoDetect() may cross the permission boundary.
