@@ -1,18 +1,21 @@
-import * as Notifications from "expo-notifications";
+import type {
+  IosAuthorizationStatus,
+  NotificationPermissionsStatus,
+} from "expo-notifications";
 
 import type { ShieldRouteHomeSource } from "../ShieldContentCoordinator";
 
 type PermissionSnapshot = Readonly<{
   granted: boolean;
-  ios?: Readonly<{ status: Notifications.IosAuthorizationStatus }>;
+  ios?: Readonly<{ status: IosAuthorizationStatus }>;
 }>;
 
-type PermissionReader = () => Promise<PermissionSnapshot>;
+type PermissionReader = () => Promise<PermissionSnapshot | undefined>;
 
-const ROUTABLE_IOS_AUTHORIZATIONS = new Set([
-  Notifications.IosAuthorizationStatus.AUTHORIZED,
-  Notifications.IosAuthorizationStatus.PROVISIONAL,
-  Notifications.IosAuthorizationStatus.EPHEMERAL,
+const ROUTABLE_IOS_AUTHORIZATIONS: ReadonlySet<IosAuthorizationStatus> = new Set([
+  2,
+  3,
+  4,
 ]);
 
 export function createNotificationRouteHomeSource(
@@ -22,8 +25,8 @@ export function createNotificationRouteHomeSource(
     async available() {
       return getPermissions().then(
         (permissions) =>
-          permissions.granted ||
-          (permissions.ios !== undefined &&
+          permissions?.granted === true ||
+          (permissions?.ios !== undefined &&
             ROUTABLE_IOS_AUTHORIZATIONS.has(permissions.ios.status)),
         () => false,
       );
@@ -32,4 +35,9 @@ export function createNotificationRouteHomeSource(
 }
 
 export const notificationRouteHomeSource =
-  createNotificationRouteHomeSource(Notifications.getPermissionsAsync);
+  createNotificationRouteHomeSource(readNativePermissions);
+
+/** Defers the native package until policy actually needs a permission read. */
+function readNativePermissions(): Promise<NotificationPermissionsStatus> {
+  return require("expo-notifications").getPermissionsAsync();
+}

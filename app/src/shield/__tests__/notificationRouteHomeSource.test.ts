@@ -41,4 +41,12 @@ describe("notificationRouteHomeSource", () => {
 
     await expect(source.available()).resolves.toBe(false);
   });
+
+  it("fails closed when a test or native shim returns no snapshot", async () => {
+    const source = createNotificationRouteHomeSource(
+      async () => undefined,
+    );
+
+    await expect(source.available()).resolves.toBe(false);
+  });
 });
