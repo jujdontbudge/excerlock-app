@@ -1,4 +1,4 @@
-import type { EventSpecMap } from '../types'
+import type { EmptyProps, EventSpecMap } from '../types'
 
 /** The four shield-screen variants (PRD §3.15 non-tab surface 1). */
 export type ShieldCause = 'balance_empty' | 'full_lock' | 'walk_session_ended' | 'lock_window'
@@ -33,9 +33,9 @@ export const shieldEvents = {
 } as const satisfies EventSpecMap
 
 export interface ShieldEventProps {
-  shields_applied: { cause: ShieldCause }
-  shields_lifted: { reason: ShieldLiftReason }
-  shield_screen_opened: { cause: ShieldCause }
-  walk_session_started: { source: WalkSessionSource }
-  walk_session_ended: { reason: WalkSessionEndReason }
+  shields_applied: EmptyProps
+  shields_lifted: EmptyProps
+  shield_screen_opened: EmptyProps
+  walk_session_started: EmptyProps
+  walk_session_ended: EmptyProps
 }

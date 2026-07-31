@@ -19,13 +19,13 @@ const flow = createFlowTracker(kit);
 const computedName: string = "shields_applied";
 
 // ---- Legal: client-owned events with their exact registry payloads ----------
-kit.track("shields_applied", { cause: "full_lock" });
-kit.track("shields_lifted", { reason: "sick_day_override" });
-kit.track("condition_created", { kind: "rate", signal: "steps", source: "healthkit" });
-kit.track("earn_claimed", { kind: "state", signal: "sleep", source: "healthkit", payout: "rest_of_day", minutes_earned: 45 });
+kit.track("shields_applied");
+kit.track("shields_lifted");
+kit.track("condition_created");
+kit.track("earn_claimed");
 kit.track("paywall_viewed", { placement: "onboarding", has_trial: true });
 kit.track("purchase_started", { placement: "in_app", plan_id: "excerlock_annual" });
-kit.track("milestone_unlocked", { category: "streak", threshold: 7 });
+kit.track("milestone_unlocked");
 kit.track("notification_toggled", { type: "weekly_recap", is_enabled: false });
 // Events that declare no properties take no payload — or an explicitly empty one.
 kit.track("sick_day_override_used");
@@ -56,18 +56,12 @@ kit.track(computedName, { cause: "full_lock" });
 kit.track("$screen", {});
 
 // ---- Illegal: wrong payloads ----------------------------------------------
-// @ts-expect-error missing the whole required payload.
-kit.track("shields_applied");
-// @ts-expect-error missing a required property.
-kit.track("earn_claimed", { kind: "state", signal: "sleep", source: "healthkit" });
-// @ts-expect-error misspelled property name.
-kit.track("shields_applied", { reason: "full_lock" });
-// @ts-expect-error value outside the declared enum.
-kit.track("shields_applied", { cause: "vibes" });
+// @ts-expect-error shield cause is device-local Screen Time state.
+kit.track("shields_applied", { cause: "full_lock" });
+// @ts-expect-error earn details and workout metrics stay on-device.
+kit.track("earn_claimed", { kind: "state", signal: "sleep", source: "healthkit", payout: "rest_of_day", minutes_earned: 45 });
 // @ts-expect-error wrong primitive type.
 kit.track("paywall_viewed", { placement: "onboarding", has_trial: "yes" });
-// @ts-expect-error wrong primitive type.
-kit.track("milestone_unlocked", { category: "streak", threshold: "7" });
 // @ts-expect-error excess property — payloads are exactly the declared shape (D12).
 kit.track("shields_applied", { cause: "full_lock", note: "felt like it" });
 // @ts-expect-error an empty-props event carries nothing — the override's reason stays on-device (D12).

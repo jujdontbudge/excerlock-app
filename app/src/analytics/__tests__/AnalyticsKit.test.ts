@@ -7,7 +7,7 @@ describe("AnalyticsKit transport wiring", () => {
     const kit = createAnalyticsKit();
 
     expect(() => {
-      kit.track("shields_applied", { cause: "full_lock" });
+    kit.track("shields_applied");
       kit.trackScreen("home");
       kit.identify("user_123");
       kit.reset();
@@ -43,7 +43,11 @@ describe("AnalyticsKit.track", () => {
     const sink = createRecordingSink();
     const kit = createAnalyticsKit(sink);
 
-    kit.track("earn_claimed", {
+    const untypedTrack = kit.track as (
+      event: "earn_claimed",
+      props: Record<string, string | number>,
+    ) => void;
+    untypedTrack("earn_claimed", {
       kind: "rate",
       signal: "steps",
       source: "healthkit",

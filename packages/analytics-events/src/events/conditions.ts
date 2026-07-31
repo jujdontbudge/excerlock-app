@@ -18,18 +18,11 @@ export const conditionEvents = {
   sick_day_override_used: { owner: 'client' },
 } as const satisfies EventSpecMap
 
-/** Low-cardinality identity of a condition — kind + signal + source slugs, never user text. */
-type ConditionShapeProps = {
-  kind: ConditionKind
-  signal: string
-  source: string
-}
-
 export interface ConditionEventProps {
-  condition_created: ConditionShapeProps
-  condition_edited: ConditionShapeProps
-  condition_deleted: ConditionShapeProps
-  earn_claimed: ConditionShapeProps & { payout: PayoutKind; minutes_earned: number }
+  condition_created: EmptyProps
+  condition_edited: EmptyProps
+  condition_deleted: EmptyProps
+  earn_claimed: EmptyProps
   // D12: the override's free-text reason stays on-device — the event carries nothing.
   sick_day_override_used: EmptyProps
 }
