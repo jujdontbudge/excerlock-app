@@ -1,3 +1,10 @@
+jest.mock(
+  "@react-native-async-storage/async-storage",
+  () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import type { ScreenTimeModule } from "../../ScreenTimeModule";
 import {
   NativeScreenTimeModule,
@@ -32,6 +39,10 @@ function createPicker(
 }
 
 describe("NativeScreenTimeModule", () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
   it("maps FamilyControls authorization through the existing interface", async () => {
     const deviceActivity = createDeviceActivityApi();
     const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
@@ -265,6 +276,48 @@ describe("NativeScreenTimeModule", () => {
     await expect(screenTime.getLockWindows()).resolves.toEqual([]);
     await expect(screenTime.getCurrentShieldState()).resolves.toMatchObject({
       effectiveShields: "up",
+    });
+  });
+
+  it("restores opaque selection metadata, desired state, and windows after relaunch", async () => {
+    const deviceActivity = createDeviceActivityApi(2);
+    const nowMs = new Date(2026, 6, 31, 12, 0, 0).getTime();
+    const first = new NativeScreenTimeModule({
+      deviceActivity,
+      picker: createPicker({ applicationCount: 3, categoryCount: 1 }),
+      nowMs: () => nowMs,
+    });
+    const selection = (await first.pickSelection())!;
+    await first.reconcile(selection, {
+      shields: "up",
+      drainThresholds: [15, 30],
+    });
+    await first.scheduleLockWindow(selection, {
+      id: "later",
+      startsAtMs: nowMs + 60 * 60_000,
+      endsAtMs: nowMs + 2 * 60 * 60_000,
+    });
+
+    const restored: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity,
+      nowMs: () => nowMs,
+    });
+
+    await expect(restored.describeSelection(selection)).resolves.toMatchObject({
+      displayName: "3 apps · 1 category",
+    });
+    await expect(restored.getLockWindows()).resolves.toEqual([
+      {
+        id: "later",
+        startsAtMs: nowMs + 60 * 60_000,
+        endsAtMs: nowMs + 2 * 60 * 60_000,
+      },
+    ]);
+    await expect(restored.getCurrentShieldState()).resolves.toMatchObject({
+      selection,
+      desiredOsState: { shields: "up", drainThresholds: [15, 30] },
+      effectiveShields: "down",
+      activeLockWindowId: null,
     });
   });
 });

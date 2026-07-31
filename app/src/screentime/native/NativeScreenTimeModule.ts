@@ -1,4 +1,5 @@
 import type { DesiredOsState } from "@excerlock/ledger";
+import type { StateStorage } from "zustand/middleware";
 
 import type {
   CurrentShieldState,
@@ -11,6 +12,7 @@ import type {
   ShieldStateListener,
 } from "../ScreenTimeModule";
 import {
+  deriveShieldState,
   desiredOsStatesEqual,
   freezeDesiredOsState,
   shieldStatesEqual,
@@ -25,6 +27,10 @@ import {
   UNLOCK_INCREMENT_MS,
   UNLOCK_LEASE_MONITOR,
 } from "./deviceActivitySchedule";
+import {
+  createNativeScreenTimePersistence,
+  type NativeScheduledLockWindow,
+} from "./nativeStore";
 
 type DeviceActivityAuthorizationStatus = 0 | 1 | 2;
 
@@ -64,6 +70,7 @@ type NativeScreenTimeModuleOptions = Readonly<{
   deviceActivity: DeviceActivityApi;
   picker?: NativeSelectionPicker;
   nowMs?: () => number;
+  storage?: StateStorage<Promise<void>>;
 }>;
 
 const AUTHORIZATION_STATUSES: Record<
@@ -91,30 +98,46 @@ const MISSING_PICKER: NativeSelectionPicker = {
   },
 };
 
-type ScheduledLockWindow = LockWindow & Readonly<{
-  selection: ScreenTimeSelectionHandle;
-}>;
-
 export class NativeScreenTimeModule implements ScreenTimeModule {
   private readonly deviceActivity: DeviceActivityApi;
   private readonly picker: NativeSelectionPicker;
   private readonly nowMs: () => number;
+  private readonly persistence: ReturnType<
+    typeof createNativeScreenTimePersistence
+  >;
+  private readonly ready: Promise<void>;
   private readonly selections = new Map<string, SelectionContents>();
   private readonly listeners = new Set<ShieldStateListener>();
-  private lockWindows: ScheduledLockWindow[] = [];
+  private lockWindows: NativeScheduledLockWindow[] = [];
   private currentShieldState = INITIAL_SHIELD_STATE;
 
   public constructor({
     deviceActivity,
     picker = MISSING_PICKER,
     nowMs = Date.now,
+    storage,
   }: NativeScreenTimeModuleOptions) {
     this.deviceActivity = deviceActivity;
     this.picker = picker;
     this.nowMs = nowMs;
+    this.persistence = createNativeScreenTimePersistence(storage);
+    this.ready = this.persistence.rehydrate().then(() => {
+      const state = this.persistence.getState();
+      Object.entries(state.selectionContents).forEach(([handle, contents]) => {
+        this.selections.set(handle, contents);
+      });
+      this.lockWindows = [...state.lockWindows];
+      this.currentShieldState = deriveShieldState(
+        state.selection,
+        state.desiredOsState,
+        state.lockWindows,
+        this.nowMs(),
+      );
+    });
   }
 
   public async getAuthorizationStatus(): Promise<ScreenTimeAuthorizationStatus> {
+    await this.ready;
     return AUTHORIZATION_STATUSES[this.deviceActivity.authorizationStatus()];
   }
 
@@ -127,6 +150,7 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
   }
 
   public async pickSelection(): Promise<ScreenTimeSelectionHandle | null> {
+    await this.ready;
     if ((await this.getAuthorizationStatus()) !== "approved") {
       throw new Error("Screen Time authorization is required before selection");
     }
@@ -139,12 +163,14 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
       return null;
     }
     this.selections.set(LOCKED_SELECTION, contents);
+    await this.persistState(LOCKED_SELECTION, this.currentShieldState.desiredOsState);
     return LOCKED_SELECTION;
   }
 
   public async describeSelection(
     selection: ScreenTimeSelectionHandle,
   ): Promise<ScreenTimeSelectionSummary | null> {
+    await this.ready;
     const contents = this.selections.get(selection);
     return contents === undefined
       ? null
@@ -155,18 +181,21 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
     selection: ScreenTimeSelectionHandle,
     desiredOsState: DesiredOsState,
   ): Promise<void> {
+    await this.ready;
     this.assertIssuedSelection(selection);
     const desired = freezeDesiredOsState(desiredOsState);
     this.lockWindows.forEach((window) => {
       this.configureLockWindowStart(window, desired.shields);
     });
     await this.applyEffectiveState(selection, desired);
+    await this.persistState(selection, desired);
   }
 
   public async scheduleLockWindow(
     selection: ScreenTimeSelectionHandle,
     window: LockWindow,
   ): Promise<void> {
+    await this.ready;
     this.assertIssuedSelection(selection);
     this.assertValidLockWindow(window);
     const existing = this.lockWindows.find(({ id }) => id === window.id);
@@ -178,7 +207,7 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
       return;
     }
 
-    const scheduled: ScheduledLockWindow = Object.freeze({
+    const scheduled: NativeScheduledLockWindow = Object.freeze({
       ...window,
       selection,
     });
@@ -213,9 +242,14 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
       selection,
       this.currentShieldState.desiredOsState,
     );
+    await this.persistState(
+      selection,
+      this.currentShieldState.desiredOsState,
+    );
   }
 
   public async cancelLockWindow(id: string): Promise<void> {
+    await this.ready;
     const existing = this.lockWindows.find((window) => window.id === id);
     if (existing === undefined) {
       return;
@@ -226,15 +260,21 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
       existing.selection,
       this.currentShieldState.desiredOsState,
     );
+    await this.persistState(
+      existing.selection,
+      this.currentShieldState.desiredOsState,
+    );
   }
 
   public async getLockWindows(): Promise<readonly LockWindow[]> {
+    await this.ready;
     return this.lockWindows.map(({ id, startsAtMs, endsAtMs }) =>
       Object.freeze({ id, startsAtMs, endsAtMs }),
     );
   }
 
   public async getCurrentShieldState(): Promise<CurrentShieldState> {
+    await this.ready;
     return this.currentShieldState;
   }
 
@@ -276,7 +316,7 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
   }
 
   private configureLockWindowStart(
-    window: ScheduledLockWindow,
+    window: NativeScheduledLockWindow,
     desiredShields: DesiredOsState["shields"],
   ): void {
     this.deviceActivity.configureActions({
@@ -342,6 +382,18 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
     ) {
       throw new Error("Lock window must have an id and a non-empty finite interval");
     }
+  }
+
+  private persistState(
+    selection: ScreenTimeSelectionHandle | null,
+    desiredOsState: DesiredOsState,
+  ): Promise<void> {
+    return this.persistence.update({
+      selection,
+      desiredOsState,
+      lockWindows: this.lockWindows,
+      selectionContents: Object.fromEntries(this.selections),
+    });
   }
 
   private updateShieldState(next: CurrentShieldState): void {
