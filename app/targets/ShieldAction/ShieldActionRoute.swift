@@ -33,7 +33,9 @@ struct ShieldActionRoute {
 
   private static func appGroupDefaults() -> UserDefaults? {
     guard
-      let appGroup = Bundle.main.object(forInfoDictionaryKey: "EXPO_APP_GROUP") as? String,
+      let appGroup = Bundle.main.object(
+        forInfoDictionaryKey: "REACT_NATIVE_DEVICE_ACTIVITY_APP_GROUP"
+      ) as? String,
       !appGroup.isEmpty
     else {
       return nil

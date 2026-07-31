@@ -76,6 +76,10 @@ describe("Screen Time shield content", () => {
       .join("\n");
 
     expect(swift).toContain("UNUserNotificationCenter");
+    expect(swift).toContain(
+      'forInfoDictionaryKey: "REACT_NATIVE_DEVICE_ACTIVITY_APP_GROUP"',
+    );
+    expect(swift).not.toContain('forInfoDictionaryKey: "EXPO_APP_GROUP"');
     expect(swift).toContain('"url": deepLink');
     expect(swift).toContain("action == .primaryButtonPressed");
     expect(swift).toContain("content.sound = nil");
