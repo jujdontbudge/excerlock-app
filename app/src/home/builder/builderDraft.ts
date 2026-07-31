@@ -9,6 +9,10 @@ import {
 } from "@excerlock/condition-model";
 
 import type { CatalogOption, SourceOption } from "./builderCatalog";
+import {
+  defaultBannerForCatalog,
+  type BannerSelection,
+} from "../banners/bannerCatalog";
 
 /**
  * The builder's draft and the moves that change it — pure, so the sheet is a
@@ -19,7 +23,7 @@ import type { CatalogOption, SourceOption } from "./builderCatalog";
  * configure step until every control its kind demands has an explicit value.
  */
 
-export type BuilderStep = "catalog" | "source" | "configure" | "preview";
+export type BuilderStep = "catalog" | "source" | "configure" | "banner" | "preview";
 
 export interface BuilderDraft {
   readonly step: BuilderStep;
@@ -33,6 +37,7 @@ export interface BuilderDraft {
   readonly rateMinutes?: number;
   readonly exitGraceMs?: number;
   readonly reward?: EventReward;
+  readonly banner?: BannerSelection;
 }
 
 export const EMPTY_DRAFT: BuilderDraft = Object.freeze({ step: "catalog" });
@@ -65,6 +70,7 @@ export type BuilderAction =
   | { readonly type: "setRateMinutes"; readonly value: number }
   | { readonly type: "setGraceMs"; readonly value: number }
   | { readonly type: "setReward"; readonly reward: EventReward }
+  | { readonly type: "pickBanner"; readonly banner: BannerSelection }
   | { readonly type: "next" }
   | { readonly type: "back" }
   | { readonly type: "reset" };
@@ -88,6 +94,8 @@ export function builderReducer(draft: BuilderDraft, action: BuilderAction): Buil
       return { ...draft, exitGraceMs: action.value };
     case "setReward":
       return { ...draft, reward: action.reward };
+    case "pickBanner":
+      return { ...draft, banner: action.banner };
     case "next":
       return canAdvance(draft) ? { ...draft, step: nextStep(draft) } : draft;
     case "back":
@@ -108,6 +116,7 @@ function pickCatalog(option: CatalogOption): BuilderDraft {
   return {
     step: only === undefined ? "source" : "configure",
     catalogId: option.catalogId,
+    banner: defaultBannerForCatalog(option.catalogId),
     hasSourceChoice: only === undefined,
     ...(only === undefined
       ? {}
@@ -126,6 +135,8 @@ export function canAdvance(draft: BuilderDraft): boolean {
       return draft.source !== undefined;
     case "configure":
       return draftCondition(draft, "probe") !== undefined;
+    case "banner":
+      return draft.banner !== undefined;
     case "preview":
       return true;
   }
@@ -137,7 +148,11 @@ function nextStep(draft: BuilderDraft): BuilderStep {
       return draft.hasSourceChoice === true ? "source" : "configure";
     case "source":
       return "configure";
-    default:
+    case "configure":
+      return "banner";
+    case "banner":
+      return "preview";
+    case "preview":
       return "preview";
   }
 }
@@ -145,6 +160,8 @@ function nextStep(draft: BuilderDraft): BuilderStep {
 function previousStep(draft: BuilderDraft): BuilderStep {
   switch (draft.step) {
     case "preview":
+      return "banner";
+    case "banner":
       return "configure";
     case "configure":
       return draft.hasSourceChoice === true ? "source" : "catalog";
@@ -199,13 +216,17 @@ export function configureForm(catalogId: CatalogId): ConfigureForm {
  * source are what the condition *is* — changing either makes a different
  * condition, which is a create, not an edit.
  */
-export function draftFromCondition(condition: ConfiguredCondition): BuilderDraft {
+export function draftFromCondition(
+  condition: ConfiguredCondition,
+  banner: BannerSelection = defaultBannerForCatalog(condition.catalogId),
+): BuilderDraft {
   const base = {
     step: "configure" as const,
     catalogId: condition.catalogId,
     source: condition.source,
     ...(condition.placeId === undefined ? {} : { placeId: condition.placeId }),
     hasSourceChoice: false,
+    banner,
   };
   const form = configureForm(condition.catalogId);
 

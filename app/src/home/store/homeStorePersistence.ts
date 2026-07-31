@@ -7,6 +7,7 @@ import {
 import { UNLIMITED, type Journal, type LedgerConfig } from "@excerlock/ledger";
 
 import type { HomeStoreValues, SavedPlace } from "./homeState";
+import { isBannerSelection, type BannerSelection } from "../banners/bannerCatalog";
 
 /**
  * Persisted state is untrusted: a retired catalog entry or a hand-edited blob
@@ -27,6 +28,13 @@ export function readPersistedHomeState(
 
   if (Array.isArray(stored.conditions)) {
     values.conditions = stored.conditions.filter(isKnownCondition);
+  }
+  if (typeof stored.conditionBanners === "object" && stored.conditionBanners !== null) {
+    values.conditionBanners = Object.fromEntries(
+      Object.entries(stored.conditionBanners).filter(
+        (entry): entry is [string, BannerSelection] => isBannerSelection(entry[1]),
+      ),
+    );
   }
   if (typeof stored.allowanceBeforeFullLock === "number") {
     values.allowanceBeforeFullLock = stored.allowanceBeforeFullLock;

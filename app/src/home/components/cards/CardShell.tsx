@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { Card, useTheme } from "@/ui";
+import { bannerSource, type BannerSelection } from "../../banners/bannerCatalog";
 
 /**
  * The frame every condition card shares: title, its source, and a status badge.
@@ -16,20 +19,38 @@ export function CardShell({
   subtitle,
   badge,
   children,
+  banner,
 }: {
   title: string;
   subtitle: string;
   badge?: ReactNode;
   children?: ReactNode;
+  banner: BannerSelection;
 }) {
-  const { spacing, typography } = useTheme();
+  const { colors, spacing, typography } = useTheme();
 
   return (
-    <Card testID="condition-card" variant="elevated" style={{ gap: spacing.md }}>
+    <Card
+      testID="condition-card"
+      variant="elevated"
+      style={{ backgroundColor: "transparent", gap: spacing.md }}
+    >
+      <Image
+        accessible
+        accessibilityLabel={`${banner.kind === "photo" ? "Custom photo" : "Painted"} banner for ${title}`}
+        source={bannerSource(banner)}
+        contentFit="cover"
+        style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={["rgba(18, 12, 5, 0.18)", "rgba(18, 12, 5, 0.94)"]}
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+      />
       <View style={styles.header}>
         <View style={{ flexShrink: 1, gap: spacing.xs }}>
-          <Text style={typography.cardTitle}>{title}</Text>
-          <Text style={typography.caption}>{subtitle}</Text>
+          <Text style={[typography.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
+          <Text style={[typography.caption, { color: colors.textSecondary }]}>{subtitle}</Text>
         </View>
         {badge}
       </View>

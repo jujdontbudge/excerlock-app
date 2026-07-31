@@ -13,7 +13,7 @@ export function StateCard({ model }: { model: StateCardModel }) {
   const { colors, spacing, typography } = useTheme();
 
   return (
-    <CardShell title={model.title} subtitle={model.sourceLabel}>
+    <CardShell title={model.title} subtitle={model.sourceLabel} banner={model.banner}>
       <View style={[styles.status, { gap: spacing.sm }]}>
         <View
           testID={`condition-state-dot-${model.id}`}

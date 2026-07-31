@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 
 import { PillButton, Screen, SectionHeader } from "@/ui";
@@ -19,12 +19,23 @@ import { useHealthEventClaims } from "../signals/useHealthEventClaims";
 import { useHomeSignals } from "../signals/useHomeSignals";
 import { selectActiveConditions, selectPickerContext } from "../store/homeState";
 import { useHomeStore } from "../store/homeStore";
+import {
+  reviewCoordinator as defaultReviewCoordinator,
+  type ReviewCoordinatorContract,
+} from "@/review";
+import {
+  expoBannerPhotoPicker,
+  type BannerPhotoPicker,
+} from "../banners/bannerPhotoPicker";
 
 export interface HomeScreenProps {
   /** Injected by tests and by the Phase-3 composition root. */
   feed?: HomeSignalFeed;
   /** Local wall-clock milliseconds — the ledger never reads a clock itself. */
   now?: () => number;
+  /** System photo picker boundary, injected by the own-photo flow test. */
+  bannerPhotoPicker?: BannerPhotoPicker;
+  reviewCoordinator?: Pick<ReviewCoordinatorContract, "initialize" | "onUnlockMoment">;
 }
 
 /**
@@ -32,7 +43,12 @@ export interface HomeScreenProps {
  * and owns none of their rules: balances come from `@excerlock/ledger`, card and
  * picker rules from `@excerlock/condition-model`, live values from SignalKit.
  */
-export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
+export function HomeScreen({
+  feed,
+  now,
+  bannerPhotoPicker = expoBannerPhotoPicker,
+  reviewCoordinator = defaultReviewCoordinator,
+}: HomeScreenProps = {}) {
   const appRuntime =
     feed === undefined || now === undefined
       ? getHomeAppRuntime()
@@ -43,6 +59,7 @@ export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
   const [builderOpen, setBuilderOpen] = useState(false);
 
   const conditions = useHomeStore((state) => state.conditions);
+  const conditionBanners = useHomeStore((state) => state.conditionBanners);
   const disabledConditionIds = useHomeStore((state) => state.disabledConditionIds);
   const journal = useHomeStore((state) => state.journal);
   const ledgerConfig = useHomeStore((state) => state.ledgerConfig);
@@ -72,9 +89,22 @@ export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
     reading,
     firedConditionIds: firedToday,
     placeNames,
+    conditionBanners,
   });
 
   const hero = deriveLockHero({ journal, config: ledgerConfig, atMs, liveStates: liveStates(cards) });
+  const firstObservedAtMs = useRef(atMs);
+  useEffect(() => {
+    void reviewCoordinator.initialize(firstObservedAtMs.current);
+  }, [reviewCoordinator]);
+  const previousHeroStatus = useRef(hero.status);
+  useEffect(() => {
+    const previous = previousHeroStatus.current;
+    previousHeroStatus.current = hero.status;
+    if (previous === "locked" && hero.status === "unlocked") {
+      void reviewCoordinator.onUnlockMoment(atMs);
+    }
+  }, [atMs, hero.status, reviewCoordinator]);
 
   return (
     <>
@@ -123,6 +153,7 @@ export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
         context={pickerContext}
         placeNames={placeNames}
         onSave={addCondition}
+        bannerPhotoPicker={bannerPhotoPicker}
         onClose={() => setBuilderOpen(false)}
       />
     </>

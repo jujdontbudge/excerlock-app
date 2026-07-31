@@ -30,6 +30,7 @@ import {
 } from "../store/lockScheduleStore";
 import { desiredLockState } from "./lockPolicy";
 import { syncScheduleRegistrations } from "./scheduleRegistration";
+import { reviewCoordinator } from "@/review";
 
 /** Everything the lock surfaces render, in one immutable value. */
 export type LockSnapshot = Readonly<{
@@ -54,6 +55,8 @@ export interface LockControllerOptions {
   scheduleStore?: LockScheduleStore;
   /** Verified Walk & Scroll state; Phase 3 injects its live provider. */
   walking?: () => boolean;
+  /** Review suppression boundary: called only on down → up transitions. */
+  onShieldShown?: (atMs: number) => void | Promise<void>;
 }
 
 const INITIAL: LockSnapshot = Object.freeze({
@@ -78,6 +81,7 @@ export class LockController {
   private readonly now: () => number;
   private readonly scheduleStore: LockScheduleStore;
   private readonly walking: () => boolean;
+  private readonly onShieldShown: (atMs: number) => void | Promise<void>;
   private readonly listeners = new Set<() => void>();
   private activeClients = 0;
   private reconciliation: Promise<void> = Promise.resolve();
@@ -93,6 +97,7 @@ export class LockController {
     this.now = options.now ?? lockAppNow;
     this.scheduleStore = options.scheduleStore ?? getLockScheduleStore();
     this.walking = options.walking ?? (() => false);
+    this.onShieldShown = options.onShieldShown ?? ((atMs) => reviewCoordinator.noteShieldShown(atMs));
   }
 
   public getSnapshot(): LockSnapshot {
@@ -301,7 +306,13 @@ export class LockController {
   }
 
   private patch(next: Partial<LockSnapshot>): void {
+    const previousShields = this.snapshot.shield?.effectiveShields;
+    const nextShields = next.shield?.effectiveShields ?? previousShields;
+    const wasReady = this.snapshot.ready;
     this.snapshot = Object.freeze({ ...this.snapshot, ...next });
+    if (wasReady && previousShields === "down" && nextShields === "up") {
+      void this.onShieldShown(this.now());
+    }
     this.listeners.forEach((listener) => listener());
   }
 }

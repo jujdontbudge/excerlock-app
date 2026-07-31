@@ -57,7 +57,7 @@ import { createPrivateKey, sign as cryptoSign } from 'node:crypto'
 import { readFile as fsReadFile, readdir, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 // ---------------------------------------------------------------------------
 // Types — every check is a pure function of Ctx so the test suite runs on mocks.
@@ -86,6 +86,7 @@ export interface Ctx {
   fileExists: (path: string) => Promise<boolean>
   exec: (cmd: string, args: string[]) => Promise<{ code: number; stdout: string; stderr: string }>
   home: string
+  projectRoot: string
 }
 
 export interface Check {
@@ -174,6 +175,142 @@ function missing(service: string, absent: string[], where: string): CheckResult 
 
 function errMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
+}
+
+// ---------------------------------------------------------------------------
+// PRD §10.9 dependency manifest
+// ---------------------------------------------------------------------------
+
+export type DeliberateDependencyExclusions = Readonly<Record<string, string>>
+
+/**
+ * Exact v1 exclusions only. Each package stays named in §10.9, so removing a
+ * PRD decision makes this entry stale and fails the doctor instead of silently
+ * preserving an old skip.
+ */
+export const DELIBERATE_DEPENDENCY_EXCLUSIONS: DeliberateDependencyExclusions =
+  Object.freeze({
+    '@expo-google-fonts/*':
+      'No Google-font family is selected for v1; expo-font owns bundled font loading.',
+    'expo-alternate-app-icons':
+      'PRD §8 cuts alternate app icons and the App Icon settings row from v1.',
+    'expo-local-authentication':
+      'PRD §8 cuts the Face ID app gate from v1; account auth remains Clerk-owned.',
+    'expo-mail-composer':
+      'Support is the in-app POST /v1/support flow; an OS mail composer would bypass its diagnostics and delivery receipt.',
+    'expo-sensors':
+      'The v1 cadence feature uses the custom CMMotionActivity/CMPedometer Expo Module; expo-sensors cannot supply live cadence classification.',
+  })
+
+const NPM_PACKAGE_TOKEN =
+  /^(?:@[a-z0-9][a-z0-9._-]*\/[a-z0-9*][a-z0-9*._-]*|[a-z0-9][a-z0-9._-]*)$/
+
+/** Package-shaped code spans in §10.9, stopping before §10.10. */
+export function extractDependencyManifestPackages(prd: string): string[] {
+  const start = prd.search(/^### 10\.9\b/m)
+  if (start < 0) throw new Error('PRD §10.9 heading not found')
+  const afterStart = prd.slice(start)
+  const nextHeading = afterStart.slice(1).search(/^### 10\.10\b/m)
+  if (nextHeading < 0) throw new Error('PRD §10.10 heading not found after §10.9')
+  const section = afterStart.slice(0, nextHeading + 1)
+  const packages = new Set<string>()
+
+  for (const match of section.matchAll(/`([^`\n]+)`/g)) {
+    const token = match[1]?.trim()
+    if (token !== undefined && NPM_PACKAGE_TOKEN.test(token)) {
+      packages.add(token)
+    }
+  }
+  return [...packages].sort()
+}
+
+type DependencyManifestDiff = Readonly<{
+  excluded: readonly Readonly<{ packageName: string; reason: string }>[]
+  missing: readonly string[]
+  staleExclusions: readonly string[]
+}>
+
+export function diffDependencyManifest({
+  prd,
+  installedPackages,
+  deliberateExclusions,
+}: Readonly<{
+  prd: string
+  installedPackages: ReadonlySet<string>
+  deliberateExclusions: DeliberateDependencyExclusions
+}>): DependencyManifestDiff {
+  const declared = extractDependencyManifestPackages(prd)
+  const declaredSet = new Set(declared)
+  const excluded: { packageName: string; reason: string }[] = []
+  const missing: string[] = []
+
+  for (const packageName of declared) {
+    if (installedPackages.has(packageName)) continue
+    const reason = deliberateExclusions[packageName]?.trim()
+    if (reason) excluded.push({ packageName, reason })
+    else missing.push(packageName)
+  }
+
+  return {
+    excluded,
+    missing,
+    staleExclusions: Object.keys(deliberateExclusions)
+      .filter((packageName) => !declaredSet.has(packageName))
+      .sort(),
+  }
+}
+
+function packageNames(packageJson: string): string[] {
+  const parsed = JSON.parse(packageJson) as Record<string, unknown>
+  return ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']
+    .flatMap((field) => {
+      const value = parsed[field]
+      return typeof value === 'object' && value !== null ? Object.keys(value) : []
+    })
+}
+
+/** Local, deterministic repo-integrity check — credential flags never demote it. */
+export async function checkDependencyManifest(
+  ctx: Ctx,
+  deliberateExclusions: DeliberateDependencyExclusions = DELIBERATE_DEPENDENCY_EXCLUSIONS,
+): Promise<CheckResult> {
+  const service = 'PRD §10.9 dependencies'
+  try {
+    const [prd, appPackageJson, serverPackageJson] = await Promise.all([
+      ctx.readFile(join(ctx.projectRoot, 'excerlock-app-prd.md')),
+      ctx.readFile(join(ctx.projectRoot, 'app', 'package.json')),
+      ctx.readFile(join(ctx.projectRoot, 'server', 'package.json')),
+    ])
+    const installedPackages = new Set([
+      ...packageNames(appPackageJson),
+      ...packageNames(serverPackageJson),
+    ])
+    const declaredCount = extractDependencyManifestPackages(prd).length
+    const diff = diffDependencyManifest({
+      prd,
+      installedPackages,
+      deliberateExclusions,
+    })
+    const problems = [
+      ...(diff.missing.length === 0 ? [] : [`missing ${diff.missing.join(', ')}`]),
+      ...(diff.staleExclusions.length === 0
+        ? []
+        : [`stale exclusions ${diff.staleExclusions.join(', ')}`]),
+    ]
+    return problems.length > 0
+      ? { service, status: 'failing', detail: problems.join(' · ') }
+      : {
+          service,
+          status: 'ok',
+          detail: `${declaredCount} declared · ${diff.excluded.length} reasoned v1 exclusions`,
+        }
+  } catch (e) {
+    return {
+      service,
+      status: 'failing',
+      detail: `could not diff §10.9 against package manifests: ${errMessage(e)}`,
+    }
+  }
 }
 
 /** Run a ping; 2xx → ok, anything else → failing. Never throws. */
@@ -433,6 +570,7 @@ export async function checkVendorOAuth(ctx: Ctx): Promise<CheckResult> {
 // ---------------------------------------------------------------------------
 
 export const ALL_CHECKS: Check[] = [
+  { name: 'PRD §10.9 dependencies', run: checkDependencyManifest },
   { name: 'Apple / App Store Connect', run: checkAsc },
   { name: 'Clerk', run: checkClerk },
   { name: 'Adapty', run: checkAdapty },
@@ -529,6 +667,7 @@ async function main(): Promise<void> {
       ),
     exec: realExec,
     home,
+    projectRoot: fileURLToPath(new URL('..', import.meta.url)),
   }
 
   console.log('ExcerLock day-zero doctor (PRD §10.10)\n')

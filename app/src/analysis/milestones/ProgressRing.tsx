@@ -1,3 +1,4 @@
+import Svg, { Circle } from "react-native-svg";
 import { StyleSheet, View } from "react-native";
 
 import { useTheme } from "@/ui";
@@ -8,43 +9,57 @@ type ProgressRingProps = Readonly<{
   children: React.ReactNode;
 }>;
 
-const SEGMENT_COUNT = 36;
+const SIZE = 68;
+const CENTER = SIZE / 2;
+const STROKE_WIDTH = 3;
+const RADIUS = CENTER - STROKE_WIDTH;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-/** A dependency-free thin circular meter around the next badge. */
+/** One continuous, value-exposing circular meter around the next badge. */
 export function ProgressRing({
   fraction,
   accessibilityLabel,
   children,
 }: ProgressRingProps) {
-  const { colors, radius } = useTheme();
-  const completed = Math.round(
-    Math.min(1, Math.max(0, fraction)) * SEGMENT_COUNT,
-  );
+  const { colors } = useTheme();
+  const progress = Math.min(1, Math.max(0, fraction));
 
   return (
     <View
       accessible
       accessibilityLabel={accessibilityLabel}
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: Math.round(progress * 100) }}
       style={styles.ring}
     >
-      {Array.from({ length: SEGMENT_COUNT }, (_, index) => (
-        <View
-          key={index}
-          pointerEvents="none"
-          style={[styles.segmentOrbit, { transform: [{ rotate: `${index * 10}deg` }] }]}
-        >
-          <View
-            style={[
-              styles.segment,
-              {
-                backgroundColor:
-                  index < completed ? colors.primary : colors.cardElevated,
-                borderRadius: radius.pill,
-              },
-            ]}
-          />
-        </View>
-      ))}
+      <Svg
+        height={SIZE}
+        width={SIZE}
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+      >
+        <Circle
+          cx={CENTER}
+          cy={CENTER}
+          fill="none"
+          r={RADIUS}
+          stroke={colors.cardElevated}
+          strokeWidth={STROKE_WIDTH}
+        />
+        <Circle
+          cx={CENTER}
+          cy={CENTER}
+          fill="none"
+          r={RADIUS}
+          rotation={-90}
+          origin={`${CENTER}, ${CENTER}`}
+          stroke={colors.primary}
+          strokeDasharray={[CIRCUMFERENCE, CIRCUMFERENCE]}
+          strokeDashoffset={CIRCUMFERENCE * (1 - progress)}
+          strokeLinecap="round"
+          strokeWidth={STROKE_WIDTH}
+        />
+      </Svg>
       <View style={styles.content}>{children}</View>
     </View>
   );
@@ -60,17 +75,5 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
   },
-  ring: { height: 68, width: 68 },
-  segment: {
-    alignSelf: "center",
-    height: 3,
-    width: 2,
-  },
-  segmentOrbit: {
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
-  },
+  ring: { height: SIZE, width: SIZE },
 });

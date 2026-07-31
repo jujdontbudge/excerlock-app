@@ -71,6 +71,24 @@ describe("NotificationSettingsCard permission flow", () => {
     ).toBe(false);
   });
 
+  it("dismisses the permission primer from its blurred background", async () => {
+    const module = new MockNotificationModule();
+    await render(<NotificationSettingsCard module={module} />);
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText("Notifications access: Not set up"),
+      ).toBeOnTheScreen();
+    });
+
+    await toggle("weeklyRecap", true);
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Dismiss notification primer" }),
+    );
+
+    expect(screen.queryByRole("header", { name: "Choose what helps" })).toBeNull();
+    expect(useNotificationPreferencesStore.getState().enabled.weeklyRecap).toBe(false);
+  });
+
   it("renders the granted state and skips the primer when iOS is already approved", async () => {
     const module = new MockNotificationModule();
     module.setNextAuthorizationResult("approved");

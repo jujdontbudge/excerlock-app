@@ -8,6 +8,13 @@
       "ios": {
         "simulator": true
       }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview"
+    },
+    "production": {
+      "channel": "production"
     }
   }
 }

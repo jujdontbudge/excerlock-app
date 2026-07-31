@@ -24,6 +24,7 @@ import {
   type HomeStoreValues,
 } from "./homeState";
 import { readPersistedHomeState } from "./homeStorePersistence";
+import type { BannerSelection } from "../banners/bannerCatalog";
 
 /**
  * The Phase-2 Home store: the conditions the user has built, the ledger journal
@@ -40,9 +41,9 @@ type HomeStore = HomeStoreValues & {
   setBaseAllowanceMinutes: (minutes: number) => void;
   /** PRD §3.2: entering Full Lock is setting the base allowance to zero. */
   setFullLock: (on: boolean) => void;
-  addCondition: (condition: ConfiguredCondition) => void;
+  addCondition: (condition: ConfiguredCondition, banner?: BannerSelection) => void;
   /** Replace a condition in place — the edit path, so the id and slot survive. */
-  updateCondition: (condition: ConfiguredCondition) => void;
+  updateCondition: (condition: ConfiguredCondition, banner?: BannerSelection) => void;
   removeCondition: (conditionId: string) => void;
   setConditionEnabled: (conditionId: string, enabled: boolean) => void;
   /** Bank an event condition's payout. Idempotent per condition per ledger day. */
@@ -73,27 +74,39 @@ export const useHomeStore = create<HomeStore>()(
         );
       },
 
-      addCondition: (condition) => {
-        set(({ conditions }) =>
+      addCondition: (condition, banner) => {
+        set(({ conditions, conditionBanners }) =>
           conditions.some(({ id }) => id === condition.id)
             ? {}
-            : { conditions: [...conditions, condition] },
+            : {
+                conditions: [...conditions, condition],
+                ...(banner === undefined
+                  ? {}
+                  : { conditionBanners: { ...conditionBanners, [condition.id]: banner } }),
+              },
         );
       },
 
-      updateCondition: (condition) => {
-        set(({ conditions }) => ({
+      updateCondition: (condition, banner) => {
+        set(({ conditions, conditionBanners }) => ({
           conditions: conditions.map((existing) =>
             existing.id === condition.id ? condition : existing,
           ),
+          ...(banner === undefined
+            ? {}
+            : { conditionBanners: { ...conditionBanners, [condition.id]: banner } }),
         }));
       },
 
       removeCondition: (conditionId) => {
-        set(({ conditions, disabledConditionIds }) => ({
+        set(({ conditions, conditionBanners, disabledConditionIds }) => {
+          const { [conditionId]: _removed, ...remainingBanners } = conditionBanners;
+          return {
           conditions: conditions.filter(({ id }) => id !== conditionId),
+          conditionBanners: remainingBanners,
           disabledConditionIds: disabledConditionIds.filter((id) => id !== conditionId),
-        }));
+          };
+        });
       },
 
       setConditionEnabled: (conditionId, enabled) => {
@@ -168,6 +181,7 @@ export const useHomeStore = create<HomeStore>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: ({
         conditions,
+        conditionBanners,
         allowanceBeforeFullLock,
         disabledConditionIds,
         journal,
@@ -176,6 +190,7 @@ export const useHomeStore = create<HomeStore>()(
         savedPlaces,
       }) => ({
         conditions,
+        conditionBanners,
         allowanceBeforeFullLock,
         disabledConditionIds,
         journal,

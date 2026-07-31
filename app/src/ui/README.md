@@ -28,6 +28,7 @@ it contains no domain calculation and no store.
 | `theme/ThemeProvider.tsx` | `ThemeProvider` + `useTheme` |
 | `components/Screen.tsx` | gradient background + safe-area content well |
 | `components/Card.tsx` | translucent borderless card |
+| `components/DismissalBlur.tsx` | light-ivory Expo Blur material + accessible sheet dismissal action |
 | `components/PillButton.tsx` | stadium pill, three variants, press-spring feedback |
 | `components/SectionHeader.tsx` | 13pt uppercase group label |
 | `icons/manifest.ts` | glyph assets + their alpha crops + the tab mapping |

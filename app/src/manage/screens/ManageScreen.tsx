@@ -36,6 +36,7 @@ export function ManageScreen({
   const { spacing, typography } = useTheme();
 
   const conditions = useHomeStore((state) => state.conditions);
+  const conditionBanners = useHomeStore((state) => state.conditionBanners);
   const disabledConditionIds = useHomeStore((state) => state.disabledConditionIds);
   const savedPlaces = useHomeStore((state) => state.savedPlaces);
   const connectedSources = useHomeStore((state) => state.connectedSources);
@@ -152,7 +153,7 @@ export function ManageScreen({
           visible
           context={pickerContext}
           placeNames={placeNames}
-          initialDraft={draftFromCondition(editing)}
+          initialDraft={draftFromCondition(editing, conditionBanners[editing.id])}
           createId={() => editing.id}
           onSave={updateCondition}
           onClose={() => setEditingId(undefined)}

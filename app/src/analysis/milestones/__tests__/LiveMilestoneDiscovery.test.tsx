@@ -58,4 +58,33 @@ describe("LiveMilestoneDiscovery", () => {
       useMilestoneUnlockStore.getState().records["streak-3"]?.unlockedAtMs,
     ).toBe(observedAtMs);
   });
+
+  it("offers the first 7-day streak to the ordered review policy", async () => {
+    useHomeStore.setState({
+      ...DEFAULT_HOME_STATE,
+      journal: {
+        entries: Array.from({ length: 7 }, (_, offset) => ({
+          kind: "earn" as const,
+          source: "review-live-test",
+          id: `review-activity-${offset}`,
+          atMs: FIRST_NOON + offset * DAY_MS,
+          conditionId: "daily-activity",
+          payout: { type: "fixedChunk" as const, minutes: 10 },
+        })),
+      },
+    });
+    const onStreakMilestone = jest.fn().mockResolvedValue(false);
+    const observedAtMs = FIRST_NOON + 6 * DAY_MS;
+
+    await render(
+      <LiveMilestoneDiscovery
+        clock={{ nowMs: () => observedAtMs }}
+        reviewCoordinator={{ onStreakMilestone }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(onStreakMilestone).toHaveBeenCalledWith(7, observedAtMs);
+    });
+  });
 });

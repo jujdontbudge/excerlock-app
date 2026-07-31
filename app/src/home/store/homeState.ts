@@ -14,6 +14,7 @@ import {
 } from "@excerlock/ledger";
 
 import type { AllowanceValues } from "../model/allowance";
+import type { BannerSelection } from "../banners/bannerCatalog";
 
 export interface SavedPlace {
   readonly id: string;
@@ -22,6 +23,7 @@ export interface SavedPlace {
 
 export type HomeStoreValues = Readonly<{
   conditions: readonly ConfiguredCondition[];
+  conditionBanners: Readonly<Record<string, BannerSelection>>;
   /** What Full Lock restores (`null` means there was no chosen limit). */
   allowanceBeforeFullLock: number | null;
   disabledConditionIds: readonly string[];
@@ -34,6 +36,7 @@ export type HomeStoreValues = Readonly<{
 /** Unlimited remains in force until the user chooses an allowance in Manage. */
 export const DEFAULT_HOME_STATE: HomeStoreValues = Object.freeze({
   conditions: [],
+  conditionBanners: {},
   allowanceBeforeFullLock: null,
   disabledConditionIds: [],
   journal: emptyJournal(),

@@ -19,6 +19,21 @@ describe("SupportSettingsCard", () => {
     await AsyncStorage.clear();
   });
 
+  it("dismisses the support sheet from its blurred background", async () => {
+    await render(<SupportSettingsCard module={new MockSupportModule()} />);
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Contact support" }),
+    );
+    expect(screen.getByLabelText("How can we help?")).toBeOnTheScreen();
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Dismiss Contact support" }),
+    );
+
+    expect(screen.queryByLabelText("How can we help?")).toBeNull();
+  });
+
   it("submits a support request and renders its sent state", async () => {
     const support = new MockSupportModule();
     await render(<SupportSettingsCard module={support} />);

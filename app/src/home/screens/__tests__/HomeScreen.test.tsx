@@ -70,12 +70,38 @@ describe("HomeScreen", () => {
     expect(screen.queryByTestId("lock-hero-locked")).toBeNull();
   });
 
+  it("initializes review install age on the first Home render", async () => {
+    const initialize = jest.fn().mockResolvedValue(undefined);
+    await render(
+      <HomeScreen
+        feed={stubFeed()}
+        now={now}
+        reviewCoordinator={{
+          initialize,
+          onUnlockMoment: async () => false,
+        }}
+      />,
+    );
+
+    expect(initialize).toHaveBeenCalledWith(NOON);
+  });
+
   it("opens the builder from the empty state", async () => {
     await render(<HomeScreen feed={stubFeed()} now={now} />);
 
     await press("Create your first condition");
 
     expect(screen.getByRole("header", { name: "Pick a condition" })).toBeOnTheScreen();
+  });
+
+  it("dismisses the condition-builder sheet from its blurred background", async () => {
+    await render(<HomeScreen feed={stubFeed()} now={now} />);
+
+    await press("Create your first condition");
+    await press("Dismiss condition builder");
+
+    expect(screen.queryByRole("header", { name: "Pick a condition" })).toBeNull();
+    expect(screen.getByRole("header", { name: "No conditions yet" })).toBeOnTheScreen();
   });
 
   it("shows a locked hero at a zero balance once a condition exists", async () => {
@@ -124,9 +150,16 @@ describe("HomeScreen", () => {
   });
 
   it("banks an event's payout in place and never reverses the card", async () => {
+    const onUnlockMoment = jest.fn().mockResolvedValue(false);
     seed(stepGoal);
     useHomeStore.getState().setBaseAllowanceMinutes(0);
-    await render(<HomeScreen feed={stubFeed()} now={now} />);
+    await render(
+      <HomeScreen
+        feed={stubFeed()}
+        now={now}
+        reviewCoordinator={{ initialize: async () => {}, onUnlockMoment }}
+      />,
+    );
 
     await press("Complete");
 
@@ -134,6 +167,7 @@ describe("HomeScreen", () => {
     expect(screen.getByTestId("lock-hero-unlocked")).toBeOnTheScreen();
     expect(screen.getByTestId("lock-hero-balance")).toHaveTextContent("30");
     expect(screen.getByText("Earned today")).toBeOnTheScreen();
+    expect(onUnlockMoment).toHaveBeenCalledWith(NOON);
   });
 
   it("automatically banks a Health event detected during claim-on-open", async () => {
@@ -168,10 +202,44 @@ describe("HomeScreen", () => {
     await press("Create your first condition");
     await press("Steps exchange");
     await press("Increase minutes earned");
+    await press("Choose banner");
     await press("Preview");
     await press("Save condition");
 
     expect(useHomeStore.getState().conditions).toHaveLength(1);
     expect(screen.getByText("1,000 steps = 5 min")).toBeOnTheScreen();
+  });
+
+  it("lets the user crop an own-photo banner and keeps it on the saved card", async () => {
+    const pickBannerPhoto = jest.fn().mockResolvedValue({
+      status: "selected" as const,
+      uri: "file:///picked-banner.jpg",
+    });
+    await render(
+      <HomeScreen
+        feed={stubFeed()}
+        now={now}
+        bannerPhotoPicker={{ pick: pickBannerPhoto }}
+      />,
+    );
+
+    await press("Create your first condition");
+    await press("Steps exchange");
+    await press("Increase minutes earned");
+    await press("Choose banner");
+    await press("Use your own photo");
+    await press("Preview");
+    await press("Save condition");
+
+    expect(pickBannerPhoto).toHaveBeenCalledTimes(1);
+    const [saved] = useHomeStore.getState().conditions;
+    expect(saved).toBeDefined();
+    expect(useHomeStore.getState().conditionBanners[saved!.id]).toEqual({
+      kind: "photo",
+      uri: "file:///picked-banner.jpg",
+    });
+    expect(
+      screen.getByLabelText("Custom photo banner for Steps exchange"),
+    ).toBeOnTheScreen();
   });
 });

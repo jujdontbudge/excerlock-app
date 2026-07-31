@@ -6,6 +6,7 @@ import { SectionHeader, useTheme } from "@/ui";
 import { ConditionCard } from "../../components/cards/ConditionCard";
 import { toConditionCards } from "../../model/conditionCards";
 import { EMPTY_READING } from "../../model/reading";
+import type { BannerSelection } from "../../banners/bannerCatalog";
 
 /**
  * The last step shows the real card the condition will wear on Home — the same
@@ -14,15 +15,18 @@ import { EMPTY_READING } from "../../model/reading";
 export function PreviewStep({
   condition,
   placeNames,
+  banner,
 }: {
   condition: ConfiguredCondition;
   placeNames?: Readonly<Record<string, string>>;
+  banner?: BannerSelection;
 }) {
   const { spacing, typography } = useTheme();
   const [card] = toConditionCards({
     conditions: [condition],
     reading: EMPTY_READING,
     ...(placeNames === undefined ? {} : { placeNames }),
+    ...(banner === undefined ? {} : { conditionBanners: { [condition.id]: banner } }),
   });
 
   return (
