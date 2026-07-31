@@ -2,6 +2,7 @@ import {
   getCatalogEntry,
   type ConfiguredCondition,
   type EventReward,
+  type PickerUnit,
 } from "@excerlock/condition-model";
 
 import { formatQuantity } from "@/home/model/duration";
@@ -17,13 +18,17 @@ export type UnlockOfferInput = Readonly<{
   lockWindowEndsAtMs?: number;
 }>;
 
-type RankedOffer = Readonly<{ subtitle: string; completionCost: number }>;
+type OfferEffort =
+  | Readonly<{ kind: "immediate" }>
+  | Readonly<{ kind: "quantity"; amount: number; unit: PickerUnit }>;
+
+type RankedOffer = Readonly<{ subtitle: string; effort: OfferEffort }>;
 
 /**
- * Chooses the actionable condition closest to paying out. Event progress is a
- * fraction of its own configured goal, so unlike raw steps/miles/calories it
- * never compares incompatible health units. Immediate state/event paths rank
- * first; a rate quantum ranks after an almost-complete event.
+ * Chooses the least remaining real cost without inventing cross-unit math.
+ * Immediate state/event paths rank first. Quantified paths compare their live
+ * remaining amount only when their units match; otherwise configured order is
+ * preserved because steps, miles, calories, and minutes are not interchangeable.
  */
 export function resolveCheapestUnlockOffer(input: UnlockOfferInput): string {
   if (input.cause === "walkAndScrollEnded") {
@@ -39,9 +44,7 @@ export function resolveCheapestUnlockOffer(input: UnlockOfferInput): string {
   const offers = input.conditions.flatMap((condition) =>
     offerForCondition(condition, input.reading),
   );
-  const cheapest = offers.sort(
-    (left, right) => left.completionCost - right.completionCost,
-  )[0];
+  const cheapest = offers.sort(compareOfferEffort)[0];
   return cheapest?.subtitle ?? fallbackSubtitle(input.cause);
 }
 
@@ -54,7 +57,7 @@ function offerForCondition(
     case "state":
       return [
         {
-          completionCost: 0,
+          effort: { kind: "immediate" },
           subtitle:
             entry.signal === "walking"
               ? "Start walking to unlock your apps."
@@ -68,14 +71,18 @@ function offerForCondition(
       const amount = entry.picker.quantum.value;
       const minutes = amount * condition.settings.reward.minutesPerUnit;
       return [{
-        completionCost: 1,
+        effort: {
+          kind: "quantity",
+          amount,
+          unit: entry.picker.quantum.unit,
+        },
         subtitle: `${formatQuantity(amount, entry.picker.quantum.unit)} gets you ${formatOfferMinutes(minutes)}.`,
       }];
     }
     case "event": {
       if (condition.settings.threshold === undefined) {
         return [{
-          completionCost: 0,
+          effort: { kind: "immediate" },
           subtitle: `Complete ${entry.name.toLowerCase()} to unlock ${rewardText(condition.settings.reward)}.`,
         }];
       }
@@ -88,11 +95,27 @@ function offerForCondition(
         return [];
       }
       return [{
-        completionCost: remaining / condition.settings.threshold,
+        effort: {
+          kind: "quantity",
+          amount: remaining,
+          unit: entry.picker.range.unit,
+        },
         subtitle: `${formatQuantity(remaining, entry.picker.range.unit)} gets you ${rewardText(condition.settings.reward)}.`,
       }];
     }
   }
+}
+
+function compareOfferEffort(left: RankedOffer, right: RankedOffer): number {
+  if (left.effort.kind === "immediate") {
+    return right.effort.kind === "immediate" ? 0 : -1;
+  }
+  if (right.effort.kind === "immediate") {
+    return 1;
+  }
+  return left.effort.unit === right.effort.unit
+    ? left.effort.amount - right.effort.amount
+    : 0;
 }
 
 function rewardText(reward: EventReward): string {

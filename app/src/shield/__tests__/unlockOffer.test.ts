@@ -27,14 +27,14 @@ const stepsExchange: ConfiguredCondition = {
 };
 
 describe("resolveCheapestUnlockOffer", () => {
-  it("uses live progress to show the nearest real configured offer", () => {
+  it("chooses the lower real cost when offers use the same signal unit", () => {
     expect(
       resolveCheapestUnlockOffer({
         cause: "balanceEmpty",
         conditions: [stepsExchange, stepGoal],
         reading: { totals: { steps: 8_000 }, activeSignals: [] },
       }),
-    ).toBe("2,000 steps gets you 30 more minutes.");
+    ).toBe("1,000 steps gets you 20 more minutes.");
   });
 
   it("uses the user's real rate quantum and payout", () => {
