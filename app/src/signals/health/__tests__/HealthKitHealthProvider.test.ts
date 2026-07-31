@@ -120,6 +120,124 @@ describe("HealthKitHealthProvider active minutes", () => {
   });
 });
 
+describe("HealthKitHealthProvider signal coverage", () => {
+  it("reads every HealthProvider signal in its condition-domain unit", async () => {
+    const provider = new HealthKitHealthProvider(
+      new AllSignalsHealthKitClient(),
+      () => NOW,
+    );
+    const signals: readonly HealthSignal[] = [
+      "steps",
+      "activeEnergy",
+      "appleExerciseTime",
+      "walkingRunningDistance",
+      "cyclingDistance",
+      "swimmingDistance",
+      "workout",
+    ];
+
+    const totals = await Promise.all(
+      signals.map(async (signal) => [signal, await provider.getTodayTotal(signal)]),
+    );
+    expect(Object.fromEntries(totals)).toEqual({
+      steps: 1_234,
+      activeEnergy: 321,
+      appleExerciseTime: 18,
+      walkingRunningDistance: 4.2,
+      cyclingDistance: 12.5,
+      swimmingDistance: 750,
+      workout: 35,
+    });
+
+    const anchored = await Promise.all(
+      signals.map(async (signal) => [
+        signal,
+        (await provider.getNewSamples(signal, null)).samples[0]?.value,
+      ]),
+    );
+    expect(Object.fromEntries(anchored)).toEqual({
+      steps: 1_234,
+      activeEnergy: 321,
+      appleExerciseTime: 18,
+      walkingRunningDistance: 4.2,
+      cyclingDistance: 12.5,
+      swimmingDistance: 750,
+      workout: 35,
+    });
+
+    provider.dispose();
+  });
+});
+
+class AllSignalsHealthKitClient implements HealthKitClient {
+  public getAuthorizationStatus(): HealthAuthorizationStatus {
+    return "authorized";
+  }
+
+  public async requestAuthorization(): Promise<HealthAuthorizationStatus> {
+    return "authorized";
+  }
+
+  public async configureBackgroundDelivery(): Promise<void> {}
+
+  public async queryQuantity(
+    identifier: HealthKitObjectType,
+    unit: string,
+    query: HealthKitQuery,
+  ): Promise<HealthKitSamplePage> {
+    const fixture = quantityFixtures[String(identifier)];
+    if (fixture === undefined || fixture.unit !== unit) {
+      return { samples: [], anchor: `${identifier}:0` };
+    }
+    return page(fixture.signal, [sample(fixture.value, NOW.toISOString(), false)], query);
+  }
+
+  public async queryWorkouts(
+    query: HealthKitQuery,
+  ): Promise<HealthKitSamplePage> {
+    return page("workout", [sample(35, NOW.toISOString(), false)], query);
+  }
+
+  public subscribe(): () => void {
+    return () => undefined;
+  }
+}
+
+const quantityFixtures: Readonly<
+  Record<string, { signal: HealthSignal; unit: string; value: number }>
+> = {
+  HKQuantityTypeIdentifierStepCount: {
+    signal: "steps",
+    unit: "count",
+    value: 1_234,
+  },
+  HKQuantityTypeIdentifierActiveEnergyBurned: {
+    signal: "activeEnergy",
+    unit: "kcal",
+    value: 321,
+  },
+  HKQuantityTypeIdentifierAppleExerciseTime: {
+    signal: "appleExerciseTime",
+    unit: "min",
+    value: 18,
+  },
+  HKQuantityTypeIdentifierDistanceWalkingRunning: {
+    signal: "walkingRunningDistance",
+    unit: "km",
+    value: 4.2,
+  },
+  HKQuantityTypeIdentifierDistanceCycling: {
+    signal: "cyclingDistance",
+    unit: "km",
+    value: 12.5,
+  },
+  HKQuantityTypeIdentifierDistanceSwimming: {
+    signal: "swimmingDistance",
+    unit: "m",
+    value: 750,
+  },
+};
+
 class HybridHealthKitClient implements HealthKitClient {
   public getAuthorizationStatus(): HealthAuthorizationStatus {
     return "authorized";

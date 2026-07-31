@@ -10,10 +10,13 @@ import type {
   HealthKitClient,
   HealthKitObjectType,
 } from "./HealthKitClient";
-
-const STEPS_TYPE: HealthKitObjectType = "HKQuantityTypeIdentifierStepCount";
-const EXERCISE_TIME_TYPE: HealthKitObjectType =
-  "HKQuantityTypeIdentifierAppleExerciseTime";
+import {
+  HEALTHKIT_QUANTITIES,
+  HEALTHKIT_TYPES,
+  HEALTHKIT_WORKOUT_TYPE,
+  quantityDefinition,
+  signalsChangedBy,
+} from "./healthKitSignalMapping";
 
 export class HealthKitHealthProvider implements HealthProvider {
   private readonly authorizationCallbacks = new Set<
@@ -38,7 +41,7 @@ export class HealthKitHealthProvider implements HealthProvider {
     const status = await this.client.requestAuthorization();
     this.setAuthorizationStatus(status);
     if (status === "authorized") {
-      await this.client.configureBackgroundDelivery([STEPS_TYPE]);
+      await this.client.configureBackgroundDelivery(HEALTHKIT_TYPES);
       this.reconcileSubscriptions();
     }
     return status;
@@ -52,12 +55,15 @@ export class HealthKitHealthProvider implements HealthProvider {
     signal: HealthSignal,
     sinceAnchor: string | null,
   ): Promise<AnchoredHealthSamples> {
-    if (signal !== "steps") {
-      return { samples: [], anchor: `healthkit:${signal}:empty` };
-    }
-    const result = await this.client.queryQuantity(STEPS_TYPE, "count", {
-      anchor: sinceAnchor,
-    });
+    const definition = quantityDefinition(signal);
+    const result =
+      definition === undefined
+        ? await this.client.queryWorkouts({ anchor: sinceAnchor })
+        : await this.client.queryQuantity(
+            definition.type,
+            definition.unit,
+            { anchor: sinceAnchor },
+          );
     this.latestAnchors.set(signal, result.anchor);
     return result;
   }
@@ -73,8 +79,8 @@ export class HealthKitHealthProvider implements HealthProvider {
     } as const;
     if (signal === "appleExerciseTime") {
       const exerciseTime = await this.client.queryQuantity(
-        EXERCISE_TIME_TYPE,
-        "min",
+        HEALTHKIT_QUANTITIES.appleExerciseTime.type,
+        HEALTHKIT_QUANTITIES.appleExerciseTime.unit,
         query,
       );
       const recordedExerciseTime = exerciseTime.samples.filter(
@@ -85,12 +91,19 @@ export class HealthKitHealthProvider implements HealthProvider {
       }
       return sum((await this.client.queryWorkouts(query)).samples);
     }
-    if (signal === "steps") {
-      return sum(
-        (await this.client.queryQuantity(STEPS_TYPE, "count", query)).samples,
-      );
+    if (signal === "workout") {
+      return sum((await this.client.queryWorkouts(query)).samples);
     }
-    return 0;
+    const definition = HEALTHKIT_QUANTITIES[signal];
+    return sum(
+      (
+        await this.client.queryQuantity(
+          definition.type,
+          definition.unit,
+          query,
+        )
+      ).samples,
+    );
   }
 
   public onChange(
@@ -124,38 +137,63 @@ export class HealthKitHealthProvider implements HealthProvider {
   }
 
   private reconcileSubscriptions(): void {
-    const needsSteps =
-      this.authorizationStatus === "authorized" &&
-      (this.changeCallbacks.get("steps")?.size ?? 0) > 0;
-    if (needsSteps && !this.subscriptions.has(STEPS_TYPE)) {
-      this.subscriptions.set(
-        STEPS_TYPE,
-        this.client.subscribe(STEPS_TYPE, () => this.handleStepChange()),
-      );
-    } else if (!needsSteps) {
-      this.subscriptions.get(STEPS_TYPE)?.();
-      this.subscriptions.delete(STEPS_TYPE);
+    const desired = new Set<HealthKitObjectType>();
+    if (this.authorizationStatus === "authorized") {
+      HEALTHKIT_TYPES.forEach((type) => {
+        if (
+          signalsChangedBy(type).some(
+            (signal) => (this.changeCallbacks.get(signal)?.size ?? 0) > 0,
+          )
+        ) {
+          desired.add(type);
+        }
+      });
+    }
+    desired.forEach((type) => {
+      if (!this.subscriptions.has(type)) {
+        this.subscriptions.set(
+          type,
+          this.client.subscribe(type, () => this.handleChange(type)),
+        );
+      }
+    });
+    this.subscriptions.forEach((unsubscribe, type) => {
+      if (!desired.has(type)) {
+        unsubscribe();
+        this.subscriptions.delete(type);
+      }
+    });
+  }
+
+  private handleChange(type: HealthKitObjectType): void {
+    const changedSignals = signalsChangedBy(type);
+    changedSignals.forEach((signal) => {
+      this.emitChange({
+        signal,
+        reason: "backgroundWake",
+        samples: [],
+      });
+    });
+    const sampleSignal =
+      type === HEALTHKIT_WORKOUT_TYPE ? "workout" : changedSignals[0];
+    if (sampleSignal !== undefined) {
+      void this.emitNewSamples(sampleSignal);
     }
   }
 
-  private handleStepChange(): void {
-    this.emitChange({
-      signal: "steps",
-      reason: "backgroundWake",
-      samples: [],
-    });
-    void this.getNewSamples(
-      "steps",
-      this.latestAnchors.get("steps") ?? null,
+  private async emitNewSamples(signal: HealthSignal): Promise<void> {
+    await this.getNewSamples(
+      signal,
+      this.latestAnchors.get(signal) ?? null,
     ).then((result) => {
       if (result.samples.length > 0) {
         this.emitChange({
-          signal: "steps",
+          signal,
           reason: "samplesAdded",
           samples: result.samples,
         });
       }
-    });
+    }).catch(() => undefined);
   }
 
   private emitChange(change: HealthChange): void {
