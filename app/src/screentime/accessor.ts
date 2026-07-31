@@ -9,7 +9,7 @@ let screenTimeModule: ScreenTimeModule | undefined;
 
 /**
  * The composition root for ScreenTime. Tests, Expo Go, and non-iOS previews
- * retain the persistent mock; the iOS development client owns the real seam.
+ * retain the persistent mock; every other iOS runtime owns the real seam.
  */
 export function getScreenTimeModule(): ScreenTimeModule {
   screenTimeModule ??= createScreenTimeModule();
@@ -29,7 +29,6 @@ export function shouldUseNativeScreenTimeModule(
   return (
     runtime.nodeEnv !== "test" &&
     runtime.platform === "ios" &&
-    runtime.executionEnvironment === ExecutionEnvironment.StoreClient &&
     runtime.expoGoConfig === null
   );
 }
