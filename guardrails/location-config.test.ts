@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { fromRoot, readJson } from "./repo-files";
+import { fromRoot, readJson, readUtf8 } from "./repo-files";
 
 type AppConfig = {
   expo?: {
@@ -35,5 +35,13 @@ describe("location native-configuration guardrail", () => {
           "Allow ExcerLock to detect arrivals at saved gyms when you opt into auto-detect.",
       },
     ]);
+  });
+
+  it("loads background task definitions from the application entry bundle", () => {
+    const rootLayout = readUtf8(fromRoot("app", "app", "_layout.tsx"));
+
+    expect(rootLayout).toMatch(
+      /import ["']@\/signals\/location\/registerLocationTasks["'];/,
+    );
   });
 });

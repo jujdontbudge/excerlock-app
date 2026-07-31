@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import type { ComponentType, ReactNode } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import "@/signals/location/registerLocationTasks";
 import { ThemeProvider } from "@/ui";
 import { NativeScreenTimePickerHost } from "@/screentime/native/NativeScreenTimePickerHost";
 
