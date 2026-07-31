@@ -104,6 +104,7 @@ export function NativeScreenTimePickerHost({
     <Picker
       key={request.requestId}
       familyActivitySelectionId={request.selection}
+      includeEntireCategory={false}
       style={{ width: 1, height: 1, position: "absolute" }}
       onSelectionChange={({ nativeEvent }) => {
         picker.selectionChanged(nativeEvent);

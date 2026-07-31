@@ -44,6 +44,7 @@ describe("NativeScreenTimePickerHost", () => {
 
     await waitFor(() => {
       expect(pickerProps?.familyActivitySelectionId).toBe(handle);
+      expect(pickerProps?.includeEntireCategory).toBe(false);
     });
     await act(() => {
       pickerProps!.onSelectionChange?.({
