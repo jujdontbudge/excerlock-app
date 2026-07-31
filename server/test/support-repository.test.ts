@@ -1,5 +1,17 @@
-import { sql } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { eq, sql } from "drizzle-orm";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
+import {
+  featureRequests,
+  supportRequests,
+  users,
+} from "../src/db/schema.js";
 import {
   createDrizzleFeatureRequestRepository,
   createDrizzleFeatureRequestVoteRepository,
@@ -8,20 +20,24 @@ import {
 import { createPostgresJsTestDatabase } from "./postgresJsTestDatabase.js";
 import { createPgliteTestDatabase } from "./pgliteTestDatabase.js";
 
+let postgres: Awaited<ReturnType<typeof createPgliteTestDatabase>>;
+
+beforeAll(async () => {
+  postgres = await createPgliteTestDatabase();
+});
+
+beforeEach(async () => {
+  await postgres.reset();
+});
+
+afterAll(async () => {
+  await postgres.client.close();
+});
+
 describe("repository database execution boundary", () => {
-  let database: Awaited<ReturnType<typeof createPgliteTestDatabase>>;
-
-  beforeAll(async () => {
-    database = await createPgliteTestDatabase();
-  });
-
-  afterAll(async () => {
-    await database.client.close();
-  });
-
   it("rejects SQL that names a column absent from the migrations", async () => {
     await expect(
-      database.db.execute(
+      postgres.db.execute(
         sql.raw('select "misspelled_column" from "support_requests"'),
       ),
     ).rejects.toThrow("misspelled_column");
@@ -29,7 +45,7 @@ describe("repository database execution boundary", () => {
 });
 
 describe("support submission repository", () => {
-  it("persists a feature submission and its list entry in one transaction", async () => {
+  it("opens one transaction for a feature submission", async () => {
     const database = createPostgresJsTestDatabase();
     const repository = createDrizzleSupportSubmissionRepository(
       database.db,
@@ -51,34 +67,56 @@ describe("support submission repository", () => {
       },
     });
 
-    expect({
-      transactionCount: database.transactionCount,
-      queries: database.queries,
-    }).toEqual({
-      transactionCount: 1,
-      queries: [
-        {
-          sql: 'insert into "support_requests" ("id", "user_id", "category", "title", "message", "created_at") values ($1, $2, $3, $4, $5, $6)',
-          params: [
-            "support-request-id",
-            "user_123",
-            "feature",
-            "Home Screen widget",
-            "Show my balance without opening the app.",
-            "2026-07-29T21:00:00.000Z",
-          ],
-        },
-        {
-          sql: 'insert into "feature_requests" ("id", "support_request_id", "title", "message", "created_at") values ($1, $2, $3, $4, $5)',
-          params: [
-            "feature-request-id",
-            "support-request-id",
-            "Home Screen widget",
-            "Show my balance without opening the app.",
-            "2026-07-29T21:00:00.000Z",
-          ],
-        },
-      ],
+    expect(database.transactionCount).toBe(1);
+  });
+
+  it("persists a support request and its feature-request list entry", async () => {
+    await postgres.db.insert(users).values({ id: "user_123" });
+    const repository = createDrizzleSupportSubmissionRepository(
+      postgres.db,
+    );
+    const createdAt = new Date("2026-07-29T21:00:00.000Z");
+
+    await repository.insertSupportSubmission({
+      id: "support-request-id",
+      userId: "user_123",
+      category: "feature",
+      title: "Home Screen widget",
+      message: "Show my balance without opening the app.",
+      createdAt,
+      featureRequest: {
+        id: "feature-request-id",
+        title: "Home Screen widget",
+        message: "Show my balance without opening the app.",
+        createdAt,
+      },
+    });
+
+    const [supportRow] = await postgres.db
+      .select()
+      .from(supportRequests)
+      .where(eq(supportRequests.id, "support-request-id"));
+    const [featureRow] = await postgres.db
+      .select()
+      .from(featureRequests)
+      .where(eq(featureRequests.id, "feature-request-id"));
+
+    expect({ supportRow, featureRow }).toEqual({
+      supportRow: {
+        id: "support-request-id",
+        userId: "user_123",
+        category: "feature",
+        title: "Home Screen widget",
+        message: "Show my balance without opening the app.",
+        createdAt,
+      },
+      featureRow: {
+        id: "feature-request-id",
+        supportRequestId: "support-request-id",
+        title: "Home Screen widget",
+        message: "Show my balance without opening the app.",
+        createdAt,
+      },
     });
   });
 });
