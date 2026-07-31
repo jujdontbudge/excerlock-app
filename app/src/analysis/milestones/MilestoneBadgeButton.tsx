@@ -9,6 +9,7 @@ import {
 
 import { useTheme } from "@/ui";
 
+import { MilestoneNewGlint } from "./MilestoneNewGlint";
 import type { MilestoneBadge } from "./progress";
 import { ProgressRing } from "./ProgressRing";
 
@@ -20,6 +21,7 @@ type MilestoneBadgeButtonProps = Readonly<{
   onPress: () => void;
   unlockSequence: Readonly<{
     index: number;
+    ready: boolean;
     scale: Animated.Value;
     total: number;
   }> | null;
@@ -31,7 +33,7 @@ export function MilestoneBadgeButton({
   onPress,
   unlockSequence,
 }: MilestoneBadgeButtonProps) {
-  const { colors, radius, typography } = useTheme();
+  const { colors, typography } = useTheme();
   const unlocked = badge.state === "unlocked";
   const art = (
     <Image
@@ -67,19 +69,11 @@ export function MilestoneBadgeButton({
       testID={`milestone-badge-${badge.id}`}
     >
       {isNew ? (
-        <Text
-          testID={`milestone-new-${badge.id}`}
-          style={[
-            typography.caption,
-            styles.newGlint,
-            {
-              backgroundColor: colors.primary,
-              borderRadius: radius.pill,
-            },
-          ]}
-        >
-          New
-        </Text>
+        <MilestoneNewGlint
+          active={unlockSequence?.ready === true}
+          badgeId={badge.id}
+          index={unlockSequence?.index ?? 0}
+        />
       ) : null}
       {badge.progress === null ? (
         <View style={styles.artWell}>{art}</View>
@@ -128,12 +122,4 @@ const styles = StyleSheet.create({
   },
   button: { alignItems: "center", width: 76 },
   label: { minHeight: 34, textAlign: "center" },
-  newGlint: {
-    overflow: "hidden",
-    paddingHorizontal: 5,
-    position: "absolute",
-    right: 0,
-    top: 0,
-    zIndex: 1,
-  },
 });

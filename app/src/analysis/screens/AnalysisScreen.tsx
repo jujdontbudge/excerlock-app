@@ -33,6 +33,7 @@ import {
 } from "../model";
 import type { AnalysisClock } from "../clock";
 import { MilestonesShelf } from "../milestones/MilestonesShelf";
+import { useMilestoneUnlockViewport } from "../milestones/useMilestoneUnlockViewport";
 import {
   useMilestoneUnlockMoment,
   type MilestoneHaptics,
@@ -101,6 +102,7 @@ export function AnalysisScreen({
     milestoneUnlockVisitKey,
     milestoneHaptics,
   );
+  const unlockViewport = useMilestoneUnlockViewport(unlockSequence);
   const confessed = useConfessionStore((state) => state.confessedDailyMinutes);
   const conditions = useHomeStore((state) => state.conditions);
   const journal = useHomeStore((state) => state.journal);
@@ -142,6 +144,10 @@ export function AnalysisScreen({
   return (
     <Screen testID="analysis-screen">
       <ScrollView
+        onLayout={unlockViewport.onScrollViewLayout}
+        onScroll={unlockViewport.onScroll}
+        scrollEventThrottle={16}
+        testID="analysis-scroll-view"
         contentContainerStyle={[
           styles.content,
           { gap: spacing.lg, padding: spacing.gutter, paddingBottom: spacing.xxl },
@@ -182,6 +188,9 @@ export function AnalysisScreen({
         <SectionHeader title="Milestones" />
         <MilestonesShelf
           metrics={view.milestoneMetrics}
+          onLayout={unlockViewport.onShelfLayout}
+          onRowLayout={unlockViewport.onRowLayout}
+          unlockReady={unlockViewport.isReady}
           unlockSequence={unlockSequence}
           shareCardModule={milestoneShareCardModule}
         />

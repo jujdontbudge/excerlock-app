@@ -25,7 +25,11 @@ discovery nor a visit claim can act on an incomplete persisted snapshot.
 
 `useMilestoneUnlockAnimation.ts` owns the visit's single native-driver scale-in
 sequence. Pending badges receive stable scale values in catalog order and enter
-with the completion animation's spring physics, staggered 120 ms apart.
+at `0.62` scale. `useMilestoneUnlockViewport.ts` holds those values until every
+row involved in the sequence is materially inside the Analysis viewport, then
+starts the completion animation's spring physics, staggered 120 ms apart.
+`MilestoneNewGlint.tsx` follows each spring with one clipped diagonal light sweep
+over the persistent `New` pill; it does not add a modal announcement surface.
 The Analysis route advances the visit key from Expo Router's focus boundary, so
 an unlock discovered while the mounted tab is open waits for the next return.
 Its initial key is inert; focus itself is the sole production claim trigger,
@@ -43,7 +47,9 @@ preventing a mount claim and focus claim from cancelling the first animation.
 | `LiveMilestoneDiscovery.tsx` | composition-root adapter from real stores/selectors |
 | `AnalysisTabIcon.tsx` | pending indicator dot |
 | `MilestonesShelf.tsx` | three-row shelf layout and locked/unlocked routing |
+| `useMilestoneUnlockViewport.ts` | one-shot release when every target row is materially visible |
 | `MilestoneProgressDetail.tsx` | locked-badge progress presentation |
+| `MilestoneNewGlint.tsx` | clipped diagonal light sweep over a new badge's pill |
 | `useMilestoneShareRequest.ts` | queues an unlocked tap until its persisted timestamp arrives |
 | `MilestoneSharePreview.tsx` | privacy-safe projection into the existing share preview |
 | `useMilestoneUnlockAnimation.ts` | one staggered scale-in sequence per focused visit |
@@ -80,6 +86,25 @@ and visibility failure, not evidence that the physics need numeric tuning.
 The orange `New` treatment is immediately legible on both unlocked badges once
 the shelf is reached, but it reads as a persistent label rather than a glint or
 shimmer. No popup or share-sheet takeover appeared.
+
+### Ticket #90 verification
+
+The measured cause was the first candidate: the springs started while the shelf
+was offscreen or while the Analysis tab was being composited, and finished
+before a badge could be seen. The scale values did exist at `0.62` before the
+effect, so the claim path was not skipping the from-value. The same unchanged
+springs are plainly visible when released in the viewport, so their damping and
+stiffness were not the cause.
+
+After the viewport hold and glint sweep were added, a clean Release app was
+installed on the pinned iOS 26.4 `ExcerLock-E2E` simulator and the deterministic
+recorded-history flow was watched and frame-checked. As the shelf entered the
+viewport, `activity-1` was visibly smaller than its final size, then grew to
+full size while the adjacent locked badge stayed fixed. The motion was easy to
+pick out during the scroll rather than appearing complete in the first visible
+frame. A moment later, a bright diagonal band crossed the orange `New` pill;
+the changing highlight read as a glint, not only as a label. No popup opened and
+no share sheet was presented. The focused watch flow completed successfully.
 
 The simulator cannot establish that tactile feedback feels right on physical
 hardware. The native build compiled and linked Expo Haptics; automated tests
