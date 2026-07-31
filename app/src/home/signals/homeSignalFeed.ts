@@ -69,7 +69,13 @@ export function createHomeSignalFeed({ health, motion }: HomeSignalProviders): H
   return {
     async start() {
       await health.requestAuth();
-      for (const healthSignal of Object.keys(HEALTH_SIGNALS) as HealthSignal[]) {
+      const healthSignals = Object.keys(HEALTH_SIGNALS) as HealthSignal[];
+      await Promise.all(
+        healthSignals.map((healthSignal) =>
+          health.getNewSamples(healthSignal, null).catch(() => undefined),
+        ),
+      );
+      for (const healthSignal of healthSignals) {
         unsubscribes.push(health.onChange(healthSignal, publish));
       }
       unsubscribes.push(motion.on("activity", publish));
