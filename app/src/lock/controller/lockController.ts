@@ -32,6 +32,15 @@ import { desiredLockState } from "./lockPolicy";
 import { syncScheduleRegistrations } from "./scheduleRegistration";
 import { reviewCoordinator } from "@/review";
 import { getWalkingSessionController } from "@/home/signals";
+import type { ShieldCause } from "@/shield/ShieldContentPublisher";
+
+interface ShieldContentSink {
+  publish(cause: ShieldCause): Promise<void>;
+}
+
+const NOOP_SHIELD_CONTENT: ShieldContentSink = {
+  publish: async () => undefined,
+};
 
 /** Everything the lock surfaces render, in one immutable value. */
 export type LockSnapshot = Readonly<{
@@ -60,6 +69,8 @@ export interface LockControllerOptions {
   subscribeWalking?: (listener: () => void) => () => void;
   /** Review suppression boundary: called only on down → up transitions. */
   onShieldShown?: (atMs: number) => void | Promise<void>;
+  /** Separate app-group publisher; deliberately not part of ScreenTimeModule. */
+  shieldContent?: ShieldContentSink;
 }
 
 const INITIAL: LockSnapshot = Object.freeze({
@@ -86,6 +97,7 @@ export class LockController {
   private readonly walking: () => boolean;
   private readonly subscribeWalking: (listener: () => void) => () => void;
   private readonly onShieldShown: (atMs: number) => void | Promise<void>;
+  private readonly shieldContent: ShieldContentSink;
   private readonly listeners = new Set<() => void>();
   private activeClients = 0;
   private reconciliation: Promise<void> = Promise.resolve();
@@ -114,6 +126,7 @@ export class LockController {
         ? () => () => {}
         : (listener) => walkingSession.subscribe(listener));
     this.onShieldShown = options.onShieldShown ?? ((atMs) => reviewCoordinator.noteShieldShown(atMs));
+    this.shieldContent = options.shieldContent ?? NOOP_SHIELD_CONTENT;
   }
 
   public getSnapshot(): LockSnapshot {
@@ -259,6 +272,9 @@ export class LockController {
   ): Promise<void> {
     const { decision, desired } = this.desiredState();
     this.patch({ precedence: decision });
+    if (decision.shields === "up") {
+      await this.shieldContent.publish(shieldCause(decision.cause));
+    }
     await this.screenTime.reconcile(selection, desired);
   }
 
@@ -335,6 +351,19 @@ export class LockController {
       void this.onShieldShown(this.now());
     }
     this.listeners.forEach((listener) => listener());
+  }
+}
+
+function shieldCause(
+  cause: LockPrecedenceDecision["cause"],
+): ShieldCause {
+  switch (cause) {
+    case "fullLock":
+      return "fullLock";
+    case "activeWindow":
+      return "lockWindow";
+    default:
+      return "balanceEmpty";
   }
 }
 

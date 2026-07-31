@@ -188,6 +188,26 @@ describe("LockController", () => {
     controller.stop();
   });
 
+  it("publishes the real policy cause before a production shield can render", async () => {
+    const screenTime = new FakeScreenTime();
+    const publish = jest.fn(async () => undefined);
+    const controller = new LockController({
+      screenTime,
+      journal: () => emptyJournal(),
+      now: () => NOW,
+      scheduleStore: new LockScheduleStore(),
+      shieldContent: { publish },
+    });
+    await controller.start();
+    await controller.requestAuthorization();
+
+    await controller.pickApps();
+
+    expect(controller.getSnapshot().precedence.cause).toBe("fullLock");
+    expect(publish).toHaveBeenCalledWith("fullLock");
+    controller.stop();
+  });
+
   it("uses the composition-root clock for the owned ledger by default", async () => {
     const screenTime = new FakeScreenTime();
     useHomeStore.setState({
