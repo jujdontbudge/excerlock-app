@@ -21,6 +21,8 @@ export const colors = {
   /** Translucent, borderless cards — hierarchy comes from layering, not strokes. */
   card: "rgba(255, 255, 255, 0.08)",
   cardElevated: "rgba(255, 255, 255, 0.12)",
+  /** Family-A ivory laid over the system light material on dismissible surfaces. */
+  ivoryBlur: "rgba(244, 241, 245, 0.20)",
 
   /** The big screen-level action sits in a solid white pill with near-black ink. */
   pillScreenCta: "#FFFFFF",
