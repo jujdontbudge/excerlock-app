@@ -81,4 +81,100 @@ describe("NativeScreenTimeModule", () => {
       displayName: "1 app",
     });
   });
+
+  it("applies and clears ManagedSettings shields for the opaque selection", async () => {
+    const deviceActivity = createDeviceActivityApi(2);
+    const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity,
+      picker: createPicker({ applicationCount: 2, categoryCount: 1 }),
+    });
+    const selection = (await screenTime.pickSelection())!;
+
+    await screenTime.reconcile(selection, {
+      shields: "up",
+      drainThresholds: [],
+    });
+    expect(deviceActivity.blockSelection).toHaveBeenCalledWith({
+      activitySelectionId: selection,
+    });
+    await expect(screenTime.getCurrentShieldState()).resolves.toMatchObject({
+      selection,
+      effectiveShields: "up",
+    });
+
+    await screenTime.reconcile(selection, {
+      shields: "down",
+      drainThresholds: [],
+    });
+    expect(deviceActivity.unblockSelection).toHaveBeenCalledWith({
+      activitySelectionId: selection,
+    });
+    await expect(screenTime.getCurrentShieldState()).resolves.toMatchObject({
+      selection,
+      effectiveShields: "down",
+    });
+  });
+
+  it("renews every fail-safe unlock for exactly 15 future minutes", async () => {
+    const deviceActivity = createDeviceActivityApi(2);
+    let nowMs = new Date(2026, 6, 31, 12, 0, 0).getTime();
+    const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity,
+      picker: createPicker({ applicationCount: 1, categoryCount: 0 }),
+      nowMs: () => nowMs,
+    });
+    const selection = (await screenTime.pickSelection())!;
+    const unlocked = { shields: "down" as const, drainThresholds: [] };
+
+    await screenTime.reconcile(selection, unlocked);
+
+    expect(deviceActivity.configureActions).toHaveBeenLastCalledWith({
+      activityName: "excerlock.unlock-lease.v1",
+      callbackName: "intervalDidEnd",
+      actions: [
+        {
+          type: "blockSelection",
+          familyActivitySelectionId: selection,
+        },
+      ],
+    });
+    expect(deviceActivity.startMonitoring).toHaveBeenLastCalledWith(
+      "excerlock.unlock-lease.v1",
+      {
+        intervalStart: {
+          year: 2026,
+          month: 7,
+          day: 31,
+          hour: 12,
+          minute: 0,
+          second: 0,
+        },
+        intervalEnd: {
+          year: 2026,
+          month: 7,
+          day: 31,
+          hour: 12,
+          minute: 15,
+          second: 0,
+        },
+        repeats: false,
+      },
+      [],
+    );
+
+    nowMs += 5 * 60_000;
+    await screenTime.reconcile(selection, unlocked);
+
+    expect(deviceActivity.stopMonitoring).toHaveBeenLastCalledWith([
+      "excerlock.unlock-lease.v1",
+    ]);
+    expect(deviceActivity.startMonitoring).toHaveBeenLastCalledWith(
+      "excerlock.unlock-lease.v1",
+      expect.objectContaining({
+        intervalStart: expect.objectContaining({ minute: 5 }),
+        intervalEnd: expect.objectContaining({ minute: 20 }),
+      }),
+      [],
+    );
+  });
 });

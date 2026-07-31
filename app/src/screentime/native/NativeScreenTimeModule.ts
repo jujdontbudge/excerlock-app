@@ -11,9 +11,19 @@ import type {
   ShieldStateListener,
 } from "../ScreenTimeModule";
 import {
+  desiredOsStatesEqual,
+  freezeDesiredOsState,
+  shieldStatesEqual,
+} from "../shieldState";
+import {
   summarizeSelection,
   type SelectionContents,
 } from "../selectionSummary";
+import {
+  localDateComponents,
+  UNLOCK_INCREMENT_MS,
+  UNLOCK_LEASE_MONITOR,
+} from "./deviceActivitySchedule";
 
 type DeviceActivityAuthorizationStatus = 0 | 1 | 2;
 
@@ -52,6 +62,7 @@ export interface NativeSelectionPicker {
 type NativeScreenTimeModuleOptions = Readonly<{
   deviceActivity: DeviceActivityApi;
   picker?: NativeSelectionPicker;
+  nowMs?: () => number;
 }>;
 
 const AUTHORIZATION_STATUSES: Record<
@@ -82,14 +93,19 @@ const MISSING_PICKER: NativeSelectionPicker = {
 export class NativeScreenTimeModule implements ScreenTimeModule {
   private readonly deviceActivity: DeviceActivityApi;
   private readonly picker: NativeSelectionPicker;
+  private readonly nowMs: () => number;
   private readonly selections = new Map<string, SelectionContents>();
+  private readonly listeners = new Set<ShieldStateListener>();
+  private currentShieldState = INITIAL_SHIELD_STATE;
 
   public constructor({
     deviceActivity,
     picker = MISSING_PICKER,
+    nowMs = Date.now,
   }: NativeScreenTimeModuleOptions) {
     this.deviceActivity = deviceActivity;
     this.picker = picker;
+    this.nowMs = nowMs;
   }
 
   public async getAuthorizationStatus(): Promise<ScreenTimeAuthorizationStatus> {
@@ -130,10 +146,25 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
   }
 
   public async reconcile(
-    _selection: ScreenTimeSelectionHandle,
-    _desiredOsState: DesiredOsState,
+    selection: ScreenTimeSelectionHandle,
+    desiredOsState: DesiredOsState,
   ): Promise<void> {
-    throw new Error("Native shield reconciliation is not configured yet");
+    this.assertIssuedSelection(selection);
+    const desired = freezeDesiredOsState(desiredOsState);
+    if (desired.shields === "up") {
+      this.deviceActivity.stopMonitoring([UNLOCK_LEASE_MONITOR]);
+      this.deviceActivity.blockSelection({ activitySelectionId: selection });
+    } else {
+      await this.armUnlockLease(selection);
+      this.deviceActivity.unblockSelection({ activitySelectionId: selection });
+    }
+
+    this.updateShieldState({
+      selection,
+      desiredOsState: desired,
+      effectiveShields: desired.shields,
+      activeLockWindowId: null,
+    });
   }
 
   public async scheduleLockWindow(
@@ -152,10 +183,63 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
   }
 
   public async getCurrentShieldState(): Promise<CurrentShieldState> {
-    return INITIAL_SHIELD_STATE;
+    return this.currentShieldState;
   }
 
-  public subscribe(_listener: ShieldStateListener): ScreenTimeUnsubscribe {
-    return () => undefined;
+  public subscribe(listener: ShieldStateListener): ScreenTimeUnsubscribe {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private async armUnlockLease(
+    selection: ScreenTimeSelectionHandle,
+  ): Promise<void> {
+    const startsAtMs = this.nowMs();
+    const endsAtMs = startsAtMs + UNLOCK_INCREMENT_MS;
+    this.deviceActivity.stopMonitoring([UNLOCK_LEASE_MONITOR]);
+    this.deviceActivity.configureActions({
+      activityName: UNLOCK_LEASE_MONITOR,
+      callbackName: "intervalDidEnd",
+      actions: [
+        {
+          type: "blockSelection",
+          familyActivitySelectionId: selection,
+        },
+      ],
+    });
+    try {
+      await this.deviceActivity.startMonitoring(
+        UNLOCK_LEASE_MONITOR,
+        {
+          intervalStart: localDateComponents(startsAtMs),
+          intervalEnd: localDateComponents(endsAtMs),
+          repeats: false,
+        },
+        [],
+      );
+    } catch (error) {
+      this.deviceActivity.blockSelection({ activitySelectionId: selection });
+      throw error;
+    }
+  }
+
+  private assertIssuedSelection(selection: ScreenTimeSelectionHandle): void {
+    if (!this.selections.has(selection)) {
+      throw new Error("Screen Time selection handle is stale or unknown");
+    }
+  }
+
+  private updateShieldState(next: CurrentShieldState): void {
+    if (
+      shieldStatesEqual(this.currentShieldState, next) &&
+      desiredOsStatesEqual(
+        this.currentShieldState.desiredOsState,
+        next.desiredOsState,
+      )
+    ) {
+      return;
+    }
+    this.currentShieldState = Object.freeze(next);
+    this.listeners.forEach((listener) => listener(this.currentShieldState));
   }
 }
