@@ -176,10 +176,10 @@ export class WalkingSessionController {
     window: ConfiguredCondition["activeWindow"],
     wallClockNow: number,
   ): void {
-    const endMinute = window?.endMinute;
-    if (endMinute === undefined) {
+    if (window === undefined || window.endMinute === undefined) {
       return;
     }
+    const endMinute = window.endMinute;
     const dayStart = Math.floor(wallClockNow / DAY_MS) * DAY_MS;
     const minute = (wallClockNow - dayStart) / 60_000;
     const crossesMidnight =

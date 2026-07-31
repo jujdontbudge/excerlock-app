@@ -21,6 +21,7 @@ type GymLocationProvider = Pick<
   AppLocationProvider,
   | "checkIn"
   | "getAuthorizationStatus"
+  | "on"
   | "startMonitoringRegions"
   | "stopMonitoringRegions"
 >;
@@ -31,11 +32,13 @@ export interface GymPresenceControllerDependencies {
   readonly now: () => number;
   readonly recordEventPayout: (conditionId: string, atMs: number) => void;
   readonly setAutoDetectEnabled?: (enabled: boolean) => void;
+  readonly toLedgerTime?: (atMs: number) => number;
 }
 
 /** Foreground owner of the default, When-In-Use gym check-in tier. */
 export class GymPresenceController {
   private monitoring = false;
+  private unsubscribeRegion: (() => void) | undefined;
 
   public constructor(
     private readonly dependencies: GymPresenceControllerDependencies,
@@ -80,7 +83,9 @@ export class GymPresenceController {
       return false;
     }
 
-    await this.dependencies.getLocation().startMonitoringRegions(regions);
+    const location = this.dependencies.getLocation();
+    this.subscribeToRegions(location);
+    await location.startMonitoringRegions(regions);
     this.monitoring = true;
     this.dependencies.setAutoDetectEnabled?.(true);
     return true;
@@ -113,6 +118,7 @@ export class GymPresenceController {
     if (location.getAuthorizationStatus() !== "authorizedAlways") {
       return;
     }
+    this.subscribeToRegions(location);
     await location.startMonitoringRegions(regions);
     this.monitoring = true;
   }
@@ -137,6 +143,28 @@ export class GymPresenceController {
         : [],
     );
   }
+
+  private subscribeToRegions(location: GymLocationProvider): void {
+    this.unsubscribeRegion ??= location.on("region", (transition) => {
+      if (transition.type !== "enter") {
+        return;
+      }
+      const state = this.dependencies.getState();
+      state.conditions
+        .filter(
+          ({ catalogId, id, placeId }) =>
+            catalogId === "gym-arrival" &&
+            placeId === transition.regionId &&
+            !state.disabledConditionIds.includes(id),
+        )
+        .forEach(({ id }) => {
+          this.dependencies.recordEventPayout(
+            id,
+            this.dependencies.toLedgerTime?.(transition.atMs) ?? transition.atMs,
+          );
+        });
+    });
+  }
 }
 
 let sharedController: GymPresenceController | undefined;
@@ -156,6 +184,7 @@ export function getGymPresenceController(): GymPresenceController {
     setAutoDetectEnabled: (enabled) => {
       useSettingsStore.getState().setGymAutoDetectEnabled(enabled);
     },
+    toLedgerTime: localWallClockNow,
   });
   return sharedController;
 }

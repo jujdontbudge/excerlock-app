@@ -6,6 +6,7 @@ jest.mock(
 import type { ConfiguredCondition } from "@excerlock/condition-model";
 
 import { GymPresenceController } from "../gymPresenceController";
+import type { RegionTransition } from "@/signals";
 
 const gymArrival: ConfiguredCondition = {
   id: "gym-arrival-condition",
@@ -44,6 +45,7 @@ describe("GymPresenceController manual check-in", () => {
       getLocation: () => ({
         checkIn,
         getAuthorizationStatus: () => "authorizedWhenInUse",
+        on: () => () => {},
         startMonitoringRegions: async () => {},
         stopMonitoringRegions: async () => {},
       }),
@@ -70,6 +72,7 @@ describe("GymPresenceController manual check-in", () => {
     const getLocation = jest.fn(() => ({
       checkIn: jest.fn(),
       getAuthorizationStatus: () => "authorizedWhenInUse" as const,
+      on: () => () => {},
       startMonitoringRegions,
       stopMonitoringRegions: jest.fn(),
     }));
@@ -111,5 +114,52 @@ describe("GymPresenceController manual check-in", () => {
       },
     ]);
     expect(autoDetectEnabled).toBe(true);
+  });
+
+  it("books a confirmed auto-detect enter for the matching gym condition", async () => {
+    let onRegion: (transition: RegionTransition) => void = () => {};
+    const recordEventPayout = jest.fn();
+    const controller = new GymPresenceController({
+      getState: () => ({
+        autoDetectEnabled: false,
+        conditions: [gymArrival],
+        disabledConditionIds: [],
+        savedPlaces: [
+          {
+            id: "gym-one",
+            name: "Neighborhood gym",
+            geofence: {
+              latitude: 40.7128,
+              longitude: -74.006,
+              radiusMeters: 100,
+            },
+          },
+        ],
+      }),
+      getLocation: () => ({
+        checkIn: jest.fn(),
+        getAuthorizationStatus: () => "authorizedWhenInUse",
+        startMonitoringRegions: async () => {},
+        stopMonitoringRegions: async () => {},
+        on: (_event, listener) => {
+          onRegion = listener as (transition: RegionTransition) => void;
+          return () => {};
+        },
+      }),
+      now: () => 123_000,
+      recordEventPayout,
+      setAutoDetectEnabled: jest.fn(),
+      toLedgerTime: (atMs) => atMs + 1_000,
+    });
+    await controller.enableAutoDetect();
+
+    onRegion({ type: "exit", regionId: "gym-one", atMs: 400_000 });
+    onRegion({ type: "enter", regionId: "gym-one", atMs: 456_000 });
+
+    expect(recordEventPayout).toHaveBeenCalledTimes(1);
+    expect(recordEventPayout).toHaveBeenCalledWith(
+      "gym-arrival-condition",
+      457_000,
+    );
   });
 });
