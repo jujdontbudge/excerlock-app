@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import {
   createDrizzleFeatureRequestRepository,
@@ -5,6 +6,18 @@ import {
   createDrizzleSupportSubmissionRepository,
 } from "../src/support/index.js";
 import { createPostgresJsTestDatabase } from "./postgresJsTestDatabase.js";
+
+describe("repository database execution boundary", () => {
+  it("demonstrates the SQL-recording fake accepts an invalid column", async () => {
+    const database = createPostgresJsTestDatabase();
+
+    await expect(
+      database.db.execute(
+        sql.raw('select "misspelled_column" from "support_requests"'),
+      ),
+    ).resolves.toEqual([]);
+  });
+});
 
 describe("support submission repository", () => {
   it("persists a feature submission and its list entry in one transaction", async () => {
