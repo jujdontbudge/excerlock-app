@@ -58,4 +58,53 @@ describe("GymPresenceController manual check-in", () => {
       123_000,
     );
   });
+
+  it("starts background geofencing only from the explicit auto-detect opt-in", async () => {
+    let autoDetectEnabled = false;
+    const startMonitoringRegions = jest.fn().mockResolvedValue(undefined);
+    const getLocation = jest.fn(() => ({
+      checkIn: jest.fn(),
+      getAuthorizationStatus: () => "authorizedWhenInUse" as const,
+      startMonitoringRegions,
+      stopMonitoringRegions: jest.fn(),
+    }));
+    const controller = new GymPresenceController({
+      getState: () => ({
+        autoDetectEnabled,
+        conditions: [gymArrival],
+        disabledConditionIds: [],
+        savedPlaces: [
+          {
+            id: "gym-one",
+            name: "Neighborhood gym",
+            geofence: {
+              latitude: 40.7128,
+              longitude: -74.006,
+              radiusMeters: 100,
+            },
+          },
+        ],
+      }),
+      getLocation,
+      now: () => 123_000,
+      recordEventPayout: jest.fn(),
+      setAutoDetectEnabled: (enabled) => {
+        autoDetectEnabled = enabled;
+      },
+    });
+
+    await controller.reconcileAutoDetect();
+    expect(getLocation).not.toHaveBeenCalled();
+
+    await expect(controller.enableAutoDetect()).resolves.toBe(true);
+    expect(startMonitoringRegions).toHaveBeenCalledWith([
+      {
+        id: "gym-one",
+        latitude: 40.7128,
+        longitude: -74.006,
+        radiusMeters: 100,
+      },
+    ]);
+    expect(autoDetectEnabled).toBe(true);
+  });
 });
