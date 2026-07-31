@@ -1,9 +1,10 @@
 # ScreenTime
 
 ScreenTime is the app-facing seam for iOS authorization, the system app/category
-picker, shield reconciliation, and concrete lock-window registration. Phase 2
-uses a persistent mock. Phase 3 replaces that adapter with
-FamilyControls/ManagedSettings/DeviceActivity without changing callers.
+picker, shield reconciliation, and concrete lock-window registration. Tests and
+non-native previews use a persistent mock. The iOS development client selects
+the real FamilyControls/ManagedSettings/DeviceActivity adapter without changing
+callers; see [`native/README.md`](native/README.md).
 
 ## Interface
 
@@ -51,9 +52,10 @@ persistence pattern as settings. Observable state is emitted only when the
 shield snapshot changes, so idempotent reconciliation does not cause spurious
 renders.
 
-The mock class is deliberately not exported from `index.ts`. No app module may
-import it directly. `getScreenTimeModule()` is the single Phase-3 swap point and
-returns the mock today.
+The mock and native classes are deliberately not exported from `index.ts`. No
+app module may import either implementation directly. `getScreenTimeModule()`
+is the single composition point: Jest remains mock-backed, while an iOS
+development client gets the native adapter.
 
 ## Invariants
 
