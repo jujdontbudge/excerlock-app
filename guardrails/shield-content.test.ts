@@ -59,6 +59,12 @@ describe("Screen Time shield content", () => {
     expect(swift).toContain("excerlock.shield.current-cause.v1");
     expect(swift).toContain("excerlock.shield.runtime-context.v1");
     expect(swift).toContain("excerlock.shield.copy-overrides.v1");
+    expect(swift).toContain(
+      "let contextual = applyingRuntimeContext(to: fallback, cause: cause)",
+    );
+    expect(swift).toContain(
+      "let copyOverridden = applyingCopyOverride(to: contextual, cause: cause)",
+    );
     expect(swift).toContain("F4F1F5");
     expect(swift).toContain("C9C4CC");
     expect(swift).toContain("F98529");

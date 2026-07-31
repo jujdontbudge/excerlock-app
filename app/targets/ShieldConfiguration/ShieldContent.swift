@@ -42,12 +42,12 @@ struct ShieldContentCatalog {
   func current() -> ResolvedShieldContent {
     let cause = currentCause()
     let fallback = defaults[cause.rawValue] ?? Self.emergencyDefaults[cause.rawValue]!
-    let copyOverridden = applyingCopyOverride(to: fallback, cause: cause)
-    let contextual = applyingRuntimeContext(to: copyOverridden, cause: cause)
+    let contextual = applyingRuntimeContext(to: fallback, cause: cause)
+    let copyOverridden = applyingCopyOverride(to: contextual, cause: cause)
     return ResolvedShieldContent(
       cause: cause,
       routeHomeAvailable: routeHomeAvailable(for: cause),
-      variant: contextual
+      variant: copyOverridden
     )
   }
 
