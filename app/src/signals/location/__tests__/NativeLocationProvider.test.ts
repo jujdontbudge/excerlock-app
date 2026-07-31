@@ -1,0 +1,108 @@
+import type {
+  GeofenceRegion,
+  LocationAuthorizationStatus,
+  LocationSample,
+  RegionTransition,
+} from "..";
+import type { NativeLocationClient } from "../NativeLocationClient";
+import { NativeLocationProvider } from "../NativeLocationProvider";
+import { runLocationProviderContract } from "../testing/providerContract";
+
+runLocationProviderContract("NativeLocationProvider", () => {
+  const client = new ContractLocationClient();
+  const provider = new NativeLocationProvider(client);
+
+  return {
+    provider,
+    advanceTo: (atMs) => client.advanceTo(atMs),
+    dispose: () => provider.dispose(),
+  };
+});
+
+class ContractLocationClient implements NativeLocationClient {
+  private readonly locationListeners = new Set<(sample: LocationSample) => void>();
+  private readonly presenceListeners = new Set<(transition: RegionTransition) => void>();
+  private readonly regionListeners = new Set<(transition: RegionTransition) => void>();
+  private locationDelivered = false;
+  private exitDelivered = false;
+  private walkActive = false;
+
+  public getAuthorizationStatus(): LocationAuthorizationStatus {
+    return "authorizedAlways";
+  }
+
+  public async requestForegroundAuthorization(): Promise<LocationAuthorizationStatus> {
+    return "authorizedAlways";
+  }
+
+  public async requestBackgroundAuthorization(): Promise<LocationAuthorizationStatus> {
+    return "authorizedAlways";
+  }
+
+  public getCachedRegionPresence(regionId: string): boolean | null {
+    return regionId === "gym-a";
+  }
+
+  public getLastLocation(): LocationSample | null {
+    return null;
+  }
+
+  public async getCurrentLocation(): Promise<LocationSample> {
+    return sample;
+  }
+
+  public async startGeofencing(_regions: readonly GeofenceRegion[]): Promise<void> {}
+
+  public async stopGeofencing(): Promise<void> {}
+
+  public async startLocationUpdates(): Promise<void> {
+    this.walkActive = true;
+  }
+
+  public async stopLocationUpdates(): Promise<void> {
+    this.walkActive = false;
+  }
+
+  public isLocationUpdatesActive(): boolean {
+    return this.walkActive;
+  }
+
+  public onRegionPresence(callback: (transition: RegionTransition) => void): () => void {
+    this.presenceListeners.add(callback);
+    return () => this.presenceListeners.delete(callback);
+  }
+
+  public onRegionTransition(callback: (transition: RegionTransition) => void): () => void {
+    this.regionListeners.add(callback);
+    return () => this.regionListeners.delete(callback);
+  }
+
+  public onLocation(callback: (sample: LocationSample) => void): () => void {
+    this.locationListeners.add(callback);
+    return () => this.locationListeners.delete(callback);
+  }
+
+  public advanceTo(atMs: number): void {
+    if (atMs >= 1_000 && !this.locationDelivered) {
+      this.locationDelivered = true;
+      this.locationListeners.forEach((listener) => listener(sample));
+    }
+    if (atMs >= 2_000 && !this.exitDelivered) {
+      this.exitDelivered = true;
+      const exit: RegionTransition = {
+        type: "exit",
+        regionId: "gym-a",
+        atMs: 2_000,
+      };
+      this.presenceListeners.forEach((listener) => listener(exit));
+      this.regionListeners.forEach((listener) => listener(exit));
+    }
+  }
+}
+
+const sample: LocationSample = {
+  lat: 40.741,
+  lon: -73.989,
+  accuracy: 8,
+  atMs: 1_000,
+};
