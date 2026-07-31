@@ -15,7 +15,7 @@ import {
   useHomeStore,
 } from "@/home";
 
-import { MockAccountModule } from "../MockAccountModule";
+import { getAccountModule } from "../accessor";
 
 describe("account local-first law", () => {
   beforeEach(async () => {
@@ -24,7 +24,7 @@ describe("account local-first law", () => {
   });
 
   it("earns locally and lifts the core lock while signed out", async () => {
-    const account = new MockAccountModule();
+    const account = getAccountModule();
     expect((await account.getSnapshot()).session.status).toBe("signedOut");
 
     const condition: ConfiguredCondition = {
