@@ -4,7 +4,7 @@ import {
   render,
   screen,
 } from "@testing-library/react-native";
-import { Animated } from "react-native";
+import { Alert, Animated } from "react-native";
 
 import { MockShareCardModule } from "@/shareCards";
 
@@ -122,6 +122,38 @@ describe("MilestonesShelf", () => {
       await screen.findByRole("header", { name: "Share your milestone" }),
     ).toBeOnTheScreen();
     expect(screen.getByText("July 2026")).toBeOnTheScreen();
+  });
+
+  // PRD 3.14 makes the unlock moment deliberately quiet: the badge animates into
+  // the shelf and wears a "New" glint, and that is the WHOLE announcement. No
+  // popup anywhere, no auto-opened share sheet. Sharing stays a tap the user
+  // chooses to make, so this locks the negative in -- nothing else here would
+  // fail if a future change reintroduced a takeover.
+  it("announces an unlock with no popup and no auto-opened share sheet", async () => {
+    const shareCards = new MockShareCardModule();
+    const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
+    useMilestoneUnlockStore
+      .getState()
+      .discoverUnlocks(["streak-3", "activity-1"], Date.UTC(2026, 6, 29, 12));
+    useMilestoneUnlockStore.getState().claimPending();
+
+    await render(
+      <MilestonesShelf
+        metrics={metrics}
+        shareCardModule={shareCards}
+        unlockSequence={["streak-3", "activity-1"]}
+      />,
+    );
+
+    expect(screen.getByTestId("milestone-new-streak-3")).toBeOnTheScreen();
+    expect(screen.getByTestId("milestone-new-activity-1")).toBeOnTheScreen();
+
+    expect(
+      screen.queryByRole("header", { name: "Share your milestone" }),
+    ).toBeNull();
+    expect(shareCards.getPresentedCards()).toEqual([]);
+    expect(shareCards.getCapturedCards()).toEqual([]);
+    expect(alert).not.toHaveBeenCalled();
   });
 
   it("starts one staggered scale-in sequence for all pending unlocks", async () => {
