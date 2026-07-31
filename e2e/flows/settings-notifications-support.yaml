@@ -78,6 +78,12 @@ env:
 - hideKeyboard
 - tapOn: Submit feature request
 - assertVisible: E2E dashboard
+- scrollUntilVisible:
+    element:
+      text: Vote for E2E dashboard
+    direction: DOWN
+    # Keep the floating tab bar from covering the vote button.
+    centerElement: true
 - assertVisible: Vote for E2E dashboard
 - tapOn: Vote for E2E dashboard
 - assertVisible: Voted for E2E dashboard
