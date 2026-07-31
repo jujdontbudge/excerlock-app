@@ -11,7 +11,11 @@ test("README gives an honest, executable simulator handoff", async () => {
   assert.match(normalized, /simulator-verified/i);
   assert.match(normalized, /2026-07-31/);
   assert.match(normalized, /10\/10 Flows Passed/i);
-  assert.match(normalized, /6m\s+49s/);
+  // A concrete wall-clock duration, not a pinned one. #77 pinned `6m 49s` here
+  // and then retimed the README to `6m 34s` in a later commit, landing on main
+  // with the gate red — the number has to be re-synced in two files on every
+  // re-run. The guard that matters is that a real measured duration is stated.
+  assert.match(normalized, /\d+m\s+\d+s/);
   assert.match(normalized, /exit code 0/i);
   assert.match(normalized, /Maestro 2\.7\.0/);
   assert.match(normalized, /Xcode 26\.4\.1/);

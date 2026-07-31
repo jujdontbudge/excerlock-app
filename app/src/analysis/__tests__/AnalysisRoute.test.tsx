@@ -13,14 +13,15 @@ jest.mock("expo-router", () => ({
   },
 }));
 
-jest.mock(
-  "expo-haptics",
-  () => ({
-    NotificationFeedbackType: { Success: "success" },
-    notificationAsync: jest.fn().mockResolvedValue(undefined),
-  }),
-  { virtual: true },
-);
+// NOT `{ virtual: true }`: expo-haptics is a real installed dependency, and the
+// virtual flag made this mock race jest-expo's own auto-mock of the package.
+// Whichever registered second won, so the route's haptic landed on a different
+// jest.fn() than the one asserted here — a fail that only showed when another
+// suite ran first.
+jest.mock("expo-haptics", () => ({
+  NotificationFeedbackType: { Success: "success" },
+  notificationAsync: jest.fn().mockResolvedValue(undefined),
+}));
 
 jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
