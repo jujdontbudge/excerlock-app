@@ -2,6 +2,8 @@ export type ExperimentFlagName =
   | `exp-${string}-${string}`
   | `gate-${string}`;
 
+export const EXPERIMENT_FLAG_BUDGET_MS = 500;
+
 type ExperimentDefinition = {
   readonly variants: readonly ["control", ...string[]];
 };
@@ -24,4 +26,19 @@ export function isExperimentVariant<Key extends ExperimentFlagKey>(
   value: unknown,
 ): value is ExperimentVariant<Key> {
   return (EXPERIMENTS[key].variants as readonly unknown[]).includes(value);
+}
+
+export function resolveOnTimeVariant<Key extends ExperimentFlagKey>(
+  key: Key,
+  observed: unknown,
+  elapsedMs: number,
+): ExperimentVariant<Key> {
+  if (
+    elapsedMs >= 0 &&
+    elapsedMs <= EXPERIMENT_FLAG_BUDGET_MS &&
+    isExperimentVariant(key, observed)
+  ) {
+    return observed;
+  }
+  return "control" as ExperimentVariant<Key>;
 }

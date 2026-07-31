@@ -1,7 +1,9 @@
 export {
   EXPERIMENT_KEYS,
+  EXPERIMENT_FLAG_BUDGET_MS,
   EXPERIMENTS,
   isExperimentVariant,
+  resolveOnTimeVariant,
 } from "./experiments";
 export type {
   ExperimentFlagKey,

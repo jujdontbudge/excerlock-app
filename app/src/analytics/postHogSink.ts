@@ -1,9 +1,10 @@
 import type { PropValue } from "@excerlock/analytics-events";
 import type { PostHogOptions } from "posthog-react-native";
 
+import { EXPERIMENT_FLAG_BUDGET_MS } from "../experiments/experiments";
 import type { AnalyticsPayload, AnalyticsSink } from "./sink";
 
-export const FLAG_BUDGET_MS = 500;
+export const FLAG_BUDGET_MS = EXPERIMENT_FLAG_BUDGET_MS;
 
 /**
  * One auditable SDK policy: explicit product events and feature-flag exposure

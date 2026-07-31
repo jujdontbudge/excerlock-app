@@ -2,6 +2,7 @@ import {
   decodeShieldCopyPayload,
   EXPERIMENT_KEYS,
   isExperimentVariant,
+  resolveOnTimeVariant,
 } from "..";
 
 describe("typed experiment registry", () => {
@@ -29,5 +30,18 @@ describe("typed experiment registry", () => {
       }),
     ).toBeNull();
     expect(decodeShieldCopyPayload({ balanceEmpty: payload.balanceEmpty })).toBeNull();
+  });
+
+  it("stays control-first and accepts only a valid variant inside 500ms", () => {
+    expect(resolveOnTimeVariant("exp-shield-copy-v1", undefined, 0)).toBe("control");
+    expect(resolveOnTimeVariant("exp-shield-copy-v1", "treatment", 499)).toBe(
+      "treatment",
+    );
+    expect(resolveOnTimeVariant("exp-shield-copy-v1", "treatment", 501)).toBe(
+      "control",
+    );
+    expect(resolveOnTimeVariant("exp-shield-copy-v1", "variant-c", 100)).toBe(
+      "control",
+    );
   });
 });
