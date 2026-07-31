@@ -1,21 +1,30 @@
 import { sql } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   createDrizzleFeatureRequestRepository,
   createDrizzleFeatureRequestVoteRepository,
   createDrizzleSupportSubmissionRepository,
 } from "../src/support/index.js";
 import { createPostgresJsTestDatabase } from "./postgresJsTestDatabase.js";
+import { createPgliteTestDatabase } from "./pgliteTestDatabase.js";
 
 describe("repository database execution boundary", () => {
-  it("demonstrates the SQL-recording fake accepts an invalid column", async () => {
-    const database = createPostgresJsTestDatabase();
+  let database: Awaited<ReturnType<typeof createPgliteTestDatabase>>;
 
+  beforeAll(async () => {
+    database = await createPgliteTestDatabase();
+  });
+
+  afterAll(async () => {
+    await database.client.close();
+  });
+
+  it("rejects SQL that names a column absent from the migrations", async () => {
     await expect(
       database.db.execute(
         sql.raw('select "misspelled_column" from "support_requests"'),
       ),
-    ).resolves.toEqual([]);
+    ).rejects.toThrow("misspelled_column");
   });
 });
 
