@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Animated,
   Easing,
@@ -26,7 +26,7 @@ export function MilestoneNewGlint({
   index,
 }: MilestoneNewGlintProps) {
   const { colors, radius, typography } = useTheme();
-  const sweep = useRef(new Animated.Value(0)).current;
+  const sweep = useMemo(() => new Animated.Value(0), []);
 
   useEffect(() => {
     sweep.setValue(0);
