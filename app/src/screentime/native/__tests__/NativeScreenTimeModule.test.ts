@@ -11,6 +11,7 @@ import {
   type DeviceActivityApi,
   type NativeSelectionPicker,
 } from "../NativeScreenTimeModule";
+import { NATIVE_SCREENTIME_STORAGE_KEY } from "../nativeStore";
 
 type ControlledDeviceActivityApi = DeviceActivityApi & {
   setShieldActive(active: boolean): void;
@@ -333,6 +334,43 @@ describe("NativeScreenTimeModule", () => {
       desiredOsState: { shields: "up", drainThresholds: [15, 30] },
       effectiveShields: "down",
       activeLockWindowId: null,
+    });
+  });
+
+  it("rejects persisted strings that are not the adapter-owned opaque handle", async () => {
+    const leakedIdentifier = "com.private.locked-app";
+    await AsyncStorage.setItem(
+      NATIVE_SCREENTIME_STORAGE_KEY,
+      JSON.stringify({
+        selection: leakedIdentifier,
+        desiredOsState: { shields: "up", drainThresholds: [] },
+        lockWindows: [
+          {
+            id: "private",
+            startsAtMs: 1,
+            endsAtMs: 2,
+            selection: leakedIdentifier,
+          },
+        ],
+        selectionContents: {
+          [leakedIdentifier]: { applicationCount: 1, categoryCount: 0 },
+        },
+      }),
+    );
+    const screenTime = new NativeScreenTimeModule({
+      deviceActivity: createDeviceActivityApi(2),
+    });
+
+    await expect(
+      screenTime.describeSelection(
+        leakedIdentifier as Parameters<
+          ScreenTimeModule["describeSelection"]
+        >[0],
+      ),
+    ).resolves.toBeNull();
+    await expect(screenTime.getLockWindows()).resolves.toEqual([]);
+    await expect(screenTime.getCurrentShieldState()).resolves.toMatchObject({
+      selection: null,
     });
   });
 

@@ -32,6 +32,7 @@ import {
   createNativeScreenTimePersistence,
   type NativeScheduledLockWindow,
 } from "./nativeStore";
+import { NATIVE_LOCKED_SELECTION } from "./nativeSelection";
 
 type DeviceActivityAuthorizationStatus = 0 | 1 | 2;
 
@@ -92,9 +93,6 @@ const INITIAL_SHIELD_STATE: CurrentShieldState = Object.freeze({
   effectiveShields: "down",
   activeLockWindowId: null,
 });
-
-const LOCKED_SELECTION =
-  "excerlock.selection.locked.v1" as ScreenTimeSelectionHandle;
 
 const MISSING_PICKER: NativeSelectionPicker = {
   async pick(): Promise<never> {
@@ -164,16 +162,19 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
       throw new Error("Screen Time authorization is required before selection");
     }
 
-    const contents = await this.picker.pick(LOCKED_SELECTION);
+    const contents = await this.picker.pick(NATIVE_LOCKED_SELECTION);
     if (
       contents === null ||
       (contents.applicationCount === 0 && contents.categoryCount === 0)
     ) {
       return null;
     }
-    this.selections.set(LOCKED_SELECTION, contents);
-    await this.persistState(LOCKED_SELECTION, this.currentShieldState.desiredOsState);
-    return LOCKED_SELECTION;
+    this.selections.set(NATIVE_LOCKED_SELECTION, contents);
+    await this.persistState(
+      NATIVE_LOCKED_SELECTION,
+      this.currentShieldState.desiredOsState,
+    );
+    return NATIVE_LOCKED_SELECTION;
   }
 
   public async describeSelection(

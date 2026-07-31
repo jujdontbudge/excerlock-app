@@ -9,6 +9,7 @@ import {
   readSelectionContents,
   type SelectionContents,
 } from "../selectionSummary";
+import { readNativeSelectionHandle } from "./nativeSelection";
 
 export const NATIVE_SCREENTIME_STORAGE_KEY =
   "excerlock.screentime.native.v1";
@@ -69,7 +70,7 @@ function readPersistedState(stored: string | null): NativePersistedState {
       return DEFAULT_STATE;
     }
     return {
-      selection: readSelection(Reflect.get(candidate, "selection")),
+      selection: readNativeSelectionHandle(Reflect.get(candidate, "selection")),
       desiredOsState:
         readDesiredOsState(Reflect.get(candidate, "desiredOsState")) ??
         DEFAULT_STATE.desiredOsState,
@@ -81,12 +82,6 @@ function readPersistedState(stored: string | null): NativePersistedState {
   } catch {
     return DEFAULT_STATE;
   }
-}
-
-function readSelection(value: unknown): ScreenTimeSelectionHandle | null {
-  return typeof value === "string"
-    ? (value as ScreenTimeSelectionHandle)
-    : null;
 }
 
 function readDesiredOsState(value: unknown): DesiredOsState | null {
@@ -115,7 +110,9 @@ function readLockWindows(value: unknown): NativeScheduledLockWindow[] {
     const id = Reflect.get(candidate, "id");
     const startsAtMs = Reflect.get(candidate, "startsAtMs");
     const endsAtMs = Reflect.get(candidate, "endsAtMs");
-    const selection = readSelection(Reflect.get(candidate, "selection"));
+    const selection = readNativeSelectionHandle(
+      Reflect.get(candidate, "selection"),
+    );
     return typeof id === "string" &&
       id.trim().length > 0 &&
       Number.isFinite(startsAtMs) &&
@@ -135,8 +132,11 @@ function readSelectionContentsMap(
   }
   return Object.fromEntries(
     Object.entries(value).flatMap(([handle, contents]) => {
+      const selection = readNativeSelectionHandle(handle);
       const parsed = readSelectionContents(contents);
-      return parsed === null ? [] : [[handle, parsed] as const];
+      return selection === null || parsed === null
+        ? []
+        : [[selection, parsed] as const];
     }),
   );
 }
