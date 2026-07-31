@@ -7,13 +7,13 @@ describe("ShieldContentCoordinator", () => {
     const coordinator = new ShieldContentCoordinator({
       publisher: { publish },
       offerSource: {
-        current: async (_cause, context) => {
+        resolveOffer: async (_cause, context) => {
           expect(context).toEqual({ lockWindowEndsAtMs: 123 });
           return "A 10-min walk gets you 15 more minutes.";
         },
       },
       copySource: {
-        current: () => ({ fullLock: { title: "Remote full-lock title" } }),
+        getOverrides: () => ({ fullLock: { title: "Remote full-lock title" } }),
       },
       routeHomeSource: {
         available: async () => true,
@@ -36,8 +36,8 @@ describe("ShieldContentCoordinator", () => {
     const publish = jest.fn<void, [ShieldContent]>();
     const coordinator = new ShieldContentCoordinator({
       publisher: { publish },
-      offerSource: { current: () => "Back at 7:00 AM." },
-      copySource: { current: () => ({}) },
+      offerSource: { resolveOffer: () => "Back at 7:00 AM." },
+      copySource: { getOverrides: () => ({}) },
       routeHomeSource: { available: async () => false },
     });
 

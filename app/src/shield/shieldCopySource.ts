@@ -25,7 +25,7 @@ export function installShieldCopyOverrides(payload: unknown): void {
 }
 
 export const shieldCopySource: ShieldCopySource = Object.freeze({
-  current: () => installedOverrides,
+  getOverrides: () => installedOverrides,
 });
 
 function parseOverrides(payload: unknown): ShieldCopyOverrides {

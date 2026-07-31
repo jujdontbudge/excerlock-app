@@ -5,7 +5,7 @@ import type {
 } from "./ShieldContentPublisher";
 
 export interface ShieldOfferSource {
-  current(
+  resolveOffer(
     cause: ShieldCause,
     context: ShieldOfferContext,
   ): string | Promise<string>;
@@ -17,7 +17,7 @@ export type ShieldOfferContext = Readonly<{
 
 /** #87 installs the PostHog flag payload behind this vendor-free seam. */
 export interface ShieldCopySource {
-  current(): ShieldCopyOverrides;
+  getOverrides(): ShieldCopyOverrides;
 }
 
 export interface ShieldRouteHomeSource {
@@ -43,13 +43,13 @@ export class ShieldContentCoordinator {
   ): Promise<void> {
     const [routeHomeAvailable, offerSubtitle] = await Promise.all([
       this.options.routeHomeSource.available(),
-      this.options.offerSource.current(cause, context),
+      this.options.offerSource.resolveOffer(cause, context),
     ]);
     this.options.publisher.publish({
       cause,
       offerSubtitle,
       routeHomeAvailable,
-      copyOverrides: this.options.copySource.current(),
+      copyOverrides: this.options.copySource.getOverrides(),
     });
   }
 }

@@ -26,7 +26,7 @@ export function createAppShieldContentCoordinator(
     publisher: dependencies.publisher,
     copySource: dependencies.copySource,
     offerSource: {
-      current: async (cause, context) => {
+      resolveOffer: async (cause, context) => {
         const reading = await dependencies.readSignals().catch(
           () => EMPTY_READING,
         );

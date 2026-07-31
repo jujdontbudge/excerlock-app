@@ -21,7 +21,7 @@ describe("createAppShieldContentCoordinator", () => {
       activeConditions: () => [stepsExchange],
       readSignals: async () => ({ totals: { steps: 4_000 }, activeSignals: [] }),
       routeHomeSource: { available: async () => true },
-      copySource: { current: () => ({}) },
+      copySource: { getOverrides: () => ({}) },
     });
 
     await coordinator.publish("fullLock");
@@ -43,7 +43,7 @@ describe("createAppShieldContentCoordinator", () => {
         throw new Error("Health permission unavailable");
       },
       routeHomeSource: { available: async () => false },
-      copySource: { current: () => ({}) },
+      copySource: { getOverrides: () => ({}) },
     });
 
     await expect(coordinator.publish("balanceEmpty")).resolves.toBeUndefined();
