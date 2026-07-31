@@ -17,8 +17,12 @@ import {
   type LocationFixtureManifest,
   type LocationFixturePayload,
 } from "./fixtureManifest";
+import { PRESENCE_CONFIRMATION_MS } from "./GeofenceEventProcessor";
+import { assertGymRegionsAllowed } from "./gymRegions";
+import type { ManualGymCheckIn } from "./ManualGymCheckIn";
+import { isSampleInsideRegion } from "./regionPresence";
 
-export class FixtureLocationProvider implements LocationProvider {
+export class FixtureLocationProvider implements LocationProvider, ManualGymCheckIn {
   private readonly authorizationCallbacks =
     new Set<(status: LocationAuthorizationStatus) => void>();
   private readonly locationCallbacks =
@@ -83,6 +87,39 @@ export class FixtureLocationProvider implements LocationProvider {
 
   public getLastLocation(): LocationSample | null {
     return this.lastLocation;
+  }
+
+  public async checkIn(region: GeofenceRegion): Promise<boolean> {
+    assertGymRegionsAllowed([region]);
+    const authorization = await this.requestAuthorization();
+    if (
+      authorization !== "authorizedWhenInUse" &&
+      authorization !== "authorizedAlways"
+    ) {
+      throw new Error("Location authorization is required for manual check-in");
+    }
+    if (this.lastLocation === null) {
+      return false;
+    }
+
+    const inside = isSampleInsideRegion(this.lastLocation, region);
+    this.presence.set(region.id, inside);
+    if (!inside) {
+      return false;
+    }
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, PRESENCE_CONFIRMATION_MS);
+    });
+    if (this.presence.get(region.id) !== true) {
+      return false;
+    }
+    const transition: RegionTransition = {
+      type: "enter",
+      regionId: region.id,
+      atMs: this.lastLocation.atMs,
+    };
+    this.regionCallbacks.forEach((callback) => callback(transition));
+    return true;
   }
 
   public async startWalkKeepAlive(): Promise<void> {

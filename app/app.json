@@ -44,6 +44,14 @@
           "NSHealthUpdateUsageDescription": false
         }
       ],
+      [
+        "expo-location",
+        {
+          "isIosBackgroundLocationEnabled": true,
+          "locationWhenInUsePermission": "Allow ExcerLock to check whether you are at a saved gym and keep a Walk Session active.",
+          "locationAlwaysAndWhenInUsePermission": "Allow ExcerLock to detect arrivals at saved gyms when you opt into auto-detect."
+        }
+      ],
       "./modules/excerlock-motion/app.plugin.js",
       "./plugins/withScreenTimeExtensionValidation"
     ],
