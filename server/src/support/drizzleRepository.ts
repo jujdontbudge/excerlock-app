@@ -1,4 +1,5 @@
 import { count, desc, eq, sql } from "drizzle-orm";
+import type { PgDatabase } from "drizzle-orm/pg-core";
 import { getDb } from "../db/client.js";
 import {
   featureRequestVotes,
@@ -12,7 +13,10 @@ import type {
   SupportSubmissionRepository,
 } from "./repository.js";
 
-type SupportDatabase = NonNullable<ReturnType<typeof getDb>>;
+type SupportDatabase = PgDatabase<
+  any,
+  typeof import("../db/schema.js")
+>;
 
 function requireDatabase(
   database: SupportDatabase | null,
