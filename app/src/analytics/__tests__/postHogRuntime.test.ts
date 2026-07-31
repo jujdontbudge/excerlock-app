@@ -1,5 +1,6 @@
 import { createAnalyticsKit } from "../AnalyticsKit";
 import {
+  getActivePostHogClient,
   initializePostHog,
   primeDeviceIdForFlags,
 } from "../postHogRuntime";
@@ -40,5 +41,29 @@ describe("PostHog runtime initialization", () => {
     await primeDeviceIdForFlags(client);
 
     expect(calls).toEqual(["ready", "distinct", "device", "reload"]);
+  });
+
+  it("publishes the configured client for the single experiment provider", () => {
+    const client = {
+      register: jest.fn(),
+      capture: jest.fn(),
+      screen: jest.fn(),
+      identify: jest.fn(),
+      reset: jest.fn(),
+      ready: async () => {},
+      getDistinctId: () => "anonymous_123",
+      getDeviceId: () => "device_123",
+      reloadFeatureFlags: jest.fn(),
+      getFeatureFlagPayload: jest.fn(),
+    };
+
+    expect(
+      initializePostHog(
+        { apiKey: "phc_project", host: "https://us.i.posthog.com" },
+        createAnalyticsKit(),
+        () => client,
+      ),
+    ).toBe(client);
+    expect(getActivePostHogClient()).toBe(client);
   });
 });

@@ -24,10 +24,18 @@ export interface FeatureFlagClientPort {
   reloadFeatureFlags(): void;
 }
 
-export type PostHogRuntimeClient = PostHogClientPort & FeatureFlagClientPort;
+export interface FeatureFlagPayloadClientPort {
+  getFeatureFlagPayload(key: string): unknown;
+}
+
+export type PostHogRuntimeClient = PostHogClientPort &
+  FeatureFlagClientPort &
+  FeatureFlagPayloadClientPort;
 
 const createClient: PostHogClientFactory = (apiKey, options) =>
   new PostHog(apiKey, options);
+
+let activeClient: PostHogRuntimeClient | null = null;
 
 export function initializePostHog(
   config: PostHogRuntimeConfig,
@@ -37,15 +45,21 @@ export function initializePostHog(
   const apiKey = config.apiKey?.trim();
   const host = config.host?.trim();
   if (!apiKey || !host) {
+    activeClient = null;
     return null;
   }
 
   const client = factory(apiKey, buildPostHogOptions(host));
   kit.installSink(createPostHogSink(client));
+  activeClient = client;
   void primeDeviceIdForFlags(client).catch(() => {
     // Analytics and experiments are best-effort; app boot must never fail here.
   });
   return client;
+}
+
+export function getActivePostHogClient(): PostHogRuntimeClient | null {
+  return activeClient;
 }
 
 /** Ensure the RN SDK has persisted `$device_id` before its explicit flag reload. */
