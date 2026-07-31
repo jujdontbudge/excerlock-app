@@ -3,6 +3,7 @@ import {
   ScrollView,
   Text,
   View,
+  type LayoutChangeEvent,
 } from "react-native";
 
 import { Card, useTheme } from "@/ui";
@@ -25,6 +26,11 @@ import { useMilestoneShareRequest } from "./useMilestoneShareRequest";
 
 type MilestonesShelfProps = Readonly<{
   metrics: MilestoneMetrics;
+  onLayout?: (event: LayoutChangeEvent) => void;
+  onRowLayout?: (
+    kind: MilestoneBadge["kind"],
+    event: LayoutChangeEvent,
+  ) => void;
   shareCardModule?: ShareCardModule;
   unlockReady?: boolean;
   unlockSequence?: readonly MilestoneId[];
@@ -32,6 +38,8 @@ type MilestonesShelfProps = Readonly<{
 
 export function MilestonesShelf({
   metrics,
+  onLayout,
+  onRowLayout,
   shareCardModule,
   unlockReady = false,
   unlockSequence = [],
@@ -60,9 +68,15 @@ export function MilestonesShelf({
   };
 
   return (
-    <Card testID="milestones-shelf" style={{ gap: spacing.lg }}>
-      {rows.map(({ badges, kind, title }) => (
-        <View key={kind} style={{ gap: spacing.sm }}>
+    <View onLayout={onLayout} testID="milestones-shelf-layout">
+      <Card testID="milestones-shelf" style={{ gap: spacing.lg }}>
+        {rows.map(({ badges, kind, title }) => (
+          <View
+            key={kind}
+            onLayout={(event) => onRowLayout?.(kind, event)}
+            style={{ gap: spacing.sm }}
+            testID={`milestone-row-${kind}`}
+          >
           <Text accessibilityRole="header" style={typography.cardTitle}>
             {title}
           </Text>
@@ -93,8 +107,8 @@ export function MilestonesShelf({
               />
             ))}
           </ScrollView>
-        </View>
-      ))}
+          </View>
+        ))}
 
       {selected === undefined ? null : (
         <MilestoneProgressDetail badge={selected} metrics={metrics} />
@@ -107,6 +121,7 @@ export function MilestonesShelf({
           onClose={closeShare}
         />
       )}
-    </Card>
+      </Card>
+    </View>
   );
 }

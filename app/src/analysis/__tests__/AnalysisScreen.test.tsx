@@ -6,7 +6,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react-native";
-import { processColor } from "react-native";
+import { Animated, processColor } from "react-native";
 
 import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 import { useConfessionStore } from "@/onboarding";
@@ -377,6 +377,55 @@ describe("AnalysisScreen", () => {
     expect(
       screen.queryByRole("header", { name: "Share your milestone" }),
     ).toBeNull();
+  });
+
+  it("starts the unlock sequence only when its rows enter the Analysis viewport", async () => {
+    const start = jest.fn();
+    const stop = jest.fn();
+    const reset = jest.fn();
+    const stagger = jest
+      .spyOn(Animated, "stagger")
+      .mockReturnValue({ reset, start, stop });
+    useMilestoneUnlockStore
+      .getState()
+      .discoverUnlocks(
+        ["streak-3", "activity-1"],
+        Date.UTC(2026, 6, 26, 18),
+      );
+
+    await render(
+      <AnalysisScreen
+        {...fixtureProps}
+        confessedDailyMinutes={240}
+      />,
+    );
+    await screen.findByLabelText("New milestone 2 of 2");
+
+    expect(start).not.toHaveBeenCalled();
+
+    await fireEvent(screen.getByTestId("analysis-scroll-view"), "layout", {
+      nativeEvent: { layout: { height: 800 } },
+    });
+    await fireEvent(
+      screen.getByTestId("milestones-shelf-layout"),
+      "layout",
+      { nativeEvent: { layout: { height: 420, y: 1_800 } } },
+    );
+    await fireEvent(screen.getByTestId("milestone-row-streak"), "layout", {
+      nativeEvent: { layout: { height: 120, y: 16 } },
+    });
+    await fireEvent(screen.getByTestId("milestone-row-activity"), "layout", {
+      nativeEvent: { layout: { height: 120, y: 144 } },
+    });
+    await fireEvent.scroll(screen.getByTestId("analysis-scroll-view"), {
+      nativeEvent: {
+        contentOffset: { y: 1_300 },
+        layoutMeasurement: { height: 800 },
+      },
+    });
+
+    expect(start).toHaveBeenCalledTimes(1);
+    stagger.mockRestore();
   });
 
   it("waits for persisted unlocks to hydrate before claiming the current visit", async () => {
