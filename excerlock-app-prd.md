@@ -462,7 +462,7 @@ Sentry on both app and server, Regen hygiene: the Sentry import is the **first i
 
 ### 10.9 Dependency manifest (concrete packages)
 
-Lifted from Regen's shipping `package.json`s (versions float to current at build time), plus the ExcerLock-only additions.
+Lifted from Regen's shipping package manifests (versions float to current at build time), plus the ExcerLock-only additions.
 
 **Mobile — Regen-proven core (same packages):**
 
@@ -470,7 +470,7 @@ Lifted from Regen's shipping `package.json`s (versions float to current at build
 |---|---|
 | Screen-time blocking | **`react-native-device-activity`** — Regen already ships FamilyControls / DeviceActivity / ManagedSettings through this Expo module. This is ExcerLock's load-bearing dependency, and Regen is the existence proof that the Expo path works. |
 | Auth | `@clerk/clerk-expo` |
-| Payments | `react-native-adapty` (in Regen's `react-native-purchases` seat) |
+| Payments | `react-native-adapty` (replaces Regen's RevenueCat SDK) |
 | Analytics / crash | `posthog-react-native` · `@sentry/react-native` |
 | Navigation | `expo-router` |
 | Custom native builds | `expo-dev-client` + `expo-build-properties` — **mandatory**: FamilyControls and every extension target mean no Expo Go, ever; all testing on dev-client builds |

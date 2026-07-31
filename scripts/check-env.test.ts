@@ -7,6 +7,7 @@
  * Run: npx -y vitest run scripts/check-env.test.ts
  */
 import { generateKeyPairSync } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -107,6 +108,16 @@ describe('PRD §10.9 dependency manifest', () => {
       'alpha-ui',
       'unused-native-package',
     ])
+  })
+
+  it('keeps replaced packages and filenames out of the real dependency manifest', async () => {
+    const prd = await readFile(
+      new URL('../excerlock-app-prd.md', import.meta.url),
+      'utf8',
+    )
+
+    expect(extractDependencyManifestPackages(prd)).not.toContain('react-native-purchases')
+    expect(extractDependencyManifestPackages(prd)).not.toContain('package.json')
   })
 
   it('reports an uninstalled manifest package while honoring only exact reasoned exclusions', () => {
