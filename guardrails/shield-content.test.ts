@@ -111,6 +111,15 @@ describe("Screen Time shield content", () => {
     const controller = readUtf8(
       fromRoot("app", "src", "lock", "controller", "lockController.ts"),
     );
+    const lockShieldContent = readUtf8(
+      fromRoot(
+        "app",
+        "src",
+        "lock",
+        "controller",
+        "lockShieldContent.ts",
+      ),
+    );
     const runtime = readUtf8(
       fromRoot("app", "src", "shield", "shieldContentRuntime.ts"),
     );
@@ -118,7 +127,8 @@ describe("Screen Time shield content", () => {
       fromRoot("app", "plugins", "withScreenTimeExtensionValidation.js"),
     );
 
-    expect(controller).toContain("getShieldContentCoordinator()");
+    expect(controller).toContain("new LockShieldContent");
+    expect(lockShieldContent).toContain("getShieldContentCoordinator()");
     expect(controller).not.toContain("NOOP_SHIELD_CONTENT");
     expect(runtime).toContain("nativeShieldContentPublisher");
     expect(runtime).toContain("selectActiveConditions");

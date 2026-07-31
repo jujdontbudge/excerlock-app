@@ -32,14 +32,7 @@ import { desiredLockState } from "./lockPolicy";
 import { syncScheduleRegistrations } from "./scheduleRegistration";
 import { reviewCoordinator } from "@/review";
 import { getWalkingSessionController } from "@/home/signals";
-import { getShieldContentCoordinator } from "@/shield/shieldContentRuntime";
-import { ShieldCauseResolver } from "@/shield/ShieldCauseResolver";
-import type { ShieldOfferContext } from "@/shield/ShieldContentCoordinator";
-import type { ShieldCause } from "@/shield/ShieldContentPublisher";
-
-interface ShieldContentSink {
-  publish(cause: ShieldCause, context?: ShieldOfferContext): Promise<void>;
-}
+import { LockShieldContent, type ShieldContentSink } from "./lockShieldContent";
 
 /** Everything the lock surfaces render, in one immutable value. */
 export type LockSnapshot = Readonly<{
@@ -96,8 +89,7 @@ export class LockController {
   private readonly walking: () => boolean;
   private readonly subscribeWalking: (listener: () => void) => () => void;
   private readonly onShieldShown: (atMs: number) => void | Promise<void>;
-  private readonly shieldContent: ShieldContentSink;
-  private readonly shieldCauseResolver = new ShieldCauseResolver();
+  private readonly shieldContent: LockShieldContent;
   private readonly listeners = new Set<() => void>();
   private activeClients = 0;
   private reconciliation: Promise<void> = Promise.resolve();
@@ -126,7 +118,7 @@ export class LockController {
         ? () => () => {}
         : (listener) => walkingSession.subscribe(listener));
     this.onShieldShown = options.onShieldShown ?? ((atMs) => reviewCoordinator.noteShieldShown(atMs));
-    this.shieldContent = options.shieldContent ?? getShieldContentCoordinator();
+    this.shieldContent = new LockShieldContent(options.shieldContent);
   }
 
   public getSnapshot(): LockSnapshot {
@@ -272,12 +264,11 @@ export class LockController {
   ): Promise<void> {
     const { decision, desired } = this.desiredState();
     this.patch({ precedence: decision });
-    const cause = this.shieldCauseResolver.resolve(decision, this.walking());
-    if (cause !== null) {
-      await this.shieldContent.publish(cause, {
-        lockWindowEndsAtMs: this.activeLockWindowEnd(),
-      });
-    }
+    await this.shieldContent.publish(
+      decision,
+      this.walking(),
+      this.activeLockWindowEnd(),
+    );
     await this.screenTime.reconcile(selection, desired);
   }
 
