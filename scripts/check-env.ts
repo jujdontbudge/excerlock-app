@@ -46,7 +46,6 @@
  *                                          default https://us.i.posthog.com)
  *   SENTRY_AUTH_TOKEN                    → ~/.sentryclirc + EAS secret
  *   SENTRY_DSN_MOBILE, SENTRY_DSN_API    → app config / server env
- *   RESEND_API_KEY                       → server env
  *   EXCERLOCK_API_URL                    → default https://api.excerlock.com
  *   STRAVA/OURA/WHOOP/POLAR _CLIENT_ID + _CLIENT_SECRET → server env only
  *                                          (never the binary; no live ping
@@ -476,22 +475,10 @@ export async function checkSentry(ctx: Ctx): Promise<CheckResult> {
   )
 }
 
-/** Resend: API key ping via the domains list. */
-export async function checkResend(ctx: Ctx): Promise<CheckResult> {
-  const service = 'Resend'
-  const absent = absentVars(ctx, ['RESEND_API_KEY'])
-  if (absent.length) return missing(service, absent, 'API key → server env')
-  return ping(
-    service,
-    ctx,
-    'https://api.resend.com/domains',
-    { headers: { Authorization: `Bearer ${ctx.env.RESEND_API_KEY}` } },
-    'API key ok',
-  )
-}
-
 /**
- * Server / Azure: GET /health on the API base URL (default api.excerlock.com).
+ * Server / Azure: GET /v1/health on the API base URL (default api.excerlock.com).
+ * The path carries the /v1 prefix `server/src/index.ts` registers healthRoutes under —
+ * a bare /health is a 404 and reads as "server down" when the server is fine.
  * An explicitly set EXCERLOCK_API_URL that doesn't answer is ❌ (server down);
  * an unset URL whose default doesn't answer is ⚠️ (day zero: not provisioned yet).
  */
@@ -499,7 +486,7 @@ export async function checkServer(ctx: Ctx): Promise<CheckResult> {
   const service = 'Server / Azure'
   const configured = ctx.env.EXCERLOCK_API_URL
   const base = (configured ?? 'https://api.excerlock.com').replace(/\/$/, '')
-  const url = `${base}/health`
+  const url = `${base}/v1/health`
   try {
     const res = await ctx.fetch(url, {})
     if (res.ok) return { service, status: 'ok', detail: `${url} reachable` }
@@ -576,7 +563,6 @@ export const ALL_CHECKS: Check[] = [
   { name: 'Adapty', run: checkAdapty },
   { name: 'PostHog', run: checkPostHog },
   { name: 'Sentry', run: checkSentry },
-  { name: 'Resend', run: checkResend },
   { name: 'Server / Azure', run: checkServer },
   { name: 'Expo / EAS', run: checkEas },
   { name: 'Vendor OAuth apps', run: checkVendorOAuth },

@@ -19,7 +19,6 @@ import {
   checkDependencyManifest,
   checkEas,
   checkPostHog,
-  checkResend,
   checkSentry,
   checkServer,
   checkVendorOAuth,
@@ -306,10 +305,6 @@ describe('simple bearer-key services', () => {
     expect(r.detail).toContain('SENTRY_DSN_API')
   })
 
-  it('checkResend: key + 200 → OK', async () => {
-    const r = await checkResend(ctx({ env: { RESEND_API_KEY: 're_x' }, fetch: ok200 }))
-    expect(r.status).toBe('ok')
-  })
 })
 
 describe('checkServer', () => {
@@ -325,7 +320,8 @@ describe('checkServer', () => {
       }),
     )
     expect(r.status).toBe('ok')
-    expect(url).toBe('https://api.example.com/health')
+    // The server mounts healthRoutes under the /v1 prefix (server/src/index.ts).
+    expect(url).toBe('https://api.example.com/v1/health')
   })
 
   it('URL explicitly set but unreachable → FAILING', async () => {
@@ -363,7 +359,7 @@ describe('checkServer', () => {
       }),
     )
     expect(r.status).toBe('ok')
-    expect(url).toBe('https://api.excerlock.com/health')
+    expect(url).toBe('https://api.excerlock.com/v1/health')
   })
 })
 
