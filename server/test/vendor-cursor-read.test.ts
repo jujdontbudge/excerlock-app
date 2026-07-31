@@ -1,31 +1,32 @@
-import { describe, expect, it } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from "vitest";
+import { users } from "../src/db/schema.js";
+import { createDrizzleVendorRepository } from "../src/vendors/index.js";
 import {
   createVendorEventFeed,
-  type VendorEventCursor,
-  type VendorEventFeedRepository,
   type VendorWebhookEventRecord,
 } from "../src/webhooks/index.js";
+import { createPgliteTestDatabase } from "./pgliteTestDatabase.js";
 
-class MemoryEventFeedRepository implements VendorEventFeedRepository {
-  constructor(private readonly events: readonly VendorWebhookEventRecord[]) {}
+let postgres: Awaited<ReturnType<typeof createPgliteTestDatabase>>;
 
-  async listWebhookEvents(
-    userId: string,
-    after: VendorEventCursor | null,
-    limit: number,
-  ): Promise<readonly VendorWebhookEventRecord[]> {
-    return this.events
-      .filter((event) => event.userId === userId)
-      .filter(
-        (event) =>
-          !after ||
-          event.receivedAt > after.receivedAt ||
-          (event.receivedAt.getTime() === after.receivedAt.getTime() &&
-            event.id > after.id),
-      )
-      .slice(0, limit);
-  }
-}
+beforeAll(async () => {
+  postgres = await createPgliteTestDatabase();
+});
+
+beforeEach(async () => {
+  await postgres.reset();
+});
+
+afterAll(async () => {
+  await postgres.client.close();
+});
 
 const events = [
   {
@@ -72,9 +73,15 @@ const events = [
 
 describe("vendor webhook cursor feed", () => {
   it("returns only the user's raw notifications after the cursor", async () => {
-    const feed = createVendorEventFeed(
-      new MemoryEventFeedRepository(events),
-    );
+    await postgres.db.insert(users).values([
+      { id: "user_123" },
+      { id: "another_user" },
+    ]);
+    const repository = createDrizzleVendorRepository(postgres.db);
+    for (const event of events) {
+      await repository.insertWebhookEvent(event);
+    }
+    const feed = createVendorEventFeed(repository);
 
     const first = await feed.readSince("user_123", null, 2);
     const second = await feed.readSince(

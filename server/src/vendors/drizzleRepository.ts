@@ -1,4 +1,5 @@
 import { and, asc, eq, gt, or } from "drizzle-orm";
+import type { PgDatabase } from "drizzle-orm/pg-core";
 import { getDb } from "../db/client.js";
 import {
   vendorConnections,
@@ -17,7 +18,10 @@ import type {
 } from "./repository.js";
 import type { Vendor } from "./types.js";
 
-type VendorDatabase = NonNullable<ReturnType<typeof getDb>>;
+type VendorDatabase = PgDatabase<
+  any,
+  typeof import("../db/schema.js")
+>;
 
 export type VendorRepository = VendorOAuthStateRepository &
   VendorWebhookRepository &
