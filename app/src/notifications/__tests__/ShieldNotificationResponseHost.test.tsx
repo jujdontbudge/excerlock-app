@@ -4,7 +4,7 @@ import {
   ShieldNotificationResponseHost,
   type ShieldNotificationResponse,
   type ShieldNotificationResponseSource,
-} from "../ShieldNotificationResponseHost";
+} from "../native/ShieldNotificationResponseHost";
 
 function response(
   identifier: string,

@@ -1,4 +1,5 @@
 export { getNotificationModule } from "./accessor";
+export { NativeShieldNotificationResponseHost } from "./native/NativeShieldNotificationResponseHost";
 export {
   NotificationSettingsCard,
   type NotificationSettingsCardProps,

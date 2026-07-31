@@ -88,6 +88,13 @@ interface for local scheduling, and changes only the constructor in
 `accessor.ts`. It must not add remote push infrastructure, a push token flow, or
 server-owned trigger decisions.
 
+Ticket #80 adds one narrow native boundary ahead of that full adapter:
+`NativeShieldNotificationResponseHost` owns the supported notification-tap
+fallback from ShieldAction. It accepts only extension request identifiers and
+the two ticket-owned URLs (`excerlock://` and `excerlock://locked-apps`), so
+unrelated notification data cannot become a route. Its injected response source
+keeps Jest native-free. The mock remains the default scheduling module in tests.
+
 ## Tests
 
 From the repository root:
@@ -101,7 +108,8 @@ npm run test:app -- --runTestsByPath \
   src/notifications/__tests__/notificationPreferencesStore.test.ts \
   src/notifications/__tests__/MockNotificationModule.test.ts \
   src/notifications/__tests__/NotificationScheduler.test.ts \
-  src/notifications/__tests__/NotificationSettingsCard.test.tsx
+  src/notifications/__tests__/NotificationSettingsCard.test.tsx \
+  src/notifications/__tests__/ShieldNotificationResponseHost.test.tsx
 ```
 
 Screen tests mock AsyncStorage at the native boundary. In RNTL 14 both `render`
