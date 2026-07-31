@@ -1,6 +1,6 @@
 /**
- * Detection constant, not a user setting. Device spike 3 owns final tuning.
- * The ticket #4 starting value is the midpoint of the approved 60–70 steps/min range.
+ * Detection constant, not a user setting. Physical-device spike #27 owns final tuning.
+ * This provisional value is the midpoint of the approved 60–70 steps/min range.
  */
 export const WALK_CADENCE_THRESHOLD_STEPS_PER_MINUTE = 65;
 
