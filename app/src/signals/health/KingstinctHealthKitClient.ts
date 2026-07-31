@@ -9,6 +9,9 @@ import type {
 } from "./HealthKitClient";
 import { HEALTHKIT_TYPES } from "./healthKitSignalMapping";
 
+/** Raw v14 enum value for HKUpdateFrequency.immediate. */
+const IMMEDIATE_BACKGROUND_DELIVERY = 1;
+
 interface KingstinctSourceRevision {
   readonly source: {
     readonly name: string;
@@ -101,8 +104,10 @@ export class KingstinctHealthKitClient implements HealthKitClient {
   public async configureBackgroundDelivery(
     types: readonly HealthKitObjectType[],
   ): Promise<void> {
-    // HKUpdateFrequency.immediate is raw value 1 in the package's v14 API.
-    await this.healthKit.configureBackgroundTypes(types, 1);
+    await this.healthKit.configureBackgroundTypes(
+      types,
+      IMMEDIATE_BACKGROUND_DELIVERY,
+    );
   }
 
   public async queryQuantity(
