@@ -26,6 +26,9 @@ describe("SupportSettingsCard", () => {
     await fireEvent.press(
       screen.getByRole("button", { name: "Contact support" }),
     );
+    expect(screen.getByTestId("support-composer-message-input")).toBe(
+      screen.getByLabelText("How can we help?"),
+    );
     await fireEvent.changeText(
       screen.getByLabelText("How can we help?"),
       "My workout did not unlock my apps.",
@@ -122,6 +125,12 @@ describe("SupportSettingsCard", () => {
 
     await fireEvent.press(
       screen.getByRole("button", { name: "Request a feature" }),
+    );
+    expect(screen.getByTestId("support-composer-title-input")).toBe(
+      screen.getByLabelText("Feature title"),
+    );
+    expect(screen.getByTestId("support-composer-message-input")).toBe(
+      screen.getByLabelText("What would make ExcerLock better?"),
     );
     await fireEvent.changeText(
       screen.getByLabelText("Feature title"),

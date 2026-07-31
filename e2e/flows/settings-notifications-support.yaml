@@ -57,7 +57,8 @@ env:
 - tapOn: Contact support
 - assertVisible:
     id: support-composer
-- tapOn: How can we help?
+- tapOn:
+    id: support-composer-message-input
 - inputText: E2E support request
 - hideKeyboard
 - tapOn: Send support request
@@ -67,9 +68,12 @@ env:
 - tapOn: Request a feature
 - assertVisible:
     id: support-composer
-- tapOn: Feature title
+- tapOn:
+    id: support-composer-title-input
 - inputText: E2E dashboard
-- tapOn: What would make ExcerLock better?
+- hideKeyboard
+- tapOn:
+    id: support-composer-message-input
 - inputText: Show the deterministic E2E state.
 - hideKeyboard
 - tapOn: Submit feature request
