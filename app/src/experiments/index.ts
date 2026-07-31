@@ -14,6 +14,16 @@ export {
   decodeShieldCopyPayload,
   SHIELD_COPY_CAUSES,
 } from "./shieldCopyPayload";
+export {
+  ExperimentVariantProvider,
+  useExperimentVariant,
+  useShieldCopyExperiment,
+  useTimedExperimentVariant,
+} from "./ExperimentVariantProvider";
+export type {
+  ExperimentSelection,
+  ExperimentVariantProviderProps,
+} from "./ExperimentVariantProvider";
 export type {
   ShieldCopy,
   ShieldCopyCause,
