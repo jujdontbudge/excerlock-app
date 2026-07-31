@@ -163,6 +163,63 @@ describe("createHomeSignalFeed", () => {
     }
   });
 
+  it("publishes cadence freshness expiry through the full grace chain", async () => {
+    jest.useFakeTimers();
+    const provider = motion();
+    let nowMs = 0;
+    const feed = createHomeSignalFeed({
+      health: health(),
+      motion: provider,
+      walking: { gracePeriodMs: 30_000, now: () => nowMs },
+    });
+    const readings: string[][] = [];
+
+    try {
+      feed.subscribe((reading) => readings.push([...reading.activeSignals]));
+      await feed.start();
+      nowMs = 4_000;
+      provider.advanceTo(4_000);
+      await jest.advanceTimersByTimeAsync(0);
+      expect(readings.at(-1)).toEqual(["walking"]);
+
+      nowMs = 9_001;
+      await jest.advanceTimersByTimeAsync(5_001);
+      expect(readings.at(-1)).toEqual(["walking"]);
+
+      nowMs = 39_000;
+      await jest.advanceTimersByTimeAsync(29_999);
+      expect(readings.at(-1)).toEqual([]);
+    } finally {
+      feed.dispose();
+      jest.useRealTimers();
+    }
+  });
+
+  it("cancels a pending cadence watchdog when disposed", async () => {
+    jest.useFakeTimers();
+    const provider = motion();
+    let nowMs = 0;
+    const feed = createHomeSignalFeed({
+      health: health(),
+      motion: provider,
+      walking: { gracePeriodMs: 30_000, now: () => nowMs },
+    });
+
+    try {
+      await feed.start();
+      nowMs = 4_000;
+      provider.advanceTo(4_000);
+
+      expect(jest.getTimerCount()).toBe(1);
+      feed.dispose();
+
+      expect(jest.getTimerCount()).toBe(0);
+    } finally {
+      feed.dispose();
+      jest.useRealTimers();
+    }
+  });
+
   it("notifies subscribers when a signal moves", async () => {
     const provider = motion();
     const feed = createTestFeed(health(), provider);
