@@ -1,4 +1,4 @@
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { AccountSettingsCard } from "@/account";
 import {
@@ -7,6 +7,10 @@ import {
 } from "@/notifications";
 import { SupportSettingsCard, type SupportModule } from "@/support";
 import { Card, Screen, SectionHeader, useTheme } from "@/ui";
+import {
+  reviewCoordinator as defaultReviewCoordinator,
+  type ReviewCoordinatorContract,
+} from "@/review";
 
 import { GracePeriodPicker } from "../components/GracePeriodPicker";
 import { SettingsRow } from "../components/SettingsRow";
@@ -16,6 +20,7 @@ export type SettingsScreenProps = Readonly<{
   notificationModule?: NotificationModule;
   openNotificationSettings?: () => void;
   supportModule?: SupportModule;
+  reviewCoordinator?: Pick<ReviewCoordinatorContract, "manualRate">;
 }>;
 
 /** Settings surface: real local choices plus owned integration boundaries. */
@@ -23,6 +28,7 @@ export function SettingsScreen({
   notificationModule,
   openNotificationSettings,
   supportModule,
+  reviewCoordinator = defaultReviewCoordinator,
 }: SettingsScreenProps = {}) {
   const { spacing, typography } = useTheme();
   const gracePeriod = useSettingsStore(
@@ -86,6 +92,23 @@ export function SettingsScreen({
         <View style={{ gap: spacing.md }}>
           <SectionHeader title="Support & Feedback" />
           <SupportSettingsCard module={supportModule} />
+        </View>
+
+        <View style={{ gap: spacing.md }}>
+          <SectionHeader title="About" />
+          <Card>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Rate ExcerLock"
+              onPress={() => void reviewCoordinator.manualRate()}
+            >
+              <SettingsRow
+                title="Rate ExcerLock"
+                value="App Store"
+                description="Leave a review without sharing any ExcerLock data."
+              />
+            </Pressable>
+          </Card>
         </View>
 
         {__DEV__ ? (

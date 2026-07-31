@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 
 import { PillButton, Screen, SectionHeader } from "@/ui";
@@ -20,6 +20,10 @@ import { useHomeSignals } from "../signals/useHomeSignals";
 import { selectActiveConditions, selectPickerContext } from "../store/homeState";
 import { useHomeStore } from "../store/homeStore";
 import {
+  reviewCoordinator as defaultReviewCoordinator,
+  type ReviewCoordinatorContract,
+} from "@/review";
+import {
   expoBannerPhotoPicker,
   type BannerPhotoPicker,
 } from "../banners/bannerPhotoPicker";
@@ -31,6 +35,7 @@ export interface HomeScreenProps {
   now?: () => number;
   /** System photo picker boundary, injected by the own-photo flow test. */
   bannerPhotoPicker?: BannerPhotoPicker;
+  reviewCoordinator?: Pick<ReviewCoordinatorContract, "onUnlockMoment">;
 }
 
 /**
@@ -38,7 +43,12 @@ export interface HomeScreenProps {
  * and owns none of their rules: balances come from `@excerlock/ledger`, card and
  * picker rules from `@excerlock/condition-model`, live values from SignalKit.
  */
-export function HomeScreen({ feed, now, bannerPhotoPicker = expoBannerPhotoPicker }: HomeScreenProps = {}) {
+export function HomeScreen({
+  feed,
+  now,
+  bannerPhotoPicker = expoBannerPhotoPicker,
+  reviewCoordinator = defaultReviewCoordinator,
+}: HomeScreenProps = {}) {
   const appRuntime =
     feed === undefined || now === undefined
       ? getHomeAppRuntime()
@@ -83,6 +93,14 @@ export function HomeScreen({ feed, now, bannerPhotoPicker = expoBannerPhotoPicke
   });
 
   const hero = deriveLockHero({ journal, config: ledgerConfig, atMs, liveStates: liveStates(cards) });
+  const previousHeroStatus = useRef(hero.status);
+  useEffect(() => {
+    const previous = previousHeroStatus.current;
+    previousHeroStatus.current = hero.status;
+    if (previous === "locked" && hero.status === "unlocked") {
+      void reviewCoordinator.onUnlockMoment(atMs);
+    }
+  }, [atMs, hero.status, reviewCoordinator]);
 
   return (
     <>

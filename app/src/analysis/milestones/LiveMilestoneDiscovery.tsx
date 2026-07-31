@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 import { useHomeStore } from "@/home";
 import { useConfessionStore } from "@/onboarding";
@@ -15,9 +15,14 @@ import {
 import { deriveDayRecord } from "../model";
 import { MilestoneDiscovery } from "./MilestoneDiscovery";
 import { selectMilestoneMetrics } from "./metrics";
+import {
+  reviewCoordinator as defaultReviewCoordinator,
+  type ReviewCoordinatorContract,
+} from "@/review";
 
 type LiveMilestoneDiscoveryProps = Readonly<{
   clock?: AnalysisClock;
+  reviewCoordinator?: Pick<ReviewCoordinatorContract, "onStreakMilestone">;
 }>;
 
 /**
@@ -26,6 +31,7 @@ type LiveMilestoneDiscoveryProps = Readonly<{
  */
 export function LiveMilestoneDiscovery({
   clock = systemAnalysisClock,
+  reviewCoordinator = defaultReviewCoordinator,
 }: LiveMilestoneDiscoveryProps) {
   const confessedDailyMinutes = useConfessionStore(
     (state) => state.confessedDailyMinutes,
@@ -54,6 +60,11 @@ export function LiveMilestoneDiscovery({
       }),
     [confessedDailyMinutes, days, schedule],
   );
+  useEffect(() => {
+    if (metrics.currentStreakDays === 7 || metrics.currentStreakDays === 30) {
+      void reviewCoordinator.onStreakMilestone(metrics.currentStreakDays, observedAtMs);
+    }
+  }, [metrics.currentStreakDays, observedAtMs, reviewCoordinator]);
 
   return (
     <MilestoneDiscovery

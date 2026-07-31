@@ -104,6 +104,25 @@ describe("LockController", () => {
     controller.stop();
   });
 
+  it("records when effective shields become active for review-prompt suppression", async () => {
+    const screenTime = new FakeScreenTime();
+    const onShieldShown = jest.fn();
+    const controller = new LockController({
+      screenTime,
+      journal: () => emptyJournal(),
+      now: () => NOW,
+      scheduleStore: new LockScheduleStore(),
+      onShieldShown,
+    });
+    await controller.start();
+    await controller.requestAuthorization();
+
+    await controller.pickApps();
+
+    expect(onShieldShown).toHaveBeenCalledWith(NOW);
+    controller.stop();
+  });
+
   it("carries a denied decision back to callers and to subscribers", async () => {
     const screenTime = new FakeScreenTime();
     screenTime.nextDecision = "denied";

@@ -102,4 +102,13 @@ describe("SettingsScreen", () => {
     expect(screen.getByLabelText("Streak last call")).toBeOnTheScreen();
     expect(screen.getByLabelText("Selected nudge time: 3:00 PM")).toBeOnTheScreen();
   });
+
+  it("opens the direct App Store review path from the manual Rate row", async () => {
+    const manualRate = jest.fn().mockResolvedValue(true);
+    await render(<SettingsScreen reviewCoordinator={{ manualRate }} />);
+
+    await fireEvent.press(screen.getByRole("button", { name: "Rate ExcerLock" }));
+
+    expect(manualRate).toHaveBeenCalledTimes(1);
+  });
 });

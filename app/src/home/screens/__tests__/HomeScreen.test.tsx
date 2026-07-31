@@ -134,9 +134,16 @@ describe("HomeScreen", () => {
   });
 
   it("banks an event's payout in place and never reverses the card", async () => {
+    const onUnlockMoment = jest.fn().mockResolvedValue(false);
     seed(stepGoal);
     useHomeStore.getState().setBaseAllowanceMinutes(0);
-    await render(<HomeScreen feed={stubFeed()} now={now} />);
+    await render(
+      <HomeScreen
+        feed={stubFeed()}
+        now={now}
+        reviewCoordinator={{ onUnlockMoment }}
+      />,
+    );
 
     await press("Complete");
 
@@ -144,6 +151,7 @@ describe("HomeScreen", () => {
     expect(screen.getByTestId("lock-hero-unlocked")).toBeOnTheScreen();
     expect(screen.getByTestId("lock-hero-balance")).toHaveTextContent("30");
     expect(screen.getByText("Earned today")).toBeOnTheScreen();
+    expect(onUnlockMoment).toHaveBeenCalledWith(NOON);
   });
 
   it("automatically banks a Health event detected during claim-on-open", async () => {
