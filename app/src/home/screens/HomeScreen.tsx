@@ -17,6 +17,7 @@ import { getHomeAppRuntime } from "../signals/appRuntime";
 import type { HomeSignalFeed } from "../signals/homeSignalFeed";
 import { useHealthEventClaims } from "../signals/useHealthEventClaims";
 import { useHomeSignals } from "../signals/useHomeSignals";
+import { manualGymCheckIn } from "../signals/manualGymCheckIn";
 import { selectActiveConditions, selectPickerContext } from "../store/homeState";
 import { useHomeStore } from "../store/homeStore";
 import {
@@ -91,6 +92,25 @@ export function HomeScreen({
     placeNames,
     conditionBanners,
   });
+  const completeCondition = async (conditionId: string) => {
+    const condition = conditions.find(({ id }) => id === conditionId);
+    if (condition?.catalogId !== "gym-arrival") {
+      recordEventPayout(conditionId, currentTime());
+      return;
+    }
+
+    const place = savedPlaces.find(({ id }) => id === condition.placeId);
+    if (place?.geofence === undefined) {
+      return;
+    }
+    const confirmed = await manualGymCheckIn({
+      id: place.id,
+      ...place.geofence,
+    });
+    if (confirmed) {
+      recordEventPayout(conditionId, currentTime());
+    }
+  };
 
   const hero = deriveLockHero({ journal, config: ledgerConfig, atMs, liveStates: liveStates(cards) });
   const firstObservedAtMs = useRef(atMs);
@@ -127,7 +147,7 @@ export function HomeScreen({
           <View style={{ gap: spacing.md }}>
             <SectionHeader title="Today's conditions" />
             {cards.map((card) => (
-              <ConditionCard key={card.id} model={card} onComplete={(id) => recordEventPayout(id, atMs)} />
+              <ConditionCard key={card.id} model={card} onComplete={(id) => void completeCondition(id)} />
             ))}
           </View>
 

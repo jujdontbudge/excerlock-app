@@ -15,10 +15,13 @@ import {
 
 import type { AllowanceValues } from "../model/allowance";
 import type { BannerSelection } from "../banners/bannerCatalog";
+import type { GeofenceRegion } from "@/signals";
 
 export interface SavedPlace {
   readonly id: string;
   readonly name: string;
+  /** Present once the map/pin flow has saved a check-in circle. */
+  readonly geofence?: Omit<GeofenceRegion, "id">;
 }
 
 export type HomeStoreValues = Readonly<{
