@@ -10,8 +10,6 @@ enum ShieldDeepLinkNotification {
       "url": deepLink,
       "shieldCause": cause,
     ]
-    content.interruptionLevel = .passive
-
     let request = UNNotificationRequest(
       identifier: "excerlock.shield.open.\(cause)",
       content: content,

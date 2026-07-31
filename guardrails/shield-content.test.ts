@@ -79,6 +79,7 @@ describe("Screen Time shield content", () => {
     expect(swift).toContain('"url": deepLink');
     expect(swift).toContain("action == .primaryButtonPressed");
     expect(swift).toContain("content.sound = nil");
+    expect(swift).not.toContain("interruptionLevel = .passive");
     expect(swift).not.toMatch(
       /localizedDisplayName|Application\(token:|WebDomain\(token:|application\.token|webDomain\.domain/,
     );
