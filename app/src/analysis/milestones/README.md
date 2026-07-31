@@ -47,8 +47,12 @@ preventing a mount claim and focus claim from cancelling the first animation.
 | `useMilestoneShareRequest.ts` | queues an unlocked tap until its persisted timestamp arrives |
 | `MilestoneSharePreview.tsx` | privacy-safe projection into the existing share preview |
 | `useMilestoneUnlockAnimation.ts` | one staggered scale-in sequence per focused visit |
+| `MilestoneHaptics.ts` | vendor-free success-feedback boundary |
+| `NativeMilestoneHaptics.ts` | Expo Haptics success-feedback adapter |
+| `milestoneHapticsAccessor.ts` | sole production composition root for the native adapter |
 
-`MilestoneHaptics` remains an injected boundary. The app workspace currently has
-no native success-haptics dependency, and ticket #75 forbids adding one, so the
-production route cannot bind that boundary in this lane; tests cover its exactly-once
-contract without claiming device verification.
+`MilestoneHaptics` remains injected at the Analysis screen edge. Production binds
+that boundary once through `getMilestoneHaptics()` and `expo-haptics`; the unlock
+moment invokes `success()` once only when the visit claims a non-empty pending
+sequence. The adapter requests notification-style success feedback and owns no
+sound API.
