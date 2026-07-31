@@ -5,7 +5,11 @@ jest.mock(
 
 import { WalkingSessionController } from "../walkingSessionController";
 import type { ConfiguredCondition } from "@excerlock/condition-model";
-import type { MotionProvider } from "@/signals";
+import type {
+  ActivitySample,
+  CadenceSample,
+  MotionProvider,
+} from "@/signals";
 
 const walkingCondition: ConfiguredCondition = {
   id: "walking-condition",
@@ -67,5 +71,51 @@ describe("WalkingSessionController", () => {
       conditionId: "walking-condition",
       walking: false,
     });
+  });
+
+  it("publishes verified walking only after classification and sustained cadence", async () => {
+    let onActivity: (sample: ActivitySample) => void = () => {};
+    let onCadence: (sample: CadenceSample) => void = () => {};
+    const motion = {
+      start: jest.fn().mockResolvedValue(undefined),
+      stop: jest.fn().mockResolvedValue(undefined),
+      on: jest.fn((event: "activity" | "cadence", callback: unknown) => {
+        if (event === "activity") {
+          onActivity = callback as (sample: ActivitySample) => void;
+        } else {
+          onCadence = callback as (sample: CadenceSample) => void;
+        }
+        return () => {};
+      }),
+    } as unknown as MotionProvider;
+    const controller = new WalkingSessionController({
+      createMotion: () => motion,
+      getLocation: () => ({
+        startWalkKeepAlive: async () => {},
+        stopWalkKeepAlive: async () => {},
+      }),
+      getState: () => ({
+        conditions: [walkingCondition],
+        disabledConditionIds: [],
+      }),
+      now: () => 2_000,
+    });
+    const listener = jest.fn();
+    controller.subscribe(listener);
+    await controller.start("walking-condition");
+
+    onActivity({
+      classes: ["walking"],
+      confidence: "high",
+      startedAt: 0,
+      receivedAt: 0,
+    });
+    expect(controller.getSnapshot().walking).toBe(false);
+
+    onCadence({ stepsPerSecond: 1.2, cumulativeSteps: 2, asOf: 1_000 });
+    onCadence({ stepsPerSecond: 1.2, cumulativeSteps: 4, asOf: 2_000 });
+
+    expect(controller.getSnapshot().walking).toBe(true);
+    expect(listener).toHaveBeenCalledWith();
   });
 });
