@@ -94,6 +94,7 @@ export function MilestonesShelf({
                   unlockSequence.includes(badge.id)
                     ? {
                         index: unlockSequence.indexOf(badge.id),
+                        ready: unlockReady,
                         scale: unlockScales.get(badge.id)!,
                         total: unlockSequence.length,
                       }

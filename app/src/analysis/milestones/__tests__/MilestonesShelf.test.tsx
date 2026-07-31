@@ -156,6 +156,53 @@ describe("MilestonesShelf", () => {
     expect(alert).not.toHaveBeenCalled();
   });
 
+  it("sweeps a visible highlight across each New marker", async () => {
+    const start = jest.fn();
+    const stop = jest.fn();
+    const reset = jest.fn();
+    const timing = jest.spyOn(Animated, "timing");
+    const sequence = jest
+      .spyOn(Animated, "sequence")
+      .mockReturnValue({ reset, start, stop });
+    useMilestoneUnlockStore
+      .getState()
+      .discoverUnlocks(
+        ["streak-3", "activity-1"],
+        Date.UTC(2026, 6, 29, 12),
+      );
+    useMilestoneUnlockStore.getState().claimPending();
+
+    await render(
+      <MilestonesShelf
+        metrics={metrics}
+        unlockReady
+        unlockSequence={["streak-3", "activity-1"]}
+      />,
+    );
+
+    expect(
+      screen.getByTestId("milestone-new-glint-sweep-streak-3"),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByTestId("milestone-new-glint-sweep-activity-1"),
+    ).toBeOnTheScreen();
+    expect(timing).toHaveBeenCalledTimes(2);
+    expect(timing.mock.calls.map(([, config]) => config)).toEqual([
+      expect.objectContaining({
+        duration: 650,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      expect.objectContaining({
+        duration: 650,
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]);
+    expect(sequence).toHaveBeenCalledTimes(2);
+    expect(start).toHaveBeenCalledTimes(2);
+  });
+
   it("holds the scale-in until the shelf is visible, then starts one sequence", async () => {
     const start = jest.fn();
     const stop = jest.fn();
