@@ -6,6 +6,11 @@ import type {
   RegionTransition,
 } from "./LocationProvider";
 
+const EXPO_GEOFENCE_EVENT = {
+  enter: 1,
+  exit: 2,
+} as const;
+
 export type GeofencingTaskData = {
   readonly eventType?: number;
   readonly region?: {
@@ -52,11 +57,15 @@ export class LocationTaskRuntime {
 
   public handleGeofencingTask(data: GeofencingTaskData): Promise<void> {
     const regionId = data.region?.identifier;
-    if (regionId === undefined || (data.eventType !== 1 && data.eventType !== 2)) {
+    if (
+      regionId === undefined ||
+      (data.eventType !== EXPO_GEOFENCE_EVENT.enter &&
+        data.eventType !== EXPO_GEOFENCE_EVENT.exit)
+    ) {
       return Promise.resolve();
     }
     return this.confirmRegionPresence({
-      type: data.eventType === 1 ? "enter" : "exit",
+      type: data.eventType === EXPO_GEOFENCE_EVENT.enter ? "enter" : "exit",
       regionId,
       atMs: Date.now(),
     });

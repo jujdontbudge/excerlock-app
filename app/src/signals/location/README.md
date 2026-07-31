@@ -1,11 +1,46 @@
 # LocationProvider
 
 Contract: geofence regions, presence checks, and walk-session keep-alive behavior behind one provider
-interface. Consumers do not import Expo Location or Task Manager directly.
+interface. Consumers do not import Expo Location or Task Manager directly. Manual check-in is an
+additive `ManualGymCheckIn` capability so the shared `LocationProvider` interface remains unchanged.
 
 `FixtureLocationProvider` consumes `location.enterRegion`, `location.exitRegion`, `location.update`,
 and `location.authChanged`. History establishes presence synchronously; future region events notify
-only regions the caller is monitoring. Walk keep-alive is an explicit start/stop lifecycle.
+only regions the caller is monitoring. It remains the singleton default in Jest, Expo Go, standalone,
+and non-iOS runtimes.
+
+`NativeLocationProvider` preserves the contract over `ExpoLocationClient`, which is the only module
+that translates `expo-location` calls. The composition root loads it only in an iOS dev-client
+`storeClient`. Constructing the provider never requests permission or starts monitoring.
+
+Manual check-in requests foreground (`When In Use`) permission, takes one high-accuracy sample, and
+checks that sample against the saved circle on device. Starting auto-detect is the explicit opt-in
+boundary: it requests foreground permission first, then background (`Always`) permission, and only
+then registers regions. At most five gyms are accepted. The public radius constants are 100 m default,
+50 m minimum, and 200 m maximum.
+
+Raw presence changes immediately when a region event arrives: there is no dwell state and
+`isInsideRegion` does not wait. A separate, invisible 30-second confirmation debounce delays when the
+arrival counts; an exit during that window cancels the arrival. Manual and automatic arrivals share
+that processor. Confirmed arrivals append only `{regionId, atMs}` to AsyncStorage. Coordinates are used
+only in memory for the OS boundary and distance calculation; they are never logged or sent to
+analytics.
+
+`registerLocationTasks` is imported at the Expo Router entry module so Task Manager can find both task
+definitions during a headless launch. The geofence task owns the confirmation processor and on-device
+visit log. The Walk task maps continuous background locations into `LocationSample` callbacks without
+persisting them. Walk keep-alive starts foreground-authorized high-accuracy Fitness updates with the
+iOS background-location indicator visible, and stops them explicitly. Expo permission and registered
+task state are rehydrated after a JS reload.
+
+Automated tests cover the shared provider contract, five-gym/radius limits, exact 30-second timing,
+quick enter-exit cancellation, permission prompt timing, SDK translation, module-scope registration,
+fixture-default selection, coordinate-free persistence, and native-state hydration. This lane had no
+physical iPhone. Simulator tests cannot establish that iOS relaunches the app for a real region event
+or grants the headless task enough execution time to finish the 30-second debounce and persist the
+visit; those checks remain mandatory before claiming physical-device geofencing. If the Task Manager
+window is too short, the debounce must move into a small native Swift module without widening
+`LocationProvider`.
 
 Canonical fixtures: `gym-enter-exit`, `region-blip`, and `quiet`. Test with
 `npm run test --workspace app -- signals/location`.
