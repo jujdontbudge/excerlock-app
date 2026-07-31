@@ -1,4 +1,5 @@
-import { compileModsAsync, type ExpoConfig } from "expo/config-plugins";
+import type { ExpoConfig } from "expo/config";
+import { compileModsAsync } from "expo/config-plugins";
 
 const MOTION_PERMISSION_COPY =
   "ExcerLock uses Motion & Fitness data to verify that you're walking during Walk & Scroll sessions.";
