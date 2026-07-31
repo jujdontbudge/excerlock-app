@@ -44,6 +44,7 @@
           "NSHealthUpdateUsageDescription": false
         }
       ],
+      "./modules/excerlock-motion/app.plugin.js",
       "./plugins/withScreenTimeExtensionValidation"
     ],
     "experiments": {

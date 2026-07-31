@@ -43,7 +43,7 @@ export function E2ERuntimeRoot({
       uninstallHomeRuntime.current?.();
       const { health, motion } = loaded.composition.providers;
       uninstallHomeRuntime.current = installHomeAppRuntime({
-        feed: createHomeSignalFeed({ health, motion }),
+        feed: createHomeSignalFeed({ health, motion, walking: null }),
         now: () => loaded.composition.clock.nowMs(),
       });
       uninstallLockRuntime.current?.();

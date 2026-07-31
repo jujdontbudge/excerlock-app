@@ -27,7 +27,9 @@ describe("minimum-iOS guardrail", () => {
 
     const targetConfigs = [
       ...walkFiles(fromRoot("app", "targets"), new Set([".json", ".ts", ".js"])),
-      ...walkFiles(fromRoot("app", "modules"), new Set([".podspec", ".json", ".xcconfig"])),
+      // expo-module.config.json registers/autolinks classes; Expo exposes no
+      // deployment-target field there. Local module targets pin iOS in CocoaPods.
+      ...walkFiles(fromRoot("app", "modules"), new Set([".podspec", ".xcconfig"])),
     ].filter((path) => !path.endsWith("README.md"));
     const offenders = targetConfigs
       .filter((path) => !readUtf8(path).includes("17.4"))

@@ -5,9 +5,10 @@ gets a native implementation and a fixture implementation; selection happens onc
 root. Screens never branch on provider availability.
 
 This module ships the interfaces, fixture implementations, shared `TimelinePlayer`, canonical JSON
-fixture libraries, and JS-only `WalkVerifier`. The Health domain also has the Phase-3
-`NativeHealthProvider`; the composition root selects it only in an iOS dev-client runtime and keeps
-fixtures as the test default. Other native implementations remain Phase 3.
+fixture libraries, and JS-only `WalkVerifier`. The Health and motion domains also have
+`NativeHealthProvider` and `NativeMotionProvider`; the composition root selects both only in an iOS
+dev-client runtime and keeps fixtures as the test default. Other native implementations remain Phase
+3.
 
 Every fixture is a named, versioned manifest with sorted `{atMs, event, payload}` rows. History at or
 before zero is applied synchronously. Future rows use manual clock advancement or accelerated auto

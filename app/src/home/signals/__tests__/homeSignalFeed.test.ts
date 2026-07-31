@@ -26,11 +26,25 @@ function motion(): FixtureMotionProvider {
   );
 }
 
+function createTestFeed(
+  healthProvider: FixtureHealthProvider,
+  motionProvider: FixtureMotionProvider,
+) {
+  return createHomeSignalFeed({
+    health: healthProvider,
+    motion: motionProvider,
+    walking: {
+      gracePeriodMs: 30_000,
+      now: () => motionProvider.currentTimeMs,
+    },
+  });
+}
+
 describe("createHomeSignalFeed", () => {
   it("claims Health authorization before starting live delivery", async () => {
     const provider = health();
     const requestAuth = jest.spyOn(provider, "requestAuth");
-    const feed = createHomeSignalFeed({ health: provider, motion: motion() });
+    const feed = createTestFeed(provider, motion());
 
     await feed.start();
 
@@ -41,7 +55,7 @@ describe("createHomeSignalFeed", () => {
   it("seeds native anchors while claiming existing Health data", async () => {
     const provider = health();
     const getNewSamples = jest.spyOn(provider, "getNewSamples");
-    const feed = createHomeSignalFeed({ health: provider, motion: motion() });
+    const feed = createTestFeed(provider, motion());
 
     await feed.start();
 
@@ -58,7 +72,7 @@ describe("createHomeSignalFeed", () => {
   });
 
   it("reads today's health totals under the condition model's signal names", async () => {
-    const feed = createHomeSignalFeed({ health: health(), motion: motion() });
+    const feed = createTestFeed(health(), motion());
 
     const reading = await feed.read();
 
@@ -70,7 +84,7 @@ describe("createHomeSignalFeed", () => {
 
   it("picks up a health sample that lands later in the day", async () => {
     const provider = health();
-    const feed = createHomeSignalFeed({ health: provider, motion: motion() });
+    const feed = createTestFeed(provider, motion());
 
     provider.advanceTo(120_000);
     const reading = await feed.read();
@@ -79,46 +93,141 @@ describe("createHomeSignalFeed", () => {
     feed.dispose();
   });
 
-  it("reports walking as an active signal once the classifier says so", async () => {
+  it("waits for sustained cadence after walking classification", async () => {
     const provider = motion();
-    const feed = createHomeSignalFeed({ health: health(), motion: provider });
+    const feed = createTestFeed(health(), provider);
 
     expect((await feed.read()).activeSignals).toEqual([]);
 
     await feed.start();
     provider.advanceTo(1_000);
+
+    expect((await feed.read()).activeSignals).toEqual([]);
+
+    provider.advanceTo(4_000);
 
     expect((await feed.read()).activeSignals).toEqual(["walking"]);
     feed.dispose();
   });
 
-  it("drops walking again when the classifier moves on", async () => {
-    const provider = new FixtureMotionProvider({
-      name: "walk-then-stop",
-      version: 1,
-      description: "Walking, then stationary.",
-      timeline: [
-        { atMs: 1_000, event: "motion.activityChange", payload: { activity: "walking", confidence: "high" } },
-        { atMs: 2_000, event: "motion.activityChange", payload: { activity: "stationary", confidence: "high" } },
-      ],
-    });
-    const feed = createHomeSignalFeed({ health: health(), motion: provider });
+  it("drops verified walking after the configured stop grace", async () => {
+    const provider = new FixtureMotionProvider(
+      getSignalFixture("motion", "stop-for-good") as MotionFixtureManifest,
+    );
+    const feed = createTestFeed(health(), provider);
 
     await feed.start();
-    provider.advanceTo(2_000);
+    provider.advanceTo(4_000);
+
+    expect((await feed.read()).activeSignals).toEqual(["walking"]);
+
+    provider.advanceTo(41_000);
 
     expect((await feed.read()).activeSignals).toEqual([]);
     feed.dispose();
   });
 
+  it("publishes stop-grace expiry without waiting for another sensor event", async () => {
+    jest.useFakeTimers();
+    const provider = new FixtureMotionProvider(
+      getSignalFixture("motion", "stop-for-good") as MotionFixtureManifest,
+    );
+    let nowMs = 0;
+    const feed = createHomeSignalFeed({
+      health: health(),
+      motion: provider,
+      walking: { gracePeriodMs: 30_000, now: () => nowMs },
+    });
+    const readings: string[][] = [];
+
+    try {
+      feed.subscribe((reading) => readings.push([...reading.activeSignals]));
+      await feed.start();
+      nowMs = 4_000;
+      provider.advanceTo(4_000);
+      await jest.advanceTimersByTimeAsync(0);
+      expect(readings.at(-1)).toEqual(["walking"]);
+
+      nowMs = 10_000;
+      provider.advanceTo(10_000);
+      await jest.advanceTimersByTimeAsync(0);
+      expect(readings.at(-1)).toEqual(["walking"]);
+
+      nowMs = 40_000;
+      await jest.advanceTimersByTimeAsync(30_000);
+
+      expect(readings.at(-1)).toEqual([]);
+    } finally {
+      feed.dispose();
+      jest.useRealTimers();
+    }
+  });
+
+  it("publishes cadence freshness expiry through the full grace chain", async () => {
+    jest.useFakeTimers();
+    const provider = motion();
+    let nowMs = 0;
+    const feed = createHomeSignalFeed({
+      health: health(),
+      motion: provider,
+      walking: { gracePeriodMs: 30_000, now: () => nowMs },
+    });
+    const readings: string[][] = [];
+
+    try {
+      feed.subscribe((reading) => readings.push([...reading.activeSignals]));
+      await feed.start();
+      nowMs = 4_000;
+      provider.advanceTo(4_000);
+      await jest.advanceTimersByTimeAsync(0);
+      expect(readings.at(-1)).toEqual(["walking"]);
+
+      nowMs = 9_001;
+      await jest.advanceTimersByTimeAsync(5_001);
+      expect(readings.at(-1)).toEqual(["walking"]);
+
+      nowMs = 39_000;
+      await jest.advanceTimersByTimeAsync(29_999);
+      expect(readings.at(-1)).toEqual([]);
+    } finally {
+      feed.dispose();
+      jest.useRealTimers();
+    }
+  });
+
+  it("cancels a pending cadence watchdog when disposed", async () => {
+    jest.useFakeTimers();
+    const provider = motion();
+    let nowMs = 0;
+    const feed = createHomeSignalFeed({
+      health: health(),
+      motion: provider,
+      walking: { gracePeriodMs: 30_000, now: () => nowMs },
+    });
+
+    try {
+      await feed.start();
+      nowMs = 4_000;
+      provider.advanceTo(4_000);
+
+      expect(jest.getTimerCount()).toBe(1);
+      feed.dispose();
+
+      expect(jest.getTimerCount()).toBe(0);
+    } finally {
+      feed.dispose();
+      jest.useRealTimers();
+    }
+  });
+
   it("notifies subscribers when a signal moves", async () => {
     const provider = motion();
-    const feed = createHomeSignalFeed({ health: health(), motion: provider });
+    const feed = createTestFeed(health(), provider);
     const readings: string[][] = [];
     feed.subscribe((reading) => readings.push([...reading.activeSignals]));
 
     await feed.start();
-    provider.advanceTo(1_000);
+    provider.advanceTo(4_000);
     await settle();
 
     expect(readings.at(-1)).toEqual(["walking"]);
@@ -127,7 +236,7 @@ describe("createHomeSignalFeed", () => {
 
   it("stops notifying an unsubscribed listener", async () => {
     const provider = motion();
-    const feed = createHomeSignalFeed({ health: health(), motion: provider });
+    const feed = createTestFeed(health(), provider);
     const readings: unknown[] = [];
     const unsubscribe = feed.subscribe((reading) => readings.push(reading));
 
@@ -145,7 +254,7 @@ describe("createHomeSignalFeed", () => {
       getSignalFixture("motion", "denied-permission") as MotionFixtureManifest,
     );
     denied.advanceTo(1_000);
-    const feed = createHomeSignalFeed({ health: health(), motion: denied });
+    const feed = createTestFeed(health(), denied);
 
     await expect(feed.start()).resolves.toBeUndefined();
     expect((await feed.read()).activeSignals).toEqual([]);

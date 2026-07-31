@@ -1,5 +1,6 @@
 export { FixtureMotionProvider } from "./FixtureMotionProvider";
 export { MotionFixtureError } from "./MotionFixtureError";
+export { NativeMotionProvider } from "./NativeMotionProvider";
 export {
   WALK_CADENCE_FRESHNESS_MS,
   WALK_CADENCE_THRESHOLD_STEPS_PER_MINUTE,
@@ -11,6 +12,12 @@ export {
   MOTION_FIXTURES,
 } from "./fixtures";
 export { WalkVerifier } from "./WalkVerifier";
+export type {
+  ExcerlockMotionEvent,
+  ExcerlockMotionModuleClient,
+  MotionModuleSubscription,
+} from "./MotionModuleClient";
+export { createExcerlockMotionModuleClient } from "./MotionModuleClient";
 export type {
   MotionActivityChangePayload,
   MotionFixtureEvent,
