@@ -284,6 +284,7 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
 
   public async getCurrentShieldState(): Promise<CurrentShieldState> {
     await this.ready;
+    this.refreshObservedShieldState();
     return this.currentShieldState;
   }
 

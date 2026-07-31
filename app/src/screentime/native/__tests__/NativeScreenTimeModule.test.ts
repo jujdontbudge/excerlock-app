@@ -12,24 +12,38 @@ import {
   type NativeSelectionPicker,
 } from "../NativeScreenTimeModule";
 
-function createDeviceActivityApi(initialAuthorizationStatus = 0): DeviceActivityApi {
+type ControlledDeviceActivityApi = DeviceActivityApi & {
+  setShieldActive(active: boolean): void;
+};
+
+function createDeviceActivityApi(
+  initialAuthorizationStatus = 0,
+): ControlledDeviceActivityApi {
   let authorizationStatus: ReturnType<DeviceActivityApi["authorizationStatus"]> =
     initialAuthorizationStatus as ReturnType<
       DeviceActivityApi["authorizationStatus"]
     >;
+  let shieldActive = false;
 
   return {
     authorizationStatus: () => authorizationStatus,
     requestAuthorization: jest.fn(async () => {
       authorizationStatus = 2;
     }),
-    blockSelection: jest.fn(),
-    unblockSelection: jest.fn(),
+    blockSelection: jest.fn(() => {
+      shieldActive = true;
+    }),
+    unblockSelection: jest.fn(() => {
+      shieldActive = false;
+    }),
     configureActions: jest.fn(),
     startMonitoring: jest.fn(async () => undefined),
     stopMonitoring: jest.fn(),
-    isShieldActive: jest.fn(() => false),
+    isShieldActive: jest.fn(() => shieldActive),
     onDeviceActivityMonitorEvent: jest.fn(() => ({ remove: jest.fn() })),
+    setShieldActive(active) {
+      shieldActive = active;
+    },
   };
 }
 
@@ -354,5 +368,26 @@ describe("NativeScreenTimeModule", () => {
       effectiveShields: "up",
     });
     expect(observed).toEqual(["up"]);
+  });
+
+  it("refreshes actual ManagedSettings state after returning to the app", async () => {
+    const deviceActivity = createDeviceActivityApi(2);
+    const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity,
+      picker: createPicker({ applicationCount: 1, categoryCount: 0 }),
+    });
+    const selection = (await screenTime.pickSelection())!;
+    await screenTime.reconcile(selection, {
+      shields: "down",
+      drainThresholds: [],
+    });
+
+    deviceActivity.setShieldActive(true);
+
+    await expect(screenTime.getCurrentShieldState()).resolves.toMatchObject({
+      selection,
+      desiredOsState: { shields: "down" },
+      effectiveShields: "up",
+    });
   });
 });
