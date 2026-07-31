@@ -137,6 +137,7 @@ describe("ManageScreen", () => {
     expect(screen.getByText("5 min")).toBeOnTheScreen();
 
     await press("Increase minutes earned");
+    await press("Choose banner");
     await press("Preview");
     await press("Save condition");
 

@@ -17,6 +17,7 @@ export function RateCard({ model }: { model: RateCardModel }) {
     <CardShell
       title={model.title}
       subtitle={model.sourceLabel}
+      banner={model.banner}
       badge={<RewardBadge label={model.ratioLabel} />}
     >
       <Text style={[typography.body, { color: colors.textPrimary }]}>{model.meterLabel}</Text>

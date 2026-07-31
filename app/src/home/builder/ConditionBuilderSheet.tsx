@@ -23,11 +23,18 @@ import { CatalogStep } from "./steps/CatalogStep";
 import { ConfigureStep } from "./steps/ConfigureStep";
 import { PreviewStep } from "./steps/PreviewStep";
 import { SourceStep } from "./steps/SourceStep";
+import { BannerStep } from "./steps/BannerStep";
+import {
+  expoBannerPhotoPicker,
+  type BannerPhotoPicker,
+} from "../banners/bannerPhotoPicker";
+import type { BannerSelection } from "../banners/bannerCatalog";
 
 const STEP_TITLES: Readonly<Record<BuilderStep, string>> = {
   catalog: "Pick a condition",
   source: "Pick a source",
   configure: "Set it up",
+  banner: "Choose a banner",
   preview: "Preview",
 };
 
@@ -47,6 +54,7 @@ export function ConditionBuilderSheet({
   onSave,
   onClose,
   createId = () => `condition-${Date.now()}`,
+  bannerPhotoPicker = expoBannerPhotoPicker,
 }: {
   visible: boolean;
   context: PickerContext;
@@ -58,9 +66,10 @@ export function ConditionBuilderSheet({
    * mount a second sheet (a `key` on the condition's id).
    */
   initialDraft?: BuilderDraft;
-  onSave: (condition: ConfiguredCondition) => void;
+  onSave: (condition: ConfiguredCondition, banner: BannerSelection) => void;
   onClose: () => void;
   createId?: () => string;
+  bannerPhotoPicker?: BannerPhotoPicker;
 }) {
   const { colors, radius, spacing, typography } = useTheme();
   const [draft, dispatch] = useReducer(builderReducer, initialDraft);
@@ -75,8 +84,8 @@ export function ConditionBuilderSheet({
 
   const save = () => {
     const condition = draftCondition(draft, createId());
-    if (condition !== undefined) {
-      onSave(condition);
+    if (condition !== undefined && draft.banner !== undefined) {
+      onSave(condition, draft.banner);
     }
     close();
   };
@@ -135,8 +144,21 @@ export function ConditionBuilderSheet({
               <ConfigureStep catalogId={draft.catalogId} draft={draft} dispatch={dispatch} />
             ) : null}
 
+            {draft.step === "banner" && draft.catalogId !== undefined ? (
+              <BannerStep
+                catalogId={draft.catalogId}
+                selection={draft.banner}
+                photoPicker={bannerPhotoPicker}
+                onSelect={(banner) => dispatch({ type: "pickBanner", banner })}
+              />
+            ) : null}
+
             {draft.step === "preview" && preview !== undefined ? (
-              <PreviewStep condition={preview} {...(placeNames === undefined ? {} : { placeNames })} />
+              <PreviewStep
+                condition={preview}
+                banner={draft.banner}
+                {...(placeNames === undefined ? {} : { placeNames })}
+              />
             ) : null}
           </ScrollView>
 
@@ -162,6 +184,15 @@ export function ConditionBuilderSheet({
               />
             )}
             {draft.step === "configure" ? (
+              <PillButton
+                label="Choose banner"
+                variant="white"
+                disabled={!canAdvance(draft)}
+                onPress={() => dispatch({ type: "next" })}
+                style={styles.action}
+              />
+            ) : null}
+            {draft.step === "banner" ? (
               <PillButton
                 label="Preview"
                 variant="white"

@@ -25,6 +25,7 @@ export function EventCard({
     <CardShell
       title={model.title}
       subtitle={model.sourceLabel}
+      banner={model.banner}
       badge={<RewardBadge label={model.rewardLabel} />}
     >
       {model.progressLabel === undefined ? null : (

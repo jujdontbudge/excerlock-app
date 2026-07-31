@@ -53,6 +53,14 @@
         }
       ],
       "./modules/excerlock-motion/app.plugin.js",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow ExcerLock to use a photo as a condition banner.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
       "./plugins/withScreenTimeExtensionValidation"
     ],
     "experiments": {

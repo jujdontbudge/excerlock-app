@@ -9,6 +9,10 @@ import {
 
 import { formatCount, formatMinutes, formatQuantity } from "./duration";
 import type { SignalReading } from "./reading";
+import {
+  bannerForCondition,
+  type BannerSelection,
+} from "../banners/bannerCatalog";
 
 /**
  * One card per active condition (PRD §3.15 Tab 1), in the variant its kind
@@ -34,6 +38,7 @@ interface CardBase {
   readonly title: string;
   /** Where the signal comes from — or the saved gym, when the condition has one. */
   readonly sourceLabel: string;
+  readonly banner: BannerSelection;
 }
 
 export interface EventCardModel extends CardBase {
@@ -69,6 +74,7 @@ export interface ConditionCardsInput {
   /** Conditions the ledger already paid out today — an event card stays completed. */
   readonly firedConditionIds?: readonly string[];
   readonly placeNames?: Readonly<Record<string, string>>;
+  readonly conditionBanners?: Readonly<Record<string, BannerSelection>>;
 }
 
 export function toConditionCards({
@@ -76,6 +82,7 @@ export function toConditionCards({
   reading,
   firedConditionIds = [],
   placeNames = {},
+  conditionBanners = {},
 }: ConditionCardsInput): readonly ConditionCardModel[] {
   return conditions.map((condition) => {
     const entry = getCatalogEntry(condition.catalogId);
@@ -83,6 +90,7 @@ export function toConditionCards({
       id: condition.id,
       title: entry.name,
       sourceLabel: sourceLabelFor(condition, entry, placeNames),
+      banner: bannerForCondition(condition, conditionBanners[condition.id]),
     };
 
     switch (condition.settings.kind) {

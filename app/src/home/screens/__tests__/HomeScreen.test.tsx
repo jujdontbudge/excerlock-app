@@ -178,10 +178,44 @@ describe("HomeScreen", () => {
     await press("Create your first condition");
     await press("Steps exchange");
     await press("Increase minutes earned");
+    await press("Choose banner");
     await press("Preview");
     await press("Save condition");
 
     expect(useHomeStore.getState().conditions).toHaveLength(1);
     expect(screen.getByText("1,000 steps = 5 min")).toBeOnTheScreen();
+  });
+
+  it("lets the user crop an own-photo banner and keeps it on the saved card", async () => {
+    const pickBannerPhoto = jest.fn().mockResolvedValue({
+      status: "selected" as const,
+      uri: "file:///picked-banner.jpg",
+    });
+    await render(
+      <HomeScreen
+        feed={stubFeed()}
+        now={now}
+        bannerPhotoPicker={{ pick: pickBannerPhoto }}
+      />,
+    );
+
+    await press("Create your first condition");
+    await press("Steps exchange");
+    await press("Increase minutes earned");
+    await press("Choose banner");
+    await press("Use your own photo");
+    await press("Preview");
+    await press("Save condition");
+
+    expect(pickBannerPhoto).toHaveBeenCalledTimes(1);
+    const [saved] = useHomeStore.getState().conditions;
+    expect(saved).toBeDefined();
+    expect(useHomeStore.getState().conditionBanners[saved!.id]).toEqual({
+      kind: "photo",
+      uri: "file:///picked-banner.jpg",
+    });
+    expect(
+      screen.getByLabelText("Custom photo banner for Steps exchange"),
+    ).toBeOnTheScreen();
   });
 });

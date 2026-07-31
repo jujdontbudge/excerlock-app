@@ -100,7 +100,7 @@ describe("builderReducer", () => {
 
     draft = builderReducer(draft, { type: "setReward", reward: { type: "fixedMinutes", minutes: 30 } });
     expect(canAdvance(draft)).toBe(true);
-    expect(builderReducer(draft, { type: "next" }).step).toBe("preview");
+    expect(builderReducer(draft, { type: "next" }).step).toBe("banner");
   });
 
   it("keeps a thresholdless event waiting only on its reward", () => {
@@ -234,6 +234,7 @@ describe("draftFromCondition", () => {
       catalogId: "steps-goal",
       source: "appleHealth",
       hasSourceChoice: false,
+      banner: { kind: "curated", id: "walk-1" },
       threshold: 10_000,
       reward: { type: "fixedMinutes", minutes: 30 },
     });

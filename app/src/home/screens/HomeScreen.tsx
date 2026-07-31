@@ -19,12 +19,18 @@ import { useHealthEventClaims } from "../signals/useHealthEventClaims";
 import { useHomeSignals } from "../signals/useHomeSignals";
 import { selectActiveConditions, selectPickerContext } from "../store/homeState";
 import { useHomeStore } from "../store/homeStore";
+import {
+  expoBannerPhotoPicker,
+  type BannerPhotoPicker,
+} from "../banners/bannerPhotoPicker";
 
 export interface HomeScreenProps {
   /** Injected by tests and by the Phase-3 composition root. */
   feed?: HomeSignalFeed;
   /** Local wall-clock milliseconds — the ledger never reads a clock itself. */
   now?: () => number;
+  /** System photo picker boundary, injected by the own-photo flow test. */
+  bannerPhotoPicker?: BannerPhotoPicker;
 }
 
 /**
@@ -32,7 +38,7 @@ export interface HomeScreenProps {
  * and owns none of their rules: balances come from `@excerlock/ledger`, card and
  * picker rules from `@excerlock/condition-model`, live values from SignalKit.
  */
-export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
+export function HomeScreen({ feed, now, bannerPhotoPicker = expoBannerPhotoPicker }: HomeScreenProps = {}) {
   const appRuntime =
     feed === undefined || now === undefined
       ? getHomeAppRuntime()
@@ -43,6 +49,7 @@ export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
   const [builderOpen, setBuilderOpen] = useState(false);
 
   const conditions = useHomeStore((state) => state.conditions);
+  const conditionBanners = useHomeStore((state) => state.conditionBanners);
   const disabledConditionIds = useHomeStore((state) => state.disabledConditionIds);
   const journal = useHomeStore((state) => state.journal);
   const ledgerConfig = useHomeStore((state) => state.ledgerConfig);
@@ -72,6 +79,7 @@ export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
     reading,
     firedConditionIds: firedToday,
     placeNames,
+    conditionBanners,
   });
 
   const hero = deriveLockHero({ journal, config: ledgerConfig, atMs, liveStates: liveStates(cards) });
@@ -123,6 +131,7 @@ export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
         context={pickerContext}
         placeNames={placeNames}
         onSave={addCondition}
+        bannerPhotoPicker={bannerPhotoPicker}
         onClose={() => setBuilderOpen(false)}
       />
     </>
