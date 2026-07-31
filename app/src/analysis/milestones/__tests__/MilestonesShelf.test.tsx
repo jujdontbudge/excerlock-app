@@ -156,7 +156,7 @@ describe("MilestonesShelf", () => {
     expect(alert).not.toHaveBeenCalled();
   });
 
-  it("starts one staggered scale-in sequence for all pending unlocks", async () => {
+  it("holds the scale-in until the shelf is visible, then starts one sequence", async () => {
     const start = jest.fn();
     const stop = jest.fn();
     const reset = jest.fn();
@@ -165,9 +165,20 @@ describe("MilestonesShelf", () => {
       .spyOn(Animated, "stagger")
       .mockReturnValue({ reset, start, stop });
 
-    await render(
+    const view = await render(
       <MilestonesShelf
         metrics={metrics}
+        unlockReady={false}
+        unlockSequence={["streak-3", "activity-1"]}
+      />,
+    );
+
+    expect(start).not.toHaveBeenCalled();
+
+    await view.rerender(
+      <MilestonesShelf
+        metrics={metrics}
+        unlockReady
         unlockSequence={["streak-3", "activity-1"]}
       />,
     );

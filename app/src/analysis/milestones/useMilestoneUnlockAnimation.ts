@@ -9,6 +9,7 @@ const STAGGER_MS = 120;
 /** Owns the one ordered native-driver animation for an Analysis visit. */
 export function useMilestoneUnlockAnimation(
   sequence: readonly MilestoneId[],
+  enabled: boolean,
 ): ReadonlyMap<MilestoneId, Animated.Value> {
   const sequenceKey = sequence.join("|");
   const scales = useMemo(
@@ -22,7 +23,7 @@ export function useMilestoneUnlockAnimation(
   );
 
   useEffect(() => {
-    if (scales.size === 0) return;
+    if (!enabled || scales.size === 0) return;
 
     const animation = Animated.stagger(
       STAGGER_MS,
@@ -38,7 +39,7 @@ export function useMilestoneUnlockAnimation(
     animation.start();
 
     return () => animation.stop();
-  }, [scales]);
+  }, [enabled, scales]);
 
   return scales;
 }

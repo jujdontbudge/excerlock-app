@@ -26,18 +26,23 @@ import { useMilestoneShareRequest } from "./useMilestoneShareRequest";
 type MilestonesShelfProps = Readonly<{
   metrics: MilestoneMetrics;
   shareCardModule?: ShareCardModule;
+  unlockReady?: boolean;
   unlockSequence?: readonly MilestoneId[];
 }>;
 
 export function MilestonesShelf({
   metrics,
   shareCardModule,
+  unlockReady = false,
   unlockSequence = [],
 }: MilestonesShelfProps) {
   const { spacing, typography } = useTheme();
   const rows = buildMilestoneRows(metrics);
   const badges = rows.flatMap((row) => row.badges);
-  const unlockScales = useMilestoneUnlockAnimation(unlockSequence);
+  const unlockScales = useMilestoneUnlockAnimation(
+    unlockSequence,
+    unlockReady,
+  );
   const { closeShare, records, requestShare, selection } =
     useMilestoneShareRequest(badges);
   const [selectedLockedId, setSelectedLockedId] =
