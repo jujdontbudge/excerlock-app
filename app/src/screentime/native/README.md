@@ -34,7 +34,9 @@ adapter applies the shield before returning the error.
 When Ledger supplies drain thresholds, the adapter instead re-arms a local-day
 DeviceActivity usage ladder with `includesPastActivity: true`; the final rung
 applies the shield OS-side. This is why the deployment target remains iOS 17.4.
-Event names and monitor names contain no app or lock-window names.
+The scheduler resolves the package-owned serialized selection just in time for
+`startMonitoring`; it never persists or returns that value. Event names and
+monitor names contain no app or lock-window names.
 
 The monitor survives the host app being force-quit once ticket #80 supplies the
 `ActivityMonitorExtension` target. Reconciliation outside a configured lock

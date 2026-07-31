@@ -16,8 +16,8 @@ Callers import only `index.ts` and obtain the adapter through
 - the system picker, returning an opaque `ScreenTimeSelectionHandle`, plus
   `describeSelection(handle)` — the adapter-composed `ScreenTimeSelectionSummary`
   a caller may render;
-- one idempotent `reconcile(selection, desiredOsState)` operation that applies
-  or clears shields from the `DesiredOsState` computed by `@excerlock/ledger`;
+- one `reconcile(selection, desiredOsState)` operation that applies or clears
+  shields from the `DesiredOsState` computed by `@excerlock/ledger`;
 - concrete lock windows with `[startsAtMs, endsAtMs)` boundaries, readable back
   through `getLockWindows()` so a caller can say when a shield lifts;
 - a current shield-state snapshot and change subscription.
