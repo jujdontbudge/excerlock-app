@@ -22,6 +22,10 @@ export {
 } from "./fixtures";
 export type { LocationFixtureName } from "./fixtures";
 export type {
+  AppLocationProvider,
+  ManualGymCheckIn,
+} from "./ManualGymCheckIn";
+export type {
   GeofenceRegion,
   LocationAuthorizationStatus,
   LocationProvider,

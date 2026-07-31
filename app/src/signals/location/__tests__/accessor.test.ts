@@ -12,9 +12,17 @@ const developmentClient = {
 } as const;
 
 describe("LocationProvider composition seam", () => {
-  it("keeps fixtures as the singleton test default", () => {
+  it("keeps a manual-check-in fixture as the singleton test default", async () => {
     expect(getLocationProvider()).toBe(getLocationProvider());
     expect(getLocationProvider()).toBeInstanceOf(FixtureLocationProvider);
+    await expect(
+      getLocationProvider().checkIn({
+        id: "gym-a",
+        latitude: 40.741,
+        longitude: -73.989,
+        radiusMeters: 100,
+      }),
+    ).resolves.toBe(false);
   });
 
   it("selects native location only for an iOS development client", () => {

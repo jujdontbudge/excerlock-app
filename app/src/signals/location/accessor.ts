@@ -2,7 +2,7 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 
 import { FixtureLocationProvider } from "./FixtureLocationProvider";
-import type { LocationProvider } from "./LocationProvider";
+import type { AppLocationProvider } from "./ManualGymCheckIn";
 import { getLocationFixture } from "./fixtures";
 
 type LocationRuntime = Readonly<{
@@ -12,10 +12,10 @@ type LocationRuntime = Readonly<{
   expoGoConfig: unknown | null;
 }>;
 
-let locationProvider: LocationProvider | undefined;
+let locationProvider: AppLocationProvider | undefined;
 
 /** Fixtures are the default; only an iOS development client loads Expo Location. */
-export function getLocationProvider(): LocationProvider {
+export function getLocationProvider(): AppLocationProvider {
   locationProvider ??= createLocationProvider();
   return locationProvider;
 }
@@ -31,7 +31,7 @@ export function shouldUseNativeLocationProvider(
   );
 }
 
-function createLocationProvider(): LocationProvider {
+function createLocationProvider(): AppLocationProvider {
   if (
     shouldUseNativeLocationProvider({
       nodeEnv: process.env.NODE_ENV,
