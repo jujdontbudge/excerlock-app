@@ -8,3 +8,12 @@ export type {
   ExperimentFlagName,
   ExperimentVariant,
 } from "./experiments";
+export {
+  decodeShieldCopyPayload,
+  SHIELD_COPY_CAUSES,
+} from "./shieldCopyPayload";
+export type {
+  ShieldCopy,
+  ShieldCopyCause,
+  ShieldCopyPayload,
+} from "./shieldCopyPayload";
