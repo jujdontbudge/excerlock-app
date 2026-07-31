@@ -22,6 +22,7 @@ import {
   type SelectionContents,
 } from "../selectionSummary";
 import {
+  type DeviceActivityDateComponents,
   localDateComponents,
   monitorNameForLockWindow,
   UNLOCK_INCREMENT_MS,
@@ -50,8 +51,8 @@ export type DeviceActivityApi = Readonly<{
   startMonitoring(
     activityName: string,
     schedule: {
-      intervalStart: Record<string, number | string>;
-      intervalEnd: Record<string, number | string>;
+      intervalStart: DeviceActivityDateComponents;
+      intervalEnd: DeviceActivityDateComponents;
       repeats: boolean;
     },
     events: readonly never[],
