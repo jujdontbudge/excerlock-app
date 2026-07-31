@@ -14,4 +14,9 @@ export class PinnedScenarioClock implements E2EClock {
   public nowMs(): number {
     return this.initialNowMs;
   }
+
+  /** A pinned scenario never crosses a future boundary during one flow. */
+  public scheduleAt(): () => void {
+    return () => undefined;
+  }
 }

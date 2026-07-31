@@ -1,4 +1,9 @@
 export { getScreenTimeModule } from "./accessor";
+export {
+  getScreenTimeAppRuntime,
+  installScreenTimeAppRuntime,
+  type ScreenTimeAppRuntime,
+} from "./appRuntime";
 export type {
   CurrentShieldState,
   LockWindow,
