@@ -29,6 +29,7 @@ function createDeviceActivityApi(initialAuthorizationStatus = 0): DeviceActivity
     startMonitoring: jest.fn(async () => undefined),
     stopMonitoring: jest.fn(),
     isShieldActive: jest.fn(() => false),
+    onDeviceActivityMonitorEvent: jest.fn(() => ({ remove: jest.fn() })),
   };
 }
 
@@ -319,5 +320,39 @@ describe("NativeScreenTimeModule", () => {
       effectiveShields: "down",
       activeLockWindowId: null,
     });
+  });
+
+  it("observes the OS-side re-shield when a lease lapses", async () => {
+    let monitorListener:
+      | ((event: { callbackName: string }) => void)
+      | undefined;
+    let shieldActive = false;
+    const deviceActivity: DeviceActivityApi = {
+      ...createDeviceActivityApi(2),
+      isShieldActive: () => shieldActive,
+      onDeviceActivityMonitorEvent: jest.fn((listener) => {
+        monitorListener = listener;
+        return { remove: jest.fn() };
+      }),
+    };
+    const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity,
+      picker: createPicker({ applicationCount: 1, categoryCount: 0 }),
+    });
+    const selection = (await screenTime.pickSelection())!;
+    await screenTime.reconcile(selection, {
+      shields: "down",
+      drainThresholds: [],
+    });
+    const observed: string[] = [];
+    screenTime.subscribe((state) => observed.push(state.effectiveShields));
+
+    shieldActive = true;
+    monitorListener?.({ callbackName: "intervalDidEnd" });
+
+    await expect(screenTime.getCurrentShieldState()).resolves.toMatchObject({
+      effectiveShields: "up",
+    });
+    expect(observed).toEqual(["up"]);
   });
 });

@@ -59,6 +59,9 @@ export type DeviceActivityApi = Readonly<{
   ): Promise<void>;
   stopMonitoring(activityNames?: string[]): void;
   isShieldActive(): boolean;
+  onDeviceActivityMonitorEvent(
+    listener: (event: { callbackName: string }) => void,
+  ): { remove(): void };
 }>;
 
 export interface NativeSelectionPicker {
@@ -107,6 +110,7 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
     typeof createNativeScreenTimePersistence
   >;
   private readonly ready: Promise<void>;
+  private readonly monitorSubscription: { remove(): void };
   private readonly selections = new Map<string, SelectionContents>();
   private readonly listeners = new Set<ShieldStateListener>();
   private lockWindows: NativeScheduledLockWindow[] = [];
@@ -135,6 +139,10 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
         this.nowMs(),
       );
     });
+    this.monitorSubscription =
+      this.deviceActivity.onDeviceActivityMonitorEvent(() => {
+        this.refreshObservedShieldState();
+      });
   }
 
   public async getAuthorizationStatus(): Promise<ScreenTimeAuthorizationStatus> {
@@ -394,6 +402,19 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
       desiredOsState,
       lockWindows: this.lockWindows,
       selectionContents: Object.fromEntries(this.selections),
+    });
+  }
+
+  private refreshObservedShieldState(): void {
+    const nowMs = this.nowMs();
+    const activeWindow = this.lockWindows.find(
+      ({ startsAtMs, endsAtMs }) =>
+        nowMs >= startsAtMs && nowMs < endsAtMs,
+    );
+    this.updateShieldState({
+      ...this.currentShieldState,
+      effectiveShields: this.deviceActivity.isShieldActive() ? "up" : "down",
+      activeLockWindowId: activeWindow?.id ?? null,
     });
   }
 
