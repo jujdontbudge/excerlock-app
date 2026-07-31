@@ -41,7 +41,9 @@ export class HealthKitHealthProvider implements HealthProvider {
     const status = await this.client.requestAuthorization();
     this.setAuthorizationStatus(status);
     if (status === "authorized") {
-      await this.client.configureBackgroundDelivery(HEALTHKIT_TYPES);
+      await this.client
+        .configureBackgroundDelivery(HEALTHKIT_TYPES)
+        .catch(() => undefined);
       this.reconcileSubscriptions();
     }
     return status;

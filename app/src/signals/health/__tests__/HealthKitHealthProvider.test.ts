@@ -126,6 +126,26 @@ describe("HealthKitHealthProvider active minutes", () => {
   });
 });
 
+describe("HealthKitHealthProvider background delivery", () => {
+  it("keeps successful authorization when background registration fails", async () => {
+    const provider = new HealthKitHealthProvider(
+      new BackgroundFailureHealthKitClient(),
+      () => NOW,
+    );
+
+    await expect(provider.requestAuth()).resolves.toBe("authorized");
+    expect(provider.getAuthorizationStatus()).toBe("authorized");
+
+    provider.dispose();
+  });
+});
+
+class BackgroundFailureHealthKitClient extends ContractHealthKitClient {
+  public override async configureBackgroundDelivery(): Promise<void> {
+    throw new Error("background delivery unavailable");
+  }
+}
+
 describe("HealthKitHealthProvider signal coverage", () => {
   it("reads every HealthProvider signal in its condition-domain unit", async () => {
     const provider = new HealthKitHealthProvider(
