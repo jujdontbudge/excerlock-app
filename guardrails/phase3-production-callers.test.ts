@@ -14,6 +14,13 @@ const PHASE_3_ACCESSORS = [
   "getMilestoneHaptics",
 ] as const;
 
+const ACCESSOR_MODULES: Readonly<Record<(typeof PHASE_3_ACCESSORS)[number], readonly string[]>> = {
+  getScreenTimeModule: ["@/screentime"],
+  getLocationProvider: ["@/signals"],
+  createExcerlockMotionModuleClient: ["@/signals"],
+  getMilestoneHaptics: ["@/analysis"],
+};
+
 function isProductionFile(path: string): boolean {
   const file = repoRelative(path);
   return (
@@ -24,22 +31,57 @@ function isProductionFile(path: string): boolean {
   );
 }
 
-function calledIdentifiers(path: string): readonly string[] {
+function calledImportedAccessors(
+  path: string,
+  sourceText: string = readUtf8(path),
+): readonly string[] {
   const source = ts.createSourceFile(
     path,
-    readUtf8(path),
+    sourceText,
     ts.ScriptTarget.Latest,
     true,
   );
+  const importedAccessors = new Map<
+    string,
+    (typeof PHASE_3_ACCESSORS)[number]
+  >();
   const calls: string[] = [];
 
+  source.statements.forEach((statement) => {
+    if (
+      !ts.isImportDeclaration(statement) ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      statement.importClause?.isTypeOnly === true ||
+      !statement.importClause?.namedBindings ||
+      !ts.isNamedImports(statement.importClause.namedBindings)
+    ) {
+      return;
+    }
+    const moduleName = statement.moduleSpecifier.text;
+    statement.importClause.namedBindings.elements.forEach((element) => {
+      const importedName = element.propertyName?.text ?? element.name.text;
+      if (
+        !element.isTypeOnly &&
+        PHASE_3_ACCESSORS.includes(
+          importedName as (typeof PHASE_3_ACCESSORS)[number],
+        ) &&
+        ACCESSOR_MODULES[
+          importedName as (typeof PHASE_3_ACCESSORS)[number]
+        ].includes(moduleName)
+      ) {
+        importedAccessors.set(
+          element.name.text,
+          importedName as (typeof PHASE_3_ACCESSORS)[number],
+        );
+      }
+    });
+  });
+
   function visit(node: ts.Node): void {
-    if (ts.isCallExpression(node)) {
-      const expression = node.expression;
-      if (ts.isIdentifier(expression)) {
-        calls.push(expression.text);
-      } else if (ts.isPropertyAccessExpression(expression)) {
-        calls.push(expression.name.text);
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const accessor = importedAccessors.get(node.expression.text);
+      if (accessor !== undefined) {
+        calls.push(accessor);
       }
     }
     ts.forEachChild(node, visit);
@@ -116,12 +158,29 @@ function productionFilesReachableFromRoutes(): readonly string[] {
 }
 
 describe("Phase 3 production composition", () => {
+  it("ignores same-named calls that are not imported accessors", () => {
+    expect(
+      calledImportedAccessors(
+        "impostor.ts",
+        `const object = { getLocationProvider() {} };
+         object.getLocationProvider();`,
+      ),
+    ).toEqual([]);
+    expect(
+      calledImportedAccessors(
+        "caller.ts",
+        `import { getLocationProvider as location } from "@/signals";
+         location();`,
+      ),
+    ).toEqual(["getLocationProvider"]);
+  });
+
   it("gives every native accessor a production caller", () => {
     const productionCalls = new Map<string, string[]>();
     const files = productionFilesReachableFromRoutes();
 
     for (const path of files) {
-      for (const accessor of calledIdentifiers(path)) {
+      for (const accessor of calledImportedAccessors(path)) {
         const sites = productionCalls.get(accessor) ?? [];
         sites.push(repoRelative(path));
         productionCalls.set(accessor, sites);
