@@ -63,6 +63,7 @@ export function createHomeSignalFeed({
     ? null
     : new WalkVerifier({ gracePeriodMs: walking.gracePeriodMs });
   let walkingTimer: ReturnType<typeof setTimeout> | undefined;
+  let motionStarted = false;
 
   async function read(): Promise<SignalReading> {
     const entries = await Promise.all(
@@ -142,11 +143,15 @@ export function createHomeSignalFeed({
             publish();
           }),
         );
+        // A refused motion authorization is a normal state, not a crash: the
+        // cards simply never go live. Permissions repair belongs to Settings.
+        await motion.start().then(
+          () => {
+            motionStarted = true;
+          },
+          () => undefined,
+        );
       }
-
-      // A refused motion authorization is a normal state, not a crash: the cards
-      // simply never go live. Permissions repair belongs to Settings.
-      await motion.start().catch(() => undefined);
     },
 
     read,
@@ -163,7 +168,10 @@ export function createHomeSignalFeed({
       }
       unsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
       listeners.clear();
-      void motion.stop().catch(() => undefined);
+      if (motionStarted) {
+        motionStarted = false;
+        void motion.stop().catch(() => undefined);
+      }
     },
   };
 }
