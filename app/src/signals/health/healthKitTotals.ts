@@ -20,7 +20,7 @@ export async function getHealthKitTodayTotal(
     const recordedExerciseTime = exerciseTime.samples.filter(
       (sample) => !sample.wasUserEntered,
     );
-    return recordedExerciseTime.length > 0
+    return exerciseTime.samples.length > 0
       ? sumRecorded(recordedExerciseTime)
       : sumRecorded((await client.queryWorkouts(query)).samples);
   }

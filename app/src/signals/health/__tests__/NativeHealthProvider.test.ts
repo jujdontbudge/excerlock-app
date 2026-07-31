@@ -42,6 +42,9 @@ describe("NativeHealthProvider active minutes", () => {
     now = new Date("2026-07-30T12:00:00-04:00");
     expect(await provider.getTodayTotal("appleExerciseTime")).toBe(35);
 
+    now = new Date("2026-07-31T12:00:00-04:00");
+    expect(await provider.getTodayTotal("appleExerciseTime")).toBe(0);
+
     provider.dispose();
   });
 });
@@ -219,6 +222,7 @@ class HybridHealthKitClient implements HealthKitClient {
 
 const exerciseSamples: readonly HealthSample[] = [
   sample(18, "2026-07-29T08:00:00-04:00", false),
+  sample(60, "2026-07-31T08:00:00-04:00", true),
 ];
 
 const workoutSamples: readonly HealthSample[] = [
@@ -226,6 +230,7 @@ const workoutSamples: readonly HealthSample[] = [
   sample(20, "2026-07-30T07:00:00-04:00", false),
   sample(15, "2026-07-30T09:00:00-04:00", false),
   sample(100, "2026-07-30T10:00:00-04:00", true),
+  sample(25, "2026-07-31T07:00:00-04:00", false),
 ];
 
 function page(
