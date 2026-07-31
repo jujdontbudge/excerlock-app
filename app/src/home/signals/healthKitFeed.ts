@@ -1,11 +1,11 @@
 import {
   FixtureMotionProvider,
   getSignalFixture,
+  createKingstinctHealthKitClient,
+  NativeHealthProvider,
   type MotionFixtureManifest,
   type TimelinePlayback,
 } from "@/signals";
-import { HealthKitHealthProvider } from "@/signals/health/HealthKitHealthProvider";
-import { createKingstinctHealthKitClient } from "@/signals/health/KingstinctHealthKitClient";
 
 import { HOME_FIXTURE_SCENARIO } from "./fixtureFeed";
 import { createHomeSignalFeed, type HomeSignalFeed } from "./homeSignalFeed";
@@ -14,7 +14,7 @@ import { createHomeSignalFeed, type HomeSignalFeed } from "./homeSignalFeed";
 export function createHealthKitHomeSignalFeed(
   playback: TimelinePlayback = { mode: "auto", speed: 1 },
 ): HomeSignalFeed {
-  const health = new HealthKitHealthProvider(createKingstinctHealthKitClient());
+  const health = new NativeHealthProvider(createKingstinctHealthKitClient());
   const motion = new FixtureMotionProvider(
     getSignalFixture(
       "motion",

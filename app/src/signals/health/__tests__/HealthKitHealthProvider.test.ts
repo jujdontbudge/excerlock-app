@@ -3,7 +3,7 @@ import type {
   HealthSample,
   HealthSignal,
 } from "..";
-import { HealthKitHealthProvider } from "../HealthKitHealthProvider";
+import { NativeHealthProvider } from "../NativeHealthProvider";
 import type {
   HealthKitClient,
   HealthKitObjectType,
@@ -99,9 +99,9 @@ class ContractHealthKitClient implements HealthKitClient {
   }
 }
 
-runHealthProviderContract("HealthKitHealthProvider", () => {
+runHealthProviderContract("NativeHealthProvider", () => {
   const client = new ContractHealthKitClient();
-  const provider = new HealthKitHealthProvider(client, () => NOW);
+  const provider = new NativeHealthProvider(client, () => NOW);
   return {
     provider,
     advanceTo: (atMs) => client.advanceTo(atMs),
@@ -109,10 +109,10 @@ runHealthProviderContract("HealthKitHealthProvider", () => {
   };
 });
 
-describe("HealthKitHealthProvider active minutes", () => {
+describe("NativeHealthProvider active minutes", () => {
   it("picks Watch exercise time or recorded workouts independently per day", async () => {
     let now = new Date("2026-07-29T12:00:00-04:00");
-    const provider = new HealthKitHealthProvider(
+    const provider = new NativeHealthProvider(
       new HybridHealthKitClient(),
       () => now,
     );
@@ -126,9 +126,9 @@ describe("HealthKitHealthProvider active minutes", () => {
   });
 });
 
-describe("HealthKitHealthProvider background delivery", () => {
+describe("NativeHealthProvider background delivery", () => {
   it("keeps successful authorization when background registration fails", async () => {
-    const provider = new HealthKitHealthProvider(
+    const provider = new NativeHealthProvider(
       new BackgroundFailureHealthKitClient(),
       () => NOW,
     );
@@ -146,9 +146,9 @@ class BackgroundFailureHealthKitClient extends ContractHealthKitClient {
   }
 }
 
-describe("HealthKitHealthProvider signal coverage", () => {
+describe("NativeHealthProvider signal coverage", () => {
   it("reads every HealthProvider signal in its condition-domain unit", async () => {
-    const provider = new HealthKitHealthProvider(
+    const provider = new NativeHealthProvider(
       new AllSignalsHealthKitClient(),
       () => NOW,
     );
@@ -198,7 +198,7 @@ describe("HealthKitHealthProvider signal coverage", () => {
 describe("Kingstinct HealthKit client", () => {
   it("converts native samples and configures every on-device read", async () => {
     const native = new FakeKingstinctModule();
-    const provider = new HealthKitHealthProvider(
+    const provider = new NativeHealthProvider(
       new KingstinctHealthKitClient(native),
       () => NOW,
     );

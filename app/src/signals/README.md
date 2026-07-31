@@ -6,7 +6,7 @@ root. Screens never branch on provider availability.
 
 This module ships the interfaces, fixture implementations, shared `TimelinePlayer`, canonical JSON
 fixture libraries, and JS-only `WalkVerifier`. The Health domain also has the Phase-3
-`HealthKitHealthProvider`; the composition root selects it only in an iOS dev-client runtime and keeps
+`NativeHealthProvider`; the composition root selects it only in an iOS dev-client runtime and keeps
 fixtures as the test default. Other native implementations remain Phase 3.
 
 Every fixture is a named, versioned manifest with sorted `{atMs, event, payload}` rows. History at or

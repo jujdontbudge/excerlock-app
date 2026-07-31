@@ -11,14 +11,14 @@ import type {
   HealthKitObjectType,
 } from "./HealthKitClient";
 import {
-  HEALTHKIT_QUANTITIES,
   HEALTHKIT_TYPES,
   HEALTHKIT_WORKOUT_TYPE,
   quantityDefinition,
   signalsChangedBy,
 } from "./healthKitSignalMapping";
+import { getHealthKitTodayTotal } from "./healthKitTotals";
 
-export class HealthKitHealthProvider implements HealthProvider {
+export class NativeHealthProvider implements HealthProvider {
   private readonly authorizationCallbacks = new Set<
     (status: HealthAuthorizationStatus) => void
   >();
@@ -70,42 +70,8 @@ export class HealthKitHealthProvider implements HealthProvider {
     return result;
   }
 
-  public async getTodayTotal(signal: HealthSignal): Promise<number> {
-    const now = this.now();
-    const from = new Date(now);
-    from.setHours(0, 0, 0, 0);
-    const query = {
-      anchor: null,
-      from,
-      to: now,
-    } as const;
-    if (signal === "appleExerciseTime") {
-      const exerciseTime = await this.client.queryQuantity(
-        HEALTHKIT_QUANTITIES.appleExerciseTime.type,
-        HEALTHKIT_QUANTITIES.appleExerciseTime.unit,
-        query,
-      );
-      const recordedExerciseTime = exerciseTime.samples.filter(
-        (sample) => !sample.wasUserEntered,
-      );
-      if (recordedExerciseTime.length > 0) {
-        return sum(recordedExerciseTime);
-      }
-      return sum((await this.client.queryWorkouts(query)).samples);
-    }
-    if (signal === "workout") {
-      return sum((await this.client.queryWorkouts(query)).samples);
-    }
-    const definition = HEALTHKIT_QUANTITIES[signal];
-    return sum(
-      (
-        await this.client.queryQuantity(
-          definition.type,
-          definition.unit,
-          query,
-        )
-      ).samples,
-    );
+  public getTodayTotal(signal: HealthSignal): Promise<number> {
+    return getHealthKitTodayTotal(this.client, signal, this.now());
   }
 
   public onChange(
@@ -170,11 +136,7 @@ export class HealthKitHealthProvider implements HealthProvider {
   private handleChange(type: HealthKitObjectType): void {
     const changedSignals = signalsChangedBy(type);
     changedSignals.forEach((signal) => {
-      this.emitChange({
-        signal,
-        reason: "backgroundWake",
-        samples: [],
-      });
+      this.emitChange({ signal, reason: "backgroundWake", samples: [] });
     });
     const sampleSignal =
       type === HEALTHKIT_WORKOUT_TYPE ? "workout" : changedSignals[0];
@@ -211,12 +173,4 @@ export class HealthKitHealthProvider implements HealthProvider {
     this.authorizationStatus = status;
     this.authorizationCallbacks.forEach((callback) => callback(status));
   }
-}
-
-function sum(samples: Awaited<ReturnType<HealthKitClient["queryWorkouts"]>>["samples"]): number {
-  return samples.reduce(
-    (total, sample) =>
-      sample.wasUserEntered ? total : total + sample.value,
-    0,
-  );
 }

@@ -7,7 +7,7 @@ HealthProvider interface. Native and fixture implementations must pass the same 
 `health.authChanged`. Anchors are opaque to consumers. Raw sample attribution remains queryable, while
 `getTodayTotal` enforces the PRD's device-recorded-only rule by excluding `wasUserEntered` samples.
 
-`HealthKitHealthProvider` preserves that contract over `@kingstinct/react-native-healthkit`. Its narrow
+`NativeHealthProvider` preserves that contract over `@kingstinct/react-native-healthkit`. Its narrow
 client adapter translates native quantities into condition-domain units: count for steps, kilocalories
 for active energy, kilometers for walking/running and cycling distance, meters for swimming, and
 minutes for exercise time and workouts. Native HealthKit anchors pass through unchanged.
