@@ -5,6 +5,10 @@ import type {
   MotionProvider,
 } from "@/signals";
 import { WalkVerifier } from "@/signals";
+import {
+  WALK_CADENCE_FRESHNESS_MS,
+  type WalkVerdict,
+} from "@/signals";
 
 type WalkingConditionState = Readonly<{
   conditions: readonly ConfiguredCondition[];
@@ -35,12 +39,14 @@ const IDLE: WalkingSessionSnapshot = Object.freeze({
 
 /** Explicit-session owner for live walking verification and its keep-alive. */
 export class WalkingSessionController {
+  private cadenceExpiresAt: number | undefined;
   private readonly listeners = new Set<() => void>();
   private location:
     | Pick<LocationProvider, "startWalkKeepAlive" | "stopWalkKeepAlive">
     | undefined;
   private motion: MotionProvider | undefined;
   private snapshot: WalkingSessionSnapshot = IDLE;
+  private timer: ReturnType<typeof setTimeout> | undefined;
   private unsubscribes: (() => void)[] = [];
   private verifier: WalkVerifier | undefined;
 
@@ -83,10 +89,12 @@ export class WalkingSessionController {
     this.verifier = verifier;
     this.unsubscribes = [
       motion.on("activity", (sample) => {
-        this.publishWalking(verifier.processActivity(sample).isWalking);
+        this.applyVerdict(verifier.processActivity(sample));
       }),
       motion.on("cadence", (sample) => {
-        this.publishWalking(verifier.processCadence(sample).isWalking);
+        this.cadenceExpiresAt =
+          sample.asOf + WALK_CADENCE_FRESHNESS_MS + 1;
+        this.applyVerdict(verifier.processCadence(sample));
       }),
     ];
     this.publish({
@@ -106,6 +114,58 @@ export class WalkingSessionController {
       throw error;
     }
     return true;
+  }
+
+  public async stop(): Promise<void> {
+    if (this.timer !== undefined) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
+    this.unsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
+    const motion = this.motion;
+    const location = this.location;
+    this.motion = undefined;
+    this.location = undefined;
+    this.verifier = undefined;
+    this.cadenceExpiresAt = undefined;
+    if (this.snapshot.active) {
+      this.publish(IDLE);
+    }
+    await Promise.all([
+      motion?.stop().catch(() => undefined),
+      location?.stopWalkKeepAlive().catch(() => undefined),
+    ]);
+  }
+
+  private applyVerdict(verdict: WalkVerdict): void {
+    this.scheduleWatchdog(verdict);
+    if (!verdict.isWalking && this.snapshot.walking) {
+      void this.stop();
+      return;
+    }
+    this.publishWalking(verdict.isWalking);
+  }
+
+  private scheduleWatchdog(verdict: WalkVerdict): void {
+    if (this.timer !== undefined) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
+    const evaluateAt = verdict.phase === "grace"
+      ? verdict.graceEndsAt
+      : verdict.phase === "verified"
+        ? this.cadenceExpiresAt
+        : undefined;
+    if (evaluateAt === undefined) {
+      return;
+    }
+    this.timer = setTimeout(() => {
+      this.timer = undefined;
+      const verifier = this.verifier;
+      if (verifier !== undefined) {
+        this.applyVerdict(verifier.getVerdict(this.dependencies.now()));
+      }
+    }, Math.max(0, evaluateAt - this.dependencies.now()));
   }
 
   private publishWalking(walking: boolean): void {

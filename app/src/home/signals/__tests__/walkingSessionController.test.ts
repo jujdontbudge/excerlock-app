@@ -54,7 +54,7 @@ describe("WalkingSessionController", () => {
       createMotion: () => motion,
       getLocation: () => ({
         startWalkKeepAlive,
-        stopWalkKeepAlive: jest.fn(),
+        stopWalkKeepAlive: jest.fn().mockResolvedValue(undefined),
       }),
       getState: () => ({
         conditions: [walkingCondition],
@@ -71,6 +71,7 @@ describe("WalkingSessionController", () => {
       conditionId: "walking-condition",
       walking: false,
     });
+    await controller.stop();
   });
 
   it("publishes verified walking only after classification and sustained cadence", async () => {
@@ -117,5 +118,69 @@ describe("WalkingSessionController", () => {
 
     expect(controller.getSnapshot().walking).toBe(true);
     expect(listener).toHaveBeenCalledWith();
+    await controller.stop();
+  });
+
+  it("ends the session and native work when stop grace expires", async () => {
+    jest.useFakeTimers();
+    let now = 0;
+    let onActivity: (sample: ActivitySample) => void = () => {};
+    let onCadence: (sample: CadenceSample) => void = () => {};
+    const stopMotion = jest.fn().mockResolvedValue(undefined);
+    const stopWalkKeepAlive = jest.fn().mockResolvedValue(undefined);
+    const motion = {
+      start: jest.fn().mockResolvedValue(undefined),
+      stop: stopMotion,
+      on: jest.fn((event: "activity" | "cadence", callback: unknown) => {
+        if (event === "activity") {
+          onActivity = callback as (sample: ActivitySample) => void;
+        } else {
+          onCadence = callback as (sample: CadenceSample) => void;
+        }
+        return () => {};
+      }),
+    } as unknown as MotionProvider;
+    const controller = new WalkingSessionController({
+      createMotion: () => motion,
+      getLocation: () => ({
+        startWalkKeepAlive: async () => {},
+        stopWalkKeepAlive,
+      }),
+      getState: () => ({
+        conditions: [walkingCondition],
+        disabledConditionIds: [],
+      }),
+      now: () => now,
+    });
+    await controller.start("walking-condition");
+    onActivity({
+      classes: ["walking"],
+      confidence: "high",
+      startedAt: 0,
+      receivedAt: 0,
+    });
+    onCadence({ stepsPerSecond: 1.2, cumulativeSteps: 2, asOf: 1_000 });
+    onCadence({ stepsPerSecond: 1.2, cumulativeSteps: 4, asOf: 2_000 });
+
+    now = 3_000;
+    onActivity({
+      classes: ["stationary"],
+      confidence: "high",
+      startedAt: now,
+      receivedAt: now,
+    });
+    expect(controller.getSnapshot().walking).toBe(true);
+
+    now = 33_000;
+    await jest.advanceTimersByTimeAsync(30_000);
+
+    expect(controller.getSnapshot()).toEqual({
+      active: false,
+      conditionId: null,
+      walking: false,
+    });
+    expect(stopMotion).toHaveBeenCalledTimes(1);
+    expect(stopWalkKeepAlive).toHaveBeenCalledTimes(1);
+    jest.useRealTimers();
   });
 });
