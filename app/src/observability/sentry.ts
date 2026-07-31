@@ -1,4 +1,30 @@
-import type { ErrorEvent } from "@sentry/react-native";
+import type { ErrorEvent, ReactNativeOptions } from "@sentry/react-native";
+
+export function buildSentryOptions(dsn: string | undefined): ReactNativeOptions | null {
+  const configuredDsn = dsn?.trim();
+  if (!configuredDsn) {
+    return null;
+  }
+  return {
+    dsn: configuredDsn,
+    attachScreenshot: false,
+    attachThreads: false,
+    attachViewHierarchy: false,
+    beforeSend: scrubSentryEvent,
+    enableAppStartTracking: false,
+    enableAutoPerformanceTracing: false,
+    enableAutoSessionTracking: false,
+    enableCaptureFailedRequests: false,
+    enableNativeCrashHandling: true,
+    enableNativeFramesTracking: false,
+    enableStallTracking: false,
+    enableUserInteractionTracing: false,
+    replaysOnErrorSampleRate: 0,
+    replaysSessionSampleRate: 0,
+    sendDefaultPii: false,
+    tracesSampleRate: 0,
+  };
+}
 
 /** Client-side equivalent of the server scrub, tightened for device-local data. */
 export function scrubSentryEvent(event: ErrorEvent): ErrorEvent {

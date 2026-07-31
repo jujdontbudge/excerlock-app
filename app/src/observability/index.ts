@@ -1,1 +1,1 @@
-export { scrubSentryEvent } from "./sentry";
+export { buildSentryOptions, scrubSentryEvent } from "./sentry";

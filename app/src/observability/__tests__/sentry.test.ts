@@ -1,8 +1,33 @@
 import type { ErrorEvent } from "@sentry/react-native";
 
-import { scrubSentryEvent } from "../sentry";
+import { buildSentryOptions, scrubSentryEvent } from "../sentry";
 
 describe("client Sentry privacy scrub", () => {
+  it("configures crash reports without replay, attachments, requests, or tracing", () => {
+    const options = buildSentryOptions("https://public@example.ingest.sentry.io/1");
+
+    expect(options).toMatchObject({
+      attachScreenshot: false,
+      attachThreads: false,
+      attachViewHierarchy: false,
+      dsn: "https://public@example.ingest.sentry.io/1",
+      enableAppStartTracking: false,
+      enableAutoPerformanceTracing: false,
+      enableAutoSessionTracking: false,
+      enableCaptureFailedRequests: false,
+      enableNativeCrashHandling: true,
+      enableNativeFramesTracking: false,
+      enableStallTracking: false,
+      enableUserInteractionTracing: false,
+      replaysOnErrorSampleRate: 0,
+      replaysSessionSampleRate: 0,
+      sendDefaultPii: false,
+      tracesSampleRate: 0,
+    });
+    expect(options?.beforeSend).toBe(scrubSentryEvent);
+    expect(buildSentryOptions("   ")).toBeNull();
+  });
+
   it("removes PII and breadcrumb content before an error can leave the device", () => {
     const event: ErrorEvent = {
       type: undefined,
