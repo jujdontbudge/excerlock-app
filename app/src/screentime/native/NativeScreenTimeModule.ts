@@ -22,11 +22,15 @@ import {
   type SelectionContents,
 } from "../selectionSummary";
 import {
+  BALANCE_DRAIN_MONITOR,
+  balanceRungEventName,
   type DeviceActivityDateComponents,
   localDateComponents,
+  localDaySchedule,
   monitorNameForLockWindow,
   UNLOCK_INCREMENT_MS,
   UNLOCK_LEASE_MONITOR,
+  usageThresholdComponents,
 } from "./deviceActivitySchedule";
 import {
   createNativeScreenTimePersistence,
@@ -43,7 +47,11 @@ export type DeviceActivityApi = Readonly<{
   unblockSelection(selection: { activitySelectionId: string }): void;
   configureActions(input: {
     activityName: string;
-    callbackName: "intervalDidStart" | "intervalDidEnd";
+    callbackName:
+      | "intervalDidStart"
+      | "intervalDidEnd"
+      | "eventDidReachThreshold";
+    eventName?: string;
     actions: Array<{
       type: "blockSelection" | "unblockSelection";
       familyActivitySelectionId: string;
@@ -56,7 +64,12 @@ export type DeviceActivityApi = Readonly<{
       intervalEnd: DeviceActivityDateComponents;
       repeats: boolean;
     },
-    events: readonly never[],
+    events: readonly Readonly<{
+      familyActivitySelection: string;
+      threshold: Readonly<{ minute: number; second: number }>;
+      eventName: string;
+      includesPastActivity: boolean;
+    }>[],
   ): Promise<void>;
   stopMonitoring(activityNames?: string[]): void;
   isShieldActive(): boolean;
@@ -326,6 +339,44 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
     }
   }
 
+  private async armBalanceDrain(
+    selection: ScreenTimeSelectionHandle,
+    thresholds: DesiredOsState["drainThresholds"],
+  ): Promise<void> {
+    this.deviceActivity.stopMonitoring([BALANCE_DRAIN_MONITOR]);
+    const events = thresholds.map((threshold, index) => ({
+      familyActivitySelection: selection,
+      threshold: usageThresholdComponents(threshold),
+      eventName: balanceRungEventName(index),
+      includesPastActivity: true,
+    }));
+    const finalEvent = events.at(-1);
+    if (finalEvent === undefined) {
+      return;
+    }
+    this.deviceActivity.configureActions({
+      activityName: BALANCE_DRAIN_MONITOR,
+      callbackName: "eventDidReachThreshold",
+      eventName: finalEvent.eventName,
+      actions: [
+        {
+          type: "blockSelection",
+          familyActivitySelectionId: selection,
+        },
+      ],
+    });
+    try {
+      await this.deviceActivity.startMonitoring(
+        BALANCE_DRAIN_MONITOR,
+        localDaySchedule(this.nowMs()),
+        events,
+      );
+    } catch (error) {
+      this.deviceActivity.blockSelection({ activitySelectionId: selection });
+      throw error;
+    }
+  }
+
   private configureLockWindowStart(
     window: NativeScheduledLockWindow,
     desiredShields: DesiredOsState["shields"],
@@ -355,17 +406,28 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
       this.lockWindows.length > 0 && activeWindow === undefined
         ? "down"
         : desiredOsState.shields;
+    const economyIsActive =
+      this.lockWindows.length === 0 || activeWindow !== undefined;
     const needsUnlockLease =
-      effectiveShields === "down" && desiredOsState.shields === "down";
+      economyIsActive &&
+      effectiveShields === "down" &&
+      desiredOsState.shields === "down" &&
+      desiredOsState.drainThresholds.length === 0;
 
     if (effectiveShields === "up") {
       this.deviceActivity.stopMonitoring([UNLOCK_LEASE_MONITOR]);
+      this.deviceActivity.stopMonitoring([BALANCE_DRAIN_MONITOR]);
       this.deviceActivity.blockSelection({ activitySelectionId: selection });
     } else {
-      if (needsUnlockLease) {
+      if (desiredOsState.drainThresholds.length > 0 && economyIsActive) {
+        this.deviceActivity.stopMonitoring([UNLOCK_LEASE_MONITOR]);
+        await this.armBalanceDrain(selection, desiredOsState.drainThresholds);
+      } else if (needsUnlockLease) {
+        this.deviceActivity.stopMonitoring([BALANCE_DRAIN_MONITOR]);
         await this.armUnlockLease(selection);
       } else {
         this.deviceActivity.stopMonitoring([UNLOCK_LEASE_MONITOR]);
+        this.deviceActivity.stopMonitoring([BALANCE_DRAIN_MONITOR]);
       }
       this.deviceActivity.unblockSelection({ activitySelectionId: selection });
     }

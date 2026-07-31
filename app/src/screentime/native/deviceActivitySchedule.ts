@@ -1,5 +1,6 @@
 export const UNLOCK_INCREMENT_MS = 15 * 60_000;
 export const UNLOCK_LEASE_MONITOR = "excerlock.unlock-lease.v1";
+export const BALANCE_DRAIN_MONITOR = "excerlock.balance-drain.v1";
 
 export type DeviceActivityDateComponents = Readonly<{
   year: number;
@@ -20,6 +21,37 @@ export function localDateComponents(atMs: number): DeviceActivityDateComponents 
     hour: date.getHours(),
     minute: date.getMinutes(),
     second: date.getSeconds(),
+  };
+}
+
+export function localDaySchedule(atMs: number): Readonly<{
+  intervalStart: DeviceActivityDateComponents;
+  intervalEnd: DeviceActivityDateComponents;
+  repeats: false;
+}> {
+  const start = new Date(atMs);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return {
+    intervalStart: localDateComponents(start.getTime()),
+    intervalEnd: localDateComponents(end.getTime()),
+    repeats: false,
+  };
+}
+
+export function balanceRungEventName(index: number): string {
+  return `excerlock.balance-rung.${index}`;
+}
+
+export function usageThresholdComponents(thresholdMinutes: number): Readonly<{
+  minute: number;
+  second: number;
+}> {
+  const totalSeconds = Math.round(thresholdMinutes * 60);
+  return {
+    minute: Math.floor(totalSeconds / 60),
+    second: totalSeconds % 60,
   };
 }
 

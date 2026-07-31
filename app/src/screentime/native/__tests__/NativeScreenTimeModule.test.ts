@@ -205,6 +205,107 @@ describe("NativeScreenTimeModule", () => {
     );
   });
 
+  it("re-arms the OS usage ladder and blocks when its final rung fires", async () => {
+    const deviceActivity = createDeviceActivityApi(2);
+    const nowMs = new Date(2026, 6, 31, 12, 0, 0).getTime();
+    const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity,
+      picker: createPicker({ applicationCount: 1, categoryCount: 0 }),
+      nowMs: () => nowMs,
+    });
+    const selection = (await screenTime.pickSelection())!;
+
+    await screenTime.reconcile(selection, {
+      shields: "down",
+      drainThresholds: [15, 30.5],
+    });
+
+    expect(deviceActivity.configureActions).toHaveBeenCalledWith({
+      activityName: "excerlock.balance-drain.v1",
+      callbackName: "eventDidReachThreshold",
+      eventName: "excerlock.balance-rung.1",
+      actions: [
+        {
+          type: "blockSelection",
+          familyActivitySelectionId: selection,
+        },
+      ],
+    });
+    expect(deviceActivity.startMonitoring).toHaveBeenLastCalledWith(
+      "excerlock.balance-drain.v1",
+      {
+        intervalStart: {
+          year: 2026,
+          month: 7,
+          day: 31,
+          hour: 0,
+          minute: 0,
+          second: 0,
+        },
+        intervalEnd: {
+          year: 2026,
+          month: 8,
+          day: 1,
+          hour: 0,
+          minute: 0,
+          second: 0,
+        },
+        repeats: false,
+      },
+      [
+        {
+          familyActivitySelection: selection,
+          threshold: { minute: 15, second: 0 },
+          eventName: "excerlock.balance-rung.0",
+          includesPastActivity: true,
+        },
+        {
+          familyActivitySelection: selection,
+          threshold: { minute: 30, second: 30 },
+          eventName: "excerlock.balance-rung.1",
+          includesPastActivity: true,
+        },
+      ],
+    );
+    expect(deviceActivity.startMonitoring).not.toHaveBeenCalledWith(
+      "excerlock.unlock-lease.v1",
+      expect.anything(),
+      expect.anything(),
+    );
+  });
+
+  it("does not arm an unlock lease outside every scheduled lock window", async () => {
+    const deviceActivity = createDeviceActivityApi(2);
+    const nowMs = new Date(2026, 6, 31, 12, 0, 0).getTime();
+    const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity,
+      picker: createPicker({ applicationCount: 1, categoryCount: 0 }),
+      nowMs: () => nowMs,
+    });
+    const selection = (await screenTime.pickSelection())!;
+    await screenTime.reconcile(selection, {
+      shields: "down",
+      drainThresholds: [],
+    });
+    jest.clearAllMocks();
+
+    await screenTime.scheduleLockWindow(selection, {
+      id: "later",
+      startsAtMs: nowMs + 60 * 60_000,
+      endsAtMs: nowMs + 2 * 60 * 60_000,
+    });
+
+    expect(deviceActivity.startMonitoring).not.toHaveBeenCalledWith(
+      "excerlock.unlock-lease.v1",
+      expect.anything(),
+      expect.anything(),
+    );
+    await expect(screenTime.getCurrentShieldState()).resolves.toMatchObject({
+      effectiveShields: "down",
+      activeLockWindowId: null,
+    });
+  });
+
   it("registers concrete lock windows with OS-side start and end actions", async () => {
     const deviceActivity = createDeviceActivityApi(2);
     const nowMs = new Date(2026, 6, 31, 12, 0, 0).getTime();
