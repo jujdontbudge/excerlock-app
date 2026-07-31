@@ -26,11 +26,18 @@ type ScreenTimeRuntime = Readonly<{
 export function shouldUseNativeScreenTimeModule(
   runtime: ScreenTimeRuntime,
 ): boolean {
-  return (
-    runtime.nodeEnv !== "test" &&
-    runtime.platform === "ios" &&
-    runtime.expoGoConfig === null
-  );
+  if (runtime.nodeEnv === "test" || runtime.platform !== "ios") {
+    return false;
+  }
+
+  if (
+    runtime.executionEnvironment === ExecutionEnvironment.Standalone &&
+    runtime.expoGoConfig !== null
+  ) {
+    throw new Error("Refusing to start an iOS release with mock Screen Time");
+  }
+
+  return runtime.expoGoConfig === null;
 }
 
 function createScreenTimeModule(): ScreenTimeModule {

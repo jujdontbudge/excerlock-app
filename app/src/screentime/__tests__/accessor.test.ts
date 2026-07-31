@@ -91,4 +91,15 @@ describe("ScreenTime composition seam", () => {
       testCase.expected,
     );
   });
+
+  it("fails loudly if an iOS Standalone release would select the mock", () => {
+    expect(() =>
+      shouldUseNativeScreenTimeModule({
+        nodeEnv: "production",
+        platform: "ios",
+        executionEnvironment: ExecutionEnvironment.Standalone,
+        expoGoConfig: {},
+      }),
+    ).toThrow("Refusing to start an iOS release with mock Screen Time");
+  });
 });
