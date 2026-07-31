@@ -1,3 +1,4 @@
+import type { PropValue } from "@excerlock/analytics-events";
 import type { PostHogOptions } from "posthog-react-native";
 
 import type { AnalyticsPayload, AnalyticsSink } from "./sink";
@@ -28,26 +29,39 @@ export function buildPostHogOptions(host: string): PostHogOptions {
 }
 
 export interface PostHogClientPort {
-  register(properties: AnalyticsPayload): void | Promise<void>;
-  capture(event: string, properties: AnalyticsPayload): void;
-  screen(screen: string, properties: AnalyticsPayload): void;
-  identify(distinctId: string, properties: AnalyticsPayload): void;
+  register(properties: Readonly<Record<string, PropValue>>): void | Promise<void>;
+  capture(event: string, properties: Readonly<Record<string, PropValue>>): void;
+  screen(screen: string, properties: Readonly<Record<string, PropValue>>): void;
+  identify(
+    distinctId: string,
+    properties: Readonly<Record<string, PropValue>>,
+  ): void;
   reset(): void;
+}
+
+function definedProperties(
+  properties: AnalyticsPayload,
+): Readonly<Record<string, PropValue>> {
+  return Object.fromEntries(
+    Object.entries(properties).filter(
+      (entry): entry is [string, PropValue] => entry[1] !== undefined,
+    ),
+  );
 }
 
 export function createPostHogSink(client: PostHogClientPort): AnalyticsSink {
   return {
     register(properties) {
-      void client.register(properties);
+      void client.register(definedProperties(properties));
     },
     capture(event, properties) {
-      client.capture(event, properties);
+      client.capture(event, definedProperties(properties));
     },
     screen(screen, properties) {
-      client.screen(screen, properties);
+      client.screen(screen, definedProperties(properties));
     },
     identify(distinctId, properties) {
-      client.identify(distinctId, properties);
+      client.identify(distinctId, definedProperties(properties));
     },
     reset() {
       client.reset();

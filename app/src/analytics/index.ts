@@ -15,3 +15,8 @@ export {
   FLAG_BUDGET_MS,
 } from "./postHogSink";
 export type { PostHogClientPort } from "./postHogSink";
+export { initializePostHog } from "./postHogRuntime";
+export type {
+  PostHogClientFactory,
+  PostHogRuntimeConfig,
+} from "./postHogRuntime";
