@@ -1,6 +1,7 @@
 import { act, render, waitFor } from "@testing-library/react-native";
 import type { EffectCallback } from "expo-router";
 import * as Haptics from "expo-haptics";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import AnalysisRoute from "../../../app/(tabs)/analysis";
 import { useMilestoneUnlockStore } from "../milestones/unlockStore";
@@ -27,11 +28,18 @@ jest.mock("@react-native-async-storage/async-storage", () =>
 );
 
 describe("AnalysisRoute", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
     mockFocusCallback = undefined;
     jest.mocked(Haptics.notificationAsync).mockClear();
     useMilestoneUnlockStore.setState({ records: {} });
+    await useMilestoneUnlockStore.persist.rehydrate();
+    jest
+      .spyOn(useMilestoneUnlockStore.persist, "hasHydrated")
+      .mockReturnValue(true);
   });
+
+  afterEach(() => jest.restoreAllMocks());
 
   it("claims unlocks only on focused Analysis visits, including the first", async () => {
     useMilestoneUnlockStore
