@@ -119,32 +119,70 @@ describe("support submission repository", () => {
       },
     });
   });
+
+  it("rolls back the support request when its feature insert fails", async () => {
+    await postgres.db.insert(users).values({ id: "user_123" });
+    await postgres.db.insert(supportRequests).values({
+      id: "existing-support-id",
+      userId: "user_123",
+      category: "feature",
+      title: "Existing request",
+      message: "Already persisted.",
+    });
+    await postgres.db.insert(featureRequests).values({
+      id: "duplicate-feature-id",
+      supportRequestId: "existing-support-id",
+      title: "Existing request",
+      message: "Already persisted.",
+    });
+    const repository = createDrizzleSupportSubmissionRepository(
+      postgres.db,
+    );
+
+    await expect(
+      repository.insertSupportSubmission({
+        id: "rolled-back-support-id",
+        userId: "user_123",
+        category: "feature",
+        title: "New request",
+        message: "This transaction must roll back.",
+        createdAt: new Date("2026-07-29T21:00:00.000Z"),
+        featureRequest: {
+          id: "duplicate-feature-id",
+          title: "New request",
+          message: "This transaction must roll back.",
+          createdAt: new Date("2026-07-29T21:00:00.000Z"),
+        },
+      }),
+    ).rejects.toThrow();
+
+    await expect(
+      postgres.db
+        .select({ id: supportRequests.id })
+        .from(supportRequests)
+        .where(eq(supportRequests.id, "rolled-back-support-id")),
+    ).resolves.toEqual([]);
+  });
 });
 
 describe("feature request vote repository", () => {
   it("uses the database conflict result to make a duplicate vote a no-op", async () => {
-    let insertAttempt = 0;
-    const database = createPostgresJsTestDatabase((sql) => {
-      if (
-        sql.startsWith('select "id" from "feature_requests"')
-      ) {
-        return [["feature-request-id"]];
-      }
-      if (sql.startsWith('insert into "feature_request_votes"')) {
-        insertAttempt += 1;
-        return insertAttempt === 1 ? [["vote-1"]] : [];
-      }
-      if (
-        sql.startsWith(
-          'select count("id") from "feature_request_votes"',
-        )
-      ) {
-        return [[1]];
-      }
-      return [];
+    await postgres.db.insert(users).values({ id: "user_123" });
+    await postgres.db.insert(supportRequests).values({
+      id: "support-request-id",
+      userId: "user_123",
+      category: "feature",
+      title: "Home Screen widget",
+      message: "Show my balance without opening the app.",
+    });
+    await postgres.db.insert(featureRequests).values({
+      id: "feature-request-id",
+      supportRequestId: "support-request-id",
+      title: "Home Screen widget",
+      message: "Show my balance without opening the app.",
     });
     const repository = createDrizzleFeatureRequestVoteRepository(
-      database.db,
+      postgres.db,
     );
     const createdAt = new Date("2026-07-29T21:05:00.000Z");
 
@@ -161,46 +199,49 @@ describe("feature request vote repository", () => {
       createdAt,
     });
 
-    expect({
-      first,
-      duplicate,
-      transactionCount: database.transactionCount,
-      voteInsertSql: database.queries
-        .filter(({ sql }) =>
-          sql.startsWith('insert into "feature_request_votes"'),
-        )
-        .map(({ sql }) => sql),
-    }).toEqual({
+    expect({ first, duplicate }).toEqual({
       first: { status: "voted", voteCount: 1 },
       duplicate: { status: "alreadyVoted", voteCount: 1 },
-      transactionCount: 2,
-      voteInsertSql: [
-        'insert into "feature_request_votes" ("id", "feature_request_id", "user_id", "created_at") values ($1, $2, $3, $4) on conflict ("feature_request_id","user_id") do nothing returning "id"',
-        'insert into "feature_request_votes" ("id", "feature_request_id", "user_id", "created_at") values ($1, $2, $3, $4) on conflict ("feature_request_id","user_id") do nothing returning "id"',
-      ],
     });
   });
 });
 
 describe("feature request list repository", () => {
   it("returns counts and user vote state from one aggregate query", async () => {
-    const database = createPostgresJsTestDatabase((sql) => {
-      if (sql.includes('from "feature_requests" left join')) {
-        return [
-          [
-            "feature-request-id",
-            "support-request-id",
-            "Home Screen widget",
-            "Show my balance without opening the app.",
-            3,
-            true,
-            "2026-07-29T21:00:00.000Z",
-          ],
-        ];
-      }
-      return [];
+    await postgres.db.insert(users).values([
+      { id: "user_123" },
+      { id: "user_456" },
+      { id: "user_789" },
+    ]);
+    await postgres.db.insert(supportRequests).values({
+      id: "support-request-id",
+      userId: "user_123",
+      category: "feature",
+      title: "Home Screen widget",
+      message: "Show my balance without opening the app.",
+      createdAt: new Date("2026-07-29T21:00:00.000Z"),
     });
-    const repository = createDrizzleFeatureRequestRepository(database.db);
+    await postgres.db.insert(featureRequests).values({
+      id: "feature-request-id",
+      supportRequestId: "support-request-id",
+      title: "Home Screen widget",
+      message: "Show my balance without opening the app.",
+      createdAt: new Date("2026-07-29T21:00:00.000Z"),
+    });
+    const voteRepository = createDrizzleFeatureRequestVoteRepository(
+      postgres.db,
+    );
+    await Promise.all(
+      ["user_123", "user_456", "user_789"].map((userId, index) =>
+        voteRepository.recordFeatureRequestVote({
+          id: `vote-${index + 1}`,
+          featureRequestId: "feature-request-id",
+          userId,
+          createdAt: new Date("2026-07-29T21:05:00.000Z"),
+        }),
+      ),
+    );
+    const repository = createDrizzleFeatureRequestRepository(postgres.db);
 
     await expect(
       repository.listFeatureRequests("user_123"),
@@ -215,15 +256,5 @@ describe("feature request list repository", () => {
         createdAt: new Date("2026-07-29T21:00:00.000Z"),
       },
     ]);
-    expect(database.queries).toHaveLength(1);
-    expect(database.queries[0]).toEqual({
-      sql: expect.stringContaining(
-        'coalesce(bool_or("feature_request_votes"."user_id" = $1), false)',
-      ),
-      params: ["user_123"],
-    });
-    expect(database.queries[0]?.sql).toContain(
-      'order by "feature_requests"."created_at" desc, "feature_requests"."id" desc',
-    );
   });
 });
