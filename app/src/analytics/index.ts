@@ -15,8 +15,10 @@ export {
   FLAG_BUDGET_MS,
 } from "./postHogSink";
 export type { PostHogClientPort } from "./postHogSink";
-export { initializePostHog } from "./postHogRuntime";
+export { initializePostHog, primeDeviceIdForFlags } from "./postHogRuntime";
 export type {
+  FeatureFlagClientPort,
   PostHogClientFactory,
   PostHogRuntimeConfig,
+  PostHogRuntimeClient,
 } from "./postHogRuntime";
