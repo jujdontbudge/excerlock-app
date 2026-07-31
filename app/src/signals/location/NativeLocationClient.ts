@@ -8,6 +8,7 @@ import type {
 
 /** Narrow boundary implemented by Expo Location and replaced at the OS edge in tests. */
 export interface NativeLocationClient {
+  hydrateState(): Promise<void>;
   getAuthorizationStatus(): LocationAuthorizationStatus;
   requestForegroundAuthorization(): Promise<LocationAuthorizationStatus>;
   requestBackgroundAuthorization(): Promise<LocationAuthorizationStatus>;

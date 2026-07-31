@@ -6,6 +6,19 @@ import {
 } from "../locationTaskNames";
 
 describe("ExpoLocationClient", () => {
+  it("hydrates persisted native permission and Walk task state", async () => {
+    const expo = new RecordingExpoLocationModule();
+    const client = new ExpoLocationClient(
+      expo,
+      new LocationTaskRuntime({ append: async () => undefined }),
+    );
+
+    await client.hydrateState();
+
+    expect(client.getAuthorizationStatus()).toBe("authorizedAlways");
+    expect(client.isLocationUpdatesActive()).toBe(true);
+  });
+
   it("translates the LocationProvider boundary to Expo Location", async () => {
     const expo = new RecordingExpoLocationModule();
     const client = new ExpoLocationClient(
@@ -77,6 +90,24 @@ class RecordingExpoLocationModule implements ExpoLocationModule {
   public readonly stopGeofencingAsync = jest.fn(async () => undefined);
   public readonly startLocationUpdatesAsync = jest.fn(async () => undefined);
   public readonly stopLocationUpdatesAsync = jest.fn(async () => undefined);
+
+  public async getForegroundPermissionsAsync() {
+    return {
+      status: "granted" as const,
+      ios: { scope: "whenInUse" as const },
+    };
+  }
+
+  public async getBackgroundPermissionsAsync() {
+    return {
+      status: "granted" as const,
+      ios: { scope: "always" as const },
+    };
+  }
+
+  public async hasStartedLocationUpdatesAsync() {
+    return true;
+  }
 
   public async requestForegroundPermissionsAsync() {
     return {

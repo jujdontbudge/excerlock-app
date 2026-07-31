@@ -140,6 +140,8 @@ class ContractLocationClient implements NativeLocationClient {
     this.authorizationStatus = authorizationStatus;
   }
 
+  public async hydrateState(): Promise<void> {}
+
   public getAuthorizationStatus(): LocationAuthorizationStatus {
     return this.authorizationStatus;
   }

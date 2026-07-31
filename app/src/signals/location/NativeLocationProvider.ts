@@ -21,12 +21,17 @@ export class NativeLocationProvider implements LocationProvider {
   private readonly regionCallbacks =
     new Set<(transition: RegionTransition) => void>();
   private readonly unsubscribeClient: readonly LocationUnsubscribe[];
+  private readonly ready: Promise<void>;
   private authorizationStatus: LocationAuthorizationStatus;
   private lastLocation: LocationSample | null;
 
   public constructor(private readonly client: NativeLocationClient) {
     this.authorizationStatus = client.getAuthorizationStatus();
     this.lastLocation = client.getLastLocation();
+    this.ready = client.hydrateState().then(() => {
+      this.updateAuthorization(client.getAuthorizationStatus());
+      this.lastLocation = client.getLastLocation();
+    });
     this.unsubscribeClient = [
       client.onRegionPresence((transition) => {
         this.presence.set(transition.regionId, transition.type === "enter");
@@ -47,6 +52,7 @@ export class NativeLocationProvider implements LocationProvider {
   }
 
   public async requestAuthorization(): Promise<LocationAuthorizationStatus> {
+    await this.ready;
     return this.updateAuthorization(
       await this.client.requestForegroundAuthorization(),
     );
@@ -59,6 +65,7 @@ export class NativeLocationProvider implements LocationProvider {
   public async startMonitoringRegions(
     regions: readonly GeofenceRegion[],
   ): Promise<void> {
+    await this.ready;
     assertGymRegionsAllowed(regions);
     const foregroundAuthorization =
       this.authorizationStatus === "authorizedWhenInUse" ||
@@ -94,6 +101,7 @@ export class NativeLocationProvider implements LocationProvider {
   public async stopMonitoringRegions(
     regionIds?: readonly string[],
   ): Promise<void> {
+    await this.ready;
     if (regionIds === undefined) {
       await this.client.stopGeofencing();
       this.monitoredRegions.clear();
@@ -150,6 +158,7 @@ export class NativeLocationProvider implements LocationProvider {
   }
 
   public async startWalkKeepAlive(): Promise<void> {
+    await this.ready;
     const authorization =
       this.authorizationStatus === "authorizedWhenInUse" ||
       this.authorizationStatus === "authorizedAlways"
@@ -165,6 +174,7 @@ export class NativeLocationProvider implements LocationProvider {
   }
 
   public async stopWalkKeepAlive(): Promise<void> {
+    await this.ready;
     await this.client.stopLocationUpdates();
   }
 

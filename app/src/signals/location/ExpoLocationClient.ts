@@ -31,6 +31,9 @@ type ExpoLocationObject = {
 export interface ExpoLocationModule {
   readonly Accuracy: { readonly High: unknown };
   readonly ActivityType: { readonly Fitness: unknown };
+  getForegroundPermissionsAsync(): Promise<ExpoPermissionResponse>;
+  getBackgroundPermissionsAsync(): Promise<ExpoPermissionResponse>;
+  hasStartedLocationUpdatesAsync(taskName: string): Promise<boolean>;
   requestForegroundPermissionsAsync(): Promise<ExpoPermissionResponse>;
   requestBackgroundPermissionsAsync(): Promise<ExpoPermissionResponse>;
   getCurrentPositionAsync(options: {
@@ -68,6 +71,20 @@ export class ExpoLocationClient implements NativeLocationClient {
     private readonly expo: ExpoLocationModule,
     private readonly tasks: LocationTaskRuntime,
   ) {}
+
+  public async hydrateState(): Promise<void> {
+    const [foreground, background, walkActive] = await Promise.all([
+      this.expo.getForegroundPermissionsAsync(),
+      this.expo.getBackgroundPermissionsAsync(),
+      this.expo.hasStartedLocationUpdatesAsync(WALK_LOCATION_TASK_NAME),
+    ]);
+    const backgroundStatus = mapPermission(background, "background");
+    this.authorizationStatus =
+      backgroundStatus === "authorizedAlways"
+        ? backgroundStatus
+        : mapPermission(foreground, "foreground");
+    this.locationUpdatesActive = walkActive;
+  }
 
   public getAuthorizationStatus(): LocationAuthorizationStatus {
     return this.authorizationStatus;
