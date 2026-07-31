@@ -14,6 +14,13 @@ const E2E_SURFACE_MARKER = "screen-e2e-error";
 
 type EasConfig = {
   build?: {
+    development?: {
+      developmentClient?: boolean;
+      distribution?: string;
+      env?: Record<string, string>;
+      ios?: { simulator?: boolean };
+      withoutCredentials?: boolean;
+    };
     e2e?: {
       developmentClient?: boolean;
       env?: Record<string, string>;
@@ -69,6 +76,20 @@ function exportIosBundle(e2e: boolean): string {
 }
 
 describe("E2E build gate", () => {
+  it("keeps physical-device smoke on a signed native development client", () => {
+    const config = readJson<EasConfig>(
+      fromRoot("app", "eas.json"),
+    );
+
+    expect(config.build?.development).toEqual({
+      developmentClient: true,
+      distribution: "internal",
+      env: { EXPO_PUBLIC_E2E: "0" },
+      ios: { simulator: false },
+    });
+    expect(config.build?.development?.withoutCredentials).not.toBe(true);
+  });
+
   it("pins a release-style simulator profile to the build-time flag", () => {
     const config = readJson<EasConfig>(
       fromRoot("app", "eas.json"),

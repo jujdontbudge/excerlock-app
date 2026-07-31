@@ -1,5 +1,15 @@
 {
   "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_E2E": "0"
+      },
+      "ios": {
+        "simulator": false
+      }
+    },
     "e2e": {
       "withoutCredentials": true,
       "env": {
