@@ -67,6 +67,45 @@ describe("WalkingSessionController", () => {
     expect(getLocation).not.toHaveBeenCalled();
   });
 
+  it("ends a running session at the condition's active-window boundary", async () => {
+    jest.useFakeTimers();
+    let wallClockNow = 90 * 60_000;
+    const stopMotion = jest.fn().mockResolvedValue(undefined);
+    const stopWalkKeepAlive = jest.fn().mockResolvedValue(undefined);
+    const motion = {
+      start: jest.fn().mockResolvedValue(undefined),
+      stop: stopMotion,
+      on: jest.fn(() => () => {}),
+    } as unknown as MotionProvider;
+    const controller = new WalkingSessionController({
+      createMotion: () => motion,
+      getLocation: () => ({
+        startWalkKeepAlive: async () => {},
+        stopWalkKeepAlive,
+      }),
+      getState: () => ({
+        conditions: [
+          {
+            ...walkingCondition,
+            activeWindow: { startMinute: 60, endMinute: 120 },
+          },
+        ],
+        disabledConditionIds: [],
+      }),
+      now: () => 0,
+      wallClockNow: () => wallClockNow,
+    });
+
+    await controller.start("walking-condition");
+    wallClockNow = 120 * 60_000;
+    await jest.advanceTimersByTimeAsync(30 * 60_000);
+
+    expect(controller.getSnapshot().active).toBe(false);
+    expect(stopMotion).toHaveBeenCalledTimes(1);
+    expect(stopWalkKeepAlive).toHaveBeenCalledTimes(1);
+    jest.useRealTimers();
+  });
+
   it("starts motion and foreground keep-alive only for an explicit session", async () => {
     const motion = {
       start: jest.fn().mockResolvedValue(undefined),

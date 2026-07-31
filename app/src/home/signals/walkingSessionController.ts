@@ -48,6 +48,7 @@ const IDLE: WalkingSessionSnapshot = Object.freeze({
 
 /** Explicit-session owner for live walking verification and its keep-alive. */
 export class WalkingSessionController {
+  private activeWindowTimer: ReturnType<typeof setTimeout> | undefined;
   private cadenceExpiresAt: number | undefined;
   private readonly listeners = new Set<() => void>();
   private location:
@@ -133,10 +134,15 @@ export class WalkingSessionController {
       await location.stopWalkKeepAlive().catch(() => undefined);
       throw error;
     }
+    this.scheduleActiveWindowEnd(condition.activeWindow, wallClockNow);
     return true;
   }
 
   public async stop(): Promise<void> {
+    if (this.activeWindowTimer !== undefined) {
+      clearTimeout(this.activeWindowTimer);
+      this.activeWindowTimer = undefined;
+    }
     if (this.timer !== undefined) {
       clearTimeout(this.timer);
       this.timer = undefined;
@@ -164,6 +170,29 @@ export class WalkingSessionController {
       return;
     }
     this.publishWalking(verdict.isWalking);
+  }
+
+  private scheduleActiveWindowEnd(
+    window: ConfiguredCondition["activeWindow"],
+    wallClockNow: number,
+  ): void {
+    const endMinute = window?.endMinute;
+    if (endMinute === undefined) {
+      return;
+    }
+    const dayStart = Math.floor(wallClockNow / DAY_MS) * DAY_MS;
+    const minute = (wallClockNow - dayStart) / 60_000;
+    const crossesMidnight =
+      window.startMinute !== undefined &&
+      window.startMinute > endMinute;
+    const endAt =
+      dayStart +
+      endMinute * 60_000 +
+      (crossesMidnight && minute >= window.startMinute ? DAY_MS : 0);
+    this.activeWindowTimer = setTimeout(() => {
+      this.activeWindowTimer = undefined;
+      void this.stop();
+    }, Math.max(0, endAt - wallClockNow));
   }
 
   private scheduleWatchdog(verdict: WalkVerdict): void {
