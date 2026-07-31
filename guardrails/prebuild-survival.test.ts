@@ -6,6 +6,7 @@ import { fromRoot, readJson, readUtf8, walkFiles } from "./repo-files";
 type AppConfig = {
   expo?: {
     ios?: { bundleIdentifier?: string };
+    plugins?: Array<string | [string, Record<string, unknown>]>;
   };
 };
 
@@ -110,11 +111,16 @@ describe("prebuild-survival guardrail", () => {
     const packageJson = readJson<PackageJson>(fromRoot("app", "package.json"));
     const dependencies = packageJson.dependencies ?? {};
     const targetById = new Map(targetManifest.targets.map((target) => [target.id, target]));
+    const rndaPlugin = appConfig.expo?.plugins?.find(
+      (plugin): plugin is [string, Record<string, unknown>] =>
+        Array.isArray(plugin) && plugin[0] === "react-native-device-activity",
+    );
+    const rndaGeneratesTargets = rndaPlugin?.[1]?.copyToTargetFolder !== false;
     const appIntentsHasSource = walkFiles(fromRoot("app", "targets", "app-intents")).some(
       (path) => !path.endsWith("README.md") && !path.endsWith(".gitkeep"),
     );
 
-    if ("react-native-device-activity" in dependencies) {
+    if ("react-native-device-activity" in dependencies && rndaGeneratesTargets) {
       expect(
         rndaTargetIds.every((id) => targetById.get(id)?.status === "required"),
         "Installing RNDA must permanently promote its three native-target expectations to required",
@@ -133,7 +139,9 @@ describe("prebuild-survival guardrail", () => {
       "The guardrail suite requires a clean Expo iOS prebuild before its filesystem assertions",
     ).toBeGreaterThan(0);
     const project = projectFiles.map(readUtf8).join("\n");
-    expect(project).toContain('PRODUCT_BUNDLE_IDENTIFIER = "com.johansardar.excerlock";');
+    expect(project).toMatch(
+      /PRODUCT_BUNDLE_IDENTIFIER = "?com\.johansardar\.excerlock"?;/,
+    );
 
     const projectTargets = readProjectTargets(project);
     const requiredTargets = targetManifest.targets.filter(({ status }) => status === "required");

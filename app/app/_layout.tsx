@@ -4,6 +4,7 @@ import type { ComponentType, ReactNode } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ThemeProvider } from "@/ui";
+import { NativeScreenTimePickerHost } from "@/screentime/native/NativeScreenTimePickerHost";
 
 export default function RootLayout() {
   const navigation = (
@@ -19,6 +20,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <StatusBar style="light" />
+        <NativeScreenTimePickerHost />
         {withBuildRuntime(navigation)}
       </ThemeProvider>
     </SafeAreaProvider>

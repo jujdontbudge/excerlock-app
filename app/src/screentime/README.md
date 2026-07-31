@@ -1,9 +1,10 @@
 # ScreenTime
 
 ScreenTime is the app-facing seam for iOS authorization, the system app/category
-picker, shield reconciliation, and concrete lock-window registration. Phase 2
-uses a persistent mock. Phase 3 replaces that adapter with
-FamilyControls/ManagedSettings/DeviceActivity without changing callers.
+picker, shield reconciliation, and concrete lock-window registration. Tests and
+non-native previews use a persistent mock. The iOS development client selects
+the real FamilyControls/ManagedSettings/DeviceActivity adapter without changing
+callers; see [`native/README.md`](native/README.md).
 
 ## Interface
 
@@ -15,8 +16,8 @@ Callers import only `index.ts` and obtain the adapter through
 - the system picker, returning an opaque `ScreenTimeSelectionHandle`, plus
   `describeSelection(handle)` — the adapter-composed `ScreenTimeSelectionSummary`
   a caller may render;
-- one idempotent `reconcile(selection, desiredOsState)` operation that applies
-  or clears shields from the `DesiredOsState` computed by `@excerlock/ledger`;
+- one `reconcile(selection, desiredOsState)` operation that applies or clears
+  shields from the `DesiredOsState` computed by `@excerlock/ledger`;
 - concrete lock windows with `[startsAtMs, endsAtMs)` boundaries, readable back
   through `getLockWindows()` so a caller can say when a shield lifts;
 - a current shield-state snapshot and change subscription.
@@ -54,9 +55,10 @@ persistence pattern as settings. Observable state is emitted only when the
 shield snapshot changes, so idempotent reconciliation does not cause spurious
 renders.
 
-The mock class is deliberately not exported from `index.ts`. No app module may
-import it directly. `getScreenTimeModule()` is the single Phase-3 swap point and
-returns the mock today.
+The mock and native classes are deliberately not exported from `index.ts`. No
+app module may import either implementation directly. `getScreenTimeModule()`
+is the single composition point: Jest remains mock-backed, while an iOS
+development client gets the native adapter.
 
 ## Invariants
 
@@ -64,8 +66,10 @@ returns the mock today.
   active at the start boundary, inactive at the end boundary.
 - With no scheduled windows, Ledger's desired state applies all day. Once
   windows exist, shields are clear outside every active window.
-- Repeating an authorization request, reconciliation, or schedule registration
-  with the same state is a no-op.
+- Repeating authorization and schedule registration with the same state is a
+  no-op. Reconciliation emits no duplicate observable state; the native
+  adapter may still re-arm an OS usage ladder or renew an eligible 15-minute
+  unlock lease.
 - Persisted data is validated before it crosses the interface.
 
 ## Test

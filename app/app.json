@@ -7,6 +7,7 @@
     "scheme": "excerlock",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "appleTeamId": "AX3C2B78YD",
       "bundleIdentifier": "com.johansardar.excerlock",
       "supportsTablet": false
     },
@@ -26,6 +27,13 @@
           "ios": {
             "deploymentTarget": "17.4"
           }
+        }
+      ],
+      [
+        "react-native-device-activity",
+        {
+          "appGroup": "group.com.johansardar.excerlock",
+          "copyToTargetFolder": false
         }
       ]
     ],

@@ -47,7 +47,11 @@ describe("minimum-iOS guardrail", () => {
       .flatMap((path) => [...readUtf8(path).matchAll(/buildSettings = \{([\s\S]*?)\n\s*\};/g)])
       .map((match) => match[1])
       .filter((settings): settings is string => settings !== undefined)
-      .filter((settings) => settings.includes("PRODUCT_BUNDLE_IDENTIFIER = \"com.johansardar.excerlock\""));
+      .filter((settings) =>
+        /PRODUCT_BUNDLE_IDENTIFIER = "?com\.johansardar\.excerlock"?;/.test(
+          settings,
+        ),
+      );
 
     expect(appBuildSettings.length).toBeGreaterThan(0);
     expect(
