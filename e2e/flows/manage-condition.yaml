@@ -61,7 +61,15 @@ env:
     id: manage-toggle-e2e-condition-1
 - assertVisible: "On"
 
+- scrollUntilVisible:
+    element:
+      id: manage-allowance-value
+    direction: UP
+    # The allowance stepper is above the schedule and condition cards.
+    centerElement: true
 - tapOn: Increase daily allowance
-- assertVisible: 50 minutes
+- assertVisible:
+    id: manage-allowance-value
+    text: "50m"
 - waitForAnimationToEnd
 - takeScreenshot: manage-condition-enabled
