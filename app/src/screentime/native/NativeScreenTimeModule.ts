@@ -10,6 +10,10 @@ import type {
   ScreenTimeUnsubscribe,
   ShieldStateListener,
 } from "../ScreenTimeModule";
+import {
+  summarizeSelection,
+  type SelectionContents,
+} from "../selectionSummary";
 
 type DeviceActivityAuthorizationStatus = 0 | 1 | 2;
 
@@ -39,8 +43,15 @@ export type DeviceActivityApi = Readonly<{
   isShieldActive(): boolean;
 }>;
 
+export interface NativeSelectionPicker {
+  pick(
+    selection: ScreenTimeSelectionHandle,
+  ): Promise<SelectionContents | null>;
+}
+
 type NativeScreenTimeModuleOptions = Readonly<{
   deviceActivity: DeviceActivityApi;
+  picker?: NativeSelectionPicker;
 }>;
 
 const AUTHORIZATION_STATUSES: Record<
@@ -59,11 +70,26 @@ const INITIAL_SHIELD_STATE: CurrentShieldState = Object.freeze({
   activeLockWindowId: null,
 });
 
+const LOCKED_SELECTION =
+  "excerlock.selection.locked.v1" as ScreenTimeSelectionHandle;
+
+const MISSING_PICKER: NativeSelectionPicker = {
+  async pick(): Promise<never> {
+    throw new Error("The native Screen Time picker host is not configured");
+  },
+};
+
 export class NativeScreenTimeModule implements ScreenTimeModule {
   private readonly deviceActivity: DeviceActivityApi;
+  private readonly picker: NativeSelectionPicker;
+  private readonly selections = new Map<string, SelectionContents>();
 
-  public constructor({ deviceActivity }: NativeScreenTimeModuleOptions) {
+  public constructor({
+    deviceActivity,
+    picker = MISSING_PICKER,
+  }: NativeScreenTimeModuleOptions) {
     this.deviceActivity = deviceActivity;
+    this.picker = picker;
   }
 
   public async getAuthorizationStatus(): Promise<ScreenTimeAuthorizationStatus> {
@@ -79,13 +105,28 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
   }
 
   public async pickSelection(): Promise<ScreenTimeSelectionHandle | null> {
-    throw new Error("The native Screen Time picker host is not configured yet");
+    if ((await this.getAuthorizationStatus()) !== "approved") {
+      throw new Error("Screen Time authorization is required before selection");
+    }
+
+    const contents = await this.picker.pick(LOCKED_SELECTION);
+    if (
+      contents === null ||
+      (contents.applicationCount === 0 && contents.categoryCount === 0)
+    ) {
+      return null;
+    }
+    this.selections.set(LOCKED_SELECTION, contents);
+    return LOCKED_SELECTION;
   }
 
   public async describeSelection(
-    _selection: ScreenTimeSelectionHandle,
+    selection: ScreenTimeSelectionHandle,
   ): Promise<ScreenTimeSelectionSummary | null> {
-    return null;
+    const contents = this.selections.get(selection);
+    return contents === undefined
+      ? null
+      : summarizeSelection(selection, contents);
   }
 
   public async reconcile(
