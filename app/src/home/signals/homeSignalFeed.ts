@@ -1,10 +1,12 @@
 import type { Signal } from "@excerlock/condition-model";
 
 import {
+  WALK_CADENCE_FRESHNESS_MS,
   WalkVerifier,
   type HealthProvider,
   type HealthSignal,
   type MotionProvider,
+  type WalkVerdict,
 } from "@/signals";
 
 import type { SignalReading } from "../model/reading";
@@ -60,6 +62,7 @@ export function createHomeSignalFeed({
   const walkVerifier = walking === null
     ? null
     : new WalkVerifier({ gracePeriodMs: walking.gracePeriodMs });
+  let walkingTimer: ReturnType<typeof setTimeout> | undefined;
 
   async function read(): Promise<SignalReading> {
     const entries = await Promise.all(
@@ -84,6 +87,35 @@ export function createHomeSignalFeed({
     });
   }
 
+  function scheduleWalkingEvaluation(
+    verdict: WalkVerdict,
+    cadenceExpiresAt?: number,
+  ): void {
+    if (walkingTimer !== undefined) {
+      clearTimeout(walkingTimer);
+      walkingTimer = undefined;
+    }
+    if (walking === null || walkVerifier === null) {
+      return;
+    }
+
+    const evaluateAt = verdict.phase === "grace"
+      ? verdict.graceEndsAt
+      : verdict.phase === "verified"
+        ? cadenceExpiresAt
+        : undefined;
+    if (evaluateAt === undefined) {
+      return;
+    }
+
+    walkingTimer = setTimeout(() => {
+      walkingTimer = undefined;
+      const nextVerdict = walkVerifier.getVerdict(walking.now());
+      scheduleWalkingEvaluation(nextVerdict);
+      publish();
+    }, Math.max(0, evaluateAt - walking.now()));
+  }
+
   return {
     async start() {
       await health.requestAuth();
@@ -99,11 +131,14 @@ export function createHomeSignalFeed({
       if (walkVerifier !== null) {
         unsubscribes.push(
           motion.on("activity", (sample) => {
-            walkVerifier.processActivity(sample);
+            scheduleWalkingEvaluation(walkVerifier.processActivity(sample));
             publish();
           }),
           motion.on("cadence", (sample) => {
-            walkVerifier.processCadence(sample);
+            scheduleWalkingEvaluation(
+              walkVerifier.processCadence(sample),
+              sample.asOf + WALK_CADENCE_FRESHNESS_MS + 1,
+            );
             publish();
           }),
         );
@@ -122,6 +157,10 @@ export function createHomeSignalFeed({
     },
 
     dispose() {
+      if (walkingTimer !== undefined) {
+        clearTimeout(walkingTimer);
+        walkingTimer = undefined;
+      }
       unsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
       listeners.clear();
       void motion.stop().catch(() => undefined);

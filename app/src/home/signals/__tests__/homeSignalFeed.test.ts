@@ -127,6 +127,42 @@ describe("createHomeSignalFeed", () => {
     feed.dispose();
   });
 
+  it("publishes stop-grace expiry without waiting for another sensor event", async () => {
+    jest.useFakeTimers();
+    const provider = new FixtureMotionProvider(
+      getSignalFixture("motion", "stop-for-good") as MotionFixtureManifest,
+    );
+    let nowMs = 0;
+    const feed = createHomeSignalFeed({
+      health: health(),
+      motion: provider,
+      walking: { gracePeriodMs: 30_000, now: () => nowMs },
+    });
+    const readings: string[][] = [];
+
+    try {
+      feed.subscribe((reading) => readings.push([...reading.activeSignals]));
+      await feed.start();
+      nowMs = 4_000;
+      provider.advanceTo(4_000);
+      await jest.advanceTimersByTimeAsync(0);
+      expect(readings.at(-1)).toEqual(["walking"]);
+
+      nowMs = 10_000;
+      provider.advanceTo(10_000);
+      await jest.advanceTimersByTimeAsync(0);
+      expect(readings.at(-1)).toEqual(["walking"]);
+
+      nowMs = 40_000;
+      await jest.advanceTimersByTimeAsync(30_000);
+
+      expect(readings.at(-1)).toEqual([]);
+    } finally {
+      feed.dispose();
+      jest.useRealTimers();
+    }
+  });
+
   it("notifies subscribers when a signal moves", async () => {
     const provider = motion();
     const feed = createTestFeed(health(), provider);
