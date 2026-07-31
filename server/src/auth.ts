@@ -31,6 +31,12 @@ export async function requireAuth(
 ): Promise<void> {
   const secretKey = config.clerkSecretKey;
   if (!secretKey) {
+    await reply.code(503).send({
+      error: {
+        code: "AUTH_UNAVAILABLE",
+        message: "Authentication is not configured",
+      },
+    });
     return;
   }
 

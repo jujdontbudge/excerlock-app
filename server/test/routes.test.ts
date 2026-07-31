@@ -30,34 +30,24 @@ describe("GET /v1/health", () => {
 });
 
 describe("planned v1 routes", () => {
-  it.each([
-    {
-      method: "GET" as const,
-      url: "/v1/user",
-      message: "User API is not implemented",
-    },
-    {
-      method: "GET" as const,
-      url: "/v1/vendors",
-      message: "Vendors API is not implemented",
-    },
-  ])("registers $method $url as a typed 501 stub", async ({ method, url, message }) => {
+  it("fails closed when Clerk is not configured", async () => {
     app = buildServer({ logger: false });
 
-    const response = await app.inject({ method, url });
+    const response = await app.inject({ method: "GET", url: "/v1/user" });
 
-    expect(response.statusCode).toBe(501);
+    expect(response.statusCode).toBe(503);
     expect(response.json()).toEqual({
       error: {
-        code: "NOT_IMPLEMENTED",
-        message,
+        code: "AUTH_UNAVAILABLE",
+        message: "Authentication is not configured",
       },
     });
   });
+
 });
 
 describe("POST /v1/support", () => {
-  it("is a real authenticated route instead of a 501 stub", async () => {
+  it("does not reach the route when authentication is unconfigured", async () => {
     app = buildServer({ logger: false });
 
     const response = await app.inject({
@@ -69,11 +59,11 @@ describe("POST /v1/support", () => {
       },
     });
 
-    expect(response.statusCode).toBe(401);
+    expect(response.statusCode).toBe(503);
     expect(response.json()).toEqual({
       error: {
-        code: "UNAUTHORIZED",
-        message: "A verified Clerk user is required",
+        code: "AUTH_UNAVAILABLE",
+        message: "Authentication is not configured",
       },
     });
   });
