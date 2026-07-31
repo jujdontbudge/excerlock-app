@@ -55,6 +55,13 @@ Jest, Expo Go, Android, and other previews continue to receive
 `MockScreenTimeModule`. The root layout mounts one picker host for the shared
 native adapter.
 
+It also mounts `NativeShieldNotificationResponseHost` for the supported
+notification-tap fallback from ShieldAction. The host accepts only extension
+request identifiers and only the two ticket-owned destinations (`excerlock://`
+and `excerlock://locked-apps`), so unrelated notification data cannot become a
+route. Its small injected response-source seam keeps Jest native-free without
+widening `ScreenTimeModule`.
+
 ## Native-target handoff
 
 The config plugin is installed with
