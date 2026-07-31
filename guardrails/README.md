@@ -12,3 +12,6 @@ Intents target is introduced without its required generated wiring.
 and requires real, public-module imports of every Phase 3 accessor to be called. Same-named local methods
 do not satisfy it. This prevents a complete fixture-tested native adapter from becoming unreachable when
 composition changes.
+
+The E2E bundle gate performs two clean iOS exports and has a 180-second budget; its production-marker
+elimination assertions are unchanged.
