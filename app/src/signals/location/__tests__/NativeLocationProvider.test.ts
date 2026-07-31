@@ -62,30 +62,38 @@ describe("NativeLocationProvider gym limits", () => {
 
 describe("NativeLocationProvider permission timing", () => {
   it("manual check-in samples once with foreground permission only", async () => {
+    jest.useFakeTimers();
     const client = new ContractLocationClient("notDetermined");
     const provider = new NativeLocationProvider(client);
     const transitions: RegionTransition[] = [];
     provider.on("region", (transition) => transitions.push(transition));
 
-    await expect(
-      provider.checkIn({
+    const checkingIn = provider.checkIn({
         id: "gym-a",
         latitude: 40.741,
         longitude: -73.989,
         radiusMeters: 100,
-      }),
-    ).resolves.toBe(true);
+      });
+    await jest.advanceTimersByTimeAsync(0);
 
     expect(client.foregroundAuthorizationRequests).toBe(1);
     expect(client.backgroundAuthorizationRequests).toBe(0);
     expect(client.currentLocationRequests).toBe(1);
     expect(provider.getAuthorizationStatus()).toBe("authorizedWhenInUse");
     expect(provider.isInsideRegion("gym-a")).toBe(true);
+    expect(transitions).toEqual([]);
+
+    await jest.advanceTimersByTimeAsync(29_999);
+    expect(transitions).toEqual([]);
+
+    await jest.advanceTimersByTimeAsync(1);
+    await expect(checkingIn).resolves.toBe(true);
     expect(transitions).toEqual([
       { type: "enter", regionId: "gym-a", atMs: 1_000 },
     ]);
 
     provider.dispose();
+    jest.useRealTimers();
   });
 
   it("requests Always only when auto-detect is explicitly started", async () => {
@@ -161,6 +169,20 @@ class ContractLocationClient implements NativeLocationClient {
   public async getCurrentLocation(): Promise<LocationSample> {
     this.currentLocationRequests += 1;
     return sample;
+  }
+
+  public confirmRegionPresence(transition: RegionTransition): Promise<void> {
+    this.presenceListeners.forEach((listener) => listener(transition));
+    if (transition.type === "exit") {
+      this.regionListeners.forEach((listener) => listener(transition));
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        this.regionListeners.forEach((listener) => listener(transition));
+        resolve();
+      }, 30_000);
+    });
   }
 
   public async startGeofencing(regions: readonly GeofenceRegion[]): Promise<void> {

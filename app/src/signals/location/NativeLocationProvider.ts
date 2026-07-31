@@ -15,6 +15,7 @@ export class NativeLocationProvider implements LocationProvider {
     new Set<(status: LocationAuthorizationStatus) => void>();
   private readonly locationCallbacks =
     new Set<(sample: LocationSample) => void>();
+  private readonly manualCheckIns = new Set<string>();
   private readonly monitoredRegions = new Map<string, GeofenceRegion>();
   private readonly presence = new Map<string, boolean>();
   private readonly regionCallbacks =
@@ -31,7 +32,10 @@ export class NativeLocationProvider implements LocationProvider {
         this.presence.set(transition.regionId, transition.type === "enter");
       }),
       client.onRegionTransition((transition) => {
-        if (this.monitoredRegions.has(transition.regionId)) {
+        if (
+          this.monitoredRegions.has(transition.regionId) ||
+          this.manualCheckIns.has(transition.regionId)
+        ) {
           this.regionCallbacks.forEach((callback) => callback(transition));
         }
       }),
@@ -132,16 +136,17 @@ export class NativeLocationProvider implements LocationProvider {
     this.lastLocation = sample;
     this.locationCallbacks.forEach((callback) => callback(sample));
     const inside = isSampleInsideRegion(sample, region);
-    this.presence.set(region.id, inside);
-    if (inside) {
-      const transition: RegionTransition = {
-        type: "enter",
+    this.manualCheckIns.add(region.id);
+    try {
+      await this.client.confirmRegionPresence({
+        type: inside ? "enter" : "exit",
         regionId: region.id,
         atMs: sample.atMs,
-      };
-      this.regionCallbacks.forEach((callback) => callback(transition));
+      });
+    } finally {
+      this.manualCheckIns.delete(region.id);
     }
-    return inside;
+    return this.presence.get(region.id) === true;
   }
 
   public async startWalkKeepAlive(): Promise<void> {

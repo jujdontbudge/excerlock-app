@@ -14,6 +14,7 @@ export interface NativeLocationClient {
   getCachedRegionPresence(regionId: string): boolean | null;
   getLastLocation(): LocationSample | null;
   getCurrentLocation(): Promise<LocationSample>;
+  confirmRegionPresence(transition: RegionTransition): Promise<void>;
   startGeofencing(regions: readonly GeofenceRegion[]): Promise<void>;
   stopGeofencing(): Promise<void>;
   startLocationUpdates(): Promise<void>;

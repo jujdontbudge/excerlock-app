@@ -112,6 +112,10 @@ export class ExpoLocationClient implements NativeLocationClient {
     };
   }
 
+  public confirmRegionPresence(transition: RegionTransition): Promise<void> {
+    return this.tasks.confirmRegionPresence(transition);
+  }
+
   public async startGeofencing(
     regions: readonly GeofenceRegion[],
   ): Promise<void> {

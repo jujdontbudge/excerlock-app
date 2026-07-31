@@ -55,11 +55,15 @@ export class LocationTaskRuntime {
     if (regionId === undefined || (data.eventType !== 1 && data.eventType !== 2)) {
       return Promise.resolve();
     }
-    return this.processor.process({
+    return this.confirmRegionPresence({
       type: data.eventType === 1 ? "enter" : "exit",
       regionId,
       atMs: Date.now(),
     });
+  }
+
+  public confirmRegionPresence(transition: RegionTransition): Promise<void> {
+    return this.processor.process(transition);
   }
 
   public handleLocationTask(data: LocationTaskData): void {
