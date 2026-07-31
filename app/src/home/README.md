@@ -64,17 +64,20 @@ user chooses, and `canAdvance` will not leave the configure step until `draftCon
 complete condition. The preview step renders that exact condition, so
 the card the user approves is the card they get.
 
-## Phase-2 boundaries
+## Current boundaries
 
-- **No native, no server.** Signals are SignalKit fixtures; persistence is AsyncStorage.
+- **Health is native only in an iOS dev client; other feeds remain fixtures.** Home authorizes and
+  claims Health on mount and foreground, while tests and non-dev-client builds retain fixtures.
+  Persistence remains AsyncStorage and there is no server-side Apple Health API.
 - **The base allowance has one owner here.** It lives inside `ledgerConfig`, beside the journal the
   ledger consumes. Manage calls the store's setter; lock reads and subscribes through
   `lock/controller/ledgerSource.ts`. Full Lock is the same value going to zero and restoring
   `allowanceBeforeFullLock`, not a second mode or store. Until the user chooses, the owner holds
   `UNLIMITED`; the app does not invent a daily budget.
-- **Rate conditions do not bank yet.** A rate card shows what today's activity *would* be worth; only
-  event payouts are written to the journal (`recordEventPayout`, idempotent per condition per ledger
-  day). Continuous crediting is Phase 3's, with the ledger.
+- **Rate conditions do not bank yet.** A rate card shows what today's activity *would* be worth.
+  Health event snapshots run through ConditionEngine; detected outcomes are journaled idempotently by
+  the store. Thresholdless events still use the explicit completion action. Continuous rate crediting
+  remains separate Phase-3 orchestration.
 - **Builder step 5 — the condition's banner — is owed.** The 21-banner library does not exist, so every
   condition wears the default card treatment. Repeatability, per-day cap and cooldown save their
   decided "off" values rather than offering controls.

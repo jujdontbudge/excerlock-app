@@ -94,10 +94,13 @@ export class KingstinctHealthKitClient implements HealthKitClient {
     if (this.authorizationStatus === "restricted") {
       return this.authorizationStatus;
     }
-    const authorized = await this.healthKit.requestAuthorization({
+    const requestCompleted = await this.healthKit.requestAuthorization({
       toRead: HEALTHKIT_TYPES,
     });
-    this.authorizationStatus = authorized ? "authorized" : "denied";
+    // HealthKit deliberately withholds per-type read decisions. At this frozen
+    // seam, "authorized" means the OS request completed and reads are safe to
+    // attempt; an empty result can still mean the user withheld read access.
+    this.authorizationStatus = requestCompleted ? "authorized" : "denied";
     return this.authorizationStatus;
   }
 

@@ -21,9 +21,16 @@ win when present; otherwise the provider sums recorded workout durations. The tw
 added together, and `HKWasUserEntered` samples are excluded from both totals.
 
 Home requests authorization on open, then registers observers. Anchored reads make foreground claim
-the reliable path. Background delivery is configured at immediate frequency and treated as best effort:
-iOS may delay it and force-quit stops JS delivery, so callers must not promise instant unlocks. Health
-values remain on-device and are neither logged nor sent to analytics.
+the reliable path; an already-mounted Home claims again whenever the app enters the foreground.
+Background delivery is configured at immediate frequency and treated as best effort: iOS may delay it
+and force-quit stops JS delivery, so callers must not promise instant unlocks. Health values remain
+on-device and are neither logged nor sent to analytics.
+
+Apple intentionally does not disclose whether read access was granted for each HealthKit type. The
+unchanged `HealthProvider` status `authorized` therefore means the OS authorization request completed
+and queries are safe to attempt, not proof that the user granted every read. Empty results remain
+ambiguous by platform design; widening the shared seam for a status HealthKit cannot provide would be
+more misleading.
 
 The production Home composition root instantiates this provider only for an iOS `expo-dev-client`
 StoreClient that is not Expo Go. Jest, Expo Go, standalone, and non-iOS runtimes keep fixtures.
