@@ -34,14 +34,14 @@ describe("Screen Time shield content", () => {
       },
       lockWindow: {
         deepLink: "excerlock://locked-apps",
-        primaryActionLabel: "Open ExcerLock",
-        secondaryActionLabel: "Close",
+        primaryActionLabel: "OK",
+        secondaryActionLabel: "",
         subtitle: "Back at 7:00 AM.",
         title: "Apps are asleep.",
       },
       walkAndScrollEnded: {
         deepLink: "excerlock://",
-        primaryActionLabel: "Open ExcerLock",
+        primaryActionLabel: "Keep walking",
         secondaryActionLabel: "Close",
         subtitle: "Start walking again to pick up where you left off.",
         title: "You stopped walking.",
@@ -67,6 +67,8 @@ describe("Screen Time shield content", () => {
     expect(swift).not.toContain("resolved.primaryActionLabel =");
     expect(swift).not.toContain("resolved.secondaryActionLabel =");
     expect(swift).not.toContain("resolved.deepLink =");
+    expect(swift).toContain('primaryActionLabel: "Close"');
+    expect(swift).toContain("secondaryActionLabel: nil");
     expect(swift).not.toMatch(
       /localizedDisplayName|application\.token|webDomain\.domain/,
     );
@@ -88,6 +90,8 @@ describe("Screen Time shield content", () => {
     expect(swift).not.toContain('forInfoDictionaryKey: "EXPO_APP_GROUP"');
     expect(swift).toContain('"url": deepLink');
     expect(swift).toContain("action == .primaryButtonPressed");
+    expect(swift).toContain("route.routeHomeAvailable");
+    expect(swift).toContain('route.cause != "lockWindow"');
     expect(swift).toContain("content.sound = nil");
     expect(swift).not.toContain("interruptionLevel = .passive");
     expect(route).not.toContain("copyOverridesDefaultsKey");
