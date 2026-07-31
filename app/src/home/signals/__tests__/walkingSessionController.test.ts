@@ -137,6 +137,37 @@ describe("WalkingSessionController", () => {
     await controller.stop();
   });
 
+  it("stops native work when the active condition is removed", async () => {
+    let state = {
+      conditions: [walkingCondition],
+      disabledConditionIds: [] as string[],
+    };
+    const stopMotion = jest.fn().mockResolvedValue(undefined);
+    const stopWalkKeepAlive = jest.fn().mockResolvedValue(undefined);
+    const motion = {
+      start: jest.fn().mockResolvedValue(undefined),
+      stop: stopMotion,
+      on: jest.fn(() => () => {}),
+    } as unknown as MotionProvider;
+    const controller = new WalkingSessionController({
+      createMotion: () => motion,
+      getLocation: () => ({
+        startWalkKeepAlive: async () => {},
+        stopWalkKeepAlive,
+      }),
+      getState: () => state,
+      now: () => 0,
+    });
+    await controller.start("walking-condition");
+
+    state = { conditions: [], disabledConditionIds: [] };
+    await controller.reconcileCondition();
+
+    expect(controller.getSnapshot().active).toBe(false);
+    expect(stopMotion).toHaveBeenCalledTimes(1);
+    expect(stopWalkKeepAlive).toHaveBeenCalledTimes(1);
+  });
+
   it("publishes verified walking only after classification and sustained cadence", async () => {
     let onActivity: (sample: ActivitySample) => void = () => {};
     let onCadence: (sample: CadenceSample) => void = () => {};

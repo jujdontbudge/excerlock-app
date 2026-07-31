@@ -73,6 +73,30 @@ export class WalkingSessionController {
     return () => this.listeners.delete(listener);
   }
 
+  /** Ends native work when the condition owning this session no longer applies. */
+  public async reconcileCondition(): Promise<void> {
+    const conditionId = this.snapshot.conditionId;
+    if (conditionId === null) {
+      return;
+    }
+    const state = this.dependencies.getState();
+    const condition = state.conditions.find(({ id }) => id === conditionId);
+    const wallClockNow =
+      this.dependencies.wallClockNow?.() ?? this.dependencies.now();
+    if (
+      condition?.catalogId !== "walking-state" ||
+      condition.settings.kind !== "state" ||
+      state.disabledConditionIds.includes(conditionId) ||
+      !isInsideActiveWindow(
+        condition.activeWindow,
+        wallClockNow,
+        Math.floor(wallClockNow / DAY_MS) * DAY_MS,
+      )
+    ) {
+      await this.stop();
+    }
+  }
+
   public async start(conditionId: string): Promise<boolean> {
     const state = this.dependencies.getState();
     const condition = state.conditions.find(({ id }) => id === conditionId);
