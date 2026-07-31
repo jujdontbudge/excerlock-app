@@ -43,6 +43,30 @@ describe("WalkingSessionController", () => {
     });
   });
 
+  it("starts no native work outside the condition's active window", async () => {
+    const createMotion = jest.fn();
+    const getLocation = jest.fn();
+    const controller = new WalkingSessionController({
+      createMotion,
+      getLocation,
+      getState: () => ({
+        conditions: [
+          {
+            ...walkingCondition,
+            activeWindow: { startMinute: 60, endMinute: 120 },
+          },
+        ],
+        disabledConditionIds: [],
+      }),
+      now: () => 0,
+      wallClockNow: () => 3 * 60 * 60_000,
+    });
+
+    await expect(controller.start("walking-condition")).resolves.toBe(false);
+    expect(createMotion).not.toHaveBeenCalled();
+    expect(getLocation).not.toHaveBeenCalled();
+  });
+
   it("starts motion and foreground keep-alive only for an explicit session", async () => {
     const motion = {
       start: jest.fn().mockResolvedValue(undefined),

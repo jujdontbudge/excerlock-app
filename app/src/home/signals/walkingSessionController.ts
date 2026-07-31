@@ -1,4 +1,7 @@
-import type { ConfiguredCondition } from "@excerlock/condition-model";
+import {
+  isInsideActiveWindow,
+  type ConfiguredCondition,
+} from "@excerlock/condition-model";
 
 import {
   createExcerlockMotionModuleClient,
@@ -11,6 +14,9 @@ import {
   type WalkVerdict,
 } from "@/signals";
 import { useHomeStore } from "../store/homeStore";
+import { localWallClockNow } from "../model/clock";
+
+const DAY_MS = 86_400_000;
 
 type WalkingConditionState = Readonly<{
   conditions: readonly ConfiguredCondition[];
@@ -31,6 +37,7 @@ export interface WalkingSessionDependencies {
   >;
   readonly getState: () => WalkingConditionState;
   readonly now: () => number;
+  readonly wallClockNow?: () => number;
 }
 
 const IDLE: WalkingSessionSnapshot = Object.freeze({
@@ -72,6 +79,17 @@ export class WalkingSessionController {
       condition?.catalogId !== "walking-state" ||
       condition.settings.kind !== "state" ||
       state.disabledConditionIds.includes(conditionId)
+    ) {
+      return false;
+    }
+    const wallClockNow =
+      this.dependencies.wallClockNow?.() ?? this.dependencies.now();
+    if (
+      !isInsideActiveWindow(
+        condition.activeWindow,
+        wallClockNow,
+        Math.floor(wallClockNow / DAY_MS) * DAY_MS,
+      )
     ) {
       return false;
     }
@@ -193,6 +211,7 @@ export function getWalkingSessionController(): WalkingSessionController {
     getLocation: () => getLocationProvider(),
     getState: () => useHomeStore.getState(),
     now: Date.now,
+    wallClockNow: localWallClockNow,
   });
   return sharedController;
 }

@@ -53,6 +53,7 @@ export type {
 export { EVALUATION_TIMELINES } from "./fixtures/evaluation-timelines";
 export { evaluateCondition, evaluateConditions } from "./evaluate";
 export type { ActiveWindow } from "./active-window";
+export { isInsideActiveWindow } from "./active-window";
 export type {
   ConfiguredCondition,
   EvaluationClock,
