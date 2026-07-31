@@ -12,7 +12,8 @@ Build channels are fixed in `app/eas.json`:
 
 - `preview` is an internal-distribution binary pointed at the preview channel.
 - `production` is the store binary pointed at the production channel.
-- `e2e` stays isolated on its own simulator channel.
+- `e2e` remains the exact release-style simulator profile guarded by the test
+  harness; it is not an OTA distribution binary.
 
 Publish with the matching EAS environment, for example
 `eas update --channel preview --environment preview`. Promote only the same
