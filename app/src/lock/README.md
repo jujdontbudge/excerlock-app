@@ -28,6 +28,7 @@ Two consequences worth naming, because they look like missing features until you
 | --- | --- |
 | `screens/LockScreen.tsx` | Composes the five cards. Owns no state of its own. |
 | `controller/lockController.ts` | The module's one conversation with the OS — reference-counted screen lifetimes, one immutable `LockSnapshot` |
+| `controller/appRuntime.ts` | The composition-root clock shared by Lock policy and status decisions |
 | `controller/ledgerSource.ts` | The visible wiring seam: reads/subscribes to Home's journal, ledger config and allowance |
 | `controller/lockPolicy.ts` | Composes Ledger's balance/ladder with the pure precedence decision |
 | `controller/scheduleRegistration.ts` | Reconciles only recurrence-owned concrete ScreenTime registrations |

@@ -1,7 +1,6 @@
 import { openSettings } from "expo-linking";
 import { ScrollView, Text } from "react-native";
 
-import { localWallClockNow } from "@/home";
 import { Screen, useTheme } from "@/ui";
 
 import { FullLockCard } from "../components/FullLockCard";
@@ -13,6 +12,7 @@ import {
   getLockController,
   type LockController,
 } from "../controller/lockController";
+import { lockAppNow } from "../controller/appRuntime";
 import { useHomeAllowance } from "../controller/ledgerSource";
 import { useLockSnapshot } from "../hooks/useLockSnapshot";
 import { fullLockConfirmation } from "../model/fullLockCopy";
@@ -39,7 +39,7 @@ export interface LockScreenProps {
 export function LockScreen({
   controller = getLockController(),
   openSettings: onOpenSettings = openSettings,
-  now = localWallClockNow,
+  now = lockAppNow,
 }: LockScreenProps = {}) {
   const { spacing, typography } = useTheme();
   const {

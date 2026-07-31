@@ -1,10 +1,11 @@
 # ExcerLock Maestro simulator suite
 
-> **Status: authored and statically validated; simulator execution is
-> unverified.** The flows and runner were not executed on a simulator in this
-> lane. On 2026-07-29 this machine had Maestro 2.6.1 and no `ExcerLock-E2E` simulator.
-> The runner intentionally requires Maestro 2.7.0 or newer. No flow in this
-> directory is described as green.
+> **Status: simulator-verified.** On 2026-07-31, the Release configuration built
+> with Xcode 26.4.1 (17E202) and ran on the pinned iOS 26.4 `ExcerLock-E2E`
+> simulator with Maestro 2.7.0. The suite reported
+> **10/10 Flows Passed in 6m 34s**; the runner returned exit code 0. Screenshots
+> were captured but have not been visually reviewed,
+> approved, or blessed.
 
 Read `HARNESS.md` for the test-fix loop and `scenario-schema.md` for the deep
 link contract. Unknown scenario names still fail loudly on
@@ -12,9 +13,10 @@ link contract. Unknown scenario names still fail loudly on
 
 ## Coverage
 
-Every flow declares exactly one bundled scenario in its `env` header. Small
-state variants use the schema's URL-encoded merge patch, so this ticket stays
-inside `e2e/` instead of editing the app's static scenario catalog.
+Every flow declares exactly one bundled scenario in its `env` header. Most
+small state variants use the schema's URL-encoded merge patch. The locked-app
+flow uses the named `balance-drain` scenario because its ledger must genuinely
+reach zero at the pinned clock.
 
 | Surface | Flow | Scenario selection | State or feature exercised |
 |---|---|---|---|
@@ -27,7 +29,7 @@ inside `e2e/` instead of editing the app's static scenario catalog.
 | Settings | `settings-notifications-support.yaml` | `baseline-fresh-install` | Notification opt-in, support, feature request and vote |
 | Onboarding | `onboarding-premium.yaml` | baseline + fresh patch | Every onboarding rail screen, premium entitlement |
 | Paywall | `paywall-free-tier.yaml` | baseline + fresh/free patch | Free plans, empty restore, monthly selection and purchase |
-| Locked apps | `locked-apps-states.yaml` | baseline + drained-ledger patch | Shield selection, zero balance, active window, Full Lock |
+| Locked apps | `locked-apps-states.yaml` | `balance-drain` | Shield selection, zero balance, active window, Full Lock |
 
 Each functional checkpoint is followed by a named `takeScreenshot` capture.
 Those captures have not been visually reviewed or blessed. There are no
@@ -51,23 +53,48 @@ correct, or the suite passes on-device.
 
 ## Build under test
 
-Use the `e2e` profile in `app/eas.json`. It is a release-style simulator build:
-`ios.simulator: true`, `withoutCredentials: true`, and
-`EXPO_PUBLIC_E2E=1`. It deliberately has no `developmentClient`; never point
-Maestro at the expo-dev-client launcher.
+The verified result used a local Xcode Release build. The build-time gate must
+come from `app/.env.local`, because Metro does not reliably re-evaluate
+`EXPO_PUBLIC_*` values supplied only to a later shell command. Ensure that
+gitignored file contains:
 
-From `app/`, authenticate with `eas login` (or set `EXPO_TOKEN`) and build:
+```dotenv
+EXPO_PUBLIC_E2E=1
+```
+
+After exporting the pinned `E2E_UDID` from the next section, build from the
+repository root:
 
 ```bash
 cd app
-EAS_LOCAL_BUILD_ARTIFACTS_DIR="$PWD/../e2e/out/build" \
-  eas build --profile e2e --platform ios --local
-cd ..
+npx expo prebuild --platform ios --clean --no-install
+cd ios
+pod install
+find "$TMPDIR" -maxdepth 1 \
+  \( -name 'metro-cache' -o -name 'metro-file-map-*' \) \
+  -exec rm -rf {} +
+EXPO_PUBLIC_E2E=1 xcodebuild \
+  -workspace ExcerLock.xcworkspace \
+  -scheme ExcerLock \
+  -configuration Release \
+  -sdk iphonesimulator \
+  -destination "id=$E2E_UDID" \
+  -derivedDataPath derivedData \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+export APP_BINARY="$PWD/derivedData/Build/Products/Release-iphonesimulator/ExcerLock.app"
+cd ../..
 ```
 
-If EAS emits a `.tar.gz`, extract it under `e2e/out/build/` and locate the
-contained `.app`. `APP_BINARY` below must be the absolute path to that
-release-style simulator `.app`, not a development client.
+Do not run the repository-root `npm test` between this build and the suite. Its
+guardrail phase runs `expo prebuild --clean` and replaces the generated iOS
+project; run those tests before this recipe, or rebuild afterward.
+
+The `e2e` profile in `app/eas.json` remains release-style simulator
+configuration (`ios.simulator: true`, `withoutCredentials: true`, and
+`EXPO_PUBLIC_E2E=1`). It deliberately has no `developmentClient`; never point
+Maestro at the expo-dev-client launcher. The 2026-07-31 result above used the
+local Xcode recipe, not an EAS-produced artifact.
 
 ## Pinned simulator session
 
@@ -108,7 +135,7 @@ The runner installs `APP_BINARY` when supplied, verifies
 JUnit plus failure artifacts under `e2e/out/`.
 
 ```bash
-APP_BINARY="/absolute/path/to/ExcerLock.app" E2E_UDID="$E2E_UDID" \
+APP_BINARY="$PWD/app/ios/derivedData/Build/Products/Release-iphonesimulator/ExcerLock.app" E2E_UDID="$E2E_UDID" \
   e2e/scripts/run-suite.sh
 ```
 
@@ -116,10 +143,10 @@ Focused examples:
 
 ```bash
 E2E_UDID="$E2E_UDID" e2e/scripts/run-suite.sh --tags analysis
-APP_BINARY="/absolute/path/to/ExcerLock.app" E2E_UDID="$E2E_UDID" e2e/scripts/run-suite.sh --flow flows/locked-apps-states.yaml
+APP_BINARY="$PWD/app/ios/derivedData/Build/Products/Release-iphonesimulator/ExcerLock.app" E2E_UDID="$E2E_UDID" e2e/scripts/run-suite.sh --flow flows/locked-apps-states.yaml
 ```
 
-After the functional suite is genuinely green, capture the visual pass:
+The functional suite is green; the visual review remains a separate pass:
 
 ```bash
 E2E_UDID="$E2E_UDID" e2e/scripts/run-suite.sh --with-visual
@@ -133,19 +160,16 @@ silence the visual gate.
 ## CI requirements
 
 A CI executor needs macOS with a logged-in GUI session, Xcode plus the pinned
-iOS runtime, Java 17+, Maestro 2.7.0+, `jq`, EAS authentication, and either a
-fresh `e2e` profile build or a trusted cached `.app`. CI must boot and pin the
-simulator as above, run `run-suite.sh`, and retain `e2e/out/report.xml`,
-`artifacts/`, and `debug/` even on failure.
+iOS runtime, CocoaPods, Java 17+, Maestro 2.7.0+, `jq`, and either a fresh local
+Release build, an authenticated EAS `e2e` build, or a trusted cached `.app`. CI
+must boot and pin the simulator as above, run `run-suite.sh`, and retain
+`e2e/out/report.xml`, `artifacts/`, and `debug/` even on failure.
 
 ## What remains unverified
 
-- No release-style simulator build was produced or installed in this lane.
-- No Maestro flow was driven against a simulator; all functional results are
-  unknown until a human or CI performs the run above.
-- No screenshots were inspected, approved, or promoted to baselines.
-- The one-time iOS “Open in ExcerLock” confirmation guards and the nearly
-  all-day active lock-window interaction have not been observed on the pinned
-  runtime.
+- The captured screenshots were not visually reviewed, approved, or promoted
+  to baselines, and `visual-sweep.sh` was not used as a release gate.
+- An EAS-produced artifact was not exercised; the verified artifact came from
+  the local Xcode Release recipe above.
 - Physical-device FamilyControls, motion, location, and background behavior
   remain outside this simulator suite, per `HARNESS.md`.

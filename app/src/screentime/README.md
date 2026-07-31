@@ -46,6 +46,9 @@ stale persisted token degrades into "choose your apps" rather than a crash.
 `MockScreenTimeModule` mirrors SignalKit's fixture-provider seam: it implements
 the production interface and adds deterministic driver controls only for its
 own tests. Its clock is injected; scheduling logic never reads `Date.now()`.
+The app-owned adapter receives the stable `screenTimeAppClock` indirection, so
+an E2E composition root can pin both lock policy and the mock boundary to the
+same scenario instant even when the singleton was constructed first.
 State persists under a versioned AsyncStorage key using the same Zustand
 persistence pattern as settings. Observable state is emitted only when the
 shield snapshot changes, so idempotent reconciliation does not cause spurious

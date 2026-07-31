@@ -93,6 +93,7 @@ export function SupportComposer({
                     padding: spacing.md,
                   },
                 ]}
+                testID="support-composer-title-input"
                 value={title}
               />
             ) : null}
@@ -121,6 +122,7 @@ export function SupportComposer({
                   textAlignVertical: "top",
                 },
               ]}
+              testID="support-composer-message-input"
               value={message}
             />
           </View>

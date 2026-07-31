@@ -10,9 +10,12 @@ import {
   createHomeSignalFeed,
   installHomeAppRuntime,
 } from "@/home";
+import { installLockAppRuntime } from "@/lock";
+import { installScreenTimeAppRuntime } from "@/screentime";
 import {
   installFixtureSubscriptionModule,
 } from "@/subscription/accessor";
+import { installFixtureSupportModule } from "@/support";
 
 import { E2EScenarioGate } from "./E2EScenarioGate";
 import { useScenarioUrl } from "./scenarioUrlSource";
@@ -29,8 +32,11 @@ export function E2ERuntimeRoot({
   const url = useScenarioUrl();
   const router = useRouter();
   const uninstallHomeRuntime = useRef<(() => void) | null>(null);
+  const uninstallLockRuntime = useRef<(() => void) | null>(null);
+  const uninstallScreenTimeRuntime = useRef<(() => void) | null>(null);
   const uninstallSubscriptionModule =
     useRef<(() => void) | null>(null);
+  const uninstallSupportModule = useRef<(() => void) | null>(null);
 
   const handleLoaded = useCallback(
     (loaded: LoadedScenario) => {
@@ -40,12 +46,24 @@ export function E2ERuntimeRoot({
         feed: createHomeSignalFeed({ health, motion }),
         now: () => loaded.composition.clock.nowMs(),
       });
+      uninstallLockRuntime.current?.();
+      uninstallLockRuntime.current = installLockAppRuntime({
+        now: () => loaded.composition.clock.nowMs(),
+      });
+      uninstallScreenTimeRuntime.current?.();
+      uninstallScreenTimeRuntime.current = installScreenTimeAppRuntime({
+        clock: loaded.composition.clock,
+      });
       uninstallSubscriptionModule.current?.();
       uninstallSubscriptionModule.current =
         installFixtureSubscriptionModule({
           entitlement: loaded.state.entitlement,
           clock: loaded.composition.clock,
         });
+      uninstallSupportModule.current?.();
+      uninstallSupportModule.current = installFixtureSupportModule({
+        clock: loaded.composition.clock,
+      });
       router.replace("/");
     },
     [router],
@@ -54,7 +72,10 @@ export function E2ERuntimeRoot({
   useEffect(
     () => () => {
       uninstallHomeRuntime.current?.();
+      uninstallLockRuntime.current?.();
+      uninstallScreenTimeRuntime.current?.();
       uninstallSubscriptionModule.current?.();
+      uninstallSupportModule.current?.();
     },
     [],
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -144,6 +144,7 @@ export function LockWindowEditor({
       <View style={[styles.times, { gap: spacing.sm }]}>
         <TimeField
           label="Start time"
+          testID="lock-window-start-time-input"
           value={start}
           onChange={(value) => {
             setStart(value);
@@ -152,6 +153,7 @@ export function LockWindowEditor({
         />
         <TimeField
           label="End time"
+          testID="lock-window-end-time-input"
           value={end}
           onChange={(value) => {
             setEnd(value);
@@ -175,18 +177,28 @@ export function LockWindowEditor({
 
 function TimeField({
   label,
+  testID,
   value,
   onChange,
 }: {
   label: string;
+  testID: string;
   value: string;
   onChange: (value: string) => void;
 }) {
   const { colors, radius, spacing, typography } = useTheme();
+  const inputRef = useRef<TextInput>(null);
   return (
     <View style={[styles.timeField, { gap: spacing.xs }]}>
-      <Text style={typography.caption}>{label}</Text>
+      <Text
+        accessible={false}
+        onPress={() => inputRef.current?.focus()}
+        style={typography.caption}
+      >
+        {label}
+      </Text>
       <TextInput
+        ref={inputRef}
         accessibilityLabel={label}
         autoCapitalize="none"
         keyboardType="numbers-and-punctuation"
@@ -204,6 +216,7 @@ function TimeField({
             paddingVertical: spacing.sm,
           },
         ]}
+        testID={testID}
         value={value}
       />
     </View>

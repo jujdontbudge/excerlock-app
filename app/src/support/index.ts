@@ -1,4 +1,7 @@
-export { getSupportModule } from "./accessor";
+export {
+  getSupportModule,
+  installFixtureSupportModule,
+} from "./accessor";
 export { SupportSettingsCard } from "./components/SupportSettingsCard";
 export type {
   FeatureRequest,
