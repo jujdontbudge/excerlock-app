@@ -1,27 +1,25 @@
 import {
-  FixtureMotionProvider,
-  getSignalFixture,
+  createExcerlockMotionModuleClient,
   createKingstinctHealthKitClient,
   NativeHealthProvider,
-  type MotionFixtureManifest,
-  type TimelinePlayback,
+  NativeMotionProvider,
+  type ExcerlockMotionModuleClient,
 } from "@/signals";
+import type { HealthKitClient } from "@/signals/health/HealthKitClient";
 
-import { HOME_FIXTURE_SCENARIO } from "./fixtureFeed";
 import { createHomeSignalFeed, type HomeSignalFeed } from "./homeSignalFeed";
 
-/** HealthKit is real in the dev client; motion remains Phase-2 until its native lane lands. */
+export interface NativeHomeSignalClients {
+  readonly health: HealthKitClient;
+  readonly motion: ExcerlockMotionModuleClient;
+}
+
+/** Both real sensor pipes are selected only by the iOS dev-client root. */
 export function createHealthKitHomeSignalFeed(
-  playback: TimelinePlayback = { mode: "auto", speed: 1 },
+  clients: NativeHomeSignalClients = createNativeClients(),
 ): HomeSignalFeed {
-  const health = new NativeHealthProvider(createKingstinctHealthKitClient());
-  const motion = new FixtureMotionProvider(
-    getSignalFixture(
-      "motion",
-      HOME_FIXTURE_SCENARIO.motion,
-    ) as MotionFixtureManifest,
-    playback,
-  );
+  const health = new NativeHealthProvider(clients.health);
+  const motion = new NativeMotionProvider(clients.motion);
   const feed = createHomeSignalFeed({ health, motion });
 
   return {
@@ -31,5 +29,12 @@ export function createHealthKitHomeSignalFeed(
       health.dispose();
       motion.dispose();
     },
+  };
+}
+
+function createNativeClients(): NativeHomeSignalClients {
+  return {
+    health: createKingstinctHealthKitClient(),
+    motion: createExcerlockMotionModuleClient(),
   };
 }

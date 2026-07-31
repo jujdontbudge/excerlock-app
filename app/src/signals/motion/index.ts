@@ -17,6 +17,7 @@ export type {
   ExcerlockMotionModuleClient,
   MotionModuleSubscription,
 } from "./MotionModuleClient";
+export { createExcerlockMotionModuleClient } from "./MotionModuleClient";
 export type {
   MotionActivityChangePayload,
   MotionFixtureEvent,

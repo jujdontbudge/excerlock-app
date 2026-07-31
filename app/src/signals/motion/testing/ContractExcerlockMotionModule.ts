@@ -27,6 +27,7 @@ export class ContractExcerlockMotionModule
     (sample: CadenceSample) => void
   >();
   private started = false;
+  public startCalls = 0;
 
   public getAvailability(): MotionAvailability {
     return { activity: true, cadence: true, stepCounting: true };
@@ -42,6 +43,7 @@ export class ContractExcerlockMotionModule
 
   public async start(): Promise<void> {
     this.started = true;
+    this.startCalls += 1;
   }
 
   public async stop(): Promise<void> {
