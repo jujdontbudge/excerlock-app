@@ -17,7 +17,10 @@ import { getHomeAppRuntime } from "../signals/appRuntime";
 import type { HomeSignalFeed } from "../signals/homeSignalFeed";
 import { useHealthEventClaims } from "../signals/useHealthEventClaims";
 import { useHomeSignals } from "../signals/useHomeSignals";
-import { manualGymCheckIn } from "../signals/manualGymCheckIn";
+import {
+  getGymPresenceController,
+  type GymPresenceController,
+} from "../signals/gymPresenceController";
 import { selectActiveConditions, selectPickerContext } from "../store/homeState";
 import { useHomeStore } from "../store/homeStore";
 import {
@@ -36,6 +39,7 @@ export interface HomeScreenProps {
   now?: () => number;
   /** System photo picker boundary, injected by the own-photo flow test. */
   bannerPhotoPicker?: BannerPhotoPicker;
+  gymPresenceController?: Pick<GymPresenceController, "checkIn">;
   reviewCoordinator?: Pick<ReviewCoordinatorContract, "initialize" | "onUnlockMoment">;
 }
 
@@ -48,6 +52,7 @@ export function HomeScreen({
   feed,
   now,
   bannerPhotoPicker = expoBannerPhotoPicker,
+  gymPresenceController = getGymPresenceController(),
   reviewCoordinator = defaultReviewCoordinator,
 }: HomeScreenProps = {}) {
   const appRuntime =
@@ -99,17 +104,7 @@ export function HomeScreen({
       return;
     }
 
-    const place = savedPlaces.find(({ id }) => id === condition.placeId);
-    if (place?.geofence === undefined) {
-      return;
-    }
-    const confirmed = await manualGymCheckIn({
-      id: place.id,
-      ...place.geofence,
-    });
-    if (confirmed) {
-      recordEventPayout(conditionId, currentTime());
-    }
+    await gymPresenceController.checkIn(conditionId);
   };
 
   const hero = deriveLockHero({ journal, config: ledgerConfig, atMs, liveStates: liveStates(cards) });
