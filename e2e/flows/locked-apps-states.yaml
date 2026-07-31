@@ -69,6 +69,7 @@ env:
 - tapOn:
     id: lock-window-start-time-input
 - inputText: 23:59
+- hideKeyboard
 - tapOn:
     id: lock-window-end-time-input
 - inputText: 23:58
