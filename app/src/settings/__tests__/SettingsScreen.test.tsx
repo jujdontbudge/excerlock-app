@@ -65,7 +65,10 @@ describe("SettingsScreen", () => {
     const enableAutoDetect = jest.fn().mockResolvedValue(true);
     await render(
       <SettingsScreen
-        gymPresenceController={{ enableAutoDetect }}
+        gymPresenceController={{
+          disableAutoDetect: jest.fn(),
+          enableAutoDetect,
+        }}
       />,
     );
 
@@ -75,6 +78,25 @@ describe("SettingsScreen", () => {
     );
 
     expect(enableAutoDetect).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets the user return to manual-only gym check-in", async () => {
+    useSettingsStore.setState({ gymAutoDetectEnabled: true });
+    const disableAutoDetect = jest.fn().mockResolvedValue(undefined);
+    await render(
+      <SettingsScreen
+        gymPresenceController={{
+          enableAutoDetect: jest.fn(),
+          disableAutoDetect,
+        }}
+      />,
+    );
+
+    await fireEvent.press(
+      screen.getByRole("button", { name: "Disable gym auto-detect" }),
+    );
+
+    expect(disableAutoDetect).toHaveBeenCalledTimes(1);
   });
 
   it("mounts the real signed-out account surface and real support actions", async () => {

@@ -24,7 +24,10 @@ export type SettingsScreenProps = Readonly<{
   notificationModule?: NotificationModule;
   openNotificationSettings?: () => void;
   supportModule?: SupportModule;
-  gymPresenceController?: Pick<GymPresenceController, "enableAutoDetect">;
+  gymPresenceController?: Pick<
+    GymPresenceController,
+    "disableAutoDetect" | "enableAutoDetect"
+  >;
   reviewCoordinator?: Pick<ReviewCoordinatorContract, "manualRate">;
 }>;
 
@@ -97,7 +100,13 @@ export function SettingsScreen({
               }
               description="Enabling asks for Always location so saved gyms can be detected in the background."
             />
-            {gymAutoDetectEnabled ? null : (
+            {gymAutoDetectEnabled ? (
+              <PillButton
+                label="Disable gym auto-detect"
+                onPress={() => void gymPresenceController.disableAutoDetect()}
+                variant="secondary"
+              />
+            ) : (
               <PillButton
                 label="Enable gym auto-detect"
                 onPress={() => void gymPresenceController.enableAutoDetect()}
