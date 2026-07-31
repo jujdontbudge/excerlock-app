@@ -144,6 +144,7 @@ export function LockWindowEditor({
       <View style={[styles.times, { gap: spacing.sm }]}>
         <TimeField
           label="Start time"
+          testID="lock-window-start-time-input"
           value={start}
           onChange={(value) => {
             setStart(value);
@@ -152,6 +153,7 @@ export function LockWindowEditor({
         />
         <TimeField
           label="End time"
+          testID="lock-window-end-time-input"
           value={end}
           onChange={(value) => {
             setEnd(value);
@@ -175,10 +177,12 @@ export function LockWindowEditor({
 
 function TimeField({
   label,
+  testID,
   value,
   onChange,
 }: {
   label: string;
+  testID: string;
   value: string;
   onChange: (value: string) => void;
 }) {
@@ -212,6 +216,7 @@ function TimeField({
             paddingVertical: spacing.sm,
           },
         ]}
+        testID={testID}
         value={value}
       />
     </View>

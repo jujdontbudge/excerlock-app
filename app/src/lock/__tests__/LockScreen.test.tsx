@@ -269,6 +269,12 @@ describe("LockScreen", () => {
         expect.any(Function),
       );
       expect(screen.getByText("End time")).toHaveProp("accessible", false);
+      expect(screen.getByTestId("lock-window-start-time-input")).toBe(
+        screen.getByLabelText("Start time"),
+      );
+      expect(screen.getByTestId("lock-window-end-time-input")).toBe(
+        screen.getByLabelText("End time"),
+      );
     });
 
     it("creates, edits, and deletes a persisted days-and-time rule", async () => {

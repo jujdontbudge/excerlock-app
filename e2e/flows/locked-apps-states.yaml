@@ -66,9 +66,11 @@ env:
 - tapOn: Friday
 - tapOn: Saturday
 - tapOn: Sunday
-- tapOn: Start time
+- tapOn:
+    id: lock-window-start-time-input
 - inputText: 23:59
-- tapOn: End time
+- tapOn:
+    id: lock-window-end-time-input
 - inputText: 23:58
 - hideKeyboard
 - tapOn: Save lock window
