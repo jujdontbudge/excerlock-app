@@ -72,7 +72,7 @@ export function E2ERuntimeRoot({
           createMotion: () => motion,
           getLocation: () => location,
           getState: () => useHomeStore.getState(),
-          now: () => loaded.composition.clock.nowMs(),
+          now: () => motion.currentTimeMs,
           wallClockNow: () => loaded.composition.clock.nowMs(),
         }),
       );
