@@ -1,4 +1,5 @@
 import { eq, sql } from "drizzle-orm";
+import { getTableConfig } from "drizzle-orm/pg-core";
 import {
   afterAll,
   beforeAll,
@@ -8,9 +9,13 @@ import {
   it,
 } from "vitest";
 import {
+  featureRequestVotes,
   featureRequests,
   supportRequests,
   users,
+  vendorConnections,
+  vendorOAuthStates,
+  vendorWebhookEvents,
 } from "../src/db/schema.js";
 import {
   createDrizzleFeatureRequestRepository,
@@ -41,6 +46,56 @@ describe("repository database execution boundary", () => {
         sql.raw('select "misspelled_column" from "support_requests"'),
       ),
     ).rejects.toThrow("misspelled_column");
+  });
+
+  it("matches schema.ts columns to the migrated Postgres catalog", async () => {
+    const tables = [
+      users,
+      supportRequests,
+      featureRequests,
+      featureRequestVotes,
+      vendorConnections,
+      vendorOAuthStates,
+      vendorWebhookEvents,
+    ];
+    const expectedColumns = tables.flatMap((table) => {
+      const config = getTableConfig(table);
+      return config.columns.map((column, ordinal) => ({
+        tableName: config.name,
+        columnName: column.name,
+        ordinal: ordinal + 1,
+        sqlType: column.getSQLType(),
+        notNull: column.notNull,
+        hasDefault: column.hasDefault,
+      }));
+    });
+
+    const { rows: migratedColumns } = await postgres.client.query<{
+      tableName: string;
+      columnName: string;
+      ordinal: number;
+      sqlType: string;
+      notNull: boolean;
+      hasDefault: boolean;
+    }>(`
+      select
+        table_name as "tableName",
+        column_name as "columnName",
+        ordinal_position as ordinal,
+        data_type as "sqlType",
+        is_nullable = 'NO' as "notNull",
+        column_default is not null as "hasDefault"
+      from information_schema.columns
+      where table_schema = 'public'
+      order by table_name, ordinal_position
+    `);
+
+    expect(migratedColumns).toEqual(
+      expectedColumns.sort((left, right) =>
+        left.tableName.localeCompare(right.tableName) ||
+        left.ordinal - right.ordinal,
+      ),
+    );
   });
 });
 
