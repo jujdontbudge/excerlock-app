@@ -23,19 +23,34 @@ describe("HealthKit AppDelegate guardrail", () => {
       fromRoot("app", "ios"),
       new Set(["AppDelegate.swift", "AppDelegate.mm", "AppDelegate.m"]),
     );
-    const configuredDelegates = appDelegates
-      .filter((path) => {
-        const contents = readUtf8(path);
-        return (
-          contents.includes("import ReactNativeHealthkit") &&
-          contents.includes("setupBackgroundObservers()")
-        );
-      })
-      .map(repoRelative);
+    const configuredDelegates = appDelegates.filter((path) => {
+      const contents = readUtf8(path);
+      const usesDirectSwiftImport =
+        contents.includes("import ReactNativeHealthkit") &&
+        contents.includes("setupBackgroundObservers()");
+      const usesNativeBridge =
+        contents.includes(
+          '@_silgen_name("ExcerLockSetupHealthKitBackgroundDelivery")',
+        ) && contents.includes("    setupHealthKitBackgroundDelivery()");
+      return usesDirectSwiftImport || usesNativeBridge;
+    });
+    const bridgeSources = walkFiles(
+      fromRoot("app", "ios"),
+      new Set(["HealthKitBackgroundBootstrap.mm"]),
+    ).filter((path) =>
+      readUtf8(path).includes(
+        "[[BackgroundDeliveryManager shared] setupBackgroundObservers]",
+      ),
+    );
+    const backgroundStartupConfigured =
+      configuredDelegates.length > 0 &&
+      (configuredDelegates.some((path) =>
+        readUtf8(path).includes("import ReactNativeHealthkit"),
+      ) || bridgeSources.length > 0);
 
     expect(
-      healthKitInstalled && configuredDelegates.length === 0,
-      "HealthKit is declared, but no generated AppDelegate imports ReactNativeHealthkit and calls setupBackgroundObservers(); run prebuild and verify the pinned plugin patch",
+      healthKitInstalled && !backgroundStartupConfigured,
+      `HealthKit is declared, but the generated native startup does not call setupBackgroundObservers(); checked ${appDelegates.map(repoRelative).join(", ")}`,
     ).toBe(false);
   });
 });

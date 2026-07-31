@@ -15,6 +15,14 @@ the monitor, shield configuration, or shield action target is absent or loses
 its canonical App ID, iOS 17.4 deployment target, Apple team, or entitlements
 file.
 
+`withHealthKitBackgroundBootstrap` keeps the HealthKit background-delivery
+entitlement and cold-launch observer setup while isolating Nitro's C++ headers
+in an Objective-C++ bridge. The upstream HealthKit plugin remains responsible
+for usage descriptions and the base HealthKit entitlement, but its direct
+Swift AppDelegate import is disabled because that import cannot compile in the
+Expo application target. The local bridge is linked only to the main app
+target during prebuild.
+
 ## Invariants and fixtures
 
 Both plugins are deterministic build transformations. They have no runtime
