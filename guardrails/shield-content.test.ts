@@ -64,6 +64,9 @@ describe("Screen Time shield content", () => {
     expect(swift).toContain("F98529");
     expect(swift).toContain("ClayLockBody");
     expect(swift).toContain("ClayLockShackle");
+    expect(swift).not.toContain("resolved.primaryActionLabel =");
+    expect(swift).not.toContain("resolved.secondaryActionLabel =");
+    expect(swift).not.toContain("resolved.deepLink =");
     expect(swift).not.toMatch(
       /localizedDisplayName|application\.token|webDomain\.domain/,
     );
@@ -74,6 +77,9 @@ describe("Screen Time shield content", () => {
     const swift = walkFiles(targetRoot, new Set([".swift"]))
       .map(readUtf8)
       .join("\n");
+    const route = readUtf8(
+      fromRoot("app", "targets", "ShieldAction", "ShieldActionRoute.swift"),
+    );
 
     expect(swift).toContain("UNUserNotificationCenter");
     expect(swift).toContain(
@@ -84,6 +90,8 @@ describe("Screen Time shield content", () => {
     expect(swift).toContain("action == .primaryButtonPressed");
     expect(swift).toContain("content.sound = nil");
     expect(swift).not.toContain("interruptionLevel = .passive");
+    expect(route).not.toContain("copyOverridesDefaultsKey");
+    expect(route).not.toContain('context["deepLink"]');
     expect(swift).not.toMatch(
       /localizedDisplayName|Application\(token:|WebDomain\(token:|application\.token|webDomain\.domain/,
     );

@@ -70,11 +70,6 @@ struct ShieldContentCatalog {
     var resolved = variant
     resolved.title = nonEmptyString(override["title"]) ?? resolved.title
     resolved.subtitle = safeSubtitle(override["subtitle"]) ?? resolved.subtitle
-    resolved.primaryActionLabel =
-      nonEmptyString(override["primaryActionLabel"]) ?? resolved.primaryActionLabel
-    resolved.secondaryActionLabel =
-      nonEmptyString(override["secondaryActionLabel"]) ?? resolved.secondaryActionLabel
-    resolved.deepLink = safeDeepLink(override["deepLink"]) ?? resolved.deepLink
     return resolved
   }
 
@@ -91,7 +86,6 @@ struct ShieldContentCatalog {
 
     var resolved = variant
     resolved.subtitle = safeSubtitle(context["offerSubtitle"]) ?? resolved.subtitle
-    resolved.deepLink = safeDeepLink(context["deepLink"]) ?? resolved.deepLink
     return resolved
   }
 
@@ -108,13 +102,6 @@ struct ShieldContentCatalog {
     let normalized = text.lowercased()
     let forbidden = ["balance", "countdown", "remaining", "spent", "streak"]
     return forbidden.contains(where: normalized.contains) ? nil : text
-  }
-
-  private func safeDeepLink(_ value: Any?) -> String? {
-    guard let text = nonEmptyString(value), text.hasPrefix("excerlock://") else {
-      return nil
-    }
-    return text
   }
 
   private static func appGroupDefaults() -> UserDefaults? {
