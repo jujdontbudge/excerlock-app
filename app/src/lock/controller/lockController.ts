@@ -33,6 +33,7 @@ import { syncScheduleRegistrations } from "./scheduleRegistration";
 import { reviewCoordinator } from "@/review";
 import { getWalkingSessionController } from "@/home/signals";
 import { getShieldContentCoordinator } from "@/shield/shieldContentRuntime";
+import { ShieldCauseResolver } from "@/shield/ShieldCauseResolver";
 import type { ShieldOfferContext } from "@/shield/ShieldContentCoordinator";
 import type { ShieldCause } from "@/shield/ShieldContentPublisher";
 
@@ -96,6 +97,7 @@ export class LockController {
   private readonly subscribeWalking: (listener: () => void) => () => void;
   private readonly onShieldShown: (atMs: number) => void | Promise<void>;
   private readonly shieldContent: ShieldContentSink;
+  private readonly shieldCauseResolver = new ShieldCauseResolver();
   private readonly listeners = new Set<() => void>();
   private activeClients = 0;
   private reconciliation: Promise<void> = Promise.resolve();
@@ -270,8 +272,9 @@ export class LockController {
   ): Promise<void> {
     const { decision, desired } = this.desiredState();
     this.patch({ precedence: decision });
-    if (decision.shields === "up") {
-      await this.shieldContent.publish(shieldCause(decision.cause), {
+    const cause = this.shieldCauseResolver.resolve(decision, this.walking());
+    if (cause !== null) {
+      await this.shieldContent.publish(cause, {
         lockWindowEndsAtMs: this.activeLockWindowEnd(),
       });
     }
@@ -358,19 +361,6 @@ export class LockController {
       void this.onShieldShown(this.now());
     }
     this.listeners.forEach((listener) => listener());
-  }
-}
-
-function shieldCause(
-  cause: LockPrecedenceDecision["cause"],
-): ShieldCause {
-  switch (cause) {
-    case "fullLock":
-      return "fullLock";
-    case "activeWindow":
-      return "lockWindow";
-    default:
-      return "balanceEmpty";
   }
 }
 

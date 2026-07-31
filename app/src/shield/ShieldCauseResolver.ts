@@ -17,6 +17,10 @@ export class ShieldCauseResolver {
       return null;
     }
 
+    if (this.walkingWasActive) {
+      this.walkingWasActive = false;
+      return (this.latchedCause = "walkAndScrollEnded");
+    }
     if (decision.cause === "fullLock") {
       this.walkingWasActive = false;
       return (this.latchedCause = "fullLock");
@@ -24,10 +28,6 @@ export class ShieldCauseResolver {
     if (decision.cause === "activeWindow") {
       this.walkingWasActive = false;
       return (this.latchedCause = "lockWindow");
-    }
-    if (this.walkingWasActive) {
-      this.walkingWasActive = false;
-      return (this.latchedCause = "walkAndScrollEnded");
     }
     if (this.latchedCause === "walkAndScrollEnded") {
       return this.latchedCause;
