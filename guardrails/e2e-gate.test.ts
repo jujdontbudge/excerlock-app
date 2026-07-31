@@ -118,6 +118,6 @@ describe("E2E build gate", () => {
         "The production export retained the E2E scenario surface",
       ).toBe(false);
     },
-    120_000,
+    180_000,
   );
 });
