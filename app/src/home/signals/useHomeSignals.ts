@@ -20,8 +20,11 @@ export function useHomeSignals(feed: HomeSignalFeed): SignalReading {
     };
 
     const unsubscribe = feed.subscribe(apply);
-    void feed.read().then(apply);
-    void feed.start();
+    void feed
+      .start()
+      .then(() => feed.read())
+      .then(apply)
+      .catch(() => undefined);
 
     return () => {
       mounted = false;
