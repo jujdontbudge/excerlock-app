@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import plist from "@expo/plist";
 import { describe, expect, it } from "vitest";
 
-import { fromRoot, readUtf8 } from "./repo-files";
+import { fromRoot, readUtf8, walkFiles } from "./repo-files";
 
 describe("Screen Time shield content", () => {
   it("ships the four cause-keyed variants with their matching app surfaces", () => {
@@ -47,5 +47,25 @@ describe("Screen Time shield content", () => {
         title: "You stopped walking.",
       },
     });
+  });
+
+  it("renders only cause content with the approved light treatment", () => {
+    const targetRoot = fromRoot("app", "targets", "ShieldConfiguration");
+    const swift = walkFiles(targetRoot, new Set([".swift"]))
+      .map(readUtf8)
+      .join("\n");
+
+    expect(swift).toContain("ShieldContent.plist");
+    expect(swift).toContain("excerlock.shield.current-cause.v1");
+    expect(swift).toContain("excerlock.shield.runtime-context.v1");
+    expect(swift).toContain("excerlock.shield.copy-overrides.v1");
+    expect(swift).toContain("F4F1F5");
+    expect(swift).toContain("C9C4CC");
+    expect(swift).toContain("F98529");
+    expect(swift).toContain("ClayLockBody");
+    expect(swift).toContain("ClayLockShackle");
+    expect(swift).not.toMatch(
+      /localizedDisplayName|application\.token|webDomain\.domain/,
+    );
   });
 });
