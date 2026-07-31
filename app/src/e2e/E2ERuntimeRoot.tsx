@@ -8,13 +8,15 @@ import {
 
 import {
   createHomeSignalFeed,
-  GymPresenceController,
   installHomeAppRuntime,
+  useHomeStore,
+} from "@/home";
+import {
+  GymPresenceController,
   installGymPresenceController,
   installWalkingSessionController,
-  useHomeStore,
   WalkingSessionController,
-} from "@/home";
+} from "@/home/signals";
 import { installLockAppRuntime } from "@/lock";
 import { useSettingsStore } from "@/settings";
 import { installScreenTimeAppRuntime } from "@/screentime";
@@ -29,11 +31,13 @@ import type { LoadedScenario } from "./scenarioDeepLink";
 
 export type E2ERuntimeRootProps = Readonly<{
   children: ReactNode;
+  onScenarioLoaded?: (loaded: LoadedScenario) => void;
 }>;
 
 /** Build-gated owner of URL selection and all five fixture providers. */
 export function E2ERuntimeRoot({
   children,
+  onScenarioLoaded,
 }: E2ERuntimeRootProps) {
   const url = useScenarioUrl();
   const router = useRouter();
@@ -101,9 +105,10 @@ export function E2ERuntimeRoot({
       uninstallSupportModule.current = installFixtureSupportModule({
         clock: loaded.composition.clock,
       });
+      onScenarioLoaded?.(loaded);
       router.replace("/");
     },
-    [router],
+    [onScenarioLoaded, router],
   );
 
   useEffect(

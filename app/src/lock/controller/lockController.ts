@@ -31,7 +31,7 @@ import {
 import { desiredLockState } from "./lockPolicy";
 import { syncScheduleRegistrations } from "./scheduleRegistration";
 import { reviewCoordinator } from "@/review";
-import { getWalkingSessionController } from "@/home";
+import { getWalkingSessionController } from "@/home/signals";
 
 /** Everything the lock surfaces render, in one immutable value. */
 export type LockSnapshot = Readonly<{

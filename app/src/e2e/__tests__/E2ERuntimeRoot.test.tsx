@@ -12,7 +12,7 @@ const mockReplace = jest.fn();
 jest.mock("expo-linking", () => ({
   useLinkingURL: () => null,
   useURL: () =>
-    "excerlock://e2e/scenario/baseline-fresh-install?overrides=%7B%22clock%22%3A%7B%22playback%22%3A%22auto%22%2C%22speed%22%3A100%7D%2C%22timeline%22%3A%5B%7B%22atMs%22%3A0%2C%22event%22%3A%22location.update%22%2C%22payload%22%3A%7B%22lat%22%3A40.741%2C%22lon%22%3A-73.989%2C%22accuracy%22%3A8%7D%7D%2C%7B%22atMs%22%3A10000%2C%22event%22%3A%22motion.activityChange%22%2C%22payload%22%3A%7B%22activity%22%3A%22walking%22%2C%22confidence%22%3A%22high%22%7D%7D%2C%7B%22atMs%22%3A11000%2C%22event%22%3A%22motion.pedometerUpdate%22%2C%22payload%22%3A%7B%22steps%22%3A3%2C%22cadence%22%3A1.7%7D%7D%2C%7B%22atMs%22%3A13000%2C%22event%22%3A%22motion.pedometerUpdate%22%2C%22payload%22%3A%7B%22steps%22%3A7%2C%22cadence%22%3A1.7%7D%7D%5D%7D",
+    "excerlock://e2e/scenario/baseline-fresh-install?overrides=%7B%22timeline%22%3A%5B%7B%22atMs%22%3A0%2C%22event%22%3A%22location.update%22%2C%22payload%22%3A%7B%22lat%22%3A40.741%2C%22lon%22%3A-73.989%2C%22accuracy%22%3A8%7D%7D%5D%7D",
 }));
 jest.mock("expo-router", () => ({
   useRouter: () => ({ replace: mockReplace }),
@@ -34,8 +34,14 @@ import { E2ERuntimeRoot } from "../E2ERuntimeRoot";
 
 describe("E2E runtime composition root", () => {
   it("installs the selected fixtures and pinned clock before mounting the app", async () => {
+    let advanceMotion: ((atMs: number) => void) | undefined;
     await render(
-      <E2ERuntimeRoot>
+      <E2ERuntimeRoot
+        onScenarioLoaded={(loaded) => {
+          advanceMotion = (atMs) =>
+            loaded.composition.providers.motion.advanceTo(atMs);
+        }}
+      >
         <SignalRuntimeHosts />
         <Text>Normal app</Text>
       </E2ERuntimeRoot>,
@@ -80,10 +86,8 @@ describe("E2E runtime composition root", () => {
     });
     const walkingSession = getWalkingSessionController();
     await expect(walkingSession.start("e2e-walking")).resolves.toBe(true);
-    await waitFor(
-      () => expect(walkingSession.getSnapshot().walking).toBe(true),
-      { timeout: 2_000 },
-    );
+    await act(async () => advanceMotion?.(4_000));
+    expect(walkingSession.getSnapshot().walking).toBe(true);
     await walkingSession.stop();
     await act(async () => {
       useHomeStore.getState().addCondition({

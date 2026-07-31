@@ -19,7 +19,7 @@ const mockWalkingSession = {
   },
 };
 
-jest.mock("@/home/signals/walkingSessionController", () => ({
+jest.mock("@/home/signals", () => ({
   getWalkingSessionController: () => mockWalkingSession,
 }));
 

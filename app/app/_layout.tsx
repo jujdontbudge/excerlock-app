@@ -7,7 +7,7 @@ import "@/signals/location/registerLocationTasks";
 import { ThemeProvider } from "@/ui";
 import { NativeScreenTimePickerHost } from "@/screentime/native/NativeScreenTimePickerHost";
 import { NativeShieldNotificationResponseHost } from "@/notifications";
-import { SignalRuntimeHosts } from "@/home";
+import { SignalRuntimeHosts } from "@/home/signals";
 
 export default function RootLayout() {
   const runtime = (
