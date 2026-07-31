@@ -12,6 +12,10 @@ client adapter translates native quantities into condition-domain units: count f
 for active energy, kilometers for walking/running and cycling distance, meters for swimming, and
 minutes for exercise time and workouts. Native HealthKit anchors pass through unchanged.
 
+The native library is exactly pinned at 14.0.2. The root `postinstall` applies the checked-in plugin
+patch from `app/patches/` so every clean Expo prebuild installs the cold-launch background observer in
+AppDelegate; the guardrail suite verifies the generated call.
+
 Active minutes is selected per local calendar day at read time. Recorded `appleExerciseTime` samples
 win when present; otherwise the provider sums recorded workout durations. The two sources are never
 added together, and `HKWasUserEntered` samples are excluded from both totals.

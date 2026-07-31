@@ -28,7 +28,14 @@
           }
         }
       ],
-      "@kingstinct/react-native-healthkit"
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "background": true,
+          "NSHealthShareUsageDescription": "ExcerLock reads your activity to detect completed fitness conditions on this device.",
+          "NSHealthUpdateUsageDescription": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

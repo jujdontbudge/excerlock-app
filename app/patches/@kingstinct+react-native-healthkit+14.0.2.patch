@@ -1,0 +1,62 @@
+diff --git a/node_modules/@kingstinct/react-native-healthkit/app.plugin.js b/node_modules/@kingstinct/react-native-healthkit/app.plugin.js
+index 5ba5efc..1a47651 100644
+--- a/node_modules/@kingstinct/react-native-healthkit/app.plugin.js
++++ b/node_modules/@kingstinct/react-native-healthkit/app.plugin.js
+@@ -1,6 +1,7 @@
+ const {
+   withPlugins,
+   createRunOncePlugin,
++  withAppDelegate,
+   withEntitlementsPlist,
+   withInfoPlist,
+ } = require('@expo/config-plugins')
+@@ -79,6 +80,41 @@ const withInfoPlistPlugin = (
+ 
+ const pkg = require('./package.json')
+ 
++/**
++ * @type {ConfigPlugin<{background: boolean}>}
++ */
++const withAppDelegatePlugin = (config, props) => {
++  if (props?.background === false) {
++    return config
++  }
++
++  return withAppDelegate(config, (configDelegate) => {
++    const contents = configDelegate.modResults.contents
++
++    if (!contents.includes('import HealthKit')) {
++      configDelegate.modResults.contents = contents.replace(
++        /^(import .+\n)/m,
++        '$1import HealthKit\n',
++      )
++    }
++
++    const setupCall =
++      '    BackgroundDeliveryManager.shared.setupBackgroundObservers()\n'
++
++    if (
++      !configDelegate.modResults.contents.includes('BackgroundDeliveryManager')
++    ) {
++      configDelegate.modResults.contents =
++        configDelegate.modResults.contents.replace(
++          /(func application\([\s\S]+?didFinishLaunchingWithOptions[\s\S]+?\) -> Bool \{)\n/,
++          `$1\n${setupCall}`,
++        )
++    }
++
++    return configDelegate
++  })
++}
++
+ /**
+  * @type {ConfigPlugin<AppPluginConfig>}
+  */
+@@ -86,6 +122,7 @@ const healthkitAppPlugin = (config, props) =>
+   withPlugins(config, [
+     [withEntitlementsPlugin, props],
+     [withInfoPlistPlugin, props],
++    [withAppDelegatePlugin, props],
+   ])
+ 
+ /**
