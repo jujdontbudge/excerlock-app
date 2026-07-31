@@ -6,7 +6,7 @@ import type {
 
 import type { ScreenTimeSelectionHandle } from "../ScreenTimeModule";
 import type { SelectionContents } from "../selectionSummary";
-import type { NativeSelectionPicker } from "./NativeScreenTimeModule";
+import type { NativeSelectionPicker } from "./NativeSelectionPicker";
 
 type PickerSnapshot = Readonly<{
   requestId: number;

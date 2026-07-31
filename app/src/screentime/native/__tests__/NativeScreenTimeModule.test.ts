@@ -6,11 +6,9 @@ jest.mock(
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import type { ScreenTimeModule } from "../../ScreenTimeModule";
-import {
-  NativeScreenTimeModule,
-  type DeviceActivityApi,
-  type NativeSelectionPicker,
-} from "../NativeScreenTimeModule";
+import type { DeviceActivityApi } from "../deviceActivityTypes";
+import { NativeScreenTimeModule } from "../NativeScreenTimeModule";
+import type { NativeSelectionPicker } from "../NativeSelectionPicker";
 import { NATIVE_SCREENTIME_STORAGE_KEY } from "../nativeStore";
 
 type ControlledDeviceActivityApi = DeviceActivityApi & {
