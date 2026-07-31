@@ -1,9 +1,10 @@
 # Account
 
 Account is the app-facing seam for signed-out and signed-in state, sign-in and
-sign-up intents, sign-out, and account deletion. Phase 2 uses a persistent
-deterministic mock. Phase 5 replaces that adapter with Clerk without changing
-callers.
+sign-up intents, sign-out, and account deletion. Keyless builds select a
+signed-out no-op adapter so missing configuration cannot crash or create a
+fictional session. Configured builds replace the Phase-2 mock with Clerk
+without changing callers.
 
 ## Interface
 
