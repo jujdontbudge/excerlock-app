@@ -244,3 +244,17 @@ export function getWalkingSessionController(): WalkingSessionController {
   });
   return sharedController;
 }
+
+/** Installs fixture composition before E2E app surfaces mount. */
+export function installWalkingSessionController(
+  controller: WalkingSessionController,
+): () => void {
+  const previous = sharedController;
+  sharedController = controller;
+  return () => {
+    if (sharedController === controller) {
+      void controller.stop();
+      sharedController = previous;
+    }
+  };
+}

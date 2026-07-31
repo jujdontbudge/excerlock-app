@@ -20,7 +20,8 @@ jest.mock("expo-router", () => ({
 import { render, screen, waitFor } from "@testing-library/react-native";
 import { Text } from "react-native";
 
-import { getHomeAppRuntime } from "@/home";
+import { getHomeAppRuntime, useHomeStore } from "@/home";
+import { getWalkingSessionController } from "@/home/signals/walkingSessionController";
 import { getLockAppRuntime } from "@/lock";
 import { getScreenTimeAppRuntime } from "@/screentime";
 import { getSubscriptionModule } from "@/subscription";
@@ -61,6 +62,19 @@ describe("E2E runtime composition root", () => {
         workoutDuration: 0,
       },
     });
+    useHomeStore.getState().addCondition({
+      id: "e2e-walking",
+      catalogId: "walking-state",
+      source: "motion",
+      settings: {
+        kind: "state",
+        reward: { type: "sustainedUnlock" },
+        exitGraceMs: 30_000,
+      },
+    });
+    const walkingSession = getWalkingSessionController();
+    await expect(walkingSession.start("e2e-walking")).resolves.toBe(true);
+    await walkingSession.stop();
     expect(
       (await getSubscriptionModule().getSnapshot()).entitlement,
     ).toMatchObject({

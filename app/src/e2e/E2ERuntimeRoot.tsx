@@ -9,7 +9,12 @@ import {
 import {
   createHomeSignalFeed,
   installHomeAppRuntime,
+  useHomeStore,
 } from "@/home";
+import {
+  installWalkingSessionController,
+  WalkingSessionController,
+} from "@/home/signals/walkingSessionController";
 import { installLockAppRuntime } from "@/lock";
 import { installScreenTimeAppRuntime } from "@/screentime";
 import {
@@ -33,6 +38,7 @@ export function E2ERuntimeRoot({
   const router = useRouter();
   const uninstallHomeRuntime = useRef<(() => void) | null>(null);
   const uninstallLockRuntime = useRef<(() => void) | null>(null);
+  const uninstallWalkingSession = useRef<(() => void) | null>(null);
   const uninstallScreenTimeRuntime = useRef<(() => void) | null>(null);
   const uninstallSubscriptionModule =
     useRef<(() => void) | null>(null);
@@ -41,7 +47,7 @@ export function E2ERuntimeRoot({
   const handleLoaded = useCallback(
     (loaded: LoadedScenario) => {
       uninstallHomeRuntime.current?.();
-      const { health, motion } = loaded.composition.providers;
+      const { health, location, motion } = loaded.composition.providers;
       uninstallHomeRuntime.current = installHomeAppRuntime({
         feed: createHomeSignalFeed({ health, motion, walking: null }),
         now: () => loaded.composition.clock.nowMs(),
@@ -54,6 +60,16 @@ export function E2ERuntimeRoot({
       uninstallScreenTimeRuntime.current = installScreenTimeAppRuntime({
         clock: loaded.composition.clock,
       });
+      uninstallWalkingSession.current?.();
+      uninstallWalkingSession.current = installWalkingSessionController(
+        new WalkingSessionController({
+          createMotion: () => motion,
+          getLocation: () => location,
+          getState: () => useHomeStore.getState(),
+          now: () => loaded.composition.clock.nowMs(),
+          wallClockNow: () => loaded.composition.clock.nowMs(),
+        }),
+      );
       uninstallSubscriptionModule.current?.();
       uninstallSubscriptionModule.current =
         installFixtureSubscriptionModule({
@@ -73,6 +89,7 @@ export function E2ERuntimeRoot({
     () => () => {
       uninstallHomeRuntime.current?.();
       uninstallLockRuntime.current?.();
+      uninstallWalkingSession.current?.();
       uninstallScreenTimeRuntime.current?.();
       uninstallSubscriptionModule.current?.();
       uninstallSupportModule.current?.();
