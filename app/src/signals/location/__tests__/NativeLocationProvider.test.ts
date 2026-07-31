@@ -19,6 +19,26 @@ runLocationProviderContract("NativeLocationProvider", () => {
   };
 });
 
+describe("NativeLocationProvider gym limits", () => {
+  it("rejects a sixth saved gym before changing native monitoring", async () => {
+    const client = new ContractLocationClient();
+    const provider = new NativeLocationProvider(client);
+    const regions = Array.from({ length: 6 }, (_, index) => ({
+      id: `gym-${index + 1}`,
+      latitude: 40.741 + index / 1_000,
+      longitude: -73.989,
+      radiusMeters: 100,
+    }));
+
+    await expect(provider.startMonitoringRegions(regions)).rejects.toThrow(
+      "At most 5 saved gyms can be monitored",
+    );
+    expect(client.startedRegions).toEqual([]);
+
+    provider.dispose();
+  });
+});
+
 class ContractLocationClient implements NativeLocationClient {
   private readonly locationListeners = new Set<(sample: LocationSample) => void>();
   private readonly presenceListeners = new Set<(transition: RegionTransition) => void>();
@@ -26,6 +46,7 @@ class ContractLocationClient implements NativeLocationClient {
   private locationDelivered = false;
   private exitDelivered = false;
   private walkActive = false;
+  public readonly startedRegions: GeofenceRegion[][] = [];
 
   public getAuthorizationStatus(): LocationAuthorizationStatus {
     return "authorizedAlways";
@@ -51,7 +72,9 @@ class ContractLocationClient implements NativeLocationClient {
     return sample;
   }
 
-  public async startGeofencing(_regions: readonly GeofenceRegion[]): Promise<void> {}
+  public async startGeofencing(regions: readonly GeofenceRegion[]): Promise<void> {
+    this.startedRegions.push([...regions]);
+  }
 
   public async stopGeofencing(): Promise<void> {}
 

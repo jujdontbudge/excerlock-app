@@ -1,4 +1,5 @@
 import type { NativeLocationClient } from "./NativeLocationClient";
+import { assertGymRegionsAllowed } from "./gymRegions";
 import type {
   GeofenceRegion,
   LocationAuthorizationStatus,
@@ -53,6 +54,7 @@ export class NativeLocationProvider implements LocationProvider {
   public async startMonitoringRegions(
     regions: readonly GeofenceRegion[],
   ): Promise<void> {
+    assertGymRegionsAllowed(regions);
     const authorization =
       this.authorizationStatus === "authorizedAlways"
         ? this.authorizationStatus
