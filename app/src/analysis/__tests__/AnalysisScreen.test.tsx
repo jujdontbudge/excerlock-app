@@ -1,17 +1,25 @@
 import type { ConfiguredCondition } from "@excerlock/condition-model";
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
 import { processColor } from "react-native";
 
 import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 import { useConfessionStore } from "@/onboarding";
 import { useScheduleStore } from "@/schedule";
 import { gradients } from "@/ui";
+import { MockShareCardModule } from "@/shareCards";
 
 import { AnalysisScreen } from "..";
 import {
   FIXTURE_CONDITION_NAMES,
   FIXTURE_DAY_SUMMARIES,
 } from "../fixtures";
+import { useMilestoneUnlockStore } from "../milestones/unlockStore";
 
 // The screen reads the confession store, which persists through AsyncStorage.
 jest.mock("@react-native-async-storage/async-storage", () =>
@@ -77,6 +85,7 @@ describe("AnalysisScreen", () => {
       holidays: [],
       overrides: [],
     });
+    useMilestoneUnlockStore.setState({ records: {} });
   });
 
   it("sits on the brand gradient under the screen title", async () => {
@@ -301,6 +310,120 @@ describe("AnalysisScreen", () => {
     expect(
       screen.getByTestId("condition-earning-standing-desk"),
     ).toHaveTextContent(/^Standing desk0m$/);
+  });
+
+  it("renders the complete milestone shelf from the real all-record selectors", async () => {
+    await render(
+      <AnalysisScreen {...fixtureProps} confessedDailyMinutes={240} />,
+    );
+
+    expect(
+      screen.getByRole("header", { name: "Milestones" }),
+    ).toBeOnTheScreen();
+    expect(screen.getAllByTestId(/^milestone-badge-/)).toHaveLength(22);
+    expect(screen.getByRole("header", { name: "Streaks" })).toBeOnTheScreen();
+    expect(
+      screen.getByRole("header", { name: "Activities" }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole("header", { name: "Time Reclaimed" }),
+    ).toBeOnTheScreen();
+  });
+
+  it("claims pending unlocks as one quiet sequence without opening or sharing anything", async () => {
+    const haptics = { success: jest.fn().mockResolvedValue(undefined) };
+    const shareCards = new MockShareCardModule();
+    const unlockedAtMs = Date.UTC(2026, 6, 26, 18);
+    useMilestoneUnlockStore
+      .getState()
+      .discoverUnlocks(["streak-3", "activity-1"], unlockedAtMs);
+
+    const view = await render(
+      <AnalysisScreen
+        {...fixtureProps}
+        confessedDailyMinutes={240}
+        milestoneHaptics={haptics}
+        milestoneShareCardModule={shareCards}
+      />,
+    );
+
+    expect(
+      await screen.findByLabelText("New milestone 1 of 2"),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByLabelText("New milestone 2 of 2"),
+    ).toBeOnTheScreen();
+    expect(haptics.success).toHaveBeenCalledTimes(1);
+    expect(
+      useMilestoneUnlockStore.getState().records["streak-3"]?.pending,
+    ).toBe(false);
+    expect(
+      screen.queryByRole("header", { name: "Share your milestone" }),
+    ).toBeNull();
+    expect(shareCards.getCapturedCards()).toEqual([]);
+    expect(shareCards.getPresentedCards()).toEqual([]);
+
+    await view.rerender(
+      <AnalysisScreen
+        key="remounted-analysis"
+        {...fixtureProps}
+        confessedDailyMinutes={240}
+        milestoneHaptics={haptics}
+        milestoneShareCardModule={shareCards}
+      />,
+    );
+
+    expect(haptics.success).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("header", { name: "Share your milestone" }),
+    ).toBeNull();
+  });
+
+  it("waits for persisted unlocks to hydrate before claiming the current visit", async () => {
+    let hydrated = false;
+    let finishHydration: (() => void) | undefined;
+    const hasHydrated = jest
+      .spyOn(useMilestoneUnlockStore.persist, "hasHydrated")
+      .mockImplementation(() => hydrated);
+    const onFinishHydration = jest
+      .spyOn(useMilestoneUnlockStore.persist, "onFinishHydration")
+      .mockImplementation((listener) => {
+        finishHydration = listener as () => void;
+        return jest.fn();
+      });
+    const haptics = { success: jest.fn().mockResolvedValue(undefined) };
+    useMilestoneUnlockStore
+      .getState()
+      .discoverUnlocks(["streak-3"], Date.UTC(2026, 6, 26, 18));
+
+    await render(
+      <AnalysisScreen
+        {...fixtureProps}
+        confessedDailyMinutes={240}
+        milestoneHaptics={haptics}
+      />,
+    );
+
+    expect(
+      useMilestoneUnlockStore.getState().records["streak-3"]?.pending,
+    ).toBe(true);
+    expect(haptics.success).not.toHaveBeenCalled();
+    expect(finishHydration).toBeDefined();
+
+    hydrated = true;
+    await act(async () => {
+      finishHydration?.();
+    });
+
+    await waitFor(() => {
+      expect(
+        useMilestoneUnlockStore.getState().records["streak-3"]?.pending,
+      ).toBe(false);
+    });
+    expect(haptics.success).toHaveBeenCalledTimes(1);
+
+    hasHydrated.mockRestore();
+    onFinishHydration.mockRestore();
   });
 
   it("joins real ledger condition ids to their names in the condition store", async () => {

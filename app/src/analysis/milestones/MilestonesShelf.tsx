@@ -1,0 +1,107 @@
+import { useState } from "react";
+import {
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+
+import { Card, useTheme } from "@/ui";
+import type { ShareCardModule } from "@/shareCards";
+
+import {
+  isMilestoneId,
+  type MilestoneId,
+} from "./catalog";
+import { MilestoneBadgeButton } from "./MilestoneBadgeButton";
+import { MilestoneProgressDetail } from "./MilestoneProgressDetail";
+import { MilestoneSharePreview } from "./MilestoneSharePreview";
+import {
+  buildMilestoneRows,
+  type MilestoneBadge,
+  type MilestoneMetrics,
+} from "./progress";
+import { useMilestoneUnlockAnimation } from "./useMilestoneUnlockAnimation";
+import { useMilestoneShareRequest } from "./useMilestoneShareRequest";
+
+type MilestonesShelfProps = Readonly<{
+  metrics: MilestoneMetrics;
+  shareCardModule?: ShareCardModule;
+  unlockSequence?: readonly MilestoneId[];
+}>;
+
+export function MilestonesShelf({
+  metrics,
+  shareCardModule,
+  unlockSequence = [],
+}: MilestonesShelfProps) {
+  const { spacing, typography } = useTheme();
+  const rows = buildMilestoneRows(metrics);
+  const badges = rows.flatMap((row) => row.badges);
+  const unlockScales = useMilestoneUnlockAnimation(unlockSequence);
+  const { closeShare, records, requestShare, selection } =
+    useMilestoneShareRequest(badges);
+  const [selectedLockedId, setSelectedLockedId] =
+    useState<MilestoneId | null>(null);
+  const selected = badges
+    .find(({ id }) => id === selectedLockedId);
+
+  const pressBadge = (badge: MilestoneBadge) => {
+    if (!isMilestoneId(badge.id)) return;
+    if (badge.state === "unlocked") {
+      requestShare(badge.id);
+    } else {
+      setSelectedLockedId(badge.id);
+    }
+  };
+
+  return (
+    <Card testID="milestones-shelf" style={{ gap: spacing.lg }}>
+      {rows.map(({ badges, kind, title }) => (
+        <View key={kind} style={{ gap: spacing.sm }}>
+          <Text accessibilityRole="header" style={typography.cardTitle}>
+            {title}
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: spacing.sm }}
+          >
+            {badges.map((badge) => (
+              <MilestoneBadgeButton
+                key={badge.id}
+                badge={badge}
+                unlockSequence={
+                  isMilestoneId(badge.id) &&
+                  unlockSequence.includes(badge.id)
+                    ? {
+                        index: unlockSequence.indexOf(badge.id),
+                        scale: unlockScales.get(badge.id)!,
+                        total: unlockSequence.length,
+                      }
+                    : null
+                }
+                isNew={
+                  isMilestoneId(badge.id) &&
+                  records[badge.id]?.isNew === true
+                }
+                onPress={() => pressBadge(badge)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      ))}
+
+      {selected === undefined ? null : (
+        <MilestoneProgressDetail badge={selected} metrics={metrics} />
+      )}
+
+      {selection === null ? null : (
+        <MilestoneSharePreview
+          selection={selection}
+          shareCardModule={shareCardModule}
+          onClose={closeShare}
+        />
+      )}
+    </Card>
+  );
+}

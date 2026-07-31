@@ -2,6 +2,7 @@ import { dayRangeLabel, type Weekday } from "./calendar";
 import { selectConditionBreakdown } from "./conditionBreakdown";
 import {
   DEFAULT_WEEK_STARTS_ON,
+  selectActivityCount,
   selectPreviousWeek,
   selectStreak,
   selectTotals,
@@ -98,7 +99,7 @@ export function buildRecap(
         : reclaimed.reclaimedMinutes - previousReclaimed.reclaimedMinutes,
     activeDays: scheduledActiveWeek.filter((day) => day.meaningfulActivity).length,
     dayCount: scheduledActiveWeek.length,
-    activityCount: week.reduce((sum, day) => sum + day.meaningfulConditionCount, 0),
+    activityCount: selectActivityCount(week),
     topSourceName,
     earnedMinutes: totals.earnedMinutes,
     spentMinutes: totals.spentMinutes,

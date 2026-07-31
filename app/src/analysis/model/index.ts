@@ -32,6 +32,7 @@ export {
 } from "./requirementHeatMap";
 export {
   DEFAULT_WEEK_STARTS_ON,
+  selectActivityCount,
   selectBars,
   selectMonth,
   selectPeriod,

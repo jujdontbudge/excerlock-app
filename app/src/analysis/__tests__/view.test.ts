@@ -43,6 +43,19 @@ describe("buildAnalysisView", () => {
     });
   });
 
+  it("carries the three all-record milestone readings in one pure projection", () => {
+    const view = buildAnalysisView(FIXTURE_DAY_SUMMARIES, {
+      confessedDailyMinutes: 240,
+    });
+
+    expect(view.milestoneMetrics).toEqual({
+      currentStreakDays: 5,
+      longestStreakDays: 8,
+      activityCount: 21,
+      timeReclaimedMinutes: 3882,
+    });
+  });
+
   it("has no baseline until onboarding provides one", () => {
     const view = buildAnalysisView(FIXTURE_DAY_SUMMARIES, {
       nowMs: RECAP_MOMENT,

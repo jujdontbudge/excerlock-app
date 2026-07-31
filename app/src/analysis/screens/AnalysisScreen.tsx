@@ -10,6 +10,7 @@ import {
   type ScheduleRules,
 } from "@/schedule";
 import { Screen, SectionHeader, useTheme } from "@/ui";
+import type { ShareCardModule } from "@/shareCards";
 
 import {
   AnalysisEmpty,
@@ -31,6 +32,11 @@ import {
   type Weekday,
 } from "../model";
 import type { AnalysisClock } from "../clock";
+import { MilestonesShelf } from "../milestones/MilestonesShelf";
+import {
+  useMilestoneUnlockMoment,
+  type MilestoneHaptics,
+} from "../milestones/unlockMoment";
 
 export type AnalysisScreenProps = {
   /**
@@ -60,13 +66,18 @@ export type AnalysisScreenProps = {
   confessedDailyMinutes?: number | null;
   /** Deterministic schedule override for tests; production reads Schedule's store. */
   schedule?: ScheduleRules;
+  /** Optional deterministic milestone capture/share boundary for render tests. */
+  milestoneShareCardModule?: ShareCardModule;
+  /** Native success feedback boundary; there is intentionally no sound edge. */
+  milestoneHaptics?: MilestoneHaptics;
+  /** Changes once for each focused Analysis visit. */
+  milestoneUnlockVisitKey?: number | null;
 };
 
 /**
  * Analysis — the weekly recap, the Time Reclaimed hero, the selected period's
  * earned-versus-spent trend, the streak + requirement history, per-condition
- * earnings and the day ledger under it. The milestones shelf remains separate
- * badge-art and unlock-state work.
+ * earnings, milestone shelf and the day ledger under it.
  *
  * This file projects Home's real journal, joins current condition names and
  * lays out the view. All numerical reading after projection is done by
@@ -80,9 +91,16 @@ export function AnalysisScreen({
   conditionNames,
   confessedDailyMinutes,
   schedule,
+  milestoneHaptics,
+  milestoneShareCardModule,
+  milestoneUnlockVisitKey = 0,
 }: AnalysisScreenProps) {
   const { spacing, typography } = useTheme();
   const [period, setPeriod] = useState<AnalysisPeriod>("week");
+  const unlockSequence = useMilestoneUnlockMoment(
+    milestoneUnlockVisitKey,
+    milestoneHaptics,
+  );
   const confessed = useConfessionStore((state) => state.confessedDailyMinutes);
   const conditions = useHomeStore((state) => state.conditions);
   const journal = useHomeStore((state) => state.journal);
@@ -158,7 +176,18 @@ export function AnalysisScreen({
               caption={view.periodCaption}
               items={view.conditionBreakdown}
             />
+          </>
+        )}
 
+        <SectionHeader title="Milestones" />
+        <MilestonesShelf
+          metrics={view.milestoneMetrics}
+          unlockSequence={unlockSequence}
+          shareCardModule={milestoneShareCardModule}
+        />
+
+        {view.isEmpty ? null : (
+          <>
             <SectionHeader title="Day ledger" />
             <DayLedger days={view.ledger} />
           </>

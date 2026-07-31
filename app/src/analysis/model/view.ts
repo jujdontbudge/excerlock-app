@@ -1,5 +1,7 @@
 import type { DaySummary } from "@excerlock/ledger";
 
+import { selectMilestoneMetrics } from "../milestones/metrics";
+import type { MilestoneMetrics } from "../milestones/progress";
 import type { Weekday } from "./calendar";
 import {
   selectConditionBreakdown,
@@ -57,6 +59,8 @@ export type AnalysisView = {
   recap: Recap | null;
   /** Whole-week columns for the requirement history, including honest padding. */
   requirementHeatMap: RequirementHeatMap;
+  /** All-record inputs for the three milestone ladders. */
+  milestoneMetrics: MilestoneMetrics;
 };
 
 type AnalysisViewOptions = {
@@ -94,6 +98,9 @@ export function buildAnalysisView(
   }: AnalysisViewOptions = {},
 ): AnalysisView {
   const window = selectPeriod(days, period, { weekStartsOn });
+  const streak = selectStreak(days, {
+    ...(classifyDay === undefined ? {} : { classifyDay }),
+  });
 
   return {
     isEmpty: days.length === 0,
@@ -103,9 +110,7 @@ export function buildAnalysisView(
     window,
     windowTotals: selectTotals(window),
     allTimeTotals: selectTotals(days),
-    streak: selectStreak(days, {
-      ...(classifyDay === undefined ? {} : { classifyDay }),
-    }),
+    streak,
     bars: selectBars(window),
     conditionBreakdown: selectConditionBreakdown(window, conditionNames),
     ledger: [...window].reverse(),
@@ -128,6 +133,11 @@ export function buildAnalysisView(
       ...(throughDayIndex === undefined ? {} : { throughDayIndex }),
       conditionNames,
     }),
+    milestoneMetrics: selectMilestoneMetrics(
+      days,
+      confessedDailyMinutes,
+      { ...(classifyDay === undefined ? {} : { classifyDay }) },
+    ),
   };
 }
 
