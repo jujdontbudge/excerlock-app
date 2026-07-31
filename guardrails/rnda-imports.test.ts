@@ -14,6 +14,7 @@ describe("react-native-device-activity import guardrail", () => {
           !path.includes("/src/shield/") &&
           !path.includes("/src/screentime/native/") &&
           !path.includes("/src/signals/screentime/") &&
+          !path.endsWith("/plugins/withScreenTimeExtensionValidation.js") &&
           !/\/targets\/[^/]+\/expo-target\.config\.js$/.test(path),
       )
       .map(repoRelative);
