@@ -23,7 +23,15 @@ describe("location native-configuration guardrail", () => {
     });
 
     const config = readJson<AppConfig>(fromRoot("app", "app.json"));
-    const locationPlugin = config.expo?.plugins?.at(-1);
+    // Found by name, not by position. #80, #82 and #83 each landed a guardrail
+    // asserting its own plugin was `.at(-1)`, and only one entry can be last —
+    // `withScreenTimeExtensionValidation` holds that slot because a validator
+    // must run after everything it validates. What matters here is the plugin's
+    // configuration, which position does not affect.
+    const locationPlugin = config.expo?.plugins?.find(
+      (plugin): plugin is [string, Record<string, unknown>] =>
+        Array.isArray(plugin) && plugin[0] === "expo-location",
+    );
 
     expect(locationPlugin).toEqual([
       "expo-location",
