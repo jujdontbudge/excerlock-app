@@ -5,6 +5,7 @@ export const PRESENCE_CONFIRMATION_MS = 30_000;
 
 type PendingConfirmation = {
   readonly promise: Promise<void>;
+  readonly reject: (error: unknown) => void;
   readonly resolve: () => void;
   readonly timer: ReturnType<typeof setTimeout>;
   readonly transition: RegionTransition;
@@ -60,14 +61,23 @@ export class GeofenceEventProcessor {
 
   private scheduleConfirmation(transition: RegionTransition): Promise<void> {
     let resolve: () => void = () => undefined;
-    const promise = new Promise<void>((done) => {
+    let reject: (error: unknown) => void = () => undefined;
+    const promise = new Promise<void>((done, fail) => {
       resolve = done;
+      reject = fail;
     });
     const timer = setTimeout(() => {
-      void this.confirm(transition);
+      void this.confirm(transition).catch((error: unknown) => {
+        const pending = this.pending.get(transition.regionId);
+        if (pending?.transition === transition) {
+          this.pending.delete(transition.regionId);
+          pending.reject(error);
+        }
+      });
     }, PRESENCE_CONFIRMATION_MS);
     this.pending.set(transition.regionId, {
       promise,
+      reject,
       resolve,
       timer,
       transition,

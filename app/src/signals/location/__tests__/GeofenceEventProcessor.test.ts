@@ -43,6 +43,27 @@ describe("GeofenceEventProcessor", () => {
     expect(confirmed).toEqual([enter]);
     expect(log.visits).toEqual([{ regionId: "gym-a", atMs: 1_000 }]);
   });
+
+  it("rejects instead of hanging when the on-device visit log fails", async () => {
+    jest.useFakeTimers();
+    const processor = new GeofenceEventProcessor({
+      log: { append: async () => Promise.reject(new Error("storage failed")) },
+      onPresence: () => undefined,
+      onTransition: () => undefined,
+    });
+    const outcome = processor
+      .process({ type: "enter", regionId: "gym-a", atMs: 1_000 })
+      .then(
+        () => "resolved",
+        () => "rejected",
+      );
+
+    await jest.advanceTimersByTimeAsync(30_000);
+
+    await expect(
+      Promise.race([outcome, Promise.resolve("pending")]),
+    ).resolves.toBe("rejected");
+  });
 });
 
 class RecordingGymVisitLog implements GymVisitLog {
