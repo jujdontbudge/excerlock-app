@@ -481,7 +481,6 @@ Lifted from Regen's shipping `package.json`s (versions float to current at build
 | OTA | `expo-updates` |
 | UI plumbing | `react-native-reanimated` (+ worklets) · `react-native-gesture-handler` · `react-native-svg` · `expo-image` · `expo-blur` · `expo-linear-gradient` · `expo-haptics` · `expo-font` / `@expo-google-fonts/*` · `expo-splash-screen` · safe-area + screens |
 | Banner own-photo (§3.15) | `expo-image-picker` |
-| Support email | `expo-mail-composer` |
 | Rating prompt | `expo-store-review` — Rate row + milestone-triggered prompt (§3.15 Settings; trigger decided in §8) |
 | Siri | App Intents = a small **native Swift target** (no JS wrapper needed) |
 | Testing | `jest-expo` + `@testing-library/react-native` — required anyway: the §10.6 flag-guardrail test runs on this |
@@ -492,6 +491,14 @@ Lifted from Regen's shipping `package.json`s (versions float to current at build
 - **Location / geofencing:** `expo-location` + `expo-task-manager` cover gym-arrival regions and the Walk & Scroll continuous-location session (§3.5b). If region-monitoring limits bite, fall back to a small custom Swift module.
 - **Motion / cadence:** CMMotionActivity + CMPedometer cadence (§3.5b) has no good off-the-shelf wrapper — plan a **small custom Expo Module (Swift)**; `expo-sensors`' Pedometer is not enough (no live cadence/activity classification).
 - **Extensions:** the DeviceActivity monitor extension, Shield configuration/action extensions, and (if used) the report extension are **native targets** managed via config plugins — this is the main reason `expo-dev-client` is non-negotiable.
+
+**Deliberately excluded from v1 (package + reason, checked by `scripts/check-env.ts`):**
+
+- `expo-mail-composer` — Support is the fully wired in-app composer → `POST /v1/support` → Resend path in §3.15. Opening the OS mail composer would bypass the user-visible diagnostic attachment, the authenticated server receipt, retry state, and support analytics.
+- `expo-local-authentication` — the Face ID app gate is cut from v1 in §8. Clerk owns account authentication; no decided local-biometric feature remains.
+- `expo-alternate-app-icons` — alternate icons and the App Icon Settings row are cut from v1 in §8; no icon-variant asset work is owed.
+- `expo-sensors` — v1 cadence/activity classification is implemented by the custom CMMotionActivity + CMPedometer Expo Module. Expo Sensors' Pedometer cannot provide the required live cadence/activity classification and no other v1 feature owns the package.
+- `@expo-google-fonts/*` — no Google-font family is selected for v1. `expo-font` remains the concrete bundled-font dependency; add a specific family package only when a family is approved.
 
 **Server (Regen's exact set):** `fastify` + `@fastify/helmet` + `@fastify/rate-limit` · `drizzle-orm` + `postgres` (+ `drizzle-kit`) · `jose` (Clerk JWT verification) · `zod` (request validation) · `posthog-node` · `@sentry/node` · `dotenv` · dev/test: `tsx`, `vitest`, `@electric-sql/pglite` (in-memory Postgres for tests). Node ≥22.
 

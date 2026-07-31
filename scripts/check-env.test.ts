@@ -15,12 +15,15 @@ import {
   checkAdapty,
   checkAsc,
   checkClerk,
+  checkDependencyManifest,
   checkEas,
   checkPostHog,
   checkResend,
   checkSentry,
   checkServer,
   checkVendorOAuth,
+  diffDependencyManifest,
+  extractDependencyManifestPackages,
   mergeEnvSources,
   parseEnvFile,
   resolveExitCode,
@@ -42,6 +45,7 @@ function ctx(overrides: Partial<Ctx> = {}): Ctx {
       throw new Error('exec should not be called')
     },
     home: '/home/test',
+    projectRoot: '/repo',
     ...overrides,
   }
 }
@@ -78,6 +82,92 @@ describe('env loading', () => {
   it('mergeEnvSources: process.env wins over dotfile values', () => {
     const merged = mergeEnvSources({ A: 'proc', C: 'proc-only' }, { A: 'dot', B: 'dot-only' })
     expect(merged).toEqual({ A: 'proc', B: 'dot-only', C: 'proc-only' })
+  })
+})
+
+describe('PRD §10.9 dependency manifest', () => {
+  const manifest = [
+    '### 10.9 Dependency manifest (concrete packages)',
+    '',
+    '| Concern | Package |',
+    '|---|---|',
+    '| UI | `alpha-ui` · `@scope/vector-kit` |',
+    '| Command example | `npx expo install ignored-command` |',
+    '',
+    '**Deliberately excluded from v1:**',
+    '- `unused-native-package` — no product feature owns it.',
+    '',
+    '### 10.10 Provisioning',
+    '`outside-the-section`',
+  ].join('\n')
+
+  it('extracts only package tokens inside §10.9', () => {
+    expect(extractDependencyManifestPackages(manifest)).toEqual([
+      '@scope/vector-kit',
+      'alpha-ui',
+      'unused-native-package',
+    ])
+  })
+
+  it('reports an uninstalled manifest package while honoring only exact reasoned exclusions', () => {
+    expect(
+      diffDependencyManifest({
+        prd: manifest,
+        installedPackages: new Set(['alpha-ui']),
+        deliberateExclusions: {
+          'unused-native-package': 'No product feature owns it in v1.',
+        },
+      }),
+    ).toEqual({
+      excluded: [
+        {
+          packageName: 'unused-native-package',
+          reason: 'No product feature owns it in v1.',
+        },
+      ],
+      missing: ['@scope/vector-kit'],
+      staleExclusions: [],
+    })
+  })
+
+  it('does not turn exclusions into a blanket skip and rejects stale entries', () => {
+    expect(
+      diffDependencyManifest({
+        prd: manifest,
+        installedPackages: new Set(['alpha-ui', '@scope/vector-kit']),
+        deliberateExclusions: {
+          'different-package': 'Specific reason, wrong package.',
+          'unused-native-package': '',
+        },
+      }),
+    ).toEqual({
+      excluded: [],
+      missing: ['unused-native-package'],
+      staleExclusions: ['different-package'],
+    })
+  })
+
+  it('makes manifest drift a failing doctor row, not an allow-missing warning', async () => {
+    const files: Record<string, string> = {
+      '/repo/excerlock-app-prd.md': manifest,
+      '/repo/app/package.json': JSON.stringify({ dependencies: { 'alpha-ui': '1.0.0' } }),
+      '/repo/server/package.json': JSON.stringify({ dependencies: {} }),
+    }
+    const result = await checkDependencyManifest(
+      ctx({
+        readFile: async (path) => files[path] ?? Promise.reject(new Error(`missing ${path}`)),
+      }),
+      {
+        'unused-native-package': 'No product feature owns it in v1.',
+      },
+    )
+
+    expect(result).toEqual({
+      service: 'PRD §10.9 dependencies',
+      status: 'failing',
+      detail: 'missing @scope/vector-kit',
+    })
+    expect(resolveExitCode([result], true)).toBe(1)
   })
 })
 
