@@ -6,9 +6,12 @@ import {
   type GeofencingTaskData,
   type LocationTaskData,
 } from "./LocationTaskRuntime";
+import {
+  GEOFENCE_TASK_NAME,
+  WALK_LOCATION_TASK_NAME,
+} from "./locationTaskNames";
 
-export const GEOFENCE_TASK_NAME = "excerlock.gym-geofencing.v1";
-export const WALK_LOCATION_TASK_NAME = "excerlock.walk-location.v1";
+export { GEOFENCE_TASK_NAME, WALK_LOCATION_TASK_NAME };
 
 export const locationTaskRuntime = new LocationTaskRuntime(
   new AsyncStorageGymVisitLog(),
