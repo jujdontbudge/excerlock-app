@@ -28,6 +28,9 @@ type NativeTargetsManifest = {
 
 type ProjectTarget = {
   configurations: Array<{
+    bundleIdentifier: string | undefined;
+    deploymentTarget: string | undefined;
+    developmentTeam: string | undefined;
     entitlements: string[];
     id: string;
   }>;
@@ -52,7 +55,7 @@ function projectObject(project: string, id: string): string {
 function readProjectTargets(project: string): ProjectTarget[] {
   const targetHeaders = [
     ...project.matchAll(
-      /^\t\t([A-F0-9]+) \/\* ([^*]+) \*\/ = \{\n\t\t\tisa = PBXNativeTarget;/gm,
+      /^\t\t([A-Z0-9]+) \/\* ([^*]+) \*\/ = \{\n\t\t\tisa = PBXNativeTarget;/gm,
     ),
   ];
 
@@ -64,12 +67,12 @@ function readProjectTargets(project: string): ProjectTarget[] {
     }
 
     const target = projectObject(project, targetId);
-    const configurationListId = target.match(/buildConfigurationList = ([A-F0-9]+) /)?.[1];
+    const configurationListId = target.match(/buildConfigurationList = ([A-Z0-9]+) /)?.[1];
     const configurationList = configurationListId
       ? projectObject(project, configurationListId)
       : "";
     const configurationIds = [
-      ...configurationList.matchAll(/^\t\t\t\t([A-F0-9]+) \/\*/gm),
+      ...configurationList.matchAll(/^\t\t\t\t([A-Z0-9]+) \/\*/gm),
     ].flatMap((match) => {
       const configurationId = match[1];
       return configurationId ? [configurationId] : [];
@@ -79,6 +82,15 @@ function readProjectTargets(project: string): ProjectTarget[] {
       name,
       configurations: configurationIds.map((id) => ({
         id,
+        bundleIdentifier: projectObject(project, id).match(
+          /PRODUCT_BUNDLE_IDENTIFIER = "?([^";]+)"?;/,
+        )?.[1],
+        deploymentTarget: projectObject(project, id).match(
+          /IPHONEOS_DEPLOYMENT_TARGET = "?([^";]+)"?;/,
+        )?.[1],
+        developmentTeam: projectObject(project, id).match(
+          /DEVELOPMENT_TEAM = "?([^";]+)"?;/,
+        )?.[1],
         entitlements: [
           ...projectObject(project, id).matchAll(
             /CODE_SIGN_ENTITLEMENTS = "?([^";]+\.entitlements)"?;/g,
@@ -93,6 +105,44 @@ function readProjectTargets(project: string): ProjectTarget[] {
 }
 
 describe("prebuild-survival guardrail", () => {
+  it("materializes the package-owned monitor runtime during clean prebuild", () => {
+    const targetRoot = fromRoot(
+      "app",
+      "targets",
+      "DeviceActivityMonitorExtension",
+    );
+    const generatedSources = [
+      {
+        generated: "DeviceActivityMonitorExtension.generated.swift",
+        packageSource: fromRoot(
+          "node_modules",
+          "react-native-device-activity",
+          "targets",
+          "ActivityMonitorExtension",
+          "DeviceActivityMonitorExtension.swift",
+        ),
+      },
+      {
+        generated: "PackageRuntime.generated.swift",
+        packageSource: fromRoot(
+          "node_modules",
+          "react-native-device-activity",
+          "ios",
+          "Shared.swift",
+        ),
+      },
+    ];
+
+    for (const { generated, packageSource } of generatedSources) {
+      const generatedPath = `${targetRoot}/${generated}`;
+      expect(
+        existsSync(generatedPath),
+        `Clean prebuild must materialize ${generated} from the installed package`,
+      ).toBe(true);
+      expect(readUtf8(generatedPath)).toBe(readUtf8(packageSource));
+    }
+  });
+
   it("keeps every declared native target and entitlement in the generated Xcode project", () => {
     const appConfig = readJson<AppConfig>(fromRoot("app", "app.json"));
     expect(appConfig.expo?.ios?.bundleIdentifier).toBe("com.johansardar.excerlock");
@@ -116,6 +166,9 @@ describe("prebuild-survival guardrail", () => {
         Array.isArray(plugin) && plugin[0] === "react-native-device-activity",
     );
     const rndaGeneratesTargets = rndaPlugin?.[1]?.copyToTargetFolder !== false;
+    expect(appConfig.expo?.plugins?.at(-1)).toBe(
+      "./plugins/withScreenTimeExtensionValidation",
+    );
     const appIntentsHasSource = walkFiles(fromRoot("app", "targets", "app-intents")).some(
       (path) => !path.endsWith("README.md") && !path.endsWith(".gitkeep"),
     );
@@ -179,6 +232,41 @@ describe("prebuild-survival guardrail", () => {
     expect(
       missingEntitlements,
       "A required native target build configuration lost its CODE_SIGN_ENTITLEMENTS setting or generated file",
+    ).toEqual([]);
+
+    const expectedExtensionSettings = [
+      {
+        bundleIdentifier: "com.johansardar.excerlock.monitor",
+        name: /^DeviceActivityMonitorExtension$/,
+      },
+      {
+        bundleIdentifier: "com.johansardar.excerlock.shield",
+        name: /^ShieldConfiguration$/,
+      },
+      {
+        bundleIdentifier: "com.johansardar.excerlock.shieldaction",
+        name: /^ShieldAction$/,
+      },
+    ];
+    const invalidExtensionConfigurations = expectedExtensionSettings.flatMap(
+      ({ bundleIdentifier, name }) => {
+        const target = projectTargets.find(({ name: targetName }) =>
+          name.test(targetName),
+        );
+        return (target?.configurations ?? [])
+          .filter(
+            (configuration) =>
+              configuration.bundleIdentifier !== bundleIdentifier ||
+              configuration.deploymentTarget !== "17.4" ||
+              configuration.developmentTeam !== "AX3C2B78YD",
+          )
+          .map(({ id }) => ({ configuration: id, target: target?.name }));
+      },
+    );
+
+    expect(
+      invalidExtensionConfigurations,
+      "A Screen Time extension lost its canonical bundle id, iOS 17.4 floor, or team",
     ).toEqual([]);
   });
 });

@@ -9,21 +9,21 @@
     },
     {
       "id": "device-activity-monitor",
-      "status": "pending-phase-3",
+      "status": "required",
       "namePattern": "Device.?Activity.?Monitor",
       "entitlementsPattern": "Device.?Activity.?Monitor.*\\.entitlements$",
       "entitlementsRequired": true
     },
     {
       "id": "shield-action",
-      "status": "pending-phase-3",
+      "status": "required",
       "namePattern": "Shield.?Action",
       "entitlementsPattern": "Shield.?Action.*\\.entitlements$",
       "entitlementsRequired": true
     },
     {
       "id": "shield-configuration",
-      "status": "pending-phase-3",
+      "status": "required",
       "namePattern": "Shield.?Configuration",
       "entitlementsPattern": "Shield.?Configuration.*\\.entitlements$",
       "entitlementsRequired": true

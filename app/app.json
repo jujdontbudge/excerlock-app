@@ -43,7 +43,8 @@
           "NSHealthShareUsageDescription": "ExcerLock reads your activity to detect completed fitness conditions on this device.",
           "NSHealthUpdateUsageDescription": false
         }
-      ]
+      ],
+      "./plugins/withScreenTimeExtensionValidation"
     ],
     "experiments": {
       "typedRoutes": true,
