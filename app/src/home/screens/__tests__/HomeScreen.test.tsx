@@ -126,6 +126,22 @@ describe("HomeScreen", () => {
     expect(screen.getByText("Active · apps unlocked")).toBeOnTheScreen();
   });
 
+  it("starts Walk & Scroll only from its condition card", async () => {
+    const start = jest.fn().mockResolvedValue(true);
+    seed(walking);
+    await render(
+      <HomeScreen
+        feed={stubFeed()}
+        now={now}
+        walkingSessionController={{ start }}
+      />,
+    );
+
+    await press("Start Walk Session");
+
+    expect(start).toHaveBeenCalledWith("c-state");
+  });
+
   it("renders one card per condition in its kind's variant", async () => {
     seed(stepGoal, walking, stepsExchange);
     await render(

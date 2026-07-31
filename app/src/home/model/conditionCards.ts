@@ -57,6 +57,7 @@ export interface StateCardModel extends CardBase {
   readonly active: boolean;
   readonly statusLabel: string;
   readonly graceLabel: string;
+  readonly startsWalkingSession: boolean;
 }
 
 export interface RateCardModel extends CardBase {
@@ -156,6 +157,7 @@ function stateCard(
     // state only holds the shields open, so the card never claims a paused drain.
     statusLabel: active ? "Active · apps unlocked" : "Waiting to start",
     graceLabel: `${formatGrace(exitGraceMs)} grace`,
+    startsWalkingSession: entry.signal === "walking",
   };
 }
 

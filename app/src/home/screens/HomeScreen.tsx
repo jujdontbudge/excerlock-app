@@ -21,6 +21,10 @@ import {
   getGymPresenceController,
   type GymPresenceController,
 } from "../signals/gymPresenceController";
+import {
+  getWalkingSessionController,
+  type WalkingSessionController,
+} from "../signals/walkingSessionController";
 import { selectActiveConditions, selectPickerContext } from "../store/homeState";
 import { useHomeStore } from "../store/homeStore";
 import {
@@ -40,6 +44,7 @@ export interface HomeScreenProps {
   /** System photo picker boundary, injected by the own-photo flow test. */
   bannerPhotoPicker?: BannerPhotoPicker;
   gymPresenceController?: Pick<GymPresenceController, "checkIn">;
+  walkingSessionController?: Pick<WalkingSessionController, "start">;
   reviewCoordinator?: Pick<ReviewCoordinatorContract, "initialize" | "onUnlockMoment">;
 }
 
@@ -53,6 +58,7 @@ export function HomeScreen({
   now,
   bannerPhotoPicker = expoBannerPhotoPicker,
   gymPresenceController = getGymPresenceController(),
+  walkingSessionController = getWalkingSessionController(),
   reviewCoordinator = defaultReviewCoordinator,
 }: HomeScreenProps = {}) {
   const appRuntime =
@@ -142,7 +148,12 @@ export function HomeScreen({
           <View style={{ gap: spacing.md }}>
             <SectionHeader title="Today's conditions" />
             {cards.map((card) => (
-              <ConditionCard key={card.id} model={card} onComplete={(id) => void completeCondition(id)} />
+              <ConditionCard
+                key={card.id}
+                model={card}
+                onComplete={(id) => void completeCondition(id)}
+                onStartSession={(id) => void walkingSessionController.start(id)}
+              />
             ))}
           </View>
 
