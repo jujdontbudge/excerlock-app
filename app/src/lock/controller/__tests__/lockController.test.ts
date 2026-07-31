@@ -3,6 +3,26 @@ jest.mock(
   () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
+const mockWalkingListeners = new Set<() => void>();
+const mockWalkingSession = {
+  snapshot: {
+    active: false,
+    conditionId: null,
+    walking: false,
+  } as { active: boolean; conditionId: string | null; walking: boolean },
+  getSnapshot() {
+    return this.snapshot;
+  },
+  subscribe(listener: () => void) {
+    mockWalkingListeners.add(listener);
+    return () => mockWalkingListeners.delete(listener);
+  },
+};
+
+jest.mock("@/home/signals", () => ({
+  getWalkingSessionController: () => mockWalkingSession,
+}));
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   appendEntries,
@@ -52,6 +72,7 @@ function controllerOver(
   options: {
     scheduleStore?: LockScheduleStore;
     walking?: () => boolean;
+    subscribeWalking?: (listener: () => void) => () => void;
     now?: () => number;
   } = {},
 ): LockController {
@@ -86,6 +107,12 @@ describe("LockController", () => {
     // through `controller/ledgerSource.ts` and keeps none of its own.
     useHomeStore.setState(DEFAULT_HOME_STATE);
     useHomeStore.getState().setBaseAllowanceMinutes(0);
+    mockWalkingSession.snapshot = {
+      active: false,
+      conditionId: null,
+      walking: false,
+    };
+    mockWalkingListeners.clear();
   });
 
   it("reports the boundary's authorization state once started", async () => {
@@ -522,6 +549,61 @@ describe("LockController", () => {
       cause: "walking",
     });
     expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    controller.stop();
+  });
+
+  it("reconciles Full Lock when a verified walking session changes live", async () => {
+    let walking = false;
+    let publishWalking = () => {};
+    const screenTime = new FakeScreenTime();
+    const controller = controllerOver(screenTime, emptyJournal(), {
+      walking: () => walking,
+      subscribeWalking: (listener) => {
+        publishWalking = listener;
+        return () => {
+          publishWalking = () => {};
+        };
+      },
+    });
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
+
+    walking = true;
+    publishWalking();
+    await controller.whenReconciled();
+
+    expect(controller.getSnapshot().precedence).toMatchObject({
+      shields: "down",
+      cause: "walking",
+    });
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    controller.stop();
+  });
+
+  it("uses the production walking session by default", async () => {
+    const screenTime = new FakeScreenTime();
+    const controller = controllerOver(screenTime);
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+
+    expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
+
+    mockWalkingSession.snapshot = {
+      active: true,
+      conditionId: "walking-condition",
+      walking: true,
+    };
+    mockWalkingListeners.forEach((listener) => listener());
+    await controller.whenReconciled();
+
+    expect(controller.getSnapshot().precedence).toMatchObject({
+      shields: "down",
+      cause: "walking",
+    });
     controller.stop();
   });
 });

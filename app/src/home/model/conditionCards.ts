@@ -50,6 +50,7 @@ export interface EventCardModel extends CardBase {
   readonly progress: number;
   readonly rewardLabel: string;
   readonly completed: boolean;
+  readonly actionLabel: "Check in" | "Complete";
 }
 
 export interface StateCardModel extends CardBase {
@@ -57,6 +58,7 @@ export interface StateCardModel extends CardBase {
   readonly active: boolean;
   readonly statusLabel: string;
   readonly graceLabel: string;
+  readonly startsWalkingSession: boolean;
 }
 
 export interface RateCardModel extends CardBase {
@@ -123,10 +125,18 @@ function eventCard(
   firedToday: boolean,
 ): EventCardModel {
   const rewardLabel = rewardLabelFor(settings.reward);
+  const actionLabel = entry.signal === "gymArrival" ? "Check in" : "Complete";
   const unit = thresholdUnit(entry);
 
   if (settings.threshold === undefined || unit === undefined) {
-    return { ...base, kind: "event", progress: 0, rewardLabel, completed: firedToday };
+    return {
+      ...base,
+      kind: "event",
+      progress: 0,
+      rewardLabel,
+      completed: firedToday,
+      actionLabel,
+    };
   }
 
   const total = reading.totals[entry.signal] ?? 0;
@@ -138,6 +148,7 @@ function eventCard(
     progress: Math.min(1, total / settings.threshold),
     rewardLabel,
     completed: firedToday || total >= settings.threshold,
+    actionLabel,
   };
 }
 
@@ -156,6 +167,7 @@ function stateCard(
     // state only holds the shields open, so the card never claims a paused drain.
     statusLabel: active ? "Active · apps unlocked" : "Waiting to start",
     graceLabel: `${formatGrace(exitGraceMs)} grace`,
+    startsWalkingSession: entry.signal === "walking",
   };
 }
 

@@ -7,8 +7,9 @@ root. Screens never branch on provider availability.
 This module ships the interfaces, fixture implementations, shared `TimelinePlayer`, canonical JSON
 fixture libraries, and JS-only `WalkVerifier`. The health, motion and location domains now have
 Phase-3 native adapters — `NativeHealthProvider`, `NativeMotionProvider` and the Expo Location
-geofencing adapter. Each composition root selects its native implementation only in an iOS
-dev-client runtime and keeps fixtures as the test default.
+geofencing adapter. HealthKit remains dev-client-selected; Motion and Location fail toward native in
+every non-Expo-Go iOS app runtime, including Standalone releases. Tests, Expo Go, and non-iOS keep
+fixtures as their default, and E2E installs its scenario composition before app runtime hosts mount.
 
 Every fixture is a named, versioned manifest with sorted `{atMs, event, payload}` rows. History at or
 before zero is applied synchronously. Future rows use manual clock advancement or accelerated auto

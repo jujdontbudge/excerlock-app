@@ -25,7 +25,7 @@ describe("LocationProvider composition seam", () => {
     ).resolves.toBe(false);
   });
 
-  it("selects native location only for an iOS development client", () => {
+  it("selects native location for every non-Expo-Go iOS app runtime", () => {
     expect(shouldUseNativeLocationProvider(developmentClient)).toBe(true);
     expect(
       shouldUseNativeLocationProvider({
@@ -44,7 +44,13 @@ describe("LocationProvider composition seam", () => {
         ...developmentClient,
         executionEnvironment: "standalone",
       }),
-    ).toBe(false);
+    ).toBe(true);
+    expect(
+      shouldUseNativeLocationProvider({
+        ...developmentClient,
+        executionEnvironment: "future-runtime",
+      }),
+    ).toBe(true);
     expect(
       shouldUseNativeLocationProvider({
         ...developmentClient,

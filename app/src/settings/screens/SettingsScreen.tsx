@@ -2,11 +2,15 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { AccountSettingsCard } from "@/account";
 import {
+  getGymPresenceController,
+  type GymPresenceController,
+} from "@/home/signals";
+import {
   NotificationSettingsCard,
   type NotificationModule,
 } from "@/notifications";
 import { SupportSettingsCard, type SupportModule } from "@/support";
-import { Card, Screen, SectionHeader, useTheme } from "@/ui";
+import { Card, PillButton, Screen, SectionHeader, useTheme } from "@/ui";
 import {
   reviewCoordinator as defaultReviewCoordinator,
   type ReviewCoordinatorContract,
@@ -20,6 +24,10 @@ export type SettingsScreenProps = Readonly<{
   notificationModule?: NotificationModule;
   openNotificationSettings?: () => void;
   supportModule?: SupportModule;
+  gymPresenceController?: Pick<
+    GymPresenceController,
+    "disableAutoDetect" | "enableAutoDetect"
+  >;
   reviewCoordinator?: Pick<ReviewCoordinatorContract, "manualRate">;
 }>;
 
@@ -28,6 +36,7 @@ export function SettingsScreen({
   notificationModule,
   openNotificationSettings,
   supportModule,
+  gymPresenceController = getGymPresenceController(),
   reviewCoordinator = defaultReviewCoordinator,
 }: SettingsScreenProps = {}) {
   const { spacing, typography } = useTheme();
@@ -36,6 +45,9 @@ export function SettingsScreen({
   );
   const setGracePeriod = useSettingsStore(
     (state) => state.setWalkAndScrollGracePeriod,
+  );
+  const gymAutoDetectEnabled = useSettingsStore(
+    (state) => state.gymAutoDetectEnabled,
   );
 
   return (
@@ -70,6 +82,37 @@ export function SettingsScreen({
               value="15 minutes"
               description="Fixed to Apple's minimum monitoring interval."
             />
+          </Card>
+        </View>
+
+        <View style={{ gap: spacing.md }}>
+          <SectionHeader
+            title="Gym check-in"
+            subtitle="Manual check-in is complete on its own. Auto-detect is an optional hands-free upgrade."
+          />
+          <Card style={{ gap: spacing.lg }}>
+            <SettingsRow
+              title="Auto-detect"
+              value={
+                gymAutoDetectEnabled
+                  ? "On · Always location"
+                  : "Off · manual check-in works without it"
+              }
+              description="Enabling asks for Always location so saved gyms can be detected in the background."
+            />
+            {gymAutoDetectEnabled ? (
+              <PillButton
+                label="Disable gym auto-detect"
+                onPress={() => void gymPresenceController.disableAutoDetect()}
+                variant="secondary"
+              />
+            ) : (
+              <PillButton
+                label="Enable gym auto-detect"
+                onPress={() => void gymPresenceController.enableAutoDetect()}
+                variant="secondary"
+              />
+            )}
           </Card>
         </View>
 

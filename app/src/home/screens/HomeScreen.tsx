@@ -17,6 +17,14 @@ import { getHomeAppRuntime } from "../signals/appRuntime";
 import type { HomeSignalFeed } from "../signals/homeSignalFeed";
 import { useHealthEventClaims } from "../signals/useHealthEventClaims";
 import { useHomeSignals } from "../signals/useHomeSignals";
+import {
+  getGymPresenceController,
+  type GymPresenceController,
+} from "../signals/gymPresenceController";
+import {
+  getWalkingSessionController,
+  type WalkingSessionController,
+} from "../signals/walkingSessionController";
 import { selectActiveConditions, selectPickerContext } from "../store/homeState";
 import { useHomeStore } from "../store/homeStore";
 import {
@@ -35,6 +43,8 @@ export interface HomeScreenProps {
   now?: () => number;
   /** System photo picker boundary, injected by the own-photo flow test. */
   bannerPhotoPicker?: BannerPhotoPicker;
+  gymPresenceController?: Pick<GymPresenceController, "checkIn">;
+  walkingSessionController?: Pick<WalkingSessionController, "start">;
   reviewCoordinator?: Pick<ReviewCoordinatorContract, "initialize" | "onUnlockMoment">;
 }
 
@@ -47,6 +57,8 @@ export function HomeScreen({
   feed,
   now,
   bannerPhotoPicker = expoBannerPhotoPicker,
+  gymPresenceController = getGymPresenceController(),
+  walkingSessionController = getWalkingSessionController(),
   reviewCoordinator = defaultReviewCoordinator,
 }: HomeScreenProps = {}) {
   const appRuntime =
@@ -91,6 +103,15 @@ export function HomeScreen({
     placeNames,
     conditionBanners,
   });
+  const completeCondition = async (conditionId: string) => {
+    const condition = conditions.find(({ id }) => id === conditionId);
+    if (condition?.catalogId !== "gym-arrival") {
+      recordEventPayout(conditionId, currentTime());
+      return;
+    }
+
+    await gymPresenceController.checkIn(conditionId);
+  };
 
   const hero = deriveLockHero({ journal, config: ledgerConfig, atMs, liveStates: liveStates(cards) });
   const firstObservedAtMs = useRef(atMs);
@@ -127,7 +148,12 @@ export function HomeScreen({
           <View style={{ gap: spacing.md }}>
             <SectionHeader title="Today's conditions" />
             {cards.map((card) => (
-              <ConditionCard key={card.id} model={card} onComplete={(id) => recordEventPayout(id, atMs)} />
+              <ConditionCard
+                key={card.id}
+                model={card}
+                onComplete={(id) => void completeCondition(id)}
+                onStartSession={(id) => void walkingSessionController.start(id)}
+              />
             ))}
           </View>
 

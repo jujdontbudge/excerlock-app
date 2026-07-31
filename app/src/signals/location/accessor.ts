@@ -26,7 +26,6 @@ export function shouldUseNativeLocationProvider(
   return (
     runtime.nodeEnv !== "test" &&
     runtime.platform === "ios" &&
-    runtime.executionEnvironment === "storeClient" &&
     runtime.expoGoConfig === null
   );
 }

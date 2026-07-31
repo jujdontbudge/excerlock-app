@@ -9,8 +9,16 @@ import {
 import {
   createHomeSignalFeed,
   installHomeAppRuntime,
+  useHomeStore,
 } from "@/home";
+import {
+  GymPresenceController,
+  installGymPresenceController,
+  installWalkingSessionController,
+  WalkingSessionController,
+} from "@/home/signals";
 import { installLockAppRuntime } from "@/lock";
+import { useSettingsStore } from "@/settings";
 import { installScreenTimeAppRuntime } from "@/screentime";
 import {
   installFixtureSubscriptionModule,
@@ -23,16 +31,20 @@ import type { LoadedScenario } from "./scenarioDeepLink";
 
 export type E2ERuntimeRootProps = Readonly<{
   children: ReactNode;
+  onScenarioLoaded?: (loaded: LoadedScenario) => void;
 }>;
 
 /** Build-gated owner of URL selection and all five fixture providers. */
 export function E2ERuntimeRoot({
   children,
+  onScenarioLoaded,
 }: E2ERuntimeRootProps) {
   const url = useScenarioUrl();
   const router = useRouter();
   const uninstallHomeRuntime = useRef<(() => void) | null>(null);
   const uninstallLockRuntime = useRef<(() => void) | null>(null);
+  const uninstallWalkingSession = useRef<(() => void) | null>(null);
+  const uninstallGymPresence = useRef<(() => void) | null>(null);
   const uninstallScreenTimeRuntime = useRef<(() => void) | null>(null);
   const uninstallSubscriptionModule =
     useRef<(() => void) | null>(null);
@@ -41,7 +53,7 @@ export function E2ERuntimeRoot({
   const handleLoaded = useCallback(
     (loaded: LoadedScenario) => {
       uninstallHomeRuntime.current?.();
-      const { health, motion } = loaded.composition.providers;
+      const { health, location, motion } = loaded.composition.providers;
       uninstallHomeRuntime.current = installHomeAppRuntime({
         feed: createHomeSignalFeed({ health, motion, walking: null }),
         now: () => loaded.composition.clock.nowMs(),
@@ -54,6 +66,35 @@ export function E2ERuntimeRoot({
       uninstallScreenTimeRuntime.current = installScreenTimeAppRuntime({
         clock: loaded.composition.clock,
       });
+      uninstallWalkingSession.current?.();
+      uninstallWalkingSession.current = installWalkingSessionController(
+        new WalkingSessionController({
+          createMotion: () => motion,
+          getLocation: () => location,
+          getState: () => useHomeStore.getState(),
+          now: () => motion.currentTimeMs,
+          wallClockNow: () => loaded.composition.clock.nowMs(),
+        }),
+      );
+      uninstallGymPresence.current?.();
+      uninstallGymPresence.current = installGymPresenceController(
+        new GymPresenceController({
+          getState: () => ({
+            ...useHomeStore.getState(),
+            autoDetectEnabled:
+              useSettingsStore.getState().gymAutoDetectEnabled,
+          }),
+          getLocation: () => location,
+          now: () => loaded.composition.clock.nowMs(),
+          recordEventPayout: (conditionId, atMs) => {
+            useHomeStore.getState().recordEventPayout(conditionId, atMs);
+          },
+          setAutoDetectEnabled: (enabled) => {
+            useSettingsStore.getState().setGymAutoDetectEnabled(enabled);
+          },
+          toLedgerTime: () => loaded.composition.clock.nowMs(),
+        }),
+      );
       uninstallSubscriptionModule.current?.();
       uninstallSubscriptionModule.current =
         installFixtureSubscriptionModule({
@@ -64,15 +105,18 @@ export function E2ERuntimeRoot({
       uninstallSupportModule.current = installFixtureSupportModule({
         clock: loaded.composition.clock,
       });
+      onScenarioLoaded?.(loaded);
       router.replace("/");
     },
-    [router],
+    [onScenarioLoaded, router],
   );
 
   useEffect(
     () => () => {
       uninstallHomeRuntime.current?.();
       uninstallLockRuntime.current?.();
+      uninstallWalkingSession.current?.();
+      uninstallGymPresence.current?.();
       uninstallScreenTimeRuntime.current?.();
       uninstallSubscriptionModule.current?.();
       uninstallSupportModule.current?.();

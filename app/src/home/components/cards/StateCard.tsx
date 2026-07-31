@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { useTheme } from "@/ui";
+import { PillButton, useTheme } from "@/ui";
 
 import type { StateCardModel } from "../../model/conditionCards";
 import { CardShell } from "./CardShell";
@@ -9,7 +9,13 @@ import { CardShell } from "./CardShell";
  * The live variant: a state condition holds the shields open while it is true.
  * It never banks, so it shows status rather than a meter.
  */
-export function StateCard({ model }: { model: StateCardModel }) {
+export function StateCard({
+  model,
+  onStartSession,
+}: {
+  model: StateCardModel;
+  onStartSession?: (conditionId: string) => void;
+}) {
   const { colors, spacing, typography } = useTheme();
 
   return (
@@ -25,6 +31,13 @@ export function StateCard({ model }: { model: StateCardModel }) {
         <Text style={[typography.body, { color: colors.textPrimary }]}>{model.statusLabel}</Text>
       </View>
       <Text style={typography.caption}>{model.graceLabel}</Text>
+      {model.startsWalkingSession && !model.active ? (
+        <PillButton
+          label="Start Walk Session"
+          onPress={() => onStartSession?.(model.id)}
+          variant="white"
+        />
+      ) : null}
     </CardShell>
   );
 }

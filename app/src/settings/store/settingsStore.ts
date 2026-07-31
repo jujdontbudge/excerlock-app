@@ -8,10 +8,12 @@ export type GracePeriodSeconds = (typeof GRACE_PERIOD_OPTIONS_SECONDS)[number];
 
 export type SettingsValues = Readonly<{
   walkAndScrollGracePeriodSeconds: GracePeriodSeconds | null;
+  gymAutoDetectEnabled: boolean;
 }>;
 
 export const DEFAULT_SETTINGS: SettingsValues = Object.freeze({
   walkAndScrollGracePeriodSeconds: null,
+  gymAutoDetectEnabled: false,
 });
 
 function isGracePeriodSeconds(value: unknown): value is GracePeriodSeconds {
@@ -34,6 +36,7 @@ function readPersistedGracePeriod(persistedState: unknown): GracePeriodSeconds |
 
 type SettingsStore = SettingsValues & {
   setWalkAndScrollGracePeriod: (seconds: GracePeriodSeconds) => void;
+  setGymAutoDetectEnabled: (enabled: boolean) => void;
 };
 
 export const SETTINGS_STORAGE_KEY = "excerlock.settings.v1";
@@ -45,15 +48,25 @@ export const useSettingsStore = create<SettingsStore>()(
       setWalkAndScrollGracePeriod: (seconds) => {
         set({ walkAndScrollGracePeriodSeconds: seconds });
       },
+      setGymAutoDetectEnabled: (enabled) => {
+        set({ gymAutoDetectEnabled: enabled });
+      },
     }),
     {
       name: SETTINGS_STORAGE_KEY,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: ({ walkAndScrollGracePeriodSeconds }) => ({
+      partialize: ({ gymAutoDetectEnabled, walkAndScrollGracePeriodSeconds }) => ({
+        gymAutoDetectEnabled,
         walkAndScrollGracePeriodSeconds,
       }),
       merge: (persistedState, currentState) => ({
         ...currentState,
+        gymAutoDetectEnabled:
+          typeof persistedState === "object" &&
+          persistedState !== null &&
+          typeof Reflect.get(persistedState, "gymAutoDetectEnabled") === "boolean"
+            ? Reflect.get(persistedState, "gymAutoDetectEnabled") as boolean
+            : DEFAULT_SETTINGS.gymAutoDetectEnabled,
         walkAndScrollGracePeriodSeconds: readPersistedGracePeriod(persistedState),
       }),
     },

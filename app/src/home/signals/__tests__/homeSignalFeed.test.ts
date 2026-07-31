@@ -41,6 +41,21 @@ function createTestFeed(
 }
 
 describe("createHomeSignalFeed", () => {
+  it("starts no motion delivery when no walking condition needs it", async () => {
+    const motionProvider = motion();
+    const startMotion = jest.spyOn(motionProvider, "start");
+    const feed = createHomeSignalFeed({
+      health: health(),
+      motion: motionProvider,
+      walking: null,
+    });
+
+    await feed.start();
+
+    expect(startMotion).not.toHaveBeenCalled();
+    feed.dispose();
+  });
+
   it("claims Health authorization before starting live delivery", async () => {
     const provider = health();
     const requestAuth = jest.spyOn(provider, "requestAuth");

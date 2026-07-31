@@ -36,6 +36,20 @@ const walking: ConfiguredCondition = {
   settings: { kind: "state", reward: { type: "sustainedUnlock" }, exitGraceMs: 120_000 },
 };
 
+const gymArrival: ConfiguredCondition = {
+  id: "c-gym",
+  catalogId: "gym-arrival",
+  source: "location",
+  placeId: "gym-one",
+  settings: {
+    kind: "event",
+    reward: { type: "fixedMinutes", minutes: 30 },
+    repeatable: false,
+    perDayCap: null,
+    cooldownMs: 0,
+  },
+};
+
 const stepsExchange: ConfiguredCondition = {
   id: "c-rate",
   catalogId: "steps-rate",
@@ -124,6 +138,39 @@ describe("HomeScreen", () => {
     expect(screen.getByTestId("lock-hero-unlocked")).toBeOnTheScreen();
     expect(screen.getByText("While walking is holding your apps open")).toBeOnTheScreen();
     expect(screen.getByText("Active · apps unlocked")).toBeOnTheScreen();
+  });
+
+  it("starts Walk & Scroll only from its condition card", async () => {
+    const start = jest.fn().mockResolvedValue(true);
+    seed(walking);
+    await render(
+      <HomeScreen
+        feed={stubFeed()}
+        now={now}
+        walkingSessionController={{ start }}
+      />,
+    );
+
+    await press("Start Walk Session");
+
+    expect(start).toHaveBeenCalledWith("c-state");
+  });
+
+  it("routes the gym card's Check in action through location confirmation", async () => {
+    const checkIn = jest.fn().mockResolvedValue(true);
+    seed(gymArrival);
+    await render(
+      <HomeScreen
+        feed={stubFeed()}
+        now={now}
+        gymPresenceController={{ checkIn }}
+      />,
+    );
+
+    await press("Check in");
+
+    expect(checkIn).toHaveBeenCalledWith("c-gym");
+    expect(screen.queryByRole("button", { name: "Complete" })).toBeNull();
   });
 
   it("renders one card per condition in its kind's variant", async () => {

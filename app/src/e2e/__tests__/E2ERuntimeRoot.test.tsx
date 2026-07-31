@@ -11,16 +11,20 @@ const mockReplace = jest.fn();
 // empty one, which is exactly the arrangement that broke the flows.
 jest.mock("expo-linking", () => ({
   useLinkingURL: () => null,
-  useURL: () => "excerlock://e2e/scenario/baseline-fresh-install",
+  useURL: () =>
+    "excerlock://e2e/scenario/baseline-fresh-install?overrides=%7B%22timeline%22%3A%5B%7B%22atMs%22%3A0%2C%22event%22%3A%22location.update%22%2C%22payload%22%3A%7B%22lat%22%3A40.741%2C%22lon%22%3A-73.989%2C%22accuracy%22%3A8%7D%7D%5D%7D",
 }));
 jest.mock("expo-router", () => ({
   useRouter: () => ({ replace: mockReplace }),
 }));
 
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { act, render, screen, waitFor } from "@testing-library/react-native";
 import { Text } from "react-native";
 
-import { getHomeAppRuntime } from "@/home";
+import { getHomeAppRuntime, useHomeStore } from "@/home";
+import { getGymPresenceController } from "@/home/signals/gymPresenceController";
+import { SignalRuntimeHosts } from "@/home/signals/SignalRuntimeHosts";
+import { getWalkingSessionController } from "@/home/signals/walkingSessionController";
 import { getLockAppRuntime } from "@/lock";
 import { getScreenTimeAppRuntime } from "@/screentime";
 import { getSubscriptionModule } from "@/subscription";
@@ -30,8 +34,15 @@ import { E2ERuntimeRoot } from "../E2ERuntimeRoot";
 
 describe("E2E runtime composition root", () => {
   it("installs the selected fixtures and pinned clock before mounting the app", async () => {
+    let advanceMotion: ((atMs: number) => void) | undefined;
     await render(
-      <E2ERuntimeRoot>
+      <E2ERuntimeRoot
+        onScenarioLoaded={(loaded) => {
+          advanceMotion = (atMs) =>
+            loaded.composition.providers.motion.advanceTo(atMs);
+        }}
+      >
+        <SignalRuntimeHosts />
         <Text>Normal app</Text>
       </E2ERuntimeRoot>,
     );
@@ -61,6 +72,56 @@ describe("E2E runtime composition root", () => {
         workoutDuration: 0,
       },
     });
+    await act(async () => {
+      useHomeStore.getState().addCondition({
+        id: "e2e-walking",
+        catalogId: "walking-state",
+        source: "motion",
+        settings: {
+          kind: "state",
+          reward: { type: "sustainedUnlock" },
+          exitGraceMs: 30_000,
+        },
+      });
+    });
+    const walkingSession = getWalkingSessionController();
+    await expect(walkingSession.start("e2e-walking")).resolves.toBe(true);
+    await act(async () => advanceMotion?.(4_000));
+    expect(walkingSession.getSnapshot().walking).toBe(true);
+    await walkingSession.stop();
+    await act(async () => {
+      useHomeStore.getState().addCondition({
+        id: "e2e-gym",
+        catalogId: "gym-arrival",
+        source: "location",
+        placeId: "e2e-gym-place",
+        settings: {
+          kind: "event",
+          reward: { type: "fixedMinutes", minutes: 30 },
+          repeatable: false,
+          perDayCap: null,
+          cooldownMs: 0,
+        },
+      });
+      useHomeStore.setState({
+        savedPlaces: [
+          {
+            id: "e2e-gym-place",
+            name: "E2E gym",
+            geofence: {
+              latitude: 40.741,
+              longitude: -73.989,
+              radiusMeters: 100,
+            },
+          },
+        ],
+      });
+    });
+    jest.useFakeTimers();
+    const checkIn = getGymPresenceController().checkIn("e2e-gym");
+    await jest.advanceTimersByTimeAsync(30_000);
+    await expect(checkIn).resolves.toBe(true);
+    jest.useRealTimers();
     expect(
       (await getSubscriptionModule().getSnapshot()).entitlement,
     ).toMatchObject({

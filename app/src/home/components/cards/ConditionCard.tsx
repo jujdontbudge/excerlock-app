@@ -7,15 +7,17 @@ import { StateCard } from "./StateCard";
 export function ConditionCard({
   model,
   onComplete,
+  onStartSession,
 }: {
   model: ConditionCardModel;
   onComplete: (conditionId: string) => void;
+  onStartSession?: (conditionId: string) => void;
 }) {
   switch (model.kind) {
     case "event":
       return <EventCard model={model} onComplete={onComplete} />;
     case "state":
-      return <StateCard model={model} />;
+      return <StateCard model={model} onStartSession={onStartSession} />;
     case "rate":
       return <RateCard model={model} />;
   }
