@@ -8,6 +8,7 @@ import {
 import { useReviewPromptStore } from "./reviewStore";
 
 export interface ReviewCoordinatorContract {
+  initialize: (atMs: number) => Promise<void>;
   onUnlockMoment: (atMs: number) => Promise<boolean>;
   onStreakMilestone: (days: number, atMs: number) => Promise<boolean>;
   noteShieldShown: (atMs: number) => Promise<void>;
@@ -21,6 +22,10 @@ export class ReviewCoordinator implements ReviewCoordinatorContract {
     private readonly native: NativeReviewModule = nativeReviewModule,
     private readonly analyticsKit: AnalyticsKit = analytics,
   ) {}
+
+  public async initialize(atMs: number): Promise<void> {
+    await this.prepare(atMs);
+  }
 
   public async onUnlockMoment(atMs: number): Promise<boolean> {
     await this.prepare(atMs);

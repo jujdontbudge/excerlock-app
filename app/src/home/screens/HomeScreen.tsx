@@ -35,7 +35,7 @@ export interface HomeScreenProps {
   now?: () => number;
   /** System photo picker boundary, injected by the own-photo flow test. */
   bannerPhotoPicker?: BannerPhotoPicker;
-  reviewCoordinator?: Pick<ReviewCoordinatorContract, "onUnlockMoment">;
+  reviewCoordinator?: Pick<ReviewCoordinatorContract, "initialize" | "onUnlockMoment">;
 }
 
 /**
@@ -93,6 +93,10 @@ export function HomeScreen({
   });
 
   const hero = deriveLockHero({ journal, config: ledgerConfig, atMs, liveStates: liveStates(cards) });
+  const firstObservedAtMs = useRef(atMs);
+  useEffect(() => {
+    void reviewCoordinator.initialize(firstObservedAtMs.current);
+  }, [reviewCoordinator]);
   const previousHeroStatus = useRef(hero.status);
   useEffect(() => {
     const previous = previousHeroStatus.current;

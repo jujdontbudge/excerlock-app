@@ -70,6 +70,22 @@ describe("HomeScreen", () => {
     expect(screen.queryByTestId("lock-hero-locked")).toBeNull();
   });
 
+  it("initializes review install age on the first Home render", async () => {
+    const initialize = jest.fn().mockResolvedValue(undefined);
+    await render(
+      <HomeScreen
+        feed={stubFeed()}
+        now={now}
+        reviewCoordinator={{
+          initialize,
+          onUnlockMoment: async () => false,
+        }}
+      />,
+    );
+
+    expect(initialize).toHaveBeenCalledWith(NOON);
+  });
+
   it("opens the builder from the empty state", async () => {
     await render(<HomeScreen feed={stubFeed()} now={now} />);
 
@@ -141,7 +157,7 @@ describe("HomeScreen", () => {
       <HomeScreen
         feed={stubFeed()}
         now={now}
-        reviewCoordinator={{ onUnlockMoment }}
+        reviewCoordinator={{ initialize: async () => {}, onUnlockMoment }}
       />,
     );
 
