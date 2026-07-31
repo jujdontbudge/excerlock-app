@@ -23,6 +23,10 @@ jest.mock("@/home/signals", () => ({
   getWalkingSessionController: () => mockWalkingSession,
 }));
 
+jest.mock("@/shield/shieldContentRuntime", () => ({
+  getShieldContentCoordinator: () => ({ publish: async () => undefined }),
+}));
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   appendEntries,
@@ -204,7 +208,9 @@ describe("LockController", () => {
     await controller.pickApps();
 
     expect(controller.getSnapshot().precedence.cause).toBe("fullLock");
-    expect(publish).toHaveBeenCalledWith("fullLock");
+    expect(publish).toHaveBeenCalledWith("fullLock", {
+      lockWindowEndsAtMs: undefined,
+    });
     controller.stop();
   });
 

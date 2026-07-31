@@ -32,15 +32,13 @@ import { desiredLockState } from "./lockPolicy";
 import { syncScheduleRegistrations } from "./scheduleRegistration";
 import { reviewCoordinator } from "@/review";
 import { getWalkingSessionController } from "@/home/signals";
+import { getShieldContentCoordinator } from "@/shield/shieldContentRuntime";
+import type { ShieldOfferContext } from "@/shield/ShieldContentCoordinator";
 import type { ShieldCause } from "@/shield/ShieldContentPublisher";
 
 interface ShieldContentSink {
-  publish(cause: ShieldCause): Promise<void>;
+  publish(cause: ShieldCause, context?: ShieldOfferContext): Promise<void>;
 }
-
-const NOOP_SHIELD_CONTENT: ShieldContentSink = {
-  publish: async () => undefined,
-};
 
 /** Everything the lock surfaces render, in one immutable value. */
 export type LockSnapshot = Readonly<{
@@ -126,7 +124,7 @@ export class LockController {
         ? () => () => {}
         : (listener) => walkingSession.subscribe(listener));
     this.onShieldShown = options.onShieldShown ?? ((atMs) => reviewCoordinator.noteShieldShown(atMs));
-    this.shieldContent = options.shieldContent ?? NOOP_SHIELD_CONTENT;
+    this.shieldContent = options.shieldContent ?? getShieldContentCoordinator();
   }
 
   public getSnapshot(): LockSnapshot {
@@ -273,7 +271,9 @@ export class LockController {
     const { decision, desired } = this.desiredState();
     this.patch({ precedence: decision });
     if (decision.shields === "up") {
-      await this.shieldContent.publish(shieldCause(decision.cause));
+      await this.shieldContent.publish(shieldCause(decision.cause), {
+        lockWindowEndsAtMs: this.activeLockWindowEnd(),
+      });
     }
     await this.screenTime.reconcile(selection, desired);
   }
@@ -299,6 +299,13 @@ export class LockController {
       atMs: this.now(),
     });
     await this.refresh();
+  }
+
+  private activeLockWindowEnd(): number | undefined {
+    const activeId = this.snapshot.shield?.activeLockWindowId;
+    return activeId === null || activeId === undefined
+      ? undefined
+      : this.snapshot.lockWindows.find(({ id }) => id === activeId)?.endsAtMs;
   }
 
   /** Serialize async reconciliation; every pass reads the latest inputs. */

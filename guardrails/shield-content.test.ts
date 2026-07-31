@@ -96,4 +96,21 @@ describe("Screen Time shield content", () => {
       /localizedDisplayName|Application\(token:|WebDomain\(token:|application\.token|webDomain\.domain/,
     );
   });
+
+  it("has a production app-group writer for every cause and live content input", () => {
+    const controller = readUtf8(
+      fromRoot("app", "src", "lock", "controller", "lockController.ts"),
+    );
+    const runtime = readUtf8(
+      fromRoot("app", "src", "shield", "shieldContentRuntime.ts"),
+    );
+
+    expect(controller).toContain("getShieldContentCoordinator()");
+    expect(controller).not.toContain("NOOP_SHIELD_CONTENT");
+    expect(runtime).toContain("nativeShieldContentPublisher");
+    expect(runtime).toContain("selectActiveConditions");
+    expect(runtime).toContain("getHomeAppRuntime().feed.read()");
+    expect(runtime).toContain("getNotificationModule().getAuthorizationStatus()");
+    expect(runtime).toContain("shieldCopySource");
+  });
 });
