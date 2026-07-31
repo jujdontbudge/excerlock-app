@@ -41,7 +41,12 @@ describe("GymPresenceController manual check-in", () => {
           },
         ],
       }),
-      getLocation: () => ({ checkIn }),
+      getLocation: () => ({
+        checkIn,
+        getAuthorizationStatus: () => "authorizedWhenInUse",
+        startMonitoringRegions: async () => {},
+        stopMonitoringRegions: async () => {},
+      }),
       now: () => 123_000,
       recordEventPayout,
     });

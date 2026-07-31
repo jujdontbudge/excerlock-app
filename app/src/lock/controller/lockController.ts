@@ -31,6 +31,7 @@ import {
 import { desiredLockState } from "./lockPolicy";
 import { syncScheduleRegistrations } from "./scheduleRegistration";
 import { reviewCoordinator } from "@/review";
+import { getWalkingSessionController } from "@/home/signals/walkingSessionController";
 
 /** Everything the lock surfaces render, in one immutable value. */
 export type LockSnapshot = Readonly<{
@@ -96,12 +97,22 @@ export class LockController {
   private snapshot: LockSnapshot = INITIAL;
 
   public constructor(options: LockControllerOptions = {}) {
+    const walkingSession =
+      options.walking === undefined && options.subscribeWalking === undefined
+        ? getWalkingSessionController()
+        : undefined;
     this.screenTime = options.screenTime ?? getScreenTimeModule();
     this.journal = options.journal ?? homeJournal;
     this.now = options.now ?? lockAppNow;
     this.scheduleStore = options.scheduleStore ?? getLockScheduleStore();
-    this.walking = options.walking ?? (() => false);
-    this.subscribeWalking = options.subscribeWalking ?? (() => () => {});
+    this.walking =
+      options.walking ??
+      (() => walkingSession?.getSnapshot().walking ?? false);
+    this.subscribeWalking =
+      options.subscribeWalking ??
+      (walkingSession === undefined
+        ? () => () => {}
+        : (listener) => walkingSession.subscribe(listener));
     this.onShieldShown = options.onShieldShown ?? ((atMs) => reviewCoordinator.noteShieldShown(atMs));
   }
 

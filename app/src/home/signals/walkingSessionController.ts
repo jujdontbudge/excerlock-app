@@ -1,14 +1,16 @@
 import type { ConfiguredCondition } from "@excerlock/condition-model";
 
-import type {
-  LocationProvider,
-  MotionProvider,
-} from "@/signals";
-import { WalkVerifier } from "@/signals";
 import {
+  createExcerlockMotionModuleClient,
+  getLocationProvider,
+  NativeMotionProvider,
+  WalkVerifier,
   WALK_CADENCE_FRESHNESS_MS,
+  type LocationProvider,
+  type MotionProvider,
   type WalkVerdict,
 } from "@/signals";
+import { useHomeStore } from "../store/homeStore";
 
 type WalkingConditionState = Readonly<{
   conditions: readonly ConfiguredCondition[];
@@ -179,4 +181,18 @@ export class WalkingSessionController {
     this.snapshot = Object.freeze(snapshot);
     this.listeners.forEach((listener) => listener());
   }
+}
+
+let sharedController: WalkingSessionController | undefined;
+
+/** App-lifetime session; both sensor adapters remain lazy until start(). */
+export function getWalkingSessionController(): WalkingSessionController {
+  sharedController ??= new WalkingSessionController({
+    createMotion: () =>
+      new NativeMotionProvider(createExcerlockMotionModuleClient()),
+    getLocation: () => getLocationProvider(),
+    getState: () => useHomeStore.getState(),
+    now: Date.now,
+  });
+  return sharedController;
 }
