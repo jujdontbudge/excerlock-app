@@ -42,6 +42,7 @@ describe("excerlock-motion CNG wiring", () => {
     // validator, so it has to run after everything it validates. This plugin
     // only configures the Motion permission, where position is irrelevant, so
     // membership plus ordering is the honest assertion.
+    const appConfig = readJson<AppConfig>(fromRoot("app", "app.json"));
     const plugins = appConfig.expo?.plugins ?? [];
     const motionIndex = plugins.indexOf("./modules/excerlock-motion/app.plugin.js");
     const validatorIndex = plugins.indexOf(
