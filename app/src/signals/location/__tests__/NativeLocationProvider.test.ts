@@ -87,6 +87,30 @@ describe("NativeLocationProvider permission timing", () => {
 
     provider.dispose();
   });
+
+  it("requests Always only when auto-detect is explicitly started", async () => {
+    const client = new ContractLocationClient("notDetermined");
+    const provider = new NativeLocationProvider(client);
+    const gym: GeofenceRegion = {
+      id: "gym-a",
+      latitude: 40.741,
+      longitude: -73.989,
+      radiusMeters: 100,
+    };
+
+    expect(client.foregroundAuthorizationRequests).toBe(0);
+    expect(client.backgroundAuthorizationRequests).toBe(0);
+    expect(client.startedRegions).toEqual([]);
+
+    await provider.startMonitoringRegions([gym]);
+
+    expect(client.foregroundAuthorizationRequests).toBe(1);
+    expect(client.backgroundAuthorizationRequests).toBe(1);
+    expect(provider.getAuthorizationStatus()).toBe("authorizedAlways");
+    expect(client.startedRegions).toEqual([[gym]]);
+
+    provider.dispose();
+  });
 });
 
 class ContractLocationClient implements NativeLocationClient {

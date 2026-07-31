@@ -56,9 +56,20 @@ export class NativeLocationProvider implements LocationProvider {
     regions: readonly GeofenceRegion[],
   ): Promise<void> {
     assertGymRegionsAllowed(regions);
-    const authorization =
+    const foregroundAuthorization =
+      this.authorizationStatus === "authorizedWhenInUse" ||
       this.authorizationStatus === "authorizedAlways"
         ? this.authorizationStatus
+        : await this.requestAuthorization();
+    if (
+      foregroundAuthorization !== "authorizedWhenInUse" &&
+      foregroundAuthorization !== "authorizedAlways"
+    ) {
+      throw new Error("Location authorization is required for auto-detect");
+    }
+    const authorization =
+      foregroundAuthorization === "authorizedAlways"
+        ? foregroundAuthorization
         : await this.client.requestBackgroundAuthorization();
     this.updateAuthorization(authorization);
     if (authorization !== "authorizedAlways") {
