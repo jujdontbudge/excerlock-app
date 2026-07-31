@@ -1,6 +1,10 @@
 import { GeofenceEventProcessor } from "./GeofenceEventProcessor";
 import type { GymVisitLog } from "./GymVisitLog";
-import type { LocationUnsubscribe, RegionTransition } from "./LocationProvider";
+import type {
+  LocationSample,
+  LocationUnsubscribe,
+  RegionTransition,
+} from "./LocationProvider";
 
 export type GeofencingTaskData = {
   readonly eventType?: number;
@@ -9,13 +13,27 @@ export type GeofencingTaskData = {
   };
 };
 
+export type LocationTaskData = {
+  readonly locations?: readonly {
+    readonly coords: {
+      readonly accuracy: number | null;
+      readonly latitude: number;
+      readonly longitude: number;
+    };
+    readonly timestamp: number;
+  }[];
+};
+
 /** Shared state between Task Manager callbacks and the foreground adapter. */
 export class LocationTaskRuntime {
+  private readonly locationListeners =
+    new Set<(sample: LocationSample) => void>();
   private readonly presenceListeners =
     new Set<(transition: RegionTransition) => void>();
   private readonly regionListeners =
     new Set<(transition: RegionTransition) => void>();
   private readonly processor: GeofenceEventProcessor;
+  private lastLocation: LocationSample | null = null;
 
   public constructor(log: GymVisitLog) {
     this.processor = new GeofenceEventProcessor({
@@ -41,6 +59,26 @@ export class LocationTaskRuntime {
     });
   }
 
+  public handleLocationTask(data: LocationTaskData): void {
+    data.locations?.forEach((location) => {
+      if (location.coords.accuracy === null) {
+        return;
+      }
+      const sample: LocationSample = {
+        lat: location.coords.latitude,
+        lon: location.coords.longitude,
+        accuracy: location.coords.accuracy,
+        atMs: location.timestamp,
+      };
+      this.lastLocation = sample;
+      this.locationListeners.forEach((listener) => listener(sample));
+    });
+  }
+
+  public getLastLocation(): LocationSample | null {
+    return this.lastLocation;
+  }
+
   public getCachedRegionPresence(regionId: string): boolean | null {
     return this.processor.isInside(regionId);
   }
@@ -57,5 +95,12 @@ export class LocationTaskRuntime {
   ): LocationUnsubscribe {
     this.regionListeners.add(callback);
     return () => this.regionListeners.delete(callback);
+  }
+
+  public onLocation(
+    callback: (sample: LocationSample) => void,
+  ): LocationUnsubscribe {
+    this.locationListeners.add(callback);
+    return () => this.locationListeners.delete(callback);
   }
 }

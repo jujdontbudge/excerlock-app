@@ -1,4 +1,5 @@
 import type { GymVisit, GymVisitLog } from "../GymVisitLog";
+import type { LocationSample } from "..";
 import { LocationTaskRuntime } from "../LocationTaskRuntime";
 
 describe("LocationTaskRuntime", () => {
@@ -40,6 +41,26 @@ describe("LocationTaskRuntime", () => {
     expect(runtime.getCachedRegionPresence("gym-a")).toBe(false);
     expect(confirmed).toEqual([]);
     expect(log.visits).toEqual([]);
+  });
+
+  it("delivers continuous task locations through the provider sample shape", () => {
+    const runtime = new LocationTaskRuntime(new RecordingGymVisitLog());
+    const samples: LocationSample[] = [];
+    runtime.onLocation((sample) => samples.push(sample));
+
+    runtime.handleLocationTask({
+      locations: [
+        {
+          coords: { latitude: 40.741, longitude: -73.989, accuracy: 8 },
+          timestamp: 2_000,
+        },
+      ],
+    });
+
+    expect(samples).toEqual([
+      { lat: 40.741, lon: -73.989, accuracy: 8, atMs: 2_000 },
+    ]);
+    expect(runtime.getLastLocation()).toEqual(samples[0]);
   });
 });
 
