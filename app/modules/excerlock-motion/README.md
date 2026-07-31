@@ -13,6 +13,11 @@ idempotent `start`/`stop`, historical `queryActivity`/`querySteps`, and the `onA
 contract. Expo autolinking discovers the pod through `expo-module.config.json`; the config plugin
 adds `NSMotionUsageDescription`, so `expo prebuild --clean` regenerates all required native wiring.
 
+The production signal feed constructs `WalkVerifier` only when the user has selected a stop-grace
+period, sends both native event streams through it, and publishes cadence-freshness and grace-period
+deadlines with an on-device watchdog. A walking classification by itself never becomes an active
+walking signal.
+
 The module does not decide whether a person is walking. `WalkVerifier` requires both a walking
 classification and sustained cadence at or above
 `WALK_CADENCE_THRESHOLD_STEPS_PER_MINUTE`. That app-fixed constant lives only in

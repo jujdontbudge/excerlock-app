@@ -9,7 +9,9 @@ walk qualification stays in `WalkVerifier`.
 
 `NativeMotionProvider` adapts the local `excerlock-motion` Expo Module to the same contract. The
 composition root selects it only in an iOS dev-client build; tests remain fixture-backed and loading
-SignalKit does not eagerly require the native JSI module.
+SignalKit does not eagerly require the native JSI module. The production feed routes activity and
+cadence through `WalkVerifier`; its watchdog publishes cadence-freshness and stop-grace expiry even
+when no later sensor event arrives.
 
 `WalkVerifier` requires walking classification plus fresh cadence at or above the app-fixed 65
 steps/minute starting threshold. The value is provisional pending physical-device spike #27 and is
