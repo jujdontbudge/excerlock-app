@@ -58,4 +58,61 @@ describe("vendor repository configuration", () => {
       ),
     ).resolves.toBeNull();
   });
+
+  it("upserts, updates, and deletes a connection on its user-vendor key", async () => {
+    await postgres.db.insert(users).values({ id: "user_123" });
+    const repository = createDrizzleVendorRepository(postgres.db);
+
+    await repository.upsertConnection({
+      id: "connection-original",
+      userId: "user_123",
+      vendor: "whoop",
+      externalUserId: "external-original",
+      accessTokenCiphertext: "access-original",
+      refreshTokenCiphertext: "refresh-original",
+      accessTokenExpiresAt: new Date("2026-07-29T22:00:00.000Z"),
+      scopes: "read:workout",
+    });
+    await repository.upsertConnection({
+      id: "connection-retry",
+      userId: "user_123",
+      vendor: "whoop",
+      externalUserId: "external-updated",
+      accessTokenCiphertext: "access-updated",
+      refreshTokenCiphertext: "refresh-updated",
+      accessTokenExpiresAt: new Date("2026-07-29T23:00:00.000Z"),
+      scopes: "read:recovery read:workout",
+    });
+
+    await expect(
+      repository.findConnection("user_123", "whoop"),
+    ).resolves.toEqual({
+      id: "connection-original",
+      userId: "user_123",
+      vendor: "whoop",
+      externalUserId: "external-updated",
+      accessTokenCiphertext: "access-updated",
+      refreshTokenCiphertext: "refresh-updated",
+      accessTokenExpiresAt: new Date("2026-07-29T23:00:00.000Z"),
+      scopes: "read:recovery read:workout",
+    });
+
+    await repository.updateConnectionTokens("connection-original", {
+      accessTokenCiphertext: "access-refreshed",
+      refreshTokenCiphertext: "refresh-refreshed",
+      accessTokenExpiresAt: new Date("2026-07-30T00:00:00.000Z"),
+    });
+    await expect(
+      repository.findConnection("user_123", "whoop"),
+    ).resolves.toMatchObject({
+      accessTokenCiphertext: "access-refreshed",
+      refreshTokenCiphertext: "refresh-refreshed",
+      accessTokenExpiresAt: new Date("2026-07-30T00:00:00.000Z"),
+    });
+
+    await repository.deleteConnection("connection-original");
+    await expect(
+      repository.findConnection("user_123", "whoop"),
+    ).resolves.toBeNull();
+  });
 });
