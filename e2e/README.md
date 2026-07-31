@@ -11,6 +11,12 @@ Read `HARNESS.md` for the test-fix loop and `scenario-schema.md` for the deep
 link contract. Unknown scenario names still fail loudly on
 `screen-e2e-error`; there is no fallback scenario.
 
+The simulator suite is only half of the release strategy. Use
+`DEVICE-SMOKE.md` for the signed development-client install and physical-device
+checklist, and record each run in `DEVICE-SMOKE-RESULTS.md`. The current result
+is explicitly host-only: no connected iPhone was available, so no physical
+item is marked passed.
+
 ## Coverage
 
 Every flow declares exactly one bundled scenario in its `env` header. Most
@@ -172,4 +178,5 @@ must boot and pin the simulator as above, run `run-suite.sh`, and retain
 - An EAS-produced artifact was not exercised; the verified artifact came from
   the local Xcode Release recipe above.
 - Physical-device FamilyControls, motion, location, and background behavior
-  remain outside this simulator suite, per `HARNESS.md`.
+  remain outside this simulator suite. Run `DEVICE-SMOKE.md`; the honest
+  current status is in `DEVICE-SMOKE-RESULTS.md`.
