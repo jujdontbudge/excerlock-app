@@ -66,6 +66,18 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9a358379-d939-4c56-bcea-de3ac5699be2"
+      }
+    },
+    "owner": "johansardar",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/9a358379-d939-4c56-bcea-de3ac5699be2"
     }
   }
 }

@@ -7,7 +7,15 @@
       },
       "ios": {
         "simulator": true
-      }
+      },
+      "channel": "e2e"
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview"
+    },
+    "production": {
+      "channel": "production"
     }
   }
 }
