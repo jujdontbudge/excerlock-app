@@ -105,6 +105,67 @@ function readProjectTargets(project: string): ProjectTarget[] {
 }
 
 describe("prebuild-survival guardrail", () => {
+  it("keeps HealthKit background startup compatible with the Expo Swift app target", () => {
+    const appConfig = readJson<AppConfig>(fromRoot("app", "app.json"));
+    const plugins = appConfig.expo?.plugins ?? [];
+    const healthKitPluginIndex = plugins.findIndex(
+      (plugin) =>
+        Array.isArray(plugin) &&
+        plugin[0] === "@kingstinct/react-native-healthkit",
+    );
+    const healthKitPlugin = plugins[healthKitPluginIndex];
+    const bootstrapPluginIndex = plugins.findIndex(
+      (plugin) => plugin === "./plugins/withHealthKitBackgroundBootstrap",
+    );
+
+    expect(healthKitPluginIndex).toBeGreaterThan(-1);
+    expect(Array.isArray(healthKitPlugin) ? healthKitPlugin[1]?.background : undefined).toBe(
+      false,
+    );
+    expect(bootstrapPluginIndex).toBeGreaterThan(healthKitPluginIndex);
+    expect(bootstrapPluginIndex).toBeLessThan(plugins.length - 1);
+
+    const appDelegateFiles = walkFiles(
+      fromRoot("app", "ios"),
+      new Set(["AppDelegate.swift"]),
+    );
+    expect(appDelegateFiles).toHaveLength(1);
+    const appDelegate = readUtf8(appDelegateFiles[0]!);
+    expect(appDelegate).not.toContain("import ReactNativeHealthkit");
+    expect(appDelegate).toContain(
+      '@_silgen_name("ExcerLockSetupHealthKitBackgroundDelivery")',
+    );
+    expect(appDelegate).toContain("setupHealthKitBackgroundDelivery()");
+
+    const templatePath = fromRoot(
+      "app",
+      "plugins",
+      "healthkit",
+      "HealthKitBackgroundBootstrap.mm",
+    );
+    const generatedBridgePath = fromRoot(
+      "app",
+      "ios",
+      "ExcerLock",
+      "HealthKitBackgroundBootstrap.mm",
+    );
+    expect(existsSync(templatePath)).toBe(true);
+    expect(existsSync(generatedBridgePath)).toBe(true);
+    expect(readUtf8(generatedBridgePath)).toBe(readUtf8(templatePath));
+
+    const projectFiles = walkFiles(
+      fromRoot("app", "ios", "ExcerLock.xcodeproj"),
+      new Set(["project.pbxproj"]),
+    );
+    expect(projectFiles).toHaveLength(1);
+    const project = readUtf8(projectFiles[0]!);
+    expect(project).toMatch(/HealthKitBackgroundBootstrap\.mm in Sources/);
+    expect(project).toContain("$(PODS_ROOT)/Headers/Private/NitroModules");
+    expect(project).toContain(
+      "$(PODS_CONFIGURATION_BUILD_DIR)/ReactNativeHealthkit/Swift Compatibility Header",
+    );
+  });
+
   it("materializes the package-owned monitor runtime during clean prebuild", () => {
     const targetRoot = fromRoot(
       "app",

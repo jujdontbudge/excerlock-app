@@ -39,11 +39,12 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "background": true,
+          "background": false,
           "NSHealthShareUsageDescription": "ExcerLock reads your activity to detect completed fitness conditions on this device.",
           "NSHealthUpdateUsageDescription": false
         }
       ],
+      "./plugins/withHealthKitBackgroundBootstrap",
       [
         "expo-location",
         {

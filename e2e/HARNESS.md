@@ -275,25 +275,13 @@ are the flaky path (known `--udid` hangs against freshly-booted sims).
 ## 7. Physical-device smoke checklist
 
 Simulator cannot run FamilyControls, real background wakes, real source
-attribution, or geofence/motion truth. This suite is **manual-with-a-script**:
-the agent prints the checklist, Johan (or a future rig) walks it on hardware.
-Cadence: DS-1..DS-3 at the end of Phase 3 (with the §5 spike triad), the full
-list per milestone thereafter and before submission. Results append to
-`docs/research/device-smoke-results.md` — every item records **device + iOS
-version, pass/fail, and measured latency where marked ⏱**.
-
-| ID | Item | Procedure | Pass criteria |
-|---|---|---|---|
-| DS-1 | **Shields** | Picker → selection → `blockSelection` → open a target app. Then force-quit ExcerLock and retry; reboot phone and retry. Walk every shield state (M7) | Shield shows each time; survives force-quit and reboot; per-state copy/config correct |
-| DS-2 | **Shield CTA (G1)** | Tap the shield's action button on current iOS: `openUrl` hack vs notification tap-through | Lands in ExcerLock; record taps-to-app count for both variants |
-| DS-3 | **Background earn (spike 1)** ⏱ | Workout on Watch (or seeded HK write), phone locked throughout | Shield lifts without opening the app; record wake-latency distribution. Force-quit variant: expect **no** wake until manual open — confirm |
-| DS-4 | **Mid-day re-arm (spike 2)** | Earn mid-interval on iOS ≥ 17.4 **and** one pre-17.4 device; arm 200+ events to probe the ladder ceiling; restart app mid-day | `includesPastActivity` continuity holds on 17.4+; ceiling recorded; no double-fires across restarts |
-| DS-5 | **Walk & Scroll (spike 3)** | Backdated-interval hack across target iOS versions; let the interval lapse; force-quit mid-session; observe drain during session | Re-shield at interval end with acceptable jitter (record it); force-quit caps at one increment; reduced-drain ticks observed |
-| DS-6 | **Drain ladder (G4)** ⏱ | 30-min real usage session against the 1-min tick ladder | Tick count matches real usage; record tick lag; balance display interpolation never jumps backward |
-| DS-7 | **Geofence** | Enter/exit the gym region with app backgrounded; again force-quit; cross the region after a device restart | Fires in all three states; cold-start relaunch on region cross confirmed |
-| DS-8 | **Motion** | Real walk with phone in pocket, then in hand; treadmill session | Live walk verification passes in pocket and hand; treadmill verdict recorded (expected behavior per WalkVerifier spec) |
-| DS-9 | **HealthKit foreground staleness (G4/#330)** ⏱ | Finish a Watch workout → immediately open the app | Earn is claimable on first open (record staleness delay if not) |
-| DS-10 | **Day boundary cold** | Leave the app unopened for 48 h across two boundaries | Boundary monitor fired both days: allowance reset + rollover correct on next open |
+attribution, or geofence/motion truth. The canonical, executable milestone gate
+is now [`DEVICE-SMOKE.md`](DEVICE-SMOKE.md); its append-only run record is
+[`DEVICE-SMOKE-RESULTS.md`](DEVICE-SMOKE-RESULTS.md). It supersedes the generic
+DS-1..DS-10 draft that was previously in this section and incorporates the
+exact unproven items reported by tickets #79–#83. Run the full checklist at
+each native milestone and before submission. `BLOCKED` and `NOT RUN` never
+count as passes.
 
 ---
 
