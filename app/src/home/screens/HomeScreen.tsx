@@ -15,6 +15,7 @@ import { toConditionCards } from "../model/conditionCards";
 import { deriveLockHero, type LiveState } from "../model/lockState";
 import { getHomeAppRuntime } from "../signals/appRuntime";
 import type { HomeSignalFeed } from "../signals/homeSignalFeed";
+import { useHealthEventClaims } from "../signals/useHealthEventClaims";
 import { useHomeSignals } from "../signals/useHomeSignals";
 import { selectActiveConditions, selectPickerContext } from "../store/homeState";
 import { useHomeStore } from "../store/homeStore";
@@ -53,6 +54,7 @@ export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
 
   const reading = useHomeSignals(signalFeed);
   const atMs = currentTime();
+  useHealthEventClaims(reading, atMs);
   const placeNames = useMemo(
     () => Object.fromEntries(savedPlaces.map(({ id, name }) => [id, name])),
     [savedPlaces],
@@ -64,12 +66,14 @@ export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
 
   // A condition switched off in Manage keeps its slot in the picker context but
   // leaves the dashboard entirely — an off condition has nothing to show today.
+  const firedToday = firedConditionIds(atMs);
   const cards = toConditionCards({
     conditions: selectActiveConditions({ conditions, disabledConditionIds }),
     reading,
-    firedConditionIds: firedConditionIds(atMs),
+    firedConditionIds: firedToday,
     placeNames,
   });
+
   const hero = deriveLockHero({ journal, config: ledgerConfig, atMs, liveStates: liveStates(cards) });
 
   return (

@@ -5,7 +5,7 @@ import type {
 
 export interface HealthProviderHarness {
   readonly provider: HealthProvider;
-  advanceTo(atMs: number): void;
+  advanceTo(atMs: number): void | Promise<void>;
   dispose(): void;
 }
 
@@ -16,6 +16,7 @@ export function runHealthProviderContract(
   describe(`${implementation} HealthProvider contract`, () => {
     it("replays anchored samples, excludes manual entries from totals, and emits future wakes", async () => {
       const harness = createHarness();
+      await harness.provider.requestAuth();
       const initial = await harness.provider.getNewSamples("steps", null);
       const changes: HealthChange[] = [];
       harness.provider.onChange("steps", (change) => changes.push(change));
@@ -24,7 +25,7 @@ export function runHealthProviderContract(
       expect(initial.samples[1].wasUserEntered).toBe(true);
       expect(await harness.provider.getTodayTotal("steps")).toBe(100);
 
-      harness.advanceTo(2_000);
+      await harness.advanceTo(2_000);
 
       expect(changes.map((change) => change.reason)).toEqual([
         "backgroundWake",

@@ -24,12 +24,18 @@ describe("HealthKit AppDelegate guardrail", () => {
       new Set(["AppDelegate.swift", "AppDelegate.mm", "AppDelegate.m"]),
     );
     const configuredDelegates = appDelegates
-      .filter((path) => readUtf8(path).includes("setupBackgroundObservers()"))
+      .filter((path) => {
+        const contents = readUtf8(path);
+        return (
+          contents.includes("import ReactNativeHealthkit") &&
+          contents.includes("setupBackgroundObservers()")
+        );
+      })
       .map(repoRelative);
 
     expect(
       healthKitInstalled && configuredDelegates.length === 0,
-      "HealthKit is declared, but no generated AppDelegate calls setupBackgroundObservers(); run prebuild and verify the pinned plugin patch",
+      "HealthKit is declared, but no generated AppDelegate imports ReactNativeHealthkit and calls setupBackgroundObservers(); run prebuild and verify the pinned plugin patch",
     ).toBe(false);
   });
 });

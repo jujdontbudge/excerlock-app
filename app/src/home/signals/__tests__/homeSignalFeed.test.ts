@@ -27,6 +27,36 @@ function motion(): FixtureMotionProvider {
 }
 
 describe("createHomeSignalFeed", () => {
+  it("claims Health authorization before starting live delivery", async () => {
+    const provider = health();
+    const requestAuth = jest.spyOn(provider, "requestAuth");
+    const feed = createHomeSignalFeed({ health: provider, motion: motion() });
+
+    await feed.start();
+
+    expect(requestAuth).toHaveBeenCalledTimes(1);
+    feed.dispose();
+  });
+
+  it("seeds native anchors while claiming existing Health data", async () => {
+    const provider = health();
+    const getNewSamples = jest.spyOn(provider, "getNewSamples");
+    const feed = createHomeSignalFeed({ health: provider, motion: motion() });
+
+    await feed.start();
+
+    expect(getNewSamples.mock.calls).toEqual([
+      ["steps", null],
+      ["activeEnergy", null],
+      ["appleExerciseTime", null],
+      ["walkingRunningDistance", null],
+      ["cyclingDistance", null],
+      ["swimmingDistance", null],
+      ["workout", null],
+    ]);
+    feed.dispose();
+  });
+
   it("reads today's health totals under the condition model's signal names", async () => {
     const feed = createHomeSignalFeed({ health: health(), motion: motion() });
 

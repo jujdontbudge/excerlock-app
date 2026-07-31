@@ -35,6 +35,14 @@
           "appGroup": "group.com.johansardar.excerlock",
           "copyToTargetFolder": false
         }
+      ],
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "background": true,
+          "NSHealthShareUsageDescription": "ExcerLock reads your activity to detect completed fitness conditions on this device.",
+          "NSHealthUpdateUsageDescription": false
+        }
       ]
     ],
     "experiments": {

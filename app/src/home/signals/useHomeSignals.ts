@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AppState } from "react-native";
 
 import { EMPTY_READING, type SignalReading } from "../model/reading";
 import type { HomeSignalFeed } from "./homeSignalFeed";
@@ -20,11 +21,32 @@ export function useHomeSignals(feed: HomeSignalFeed): SignalReading {
     };
 
     const unsubscribe = feed.subscribe(apply);
-    void feed.read().then(apply);
-    void feed.start();
+    let started = false;
+    let claimQueue = Promise.resolve();
+    const claim = () => {
+      claimQueue = claimQueue
+        .then(async () => {
+          if (!started) {
+            await feed.start();
+            started = true;
+          }
+          apply(await feed.read());
+        })
+        .catch(() => undefined);
+    };
+    claim();
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      (state) => {
+        if (state === "active") {
+          claim();
+        }
+      },
+    );
 
     return () => {
       mounted = false;
+      appStateSubscription.remove();
       unsubscribe();
     };
   }, [feed]);

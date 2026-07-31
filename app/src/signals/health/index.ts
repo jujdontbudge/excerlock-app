@@ -1,4 +1,6 @@
 export { FixtureHealthProvider } from "./FixtureHealthProvider";
+export { createKingstinctHealthKitClient } from "./KingstinctHealthKitClient";
+export { NativeHealthProvider } from "./NativeHealthProvider";
 export {
   HEALTH_FIXTURE_EVENTS,
   HEALTH_SIGNALS,

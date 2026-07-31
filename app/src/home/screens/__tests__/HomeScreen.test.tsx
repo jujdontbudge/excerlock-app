@@ -136,6 +136,24 @@ describe("HomeScreen", () => {
     expect(screen.getByText("Earned today")).toBeOnTheScreen();
   });
 
+  it("automatically banks a Health event detected during claim-on-open", async () => {
+    seed(stepGoal);
+    useHomeStore.getState().setBaseAllowanceMinutes(0);
+
+    await render(
+      <HomeScreen
+        feed={stubFeed({ totals: { steps: 10_000 }, activeSignals: [] })}
+        now={now}
+      />,
+    );
+
+    expect(
+      await screen.findByRole("button", { name: "✓ Completed" }),
+    ).toBeOnTheScreen();
+    expect(await screen.findByTestId("lock-hero-unlocked")).toBeOnTheScreen();
+    expect(screen.getByTestId("lock-hero-balance")).toHaveTextContent("30");
+  });
+
   it("offers the Edit and Analysis shortcuts once there is a dashboard", async () => {
     seed(stepGoal);
     await render(<HomeScreen feed={stubFeed()} now={now} />);
