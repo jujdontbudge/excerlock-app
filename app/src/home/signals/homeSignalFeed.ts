@@ -43,8 +43,9 @@ const HEALTH_SIGNALS: Readonly<Record<HealthSignal, Signal>> = {
 
 export interface HomeSignalProviders {
   readonly health: HealthProvider;
-  readonly motion: MotionProvider;
+  readonly motion?: MotionProvider;
   readonly walking: WalkingVerificationOptions | null;
+  readonly walkingState?: WalkingStateSource;
 }
 
 export interface WalkingVerificationOptions {
@@ -52,11 +53,20 @@ export interface WalkingVerificationOptions {
   readonly now: () => number;
 }
 
+export interface WalkingStateSource {
+  readonly getSnapshot: () => { readonly walking: boolean };
+  readonly subscribe: (listener: () => void) => () => void;
+}
+
 export function createHomeSignalFeed({
   health,
   motion,
   walking,
+  walkingState,
 }: HomeSignalProviders): HomeSignalFeed {
+  if (walking !== null && motion === undefined) {
+    throw new Error("MotionProvider is required for feed-owned walking verification");
+  }
   const listeners = new Set<(reading: SignalReading) => void>();
   const unsubscribes: (() => void)[] = [];
   const walkVerifier = walking === null
@@ -75,7 +85,11 @@ export function createHomeSignalFeed({
 
     return {
       totals: Object.fromEntries(entries) as SignalReading["totals"],
-      activeSignals: activeSignals(walkVerifier, walking?.now()),
+      activeSignals: activeSignals(
+        walkVerifier,
+        walking?.now(),
+        walkingState?.getSnapshot().walking,
+      ),
     };
   }
 
@@ -129,13 +143,16 @@ export function createHomeSignalFeed({
       for (const healthSignal of healthSignals) {
         unsubscribes.push(health.onChange(healthSignal, publish));
       }
+      if (walkingState !== undefined) {
+        unsubscribes.push(walkingState.subscribe(publish));
+      }
       if (walkVerifier !== null) {
         unsubscribes.push(
-          motion.on("activity", (sample) => {
+          motion!.on("activity", (sample) => {
             scheduleWalkingEvaluation(walkVerifier.processActivity(sample));
             publish();
           }),
-          motion.on("cadence", (sample) => {
+          motion!.on("cadence", (sample) => {
             scheduleWalkingEvaluation(
               walkVerifier.processCadence(sample),
               sample.asOf + WALK_CADENCE_FRESHNESS_MS + 1,
@@ -145,7 +162,7 @@ export function createHomeSignalFeed({
         );
         // A refused motion authorization is a normal state, not a crash: the
         // cards simply never go live. Permissions repair belongs to Settings.
-        await motion.start().then(
+        await motion!.start().then(
           () => {
             motionStarted = true;
           },
@@ -170,7 +187,7 @@ export function createHomeSignalFeed({
       listeners.clear();
       if (motionStarted) {
         motionStarted = false;
-        void motion.stop().catch(() => undefined);
+        void motion!.stop().catch(() => undefined);
       }
     },
   };
@@ -179,8 +196,10 @@ export function createHomeSignalFeed({
 function activeSignals(
   verifier: WalkVerifier | null,
   atMs: number | undefined,
+  sharedWalking: boolean | undefined,
 ): readonly Signal[] {
-  return verifier !== null && atMs !== undefined && verifier.getVerdict(atMs).isWalking
+  return sharedWalking === true ||
+    (verifier !== null && atMs !== undefined && verifier.getVerdict(atMs).isWalking)
     ? ["walking"]
     : [];
 }
