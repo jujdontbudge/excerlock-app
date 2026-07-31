@@ -1,5 +1,8 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import { config } from "./config.js";
+
+const CLERK_JWKS_URL = new URL("https://api.clerk.com/v1/jwks");
 
 export interface ClerkIdentity {
   userId: string;
@@ -12,17 +15,29 @@ declare module "fastify" {
   }
 }
 
-/**
- * Clerk verification boundary for the server skeleton.
- *
- * Ticket #34 establishes where verification lives; wiring Clerk's production
- * verifier is intentionally deferred to the user-route implementation.
- */
 export async function verifyClerkJwt(
-  _token: string,
-  _secretKey: string,
+  token: string,
+  secretKey: string,
 ): Promise<ClerkIdentity> {
-  throw new Error("Clerk JWT verification is not implemented");
+  const clerkJwks = createRemoteJWKSet(CLERK_JWKS_URL, {
+    headers: { authorization: `Bearer ${secretKey}` },
+  });
+  const { payload } = await jwtVerify(token, clerkJwks, {
+    algorithms: ["RS256"],
+  });
+
+  if (typeof payload.sub !== "string" || payload.sub.trim().length === 0) {
+    throw new Error("Clerk JWT is missing its subject");
+  }
+
+  const roles = Array.isArray(payload.roles)
+    ? payload.roles.filter((role): role is string => typeof role === "string")
+    : [];
+
+  return Object.freeze({
+    userId: payload.sub,
+    roles: Object.freeze(roles),
+  });
 }
 
 export async function requireAuth(
