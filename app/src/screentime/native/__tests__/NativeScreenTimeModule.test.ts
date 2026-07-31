@@ -177,4 +177,94 @@ describe("NativeScreenTimeModule", () => {
       [],
     );
   });
+
+  it("registers concrete lock windows with OS-side start and end actions", async () => {
+    const deviceActivity = createDeviceActivityApi(2);
+    const nowMs = new Date(2026, 6, 31, 12, 0, 0).getTime();
+    const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity,
+      picker: createPicker({ applicationCount: 1, categoryCount: 0 }),
+      nowMs: () => nowMs,
+    });
+    const selection = (await screenTime.pickSelection())!;
+    await screenTime.reconcile(selection, {
+      shields: "up",
+      drainThresholds: [],
+    });
+    const window = {
+      id: "afternoon",
+      startsAtMs: new Date(2026, 6, 31, 13, 0, 0).getTime(),
+      endsAtMs: new Date(2026, 6, 31, 14, 0, 0).getTime(),
+    };
+
+    await screenTime.scheduleLockWindow(selection, window);
+
+    const startAction = (deviceActivity.configureActions as jest.Mock).mock.calls
+      .map(([input]) => input)
+      .find(
+        (input) =>
+          input.callbackName === "intervalDidStart" &&
+          input.activityName.startsWith("excerlock.lock-window."),
+      );
+    const monitorName = startAction.activityName as string;
+    expect(monitorName).not.toContain(window.id);
+    expect(deviceActivity.configureActions).toHaveBeenCalledWith({
+      activityName: monitorName,
+      callbackName: "intervalDidStart",
+      actions: [
+        {
+          type: "blockSelection",
+          familyActivitySelectionId: selection,
+        },
+      ],
+    });
+    expect(deviceActivity.configureActions).toHaveBeenCalledWith({
+      activityName: monitorName,
+      callbackName: "intervalDidEnd",
+      actions: [
+        {
+          type: "unblockSelection",
+          familyActivitySelectionId: selection,
+        },
+      ],
+    });
+    expect(deviceActivity.startMonitoring).toHaveBeenLastCalledWith(
+      monitorName,
+      {
+        intervalStart: {
+          year: 2026,
+          month: 7,
+          day: 31,
+          hour: 13,
+          minute: 0,
+          second: 0,
+        },
+        intervalEnd: {
+          year: 2026,
+          month: 7,
+          day: 31,
+          hour: 14,
+          minute: 0,
+          second: 0,
+        },
+        repeats: false,
+      },
+      [],
+    );
+    await expect(screenTime.getLockWindows()).resolves.toEqual([window]);
+    await expect(screenTime.getCurrentShieldState()).resolves.toMatchObject({
+      effectiveShields: "down",
+      activeLockWindowId: null,
+    });
+
+    await screenTime.cancelLockWindow(window.id);
+
+    expect(deviceActivity.stopMonitoring).toHaveBeenCalledWith([
+      monitorName,
+    ]);
+    await expect(screenTime.getLockWindows()).resolves.toEqual([]);
+    await expect(screenTime.getCurrentShieldState()).resolves.toMatchObject({
+      effectiveShields: "up",
+    });
+  });
 });

@@ -22,3 +22,13 @@ export function localDateComponents(atMs: number): DeviceActivityDateComponents 
     second: date.getSeconds(),
   };
 }
+
+/** Keeps caller-owned window ids out of DeviceActivity's public OS log names. */
+export function monitorNameForLockWindow(id: string): string {
+  let hash = 2_166_136_261;
+  for (let index = 0; index < id.length; index += 1) {
+    hash ^= id.charCodeAt(index);
+    hash = Math.imul(hash, 16_777_619) >>> 0;
+  }
+  return `excerlock.lock-window.${hash.toString(36)}`;
+}

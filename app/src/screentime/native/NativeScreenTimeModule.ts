@@ -21,6 +21,7 @@ import {
 } from "../selectionSummary";
 import {
   localDateComponents,
+  monitorNameForLockWindow,
   UNLOCK_INCREMENT_MS,
   UNLOCK_LEASE_MONITOR,
 } from "./deviceActivitySchedule";
@@ -90,12 +91,17 @@ const MISSING_PICKER: NativeSelectionPicker = {
   },
 };
 
+type ScheduledLockWindow = LockWindow & Readonly<{
+  selection: ScreenTimeSelectionHandle;
+}>;
+
 export class NativeScreenTimeModule implements ScreenTimeModule {
   private readonly deviceActivity: DeviceActivityApi;
   private readonly picker: NativeSelectionPicker;
   private readonly nowMs: () => number;
   private readonly selections = new Map<string, SelectionContents>();
   private readonly listeners = new Set<ShieldStateListener>();
+  private lockWindows: ScheduledLockWindow[] = [];
   private currentShieldState = INITIAL_SHIELD_STATE;
 
   public constructor({
@@ -151,35 +157,81 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
   ): Promise<void> {
     this.assertIssuedSelection(selection);
     const desired = freezeDesiredOsState(desiredOsState);
-    if (desired.shields === "up") {
-      this.deviceActivity.stopMonitoring([UNLOCK_LEASE_MONITOR]);
-      this.deviceActivity.blockSelection({ activitySelectionId: selection });
-    } else {
-      await this.armUnlockLease(selection);
-      this.deviceActivity.unblockSelection({ activitySelectionId: selection });
-    }
-
-    this.updateShieldState({
-      selection,
-      desiredOsState: desired,
-      effectiveShields: desired.shields,
-      activeLockWindowId: null,
+    this.lockWindows.forEach((window) => {
+      this.configureLockWindowStart(window, desired.shields);
     });
+    await this.applyEffectiveState(selection, desired);
   }
 
   public async scheduleLockWindow(
-    _selection: ScreenTimeSelectionHandle,
-    _window: LockWindow,
+    selection: ScreenTimeSelectionHandle,
+    window: LockWindow,
   ): Promise<void> {
-    throw new Error("Native lock-window scheduling is not configured yet");
+    this.assertIssuedSelection(selection);
+    this.assertValidLockWindow(window);
+    const existing = this.lockWindows.find(({ id }) => id === window.id);
+    if (
+      existing?.selection === selection &&
+      existing.startsAtMs === window.startsAtMs &&
+      existing.endsAtMs === window.endsAtMs
+    ) {
+      return;
+    }
+
+    const scheduled: ScheduledLockWindow = Object.freeze({
+      ...window,
+      selection,
+    });
+    this.configureLockWindowStart(
+      scheduled,
+      this.currentShieldState.desiredOsState.shields,
+    );
+    this.deviceActivity.configureActions({
+      activityName: monitorNameForLockWindow(window.id),
+      callbackName: "intervalDidEnd",
+      actions: [
+        {
+          type: "unblockSelection",
+          familyActivitySelectionId: selection,
+        },
+      ],
+    });
+    await this.deviceActivity.startMonitoring(
+      monitorNameForLockWindow(window.id),
+      {
+        intervalStart: localDateComponents(window.startsAtMs),
+        intervalEnd: localDateComponents(window.endsAtMs),
+        repeats: false,
+      },
+      [],
+    );
+    this.lockWindows = [
+      ...this.lockWindows.filter(({ id }) => id !== window.id),
+      scheduled,
+    ].sort((left, right) => left.startsAtMs - right.startsAtMs);
+    await this.applyEffectiveState(
+      selection,
+      this.currentShieldState.desiredOsState,
+    );
   }
 
-  public async cancelLockWindow(_id: string): Promise<void> {
-    throw new Error("Native lock-window scheduling is not configured yet");
+  public async cancelLockWindow(id: string): Promise<void> {
+    const existing = this.lockWindows.find((window) => window.id === id);
+    if (existing === undefined) {
+      return;
+    }
+    this.deviceActivity.stopMonitoring([monitorNameForLockWindow(id)]);
+    this.lockWindows = this.lockWindows.filter((window) => window.id !== id);
+    await this.applyEffectiveState(
+      existing.selection,
+      this.currentShieldState.desiredOsState,
+    );
   }
 
   public async getLockWindows(): Promise<readonly LockWindow[]> {
-    return [];
+    return this.lockWindows.map(({ id, startsAtMs, endsAtMs }) =>
+      Object.freeze({ id, startsAtMs, endsAtMs }),
+    );
   }
 
   public async getCurrentShieldState(): Promise<CurrentShieldState> {
@@ -223,9 +275,72 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
     }
   }
 
+  private configureLockWindowStart(
+    window: ScheduledLockWindow,
+    desiredShields: DesiredOsState["shields"],
+  ): void {
+    this.deviceActivity.configureActions({
+      activityName: monitorNameForLockWindow(window.id),
+      callbackName: "intervalDidStart",
+      actions: [
+        {
+          type:
+            desiredShields === "up" ? "blockSelection" : "unblockSelection",
+          familyActivitySelectionId: window.selection,
+        },
+      ],
+    });
+  }
+
+  private async applyEffectiveState(
+    selection: ScreenTimeSelectionHandle,
+    desiredOsState: DesiredOsState,
+  ): Promise<void> {
+    const activeWindow = this.lockWindows.find(
+      ({ startsAtMs, endsAtMs }) =>
+        this.nowMs() >= startsAtMs && this.nowMs() < endsAtMs,
+    );
+    const effectiveShields =
+      this.lockWindows.length > 0 && activeWindow === undefined
+        ? "down"
+        : desiredOsState.shields;
+    const needsUnlockLease =
+      effectiveShields === "down" && desiredOsState.shields === "down";
+
+    if (effectiveShields === "up") {
+      this.deviceActivity.stopMonitoring([UNLOCK_LEASE_MONITOR]);
+      this.deviceActivity.blockSelection({ activitySelectionId: selection });
+    } else {
+      if (needsUnlockLease) {
+        await this.armUnlockLease(selection);
+      } else {
+        this.deviceActivity.stopMonitoring([UNLOCK_LEASE_MONITOR]);
+      }
+      this.deviceActivity.unblockSelection({ activitySelectionId: selection });
+    }
+
+    this.updateShieldState({
+      selection,
+      desiredOsState,
+      effectiveShields,
+      activeLockWindowId: activeWindow?.id ?? null,
+    });
+  }
+
   private assertIssuedSelection(selection: ScreenTimeSelectionHandle): void {
     if (!this.selections.has(selection)) {
       throw new Error("Screen Time selection handle is stale or unknown");
+    }
+  }
+
+  private assertValidLockWindow(window: LockWindow): void {
+    if (
+      window.id.trim().length === 0 ||
+      !Number.isFinite(window.startsAtMs) ||
+      !Number.isFinite(window.endsAtMs) ||
+      window.startsAtMs >= window.endsAtMs
+    ) {
+      throw new Error("Lock window must have an id and a non-empty finite interval");
     }
   }
 
