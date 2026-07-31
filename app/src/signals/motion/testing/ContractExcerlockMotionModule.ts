@@ -76,7 +76,9 @@ export class ContractExcerlockMotionModule
   ): MotionModuleSubscription;
   public addListener(
     event: ExcerlockMotionEvent,
-    callback: ((sample: ActivitySample) => void) | ((sample: CadenceSample) => void),
+    callback:
+      | ((sample: ActivitySample) => void)
+      | ((sample: CadenceSample) => void),
   ): MotionModuleSubscription {
     if (event === "onActivityChange") {
       const activityCallback = callback as (sample: ActivitySample) => void;
@@ -89,6 +91,18 @@ export class ContractExcerlockMotionModule
     return { remove: () => this.cadenceCallbacks.delete(cadenceCallback) };
   }
 
+  public emitActivity(sample: ActivitySample): void {
+    if (this.started) {
+      this.activityCallbacks.forEach((callback) => callback(sample));
+    }
+  }
+
+  public emitCadence(sample: CadenceSample): void {
+    if (this.started) {
+      this.cadenceCallbacks.forEach((callback) => callback(sample));
+    }
+  }
+
   public advanceTo(atMs: number): void {
     if (!this.started) {
       return;
@@ -99,7 +113,7 @@ export class ContractExcerlockMotionModule
         cumulativeSteps: 12,
         asOf: 1_000,
       };
-      this.cadenceCallbacks.forEach((callback) => callback(cadence));
+      this.emitCadence(cadence);
     }
     if (atMs === 2_000) {
       const activity: ActivitySample = {
@@ -108,7 +122,7 @@ export class ContractExcerlockMotionModule
         startedAt: 2_000,
         receivedAt: 2_000,
       };
-      this.activityCallbacks.forEach((callback) => callback(activity));
+      this.emitActivity(activity);
     }
   }
 }

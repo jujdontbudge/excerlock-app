@@ -95,7 +95,7 @@ final class CoreMotionService {
         completion(.failure(self.currentException()))
         return
       }
-        completion(.success((activities ?? []).map { motionActivityPayload($0) }))
+      completion(.success((activities ?? []).map { motionActivityPayload($0) }))
     }
   }
 
