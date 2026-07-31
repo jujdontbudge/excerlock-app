@@ -255,6 +255,22 @@ describe("LockScreen", () => {
   });
 
   describe("recurring lock windows", () => {
+    it("connects each visible time label to its input", async () => {
+      await mount(new FakeScreenTime());
+      await press("Add lock window");
+
+      expect(screen.getByText("Start time")).toHaveProp(
+        "onPress",
+        expect.any(Function),
+      );
+      expect(screen.getByText("Start time")).toHaveProp("accessible", false);
+      expect(screen.getByText("End time")).toHaveProp(
+        "onPress",
+        expect.any(Function),
+      );
+      expect(screen.getByText("End time")).toHaveProp("accessible", false);
+    });
+
     it("creates, edits, and deletes a persisted days-and-time rule", async () => {
       await mount(new FakeScreenTime());
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -183,10 +183,18 @@ function TimeField({
   onChange: (value: string) => void;
 }) {
   const { colors, radius, spacing, typography } = useTheme();
+  const inputRef = useRef<TextInput>(null);
   return (
     <View style={[styles.timeField, { gap: spacing.xs }]}>
-      <Text style={typography.caption}>{label}</Text>
+      <Text
+        accessible={false}
+        onPress={() => inputRef.current?.focus()}
+        style={typography.caption}
+      >
+        {label}
+      </Text>
       <TextInput
+        ref={inputRef}
         accessibilityLabel={label}
         autoCapitalize="none"
         keyboardType="numbers-and-punctuation"
