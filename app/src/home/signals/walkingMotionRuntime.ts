@@ -9,10 +9,7 @@ import {
   type MotionProvider,
 } from "@/signals";
 
-import {
-  shouldUseHealthKitProvider,
-  type HomeRuntimeEnvironment,
-} from "./runtimeSelection";
+import type { HomeRuntimeEnvironment } from "./runtimeSelection";
 
 export type WalkingMotionRuntime = Readonly<{
   provider: MotionProvider;
@@ -26,7 +23,7 @@ export function createWalkingMotionRuntime(
   createNative: () => MotionProvider = () =>
     new NativeMotionProvider(createExcerlockMotionModuleClient()),
 ): WalkingMotionRuntime {
-  if (shouldUseHealthKitProvider(environment)) {
+  if (shouldUseNativeWalkingMotion(environment)) {
     return { provider: createNative(), now: Date.now };
   }
 
@@ -34,6 +31,16 @@ export function createWalkingMotionRuntime(
     getMotionFixture("steady-walk"),
   );
   return { provider, now: () => provider.currentTimeMs };
+}
+
+function shouldUseNativeWalkingMotion(
+  environment: HomeRuntimeEnvironment,
+): boolean {
+  return (
+    environment.nodeEnv !== "test" &&
+    environment.platform === "ios" &&
+    !environment.hasExpoGoConfig
+  );
 }
 
 function currentEnvironment(): HomeRuntimeEnvironment {
