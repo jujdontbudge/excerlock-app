@@ -37,6 +37,7 @@ function createDeviceActivityApi(
       shieldActive = false;
     }),
     configureActions: jest.fn(),
+    setSharedValue: jest.fn(),
     startMonitoring: jest.fn(async () => undefined),
     stopMonitoring: jest.fn(),
     isShieldActive: jest.fn(() => shieldActive),
@@ -373,6 +374,16 @@ describe("NativeScreenTimeModule", () => {
         },
       ],
     });
+    expect((deviceActivity as any).setSharedValue).toHaveBeenCalledWith(
+      "excerlock.shield.lock-window-contexts.v1",
+      {
+        [monitorName]: {
+          cause: "lockWindow",
+          offerSubtitle: "Back at 2:00 PM.",
+          routeHomeAvailable: false,
+        },
+      },
+    );
     expect(deviceActivity.configureActions).toHaveBeenCalledWith({
       activityName: monitorName,
       callbackName: "intervalDidEnd",

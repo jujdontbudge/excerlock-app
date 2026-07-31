@@ -114,6 +114,9 @@ describe("Screen Time shield content", () => {
     const runtime = readUtf8(
       fromRoot("app", "src", "shield", "shieldContentRuntime.ts"),
     );
+    const screenTimePlugin = readUtf8(
+      fromRoot("app", "plugins", "withScreenTimeExtensionValidation.js"),
+    );
 
     expect(controller).toContain("getShieldContentCoordinator()");
     expect(controller).not.toContain("NOOP_SHIELD_CONTENT");
@@ -122,5 +125,32 @@ describe("Screen Time shield content", () => {
     expect(runtime).toContain("getHomeAppRuntime().feed.read()");
     expect(runtime).toContain("notificationRouteHomeSource");
     expect(runtime).toContain("shieldCopySource");
+    expect(screenTimePlugin).toContain(
+      "publishLockWindowShieldContext(activityName: activity.rawValue)",
+    );
+
+    const monitor = readUtf8(
+      fromRoot(
+        "app",
+        "targets",
+        "DeviceActivityMonitorExtension",
+        "DeviceActivityMonitorExtension.generated.swift",
+      ),
+    );
+    const lockWindowContext = readUtf8(
+      fromRoot(
+        "app",
+        "targets",
+        "DeviceActivityMonitorExtension",
+        "ShieldLockWindowContext.swift",
+      ),
+    );
+    expect(monitor).toContain("publishLockWindowShieldContext(activityName:");
+    expect(lockWindowContext).toContain(
+      '"excerlock.shield.current-cause.v1"',
+    );
+    expect(lockWindowContext).toContain(
+      '"excerlock.shield.runtime-context.v1"',
+    );
   });
 });
