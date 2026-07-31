@@ -2,7 +2,6 @@ import { useRouter } from "expo-router";
 import { useCallback } from "react";
 import { Platform } from "react-native";
 
-import { expoShieldNotificationResponseSource } from "./ExpoShieldNotificationResponseSource";
 import {
   ShieldNotificationResponseHost,
   type ShieldDestination,
@@ -18,6 +17,10 @@ export function NativeShieldNotificationResponseHost() {
   if (Platform.OS !== "ios") {
     return null;
   }
+
+  const { expoShieldNotificationResponseSource } = require(
+    "./ExpoShieldNotificationResponseSource",
+  ) as typeof import("./ExpoShieldNotificationResponseSource");
 
   return (
     <ShieldNotificationResponseHost
