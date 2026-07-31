@@ -35,5 +35,10 @@ more misleading.
 The production Home composition root instantiates this provider only for an iOS `expo-dev-client`
 StoreClient that is not Expo Go. Jest, Expo Go, standalone, and non-iOS runtimes keep fixtures.
 
+Automated verification covers the shared provider contract through the Kingstinct adapter boundary and
+checks the clean-prebuild native configuration. It does not seed real simulator HealthKit, and this lane
+had no physical device on which to verify Apple Health reads, cold-launch delivery, or the resulting
+condition payout. Those native smoke checks remain required before claiming device support.
+
 Canonical fixtures: `day-mixed-sources`, `manual-entry-day`, `background-wake-replay`, and
 `day-steps-approaching-5k`. Test with `npm run test --workspace app -- signals/health`.
