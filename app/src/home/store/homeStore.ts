@@ -13,9 +13,13 @@ import {
   exitFullLock,
   setBaseAllowance,
 } from "../model/allowance";
+import { healthEventJournalEntries } from "../model/healthEventClaims";
+import { toLedgerPayout } from "../model/ledgerPayout";
+import type { SignalReading } from "../model/reading";
 import {
   applyAllowance,
   DEFAULT_HOME_STATE,
+  selectActiveConditions,
   selectAllowance,
   type HomeStoreValues,
 } from "./homeState";
@@ -43,6 +47,8 @@ type HomeStore = HomeStoreValues & {
   setConditionEnabled: (conditionId: string, enabled: boolean) => void;
   /** Bank an event condition's payout. Idempotent per condition per ledger day. */
   recordEventPayout: (conditionId: string, atMs: number) => void;
+  /** Evaluate an on-device Health snapshot and bank any detected event outcomes. */
+  claimHealthEvents: (reading: SignalReading, atMs: number) => void;
   /** Conditions the ledger paid out on the day containing `atMs`. */
   firedConditionIds: (atMs: number) => readonly string[];
   reset: () => void;
@@ -125,6 +131,22 @@ export const useHomeStore = create<HomeStore>()(
         set({ journal: next });
       },
 
+      claimHealthEvents: (reading, atMs) => {
+        const state = get();
+        const { journal } = appendEntries(
+          state.journal,
+          healthEventJournalEntries(
+            selectActiveConditions(state),
+            reading,
+            atMs,
+            state.ledgerConfig.dayBoundaryOffsetMinutes,
+          ),
+        );
+        if (journal !== state.journal) {
+          set({ journal });
+        }
+      },
+
       firedConditionIds: (atMs) => {
         const { journal, ledgerConfig } = get();
         const days = reduceLedger(journal, ledgerConfig, atMs);
@@ -171,14 +193,3 @@ export const useHomeStore = create<HomeStore>()(
     },
   ),
 );
-
-function toLedgerPayout(reward: Extract<ConfiguredCondition["settings"], { kind: "event" }>["reward"]) {
-  switch (reward.type) {
-    case "fixedMinutes":
-      return { type: "fixedChunk" as const, minutes: reward.minutes };
-    case "restOfDay":
-      return { type: "restOfDay" as const };
-    case "setPeriod":
-      return { type: "setPeriod" as const, minutes: reward.durationMinutes };
-  }
-}

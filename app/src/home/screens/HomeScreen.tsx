@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
 
 import { PillButton, Screen, SectionHeader } from "@/ui";
@@ -15,6 +15,7 @@ import { toConditionCards } from "../model/conditionCards";
 import { deriveLockHero, type LiveState } from "../model/lockState";
 import { getHomeAppRuntime } from "../signals/appRuntime";
 import type { HomeSignalFeed } from "../signals/homeSignalFeed";
+import { useHealthEventClaims } from "../signals/useHealthEventClaims";
 import { useHomeSignals } from "../signals/useHomeSignals";
 import { selectActiveConditions, selectPickerContext } from "../store/homeState";
 import { useHomeStore } from "../store/homeStore";
@@ -53,6 +54,7 @@ export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
 
   const reading = useHomeSignals(signalFeed);
   const atMs = currentTime();
+  useHealthEventClaims(reading, atMs);
   const placeNames = useMemo(
     () => Object.fromEntries(savedPlaces.map(({ id, name }) => [id, name])),
     [savedPlaces],
@@ -71,17 +73,6 @@ export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
     firedConditionIds: firedToday,
     placeNames,
   });
-
-  useEffect(() => {
-    cards
-      .filter(
-        (card) =>
-          card.kind === "event" &&
-          card.progress >= 1 &&
-          !firedToday.includes(card.id),
-      )
-      .forEach((card) => recordEventPayout(card.id, atMs));
-  }, [atMs, cards, firedToday, recordEventPayout]);
 
   const hero = deriveLockHero({ journal, config: ledgerConfig, atMs, liveStates: liveStates(cards) });
 
