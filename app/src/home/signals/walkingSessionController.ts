@@ -192,6 +192,14 @@ export class WalkingSessionController {
       void this.stop();
       return;
     }
+    if (
+      verdict.phase === "verified" &&
+      verdict.isWalking &&
+      this.snapshot.walking
+    ) {
+      this.notifyListeners();
+      return;
+    }
     this.publishWalking(verdict.isWalking);
   }
 
@@ -249,6 +257,10 @@ export class WalkingSessionController {
 
   private publish(snapshot: WalkingSessionSnapshot): void {
     this.snapshot = Object.freeze(snapshot);
+    this.notifyListeners();
+  }
+
+  private notifyListeners(): void {
     this.listeners.forEach((listener) => listener());
   }
 }

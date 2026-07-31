@@ -212,6 +212,12 @@ describe("WalkingSessionController", () => {
 
     expect(controller.getSnapshot().walking).toBe(true);
     expect(listener).toHaveBeenCalledWith();
+
+    listener.mockClear();
+    onCadence({ stepsPerSecond: 1.2, cumulativeSteps: 6, asOf: 3_000 });
+
+    expect(controller.getSnapshot().walking).toBe(true);
+    expect(listener).toHaveBeenCalledTimes(1);
     await controller.stop();
   });
 
