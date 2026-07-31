@@ -66,7 +66,7 @@ function assertTarget(project, expected) {
 }
 
 /**
- * Postcondition for react-native-device-activity's shipped Apple-target plugin.
+ * Postcondition for the installed Screen Time package's Apple-target plugin.
  * It intentionally validates rather than recreates the package-owned generator.
  *
  * @param {import("expo/config").ExpoConfig} config
