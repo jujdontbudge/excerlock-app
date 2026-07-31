@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
 
 import { PillButton, Screen, SectionHeader } from "@/ui";
@@ -64,12 +64,25 @@ export function HomeScreen({ feed, now }: HomeScreenProps = {}) {
 
   // A condition switched off in Manage keeps its slot in the picker context but
   // leaves the dashboard entirely — an off condition has nothing to show today.
+  const firedToday = firedConditionIds(atMs);
   const cards = toConditionCards({
     conditions: selectActiveConditions({ conditions, disabledConditionIds }),
     reading,
-    firedConditionIds: firedConditionIds(atMs),
+    firedConditionIds: firedToday,
     placeNames,
   });
+
+  useEffect(() => {
+    cards
+      .filter(
+        (card) =>
+          card.kind === "event" &&
+          card.progress >= 1 &&
+          !firedToday.includes(card.id),
+      )
+      .forEach((card) => recordEventPayout(card.id, atMs));
+  }, [atMs, cards, firedToday, recordEventPayout]);
+
   const hero = deriveLockHero({ journal, config: ledgerConfig, atMs, liveStates: liveStates(cards) });
 
   return (
