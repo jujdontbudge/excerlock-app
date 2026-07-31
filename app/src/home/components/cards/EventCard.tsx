@@ -36,7 +36,7 @@ export function EventCard({
       )}
 
       <PillButton
-        label={model.completed ? "✓ Completed" : "Complete"}
+        label={model.completed ? "✓ Completed" : model.actionLabel}
         variant={model.completed ? "secondary" : "white"}
         disabled={model.completed}
         onPress={() => onComplete(model.id)}
