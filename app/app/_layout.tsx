@@ -7,6 +7,7 @@ import "@/signals/location/registerLocationTasks";
 import { ThemeProvider } from "@/ui";
 import { NativeScreenTimePickerHost } from "@/screentime/native/NativeScreenTimePickerHost";
 import { NativeShieldNotificationResponseHost } from "@/notifications";
+import { GymPresenceRuntimeHost } from "@/home/signals/GymPresenceRuntimeHost";
 
 export default function RootLayout() {
   const navigation = (
@@ -24,6 +25,7 @@ export default function RootLayout() {
         <StatusBar style="light" />
         <NativeScreenTimePickerHost />
         <NativeShieldNotificationResponseHost />
+        <GymPresenceRuntimeHost />
         {withBuildRuntime(navigation)}
       </ThemeProvider>
     </SafeAreaProvider>
