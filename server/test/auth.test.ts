@@ -33,6 +33,11 @@ describe("verifyClerkJwt", () => {
       userId: "user_123",
       roles: ["member"],
     });
+    await expect(verifyClerkJwt(token, "sk_test_example")).resolves.toEqual({
+      userId: "user_123",
+      roles: ["member"],
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [jwksUrl, jwksRequest] = fetchSpy.mock.calls[0] ?? [];
     expect(jwksUrl).toBe("https://api.clerk.com/v1/jwks");
     expect(new Headers(jwksRequest?.headers).get("authorization")).toBe(

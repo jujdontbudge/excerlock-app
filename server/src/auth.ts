@@ -3,6 +3,19 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 import { config } from "./config.js";
 
 const CLERK_JWKS_URL = new URL("https://api.clerk.com/v1/jwks");
+let cachedSecretKey: string | undefined;
+let cachedClerkJwks: ReturnType<typeof createRemoteJWKSet> | undefined;
+
+function clerkJwksFor(secretKey: string): ReturnType<typeof createRemoteJWKSet> {
+  if (cachedClerkJwks === undefined || cachedSecretKey !== secretKey) {
+    cachedSecretKey = secretKey;
+    cachedClerkJwks = createRemoteJWKSet(CLERK_JWKS_URL, {
+      headers: { authorization: `Bearer ${secretKey}` },
+    });
+  }
+
+  return cachedClerkJwks;
+}
 
 export interface ClerkIdentity {
   userId: string;
@@ -19,10 +32,7 @@ export async function verifyClerkJwt(
   token: string,
   secretKey: string,
 ): Promise<ClerkIdentity> {
-  const clerkJwks = createRemoteJWKSet(CLERK_JWKS_URL, {
-    headers: { authorization: `Bearer ${secretKey}` },
-  });
-  const { payload } = await jwtVerify(token, clerkJwks, {
+  const { payload } = await jwtVerify(token, clerkJwksFor(secretKey), {
     algorithms: ["RS256"],
   });
 
