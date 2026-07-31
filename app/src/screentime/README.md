@@ -63,8 +63,10 @@ development client gets the native adapter.
   active at the start boundary, inactive at the end boundary.
 - With no scheduled windows, Ledger's desired state applies all day. Once
   windows exist, shields are clear outside every active window.
-- Repeating an authorization request, reconciliation, or schedule registration
-  with the same state is a no-op.
+- Repeating authorization and schedule registration with the same state is a
+  no-op. Reconciliation emits no duplicate observable state; the native
+  adapter may still re-arm an OS usage ladder or renew an eligible 15-minute
+  unlock lease.
 - Persisted data is validated before it crosses the interface.
 
 ## Test

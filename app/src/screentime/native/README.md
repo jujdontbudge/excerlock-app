@@ -12,8 +12,10 @@ surface without exposing a FamilyControls token to callers.
   The picker receives the opaque id `excerlock.selection.locked.v1`; JS receives
   app/category counts only. The serialized Apple token stays in app-group
   UserDefaults.
-- `NativeScreenTimeModule.ts` maps authorization, ManagedSettings shields,
-  concrete lock-window monitors, and observable shield state.
+- `NativeScreenTimeModule.ts` maps authorization, selection persistence, and
+  observable shield state.
+- `NativeShieldScheduler.ts` is the sole owner of ManagedSettings transitions,
+  lock-window monitors, the balance drain ladder, and unlock leases.
 - `deviceActivitySchedule.ts` owns calendar conversion, private monitor names,
   and the app-fixed 15-minute unlock increment.
 - `nativeStore.ts` persists only the opaque handle, count summary, desired OS
@@ -22,16 +24,27 @@ surface without exposing a FamilyControls token to callers.
 
 ## Renewable unlock invariant
 
-Every effective `shields: "down"` reconciliation inside the active economy
-stops the prior unlock monitor and registers a new non-repeating interval from
-the current verification time through exactly 15 minutes later. Its
-`intervalDidEnd` action applies the shield from the monitor extension. The
-start is never backdated. If monitor registration fails, the adapter applies
-the shield before returning the error.
+A `shields: "down"` reconciliation with no balance drain ladder inside the
+active economy stops the prior unlock monitor and registers a new
+non-repeating interval from the current verification time through exactly 15
+minutes later. Its `intervalDidEnd` action applies the shield from the monitor
+extension. The start is never backdated. If monitor registration fails, the
+adapter applies the shield before returning the error.
+
+When Ledger supplies drain thresholds, the adapter instead re-arms a local-day
+DeviceActivity usage ladder with `includesPastActivity: true`; the final rung
+applies the shield OS-side. This is why the deployment target remains iOS 17.4.
+Event names and monitor names contain no app or lock-window names.
 
 The monitor survives the host app being force-quit once ticket #80 supplies the
 `ActivityMonitorExtension` target. Reconciliation outside a configured lock
 window clears shields without a lease because the economy is inactive there.
+
+The #44 interface does not carry the policy cause or the user's custom ledger
+day-boundary offset. Consequently the adapter cannot distinguish walking from
+another no-ladder open state, and its usage interval is the local calendar day.
+Those are seam-level limits, not facts supplied by
+`react-native-device-activity`; this ticket does not widen the interface.
 
 ## Build selection
 
