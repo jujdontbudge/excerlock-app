@@ -9,6 +9,8 @@ import { localWallClockNow } from "../model/clock";
 import type { SavedPlace } from "../store/homeState";
 import { useHomeStore } from "../store/homeStore";
 import { useSettingsStore } from "@/settings/store/settingsStore";
+import { AsyncStorageGymVisitLog } from "@/signals/location/AsyncStorageGymVisitLog";
+import type { GymVisit } from "@/signals/location/GymVisitLog";
 
 type GymPresenceState = Readonly<{
   conditions: readonly ConfiguredCondition[];
@@ -27,6 +29,7 @@ type GymLocationProvider = Pick<
 >;
 
 export interface GymPresenceControllerDependencies {
+  readonly getConfirmedVisits?: () => Promise<readonly GymVisit[]>;
   readonly getState: () => GymPresenceState;
   readonly getLocation: () => GymLocationProvider;
   readonly now: () => number;
@@ -97,6 +100,7 @@ export class GymPresenceController {
    */
   public async reconcileAutoDetect(): Promise<void> {
     const state = this.dependencies.getState();
+    await this.claimConfirmedVisits(state);
     if (state.autoDetectEnabled !== true) {
       if (this.monitoring) {
         await this.dependencies.getLocation().stopMonitoringRegions();
@@ -149,29 +153,59 @@ export class GymPresenceController {
       if (transition.type !== "enter") {
         return;
       }
-      const state = this.dependencies.getState();
-      state.conditions
-        .filter(
-          ({ catalogId, id, placeId }) =>
-            catalogId === "gym-arrival" &&
-            placeId === transition.regionId &&
-            !state.disabledConditionIds.includes(id),
-        )
-        .forEach(({ id }) => {
-          this.dependencies.recordEventPayout(
-            id,
-            this.dependencies.toLedgerTime?.(transition.atMs) ?? transition.atMs,
-          );
-        });
+      this.recordArrival(
+        this.dependencies.getState(),
+        transition.regionId,
+        transition.atMs,
+      );
     });
+  }
+
+  private async claimConfirmedVisits(state: GymPresenceState): Promise<void> {
+    if (
+      this.dependencies.getConfirmedVisits === undefined ||
+      !state.conditions.some(
+        ({ catalogId, id }) =>
+          catalogId === "gym-arrival" &&
+          !state.disabledConditionIds.includes(id),
+      )
+    ) {
+      return;
+    }
+    const visits = await this.dependencies.getConfirmedVisits();
+    visits.forEach(({ regionId, atMs }) => {
+      this.recordArrival(state, regionId, atMs);
+    });
+  }
+
+  private recordArrival(
+    state: GymPresenceState,
+    regionId: string,
+    atMs: number,
+  ): void {
+    state.conditions
+      .filter(
+        ({ catalogId, id, placeId }) =>
+          catalogId === "gym-arrival" &&
+          placeId === regionId &&
+          !state.disabledConditionIds.includes(id),
+      )
+      .forEach(({ id }) => {
+        this.dependencies.recordEventPayout(
+          id,
+          this.dependencies.toLedgerTime?.(atMs) ?? atMs,
+        );
+      });
   }
 }
 
 let sharedController: GymPresenceController | undefined;
+const confirmedVisitLog = new AsyncStorageGymVisitLog();
 
 /** The production controller stays lazy: empty-start never selects location. */
 export function getGymPresenceController(): GymPresenceController {
   sharedController ??= new GymPresenceController({
+    getConfirmedVisits: () => confirmedVisitLog.readAll(),
     getState: () => ({
       ...useHomeStore.getState(),
       autoDetectEnabled: useSettingsStore.getState().gymAutoDetectEnabled,

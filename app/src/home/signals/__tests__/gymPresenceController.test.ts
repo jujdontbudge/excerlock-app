@@ -162,4 +162,46 @@ describe("GymPresenceController manual check-in", () => {
       457_000,
     );
   });
+
+  it("claims a coordinate-free visit persisted by the background task", async () => {
+    const recordEventPayout = jest.fn();
+    const controller = new GymPresenceController({
+      getConfirmedVisits: async () => [
+        { regionId: "gym-one", atMs: 500_000 },
+      ],
+      getState: () => ({
+        autoDetectEnabled: true,
+        conditions: [gymArrival],
+        disabledConditionIds: [],
+        savedPlaces: [
+          {
+            id: "gym-one",
+            name: "Neighborhood gym",
+            geofence: {
+              latitude: 40.7128,
+              longitude: -74.006,
+              radiusMeters: 100,
+            },
+          },
+        ],
+      }),
+      getLocation: () => ({
+        checkIn: jest.fn(),
+        getAuthorizationStatus: () => "authorizedAlways",
+        on: () => () => {},
+        startMonitoringRegions: async () => {},
+        stopMonitoringRegions: async () => {},
+      }),
+      now: () => 123_000,
+      recordEventPayout,
+      toLedgerTime: (atMs) => atMs + 1_000,
+    });
+
+    await controller.reconcileAutoDetect();
+
+    expect(recordEventPayout).toHaveBeenCalledWith(
+      "gym-arrival-condition",
+      501_000,
+    );
+  });
 });
