@@ -47,8 +47,41 @@ preventing a mount claim and focus claim from cancelling the first animation.
 | `useMilestoneShareRequest.ts` | queues an unlocked tap until its persisted timestamp arrives |
 | `MilestoneSharePreview.tsx` | privacy-safe projection into the existing share preview |
 | `useMilestoneUnlockAnimation.ts` | one staggered scale-in sequence per focused visit |
+| `MilestoneHaptics.ts` | vendor-free success-feedback boundary |
+| `NativeMilestoneHaptics.ts` | Expo Haptics success-feedback adapter |
+| `milestoneHapticsAccessor.ts` | sole production composition root for the native adapter |
 
-`MilestoneHaptics` remains an injected boundary. The app workspace currently has
-no native success-haptics dependency, and ticket #75 forbids adding one, so the
-production route cannot bind that boundary in this lane; tests cover its exactly-once
-contract without claiming device verification.
+`MilestoneHaptics` remains injected at the Analysis screen edge. Production binds
+that boundary once through `getMilestoneHaptics()` and `expo-haptics`; the unlock
+moment invokes `success()` once only when the visit claims a non-empty pending
+sequence. The adapter requests notification-style success feedback and owns no
+sound API.
+
+## Simulator judgment — 2026-07-31
+
+Ticket #78 was watched in a production development build on the iOS 26.4
+`ExcerLock-E2E` simulator with a deterministic three-day journal. The visit
+unlocked `streak-3` and `activity-1` together.
+
+The default unlock moment does **not** read well. Analysis opens at the top of
+its scroll view while the milestone shelf is below the fold, so the complete
+120 ms staggered scale-in finishes offscreen. By the time the shelf is reached,
+the spring sequence is over. The configured damping and stiffness therefore
+cannot honestly be called successful as a user-visible moment on this path.
+
+A second recording isolated the motion with a layout-stable three-day fixture.
+The shelf was scrolled into frame first; completing the next activity on Home
+then crossed `streak-3` and `activity-5` together before returning to Analysis.
+Both badges were already full-size in the first visible Analysis frame. The
+native animation had run during tab presentation, so neither the stagger nor
+the spring was perceptible even with the shelf pre-positioned. This is a timing
+and visibility failure, not evidence that the physics need numeric tuning.
+
+The orange `New` treatment is immediately legible on both unlocked badges once
+the shelf is reached, but it reads as a persistent label rather than a glint or
+shimmer. No popup or share-sheet takeover appeared.
+
+The simulator cannot establish that tactile feedback feels right on physical
+hardware. The native build compiled and linked Expo Haptics; automated tests
+cover one success notification for this two-badge sequence and no notification
+for an empty visit. Physical-device haptic feel remains unverified.

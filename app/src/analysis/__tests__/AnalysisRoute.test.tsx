@@ -1,5 +1,6 @@
 import { act, render, waitFor } from "@testing-library/react-native";
 import type { EffectCallback } from "expo-router";
+import * as Haptics from "expo-haptics";
 
 import AnalysisRoute from "../../../app/(tabs)/analysis";
 import { useMilestoneUnlockStore } from "../milestones/unlockStore";
@@ -12,6 +13,15 @@ jest.mock("expo-router", () => ({
   },
 }));
 
+jest.mock(
+  "expo-haptics",
+  () => ({
+    NotificationFeedbackType: { Success: "success" },
+    notificationAsync: jest.fn().mockResolvedValue(undefined),
+  }),
+  { virtual: true },
+);
+
 jest.mock("@react-native-async-storage/async-storage", () =>
   require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
@@ -19,6 +29,7 @@ jest.mock("@react-native-async-storage/async-storage", () =>
 describe("AnalysisRoute", () => {
   beforeEach(() => {
     mockFocusCallback = undefined;
+    jest.mocked(Haptics.notificationAsync).mockClear();
     useMilestoneUnlockStore.setState({ records: {} });
   });
 
@@ -61,5 +72,31 @@ describe("AnalysisRoute", () => {
         useMilestoneUnlockStore.getState().records["activity-1"]?.pending,
       ).toBe(false);
     });
+  });
+
+  it("plays one success haptic for a multi-badge sequence and none for an empty visit", async () => {
+    useMilestoneUnlockStore
+      .getState()
+      .discoverUnlocks(
+        ["streak-3", "activity-1"],
+        Date.UTC(2026, 6, 31, 12),
+      );
+
+    await render(<AnalysisRoute />);
+
+    await act(async () => {
+      mockFocusCallback?.();
+    });
+    await waitFor(() => {
+      expect(Haptics.notificationAsync).toHaveBeenCalledTimes(1);
+    });
+    expect(Haptics.notificationAsync).toHaveBeenCalledWith(
+      Haptics.NotificationFeedbackType.Success,
+    );
+
+    await act(async () => {
+      mockFocusCallback?.();
+    });
+    expect(Haptics.notificationAsync).toHaveBeenCalledTimes(1);
   });
 });

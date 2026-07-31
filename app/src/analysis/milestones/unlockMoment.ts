@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { MilestoneId } from "./catalog";
+import type { MilestoneHaptics } from "./MilestoneHaptics";
 import { useMilestoneUnlockHydration } from "./unlockHydration";
 import { useMilestoneUnlockStore } from "./unlockStore";
-
-export type MilestoneHaptics = Readonly<{
-  success: () => void | Promise<void>;
-}>;
 
 /**
  * Claims the pending snapshot once per Analysis visit. Unlocks discovered
@@ -33,3 +30,5 @@ export function useMilestoneUnlockMoment(
 
   return sequence;
 }
+
+export type { MilestoneHaptics } from "./MilestoneHaptics";
