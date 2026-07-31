@@ -27,7 +27,8 @@
             "deploymentTarget": "17.4"
           }
         }
-      ]
+      ],
+      "@kingstinct/react-native-healthkit"
     ],
     "experiments": {
       "typedRoutes": true,
