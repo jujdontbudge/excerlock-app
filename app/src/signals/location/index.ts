@@ -1,6 +1,8 @@
 export { FixtureLocationProvider } from "./FixtureLocationProvider";
 export { getLocationProvider } from "./accessor";
 export { NativeLocationProvider } from "./NativeLocationProvider";
+export { AsyncStorageGymVisitLog } from "./AsyncStorageGymVisitLog";
+export type { GymVisit, GymVisitLog } from "./GymVisitLog";
 export {
   GYM_RADIUS_METERS,
   MAX_SAVED_GYMS,

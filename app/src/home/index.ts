@@ -64,3 +64,14 @@ export {
   type SavedPlace,
 } from "./store/homeState";
 export { HOME_STORAGE_KEY, useHomeStore } from "./store/homeStore";
+export {
+  getGymPresenceController,
+  GymPresenceController,
+  installGymPresenceController,
+} from "./signals/gymPresenceController";
+export {
+  getWalkingSessionController,
+  installWalkingSessionController,
+  WalkingSessionController,
+} from "./signals/walkingSessionController";
+export { SignalRuntimeHosts } from "./signals/SignalRuntimeHosts";

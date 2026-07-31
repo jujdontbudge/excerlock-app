@@ -4,7 +4,7 @@ import { AccountSettingsCard } from "@/account";
 import {
   getGymPresenceController,
   type GymPresenceController,
-} from "@/home/signals/gymPresenceController";
+} from "@/home";
 import {
   NotificationSettingsCard,
   type NotificationModule,

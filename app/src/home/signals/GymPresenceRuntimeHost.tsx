@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-import { useSettingsStore } from "@/settings/store/settingsStore";
+import { useSettingsStore } from "@/settings";
 
 import { useHomeStore } from "../store/homeStore";
 import {

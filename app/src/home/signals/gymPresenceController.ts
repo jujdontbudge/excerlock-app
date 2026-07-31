@@ -1,16 +1,16 @@
 import type { ConfiguredCondition } from "@excerlock/condition-model";
 
 import {
+  AsyncStorageGymVisitLog,
   getLocationProvider,
   type AppLocationProvider,
+  type GymVisit,
 } from "@/signals";
 
 import { localWallClockNow } from "../model/clock";
 import type { SavedPlace } from "../store/homeState";
 import { useHomeStore } from "../store/homeStore";
-import { useSettingsStore } from "@/settings/store/settingsStore";
-import { AsyncStorageGymVisitLog } from "@/signals/location/AsyncStorageGymVisitLog";
-import type { GymVisit } from "@/signals/location/GymVisitLog";
+import { useSettingsStore } from "@/settings";
 
 type GymPresenceState = Readonly<{
   conditions: readonly ConfiguredCondition[];

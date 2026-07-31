@@ -8,19 +8,15 @@ import {
 
 import {
   createHomeSignalFeed,
-  installHomeAppRuntime,
-  useHomeStore,
-} from "@/home";
-import {
-  installWalkingSessionController,
-  WalkingSessionController,
-} from "@/home/signals/walkingSessionController";
-import {
   GymPresenceController,
+  installHomeAppRuntime,
   installGymPresenceController,
-} from "@/home/signals/gymPresenceController";
+  installWalkingSessionController,
+  useHomeStore,
+  WalkingSessionController,
+} from "@/home";
 import { installLockAppRuntime } from "@/lock";
-import { useSettingsStore } from "@/settings/store/settingsStore";
+import { useSettingsStore } from "@/settings";
 import { installScreenTimeAppRuntime } from "@/screentime";
 import {
   installFixtureSubscriptionModule,
