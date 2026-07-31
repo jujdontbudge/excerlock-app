@@ -6,13 +6,12 @@ tags:
   - full-lock
   - active-window
 env:
-  SCENARIO: baseline-fresh-install
-  SCENARIO_OVERRIDES: "%7B%22state%22%3A%7B%22ledger%22%3A%7B%22baseAllowanceMinutes%22%3A5%2C%22journal%22%3A%5B%7B%22kind%22%3A%22drainTick%22%2C%22source%22%3A%22screentime%22%2C%22id%22%3A%22empty-balance%22%2C%22atMs%22%3A1785332400000%2C%22minutes%22%3A5%7D%5D%7D%7D%7D"
+  SCENARIO: balance-drain
 ---
 - launchApp:
     clearState: true
 - openLink:
-    link: excerlock://e2e/scenario/${SCENARIO}?overrides=${SCENARIO_OVERRIDES}
+    link: excerlock://e2e/scenario/${SCENARIO}
 - runFlow:
     when:
       visible: 'Open in .ExcerLock.\?'

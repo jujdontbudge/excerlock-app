@@ -21,6 +21,7 @@ import { render, screen, waitFor } from "@testing-library/react-native";
 import { Text } from "react-native";
 
 import { getHomeAppRuntime } from "@/home";
+import { getLockAppRuntime } from "@/lock";
 import { getSubscriptionModule } from "@/subscription";
 
 import { E2ERuntimeRoot } from "../E2ERuntimeRoot";
@@ -38,6 +39,9 @@ describe("E2E runtime composition root", () => {
 
     const runtime = getHomeAppRuntime();
     expect(runtime.now()).toBe(
+      Date.parse("2026-07-29T09:41:00-04:00"),
+    );
+    expect(getLockAppRuntime().now()).toBe(
       Date.parse("2026-07-29T09:41:00-04:00"),
     );
     expect(await runtime.feed.read()).toEqual({

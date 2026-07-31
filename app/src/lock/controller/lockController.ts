@@ -15,10 +15,10 @@ import {
   homeFullLock,
   homeJournal,
   homeLedgerConfig,
-  localNow,
   setHomeFullLock,
   subscribeHomeLedgerInputs,
 } from "./ledgerSource";
+import { lockAppNow } from "./appRuntime";
 import type { LockPrecedenceDecision } from "../model/lockPrecedence";
 import type {
   RecurringLockWindow,
@@ -90,7 +90,7 @@ export class LockController {
   public constructor(options: LockControllerOptions = {}) {
     this.screenTime = options.screenTime ?? getScreenTimeModule();
     this.journal = options.journal ?? homeJournal;
-    this.now = options.now ?? localNow;
+    this.now = options.now ?? lockAppNow;
     this.scheduleStore = options.scheduleStore ?? getLockScheduleStore();
     this.walking = options.walking ?? (() => false);
   }

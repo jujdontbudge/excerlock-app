@@ -4,6 +4,8 @@ jest.mock(
     require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
+import { remainingMinutes } from "@excerlock/ledger";
+
 import {
   getScenarioManifest,
   parseScenarioManifest,
@@ -17,7 +19,10 @@ const validManifest = () =>
 
 describe("bundled E2E scenario catalog", () => {
   it("ships the scenario selected by the smoke-home flow", () => {
-    expect(SCENARIO_NAMES).toEqual(["baseline-fresh-install"]);
+    expect(SCENARIO_NAMES).toEqual([
+      "baseline-fresh-install",
+      "balance-drain",
+    ]);
 
     expect(getScenarioManifest("baseline-fresh-install")).toMatchObject({
       name: "baseline-fresh-install",
@@ -33,6 +38,24 @@ describe("bundled E2E scenario catalog", () => {
         vendor: { fixture: "none-connected" },
       },
     });
+  });
+
+  it("ships a drained-balance story whose allowance is actually empty", () => {
+    const scenario = getScenarioManifest("balance-drain");
+    const atMs = Date.parse(scenario.clock.now);
+
+    expect(scenario.state.ledger.baseAllowanceMinutes).toBeGreaterThan(0);
+    expect(
+      remainingMinutes(
+        { entries: scenario.state.ledger.journal },
+        {
+          baseAllowanceMinutes: scenario.state.ledger.baseAllowanceMinutes,
+          dayBoundaryOffsetMinutes: 0,
+          rollover: null,
+        },
+        atMs,
+      ),
+    ).toBe(0);
   });
 
   it("rejects unknown scenario names instead of falling back", () => {

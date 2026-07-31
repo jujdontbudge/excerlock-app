@@ -2,7 +2,6 @@ import type { Journal, LedgerConfig } from "@excerlock/ledger";
 
 import {
   isFullLock,
-  localWallClockNow,
   selectAllowance,
   useHomeStore,
   type AllowanceValues,
@@ -69,8 +68,4 @@ export function useHomeAllowance(): AllowanceValues {
     (state) => state.allowanceBeforeFullLock,
   );
   return { baseAllowanceMinutes, allowanceBeforeFullLock };
-}
-
-export function localNow(): number {
-  return localWallClockNow();
 }

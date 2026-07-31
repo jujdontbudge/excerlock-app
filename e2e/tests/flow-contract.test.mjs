@@ -5,6 +5,7 @@ import { test } from "node:test";
 const E2E_ROOT = new URL("../", import.meta.url);
 const APP_ID = "com.johansardar.excerlock";
 const BUNDLED_SCENARIO = "baseline-fresh-install";
+const DRAINED_SCENARIO = "balance-drain";
 
 async function read(relativePath) {
   return readFile(new URL(relativePath, E2E_ROOT), "utf8");
@@ -176,7 +177,8 @@ test("Locked-apps flow covers shields, an active window, and Full Lock", async (
   const flow = await read("flows/locked-apps-states.yaml");
 
   assert.match(flow, new RegExp(`^appId: ${APP_ID}$`, "m"));
-  assert.match(flow, new RegExp(`^  SCENARIO: ${BUNDLED_SCENARIO}$`, "m"));
+  assert.match(flow, new RegExp(`^  SCENARIO: ${DRAINED_SCENARIO}$`, "m"));
+  assert.match(flow, /excerlock:\/\/e2e\/scenario\/\$\{SCENARIO\}/);
   assert.match(flow, /openLink:\n    link: excerlock:\/\/locked-apps/);
   assert.match(flow, /id: lock-screen/);
   assert.match(flow, /Time's up — for now\./);

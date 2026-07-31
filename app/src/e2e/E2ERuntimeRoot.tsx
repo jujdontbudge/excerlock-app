@@ -10,6 +10,7 @@ import {
   createHomeSignalFeed,
   installHomeAppRuntime,
 } from "@/home";
+import { installLockAppRuntime } from "@/lock";
 import {
   installFixtureSubscriptionModule,
 } from "@/subscription/accessor";
@@ -29,6 +30,7 @@ export function E2ERuntimeRoot({
   const url = useScenarioUrl();
   const router = useRouter();
   const uninstallHomeRuntime = useRef<(() => void) | null>(null);
+  const uninstallLockRuntime = useRef<(() => void) | null>(null);
   const uninstallSubscriptionModule =
     useRef<(() => void) | null>(null);
 
@@ -38,6 +40,10 @@ export function E2ERuntimeRoot({
       const { health, motion } = loaded.composition.providers;
       uninstallHomeRuntime.current = installHomeAppRuntime({
         feed: createHomeSignalFeed({ health, motion }),
+        now: () => loaded.composition.clock.nowMs(),
+      });
+      uninstallLockRuntime.current?.();
+      uninstallLockRuntime.current = installLockAppRuntime({
         now: () => loaded.composition.clock.nowMs(),
       });
       uninstallSubscriptionModule.current?.();
@@ -54,6 +60,7 @@ export function E2ERuntimeRoot({
   useEffect(
     () => () => {
       uninstallHomeRuntime.current?.();
+      uninstallLockRuntime.current?.();
       uninstallSubscriptionModule.current?.();
     },
     [],

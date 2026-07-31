@@ -7,6 +7,12 @@ export {
   type LockControllerOptions,
   type LockSnapshot,
 } from "./controller/lockController";
+export {
+  getLockAppRuntime,
+  installLockAppRuntime,
+  lockAppNow,
+  type LockAppRuntime,
+} from "./controller/appRuntime";
 export { useLockSnapshot } from "./hooks/useLockSnapshot";
 export {
   fullLockConfirmation,

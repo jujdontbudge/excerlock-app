@@ -16,6 +16,7 @@ import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 import { weekdayForWallClock } from "../../model/recurringLockWindow";
 import { LockScheduleStore } from "../../store/lockScheduleStore";
 import { FakeScreenTime } from "../../testing/fakeScreenTime";
+import { installLockAppRuntime } from "../appRuntime";
 import { LockController } from "../lockController";
 
 const NOW = 10 * 86_400_000 + 9 * 3_600_000;
@@ -139,6 +140,34 @@ describe("LockController", () => {
       },
     ]);
     controller.stop();
+  });
+
+  it("uses the composition-root clock for the owned ledger by default", async () => {
+    const screenTime = new FakeScreenTime();
+    useHomeStore.setState({
+      journal: spentToday(5),
+      ledgerConfig: {
+        ...DEFAULT_HOME_STATE.ledgerConfig,
+        baseAllowanceMinutes: 5,
+      },
+    });
+    const uninstallRuntime = installLockAppRuntime({ now: () => NOW });
+    const controller = new LockController({
+      screenTime,
+      scheduleStore: new LockScheduleStore(),
+    });
+
+    try {
+      await controller.start();
+      await controller.requestAuthorization();
+      await controller.pickApps();
+
+      expect(controller.getSnapshot().precedence.cause).toBe("emptyBalance");
+      expect(controller.getSnapshot().shield?.effectiveShields).toBe("up");
+    } finally {
+      controller.stop();
+      uninstallRuntime();
+    }
   });
 
   it("leaves everything alone when the picker is cancelled", async () => {
