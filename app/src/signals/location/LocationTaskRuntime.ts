@@ -10,6 +10,9 @@ export type GeofencingTaskData = {
   readonly eventType?: number;
   readonly region?: {
     readonly identifier?: string;
+    readonly latitude?: number;
+    readonly longitude?: number;
+    readonly radius?: number;
   };
 };
 

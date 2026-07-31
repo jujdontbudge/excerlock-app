@@ -32,7 +32,7 @@ if (!TaskManager.isTaskDefined(GEOFENCE_TASK_NAME)) {
 if (!TaskManager.isTaskDefined(WALK_LOCATION_TASK_NAME)) {
   TaskManager.defineTask<LocationTaskData>(
     WALK_LOCATION_TASK_NAME,
-    ({ data, error }) => {
+    async ({ data, error }) => {
       if (error === null) {
         locationTaskRuntime.handleLocationTask(data);
       }

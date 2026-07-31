@@ -59,7 +59,7 @@ export class GeofenceEventProcessor {
   }
 
   private scheduleConfirmation(transition: RegionTransition): Promise<void> {
-    let resolve = () => undefined;
+    let resolve: () => void = () => undefined;
     const promise = new Promise<void>((done) => {
       resolve = done;
     });
