@@ -6,12 +6,13 @@ additive `ManualGymCheckIn` capability so the shared `LocationProvider` interfac
 
 `FixtureLocationProvider` consumes `location.enterRegion`, `location.exitRegion`, `location.update`,
 and `location.authChanged`. History establishes presence synchronously; future region events notify
-only regions the caller is monitoring. It remains the singleton default in Jest, Expo Go, standalone,
-and non-iOS runtimes.
+only regions the caller is monitoring. It remains the singleton default in Jest, Expo Go, and non-iOS
+runtimes. A non-Expo-Go iOS runtime fails toward native, including development clients, Standalone
+releases, bare builds, and future execution-environment values.
 
 `NativeLocationProvider` preserves the contract over `ExpoLocationClient`, which is the only module
-that translates `expo-location` calls. The composition root loads it only in an iOS dev-client
-`storeClient`. Constructing the provider never requests permission or starts monitoring.
+that translates `expo-location` calls. Constructing the provider never requests permission or starts
+monitoring.
 
 Manual check-in requests foreground (`When In Use`) permission, takes one high-accuracy sample, and
 checks that sample against the saved circle on device. Starting auto-detect is the explicit opt-in
@@ -19,12 +20,24 @@ boundary: it requests foreground permission first, then background (`Always`) pe
 then registers regions. At most five gyms are accepted. The public radius constants are 100 m default,
 50 m minimum, and 200 m maximum.
 
+Production ownership lives in Home's `GymPresenceController`. An Arrive-at-gym card calls `checkIn`
+only after the user presses **Check in**. Settings is the only surface that calls `enableAutoDetect`;
+the app-lifetime signal host merely restores a persisted opt-in when `Always` is already granted and
+quietly does nothing otherwise. Turning auto-detect off stops registered monitoring while leaving
+manual check-in intact. With no enabled location condition, the host neither selects this provider nor
+reads location.
+
 Raw presence changes immediately when a region event arrives: there is no dwell state and
 `isInsideRegion` does not wait. A separate, invisible 30-second confirmation debounce delays when the
 arrival counts; an exit during that window cancels the arrival. Manual and automatic arrivals share
 that processor. Confirmed arrivals append only `{regionId, atMs}` to AsyncStorage. Coordinates are used
 only in memory for the OS boundary and distance calculation; they are never logged or sent to
 analytics.
+
+The app-open reconciliation also claims coordinate-free visits persisted by a background task. Ledger
+event ids make replay idempotent, so reading the on-device visit log again cannot double-pay an arrival.
+The E2E composition root installs its selected `FixtureLocationProvider` before runtime hosts mount;
+production and scenario adapters cannot be mixed.
 
 `registerLocationTasks` is imported at the Expo Router entry module so Task Manager can find both task
 definitions during a headless launch. The geofence task owns the confirmation processor and on-device

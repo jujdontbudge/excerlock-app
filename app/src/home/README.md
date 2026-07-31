@@ -35,6 +35,9 @@ a rendering of a rule owned elsewhere — the one genuine exception is documente
 | `signals/appRuntime.ts` | Holds the one build-selected feed and clock installed by the app composition root |
 | `signals/fixtureFeed.ts` | Phase-2 composition root: fixture providers, real-time playback |
 | `signals/useHomeSignals.ts` | Subscribes a mounted screen to a feed |
+| `signals/gymPresenceController.ts` | Owns manual arrival check-in, explicit auto-detect opt-in, and persisted visit claims |
+| `signals/walkingSessionController.ts` | Owns explicit live verification sessions, the watchdog, active window, and sensor lifetime |
+| `signals/SignalRuntimeHosts.tsx` | Reconciles persisted condition/settings changes after build-specific composition is installed |
 | `store/homeState.ts` | Owned state shape, Unlimited default, and projections used by Home/Manage/lock |
 | `store/homeStore.ts` | Mutates conditions, journal and ledger config; wires the state to AsyncStorage |
 | `store/homeStorePersistence.ts` | Validates and revives persisted store fields, including Unlimited's JSON sentinel |
@@ -69,6 +72,13 @@ the card the user approves is the card they get.
 - **Health is native only in an iOS dev client; other feeds remain fixtures.** Home authorizes and
   claims Health on mount and foreground, while tests and non-dev-client builds retain fixtures.
   Persistence remains AsyncStorage and there is no server-side Apple Health API.
+- **Walking is an explicit session, never an ambient feed.** Creating the condition does not start
+  Motion or Location. Its card starts the shared session; the same verified snapshot drives Home and
+  Lock, and removing/disabling the condition stops native work. The condition's active window is the
+  only precedence restraint.
+- **Gym check-in is foreground-first.** The arrival card samples the saved circle on demand with
+  When-In-Use permission. Settings presents auto-detect as an optional hands-free upgrade and is the
+  only `Always` permission boundary. Runtime reconciliation never promotes permission on its own.
 - **The base allowance has one owner here.** It lives inside `ledgerConfig`, beside the journal the
   ledger consumes. Manage calls the store's setter; lock reads and subscribes through
   `lock/controller/ledgerSource.ts`. Full Lock is the same value going to zero and restoring

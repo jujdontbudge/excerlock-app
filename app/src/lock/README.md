@@ -28,6 +28,7 @@ Two consequences worth naming, because they look like missing features until you
 | --- | --- |
 | `screens/LockScreen.tsx` | Composes the five cards. Owns no state of its own. |
 | `controller/lockController.ts` | The module's one conversation with the OS — reference-counted screen lifetimes, one immutable `LockSnapshot` |
+| `../home/signals/walkingSessionController.ts` | The shared verified session source subscribed by the production controller |
 | `controller/appRuntime.ts` | The composition-root clock shared by Lock policy and status decisions |
 | `controller/ledgerSource.ts` | The visible wiring seam: reads/subscribes to Home's journal, ledger config and allowance |
 | `controller/lockPolicy.ts` | Composes Ledger's balance/ladder with the pure precedence decision |
@@ -67,6 +68,11 @@ That makes every conflict explicit: walking beats Full Lock and active windows; 
 Full Lock and an active window; and an inactive schedule beats Full Lock because PRD §3.10 says
 there is no locking outside chosen hours. `LockController` reconciles this decision and
 `lockStatus.ts` renders its `cause`, so precedence cannot change with component/render order.
+
+The production controller subscribes to Home's shared Walk Session rather than defaulting to false.
+Every verified cadence publication queues reconciliation, including publications where walking remains
+true, because the native Screen Time adapter uses them to renew its fixed 15-minute fail-safe lease.
+The lease re-shields OS-side if the app is killed and no further verification arrives.
 
 ## Recurring lock windows
 
