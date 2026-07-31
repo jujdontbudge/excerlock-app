@@ -9,4 +9,9 @@ export { noopSink } from "./noopSink";
 export { createRecordingSink } from "./recordingSink";
 export type { RecordedEvent, RecordingSink } from "./recordingSink";
 export type { AnalyticsPayload, AnalyticsSignal, AnalyticsSink } from "./sink";
-export { buildPostHogOptions, FLAG_BUDGET_MS } from "./postHogSink";
+export {
+  buildPostHogOptions,
+  createPostHogSink,
+  FLAG_BUDGET_MS,
+} from "./postHogSink";
+export type { PostHogClientPort } from "./postHogSink";
