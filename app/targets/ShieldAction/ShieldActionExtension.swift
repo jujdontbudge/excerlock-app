@@ -1,6 +1,6 @@
 import ManagedSettings
 
-private func handle(
+private func completeShieldAction(
   action: ShieldAction,
   completionHandler: @escaping (ShieldActionResponse) -> Void
 ) {
@@ -18,7 +18,7 @@ final class ShieldActionExtension: ShieldActionDelegate {
     for application: ApplicationToken,
     completionHandler: @escaping (ShieldActionResponse) -> Void
   ) {
-    handle(action: action, completionHandler: completionHandler)
+    completeShieldAction(action: action, completionHandler: completionHandler)
   }
 
   override func handle(
@@ -26,7 +26,7 @@ final class ShieldActionExtension: ShieldActionDelegate {
     for webDomain: WebDomainToken,
     completionHandler: @escaping (ShieldActionResponse) -> Void
   ) {
-    handle(action: action, completionHandler: completionHandler)
+    completeShieldAction(action: action, completionHandler: completionHandler)
   }
 
   override func handle(
@@ -34,6 +34,6 @@ final class ShieldActionExtension: ShieldActionDelegate {
     for category: ActivityCategoryToken,
     completionHandler: @escaping (ShieldActionResponse) -> Void
   ) {
-    handle(action: action, completionHandler: completionHandler)
+    completeShieldAction(action: action, completionHandler: completionHandler)
   }
 }
