@@ -1,4 +1,10 @@
 export { FixtureLocationProvider } from "./FixtureLocationProvider";
+export { getLocationProvider } from "./accessor";
+export { NativeLocationProvider } from "./NativeLocationProvider";
+export {
+  GYM_RADIUS_METERS,
+  MAX_SAVED_GYMS,
+} from "./gymRegions";
 export { LOCATION_FIXTURE_EVENTS } from "./fixtureManifest";
 export type {
   LocationAuthChangedPayload,
