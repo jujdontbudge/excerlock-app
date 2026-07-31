@@ -2,9 +2,9 @@
 
 ScreenTime is the app-facing seam for iOS authorization, the system app/category
 picker, shield reconciliation, and concrete lock-window registration. Tests and
-non-native previews use a persistent mock. The iOS development client selects
-the real FamilyControls/ManagedSettings/DeviceActivity adapter without changing
-callers; see [`native/README.md`](native/README.md).
+non-native previews use a persistent mock. Native iOS runtimes select the real
+FamilyControls/ManagedSettings/DeviceActivity adapter without changing callers;
+see [`native/README.md`](native/README.md).
 
 ## Interface
 
@@ -42,6 +42,24 @@ that wants to name the locked group therefore prints this line and nothing else.
 `describeSelection` answers `null` for a handle this adapter did not issue, so a
 stale persisted token degrades into "choose your apps" rather than a crash.
 
+## Runtime selection
+
+The composition root selects the mock only for tests, Expo Go, and non-iOS
+runtimes. Every other iOS runtime selects the native adapter: an
+`expo-dev-client` development build, a `Standalone` production/release build, a
+`Bare` build, or an execution-environment value introduced after this code was
+written. [Expo documents](https://docs.expo.dev/versions/latest/sdk/constants/#executionenvironment)
+`StoreClient` as Expo Go or `expo-dev-client`, and `Standalone` as a
+production/release build; `expoGoConfig` is the discriminator that is populated
+only by Expo Go.
+
+This native-by-default rule is deliberate. Once #80 added the native extension
+targets, an unfamiliar iOS environment failing toward the native module became
+safer than silently running a simulation that never blocks an app. As a second
+guard, an iOS `Standalone` runtime with contradictory Expo Go metadata throws at
+startup rather than resolving the mock. `NODE_ENV === "test"` remains the first
+selection rule, so Jest always retains the deterministic mock.
+
 ## Mock and clock
 
 `MockScreenTimeModule` mirrors SignalKit's fixture-provider seam: it implements
@@ -57,8 +75,12 @@ renders.
 
 The mock and native classes are deliberately not exported from `index.ts`. No
 app module may import either implementation directly. `getScreenTimeModule()`
-is the single composition point: Jest remains mock-backed, while an iOS
-development client gets the native adapter.
+is the single composition point.
+
+Native behavior cannot be verified on a simulator because FamilyControls
+requires a physical device. Release-build and hardware verification therefore
+remain with #84; the selection tests here prove only which adapter each modeled
+runtime chooses.
 
 ## Invariants
 
