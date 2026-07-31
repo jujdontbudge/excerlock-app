@@ -1,6 +1,6 @@
 {
   "name": "@excerlock/app",
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "version": "0.0.0",
   "dependencies": {
     "@expo/ui": "~57.0.7",

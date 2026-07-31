@@ -9,7 +9,7 @@ import {
 
 export interface PostHogRuntimeConfig {
   apiKey: string | undefined;
-  host: string;
+  host: string | undefined;
 }
 
 export type PostHogClientFactory = (
@@ -35,11 +35,12 @@ export function initializePostHog(
   factory: PostHogClientFactory = createClient,
 ): PostHogRuntimeClient | null {
   const apiKey = config.apiKey?.trim();
-  if (!apiKey) {
+  const host = config.host?.trim();
+  if (!apiKey || !host) {
     return null;
   }
 
-  const client = factory(apiKey, buildPostHogOptions(config.host));
+  const client = factory(apiKey, buildPostHogOptions(host));
   kit.installSink(createPostHogSink(client));
   void primeDeviceIdForFlags(client).catch(() => {
     // Analytics and experiments are best-effort; app boot must never fail here.
