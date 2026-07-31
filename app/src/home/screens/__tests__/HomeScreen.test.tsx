@@ -78,6 +78,16 @@ describe("HomeScreen", () => {
     expect(screen.getByRole("header", { name: "Pick a condition" })).toBeOnTheScreen();
   });
 
+  it("dismisses the condition-builder sheet from its blurred background", async () => {
+    await render(<HomeScreen feed={stubFeed()} now={now} />);
+
+    await press("Create your first condition");
+    await press("Dismiss condition builder");
+
+    expect(screen.queryByRole("header", { name: "Pick a condition" })).toBeNull();
+    expect(screen.getByRole("header", { name: "No conditions yet" })).toBeOnTheScreen();
+  });
+
   it("shows a locked hero at a zero balance once a condition exists", async () => {
     seed(stepGoal);
     useHomeStore.getState().setBaseAllowanceMinutes(0);

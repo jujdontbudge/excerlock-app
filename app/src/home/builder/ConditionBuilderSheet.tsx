@@ -2,7 +2,13 @@ import type { ConfiguredCondition, PickerContext } from "@excerlock/condition-mo
 import { useMemo, useReducer } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import { FLOATING_TAB_BAR_HEIGHT, PillButton, Screen, useTheme } from "@/ui";
+import {
+  DismissalBlur,
+  FLOATING_TAB_BAR_HEIGHT,
+  PillButton,
+  Screen,
+  useTheme,
+} from "@/ui";
 
 import { builderCatalog, findOption } from "./builderCatalog";
 import {
@@ -56,7 +62,7 @@ export function ConditionBuilderSheet({
   onClose: () => void;
   createId?: () => string;
 }) {
-  const { colors, spacing, typography } = useTheme();
+  const { colors, radius, spacing, typography } = useTheme();
   const [draft, dispatch] = useReducer(builderReducer, initialDraft);
   const groups = useMemo(() => builderCatalog(context), [context]);
   const option = draft.catalogId === undefined ? undefined : findOption(groups, draft.catalogId);
@@ -86,76 +92,90 @@ export function ConditionBuilderSheet({
      * cost the shared theme context and a11y focus order.
      */
     <View accessibilityViewIsModal style={StyleSheet.absoluteFill}>
-      <Screen testID="condition-builder" edges={["top", "left", "right", "bottom"]}>
-        <View style={[styles.header, { paddingHorizontal: spacing.gutter, paddingBottom: spacing.md }]}>
-          <Text accessibilityRole="header" style={typography.sheetTitle}>
-            {STEP_TITLES[draft.step]}
-          </Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Cancel" onPress={close}>
-            <Text style={[typography.cardTitle, { color: colors.textSecondary }]}>Cancel</Text>
-          </Pressable>
-        </View>
+      <DismissalBlur
+        accessibilityLabel="Dismiss condition builder"
+        onDismiss={close}
+      />
+      <View
+        style={[
+          styles.panel,
+          {
+            borderTopLeftRadius: radius.xl,
+            borderTopRightRadius: radius.xl,
+          },
+        ]}
+      >
+        <Screen testID="condition-builder" edges={["top", "left", "right", "bottom"]}>
+          <View style={[styles.header, { paddingHorizontal: spacing.gutter, paddingBottom: spacing.md }]}>
+            <Text accessibilityRole="header" style={typography.sheetTitle}>
+              {STEP_TITLES[draft.step]}
+            </Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Cancel" onPress={close}>
+              <Text style={[typography.cardTitle, { color: colors.textSecondary }]}>Cancel</Text>
+            </Pressable>
+          </View>
 
-        <ScrollView
-          contentContainerStyle={{
-            gap: spacing.lg,
-            paddingBottom: spacing.xxl,
-            paddingHorizontal: spacing.gutter,
-          }}
-          showsVerticalScrollIndicator={false}
-        >
-          {draft.step === "catalog" ? (
-            <CatalogStep groups={groups} onPick={(option) => dispatch({ type: "pickCatalog", option })} />
-          ) : null}
+          <ScrollView
+            contentContainerStyle={{
+              gap: spacing.lg,
+              paddingBottom: spacing.xxl,
+              paddingHorizontal: spacing.gutter,
+            }}
+            showsVerticalScrollIndicator={false}
+          >
+            {draft.step === "catalog" ? (
+              <CatalogStep groups={groups} onPick={(option) => dispatch({ type: "pickCatalog", option })} />
+            ) : null}
 
-          {draft.step === "source" && option !== undefined ? (
-            <SourceStep option={option} onPick={(source) => dispatch({ type: "pickSource", option: source })} />
-          ) : null}
+            {draft.step === "source" && option !== undefined ? (
+              <SourceStep option={option} onPick={(source) => dispatch({ type: "pickSource", option: source })} />
+            ) : null}
 
-          {draft.step === "configure" && draft.catalogId !== undefined ? (
-            <ConfigureStep catalogId={draft.catalogId} draft={draft} dispatch={dispatch} />
-          ) : null}
+            {draft.step === "configure" && draft.catalogId !== undefined ? (
+              <ConfigureStep catalogId={draft.catalogId} draft={draft} dispatch={dispatch} />
+            ) : null}
 
-          {draft.step === "preview" && preview !== undefined ? (
-            <PreviewStep condition={preview} {...(placeNames === undefined ? {} : { placeNames })} />
-          ) : null}
-        </ScrollView>
+            {draft.step === "preview" && preview !== undefined ? (
+              <PreviewStep condition={preview} {...(placeNames === undefined ? {} : { placeNames })} />
+            ) : null}
+          </ScrollView>
 
-        {/* The tab bar floats over this sheet, so the actions must sit above
-            it — otherwise a tap on "Preview" lands on a tab and switches away. */}
-        <View
-          style={[
-            styles.footer,
-            {
-              gap: spacing.md,
-              padding: spacing.gutter,
-              paddingBottom: spacing.gutter + FLOATING_TAB_BAR_HEIGHT,
-            },
-          ]}
-        >
-          {/* Back retraces the steps the sheet opened on — never behind them. */}
-          {draft.step === initialDraft.step ? null : (
-            <PillButton
-              label="Back"
-              variant="secondary"
-              onPress={() => dispatch({ type: "back" })}
-              style={styles.action}
-            />
-          )}
-          {draft.step === "configure" ? (
-            <PillButton
-              label="Preview"
-              variant="white"
-              disabled={!canAdvance(draft)}
-              onPress={() => dispatch({ type: "next" })}
-              style={styles.action}
-            />
-          ) : null}
-          {draft.step === "preview" ? (
-            <PillButton label="Save condition" variant="white" onPress={save} style={styles.action} />
-          ) : null}
-        </View>
-      </Screen>
+          {/* The tab bar floats over this sheet, so the actions must sit above
+              it — otherwise a tap on "Preview" lands on a tab and switches away. */}
+          <View
+            style={[
+              styles.footer,
+              {
+                gap: spacing.md,
+                padding: spacing.gutter,
+                paddingBottom: spacing.gutter + FLOATING_TAB_BAR_HEIGHT,
+              },
+            ]}
+          >
+            {/* Back retraces the steps the sheet opened on — never behind them. */}
+            {draft.step === initialDraft.step ? null : (
+              <PillButton
+                label="Back"
+                variant="secondary"
+                onPress={() => dispatch({ type: "back" })}
+                style={styles.action}
+              />
+            )}
+            {draft.step === "configure" ? (
+              <PillButton
+                label="Preview"
+                variant="white"
+                disabled={!canAdvance(draft)}
+                onPress={() => dispatch({ type: "next" })}
+                style={styles.action}
+              />
+            ) : null}
+            {draft.step === "preview" ? (
+              <PillButton label="Save condition" variant="white" onPress={save} style={styles.action} />
+            ) : null}
+          </View>
+        </Screen>
+      </View>
     </View>
   );
 }
@@ -164,4 +184,12 @@ const styles = StyleSheet.create({
   action: { flex: 1 },
   footer: { flexDirection: "row" },
   header: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
+  panel: {
+    bottom: 0,
+    height: "96%",
+    left: 0,
+    overflow: "hidden",
+    position: "absolute",
+    right: 0,
+  },
 });
