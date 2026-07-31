@@ -71,10 +71,10 @@ export async function requireAuth(
   try {
     request.clerkIdentity = await verifyClerkJwt(token, secretKey);
   } catch {
-    await reply.code(501).send({
+    await reply.code(401).send({
       error: {
-        code: "AUTH_NOT_IMPLEMENTED",
-        message: "Clerk JWT verification is not implemented",
+        code: "UNAUTHORIZED",
+        message: "Invalid or expired Clerk session",
       },
     });
   }
