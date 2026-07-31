@@ -30,7 +30,14 @@ export function createFixtureHomeSignalFeed(
     getSignalFixture("motion", HOME_FIXTURE_SCENARIO.motion) as MotionFixtureManifest,
     playback,
   );
-  const feed = createHomeSignalFeed({ health, motion });
+  const feed = createHomeSignalFeed({
+    health,
+    motion,
+    walking: {
+      gracePeriodMs: 30_000,
+      now: () => motion.currentTimeMs,
+    },
+  });
 
   return {
     ...feed,
