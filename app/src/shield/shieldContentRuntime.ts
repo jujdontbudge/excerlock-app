@@ -1,10 +1,10 @@
 import { selectActiveConditions } from "@/home/store/homeState";
 import { useHomeStore } from "@/home/store/homeStore";
 import { getHomeAppRuntime } from "@/home/signals/appRuntime";
-import { getNotificationModule } from "@/notifications/accessor";
 
 import { createAppShieldContentCoordinator } from "./appShieldContent";
 import { nativeShieldContentPublisher } from "./native/nativeShieldContentPublisher";
+import { notificationRouteHomeSource } from "./native/notificationRouteHomeSource";
 import { shieldCopySource } from "./shieldCopySource";
 
 let coordinator: ReturnType<typeof createAppShieldContentCoordinator> | undefined;
@@ -15,8 +15,7 @@ export function getShieldContentCoordinator() {
     publisher: nativeShieldContentPublisher,
     activeConditions: () => selectActiveConditions(useHomeStore.getState()),
     readSignals: () => getHomeAppRuntime().feed.read(),
-    notificationAuthorization: () =>
-      getNotificationModule().getAuthorizationStatus(),
+    routeHomeSource: notificationRouteHomeSource,
     copySource: shieldCopySource,
   });
   return coordinator;

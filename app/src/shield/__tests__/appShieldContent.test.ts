@@ -20,7 +20,7 @@ describe("createAppShieldContentCoordinator", () => {
       publisher: { publish },
       activeConditions: () => [stepsExchange],
       readSignals: async () => ({ totals: { steps: 4_000 }, activeSignals: [] }),
-      notificationAuthorization: async () => "approved",
+      routeHomeSource: { available: async () => true },
       copySource: { current: () => ({}) },
     });
 
@@ -42,7 +42,7 @@ describe("createAppShieldContentCoordinator", () => {
       readSignals: async () => {
         throw new Error("Health permission unavailable");
       },
-      notificationAuthorization: async () => "notDetermined",
+      routeHomeSource: { available: async () => false },
       copySource: { current: () => ({}) },
     });
 

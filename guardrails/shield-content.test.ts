@@ -114,7 +114,7 @@ describe("Screen Time shield content", () => {
     expect(runtime).toContain("nativeShieldContentPublisher");
     expect(runtime).toContain("selectActiveConditions");
     expect(runtime).toContain("getHomeAppRuntime().feed.read()");
-    expect(runtime).toContain("getNotificationModule().getAuthorizationStatus()");
+    expect(runtime).toContain("notificationRouteHomeSource");
     expect(runtime).toContain("shieldCopySource");
   });
 });
