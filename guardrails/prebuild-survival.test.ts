@@ -105,6 +105,44 @@ function readProjectTargets(project: string): ProjectTarget[] {
 }
 
 describe("prebuild-survival guardrail", () => {
+  it("materializes the package-owned monitor runtime during clean prebuild", () => {
+    const targetRoot = fromRoot(
+      "app",
+      "targets",
+      "DeviceActivityMonitorExtension",
+    );
+    const generatedSources = [
+      {
+        generated: "DeviceActivityMonitorExtension.generated.swift",
+        packageSource: fromRoot(
+          "node_modules",
+          "react-native-device-activity",
+          "targets",
+          "ActivityMonitorExtension",
+          "DeviceActivityMonitorExtension.swift",
+        ),
+      },
+      {
+        generated: "PackageRuntime.generated.swift",
+        packageSource: fromRoot(
+          "node_modules",
+          "react-native-device-activity",
+          "ios",
+          "Shared.swift",
+        ),
+      },
+    ];
+
+    for (const { generated, packageSource } of generatedSources) {
+      const generatedPath = `${targetRoot}/${generated}`;
+      expect(
+        existsSync(generatedPath),
+        `Clean prebuild must materialize ${generated} from the installed package`,
+      ).toBe(true);
+      expect(readUtf8(generatedPath)).toBe(readUtf8(packageSource));
+    }
+  });
+
   it("keeps every declared native target and entitlement in the generated Xcode project", () => {
     const appConfig = readJson<AppConfig>(fromRoot("app", "app.json"));
     expect(appConfig.expo?.ios?.bundleIdentifier).toBe("com.johansardar.excerlock");

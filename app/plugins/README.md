@@ -9,7 +9,23 @@ automatic native configuration.
 after every Xcode mutation. The installed
 `react-native-device-activity` plugin already delegates target generation to
 `@kingstinct/expo-apple-targets`, so this repo does not duplicate that
-generator. Instead, the final plugin makes clean prebuild fail immediately if
+generator. It materializes the package-owned monitor Swift sources, then makes
+clean prebuild fail immediately if
 the monitor, shield configuration, or shield action target is absent or loses
 its canonical App ID, iOS 17.4 deployment target, Apple team, or entitlements
 file.
+
+## Invariants and fixtures
+
+Both plugins are deterministic build transformations. They have no runtime
+fixtures: their fixture is the clean-generated Xcode project inspected by the
+guardrail suite. No local plugin may add remote-push capability or silently
+repair an incorrect extension identity.
+
+## Test
+
+From the repository root:
+
+```sh
+npm run test:guardrails
+```

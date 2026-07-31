@@ -1,3 +1,5 @@
+const fs = require("node:fs");
+const path = require("node:path");
 const { IOSConfig, withFinalizedMod } = require("expo/config-plugins");
 
 const EXPECTED_TARGETS = [
@@ -14,6 +16,42 @@ const EXPECTED_TARGETS = [
     bundleIdentifier: "com.johansardar.excerlock.shieldaction",
   },
 ];
+
+const MONITOR_PACKAGE_SOURCES = [
+  {
+    destination: "DeviceActivityMonitorExtension.generated.swift",
+    source: path.join(
+      "targets",
+      "ActivityMonitorExtension",
+      "DeviceActivityMonitorExtension.swift",
+    ),
+  },
+  {
+    destination: "PackageRuntime.generated.swift",
+    source: path.join("ios", "Shared.swift"),
+  },
+];
+
+function materializeMonitorSources(projectRoot) {
+  const packageRoot = path.dirname(
+    require.resolve("react-native-device-activity/package.json", {
+      paths: [projectRoot],
+    }),
+  );
+  const targetRoot = path.join(
+    projectRoot,
+    "targets",
+    "DeviceActivityMonitorExtension",
+  );
+  fs.mkdirSync(targetRoot, { recursive: true });
+
+  for (const source of MONITOR_PACKAGE_SOURCES) {
+    fs.copyFileSync(
+      path.join(packageRoot, source.source),
+      path.join(targetRoot, source.destination),
+    );
+  }
+}
 
 function withoutQuotes(value) {
   return typeof value === "string" ? value.replace(/^"|"$/g, "") : value;
@@ -73,6 +111,7 @@ function assertTarget(project, expected) {
  */
 function withScreenTimeExtensionValidation(config) {
   return withFinalizedMod(config, ["ios", (modConfig) => {
+    materializeMonitorSources(modConfig.modRequest.projectRoot);
     const project = IOSConfig.XcodeUtils.getPbxproj(
       modConfig.modRequest.projectRoot,
     );
