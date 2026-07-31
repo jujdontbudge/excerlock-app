@@ -20,6 +20,8 @@ export {
   useShieldCopyExperiment,
   useTimedExperimentVariant,
 } from "./ExperimentVariantProvider";
+export { ExperimentRuntimeRoot } from "./ExperimentRuntimeRoot";
+export type { ExperimentRuntimeRootProps } from "./ExperimentRuntimeRoot";
 export type {
   ExperimentSelection,
   ExperimentVariantProviderProps,
