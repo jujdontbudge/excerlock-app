@@ -88,6 +88,32 @@ No other subscription caller changes, and no Adapty type crosses the public
 `SubscriptionModule` interface. If a placement cannot load, the hard gate stays
 closed and presents its retry surface.
 
+## App Store Connect handoff
+
+The placement may return any configured identifier; the adapter never embeds
+this catalog. The orchestrator should create these products and mirror them to
+Adapty's `premium` access level:
+
+| Subscription group | Product identifier | Duration | Starting offer |
+|---|---|---:|---|
+| ExcerLock Premium — Variant A | `com.johansardar.excerlock.premium.a.annual` | 1 year | $59.99, 7-day trial |
+| ExcerLock Premium — Variant A | `com.johansardar.excerlock.premium.a.monthly` | 1 month | $9.99, no trial |
+| ExcerLock Premium — Variant A | `com.johansardar.excerlock.premium.a.winback.annual` | 1 year | $29.99, 7-day trial |
+| ExcerLock Premium — Variant B | `com.johansardar.excerlock.premium.b.annual` | 1 year | $79.99, 7-day trial |
+| ExcerLock Premium — Variant B | `com.johansardar.excerlock.premium.b.monthly` | 1 month | $12.99, no trial |
+| ExcerLock Premium — Variant B | `com.johansardar.excerlock.premium.b.winback.annual` | 1 year | $39.99, 7-day trial |
+
+There is no weekly or lifetime product. Keeping variants in separate groups is
+what lets Adapty own the price experiment. The decline placement must use the
+real win-back product for its assigned group; the app generates neither a fake
+discount nor a countdown.
+
+No real StoreKit sandbox purchase has been made from this implementation, and
+no entitlement has been observed round-tripping through Adapty. A dashboard
+fallback export and offline product behavior also require verification after
+the ASC catalog exists; the app currently stays hard-locked with a retry state
+when the placement or products cannot load.
+
 ## Analytics ownership
 
 This boundary emits no purchase outcome or subscription-lifecycle event. The
