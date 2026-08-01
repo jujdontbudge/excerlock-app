@@ -153,4 +153,19 @@ describe("NotificationScheduler", () => {
       }),
     ]);
   });
+
+  it("reconciles an offline horizon under one rolling-week ceiling", async () => {
+    const { module, scheduler } = await harness();
+    const days = Array.from({ length: 8 }, (_, offset) => ({
+      ...ACTIVE_DAY,
+      dayIndex: ACTIVE_DAY.dayIndex + offset,
+      dayStartMs: ACTIVE_DAY.dayStartMs + offset * DAY_MS,
+    }));
+
+    await scheduler.reconcileDays(
+      days.map((day) => input(preferences("afternoonNudge"), day)),
+    );
+
+    await expect(module.getScheduled()).resolves.toHaveLength(5);
+  });
 });

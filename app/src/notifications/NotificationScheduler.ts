@@ -37,21 +37,41 @@ export class NotificationScheduler {
   public async reconcileDay(
     input: NotificationPlanningInput,
   ): Promise<readonly ScheduledNotification[]> {
+    return this.reconcileDays([input]);
+  }
+
+  /** Atomically reconciles a local offline horizon under one rolling ceiling. */
+  public async reconcileDays(
+    inputs: readonly NotificationPlanningInput[],
+  ): Promise<readonly ScheduledNotification[]> {
     const authorization = await this.module.getAuthorizationStatus();
-    const plan =
-      authorization === "approved"
-        ? buildDayPlan({
-            ...input,
-            atMs: this.clock.nowMs(),
-            deliveries: await this.module.getDeliveries(),
-          })
-        : [];
+    const delivered = await this.module.getDeliveries();
+    const plan: ScheduledNotification[] = [];
+    if (authorization === "approved") {
+      for (const input of inputs) {
+        const dayPlan = buildDayPlan({
+          ...input,
+          atMs: this.clock.nowMs(),
+          deliveries: [
+            ...delivered,
+            ...plan.map(({ id, typeId, deliverAtMs }) => ({
+              id,
+              typeId,
+              deliveredAtMs: deliverAtMs,
+            })),
+          ],
+        });
+        plan.push(...dayPlan);
+      }
+    }
     const plannedIds = new Set(plan.map(({ id }) => id));
 
-    for (const typeId of NOTIFICATION_TYPE_IDS) {
-      const id = notificationScheduleId(typeId, input.day.dayIndex);
-      if (!plannedIds.has(id)) {
-        await this.module.cancel(id);
+    for (const input of inputs) {
+      for (const typeId of NOTIFICATION_TYPE_IDS) {
+        const id = notificationScheduleId(typeId, input.day.dayIndex);
+        if (!plannedIds.has(id)) {
+          await this.module.cancel(id);
+        }
       }
     }
     for (const notification of plan) {
