@@ -51,4 +51,27 @@ describe("ClerkAccountModule", () => {
       intent: { status: "idle", error: null },
     });
   });
+
+  it("uses Clerk SSO to create an account", async () => {
+    const account = new ClerkAccountModule();
+    const authenticate = jest.fn(async () => ({
+      status: "authenticated" as const,
+      user: {
+        id: "user_new",
+        email: "new@example.com",
+        authenticatedAtMs: 1_785_542_500_000,
+      },
+    }));
+    account.attachRuntime({
+      authenticate,
+      deleteAccount: jest.fn(async () => undefined),
+      signOut: jest.fn(async () => undefined),
+    });
+
+    await expect(account.signUp()).resolves.toMatchObject({
+      status: "authenticated",
+      session: { user: { id: "user_new", email: "new@example.com" } },
+    });
+    expect(authenticate).toHaveBeenCalledTimes(1);
+  });
 });

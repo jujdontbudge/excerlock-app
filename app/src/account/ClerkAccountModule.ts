@@ -76,10 +76,35 @@ export class ClerkAccountModule implements AccountModule {
   }
 
   public async signUp(): Promise<AuthenticationResult> {
-    return this.authenticationUnavailable(
-      "sign_up_failed",
-      "Account creation is still loading. Please try again.",
-    );
+    if (this.runtime === null) {
+      return this.authenticationUnavailable(
+        "sign_up_failed",
+        "Account creation is still loading. Please try again.",
+      );
+    }
+
+    this.publish({
+      ...this.snapshot,
+      intent: Object.freeze({ status: "signingUp", error: null }),
+    });
+    const result = await this.runtime.authenticate();
+    if (result.status === "cancelled") {
+      this.publish({
+        ...this.snapshot,
+        intent: Object.freeze({ status: "idle", error: null }),
+      });
+      return Object.freeze({ status: "cancelled" });
+    }
+    const session: SignedInAccountSession = Object.freeze({
+      status: "signedIn",
+      authenticatedAtMs: result.user.authenticatedAtMs,
+      user: Object.freeze({ id: result.user.id, email: result.user.email }),
+    });
+    this.publish({
+      session,
+      intent: Object.freeze({ status: "idle", error: null }),
+    });
+    return Object.freeze({ status: "authenticated", session });
   }
 
   public async signOut(): Promise<SignOutResult> {
