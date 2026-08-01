@@ -34,7 +34,6 @@ describe("Notification composition seam", () => {
           UNDETERMINED: "undetermined",
         },
       }),
-      { virtual: true },
     );
 
     try {
