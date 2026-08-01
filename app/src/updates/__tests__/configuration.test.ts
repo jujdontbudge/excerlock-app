@@ -23,4 +23,14 @@ describe("EAS Update configuration", () => {
       "./plugins/withScreenTimeExtensionValidation",
     );
   });
+
+  it("runs the Adapty plugin before Screen Time extension validation", () => {
+    const adaptyIndex = appConfig.expo.plugins.indexOf("react-native-adapty");
+    const validatorIndex = appConfig.expo.plugins.indexOf(
+      "./plugins/withScreenTimeExtensionValidation",
+    );
+
+    expect(adaptyIndex).toBeGreaterThanOrEqual(0);
+    expect(adaptyIndex).toBe(validatorIndex - 1);
+  });
 });

@@ -69,6 +69,7 @@
           "project": "excerlock-mobile"
         }
       ],
+      "react-native-adapty",
       "./plugins/withScreenTimeExtensionValidation"
     ],
     "experiments": {
