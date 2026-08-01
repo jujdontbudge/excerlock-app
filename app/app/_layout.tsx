@@ -4,6 +4,7 @@ import type { ComponentType, ReactNode } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import "@/signals/location/registerLocationTasks";
+import { AccountRuntimeRoot } from "@/account";
 import { ThemeProvider } from "@/ui";
 import { NativeScreenTimePickerHost } from "@/screentime/native/NativeScreenTimePickerHost";
 import { NativeShieldNotificationResponseHost } from "@/notifications";
@@ -26,10 +27,12 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <StatusBar style="light" />
-        {withBuildRuntime(runtime)}
-      </ThemeProvider>
+      <AccountRuntimeRoot>
+        <ThemeProvider>
+          <StatusBar style="light" />
+          {withBuildRuntime(runtime)}
+        </ThemeProvider>
+      </AccountRuntimeRoot>
     </SafeAreaProvider>
   );
 }
