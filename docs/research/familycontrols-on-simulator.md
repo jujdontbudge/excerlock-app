@@ -36,21 +36,79 @@ names "ExcerLock".** It is not a stub and it is not absent.
 
 ## Why authorization still cannot complete
 
-The sheet's only affirmative action is **"Allow with Passcode"**, which leads to
-*"Enter iPhone Passcode for ExcerLock"*. iOS requires device-passcode
-authentication before granting Screen Time access.
+**Corrected 2026-08-01.** This section first claimed the blocker was a
+passcode check. That was wrong, and wrong in the same way as the claim this
+whole file exists to fix: it was the plausible reading, not the measured one.
 
-**A simulator cannot have a device passcode.** Settings → Passcode opens a blank
-pane that cannot be interacted with — there is no Secure Enclave to back it.
-So the flow dead-ends, and Apple's developer forums independently report
-individual authorization failing on Simulator with `FamilyControlsError` code 3.
+`FamilyControls.framework` contains **two distinct error strings**:
+
+```
+Family Controls authorization requires a device passcode.
+Family Controls authorization canceled.
+```
+
+The app received the **second**. If a passcode check were the gate, the first
+would have been thrown. The actual system log line is:
+
+```
+FamilyControlsAgent [com.apple.FamilyControls:authentication]
+  Service deactivated without returning a response. Treating it as a cancel.
+```
+
+So the authorization UI service **dies before answering**, and the framework
+reports that silence as a cancel.
+
+The mechanical cause is that the passcode UI is not shipped in the simulator
+runtime at all. `PasscodeAndBiometricsSettings.framework` and its App Intents
+extension contain **only `.lproj` localization directories** — zero Mach-O, zero
+`Info.plist`. Among the 152 bundles in `PreferenceBundles` there is no passcode
+or Face ID pane (only `SIMPasscodeTelephonySettings`, which is the unrelated
+SIM-card PIN). That absence is also why Settings → Passcode renders blank.
+
+A device passcode additionally **cannot be set by any route**, which was
+verified separately and exhaustively: no keybag framework or keybag file exists
+anywhere in the runtime; the runtime volume is a sealed read-only APFS snapshot,
+so nothing can be injected; `simctl` has no passcode capability in any
+subcommand, and `strings` finds none in `simctl` or `CoreSimulator.framework`;
+`mdmd` implements only *clear*-device-passcode, never set; and Simulator.app's
+biometric "enrolment" is a synthetic HID stub with **zero** passcode strings in
+its binary, refuting the idea that enrolment implies a passcode.
+
+`simctl privacy` cannot grant it either — its complete service list is calendar,
+contacts, contacts-limited, location, location-always, photos, photos-add,
+media-library, microphone, **motion**, reminders, siri. There is no screen-time,
+family-controls, or device-activity service.
+
+**The conclusion is unchanged; only the reason is.** Both routes are closed, so
+authorization cannot complete on a simulator either way — but the honest
+statement is "the authorization UI service is absent," not "the passcode check
+fails."
+
+### One lead not yet tested
+
+Authorization persists to `Authorizations.plist` / `InternalAuthorizations.plist`
+under `<device>/data/Library/com.apple.FamilyControlsAgent/`. Neither file
+exists yet; the container holds only an empty `Store.plist`, a 32-byte
+`KeyData.plist`, and `PrivateSyncSerialization.plist`. Writing a synthetic
+authorization record has **not** been attempted, and `FamilyControlsAgent` may
+cross-check it against that key blob. Separately, ManagedSettings persistence
+**does** already work on the simulator — `EffectiveSettings.plist` holds live
+keys — so if the gate could be forced, shield writes might round-trip.
+Unverified in both directions; do not cite it as either possible or impossible.
 
 ## The corrected position
 
 **Wrong:** "FamilyControls does not run on the simulator."
-**Right:** FamilyControls loads and runs on the simulator; **authorization
-cannot be completed there**, so anything gated on authorization — shield apply,
-shield lift, DeviceActivity monitoring — cannot be verified on a simulator.
+**Also wrong:** "authorization fails because a simulator has no passcode."
+**Right:** FamilyControls loads and runs on the simulator and presents the real
+authorization sheet; **authorization cannot be completed there because the
+authorization UI service is not shipped in the runtime**, so anything gated on
+authorization — shield apply, shield lift, DeviceActivity monitoring — cannot be
+verified on a simulator.
+
+Two wrong reasons preceded the right one, for the same correct conclusion. That
+is the pattern worth remembering: a conclusion surviving does not mean the
+reasoning behind it was ever checked.
 
 The device smoke suite is therefore still needed, but for a narrower and more
 precise reason than the repo claimed.

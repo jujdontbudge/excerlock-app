@@ -64,7 +64,7 @@ and shield-action targets and their canonical bundle identifiers. Until those
 targets exist, JS can call ManagedSettings from the host app, but OS-side
 `intervalDidEnd` and lock-window actions cannot execute.
 
-FamilyControls and ManagedSettings load and run on the simulator, but authorization cannot be completed there (no device passcode is possible), so everything gated behind it is unverifiable — see `docs/research/familycontrols-on-simulator.md`. Shield apply,
+FamilyControls and ManagedSettings load and run on the simulator, but authorization cannot be completed there (the authorization UI service is not shipped in the simulator runtime — the passcode explanation was itself wrong, corrected 2026-08-01), so everything gated behind it is unverifiable — see `docs/research/familycontrols-on-simulator.md`. Shield apply,
 lift, interval lapse, force-quit survival, and provisioning therefore remain
 unverified until #80 is built and the complete flow is exercised on a physical
 iOS 17.4+ device.
