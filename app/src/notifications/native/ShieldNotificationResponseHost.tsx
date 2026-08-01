@@ -1,5 +1,12 @@
 import { useEffect } from "react";
 
+import {
+  NOTIFICATION_TYPE_IDS,
+  getNotificationType,
+  type NotificationRoute,
+  type NotificationTypeId,
+} from "../model/catalog";
+
 export type ShieldNotificationResponse = Readonly<{
   identifier: string;
   data: Readonly<Record<string, unknown>>;
@@ -14,10 +21,11 @@ export interface ShieldNotificationResponseSource {
 }
 
 export type ShieldDestination = "/" | "/locked-apps";
+export type NotificationDestination = ShieldDestination | NotificationRoute;
 
 export type ShieldNotificationResponseHostProps = Readonly<{
   source: ShieldNotificationResponseSource;
-  navigate: (destination: ShieldDestination) => void;
+  navigate: (destination: NotificationDestination) => void;
 }>;
 
 export function ShieldNotificationResponseHost({
@@ -26,7 +34,7 @@ export function ShieldNotificationResponseHost({
 }: ShieldNotificationResponseHostProps) {
   useEffect(() => {
     const handleResponse = (response: ShieldNotificationResponse) => {
-      const destination = shieldDestination(response);
+      const destination = notificationDestination(response);
       if (destination === null) {
         return;
       }
@@ -46,6 +54,12 @@ export function ShieldNotificationResponseHost({
   return null;
 }
 
+export function notificationDestination(
+  response: ShieldNotificationResponse,
+): NotificationDestination | null {
+  return shieldDestination(response) ?? scheduledDestination(response);
+}
+
 export function shieldDestination(
   response: ShieldNotificationResponse,
 ): ShieldDestination | null {
@@ -61,4 +75,25 @@ export function shieldDestination(
     default:
       return null;
   }
+}
+
+function scheduledDestination(
+  response: ShieldNotificationResponse,
+): NotificationRoute | null {
+  const [typeId, dayIndex, extra] = response.identifier.split(":");
+  if (
+    extra !== undefined ||
+    !isNotificationTypeId(typeId) ||
+    dayIndex === undefined ||
+    !Number.isInteger(Number(dayIndex))
+  ) {
+    return null;
+  }
+
+  const route = getNotificationType(typeId).route;
+  return response.data.url === route ? route : null;
+}
+
+function isNotificationTypeId(value: string): value is NotificationTypeId {
+  return (NOTIFICATION_TYPE_IDS as readonly string[]).includes(value);
 }

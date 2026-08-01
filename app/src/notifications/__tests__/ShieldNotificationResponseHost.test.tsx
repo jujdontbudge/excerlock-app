@@ -92,4 +92,21 @@ describe("ShieldNotificationResponseHost", () => {
     expect(navigate).not.toHaveBeenCalled();
     expect(responses.clearLastResponse).not.toHaveBeenCalled();
   });
+
+  it("routes a scheduled recap tap to its catalog surface", async () => {
+    const responses = source(
+      response("weeklyRecap:42", "/(tabs)/analysis"),
+    );
+    const navigate = jest.fn();
+
+    await render(
+      <ShieldNotificationResponseHost
+        source={responses}
+        navigate={navigate}
+      />,
+    );
+
+    expect(navigate).toHaveBeenCalledWith("/(tabs)/analysis");
+    expect(responses.clearLastResponse).toHaveBeenCalledTimes(1);
+  });
 });
