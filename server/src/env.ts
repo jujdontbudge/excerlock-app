@@ -26,6 +26,7 @@ const envSchema = z.object({
   SENTRY_DSN: optionalString,
   CLERK_SECRET_KEY: optionalString,
   ADAPTY_SECRET_KEY: optionalString,
+  ADAPTY_WEBHOOK_SECRET: optionalString,
   POSTHOG_API_KEY: optionalString,
   POSTHOG_PERSONAL_API_KEY: optionalString,
   POSTHOG_PROJECT_ID: optionalString,
@@ -65,6 +66,7 @@ export interface Environment {
   sentryDsn: string | undefined;
   clerkSecretKey: string | undefined;
   adaptySecretKey: string | undefined;
+  adaptyWebhookAuth: string | undefined;
   posthogApiKey: string | undefined;
   posthogHost: string;
   posthogPersonalApiKey: string | undefined;
@@ -99,6 +101,7 @@ export function parseEnv(
     sentryDsn: parsed.SENTRY_DSN,
     clerkSecretKey: parsed.CLERK_SECRET_KEY,
     adaptySecretKey: parsed.ADAPTY_SECRET_KEY,
+    adaptyWebhookAuth: parsed.ADAPTY_WEBHOOK_SECRET,
     posthogApiKey: parsed.POSTHOG_API_KEY,
     posthogHost: parsed.POSTHOG_HOST,
     posthogPersonalApiKey: parsed.POSTHOG_PERSONAL_API_KEY,

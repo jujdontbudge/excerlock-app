@@ -8,6 +8,8 @@ import {
   it,
 } from "vitest";
 import {
+  adaptySubscriptionStates,
+  adaptyWebhookEvents,
   featureRequestVotes,
   featureRequests,
   supportRequests,
@@ -79,6 +81,8 @@ describe("account deletion persistence", () => {
       ),
       retainedUserContent,
       retainedWebhook,
+      adaptyState: await postgres.db.select().from(adaptySubscriptionStates),
+      adaptyWebhook: await postgres.db.select().from(adaptyWebhookEvents),
     }).toEqual({
       first: {
         deletedAt,
@@ -115,6 +119,14 @@ describe("account deletion persistence", () => {
           externalUserId: "deleted",
           rawPayload: "{}",
           deliveryKey: "delivery-key",
+        }),
+      ],
+      adaptyState: [],
+      adaptyWebhook: [
+        expect.objectContaining({
+          deliveryKey: "adapty-delivery-key",
+          userId: null,
+          eventType: "subscription_started",
         }),
       ],
     });
@@ -245,5 +257,15 @@ async function seedIdentitySpine(): Promise<void> {
     deliveryKey: "delivery-key",
     eventType: "workout.updated",
     rawPayload: "{\"user_id\":\"external-user\"}",
+  });
+  await postgres.db.insert(adaptySubscriptionStates).values({
+    userId: "user_123",
+    hasAccess: true,
+    eventType: "subscription_started",
+  });
+  await postgres.db.insert(adaptyWebhookEvents).values({
+    deliveryKey: "adapty-delivery-key",
+    userId: "user_123",
+    eventType: "subscription_started",
   });
 }

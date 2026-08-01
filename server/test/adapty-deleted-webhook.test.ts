@@ -8,6 +8,7 @@ import {
   it,
 } from "vitest";
 import {
+  adaptySubscriptionStates,
   adaptyWebhookEvents,
   users,
 } from "../src/db/schema.js";
@@ -33,6 +34,38 @@ afterAll(async () => {
 });
 
 describe("late Adapty webhooks after account deletion", () => {
+  it("mirrors access for an active account without retaining the payload", async () => {
+    await postgres.db.insert(users).values({ id: "user_123" });
+    const service = createAdaptyWebhookService(
+      createDrizzleAdaptyWebhookRepository(postgres.db),
+      () => new Date("2026-07-31T20:00:00.000Z"),
+    );
+
+    expect(
+      await service.record(
+        adaptyEvent("start-event-id", "subscription_started", true),
+      ),
+    ).toEqual({ recorded: true });
+
+    expect(await postgres.db.select().from(adaptySubscriptionStates)).toEqual([
+      {
+        userId: "user_123",
+        hasAccess: true,
+        eventType: "subscription_started",
+        expiresAt: new Date("2026-09-30T20:00:00.000Z"),
+        updatedAt: new Date("2026-07-31T20:00:00.000Z"),
+      },
+    ]);
+    expect(await postgres.db.select().from(adaptyWebhookEvents)).toEqual([
+      {
+        deliveryKey: "start-event-id",
+        userId: "user_123",
+        eventType: "subscription_started",
+        receivedAt: new Date("2026-07-31T20:00:00.000Z"),
+      },
+    ]);
+  });
+
   it("acknowledges renewal and refund retries without resurrecting the user", async () => {
     await postgres.db.insert(users).values({
       id: "user_123",

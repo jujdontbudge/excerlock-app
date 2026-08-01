@@ -27,6 +27,7 @@ export {
   verifyStravaChallenge,
   verifyStravaSubscription,
   verifyWhoopWebhook,
+  verifyWebhookAuthorization,
 } from "./verification.js";
 export {
   createAdaptyWebhookService,

@@ -82,6 +82,7 @@ DATABASE_URL=postgres://excerlock@/excerlock?host=/var/run/postgresql
 SENTRY_DSN=
 CLERK_SECRET_KEY=
 ADAPTY_SECRET_KEY=
+ADAPTY_WEBHOOK_SECRET=
 POSTHOG_API_KEY=
 POSTHOG_HOST=https://us.i.posthog.com
 POSTHOG_PERSONAL_API_KEY=
