@@ -32,6 +32,22 @@ const MONITOR_PACKAGE_SOURCES = [
   },
 ];
 
+const LOCK_WINDOW_CONTEXT_HOOK =
+  "    publishLockWindowShieldContext(activityName: activity.rawValue)\n\n";
+
+function addLockWindowContextHook(source) {
+  const insertionPoint = `    persistToUserDefaults(
+      activityName: activity.rawValue,
+      callbackName: "intervalDidStart"
+    )`;
+  if (!source.includes(insertionPoint)) {
+    throw new Error(
+      "Screen Time monitor source no longer exposes the lock-window hook point",
+    );
+  }
+  return source.replace(insertionPoint, LOCK_WINDOW_CONTEXT_HOOK + insertionPoint);
+}
+
 function materializeMonitorSources(projectRoot) {
   const packageRoot = path.dirname(
     require.resolve("react-native-device-activity/package.json", {
@@ -46,10 +62,16 @@ function materializeMonitorSources(projectRoot) {
   fs.mkdirSync(targetRoot, { recursive: true });
 
   for (const source of MONITOR_PACKAGE_SOURCES) {
-    fs.copyFileSync(
-      path.join(packageRoot, source.source),
-      path.join(targetRoot, source.destination),
-    );
+    const sourcePath = path.join(packageRoot, source.source);
+    const destinationPath = path.join(targetRoot, source.destination);
+    if (source.destination === "DeviceActivityMonitorExtension.generated.swift") {
+      fs.writeFileSync(
+        destinationPath,
+        addLockWindowContextHook(fs.readFileSync(sourcePath, "utf8")),
+      );
+    } else {
+      fs.copyFileSync(sourcePath, destinationPath);
+    }
   }
 }
 

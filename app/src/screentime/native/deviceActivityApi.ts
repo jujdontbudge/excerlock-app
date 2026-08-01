@@ -7,6 +7,7 @@ export const deviceActivityApi: DeviceActivityApi = {
   authorizationStatus: DeviceActivity.getAuthorizationStatus,
   requestAuthorization: DeviceActivity.requestAuthorization,
   getFamilyActivitySelectionId: DeviceActivity.getFamilyActivitySelectionId,
+  setSharedValue: DeviceActivity.userDefaultsSet,
   blockSelection: DeviceActivity.blockSelection,
   unblockSelection: DeviceActivity.unblockSelection,
   configureActions: DeviceActivity.configureActions,

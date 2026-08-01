@@ -9,8 +9,8 @@ export type PaywallPlacement = 'onboarding' | 'in_app'
  * the client never emits purchase outcomes (D9).
  */
 export const paywallEvents = {
-  paywall_viewed: { owner: 'client' },
-  purchase_started: { owner: 'client' },
+  paywall_viewed: { owner: 'client', transmittedProperties: ['placement', 'has_trial'] },
+  purchase_started: { owner: 'client', transmittedProperties: ['placement', 'plan_id'] },
 } as const satisfies EventSpecMap
 
 export interface PaywallEventProps {

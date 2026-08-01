@@ -10,7 +10,13 @@ export type {
   PropsOf,
   ServerEventName,
 } from './src/registry'
-export { EVENT_NAMES, eventsOwnedBy, isRegisteredEvent, ownerOf } from './src/helpers'
+export {
+  EVENT_NAMES,
+  eventsOwnedBy,
+  isRegisteredEvent,
+  ownerOf,
+  transmittedPropertiesOf,
+} from './src/helpers'
 export type { EmptyProps, EventOwner, EventProps, EventSpec, PropValue } from './src/types'
 export { FLOW_SCREENS, isFlowScreen } from './src/flow'
 export type { FlowScreen } from './src/flow'

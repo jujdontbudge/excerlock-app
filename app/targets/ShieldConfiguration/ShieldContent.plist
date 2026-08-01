@@ -33,9 +33,9 @@
 		<key>deepLink</key>
 		<string>excerlock://locked-apps</string>
 		<key>primaryActionLabel</key>
-		<string>Open ExcerLock</string>
+		<string>OK</string>
 		<key>secondaryActionLabel</key>
-		<string>Close</string>
+		<string></string>
 		<key>subtitle</key>
 		<string>Back at 7:00 AM.</string>
 		<key>title</key>
@@ -46,7 +46,7 @@
 		<key>deepLink</key>
 		<string>excerlock://</string>
 		<key>primaryActionLabel</key>
-		<string>Open ExcerLock</string>
+		<string>Keep walking</string>
 		<key>secondaryActionLabel</key>
 		<string>Close</string>
 		<key>subtitle</key>

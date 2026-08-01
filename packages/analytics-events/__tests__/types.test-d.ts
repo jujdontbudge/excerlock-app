@@ -27,10 +27,9 @@ describe('PropsOf', () => {
     expectTypeOf<PropsOf<'onboarding_screen_viewed'>>().toEqualTypeOf<{
       screen: FlowScreen
     }>()
-    expectTypeOf<PropsOf<'milestone_unlocked'>>().toEqualTypeOf<{
-      category: 'streak' | 'activities' | 'time_reclaimed'
-      threshold: number
-    }>()
+    expectTypeOf<PropsOf<'milestone_unlocked'>>().toEqualTypeOf<
+      Record<string, never>
+    >()
   })
 
   it('D12: every props shape is flat string/number/boolean values only', () => {
@@ -95,7 +94,7 @@ describe('FLOW funnel type surface (§10.5)', () => {
     >()
     const step = {} as OnboardingFunnelStep
     if (step.name === 'onboarding_answer') {
-      expectTypeOf(step.props.value).toEqualTypeOf<string | number | boolean>()
+      expectTypeOf(step.props).toEqualTypeOf<{ screen: FlowScreen }>()
     }
   })
 })

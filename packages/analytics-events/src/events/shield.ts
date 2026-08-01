@@ -1,4 +1,4 @@
-import type { EventSpecMap } from '../types'
+import type { EmptyProps, EventSpecMap } from '../types'
 
 /** The four shield-screen variants (PRD §3.15 non-tab surface 1). */
 export type ShieldCause = 'balance_empty' | 'full_lock' | 'walk_session_ended' | 'lock_window'
@@ -25,17 +25,17 @@ export type WalkSessionEndReason = 'lapsed' | 'stopped'
  * cause carried as a nav param (Regen's `panic_opened` pattern).
  */
 export const shieldEvents = {
-  shields_applied: { owner: 'client' },
-  shields_lifted: { owner: 'client' },
-  shield_screen_opened: { owner: 'client' },
-  walk_session_started: { owner: 'client' },
-  walk_session_ended: { owner: 'client' },
+  shields_applied: { owner: 'client', transmittedProperties: [] },
+  shields_lifted: { owner: 'client', transmittedProperties: [] },
+  shield_screen_opened: { owner: 'client', transmittedProperties: [] },
+  walk_session_started: { owner: 'client', transmittedProperties: [] },
+  walk_session_ended: { owner: 'client', transmittedProperties: [] },
 } as const satisfies EventSpecMap
 
 export interface ShieldEventProps {
-  shields_applied: { cause: ShieldCause }
-  shields_lifted: { reason: ShieldLiftReason }
-  shield_screen_opened: { cause: ShieldCause }
-  walk_session_started: { source: WalkSessionSource }
-  walk_session_ended: { reason: WalkSessionEndReason }
+  shields_applied: EmptyProps
+  shields_lifted: EmptyProps
+  shield_screen_opened: EmptyProps
+  walk_session_started: EmptyProps
+  walk_session_ended: EmptyProps
 }

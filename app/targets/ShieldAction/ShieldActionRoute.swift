@@ -2,13 +2,23 @@ import Foundation
 
 struct ShieldActionRoute {
   static let causeDefaultsKey = "excerlock.shield.current-cause.v1"
+  static let runtimeContextDefaultsKey = "excerlock.shield.runtime-context.v1"
 
   let cause: String
   let deepLink: String
+  let routeHomeAvailable: Bool
 
   static func current(defaults: UserDefaults? = appGroupDefaults()) -> ShieldActionRoute {
     let cause = normalizedCause(defaults?.string(forKey: causeDefaultsKey))
-    return ShieldActionRoute(cause: cause, deepLink: defaultDeepLink(for: cause))
+    let context = defaults?.dictionary(forKey: runtimeContextDefaultsKey)
+    let routeHomeAvailable =
+      context?["cause"] as? String == cause &&
+      context?["routeHomeAvailable"] as? Bool == true
+    return ShieldActionRoute(
+      cause: cause,
+      deepLink: defaultDeepLink(for: cause),
+      routeHomeAvailable: routeHomeAvailable
+    )
   }
 
   private static func appGroupDefaults() -> UserDefaults? {

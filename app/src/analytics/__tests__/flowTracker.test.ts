@@ -44,8 +44,8 @@ describe("FLOW funnel helpers (PRD §10.5)", () => {
     tracker.trackOnboardingAnswer("pick-apps", true);
 
     expect(sink.signals).toEqual([
-      { kind: "capture", event: "onboarding_answer", props: { screen: "confession", value: 360 } },
-      { kind: "capture", event: "onboarding_answer", props: { screen: "pick-apps", value: true } },
+      { kind: "capture", event: "onboarding_answer", props: { screen: "confession" } },
+      { kind: "capture", event: "onboarding_answer", props: { screen: "pick-apps" } },
     ]);
   });
 

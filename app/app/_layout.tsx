@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/ui";
 import { NativeScreenTimePickerHost } from "@/screentime/native/NativeScreenTimePickerHost";
 import { NativeShieldNotificationResponseHost } from "@/notifications";
 import { SignalRuntimeHosts } from "@/home/signals";
+import { ExperimentRuntimeRoot } from "@/experiments";
 
 export default function RootLayout() {
   const runtime = (
@@ -30,7 +31,9 @@ export default function RootLayout() {
       <AccountRuntimeRoot>
         <ThemeProvider>
           <StatusBar style="light" />
-          {withBuildRuntime(runtime)}
+          <ExperimentRuntimeRoot>
+            {withBuildRuntime(runtime)}
+          </ExperimentRuntimeRoot>
         </ThemeProvider>
       </AccountRuntimeRoot>
     </SafeAreaProvider>

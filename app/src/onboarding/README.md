@@ -12,8 +12,10 @@ Analysis Time Reclaimed calculation. Both stores validate rehydrated values befo
 **Analytics.** The central renderer calls AnalyticsKit's FLOW helpers after a step commits, emitting
 `$screen` followed by `onboarding_screen_viewed` once per step during a mounted rail session.
 Re-renders and back-navigation revisits do not emit another view. Continuing from `confession`
-emits `onboarding_answer` with the value the screen has just persisted in `confessionStore`; the
-renderer reads it with `getState()` so analytics adds no store subscription or render.
+emits `onboarding_answer` for the fixed screen after the answer is persisted in
+`confessionStore`; the answer value remains on-device and is never included in analytics
+properties. The renderer reads it with `getState()` so analytics adds no store subscription or
+render.
 
 **Phase-2 seams.** Permissions, locked-app selection, paywall, and sign-up are honest visual
 scaffolds. Their screen props are the seams where FamilyControls, Adapty, and Clerk will connect in

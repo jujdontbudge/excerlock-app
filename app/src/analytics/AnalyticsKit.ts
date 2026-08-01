@@ -1,10 +1,13 @@
 import type {
   ClientEventName,
   EmptyProps,
+  FlowScreen,
   PropsOf,
 } from "@excerlock/analytics-events";
+import { isFlowScreen } from "@excerlock/analytics-events";
 
 import { noopSink } from "./noopSink";
+import { sanitizeAnalyticsProperties } from "./privacyPolicy";
 import type { AnalyticsPayload, AnalyticsSink } from "./sink";
 import { SUPER_PROPERTIES } from "./superProperties";
 
@@ -30,7 +33,7 @@ export interface AnalyticsKit {
   installSink(sink: AnalyticsSink): void;
   track<E extends ClientEventName>(event: E, ...props: TrackArgs<E>): void;
   /** Manual `$screen` on real navigation only (D11). */
-  trackScreen(screen: string): void;
+  trackScreen(screen: FlowScreen): void;
   /** Clerk user id, at post-purchase sign-up only (D6). */
   identify(distinctId: string): void;
   /** Drop the identity on sign-out so the next session starts anonymous. */
@@ -52,9 +55,15 @@ export function createAnalyticsKit(initialSink: AnalyticsSink = noopSink): Analy
     },
     track(event, ...props) {
       const [payload] = props as [AnalyticsPayload?];
-      sink.capture(event, payload ?? NO_PROPS);
+      sink.capture(
+        event,
+        sanitizeAnalyticsProperties(event, payload ?? NO_PROPS),
+      );
     },
     trackScreen(screen) {
+      if (!isFlowScreen(screen)) {
+        return;
+      }
       sink.screen(screen, NO_PROPS);
     },
     identify(distinctId) {

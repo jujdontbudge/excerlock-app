@@ -23,6 +23,10 @@ jest.mock("@/home/signals", () => ({
   getWalkingSessionController: () => mockWalkingSession,
 }));
 
+jest.mock("@/shield/shieldContentRuntime", () => ({
+  getShieldContentCoordinator: () => ({ publish: async () => undefined }),
+}));
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   appendEntries,
@@ -74,6 +78,7 @@ function controllerOver(
     walking?: () => boolean;
     subscribeWalking?: (listener: () => void) => () => void;
     now?: () => number;
+    shieldContent?: { publish: jest.Mock<Promise<void>, [string, object?]> };
   } = {},
 ): LockController {
   return new LockController({
@@ -185,6 +190,30 @@ describe("LockController", () => {
         desiredOsState: { shields: "up", drainThresholds: [] },
       },
     ]);
+    controller.stop();
+  });
+
+  it("publishes the real policy cause before a production shield can render", async () => {
+    const screenTime = new FakeScreenTime();
+    const publish = jest.fn<Promise<void>, [string, object?]>(
+      async () => undefined,
+    );
+    const controller = new LockController({
+      screenTime,
+      journal: () => emptyJournal(),
+      now: () => NOW,
+      scheduleStore: new LockScheduleStore(),
+      shieldContent: { publish },
+    });
+    await controller.start();
+    await controller.requestAuthorization();
+
+    await controller.pickApps();
+
+    expect(controller.getSnapshot().precedence.cause).toBe("fullLock");
+    expect(publish).toHaveBeenCalledWith("fullLock", {
+      lockWindowEndsAtMs: undefined,
+    });
     controller.stop();
   });
 
@@ -580,6 +609,39 @@ describe("LockController", () => {
       cause: "walking",
     });
     expect(controller.getSnapshot().shield?.effectiveShields).toBe("down");
+    controller.stop();
+  });
+
+  it("publishes Walk & Scroll ended when verified walking access closes", async () => {
+    let walking = false;
+    let publishWalking = () => {};
+    const publish = jest.fn<Promise<void>, [string, object?]>(
+      async () => undefined,
+    );
+    const screenTime = new FakeScreenTime();
+    const controller = controllerOver(screenTime, emptyJournal(), {
+      walking: () => walking,
+      subscribeWalking: (listener) => {
+        publishWalking = listener;
+        return () => undefined;
+      },
+      shieldContent: { publish },
+    });
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+    publish.mockClear();
+
+    walking = true;
+    publishWalking();
+    await controller.whenReconciled();
+    walking = false;
+    publishWalking();
+    await controller.whenReconciled();
+
+    expect(publish).toHaveBeenCalledWith("walkAndScrollEnded", {
+      lockWindowEndsAtMs: undefined,
+    });
     controller.stop();
   });
 

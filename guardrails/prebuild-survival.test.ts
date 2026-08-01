@@ -200,7 +200,16 @@ describe("prebuild-survival guardrail", () => {
         existsSync(generatedPath),
         `Clean prebuild must materialize ${generated} from the installed package`,
       ).toBe(true);
-      expect(readUtf8(generatedPath)).toBe(readUtf8(packageSource));
+      const generatedText = readUtf8(generatedPath);
+      const packageText = readUtf8(packageSource);
+      if (generated === "DeviceActivityMonitorExtension.generated.swift") {
+        const hook =
+          "    publishLockWindowShieldContext(activityName: activity.rawValue)\n\n";
+        expect(generatedText.match(/publishLockWindowShieldContext/g)).toHaveLength(1);
+        expect(generatedText.replace(hook, "")).toBe(packageText);
+      } else {
+        expect(generatedText).toBe(packageText);
+      }
     }
   });
 

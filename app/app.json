@@ -63,6 +63,13 @@
         }
       ],
       "expo-secure-store",
+      [
+        "@sentry/react-native",
+        {
+          "organization": "edge-ix",
+          "project": "excerlock-mobile"
+        }
+      ],
       "./plugins/withScreenTimeExtensionValidation"
     ],
     "experiments": {

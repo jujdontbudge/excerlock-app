@@ -32,7 +32,7 @@ ExcerLock law:
 | D9 | Subscription lifecycle events come **only** from the native Adapty → PostHog integration. The server's Adapty webhook drives the Postgres entitlement mirror and emits **no** subscription events — that would double-count. |
 | D10 | Flag keys: `exp-<surface>-<slug>` for experiments, `gate-<slug>` for gates. |
 | D11 | Autocapture **off**; no session replay; screen tracking is manual `trackScreen()` (`$screen`) on real navigation only. |
-| D12 | **Privacy:** event payloads carry ids, enums, numbers, booleans — **never free text or health values**. (Enforced at the type level: every props shape must extend `Record<string, string \| number \| boolean \| undefined>`; e.g. `sick_day_override_used` deliberately carries no reason text.) |
+| D12 | **Privacy:** event payloads carry only explicitly allowlisted product metadata — never free text, health, motion, location, workout metrics, or screen-time values. Types constrain shapes and each client registry entry declares `transmittedProperties` for the runtime boundary. |
 
 **Adding an event** = add it to its domain module (name + owner + props type) **and** to the
 taxonomy table below, in the same PR, test-first. After launch cutover, names are frozen; a rename
@@ -45,18 +45,18 @@ requires a migration note here.
 | Event | Properties |
 |---|---|
 | `onboarding_screen_viewed` | `screen` |
-| `onboarding_answer` | `screen`, `value` |
-| `condition_created` / `condition_edited` / `condition_deleted` | `kind`, `signal`, `source` |
-| `earn_claimed` | `kind`, `signal`, `source`, `payout`, `minutes_earned` |
+| `onboarding_answer` | `screen` (answer value stays on-device) |
+| `condition_created` / `condition_edited` / `condition_deleted` | — |
+| `earn_claimed` | — |
 | `sick_day_override_used` | — (reason text stays on-device, D12) |
-| `shields_applied` | `cause` |
-| `shields_lifted` | `reason` |
-| `shield_screen_opened` | `cause` (the shield's "Open ExcerLock" deep link; Regen's `panic_opened` pattern) |
-| `walk_session_started` | `source` |
-| `walk_session_ended` | `reason` |
+| `shields_applied` | — |
+| `shields_lifted` | — |
+| `shield_screen_opened` | — |
+| `walk_session_started` | — |
+| `walk_session_ended` | — |
 | `paywall_viewed` | `placement`, `has_trial` |
 | `purchase_started` | `placement`, `plan_id` |
-| `milestone_unlocked` | `category`, `threshold` |
+| `milestone_unlocked` | — |
 | `share_card_shared` | `card`, `format` |
 | `notification_toggled` | `type`, `is_enabled` |
 | `notification_opened` | `type` |
@@ -97,7 +97,8 @@ registry is the single place to correct them.
 
 ## Public surface (`index.ts`)
 
-- `EVENTS`, `EVENT_NAMES`, `ownerOf()`, `eventsOwnedBy()`, `isRegisteredEvent()` — what emitters
+- `EVENTS`, `EVENT_NAMES`, `ownerOf()`, `eventsOwnedBy()`, `isRegisteredEvent()`,
+  `transmittedPropertiesOf()` — what emitters
   and the guardrail test consume.
 - `EventName`, `PropsOf<E>`, `OwnerOf<E>`, `ClientEventName` / `ServerEventName` /
   `AdaptyEventName`, `AnalyticsEvent` — the type helpers.

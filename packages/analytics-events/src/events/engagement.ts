@@ -1,4 +1,4 @@
-import type { EventSpecMap } from '../types'
+import type { EmptyProps, EventSpecMap } from '../types'
 
 /** The three milestone ladders (PRD §3.13 — 22 badges across these rows). */
 export type MilestoneCategory = 'streak' | 'activities' | 'time_reclaimed'
@@ -16,15 +16,15 @@ export type ShareCardFormat = 'story' | 'feed'
  * local-only in v1.
  */
 export const engagementEvents = {
-  milestone_unlocked: { owner: 'client' },
-  share_card_shared: { owner: 'client' },
-  notification_toggled: { owner: 'client' },
-  notification_opened: { owner: 'client' },
-  rating_prompt_shown: { owner: 'client' },
+  milestone_unlocked: { owner: 'client', transmittedProperties: [] },
+  share_card_shared: { owner: 'client', transmittedProperties: ['card', 'format'] },
+  notification_toggled: { owner: 'client', transmittedProperties: ['type', 'is_enabled'] },
+  notification_opened: { owner: 'client', transmittedProperties: ['type'] },
+  rating_prompt_shown: { owner: 'client', transmittedProperties: ['source'] },
 } as const satisfies EventSpecMap
 
 export interface EngagementEventProps {
-  milestone_unlocked: { category: MilestoneCategory; threshold: number }
+  milestone_unlocked: EmptyProps
   share_card_shared: { card: ShareCardKind; format: ShareCardFormat }
   notification_toggled: { type: NotificationType; is_enabled: boolean }
   // Fired when a push deep-links the app open — the per-type open rate.

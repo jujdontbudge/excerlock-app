@@ -6,7 +6,9 @@ private func completeShieldAction(
 ) {
   if action == .primaryButtonPressed {
     let route = ShieldActionRoute.current()
-    ShieldDeepLinkNotification.enqueue(cause: route.cause, deepLink: route.deepLink)
+    if route.routeHomeAvailable && route.cause != "lockWindow" {
+      ShieldDeepLinkNotification.enqueue(cause: route.cause, deepLink: route.deepLink)
+    }
   }
 
   completionHandler(.close)

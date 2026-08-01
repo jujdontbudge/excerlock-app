@@ -24,8 +24,8 @@ export function createFlowTracker(kit: AnalyticsKit): FlowTracker {
       kit.trackScreen(screen);
       kit.track("onboarding_screen_viewed", { screen });
     },
-    trackOnboardingAnswer(screen, value) {
-      kit.track("onboarding_answer", { screen, value });
+    trackOnboardingAnswer(screen, _value) {
+      kit.track("onboarding_answer", { screen });
     },
   };
 }

@@ -8,12 +8,12 @@ describe("the app-wide kit", () => {
 
     const sink = createRecordingSink();
     analytics.installSink(sink);
-    analytics.track("walk_session_started", { source: "shield" });
+    analytics.track("walk_session_started");
     flowTracker.trackOnboardingScreen(FLOW_SCREENS[0]);
 
     expect(sink.signals).toEqual([
       { kind: "register", props: { app: "excerlock" } },
-      { kind: "capture", event: "walk_session_started", props: { source: "shield" } },
+      { kind: "capture", event: "walk_session_started", props: {} },
       { kind: "screen", screen: FLOW_SCREENS[0], props: {} },
       {
         kind: "capture",
@@ -29,7 +29,7 @@ describe("the app-wide kit", () => {
     sink.clear();
 
     flowTracker.trackOnboardingAnswer("confession", 360);
-    analytics.track("shields_lifted", { reason: "earn" });
+    analytics.track("shields_lifted");
 
     expect(sink.eventNames()).toEqual(["onboarding_answer", "shields_lifted"]);
   });

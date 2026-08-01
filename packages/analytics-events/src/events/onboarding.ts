@@ -8,13 +8,13 @@ import type { FlowScreen } from '../flow'
  * new code.
  */
 export const onboardingEvents = {
-  onboarding_screen_viewed: { owner: 'client' },
-  onboarding_answer: { owner: 'client' },
+  onboarding_screen_viewed: { owner: 'client', transmittedProperties: ['screen'] },
+  onboarding_answer: { owner: 'client', transmittedProperties: ['screen'] },
 } as const satisfies EventSpecMap
 
 export interface OnboardingEventProps {
   onboarding_screen_viewed: { screen: FlowScreen }
-  onboarding_answer: { screen: FlowScreen; value: PropValue }
+  onboarding_answer: { screen: FlowScreen }
 }
 
 export type OnboardingFunnelEventName = keyof OnboardingEventProps
@@ -27,5 +27,5 @@ export type OnboardingFunnelStep = {
 /** Signature of the rail's screen-view helper (fires `$screen` + `onboarding_screen_viewed`). */
 export type TrackOnboardingScreen = (screen: FlowScreen) => void
 
-/** Signature of the rail's answer helper. */
+/** Signature of the rail's answer helper; the value is consumed locally, never transmitted. */
 export type TrackOnboardingAnswer = (screen: FlowScreen, value: PropValue) => void
