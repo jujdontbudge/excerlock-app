@@ -3,11 +3,6 @@ import type { StateStorage } from "zustand/middleware";
 
 import { type NotificationClock, SystemNotificationClock } from "../clock";
 import { settleDueNotifications } from "../deliveryHistory";
-import {
-  NOTIFICATION_TYPE_IDS,
-  getNotificationType,
-  type NotificationTypeId,
-} from "../model/catalog";
 import type {
   DeliveryRecord,
   NotificationAuthorizationStatus,
@@ -22,6 +17,11 @@ import {
   freezeScheduledNotification,
   scheduledNotificationsEqual,
 } from "../scheduledNotification";
+import { configureNotificationPresentation } from "./configureNotificationPresentation";
+import {
+  fromExpoNotificationRequest,
+  toExpoNotificationRequest,
+} from "./expoNotificationCodec";
 import { createNativeNotificationPersistence } from "./nativeNotificationStore";
 
 type ExpoNotificationModuleOptions = Readonly<{
@@ -38,14 +38,7 @@ export class ExpoNotificationModule implements NotificationModule {
   private readonly listeners = new Set<ScheduleListener>();
 
   public constructor(options: ExpoNotificationModuleOptions = {}) {
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      }),
-    });
+    configureNotificationPresentation();
     this.clock = options.clock ?? new SystemNotificationClock();
     this.persistence = createNativeNotificationPersistence(options.storage);
     this.ready = this.persistence.rehydrate();
@@ -80,26 +73,9 @@ export class ExpoNotificationModule implements NotificationModule {
       return;
     }
 
-    await Notifications.scheduleNotificationAsync({
-      identifier: notification.id,
-      content: {
-        title: notification.content.title,
-        body: notification.content.body,
-        sound: "default",
-        data: {
-          url: notification.route,
-          excerlockNotification: {
-            version: 1,
-            typeId: notification.typeId,
-            deliverAtMs: notification.deliverAtMs,
-          },
-        },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: new Date(notification.deliverAtMs),
-      },
-    });
+    await Notifications.scheduleNotificationAsync(
+      toExpoNotificationRequest(notification),
+    );
     await this.rememberSchedule(notification);
     this.emit();
   }
@@ -120,7 +96,7 @@ export class ExpoNotificationModule implements NotificationModule {
     const requests = await Notifications.getAllScheduledNotificationsAsync();
     return requests
       .flatMap((request) => {
-        const notification = scheduledNotification(request);
+        const notification = fromExpoNotificationRequest(request);
         return notification === null ? [] : [notification];
       })
       .sort(byDeliveryTime);
@@ -165,50 +141,6 @@ export class ExpoNotificationModule implements NotificationModule {
       .scheduled.map((notification) => freezeScheduledNotification(notification));
     this.listeners.forEach((listener) => listener(scheduled));
   }
-}
-
-function scheduledNotification(
-  request: Notifications.NotificationRequest,
-): ScheduledNotification | null {
-  const data = request.content.data;
-  const metadata = data?.excerlockNotification;
-  const route = data?.url;
-  if (typeof metadata !== "object" || metadata === null) {
-    return null;
-  }
-
-  const version = Reflect.get(metadata, "version");
-  const typeId = Reflect.get(metadata, "typeId");
-  const deliverAtMs = Reflect.get(metadata, "deliverAtMs");
-  if (
-    version !== 1 ||
-    !isNotificationTypeId(typeId) ||
-    !Number.isFinite(deliverAtMs) ||
-    !request.identifier.startsWith(`${typeId}:`) ||
-    request.content.title === null ||
-    request.content.body === null ||
-    route !== getNotificationType(typeId).route
-  ) {
-    return null;
-  }
-
-  return freezeScheduledNotification({
-    id: request.identifier,
-    typeId,
-    content: {
-      title: request.content.title,
-      body: request.content.body,
-    },
-    route: getNotificationType(typeId).route,
-    deliverAtMs,
-  });
-}
-
-function isNotificationTypeId(value: unknown): value is NotificationTypeId {
-  return (
-    typeof value === "string" &&
-    (NOTIFICATION_TYPE_IDS as readonly string[]).includes(value)
-  );
 }
 
 function authorizationStatus(

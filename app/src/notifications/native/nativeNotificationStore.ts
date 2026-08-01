@@ -6,7 +6,7 @@ import {
   type StateStorage,
 } from "zustand/middleware";
 
-import { NOTIFICATION_TYPE_IDS, type NotificationTypeId } from "../model/catalog";
+import { isNotificationTypeId } from "../model/catalog";
 import type {
   DeliveryRecord,
   ScheduledNotification,
@@ -104,7 +104,7 @@ function isScheduledNotification(value: unknown): value is ScheduledNotification
   const content = Reflect.get(value, "content");
   return (
     typeof Reflect.get(value, "id") === "string" &&
-    isTypeId(Reflect.get(value, "typeId")) &&
+    isNotificationTypeId(Reflect.get(value, "typeId")) &&
     typeof content === "object" &&
     content !== null &&
     typeof Reflect.get(content, "title") === "string" &&
@@ -124,14 +124,7 @@ function isDeliveryRecord(value: unknown): value is DeliveryRecord {
     typeof value === "object" &&
     value !== null &&
     typeof Reflect.get(value, "id") === "string" &&
-    isTypeId(Reflect.get(value, "typeId")) &&
+    isNotificationTypeId(Reflect.get(value, "typeId")) &&
     Number.isFinite(Reflect.get(value, "deliveredAtMs"))
-  );
-}
-
-function isTypeId(value: unknown): value is NotificationTypeId {
-  return (
-    typeof value === "string" &&
-    (NOTIFICATION_TYPE_IDS as readonly string[]).includes(value)
   );
 }

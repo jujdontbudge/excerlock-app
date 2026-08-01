@@ -1,11 +1,9 @@
 import { useEffect } from "react";
 
 import {
-  NOTIFICATION_TYPE_IDS,
-  getNotificationType,
   type NotificationRoute,
-  type NotificationTypeId,
 } from "../model/catalog";
+import { scheduledNotificationDestination } from "./expoNotificationCodec";
 
 export type ShieldNotificationResponse = Readonly<{
   identifier: string;
@@ -80,20 +78,5 @@ export function shieldDestination(
 function scheduledDestination(
   response: ShieldNotificationResponse,
 ): NotificationRoute | null {
-  const [typeId, dayIndex, extra] = response.identifier.split(":");
-  if (
-    extra !== undefined ||
-    !isNotificationTypeId(typeId) ||
-    dayIndex === undefined ||
-    !Number.isInteger(Number(dayIndex))
-  ) {
-    return null;
-  }
-
-  const route = getNotificationType(typeId).route;
-  return response.data.url === route ? route : null;
-}
-
-function isNotificationTypeId(value: string): value is NotificationTypeId {
-  return (NOTIFICATION_TYPE_IDS as readonly string[]).includes(value);
+  return scheduledNotificationDestination(response.identifier, response.data);
 }

@@ -95,7 +95,17 @@ describe("ShieldNotificationResponseHost", () => {
 
   it("routes a scheduled recap tap to its catalog surface", async () => {
     const responses = source(
-      response("weeklyRecap:42", "/(tabs)/analysis"),
+      {
+        identifier: "weeklyRecap:42",
+        data: {
+          url: "/(tabs)/analysis",
+          excerlockNotification: {
+            version: 1,
+            typeId: "weeklyRecap",
+            deliverAtMs: 1_800_000,
+          },
+        },
+      },
     );
     const navigate = jest.fn();
 

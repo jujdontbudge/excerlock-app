@@ -6,11 +6,7 @@ import {
   type StateStorage,
 } from "zustand/middleware";
 
-import {
-  NOTIFICATION_TYPE_IDS,
-  getNotificationType,
-  type NotificationTypeId,
-} from "./model/catalog";
+import { getNotificationType, isNotificationTypeId } from "./model/catalog";
 import type {
   DeliveryRecord,
   NotificationAuthorizationStatus,
@@ -120,13 +116,6 @@ function isAuthorizationStatus(
   );
 }
 
-function isTypeId(value: unknown): value is NotificationTypeId {
-  return (
-    typeof value === "string" &&
-    (NOTIFICATION_TYPE_IDS as readonly string[]).includes(value)
-  );
-}
-
 function readScheduled(value: unknown): ScheduledNotification[] {
   if (!Array.isArray(value)) {
     return [];
@@ -143,7 +132,7 @@ function readScheduled(value: unknown): ScheduledNotification[] {
     if (
       typeof id !== "string" ||
       id.trim().length === 0 ||
-      !isTypeId(typeId) ||
+      !isNotificationTypeId(typeId) ||
       typeof content !== "object" ||
       content === null ||
       typeof Reflect.get(content, "title") !== "string" ||
@@ -181,7 +170,7 @@ function readDeliveries(value: unknown): DeliveryRecord[] {
     const deliveredAtMs = Reflect.get(candidate, "deliveredAtMs");
     return typeof id === "string" &&
       id.trim().length > 0 &&
-      isTypeId(typeId) &&
+      isNotificationTypeId(typeId) &&
       Number.isFinite(deliveredAtMs)
       ? [{ id, typeId, deliveredAtMs }]
       : [];
