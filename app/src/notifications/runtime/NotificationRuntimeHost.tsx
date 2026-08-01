@@ -1,5 +1,5 @@
 import { dayIndexFor, dayStartMs } from "@excerlock/ledger";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useHomeStore } from "@/home";
 import { useConfessionStore } from "@/onboarding";
@@ -55,6 +55,7 @@ export function NotificationRuntimeHost({
     (state) => state.confessedDailyMinutes,
   );
   const [dayVersion, setDayVersion] = useState(0);
+  const reconciliationQueue = useRef(Promise.resolve());
 
   const inputs = useMemo(
     () =>
@@ -81,7 +82,13 @@ export function NotificationRuntimeHost({
   );
 
   useEffect(() => {
-    void Promise.all(inputs.map((input) => dayReconciler.reconcileDay(input)));
+    reconciliationQueue.current = reconciliationQueue.current
+      .then(async () => {
+        for (const input of inputs) {
+          await dayReconciler.reconcileDay(input);
+        }
+      })
+      .catch(() => {});
   }, [dayReconciler, inputs]);
 
   useEffect(() => {

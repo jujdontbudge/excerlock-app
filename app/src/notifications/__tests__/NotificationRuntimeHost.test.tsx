@@ -44,4 +44,30 @@ describe("NotificationRuntimeHost", () => {
 
     await view.unmount();
   });
+
+  it("serializes day reconciliation so delivery evidence cannot race", async () => {
+    let finishCurrentDay: (() => void) | undefined;
+    const currentDay = new Promise<readonly unknown[]>((resolve) => {
+      finishCurrentDay = () => resolve([]);
+    });
+    const reconciler = {
+      reconcileDay: jest
+        .fn()
+        .mockReturnValueOnce(currentDay)
+        .mockResolvedValueOnce([]),
+    };
+
+    const view = await render(
+      <NotificationRuntimeHost
+        reconciler={reconciler}
+        clock={new ManualNotificationClock(12 * 60 * 60 * 1_000)}
+      />,
+    );
+
+    await waitFor(() => expect(reconciler.reconcileDay).toHaveBeenCalledTimes(1));
+    finishCurrentDay?.();
+    await waitFor(() => expect(reconciler.reconcileDay).toHaveBeenCalledTimes(2));
+
+    await view.unmount();
+  });
 });
