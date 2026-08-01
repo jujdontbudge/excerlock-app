@@ -14,9 +14,9 @@
 
 | Final path | Canvas | Four corners black | Condition-card inset | Required content | Other measured checks | Result |
 |---|---:|---|---:|---|---|---|
-| `design/mockups/tabbar-4plain-v1.png` | 853×1844 RGB | yes (`max channel ≤ 4`) | 42 px left / 45 px right ≈ 19.8 / 21.2 pt | Home · Manage · Analysis · Settings; Home active; no center/fifth tab | four nav clusters centered near x=103, 312, 526, 743; mocked status bar; no Mobbin footer | ACCEPTED DRAFT |
-| `design/mockups/card-state-live-v1.png` | 853×1844 RGB | yes (`max channel ≤ 4`) | 42 px / 42 px ≈ 19.8 / 19.8 pt | ACTIVE; Walking; apps-unlocked line; drain-paused note; no Complete/meter | four nav clusters; green live indicator; full-bleed painted banner + scrim | ACCEPTED DRAFT |
-| `design/mockups/card-rate-meter-v1.png` | 853×1844 RGB | yes (`max channel ≤ 4`) | 48 px / 50 px ≈ 22.6 / 23.6 pt | metric; exchange ratio; earned-so-far; daily cap; no Complete/ACTIVE | continuous amber meter measures 61.9% vs requested 62.4%; four nav clusters | ACCEPTED DRAFT — symmetric model variance retained over asymmetric correction |
+| `design/mockups/tabbar-4plain-v1.png` | 853×1844 RGB | yes (`max channel ≤ 4`) | 42 px left / 45 px right ≈ 19.8 / 21.2 pt | Home · Manage · Analysis · Settings; Home active; no center/fifth tab | four nav clusters centered near x=103, 312, 526, 743; mocked status bar; no Mobbin footer | **APPROVED 2026-08-01** — style anchor |
+| `design/mockups/card-state-live-v1.png` | 853×1844 RGB | yes (`max channel ≤ 4`) | 42 px / 42 px ≈ 19.8 / 19.8 pt | ACTIVE; Walking; apps-unlocked line; drain-paused note; no Complete/meter | four nav clusters; green live indicator; full-bleed painted banner + scrim | **APPROVED 2026-08-01** — style anchor |
+| `design/mockups/card-rate-meter-v1.png` | 853×1844 RGB | yes (`max channel ≤ 4`) | 48 px / 50 px ≈ 22.6 / 23.6 pt | metric; exchange ratio; earned-so-far; daily cap; no Complete/ACTIVE | continuous amber meter measures 61.9% vs requested 62.4%; four nav clusters | **APPROVED 2026-08-01 — content/palette anchor ONLY, never a geometry reference** (48/50 px inset vs 43/43 and 44/46 on the other two; R4 and R5 both regressed it, and the app enforces 20 pt in code) |
 
 ## `tabbar-4plain-v1.png`
 

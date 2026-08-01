@@ -37,6 +37,11 @@ Palette law across ALL families: subjects use only the colors named in their fam
 | Shipped glyph set | `prototype/assets/icons/icon-*.png` | Family B weight/geometry |
 | Unlock animation | `design/mockups/unlock-animation-v18-noconfetti-iphone.mp4` | Motion reference |
 | App icon | `app/assets/icon.png` | Family E composition, fill, and subject scale |
+| Four-tab bar | `design/mockups/tabbar-4plain-v1.png` | Family D tab-bar geometry: four plain tabs, one active, no center button or fifth tab |
+| STATE condition card | `design/mockups/card-state-live-v1.png` | Family D §3.15 STATE card — ACTIVE chip, live copy, scrim treatment |
+| RATE condition card | `design/mockups/card-rate-meter-v1.png` | Family D §3.15 RATE card — **content and palette only, NOT geometry** (see below) |
+
+**Do not pass `card-rate-meter-v1.png` as a horizontal-boundary reference.** Its condition card measures 49/51 px inset on the 853 px canvas where the other two anchors measure 43/43 and 44/46 (20 pt ≈ 43 px). Approved 2026-08-01 with that drift knowingly retained — three correction rounds all regressed it, and the real app enforces the 20 pt margin in code, not from a mockup. For geometry, reference the tab-bar or STATE screens.
 
 New approved assets get **added to this table** — the anchor set grows, the style converges.
 
