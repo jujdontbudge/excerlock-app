@@ -16,6 +16,7 @@ import {
 } from "@/home";
 
 import { getAccountModule } from "../accessor";
+import { ClerkAccountModule } from "../ClerkAccountModule";
 
 describe("account local-first law", () => {
   beforeEach(async () => {
@@ -23,8 +24,11 @@ describe("account local-first law", () => {
     useHomeStore.setState(DEFAULT_HOME_STATE);
   });
 
-  it("earns locally and lifts the core lock while signed out", async () => {
-    const account = getAccountModule();
+  it.each([
+    ["a keyless no-op build", () => getAccountModule()],
+    ["a configured Clerk build", () => new ClerkAccountModule()],
+  ])("earns locally and lifts the core lock while signed out in %s", async (_mode, createAccount) => {
+    const account = createAccount();
     expect((await account.getSnapshot()).session.status).toBe("signedOut");
 
     const condition: ConfiguredCondition = {

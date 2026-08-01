@@ -1,9 +1,6 @@
-import { ClerkProvider } from "@clerk/clerk-expo";
-import { tokenCache } from "@clerk/clerk-expo/token-cache";
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 
 import { getAccountModule } from "./accessor";
-import { ClerkAccountBridge } from "./ClerkAccountBridge";
 import { ClerkAccountModule } from "./ClerkAccountModule";
 
 type AccountRuntimeRootProps = Readonly<{
@@ -28,11 +25,22 @@ export function AccountRuntimeRoot({
     return children;
   }
 
+  const { ConfiguredClerkRuntimeRoot } = require(
+    "./ConfiguredClerkRuntimeRoot",
+  ) as {
+    ConfiguredClerkRuntimeRoot: ComponentType<{
+      account: ClerkAccountModule;
+      children: ReactNode;
+      publishableKey: string;
+    }>;
+  };
+
   return (
-    <ClerkProvider publishableKey={configuredKey} tokenCache={tokenCache}>
-      <ClerkAccountBridge account={configuredAccount}>
-        {children}
-      </ClerkAccountBridge>
-    </ClerkProvider>
+    <ConfiguredClerkRuntimeRoot
+      account={configuredAccount}
+      publishableKey={configuredKey}
+    >
+      {children}
+    </ConfiguredClerkRuntimeRoot>
   );
 }

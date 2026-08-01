@@ -17,8 +17,8 @@ Callers import only `index.ts` and obtain the adapter through
   outcomes;
 - `signOut()`, which clears the remote-shaped session but never local product
   data;
-- `deleteAccount()`, which represents the authenticated server deletion and
-  returns deleted or failed;
+- `deleteAccount()`, which deletes the active Clerk user and returns deleted or
+  failed;
 - snapshot change subscription for renderers.
 
 `AccountSettingsCard` owns Settings account rendering, session actions, errors,
@@ -56,10 +56,11 @@ Deletion has no silent path. Settings first explains that:
 The user must then choose `Delete account forever` or `Keep my account`.
 Failure leaves the session signed in and renders the normalized server error.
 
-The app does not emit `account_deleted`. The Phase-5 adapter calls the protected
-`/v1/user` server boundary, and the server owns both authoritative deletion and
-the `account_deleted` event. Adding a client capture here would violate the
-analytics single-emitter law.
+The app does not emit `account_deleted`; adding a client capture here would
+violate the analytics single-emitter law. The current server has no user-record
+deletion route yet, so this adapter deletes the Clerk user only. Server-record,
+Adapty, and PostHog erasure remain owned by the future authoritative server
+deletion endpoint.
 
 ## Mock, persistence, and clock
 
@@ -77,21 +78,29 @@ The mock class, persistence, and clock are deliberately not exported from
 `index.ts`. App modules depend on `AccountModule` or use
 `getAccountModule()`.
 
-## Phase-5 Clerk swap
+## Clerk runtime
 
-Phase 5 changes only the constructor in `accessor.ts` to a Clerk-backed
-`AccountModule`. That adapter will:
+Configured builds select `ClerkAccountModule` in `accessor.ts`.
+`AccountRuntimeRoot` mounts `ClerkProvider` once at the Expo root and passes
+Clerk's `tokenCache`, which persists credentials through `expo-secure-store`
+(iOS Keychain / Android Keystore-backed storage). `ClerkAccountBridge` keeps SDK
+hooks and types inside the module and attaches their actions to the class
+adapter.
+
+The adapter:
 
 - translate Clerk session/profile state into `AccountSession`;
 - normalize sign-in and sign-up success, cancellation, and error outcomes;
 - sign out through Clerk while leaving all local earning and locking data
   untouched;
-- call the authenticated `/v1/user` server boundary for deletion and clear the
-  Clerk session only after authoritative success;
+- starts Google OAuth through Clerk SSO at the allowlisted
+  `excerlock://sso-callback` redirect;
+- deletes the active Clerk user and clears its session only after success;
 - keep Clerk SDK types and credentials inside the adapter.
 
-No Clerk SDK or auth key is installed by this module. No account caller changes
-at the swap.
+The only app credential is `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`; the Clerk secret
+key is server-only. Empty or whitespace keys bypass `ClerkProvider` entirely and
+select `NoopAccountModule`, so keyless builds stay signed out without crashing.
 
 ## Test
 
