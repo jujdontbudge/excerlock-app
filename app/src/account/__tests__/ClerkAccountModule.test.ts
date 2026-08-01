@@ -74,4 +74,24 @@ describe("ClerkAccountModule", () => {
     });
     expect(authenticate).toHaveBeenCalledTimes(1);
   });
+
+  it("normalizes Clerk authentication failures", async () => {
+    const account = new ClerkAccountModule();
+    account.attachRuntime({
+      authenticate: jest.fn(async () => {
+        throw new Error("network details must stay behind the boundary");
+      }),
+      deleteAccount: jest.fn(async () => undefined),
+      signOut: jest.fn(async () => undefined),
+    });
+
+    await expect(account.signIn()).resolves.toEqual({
+      status: "failed",
+      error: {
+        code: "sign_in_failed",
+        message: "We couldn't sign you in. Please try again.",
+      },
+    });
+    expect((await account.getSnapshot()).session.status).toBe("signedOut");
+  });
 });
