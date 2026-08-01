@@ -116,11 +116,32 @@ export class ClerkAccountModule implements AccountModule {
   }
 
   public async signOut(): Promise<SignOutResult> {
-    const error = this.publishError(
-      "sign_out_failed",
-      "Account sign-out is still loading. Please try again.",
-    );
-    return Object.freeze({ status: "failed", error });
+    if (this.runtime === null) {
+      const error = this.publishError(
+        "sign_out_failed",
+        "Account sign-out is still loading. Please try again.",
+      );
+      return Object.freeze({ status: "failed", error });
+    }
+
+    this.publish({
+      ...this.snapshot,
+      intent: Object.freeze({ status: "signingOut", error: null }),
+    });
+    try {
+      await this.runtime.signOut();
+    } catch {
+      const error = this.publishError(
+        "sign_out_failed",
+        "We couldn't sign you out. Please try again.",
+      );
+      return Object.freeze({ status: "failed", error });
+    }
+    this.publish({
+      session: SIGNED_OUT,
+      intent: Object.freeze({ status: "idle", error: null }),
+    });
+    return Object.freeze({ status: "signedOut" });
   }
 
   public async deleteAccount(): Promise<AccountDeletionResult> {

@@ -113,4 +113,25 @@ describe("ClerkAccountModule", () => {
       intent: { status: "idle", error: null },
     });
   });
+
+  it("signs out through Clerk and clears only the account session", async () => {
+    const signOut = jest.fn(async () => undefined);
+    const account = new ClerkAccountModule();
+    account.attachRuntime({
+      authenticate: jest.fn(),
+      deleteAccount: jest.fn(async () => undefined),
+      signOut,
+    });
+    account.synchronizeUser({
+      id: "user_signed_in",
+      email: "member@example.com",
+      authenticatedAtMs: 1_785_542_700_000,
+    });
+
+    await expect(account.signOut()).resolves.toEqual({ status: "signedOut" });
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect((await account.getSnapshot()).session).toEqual({
+      status: "signedOut",
+    });
+  });
 });
