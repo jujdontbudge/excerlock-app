@@ -16,16 +16,14 @@ export {
 } from "./shieldCopyPayload";
 export {
   ExperimentVariantProvider,
-  useExperimentVariant,
-  useShieldCopyExperiment,
-  useTimedExperimentVariant,
 } from "./ExperimentVariantProvider";
+export { useExperimentVariant } from "./useExperimentVariant";
+export { useShieldCopyExperiment } from "./useShieldCopyExperiment";
+export { useTimedExperimentVariant } from "./useTimedExperimentVariant";
 export { ExperimentRuntimeRoot } from "./ExperimentRuntimeRoot";
 export type { ExperimentRuntimeRootProps } from "./ExperimentRuntimeRoot";
-export type {
-  ExperimentSelection,
-  ExperimentVariantProviderProps,
-} from "./ExperimentVariantProvider";
+export type { ExperimentVariantProviderProps } from "./ExperimentVariantProvider";
+export type { ExperimentSelection } from "./useExperimentVariant";
 export type {
   ShieldCopy,
   ShieldCopyCause,

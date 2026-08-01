@@ -3,7 +3,7 @@ import { Text } from "react-native";
 import { render, screen } from "@testing-library/react-native";
 
 import { ExperimentRuntimeRoot } from "../ExperimentRuntimeRoot";
-import { useShieldCopyExperiment } from "../ExperimentVariantProvider";
+import { useShieldCopyExperiment } from "../useShieldCopyExperiment";
 
 function SelectionProbe() {
   const selection = useShieldCopyExperiment();

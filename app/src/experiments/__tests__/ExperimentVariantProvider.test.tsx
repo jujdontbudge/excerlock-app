@@ -1,6 +1,6 @@
 import { renderHook } from "@testing-library/react-native";
 
-import { useTimedExperimentVariant } from "../ExperimentVariantProvider";
+import { useTimedExperimentVariant } from "../useTimedExperimentVariant";
 
 describe("ExperimentVariantProvider timing", () => {
   it("renders control first, then accepts an on-time server-selected variant", async () => {
