@@ -15,7 +15,7 @@ jest.mock("expo-notifications", () => ({
   getPermissionsAsync: jest.fn(),
   requestPermissionsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn().mockResolvedValue("afternoonNudge:42"),
-  getAllScheduledNotificationsAsync: jest.fn(),
+  getAllScheduledNotificationsAsync: jest.fn().mockResolvedValue([]),
 }));
 
 import * as Notifications from "expo-notifications";
@@ -92,5 +92,30 @@ describe("ExpoNotificationModule", () => {
     await expect(new ExpoNotificationModule().getScheduled()).resolves.toEqual([
       AFTERNOON_NUDGE,
     ]);
+  });
+
+  it("does not replace an identical pending notification", async () => {
+    jest.mocked(Notifications.getAllScheduledNotificationsAsync).mockResolvedValue([
+      {
+        identifier: "afternoonNudge:42",
+        content: {
+          title: AFTERNOON_NUDGE.content.title,
+          body: AFTERNOON_NUDGE.content.body,
+          data: {
+            url: AFTERNOON_NUDGE.route,
+            excerlockNotification: {
+              version: 1,
+              typeId: AFTERNOON_NUDGE.typeId,
+              deliverAtMs: AFTERNOON_NUDGE.deliverAtMs,
+            },
+          },
+        },
+        trigger: { type: "date" },
+      },
+    ] as unknown as Notifications.NotificationRequest[]);
+
+    await new ExpoNotificationModule().schedule(AFTERNOON_NUDGE);
+
+    expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
   });
 });

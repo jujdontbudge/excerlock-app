@@ -17,6 +17,7 @@ import {
   assertValidScheduledNotification,
   byDeliveryTime,
   freezeScheduledNotification,
+  scheduledNotificationsEqual,
 } from "../scheduledNotification";
 
 export class ExpoNotificationModule implements NotificationModule {
@@ -37,6 +38,16 @@ export class ExpoNotificationModule implements NotificationModule {
 
   public async schedule(notification: ScheduledNotification): Promise<void> {
     assertValidScheduledNotification(notification);
+    const existing = (await this.getScheduled()).find(
+      ({ id }) => id === notification.id,
+    );
+    if (
+      existing !== undefined &&
+      scheduledNotificationsEqual(existing, notification)
+    ) {
+      return;
+    }
+
     await Notifications.scheduleNotificationAsync({
       identifier: notification.id,
       content: {
