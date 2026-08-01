@@ -1,3 +1,8 @@
+jest.mock(
+  "@react-native-async-storage/async-storage",
+  () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
+
 jest.mock("expo-notifications", () => ({
   IosAuthorizationStatus: {
     NOT_DETERMINED: 0,
@@ -20,7 +25,9 @@ jest.mock("expo-notifications", () => ({
 }));
 
 import * as Notifications from "expo-notifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { ManualNotificationClock } from "../clock";
 import { ExpoNotificationModule } from "../native/ExpoNotificationModule";
 import type { ScheduledNotification } from "../NotificationModule";
 
@@ -36,7 +43,13 @@ const AFTERNOON_NUDGE: ScheduledNotification = {
 };
 
 describe("ExpoNotificationModule", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    jest
+      .mocked(Notifications.getAllScheduledNotificationsAsync)
+      .mockResolvedValue([]);
+    await AsyncStorage.clear();
+  });
 
   it("schedules the resolved plan as a one-off local notification", async () => {
     const module = new ExpoNotificationModule();
@@ -126,5 +139,24 @@ describe("ExpoNotificationModule", () => {
     expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(
       "afternoonNudge:42",
     );
+  });
+
+  it("restores delivery evidence so the rolling cap survives a restart", async () => {
+    const first = new ExpoNotificationModule({
+      clock: new ManualNotificationClock(1_000_000),
+    });
+    await first.schedule({ ...AFTERNOON_NUDGE, deliverAtMs: 1_001_000 });
+
+    const restored = new ExpoNotificationModule({
+      clock: new ManualNotificationClock(1_002_000),
+    });
+
+    await expect(restored.getDeliveries()).resolves.toEqual([
+      {
+        id: "afternoonNudge:42",
+        typeId: "afternoonNudge",
+        deliveredAtMs: 1_001_000,
+      },
+    ]);
   });
 });

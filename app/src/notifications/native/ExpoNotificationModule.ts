@@ -1,5 +1,8 @@
 import * as Notifications from "expo-notifications";
+import type { StateStorage } from "zustand/middleware";
 
+import { type NotificationClock, SystemNotificationClock } from "../clock";
+import { settleDueNotifications } from "../deliveryHistory";
 import {
   NOTIFICATION_TYPE_IDS,
   getNotificationType,
@@ -19,8 +22,26 @@ import {
   freezeScheduledNotification,
   scheduledNotificationsEqual,
 } from "../scheduledNotification";
+import { createNativeNotificationPersistence } from "./nativeNotificationStore";
+
+type ExpoNotificationModuleOptions = Readonly<{
+  clock?: NotificationClock;
+  storage?: StateStorage<Promise<void>>;
+}>;
 
 export class ExpoNotificationModule implements NotificationModule {
+  private readonly clock: NotificationClock;
+  private readonly persistence: ReturnType<
+    typeof createNativeNotificationPersistence
+  >;
+  private readonly ready: Promise<void>;
+
+  public constructor(options: ExpoNotificationModuleOptions = {}) {
+    this.clock = options.clock ?? new SystemNotificationClock();
+    this.persistence = createNativeNotificationPersistence(options.storage);
+    this.ready = this.persistence.rehydrate();
+  }
+
   public async getAuthorizationStatus(): Promise<NotificationAuthorizationStatus> {
     return authorizationStatus(await Notifications.getPermissionsAsync());
   }
@@ -37,6 +58,7 @@ export class ExpoNotificationModule implements NotificationModule {
   }
 
   public async schedule(notification: ScheduledNotification): Promise<void> {
+    await this.ready;
     assertValidScheduledNotification(notification);
     const existing = (await this.getScheduled()).find(
       ({ id }) => id === notification.id,
@@ -45,6 +67,7 @@ export class ExpoNotificationModule implements NotificationModule {
       existing !== undefined &&
       scheduledNotificationsEqual(existing, notification)
     ) {
+      await this.rememberSchedule(notification);
       return;
     }
 
@@ -68,10 +91,16 @@ export class ExpoNotificationModule implements NotificationModule {
         date: new Date(notification.deliverAtMs),
       },
     });
+    await this.rememberSchedule(notification);
   }
 
   public async cancel(id: string): Promise<void> {
+    await this.ready;
     await Notifications.cancelScheduledNotificationAsync(id);
+    const scheduled = this.persistence
+      .getState()
+      .scheduled.filter((notification) => notification.id !== id);
+    await this.persistence.update({ scheduled });
   }
 
   public async getScheduled(): Promise<readonly ScheduledNotification[]> {
@@ -85,11 +114,35 @@ export class ExpoNotificationModule implements NotificationModule {
   }
 
   public async getDeliveries(): Promise<readonly DeliveryRecord[]> {
-    return [];
+    await this.ready;
+    const state = this.persistence.getState();
+    const settled = settleDueNotifications(
+      state.scheduled,
+      state.deliveries,
+      this.clock.nowMs(),
+    );
+    if (settled.changed) {
+      await this.persistence.update({
+        scheduled: settled.scheduled,
+        deliveries: settled.deliveries,
+      });
+    }
+    return settled.deliveries.map((record) => Object.freeze({ ...record }));
   }
 
   public subscribe(_listener: ScheduleListener): NotificationUnsubscribe {
     return () => {};
+  }
+
+  private async rememberSchedule(
+    notification: ScheduledNotification,
+  ): Promise<void> {
+    const state = this.persistence.getState();
+    const scheduled = [
+      ...state.scheduled.filter(({ id }) => id !== notification.id),
+      freezeScheduledNotification(notification),
+    ].sort(byDeliveryTime);
+    await this.persistence.update({ scheduled });
   }
 }
 
