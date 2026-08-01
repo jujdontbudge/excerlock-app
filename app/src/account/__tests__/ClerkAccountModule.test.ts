@@ -134,4 +134,25 @@ describe("ClerkAccountModule", () => {
       status: "signedOut",
     });
   });
+
+  it("deletes the Clerk account before clearing the account session", async () => {
+    const deleteAccount = jest.fn(async () => undefined);
+    const account = new ClerkAccountModule();
+    account.attachRuntime({
+      authenticate: jest.fn(),
+      deleteAccount,
+      signOut: jest.fn(async () => undefined),
+    });
+    account.synchronizeUser({
+      id: "user_delete",
+      email: "delete@example.com",
+      authenticatedAtMs: 1_785_542_800_000,
+    });
+
+    await expect(account.deleteAccount()).resolves.toEqual({
+      status: "deleted",
+    });
+    expect(deleteAccount).toHaveBeenCalledTimes(1);
+    expect((await account.getSnapshot()).session.status).toBe("signedOut");
+  });
 });

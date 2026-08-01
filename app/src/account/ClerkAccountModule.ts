@@ -145,11 +145,32 @@ export class ClerkAccountModule implements AccountModule {
   }
 
   public async deleteAccount(): Promise<AccountDeletionResult> {
-    const error = this.publishError(
-      "account_deletion_failed",
-      "Account deletion is still loading. Please try again.",
-    );
-    return Object.freeze({ status: "failed", error });
+    if (this.runtime === null) {
+      const error = this.publishError(
+        "account_deletion_failed",
+        "Account deletion is still loading. Please try again.",
+      );
+      return Object.freeze({ status: "failed", error });
+    }
+
+    this.publish({
+      ...this.snapshot,
+      intent: Object.freeze({ status: "deleting", error: null }),
+    });
+    try {
+      await this.runtime.deleteAccount();
+    } catch {
+      const error = this.publishError(
+        "account_deletion_failed",
+        "We couldn't delete your account. Please try again.",
+      );
+      return Object.freeze({ status: "failed", error });
+    }
+    this.publish({
+      session: SIGNED_OUT,
+      intent: Object.freeze({ status: "idle", error: null }),
+    });
+    return Object.freeze({ status: "deleted" });
   }
 
   public subscribe(listener: AccountStateListener): AccountUnsubscribe {
