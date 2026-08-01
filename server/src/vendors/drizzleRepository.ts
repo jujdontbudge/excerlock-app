@@ -44,7 +44,8 @@ export function createDrizzleVendorRepository(
           .select({ id: users.id })
           .from(users)
           .where(and(eq(users.id, state.userId), isNull(users.deletedAt)))
-          .limit(1);
+          .limit(1)
+          .for("update");
         if (!activeUser) {
           throw new Error("User is deleted or missing");
         }
@@ -80,7 +81,8 @@ export function createDrizzleVendorRepository(
           .where(
             and(eq(users.id, connection.userId), isNull(users.deletedAt)),
           )
-          .limit(1);
+          .limit(1)
+          .for("update");
         if (!activeUser) {
           throw new Error("User is deleted or missing");
         }

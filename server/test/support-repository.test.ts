@@ -108,10 +108,21 @@ describe("support submission repository", () => {
     const repository = createDrizzleSupportSubmissionRepository(postgres.db);
 
     await expect(repository.userExists("deleted_user")).resolves.toBe(false);
+    await expect(
+      repository.insertSupportSubmission({
+        id: "late-support",
+        userId: "deleted_user",
+        category: "support",
+        title: null,
+        message: "This must not be attached to a tombstone.",
+        createdAt: new Date("2026-07-31T20:01:00.000Z"),
+        featureRequest: null,
+      }),
+    ).rejects.toThrow("User is deleted");
   });
 
   it("opens one transaction for a feature submission", async () => {
-    const database = createPostgresJsTestDatabase();
+    const database = createPostgresJsTestDatabase(() => [["user_123"]]);
     const repository = createDrizzleSupportSubmissionRepository(
       database.db,
     );

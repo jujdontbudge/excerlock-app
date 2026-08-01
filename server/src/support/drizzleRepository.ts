@@ -51,6 +51,21 @@ export function createDrizzleSupportSubmissionRepository(
 
     async insertSupportSubmission(submission) {
       await database.transaction(async (transaction) => {
+        const [activeUser] = await transaction
+          .select({ id: users.id })
+          .from(users)
+          .where(
+            and(
+              eq(users.id, submission.userId),
+              isNull(users.deletedAt),
+            ),
+          )
+          .limit(1)
+          .for("update");
+        if (!activeUser) {
+          throw new Error("User is deleted or missing");
+        }
+
         await transaction.insert(supportRequests).values({
           id: submission.id,
           userId: submission.userId,
