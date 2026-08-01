@@ -4,10 +4,8 @@ import type {
   AdaptyProfile,
 } from "react-native-adapty";
 
-import {
-  AdaptySubscriptionModule,
-  type AdaptySDKPort,
-} from "../AdaptySubscriptionModule";
+import { AdaptySubscriptionModule } from "../AdaptySubscriptionModule";
+import type { AdaptySDKPort } from "../adaptySDK";
 
 function profileWithPremium(
   overrides: Partial<NonNullable<AdaptyProfile["accessLevels"]>[string]> = {},

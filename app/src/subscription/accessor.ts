@@ -3,8 +3,8 @@ import type { StateStorage } from "zustand/middleware";
 
 import {
   AdaptySubscriptionModule,
-  type AdaptySDKPort,
 } from "./AdaptySubscriptionModule";
+import type { AdaptySDKPort } from "./adaptySDK";
 import type { SubscriptionClock } from "./clock";
 import { MockSubscriptionModule } from "./MockSubscriptionModule";
 import { MOCK_SUBSCRIPTION_STORAGE_KEY } from "./mockStore";
@@ -43,10 +43,12 @@ export function createSubscriptionModule(
   if (runtime.nodeEnv === "test") {
     return new MockSubscriptionModule();
   }
-  const apiKey = runtime.adaptyKey?.trim();
-  if (!apiKey) {
+  if (!shouldUseAdaptySubscriptionModule(runtime)) {
     return new NoopSubscriptionModule();
   }
+  const apiKey = runtime.adaptyKey?.trim();
+  // The selection predicate above proves this branch has a non-empty key.
+  if (!apiKey) throw new Error("Unreachable Adapty key state");
   const nativeSDK = sdk ?? loadAdaptySDK();
   return new AdaptySubscriptionModule(apiKey, nativeSDK);
 }

@@ -3,48 +3,24 @@ import type {
   AdaptyFlow,
   AdaptyPaywallProduct,
   AdaptyProfile,
-  AdaptyPurchaseResult,
 } from "react-native-adapty";
 
+import { entitlementFromAdaptyProfile } from "./adaptyEntitlement";
+import type { AdaptySDKPort } from "./adaptySDK";
 import type {
-  ActivePremiumEntitlement,
   PurchaseResult,
   RestoreResult,
-  SubscriptionError,
   SubscriptionModule,
   SubscriptionSnapshot,
   SubscriptionStateListener,
   SubscriptionUnsubscribe,
 } from "./SubscriptionModule";
 import { adaptyPaywallConfig } from "./adaptyPaywall";
-
-export interface AdaptySDKPort {
-  activate(
-    apiKey: string,
-    params: Readonly<{ __ignoreActivationOnFastRefresh: true }>,
-  ): Promise<void>;
-  addEventListener(
-    event: "onLatestProfileLoad",
-    callback: (profile: AdaptyProfile) => void,
-  ): Readonly<{ remove(): void }>;
-  getProfile(): Promise<AdaptyProfile>;
-  identify(customerUserId: string): Promise<void>;
-  getFlow(placementId: string): Promise<AdaptyFlow>;
-  getPaywallProducts(flow: AdaptyFlow): Promise<AdaptyPaywallProduct[]>;
-  logShowFlow(flow: AdaptyFlow): Promise<void>;
-  makePurchase(product: AdaptyPaywallProduct): Promise<AdaptyPurchaseResult>;
-  restorePurchases(): Promise<AdaptyProfile>;
-}
-
-const INITIAL_SNAPSHOT: SubscriptionSnapshot = Object.freeze({
-  entitlement: Object.freeze({ status: "inactive" }),
-  paywall: Object.freeze({ status: "idle" }),
-  intent: Object.freeze({ status: "idle", error: null }),
-});
+import { subscriptionError } from "./subscriptionError";
+import { SubscriptionSnapshotStore } from "./subscriptionSnapshotStore";
 
 export class AdaptySubscriptionModule implements SubscriptionModule {
-  private snapshot = INITIAL_SNAPSHOT;
-  private readonly listeners = new Set<SubscriptionStateListener>();
+  private readonly state = new SubscriptionSnapshotStore();
   private readonly products = new Map<string, AdaptyPaywallProduct>();
   private readonly ready: Promise<void>;
 
@@ -71,7 +47,7 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
     } catch {
       // Cached snapshot remains authoritative when the SDK is unavailable.
     }
-    return this.snapshot;
+    return this.state.current;
   }
 
   /** Post-purchase Clerk handoff; activation itself deliberately stays anonymous. */
@@ -81,8 +57,8 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
   }
 
   public async loadPaywall(placement: PaywallPlacement): Promise<void> {
-    this.publish({
-      ...this.snapshot,
+    this.state.publish({
+      ...this.state.current,
       paywall: Object.freeze({ status: "loading", placement }),
     });
     await this.ready;
@@ -93,8 +69,8 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
       products.forEach((product) => {
         this.products.set(product.vendorProductId, product);
       });
-      this.publish({
-        ...this.snapshot,
+      this.state.publish({
+        ...this.state.current,
         paywall: Object.freeze({
           status: "ready",
           paywall: adaptyPaywallConfig(placement, flow, products),
@@ -108,8 +84,8 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
         "paywall_load_failed",
         "Plans are temporarily unavailable.",
       );
-      this.publish({
-        ...this.snapshot,
+      this.state.publish({
+        ...this.state.current,
         paywall: Object.freeze({ status: "error", placement, error }),
       });
     }
@@ -121,8 +97,8 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
     if (product === undefined) {
       throw new Error("A loaded paywall product is required for purchase");
     }
-    this.publish({
-      ...this.snapshot,
+    this.state.publish({
+      ...this.state.current,
       intent: Object.freeze({ status: "purchasing", error: null }),
     });
     try {
@@ -134,12 +110,12 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
       if (result.type !== "success") {
         return this.purchaseFailure("Purchase is pending approval.");
       }
-      const entitlement = entitlementFromProfile(result.profile);
+      const entitlement = entitlementFromAdaptyProfile(result.profile);
       if (entitlement.status !== "active") {
         return this.purchaseFailure("Premium access was not activated.");
       }
-      this.publish({
-        ...this.snapshot,
+      this.state.publish({
+        ...this.state.current,
         entitlement,
         intent: Object.freeze({ status: "idle", error: null }),
       });
@@ -151,12 +127,12 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
 
   public async restore(): Promise<RestoreResult> {
     await this.ready;
-    this.publish({
-      ...this.snapshot,
+    this.state.publish({
+      ...this.state.current,
       intent: Object.freeze({ status: "restoring", error: null }),
     });
     try {
-      const entitlement = entitlementFromProfile(
+      const entitlement = entitlementFromAdaptyProfile(
         await this.sdk.restorePurchases(),
       );
       if (entitlement.status !== "active") {
@@ -164,15 +140,15 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
           "no_previous_purchase",
           "No previous purchase was found.",
         );
-        this.publish({
-          ...this.snapshot,
+        this.state.publish({
+          ...this.state.current,
           entitlement,
           intent: Object.freeze({ status: "idle", error }),
         });
         return Object.freeze({ status: "notFound", error });
       }
-      this.publish({
-        ...this.snapshot,
+      this.state.publish({
+        ...this.state.current,
         entitlement,
         intent: Object.freeze({ status: "idle", error: null }),
       });
@@ -182,8 +158,8 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
         "restore_failed",
         "The restore could not be completed.",
       );
-      this.publish({
-        ...this.snapshot,
+      this.state.publish({
+        ...this.state.current,
         intent: Object.freeze({ status: "idle", error }),
       });
       return Object.freeze({ status: "failed", error });
@@ -193,62 +169,30 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
   public subscribe(
     listener: SubscriptionStateListener,
   ): SubscriptionUnsubscribe {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    return this.state.subscribe(listener);
   }
 
   private publishEntitlement(profile: AdaptyProfile): void {
-    this.publish({
-      ...this.snapshot,
-      entitlement: entitlementFromProfile(profile),
+    this.state.publish({
+      ...this.state.current,
+      entitlement: entitlementFromAdaptyProfile(profile),
     });
   }
 
   private publishIdleIntent(): void {
-    this.publish({
-      ...this.snapshot,
+    this.state.publish({
+      ...this.state.current,
       intent: Object.freeze({ status: "idle", error: null }),
     });
   }
 
   private purchaseFailure(message: string): PurchaseResult {
     const error = subscriptionError("purchase_failed", message);
-    this.publish({
-      ...this.snapshot,
+    this.state.publish({
+      ...this.state.current,
       intent: Object.freeze({ status: "idle", error }),
     });
     return Object.freeze({ status: "failed", error });
   }
 
-  private publish(snapshot: SubscriptionSnapshot): void {
-    this.snapshot = Object.freeze(snapshot);
-    this.listeners.forEach((listener) => listener(this.snapshot));
-  }
-}
-
-function entitlementFromProfile(
-  profile: AdaptyProfile,
-): SubscriptionSnapshot["entitlement"] {
-  const access = profile.accessLevels?.premium;
-  return access?.isActive === true
-    ? activeEntitlement(access)
-    : Object.freeze({ status: "inactive" as const });
-}
-
-function activeEntitlement(
-  access: NonNullable<AdaptyProfile["accessLevels"]>[string],
-): ActivePremiumEntitlement {
-  return Object.freeze({
-    status: "active",
-    productId: access.vendorProductId,
-    purchasedAtMs: (access.startsAt ?? access.activatedAt).getTime(),
-    renewsAtMs: access.expiresAt?.getTime() ?? Number.MAX_SAFE_INTEGER,
-  });
-}
-
-function subscriptionError(
-  code: SubscriptionError["code"],
-  message: string,
-): SubscriptionError {
-  return Object.freeze({ code, message });
 }

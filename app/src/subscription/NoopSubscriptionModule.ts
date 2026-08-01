@@ -9,26 +9,21 @@ import type {
   SubscriptionStateListener,
   SubscriptionUnsubscribe,
 } from "./SubscriptionModule";
-
-const INITIAL_SNAPSHOT: SubscriptionSnapshot = Object.freeze({
-  entitlement: Object.freeze({ status: "inactive" }),
-  paywall: Object.freeze({ status: "idle" }),
-  intent: Object.freeze({ status: "idle", error: null }),
-});
+import { subscriptionError } from "./subscriptionError";
+import { SubscriptionSnapshotStore } from "./subscriptionSnapshotStore";
 
 /** Keyless-build adapter: always locked, always recoverable, never throws. */
 export class NoopSubscriptionModule implements SubscriptionModule {
-  private snapshot = INITIAL_SNAPSHOT;
-  private readonly listeners = new Set<SubscriptionStateListener>();
+  private readonly state = new SubscriptionSnapshotStore();
 
   public async getSnapshot(): Promise<SubscriptionSnapshot> {
-    return this.snapshot;
+    return this.state.current;
   }
 
   public async loadPaywall(placement: PaywallPlacement): Promise<void> {
     const error = unavailable("paywall_load_failed");
-    this.publish({
-      ...this.snapshot,
+    this.state.publish({
+      ...this.state.current,
       paywall: Object.freeze({ status: "error", placement, error }),
     });
   }
@@ -50,19 +45,10 @@ export class NoopSubscriptionModule implements SubscriptionModule {
   public subscribe(
     listener: SubscriptionStateListener,
   ): SubscriptionUnsubscribe {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  }
-
-  private publish(snapshot: SubscriptionSnapshot): void {
-    this.snapshot = Object.freeze(snapshot);
-    this.listeners.forEach((listener) => listener(this.snapshot));
+    return this.state.subscribe(listener);
   }
 }
 
 function unavailable(code: SubscriptionError["code"]): SubscriptionError {
-  return Object.freeze({
-    code,
-    message: "Subscriptions are unavailable in this build.",
-  });
+  return subscriptionError(code, "Subscriptions are unavailable in this build.");
 }
