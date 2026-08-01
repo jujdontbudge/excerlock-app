@@ -35,11 +35,22 @@ Deletion fails closed until all of these are configured:
 - `DATABASE_URL`
 - `CLERK_SECRET_KEY`
 - `ADAPTY_SECRET_KEY`
+- `ADAPTY_WEBHOOK_SECRET` (the exact Authorization value configured in Adapty)
 - `POSTHOG_PERSONAL_API_KEY` with `person:write`
 - `POSTHOG_PROJECT_ID`
 - optional `POSTHOG_API_HOST` (defaults to `https://us.posthog.com`)
 
 No secret or identity is included in route error responses.
+
+## Verification boundary
+
+Automated coverage executes the deletion and late Adapty renewal/refund paths
+against migrated PGlite and uses mocked processor HTTP responses. This lane did
+not call the live Clerk, Adapty, or PostHog erasure endpoints, did not configure
+or send a sandbox event from Adapty's dashboard, and did not exercise the full
+flow on a physical device. `ADAPTY_WEBHOOK_SECRET`, the PostHog personal key,
+and the PostHog project id are not currently present in `~/.excerlock/env`; they
+must be provisioned on the VPS and verified before submission.
 
 ## Tests
 

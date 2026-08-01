@@ -25,6 +25,10 @@ behind `index.ts`; consumers do not deep-import them.
   the delivery key. The `(vendor, delivery_key)` unique index therefore keeps
   replays idempotent after deletion, while `(user_id, received_at, id)` supports
   stable device cursor reads.
+- `adapty_subscription_states` mirrors only current access for active users.
+  `adapty_webhook_events` keeps an opaque delivery id and event type for retry
+  idempotency, never the Adapty body or purchase metadata. Deletion removes the
+  state row and nulls delivery-ledger user links.
 - `support_requests` stores the submitted category and content.
   Feature-category submissions create one linked `feature_requests` row.
 - `feature_request_votes` has a unique `(feature_request_id, user_id)` index,

@@ -133,7 +133,7 @@ function adaptyEvent(
     event_properties: {
       profile_event_id: profileEventId,
       profile_has_access_level: hasAccess,
-      subscription_expires_at: "2026-09-30T20:00:00.000Z",
+      subscription_expires_at: "2026-09-30T20:00:00.000000+0000",
     },
   };
 }

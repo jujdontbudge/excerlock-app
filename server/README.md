@@ -10,6 +10,8 @@ Self-contained Node 22+ Fastify API skeleton for the ExcerLock VPS backend.
   listed and voted on through `/v1/feature-requests`.
 - OAuth callbacks and signed vendor webhook receivers are the intentionally
   public exceptions; connect, disconnect, and cursor reads require Clerk.
+- The shared-secret-verified Adapty webhook mirrors subscription access and
+  remains retry-safe after account deletion.
 - Drizzle/Postgres, Sentry, and PostHog initialize lazily or no-op when their
   environment values are absent.
 

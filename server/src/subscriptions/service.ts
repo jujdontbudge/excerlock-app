@@ -7,7 +7,10 @@ const adaptyEventSchema = z.object({
   event_properties: z.object({
     profile_event_id: z.string().min(1),
     profile_has_access_level: z.boolean(),
-    subscription_expires_at: z.iso.datetime({ offset: true }).nullish(),
+    subscription_expires_at: z
+      .string()
+      .refine((value) => !Number.isNaN(Date.parse(value)))
+      .nullish(),
   }),
 });
 

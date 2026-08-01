@@ -111,6 +111,11 @@ Vendor route boundaries:
 - Provider/configuration errors are mapped to explicit 4xx/5xx response codes;
   no missing credential is silently ignored.
 
+`POST /v1/webhooks/adapty` is the other intentional public exception. Adapty's
+configured Authorization value is compared through fixed-width SHA-256 digests
+before an empty verification request or subscription event is accepted. The
+route never logs the header, customer id, or payload.
+
 Route fixtures use `fastify.inject()`:
 
 ```sh

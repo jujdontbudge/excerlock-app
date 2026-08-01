@@ -41,6 +41,7 @@
  *   CLERK_SECRET_KEY                     → server env
  *   EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY    → EAS secret
  *   ADAPTY_SECRET_KEY                    → server env
+ *   ADAPTY_WEBHOOK_SECRET                → server env + Adapty Authorization
  *   EXPO_PUBLIC_ADAPTY_KEY               → EAS secret
  *   EXPO_PUBLIC_POSTHOG_KEY              → EAS secret (POSTHOG_HOST optional,
  *                                          default https://us.i.posthog.com)
@@ -409,9 +410,17 @@ export async function checkClerk(ctx: Ctx): Promise<CheckResult> {
  */
 export async function checkAdapty(ctx: Ctx): Promise<CheckResult> {
   const service = 'Adapty'
-  const absent = absentVars(ctx, ['ADAPTY_SECRET_KEY', 'EXPO_PUBLIC_ADAPTY_KEY'])
+  const absent = absentVars(ctx, [
+    'ADAPTY_SECRET_KEY',
+    'ADAPTY_WEBHOOK_SECRET',
+    'EXPO_PUBLIC_ADAPTY_KEY',
+  ])
   if (absent.length) {
-    return missing(service, absent, 'public SDK key → EXPO_PUBLIC_ADAPTY_KEY, secret server key → server env')
+    return missing(
+      service,
+      absent,
+      'public SDK key → EAS secret; API and webhook secrets → server env',
+    )
   }
   const url = 'https://api.adapty.io/api/v2/server-side-api/profile/'
   try {
