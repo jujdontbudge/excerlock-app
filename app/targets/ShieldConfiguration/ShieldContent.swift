@@ -17,6 +17,7 @@ struct ShieldVariant: Decodable, Equatable {
 
 struct ResolvedShieldContent {
   let cause: ShieldCause
+  let routeHomeAvailable: Bool
   let variant: ShieldVariant
 }
 
@@ -41,9 +42,13 @@ struct ShieldContentCatalog {
   func current() -> ResolvedShieldContent {
     let cause = currentCause()
     let fallback = defaults[cause.rawValue] ?? Self.emergencyDefaults[cause.rawValue]!
-    let copyOverridden = applyingCopyOverride(to: fallback, cause: cause)
-    let contextual = applyingRuntimeContext(to: copyOverridden, cause: cause)
-    return ResolvedShieldContent(cause: cause, variant: contextual)
+    let contextual = applyingRuntimeContext(to: fallback, cause: cause)
+    let copyOverridden = applyingCopyOverride(to: contextual, cause: cause)
+    return ResolvedShieldContent(
+      cause: cause,
+      routeHomeAvailable: routeHomeAvailable(for: cause),
+      variant: copyOverridden
+    )
   }
 
   private func currentCause() -> ShieldCause {
@@ -87,6 +92,16 @@ struct ShieldContentCatalog {
     var resolved = variant
     resolved.subtitle = safeSubtitle(context["offerSubtitle"]) ?? resolved.subtitle
     return resolved
+  }
+
+  private func routeHomeAvailable(for cause: ShieldCause) -> Bool {
+    guard
+      let context = sharedDefaults?.dictionary(forKey: Self.runtimeContextKey),
+      context["cause"] as? String == cause.rawValue
+    else {
+      return false
+    }
+    return context["routeHomeAvailable"] as? Bool == true
   }
 
   private func nonEmptyString(_ value: Any?) -> String? {
@@ -146,14 +161,14 @@ struct ShieldContentCatalog {
     ),
     ShieldCause.lockWindow.rawValue: ShieldVariant(
       deepLink: "excerlock://locked-apps",
-      primaryActionLabel: "Open ExcerLock",
-      secondaryActionLabel: "Close",
+      primaryActionLabel: "OK",
+      secondaryActionLabel: "",
       subtitle: "Back at 7:00 AM.",
       title: "Apps are asleep."
     ),
     ShieldCause.walkAndScrollEnded.rawValue: ShieldVariant(
       deepLink: "excerlock://",
-      primaryActionLabel: "Open ExcerLock",
+      primaryActionLabel: "Keep walking",
       secondaryActionLabel: "Close",
       subtitle: "Start walking again to pick up where you left off.",
       title: "You stopped walking."

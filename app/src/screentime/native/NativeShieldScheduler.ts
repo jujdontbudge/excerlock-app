@@ -22,6 +22,9 @@ export type NativeShieldResult = Readonly<{
   activeLockWindowId: string | null;
 }>;
 
+const LOCK_WINDOW_SHIELD_CONTEXTS_KEY =
+  "excerlock.shield.lock-window-contexts.v1";
+
 type CancelResult = Readonly<{
   selection: ScreenTimeSelectionHandle;
   shield: NativeShieldResult;
@@ -38,6 +41,7 @@ export class NativeShieldScheduler {
 
   public restore(lockWindows: readonly NativeScheduledLockWindow[]): void {
     this.lockWindows = [...lockWindows];
+    this.writeLockWindowContexts();
   }
 
   public async reconcile(
@@ -91,6 +95,7 @@ export class NativeShieldScheduler {
       ...this.lockWindows.filter(({ id }) => id !== window.id),
       scheduled,
     ].sort((left, right) => left.startsAtMs - right.startsAtMs);
+    this.writeLockWindowContexts();
     return this.apply(selection, desired);
   }
 
@@ -104,6 +109,7 @@ export class NativeShieldScheduler {
     }
     this.deviceActivity.stopMonitoring([monitorNameForLockWindow(id)]);
     this.lockWindows = this.lockWindows.filter((window) => window.id !== id);
+    this.writeLockWindowContexts();
     return {
       selection: existing.selection,
       shield: await this.apply(existing.selection, desired),
@@ -254,6 +260,22 @@ export class NativeShieldScheduler {
     });
   }
 
+  private writeLockWindowContexts(): void {
+    this.deviceActivity.setSharedValue(
+      LOCK_WINDOW_SHIELD_CONTEXTS_KEY,
+      Object.fromEntries(
+        this.lockWindows.map((window) => [
+          monitorNameForLockWindow(window.id),
+          {
+            cause: "lockWindow",
+            offerSubtitle: `Back at ${formatWallClockTime(window.endsAtMs)}.`,
+            routeHomeAvailable: false,
+          },
+        ]),
+      ),
+    );
+  }
+
   private activeWindow(): NativeScheduledLockWindow | undefined {
     const nowMs = this.nowMs();
     return this.lockWindows.find(
@@ -266,4 +288,12 @@ export class NativeShieldScheduler {
     this.deviceActivity.stopMonitoring([UNLOCK_LEASE_MONITOR]);
     this.deviceActivity.stopMonitoring([BALANCE_DRAIN_MONITOR]);
   }
+}
+
+function formatWallClockTime(atMs: number): string {
+  const date = new Date(atMs);
+  const hour24 = date.getHours();
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${hour12}:${minutes} ${hour24 < 12 ? "AM" : "PM"}`;
 }
