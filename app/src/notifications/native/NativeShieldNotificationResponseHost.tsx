@@ -4,13 +4,13 @@ import { Platform } from "react-native";
 
 import {
   ShieldNotificationResponseHost,
-  type ShieldDestination,
+  type NotificationDestination,
 } from "./ShieldNotificationResponseHost";
 
 export function NativeShieldNotificationResponseHost() {
   const router = useRouter();
   const navigate = useCallback(
-    (destination: ShieldDestination) => router.push(destination),
+    (destination: NotificationDestination) => router.push(destination),
     [router],
   );
 

@@ -92,4 +92,31 @@ describe("ShieldNotificationResponseHost", () => {
     expect(navigate).not.toHaveBeenCalled();
     expect(responses.clearLastResponse).not.toHaveBeenCalled();
   });
+
+  it("routes a scheduled recap tap to its catalog surface", async () => {
+    const responses = source(
+      {
+        identifier: "weeklyRecap:42",
+        data: {
+          url: "/(tabs)/analysis",
+          excerlockNotification: {
+            version: 1,
+            typeId: "weeklyRecap",
+            deliverAtMs: 1_800_000,
+          },
+        },
+      },
+    );
+    const navigate = jest.fn();
+
+    await render(
+      <ShieldNotificationResponseHost
+        source={responses}
+        navigate={navigate}
+      />,
+    );
+
+    expect(navigate).toHaveBeenCalledWith("/(tabs)/analysis");
+    expect(responses.clearLastResponse).toHaveBeenCalledTimes(1);
+  });
 });

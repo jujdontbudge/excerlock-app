@@ -80,3 +80,10 @@ const BY_ID: Readonly<Record<NotificationTypeId, NotificationType>> =
 export function getNotificationType(id: NotificationTypeId): NotificationType {
   return BY_ID[id];
 }
+
+export function isNotificationTypeId(value: unknown): value is NotificationTypeId {
+  return (
+    typeof value === "string" &&
+    (NOTIFICATION_TYPE_IDS as readonly string[]).includes(value)
+  );
+}

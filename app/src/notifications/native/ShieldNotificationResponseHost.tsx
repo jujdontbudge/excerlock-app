@@ -1,5 +1,8 @@
 import { useEffect } from "react";
 
+import type { NotificationRoute } from "../model/catalog";
+import { scheduledNotificationDestination } from "./expoNotificationCodec";
+
 export type ShieldNotificationResponse = Readonly<{
   identifier: string;
   data: Readonly<Record<string, unknown>>;
@@ -14,10 +17,11 @@ export interface ShieldNotificationResponseSource {
 }
 
 export type ShieldDestination = "/" | "/locked-apps";
+export type NotificationDestination = ShieldDestination | NotificationRoute;
 
 export type ShieldNotificationResponseHostProps = Readonly<{
   source: ShieldNotificationResponseSource;
-  navigate: (destination: ShieldDestination) => void;
+  navigate: (destination: NotificationDestination) => void;
 }>;
 
 export function ShieldNotificationResponseHost({
@@ -26,7 +30,7 @@ export function ShieldNotificationResponseHost({
 }: ShieldNotificationResponseHostProps) {
   useEffect(() => {
     const handleResponse = (response: ShieldNotificationResponse) => {
-      const destination = shieldDestination(response);
+      const destination = notificationDestination(response);
       if (destination === null) {
         return;
       }
@@ -44,6 +48,15 @@ export function ShieldNotificationResponseHost({
   }, [navigate, source]);
 
   return null;
+}
+
+export function notificationDestination(
+  response: ShieldNotificationResponse,
+): NotificationDestination | null {
+  return (
+    shieldDestination(response) ??
+    scheduledNotificationDestination(response.identifier, response.data)
+  );
 }
 
 export function shieldDestination(

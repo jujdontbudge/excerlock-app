@@ -1,0 +1,215 @@
+jest.mock(
+  "@react-native-async-storage/async-storage",
+  () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
+
+jest.mock("expo-notifications", () => ({
+  IosAuthorizationStatus: {
+    NOT_DETERMINED: 0,
+    DENIED: 1,
+    AUTHORIZED: 2,
+    PROVISIONAL: 3,
+    EPHEMERAL: 4,
+  },
+  PermissionStatus: {
+    DENIED: "denied",
+    GRANTED: "granted",
+    UNDETERMINED: "undetermined",
+  },
+  SchedulableTriggerInputTypes: { DATE: "date" },
+  getPermissionsAsync: jest.fn(),
+  requestPermissionsAsync: jest.fn(),
+  scheduleNotificationAsync: jest.fn().mockResolvedValue("afternoonNudge:42"),
+  getAllScheduledNotificationsAsync: jest.fn().mockResolvedValue([]),
+  cancelScheduledNotificationAsync: jest.fn().mockResolvedValue(undefined),
+  setNotificationHandler: jest.fn(),
+}));
+
+import * as Notifications from "expo-notifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+import { ManualNotificationClock } from "../clock";
+import { ExpoNotificationModule } from "../native/ExpoNotificationModule";
+import { NATIVE_NOTIFICATIONS_STORAGE_KEY } from "../native/nativeNotificationStore";
+import type { ScheduledNotification } from "../NotificationModule";
+
+const AFTERNOON_NUDGE: ScheduledNotification = {
+  id: "afternoonNudge:42",
+  typeId: "afternoonNudge",
+  content: {
+    title: "Your screen time is waiting",
+    body: "A quick workout unlocks your apps for tonight.",
+  },
+  route: "/(tabs)",
+  deliverAtMs: 1_800_000,
+};
+
+describe("ExpoNotificationModule", () => {
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    jest
+      .mocked(Notifications.getAllScheduledNotificationsAsync)
+      .mockResolvedValue([]);
+    await AsyncStorage.clear();
+  });
+
+  it("schedules the resolved plan as a one-off local notification", async () => {
+    const module = new ExpoNotificationModule();
+
+    await module.schedule(AFTERNOON_NUDGE);
+
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledWith({
+      identifier: "afternoonNudge:42",
+      content: {
+        title: "Your screen time is waiting",
+        body: "A quick workout unlocks your apps for tonight.",
+        sound: "default",
+        data: {
+          url: "/(tabs)",
+          excerlockNotification: {
+            version: 1,
+            typeId: "afternoonNudge",
+            deliverAtMs: 1_800_000,
+          },
+        },
+      },
+      trigger: {
+        type: "date",
+        date: new Date(1_800_000),
+      },
+    });
+  });
+
+  it("presents an opted-in notification while the app is foregrounded", async () => {
+    new ExpoNotificationModule();
+
+    const handler = jest.mocked(Notifications.setNotificationHandler).mock
+      .calls[0]?.[0];
+    await expect(
+      handler?.handleNotification({} as Notifications.Notification),
+    ).resolves.toEqual({
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    });
+  });
+
+  it("reads only valid ExcerLock plans from native pending requests", async () => {
+    jest.mocked(Notifications.getAllScheduledNotificationsAsync).mockResolvedValue([
+      {
+        identifier: "afternoonNudge:42",
+        content: {
+          title: "Your screen time is waiting",
+          body: "A quick workout unlocks your apps for tonight.",
+          data: {
+            url: "/(tabs)",
+            excerlockNotification: {
+              version: 1,
+              typeId: "afternoonNudge",
+              deliverAtMs: 1_800_000,
+            },
+          },
+        },
+        trigger: { type: "date" },
+      },
+      {
+        identifier: "excerlock.shield.open.balanceEmpty",
+        content: { title: null, body: null, data: { url: "excerlock://" } },
+        trigger: { type: "unknown" },
+      },
+    ] as unknown as Notifications.NotificationRequest[]);
+
+    await expect(new ExpoNotificationModule().getScheduled()).resolves.toEqual([
+      AFTERNOON_NUDGE,
+    ]);
+  });
+
+  it("does not replace an identical pending notification", async () => {
+    jest.mocked(Notifications.getAllScheduledNotificationsAsync).mockResolvedValue([
+      {
+        identifier: "afternoonNudge:42",
+        content: {
+          title: AFTERNOON_NUDGE.content.title,
+          body: AFTERNOON_NUDGE.content.body,
+          data: {
+            url: AFTERNOON_NUDGE.route,
+            excerlockNotification: {
+              version: 1,
+              typeId: AFTERNOON_NUDGE.typeId,
+              deliverAtMs: AFTERNOON_NUDGE.deliverAtMs,
+            },
+          },
+        },
+        trigger: { type: "date" },
+      },
+    ] as unknown as Notifications.NotificationRequest[]);
+
+    await new ExpoNotificationModule().schedule(AFTERNOON_NUDGE);
+
+    expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+  });
+
+  it("cancels only the deterministic native request", async () => {
+    await new ExpoNotificationModule().cancel("afternoonNudge:42");
+
+    expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(
+      "afternoonNudge:42",
+    );
+  });
+
+  it("restores delivery evidence so the rolling cap survives a restart", async () => {
+    const first = new ExpoNotificationModule({
+      clock: new ManualNotificationClock(1_000_000),
+    });
+    await first.schedule({ ...AFTERNOON_NUDGE, deliverAtMs: 1_001_000 });
+
+    const restored = new ExpoNotificationModule({
+      clock: new ManualNotificationClock(1_002_000),
+    });
+
+    await expect(restored.getDeliveries()).resolves.toEqual([
+      {
+        id: "afternoonNudge:42",
+        typeId: "afternoonNudge",
+        deliveredAtMs: 1_001_000,
+      },
+    ]);
+  });
+
+  it("rejects persisted schedules whose route disagrees with their type", async () => {
+    await AsyncStorage.setItem(
+      NATIVE_NOTIFICATIONS_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        state: {
+          scheduled: [{ ...AFTERNOON_NUDGE, route: "/analysis" }],
+          deliveries: [],
+        },
+      }),
+    );
+
+    const restored = new ExpoNotificationModule({
+      clock: new ManualNotificationClock(AFTERNOON_NUDGE.deliverAtMs + 1),
+    });
+
+    await expect(restored.getDeliveries()).resolves.toEqual([]);
+  });
+
+  it("emits native schedule changes until the caller unsubscribes", async () => {
+    const module = new ExpoNotificationModule({
+      clock: new ManualNotificationClock(1_000_000),
+    });
+    const listener = jest.fn();
+    const unsubscribe = module.subscribe(listener);
+
+    await module.schedule(AFTERNOON_NUDGE);
+    await module.cancel(AFTERNOON_NUDGE.id);
+    unsubscribe();
+    await module.schedule({ ...AFTERNOON_NUDGE, id: "afternoonNudge:43" });
+
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener).toHaveBeenNthCalledWith(1, [AFTERNOON_NUDGE]);
+    expect(listener).toHaveBeenNthCalledWith(2, []);
+  });
+});
