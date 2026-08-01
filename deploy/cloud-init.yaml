@@ -44,6 +44,9 @@ write_files:
       # ADAPTY_SECRET_KEY=
       # ADAPTY_WEBHOOK_SECRET=
       # POSTHOG_API_KEY=
+      # POSTHOG_PERSONAL_API_KEY=  # person:write, for account erasure
+      # POSTHOG_PROJECT_ID=
+      # POSTHOG_API_HOST=https://us.posthog.com
       # RESEND_API_KEY=
       # SENTRY_DSN=
       # STRAVA_CLIENT_ID= / STRAVA_CLIENT_SECRET=  (and Oura/Whoop/Polar, Sec. 3.5c)

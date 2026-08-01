@@ -81,8 +81,12 @@ PORT=3000
 DATABASE_URL=postgres://excerlock@/excerlock?host=/var/run/postgresql
 SENTRY_DSN=
 CLERK_SECRET_KEY=
+ADAPTY_SECRET_KEY=
 POSTHOG_API_KEY=
 POSTHOG_HOST=https://us.i.posthog.com
+POSTHOG_PERSONAL_API_KEY=
+POSTHOG_PROJECT_ID=
+POSTHOG_API_HOST=https://us.posthog.com
 ```
 
 ## 2. Point DNS at the VM

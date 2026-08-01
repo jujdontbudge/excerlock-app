@@ -2,6 +2,7 @@ import "dotenv/config";
 import { z } from "zod";
 
 const DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com";
+const DEFAULT_POSTHOG_API_HOST = "https://us.posthog.com";
 
 function blankToUndefined(value: unknown): unknown {
   if (typeof value !== "string") {
@@ -24,7 +25,10 @@ const envSchema = z.object({
   DATABASE_URL: optionalString,
   SENTRY_DSN: optionalString,
   CLERK_SECRET_KEY: optionalString,
+  ADAPTY_SECRET_KEY: optionalString,
   POSTHOG_API_KEY: optionalString,
+  POSTHOG_PERSONAL_API_KEY: optionalString,
+  POSTHOG_PROJECT_ID: optionalString,
   VENDOR_OAUTH_CALLBACK_BASE_URL: optionalString,
   VENDOR_TOKEN_ENCRYPTION_KEY: optionalString,
   STRAVA_CLIENT_ID: optionalString,
@@ -43,6 +47,14 @@ const envSchema = z.object({
     blankToUndefined,
     z.string().url().default(DEFAULT_POSTHOG_HOST).catch(DEFAULT_POSTHOG_HOST),
   ),
+  POSTHOG_API_HOST: z.preprocess(
+    blankToUndefined,
+    z
+      .string()
+      .url()
+      .default(DEFAULT_POSTHOG_API_HOST)
+      .catch(DEFAULT_POSTHOG_API_HOST),
+  ),
 });
 
 export interface Environment {
@@ -52,8 +64,12 @@ export interface Environment {
   databaseUrl: string | undefined;
   sentryDsn: string | undefined;
   clerkSecretKey: string | undefined;
+  adaptySecretKey: string | undefined;
   posthogApiKey: string | undefined;
   posthogHost: string;
+  posthogPersonalApiKey: string | undefined;
+  posthogProjectId: string | undefined;
+  posthogApiHost: string;
   vendorOAuthCallbackBaseUrl: string | undefined;
   vendorTokenEncryptionKey: string | undefined;
   stravaClientId: string | undefined;
@@ -82,8 +98,12 @@ export function parseEnv(
     databaseUrl: parsed.DATABASE_URL,
     sentryDsn: parsed.SENTRY_DSN,
     clerkSecretKey: parsed.CLERK_SECRET_KEY,
+    adaptySecretKey: parsed.ADAPTY_SECRET_KEY,
     posthogApiKey: parsed.POSTHOG_API_KEY,
     posthogHost: parsed.POSTHOG_HOST,
+    posthogPersonalApiKey: parsed.POSTHOG_PERSONAL_API_KEY,
+    posthogProjectId: parsed.POSTHOG_PROJECT_ID,
+    posthogApiHost: parsed.POSTHOG_API_HOST,
     vendorOAuthCallbackBaseUrl: parsed.VENDOR_OAUTH_CALLBACK_BASE_URL,
     vendorTokenEncryptionKey: parsed.VENDOR_TOKEN_ENCRYPTION_KEY,
     stravaClientId: parsed.STRAVA_CLIENT_ID,

@@ -1,5 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
 import {
+  createConfiguredUserDeletionService,
+  IdentityErasureRequestError,
+  UserDeletionConfigurationError,
+} from "../userDeletion/index.js";
+import {
   sendNotImplemented,
   type NotImplementedResponse,
 } from "./notImplemented.js";
@@ -28,16 +33,41 @@ export function createUserRoutes(
         return;
       }
 
-      await dependencies.deletion.deleteAccount(userId);
-      return reply.code(204).send();
+      try {
+        await dependencies.deletion.deleteAccount(userId);
+        return reply.code(204).send();
+      } catch (error) {
+        if (error instanceof UserDeletionConfigurationError) {
+          return reply.code(503).send({
+            error: {
+              code: "ACCOUNT_DELETION_UNAVAILABLE",
+              message: "Account deletion is temporarily unavailable",
+            },
+          });
+        }
+        if (error instanceof IdentityErasureRequestError) {
+          return reply.code(502).send({
+            error: {
+              code: "IDENTITY_ERASURE_FAILED",
+              message: "Account deletion is incomplete; retry safely",
+            },
+          });
+        }
+        return reply.code(500).send({
+          error: {
+            code: "ACCOUNT_DELETION_FAILED",
+            message: "Account deletion is incomplete; retry safely",
+          },
+        });
+      }
     });
   };
 }
 
 export const userRoutes = createUserRoutes({
   deletion: {
-    async deleteAccount() {
-      throw new Error("Account deletion is not configured");
+    async deleteAccount(userId) {
+      await createConfiguredUserDeletionService().deleteAccount(userId);
     },
   },
 });

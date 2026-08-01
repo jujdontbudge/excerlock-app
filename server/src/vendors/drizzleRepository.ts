@@ -1,10 +1,11 @@
-import { and, asc, eq, gt, or } from "drizzle-orm";
+import { and, asc, eq, gt, isNull, or } from "drizzle-orm";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 import { getDb } from "../db/client.js";
 import {
   vendorConnections,
   vendorOAuthStates,
   vendorWebhookEvents,
+  users,
 } from "../db/schema.js";
 import type {
   VendorEventFeedRepository,
@@ -38,7 +39,17 @@ export function createDrizzleVendorRepository(
 
   return {
     async saveOAuthState(state: NewVendorOAuthStateRecord) {
-      await database.insert(vendorOAuthStates).values(state);
+      await database.transaction(async (transaction) => {
+        const [activeUser] = await transaction
+          .select({ id: users.id })
+          .from(users)
+          .where(and(eq(users.id, state.userId), isNull(users.deletedAt)))
+          .limit(1);
+        if (!activeUser) {
+          throw new Error("User is deleted or missing");
+        }
+        await transaction.insert(vendorOAuthStates).values(state);
+      });
     },
 
     async consumeOAuthState(stateHash, vendor, now) {
@@ -62,20 +73,32 @@ export function createDrizzleVendorRepository(
     },
 
     async upsertConnection(connection: NewVendorConnectionRecord) {
-      await database
-        .insert(vendorConnections)
-        .values(connection)
-        .onConflictDoUpdate({
-          target: [vendorConnections.userId, vendorConnections.vendor],
-          set: {
-            externalUserId: connection.externalUserId,
-            accessTokenCiphertext: connection.accessTokenCiphertext,
-            refreshTokenCiphertext: connection.refreshTokenCiphertext,
-            accessTokenExpiresAt: connection.accessTokenExpiresAt,
-            scopes: connection.scopes,
-            updatedAt: new Date(),
-          },
-        });
+      await database.transaction(async (transaction) => {
+        const [activeUser] = await transaction
+          .select({ id: users.id })
+          .from(users)
+          .where(
+            and(eq(users.id, connection.userId), isNull(users.deletedAt)),
+          )
+          .limit(1);
+        if (!activeUser) {
+          throw new Error("User is deleted or missing");
+        }
+        await transaction
+          .insert(vendorConnections)
+          .values(connection)
+          .onConflictDoUpdate({
+            target: [vendorConnections.userId, vendorConnections.vendor],
+            set: {
+              externalUserId: connection.externalUserId,
+              accessTokenCiphertext: connection.accessTokenCiphertext,
+              refreshTokenCiphertext: connection.refreshTokenCiphertext,
+              accessTokenExpiresAt: connection.accessTokenExpiresAt,
+              scopes: connection.scopes,
+              updatedAt: new Date(),
+            },
+          });
+      });
     },
 
     async findConnection(userId: string, vendor: Vendor) {

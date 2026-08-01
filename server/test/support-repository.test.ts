@@ -100,6 +100,16 @@ describe("repository database execution boundary", () => {
 });
 
 describe("support submission repository", () => {
+  it("does not treat a deletion tombstone as an active support user", async () => {
+    await postgres.db.insert(users).values({
+      id: "deleted_user",
+      deletedAt: new Date("2026-07-31T20:00:00.000Z"),
+    });
+    const repository = createDrizzleSupportSubmissionRepository(postgres.db);
+
+    await expect(repository.userExists("deleted_user")).resolves.toBe(false);
+  });
+
   it("opens one transaction for a feature submission", async () => {
     const database = createPostgresJsTestDatabase();
     const repository = createDrizzleSupportSubmissionRepository(
