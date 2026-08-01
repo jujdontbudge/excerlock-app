@@ -170,4 +170,23 @@ describe("ClerkAccountModule", () => {
       status: "signedOut",
     });
   });
+
+  it("normalizes Clerk account-creation failures", async () => {
+    const account = new ClerkAccountModule();
+    account.attachRuntime({
+      authenticate: jest.fn(async () => {
+        throw new Error("private Clerk error");
+      }),
+      deleteAccount: jest.fn(async () => undefined),
+      signOut: jest.fn(async () => undefined),
+    });
+
+    await expect(account.signUp()).resolves.toEqual({
+      status: "failed",
+      error: {
+        code: "sign_up_failed",
+        message: "We couldn't create your account. Please try again.",
+      },
+    });
+  });
 });

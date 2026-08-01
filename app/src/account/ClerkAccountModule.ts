@@ -95,7 +95,15 @@ export class ClerkAccountModule implements AccountModule {
       ...this.snapshot,
       intent: Object.freeze({ status: "signingUp", error: null }),
     });
-    const result = await this.runtime.authenticate();
+    let result: Awaited<ReturnType<ClerkAccountRuntime["authenticate"]>>;
+    try {
+      result = await this.runtime.authenticate();
+    } catch {
+      return this.authenticationUnavailable(
+        "sign_up_failed",
+        "We couldn't create your account. Please try again.",
+      );
+    }
     if (result.status === "cancelled") {
       this.publish({
         ...this.snapshot,
