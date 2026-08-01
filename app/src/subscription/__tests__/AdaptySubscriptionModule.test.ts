@@ -1,4 +1,8 @@
-import type { AdaptyProfile } from "react-native-adapty";
+import type {
+  AdaptyFlow,
+  AdaptyPaywallProduct,
+  AdaptyProfile,
+} from "react-native-adapty";
 
 import {
   AdaptySubscriptionModule,
@@ -58,4 +62,146 @@ describe("AdaptySubscriptionModule", () => {
       __ignoreActivationOnFastRefresh: true,
     });
   });
+
+  it("renders the placement's remote config and products in returned order", async () => {
+    const sdk = sdkWithProfile({ profileId: "anonymous-profile" });
+    const flow = {
+      id: "onboarding-flow",
+      name: "Experiment B",
+      variationId: "variant-b",
+      placement: {
+        id: "onboarding",
+        abTestName: "first-price-test",
+        audienceName: "all-users",
+        audienceVersionId: "audience-v1",
+        revision: 2,
+      },
+      paywalls: [],
+      responseCreatedAt: Date.now(),
+      remoteConfigs: [
+        {
+          lang: "en",
+          dataString: "{}",
+          data: {
+            title: "Remote title",
+            body: "Remote body",
+            valueStatement: "Remote value statement",
+            plansTitle: "Pick a remote plan",
+            trialStatement: "Annual includes a seven-day trial",
+            defaultProductId: "annual.variant-b",
+            productBadges: {
+              "annual.variant-b": "REMOTE ANNUAL BADGE",
+            },
+          },
+        },
+      ],
+    } satisfies AdaptyFlow;
+    const products = [
+      adaptyProduct({
+        id: "monthly.variant-b",
+        title: "Monthly",
+        price: "$12.99",
+        period: "month",
+      }),
+      adaptyProduct({
+        id: "annual.variant-b",
+        title: "Annual",
+        price: "$79.99",
+        period: "year",
+        trialDays: 7,
+      }),
+    ];
+    (sdk.getFlow as jest.Mock).mockResolvedValue(flow);
+    (sdk.getPaywallProducts as jest.Mock).mockResolvedValue(products);
+    (sdk.logShowFlow as jest.Mock).mockResolvedValue(undefined);
+    const subscription = new AdaptySubscriptionModule("public-sdk-key", sdk);
+
+    await subscription.loadPaywall("onboarding");
+
+    await expect(subscription.getSnapshot()).resolves.toMatchObject({
+      paywall: {
+        status: "ready",
+        paywall: {
+          placement: "onboarding",
+          title: "Remote title",
+          body: "Remote body",
+          valueStatement: "Remote value statement",
+          plansTitle: "Pick a remote plan",
+          trialStatement: "Annual includes a seven-day trial",
+          products: [
+            {
+              id: "monthly.variant-b",
+              title: "Monthly",
+              price: "$12.99 / month",
+              badge: null,
+              trialDays: 0,
+              durationDays: 30,
+              isDefault: false,
+            },
+            {
+              id: "annual.variant-b",
+              title: "Annual",
+              price: "$79.99 / year",
+              badge: "REMOTE ANNUAL BADGE",
+              trialDays: 7,
+              durationDays: 365,
+              isDefault: true,
+            },
+          ],
+        },
+      },
+    });
+    expect(sdk.getFlow).toHaveBeenCalledWith("onboarding");
+    expect(sdk.getPaywallProducts).toHaveBeenCalledWith(flow);
+    expect(sdk.logShowFlow).toHaveBeenCalledWith(flow);
+  });
 });
+
+function adaptyProduct({
+  id,
+  title,
+  price,
+  period,
+  trialDays = 0,
+}: Readonly<{
+  id: string;
+  title: string;
+  price: string;
+  period: "month" | "year";
+  trialDays?: number;
+}>): AdaptyPaywallProduct {
+  return {
+    adaptyId: `adapty-${id}`,
+    accessLevelId: "premium",
+    localizedDescription: `${title} billing detail`,
+    localizedTitle: title,
+    paywallABTestName: "first-price-test",
+    paywallName: "Experiment B",
+    paywallProductIndex: 0,
+    productType: "subscription",
+    variationId: "variant-b",
+    vendorProductId: id,
+    price: { amount: Number(price.slice(1)), localizedString: price },
+    subscription: {
+      subscriptionPeriod: { numberOfUnits: 1, unit: period },
+      localizedSubscriptionPeriod: period,
+      offer:
+        trialDays === 0
+          ? undefined
+          : {
+              identifier: { type: "introductory" },
+              phases: [
+                {
+                  numberOfPeriods: 1,
+                  paymentMode: "free_trial",
+                  price: { amount: 0, localizedString: "$0.00" },
+                  subscriptionPeriod: {
+                    numberOfUnits: trialDays,
+                    unit: "day",
+                  },
+                },
+              ],
+            },
+    },
+  };
+}

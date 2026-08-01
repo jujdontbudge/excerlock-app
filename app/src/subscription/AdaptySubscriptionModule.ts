@@ -16,6 +16,7 @@ import type {
   SubscriptionStateListener,
   SubscriptionUnsubscribe,
 } from "./SubscriptionModule";
+import { adaptyPaywallConfig } from "./adaptyPaywall";
 
 export interface AdaptySDKPort {
   activate(
@@ -72,14 +73,34 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
   }
 
   public async loadPaywall(placement: PaywallPlacement): Promise<void> {
-    const error = subscriptionError(
-      "paywall_load_failed",
-      "Plans are temporarily unavailable.",
-    );
     this.publish({
       ...this.snapshot,
-      paywall: Object.freeze({ status: "error", placement, error }),
+      paywall: Object.freeze({ status: "loading", placement }),
     });
+    await this.ready;
+    try {
+      const flow = await this.sdk.getFlow(placement);
+      const products = await this.sdk.getPaywallProducts(flow);
+      this.publish({
+        ...this.snapshot,
+        paywall: Object.freeze({
+          status: "ready",
+          paywall: adaptyPaywallConfig(placement, flow, products),
+        }),
+      });
+      void this.sdk.logShowFlow(flow).catch(() => {
+        // Adapty flow measurement is best-effort and never blocks the paywall.
+      });
+    } catch {
+      const error = subscriptionError(
+        "paywall_load_failed",
+        "Plans are temporarily unavailable.",
+      );
+      this.publish({
+        ...this.snapshot,
+        paywall: Object.freeze({ status: "error", placement, error }),
+      });
+    }
   }
 
   public async purchase(_productId: string): Promise<PurchaseResult> {
