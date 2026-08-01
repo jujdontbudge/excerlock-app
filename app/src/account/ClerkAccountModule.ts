@@ -18,6 +18,13 @@ type ClerkRuntimeUser = Readonly<{
   authenticatedAtMs: number;
 }>;
 
+type AuthenticationAttempt = Readonly<{
+  failureCode: "sign_in_failed" | "sign_up_failed";
+  failureMessage: string;
+  intentStatus: "signingIn" | "signingUp";
+  unavailableMessage: string;
+}>;
+
 export type ClerkAccountRuntime = Readonly<{
   authenticate: () => Promise<
     | Readonly<{ status: "authenticated"; user: ClerkRuntimeUser }>
@@ -44,64 +51,45 @@ export class ClerkAccountModule implements AccountModule {
   }
 
   public async signIn(): Promise<AuthenticationResult> {
-    if (this.runtime === null) {
-      return this.authenticationUnavailable(
-        "sign_in_failed",
-        "Account sign-in is still loading. Please try again.",
-      );
-    }
-
-    this.publish({
-      ...this.snapshot,
-      intent: Object.freeze({ status: "signingIn", error: null }),
+    return this.authenticate({
+      failureCode: "sign_in_failed",
+      failureMessage: "We couldn't sign you in. Please try again.",
+      intentStatus: "signingIn",
+      unavailableMessage: "Account sign-in is still loading. Please try again.",
     });
-    let result: Awaited<ReturnType<ClerkAccountRuntime["authenticate"]>>;
-    try {
-      result = await this.runtime.authenticate();
-    } catch {
-      return this.authenticationUnavailable(
-        "sign_in_failed",
-        "We couldn't sign you in. Please try again.",
-      );
-    }
-    if (result.status === "cancelled") {
-      this.publish({
-        ...this.snapshot,
-        intent: Object.freeze({ status: "idle", error: null }),
-      });
-      return Object.freeze({ status: "cancelled" });
-    }
-    const session: SignedInAccountSession = Object.freeze({
-      status: "signedIn",
-      authenticatedAtMs: result.user.authenticatedAtMs,
-      user: Object.freeze({ id: result.user.id, email: result.user.email }),
-    });
-    this.publish({
-      session,
-      intent: Object.freeze({ status: "idle", error: null }),
-    });
-    return Object.freeze({ status: "authenticated", session });
   }
 
   public async signUp(): Promise<AuthenticationResult> {
+    return this.authenticate({
+      failureCode: "sign_up_failed",
+      failureMessage: "We couldn't create your account. Please try again.",
+      intentStatus: "signingUp",
+      unavailableMessage:
+        "Account creation is still loading. Please try again.",
+    });
+  }
+
+  private async authenticate(
+    attempt: AuthenticationAttempt,
+  ): Promise<AuthenticationResult> {
     if (this.runtime === null) {
       return this.authenticationUnavailable(
-        "sign_up_failed",
-        "Account creation is still loading. Please try again.",
+        attempt.failureCode,
+        attempt.unavailableMessage,
       );
     }
 
     this.publish({
       ...this.snapshot,
-      intent: Object.freeze({ status: "signingUp", error: null }),
+      intent: Object.freeze({ status: attempt.intentStatus, error: null }),
     });
     let result: Awaited<ReturnType<ClerkAccountRuntime["authenticate"]>>;
     try {
       result = await this.runtime.authenticate();
     } catch {
       return this.authenticationUnavailable(
-        "sign_up_failed",
-        "We couldn't create your account. Please try again.",
+        attempt.failureCode,
+        attempt.failureMessage,
       );
     }
     if (result.status === "cancelled") {
