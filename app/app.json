@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "scheme": "excerlock",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
     "ios": {
       "appleTeamId": "AX3C2B78YD",
       "bundleIdentifier": "com.johansardar.excerlock",
@@ -21,6 +22,15 @@
       "./plugins/withNoPush",
       "expo-router",
       "expo-dev-client",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-logo.png",
+          "backgroundColor": "#F25A16",
+          "imageWidth": 180,
+          "resizeMode": "contain"
+        }
+      ],
       [
         "expo-build-properties",
         {
