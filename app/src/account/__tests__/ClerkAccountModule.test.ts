@@ -94,4 +94,23 @@ describe("ClerkAccountModule", () => {
     });
     expect((await account.getSnapshot()).session.status).toBe("signedOut");
   });
+
+  it("restores a Clerk session loaded from the keychain", async () => {
+    const account = new ClerkAccountModule();
+
+    account.synchronizeUser({
+      id: "user_restored",
+      email: "restored@example.com",
+      authenticatedAtMs: 1_785_542_600_000,
+    });
+
+    expect(await account.getSnapshot()).toEqual({
+      session: {
+        status: "signedIn",
+        user: { id: "user_restored", email: "restored@example.com" },
+        authenticatedAtMs: 1_785_542_600_000,
+      },
+      intent: { status: "idle", error: null },
+    });
+  });
 });

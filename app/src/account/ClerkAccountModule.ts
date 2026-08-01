@@ -140,6 +140,17 @@ export class ClerkAccountModule implements AccountModule {
     this.runtime = runtime;
   }
 
+  public synchronizeUser(user: ClerkRuntimeUser): void {
+    this.publish({
+      session: Object.freeze({
+        status: "signedIn",
+        authenticatedAtMs: user.authenticatedAtMs,
+        user: Object.freeze({ id: user.id, email: user.email }),
+      }),
+      intent: Object.freeze({ status: "idle", error: null }),
+    });
+  }
+
   private authenticationUnavailable(
     code: "sign_in_failed" | "sign_up_failed",
     message: string,
