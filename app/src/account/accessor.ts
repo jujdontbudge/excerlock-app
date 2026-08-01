@@ -1,4 +1,4 @@
-import { MockAccountModule } from "./MockAccountModule";
+import { ClerkAccountModule } from "./ClerkAccountModule";
 import { NoopAccountModule } from "./NoopAccountModule";
 import type { AccountModule } from "./AccountModule";
 
@@ -10,7 +10,7 @@ let accountModule: AccountModule | undefined;
  */
 export function getAccountModule(): AccountModule {
   accountModule ??= process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim()
-    ? new MockAccountModule()
+    ? new ClerkAccountModule()
     : new NoopAccountModule();
   return accountModule;
 }
