@@ -26,7 +26,7 @@ export type NotificationRuntimeSnapshot = Readonly<{
   confessedDailyMinutes: number | null;
 }>;
 
-/** Builds the opened current day plus the next day that can fire unattended. */
+/** Builds the opened current day plus a full offline week of local requests. */
 export function buildNotificationRuntimeInputs({
   atMs,
   journal,
@@ -40,10 +40,9 @@ export function buildNotificationRuntimeInputs({
     ledgerConfig.dayBoundaryOffsetMinutes,
   );
 
-  return [
-    planningInput(currentDayIndex, true),
-    planningInput(currentDayIndex + 1, false),
-  ];
+  return Array.from({ length: 8 }, (_, offset) =>
+    planningInput(currentDayIndex + offset, offset === 0),
+  );
 
   function planningInput(
     targetDayIndex: number,

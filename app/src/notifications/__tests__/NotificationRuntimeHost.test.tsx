@@ -4,7 +4,7 @@ jest.mock(
 );
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { render, waitFor } from "@testing-library/react-native";
+import { act, render, waitFor } from "@testing-library/react-native";
 
 import { DEFAULT_HOME_STATE, useHomeStore } from "@/home";
 import { DEFAULT_CONFESSION, useConfessionStore } from "@/onboarding";
@@ -25,19 +25,21 @@ describe("NotificationRuntimeHost", () => {
   });
 
   it("reconciles the opened day and pre-schedules the next day", async () => {
-    const reconciler = { reconcileDay: jest.fn().mockResolvedValue([]) };
+    const reconciler = { reconcileDays: jest.fn().mockResolvedValue([]) };
     const clock = new ManualNotificationClock(12 * 60 * 60 * 1_000);
 
     const view = await render(
       <NotificationRuntimeHost reconciler={reconciler} clock={clock} />,
     );
 
-    await waitFor(() => expect(reconciler.reconcileDay).toHaveBeenCalledTimes(2));
-    expect(reconciler.reconcileDay.mock.calls[0]?.[0].day).toMatchObject({
+    await waitFor(() => expect(reconciler.reconcileDays).toHaveBeenCalledTimes(1));
+    const horizon = reconciler.reconcileDays.mock.calls[0]?.[0];
+    expect(horizon).toHaveLength(8);
+    expect(horizon?.[0].day).toMatchObject({
       dayIndex: 0,
       appOpenedToday: true,
     });
-    expect(reconciler.reconcileDay.mock.calls[1]?.[0].day).toMatchObject({
+    expect(horizon?.[1].day).toMatchObject({
       dayIndex: 1,
       appOpenedToday: false,
     });
@@ -51,7 +53,7 @@ describe("NotificationRuntimeHost", () => {
       finishCurrentDay = () => resolve([]);
     });
     const reconciler = {
-      reconcileDay: jest
+      reconcileDays: jest
         .fn()
         .mockReturnValueOnce(currentDay)
         .mockResolvedValueOnce([]),
@@ -64,9 +66,15 @@ describe("NotificationRuntimeHost", () => {
       />,
     );
 
-    await waitFor(() => expect(reconciler.reconcileDay).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(reconciler.reconcileDays).toHaveBeenCalledTimes(1));
+    await act(() => {
+      useNotificationPreferencesStore.setState({
+        afternoonNudgeMinuteOfDay: 16 * 60,
+      });
+    });
+    expect(reconciler.reconcileDays).toHaveBeenCalledTimes(1);
     finishCurrentDay?.();
-    await waitFor(() => expect(reconciler.reconcileDay).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(reconciler.reconcileDays).toHaveBeenCalledTimes(2));
 
     await view.unmount();
   });

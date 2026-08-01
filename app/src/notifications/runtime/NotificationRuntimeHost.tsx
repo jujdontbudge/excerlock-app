@@ -17,8 +17,8 @@ import { useNotificationPreferencesStore } from "../store/notificationPreference
 import { buildNotificationRuntimeInputs } from "./buildNotificationRuntimeInputs";
 
 export interface NotificationDayReconciler {
-  reconcileDay(
-    input: NotificationPlanningInput,
+  reconcileDays(
+    inputs: readonly NotificationPlanningInput[],
   ): Promise<readonly unknown[]>;
 }
 
@@ -84,9 +84,7 @@ export function NotificationRuntimeHost({
   useEffect(() => {
     reconciliationQueue.current = reconciliationQueue.current
       .then(async () => {
-        for (const input of inputs) {
-          await dayReconciler.reconcileDay(input);
-        }
+        await dayReconciler.reconcileDays(inputs);
       })
       .catch(() => {});
   }, [dayReconciler, inputs]);
