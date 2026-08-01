@@ -143,11 +143,44 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
   }
 
   public async restore(): Promise<RestoreResult> {
-    const error = subscriptionError(
-      "restore_failed",
-      "Restore is temporarily unavailable.",
-    );
-    return Object.freeze({ status: "failed", error });
+    await this.ready;
+    this.publish({
+      ...this.snapshot,
+      intent: Object.freeze({ status: "restoring", error: null }),
+    });
+    try {
+      const entitlement = entitlementFromProfile(
+        await this.sdk.restorePurchases(),
+      );
+      if (entitlement.status !== "active") {
+        const error = subscriptionError(
+          "no_previous_purchase",
+          "No previous purchase was found.",
+        );
+        this.publish({
+          ...this.snapshot,
+          entitlement,
+          intent: Object.freeze({ status: "idle", error }),
+        });
+        return Object.freeze({ status: "notFound", error });
+      }
+      this.publish({
+        ...this.snapshot,
+        entitlement,
+        intent: Object.freeze({ status: "idle", error: null }),
+      });
+      return Object.freeze({ status: "restored", entitlement });
+    } catch {
+      const error = subscriptionError(
+        "restore_failed",
+        "The restore could not be completed.",
+      );
+      this.publish({
+        ...this.snapshot,
+        intent: Object.freeze({ status: "idle", error }),
+      });
+      return Object.freeze({ status: "failed", error });
+    }
   }
 
   public subscribe(

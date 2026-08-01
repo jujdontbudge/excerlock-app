@@ -188,6 +188,26 @@ describe("AdaptySubscriptionModule", () => {
     });
     expect(sdk.makePurchase).toHaveBeenCalledWith(product);
   });
+
+  it("restores the premium access level from Adapty", async () => {
+    const restoredProfile = profileWithPremium({
+      vendorProductId: "com.excerlock.winback",
+    });
+    const sdk = sdkWithProfile(restoredProfile);
+    (sdk.restorePurchases as jest.Mock).mockResolvedValue(restoredProfile);
+    const subscription = new AdaptySubscriptionModule("public-sdk-key", sdk);
+
+    await expect(subscription.restore()).resolves.toMatchObject({
+      status: "restored",
+      entitlement: {
+        status: "active",
+        productId: "com.excerlock.winback",
+      },
+    });
+    await expect(subscription.getSnapshot()).resolves.toMatchObject({
+      entitlement: { status: "active", productId: "com.excerlock.winback" },
+    });
+  });
 });
 
 function minimalFlow(): AdaptyFlow {
