@@ -1,6 +1,6 @@
 # ExcerLock physical-device smoke suite
 
-This is the milestone gate for native behavior that the simulator cannot prove.
+This is the milestone gate for native behavior that the simulator cannot prove. Scope corrected 2026-08-01: the simulator *can* run FamilyControls and present its authorization sheet, but cannot complete authorization (no device passcode), so only post-authorization behaviour belongs here — see `docs/research/familycontrols-on-simulator.md`.
 Run it on a real iPhone with iOS 17.4 or later, using the development client
 with fixture mode off. Record every result in `DEVICE-SMOKE-RESULTS.md` as
 `PASS`, `FAIL`, `BLOCKED`, or `NOT RUN`; absence of a crash is not a pass.

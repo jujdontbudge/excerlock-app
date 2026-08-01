@@ -150,7 +150,7 @@ xcrun simctl shutdown "$E2E_UDID" && xcrun simctl erase "$E2E_UDID" && xcrun sim
 
 ## Physical-device smoke checklist (skeleton)
 
-Simulator cannot run FamilyControls at all, can't produce real background wakes, real source attribution, or geofence/motion truth. The device suite is **manual-with-a-script**: a checklist the agent prints and Johan (or a future rig) walks on hardware. To be fleshed out by the §5 spike triad (device-activity-gaps §spikes); skeleton:
+Simulator **can** run FamilyControls — corrected 2026-08-01 by measurement, see `familycontrols-on-simulator.md`; the frameworks load, `getAuthorizationStatus()`/`isShieldActive()` return real values, and the system authorization sheet renders. What it cannot do is *complete* authorization (no device passcode is possible), so everything gated behind authorization — shield apply/lift, DeviceActivity monitoring — is unverifiable there, as are real background wakes, real source attribution, and geofence/motion truth. The device suite is **manual-with-a-script**: a checklist the agent prints and Johan (or a future rig) walks on hardware. To be fleshed out by the §5 spike triad (device-activity-gaps §spikes); skeleton:
 
 - [ ] **Shields:** picker → selection → `blockSelection` → shield shows on target app; survives force-quit; survives reboot. Shield copy/config per state (M7).
 - [ ] **Shield CTA (G1):** shield button behavior on current iOS — `openUrl` hack vs notification tap-through; measure taps-to-app.

@@ -77,7 +77,7 @@ The mock and native classes are deliberately not exported from `index.ts`. No
 app module may import either implementation directly. `getScreenTimeModule()`
 is the single composition point.
 
-Native behavior cannot be verified on a simulator because FamilyControls
+Native behavior cannot be fully verified on a simulator because FamilyControls **authorization** cannot complete there (the frameworks themselves do run — `docs/research/familycontrols-on-simulator.md`); FamilyControls
 requires a physical device. Release-build and hardware verification therefore
 remain with #84; the selection tests here prove only which adapter each modeled
 runtime chooses.
