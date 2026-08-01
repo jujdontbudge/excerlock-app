@@ -30,6 +30,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { ManualNotificationClock } from "../clock";
 import { ExpoNotificationModule } from "../native/ExpoNotificationModule";
+import { NATIVE_NOTIFICATIONS_STORAGE_KEY } from "../native/nativeNotificationStore";
 import type { ScheduledNotification } from "../NotificationModule";
 
 const AFTERNOON_NUDGE: ScheduledNotification = {
@@ -174,6 +175,25 @@ describe("ExpoNotificationModule", () => {
         deliveredAtMs: 1_001_000,
       },
     ]);
+  });
+
+  it("rejects persisted schedules whose route disagrees with their type", async () => {
+    await AsyncStorage.setItem(
+      NATIVE_NOTIFICATIONS_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        state: {
+          scheduled: [{ ...AFTERNOON_NUDGE, route: "/analysis" }],
+          deliveries: [],
+        },
+      }),
+    );
+
+    const restored = new ExpoNotificationModule({
+      clock: new ManualNotificationClock(AFTERNOON_NUDGE.deliverAtMs + 1),
+    });
+
+    await expect(restored.getDeliveries()).resolves.toEqual([]);
   });
 
   it("emits native schedule changes until the caller unsubscribes", async () => {

@@ -6,11 +6,14 @@ import {
   type StateStorage,
 } from "zustand/middleware";
 
-import { isNotificationTypeId } from "../model/catalog";
 import type {
   DeliveryRecord,
   ScheduledNotification,
 } from "../NotificationModule";
+import {
+  readDeliveryRecords,
+  readScheduledNotifications,
+} from "../persistenceCodec";
 
 export const NATIVE_NOTIFICATIONS_STORAGE_KEY =
   "excerlock.notifications.native.v1";
@@ -89,42 +92,7 @@ function readPersistedState(
   }
 
   return {
-    scheduled: readScheduled(Reflect.get(persistedState, "scheduled")),
-    deliveries: readDeliveries(Reflect.get(persistedState, "deliveries")),
+    scheduled: readScheduledNotifications(Reflect.get(persistedState, "scheduled")),
+    deliveries: readDeliveryRecords(Reflect.get(persistedState, "deliveries")),
   };
-}
-
-function readScheduled(value: unknown): ScheduledNotification[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(isScheduledNotification);
-}
-
-function isScheduledNotification(value: unknown): value is ScheduledNotification {
-  if (typeof value !== "object" || value === null) return false;
-  const content = Reflect.get(value, "content");
-  return (
-    typeof Reflect.get(value, "id") === "string" &&
-    isNotificationTypeId(Reflect.get(value, "typeId")) &&
-    typeof content === "object" &&
-    content !== null &&
-    typeof Reflect.get(content, "title") === "string" &&
-    typeof Reflect.get(content, "body") === "string" &&
-    typeof Reflect.get(value, "route") === "string" &&
-    Number.isFinite(Reflect.get(value, "deliverAtMs"))
-  );
-}
-
-function readDeliveries(value: unknown): DeliveryRecord[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(isDeliveryRecord);
-}
-
-function isDeliveryRecord(value: unknown): value is DeliveryRecord {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof Reflect.get(value, "id") === "string" &&
-    isNotificationTypeId(Reflect.get(value, "typeId")) &&
-    Number.isFinite(Reflect.get(value, "deliveredAtMs"))
-  );
 }

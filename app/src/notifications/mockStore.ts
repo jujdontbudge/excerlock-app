@@ -6,12 +6,15 @@ import {
   type StateStorage,
 } from "zustand/middleware";
 
-import { getNotificationType, isNotificationTypeId } from "./model/catalog";
 import type {
   DeliveryRecord,
   NotificationAuthorizationStatus,
   ScheduledNotification,
 } from "./NotificationModule";
+import {
+  readDeliveryRecords,
+  readScheduledNotifications,
+} from "./persistenceCodec";
 
 export const MOCK_NOTIFICATIONS_STORAGE_KEY =
   "excerlock.notifications.mock.v1";
@@ -103,8 +106,8 @@ function readPersistedState(
     authorizationStatus: isAuthorizationStatus(authorizationStatus)
       ? authorizationStatus
       : fallback.authorizationStatus,
-    scheduled: readScheduled(Reflect.get(persistedState, "scheduled")),
-    deliveries: readDeliveries(Reflect.get(persistedState, "deliveries")),
+    scheduled: readScheduledNotifications(Reflect.get(persistedState, "scheduled")),
+    deliveries: readDeliveryRecords(Reflect.get(persistedState, "deliveries")),
   };
 }
 
@@ -114,65 +117,4 @@ function isAuthorizationStatus(
   return (
     value === "notDetermined" || value === "approved" || value === "denied"
   );
-}
-
-function readScheduled(value: unknown): ScheduledNotification[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value.flatMap((candidate) => {
-    if (typeof candidate !== "object" || candidate === null) {
-      return [];
-    }
-    const id = Reflect.get(candidate, "id");
-    const typeId = Reflect.get(candidate, "typeId");
-    const content = Reflect.get(candidate, "content");
-    const route = Reflect.get(candidate, "route");
-    const deliverAtMs = Reflect.get(candidate, "deliverAtMs");
-    if (
-      typeof id !== "string" ||
-      id.trim().length === 0 ||
-      !isNotificationTypeId(typeId) ||
-      typeof content !== "object" ||
-      content === null ||
-      typeof Reflect.get(content, "title") !== "string" ||
-      typeof Reflect.get(content, "body") !== "string" ||
-      route !== getNotificationType(typeId).route ||
-      !Number.isFinite(deliverAtMs)
-    ) {
-      return [];
-    }
-    return [
-      {
-        id,
-        typeId,
-        content: {
-          title: Reflect.get(content, "title"),
-          body: Reflect.get(content, "body"),
-        },
-        route,
-        deliverAtMs,
-      },
-    ];
-  });
-}
-
-function readDeliveries(value: unknown): DeliveryRecord[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value.flatMap((candidate) => {
-    if (typeof candidate !== "object" || candidate === null) {
-      return [];
-    }
-    const id = Reflect.get(candidate, "id");
-    const typeId = Reflect.get(candidate, "typeId");
-    const deliveredAtMs = Reflect.get(candidate, "deliveredAtMs");
-    return typeof id === "string" &&
-      id.trim().length > 0 &&
-      isNotificationTypeId(typeId) &&
-      Number.isFinite(deliveredAtMs)
-      ? [{ id, typeId, deliveredAtMs }]
-      : [];
-  });
 }
