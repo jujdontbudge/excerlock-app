@@ -35,6 +35,7 @@ export class ExpoNotificationModule implements NotificationModule {
     typeof createNativeNotificationPersistence
   >;
   private readonly ready: Promise<void>;
+  private readonly listeners = new Set<ScheduleListener>();
 
   public constructor(options: ExpoNotificationModuleOptions = {}) {
     Notifications.setNotificationHandler({
@@ -100,6 +101,7 @@ export class ExpoNotificationModule implements NotificationModule {
       },
     });
     await this.rememberSchedule(notification);
+    this.emit();
   }
 
   public async cancel(id: string): Promise<void> {
@@ -108,7 +110,10 @@ export class ExpoNotificationModule implements NotificationModule {
     const scheduled = this.persistence
       .getState()
       .scheduled.filter((notification) => notification.id !== id);
+    const changed =
+      scheduled.length !== this.persistence.getState().scheduled.length;
     await this.persistence.update({ scheduled });
+    if (changed) this.emit();
   }
 
   public async getScheduled(): Promise<readonly ScheduledNotification[]> {
@@ -138,8 +143,9 @@ export class ExpoNotificationModule implements NotificationModule {
     return settled.deliveries.map((record) => Object.freeze({ ...record }));
   }
 
-  public subscribe(_listener: ScheduleListener): NotificationUnsubscribe {
-    return () => {};
+  public subscribe(listener: ScheduleListener): NotificationUnsubscribe {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
   }
 
   private async rememberSchedule(
@@ -151,6 +157,13 @@ export class ExpoNotificationModule implements NotificationModule {
       freezeScheduledNotification(notification),
     ].sort(byDeliveryTime);
     await this.persistence.update({ scheduled });
+  }
+
+  private emit(): void {
+    const scheduled = this.persistence
+      .getState()
+      .scheduled.map((notification) => freezeScheduledNotification(notification));
+    this.listeners.forEach((listener) => listener(scheduled));
   }
 }
 

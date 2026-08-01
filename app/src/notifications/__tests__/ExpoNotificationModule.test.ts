@@ -175,4 +175,21 @@ describe("ExpoNotificationModule", () => {
       },
     ]);
   });
+
+  it("emits native schedule changes until the caller unsubscribes", async () => {
+    const module = new ExpoNotificationModule({
+      clock: new ManualNotificationClock(1_000_000),
+    });
+    const listener = jest.fn();
+    const unsubscribe = module.subscribe(listener);
+
+    await module.schedule(AFTERNOON_NUDGE);
+    await module.cancel(AFTERNOON_NUDGE.id);
+    unsubscribe();
+    await module.schedule({ ...AFTERNOON_NUDGE, id: "afternoonNudge:43" });
+
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener).toHaveBeenNthCalledWith(1, [AFTERNOON_NUDGE]);
+    expect(listener).toHaveBeenNthCalledWith(2, []);
+  });
 });
