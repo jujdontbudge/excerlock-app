@@ -16,6 +16,7 @@ jest.mock("expo-notifications", () => ({
   requestPermissionsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn().mockResolvedValue("afternoonNudge:42"),
   getAllScheduledNotificationsAsync: jest.fn().mockResolvedValue([]),
+  cancelScheduledNotificationAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
 import * as Notifications from "expo-notifications";
@@ -117,5 +118,13 @@ describe("ExpoNotificationModule", () => {
     await new ExpoNotificationModule().schedule(AFTERNOON_NUDGE);
 
     expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled();
+  });
+
+  it("cancels only the deterministic native request", async () => {
+    await new ExpoNotificationModule().cancel("afternoonNudge:42");
+
+    expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(
+      "afternoonNudge:42",
+    );
   });
 });

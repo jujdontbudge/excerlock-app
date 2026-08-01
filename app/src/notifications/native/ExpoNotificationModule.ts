@@ -70,7 +70,9 @@ export class ExpoNotificationModule implements NotificationModule {
     });
   }
 
-  public async cancel(_id: string): Promise<void> {}
+  public async cancel(id: string): Promise<void> {
+    await Notifications.cancelScheduledNotificationAsync(id);
+  }
 
   public async getScheduled(): Promise<readonly ScheduledNotification[]> {
     const requests = await Notifications.getAllScheduledNotificationsAsync();
