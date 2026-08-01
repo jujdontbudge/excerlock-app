@@ -7,12 +7,12 @@ import {
 } from "@excerlock/ledger";
 
 import {
-  DEFAULT_WEEK_STARTS_ON,
   selectStreak,
   selectTimeReclaimed,
   selectWeek,
 } from "@/analysis/model";
 import { classifyScheduleDay, type ScheduleRules } from "@/schedule";
+import type { WeekStart } from "@/settings";
 
 import type { NotificationPlanningInput } from "../planning/dayPlan";
 import type { NotificationPreferences } from "../store/notificationPreferencesStore";
@@ -24,6 +24,7 @@ export type NotificationRuntimeSnapshot = Readonly<{
   schedule: ScheduleRules;
   preferences: NotificationPreferences;
   confessedDailyMinutes: number | null;
+  weekStartsOn: WeekStart;
 }>;
 
 /** Builds the opened current day plus a full offline week of local requests. */
@@ -34,6 +35,7 @@ export function buildNotificationRuntimeInputs({
   schedule,
   preferences,
   confessedDailyMinutes,
+  weekStartsOn,
 }: NotificationRuntimeSnapshot): readonly NotificationPlanningInput[] {
   const currentDayIndex = dayIndexFor(
     atMs,
@@ -76,10 +78,10 @@ export function buildNotificationRuntimeInputs({
           !active || target?.meaningfulActivity === true,
         streakDays: streakBeforeTarget,
       },
-      week: { weekStartsOn: DEFAULT_WEEK_STARTS_ON },
+      week: { weekStartsOn },
       copyFacts: {
         reclaimedMinutesThisWeek: selectTimeReclaimed(
-          selectWeek(days, { weekStartsOn: DEFAULT_WEEK_STARTS_ON }),
+          selectWeek(days, { weekStartsOn }),
           confessedDailyMinutes,
         ).reclaimedMinutes,
         streakDays: streakBeforeTarget,

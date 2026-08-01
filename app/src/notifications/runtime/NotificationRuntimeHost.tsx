@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useHomeStore } from "@/home";
 import { useConfessionStore } from "@/onboarding";
 import { useScheduleStore } from "@/schedule";
+import { useSettingsStore } from "@/settings";
 
 import {
   SystemNotificationClock,
@@ -54,6 +55,7 @@ export function NotificationRuntimeHost({
   const confessedDailyMinutes = useConfessionStore(
     (state) => state.confessedDailyMinutes,
   );
+  const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
   const [dayVersion, setDayVersion] = useState(0);
   const reconciliationQueue = useRef(Promise.resolve());
 
@@ -66,6 +68,7 @@ export function NotificationRuntimeHost({
         schedule: { recurringRestWeekdays, holidays, overrides },
         preferences: { enabled, afternoonNudgeMinuteOfDay },
         confessedDailyMinutes,
+        weekStartsOn,
       }),
     [
       afternoonNudgeMinuteOfDay,
@@ -78,6 +81,7 @@ export function NotificationRuntimeHost({
       overrides,
       recurringRestWeekdays,
       runtimeClock,
+      weekStartsOn,
     ],
   );
 
