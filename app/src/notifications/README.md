@@ -60,6 +60,13 @@ facts, live copy facts, and persisted preferences. Its two injected system
 boundaries are `NotificationModule` and `NotificationClock`; planning logic
 never reads `Date.now()`.
 
+`NotificationRuntimeHost`, mounted beside the other root runtime hosts, derives
+those facts from the local ledger, weekly schedule, onboarding confession, and
+notification preferences. Each app open reconciles today as opened (cancelling
+its engagement pushes) and pre-schedules tomorrow so opted-in notifications can
+fire while the app is closed. Store changes and local day rollover reconcile
+again. Day plans run serially so native delivery evidence cannot lose an update.
+
 Schedules use the deterministic ID `typeId:dayIndex`. Re-planning the same day
 updates that schedule rather than duplicating it, and a type that is silenced or
 no longer eligible is cancelled without touching the others.
@@ -119,6 +126,7 @@ npm run test:app -- --runTestsByPath \
   src/notifications/__tests__/ExpoNotificationModule.test.ts \
   src/notifications/__tests__/accessor.test.ts \
   src/notifications/__tests__/NotificationScheduler.test.ts \
+  src/notifications/__tests__/NotificationRuntimeHost.test.tsx \
   src/notifications/__tests__/NotificationSettingsCard.test.tsx \
   src/notifications/__tests__/ShieldNotificationResponseHost.test.tsx
 ```
