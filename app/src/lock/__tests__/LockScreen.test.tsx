@@ -36,6 +36,7 @@ async function mount(screenTime: FakeScreenTime, openSettings?: () => void) {
     journal: () => emptyJournal(),
     now: () => NOW,
     scheduleStore: new LockScheduleStore(),
+    shieldContent: { publish: async () => {} },
   });
   const utils = await render(
     <LockScreen controller={controller} openSettings={openSettings} />,
