@@ -28,3 +28,9 @@ export {
   verifyStravaSubscription,
   verifyWhoopWebhook,
 } from "./verification.js";
+export {
+  createAdaptyWebhookService,
+  createDrizzleAdaptyWebhookRepository,
+  type AdaptyWebhookService,
+  type AdaptyWebhookRepository,
+} from "../subscriptions/index.js";

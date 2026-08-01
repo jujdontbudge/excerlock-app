@@ -9,6 +9,8 @@ import {
   it,
 } from "vitest";
 import {
+  adaptySubscriptionStates,
+  adaptyWebhookEvents,
   featureRequestVotes,
   featureRequests,
   supportRequests,
@@ -50,6 +52,8 @@ describe("repository database execution boundary", () => {
 
   it("matches schema.ts columns to the migrated Postgres catalog", async () => {
     const tables = [
+      adaptySubscriptionStates,
+      adaptyWebhookEvents,
       users,
       supportRequests,
       featureRequests,

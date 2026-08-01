@@ -1,6 +1,8 @@
 import { eq, isNull, sql } from "drizzle-orm";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 import {
+  adaptySubscriptionStates,
+  adaptyWebhookEvents,
   featureRequestVotes,
   getDb,
   supportRequests,
@@ -66,6 +68,13 @@ export function createDrizzleUserDeletionRepository(
         await transaction
           .delete(featureRequestVotes)
           .where(eq(featureRequestVotes.userId, userId));
+        await transaction
+          .delete(adaptySubscriptionStates)
+          .where(eq(adaptySubscriptionStates.userId, userId));
+        await transaction
+          .update(adaptyWebhookEvents)
+          .set({ userId: null })
+          .where(eq(adaptyWebhookEvents.userId, userId));
         await transaction
           .delete(supportRequests)
           .where(eq(supportRequests.userId, userId));
