@@ -207,15 +207,16 @@ describe("ClerkAccountBridge", () => {
         },
       );
       expect(mockAnalyticsFlush).toHaveBeenCalledTimes(1);
+      expect(mockAnalyticsDiscardPending).toHaveBeenCalledTimes(1);
       expect(mockAnalyticsReset).toHaveBeenCalledTimes(1);
       expect(mockResetSubscriptionCustomer).toHaveBeenCalledTimes(1);
       expect(mockSignOut).toHaveBeenCalledTimes(1);
-      expect(mockResetSubscriptionCustomer.mock.invocationCallOrder[0])
-        .toBeLessThan(mockSignOut.mock.invocationCallOrder[0] ?? 0);
-      expect(mockAnalyticsReset.mock.invocationCallOrder[0])
-        .toBeLessThan(mockSignOut.mock.invocationCallOrder[0] ?? 0);
       expect(mockAnalyticsFlush.mock.invocationCallOrder[0])
         .toBeLessThan(fetchSpy.mock.invocationCallOrder[0] ?? 0);
+      expect(fetchSpy.mock.invocationCallOrder[0])
+        .toBeLessThan(mockAnalyticsDiscardPending.mock.invocationCallOrder[0] ?? 0);
+      expect(mockAnalyticsDiscardPending.mock.invocationCallOrder[0])
+        .toBeLessThan(mockAnalyticsReset.mock.invocationCallOrder[0] ?? 0);
       expect(mockDelete).not.toHaveBeenCalled();
       expect(result).toEqual({ status: "deleted" });
     } finally {

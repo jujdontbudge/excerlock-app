@@ -60,9 +60,10 @@ The app does not emit `account_deleted`; adding a client capture here would
 violate the analytics single-emitter law. The adapter calls authenticated
 `DELETE /v1/user`, and clears its local Clerk session only after that
 authoritative endpoint succeeds. Before the request it flushes pending PostHog
-events so none can arrive after erasure. After success it resets the PostHog
-identity and logs out the Adapty customer before signing out of Clerk. These
-vendor resets do not cancel the Apple subscription.
+events so they arrive before erasure. After success it discards anything queued
+during the request before resetting the PostHog identity, logs out the Adapty
+customer, and signs out of Clerk. These vendor resets do not cancel the Apple
+subscription.
 
 ## Mock, persistence, and clock
 

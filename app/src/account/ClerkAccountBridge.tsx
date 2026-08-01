@@ -150,9 +150,7 @@ export function ClerkAccountBridge({
         if (!response.ok) {
           throw new Error("Authoritative account deletion failed");
         }
-        analytics.reset();
-        await resetSubscription();
-        await clerk.signOut();
+        await recoverDeletedIdentity();
       },
     });
 
