@@ -1,8 +1,14 @@
+import Constants from "expo-constants";
 import type { StateStorage } from "zustand/middleware";
 
+import {
+  AdaptySubscriptionModule,
+  type AdaptySDKPort,
+} from "./AdaptySubscriptionModule";
 import type { SubscriptionClock } from "./clock";
 import { MockSubscriptionModule } from "./MockSubscriptionModule";
 import { MOCK_SUBSCRIPTION_STORAGE_KEY } from "./mockStore";
+import { NoopSubscriptionModule } from "./NoopSubscriptionModule";
 import type {
   PremiumEntitlement,
   SubscriptionModule,
@@ -10,7 +16,7 @@ import type {
 
 let subscriptionModule: SubscriptionModule | undefined;
 
-type SubscriptionRuntime = Readonly<{
+export type SubscriptionRuntime = Readonly<{
   nodeEnv: string | undefined;
   adaptyKey: string | undefined;
 }>;
@@ -26,8 +32,23 @@ export function shouldUseAdaptySubscriptionModule(
  * an Adapty adapter; callers continue to depend on the vendor-free interface.
  */
 export function getSubscriptionModule(): SubscriptionModule {
-  subscriptionModule ??= new MockSubscriptionModule();
+  subscriptionModule ??= createSubscriptionModule(readSubscriptionRuntime());
   return subscriptionModule;
+}
+
+export function createSubscriptionModule(
+  runtime: SubscriptionRuntime,
+  sdk?: AdaptySDKPort,
+): SubscriptionModule {
+  if (runtime.nodeEnv === "test") {
+    return new MockSubscriptionModule();
+  }
+  const apiKey = runtime.adaptyKey?.trim();
+  if (!apiKey) {
+    return new NoopSubscriptionModule();
+  }
+  const nativeSDK = sdk ?? loadAdaptySDK();
+  return new AdaptySubscriptionModule(apiKey, nativeSDK);
 }
 
 /** Composition-root injection for build-selected adapter implementations. */
@@ -95,4 +116,25 @@ function fixtureEntitlementStorage(
       values.delete(name);
     },
   };
+}
+
+function readSubscriptionRuntime(): SubscriptionRuntime {
+  const extra = Constants.expoConfig?.extra as
+    | Readonly<{
+        clientSubscription?: Readonly<{ adaptyKey?: unknown }>;
+      }>
+    | undefined;
+  const configuredKey = extra?.clientSubscription?.adaptyKey;
+  return {
+    nodeEnv: process.env.NODE_ENV,
+    adaptyKey:
+      typeof configuredKey === "string"
+        ? configuredKey
+        : process.env.EXPO_PUBLIC_ADAPTY_KEY,
+  };
+}
+
+function loadAdaptySDK(): AdaptySDKPort {
+  const { adapty } = require("react-native-adapty") as typeof import("react-native-adapty");
+  return adapty;
 }
