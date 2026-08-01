@@ -61,6 +61,8 @@ export function ClerkAccountBridge({
 
     if (isSignedIn && user) {
       account.synchronizeUser(clerkUser(user));
+    } else {
+      account.synchronizeUser(null);
     }
   }, [account, clerk, isLoaded, isSignedIn, startSSOFlow, user]);
 

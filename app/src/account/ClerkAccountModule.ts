@@ -182,7 +182,14 @@ export class ClerkAccountModule implements AccountModule {
     this.runtime = runtime;
   }
 
-  public synchronizeUser(user: ClerkRuntimeUser): void {
+  public synchronizeUser(user: ClerkRuntimeUser | null): void {
+    if (user === null) {
+      this.publish({
+        session: SIGNED_OUT,
+        intent: Object.freeze({ status: "idle", error: null }),
+      });
+      return;
+    }
     this.publish({
       session: Object.freeze({
         status: "signedIn",

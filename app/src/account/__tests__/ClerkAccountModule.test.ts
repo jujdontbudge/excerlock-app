@@ -155,4 +155,19 @@ describe("ClerkAccountModule", () => {
     expect(deleteAccount).toHaveBeenCalledTimes(1);
     expect((await account.getSnapshot()).session.status).toBe("signedOut");
   });
+
+  it("returns to signed-out when Clerk reports that the session ended", async () => {
+    const account = new ClerkAccountModule();
+    account.synchronizeUser({
+      id: "user_expired",
+      email: "expired@example.com",
+      authenticatedAtMs: 1_785_543_100_000,
+    });
+
+    account.synchronizeUser(null);
+
+    expect((await account.getSnapshot()).session).toEqual({
+      status: "signedOut",
+    });
+  });
 });
