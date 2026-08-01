@@ -1,6 +1,11 @@
 export { getNotificationModule } from "./accessor";
 export { NativeShieldNotificationResponseHost } from "./native/NativeShieldNotificationResponseHost";
 export {
+  NotificationRuntimeHost,
+  type NotificationDayReconciler,
+  type NotificationRuntimeHostProps,
+} from "./runtime/NotificationRuntimeHost";
+export {
   NotificationSettingsCard,
   type NotificationSettingsCardProps,
 } from "./components/NotificationSettingsCard";
