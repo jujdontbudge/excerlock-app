@@ -15,6 +15,7 @@ jest.mock("expo-notifications", () => ({
   getPermissionsAsync: jest.fn(),
   requestPermissionsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn().mockResolvedValue("afternoonNudge:42"),
+  getAllScheduledNotificationsAsync: jest.fn(),
 }));
 
 import * as Notifications from "expo-notifications";
@@ -61,5 +62,35 @@ describe("ExpoNotificationModule", () => {
         date: new Date(1_800_000),
       },
     });
+  });
+
+  it("reads only valid ExcerLock plans from native pending requests", async () => {
+    jest.mocked(Notifications.getAllScheduledNotificationsAsync).mockResolvedValue([
+      {
+        identifier: "afternoonNudge:42",
+        content: {
+          title: "Your screen time is waiting",
+          body: "A quick workout unlocks your apps for tonight.",
+          data: {
+            url: "/(tabs)",
+            excerlockNotification: {
+              version: 1,
+              typeId: "afternoonNudge",
+              deliverAtMs: 1_800_000,
+            },
+          },
+        },
+        trigger: { type: "date" },
+      },
+      {
+        identifier: "excerlock.shield.open.balanceEmpty",
+        content: { title: null, body: null, data: { url: "excerlock://" } },
+        trigger: { type: "unknown" },
+      },
+    ] as unknown as Notifications.NotificationRequest[]);
+
+    await expect(new ExpoNotificationModule().getScheduled()).resolves.toEqual([
+      AFTERNOON_NUDGE,
+    ]);
   });
 });

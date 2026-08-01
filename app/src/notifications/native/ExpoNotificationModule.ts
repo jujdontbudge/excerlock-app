@@ -1,5 +1,10 @@
 import * as Notifications from "expo-notifications";
 
+import {
+  NOTIFICATION_TYPE_IDS,
+  getNotificationType,
+  type NotificationTypeId,
+} from "../model/catalog";
 import type {
   DeliveryRecord,
   NotificationAuthorizationStatus,
@@ -8,7 +13,11 @@ import type {
   ScheduledNotification,
   ScheduleListener,
 } from "../NotificationModule";
-import { assertValidScheduledNotification } from "../scheduledNotification";
+import {
+  assertValidScheduledNotification,
+  byDeliveryTime,
+  freezeScheduledNotification,
+} from "../scheduledNotification";
 
 export class ExpoNotificationModule implements NotificationModule {
   public async getAuthorizationStatus(): Promise<NotificationAuthorizationStatus> {
@@ -53,7 +62,13 @@ export class ExpoNotificationModule implements NotificationModule {
   public async cancel(_id: string): Promise<void> {}
 
   public async getScheduled(): Promise<readonly ScheduledNotification[]> {
-    return [];
+    const requests = await Notifications.getAllScheduledNotificationsAsync();
+    return requests
+      .flatMap((request) => {
+        const notification = scheduledNotification(request);
+        return notification === null ? [] : [notification];
+      })
+      .sort(byDeliveryTime);
   }
 
   public async getDeliveries(): Promise<readonly DeliveryRecord[]> {
@@ -63,6 +78,49 @@ export class ExpoNotificationModule implements NotificationModule {
   public subscribe(_listener: ScheduleListener): NotificationUnsubscribe {
     return () => {};
   }
+}
+
+function scheduledNotification(
+  request: Notifications.NotificationRequest,
+): ScheduledNotification | null {
+  const data = request.content.data;
+  const metadata = data?.excerlockNotification;
+  if (typeof metadata !== "object" || metadata === null) {
+    return null;
+  }
+
+  const version = Reflect.get(metadata, "version");
+  const typeId = Reflect.get(metadata, "typeId");
+  const deliverAtMs = Reflect.get(metadata, "deliverAtMs");
+  if (
+    version !== 1 ||
+    !isNotificationTypeId(typeId) ||
+    !Number.isFinite(deliverAtMs) ||
+    !request.identifier.startsWith(`${typeId}:`) ||
+    request.content.title === null ||
+    request.content.body === null ||
+    data.url !== getNotificationType(typeId).route
+  ) {
+    return null;
+  }
+
+  return freezeScheduledNotification({
+    id: request.identifier,
+    typeId,
+    content: {
+      title: request.content.title,
+      body: request.content.body,
+    },
+    route: getNotificationType(typeId).route,
+    deliverAtMs,
+  });
+}
+
+function isNotificationTypeId(value: unknown): value is NotificationTypeId {
+  return (
+    typeof value === "string" &&
+    (NOTIFICATION_TYPE_IDS as readonly string[]).includes(value)
+  );
 }
 
 function authorizationStatus(
