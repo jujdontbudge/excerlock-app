@@ -12,6 +12,7 @@ const mockStartSSOFlow = jest.fn(async () => ({
 }));
 const mockDelete = jest.fn(async () => undefined);
 const mockSignOut = jest.fn(async () => undefined);
+const mockGetToken = jest.fn(async () => "test_session_token");
 const mockUser = {
   id: "user_123",
   primaryEmailAddress: { emailAddress: "member@example.com" },
@@ -23,7 +24,9 @@ const mockUser = {
 jest.mock("@clerk/clerk-expo", () => ({
   useClerk: () => ({
     client: { sessions: [{ id: "sess_123", user: mockUser }] },
+    session: { getToken: mockGetToken },
     signOut: mockSignOut,
+    user: mockUser,
   }),
   useSSO: () => ({ startSSOFlow: mockStartSSOFlow }),
   useUser: () => ({ isLoaded: true, isSignedIn: false, user: null }),
@@ -52,5 +55,47 @@ describe("ClerkAccountBridge", () => {
       status: "authenticated",
       session: { user: { id: "user_123", email: "member@example.com" } },
     });
+  });
+
+  it("deletes through the authenticated server before clearing Clerk", async () => {
+    const previousBaseUrl = process.env.EXPO_PUBLIC_API_URL;
+    delete process.env.EXPO_PUBLIC_API_URL;
+    const fetchSpy = jest
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(null, { status: 204 }));
+    const account = new ClerkAccountModule();
+
+    try {
+      await render(
+        <ClerkAccountBridge account={account}>
+          <Text>App content</Text>
+        </ClerkAccountBridge>,
+      );
+      account.synchronizeUser({
+        id: "user_123",
+        email: "member@example.com",
+        authenticatedAtMs: 1_785_542_900_000,
+      });
+
+      await expect(account.deleteAccount()).resolves.toEqual({
+        status: "deleted",
+      });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "https://api.excerlock.com/v1/user",
+        {
+          headers: { authorization: "Bearer test_session_token" },
+          method: "DELETE",
+        },
+      );
+      expect(mockSignOut).toHaveBeenCalledTimes(1);
+      expect(mockDelete).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+      if (previousBaseUrl === undefined) {
+        delete process.env.EXPO_PUBLIC_API_URL;
+      } else {
+        process.env.EXPO_PUBLIC_API_URL = previousBaseUrl;
+      }
+    }
   });
 });

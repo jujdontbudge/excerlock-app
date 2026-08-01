@@ -3,6 +3,8 @@ import { useEffect, type ReactNode } from "react";
 
 import { ClerkAccountModule } from "./ClerkAccountModule";
 
+const DEFAULT_API_BASE_URL = "https://api.excerlock.com";
+
 type ClerkAccountBridgeProps = Readonly<{
   account: ClerkAccountModule;
   children: ReactNode;
@@ -52,10 +54,21 @@ export function ClerkAccountBridge({
       },
       signOut: () => clerk.signOut(),
       deleteAccount: async () => {
-        if (!clerk.user) {
-          throw new Error("Clerk has no active user to delete");
+        const baseUrl = (
+          process.env.EXPO_PUBLIC_API_URL?.trim() || DEFAULT_API_BASE_URL
+        ).replace(/\/$/, "");
+        const token = await clerk.session?.getToken();
+        if (!baseUrl || !token) {
+          throw new Error("Authenticated account deletion is unavailable");
         }
-        await clerk.user.delete();
+        const response = await fetch(`${baseUrl}/v1/user`, {
+          method: "DELETE",
+          headers: { authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) {
+          throw new Error("Authoritative account deletion failed");
+        }
+        await clerk.signOut();
       },
     });
 

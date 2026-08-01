@@ -17,8 +17,8 @@ Callers import only `index.ts` and obtain the adapter through
   outcomes;
 - `signOut()`, which clears the remote-shaped session but never local product
   data;
-- `deleteAccount()`, which deletes the active Clerk user and returns deleted or
-  failed;
+- `deleteAccount()`, which invokes authenticated authoritative server deletion
+  and returns deleted or failed;
 - snapshot change subscription for renderers.
 
 `AccountSettingsCard` owns Settings account rendering, session actions, errors,
@@ -57,10 +57,10 @@ The user must then choose `Delete account forever` or `Keep my account`.
 Failure leaves the session signed in and renders the normalized server error.
 
 The app does not emit `account_deleted`; adding a client capture here would
-violate the analytics single-emitter law. The current server has no user-record
-deletion route yet, so this adapter deletes the Clerk user only. Server-record,
-Adapty, and PostHog erasure remain owned by the future authoritative server
-deletion endpoint.
+violate the analytics single-emitter law. The adapter calls authenticated
+`DELETE /v1/user`, and clears its local Clerk session only after that
+authoritative endpoint succeeds. The server owns Clerk-user and server-record
+deletion, downstream erasure scheduling, and the analytics event.
 
 ## Mock, persistence, and clock
 
@@ -95,7 +95,8 @@ The adapter:
   untouched;
 - starts Google OAuth through Clerk SSO at the allowlisted
   `excerlock://sso-callback` redirect;
-- deletes the active Clerk user and clears its session only after success;
+- calls authenticated `DELETE /v1/user` and clears its local Clerk session only
+  after authoritative success;
 - keep Clerk SDK types and credentials inside the adapter.
 
 The only app credential is `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`; the Clerk secret
