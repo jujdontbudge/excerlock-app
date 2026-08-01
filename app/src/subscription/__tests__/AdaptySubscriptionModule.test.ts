@@ -155,7 +155,57 @@ describe("AdaptySubscriptionModule", () => {
     expect(sdk.getPaywallProducts).toHaveBeenCalledWith(flow);
     expect(sdk.logShowFlow).toHaveBeenCalledWith(flow);
   });
+
+  it("purchases the selected placement product and unlocks only premium", async () => {
+    const activeProfile = profileWithPremium();
+    const sdk = sdkWithProfile(activeProfile);
+    const product = adaptyProduct({
+      id: "annual.variant-a",
+      title: "Annual",
+      price: "$59.99",
+      period: "year",
+      trialDays: 7,
+    });
+    const flow = minimalFlow();
+    (sdk.getFlow as jest.Mock).mockResolvedValue(flow);
+    (sdk.getPaywallProducts as jest.Mock).mockResolvedValue([product]);
+    (sdk.logShowFlow as jest.Mock).mockResolvedValue(undefined);
+    (sdk.makePurchase as jest.Mock).mockResolvedValue({
+      type: "success",
+      profile: activeProfile,
+    });
+    const subscription = new AdaptySubscriptionModule("public-sdk-key", sdk);
+    await subscription.loadPaywall("onboarding");
+
+    await expect(subscription.purchase("annual.variant-a")).resolves.toEqual({
+      status: "purchased",
+      entitlement: {
+        status: "active",
+        productId: "com.excerlock.annual",
+        purchasedAtMs: Date.parse("2026-07-01T00:00:00.000Z"),
+        renewsAtMs: Date.parse("2027-07-01T00:00:00.000Z"),
+      },
+    });
+    expect(sdk.makePurchase).toHaveBeenCalledWith(product);
+  });
 });
+
+function minimalFlow(): AdaptyFlow {
+  return {
+    id: "onboarding-flow",
+    name: "Onboarding",
+    variationId: "variant-a",
+    placement: {
+      id: "onboarding",
+      abTestName: "first-price-test",
+      audienceName: "all-users",
+      audienceVersionId: "audience-v1",
+      revision: 1,
+    },
+    paywalls: [],
+    responseCreatedAt: Date.now(),
+  };
+}
 
 function adaptyProduct({
   id,

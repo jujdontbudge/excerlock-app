@@ -44,6 +44,7 @@ const INITIAL_SNAPSHOT: SubscriptionSnapshot = Object.freeze({
 export class AdaptySubscriptionModule implements SubscriptionModule {
   private snapshot = INITIAL_SNAPSHOT;
   private readonly listeners = new Set<SubscriptionStateListener>();
+  private readonly products = new Map<string, AdaptyPaywallProduct>();
   private readonly ready: Promise<void>;
 
   public constructor(
@@ -81,6 +82,10 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
     try {
       const flow = await this.sdk.getFlow(placement);
       const products = await this.sdk.getPaywallProducts(flow);
+      this.products.clear();
+      products.forEach((product) => {
+        this.products.set(product.vendorProductId, product);
+      });
       this.publish({
         ...this.snapshot,
         paywall: Object.freeze({
@@ -103,12 +108,38 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
     }
   }
 
-  public async purchase(_productId: string): Promise<PurchaseResult> {
-    const error = subscriptionError(
-      "purchase_failed",
-      "Purchases are temporarily unavailable.",
-    );
-    return Object.freeze({ status: "failed", error });
+  public async purchase(productId: string): Promise<PurchaseResult> {
+    await this.ready;
+    const product = this.products.get(productId);
+    if (product === undefined) {
+      throw new Error("A loaded paywall product is required for purchase");
+    }
+    this.publish({
+      ...this.snapshot,
+      intent: Object.freeze({ status: "purchasing", error: null }),
+    });
+    try {
+      const result = await this.sdk.makePurchase(product);
+      if (result.type === "user_cancelled") {
+        this.publishIdleIntent();
+        return Object.freeze({ status: "cancelled" });
+      }
+      if (result.type !== "success") {
+        return this.purchaseFailure("Purchase is pending approval.");
+      }
+      const entitlement = entitlementFromProfile(result.profile);
+      if (entitlement.status !== "active") {
+        return this.purchaseFailure("Premium access was not activated.");
+      }
+      this.publish({
+        ...this.snapshot,
+        entitlement,
+        intent: Object.freeze({ status: "idle", error: null }),
+      });
+      return Object.freeze({ status: "purchased", entitlement });
+    } catch {
+      return this.purchaseFailure("The purchase could not be completed.");
+    }
   }
 
   public async restore(): Promise<RestoreResult> {
@@ -127,18 +158,41 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
   }
 
   private publishEntitlement(profile: AdaptyProfile): void {
-    const access = profile.accessLevels?.premium;
-    const entitlement: SubscriptionSnapshot["entitlement"] =
-      access?.isActive === true
-        ? activeEntitlement(access)
-        : Object.freeze({ status: "inactive" as const });
-    this.publish({ ...this.snapshot, entitlement });
+    this.publish({
+      ...this.snapshot,
+      entitlement: entitlementFromProfile(profile),
+    });
+  }
+
+  private publishIdleIntent(): void {
+    this.publish({
+      ...this.snapshot,
+      intent: Object.freeze({ status: "idle", error: null }),
+    });
+  }
+
+  private purchaseFailure(message: string): PurchaseResult {
+    const error = subscriptionError("purchase_failed", message);
+    this.publish({
+      ...this.snapshot,
+      intent: Object.freeze({ status: "idle", error }),
+    });
+    return Object.freeze({ status: "failed", error });
   }
 
   private publish(snapshot: SubscriptionSnapshot): void {
     this.snapshot = Object.freeze(snapshot);
     this.listeners.forEach((listener) => listener(this.snapshot));
   }
+}
+
+function entitlementFromProfile(
+  profile: AdaptyProfile,
+): SubscriptionSnapshot["entitlement"] {
+  const access = profile.accessLevels?.premium;
+  return access?.isActive === true
+    ? activeEntitlement(access)
+    : Object.freeze({ status: "inactive" as const });
 }
 
 function activeEntitlement(
