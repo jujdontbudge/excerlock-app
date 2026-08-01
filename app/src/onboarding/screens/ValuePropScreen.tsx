@@ -1,8 +1,10 @@
 import { Card, Glyph, useTheme } from "@/ui";
+import type { AccountModule } from "@/account";
 
 import { OnboardingScaffold } from "../components/OnboardingScaffold";
 
 export type OnboardingScreenProps = {
+  account?: AccountModule;
   onContinue: () => void;
   onBack?: () => void;
 };

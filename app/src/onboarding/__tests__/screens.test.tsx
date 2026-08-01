@@ -4,6 +4,7 @@ jest.mock(
 );
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { MockAccountModule } from "../../account/MockAccountModule";
 
 import { PERMISSION_COPY } from "@/lock";
 
@@ -158,7 +159,13 @@ describe("onboarding screens", () => {
 
   it("renders the shared post-purchase account surface", async () => {
     const onContinue = jest.fn();
-    await render(<SignUpScreen onContinue={onContinue} onBack={jest.fn()} />);
+    await render(
+      <SignUpScreen
+        account={new MockAccountModule()}
+        onContinue={onContinue}
+        onBack={jest.fn()}
+      />,
+    );
 
     expect(
       await screen.findByRole("header", { name: "Create your account" }),

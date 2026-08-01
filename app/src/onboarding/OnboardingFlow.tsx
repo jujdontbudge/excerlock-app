@@ -1,5 +1,6 @@
 import type { FlowScreen } from "@excerlock/analytics-events";
 import { useEffect, useRef, type ComponentType } from "react";
+import type { AccountModule } from "@/account";
 
 import { flowTracker } from "../analytics";
 import { FLOW } from "./flow";
@@ -27,11 +28,12 @@ const SCREEN_BY_STEP = {
 } satisfies Record<FlowScreen, ComponentType<OnboardingScreenProps>>;
 
 type OnboardingFlowProps = {
+  account?: AccountModule;
   onComplete: () => void;
 };
 
 /** The rail's only screen chooser; leaf screens own neither state nor navigation. */
-export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
+export function OnboardingFlow({ account, onComplete }: OnboardingFlowProps) {
   const currentStep = useOnboardingStore((state) => state.currentStep);
   const advance = useOnboardingStore((state) => state.advance);
   const back = useOnboardingStore((state) => state.back);
@@ -68,5 +70,11 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     }
   };
 
-  return <ScreenComponent onContinue={handleContinue} onBack={back} />;
+  return (
+    <ScreenComponent
+      account={account}
+      onContinue={handleContinue}
+      onBack={back}
+    />
+  );
 }

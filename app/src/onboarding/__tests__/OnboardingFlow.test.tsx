@@ -4,6 +4,7 @@ jest.mock(
 );
 
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { MockAccountModule } from "../../account/MockAccountModule";
 
 import {
   DEFAULT_ONBOARDING_PROGRESS,
@@ -48,7 +49,12 @@ describe("OnboardingFlow", () => {
     });
     useOnboardingStore.setState({ currentStep: "sign-up" });
 
-    await render(<OnboardingFlow onComplete={onComplete} />);
+    await render(
+      <OnboardingFlow
+        account={new MockAccountModule()}
+        onComplete={onComplete}
+      />,
+    );
     await fireEvent.press(
       screen.getByRole("button", { name: "Create account" }),
     );
