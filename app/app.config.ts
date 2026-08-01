@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 const CLIENT_ENV_NAMES = [
+  "EXPO_PUBLIC_ADAPTY_KEY",
   "EXPO_PUBLIC_POSTHOG_KEY",
   "POSTHOG_HOST",
   "SENTRY_DSN_MOBILE",
@@ -50,6 +51,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     slug: config.slug,
     extra: {
       ...config.extra,
+      clientSubscription: {
+        adaptyKey: environment.EXPO_PUBLIC_ADAPTY_KEY,
+      },
       clientObservability: {
         posthogApiKey: environment.EXPO_PUBLIC_POSTHOG_KEY,
         posthogHost: environment.POSTHOG_HOST,
