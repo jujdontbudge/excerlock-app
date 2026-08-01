@@ -59,8 +59,10 @@ Failure leaves the session signed in and renders the normalized server error.
 The app does not emit `account_deleted`; adding a client capture here would
 violate the analytics single-emitter law. The adapter calls authenticated
 `DELETE /v1/user`, and clears its local Clerk session only after that
-authoritative endpoint succeeds. The server owns Clerk-user and server-record
-deletion, downstream erasure scheduling, and the analytics event.
+authoritative endpoint succeeds. Before the request it flushes pending PostHog
+events so none can arrive after erasure. After success it resets the PostHog
+identity and logs out the Adapty customer before signing out of Clerk. These
+vendor resets do not cancel the Apple subscription.
 
 ## Mock, persistence, and clock
 
@@ -96,7 +98,8 @@ The adapter:
 - starts Google OAuth through Clerk SSO at the allowlisted
   `excerlock://sso-callback` redirect;
 - calls authenticated `DELETE /v1/user` and clears its local Clerk session only
-  after authoritative success;
+  after authoritative success, with PostHog/Adapty identity cleanup around the
+  request so erased profiles cannot be recreated by queued client work;
 - keep Clerk SDK types and credentials inside the adapter.
 
 The only app credential is `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`; the Clerk secret

@@ -36,6 +36,8 @@ export interface AnalyticsKit {
   trackScreen(screen: FlowScreen): void;
   /** Clerk user id, at post-purchase sign-up only (D6). */
   identify(distinctId: string): void;
+  /** Drain identified events before authoritative account erasure. */
+  flush(): Promise<void>;
   /** Drop the identity on sign-out so the next session starts anonymous. */
   reset(): void;
 }
@@ -68,6 +70,9 @@ export function createAnalyticsKit(initialSink: AnalyticsSink = noopSink): Analy
     },
     identify(distinctId) {
       sink.identify(distinctId, NO_PROPS);
+    },
+    flush() {
+      return sink.flush();
     },
     reset() {
       sink.reset();

@@ -242,6 +242,44 @@ describe("support submission repository", () => {
 });
 
 describe("feature request vote repository", () => {
+  it("does not attach a late vote to a deletion tombstone", async () => {
+    await postgres.db.insert(users).values([
+      {
+        id: "deleted_user",
+        deletedAt: new Date("2026-07-31T20:00:00.000Z"),
+      },
+      { id: "active_user" },
+    ]);
+    await postgres.db.insert(supportRequests).values({
+      id: "active-support",
+      userId: "active_user",
+      category: "feature",
+      title: "Active feature",
+      message: "Keep this request.",
+    });
+    await postgres.db.insert(featureRequests).values({
+      id: "active-feature",
+      supportRequestId: "active-support",
+      title: "Active feature",
+      message: "Keep this request.",
+    });
+    const repository = createDrizzleFeatureRequestVoteRepository(postgres.db);
+
+    await expect(
+      repository.recordFeatureRequestVote({
+        id: "late-vote",
+        featureRequestId: "active-feature",
+        userId: "deleted_user",
+        createdAt: new Date("2026-07-31T20:01:00.000Z"),
+      }),
+    ).rejects.toThrow("User is deleted");
+    await expect(
+      postgres.db.select().from(featureRequestVotes),
+    ).resolves.toEqual([]);
+  });
+});
+
+describe("feature request vote repository", () => {
   it("uses the database conflict result to make a duplicate vote a no-op", async () => {
     await postgres.db.insert(users).values({ id: "user_123" });
     await postgres.db.insert(supportRequests).values({

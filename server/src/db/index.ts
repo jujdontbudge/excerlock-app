@@ -1,4 +1,6 @@
 export { closeDb, getDb } from "./client.js";
+import * as schema from "./schema.js";
+export type DatabaseSchema = typeof schema;
 export {
   featureRequests,
   featureRequestVotes,

@@ -32,6 +32,30 @@ jest.mock("@clerk/clerk-expo", () => ({
   useUser: () => ({ isLoaded: true, isSignedIn: false, user: null }),
 }));
 
+jest.mock("../../analytics/index", () => ({
+  analytics: { flush: jest.fn(async () => undefined), reset: jest.fn() },
+}));
+
+jest.mock("../../subscription/index", () => ({
+  resetSubscriptionCustomer: jest.fn(async () => undefined),
+}));
+
+const mockAnalyticsReset = (
+  jest.requireMock("../../analytics/index") as {
+    analytics: { flush: jest.Mock; reset: jest.Mock };
+  }
+).analytics.reset;
+const mockAnalyticsFlush = (
+  jest.requireMock("../../analytics/index") as {
+    analytics: { flush: jest.Mock; reset: jest.Mock };
+  }
+).analytics.flush;
+const mockResetSubscriptionCustomer = (
+  jest.requireMock("../../subscription/index") as {
+    resetSubscriptionCustomer: jest.Mock;
+  }
+).resetSubscriptionCustomer;
+
 describe("ClerkAccountBridge", () => {
   it("authenticates through Clerk SSO and the allowlisted mobile callback", async () => {
     const account = new ClerkAccountModule();
@@ -77,9 +101,7 @@ describe("ClerkAccountBridge", () => {
         authenticatedAtMs: 1_785_542_900_000,
       });
 
-      await expect(account.deleteAccount()).resolves.toEqual({
-        status: "deleted",
-      });
+      const result = await account.deleteAccount();
       expect(fetchSpy).toHaveBeenCalledWith(
         "https://api.excerlock.com/v1/user",
         {
@@ -87,8 +109,18 @@ describe("ClerkAccountBridge", () => {
           method: "DELETE",
         },
       );
+      expect(mockAnalyticsFlush).toHaveBeenCalledTimes(1);
+      expect(mockAnalyticsReset).toHaveBeenCalledTimes(1);
+      expect(mockResetSubscriptionCustomer).toHaveBeenCalledTimes(1);
       expect(mockSignOut).toHaveBeenCalledTimes(1);
+      expect(mockResetSubscriptionCustomer.mock.invocationCallOrder[0])
+        .toBeLessThan(mockSignOut.mock.invocationCallOrder[0] ?? 0);
+      expect(mockAnalyticsReset.mock.invocationCallOrder[0])
+        .toBeLessThan(mockSignOut.mock.invocationCallOrder[0] ?? 0);
+      expect(mockAnalyticsFlush.mock.invocationCallOrder[0])
+        .toBeLessThan(fetchSpy.mock.invocationCallOrder[0] ?? 0);
       expect(mockDelete).not.toHaveBeenCalled();
+      expect(result).toEqual({ status: "deleted" });
     } finally {
       fetchSpy.mockRestore();
       if (previousBaseUrl === undefined) {

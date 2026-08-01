@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import {
   createConfiguredUserDeletionService,
   IdentityErasureRequestError,
+  type UserDeletionService,
   UserDeletionConfigurationError,
 } from "../userDeletion/index.js";
 import {
@@ -9,10 +10,6 @@ import {
   type NotImplementedResponse,
 } from "./notImplemented.js";
 import { requireRouteUserId } from "./vendorRouteSupport.js";
-
-export interface UserDeletionService {
-  deleteAccount(userId: string): Promise<void>;
-}
 
 interface UserRouteDependencies {
   deletion: UserDeletionService;

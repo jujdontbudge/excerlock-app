@@ -17,6 +17,8 @@ import {
   vendorWebhookEvents,
 } from "../src/db/schema.js";
 import { createDrizzleUserDeletionRepository } from "../src/userDeletion/index.js";
+import { createDrizzleVendorRepository } from "../src/vendors/index.js";
+import { createVendorWebhookService } from "../src/webhooks/index.js";
 import { createPgliteTestDatabase } from "./pgliteTestDatabase.js";
 
 let postgres: Awaited<ReturnType<typeof createPgliteTestDatabase>>;
@@ -108,6 +110,48 @@ describe("account deletion persistence", () => {
         expect.objectContaining({ id: "other-support" }),
       ],
       retainedWebhook: [
+        expect.objectContaining({
+          id: "webhook-event",
+          externalUserId: "deleted",
+          rawPayload: "{}",
+          deliveryKey: "delivery-key",
+        }),
+      ],
+    });
+  });
+
+  it("acknowledges a late webhook without recreating deleted identity data", async () => {
+    await seedIdentitySpine();
+    await createDrizzleUserDeletionRepository(postgres.db).prepareDeletion(
+      "user_123",
+      new Date("2026-07-31T20:00:00.000Z"),
+    );
+    const service = createVendorWebhookService({
+      repository: createDrizzleVendorRepository(postgres.db),
+      analytics: {
+        vendorDisconnected() {},
+        vendorEarnRecorded() {},
+      },
+    });
+
+    const result = await service.recordVerified(
+      "whoop",
+      '{"user_id":67890,"id":"550e8400-e29b-41d4-a716-446655440000","type":"workout.updated","trace_id":"late-after-delete"}',
+    );
+
+    expect({
+      result,
+      users: await postgres.db.select().from(users),
+      connections: await postgres.db.select().from(vendorConnections),
+      events: await postgres.db.select().from(vendorWebhookEvents),
+    }).toEqual({
+      result: { recorded: false, eventId: null },
+      users: expect.arrayContaining([
+        expect.objectContaining({ id: "user_123", email: null }),
+        expect.objectContaining({ id: "other_user" }),
+      ]),
+      connections: [],
+      events: [
         expect.objectContaining({
           id: "webhook-event",
           externalUserId: "deleted",

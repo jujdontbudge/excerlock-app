@@ -63,6 +63,14 @@ export async function identifySubscriptionCustomer(
   }
 }
 
+/** Clears the deleted Clerk id from Adapty without cancelling Apple billing. */
+export async function resetSubscriptionCustomer(): Promise<void> {
+  const module = getSubscriptionModule();
+  if (module instanceof AdaptySubscriptionModule) {
+    await module.resetCustomer();
+  }
+}
+
 /** Composition-root injection for build-selected adapter implementations. */
 export function installSubscriptionModule(
   module: SubscriptionModule,

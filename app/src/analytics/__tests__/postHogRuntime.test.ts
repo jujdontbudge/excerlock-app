@@ -49,6 +49,7 @@ describe("PostHog runtime initialization", () => {
       capture: jest.fn(),
       screen: jest.fn(),
       identify: jest.fn(),
+      flush: jest.fn(async () => undefined),
       reset: jest.fn(),
       ready: async () => {},
       getDistinctId: () => "anonymous_123",

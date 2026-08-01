@@ -56,6 +56,11 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
     await this.sdk.identify(customerUserId);
   }
 
+  public async resetCustomer(): Promise<void> {
+    await this.ready;
+    await this.sdk.logout();
+  }
+
   public async loadPaywall(placement: PaywallPlacement): Promise<void> {
     this.state.publish({
       ...this.state.current,

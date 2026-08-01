@@ -2,6 +2,8 @@
 
 This module verifies callbacks, extracts only routing metadata, records the
 exact callback body idempotently, and exposes a cursor feed to the device.
+Account deletion later anonymizes the retained body and external user id while
+preserving the delivery key; that is the only exact-body retention exception.
 
 ## The law
 

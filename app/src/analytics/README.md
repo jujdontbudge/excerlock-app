@@ -4,6 +4,8 @@ Contract: this module is the app's only analytics emitter. It accepts only clien
 payloads from `@excerlock/analytics-events`, applies that registry's transmission allowlist at the
 final boundary, and forwards to an installed sink. It hides the PostHog SDK, boot-time configuration,
 super properties, identity calls, and the no-op behavior used when configuration is absent.
+Its `flush()` boundary is awaited before account deletion so identified events reach PostHog before
+the server queues erasure; `reset()` then clears the deleted identity after success.
 
 PostHog is initialized once from `app/index.ts`. `postHogSink.ts` fixes the SDK policy: app lifecycle
 capture, UI autocapture, exception autocapture, surveys, GeoIP, heatmaps/session replay, and retries

@@ -32,5 +32,7 @@ export interface AnalyticsSink {
   screen(screen: string, props: AnalyticsPayload): void;
   /** Distinct id passthrough — the Clerk user id, at post-purchase sign-up (D6). */
   identify(distinctId: string, props: AnalyticsPayload): void;
+  /** Resolve only after pending events have reached the transport boundary. */
+  flush(): Promise<void>;
   reset(): void;
 }

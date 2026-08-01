@@ -37,6 +37,7 @@ export interface PostHogClientPort {
     distinctId: string,
     properties: Readonly<Record<string, PropValue>>,
   ): void;
+  flush(): Promise<void>;
   reset(): void;
 }
 
@@ -63,6 +64,9 @@ export function createPostHogSink(client: PostHogClientPort): AnalyticsSink {
     },
     identify(distinctId, properties) {
       client.identify(distinctId, definedProperties(properties));
+    },
+    flush() {
+      return client.flush();
     },
     reset() {
       client.reset();

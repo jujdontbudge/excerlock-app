@@ -1,14 +1,15 @@
 import { eq, isNull, sql } from "drizzle-orm";
 import type { PgDatabase } from "drizzle-orm/pg-core";
-import { getDb } from "../db/client.js";
 import {
   featureRequestVotes,
+  getDb,
   supportRequests,
   users,
   vendorConnections,
   vendorOAuthStates,
   vendorWebhookEvents,
-} from "../db/schema.js";
+} from "../db/index.js";
+import type { DatabaseSchema } from "../db/index.js";
 import type {
   UserDeletionRepository,
   UserDeletionState,
@@ -16,7 +17,7 @@ import type {
 
 type UserDeletionDatabase = PgDatabase<
   any,
-  typeof import("../db/schema.js")
+  DatabaseSchema
 >;
 
 function requireDatabase(

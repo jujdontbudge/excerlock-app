@@ -23,6 +23,9 @@ type VendorDatabase = PgDatabase<
   any,
   typeof import("../db/schema.js")
 >;
+type VendorTransaction = Parameters<
+  Parameters<VendorDatabase["transaction"]>[0]
+>[0];
 
 export type VendorRepository = VendorOAuthStateRepository &
   VendorWebhookRepository &
@@ -37,18 +40,25 @@ export function createDrizzleVendorRepository(
     );
   }
 
+  async function lockActiveUser(
+    transaction: VendorTransaction,
+    userId: string,
+  ): Promise<void> {
+    const [activeUser] = await transaction
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+      .limit(1)
+      .for("update");
+    if (!activeUser) {
+      throw new Error("User is deleted or missing");
+    }
+  }
+
   return {
     async saveOAuthState(state: NewVendorOAuthStateRecord) {
       await database.transaction(async (transaction) => {
-        const [activeUser] = await transaction
-          .select({ id: users.id })
-          .from(users)
-          .where(and(eq(users.id, state.userId), isNull(users.deletedAt)))
-          .limit(1)
-          .for("update");
-        if (!activeUser) {
-          throw new Error("User is deleted or missing");
-        }
+        await lockActiveUser(transaction, state.userId);
         await transaction.insert(vendorOAuthStates).values(state);
       });
     },
@@ -75,17 +85,7 @@ export function createDrizzleVendorRepository(
 
     async upsertConnection(connection: NewVendorConnectionRecord) {
       await database.transaction(async (transaction) => {
-        const [activeUser] = await transaction
-          .select({ id: users.id })
-          .from(users)
-          .where(
-            and(eq(users.id, connection.userId), isNull(users.deletedAt)),
-          )
-          .limit(1)
-          .for("update");
-        if (!activeUser) {
-          throw new Error("User is deleted or missing");
-        }
+        await lockActiveUser(transaction, connection.userId);
         await transaction
           .insert(vendorConnections)
           .values(connection)

@@ -1,6 +1,8 @@
 import { useClerk, useSSO, useUser } from "@clerk/clerk-expo";
 import { useEffect, type ReactNode } from "react";
 
+import { analytics } from "../analytics";
+import { resetSubscriptionCustomer } from "../subscription";
 import { ClerkAccountModule } from "./ClerkAccountModule";
 
 const DEFAULT_API_BASE_URL = "https://api.excerlock.com";
@@ -61,6 +63,7 @@ export function ClerkAccountBridge({
         if (!baseUrl || !token) {
           throw new Error("Authenticated account deletion is unavailable");
         }
+        await analytics.flush();
         const response = await fetch(`${baseUrl}/v1/user`, {
           method: "DELETE",
           headers: { authorization: `Bearer ${token}` },
@@ -68,6 +71,8 @@ export function ClerkAccountBridge({
         if (!response.ok) {
           throw new Error("Authoritative account deletion failed");
         }
+        analytics.reset();
+        await resetSubscriptionCustomer();
         await clerk.signOut();
       },
     });
