@@ -6,6 +6,7 @@ import {
   buildSentryOptions,
   readClientObservabilityConfig,
 } from "./src/observability";
+import { getSubscriptionModule } from "./src/subscription";
 
 const runtimeConfig = readClientObservabilityConfig(
   Constants.expoConfig?.extra,
@@ -23,5 +24,6 @@ initializePostHog(
   },
   analytics,
 );
+getSubscriptionModule();
 
 require("expo-router/entry");
