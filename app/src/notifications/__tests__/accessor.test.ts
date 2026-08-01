@@ -21,6 +21,7 @@ describe("Notification composition seam", () => {
       "expo-notifications",
       () => ({
         getPermissionsAsync,
+        setNotificationHandler: jest.fn(),
         IosAuthorizationStatus: {
           NOT_DETERMINED: 0,
           DENIED: 1,

@@ -172,6 +172,7 @@ function scheduledNotification(
 ): ScheduledNotification | null {
   const data = request.content.data;
   const metadata = data?.excerlockNotification;
+  const route = data?.url;
   if (typeof metadata !== "object" || metadata === null) {
     return null;
   }
@@ -186,7 +187,7 @@ function scheduledNotification(
     !request.identifier.startsWith(`${typeId}:`) ||
     request.content.title === null ||
     request.content.body === null ||
-    data.url !== getNotificationType(typeId).route
+    route !== getNotificationType(typeId).route
   ) {
     return null;
   }
