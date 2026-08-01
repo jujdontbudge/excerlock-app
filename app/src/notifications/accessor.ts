@@ -4,8 +4,8 @@ import type { NotificationModule } from "./NotificationModule";
 let notificationModule: NotificationModule | undefined;
 
 /**
- * The composition root for local notifications. Phase 3 changes only this
- * constructor to the native `expo-notifications` adapter.
+ * The composition root for local notifications: native in app bundles, mock in
+ * Jest unless a test injects a module explicitly.
  */
 export function getNotificationModule(): NotificationModule {
   notificationModule ??= createNotificationModule();

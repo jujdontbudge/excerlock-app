@@ -1,7 +1,7 @@
 # Notifications
 
 Local notification policy, user controls, permission flow, scheduling, and the
-Phase-2 adapter. This module never requests a push token, sends a remote
+production Expo adapter. This module never requests a push token, sends a remote
 payload, calls the server, or decides anything about earning and locking.
 Ledger facts come in; local schedules come out.
 
@@ -72,21 +72,30 @@ The pure rules enforce:
 - no exception to the maximum of five deliveries in a rolling seven days;
 - go-quiet-on-openers for the two engagement pushes.
 
-## Boundary and Phase-3 swap
+## Boundary and native adapter
 
 Callers import `index.ts` and obtain the adapter only through
-`getNotificationModule()`. `accessor.ts` is the single native swap point.
+`getNotificationModule()`. `accessor.ts` remains the single native composition
+point: app builds receive `ExpoNotificationModule`; Jest receives the persistent
+`MockNotificationModule` by default.
 
-Phase 2 returns `MockNotificationModule`. It implements the production
-`NotificationModule` interface, persists authorization/pending schedules/
-delivery evidence, and moves due schedules into delivery history from an
-injected clock. The mock class and manual clock are test infrastructure and are
-not exported through `index.ts`.
+The Expo adapter maps each resolved plan to a one-off local date trigger using
+the deterministic plan ID as the native request identifier. Its data contains
+only the closed notification type, delivery time, and allow-listed local route.
+It requests alert and sound permission only when the Settings permission flow
+calls `requestAuthorization`; constructing the adapter, onboarding, and
+scheduling do not request permission.
 
-Phase 3 installs and configures `expo-notifications`, implements the same
-interface for local scheduling, and changes only the constructor in
-`accessor.ts`. It must not add remote push infrastructure, a push token flow, or
-server-owned trigger decisions.
+Pending plan intent and settled delivery evidence persist locally under
+`excerlock.notifications.native.v1`. This lets the planner enforce the rolling
+seven-day ceiling after an app restart. Foreground alerts use an explicit Expo
+handler, and taps are accepted only when a deterministic notification ID and
+catalog route agree. No push token API, remote payload, analytics event, or
+server call exists in the adapter.
+
+`app/plugins/withNoPush` remains first in `app.json`. The clean-prebuild
+guardrail inspects the generated host entitlements and fails if
+`aps-environment` reappears.
 
 Ticket #80 adds one narrow native boundary ahead of that full adapter:
 `NativeShieldNotificationResponseHost` owns the supported notification-tap
@@ -107,6 +116,8 @@ npm run test:app -- --runTestsByPath \
   src/notifications/__tests__/triggers.test.ts \
   src/notifications/__tests__/notificationPreferencesStore.test.ts \
   src/notifications/__tests__/MockNotificationModule.test.ts \
+  src/notifications/__tests__/ExpoNotificationModule.test.ts \
+  src/notifications/__tests__/accessor.test.ts \
   src/notifications/__tests__/NotificationScheduler.test.ts \
   src/notifications/__tests__/NotificationSettingsCard.test.tsx \
   src/notifications/__tests__/ShieldNotificationResponseHost.test.tsx

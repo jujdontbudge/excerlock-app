@@ -4,8 +4,8 @@ import type { NotificationContent } from "./model/copy";
 /**
  * The app-facing seam for iOS local notifications.
  *
- * Phase 2 is a persistent mock. Phase 3 swaps in `expo-notifications` behind
- * `getNotificationModule()` and no caller changes — see `accessor.ts`.
+ * Production uses `expo-notifications` behind `getNotificationModule()` while
+ * Jest keeps the persistent mock as its default — see `accessor.ts`.
  *
  * **Local scheduling only.** There is no push token, no remote payload, and no
  * server call anywhere behind this interface. PRD §7 cuts remote push and any
