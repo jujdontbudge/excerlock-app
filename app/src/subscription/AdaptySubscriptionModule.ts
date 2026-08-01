@@ -28,6 +28,7 @@ export interface AdaptySDKPort {
     callback: (profile: AdaptyProfile) => void,
   ): Readonly<{ remove(): void }>;
   getProfile(): Promise<AdaptyProfile>;
+  identify(customerUserId: string): Promise<void>;
   getFlow(placementId: string): Promise<AdaptyFlow>;
   getPaywallProducts(flow: AdaptyFlow): Promise<AdaptyPaywallProduct[]>;
   logShowFlow(flow: AdaptyFlow): Promise<void>;
@@ -71,6 +72,12 @@ export class AdaptySubscriptionModule implements SubscriptionModule {
       // Cached snapshot remains authoritative when the SDK is unavailable.
     }
     return this.snapshot;
+  }
+
+  /** Post-purchase Clerk handoff; activation itself deliberately stays anonymous. */
+  public async identifyCustomer(customerUserId: string): Promise<void> {
+    await this.ready;
+    await this.sdk.identify(customerUserId);
   }
 
   public async loadPaywall(placement: PaywallPlacement): Promise<void> {

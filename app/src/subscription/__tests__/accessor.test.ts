@@ -43,6 +43,7 @@ describe("Subscription composition seam", () => {
       activate: jest.fn().mockResolvedValue(undefined),
       addEventListener: jest.fn().mockReturnValue({ remove: jest.fn() }),
       getProfile: jest.fn().mockResolvedValue({ profileId: "anonymous" }),
+      identify: jest.fn().mockResolvedValue(undefined),
       getFlow: jest.fn(),
       getPaywallProducts: jest.fn(),
       logShowFlow: jest.fn(),

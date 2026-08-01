@@ -1,4 +1,7 @@
-export { getSubscriptionModule } from "./accessor";
+export {
+  getSubscriptionModule,
+  identifySubscriptionCustomer,
+} from "./accessor";
 export { isPremiumEntitled } from "./entitlement";
 export { SubscriptionPaywall } from "./SubscriptionPaywall";
 export type {

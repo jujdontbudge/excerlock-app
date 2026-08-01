@@ -36,6 +36,7 @@ function sdkWithProfile(profile: AdaptyProfile): AdaptySDKPort {
   return {
     activate: jest.fn().mockResolvedValue(undefined),
     addEventListener: jest.fn().mockReturnValue({ remove: jest.fn() }),
+    identify: jest.fn().mockResolvedValue(undefined),
     getProfile: jest.fn().mockResolvedValue(profile),
     getFlow: jest.fn(),
     getPaywallProducts: jest.fn(),
@@ -61,6 +62,18 @@ describe("AdaptySubscriptionModule", () => {
     expect(sdk.activate).toHaveBeenCalledWith("public-sdk-key", {
       __ignoreActivationOnFastRefresh: true,
     });
+  });
+
+  it("attaches Clerk identity only after anonymous activation", async () => {
+    const sdk = sdkWithProfile({ profileId: "anonymous-profile" });
+    const subscription = new AdaptySubscriptionModule("public-sdk-key", sdk);
+
+    await subscription.identifyCustomer("clerk-user-123");
+
+    expect(sdk.identify).toHaveBeenCalledWith("clerk-user-123");
+    expect(
+      (sdk.activate as jest.Mock).mock.invocationCallOrder[0],
+    ).toBeLessThan((sdk.identify as jest.Mock).mock.invocationCallOrder[0]);
   });
 
   it("renders the placement's remote config and products in returned order", async () => {

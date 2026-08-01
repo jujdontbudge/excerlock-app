@@ -51,6 +51,16 @@ export function createSubscriptionModule(
   return new AdaptySubscriptionModule(apiKey, nativeSDK);
 }
 
+/** Called by the account seam immediately after post-purchase Clerk sign-up. */
+export async function identifySubscriptionCustomer(
+  customerUserId: string,
+): Promise<void> {
+  const module = getSubscriptionModule();
+  if (module instanceof AdaptySubscriptionModule) {
+    await module.identifyCustomer(customerUserId);
+  }
+}
+
 /** Composition-root injection for build-selected adapter implementations. */
 export function installSubscriptionModule(
   module: SubscriptionModule,
