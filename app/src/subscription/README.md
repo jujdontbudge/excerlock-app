@@ -1,8 +1,8 @@
 # Subscription
 
 Subscription is the app-facing seam for remote-shaped paywalls, the single
-`premium` entitlement, purchases, and restores. Phase 2 uses a persistent mock.
-Phase 5 replaces that adapter with Adapty without changing callers.
+`premium` entitlement, purchases, and restores. Production uses Adapty without
+exposing SDK types to callers; tests retain the persistent deterministic mock.
 
 ## Interface
 
@@ -16,6 +16,11 @@ Callers import only `index.ts` and obtain the adapter through
 - `purchase(productId)` with purchased, cancelled, and failed outcomes;
 - `restore()` with restored, not-found, and failed outcomes;
 - snapshot change subscription for renderers.
+
+After the required post-purchase Clerk sign-up, the account composition root
+calls `identifySubscriptionCustomer(clerkUserId)`. That is the one identity
+handoff: Adapty activates anonymously at app bootstrap, the purchase completes
+without an account, and only then is the Clerk id attached.
 
 `SubscriptionPaywall` is the shared renderer. The onboarding step supplies only
 its placement, the user's confessed daily phone time, and navigation callbacks.
@@ -47,27 +52,41 @@ and renewal timestamps come exclusively from the injected subscription clock,
 and entitlement expires exactly at `renewsAtMs`.
 
 The mock class and clock are deliberately not exported from `index.ts`. No app
-module may import them directly. `getSubscriptionModule()` is the single
-Phase-5 swap point and returns the mock today.
+module may import them directly. `getSubscriptionModule()` is the single swap
+point and returns the mock whenever `NODE_ENV` is `test`.
 
 The build-gated E2E/debug composition root calls
 `installFixtureSubscriptionModule()` in `accessor.ts` to seed `free` or
 `premium` through that same boundary and a pinned clock. The mock class and its
 persistence details stay private to this module.
 
-## Phase-5 Adapty swap
+## Adapty adapter
 
-Phase 5 changes the constructor in `accessor.ts` to an Adapty-backed
-`SubscriptionModule`. That adapter will:
+`react-native-adapty` is installed through Expo and activated once at app
+bootstrap. A keyed non-test runtime receives `AdaptySubscriptionModule`; a
+keyless runtime receives `NoopSubscriptionModule`, which stays locked and
+returns recoverable unavailable states instead of throwing. Only
+`EXPO_PUBLIC_ADAPTY_KEY` enters Expo config. `ADAPTY_SECRET_KEY` is never read by
+mobile code or copied into the bundle.
+
+The adapter:
 
 - load the requested Adapty placement and translate its returned products into
   `SubscriptionPaywallConfig` without imposing a fixed plan count or order;
 - translate the `premium` access level into the entitlement snapshot;
 - forward purchase and restore intents and normalize cancellation/errors;
-- keep bundled fallback paywalls available for offline first launch.
+- listen for Adapty profile refreshes so entitlement changes update the shared
+  snapshot.
 
-No other subscription caller changes, and no Adapty type crosses this module.
-The SDK and keys are intentionally absent until tickets #22/#24.
+Remote config may provide `title`, `body`, `valueStatement`, `plansTitle`,
+`trialStatement`, `defaultProductId`, and a `productBadges` map. Product count,
+order, identifiers, localized prices, billing periods, descriptions, and trial
+periods always come from Adapty's placement response. Missing remote badges stay
+absent; the app never synthesizes scarcity copy.
+
+No other subscription caller changes, and no Adapty type crosses the public
+`SubscriptionModule` interface. If a placement cannot load, the hard gate stays
+closed and presents its retry surface.
 
 ## Analytics ownership
 

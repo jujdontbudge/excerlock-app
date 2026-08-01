@@ -18,7 +18,7 @@ describe("onboarding paywall adoption", () => {
     useConfessionStore.setState(DEFAULT_CONFESSION);
   });
 
-  it("drives the shared subscription surface with the confession", async () => {
+  it("advances to post-purchase sign-up only after anonymous purchase", async () => {
     const onContinue = jest.fn();
     useConfessionStore.setState({ confessedDailyMinutes: 330 });
     await render(
@@ -30,6 +30,7 @@ describe("onboarding paywall adoption", () => {
         "You told us 5 hours 30 minutes a day. The annual plan is about $5 a month.",
       ),
     ).toBeOnTheScreen();
+    expect(onContinue).not.toHaveBeenCalled();
 
     await fireEvent.press(
       screen.getByRole("button", { name: "Start free trial" }),
