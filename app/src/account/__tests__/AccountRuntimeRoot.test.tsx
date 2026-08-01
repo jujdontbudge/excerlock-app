@@ -15,11 +15,16 @@ const mockRuntimeUser = {
   delete: jest.fn(async () => undefined),
 };
 const mockSetActive = jest.fn(async () => undefined);
+const mockGetToken = jest.fn(async () => "test_session_token");
 jest.mock("@clerk/clerk-expo", () => ({
   ClerkProvider: (props: { children: React.ReactNode }) =>
     mockClerkProvider(props),
   useClerk: () => ({
-    client: { sessions: [{ id: "sess_root", user: mockRuntimeUser }] },
+    client: {
+      sessions: [
+        { id: "sess_root", user: mockRuntimeUser, getToken: mockGetToken },
+      ],
+    },
     signOut: jest.fn(async () => undefined),
     user: mockRuntimeUser,
   }),
@@ -71,23 +76,30 @@ describe("AccountRuntimeRoot", () => {
   });
 
   it("attaches the configured account adapter to Clerk", async () => {
+    const fetchSpy = jest
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(null, { status: 204 }));
     const account = new ClerkAccountModule();
-    await render(
-      <AccountRuntimeRoot
-        account={account}
-        publishableKey="pk_test_configured"
-      >
-        <Text>App content</Text>
-      </AccountRuntimeRoot>,
-    );
+    try {
+      await render(
+        <AccountRuntimeRoot
+          account={account}
+          publishableKey="pk_test_configured"
+        >
+          <Text>App content</Text>
+        </AccountRuntimeRoot>,
+      );
 
-    let result: Awaited<ReturnType<typeof account.signIn>> | undefined;
-    await act(async () => {
-      result = await account.signIn();
-    });
-    expect(result).toMatchObject({
-      status: "authenticated",
-      session: { user: { id: "user_root", email: "root@example.com" } },
-    });
+      let result: Awaited<ReturnType<typeof account.signIn>> | undefined;
+      await act(async () => {
+        result = await account.signIn();
+      });
+      expect(result).toMatchObject({
+        status: "authenticated",
+        session: { user: { id: "user_root", email: "root@example.com" } },
+      });
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 });

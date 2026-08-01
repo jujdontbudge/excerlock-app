@@ -60,6 +60,9 @@ describe("ClerkAccountBridge", () => {
   beforeEach(() => {
     mockIsSignedIn = false;
     mockHookUser = null;
+    mockAnalyticsReset.mockClear();
+    mockResetSubscriptionCustomer.mockClear();
+    mockSignOut.mockClear();
   });
 
   it("authenticates through Clerk SSO and the allowlisted mobile callback", async () => {
@@ -121,6 +124,37 @@ describe("ClerkAccountBridge", () => {
         expect((await account.getSnapshot()).session.status).toBe("signedIn");
       });
       expect(fetchSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("clears a restored identity when the server reports its tombstone", async () => {
+    mockIsSignedIn = true;
+    mockHookUser = mockUser;
+    const fetchSpy = jest
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(null, { status: 410 }));
+    const account = new ClerkAccountModule();
+
+    try {
+      await render(
+        <ClerkAccountBridge
+          account={account}
+          provisionRetryDelayMs={100}
+          resetDeletedSubscriptionCustomer={mockResetSubscriptionCustomer}
+        >
+          <Text>App content</Text>
+        </ClerkAccountBridge>,
+      );
+
+      await waitFor(() => {
+        expect(mockAnalyticsReset).toHaveBeenCalledTimes(1);
+        expect(mockResetSubscriptionCustomer).toHaveBeenCalledTimes(1);
+        expect(mockSignOut).toHaveBeenCalledTimes(1);
+      });
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect((await account.getSnapshot()).session.status).toBe("signedOut");
     } finally {
       fetchSpy.mockRestore();
     }

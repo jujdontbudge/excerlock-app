@@ -1,10 +1,17 @@
 import { useClerk, useSSO, useUser } from "@clerk/clerk-expo";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { analytics } from "../analytics";
 import { ClerkAccountModule } from "./ClerkAccountModule";
 
 const DEFAULT_API_BASE_URL = "https://api.excerlock.com";
+
+class DeletedIdentityProvisioningError extends Error {
+  constructor() {
+    super("The authoritative account is deleted");
+    this.name = "DeletedIdentityProvisioningError";
+  }
+}
 
 type ClerkAccountBridgeProps = Readonly<{
   account: ClerkAccountModule;
@@ -36,6 +43,9 @@ async function provisionIdentity(session: {
     headers: { authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
+    if (response.status === 410) {
+      throw new DeletedIdentityProvisioningError();
+    }
     throw new Error("Authoritative account registration failed");
   }
 }
@@ -52,11 +62,22 @@ export function ClerkAccountBridge({
   const { startSSOFlow } = useSSO();
   const { isLoaded, isSignedIn, user } = useUser();
   const clerkSession = clerk.session;
+  const deletionRecoveryRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     if (!isLoaded) {
       return;
     }
+
+    const recoverDeletedIdentity = (): Promise<void> => {
+      deletionRecoveryRef.current ??= (async () => {
+        analytics.reset();
+        await resetSubscription();
+        await clerk.signOut();
+        account.synchronizeUser(null);
+      })();
+      return deletionRecoveryRef.current;
+    };
 
     account.attachRuntime({
       authenticate: async () => {
@@ -81,7 +102,14 @@ export function ClerkAccountBridge({
         if (!session?.user) {
           throw new Error("Clerk did not expose the activated session");
         }
-        await provisionIdentity(session);
+        try {
+          await provisionIdentity(session);
+        } catch (error) {
+          if (error instanceof DeletedIdentityProvisioningError) {
+            await recoverDeletedIdentity();
+          }
+          throw error;
+        }
         return Object.freeze({
           status: "authenticated" as const,
           user: clerkUser(session.user),
@@ -120,7 +148,11 @@ export function ClerkAccountBridge({
               account.synchronizeUser(synchronizedUser);
             }
             return;
-          } catch {
+          } catch (error) {
+            if (error instanceof DeletedIdentityProvisioningError) {
+              await recoverDeletedIdentity();
+              return;
+            }
             await new Promise<void>((resolve) => {
               setTimeout(resolve, provisionRetryDelayMs);
             });
@@ -128,6 +160,7 @@ export function ClerkAccountBridge({
         }
       })();
     } else {
+      deletionRecoveryRef.current = null;
       account.synchronizeUser(null);
     }
     return () => {
