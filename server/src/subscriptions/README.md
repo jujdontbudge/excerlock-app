@@ -21,3 +21,7 @@ same row lock through its upsert, so the two transactions serialize:
 The delivery ledger survives account deletion so Adapty retries, renewals, and
 refunds remain idempotent. Apple billing is not cancelled by either the webhook
 or account deletion.
+
+The receiver fails closed with `503` until `ADAPTY_WEBHOOK_SECRET` is set to
+the exact Authorization value configured in Adapty. This secret is independent
+from `ADAPTY_SECRET_KEY`, which authorizes server-side profile erasure.

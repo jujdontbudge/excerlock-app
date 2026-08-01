@@ -16,7 +16,7 @@ import { createDrizzleUserDeletionRepository } from "../src/userDeletion/index.j
 import {
   createAdaptyWebhookService,
   createDrizzleAdaptyWebhookRepository,
-} from "../src/webhooks/index.js";
+} from "../src/subscriptions/index.js";
 import { createPgliteTestDatabase } from "./pgliteTestDatabase.js";
 
 let postgres: Awaited<ReturnType<typeof createPgliteTestDatabase>>;

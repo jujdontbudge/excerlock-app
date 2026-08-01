@@ -35,7 +35,6 @@ Deletion fails closed until all of these are configured:
 - `DATABASE_URL`
 - `CLERK_SECRET_KEY`
 - `ADAPTY_SECRET_KEY`
-- `ADAPTY_WEBHOOK_SECRET` (the exact Authorization value configured in Adapty)
 - `POSTHOG_PERSONAL_API_KEY` with `person:write`
 - `POSTHOG_PROJECT_ID`
 - optional `POSTHOG_API_HOST` (defaults to `https://us.posthog.com`)
