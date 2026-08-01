@@ -13,6 +13,8 @@ export type EmptyProps = Record<string, never>
 /** One registry entry — everything the single-emitter guardrail test needs. */
 export interface EventSpec {
   readonly owner: EventOwner
+  /** Client properties permitted to cross the analytics transport boundary. */
+  readonly transmittedProperties?: readonly string[]
 }
 
 /** Shape every domain event module must satisfy. */

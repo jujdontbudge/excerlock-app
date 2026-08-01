@@ -24,8 +24,6 @@ import {
   useOnboardingStore,
 } from "..";
 
-const CONFESSED_DAILY_MINUTES = 330;
-
 function expectedStepViewSignals(
   flowScreen: FlowScreen,
 ): AnalyticsSignal[] {
@@ -81,7 +79,6 @@ describe("onboarding analytics", () => {
                 event: "onboarding_answer",
                 props: {
                   screen: flowScreen,
-                  value: CONFESSED_DAILY_MINUTES,
                 },
               },
             ]

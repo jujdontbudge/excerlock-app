@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { EVENTS, EVENT_NAMES, eventsOwnedBy, ownerOf } from '../index'
+import {
+  EVENTS,
+  EVENT_NAMES,
+  eventsOwnedBy,
+  ownerOf,
+  transmittedPropertiesOf,
+} from '../index'
 import { conditionEvents } from '../src/events/conditions'
 import { engagementEvents } from '../src/events/engagement'
 import { onboardingEvents } from '../src/events/onboarding'
@@ -91,6 +97,14 @@ describe('single-emitter ownership (D4/D5)', () => {
     for (const name of nonAdapty) {
       expect(name.startsWith('subscription_')).toBe(false)
       expect(name.startsWith('trial_')).toBe(false)
+    }
+  })
+
+  it('gives every client event one canonical transmission allowlist', () => {
+    for (const name of eventsOwnedBy('client')) {
+      expect(EVENTS[name]).toHaveProperty('transmittedProperties')
+      expect(transmittedPropertiesOf(name as Parameters<typeof transmittedPropertiesOf>[0]))
+        .toEqual((EVENTS[name] as { transmittedProperties: readonly string[] }).transmittedProperties)
     }
   })
 })
