@@ -61,6 +61,16 @@ describe("SettingsScreen", () => {
     });
   });
 
+  it("lets the user align weeks to Sunday", async () => {
+    await render(<SettingsScreen />);
+
+    expect(screen.getByLabelText("Selected week start: Monday")).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole("button", { name: "Sunday" }));
+
+    expect(useSettingsStore.getState().weekStartsOn).toBe(0);
+    expect(screen.getByLabelText("Selected week start: Sunday")).toBeOnTheScreen();
+  });
+
   it("makes gym auto-detect an explicit user action", async () => {
     const enableAutoDetect = jest.fn().mockResolvedValue(true);
     await render(
