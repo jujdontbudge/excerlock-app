@@ -98,9 +98,9 @@ The adapter:
   reports success;
 - keeps restored Clerk sessions signed out at the app account boundary while
   that same provisioning call retries, preventing a partial identity spine;
-- treats `410 ACCOUNT_DELETED` as terminal recovery: reset PostHog, log the
-  Adapty customer out, and clear the stale Clerk session without retrying or
-  emitting a post-deletion event;
+- treats `410 ACCOUNT_DELETED` as terminal recovery: durably discard PostHog's
+  queued identified events before reset, log the Adapty customer out, and clear
+  the stale Clerk session without retrying or emitting a post-deletion event;
 - sign out through Clerk while leaving all local earning and locking data
   untouched;
 - starts Google OAuth through Clerk SSO at the allowlisted

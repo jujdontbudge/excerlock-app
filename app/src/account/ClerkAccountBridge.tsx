@@ -71,10 +71,30 @@ export function ClerkAccountBridge({
 
     const recoverDeletedIdentity = (): Promise<void> => {
       deletionRecoveryRef.current ??= (async () => {
-        analytics.reset();
-        await resetSubscription();
-        await clerk.signOut();
         account.synchronizeUser(null);
+        const retryUntilSuccessful = async (
+          cleanup: () => Promise<void>,
+        ): Promise<void> => {
+          for (;;) {
+            try {
+              await cleanup();
+              return;
+            } catch {
+              await new Promise<void>((resolve) => {
+                setTimeout(resolve, provisionRetryDelayMs);
+              });
+            }
+          }
+        };
+
+        await Promise.all([
+          retryUntilSuccessful(async () => {
+            await analytics.discardPending();
+            analytics.reset();
+          }),
+          retryUntilSuccessful(resetSubscription),
+          retryUntilSuccessful(() => clerk.signOut()),
+        ]);
       })();
       return deletionRecoveryRef.current;
     };

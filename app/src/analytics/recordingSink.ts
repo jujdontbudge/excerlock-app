@@ -37,6 +37,9 @@ export function createRecordingSink(limit: number = DEFAULT_LIMIT): RecordingSin
     screen: (screen, props) => record({ kind: "screen", screen, props }),
     identify: (distinctId, props) => record({ kind: "identify", distinctId, props }),
     flush: async () => undefined,
+    discardPending: async () => {
+      signals.length = 0;
+    },
     reset: () => record({ kind: "reset" }),
     captured: () =>
       signals.flatMap((signal) =>

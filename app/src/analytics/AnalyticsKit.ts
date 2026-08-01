@@ -38,6 +38,8 @@ export interface AnalyticsKit {
   identify(distinctId: string): void;
   /** Drain identified events before authoritative account erasure. */
   flush(): Promise<void>;
+  /** Purge identified events when authoritative erasure already happened. */
+  discardPending(): Promise<void>;
   /** Drop the identity on sign-out so the next session starts anonymous. */
   reset(): void;
 }
@@ -73,6 +75,9 @@ export function createAnalyticsKit(initialSink: AnalyticsSink = noopSink): Analy
     },
     flush() {
       return sink.flush();
+    },
+    discardPending() {
+      return sink.discardPending();
     },
     reset() {
       sink.reset();

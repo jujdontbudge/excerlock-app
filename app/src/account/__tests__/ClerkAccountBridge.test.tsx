@@ -41,8 +41,18 @@ jest.mock("@clerk/clerk-expo", () => ({
 }));
 
 jest.mock("../../analytics/index", () => ({
-  analytics: { flush: jest.fn(async () => undefined), reset: jest.fn() },
+  analytics: {
+    discardPending: jest.fn(async () => undefined),
+    flush: jest.fn(async () => undefined),
+    reset: jest.fn(),
+  },
 }));
+
+const mockAnalyticsDiscardPending = (
+  jest.requireMock("../../analytics/index") as {
+    analytics: { discardPending: jest.Mock };
+  }
+).analytics.discardPending;
 
 const mockAnalyticsReset = (
   jest.requireMock("../../analytics/index") as {
@@ -61,7 +71,9 @@ describe("ClerkAccountBridge", () => {
     mockIsSignedIn = false;
     mockHookUser = null;
     mockAnalyticsReset.mockClear();
-    mockResetSubscriptionCustomer.mockClear();
+    mockAnalyticsDiscardPending.mockClear();
+    mockResetSubscriptionCustomer.mockReset();
+    mockResetSubscriptionCustomer.mockResolvedValue(undefined);
     mockSignOut.mockClear();
   });
 
@@ -111,7 +123,6 @@ describe("ClerkAccountBridge", () => {
       .mockRejectedValueOnce(new Error("temporary network failure"))
       .mockResolvedValue(new Response(null, { status: 204 }));
     const account = new ClerkAccountModule();
-
     try {
       await render(
         <ClerkAccountBridge account={account} provisionRetryDelayMs={0}>
@@ -136,6 +147,9 @@ describe("ClerkAccountBridge", () => {
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(new Response(null, { status: 410 }));
     const account = new ClerkAccountModule();
+    mockResetSubscriptionCustomer
+      .mockRejectedValueOnce(new Error("temporary Adapty failure"))
+      .mockResolvedValueOnce(undefined);
 
     try {
       await render(
@@ -149,8 +163,9 @@ describe("ClerkAccountBridge", () => {
       );
 
       await waitFor(() => {
+        expect(mockAnalyticsDiscardPending).toHaveBeenCalledTimes(1);
         expect(mockAnalyticsReset).toHaveBeenCalledTimes(1);
-        expect(mockResetSubscriptionCustomer).toHaveBeenCalledTimes(1);
+        expect(mockResetSubscriptionCustomer).toHaveBeenCalledTimes(2);
         expect(mockSignOut).toHaveBeenCalledTimes(1);
       });
       expect(fetchSpy).toHaveBeenCalledTimes(1);

@@ -34,5 +34,7 @@ export interface AnalyticsSink {
   identify(distinctId: string, props: AnalyticsPayload): void;
   /** Resolve only after pending events have reached the transport boundary. */
   flush(): Promise<void>;
+  /** Permanently discard pending transport data without sending it. */
+  discardPending(): Promise<void>;
   reset(): void;
 }

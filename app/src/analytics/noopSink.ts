@@ -12,5 +12,6 @@ export const noopSink: AnalyticsSink = {
   screen() {},
   identify() {},
   async flush() {},
+  async discardPending() {},
   reset() {},
 };

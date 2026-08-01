@@ -1,3 +1,4 @@
+import { PostHogPersistedProperty } from "posthog-react-native";
 import { buildPostHogOptions, createPostHogSink } from "../postHogSink";
 
 describe("PostHog client transport", () => {
@@ -22,7 +23,9 @@ describe("PostHog client transport", () => {
       screen: jest.fn(),
       identify: jest.fn(),
       flush: jest.fn(async () => undefined),
+      optOut: jest.fn(async () => undefined),
       reset: jest.fn(),
+      setPersistedProperty: jest.fn(),
     };
     const sink = createPostHogSink(client);
 
@@ -31,6 +34,7 @@ describe("PostHog client transport", () => {
     sink.screen("paywall", {});
     sink.identify("user_123", {});
     await sink.flush();
+    await sink.discardPending();
     sink.reset();
 
     expect(client.register).toHaveBeenCalledWith({ app: "excerlock" });
@@ -41,6 +45,12 @@ describe("PostHog client transport", () => {
     expect(client.screen).toHaveBeenCalledWith("paywall", {});
     expect(client.identify).toHaveBeenCalledWith("user_123", {});
     expect(client.flush).toHaveBeenCalledWith();
+    expect(client.setPersistedProperty.mock.calls).toEqual([
+      [PostHogPersistedProperty.Queue, null],
+      [PostHogPersistedProperty.AiQueue, null],
+      [PostHogPersistedProperty.LogsQueue, null],
+    ]);
+    expect(client.optOut).toHaveBeenCalledWith();
     expect(client.reset).toHaveBeenCalledWith();
   });
 });

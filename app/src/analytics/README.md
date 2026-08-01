@@ -5,7 +5,9 @@ payloads from `@excerlock/analytics-events`, applies that registry's transmissio
 final boundary, and forwards to an installed sink. It hides the PostHog SDK, boot-time configuration,
 super properties, identity calls, and the no-op behavior used when configuration is absent.
 Its `flush()` boundary is awaited before account deletion so identified events reach PostHog before
-the server queues erasure; `reset()` then clears the deleted identity after success.
+the server queues erasure; `reset()` then clears the deleted identity after success. If a restored
+Clerk session discovers that server erasure already completed, `discardPending()` durably removes
+the SDK queues without sending them before reset, preventing stale events from recreating the user.
 
 PostHog is initialized once from `app/index.ts`. `postHogSink.ts` fixes the SDK policy: app lifecycle
 capture, UI autocapture, exception autocapture, surveys, GeoIP, heatmaps/session replay, and retries
