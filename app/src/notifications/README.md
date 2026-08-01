@@ -55,17 +55,19 @@ while the OS decision is pending.
 
 ## Planning and delivery rules
 
-`NotificationScheduler` reconciles one ledger day. Its input is only day/week
-facts, live copy facts, and persisted preferences. Its two injected system
-boundaries are `NotificationModule` and `NotificationClock`; planning logic
-never reads `Date.now()`.
+`NotificationScheduler` atomically reconciles a horizon of ledger days. Its
+input is only day/week facts, live copy facts, and persisted preferences. Its
+two injected system boundaries are `NotificationModule` and
+`NotificationClock`; planning logic never reads `Date.now()`.
 
 `NotificationRuntimeHost`, mounted beside the other root runtime hosts, derives
-those facts from the local ledger, weekly schedule, onboarding confession, and
-notification preferences. Each app open reconciles today as opened (cancelling
-its engagement pushes) and pre-schedules tomorrow so opted-in notifications can
-fire while the app is closed. Store changes and local day rollover reconcile
-again. Day plans run serially so native delivery evidence cannot lose an update.
+those facts from the local ledger, weekly schedule, onboarding confession,
+user-selected week boundary, and notification preferences. Each app open
+reconciles today as opened (cancelling its engagement pushes) and pre-schedules
+the next seven unattended days so opted-in notifications can fire through a
+full offline week. Store changes and local day rollover reconcile again.
+Horizon plans run serially and share one simulated delivery ledger, so native
+evidence cannot lose an update and the rolling cap applies across the batch.
 
 Schedules use the deterministic ID `typeId:dayIndex`. Re-planning the same day
 updates that schedule rather than duplicating it, and a type that is silenced or

@@ -1,8 +1,6 @@
 import { useEffect } from "react";
 
-import {
-  type NotificationRoute,
-} from "../model/catalog";
+import type { NotificationRoute } from "../model/catalog";
 import { scheduledNotificationDestination } from "./expoNotificationCodec";
 
 export type ShieldNotificationResponse = Readonly<{
@@ -55,7 +53,10 @@ export function ShieldNotificationResponseHost({
 export function notificationDestination(
   response: ShieldNotificationResponse,
 ): NotificationDestination | null {
-  return shieldDestination(response) ?? scheduledDestination(response);
+  return (
+    shieldDestination(response) ??
+    scheduledNotificationDestination(response.identifier, response.data)
+  );
 }
 
 export function shieldDestination(
@@ -73,10 +74,4 @@ export function shieldDestination(
     default:
       return null;
   }
-}
-
-function scheduledDestination(
-  response: ShieldNotificationResponse,
-): NotificationRoute | null {
-  return scheduledNotificationDestination(response.identifier, response.data);
 }
