@@ -2,7 +2,7 @@ export { getNotificationModule } from "./accessor";
 export { NativeShieldNotificationResponseHost } from "./native/NativeShieldNotificationResponseHost";
 export {
   NotificationRuntimeHost,
-  type NotificationDayReconciler,
+  type NotificationHorizonReconciler,
   type NotificationRuntimeHostProps,
 } from "./runtime/NotificationRuntimeHost";
 export {

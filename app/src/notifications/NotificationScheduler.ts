@@ -20,7 +20,7 @@ export type NotificationSchedulerOptions = Readonly<{
 }>;
 
 /**
- * Reconciles one ledger day into local schedules.
+ * Reconciles a ledger-day horizon into local schedules under shared caps.
  *
  * The caller supplies facts and persisted user choices; this class supplies
  * only two system boundaries. All trigger and delivery decisions remain local.

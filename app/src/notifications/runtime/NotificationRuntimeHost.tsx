@@ -17,14 +17,14 @@ import {
 import { useNotificationPreferencesStore } from "../store/notificationPreferencesStore";
 import { buildNotificationRuntimeInputs } from "./buildNotificationRuntimeInputs";
 
-export interface NotificationDayReconciler {
+export interface NotificationHorizonReconciler {
   reconcileDays(
     inputs: readonly NotificationPlanningInput[],
   ): Promise<readonly unknown[]>;
 }
 
 export type NotificationRuntimeHostProps = Readonly<{
-  reconciler?: NotificationDayReconciler;
+  reconciler?: NotificationHorizonReconciler;
   clock?: NotificationClock;
 }>;
 

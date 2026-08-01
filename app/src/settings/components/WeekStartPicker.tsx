@@ -10,14 +10,19 @@ type WeekStartPickerProps = Readonly<{
   onChange: (weekday: WeekStart) => void;
 }>;
 
+const WEEK_START_LABELS: Record<WeekStart, string> = {
+  0: "Sunday",
+  1: "Monday",
+};
+
 const OPTIONS: ReadonlyArray<{ label: string; value: WeekStart }> = [
-  { label: "Monday", value: 1 },
-  { label: "Sunday", value: 0 },
+  { label: WEEK_START_LABELS[1], value: 1 },
+  { label: WEEK_START_LABELS[0], value: 0 },
 ];
 
 export function WeekStartPicker({ value, onChange }: WeekStartPickerProps) {
   const { spacing } = useTheme();
-  const selectedLabel = value === 0 ? "Sunday" : "Monday";
+  const selectedLabel = WEEK_START_LABELS[value];
 
   return (
     <View style={{ gap: spacing.md }}>
