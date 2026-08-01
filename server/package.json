@@ -14,7 +14,8 @@
     "test": "npm run typecheck:test && vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:test": "tsc -p tsconfig.test.json --noEmit",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node dist/migrate.js"
   },
   "dependencies": {
     "@fastify/helmet": "^13.1.0",

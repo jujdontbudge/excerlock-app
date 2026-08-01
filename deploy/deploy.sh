@@ -140,13 +140,24 @@ sudo test -r /etc/excerlock/env || {
   printf "ERROR: /etc/excerlock/env is missing or unreadable; create it before the first deploy\n" >&2
   exit 1
 }
-sudo install -d -m 0755 -o excerlock -g excerlock /opt/excerlock/server /opt/excerlock/server/dist /opt/excerlock/server/deploy'
+sudo install -d -m 0755 -o excerlock -g excerlock /opt/excerlock/server /opt/excerlock/server/dist /opt/excerlock/server/deploy /opt/excerlock/server/drizzle'
 
 # Expansion of attempt belongs to the remote shell, not this local script.
 # shellcheck disable=SC2016
 REMOTE_ACTIVATE='set -eu
 cd /opt/excerlock/server
 sudo -n -u excerlock npm ci --omit=dev --no-audit --no-fund
+# Apply pending migrations BEFORE the restart, so new code never meets an old
+# schema. systemd-run supplies the same EnvironmentFile the service uses, which
+# keeps DATABASE_URL out of the process table and off this script. Drizzle
+# journals what it has applied, so a no-op deploy stays a no-op. A non-zero exit
+# aborts the deploy and leaves the previous service running.
+sudo -n systemd-run --quiet --pipe --wait --collect \
+  --unit=excerlock-migrate \
+  --property=User=excerlock \
+  --property=WorkingDirectory=/opt/excerlock/server \
+  --property=EnvironmentFile=/etc/excerlock/env \
+  /usr/bin/node dist/migrate.js
 sudo caddy validate --config /opt/excerlock/server/deploy/Caddyfile --adapter caddyfile
 sudo install -m 0644 -o root -g root /opt/excerlock/server/deploy/Caddyfile /etc/caddy/Caddyfile
 sudo install -m 0644 -o root -g root /opt/excerlock/server/deploy/excerlock-api.service /etc/systemd/system/excerlock-api.service
@@ -164,6 +175,15 @@ while ! curl --fail --silent --show-error http://127.0.0.1:3000/v1/health >/dev/
   attempt=$((attempt + 1))
   sleep 1
 done
+# Liveness alone is what let an empty database hide behind a green deploy for
+# days. Readiness verifies the schema this build expects is actually present,
+# so a deploy that migrated nothing fails here instead of silently "succeeding".
+curl --fail --silent --show-error http://127.0.0.1:3000/v1/ready >/dev/null || {
+  printf "ERROR: the service is live but not ready; the schema is missing or incomplete\n" >&2
+  curl --silent http://127.0.0.1:3000/v1/ready >&2 || true
+  printf "\n" >&2
+  exit 1
+}
 sudo systemctl is-active --quiet excerlock-api.service'
 
 if "$DRY_RUN"; then
@@ -185,6 +205,12 @@ fi
 log "Sync built server and package manifests"
 run_command rsync "${RSYNC_OPTIONS[@]}" --delete \
   "${SERVER_DIR}/dist/" "${DEPLOY_HOST}:${REMOTE_DIR}/dist/"
+
+# The migration SQL is data, not build output, so it never lands in dist/.
+# dist/migrate.js resolves it at ../../drizzle relative to dist/db/, which is
+# why it must sit beside dist/ rather than inside it.
+run_command rsync "${RSYNC_OPTIONS[@]}" --delete \
+  "${SERVER_DIR}/drizzle/" "${DEPLOY_HOST}:${REMOTE_DIR}/drizzle/"
 
 # The box gets a production-pruned package.json, never the workspace one.
 # server/package.json declares dev-only workspace siblings such as

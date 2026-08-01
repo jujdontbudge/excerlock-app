@@ -74,11 +74,22 @@ Use systemd `EnvironmentFile` syntax: one `KEY=value` per line, without
 `export`. At minimum, set the runtime and local Postgres connection; add the
 server secrets from PRD §10.10 without ever committing their values:
 
+**The database URL must be exactly this pair of lines.** `postgres-js` only opens a
+unix socket when the *host* contains a `/`, and it never reads a `?host=` query
+parameter — so the obvious-looking
+`postgres://excerlock@/excerlock?host=/var/run/postgresql` is both an invalid URL
+(Node's `new URL` throws `Invalid URL` on it) and, if it parsed, would silently
+fall back to TCP on `127.0.0.1`, where `pg_hba.conf` demands a password the
+service does not have. `postgres:///excerlock` leaves the host empty so the
+driver falls through to `PGHOST`, whose slash selects the socket and lets
+`peer` auth match the `excerlock` service user to the `excerlock` role.
+
 ```dotenv
 NODE_ENV=production
 HOST=127.0.0.1
 PORT=3000
-DATABASE_URL=postgres://excerlock@/excerlock?host=/var/run/postgresql
+DATABASE_URL=postgres:///excerlock
+PGHOST=/var/run/postgresql
 SENTRY_DSN=
 CLERK_SECRET_KEY=
 ADAPTY_SECRET_KEY=
