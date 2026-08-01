@@ -6,6 +6,10 @@ the server deliberately does not retain webhook bodies, profile identifiers,
 transaction identifiers, price, currency, attribution, IP addresses, or user
 attributes.
 
+The mirror compares Adapty's business `event_datetime`, rather than delivery
+arrival time, so a delayed older lifecycle event cannot overwrite a newer
+access decision. The delivery key independently handles exact retries.
+
 The user row is locked before recording a delivery. Account deletion uses the
 same row lock through its upsert, so the two transactions serialize:
 

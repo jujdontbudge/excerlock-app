@@ -205,6 +205,9 @@ export const adaptySubscriptionStates = pgTable("adapty_subscription_states", {
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  eventOccurredAt: timestamp("event_occurred_at", {
+    withTimezone: true,
+  }).notNull(),
 });
 
 export type AdaptyWebhookEvent = typeof adaptyWebhookEvents.$inferSelect;

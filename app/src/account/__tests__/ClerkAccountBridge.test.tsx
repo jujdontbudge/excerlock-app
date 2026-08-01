@@ -23,7 +23,9 @@ const mockUser = {
 
 jest.mock("@clerk/clerk-expo", () => ({
   useClerk: () => ({
-    client: { sessions: [{ id: "sess_123", user: mockUser }] },
+    client: {
+      sessions: [{ id: "sess_123", user: mockUser, getToken: mockGetToken }],
+    },
     session: { getToken: mockGetToken },
     signOut: mockSignOut,
     user: mockUser,
@@ -50,27 +52,41 @@ const mockResetSubscriptionCustomer = jest.fn(async () => undefined);
 
 describe("ClerkAccountBridge", () => {
   it("authenticates through Clerk SSO and the allowlisted mobile callback", async () => {
+    const fetchSpy = jest
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(null, { status: 204 }));
     const account = new ClerkAccountModule();
-    await render(
-      <ClerkAccountBridge account={account}>
-        <Text>App content</Text>
-      </ClerkAccountBridge>,
-    );
+    try {
+      await render(
+        <ClerkAccountBridge account={account}>
+          <Text>App content</Text>
+        </ClerkAccountBridge>,
+      );
 
-    let result: Awaited<ReturnType<typeof account.signIn>> | undefined;
-    await act(async () => {
-      result = await account.signIn();
-    });
+      let result: Awaited<ReturnType<typeof account.signIn>> | undefined;
+      await act(async () => {
+        result = await account.signIn();
+      });
 
-    expect(mockStartSSOFlow).toHaveBeenCalledWith({
-      redirectUrl: "excerlock://sso-callback",
-      strategy: "oauth_google",
-    });
-    expect(mockSetActive).toHaveBeenCalledWith({ session: "sess_123" });
-    expect(result).toMatchObject({
-      status: "authenticated",
-      session: { user: { id: "user_123", email: "member@example.com" } },
-    });
+      expect(mockStartSSOFlow).toHaveBeenCalledWith({
+        redirectUrl: "excerlock://sso-callback",
+        strategy: "oauth_google",
+      });
+      expect(mockSetActive).toHaveBeenCalledWith({ session: "sess_123" });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "https://api.excerlock.com/v1/user",
+        {
+          headers: { authorization: "Bearer test_session_token" },
+          method: "PUT",
+        },
+      );
+      expect(result).toMatchObject({
+        status: "authenticated",
+        session: { user: { id: "user_123", email: "member@example.com" } },
+      });
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 
   it("deletes through the authenticated server before clearing Clerk", async () => {

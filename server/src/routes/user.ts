@@ -1,5 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
 import {
+  createDrizzleIdentityRepository,
+  DeletedIdentityError,
+  type IdentityRepository,
+} from "../identity/index.js";
+import {
   createConfiguredUserDeletionService,
   IdentityErasureRequestError,
   type UserDeletionService,
@@ -13,6 +18,7 @@ import { requireRouteUserId } from "./vendorRouteSupport.js";
 
 interface UserRouteDependencies {
   deletion: UserDeletionService;
+  identity: IdentityRepository;
 }
 
 export function createUserRoutes(
@@ -23,6 +29,32 @@ export function createUserRoutes(
       "/user",
       async (_request, reply) => sendNotImplemented(reply, "User"),
     );
+
+    app.put("/user", async (request, reply) => {
+      const userId = await requireRouteUserId(request, reply);
+      if (!userId) {
+        return;
+      }
+      try {
+        await dependencies.identity.ensureActiveUser(userId);
+        return reply.code(204).send();
+      } catch (error) {
+        if (error instanceof DeletedIdentityError) {
+          return reply.code(410).send({
+            error: {
+              code: "ACCOUNT_DELETED",
+              message: "This account has been deleted",
+            },
+          });
+        }
+        return reply.code(503).send({
+          error: {
+            code: "IDENTITY_UNAVAILABLE",
+            message: "Account registration is temporarily unavailable",
+          },
+        });
+      }
+    });
 
     app.delete("/user", async (request, reply) => {
       const userId = await requireRouteUserId(request, reply);
@@ -62,6 +94,11 @@ export function createUserRoutes(
 }
 
 export const userRoutes = createUserRoutes({
+  identity: {
+    async ensureActiveUser(userId) {
+      await createDrizzleIdentityRepository().ensureActiveUser(userId);
+    },
+  },
   deletion: {
     async deleteAccount(userId) {
       await createConfiguredUserDeletionService().deleteAccount(userId);

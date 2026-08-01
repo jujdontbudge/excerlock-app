@@ -2,6 +2,7 @@ export interface AdaptySubscriptionEvent {
   customerUserId: string;
   deliveryKey: string;
   eventType: string;
+  eventOccurredAt: Date;
   hasAccess: boolean;
   expiresAt: Date | null;
 }

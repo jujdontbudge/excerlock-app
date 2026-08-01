@@ -262,6 +262,7 @@ async function seedIdentitySpine(): Promise<void> {
     userId: "user_123",
     hasAccess: true,
     eventType: "subscription_started",
+    eventOccurredAt: new Date("2026-07-30T20:00:00.000Z"),
   });
   await postgres.db.insert(adaptyWebhookEvents).values({
     deliveryKey: "adapty-delivery-key",

@@ -17,6 +17,28 @@ async function resetDeletedSubscriptionCustomer(): Promise<void> {
   await resetSubscriptionCustomer();
 }
 
+function apiBaseUrl(): string {
+  return (
+    process.env.EXPO_PUBLIC_API_URL?.trim() || DEFAULT_API_BASE_URL
+  ).replace(/\/$/, "");
+}
+
+async function provisionIdentity(session: {
+  getToken(): Promise<string | null>;
+}): Promise<void> {
+  const token = await session.getToken();
+  if (!token) {
+    throw new Error("Authenticated account registration is unavailable");
+  }
+  const response = await fetch(`${apiBaseUrl()}/v1/user`, {
+    method: "PUT",
+    headers: { authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    throw new Error("Authoritative account registration failed");
+  }
+}
+
 /** Translates Clerk's hook-shaped runtime into the app's class boundary. */
 export function ClerkAccountBridge({
   account,
@@ -56,6 +78,7 @@ export function ClerkAccountBridge({
         if (!session?.user) {
           throw new Error("Clerk did not expose the activated session");
         }
+        await provisionIdentity(session);
         return Object.freeze({
           status: "authenticated" as const,
           user: clerkUser(session.user),
@@ -63,9 +86,7 @@ export function ClerkAccountBridge({
       },
       signOut: () => clerk.signOut(),
       deleteAccount: async () => {
-        const baseUrl = (
-          process.env.EXPO_PUBLIC_API_URL?.trim() || DEFAULT_API_BASE_URL
-        ).replace(/\/$/, "");
+        const baseUrl = apiBaseUrl();
         const token = await clerk.session?.getToken();
         if (!baseUrl || !token) {
           throw new Error("Authenticated account deletion is unavailable");
@@ -86,6 +107,9 @@ export function ClerkAccountBridge({
 
     if (isSignedIn && user) {
       account.synchronizeUser(clerkUser(user));
+      if (clerk.session) {
+        void provisionIdentity(clerk.session).catch(() => undefined);
+      }
     } else {
       account.synchronizeUser(null);
     }

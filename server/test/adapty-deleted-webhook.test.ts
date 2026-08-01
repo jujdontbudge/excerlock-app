@@ -52,6 +52,7 @@ describe("late Adapty webhooks after account deletion", () => {
         userId: "user_123",
         hasAccess: true,
         eventType: "subscription_started",
+        eventOccurredAt: new Date("2026-08-31T20:00:00.000Z"),
         expiresAt: new Date("2026-09-30T20:00:00.000Z"),
         updatedAt: new Date("2026-07-31T20:00:00.000Z"),
       },
@@ -63,6 +64,40 @@ describe("late Adapty webhooks after account deletion", () => {
         eventType: "subscription_started",
         receivedAt: new Date("2026-07-31T20:00:00.000Z"),
       },
+    ]);
+  });
+
+  it("does not let a delayed older renewal overwrite a newer refund", async () => {
+    await postgres.db.insert(users).values({ id: "user_123" });
+    let receivedAt = new Date("2026-09-01T20:00:00.000Z");
+    const service = createAdaptyWebhookService(
+      createDrizzleAdaptyWebhookRepository(postgres.db),
+      () => receivedAt,
+    );
+
+    await service.record(
+      adaptyEvent(
+        "refund-event-id",
+        "subscription_refunded",
+        false,
+        "2026-09-01T19:00:00.000000+0000",
+      ),
+    );
+    receivedAt = new Date("2026-09-01T20:05:00.000Z");
+    await service.record(
+      adaptyEvent(
+        "renewal-event-id",
+        "subscription_renewed",
+        true,
+        "2026-08-01T19:00:00.000000+0000",
+      ),
+    );
+
+    expect(await postgres.db.select().from(adaptySubscriptionStates)).toEqual([
+      expect.objectContaining({
+        hasAccess: false,
+        eventType: "subscription_refunded",
+      }),
     ]);
   });
 
@@ -125,11 +160,12 @@ function adaptyEvent(
   profileEventId: string,
   eventType: string,
   hasAccess: boolean,
+  eventDatetime = "2026-08-31T20:00:00.000Z",
 ) {
   return {
     customer_user_id: "user_123",
     event_type: eventType,
-    event_datetime: "2026-08-31T20:00:00.000Z",
+    event_datetime: eventDatetime,
     event_properties: {
       profile_event_id: profileEventId,
       profile_has_access_level: hasAccess,

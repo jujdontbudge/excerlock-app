@@ -59,6 +59,7 @@ export function createDrizzleAdaptyWebhookRepository(
               userId: user.id,
               hasAccess: event.hasAccess,
               eventType: event.eventType,
+              eventOccurredAt: event.eventOccurredAt,
               expiresAt: event.expiresAt,
               updatedAt: receivedAt,
             })
@@ -67,10 +68,11 @@ export function createDrizzleAdaptyWebhookRepository(
               set: {
                 hasAccess: event.hasAccess,
                 eventType: event.eventType,
+                eventOccurredAt: event.eventOccurredAt,
                 expiresAt: event.expiresAt,
                 updatedAt: receivedAt,
               },
-              setWhere: sql`${adaptySubscriptionStates.updatedAt} <= ${receivedAt}`,
+              setWhere: sql`${adaptySubscriptionStates.eventOccurredAt} <= ${event.eventOccurredAt}`,
             });
         }
 

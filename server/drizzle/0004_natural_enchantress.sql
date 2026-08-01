@@ -1,0 +1,1 @@
+ALTER TABLE "adapty_subscription_states" ADD COLUMN "event_occurred_at" timestamp with time zone NOT NULL;

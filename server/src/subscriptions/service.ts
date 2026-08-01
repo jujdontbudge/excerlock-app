@@ -4,6 +4,9 @@ import type { AdaptyWebhookRepository } from "./repository.js";
 const adaptyEventSchema = z.object({
   customer_user_id: z.string().min(1),
   event_type: z.string().min(1),
+  event_datetime: z
+    .string()
+    .refine((value) => !Number.isNaN(Date.parse(value))),
   event_properties: z.object({
     profile_event_id: z.string().min(1),
     profile_has_access_level: z.boolean(),
@@ -30,6 +33,7 @@ export function createAdaptyWebhookService(
           customerUserId: parsed.customer_user_id,
           deliveryKey: parsed.event_properties.profile_event_id,
           eventType: parsed.event_type,
+          eventOccurredAt: new Date(parsed.event_datetime),
           hasAccess: parsed.event_properties.profile_has_access_level,
           expiresAt: parsed.event_properties.subscription_expires_at
             ? new Date(parsed.event_properties.subscription_expires_at)
