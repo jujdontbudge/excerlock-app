@@ -10,6 +10,17 @@ import type {
 
 let subscriptionModule: SubscriptionModule | undefined;
 
+type SubscriptionRuntime = Readonly<{
+  nodeEnv: string | undefined;
+  adaptyKey: string | undefined;
+}>;
+
+export function shouldUseAdaptySubscriptionModule(
+  runtime: SubscriptionRuntime,
+): boolean {
+  return runtime.nodeEnv !== "test" && Boolean(runtime.adaptyKey?.trim());
+}
+
 /**
  * The subscription composition root. Phase 5 changes only this constructor to
  * an Adapty adapter; callers continue to depend on the vendor-free interface.
