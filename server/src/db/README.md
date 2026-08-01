@@ -19,9 +19,16 @@ behind `index.ts`; consumers do not deep-import them.
 - `vendor_connections` stores access and refresh tokens only as versioned
   AES-256-GCM ciphertext. Its unique keys allow one connection per user/vendor
   and one owner per vendor external id.
-- `vendor_webhook_events` retains the exact thin callback notification. Its
-  `(vendor, delivery_key)` unique index makes replays idempotent, while
-  `(user_id, received_at, id)` supports stable device cursor reads.
+- `vendor_webhook_events` retains the exact thin callback notification while
+  an account is active. Account deletion is the sole exception: it replaces
+  the body and external user id with non-identifying placeholders but retains
+  the delivery key. The `(vendor, delivery_key)` unique index therefore keeps
+  replays idempotent after deletion, while `(user_id, received_at, id)` supports
+  stable device cursor reads.
+- `adapty_subscription_states` mirrors only current access for active users.
+  `adapty_webhook_events` keeps an opaque delivery id and event type for retry
+  idempotency, never the Adapty body or purchase metadata. Deletion removes the
+  state row and nulls delivery-ledger user links.
 - `support_requests` stores the submitted category and content.
   Feature-category submissions create one linked `feature_requests` row.
 - `feature_request_votes` has a unique `(feature_request_id, user_id)` index,

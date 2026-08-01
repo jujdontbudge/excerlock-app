@@ -4,6 +4,11 @@ This module owns the `/v1/*` Fastify transport for health, support, user, and
 vendor endpoints. Handlers validate transport data and delegate; they contain
 no earning, ledger, shield, or lock decisions.
 
+`PUT /v1/user` idempotently provisions the authenticated Clerk subject as the
+minimal Postgres identity-spine row. It never accepts an id from the request
+body and never reactivates a deletion tombstone. `DELETE /v1/user` may revisit
+a tombstone only to resume downstream erasure checkpoints.
+
 ## Support and feature requests
 
 All support and feature-request routes are Clerk protected.
@@ -110,6 +115,11 @@ Vendor route boundaries:
   alter unrelated API routes.
 - Provider/configuration errors are mapped to explicit 4xx/5xx response codes;
   no missing credential is silently ignored.
+
+`POST /v1/webhooks/adapty` is the other intentional public exception. Adapty's
+configured Authorization value is compared through fixed-width SHA-256 digests
+before an empty verification request or subscription event is accepted. The
+route never logs the header, customer id, or payload.
 
 Route fixtures use `fastify.inject()`:
 

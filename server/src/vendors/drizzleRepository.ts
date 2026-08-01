@@ -1,10 +1,11 @@
-import { and, asc, eq, gt, or } from "drizzle-orm";
+import { and, asc, eq, gt, isNull, or } from "drizzle-orm";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 import { getDb } from "../db/client.js";
 import {
   vendorConnections,
   vendorOAuthStates,
   vendorWebhookEvents,
+  users,
 } from "../db/schema.js";
 import type {
   VendorEventFeedRepository,
@@ -22,6 +23,9 @@ type VendorDatabase = PgDatabase<
   any,
   typeof import("../db/schema.js")
 >;
+type VendorTransaction = Parameters<
+  Parameters<VendorDatabase["transaction"]>[0]
+>[0];
 
 export type VendorRepository = VendorOAuthStateRepository &
   VendorWebhookRepository &
@@ -36,9 +40,27 @@ export function createDrizzleVendorRepository(
     );
   }
 
+  async function lockActiveUser(
+    transaction: VendorTransaction,
+    userId: string,
+  ): Promise<void> {
+    const [activeUser] = await transaction
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+      .limit(1)
+      .for("update");
+    if (!activeUser) {
+      throw new Error("User is deleted or missing");
+    }
+  }
+
   return {
     async saveOAuthState(state: NewVendorOAuthStateRecord) {
-      await database.insert(vendorOAuthStates).values(state);
+      await database.transaction(async (transaction) => {
+        await lockActiveUser(transaction, state.userId);
+        await transaction.insert(vendorOAuthStates).values(state);
+      });
     },
 
     async consumeOAuthState(stateHash, vendor, now) {
@@ -62,20 +84,23 @@ export function createDrizzleVendorRepository(
     },
 
     async upsertConnection(connection: NewVendorConnectionRecord) {
-      await database
-        .insert(vendorConnections)
-        .values(connection)
-        .onConflictDoUpdate({
-          target: [vendorConnections.userId, vendorConnections.vendor],
-          set: {
-            externalUserId: connection.externalUserId,
-            accessTokenCiphertext: connection.accessTokenCiphertext,
-            refreshTokenCiphertext: connection.refreshTokenCiphertext,
-            accessTokenExpiresAt: connection.accessTokenExpiresAt,
-            scopes: connection.scopes,
-            updatedAt: new Date(),
-          },
-        });
+      await database.transaction(async (transaction) => {
+        await lockActiveUser(transaction, connection.userId);
+        await transaction
+          .insert(vendorConnections)
+          .values(connection)
+          .onConflictDoUpdate({
+            target: [vendorConnections.userId, vendorConnections.vendor],
+            set: {
+              externalUserId: connection.externalUserId,
+              accessTokenCiphertext: connection.accessTokenCiphertext,
+              refreshTokenCiphertext: connection.refreshTokenCiphertext,
+              accessTokenExpiresAt: connection.accessTokenExpiresAt,
+              scopes: connection.scopes,
+              updatedAt: new Date(),
+            },
+          });
+      });
     },
 
     async findConnection(userId: string, vendor: Vendor) {

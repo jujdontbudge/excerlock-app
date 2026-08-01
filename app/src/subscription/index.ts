@@ -1,6 +1,7 @@
 export {
   getSubscriptionModule,
   identifySubscriptionCustomer,
+  resetSubscriptionCustomer,
 } from "./accessor";
 export { isPremiumEntitled } from "./entitlement";
 export { SubscriptionPaywall } from "./SubscriptionPaywall";

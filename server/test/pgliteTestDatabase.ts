@@ -20,6 +20,8 @@ export async function createPgliteTestDatabase() {
     async reset() {
       await client.exec(`
         truncate table
+          adapty_webhook_events,
+          adapty_subscription_states,
           feature_request_votes,
           feature_requests,
           support_requests,

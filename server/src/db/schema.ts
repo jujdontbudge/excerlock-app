@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   pgTable,
   text,
@@ -17,6 +18,10 @@ export const users = pgTable("users", {
   email: text("email"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  adaptyErasedAt: timestamp("adapty_erased_at", { withTimezone: true }),
+  posthogErasedAt: timestamp("posthog_erased_at", { withTimezone: true }),
+  clerkDeletedAt: timestamp("clerk_deleted_at", { withTimezone: true }),
 });
 
 export type User = typeof users.$inferSelect;
@@ -172,3 +177,42 @@ export type VendorOAuthState = typeof vendorOAuthStates.$inferSelect;
 export type NewVendorOAuthState = typeof vendorOAuthStates.$inferInsert;
 export type VendorWebhookEvent = typeof vendorWebhookEvents.$inferSelect;
 export type NewVendorWebhookEvent = typeof vendorWebhookEvents.$inferInsert;
+
+/**
+ * Minimal Adapty delivery ledger. Payloads, profile ids, transaction ids, and
+ * purchase values are deliberately not retained. The stable profile event id
+ * is sufficient for retry idempotency.
+ */
+export const adaptyWebhookEvents = pgTable("adapty_webhook_events", {
+  deliveryKey: text("delivery_key").primaryKey(),
+  userId: text("user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  eventType: text("event_type").notNull(),
+  receivedAt: timestamp("received_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** Current subscription access mirror for active accounts only. */
+export const adaptySubscriptionStates = pgTable("adapty_subscription_states", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  hasAccess: boolean("has_access").notNull(),
+  eventType: text("event_type").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  eventOccurredAt: timestamp("event_occurred_at", {
+    withTimezone: true,
+  }).notNull(),
+});
+
+export type AdaptyWebhookEvent = typeof adaptyWebhookEvents.$inferSelect;
+export type NewAdaptyWebhookEvent = typeof adaptyWebhookEvents.$inferInsert;
+export type AdaptySubscriptionState =
+  typeof adaptySubscriptionStates.$inferSelect;
+export type NewAdaptySubscriptionState =
+  typeof adaptySubscriptionStates.$inferInsert;

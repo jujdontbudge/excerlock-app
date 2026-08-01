@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 interface TimestampedWebhookVerification {
   rawBody: string;
@@ -14,12 +14,16 @@ interface PolarWebhookVerification {
 }
 
 function safeEqual(received: string, expected: string): boolean {
-  const receivedBytes = Buffer.from(received);
-  const expectedBytes = Buffer.from(expected);
-  if (receivedBytes.byteLength !== expectedBytes.byteLength) {
-    return false;
-  }
-  return timingSafeEqual(receivedBytes, expectedBytes);
+  const receivedDigest = createHash("sha256").update(received).digest();
+  const expectedDigest = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(receivedDigest, expectedDigest);
+}
+
+export function verifyWebhookAuthorization(
+  received: string,
+  expected: string,
+): boolean {
+  return safeEqual(received, expected);
 }
 
 export function verifyStravaChallenge(

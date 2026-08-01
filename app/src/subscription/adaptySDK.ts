@@ -17,6 +17,7 @@ export interface AdaptySDKPort {
   ): Readonly<{ remove(): void }>;
   getProfile(): Promise<AdaptyProfile>;
   identify(customerUserId: string): Promise<void>;
+  logout(): Promise<void>;
   getFlow(placementId: string): Promise<AdaptyFlow>;
   getPaywallProducts(flow: AdaptyFlow): Promise<AdaptyPaywallProduct[]>;
   logShowFlow(flow: AdaptyFlow): Promise<void>;

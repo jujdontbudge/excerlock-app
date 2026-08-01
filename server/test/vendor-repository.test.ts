@@ -6,7 +6,7 @@ import {
   expect,
   it,
 } from "vitest";
-import { users } from "../src/db/schema.js";
+import { users, vendorConnections, vendorOAuthStates } from "../src/db/schema.js";
 import { createDrizzleVendorRepository } from "../src/vendors/index.js";
 import { createPgliteTestDatabase } from "./pgliteTestDatabase.js";
 
@@ -57,6 +57,40 @@ describe("vendor repository configuration", () => {
         new Date("2026-07-29T21:00:00.000Z"),
       ),
     ).resolves.toBeNull();
+  });
+
+  it("does not attach OAuth state or credentials to a deletion tombstone", async () => {
+    await postgres.db.insert(users).values({
+      id: "deleted_user",
+      deletedAt: new Date("2026-07-31T20:00:00.000Z"),
+    });
+    const repository = createDrizzleVendorRepository(postgres.db);
+
+    await expect(
+      repository.saveOAuthState({
+        stateHash: "late-state",
+        userId: "deleted_user",
+        vendor: "strava",
+        expiresAt: new Date("2026-07-31T20:10:00.000Z"),
+      }),
+    ).rejects.toThrow("User is deleted");
+    await expect(
+      repository.upsertConnection({
+        id: "late-connection",
+        userId: "deleted_user",
+        vendor: "strava",
+        externalUserId: "late-external-user",
+        accessTokenCiphertext: "late-secret",
+        refreshTokenCiphertext: null,
+        accessTokenExpiresAt: null,
+        scopes: "activity:read_all",
+      }),
+    ).rejects.toThrow("User is deleted");
+
+    expect({
+      states: await postgres.db.select().from(vendorOAuthStates),
+      connections: await postgres.db.select().from(vendorConnections),
+    }).toEqual({ states: [], connections: [] });
   });
 
   it("upserts, updates, and deletes a connection on its user-vendor key", async () => {

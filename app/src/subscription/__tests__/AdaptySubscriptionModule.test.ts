@@ -35,6 +35,7 @@ function sdkWithProfile(profile: AdaptyProfile): AdaptySDKPort {
     activate: jest.fn().mockResolvedValue(undefined),
     addEventListener: jest.fn().mockReturnValue({ remove: jest.fn() }),
     identify: jest.fn().mockResolvedValue(undefined),
+    logout: jest.fn().mockResolvedValue(undefined),
     getProfile: jest.fn().mockResolvedValue(profile),
     getFlow: jest.fn(),
     getPaywallProducts: jest.fn(),
@@ -72,6 +73,15 @@ describe("AdaptySubscriptionModule", () => {
     expect(
       (sdk.activate as jest.Mock).mock.invocationCallOrder[0],
     ).toBeLessThan((sdk.identify as jest.Mock).mock.invocationCallOrder[0]);
+  });
+
+  it("logs out the deleted Clerk identity without cancelling Apple billing", async () => {
+    const sdk = sdkWithProfile({ profileId: "clerk-profile" });
+    const subscription = new AdaptySubscriptionModule("public-sdk-key", sdk);
+
+    await subscription.resetCustomer();
+
+    expect(sdk.logout).toHaveBeenCalledWith();
   });
 
   it("renders the placement's remote config and products in returned order", async () => {

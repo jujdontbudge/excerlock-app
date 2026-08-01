@@ -59,8 +59,11 @@ Failure leaves the session signed in and renders the normalized server error.
 The app does not emit `account_deleted`; adding a client capture here would
 violate the analytics single-emitter law. The adapter calls authenticated
 `DELETE /v1/user`, and clears its local Clerk session only after that
-authoritative endpoint succeeds. The server owns Clerk-user and server-record
-deletion, downstream erasure scheduling, and the analytics event.
+authoritative endpoint succeeds. Before the request it flushes pending PostHog
+events so they arrive before erasure. After success it discards anything queued
+during the request before resetting the PostHog identity, logs out the Adapty
+customer, and signs out of Clerk. These vendor resets do not cancel the Apple
+subscription.
 
 ## Mock, persistence, and clock
 
@@ -91,12 +94,21 @@ The adapter:
 
 - translate Clerk session/profile state into `AccountSession`;
 - normalize sign-in and sign-up success, cancellation, and error outcomes;
+- calls authenticated, idempotent `PUT /v1/user` after Clerk activates a
+  session, attaching the Clerk subject to Postgres before authentication
+  reports success;
+- keeps restored Clerk sessions signed out at the app account boundary while
+  that same provisioning call retries, preventing a partial identity spine;
+- treats `410 ACCOUNT_DELETED` as terminal recovery: durably discard PostHog's
+  queued identified events before reset, log the Adapty customer out, and clear
+  the stale Clerk session without retrying or emitting a post-deletion event;
 - sign out through Clerk while leaving all local earning and locking data
   untouched;
 - starts Google OAuth through Clerk SSO at the allowlisted
   `excerlock://sso-callback` redirect;
 - calls authenticated `DELETE /v1/user` and clears its local Clerk session only
-  after authoritative success;
+  after authoritative success, with PostHog/Adapty identity cleanup around the
+  request so erased profiles cannot be recreated by queued client work;
 - keep Clerk SDK types and credentials inside the adapter.
 
 The only app credential is `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`; the Clerk secret

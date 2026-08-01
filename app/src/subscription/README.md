@@ -22,6 +22,11 @@ calls `identifySubscriptionCustomer(clerkUserId)`. That is the one identity
 handoff: Adapty activates anonymously at app bootstrap, the purchase completes
 without an account, and only then is the Clerk id attached.
 
+After authoritative account deletion,
+`resetSubscriptionCustomer()` calls Adapty logout before the Clerk session is
+cleared. This removes the deleted Clerk id from the SDK but does not cancel or
+misrepresent the Apple-owned subscription.
+
 `SubscriptionPaywall` is the shared renderer. The onboarding step supplies only
 its placement, the user's confessed daily phone time, and navigation callbacks.
 The surface owns plan selection, loading/error UI, purchase/restore intents, and
@@ -77,6 +82,7 @@ The adapter:
 - forward purchase and restore intents and normalize cancellation/errors;
 - listen for Adapty profile refreshes so entitlement changes update the shared
   snapshot.
+- log out the deleted Clerk customer id without cancelling Apple billing.
 
 Remote config may provide `title`, `body`, `valueStatement`, `plansTitle`,
 `trialStatement`, `defaultProductId`, and a `productBadges` map. Product count,

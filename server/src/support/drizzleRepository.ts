@@ -1,4 +1,4 @@
-import { count, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 import { getDb } from "../db/client.js";
 import {
@@ -17,6 +17,9 @@ type SupportDatabase = PgDatabase<
   any,
   typeof import("../db/schema.js")
 >;
+type SupportTransaction = Parameters<
+  Parameters<SupportDatabase["transaction"]>[0]
+>[0];
 
 function requireDatabase(
   database: SupportDatabase | null,
@@ -36,9 +39,24 @@ async function userExists(
   const [user] = await database
     .select({ id: users.id })
     .from(users)
-    .where(eq(users.id, userId))
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
     .limit(1);
   return user !== undefined;
+}
+
+async function lockActiveUser(
+  transaction: SupportTransaction,
+  userId: string,
+): Promise<void> {
+  const [activeUser] = await transaction
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    .limit(1)
+    .for("update");
+  if (!activeUser) {
+    throw new Error("User is deleted or missing");
+  }
 }
 
 export function createDrizzleSupportSubmissionRepository(
@@ -51,6 +69,8 @@ export function createDrizzleSupportSubmissionRepository(
 
     async insertSupportSubmission(submission) {
       await database.transaction(async (transaction) => {
+        await lockActiveUser(transaction, submission.userId);
+
         await transaction.insert(supportRequests).values({
           id: submission.id,
           userId: submission.userId,
@@ -84,6 +104,7 @@ export function createDrizzleFeatureRequestVoteRepository(
 
     async recordFeatureRequestVote(vote) {
       return database.transaction(async (transaction) => {
+        await lockActiveUser(transaction, vote.userId);
         const [featureRequest] = await transaction
           .select({ id: featureRequests.id })
           .from(featureRequests)

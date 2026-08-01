@@ -1,28 +1,103 @@
 import { useClerk, useSSO, useUser } from "@clerk/clerk-expo";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
+import { analytics } from "../analytics";
 import { ClerkAccountModule } from "./ClerkAccountModule";
 
 const DEFAULT_API_BASE_URL = "https://api.excerlock.com";
 
+class DeletedIdentityProvisioningError extends Error {
+  constructor() {
+    super("The authoritative account is deleted");
+    this.name = "DeletedIdentityProvisioningError";
+  }
+}
+
 type ClerkAccountBridgeProps = Readonly<{
   account: ClerkAccountModule;
   children: ReactNode;
+  provisionRetryDelayMs?: number;
+  resetDeletedSubscriptionCustomer?: () => Promise<void>;
 }>;
+
+async function resetDeletedSubscriptionCustomer(): Promise<void> {
+  const { resetSubscriptionCustomer } = await import("../subscription");
+  await resetSubscriptionCustomer();
+}
+
+function apiBaseUrl(): string {
+  return (
+    process.env.EXPO_PUBLIC_API_URL?.trim() || DEFAULT_API_BASE_URL
+  ).replace(/\/$/, "");
+}
+
+async function provisionIdentity(session: {
+  getToken(): Promise<string | null>;
+}): Promise<void> {
+  const token = await session.getToken();
+  if (!token) {
+    throw new Error("Authenticated account registration is unavailable");
+  }
+  const response = await fetch(`${apiBaseUrl()}/v1/user`, {
+    method: "PUT",
+    headers: { authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    if (response.status === 410) {
+      throw new DeletedIdentityProvisioningError();
+    }
+    throw new Error("Authoritative account registration failed");
+  }
+}
 
 /** Translates Clerk's hook-shaped runtime into the app's class boundary. */
 export function ClerkAccountBridge({
   account,
   children,
+  provisionRetryDelayMs = 1_000,
+  resetDeletedSubscriptionCustomer: resetSubscription =
+    resetDeletedSubscriptionCustomer,
 }: ClerkAccountBridgeProps) {
   const clerk = useClerk();
   const { startSSOFlow } = useSSO();
   const { isLoaded, isSignedIn, user } = useUser();
+  const clerkSession = clerk.session;
+  const deletionRecoveryRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     if (!isLoaded) {
       return;
     }
+
+    const recoverDeletedIdentity = (): Promise<void> => {
+      deletionRecoveryRef.current ??= (async () => {
+        account.synchronizeUser(null);
+        const retryUntilSuccessful = async (
+          cleanup: () => Promise<void>,
+        ): Promise<void> => {
+          for (;;) {
+            try {
+              await cleanup();
+              return;
+            } catch {
+              await new Promise<void>((resolve) => {
+                setTimeout(resolve, provisionRetryDelayMs);
+              });
+            }
+          }
+        };
+
+        await Promise.all([
+          retryUntilSuccessful(async () => {
+            await analytics.discardPending();
+            analytics.reset();
+          }),
+          retryUntilSuccessful(resetSubscription),
+          retryUntilSuccessful(() => clerk.signOut()),
+        ]);
+      })();
+      return deletionRecoveryRef.current;
+    };
 
     account.attachRuntime({
       authenticate: async () => {
@@ -47,6 +122,14 @@ export function ClerkAccountBridge({
         if (!session?.user) {
           throw new Error("Clerk did not expose the activated session");
         }
+        try {
+          await provisionIdentity(session);
+        } catch (error) {
+          if (error instanceof DeletedIdentityProvisioningError) {
+            await recoverDeletedIdentity();
+          }
+          throw error;
+        }
         return Object.freeze({
           status: "authenticated" as const,
           user: clerkUser(session.user),
@@ -54,13 +137,12 @@ export function ClerkAccountBridge({
       },
       signOut: () => clerk.signOut(),
       deleteAccount: async () => {
-        const baseUrl = (
-          process.env.EXPO_PUBLIC_API_URL?.trim() || DEFAULT_API_BASE_URL
-        ).replace(/\/$/, "");
+        const baseUrl = apiBaseUrl();
         const token = await clerk.session?.getToken();
         if (!baseUrl || !token) {
           throw new Error("Authenticated account deletion is unavailable");
         }
+        await analytics.flush();
         const response = await fetch(`${baseUrl}/v1/user`, {
           method: "DELETE",
           headers: { authorization: `Bearer ${token}` },
@@ -68,16 +150,51 @@ export function ClerkAccountBridge({
         if (!response.ok) {
           throw new Error("Authoritative account deletion failed");
         }
-        await clerk.signOut();
+        await recoverDeletedIdentity();
       },
     });
 
-    if (isSignedIn && user) {
-      account.synchronizeUser(clerkUser(user));
+    let cancelled = false;
+    if (isSignedIn && user && clerkSession) {
+      account.synchronizeUser(null);
+      const synchronizedUser = clerkUser(user);
+      void (async () => {
+        while (!cancelled) {
+          try {
+            await provisionIdentity(clerkSession);
+            if (!cancelled) {
+              account.synchronizeUser(synchronizedUser);
+            }
+            return;
+          } catch (error) {
+            if (error instanceof DeletedIdentityProvisioningError) {
+              await recoverDeletedIdentity();
+              return;
+            }
+            await new Promise<void>((resolve) => {
+              setTimeout(resolve, provisionRetryDelayMs);
+            });
+          }
+        }
+      })();
     } else {
+      deletionRecoveryRef.current = null;
       account.synchronizeUser(null);
     }
-  }, [account, clerk, isLoaded, isSignedIn, startSSOFlow, user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    account,
+    clerk,
+    clerkSession,
+    isLoaded,
+    isSignedIn,
+    provisionRetryDelayMs,
+    resetSubscription,
+    startSSOFlow,
+    user,
+  ]);
 
   return children;
 }

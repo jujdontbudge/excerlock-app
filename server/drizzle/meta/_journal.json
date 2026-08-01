@@ -15,6 +15,27 @@
       "when": 1785381108197,
       "tag": "0001_brave_echo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785546856080,
+      "tag": "0002_sleepy_the_phantom",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785548586853,
+      "tag": "0003_lively_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785549110689,
+      "tag": "0004_natural_enchantress",
+      "breakpoints": true
     }
   ]
 }

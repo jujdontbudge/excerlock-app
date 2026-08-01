@@ -1,5 +1,6 @@
 import type { PropValue } from "@excerlock/analytics-events";
 import type { PostHogOptions } from "posthog-react-native";
+import { PostHogPersistedProperty } from "posthog-react-native";
 
 import { EXPERIMENT_FLAG_BUDGET_MS } from "../experiments";
 import type { AnalyticsPayload, AnalyticsSink } from "./sink";
@@ -37,7 +38,13 @@ export interface PostHogClientPort {
     distinctId: string,
     properties: Readonly<Record<string, PropValue>>,
   ): void;
+  flush(): Promise<void>;
+  optOut(): Promise<void>;
   reset(): void;
+  setPersistedProperty(
+    key: PostHogPersistedProperty,
+    value: null,
+  ): void;
 }
 
 function definedProperties(
@@ -63,6 +70,17 @@ export function createPostHogSink(client: PostHogClientPort): AnalyticsSink {
     },
     identify(distinctId, properties) {
       client.identify(distinctId, definedProperties(properties));
+    },
+    flush() {
+      return client.flush();
+    },
+    async discardPending() {
+      client.setPersistedProperty(PostHogPersistedProperty.Queue, null);
+      client.setPersistedProperty(PostHogPersistedProperty.AiQueue, null);
+      client.setPersistedProperty(PostHogPersistedProperty.LogsQueue, null);
+      // optOut waits for the React Native event store to persist the queue
+      // removals. reset() is called separately after this boundary completes.
+      await client.optOut();
     },
     reset() {
       client.reset();

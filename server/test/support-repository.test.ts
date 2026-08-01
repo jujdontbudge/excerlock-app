@@ -9,6 +9,8 @@ import {
   it,
 } from "vitest";
 import {
+  adaptySubscriptionStates,
+  adaptyWebhookEvents,
   featureRequestVotes,
   featureRequests,
   supportRequests,
@@ -50,6 +52,8 @@ describe("repository database execution boundary", () => {
 
   it("matches schema.ts columns to the migrated Postgres catalog", async () => {
     const tables = [
+      adaptySubscriptionStates,
+      adaptyWebhookEvents,
       users,
       supportRequests,
       featureRequests,
@@ -100,8 +104,29 @@ describe("repository database execution boundary", () => {
 });
 
 describe("support submission repository", () => {
+  it("does not treat a deletion tombstone as an active support user", async () => {
+    await postgres.db.insert(users).values({
+      id: "deleted_user",
+      deletedAt: new Date("2026-07-31T20:00:00.000Z"),
+    });
+    const repository = createDrizzleSupportSubmissionRepository(postgres.db);
+
+    await expect(repository.userExists("deleted_user")).resolves.toBe(false);
+    await expect(
+      repository.insertSupportSubmission({
+        id: "late-support",
+        userId: "deleted_user",
+        category: "support",
+        title: null,
+        message: "This must not be attached to a tombstone.",
+        createdAt: new Date("2026-07-31T20:01:00.000Z"),
+        featureRequest: null,
+      }),
+    ).rejects.toThrow("User is deleted");
+  });
+
   it("opens one transaction for a feature submission", async () => {
-    const database = createPostgresJsTestDatabase();
+    const database = createPostgresJsTestDatabase(() => [["user_123"]]);
     const repository = createDrizzleSupportSubmissionRepository(
       database.db,
     );
@@ -216,6 +241,44 @@ describe("support submission repository", () => {
         .select({ id: supportRequests.id })
         .from(supportRequests)
         .where(eq(supportRequests.id, "rolled-back-support-id")),
+    ).resolves.toEqual([]);
+  });
+});
+
+describe("feature request vote repository", () => {
+  it("does not attach a late vote to a deletion tombstone", async () => {
+    await postgres.db.insert(users).values([
+      {
+        id: "deleted_user",
+        deletedAt: new Date("2026-07-31T20:00:00.000Z"),
+      },
+      { id: "active_user" },
+    ]);
+    await postgres.db.insert(supportRequests).values({
+      id: "active-support",
+      userId: "active_user",
+      category: "feature",
+      title: "Active feature",
+      message: "Keep this request.",
+    });
+    await postgres.db.insert(featureRequests).values({
+      id: "active-feature",
+      supportRequestId: "active-support",
+      title: "Active feature",
+      message: "Keep this request.",
+    });
+    const repository = createDrizzleFeatureRequestVoteRepository(postgres.db);
+
+    await expect(
+      repository.recordFeatureRequestVote({
+        id: "late-vote",
+        featureRequestId: "active-feature",
+        userId: "deleted_user",
+        createdAt: new Date("2026-07-31T20:01:00.000Z"),
+      }),
+    ).rejects.toThrow("User is deleted");
+    await expect(
+      postgres.db.select().from(featureRequestVotes),
     ).resolves.toEqual([]);
   });
 });

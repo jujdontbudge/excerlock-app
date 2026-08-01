@@ -1,5 +1,9 @@
 export { closeDb, getDb } from "./client.js";
+import * as schema from "./schema.js";
+export type DatabaseSchema = typeof schema;
 export {
+  adaptySubscriptionStates,
+  adaptyWebhookEvents,
   featureRequests,
   featureRequestVotes,
   supportRequests,
@@ -8,8 +12,12 @@ export {
   vendorOAuthStates,
   vendorWebhookEvents,
   type FeatureRequest,
+  type AdaptySubscriptionState,
+  type AdaptyWebhookEvent,
   type FeatureRequestVote,
   type NewFeatureRequest,
+  type NewAdaptySubscriptionState,
+  type NewAdaptyWebhookEvent,
   type NewFeatureRequestVote,
   type NewSupportRequest,
   type NewUser,

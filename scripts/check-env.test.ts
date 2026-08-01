@@ -276,12 +276,21 @@ describe('checkAsc', () => {
 })
 
 describe('simple bearer-key services', () => {
+  it('checkAdapty: requires the independent webhook secret', async () => {
+    const result = await checkAdapty(
+      ctx({ env: { ADAPTY_SECRET_KEY: 'k', EXPO_PUBLIC_ADAPTY_KEY: 'p' } }),
+    )
+
+    expect(result.status).toBe('missing')
+    expect(result.detail).toContain('ADAPTY_WEBHOOK_SECRET')
+  })
+
   it('checkAdapty: 401 → FAILING; 404 (bogus probe profile) still proves the key → OK', async () => {
-    const bad = await checkAdapty(ctx({ env: { ADAPTY_SECRET_KEY: 'k', EXPO_PUBLIC_ADAPTY_KEY: 'p' }, fetch: deny401 }))
+    const bad = await checkAdapty(ctx({ env: { ADAPTY_SECRET_KEY: 'k', ADAPTY_WEBHOOK_SECRET: 'w', EXPO_PUBLIC_ADAPTY_KEY: 'p' }, fetch: deny401 }))
     expect(bad.status).toBe('failing')
     const good = await checkAdapty(
       ctx({
-        env: { ADAPTY_SECRET_KEY: 'k', EXPO_PUBLIC_ADAPTY_KEY: 'p' },
+        env: { ADAPTY_SECRET_KEY: 'k', ADAPTY_WEBHOOK_SECRET: 'w', EXPO_PUBLIC_ADAPTY_KEY: 'p' },
         fetch: async () => ({ status: 404, ok: false, body: 'no such profile' }),
       }),
     )
