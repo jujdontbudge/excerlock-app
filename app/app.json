@@ -62,6 +62,7 @@
           "microphonePermission": false
         }
       ],
+      "expo-secure-store",
       "./plugins/withScreenTimeExtensionValidation"
     ],
     "experiments": {
