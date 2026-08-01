@@ -1,4 +1,13 @@
-# Vendor developer-portal signups — Johan's checklist (#24)
+# Vendor developer-portal signups — deferred, NOT v1
+
+> **Status 2026-08-01: all four vendors are cut from v1.** Polar was dropped by
+> Johan; Strava, Oura and Whoop were already out. **File no applications and
+> register no apps** until a later effort revives this. Apple Health is v1's
+> only external signal source.
+>
+> This file is kept because the facts below cost real research and are not
+> recoverable from the code — especially the redirect URIs, which are only
+> derivable from the VPS Caddyfile plus the server's route prefix.
 
 Four portals need a human with an account. Everything after — storing the
 credentials, wiring the flows, webhooks — is agent work.

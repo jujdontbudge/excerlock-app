@@ -11,6 +11,7 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
 import {
+  ALL_CHECKS,
   type CheckResult,
   type Ctx,
   checkAdapty,
@@ -424,6 +425,12 @@ describe('checkVendorOAuth', () => {
     expect(r.detail).toContain('OURA_CLIENT_SECRET')
     expect(r.detail).toContain('WHOOP_CLIENT_ID')
     expect(r.detail).not.toContain('STRAVA_CLIENT_ID')
+  })
+
+  it('is not part of the v1 run — vendors were cut, so absent keys are not a gap', () => {
+    // The check stays exported and tested: the vendor work is deferred, not
+    // deleted, and this is what a later effort re-enables.
+    expect(ALL_CHECKS.map((check) => check.name)).not.toContain('Vendor OAuth apps')
   })
 })
 

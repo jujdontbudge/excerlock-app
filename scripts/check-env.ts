@@ -574,7 +574,11 @@ export const ALL_CHECKS: Check[] = [
   { name: 'Sentry', run: checkSentry },
   { name: 'Server / Azure', run: checkServer },
   { name: 'Expo / EAS', run: checkEas },
-  { name: 'Vendor OAuth apps', run: checkVendorOAuth },
+  // 'Vendor OAuth apps' is deliberately absent. Strava/Oura/Whoop/Polar were
+  // all cut from v1 (2026-08-01), so absent client ids are the intended state,
+  // not a gap — reporting them as MISSING would leave the doctor permanently
+  // yellow and train everyone to ignore it. `checkVendorOAuth` stays exported
+  // and tested; a later vendor effort re-adds this one line.
 ]
 
 /** Run all checks; a thrown error becomes a ❌ row — the doctor never crashes. */
