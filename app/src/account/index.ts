@@ -1,4 +1,5 @@
 export { getAccountModule } from "./accessor";
+export { AccountRuntimeRoot } from "./AccountRuntimeRoot";
 export { AccountOnboarding } from "./AccountOnboarding";
 export { AccountSettingsCard } from "./AccountSettingsCard";
 export type {

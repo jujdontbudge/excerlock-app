@@ -8,6 +8,7 @@ import {
   type FlowScreen,
 } from "@excerlock/analytics-events";
 import { fireEvent, render, screen } from "@testing-library/react-native";
+import { MockAccountModule } from "../../account/MockAccountModule";
 
 import {
   analytics,
@@ -54,7 +55,12 @@ describe("onboarding analytics", () => {
 
   it("emits the locked flow sequence with exact screen and answer payloads", async () => {
     const onComplete = jest.fn();
-    await render(<OnboardingFlow onComplete={onComplete} />);
+    await render(
+      <OnboardingFlow
+        account={new MockAccountModule()}
+        onComplete={onComplete}
+      />,
+    );
 
     for (const flowScreen of FLOW_SCREENS) {
       if (flowScreen === "confession") {
