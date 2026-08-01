@@ -17,6 +17,10 @@ export const users = pgTable("users", {
   email: text("email"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  adaptyErasedAt: timestamp("adapty_erased_at", { withTimezone: true }),
+  posthogErasedAt: timestamp("posthog_erased_at", { withTimezone: true }),
+  clerkDeletedAt: timestamp("clerk_deleted_at", { withTimezone: true }),
 });
 
 export type User = typeof users.$inferSelect;

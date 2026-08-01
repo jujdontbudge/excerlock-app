@@ -15,6 +15,13 @@
       "when": 1785381108197,
       "tag": "0001_brave_echo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785546856080,
+      "tag": "0002_sleepy_the_phantom",
+      "breakpoints": true
     }
   ]
 }
