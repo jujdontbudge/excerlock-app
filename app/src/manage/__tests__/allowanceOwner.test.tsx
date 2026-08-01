@@ -45,6 +45,7 @@ async function lockOver(screenTime: FakeScreenTime): Promise<LockController> {
     screenTime,
     journal: () => emptyJournal(),
     now: () => NOW,
+    shieldContent: { publish: async () => {} },
   });
   await controller.start();
   await controller.requestAuthorization();
