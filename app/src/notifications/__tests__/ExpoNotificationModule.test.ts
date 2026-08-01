@@ -22,6 +22,7 @@ jest.mock("expo-notifications", () => ({
   scheduleNotificationAsync: jest.fn().mockResolvedValue("afternoonNudge:42"),
   getAllScheduledNotificationsAsync: jest.fn().mockResolvedValue([]),
   cancelScheduledNotificationAsync: jest.fn().mockResolvedValue(undefined),
+  setNotificationHandler: jest.fn(),
 }));
 
 import * as Notifications from "expo-notifications";
@@ -75,6 +76,21 @@ describe("ExpoNotificationModule", () => {
         type: "date",
         date: new Date(1_800_000),
       },
+    });
+  });
+
+  it("presents an opted-in notification while the app is foregrounded", async () => {
+    new ExpoNotificationModule();
+
+    const handler = jest.mocked(Notifications.setNotificationHandler).mock
+      .calls[0]?.[0];
+    await expect(
+      handler?.handleNotification({} as Notifications.Notification),
+    ).resolves.toEqual({
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
     });
   });
 

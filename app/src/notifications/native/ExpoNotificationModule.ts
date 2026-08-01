@@ -37,6 +37,14 @@ export class ExpoNotificationModule implements NotificationModule {
   private readonly ready: Promise<void>;
 
   public constructor(options: ExpoNotificationModuleOptions = {}) {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
     this.clock = options.clock ?? new SystemNotificationClock();
     this.persistence = createNativeNotificationPersistence(options.storage);
     this.ready = this.persistence.rehydrate();
