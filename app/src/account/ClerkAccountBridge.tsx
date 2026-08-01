@@ -2,7 +2,6 @@ import { useClerk, useSSO, useUser } from "@clerk/clerk-expo";
 import { useEffect, type ReactNode } from "react";
 
 import { analytics } from "../analytics";
-import { resetSubscriptionCustomer } from "../subscription";
 import { ClerkAccountModule } from "./ClerkAccountModule";
 
 const DEFAULT_API_BASE_URL = "https://api.excerlock.com";
@@ -10,12 +9,20 @@ const DEFAULT_API_BASE_URL = "https://api.excerlock.com";
 type ClerkAccountBridgeProps = Readonly<{
   account: ClerkAccountModule;
   children: ReactNode;
+  resetDeletedSubscriptionCustomer?: () => Promise<void>;
 }>;
+
+async function resetDeletedSubscriptionCustomer(): Promise<void> {
+  const { resetSubscriptionCustomer } = await import("../subscription");
+  await resetSubscriptionCustomer();
+}
 
 /** Translates Clerk's hook-shaped runtime into the app's class boundary. */
 export function ClerkAccountBridge({
   account,
   children,
+  resetDeletedSubscriptionCustomer: resetSubscription =
+    resetDeletedSubscriptionCustomer,
 }: ClerkAccountBridgeProps) {
   const clerk = useClerk();
   const { startSSOFlow } = useSSO();
@@ -72,7 +79,7 @@ export function ClerkAccountBridge({
           throw new Error("Authoritative account deletion failed");
         }
         analytics.reset();
-        await resetSubscriptionCustomer();
+        await resetSubscription();
         await clerk.signOut();
       },
     });
@@ -82,7 +89,15 @@ export function ClerkAccountBridge({
     } else {
       account.synchronizeUser(null);
     }
-  }, [account, clerk, isLoaded, isSignedIn, startSSOFlow, user]);
+  }, [
+    account,
+    clerk,
+    isLoaded,
+    isSignedIn,
+    resetSubscription,
+    startSSOFlow,
+    user,
+  ]);
 
   return children;
 }

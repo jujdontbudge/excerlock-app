@@ -36,10 +36,6 @@ jest.mock("../../analytics/index", () => ({
   analytics: { flush: jest.fn(async () => undefined), reset: jest.fn() },
 }));
 
-jest.mock("../../subscription/index", () => ({
-  resetSubscriptionCustomer: jest.fn(async () => undefined),
-}));
-
 const mockAnalyticsReset = (
   jest.requireMock("../../analytics/index") as {
     analytics: { flush: jest.Mock; reset: jest.Mock };
@@ -50,11 +46,7 @@ const mockAnalyticsFlush = (
     analytics: { flush: jest.Mock; reset: jest.Mock };
   }
 ).analytics.flush;
-const mockResetSubscriptionCustomer = (
-  jest.requireMock("../../subscription/index") as {
-    resetSubscriptionCustomer: jest.Mock;
-  }
-).resetSubscriptionCustomer;
+const mockResetSubscriptionCustomer = jest.fn(async () => undefined);
 
 describe("ClerkAccountBridge", () => {
   it("authenticates through Clerk SSO and the allowlisted mobile callback", async () => {
@@ -91,7 +83,10 @@ describe("ClerkAccountBridge", () => {
 
     try {
       await render(
-        <ClerkAccountBridge account={account}>
+        <ClerkAccountBridge
+          account={account}
+          resetDeletedSubscriptionCustomer={mockResetSubscriptionCustomer}
+        >
           <Text>App content</Text>
         </ClerkAccountBridge>,
       );
