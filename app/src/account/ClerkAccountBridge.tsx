@@ -9,6 +9,7 @@ const DEFAULT_API_BASE_URL = "https://api.excerlock.com";
 type ClerkAccountBridgeProps = Readonly<{
   account: ClerkAccountModule;
   children: ReactNode;
+  provisionRetryDelayMs?: number;
   resetDeletedSubscriptionCustomer?: () => Promise<void>;
 }>;
 
@@ -43,12 +44,14 @@ async function provisionIdentity(session: {
 export function ClerkAccountBridge({
   account,
   children,
+  provisionRetryDelayMs = 1_000,
   resetDeletedSubscriptionCustomer: resetSubscription =
     resetDeletedSubscriptionCustomer,
 }: ClerkAccountBridgeProps) {
   const clerk = useClerk();
   const { startSSOFlow } = useSSO();
   const { isLoaded, isSignedIn, user } = useUser();
+  const clerkSession = clerk.session;
 
   useEffect(() => {
     if (!isLoaded) {
@@ -105,19 +108,38 @@ export function ClerkAccountBridge({
       },
     });
 
-    if (isSignedIn && user) {
-      account.synchronizeUser(clerkUser(user));
-      if (clerk.session) {
-        void provisionIdentity(clerk.session).catch(() => undefined);
-      }
+    let cancelled = false;
+    if (isSignedIn && user && clerkSession) {
+      account.synchronizeUser(null);
+      const synchronizedUser = clerkUser(user);
+      void (async () => {
+        while (!cancelled) {
+          try {
+            await provisionIdentity(clerkSession);
+            if (!cancelled) {
+              account.synchronizeUser(synchronizedUser);
+            }
+            return;
+          } catch {
+            await new Promise<void>((resolve) => {
+              setTimeout(resolve, provisionRetryDelayMs);
+            });
+          }
+        }
+      })();
     } else {
       account.synchronizeUser(null);
     }
+    return () => {
+      cancelled = true;
+    };
   }, [
     account,
     clerk,
+    clerkSession,
     isLoaded,
     isSignedIn,
+    provisionRetryDelayMs,
     resetSubscription,
     startSSOFlow,
     user,

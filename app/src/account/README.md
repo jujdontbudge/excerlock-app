@@ -96,6 +96,8 @@ The adapter:
 - calls authenticated, idempotent `PUT /v1/user` after Clerk activates a
   session, attaching the Clerk subject to Postgres before authentication
   reports success;
+- keeps restored Clerk sessions signed out at the app account boundary while
+  that same provisioning call retries, preventing a partial identity spine;
 - sign out through Clerk while leaving all local earning and locking data
   untouched;
 - starts Google OAuth through Clerk SSO at the allowlisted

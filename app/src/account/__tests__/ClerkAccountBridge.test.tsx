@@ -1,4 +1,4 @@
-import { act, render } from "@testing-library/react-native";
+import { act, render, waitFor } from "@testing-library/react-native";
 import { Text } from "react-native";
 
 import { ClerkAccountBridge } from "../ClerkAccountBridge";
@@ -20,6 +20,8 @@ const mockUser = {
   lastSignInAt: new Date(1_785_542_900_000),
   delete: mockDelete,
 };
+let mockIsSignedIn = false;
+let mockHookUser: typeof mockUser | null = null;
 
 jest.mock("@clerk/clerk-expo", () => ({
   useClerk: () => ({
@@ -31,7 +33,11 @@ jest.mock("@clerk/clerk-expo", () => ({
     user: mockUser,
   }),
   useSSO: () => ({ startSSOFlow: mockStartSSOFlow }),
-  useUser: () => ({ isLoaded: true, isSignedIn: false, user: null }),
+  useUser: () => ({
+    isLoaded: true,
+    isSignedIn: mockIsSignedIn,
+    user: mockHookUser,
+  }),
 }));
 
 jest.mock("../../analytics/index", () => ({
@@ -51,6 +57,11 @@ const mockAnalyticsFlush = (
 const mockResetSubscriptionCustomer = jest.fn(async () => undefined);
 
 describe("ClerkAccountBridge", () => {
+  beforeEach(() => {
+    mockIsSignedIn = false;
+    mockHookUser = null;
+  });
+
   it("authenticates through Clerk SSO and the allowlisted mobile callback", async () => {
     const fetchSpy = jest
       .spyOn(globalThis, "fetch")
@@ -84,6 +95,32 @@ describe("ClerkAccountBridge", () => {
         status: "authenticated",
         session: { user: { id: "user_123", email: "member@example.com" } },
       });
+    } finally {
+      fetchSpy.mockRestore();
+    }
+  });
+
+  it("publishes a restored session only after provisioning retries succeed", async () => {
+    mockIsSignedIn = true;
+    mockHookUser = mockUser;
+    const fetchSpy = jest
+      .spyOn(globalThis, "fetch")
+      .mockRejectedValueOnce(new Error("temporary network failure"))
+      .mockResolvedValue(new Response(null, { status: 204 }));
+    const account = new ClerkAccountModule();
+
+    try {
+      await render(
+        <ClerkAccountBridge account={account} provisionRetryDelayMs={0}>
+          <Text>App content</Text>
+        </ClerkAccountBridge>,
+      );
+
+      expect((await account.getSnapshot()).session.status).toBe("signedOut");
+      await waitFor(async () => {
+        expect((await account.getSnapshot()).session.status).toBe("signedIn");
+      });
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
     } finally {
       fetchSpy.mockRestore();
     }
