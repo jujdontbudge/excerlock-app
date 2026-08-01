@@ -36,4 +36,19 @@ describe("ClerkAccountModule", () => {
     });
     expect(snapshots).toEqual(["signingIn", "idle"]);
   });
+
+  it("normalizes a dismissed Clerk browser flow as cancellation", async () => {
+    const account = new ClerkAccountModule();
+    account.attachRuntime({
+      authenticate: jest.fn(async () => ({ status: "cancelled" as const })),
+      deleteAccount: jest.fn(async () => undefined),
+      signOut: jest.fn(async () => undefined),
+    });
+
+    await expect(account.signIn()).resolves.toEqual({ status: "cancelled" });
+    expect(await account.getSnapshot()).toEqual({
+      session: { status: "signedOut" },
+      intent: { status: "idle", error: null },
+    });
+  });
 });

@@ -20,7 +20,8 @@ type ClerkRuntimeUser = Readonly<{
 
 export type ClerkAccountRuntime = Readonly<{
   authenticate: () => Promise<
-    Readonly<{ status: "authenticated"; user: ClerkRuntimeUser }>
+    | Readonly<{ status: "authenticated"; user: ClerkRuntimeUser }>
+    | Readonly<{ status: "cancelled" }>
   >;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -55,6 +56,13 @@ export class ClerkAccountModule implements AccountModule {
       intent: Object.freeze({ status: "signingIn", error: null }),
     });
     const result = await this.runtime.authenticate();
+    if (result.status === "cancelled") {
+      this.publish({
+        ...this.snapshot,
+        intent: Object.freeze({ status: "idle", error: null }),
+      });
+      return Object.freeze({ status: "cancelled" });
+    }
     const session: SignedInAccountSession = Object.freeze({
       status: "signedIn",
       authenticatedAtMs: result.user.authenticatedAtMs,
