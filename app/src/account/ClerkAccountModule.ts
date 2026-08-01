@@ -6,10 +6,25 @@ import type {
   AccountStateListener,
   AccountUnsubscribe,
   AuthenticationResult,
+  SignedInAccountSession,
   SignOutResult,
 } from "./AccountModule";
 
 const SIGNED_OUT = Object.freeze({ status: "signedOut" as const });
+
+type ClerkRuntimeUser = Readonly<{
+  id: string;
+  email: string;
+  authenticatedAtMs: number;
+}>;
+
+export type ClerkAccountRuntime = Readonly<{
+  authenticate: () => Promise<
+    Readonly<{ status: "authenticated"; user: ClerkRuntimeUser }>
+  >;
+  signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
+}>;
 
 /**
  * Vendor adapter selected for configured builds. The React bridge attaches the
@@ -17,6 +32,7 @@ const SIGNED_OUT = Object.freeze({ status: "signedOut" as const });
  */
 export class ClerkAccountModule implements AccountModule {
   private readonly listeners = new Set<AccountStateListener>();
+  private runtime: ClerkAccountRuntime | null = null;
   private snapshot: AccountSnapshot = Object.freeze({
     session: SIGNED_OUT,
     intent: Object.freeze({ status: "idle", error: null }),
@@ -27,10 +43,28 @@ export class ClerkAccountModule implements AccountModule {
   }
 
   public async signIn(): Promise<AuthenticationResult> {
-    return this.authenticationUnavailable(
-      "sign_in_failed",
-      "Account sign-in is still loading. Please try again.",
-    );
+    if (this.runtime === null) {
+      return this.authenticationUnavailable(
+        "sign_in_failed",
+        "Account sign-in is still loading. Please try again.",
+      );
+    }
+
+    this.publish({
+      ...this.snapshot,
+      intent: Object.freeze({ status: "signingIn", error: null }),
+    });
+    const result = await this.runtime.authenticate();
+    const session: SignedInAccountSession = Object.freeze({
+      status: "signedIn",
+      authenticatedAtMs: result.user.authenticatedAtMs,
+      user: Object.freeze({ id: result.user.id, email: result.user.email }),
+    });
+    this.publish({
+      session,
+      intent: Object.freeze({ status: "idle", error: null }),
+    });
+    return Object.freeze({ status: "authenticated", session });
   }
 
   public async signUp(): Promise<AuthenticationResult> {
@@ -61,6 +95,10 @@ export class ClerkAccountModule implements AccountModule {
     return () => this.listeners.delete(listener);
   }
 
+  public attachRuntime(runtime: ClerkAccountRuntime): void {
+    this.runtime = runtime;
+  }
+
   private authenticationUnavailable(
     code: "sign_in_failed" | "sign_up_failed",
     message: string,
@@ -80,5 +118,10 @@ export class ClerkAccountModule implements AccountModule {
     });
     this.listeners.forEach((listener) => listener(this.snapshot));
     return error;
+  }
+
+  private publish(snapshot: AccountSnapshot): void {
+    this.snapshot = Object.freeze(snapshot);
+    this.listeners.forEach((listener) => listener(this.snapshot));
   }
 }
