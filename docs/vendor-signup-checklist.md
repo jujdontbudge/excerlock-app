@@ -54,7 +54,9 @@ soon as the app exists, well before TestFlight outgrows 10 Oura testers.
 
 ## 3. Whoop — self-serve, but has a review gate
 
-Portal: **https://developer.whoop.com** (Developer Dashboard)
+Portal: **https://developer-dashboard.whoop.com** — verified 2026-08-01.
+`developer.whoop.com` is the **documentation** site and has no app-creation UI;
+the dashboard is a separate host.
 
 1. Sign in with a WHOOP account.
 2. Create an app. It requires **≥1 scope** and **≥1 redirect URL**.
@@ -74,6 +76,9 @@ Portal: **https://www.strava.com/settings/api**
 
 **A paid Strava subscription is required to create an API application** — this
 is Strava's stated requirement, and the only hard cash line item in the four.
+
+Note: hitting `/settings/api` while logged out bounces to `/login` and does
+**not** return you afterwards. Re-open `/settings/api` manually once signed in.
 
 1. Subscribe, then open the API settings page.
 2. Fill in Application Name, Category, Club (optional), Website, Description.
