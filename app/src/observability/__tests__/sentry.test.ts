@@ -52,4 +52,43 @@ describe("client Sentry privacy scrub", () => {
       breadcrumbs: [{ category: "ui.tap", level: "info" }],
     });
   });
+
+  it("removes exception messages and source context that can contain private device data", () => {
+    const event = {
+      type: undefined,
+      exception: {
+        values: [{
+          type: "Error",
+          value: "Midtown Gym at 40.7128 while walking",
+          mechanism: { type: "generic", data: { activity: "run" } },
+          stacktrace: {
+            frames: [{
+              filename: "condition.ts",
+              function: "evaluateGymCondition",
+              context_line: "evaluate(40.7128, 'Midtown Gym')",
+              pre_context: ["const activity = 'run'"],
+              post_context: ["return steps"],
+              vars: { latitude: 40.7128 },
+            }],
+          },
+        }],
+      },
+    } as ErrorEvent;
+
+    expect(scrubSentryEvent(event)).toEqual({
+      type: undefined,
+      exception: {
+        values: [{
+          type: "Error",
+          mechanism: { type: "generic" },
+          stacktrace: {
+            frames: [{
+              filename: "condition.ts",
+              function: "evaluateGymCondition",
+            }],
+          },
+        }],
+      },
+    });
+  });
 });

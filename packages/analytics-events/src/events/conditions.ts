@@ -11,11 +11,11 @@ export type PayoutKind = 'fixed_chunk' | 'rest_of_day' | 'set_period' | 'rate_cr
  * on-device (PRD §5), so the client is the authoritative emitter.
  */
 export const conditionEvents = {
-  condition_created: { owner: 'client' },
-  condition_edited: { owner: 'client' },
-  condition_deleted: { owner: 'client' },
-  earn_claimed: { owner: 'client' },
-  sick_day_override_used: { owner: 'client' },
+  condition_created: { owner: 'client', transmittedProperties: [] },
+  condition_edited: { owner: 'client', transmittedProperties: [] },
+  condition_deleted: { owner: 'client', transmittedProperties: [] },
+  earn_claimed: { owner: 'client', transmittedProperties: [] },
+  sick_day_override_used: { owner: 'client', transmittedProperties: [] },
 } as const satisfies EventSpecMap
 
 export interface ConditionEventProps {

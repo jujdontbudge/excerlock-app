@@ -1,7 +1,7 @@
 import type { PropValue } from "@excerlock/analytics-events";
 import type { PostHogOptions } from "posthog-react-native";
 
-import { EXPERIMENT_FLAG_BUDGET_MS } from "../experiments/experiments";
+import { EXPERIMENT_FLAG_BUDGET_MS } from "../experiments";
 import type { AnalyticsPayload, AnalyticsSink } from "./sink";
 
 export const FLAG_BUDGET_MS = EXPERIMENT_FLAG_BUDGET_MS;

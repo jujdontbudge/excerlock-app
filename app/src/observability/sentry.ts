@@ -42,5 +42,18 @@ export function scrubSentryEvent(event: ErrorEvent): ErrorEvent {
     delete breadcrumb.message;
   }
 
+  for (const exception of event.exception?.values ?? []) {
+    delete exception.value;
+    if (exception.mechanism) {
+      delete exception.mechanism.data;
+    }
+    for (const frame of exception.stacktrace?.frames ?? []) {
+      delete frame.context_line;
+      delete frame.pre_context;
+      delete frame.post_context;
+      delete frame.vars;
+    }
+  }
+
   return event;
 }

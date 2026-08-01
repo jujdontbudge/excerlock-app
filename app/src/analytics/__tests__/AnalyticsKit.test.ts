@@ -8,7 +8,7 @@ describe("AnalyticsKit transport wiring", () => {
 
     expect(() => {
     kit.track("shields_applied");
-      kit.trackScreen("home");
+      kit.trackScreen("confession");
       kit.identify("user_123");
       kit.reset();
     }).not.toThrow();
@@ -82,6 +82,35 @@ describe("AnalyticsKit.track", () => {
     ]);
   });
 
+  it("drops answer values because they can contain screen-time, health, motion, or location data", () => {
+    const sink = createRecordingSink();
+    const kit = createAnalyticsKit(sink);
+    const untypedTrack = kit.track as (
+      event: "onboarding_answer",
+      props: Record<string, string>,
+    ) => void;
+
+    untypedTrack("onboarding_answer", {
+      screen: "mirror",
+      value: "walking",
+    });
+
+    expect(sink.captured()).toEqual([
+      { event: "onboarding_answer", props: { screen: "mirror" } },
+    ]);
+  });
+
+  it("drops an unregistered screen label before it reaches PostHog", () => {
+    const sink = createRecordingSink();
+    const kit = createAnalyticsKit(sink);
+
+    (kit.trackScreen as (screen: string) => void)("Midtown Gym");
+
+    expect(sink.signals).toEqual([
+      { kind: "register", props: { app: "excerlock" } },
+    ]);
+  });
+
   it("forwards the event name and its exact payload", () => {
     const sink = createRecordingSink();
     const kit = createAnalyticsKit(sink);
@@ -137,8 +166,10 @@ describe("AnalyticsKit identity plumbing", () => {
     const sink = createRecordingSink();
     const kit = createAnalyticsKit(sink);
 
-    kit.trackScreen("home");
+    kit.trackScreen("confession");
 
-    expect(sink.signals.slice(1)).toEqual([{ kind: "screen", screen: "home", props: {} }]);
+    expect(sink.signals.slice(1)).toEqual([
+      { kind: "screen", screen: "confession", props: {} },
+    ]);
   });
 });

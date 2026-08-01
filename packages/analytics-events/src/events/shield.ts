@@ -25,11 +25,11 @@ export type WalkSessionEndReason = 'lapsed' | 'stopped'
  * cause carried as a nav param (Regen's `panic_opened` pattern).
  */
 export const shieldEvents = {
-  shields_applied: { owner: 'client' },
-  shields_lifted: { owner: 'client' },
-  shield_screen_opened: { owner: 'client' },
-  walk_session_started: { owner: 'client' },
-  walk_session_ended: { owner: 'client' },
+  shields_applied: { owner: 'client', transmittedProperties: [] },
+  shields_lifted: { owner: 'client', transmittedProperties: [] },
+  shield_screen_opened: { owner: 'client', transmittedProperties: [] },
+  walk_session_started: { owner: 'client', transmittedProperties: [] },
+  walk_session_ended: { owner: 'client', transmittedProperties: [] },
 } as const satisfies EventSpecMap
 
 export interface ShieldEventProps {

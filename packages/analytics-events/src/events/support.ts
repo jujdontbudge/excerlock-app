@@ -12,8 +12,8 @@ export type SupportCategory = 'support' | 'bug' | 'feature'
 export const supportEvents = {
   support_request_submitted: { owner: 'server' },
   account_deleted: { owner: 'server' },
-  diagnostics_shared: { owner: 'client' },
-  data_export_requested: { owner: 'client' },
+  diagnostics_shared: { owner: 'client', transmittedProperties: [] },
+  data_export_requested: { owner: 'client', transmittedProperties: [] },
 } as const satisfies EventSpecMap
 
 export interface SupportEventProps {

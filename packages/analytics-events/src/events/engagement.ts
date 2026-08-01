@@ -16,11 +16,11 @@ export type ShareCardFormat = 'story' | 'feed'
  * local-only in v1.
  */
 export const engagementEvents = {
-  milestone_unlocked: { owner: 'client' },
-  share_card_shared: { owner: 'client' },
-  notification_toggled: { owner: 'client' },
-  notification_opened: { owner: 'client' },
-  rating_prompt_shown: { owner: 'client' },
+  milestone_unlocked: { owner: 'client', transmittedProperties: [] },
+  share_card_shared: { owner: 'client', transmittedProperties: ['card', 'format'] },
+  notification_toggled: { owner: 'client', transmittedProperties: ['type', 'is_enabled'] },
+  notification_opened: { owner: 'client', transmittedProperties: ['type'] },
+  rating_prompt_shown: { owner: 'client', transmittedProperties: ['source'] },
 } as const satisfies EventSpecMap
 
 export interface EngagementEventProps {
