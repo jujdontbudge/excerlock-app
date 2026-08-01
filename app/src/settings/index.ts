@@ -9,5 +9,4 @@ export {
   useSettingsStore,
   type GracePeriodSeconds,
   type SettingsValues,
-  type WeekStart,
 } from "./store/settingsStore";

@@ -22,8 +22,6 @@ module's exported screen.
 - Notifications mounts the public `@/notifications` settings card. Its three switches persist
   independently and default OFF; the first opt-in owns the permission primer/request flow, and the
   afternoon time starts at the settled 15:00 default.
-- Calendar persists whether weekly analysis and recap boundaries start on Monday (the default) or
-  Sunday. Runtime notification planning consumes the same value.
 - The debug-menu entry sits inside a literal `__DEV__` branch so App Store bundles can eliminate it.
 
 `components/` owns settings-only presentation. Shared visual decisions still come from `src/ui`;

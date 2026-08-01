@@ -6,10 +6,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import "@/signals/location/registerLocationTasks";
 import { ThemeProvider } from "@/ui";
 import { NativeScreenTimePickerHost } from "@/screentime/native/NativeScreenTimePickerHost";
-import {
-  NativeShieldNotificationResponseHost,
-  NotificationRuntimeHost,
-} from "@/notifications";
+import { NativeShieldNotificationResponseHost } from "@/notifications";
 import { SignalRuntimeHosts } from "@/home/signals";
 
 export default function RootLayout() {
@@ -17,7 +14,6 @@ export default function RootLayout() {
     <>
       <NativeScreenTimePickerHost />
       <NativeShieldNotificationResponseHost />
-      <NotificationRuntimeHost />
       <SignalRuntimeHosts />
       <Stack
         screenOptions={{

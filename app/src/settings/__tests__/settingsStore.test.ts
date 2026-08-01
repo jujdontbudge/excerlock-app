@@ -50,17 +50,4 @@ describe("settings store", () => {
 
     expect(useSettingsStore.getState().walkAndScrollGracePeriodSeconds).toBeNull();
   });
-
-  it("defaults to Monday and persists the user's Sunday week boundary", async () => {
-    expect(useSettingsStore.getState().weekStartsOn).toBe(1);
-
-    useSettingsStore.getState().setWeekStartsOn(0);
-    await Promise.resolve();
-    const savedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
-    useSettingsStore.setState(DEFAULT_SETTINGS);
-    await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, savedSettings!);
-    await useSettingsStore.persist.rehydrate();
-
-    expect(useSettingsStore.getState().weekStartsOn).toBe(0);
-  });
 });

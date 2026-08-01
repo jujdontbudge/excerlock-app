@@ -55,19 +55,12 @@ while the OS decision is pending.
 
 ## Planning and delivery rules
 
-`NotificationScheduler` atomically reconciles a horizon of ledger days. Its
-input is only day/week facts, live copy facts, and persisted preferences. Its
-two injected system boundaries are `NotificationModule` and
-`NotificationClock`; planning logic never reads `Date.now()`.
-
-`NotificationRuntimeHost`, mounted beside the other root runtime hosts, derives
-those facts from the local ledger, weekly schedule, onboarding confession,
-user-selected week boundary, and notification preferences. Each app open
-reconciles today as opened (cancelling its engagement pushes) and pre-schedules
-the next seven unattended days so opted-in notifications can fire through a
-full offline week. Store changes and local day rollover reconcile again.
-Horizon plans run serially and share one simulated delivery ledger, so native
-evidence cannot lose an update and the rolling cap applies across the batch.
+`NotificationScheduler` reconciles one ledger day. Its input is only current
+day/week facts, live copy facts, and persisted preferences. Its two injected
+system boundaries are `NotificationModule` and `NotificationClock`; planning
+logic never reads `Date.now()`. The caller remains responsible for supplying
+those facts at its existing reconciliation points; the native adapter does not
+guess future eligibility or freeze future recap numbers.
 
 Schedules use the deterministic ID `typeId:dayIndex`. Re-planning the same day
 updates that schedule rather than duplicating it, and a type that is silenced or
@@ -128,7 +121,6 @@ npm run test:app -- --runTestsByPath \
   src/notifications/__tests__/ExpoNotificationModule.test.ts \
   src/notifications/__tests__/accessor.test.ts \
   src/notifications/__tests__/NotificationScheduler.test.ts \
-  src/notifications/__tests__/NotificationRuntimeHost.test.tsx \
   src/notifications/__tests__/NotificationSettingsCard.test.tsx \
   src/notifications/__tests__/ShieldNotificationResponseHost.test.tsx
 ```

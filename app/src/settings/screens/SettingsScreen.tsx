@@ -18,7 +18,6 @@ import {
 
 import { GracePeriodPicker } from "../components/GracePeriodPicker";
 import { SettingsRow } from "../components/SettingsRow";
-import { WeekStartPicker } from "../components/WeekStartPicker";
 import { useSettingsStore } from "../store/settingsStore";
 
 export type SettingsScreenProps = Readonly<{
@@ -50,8 +49,6 @@ export function SettingsScreen({
   const gymAutoDetectEnabled = useSettingsStore(
     (state) => state.gymAutoDetectEnabled,
   );
-  const weekStartsOn = useSettingsStore((state) => state.weekStartsOn);
-  const setWeekStartsOn = useSettingsStore((state) => state.setWeekStartsOn);
 
   return (
     <Screen testID="settings-screen">
@@ -85,16 +82,6 @@ export function SettingsScreen({
               value="15 minutes"
               description="Fixed to Apple's minimum monitoring interval."
             />
-          </Card>
-        </View>
-
-        <View style={{ gap: spacing.md }}>
-          <SectionHeader
-            title="Calendar"
-            subtitle="Choose how ExcerLock groups your weekly progress."
-          />
-          <Card>
-            <WeekStartPicker value={weekStartsOn} onChange={setWeekStartsOn} />
           </Card>
         </View>
 
