@@ -52,6 +52,7 @@ describe("late Adapty webhooks after account deletion", () => {
         userId: "user_123",
         hasAccess: true,
         eventType: "subscription_started",
+        environment: "production",
         eventOccurredAt: new Date("2026-08-31T20:00:00.000Z"),
         expiresAt: new Date("2026-09-30T20:00:00.000Z"),
         updatedAt: new Date("2026-07-31T20:00:00.000Z"),
@@ -62,6 +63,7 @@ describe("late Adapty webhooks after account deletion", () => {
         deliveryKey: "start-event-id",
         userId: "user_123",
         eventType: "subscription_started",
+        environment: "production",
         receivedAt: new Date("2026-07-31T20:00:00.000Z"),
       },
     ]);
@@ -169,6 +171,7 @@ function adaptyEvent(
     event_properties: {
       profile_event_id: profileEventId,
       profile_has_access_level: hasAccess,
+      environment: "Production",
       subscription_expires_at: "2026-09-30T20:00:00.000000+0000",
     },
   };

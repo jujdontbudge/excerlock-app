@@ -1,0 +1,2 @@
+ALTER TABLE "adapty_subscription_states" ADD COLUMN "environment" text DEFAULT 'production' NOT NULL;--> statement-breakpoint
+ALTER TABLE "adapty_webhook_events" ADD COLUMN "environment" text DEFAULT 'production' NOT NULL;

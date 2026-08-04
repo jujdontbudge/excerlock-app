@@ -179,6 +179,13 @@ export type VendorWebhookEvent = typeof vendorWebhookEvents.$inferSelect;
 export type NewVendorWebhookEvent = typeof vendorWebhookEvents.$inferInsert;
 
 /**
+ * Store environment a purchase event originated from. Sandbox rows are
+ * TestFlight/StoreKit test purchases; anything that counts revenue or
+ * customers must filter to "production".
+ */
+export type AdaptyEnvironment = "production" | "sandbox";
+
+/**
  * Minimal Adapty delivery ledger. Payloads, profile ids, transaction ids, and
  * purchase values are deliberately not retained. The stable profile event id
  * is sufficient for retry idempotency.
@@ -192,6 +199,12 @@ export const adaptyWebhookEvents = pgTable("adapty_webhook_events", {
   receivedAt: timestamp("received_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  // Declared last to mirror the physical column order: it arrived via
+  // ALTER TABLE, and the catalog guardrail checks ordinals.
+  environment: text("environment")
+    .$type<AdaptyEnvironment>()
+    .notNull()
+    .default("production"),
 });
 
 /** Current subscription access mirror for active accounts only. */
@@ -208,6 +221,12 @@ export const adaptySubscriptionStates = pgTable("adapty_subscription_states", {
   eventOccurredAt: timestamp("event_occurred_at", {
     withTimezone: true,
   }).notNull(),
+  // Declared last to mirror the physical column order: it arrived via
+  // ALTER TABLE, and the catalog guardrail checks ordinals.
+  environment: text("environment")
+    .$type<AdaptyEnvironment>()
+    .notNull()
+    .default("production"),
 });
 
 export type AdaptyWebhookEvent = typeof adaptyWebhookEvents.$inferSelect;

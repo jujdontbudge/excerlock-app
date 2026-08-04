@@ -10,6 +10,16 @@ The mirror compares Adapty's business `event_datetime`, rather than delivery
 arrival time, so a delayed older lifecycle event cannot overwrite a newer
 access decision. The delivery key independently handles exact retries.
 
+Every event carries Adapty's `event_properties.environment` ("Sandbox" or
+"Production"), stored lowercase on both the ledger and the mirror. The field
+is required: an event that cannot be attributed to a store fails validation
+rather than defaulting into the revenue-bearing side. Sandbox events flow
+through the same pipeline — a TestFlight tester's access mirror works exactly
+like a customer's — but anything that counts revenue or customers must filter
+`environment = 'production'`. Both Adapty endpoints (production and sandbox)
+point at the same URL with the same Authorization value; the payload's own
+stamp is the separator, so a misconfigured dashboard cannot mislabel events.
+
 The user row is locked before recording a delivery. Account deletion uses the
 same row lock through its upsert, so the two transactions serialize:
 

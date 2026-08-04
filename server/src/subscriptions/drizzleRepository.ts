@@ -43,6 +43,7 @@ export function createDrizzleAdaptyWebhookRepository(
             deliveryKey: event.deliveryKey,
             userId: user && !user.deletedAt ? user.id : null,
             eventType: event.eventType,
+            environment: event.environment,
             receivedAt,
           })
           .onConflictDoNothing()
@@ -59,6 +60,7 @@ export function createDrizzleAdaptyWebhookRepository(
               userId: user.id,
               hasAccess: event.hasAccess,
               eventType: event.eventType,
+              environment: event.environment,
               eventOccurredAt: event.eventOccurredAt,
               expiresAt: event.expiresAt,
               updatedAt: receivedAt,
@@ -68,6 +70,7 @@ export function createDrizzleAdaptyWebhookRepository(
               set: {
                 hasAccess: event.hasAccess,
                 eventType: event.eventType,
+                environment: event.environment,
                 eventOccurredAt: event.eventOccurredAt,
                 expiresAt: event.expiresAt,
                 updatedAt: receivedAt,

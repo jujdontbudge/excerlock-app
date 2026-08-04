@@ -1,7 +1,10 @@
+import type { AdaptyEnvironment } from "../db/schema.js";
+
 export interface AdaptySubscriptionEvent {
   customerUserId: string;
   deliveryKey: string;
   eventType: string;
+  environment: AdaptyEnvironment;
   eventOccurredAt: Date;
   hasAccess: boolean;
   expiresAt: Date | null;

@@ -86,5 +86,6 @@ const event = {
   event_properties: {
     profile_event_id: "refund-event-id",
     profile_has_access_level: false,
+    environment: "Production",
   },
 };
