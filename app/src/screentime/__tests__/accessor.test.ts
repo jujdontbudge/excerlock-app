@@ -30,12 +30,15 @@ const runtimeCases = [
     expected: false,
   },
   {
-    name: "an iOS development client",
+    // Measured on the physical iPhone `Il` 2026-08-04 (#84): a Metro-served
+    // development client reports executionEnvironment "bare" with a non-null
+    // expoGoConfig. The manifest shape must not route a real device to the mock.
+    name: "an iOS development client served by Metro",
     runtime: {
       nodeEnv: "development",
       platform: "ios",
-      executionEnvironment: ExecutionEnvironment.StoreClient,
-      expoGoConfig: null,
+      executionEnvironment: ExecutionEnvironment.Bare,
+      expoGoConfig: {},
     },
     expected: true,
   },
@@ -92,14 +95,14 @@ describe("ScreenTime composition seam", () => {
     );
   });
 
-  it("fails loudly if an iOS Standalone release would select the mock", () => {
-    expect(() =>
+  it("keeps an iOS Standalone release on the native module even with a manifest present", () => {
+    expect(
       shouldUseNativeScreenTimeModule({
         nodeEnv: "production",
         platform: "ios",
         executionEnvironment: ExecutionEnvironment.Standalone,
         expoGoConfig: {},
       }),
-    ).toThrow("Refusing to start an iOS release with mock Screen Time");
+    ).toBe(true);
   });
 });

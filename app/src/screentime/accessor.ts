@@ -30,14 +30,12 @@ export function shouldUseNativeScreenTimeModule(
     return false;
   }
 
-  if (
-    runtime.executionEnvironment === ExecutionEnvironment.Standalone &&
-    runtime.expoGoConfig !== null
-  ) {
-    throw new Error("Refusing to start an iOS release with mock Screen Time");
-  }
-
-  return runtime.expoGoConfig === null;
+  // Expo Go (StoreClient) is the only iOS runtime without our native module.
+  // A Metro-served development client reports executionEnvironment "bare"
+  // WITH a non-null expoGoConfig (measured on device, #84), so the manifest
+  // shape must never be the discriminator — it routed real iPhones to the
+  // mock while every screen claimed Screen Time was live.
+  return runtime.executionEnvironment !== ExecutionEnvironment.StoreClient;
 }
 
 function createScreenTimeModule(): ScreenTimeModule {
