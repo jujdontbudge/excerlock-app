@@ -71,7 +71,16 @@ export type ScenarioManifest = Readonly<{
       journal: Journal["entries"];
     }>;
     conditions: readonly ScenarioCondition[];
-    shield: Readonly<{ armedMonitors: readonly string[] }>;
+    shield: Readonly<{
+      armedMonitors: readonly string[];
+      /**
+       * Which ScreenTimeModule the scenario composes. Absent means "mock" —
+       * every #77 flow was written against instant mock authorization. Only
+       * "native" exposes the real FamilyControls surface (see the
+       * screentime-permission scenario).
+       */
+      screenTimeModule?: "mock" | "native";
+    }>;
     vendors: Readonly<Record<Vendor, ScenarioVendorState>>;
   }>;
   providers: Readonly<

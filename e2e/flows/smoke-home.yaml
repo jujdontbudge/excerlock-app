@@ -27,10 +27,14 @@ env:
     timeout: 10000
 - assertNotVisible:
     id: screen-e2e-error
+# Walk & Scroll is session-initiated (production shares the walking session
+# controller with the feed via walkingState) — the hold engages only after the
+# user starts a session and the motion fixture verifies sustained walking.
+- tapOn: "Start Walk Session"
 - extendedWaitUntil:
     visible:
       id: lock-hero-unlocked
-    timeout: 10000
+    timeout: 15000
 - assertVisible:
     id: lock-hero-balance
 - assertVisible: "Active · apps unlocked"

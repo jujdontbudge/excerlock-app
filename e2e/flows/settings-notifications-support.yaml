@@ -29,21 +29,27 @@ env:
 - assertVisible:
     id: settings-screen
 
+# Scroll to the toggle itself, not the card — centring the card leaves the
+# first toggle above the viewport and XCUITest only reports what is on screen.
 - scrollUntilVisible:
     element:
-      id: notification-settings-card
+      id: notification-toggle-afternoonNudge
     direction: DOWN
     # Tab bar floats over content, so centre the row before tapping it.
     centerElement: true
-- extendedWaitUntil:
-    visible: "Notifications are not set up"
-    timeout: 10000
+# The OS remembers a granted notification permission across clearState and
+# launchApp permissions:unset does not clear it (verified 2026-08-04), so this
+# converges both start states: a fresh device walks the primer, a granted one
+# skips straight to the approved card.
 - tapOn:
     id: notification-toggle-afternoonNudge
-- assertVisible:
-    id: notification-permission-primer
-- assertVisible: Choose what helps
-- tapOn: Allow notifications
+- runFlow:
+    when:
+      visible:
+        id: notification-permission-primer
+    commands:
+      - assertVisible: Choose what helps
+      - tapOn: Allow notifications
 - extendedWaitUntil:
     visible: Notifications are on
     timeout: 10000

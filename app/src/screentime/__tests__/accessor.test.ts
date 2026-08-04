@@ -6,7 +6,11 @@ jest.mock(
 import { ExecutionEnvironment } from "expo-constants";
 
 import { getScreenTimeModule } from "..";
-import { shouldUseNativeScreenTimeModule } from "../accessor";
+import {
+  installScreenTimeModule,
+  shouldUseNativeScreenTimeModule,
+} from "../accessor";
+import { MockScreenTimeModule } from "../MockScreenTimeModule";
 
 const runtimeCases = [
   {
@@ -84,6 +88,28 @@ const runtimeCases = [
 describe("ScreenTime composition seam", () => {
   it("returns one module instance from the Phase-3 swap point", () => {
     expect(getScreenTimeModule()).toBe(getScreenTimeModule());
+  });
+
+  it("lets the E2E runtime install a scenario module and restore on uninstall", () => {
+    const before = getScreenTimeModule();
+    const scenarioModule = new MockScreenTimeModule();
+
+    const uninstall = installScreenTimeModule(scenarioModule);
+    expect(getScreenTimeModule()).toBe(scenarioModule);
+
+    uninstall();
+    expect(getScreenTimeModule()).toBe(before);
+  });
+
+  it("ignores an uninstall after a newer module was installed", () => {
+    const first = new MockScreenTimeModule();
+    const second = new MockScreenTimeModule();
+
+    const uninstallFirst = installScreenTimeModule(first);
+    installScreenTimeModule(second);
+    uninstallFirst();
+
+    expect(getScreenTimeModule()).toBe(second);
   });
 
   it.each(runtimeCases)("selects the expected adapter for $name", (testCase) => {

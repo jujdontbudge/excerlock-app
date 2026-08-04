@@ -41,7 +41,11 @@ import { weekdayForWallClock } from "../../model/recurringLockWindow";
 import { LockScheduleStore } from "../../store/lockScheduleStore";
 import { FakeScreenTime } from "../../testing/fakeScreenTime";
 import { installLockAppRuntime } from "../appRuntime";
-import { LockController } from "../lockController";
+import {
+  getLockController,
+  installLockController,
+  LockController,
+} from "../lockController";
 
 const NOW = 10 * 86_400_000 + 9 * 3_600_000;
 
@@ -667,5 +671,30 @@ describe("LockController", () => {
       cause: "walking",
     });
     controller.stop();
+  });
+
+  it("lets a scenario install its own shared controller and restore the prior one", () => {
+    const before = getLockController();
+    const scenarioController = new LockController({
+      screenTime: new FakeScreenTime(),
+    });
+
+    const uninstall = installLockController(scenarioController);
+    expect(getLockController()).toBe(scenarioController);
+
+    uninstall();
+    expect(getLockController()).toBe(before);
+  });
+
+  it("ignores a stale uninstall after a newer controller was installed", () => {
+    const first = new LockController({ screenTime: new FakeScreenTime() });
+    const second = new LockController({ screenTime: new FakeScreenTime() });
+
+    const uninstallFirst = installLockController(first);
+    const uninstallSecond = installLockController(second);
+
+    uninstallFirst();
+    expect(getLockController()).toBe(second);
+    uninstallSecond();
   });
 });

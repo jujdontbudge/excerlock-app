@@ -22,11 +22,13 @@ import { act, render, screen, waitFor } from "@testing-library/react-native";
 import { Text } from "react-native";
 
 import { getHomeAppRuntime, useHomeStore } from "@/home";
+import { getAnalysisClock } from "@/analysis";
 import { getGymPresenceController } from "@/home/signals/gymPresenceController";
 import { SignalRuntimeHosts } from "@/home/signals/SignalRuntimeHosts";
 import { getWalkingSessionController } from "@/home/signals/walkingSessionController";
-import { getLockAppRuntime } from "@/lock";
-import { getScreenTimeAppRuntime } from "@/screentime";
+import { getLockAppRuntime, getLockController } from "@/lock";
+import { getScreenTimeAppRuntime, getScreenTimeModule } from "@/screentime";
+import { MockScreenTimeModule } from "@/screentime/MockScreenTimeModule";
 import { getSubscriptionModule } from "@/subscription";
 import { getSupportModule } from "@/support";
 
@@ -34,6 +36,8 @@ import { E2ERuntimeRoot } from "../E2ERuntimeRoot";
 
 describe("E2E runtime composition root", () => {
   it("installs the selected fixtures and pinned clock before mounting the app", async () => {
+    const moduleBeforeScenario = getScreenTimeModule();
+    const lockControllerBeforeScenario = getLockController();
     let advanceMotion: ((atMs: number) => void) | undefined;
     await render(
       <E2ERuntimeRoot
@@ -60,6 +64,20 @@ describe("E2E runtime composition root", () => {
     expect(getScreenTimeAppRuntime().clock.nowMs()).toBe(
       Date.parse("2026-07-29T09:41:00-04:00"),
     );
+    // Analysis anchors "today" here; without the install its heat map and
+    // period breakdowns read the machine's real date.
+    expect(getAnalysisClock().nowMs()).toBe(
+      Date.parse("2026-07-29T09:41:00-04:00"),
+    );
+    // The OS boundary is scenario-owned like every other fixture: the default
+    // (no screenTimeModule field) installs a fresh mock on the scenario clock.
+    expect(getScreenTimeModule()).not.toBe(moduleBeforeScenario);
+    expect(getScreenTimeModule()).toBeInstanceOf(MockScreenTimeModule);
+    // The shared LockController captures its ScreenTime module and walking
+    // session at construction, so the scenario must install one constructed
+    // after both swaps — a startup controller would keep the launch-time OS
+    // boundary alive underneath the fixtures.
+    expect(getLockController()).not.toBe(lockControllerBeforeScenario);
     expect(await runtime.feed.read()).toEqual({
       activeSignals: [],
       totals: {

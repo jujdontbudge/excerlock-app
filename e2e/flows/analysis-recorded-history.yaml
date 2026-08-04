@@ -23,7 +23,8 @@ env:
     timeout: 10000
 - assertNotVisible:
     id: screen-e2e-error
-- tapOn: Analysis
+- tapOn:
+    id: tab-analysis
 - assertVisible:
     id: analysis-screen
 - assertNotVisible:

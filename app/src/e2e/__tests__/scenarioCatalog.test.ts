@@ -22,6 +22,7 @@ describe("bundled E2E scenario catalog", () => {
     expect(SCENARIO_NAMES).toEqual([
       "baseline-fresh-install",
       "balance-drain",
+      "screentime-permission",
     ]);
 
     expect(getScenarioManifest("baseline-fresh-install")).toMatchObject({
@@ -56,6 +57,20 @@ describe("bundled E2E scenario catalog", () => {
         atMs,
       ),
     ).toBe(0);
+  });
+
+  it("keeps every existing scenario on the mock OS boundary by default", () => {
+    // Every #77 flow was written against MockScreenTimeModule semantics
+    // (authorization approves instantly). Only a scenario that says
+    // "native" opts into the real FamilyControls surface.
+    expect(
+      getScenarioManifest("baseline-fresh-install").state.shield
+        .screenTimeModule,
+    ).toBeUndefined();
+    expect(
+      getScenarioManifest("screentime-permission").state.shield
+        .screenTimeModule,
+    ).toBe("native");
   });
 
   it("rejects unknown scenario names instead of falling back", () => {
@@ -93,6 +108,21 @@ describe("bundled E2E scenario catalog", () => {
         },
       }),
       "state.vendors",
+    ],
+    [
+      "an unknown screen-time module choice",
+      () => {
+        const manifest = validManifest();
+        const state = manifest.state as Record<string, unknown>;
+        return {
+          ...manifest,
+          state: {
+            ...state,
+            shield: { armedMonitors: [], screenTimeModule: "real" },
+          },
+        };
+      },
+      "state.shield.screenTimeModule",
     ],
     [
       "unsorted local timeline",

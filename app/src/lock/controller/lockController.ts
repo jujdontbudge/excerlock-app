@@ -362,3 +362,23 @@ export function getLockController(): LockController {
   sharedController ??= new LockController();
   return sharedController;
 }
+
+/**
+ * Scenario-owned replacement of the shared controller, mirroring
+ * installWalkingSessionController. The constructor captures its collaborators,
+ * so a scenario that swaps the ScreenTime module must install a controller
+ * constructed after that swap — otherwise the startup controller keeps
+ * driving the OS boundary it captured at launch.
+ */
+export function installLockController(
+  controller: LockController,
+): () => void {
+  const previous = sharedController;
+  sharedController = controller;
+  return () => {
+    if (sharedController === controller) {
+      controller.stop();
+      sharedController = previous;
+    }
+  };
+}

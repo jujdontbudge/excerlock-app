@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { installAnalysisClock } from "@/analysis";
 import {
   createHomeSignalFeed,
   installHomeAppRuntime,
@@ -17,9 +18,20 @@ import {
   installWalkingSessionController,
   WalkingSessionController,
 } from "@/home/signals";
-import { installLockAppRuntime } from "@/lock";
+import {
+  installLockAppRuntime,
+  installLockController,
+  LockController,
+} from "@/lock";
 import { useSettingsStore } from "@/settings";
-import { installScreenTimeAppRuntime } from "@/screentime";
+import {
+  installScreenTimeAppRuntime,
+  installScreenTimeModule,
+} from "@/screentime";
+import { screenTimeAppClock } from "@/screentime/appRuntime";
+// Composition-root exemption from the index-only law: this build-gated root
+// composes implementations the way the accessor itself does.
+import { MockScreenTimeModule } from "@/screentime/MockScreenTimeModule";
 import {
   installFixtureSubscriptionModule,
 } from "@/subscription/accessor";
@@ -46,6 +58,9 @@ export function E2ERuntimeRoot({
   const uninstallWalkingSession = useRef<(() => void) | null>(null);
   const uninstallGymPresence = useRef<(() => void) | null>(null);
   const uninstallScreenTimeRuntime = useRef<(() => void) | null>(null);
+  const uninstallScreenTimeModule = useRef<(() => void) | null>(null);
+  const uninstallLockController = useRef<(() => void) | null>(null);
+  const uninstallAnalysisClock = useRef<(() => void) | null>(null);
   const uninstallSubscriptionModule =
     useRef<(() => void) | null>(null);
   const uninstallSupportModule = useRef<(() => void) | null>(null);
@@ -54,8 +69,24 @@ export function E2ERuntimeRoot({
     (loaded: LoadedScenario) => {
       uninstallHomeRuntime.current?.();
       const { health, location, motion } = loaded.composition.providers;
+      // Constructed before the feed so the feed can read walking through it —
+      // production wires walkingState the same way (healthKitFeed.ts). With
+      // walking: null and no walkingState, activeSignals can never contain
+      // "walking" and the hold state is unreachable in every scenario.
+      const walkingSession = new WalkingSessionController({
+        createMotion: () => motion,
+        getLocation: () => location,
+        getState: () => useHomeStore.getState(),
+        now: () => motion.currentTimeMs,
+        wallClockNow: () => loaded.composition.clock.nowMs(),
+      });
       uninstallHomeRuntime.current = installHomeAppRuntime({
-        feed: createHomeSignalFeed({ health, motion, walking: null }),
+        feed: createHomeSignalFeed({
+          health,
+          motion,
+          walking: null,
+          walkingState: walkingSession,
+        }),
         now: () => loaded.composition.clock.nowMs(),
       });
       uninstallLockRuntime.current?.();
@@ -66,15 +97,31 @@ export function E2ERuntimeRoot({
       uninstallScreenTimeRuntime.current = installScreenTimeAppRuntime({
         clock: loaded.composition.clock,
       });
+      uninstallAnalysisClock.current?.();
+      uninstallAnalysisClock.current = installAnalysisClock({
+        nowMs: () => loaded.composition.clock.nowMs(),
+      });
+      uninstallScreenTimeModule.current?.();
+      // The OS boundary is scenario-owned like every other fixture. Default is
+      // the mock (all #77 flows assume its canned selection and drivable
+      // shield state); only a scenario declaring "native" keeps the real
+      // FamilyControls adapter.
+      uninstallScreenTimeModule.current =
+        loaded.manifest.state.shield.screenTimeModule === "native"
+          ? null
+          : installScreenTimeModule(
+              new MockScreenTimeModule({ clock: screenTimeAppClock }),
+            );
       uninstallWalkingSession.current?.();
-      uninstallWalkingSession.current = installWalkingSessionController(
-        new WalkingSessionController({
-          createMotion: () => motion,
-          getLocation: () => location,
-          getState: () => useHomeStore.getState(),
-          now: () => motion.currentTimeMs,
-          wallClockNow: () => loaded.composition.clock.nowMs(),
-        }),
+      uninstallWalkingSession.current =
+        installWalkingSessionController(walkingSession);
+      // Constructed only after the ScreenTime module and walking session
+      // above are in place: the controller captures both at construction, and
+      // a startup-constructed controller would keep driving the launch-time
+      // OS boundary underneath the scenario's fixtures.
+      uninstallLockController.current?.();
+      uninstallLockController.current = installLockController(
+        new LockController(),
       );
       uninstallGymPresence.current?.();
       uninstallGymPresence.current = installGymPresenceController(
@@ -118,6 +165,9 @@ export function E2ERuntimeRoot({
       uninstallWalkingSession.current?.();
       uninstallGymPresence.current?.();
       uninstallScreenTimeRuntime.current?.();
+      uninstallScreenTimeModule.current?.();
+      uninstallLockController.current?.();
+      uninstallAnalysisClock.current?.();
       uninstallSubscriptionModule.current?.();
       uninstallSupportModule.current?.();
     },

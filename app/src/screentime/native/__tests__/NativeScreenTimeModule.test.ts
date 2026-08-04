@@ -14,6 +14,8 @@ import { NATIVE_SCREENTIME_STORAGE_KEY } from "../nativeStore";
 type ControlledDeviceActivityApi = DeviceActivityApi & {
   getFamilyActivitySelectionId(id: string): string | undefined;
   setShieldActive(active: boolean): void;
+  setAuthorizationStatus(status: 0 | 1 | 2): void;
+  requestAuthorization: jest.Mock<Promise<void>, [("individual" | "child")?]>;
 };
 
 function createDeviceActivityApi(
@@ -48,6 +50,9 @@ function createDeviceActivityApi(
     setShieldActive(active) {
       shieldActive = active;
     },
+    setAuthorizationStatus(status) {
+      authorizationStatus = status;
+    },
   };
 }
 
@@ -75,6 +80,47 @@ describe("NativeScreenTimeModule", () => {
     expect(deviceActivity.requestAuthorization).toHaveBeenCalledWith(
       "individual",
     );
+  });
+
+  it("reports a denial as denied instead of rejecting", async () => {
+    // On a real device "Don't Allow" makes the OS call throw AND record the
+    // refusal; the re-read status is the truthful answer, not the error.
+    const deviceActivity = createDeviceActivityApi();
+    deviceActivity.requestAuthorization = jest.fn(async () => {
+      deviceActivity.setAuthorizationStatus(1);
+      throw new Error("Family Controls authorization canceled.");
+    });
+    const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity,
+    });
+
+    await expect(screenTime.requestAuthorization()).resolves.toBe("denied");
+  });
+
+  it("stays notDetermined when the sheet dies without answering", async () => {
+    // Observed on one 2026-08-01 simulator device: the OS call throws
+    // "canceled" while the recorded status never changes.
+    const deviceActivity = createDeviceActivityApi();
+    deviceActivity.requestAuthorization = jest.fn(async () => {
+      throw new Error("Family Controls authorization canceled.");
+    });
+    const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity,
+    });
+
+    await expect(screenTime.requestAuthorization()).resolves.toBe(
+      "notDetermined",
+    );
+  });
+
+  it("never re-asks the OS after a recorded refusal", async () => {
+    const deviceActivity = createDeviceActivityApi(1);
+    const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity,
+    });
+
+    await expect(screenTime.requestAuthorization()).resolves.toBe("denied");
+    expect(deviceActivity.requestAuthorization).not.toHaveBeenCalled();
   });
 
   it("returns only an opaque persisted picker handle and a count summary", async () => {

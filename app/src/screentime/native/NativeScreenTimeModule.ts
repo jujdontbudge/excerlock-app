@@ -108,7 +108,11 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
   public async requestAuthorization(): Promise<ScreenTimeAuthorizationStatus> {
     const current = await this.getAuthorizationStatus();
     if (current === "notDetermined") {
-      await this.deviceActivity.requestAuthorization("individual");
+      // FamilyControls throws on "Don't Allow" and on a dead sheet alike, but
+      // it records the refusal before throwing, so the re-read status below is
+      // the truthful outcome either way. Rethrowing would just detach the UI
+      // from what the OS already decided.
+      await this.deviceActivity.requestAuthorization("individual").catch(() => undefined);
     }
     return this.getAuthorizationStatus();
   }

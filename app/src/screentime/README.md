@@ -75,12 +75,23 @@ renders.
 
 The mock and native classes are deliberately not exported from `index.ts`. No
 app module may import either implementation directly. `getScreenTimeModule()`
-is the single composition point.
+is the single composition point, with one exemption: the build-gated E2E
+runtime root may install a scenario-selected module through
+`installScreenTimeModule()`, because a scenario owns its OS boundary the same
+way it owns every signal fixture. Scenarios default to the mock; a scenario
+declaring `screenTimeModule: "native"` keeps the real adapter (see
+`e2e/scenario-schema.md`).
 
-Native behavior cannot be fully verified on a simulator because FamilyControls **authorization** cannot complete there (the frameworks themselves do run — `docs/research/familycontrols-on-simulator.md`); FamilyControls
-requires a physical device. Release-build and hardware verification therefore
-remain with #84; the selection tests here prove only which adapter each modeled
-runtime chooses.
+Simulator coverage of the native adapter was re-measured 2026-08-04 (#97): on
+a fresh iOS 26.4.1 simulator, real FamilyControls authorization **completes
+silently** — no sheet, instant approval, remembered across uninstall and
+`simctl privacy reset`. The e2e flow `screentime-permission` runs the real
+notDetermined read, the primer, the request, and the approved-state UI against
+the real adapter. What still requires hardware (#84): the deny path (no sheet
+on a simulator means nothing can be refused), real shield enforcement, and
+everything behind it. `requestAuthorization()` resolves to the re-read OS
+status instead of rejecting, because on a device FamilyControls records a
+refusal before it throws — the status is the truthful answer.
 
 ## Invariants
 

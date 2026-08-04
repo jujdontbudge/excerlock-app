@@ -112,7 +112,16 @@ READMEs) — unknown events are a scenario-load error, never silently ignored.
       { "kind": "event", "signal": "steps", "source": "health", "threshold": 5000,
         "reward": { "type": "fixedChunk", "minutes": 20 } }
     ],
-    "shield": { "armedMonitors": [] },   // monitors "already armed" at load
+    "shield": { "armedMonitors": [],     // monitors "already armed" at load
+      "screenTimeModule": "mock" },      // OPTIONAL "mock" (default) | "native".
+                                         // Which ScreenTimeModule the scenario composes.
+                                         // Absent/"mock" = MockScreenTimeModule on the scenario
+                                         // clock — deterministic canned selection and drivable
+                                         // shield state, what every flow before #97 assumes.
+                                         // "native" keeps the real FamilyControls adapter; on a
+                                         // fresh iOS 26.4.1 simulator real authorization
+                                         // completes silently (measured 2026-08-04), so only
+                                         // the screentime-permission flow uses it.
     "vendors": { "strava": "disconnected", "oura": "disconnected",
                  "whoop": "disconnected", "polar": "disconnected" }
   },

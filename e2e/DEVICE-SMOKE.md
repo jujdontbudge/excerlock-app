@@ -1,6 +1,6 @@
 # ExcerLock physical-device smoke suite
 
-This is the milestone gate for native behavior that the simulator cannot prove. Scope corrected 2026-08-01: the simulator *can* run FamilyControls and present its authorization sheet, but cannot complete authorization (its authorization UI service is not shipped in the runtime; the earlier "no device passcode" reason was wrong), so only post-authorization behaviour belongs here — see `docs/research/familycontrols-on-simulator.md`.
+This is the milestone gate for native behavior that the simulator cannot prove. Scope corrected twice — 2026-08-01 and again 2026-08-04: on a fresh iOS 26.4.1 simulator, real FamilyControls authorization **completes silently** (no sheet), so even the authorized state is simulator-reachable now. What belongs here is what a simulator still cannot prove: the **deny path** (no sheet means nothing can be refused), **real shield enforcement** (does the shield actually block the app), background wakes, and motion truth — see `docs/research/familycontrols-on-simulator.md`.
 Run it on a real iPhone with iOS 17.4 or later, using the development client
 with fixture mode off. Record every result in `DEVICE-SMOKE-RESULTS.md` as
 `PASS`, `FAIL`, `BLOCKED`, or `NOT RUN`; absence of a crash is not a pass.

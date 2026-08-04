@@ -1,4 +1,4 @@
-export { getScreenTimeModule } from "./accessor";
+export { getScreenTimeModule, installScreenTimeModule } from "./accessor";
 export {
   getScreenTimeAppRuntime,
   installScreenTimeAppRuntime,

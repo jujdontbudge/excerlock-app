@@ -274,8 +274,10 @@ are the flaky path (known `--udid` hangs against freshly-booted sims).
 
 ## 7. Physical-device smoke checklist
 
-Simulator cannot *complete FamilyControls authorization* (the frameworks do run — see `docs/research/familycontrols-on-simulator.md`), real background wakes, real source
-attribution, or geofence/motion truth. The canonical, executable milestone gate
+Simulator cannot produce the FamilyControls *deny* path or prove real shield
+enforcement (on a fresh device, authorization completes silently — measured
+2026-08-04, see `docs/research/familycontrols-on-simulator.md`), nor real
+background wakes, real source attribution, or geofence/motion truth. The canonical, executable milestone gate
 is now [`DEVICE-SMOKE.md`](DEVICE-SMOKE.md); its append-only run record is
 [`DEVICE-SMOKE-RESULTS.md`](DEVICE-SMOKE-RESULTS.md). It supersedes the generic
 DS-1..DS-10 draft that was previously in this section and incorporates the

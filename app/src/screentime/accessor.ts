@@ -16,6 +16,25 @@ export function getScreenTimeModule(): ScreenTimeModule {
   return screenTimeModule;
 }
 
+/**
+ * Scenario-owned override for the E2E runtime, mirroring the other fixture
+ * installs. A scenario that keeps mock semantics installs a fresh mock here;
+ * one that says `screenTimeModule: "native"` installs nothing and the seam
+ * above resolves the real adapter.
+ */
+export function installScreenTimeModule(
+  module: ScreenTimeModule,
+): () => void {
+  const previous = screenTimeModule;
+  screenTimeModule = module;
+
+  return () => {
+    if (screenTimeModule === module) {
+      screenTimeModule = previous;
+    }
+  };
+}
+
 type ScreenTimeRuntime = Readonly<{
   nodeEnv: string | undefined;
   platform: string;

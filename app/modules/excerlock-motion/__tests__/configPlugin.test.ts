@@ -5,6 +5,8 @@ const MOTION_PERMISSION_COPY =
   "ExcerLock uses Motion & Fitness data to verify that you're walking during Walk & Scroll sessions.";
 
 describe("excerlock-motion config plugin", () => {
+  // compileModsAsync loads @expo/config-plugins base mods from disk; under a
+  // fully parallel jest run that cold load alone can exceed the 5 s default.
   it("adds the honest Motion & Fitness usage description", async () => {
     const withExcerlockMotion = require("../app.plugin.js") as (
       config: ExpoConfig,
@@ -26,5 +28,5 @@ describe("excerlock-motion config plugin", () => {
     expect(config.ios?.infoPlist?.NSMotionUsageDescription).toBe(
       MOTION_PERMISSION_COPY,
     );
-  });
+  }, 20000);
 });

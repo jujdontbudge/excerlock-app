@@ -17,6 +17,10 @@ export default function TabLayout() {
             name={route.name}
             options={{
               title: route.title,
+              // Text-matching a tab is ambiguous — Home's shortcut rows carry
+              // the same labels (observed 2026-08-04: tapOn "Analysis" hit the
+              // row under the floating bar and nothing navigated).
+              tabBarButtonTestID: `tab-${route.name}`,
               tabBarIcon: ({ color, size }) =>
                 route.name === "analysis" ? (
                   <AnalysisTabIcon color={color} size={size} />

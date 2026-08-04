@@ -3,8 +3,8 @@ import { useCallback, useState } from "react";
 
 import {
   AnalysisScreen,
+  getAnalysisClock,
   getMilestoneHaptics,
-  systemAnalysisClock,
 } from "@/analysis";
 
 export default function AnalysisRoute() {
@@ -18,7 +18,7 @@ export default function AnalysisRoute() {
 
   return (
     <AnalysisScreen
-      clock={systemAnalysisClock}
+      clock={getAnalysisClock()}
       milestoneHaptics={getMilestoneHaptics()}
       milestoneUnlockVisitKey={unlockVisitKey}
     />

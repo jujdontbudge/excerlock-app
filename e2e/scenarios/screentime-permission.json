@@ -1,0 +1,56 @@
+{
+  "name": "screentime-permission",
+  "version": 1,
+  "description": "Real FamilyControls surface: the permission primer and silent simulator authorization (measured 2026-08-04). The only scenario composing the native ScreenTimeModule.",
+  "clock": {
+    "now": "2026-07-29T09:41:00-04:00",
+    "playback": "manual"
+  },
+  "state": {
+    "onboarding": "complete",
+    "entitlement": "premium",
+    "ledger": {
+      "baseAllowanceMinutes": 45,
+      "journal": []
+    },
+    "conditions": [
+      {
+        "kind": "state",
+        "signal": "walking",
+        "source": "motion",
+        "reward": {
+          "type": "sustainedUnlock"
+        },
+        "exitGraceMs": 120000
+      }
+    ],
+    "shield": {
+      "armedMonitors": [],
+      "screenTimeModule": "native"
+    },
+    "vendors": {
+      "strava": "disconnected",
+      "oura": "disconnected",
+      "whoop": "disconnected",
+      "polar": "disconnected"
+    }
+  },
+  "providers": {
+    "health": {
+      "fixture": "background-wake-replay"
+    },
+    "motion": {
+      "fixture": "steady-walk"
+    },
+    "location": {
+      "fixture": "quiet"
+    },
+    "screentime": {
+      "fixture": "tick-ladder-basic"
+    },
+    "vendor": {
+      "fixture": "none-connected"
+    }
+  },
+  "timeline": []
+}

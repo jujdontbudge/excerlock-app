@@ -4,6 +4,46 @@ Tested empirically 2026-08-01 on **iOS 26.4 simulator**, Xcode 26.4, against a
 real `expo run:ios` debug build of this app. This file exists because the repo
 asserted the opposite in eight places on the strength of **zero tests**.
 
+## ⚠️ Superseded 2026-08-04 — authorization COMPLETES on a fresh simulator
+
+Re-measured on a **freshly created** iPhone 17 Pro device on the same installed
+runtime (iOS 26.4.1 · 23E254a), Release e2e build, driven by Maestro
+(`e2e/flows/screentime-permission.yaml`), twice:
+
+1. **First-ever request on the fresh device:** status read `notDetermined`, the
+   app's "Allow Screen Time" button called `requestAuthorization(.individual)`,
+   and it **succeeded instantly — no sheet was ever presented**. The panel
+   flipped to approved within a second.
+2. **After `simctl privacy reset all` + full app uninstall + reinstall:** the
+   app launched **already approved**. The grant is recorded OS-side, survives
+   both, and there is no known simulator route to un-grant it (delete the
+   device or make a new one).
+
+The 2026-08-01 sheet-then-cancel measurement was real — the log lines and
+error strings below happened — but it came from a long-lived, heavily used
+device (`CB88DF53…`) that **has since been deleted**, and it did not reproduce
+on a fresh device on the same runtime version. Whether the difference was
+accumulated device state or something else is **unknowable now**; what is
+reproducible today is silent success.
+
+**The corrected corrected position:** on a fresh iOS 26.4.1 simulator device,
+real FamilyControls `.individual` authorization completes silently. The
+sections below are kept as the trail — including the two wrong reasons — but
+their shared conclusion ("authorization cannot complete on a simulator") is
+**no longer true** on current tooling.
+
+**What this changes:** the approved state, and every API gated on it, is now
+reachable with the real adapter on a simulator. **What it does not change:**
+the deny path cannot be produced (no sheet → nothing to refuse), and whether a
+shield actually blocks an app — the product's core promise — is still
+device-only truth (#84), as is everything this file never covered (background
+wakes, real motion).
+
+This is the third revision of this file, and this time the **conclusion**
+fell, not just the reasoning. The compounding lesson: a measurement is a fact
+about one device on one day, not a law — record the device, the runtime, and
+the date with every claim, and re-run the measurement when any of them change.
+
 ## The claim that was wrong
 
 The 2026-07-28 charting session recorded *"FamilyControls does not run on
@@ -96,22 +136,21 @@ cross-check it against that key blob. Separately, ManagedSettings persistence
 keys — so if the gate could be forced, shield writes might round-trip.
 Unverified in both directions; do not cite it as either possible or impossible.
 
-## The corrected position
+## The corrected position (historical — superseded above)
 
 **Wrong:** "FamilyControls does not run on the simulator."
 **Also wrong:** "authorization fails because a simulator has no passcode."
-**Right:** FamilyControls loads and runs on the simulator and presents the real
-authorization sheet; **authorization cannot be completed there because the
-authorization UI service is not shipped in the runtime**, so anything gated on
-authorization — shield apply, shield lift, DeviceActivity monitoring — cannot be
-verified on a simulator.
+**Wrong again (2026-08-04):** "authorization cannot be completed there because
+the authorization UI service is not shipped in the runtime." On a fresh device
+the request never involves that UI service at all — it succeeds silently.
 
-Two wrong reasons preceded the right one, for the same correct conclusion. That
-is the pattern worth remembering: a conclusion surviving does not mean the
-reasoning behind it was ever checked.
+Two wrong reasons preceded a conclusion that then fell itself. A conclusion
+surviving does not mean the reasoning behind it was ever checked — and a
+measured conclusion is still only a fact about one device on one day.
 
-The device smoke suite is therefore still needed, but for a narrower and more
-precise reason than the repo claimed.
+The device smoke suite is still needed, but its reason narrowed twice: it now
+exists for the deny path and for **real shield enforcement**, not for reaching
+the authorized state.
 
 ## What this *unblocks* for the simulator loop
 

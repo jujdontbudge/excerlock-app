@@ -36,7 +36,7 @@ a rendering of a rule owned elsewhere — the one genuine exception is documente
 | `signals/fixtureFeed.ts` | Phase-2 composition root: fixture providers, real-time playback |
 | `signals/useHomeSignals.ts` | Subscribes a mounted screen to a feed |
 | `signals/gymPresenceController.ts` | Owns manual arrival check-in, explicit auto-detect opt-in, and persisted visit claims |
-| `signals/walkingSessionController.ts` | Owns explicit live verification sessions, the watchdog, active window, and sensor lifetime |
+| `signals/walkingSessionController.ts` | Owns explicit live verification sessions, the watchdog, active window, and sensor lifetime. Every composition root must hand it to the feed as `walkingState` — with `walking: null` and no `walkingState`, `activeSignals` can never report walking and the hold state is unreachable (this silently broke the E2E composition once, 2026-08-04) |
 | `signals/SignalRuntimeHosts.tsx` | Reconciles persisted condition/settings changes after build-specific composition is installed |
 | `store/homeState.ts` | Owned state shape, Unlimited default, and projections used by Home/Manage/lock |
 | `store/homeStore.ts` | Mutates conditions, journal and ledger config; wires the state to AsyncStorage |
@@ -48,7 +48,7 @@ a rendering of a rule owned elsewhere — the one genuine exception is documente
 
 ## The builder
 
-`builder/ConditionBuilderSheet.tsx` walks **catalog → source → configure → preview → save**. The source
+`builder/ConditionBuilderSheet.tsx` walks **catalog → source → configure → banner → preview → save**. The source
 step only appears when more than one source can supply the signal; a single selectable source is chosen
 for the user.
 

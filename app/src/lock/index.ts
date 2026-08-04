@@ -3,6 +3,7 @@ export { FullLockConfirmationPrompt } from "./components/FullLockConfirmationPro
 export { LockWindowsCard } from "./components/LockWindowsCard";
 export {
   getLockController,
+  installLockController,
   LockController,
   type LockControllerOptions,
   type LockSnapshot,

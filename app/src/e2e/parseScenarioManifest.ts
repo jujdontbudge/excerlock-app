@@ -133,7 +133,14 @@ function parseState(input: unknown): void {
   );
 
   const shield = record(state.shield, "state.shield");
-  exactKeys(shield, ["armedMonitors"], [], "state.shield");
+  exactKeys(shield, ["armedMonitors"], ["screenTimeModule"], "state.shield");
+  if (shield.screenTimeModule !== undefined) {
+    oneOf(
+      shield.screenTimeModule,
+      ["mock", "native"],
+      "state.shield.screenTimeModule",
+    );
+  }
   const monitors = stringArray(
     shield.armedMonitors,
     "state.shield.armedMonitors",

@@ -1,4 +1,6 @@
 export {
+  getAnalysisClock,
+  installAnalysisClock,
   systemAnalysisClock,
   type AnalysisClock,
 } from "./clock";

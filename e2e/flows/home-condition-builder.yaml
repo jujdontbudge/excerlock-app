@@ -40,6 +40,10 @@ env:
 # The builder renders the reward as "5 min" (and its range as "5 min - 120 min"),
 # matching the compact duration format used across the app.
 - assertVisible: "5 min"
+# The banner step (added by the condition banner photo flow) sits between
+# configure and preview; the catalog pick preselects a default banner, so
+# "Preview" is immediately enabled.
+- tapOn: Choose banner
 - tapOn: Preview
 
 - assertVisible: Preview

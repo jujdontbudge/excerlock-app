@@ -107,6 +107,13 @@ chosen wall times unchanged.
   real authorization call itself remains Phase 3 work without duplicating these words.
 - **The shield screen itself is not this module.** PRD §3.15 surface 1 (what a *blocked app* shows)
   is a native Shield extension. This is the in-app surface that explains and controls it.
+- **The shared controller is scenario-replaceable.** `getLockController()` builds one controller for
+  the app's lifetime, and the constructor captures its ScreenTime module and walking session right
+  there. `installLockController` exists for the E2E runtime because of that capture: a scenario that
+  swaps the ScreenTime module must install a controller constructed *after* the swap, or the
+  startup controller keeps driving the launch-time OS boundary underneath the fixtures (observed
+  2026-08-04 — the silently-authorized simulator's native adapter kept applying real shields while
+  every scenario surface read the mock).
 
 ## Tests
 
