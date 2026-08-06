@@ -66,6 +66,119 @@ shared lock controller) cleared the shield within ~5 s. Earn-to-lift is
 currently reconciliation-driven, not event-driven — SH-03 passes only with
 that caveat recorded.
 
+### Finding 4 — `useNotificationPermission` has no rejection handler
+
+`useNotificationPermission`'s mount effect calls
+`module.getAuthorizationStatus().then(onFulfilled)` with **no rejection
+handler**. If that first native call ever rejects, `ready` stays `false`
+forever and every notification toggle renders permanently disabled with no
+error surfaced anywhere — the Settings card just goes dead. Observed while
+diagnosing an unresponsive toggle this run (temporary instrumentation proved
+the promise resolves normally on this device — the dead toggle was Finding 5 —
+but the silent-failure path is real and untested). Needs a follow-up issue
+alongside #92.
+
+### Finding 5 — dev-menu gear also occludes the first Settings toggle
+
+Finding 2's Expo dev-menu floating gear (logical ~349,85 with a touch window
+larger than its visible circle) also swallows taps on the **first notification
+toggle** in Settings when the card scrolls under it. The switch received no
+touch despite rendering `disabled: false` (proven via instrumentation). Same
+dev-client-only hazard; workaround is to use any control outside the gear's
+hit window or scroll the target away from it.
+
+### Finding 6 — the JS ledger never sees native drain usage (economy split-brain)
+
+Observed 2026-08-06 with a 5-minute earned balance and the 1-app selection:
+
+1. **Native drain works**: ~15 min of continuous foreground use of the locked
+   app fired the DeviceActivity drain ladder and the extension applied the
+   shield (shield landed ≈10 min after the 5-minute usage mark — threshold
+   granularity/queueing jitter, recorded below).
+2. **JS never ingests it**: after all of that, Home still showed **Screen time
+   used 0m** and the ledger still computed a positive balance. The drain
+   events persist in the app group but nothing maps them into journal drains.
+3. **Foregrounding the app therefore LIFTS a legitimate drain shield**: the
+   next reconcile computes `drainsBalance → shields down` from the stale
+   positive balance and removes the shield the OS had correctly applied. The
+   user gets unlimited use after any app-open.
+4. **Catch-22 blocks the SH-02 tap-through**: shield content (including
+   `routeHomeAvailable`, i.e. the **Open ExcerLock** button) is only published
+   during a shields-up reconcile (`ShieldCauseResolver.resolve` returns null
+   when shields are down, so shields-down reconciles skip publishing). But the
+   JS side never computes shields-up for a drain-caused shield (see 2). Net:
+   **a drain-caused balance-empty shield can never render the Open ExcerLock
+   button**, and the app-group content stays stale (this run's shields still
+   rendered Aug 4 fullLock-era copy with Close only).
+5. **The balance cannot be zeroed intraday**: pausing the earning condition
+   leaves today's paid claim; deleting the condition also leaves the claim
+   (history is preserved, defensibly). So the only JS-visible balance-empty
+   state is a fresh day with no auto-claiming conditions.
+
+This is the biggest product finding of the run after the accessor gate bug.
+
+Revision from the DA-01 run later the same day: drain usage DOES eventually
+reach the lock ledger — after the 15-minute DeviceActivity interval ended, the
+next locked-apps reconcile computed **"Time's up — today's balance is empty"**
+(so ingestion happens at interval boundaries, not live). Points 3–5 stand as
+written for the intra-interval window, and Home's **Screen time used** display
+never updated (still 0m) even after the lock ledger saw the drain.
+
+### Finding 9 — rest-of-day reward is honored by Home but not by lock policy
+
+With the "Finish any workout" condition edited to a **Rest of day** reward and
+completed at 15:04 (2026-08-06), Home's hero flipped to **"Apps are unlocked /
+Unlocked for the rest of the day"** and the card to ✓ Completed — and still
+showed exactly that at 15:23. But the lock-policy surfaces never honored it:
+Locked apps at 15:05 attributed the open state to the (stale) minute balance,
+at 15:21 showed **"Time's up — for now. Today's balance is empty."**, and the
+target app rendered the shield at 15:23 **while Home simultaneously claimed
+rest-of-day unlock**. The rest-of-day claim evidently never enters the
+`desiredLockState` inputs (no holiday window recorded, or not translated).
+Split-brain between the hero and the shield state, captured 90 s apart.
+
+### Finding 10 — routeHomeAvailable never reaches the shield despite granted permission
+
+At 15:21:35 a genuine shields-up reconcile ran with cause `balanceEmpty` —
+exactly the path that publishes fresh shield content including
+`routeHomeAvailable` — while Settings verifiably showed **"Notifications are
+on"** (permission granted on-device Aug 4). The shield rendered afterwards
+(15:23) still had **no "Open ExcerLock" button**. So even when the publish
+path runs, the route-home flag arrives at the ShieldConfiguration extension as
+false (or the runtimeContext write never lands in the app group). The
+`ShieldRouteHomeSource` → publisher → app-group → extension chain needs
+on-device instrumentation; until it is fixed, **no shield variant can offer
+tap-through**, and the SH-02 fresh-day plan will hit this same wall.
+
+### Finding 7 — dev-client touch-wedge flake
+
+Twice this run every RN touch went dead app-wide (Complete, onboarding CTAs)
+while WDA taps demonstrably landed (the Expo dev-menu gear still opened). A
+dev-menu **Reload** restored touch handling. This also retroactively explains
+Aug 4's "Complete tap produced no earn until relaunch" observation. Dev-client
+automation hazard: after a burst of deep links/relaunches, verify a known
+control responds before concluding a product control is broken.
+
+### Finding 8 — onboarding is hard-gated on the plans service
+
+Cold-starting the installed dev build lands on the **Earn your screen time**
+onboarding screen even for an already-onboarded install (state underneath is
+intact — conditions, selection, and permissions all survive). Walking the flow
+dead-ends at **"Plans couldn't load / Plans are temporarily unavailable"**
+with only Try again/Back — no skip. On any install where the plans backend is
+unreachable, onboarding can never complete and every cold start re-enters it;
+deep links (`excerlock://(tabs)`) are the only way past. Needs a product
+decision (cached plans, offline skip, or dev bypass).
+
+### Run-infra note — shared Metro cache poisoning across lanes
+
+On 2026-08-06 the f4 Metro (port 8090) served a broken bundle — phantom
+`Cannot find native module 'ExpoSharing'/'ExpoTaskManager'` errors plus an
+`ErrorBoundary` crash on boot — with zero code changes since the working
+Aug 4 session. Cause: Metro's cache directory is shared with the other lane's
+Metro (port 8081) on this machine. `expo start --clear` fixed it. When two
+lanes run Metro simultaneously, start with `--clear` after switching lanes.
+
 ### Device checklist status
 
 | ID | Status | Observation |
@@ -73,12 +186,12 @@ that caveat recorded.
 | FC-01 | PASS | With the fixed gate, a clean `requestAuthorization` run presented the real Apple FamilyControls sheet exactly once (~15:20). On iOS 26.2.1 the sheet completes via **"Allow with Face ID"** — not a passcode entry as `DEVICE-SMOKE.md` §FC-01 assumes (one Face-Not-Recognized retry then success, performed by Johan; the only manual action in the run). Locked apps then reports **Screen Time is on / On**, and the granted state survives force-quit + relaunch. No Expo/native-module error at any point. Deny path NOT RUN (needs a clean reinstall). |
 | FC-02 | PASS | Real FamilyActivityPicker presents from **Choose apps**/**Change apps** under WDA automation. One harmless app selected (identity only in private notes); on ✓ Done the persisted view emitted `onSelectionChange {applicationCount: 1, categoryCount: 0}` and the app rendered **1 app** with no identities leaked. Count + authorization survive force-quit and relaunch; **Change apps** reopens with the prior selection shown (category badge `1`); X-cancel leaves the saved selection unchanged. Initial "selection never saves" observation was Finding 2 (Done occluded), not a code defect. |
 | SH-01 | PASS (reboot leg NOT RUN) | With Full Lock on and a real 1-app selection, the target app is covered by ExcerLock's native shield: clay-lock art, **"Move first, scroll after."**, subtitle **"Open ExcerLock to choose your fastest unlock."**, orange **Close**. This is the **fullLock-cause variant with a live copy override** — the app-group cause writer (`ShieldContentPublisher`) now exists, so the §SH-01 "#92 balance-empty-only" oracle is stale. No target-app name on the shield. Close returns to Home Screen, where iOS shows its hourglass restriction marker on the target app. Shield persists with ExcerLock force-quit. One flake: a single launch (~15:39) rendered **Apple's generic "Restricted" screen** instead of the custom shield; the custom shield rendered on every other attempt (before and after). Reboot leg NOT RUN — requires the device passcode after restart. |
-| SH-02 | NOT RUN | — |
+| SH-02 | PARTIAL — permission PASS, tap-through BLOCKED | Permission leg (2026-08-04): turning on a notification type walked the designed OFF→ON flow — primer **Choose what helps** → **Allow notifications** → the real iOS sheet (""ExcerLock" Would Like to Send You Notifications") → approval, and the pending type was applied only after approval (Settings shows **Notifications are on**, type On). The doc's "production accessor still constructs the mock / record BLOCKED" note is stale — the real module presents the real sheet. Tap-through leg (2026-08-06): BLOCKED by Finding 6's catch-22 — the drain-caused balance-empty shield renders stale Close-only content and the **Open ExcerLock** button can never appear for it. A fresh-day run (day rolls to zero balance with no auto-claiming conditions, one app-open publishes `balanceEmpty`) was the planned path to exercise steps 3–4, but the same-day DA-01 run then proved that even a genuine `balanceEmpty` publish with granted permission does not surface the button (Finding 10) — tap-through stays BLOCKED until that chain is fixed; denied-permission repeat also NOT RUN. Drain timing measured while attempting it: 5m balance, continuous foreground use from 14:30, native shield applied 14:45:37 (≈10 min after the 5-minute usage mark). |
 | SH-03 | PASS with caveat | "Finish any workout" event condition (10-min goal, fixed **+5 min** reward) created through the Home builder; its **Complete** control recorded exactly one earn (idempotence key `conditionId:dayIndex`; card flips to ✓ Completed, **Earned today 5m**, hero **Apps are unlocked / 5 min left**). Target app then opened fully, no shield. Caveat = Finding 3: the lift required foregrounding `excerlock://locked-apps` (~5 s after mount); from Home alone the shield remained ≥40 s after the earn. One earlier Complete tap sequence produced no earn until an app relaunch (builder sheet was invisibly open over Home in that window — see Finding 2's occluded Cancel). No duplicate payout observed. |
-| DA-01 | NOT RUN | — |
-| HK-01 | NOT RUN | — |
-| HK-02 | NOT RUN | — |
-| HK-03 | NOT RUN | — |
+| DA-01 | PARTIAL — lapse PASS, re-open FAIL (Finding 9), force-quit leg BLOCKED | Setup 2026-08-06: "Finish any workout" edited to a **Rest of day** reward, completed via its Complete control at 15:04; shield lifted only after the locked-apps mount at 15:05:44 (Finding 3 again, ~5 s), target verified open, everything backgrounded 15:06:07. **Lease lapse**: with ExcerLock backgrounded the shield re-applied by the 15:21:04 retry — ≈20 s after the 15-minute interval end (armed 15:05:44), comfortably inside the 30-second fail-safe. It rendered **Apple's generic "Restricted" screen** rather than the custom shield (second occurrence of the SH-01 flake, this time on an extension-applied shield). **Re-open while reward valid: FAIL** — the rest-of-day reward was not honored by lock policy (Finding 9): locked-apps showed "Time's up — today's balance is empty", and the target re-shielded (custom shield) after reconcile while Home still claimed rest-of-day unlock. **Second interval with force-quit: BLOCKED** — no open state is reachable once the balance is empty and the reward is ignored. |
+| HK-01 | PASS with caveat | **Step goal** condition (1,000-step threshold, fixed **+5 min**) created through the Home builder read real HealthKit data immediately on save: the card showed a nonzero device-recorded count already above the threshold and paid **exactly one** +5 earn (**Earned today 5m → 10m**). Backgrounding and reopening produced no duplicate claim (idempotence key `conditionId:dayIndex` held). Caveat: **no iOS Health permission sheet appeared** — Steps read access was already granted to this bundle from an earlier session, so the first-read sheet leg is unproven on this install; a clean reinstall would be needed to observe it. |
+| HK-02 | PASS | A synthetic manual Steps entry (20,000, entered via the Health app by the tester at ~17:41 and deleted after the check) was **excluded** from ExcerLock's count: the Step goal card advanced only by the natural device-recorded delta over the same span while Health's own daily total jumped by the manual 20,000. Earned today stayed at 10m — no payout change from manual data. The device-recorded-only filter works on real hardware. |
+| HK-03 | PARTIAL | Cold-launch catch-up proven on the day boundary: the first open of 2026-08-06 auto-claimed the Step goal for that day's already-recorded device steps — exactly one +5 payout, no duplicate on later opens (idempotence key held across the day roll). Background delivery (claim without any app open) NOT RUN — requires new qualifying Health data to arrive while the app stays backgrounded, which needs real activity. |
 | MOT-01 | NOT RUN | — |
 | MOT-02 | NOT RUN | — |
 | WLK-01 | NOT RUN | — |
