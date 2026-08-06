@@ -1,5 +1,21 @@
 # Physical-device smoke results
 
+## Ticket index (filed 2026-08-06)
+
+| Finding | Ticket |
+|---|---|
+| Finding 1 — mock/native accessor gate | Fixed on this branch (`e9012d6`); port to main tracked as #110 |
+| Finding 3 — earn-to-lift reconciliation-driven | #106 |
+| Finding 4 — `useNotificationPermission` rejection handler | #107 |
+| Finding 6 — economy split-brain (drain ingestion) | #103 |
+| Finding 8 — onboarding hard-gated on plans service | #108 |
+| Finding 9 — rest-of-day reward ignored by lock policy | #104 |
+| Finding 10 — routeHomeAvailable never reaches the shield | #105 |
+| Generic "Restricted" shield flake (SH-01/DA-01) | #109 |
+
+Findings 2, 5, 7 and the Metro-cache note are dev-client/harness hazards, not
+product defects — they live in this file and `HARNESS.md` guidance only.
+
 ## 2026-08-04 — lane/84-device-smoke-run — first on-device run
 
 ### Run header
