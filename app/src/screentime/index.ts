@@ -6,6 +6,7 @@ export {
 } from "./appRuntime";
 export type {
   CurrentShieldState,
+  FiredDrainRung,
   LockWindow,
   ScreenTimeAuthorizationStatus,
   ScreenTimeModule,

@@ -3,6 +3,7 @@ import type { StateStorage } from "zustand/middleware";
 
 import type {
   CurrentShieldState,
+  FiredDrainRung,
   LockWindow,
   ScreenTimeAuthorizationStatus,
   ScreenTimeModule,
@@ -29,6 +30,7 @@ import {
   MISSING_NATIVE_SELECTION_PICKER,
   type NativeSelectionPicker,
 } from "./NativeSelectionPicker";
+import { BALANCE_DRAIN_MONITOR } from "./deviceActivitySchedule";
 import { NativeShieldScheduler } from "./NativeShieldScheduler";
 import { NATIVE_LOCKED_SELECTION } from "./nativeSelection";
 import { createNativeScreenTimePersistence } from "./nativeStore";
@@ -207,6 +209,22 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
     await this.ready;
     this.refreshObservedShieldState();
     return this.currentShieldState;
+  }
+
+  public async getFiredDrainRungs(): Promise<readonly FiredDrainRung[]> {
+    await this.ready;
+    return this.deviceActivity
+      .getEvents(BALANCE_DRAIN_MONITOR)
+      .filter(
+        (record) =>
+          record.callbackName === "eventDidReachThreshold" &&
+          record.eventName !== undefined,
+      )
+      .map((record) => {
+        const atMs = record.lastCalledAt.getTime();
+        return { id: `${record.eventName}@${atMs}`, atMs };
+      })
+      .sort((left, right) => left.atMs - right.atMs);
   }
 
   public subscribe(listener: ShieldStateListener): ScreenTimeUnsubscribe {

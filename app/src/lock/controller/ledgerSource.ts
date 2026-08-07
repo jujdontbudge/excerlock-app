@@ -1,4 +1,5 @@
 import type { Journal, LedgerConfig } from "@excerlock/ledger";
+import type { FiredDrainRung } from "@/screentime";
 
 import {
   isFullLock,
@@ -55,6 +56,11 @@ export function homeFullLock(): boolean {
 /** Full Lock's two transitions, run by the owner rather than mirrored here. */
 export function setHomeFullLock(on: boolean): void {
   useHomeStore.getState().setFullLock(on);
+}
+
+/** OS-reported drain rungs land in the owner's journal, idempotently. */
+export function ingestHomeDrainRungs(rungs: readonly FiredDrainRung[]): void {
+  useHomeStore.getState().ingestDrainRungs(rungs);
 }
 
 /**

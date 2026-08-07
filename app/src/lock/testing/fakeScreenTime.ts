@@ -2,6 +2,7 @@ import type { DesiredOsState } from "@excerlock/ledger";
 
 import type {
   CurrentShieldState,
+  FiredDrainRung,
   LockWindow,
   ScreenTimeAuthorizationStatus,
   ScreenTimeModule,
@@ -140,6 +141,13 @@ export class FakeScreenTime implements ScreenTimeModule {
 
   public async getCurrentShieldState(): Promise<CurrentShieldState> {
     return this.shield;
+  }
+
+  /** Driver: rungs the fake OS reports as fired. */
+  public firedDrainRungs: FiredDrainRung[] = [];
+
+  public async getFiredDrainRungs(): Promise<readonly FiredDrainRung[]> {
+    return this.firedDrainRungs;
   }
 
   public subscribe(listener: ShieldStateListener): ScreenTimeUnsubscribe {

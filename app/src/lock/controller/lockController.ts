@@ -3,6 +3,7 @@ import type { Journal } from "@excerlock/ledger";
 import {
   getScreenTimeModule,
   type CurrentShieldState,
+  type FiredDrainRung,
   type LockWindow,
   type ScreenTimeAuthorizationStatus,
   type ScreenTimeModule,
@@ -16,6 +17,7 @@ import {
   homeJournal,
   homeLedgerConfig,
   homeLedgerHydrated,
+  ingestHomeDrainRungs,
   setHomeFullLock,
   subscribeHomeLedgerInputs,
 } from "./ledgerSource";
@@ -54,6 +56,8 @@ export interface LockControllerOptions {
   journal?: () => Journal;
   /** Resolves when the journal/config source is trustworthy (persistence hydrated). */
   ledgerReady?: () => Promise<void>;
+  /** Where OS-reported drain rungs are journaled; injected to isolate tests. */
+  ingestDrainRungs?: (rungs: readonly FiredDrainRung[]) => void;
   /** Local wall-clock ms. */
   now?: () => number;
   /** Persisted recurring definitions; injected to isolate tests. */
@@ -88,6 +92,9 @@ export class LockController {
   private readonly screenTime: ScreenTimeModule;
   private readonly journal: () => Journal;
   private readonly ledgerReady: () => Promise<void>;
+  private readonly ingestDrainRungs: (
+    rungs: readonly FiredDrainRung[],
+  ) => void;
   private readonly now: () => number;
   private readonly scheduleStore: LockScheduleStore;
   private readonly walking: () => boolean;
@@ -112,6 +119,7 @@ export class LockController {
     this.screenTime = options.screenTime ?? getScreenTimeModule();
     this.journal = options.journal ?? homeJournal;
     this.ledgerReady = options.ledgerReady ?? homeLedgerHydrated;
+    this.ingestDrainRungs = options.ingestDrainRungs ?? ingestHomeDrainRungs;
     this.now = options.now ?? lockAppNow;
     this.scheduleStore = options.scheduleStore ?? getLockScheduleStore();
     this.walking =
@@ -264,10 +272,34 @@ export class LockController {
     return this.reconciliation;
   }
 
+  /**
+   * Re-read the OS and decide again — the app-foreground hook. Native drain
+   * rungs that fired while the app was backgrounded are journaled before the
+   * decision, so returning to the app cannot lift a legitimately drained
+   * shield (device-smoke Finding 6).
+   */
+  public reconcileNow(): Promise<void> {
+    return this.queueReconciliation();
+  }
+
+  /** Journal every OS-reported drain before any shield decision reads it. */
+  private async ingestDrains(): Promise<void> {
+    const rungs = await this.screenTime.getFiredDrainRungs();
+    if (rungs.length > 0) {
+      this.suppressAllowanceSubscription = true;
+      try {
+        this.ingestDrainRungs(rungs);
+      } finally {
+        this.suppressAllowanceSubscription = false;
+      }
+    }
+  }
+
   private async applyDesiredState(
     selection: ScreenTimeSelectionHandle,
   ): Promise<void> {
     await this.ledgerReady();
+    await this.ingestDrains();
     const { decision, desired } = this.desiredState();
     this.patch({ precedence: decision });
     await this.shieldContent.publish(
@@ -327,6 +359,7 @@ export class LockController {
 
   private async refresh(): Promise<void> {
     await this.ledgerReady();
+    await this.ingestDrains();
     const [authorization, shield, lockWindows] = await Promise.all([
       this.screenTime.getAuthorizationStatus(),
       this.screenTime.getCurrentShieldState(),

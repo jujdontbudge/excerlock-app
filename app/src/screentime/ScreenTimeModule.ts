@@ -44,6 +44,18 @@ export type LockWindow = Readonly<{
 export type ShieldStateListener = (state: CurrentShieldState) => void;
 export type ScreenTimeUnsubscribe = () => void;
 
+/**
+ * One fired balance-drain ladder rung, as reported by the OS monitor. Each rung
+ * stands for one more minute of locked-group usage. `id` is stable for a given
+ * firing (it includes the OS-reported firing time), so replaying the full list
+ * into the ledger journal is idempotent.
+ */
+export type FiredDrainRung = Readonly<{
+  id: string;
+  /** Local wall-clock ms when the OS reported the rung. */
+  atMs: number;
+}>;
+
 export interface ScreenTimeModule {
   getAuthorizationStatus(): Promise<ScreenTimeAuthorizationStatus>;
   requestAuthorization(): Promise<ScreenTimeAuthorizationStatus>;
@@ -64,5 +76,11 @@ export interface ScreenTimeModule {
   /** Registered windows in start order — how a caller learns when a shield lifts. */
   getLockWindows(): Promise<readonly LockWindow[]>;
   getCurrentShieldState(): Promise<CurrentShieldState>;
+  /**
+   * Every balance-drain rung the OS has reported fired, oldest first. This is
+   * how the JS ledger learns about native drain usage (device-smoke Finding 6);
+   * callers replay the list into the journal, relying on `id` idempotence.
+   */
+  getFiredDrainRungs(): Promise<readonly FiredDrainRung[]>;
   subscribe(listener: ShieldStateListener): ScreenTimeUnsubscribe;
 }

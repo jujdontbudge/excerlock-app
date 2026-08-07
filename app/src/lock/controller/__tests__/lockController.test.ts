@@ -185,6 +185,37 @@ describe("LockController", () => {
     controller.stop();
   });
 
+  it("ingests OS-fired drain rungs before deciding shields (device-smoke Finding 6)", async () => {
+    const screenTime = new FakeScreenTime();
+    // Five one-minute rungs fired natively (after the earn) while the app
+    // was backgrounded.
+    screenTime.firedDrainRungs = [0, 1, 2, 3, 4].map((index) => ({
+      id: `balance-rung-${index}@${NOW - 50_000 + index * 10_000}`,
+      atMs: NOW - 50_000 + index * 10_000,
+    }));
+    useHomeStore.setState({ journal: earnedToday(5) });
+    const controller = new LockController({
+      screenTime,
+      journal: () => useHomeStore.getState().journal,
+      now: () => NOW,
+      scheduleStore: new LockScheduleStore(),
+      ledgerReady: () => Promise.resolve(),
+    });
+    await controller.start();
+    await controller.requestAuthorization();
+    await controller.pickApps();
+    await controller.whenReconciled();
+
+    // The 5-minute earn is fully drained: shields stay up, no lift.
+    expect(screenTime.reconciled.at(-1)?.desiredOsState.shields).toBe("up");
+    expect(
+      useHomeStore
+        .getState()
+        .journal.entries.filter(({ kind }) => kind === "drainTick"),
+    ).toHaveLength(5);
+    controller.stop();
+  });
+
   it("carries a denied decision back to callers and to subscribers", async () => {
     const screenTime = new FakeScreenTime();
     screenTime.nextDecision = "denied";

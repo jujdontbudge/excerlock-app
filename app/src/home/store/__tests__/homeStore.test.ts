@@ -162,6 +162,45 @@ describe("useHomeStore", () => {
     expect(useHomeStore.getState().journal.entries).toEqual([]);
   });
 
+  describe("native drain ingestion (device-smoke Finding 6)", () => {
+    it("turns fired drain rungs into spent minutes the ledger can see", () => {
+      useHomeStore.getState().setBaseAllowanceMinutes(0);
+      useHomeStore.getState().addCondition(stepGoal);
+      useHomeStore.getState().recordEventPayout("c-event", NOON);
+
+      useHomeStore.getState().ingestDrainRungs([
+        { id: "balance-rung-0@1", atMs: NOON + 60_000 },
+        { id: "balance-rung-1@2", atMs: NOON + 120_000 },
+      ]);
+
+      const { journal, ledgerConfig } = useHomeStore.getState();
+      expect(remainingMinutes(journal, ledgerConfig, NOON + 120_000)).toBe(28);
+    });
+
+    it("replays the same rung list without double-charging", () => {
+      useHomeStore.getState().setBaseAllowanceMinutes(0);
+      useHomeStore.getState().addCondition(stepGoal);
+      useHomeStore.getState().recordEventPayout("c-event", NOON);
+      const rungs = [{ id: "balance-rung-0@1", atMs: NOON + 60_000 }];
+
+      useHomeStore.getState().ingestDrainRungs(rungs);
+      const once = useHomeStore.getState().journal;
+      useHomeStore.getState().ingestDrainRungs(rungs);
+
+      expect(useHomeStore.getState().journal).toBe(once);
+      const { journal, ledgerConfig } = useHomeStore.getState();
+      expect(remainingMinutes(journal, ledgerConfig, NOON + 60_000)).toBe(29);
+    });
+
+    it("ignores an empty report without touching the journal", () => {
+      const before = useHomeStore.getState().journal;
+
+      useHomeStore.getState().ingestDrainRungs([]);
+
+      expect(useHomeStore.getState().journal).toBe(before);
+    });
+  });
+
   it("reports which conditions the ledger fired today", () => {
     useHomeStore.getState().addCondition(stepGoal);
     useHomeStore.getState().recordEventPayout("c-event", NOON);

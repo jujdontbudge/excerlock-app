@@ -14,6 +14,7 @@ import { NATIVE_SCREENTIME_STORAGE_KEY } from "../nativeStore";
 type ControlledDeviceActivityApi = DeviceActivityApi & {
   getFamilyActivitySelectionId(id: string): string | undefined;
   setShieldActive(active: boolean): void;
+  setEventRecords(records: ReturnType<DeviceActivityApi["getEvents"]>): void;
 };
 
 function createDeviceActivityApi(
@@ -24,6 +25,7 @@ function createDeviceActivityApi(
       DeviceActivityApi["authorizationStatus"]
     >;
   let shieldActive = false;
+  let eventRecords: ReturnType<DeviceActivityApi["getEvents"]> = [];
 
   return {
     authorizationStatus: () => authorizationStatus,
@@ -41,12 +43,20 @@ function createDeviceActivityApi(
     startMonitoring: jest.fn(async () => undefined),
     stopMonitoring: jest.fn(),
     isShieldActive: jest.fn(() => shieldActive),
+    getEvents: jest.fn((activityName?: string) =>
+      activityName === undefined
+        ? eventRecords
+        : eventRecords.filter((record) => record.activityName === activityName),
+    ),
     onDeviceActivityMonitorEvent: jest.fn(() => ({ remove: jest.fn() })),
     getFamilyActivitySelectionId: jest.fn(
       () => "opaque-apple-selection-token",
     ),
     setShieldActive(active) {
       shieldActive = active;
+    },
+    setEventRecords(records) {
+      eventRecords = records;
     },
   };
 }
@@ -566,5 +576,51 @@ describe("NativeScreenTimeModule", () => {
       desiredOsState: { shields: "down" },
       effectiveShields: "up",
     });
+  });
+
+  it("reports fired balance-drain rungs oldest first with replay-stable ids", async () => {
+    const deviceActivity = createDeviceActivityApi(2);
+    deviceActivity.setEventRecords([
+      {
+        activityName: "excerlock.balance-drain.v1",
+        callbackName: "eventDidReachThreshold",
+        eventName: "balance-rung-1",
+        lastCalledAt: new Date(2_000),
+      },
+      {
+        // A lock-window callback is not a drain rung.
+        activityName: "excerlock.lock-window.morning",
+        callbackName: "intervalDidEnd",
+        lastCalledAt: new Date(1_500),
+      },
+      {
+        // The drain monitor's own interval callbacks are not rungs either.
+        activityName: "excerlock.balance-drain.v1",
+        callbackName: "intervalDidStart",
+        lastCalledAt: new Date(500),
+      },
+      {
+        activityName: "excerlock.balance-drain.v1",
+        callbackName: "eventDidReachThreshold",
+        eventName: "balance-rung-0",
+        lastCalledAt: new Date(1_000),
+      },
+    ]);
+    const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity,
+    });
+
+    await expect(screenTime.getFiredDrainRungs()).resolves.toEqual([
+      { id: "balance-rung-0@1000", atMs: 1_000 },
+      { id: "balance-rung-1@2000", atMs: 2_000 },
+    ]);
+  });
+
+  it("reports no rungs when the app group has no drain events", async () => {
+    const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity: createDeviceActivityApi(2),
+    });
+
+    await expect(screenTime.getFiredDrainRungs()).resolves.toEqual([]);
   });
 });

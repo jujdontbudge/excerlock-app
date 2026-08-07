@@ -3,6 +3,7 @@ import type { StateStorage } from "zustand/middleware";
 
 import type {
   CurrentShieldState,
+  FiredDrainRung,
   LockWindow,
   ScreenTimeUnsubscribe,
   ScreenTimeAuthorizationStatus,
@@ -173,6 +174,11 @@ export class MockScreenTimeModule implements ScreenTimeModule {
   public async getCurrentShieldState(): Promise<CurrentShieldState> {
     await this.ready;
     return this.currentShieldState;
+  }
+
+  /** The mock has no OS monitor, so no drain rungs ever fire. */
+  public async getFiredDrainRungs(): Promise<readonly FiredDrainRung[]> {
+    return [];
   }
 
   public subscribe(listener: ShieldStateListener): ScreenTimeUnsubscribe {

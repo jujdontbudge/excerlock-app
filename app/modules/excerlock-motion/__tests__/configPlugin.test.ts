@@ -26,5 +26,7 @@ describe("excerlock-motion config plugin", () => {
     expect(config.ios?.infoPlist?.NSMotionUsageDescription).toBe(
       MOTION_PERMISSION_COPY,
     );
-  });
+    // compileModsAsync does real config-plugin IO; the 5 s default flakes
+    // when the full suite saturates the machine.
+  }, 30_000);
 });

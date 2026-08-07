@@ -50,6 +50,13 @@ type HomeStore = HomeStoreValues & {
   recordEventPayout: (conditionId: string, atMs: number) => void;
   /** Evaluate an on-device Health snapshot and bank any detected event outcomes. */
   claimHealthEvents: (reading: SignalReading, atMs: number) => void;
+  /**
+   * Replay the OS-reported balance-drain rungs into the journal, one minute per
+   * rung. Idempotent per rung id — re-reading the full app-group log is safe.
+   */
+  ingestDrainRungs: (
+    rungs: readonly Readonly<{ id: string; atMs: number }>[],
+  ) => void;
   /** Conditions the ledger paid out on the day containing `atMs`. */
   firedConditionIds: (atMs: number) => readonly string[];
   reset: () => void;
@@ -154,6 +161,23 @@ export const useHomeStore = create<HomeStore>()(
             atMs,
             state.ledgerConfig.dayBoundaryOffsetMinutes,
           ),
+        );
+        if (journal !== state.journal) {
+          set({ journal });
+        }
+      },
+
+      ingestDrainRungs: (rungs) => {
+        const state = get();
+        const { journal } = appendEntries(
+          state.journal,
+          rungs.map(({ id, atMs }) => ({
+            kind: "drainTick" as const,
+            source: "device-activity",
+            id,
+            atMs,
+            minutes: 1,
+          })),
         );
         if (journal !== state.journal) {
           set({ journal });

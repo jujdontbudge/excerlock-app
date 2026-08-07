@@ -25,6 +25,7 @@ jest.mock("@/notifications", () => ({
   NativeShieldNotificationResponseHost: () => null,
 }));
 jest.mock("@/home/signals", () => ({ SignalRuntimeHosts: () => null }));
+jest.mock("@/lock", () => ({ LockRuntimeHost: () => null }));
 jest.mock("@/signals/location/registerLocationTasks", () => ({}));
 
 describe("RootLayout account composition", () => {

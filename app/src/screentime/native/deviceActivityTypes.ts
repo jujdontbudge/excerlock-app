@@ -9,6 +9,14 @@ export type DeviceActivityEvent = Readonly<{
   includesPastActivity: boolean;
 }>;
 
+/** One callback the monitor extension recorded in the app group. */
+export type DeviceActivityEventRecord = Readonly<{
+  activityName: string;
+  callbackName: string;
+  eventName?: string;
+  lastCalledAt: Date;
+}>;
+
 export type DeviceActivityApi = Readonly<{
   authorizationStatus(): DeviceActivityAuthorizationStatus;
   requestAuthorization(forMember: "individual" | "child"): Promise<void>;
@@ -38,6 +46,8 @@ export type DeviceActivityApi = Readonly<{
     events: readonly DeviceActivityEvent[],
   ): Promise<void>;
   stopMonitoring(activityNames?: string[]): void;
+  /** The app-group log of extension callbacks, one record per (activity, callback, event). */
+  getEvents(onlyEventsForActivityWithName?: string): readonly DeviceActivityEventRecord[];
   isShieldActive(): boolean;
   onDeviceActivityMonitorEvent(
     listener: (event: { callbackName: string }) => void,

@@ -14,6 +14,7 @@ export const deviceActivityApi: DeviceActivityApi = {
   startMonitoring: (activityName, schedule, events) =>
     DeviceActivity.startMonitoring(activityName, schedule, [...events]),
   stopMonitoring: DeviceActivity.stopMonitoring,
+  getEvents: DeviceActivity.getEvents,
   isShieldActive: DeviceActivity.isShieldActive,
   onDeviceActivityMonitorEvent: DeviceActivity.onDeviceActivityMonitorEvent,
 };

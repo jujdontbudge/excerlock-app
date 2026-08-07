@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { AppState } from "react-native";
 
 import {
   getLockController,
@@ -22,6 +23,18 @@ export function LockRuntimeHost({
   useEffect(() => {
     void controller.start();
     return () => controller.stop();
+  }, [controller]);
+
+  useEffect(() => {
+    // Foregrounding is when the JS ledger is most likely behind the OS: drain
+    // rungs fired while the app was backgrounded. Ingest and decide again
+    // before any screen renders a stale verdict (device-smoke Finding 6).
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        void controller.reconcileNow();
+      }
+    });
+    return () => subscription?.remove();
   }, [controller]);
 
   return null;
