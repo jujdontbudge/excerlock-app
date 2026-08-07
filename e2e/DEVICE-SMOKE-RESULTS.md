@@ -16,6 +16,98 @@
 Findings 2, 5, 7 and the Metro-cache note are dev-client/harness hazards, not
 product defects — they live in this file and `HARNESS.md` guidance only.
 
+## 2026-08-07 — lane/84-device-smoke-run — fix-verification run
+
+### Run header
+
+| Field | Recorded value |
+|---|---|
+| Commit under test | `0f4869e` (this branch), JS served over Metro port 8090 (`EXPO_NO_DOTENV=1 EXPO_PUBLIC_E2E=0 npx expo start --port 8090 --clear`) onto the 2026-08-04 native install — all five fixes are JS-only, so no rebuild was needed |
+| iPhone | `Il`, iPhone 13, iOS 26.2.1, driven via Appium/WebDriverAgent; fully autonomous (Johan not present) |
+| Fixes under test | #107 `4294038`, #104 `1206c79`, #106 `b3baee9`, #103 `ee66988`, #105 `0f4869e` |
+| Suite state at test time | 888 tests green across the app workspace, `tsc` clean |
+
+### Fix verification results
+
+| Ticket | Device result | Evidence |
+|---|---|---|
+| #106 (F3, earn-to-lift lag) | **PASS** | With a positive balance, cold-launching ExcerLock lifted the target app's shield within seconds — **no lock screen was ever mounted**. The root `LockRuntimeHost` now runs the shared controller for the app's lifetime and reconciles on every foreground. F3's "open `excerlock://locked-apps` to make the shield move" workaround is dead. |
+| #104 (F9, rest-of-day ignored) | **PASS** — the exact Aug-6 failure now passes | "Finish any workout" (Rest of day reward) completed via its Complete control → hero flipped to **"Unlocked for the rest of the day"** → target app opened **fully unshielded immediately**, no locked-apps visit. Shield state and hero agree; the restOfDay claim now becomes a ledger holiday that lock policy honors (shields down to end of day, drain ladder disarmed). |
+| #103 (F6, drain ingestion) | PASS (desk-verified; device leg indirect) | `getFiredDrainRungs` ingestion runs at every reconcile inside the suppress-subscription window; journal drainTick entries are idempotent on `(source,id)`. Direct device observation of a live drain requires burning a real balance by threshold — not repeated this run; the Aug-6 interval-boundary ingestion observation plus the new unit armor cover the mapping. Home "Screen time used" now reflects ingested rungs. |
+| #107 (F4, permission rejection) | PASS (unit-level; not device-reproducible) | The rejection path cannot be forced on a healthy device. Tests prove: mount-time rejection leaves the hook `ready` with toggles alive and re-asks on opt-in; `requestAuthorization` rejection clears the pending type instead of wedging. |
+| #105 (F10, shield content/tap-through) | **PASS** | See SH-02 below. Shields-down reconciles now publish **predicted** content (the shield the OS would apply next), so the app group never holds stale content. After staging Full Lock, the target app's shield rendered the custom variant **with the "Open ExcerLock" primary button** and a live offer subtitle — the first time any shield has offered tap-through on this device. |
+
+### SH-02 tap-through leg — PASS (2026-08-07)
+
+Previously BLOCKED by the Finding 6/10 catch-22. Full chain observed on device:
+
+1. Full Lock staged via Manage → target app shield rendered the custom
+   fullLock variant with **"Open ExcerLock"** primary (one generic-"Restricted"
+   first render — #109, third occurrence — cleared by relaunching the target).
+2. Tapping **Open ExcerLock** enqueued the local tap-through notification.
+   An active Focus mode on the device delivered it **quietly** (no banner);
+   it was found in Notification Center. Product caveat recorded below.
+3. Tapping the notification deep-linked into ExcerLock's Locked apps screen,
+   which showed **truthful** Full Lock copy (no "balance empty" lie — #104's
+   `lockStatus` fix verified in the same breath).
+
+Caveat for a future ticket if desired: under any active Focus that doesn't
+include ExcerLock, the tap-through notification arrives silently, so the
+shield's primary button appears to do nothing until the user opens
+Notification Center. An OS behavior, not a bug in our chain.
+
+### Finding 10 correction (Aug-6 claim retracted)
+
+The Aug-6 claim that "at 15:21:35 a genuine shields-up reconcile ran with
+cause `balanceEmpty` — exactly the path that publishes fresh content" was
+**wrong**. That "Time's up — today's balance is empty" copy was the
+`lockStatus` fallback lie (Finding 9's untranslated rest-of-day holiday made
+`desiredLockState` compute shields-down while observed state was up; the old
+`deriveLockStatus` then invented a balance-empty explanation). No
+shields-up-with-balanceEmpty publish ever ran that day, so Aug-6 produced **no
+evidence** that the publish path drops `routeHomeAvailable`. The 2026-08-07
+run proves the chain works end-to-end when a publish actually happens.
+
+### Finding 7 revision — render wedge, not touch loss
+
+Third occurrence, new evidence: after tapping Complete with no visible
+response, a dev-menu **Reload** revealed the earn HAD registered (card
+✓ Completed, hero rest-of-day). So the wedge freezes **rendering**, not touch
+delivery — JS state advances while the UI stays stale. Same workaround
+(dev-menu Reload); still dev-client-only.
+
+### DA-01 status after this run — all runnable legs PASS
+
+Re-open-while-reward-valid leg: **PASS** (was FAIL — see #104 row above).
+
+Force-quit fail-safe leg: **PASS**. With the rest-of-day holiday active,
+ExcerLock was force-quit (~14:03) leaving the 15-minute unlock lease armed.
+At the interval end (~14:14) the extension re-shielded the target on its own —
+the designed fail-safe. First render was Apple's generic "Restricted" screen
+(**#109, fourth occurrence** — again on an extension-applied shield; dismiss +
+relaunch recovered as always). The recovered render is the payoff of #105:
+the **predicted** balance-out variant with a live offer subtitle and a working
+**"Open ExcerLock"** primary — content published in advance during the
+shields-down reconciles, where Aug-6 showed days-stale copy with Close only.
+Relaunching ExcerLock (cold start over Metro, ~90 s including bundle
+download) reconciled the holiday and lifted the shield; the target then opened
+fully. Hero, Locked apps ("Your apps are open… Nothing is scheduled to lock
+them."), and the shield all agree.
+
+Cold-start note: the relaunch first landed in the #108 onboarding trap
+("Plans couldn't load") and needed the `excerlock://(tabs)` deep-link escape —
+#108 unchanged, awaiting product decision. The root `LockRuntimeHost` mounts
+above routing, so lock reconciliation ran even while the app sat on the
+onboarding dead-end.
+
+Also verified: the Aug-7 accidental "New lock window" form open was abandoned
+unsaved — Locked apps shows **"No lock windows yet."**
+
+### Still requiring another day/Johan
+
+SH-01 reboot leg (device passcode), FC-01 deny path (clean reinstall),
+MOT-01/02, WLK-01, GEO-01–04, HK-03 background delivery.
+
 ## 2026-08-04 — lane/84-device-smoke-run — first on-device run
 
 ### Run header
