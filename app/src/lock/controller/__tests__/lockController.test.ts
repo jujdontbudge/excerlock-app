@@ -155,6 +155,36 @@ describe("LockController", () => {
     controller.stop();
   });
 
+  it("decides nothing until the home ledger has hydrated (device-smoke Finding 9)", async () => {
+    // A cold-started controller reconciling against the pre-hydration default
+    // journal published wrong causes and moved real shields on-device. The
+    // controller must hold every decision until persistence has answered.
+    const screenTime = new FakeScreenTime();
+    let resolveHydration!: () => void;
+    const hydrated = new Promise<void>((resolve) => {
+      resolveHydration = resolve;
+    });
+    const controller = new LockController({
+      screenTime,
+      journal: () => emptyJournal(),
+      now: () => NOW,
+      scheduleStore: new LockScheduleStore(),
+      ledgerReady: () => hydrated,
+    });
+
+    const started = controller.start();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(controller.getSnapshot().ready).toBe(false);
+    expect(screenTime.reconciled).toEqual([]);
+
+    resolveHydration();
+    await started;
+
+    expect(controller.getSnapshot().ready).toBe(true);
+    controller.stop();
+  });
+
   it("carries a denied decision back to callers and to subscribers", async () => {
     const screenTime = new FakeScreenTime();
     screenTime.nextDecision = "denied";

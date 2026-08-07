@@ -21,6 +21,25 @@ export function homeJournal(): Journal {
   return useHomeStore.getState().journal;
 }
 
+/**
+ * Resolves once the persisted Home state has been rehydrated. Before that,
+ * `homeJournal()`/`homeLedgerConfig()` answer with defaults — a journal with
+ * no earns and an unlimited allowance — and any shield decision made from
+ * them is wrong in both directions (device-smoke Finding 9).
+ */
+export function homeLedgerHydrated(): Promise<void> {
+  const { persist } = useHomeStore;
+  if (persist.hasHydrated()) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    const unsubscribe = persist.onFinishHydration(() => {
+      unsubscribe();
+      resolve();
+    });
+  });
+}
+
 export function homeLedgerConfig(): LedgerConfig {
   return useHomeStore.getState().ledgerConfig;
 }

@@ -166,6 +166,29 @@ describe("deriveLockStatus", () => {
     expect(model.reason).toBe("You have time left on today's balance.");
   });
 
+  it("does not claim the balance is empty while policy wants the shields down", () => {
+    // Device-smoke Finding 9's lying copy: the OS shield is still up (e.g. the
+    // monitor extension just re-applied it) but precedence says shields down.
+    const model = deriveLockStatus(
+      input({ precedence: decision("earnedBalance", "down") }),
+    );
+
+    expect(model.status).toBe("locked");
+    expect(model.headline).toBe("Opening your apps.");
+    expect(model.reason).toBe("You have time left on today's balance.");
+    expect(model.nextChange).toBe("Any moment now.");
+  });
+
+  it("names the real holder when a walk is active but the shield has not lifted yet", () => {
+    const model = deriveLockStatus(
+      input({ precedence: decision("walking", "down") }),
+    );
+
+    expect(model.status).toBe("locked");
+    expect(model.headline).toBe("Opening your apps.");
+    expect(model.reason).toBe("Walking is holding your apps open.");
+  });
+
   it("credits walking rather than an active lock window when both are true", () => {
     const model = deriveLockStatus(
       input({

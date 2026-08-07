@@ -15,6 +15,7 @@ import {
   homeFullLock,
   homeJournal,
   homeLedgerConfig,
+  homeLedgerHydrated,
   setHomeFullLock,
   subscribeHomeLedgerInputs,
 } from "./ledgerSource";
@@ -51,6 +52,8 @@ export interface LockControllerOptions {
   screenTime?: ScreenTimeModule;
   /** The earn ledger the desired shield state is computed from. */
   journal?: () => Journal;
+  /** Resolves when the journal/config source is trustworthy (persistence hydrated). */
+  ledgerReady?: () => Promise<void>;
   /** Local wall-clock ms. */
   now?: () => number;
   /** Persisted recurring definitions; injected to isolate tests. */
@@ -84,6 +87,7 @@ const INITIAL: LockSnapshot = Object.freeze({
 export class LockController {
   private readonly screenTime: ScreenTimeModule;
   private readonly journal: () => Journal;
+  private readonly ledgerReady: () => Promise<void>;
   private readonly now: () => number;
   private readonly scheduleStore: LockScheduleStore;
   private readonly walking: () => boolean;
@@ -107,6 +111,7 @@ export class LockController {
         : undefined;
     this.screenTime = options.screenTime ?? getScreenTimeModule();
     this.journal = options.journal ?? homeJournal;
+    this.ledgerReady = options.ledgerReady ?? homeLedgerHydrated;
     this.now = options.now ?? lockAppNow;
     this.scheduleStore = options.scheduleStore ?? getLockScheduleStore();
     this.walking =
@@ -262,6 +267,7 @@ export class LockController {
   private async applyDesiredState(
     selection: ScreenTimeSelectionHandle,
   ): Promise<void> {
+    await this.ledgerReady();
     const { decision, desired } = this.desiredState();
     this.patch({ precedence: decision });
     await this.shieldContent.publish(
@@ -320,6 +326,7 @@ export class LockController {
   }
 
   private async refresh(): Promise<void> {
+    await this.ledgerReady();
     const [authorization, shield, lockWindows] = await Promise.all([
       this.screenTime.getAuthorizationStatus(),
       this.screenTime.getCurrentShieldState(),

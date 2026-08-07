@@ -64,6 +64,19 @@ export function deriveLockStatus({
     });
   }
 
+  if (precedence.shields === "down") {
+    // The OS shield is still up but policy wants it down (a reconcile is
+    // catching up with an extension-applied shield). Claiming "balance empty"
+    // here would be false — name the real holder instead.
+    return Object.freeze({
+      status: "locked" as const,
+      scope,
+      headline: "Opening your apps.",
+      reason: unlockedReason(precedence),
+      nextChange: "Any moment now.",
+    });
+  }
+
   return Object.freeze({
     status: "locked" as const,
     scope,
