@@ -25,7 +25,11 @@ describe("ShieldCauseResolver", () => {
   it("publishes and latches Walk & Scroll ended after verified access closes", () => {
     const resolver = new ShieldCauseResolver();
 
-    expect(resolver.resolve(decision("walking", "down"), true)).toBeNull();
+    // While the walk holds shields down, the predicted native shield is
+    // already walk-ended — a lease lapse mid-walk renders truthfully.
+    expect(resolver.resolve(decision("walking", "down"), true)).toBe(
+      "walkAndScrollEnded",
+    );
     expect(resolver.resolve(decision("emptyBalance"), false)).toBe(
       "walkAndScrollEnded",
     );
@@ -40,7 +44,11 @@ describe("ShieldCauseResolver", () => {
     resolver.resolve(decision("emptyBalance"), false);
 
     expect(resolver.resolve(decision("fullLock"), false)).toBe("fullLock");
-    expect(resolver.resolve(decision("earnedBalance", "down"), false)).toBeNull();
+    // Draining access open: the only shield the OS can apply is balance-out
+    // (device-smoke Finding 10 — a down decision publishes the prediction).
+    expect(resolver.resolve(decision("earnedBalance", "down"), false)).toBe(
+      "balanceEmpty",
+    );
     expect(resolver.resolve(decision("emptyBalance"), false)).toBe("balanceEmpty");
   });
 });
