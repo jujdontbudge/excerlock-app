@@ -18,12 +18,22 @@ export function useNotificationPermission(
 
   useEffect(() => {
     let mounted = true;
-    void module.getAuthorizationStatus().then((status) => {
-      if (mounted) {
-        setAuthorization(status);
-        setReady(true);
-      }
-    });
+    void module
+      .getAuthorizationStatus()
+      .then((status) => {
+        if (mounted) {
+          setAuthorization(status);
+        }
+      })
+      .catch(() => {
+        // Stay "notDetermined": the opt-in flow re-asks natively on demand,
+        // which doubles as the retry path.
+      })
+      .finally(() => {
+        if (mounted) {
+          setReady(true);
+        }
+      });
     return () => {
       mounted = false;
     };
@@ -38,10 +48,15 @@ export function useNotificationPermission(
   };
 
   const requestAuthorization = async () => {
-    const status = await module.requestAuthorization();
-    setAuthorization(status);
-    if (status === "approved" && pendingTypeId !== null) {
-      onApproved(pendingTypeId);
+    try {
+      const status = await module.requestAuthorization();
+      setAuthorization(status);
+      if (status === "approved" && pendingTypeId !== null) {
+        onApproved(pendingTypeId);
+      }
+    } catch {
+      // Leave authorization as-is; the primer closes below so the user can
+      // try again instead of facing a stuck sheet.
     }
     setPendingTypeId(null);
   };
