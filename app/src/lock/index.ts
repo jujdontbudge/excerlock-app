@@ -13,6 +13,7 @@ export {
   lockAppNow,
   type LockAppRuntime,
 } from "./controller/appRuntime";
+export { LockRuntimeHost } from "./LockRuntimeHost";
 export { useLockSnapshot } from "./hooks/useLockSnapshot";
 export {
   fullLockConfirmation,

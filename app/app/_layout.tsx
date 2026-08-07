@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/ui";
 import { NativeScreenTimePickerHost } from "@/screentime/native/NativeScreenTimePickerHost";
 import { NativeShieldNotificationResponseHost } from "@/notifications";
 import { SignalRuntimeHosts } from "@/home/signals";
+import { LockRuntimeHost } from "@/lock";
 import { ExperimentRuntimeRoot } from "@/experiments";
 
 export default function RootLayout() {
@@ -17,6 +18,7 @@ export default function RootLayout() {
       <NativeScreenTimePickerHost />
       <NativeShieldNotificationResponseHost />
       <SignalRuntimeHosts />
+      <LockRuntimeHost />
       <Stack
         screenOptions={{
           headerShown: false,
