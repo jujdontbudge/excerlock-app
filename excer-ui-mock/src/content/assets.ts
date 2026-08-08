@@ -1,0 +1,118 @@
+import type { RuntimeImageSource } from "./types";
+
+type LocalAssetFamily = Readonly<Record<string, RuntimeImageSource>>;
+
+export const assetRegistry = {
+  branding: {
+    icon: require("../../assets/icon.png"),
+    "splash-logo": require("../../assets/splash-logo.png"),
+  },
+  heroes: {
+    "allowance-clock": require("../../assets/heroes/allowance-clock.png"),
+    "empty-conditions": require("../../assets/heroes/empty-conditions.png"),
+    "lock-body": require("../../assets/heroes/lock-body.png"),
+    "lock-shackle": require("../../assets/heroes/lock-shackle.png"),
+    "paywall-hero": require("../../assets/heroes/paywall-hero.png"),
+    "permission-health-motion": require("../../assets/heroes/permission-health-motion.png"),
+    "permission-location": require("../../assets/heroes/permission-location.png"),
+    "permission-screen-time": require("../../assets/heroes/permission-screen-time.png"),
+  },
+  glyphs: {
+    "icon-account": require("../../assets/glyphs/icon-account.png"),
+    "icon-active-calories": require("../../assets/glyphs/icon-active-calories.png"),
+    "icon-activity-cycle": require("../../assets/glyphs/icon-activity-cycle.png"),
+    "icon-activity-gym": require("../../assets/glyphs/icon-activity-gym.png"),
+    "icon-activity-run": require("../../assets/glyphs/icon-activity-run.png"),
+    "icon-activity-swim": require("../../assets/glyphs/icon-activity-swim.png"),
+    "icon-activity-walk": require("../../assets/glyphs/icon-activity-walk.png"),
+    "icon-arrow-right": require("../../assets/glyphs/icon-arrow-right.png"),
+    "icon-camera": require("../../assets/glyphs/icon-camera.png"),
+    "icon-connections": require("../../assets/glyphs/icon-connections.png"),
+    "icon-health": require("../../assets/glyphs/icon-health.png"),
+    "icon-info": require("../../assets/glyphs/icon-info.png"),
+    "icon-location": require("../../assets/glyphs/icon-location.png"),
+    "icon-notifications": require("../../assets/glyphs/icon-notifications.png"),
+    "icon-padlock-chip": require("../../assets/glyphs/icon-padlock-chip.png"),
+    "icon-padlock-mini": require("../../assets/glyphs/icon-padlock-mini.png"),
+    "icon-pencil": require("../../assets/glyphs/icon-pencil.png"),
+    "icon-share": require("../../assets/glyphs/icon-share.png"),
+    "icon-sparkle": require("../../assets/glyphs/icon-sparkle.png"),
+    "icon-tab-alarm": require("../../assets/glyphs/icon-tab-alarm.png"),
+    "icon-tab-chart": require("../../assets/glyphs/icon-tab-chart.png"),
+    "icon-tab-home": require("../../assets/glyphs/icon-tab-home.png"),
+    "icon-tab-manage": require("../../assets/glyphs/icon-tab-manage.png"),
+    "icon-tab-mountain": require("../../assets/glyphs/icon-tab-mountain.png"),
+    "icon-tab-settings": require("../../assets/glyphs/icon-tab-settings.png"),
+    "icon-tab-spiral": require("../../assets/glyphs/icon-tab-spiral.png"),
+  },
+  banners: {
+    "cycle-city-commute": require("../../assets/banners/cycle-city-commute.png"),
+    "cycle-mountain-climb": require("../../assets/banners/cycle-mountain-climb.png"),
+    "cycle-open-road": require("../../assets/banners/cycle-open-road.png"),
+    "general-abstract-energy": require("../../assets/banners/general-abstract-energy.png"),
+    "general-city-motion": require("../../assets/banners/general-city-motion.png"),
+    "general-mountain-silhouette": require("../../assets/banners/general-mountain-silhouette.png"),
+    "general-rain-window": require("../../assets/banners/general-rain-window.png"),
+    "general-sunrise": require("../../assets/banners/general-sunrise.png"),
+    "gym-cable-row": require("../../assets/banners/gym-cable-row.png"),
+    "gym-squat-rack": require("../../assets/banners/gym-squat-rack.png"),
+    "gym-sunset-gym": require("../../assets/banners/gym-sunset-gym.png"),
+    "gym-weights-floor": require("../../assets/banners/gym-weights-floor.png"),
+    "run-forest-trail": require("../../assets/banners/run-forest-trail.png"),
+    "run-road-dawn": require("../../assets/banners/run-road-dawn.png"),
+    "run-track": require("../../assets/banners/run-track.png"),
+    "swim-open-water": require("../../assets/banners/swim-open-water.png"),
+    "swim-pool-lanes": require("../../assets/banners/swim-pool-lanes.png"),
+    "swim-underwater-light": require("../../assets/banners/swim-underwater-light.png"),
+    "walk-city-sidewalk": require("../../assets/banners/walk-city-sidewalk.png"),
+    "walk-night-walk": require("../../assets/banners/walk-night-walk.png"),
+    "walk-park-path": require("../../assets/banners/walk-park-path.png"),
+  },
+  badges: {
+    "activity-1": require("../../assets/badges/activity-1.png"),
+    "activity-10": require("../../assets/badges/activity-10.png"),
+    "activity-100": require("../../assets/badges/activity-100.png"),
+    "activity-25": require("../../assets/badges/activity-25.png"),
+    "activity-250": require("../../assets/badges/activity-250.png"),
+    "activity-5": require("../../assets/badges/activity-5.png"),
+    "activity-50": require("../../assets/badges/activity-50.png"),
+    "activity-500": require("../../assets/badges/activity-500.png"),
+    "streak-100-days": require("../../assets/badges/streak-100-days.png"),
+    "streak-14-days": require("../../assets/badges/streak-14-days.png"),
+    "streak-180-days": require("../../assets/badges/streak-180-days.png"),
+    "streak-3-days": require("../../assets/badges/streak-3-days.png"),
+    "streak-30-days": require("../../assets/badges/streak-30-days.png"),
+    "streak-365-days": require("../../assets/badges/streak-365-days.png"),
+    "streak-60-days": require("../../assets/badges/streak-60-days.png"),
+    "streak-7-days": require("../../assets/badges/streak-7-days.png"),
+    "time-reclaimed-10-hours": require("../../assets/badges/time-reclaimed-10-hours.png"),
+    "time-reclaimed-100-hours": require("../../assets/badges/time-reclaimed-100-hours.png"),
+    "time-reclaimed-25-hours": require("../../assets/badges/time-reclaimed-25-hours.png"),
+    "time-reclaimed-250-hours": require("../../assets/badges/time-reclaimed-250-hours.png"),
+    "time-reclaimed-50-hours": require("../../assets/badges/time-reclaimed-50-hours.png"),
+    "time-reclaimed-500-hours": require("../../assets/badges/time-reclaimed-500-hours.png"),
+  },
+} as const satisfies Readonly<
+  Record<"branding" | "heroes" | "glyphs" | "banners" | "badges", LocalAssetFamily>
+>;
+
+export type AssetFamily = keyof typeof assetRegistry;
+export type AssetId<F extends AssetFamily> = Extract<keyof (typeof assetRegistry)[F], string>;
+
+export const glyphRoles = {
+  alarm: "icon-tab-alarm",
+  analysis: "icon-tab-chart",
+  anyWorkout: "icon-tab-mountain",
+  liveSignal: "icon-tab-spiral",
+} as const satisfies Record<string, AssetId<"glyphs">>;
+
+export const heroRoles = {
+  homeLockBody: "lock-body",
+  homeLockShackle: "lock-shackle",
+  screenTimePermission: "permission-screen-time",
+  motionAndHealthPermission: "permission-health-motion",
+  locationPermission: "permission-location",
+  allowance: "allowance-clock",
+  paywall: "paywall-hero",
+  emptyConditions: "empty-conditions",
+} as const satisfies Record<string, AssetId<"heroes">>;
