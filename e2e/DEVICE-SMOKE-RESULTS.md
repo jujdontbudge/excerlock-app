@@ -135,6 +135,62 @@ phone is locked ("Timed out while enabling automation mode"), and after a
 reboot the stale Appium instance kept polling a dead WDA — restart Appium
 after any device reboot before creating the new session.
 
+## 2026-08-11 — lane/84-device-smoke-run — FC-01 deny path (clean reinstall)
+
+Same session as the SH-01 reboot leg. ExcerLock was uninstalled via
+`devicectl` and reinstalled from the preserved Aug-4 build
+(`f4/app/ios/build/.../ExcerLock.app`); JS over Metro port 8095 (8090 was
+held by another project). Johan's manual step: one Face ID approval at the
+end to restore the allow state (with the same single Face-Not-Recognized
+retry as Aug 4).
+
+**FC-01 deny path: PASS, both halves.**
+
+1. *Deny is graceful.* On the fresh install, **Allow Screen Time** presented
+   the FamilyControls alert ("ExcerLock Would Like to Access Screen Time",
+   Continue / Don't Allow). **Don't Allow**: no crash, no error dead-end —
+   the status chip honestly stays **Not set up** and the Allow control
+   remains enabled.
+2. *Deny is recoverable in-app.* Tapping **Allow Screen Time** again
+   re-presented the same system alert (no Settings trip required — unlike
+   most iOS permissions, FamilyControls re-prompts). Continue → full-screen
+   Allow Access sheet → **Allow with Face ID** → **Screen Time is on**.
+
+**Permission-persistence matrix from the reinstall** (useful for support and
+future test planning):
+
+| Permission | Survives delete + reinstall? |
+|---|---|
+| FamilyControls (Screen Time) | **No** — must re-authorize |
+| Notifications | **No** — reset to not-determined |
+| HealthKit (Steps/Workouts read) | **Yes** — grants persist in Health; no sheet on first read |
+
+Consequence: **HK-01's first-read Health-sheet leg cannot be exercised by
+reinstalling** — the grant would have to be revoked manually inside the
+Health app. Left unproven, matrix note stands in its place.
+
+**State restore, fully automated** (except the Face ID moment): app
+selection re-picked via the real FamilyActivityPicker (search → select →
+✓ Done), Full Lock re-enabled via the Locked-apps card, "Finish any workout"
+(10 min → Rest of day, General banner 1) rebuilt through the builder,
+notifications re-enabled through the primer → iOS sheet → **Allow** flow
+(the pending type applied only after approval — SH-02's permission leg
+re-verified on a clean install). End state confirmed: Home shows **Apps are
+locked / 0 min left**, and the target app renders the custom fullLock shield
+with the **Open ExcerLock** button on first render. Earn/analysis history
+from before the wipe is gone (accepted cost of the reinstall).
+
+Automation note: the Expo dev-menu floating gear again occluded the
+picker's ✓ Done (Finding 2), and the arc-tap workaround failed this time.
+**Better workaround discovered: the gear is draggable** — a W3C-actions
+pointer drag (press ~400 ms, glide to mid-screen, release) relocates it
+without opening the dev menu, leaving Done fully tappable. Prefer the drag
+over the arc tap in future runs.
+
+Incidental: a fresh install's dev client shows a first-run local-network
+permission flow (Expo launcher primer → iOS alert) before the server list —
+one-time, absent on every later launch.
+
 ## 2026-08-04 — lane/84-device-smoke-run — first on-device run
 
 ### Run header
