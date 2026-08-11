@@ -108,6 +108,33 @@ unsaved — Locked apps shows **"No lock windows yet."**
 SH-01 reboot leg (device passcode), FC-01 deny path (clean reinstall),
 MOT-01/02, WLK-01, GEO-01–04, HK-03 background delivery.
 
+## 2026-08-11 — lane/84-device-smoke-run — SH-01 reboot leg
+
+Same install and commit under test as the 2026-08-07 run. Johan's manual
+actions: plugging in the USB cable and one passcode unlock after boot;
+everything else automated (reboot triggered via
+`devicectl device reboot --style full`).
+
+**SH-01 reboot leg: PASS.** Pre-reboot baseline at 15:03: the target app
+rendered the custom balance-out shield with the **Open ExcerLock** primary
+(fresh day, Full Lock allowance, nothing earned — correct state; no
+first-render flake this time). Full reboot triggered 15:03:35. After boot and
+a single passcode unlock, the target app was opened **without ExcerLock ever
+launching post-boot**: the shield was still applied and rendered the **custom
+variant with correct copy and the working Open ExcerLock button on the first
+render** (15:17). iOS re-applies the ManagedSettings store across reboots on
+its own, and the app-group shield content survives with it.
+
+**#109 counter-datapoint recorded on the ticket:** a fresh boot is the coldest
+possible ShieldConfiguration-extension start, and the custom shield rendered
+first try — so the generic-Restricted flake is not a deterministic
+cold-start failure.
+
+Automation note for HARNESS.md-style reruns: WDA cannot attach while the
+phone is locked ("Timed out while enabling automation mode"), and after a
+reboot the stale Appium instance kept polling a dead WDA — restart Appium
+after any device reboot before creating the new session.
+
 ## 2026-08-04 — lane/84-device-smoke-run — first on-device run
 
 ### Run header
