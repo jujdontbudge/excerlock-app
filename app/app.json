@@ -64,6 +64,7 @@
         }
       ],
       "./modules/excerlock-motion/app.plugin.js",
+      "./modules/excerlock-gait-vision/app.plugin.js",
       [
         "expo-image-picker",
         {

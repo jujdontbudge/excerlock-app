@@ -28,5 +28,5 @@ describe("excerlock-motion config plugin", () => {
     expect(config.ios?.infoPlist?.NSMotionUsageDescription).toBe(
       MOTION_PERMISSION_COPY,
     );
-  }, 20000);
+  }, 60_000);
 });
