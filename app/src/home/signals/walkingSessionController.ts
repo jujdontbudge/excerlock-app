@@ -2,6 +2,12 @@ import {
   isInsideActiveWindow,
   type ConfiguredCondition,
 } from "@excerlock/condition-model";
+import {
+  extendWalkIncrement,
+  isWalkWindowActive,
+  planWalkIncrement,
+  type WalkWindow,
+} from "@excerlock/ledger";
 
 import {
   getLocationProvider,
@@ -14,6 +20,7 @@ import {
   type PhonePlacementResult,
   type WalkVerdict,
 } from "@/signals";
+import type { WalkLeaseWarningNotifier } from "@/notifications";
 import { useHomeStore } from "../store/homeStore";
 import { localWallClockNow } from "../model/clock";
 import { createWalkingMotionRuntime } from "./walkingMotionRuntime";
@@ -56,6 +63,7 @@ export interface WalkingSessionDependencies {
   readonly getState: () => WalkingConditionState;
   readonly now: () => number;
   readonly wallClockNow?: () => number;
+  readonly leaseWarning?: WalkLeaseWarningNotifier;
 }
 
 const IDLE: WalkingSessionSnapshot = Object.freeze({
@@ -78,6 +86,7 @@ export class WalkingSessionController {
     | Pick<LocationProvider, "startWalkKeepAlive" | "stopWalkKeepAlive">
     | undefined;
   private handoffTimer: ReturnType<typeof setTimeout> | undefined;
+  private leaseTimer: ReturnType<typeof setTimeout> | undefined;
   private motion: MotionProvider | undefined;
   private placement: PhonePlacementProvider | undefined;
   private placementClassifier: PhonePlacementClassifier | undefined;
@@ -90,16 +99,19 @@ export class WalkingSessionController {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private unsubscribes: (() => void)[] = [];
   private verifier: WalkVerifier | undefined;
+  private walkWindow: WalkWindow | undefined;
 
   public constructor(
     private readonly dependencies: WalkingSessionDependencies,
   ) {}
 
   public getSnapshot(): WalkingSessionSnapshot {
+    this.expireWalkLeaseIfNeeded();
     return this.snapshot;
   }
 
   public getTreadmillSnapshot(): TreadmillSessionSnapshot {
+    this.expireWalkLeaseIfNeeded();
     return this.treadmillSnapshot;
   }
 
@@ -126,6 +138,7 @@ export class WalkingSessionController {
       this.handoffTimer = undefined;
     }
     this.proppedMotionVerified = false;
+    this.renewWalkLease();
     this.publishWalking(true);
     return true;
   }
@@ -275,6 +288,10 @@ export class WalkingSessionController {
       clearTimeout(this.handoffTimer);
       this.handoffTimer = undefined;
     }
+    if (this.leaseTimer !== undefined) {
+      clearTimeout(this.leaseTimer);
+      this.leaseTimer = undefined;
+    }
     this.unsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
     const motion = this.motion;
     const placement = this.placement;
@@ -287,6 +304,7 @@ export class WalkingSessionController {
     this.cadenceExpiresAt = undefined;
     this.proppedExitGraceMs = undefined;
     this.proppedMotionVerified = false;
+    this.walkWindow = undefined;
     this.treadmillSnapshot = TREADMILL_IDLE;
     if (this.snapshot.active) {
       this.publish(IDLE);
@@ -295,6 +313,7 @@ export class WalkingSessionController {
       motion?.stop().catch(() => undefined),
       placement?.stop().catch(() => undefined),
       location?.stopWalkKeepAlive().catch(() => undefined),
+      this.dependencies.leaseWarning?.cancel().catch(() => undefined),
     ]);
   }
 
@@ -305,6 +324,10 @@ export class WalkingSessionController {
     }
     this.scheduleWatchdog(verdict);
     if (!verdict.isWalking && this.snapshot.walking) {
+      void this.stop();
+      return;
+    }
+    if (verdict.phase === "verified" && !this.renewWalkLease()) {
       void this.stop();
       return;
     }
@@ -324,6 +347,10 @@ export class WalkingSessionController {
       return;
     }
     if (verdict.phase === "verified") {
+      if (!this.renewWalkLease()) {
+        void this.stop();
+        return;
+      }
       this.proppedMotionVerified = true;
       if (this.pickupCadenceTimer !== undefined) {
         clearTimeout(this.pickupCadenceTimer);
@@ -412,6 +439,70 @@ export class WalkingSessionController {
     }, exitGraceMs);
   }
 
+  private renewWalkLease(): boolean {
+    const now = this.leaseNow();
+    const window = this.walkWindow === undefined
+      ? planWalkIncrement(now)
+      : extendWalkIncrement(this.walkWindow, now);
+    if (window === null) {
+      return false;
+    }
+    this.walkWindow = window;
+    this.scheduleLeaseExpiry(window, now);
+    void this.dependencies.leaseWarning
+      ?.schedule(window.endMs)
+      .catch(() => undefined);
+    return true;
+  }
+
+  private scheduleLeaseExpiry(window: WalkWindow, now: number): void {
+    if (this.leaseTimer !== undefined) {
+      clearTimeout(this.leaseTimer);
+    }
+    this.leaseTimer = setTimeout(() => {
+      this.leaseTimer = undefined;
+      if (this.walkWindow !== window) {
+        return;
+      }
+      const currentTime = this.leaseNow();
+      if (isWalkWindowActive(window, currentTime)) {
+        this.scheduleLeaseExpiry(window, currentTime);
+        return;
+      }
+      this.expireWalkLeaseIfNeeded();
+    }, Math.max(0, window.endMs - now));
+  }
+
+  private expireWalkLeaseIfNeeded(): void {
+    const window = this.walkWindow;
+    if (
+      window === undefined ||
+      !this.snapshot.walking ||
+      isWalkWindowActive(window, this.leaseNow())
+    ) {
+      return;
+    }
+    if (this.leaseTimer !== undefined) {
+      clearTimeout(this.leaseTimer);
+      this.leaseTimer = undefined;
+    }
+    this.walkWindow = undefined;
+    void this.dependencies.leaseWarning?.cancel().catch(() => undefined);
+    if (this.treadmillSnapshot.mode === "propped") {
+      this.treadmillSnapshot = Object.freeze({
+        mode: "propped",
+        phase: "scanning",
+      });
+      this.publishWalking(false);
+      return;
+    }
+    void this.stop();
+  }
+
+  private leaseNow(): number {
+    return this.dependencies.wallClockNow?.() ?? this.dependencies.now();
+  }
+
   private scheduleActiveWindowEnd(
     window: ConfiguredCondition["activeWindow"],
     wallClockNow: number,
@@ -490,8 +581,21 @@ export function getWalkingSessionController(): WalkingSessionController {
     getState: () => useHomeStore.getState(),
     now: () => sessionNow(),
     wallClockNow: localWallClockNow,
+    leaseWarning: createWalkLeaseWarningNotifier(),
   });
   return sharedController;
+}
+
+function createWalkLeaseWarningNotifier():
+  | WalkLeaseWarningNotifier
+  | undefined {
+  if (process.env.NODE_ENV === "test") {
+    return undefined;
+  }
+  const { ExpoWalkLeaseWarningNotifier } = require(
+    "@/notifications/walkLeaseWarning"
+  ) as typeof import("@/notifications/walkLeaseWarning");
+  return new ExpoWalkLeaseWarningNotifier();
 }
 
 /** Installs fixture composition before E2E app surfaces mount. */

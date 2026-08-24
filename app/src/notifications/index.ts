@@ -35,3 +35,4 @@ export type {
   ScheduledNotification,
   ScheduleListener,
 } from "./NotificationModule";
+export type { WalkLeaseWarningNotifier } from "./walkLeaseWarning";

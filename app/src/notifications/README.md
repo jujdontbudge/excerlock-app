@@ -20,6 +20,14 @@ low, balance empty/shields up, presence cooldown, and milestone unlock remain
 in-app surfaces only. Earn verified and day-boundary notifications do not exist.
 A fourth push type requires a PRD change before a code change.
 
+The treadmill walk lease has one operational exception: while a propped
+session is active, it replaces a deterministic local warning scheduled for 30
+seconds before lease expiry. This is session infrastructure, not a catalog
+engagement type: it has no Settings toggle, does not count toward delivery
+caps, and is cancelled when the lease renews or the session stops. It schedules
+only when notification permission is already approved and never prompts from a
+walking session.
+
 `model/copy.ts` owns every lock-screen line. It carries the live reclaimed-time
 and streak numbers and enforces the binding voice rules: payoff first, no guilt,
 no exclamation hype, title at most 35 characters, body at most 90.

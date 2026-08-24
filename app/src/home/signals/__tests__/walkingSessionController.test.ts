@@ -12,6 +12,7 @@ import type {
   MotionProvider,
   PhonePlacementProvider,
 } from "@/signals";
+import type { WalkLeaseWarningNotifier } from "@/notifications";
 
 const walkingCondition: ConfiguredCondition = {
   id: "walking-condition",
@@ -49,6 +50,10 @@ function createProppedHarness(now: () => number = () => 0) {
     }),
   } as PhonePlacementProvider;
   const stopWalkKeepAlive = jest.fn().mockResolvedValue(undefined);
+  const leaseWarning: WalkLeaseWarningNotifier = {
+    schedule: jest.fn().mockResolvedValue(undefined),
+    cancel: jest.fn().mockResolvedValue(undefined),
+  };
   const controller = new WalkingSessionController({
     createMotion: () => motion,
     createPlacement: () => placement,
@@ -61,6 +66,8 @@ function createProppedHarness(now: () => number = () => 0) {
       disabledConditionIds: [],
     }),
     now,
+    wallClockNow: now,
+    leaseWarning,
   });
 
   return {
@@ -70,6 +77,7 @@ function createProppedHarness(now: () => number = () => 0) {
     emitPlacement: (sample: DeviceMotionSample) => onPlacement(sample),
     motion,
     placement,
+    leaseWarning,
     stopWalkKeepAlive,
   };
 }
@@ -252,8 +260,13 @@ describe("WalkingSessionController", () => {
   });
 
   it("publishes verified walking only after classification and sustained cadence", async () => {
+    let now = 2_000;
     let onActivity: (sample: ActivitySample) => void = () => {};
     let onCadence: (sample: CadenceSample) => void = () => {};
+    const leaseWarning: WalkLeaseWarningNotifier = {
+      schedule: jest.fn().mockResolvedValue(undefined),
+      cancel: jest.fn().mockResolvedValue(undefined),
+    };
     const motion = {
       start: jest.fn().mockResolvedValue(undefined),
       stop: jest.fn().mockResolvedValue(undefined),
@@ -276,7 +289,9 @@ describe("WalkingSessionController", () => {
         conditions: [walkingCondition],
         disabledConditionIds: [],
       }),
-      now: () => 2_000,
+      now: () => now,
+      wallClockNow: () => now,
+      leaseWarning,
     });
     const listener = jest.fn();
     controller.subscribe(listener);
@@ -295,12 +310,15 @@ describe("WalkingSessionController", () => {
 
     expect(controller.getSnapshot().walking).toBe(true);
     expect(listener).toHaveBeenCalledWith();
+    expect(leaseWarning.schedule).toHaveBeenLastCalledWith(902_000);
 
     listener.mockClear();
-    onCadence({ stepsPerSecond: 1.2, cumulativeSteps: 6, asOf: 3_000 });
+    now = 5 * 60_000;
+    onCadence({ stepsPerSecond: 1.2, cumulativeSteps: 6, asOf: now });
 
     expect(controller.getSnapshot().walking).toBe(true);
     expect(listener).toHaveBeenCalledTimes(1);
+    expect(leaseWarning.schedule).toHaveBeenLastCalledWith(20 * 60_000);
     await controller.stop();
   });
 
@@ -440,6 +458,112 @@ describe("WalkingSessionController", () => {
       phase: "propped",
     });
     expect(controller.getSnapshot().walking).toBe(true);
+    await controller.stop();
+  });
+
+  it("re-shields a propped session when its 15-minute lease lapses", async () => {
+    jest.useFakeTimers();
+    let now = 0;
+    const { controller } = createProppedHarness(() => now);
+    await controller.start("walking-condition", "propped");
+    controller.completeProppedScan();
+
+    now = 15 * 60_000 - 1;
+    await jest.advanceTimersByTimeAsync(now);
+    expect(controller.getSnapshot().walking).toBe(true);
+
+    now = 15 * 60_000;
+    await jest.advanceTimersByTimeAsync(1);
+    expect(controller.getSnapshot()).toMatchObject({
+      active: true,
+      walking: false,
+    });
+    expect(controller.getTreadmillSnapshot()).toEqual({
+      mode: "propped",
+      phase: "scanning",
+    });
+
+    await controller.stop();
+    jest.useRealTimers();
+  });
+
+  it("starts a fresh lease only after the required post-expiry scan", async () => {
+    jest.useFakeTimers();
+    let now = 0;
+    const { controller, leaseWarning } = createProppedHarness(() => now);
+    await controller.start("walking-condition", "propped");
+    controller.completeProppedScan();
+
+    now = 15 * 60_000;
+    await jest.advanceTimersByTimeAsync(now);
+    expect(controller.getSnapshot().walking).toBe(false);
+
+    expect(controller.completeProppedScan()).toBe(true);
+    expect(controller.getSnapshot().walking).toBe(true);
+    expect(leaseWarning.schedule).toHaveBeenLastCalledWith(30 * 60_000);
+
+    await controller.stop();
+    jest.useRealTimers();
+  });
+
+  it("fails closed after background suspension even when the lease timer did not run", async () => {
+    let now = 0;
+    const { controller } = createProppedHarness(() => now);
+    await controller.start("walking-condition", "propped");
+    controller.completeProppedScan();
+
+    now = 15 * 60_000;
+
+    expect(controller.getSnapshot()).toMatchObject({
+      active: true,
+      walking: false,
+    });
+    expect(controller.getTreadmillSnapshot()).toEqual({
+      mode: "propped",
+      phase: "scanning",
+    });
+    await controller.stop();
+  });
+
+  it("schedules and cancels the operational pre-expiry warning with the lease", async () => {
+    const { controller, leaseWarning } = createProppedHarness();
+    await controller.start("walking-condition", "propped");
+
+    controller.completeProppedScan();
+
+    expect(leaseWarning.schedule).toHaveBeenCalledWith(15 * 60_000);
+    await controller.stop();
+    expect(leaseWarning.cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("extends the propped lease when handheld motion verifies", async () => {
+    let now = 0;
+    const {
+      controller,
+      emitActivity,
+      emitCadence,
+      emitPlacement,
+      leaseWarning,
+    } = createProppedHarness(() => now);
+    await controller.start("walking-condition", "propped");
+    controller.completeProppedScan();
+    emitProppedThenPickup(emitPlacement);
+
+    now = 5 * 60_000;
+    emitActivity({
+      classes: ["walking"],
+      confidence: "high",
+      startedAt: now,
+      receivedAt: now,
+    });
+    emitCadence({ stepsPerSecond: 1.2, cumulativeSteps: 2, asOf: now });
+    emitCadence({
+      stepsPerSecond: 1.2,
+      cumulativeSteps: 4,
+      asOf: now + 1_000,
+    });
+
+    expect(leaseWarning.schedule).toHaveBeenLastCalledWith(20 * 60_000);
     await controller.stop();
   });
 

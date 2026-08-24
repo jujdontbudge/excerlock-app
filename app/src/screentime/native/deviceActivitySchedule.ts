@@ -1,4 +1,6 @@
-export const UNLOCK_INCREMENT_MS = 15 * 60_000;
+import { WALK_INCREMENT_MINUTES } from "@excerlock/ledger";
+
+export const UNLOCK_INCREMENT_MS = WALK_INCREMENT_MINUTES * 60_000;
 export const UNLOCK_LEASE_MONITOR = "excerlock.unlock-lease.v1";
 export const BALANCE_DRAIN_MONITOR = "excerlock.balance-drain.v1";
 
