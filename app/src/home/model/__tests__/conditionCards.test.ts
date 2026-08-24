@@ -135,6 +135,16 @@ describe("toConditionCards", () => {
     expect(card).toMatchObject({ startsProppedWalkingSession: true });
   });
 
+  it("marks the walking card that owns the active explicit session", () => {
+    const [card] = toConditionCards({
+      conditions: [walking],
+      reading: EMPTY_READING,
+      activeWalkingConditionId: "c-state",
+    });
+
+    expect(card).toMatchObject({ hasActiveWalkingSession: true });
+  });
+
   it("builds a rate card as the ratio plus today's banked total", () => {
     const [card] = toConditionCards({
       conditions: [stepsExchange],

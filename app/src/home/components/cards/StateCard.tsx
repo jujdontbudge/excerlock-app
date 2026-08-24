@@ -13,10 +13,12 @@ export function StateCard({
   model,
   onStartSession,
   onStartProppedSession,
+  onStopSession,
 }: {
   model: StateCardModel;
   onStartSession?: (conditionId: string) => void;
   onStartProppedSession?: (conditionId: string) => void;
+  onStopSession?: (conditionId: string) => void;
 }) {
   const { colors, spacing, typography } = useTheme();
 
@@ -33,7 +35,13 @@ export function StateCard({
         <Text style={[typography.body, { color: colors.textPrimary }]}>{model.statusLabel}</Text>
       </View>
       <Text style={typography.caption}>{model.graceLabel}</Text>
-      {model.startsWalkingSession && !model.active ? (
+      {model.hasActiveWalkingSession ? (
+        <PillButton
+          label="Stop Walk Session"
+          onPress={() => onStopSession?.(model.id)}
+          variant="secondary"
+        />
+      ) : model.startsWalkingSession && !model.active ? (
         <View style={{ gap: spacing.sm }}>
           <PillButton
             label="Start Walk Session"

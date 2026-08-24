@@ -1,5 +1,12 @@
 import { router, type Href } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { ScrollView, View } from "react-native";
 
 import { PillButton, Screen, SectionHeader } from "@/ui";
@@ -44,7 +51,10 @@ export interface HomeScreenProps {
   /** System photo picker boundary, injected by the own-photo flow test. */
   bannerPhotoPicker?: BannerPhotoPicker;
   gymPresenceController?: Pick<GymPresenceController, "checkIn">;
-  walkingSessionController?: Pick<WalkingSessionController, "start">;
+  walkingSessionController?: Pick<
+    WalkingSessionController,
+    "getSnapshot" | "start" | "stop" | "subscribe"
+  >;
   openProppedScan?: (conditionId: string) => void;
   reviewCoordinator?: Pick<ReviewCoordinatorContract, "initialize" | "onUnlockMoment">;
 }
@@ -74,6 +84,18 @@ export function HomeScreen({
   const currentTime = now ?? appRuntime!.now;
   const { spacing } = useTheme();
   const [builderOpen, setBuilderOpen] = useState(false);
+  const subscribeWalkingSession = useCallback(
+    (listener: () => void) => walkingSessionController.subscribe(listener),
+    [walkingSessionController],
+  );
+  const readWalkingSession = useCallback(
+    () => walkingSessionController.getSnapshot(),
+    [walkingSessionController],
+  );
+  const walkingSession = useSyncExternalStore(
+    subscribeWalkingSession,
+    readWalkingSession,
+  );
 
   const conditions = useHomeStore((state) => state.conditions);
   const conditionBanners = useHomeStore((state) => state.conditionBanners);
@@ -107,6 +129,9 @@ export function HomeScreen({
     firedConditionIds: firedToday,
     placeNames,
     conditionBanners,
+    activeWalkingConditionId: walkingSession.active
+      ? walkingSession.conditionId
+      : null,
   });
   const completeCondition = async (conditionId: string) => {
     const condition = conditions.find(({ id }) => id === conditionId);
@@ -164,6 +189,7 @@ export function HomeScreen({
                 onComplete={(id) => void completeCondition(id)}
                 onStartSession={(id) => void walkingSessionController.start(id)}
                 onStartProppedSession={(id) => void startProppedSession(id)}
+                onStopSession={() => void walkingSessionController.stop()}
               />
             ))}
           </View>

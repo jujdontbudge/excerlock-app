@@ -70,6 +70,21 @@ async function press(name: string): Promise<void> {
   await fireEvent.press(await screen.findByRole("button", { name }));
 }
 
+const IDLE_WALKING_SESSION = {
+  active: false,
+  conditionId: null,
+  walking: false,
+} as const;
+
+function walkingSessionStub(start: jest.Mock) {
+  return {
+    getSnapshot: () => IDLE_WALKING_SESSION,
+    start,
+    stop: jest.fn().mockResolvedValue(undefined),
+    subscribe: () => () => {},
+  };
+}
+
 describe("HomeScreen", () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
@@ -147,7 +162,7 @@ describe("HomeScreen", () => {
       <HomeScreen
         feed={stubFeed()}
         now={now}
-        walkingSessionController={{ start }}
+        walkingSessionController={walkingSessionStub(start)}
       />,
     );
 
@@ -164,7 +179,7 @@ describe("HomeScreen", () => {
       <HomeScreen
         feed={stubFeed()}
         now={now}
-        walkingSessionController={{ start }}
+        walkingSessionController={walkingSessionStub(start)}
         openProppedScan={openProppedScan}
       />,
     );
@@ -173,6 +188,39 @@ describe("HomeScreen", () => {
 
     expect(start).toHaveBeenCalledWith("c-state", "propped");
     expect(openProppedScan).toHaveBeenCalledWith("c-state");
+  });
+
+  it("replaces both start choices with Stop while a walk session is active", async () => {
+    const stop = jest.fn().mockResolvedValue(undefined);
+    const snapshot = {
+      active: true,
+      conditionId: "c-state",
+      walking: false,
+    } as const;
+    const walkingSessionController = {
+      getSnapshot: () => snapshot,
+      start: jest.fn().mockResolvedValue(true),
+      stop,
+      subscribe: () => () => {},
+    };
+    seed(walking);
+
+    await render(
+      <HomeScreen
+        feed={stubFeed()}
+        now={now}
+        walkingSessionController={walkingSessionController}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Start Walk Session" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "I'm propping my phone" }),
+    ).toBeNull();
+
+    await press("Stop Walk Session");
+
+    expect(stop).toHaveBeenCalledTimes(1);
   });
 
   it("routes the gym card's Check in action through location confirmation", async () => {

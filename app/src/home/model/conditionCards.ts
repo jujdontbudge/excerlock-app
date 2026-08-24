@@ -60,6 +60,7 @@ export interface StateCardModel extends CardBase {
   readonly graceLabel: string;
   readonly startsWalkingSession: boolean;
   readonly startsProppedWalkingSession: boolean;
+  readonly hasActiveWalkingSession: boolean;
 }
 
 export interface RateCardModel extends CardBase {
@@ -78,6 +79,7 @@ export interface ConditionCardsInput {
   readonly firedConditionIds?: readonly string[];
   readonly placeNames?: Readonly<Record<string, string>>;
   readonly conditionBanners?: Readonly<Record<string, BannerSelection>>;
+  readonly activeWalkingConditionId?: string | null;
 }
 
 export function toConditionCards({
@@ -86,6 +88,7 @@ export function toConditionCards({
   firedConditionIds = [],
   placeNames = {},
   conditionBanners = {},
+  activeWalkingConditionId = null,
 }: ConditionCardsInput): readonly ConditionCardModel[] {
   return conditions.map((condition) => {
     const entry = getCatalogEntry(condition.catalogId);
@@ -100,7 +103,13 @@ export function toConditionCards({
       case "event":
         return eventCard(base, entry, condition.settings, reading, firedConditionIds.includes(condition.id));
       case "state":
-        return stateCard(base, entry, condition.settings.exitGraceMs, reading);
+        return stateCard(
+          base,
+          entry,
+          condition.settings.exitGraceMs,
+          reading,
+          activeWalkingConditionId,
+        );
       case "rate":
         return rateCard(base, entry, condition.settings.reward.minutesPerUnit, reading);
     }
@@ -158,6 +167,7 @@ function stateCard(
   entry: CatalogEntry,
   exitGraceMs: number,
   reading: SignalReading,
+  activeWalkingConditionId: string | null,
 ): StateCardModel {
   const active = reading.activeSignals.includes(entry.signal);
   return {
@@ -170,6 +180,8 @@ function stateCard(
     graceLabel: `${formatGrace(exitGraceMs)} grace`,
     startsWalkingSession: entry.signal === "walking",
     startsProppedWalkingSession: entry.signal === "walking",
+    hasActiveWalkingSession:
+      entry.signal === "walking" && base.id === activeWalkingConditionId,
   };
 }
 
