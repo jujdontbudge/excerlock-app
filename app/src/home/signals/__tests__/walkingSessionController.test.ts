@@ -322,6 +322,74 @@ describe("WalkingSessionController", () => {
     await controller.stop();
   });
 
+  it("never lapses the lease on a continuously verified handheld walker", async () => {
+    // The 15-minute lease exists for propped sessions, which produce no live
+    // signal. Ordinary Walk & Scroll flows through the same controller, so it
+    // must not inherit a deadline: a walker who keeps verifying should have the
+    // window rolled forward invisibly and never meet a shield.
+    jest.useFakeTimers();
+    let now = 0;
+    let onActivity: (sample: ActivitySample) => void = () => {};
+    let onCadence: (sample: CadenceSample) => void = () => {};
+    const stopMotion = jest.fn().mockResolvedValue(undefined);
+    const motion = {
+      start: jest.fn().mockResolvedValue(undefined),
+      stop: stopMotion,
+      on: jest.fn((event: "activity" | "cadence", callback: unknown) => {
+        if (event === "activity") {
+          onActivity = callback as (sample: ActivitySample) => void;
+        } else {
+          onCadence = callback as (sample: CadenceSample) => void;
+        }
+        return () => {};
+      }),
+    } as unknown as MotionProvider;
+    const controller = new WalkingSessionController({
+      createMotion: () => motion,
+      getLocation: () => ({
+        startWalkKeepAlive: async () => {},
+        stopWalkKeepAlive: async () => {},
+      }),
+      getState: () => ({
+        conditions: [walkingCondition],
+        disabledConditionIds: [],
+      }),
+      now: () => now,
+      wallClockNow: () => now,
+    });
+    await controller.start("walking-condition");
+    onActivity({
+      classes: ["walking"],
+      confidence: "high",
+      startedAt: 0,
+      receivedAt: 0,
+    });
+    onCadence({ stepsPerSecond: 1.2, cumulativeSteps: 2, asOf: 1_000 });
+    onCadence({ stepsPerSecond: 1.2, cumulativeSteps: 4, asOf: 2_000 });
+    expect(controller.getSnapshot().walking).toBe(true);
+
+    // Walk for 30 minutes — twice the lease — reporting cadence inside the
+    // 5-second freshness window, which is how CMPedometer actually delivers it.
+    const cadenceIntervalMs = 2_000;
+    let steps = 4;
+    for (
+      let elapsedMs = cadenceIntervalMs;
+      elapsedMs <= 30 * 60_000;
+      elapsedMs += cadenceIntervalMs
+    ) {
+      now = elapsedMs;
+      await jest.advanceTimersByTimeAsync(cadenceIntervalMs);
+      steps += 4;
+      onCadence({ stepsPerSecond: 1.2, cumulativeSteps: steps, asOf: now });
+      expect(controller.getSnapshot().walking).toBe(true);
+    }
+
+    expect(controller.getSnapshot().active).toBe(true);
+    expect(stopMotion).not.toHaveBeenCalled();
+    await controller.stop();
+    jest.useRealTimers();
+  });
+
   it("ends the session and native work when stop grace expires", async () => {
     jest.useFakeTimers();
     let now = 0;
