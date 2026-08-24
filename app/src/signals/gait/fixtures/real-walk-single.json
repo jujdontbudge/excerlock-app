@@ -1,0 +1,3485 @@
+{
+  "description": "Single walker approaching the camera on a park path, full torso in frame.",
+  "extraction": "tools/gait-fixture-extractor at 15 fps; longest run with all four torso landmarks at confidence >= 0.6",
+  "license": "Mixkit Free License (commercial use permitted, no attribution required)",
+  "samples": [
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7407,
+          "x": 0.50808,
+          "y": 0.48168
+        },
+        "leftShoulder": {
+          "confidence": 0.8384,
+          "x": 0.51423,
+          "y": 0.2962
+        },
+        "rightHip": {
+          "confidence": 0.7871,
+          "x": 0.46546,
+          "y": 0.48599
+        },
+        "rightShoulder": {
+          "confidence": 0.8003,
+          "x": 0.45385,
+          "y": 0.2855
+        }
+      },
+      "timestampMs": 0
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.751,
+          "x": 0.50988,
+          "y": 0.49447
+        },
+        "leftShoulder": {
+          "confidence": 0.8223,
+          "x": 0.51425,
+          "y": 0.30794
+        },
+        "rightHip": {
+          "confidence": 0.7817,
+          "x": 0.4661,
+          "y": 0.50086
+        },
+        "rightShoulder": {
+          "confidence": 0.7944,
+          "x": 0.45505,
+          "y": 0.29066
+        }
+      },
+      "timestampMs": 67
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7314,
+          "x": 0.51162,
+          "y": 0.50137
+        },
+        "leftShoulder": {
+          "confidence": 0.7871,
+          "x": 0.51416,
+          "y": 0.31146
+        },
+        "rightHip": {
+          "confidence": 0.8184,
+          "x": 0.46763,
+          "y": 0.50958
+        },
+        "rightShoulder": {
+          "confidence": 0.8213,
+          "x": 0.45814,
+          "y": 0.29916
+        }
+      },
+      "timestampMs": 133
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7891,
+          "x": 0.51424,
+          "y": 0.49482
+        },
+        "leftShoulder": {
+          "confidence": 0.8301,
+          "x": 0.51562,
+          "y": 0.30821
+        },
+        "rightHip": {
+          "confidence": 0.7783,
+          "x": 0.47078,
+          "y": 0.50506
+        },
+        "rightShoulder": {
+          "confidence": 0.8149,
+          "x": 0.45992,
+          "y": 0.2989
+        }
+      },
+      "timestampMs": 200
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7793,
+          "x": 0.51582,
+          "y": 0.49693
+        },
+        "leftShoulder": {
+          "confidence": 0.8716,
+          "x": 0.51738,
+          "y": 0.29962
+        },
+        "rightHip": {
+          "confidence": 0.7651,
+          "x": 0.47203,
+          "y": 0.50722
+        },
+        "rightShoulder": {
+          "confidence": 0.7598,
+          "x": 0.46075,
+          "y": 0.29744
+        }
+      },
+      "timestampMs": 267
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.8125,
+          "x": 0.51582,
+          "y": 0.48895
+        },
+        "leftShoulder": {
+          "confidence": 0.8325,
+          "x": 0.5186,
+          "y": 0.28736
+        },
+        "rightHip": {
+          "confidence": 0.7671,
+          "x": 0.47184,
+          "y": 0.49497
+        },
+        "rightShoulder": {
+          "confidence": 0.7349,
+          "x": 0.4619,
+          "y": 0.29232
+        }
+      },
+      "timestampMs": 334
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7847,
+          "x": 0.51563,
+          "y": 0.48468
+        },
+        "leftShoulder": {
+          "confidence": 0.8101,
+          "x": 0.52128,
+          "y": 0.2746
+        },
+        "rightHip": {
+          "confidence": 0.8198,
+          "x": 0.46991,
+          "y": 0.48629
+        },
+        "rightShoulder": {
+          "confidence": 0.7549,
+          "x": 0.46199,
+          "y": 0.28559
+        }
+      },
+      "timestampMs": 400
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7593,
+          "x": 0.51496,
+          "y": 0.48901
+        },
+        "leftShoulder": {
+          "confidence": 0.7969,
+          "x": 0.521,
+          "y": 0.27286
+        },
+        "rightHip": {
+          "confidence": 0.8223,
+          "x": 0.46898,
+          "y": 0.48829
+        },
+        "rightShoulder": {
+          "confidence": 0.749,
+          "x": 0.46109,
+          "y": 0.28686
+        }
+      },
+      "timestampMs": 467
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7222,
+          "x": 0.51386,
+          "y": 0.49772
+        },
+        "leftShoulder": {
+          "confidence": 0.8174,
+          "x": 0.52113,
+          "y": 0.28247
+        },
+        "rightHip": {
+          "confidence": 0.7832,
+          "x": 0.47042,
+          "y": 0.49737
+        },
+        "rightShoulder": {
+          "confidence": 0.7534,
+          "x": 0.46103,
+          "y": 0.29627
+        }
+      },
+      "timestampMs": 534
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7451,
+          "x": 0.51359,
+          "y": 0.5056
+        },
+        "leftShoulder": {
+          "confidence": 0.793,
+          "x": 0.52159,
+          "y": 0.29406
+        },
+        "rightHip": {
+          "confidence": 0.8203,
+          "x": 0.4695,
+          "y": 0.5081
+        },
+        "rightShoulder": {
+          "confidence": 0.7583,
+          "x": 0.4601,
+          "y": 0.3065
+        }
+      },
+      "timestampMs": 601
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7412,
+          "x": 0.51161,
+          "y": 0.5108
+        },
+        "leftShoulder": {
+          "confidence": 0.8262,
+          "x": 0.52196,
+          "y": 0.29842
+        },
+        "rightHip": {
+          "confidence": 0.8223,
+          "x": 0.46705,
+          "y": 0.51001
+        },
+        "rightShoulder": {
+          "confidence": 0.769,
+          "x": 0.46052,
+          "y": 0.31045
+        }
+      },
+      "timestampMs": 667
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7593,
+          "x": 0.51039,
+          "y": 0.50874
+        },
+        "leftShoulder": {
+          "confidence": 0.8394,
+          "x": 0.52113,
+          "y": 0.30027
+        },
+        "rightHip": {
+          "confidence": 0.8159,
+          "x": 0.46583,
+          "y": 0.51013
+        },
+        "rightShoulder": {
+          "confidence": 0.7798,
+          "x": 0.45886,
+          "y": 0.30655
+        }
+      },
+      "timestampMs": 734
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7217,
+          "x": 0.51193,
+          "y": 0.50522
+        },
+        "leftShoulder": {
+          "confidence": 0.8418,
+          "x": 0.52028,
+          "y": 0.29825
+        },
+        "rightHip": {
+          "confidence": 0.8164,
+          "x": 0.46638,
+          "y": 0.5083
+        },
+        "rightShoulder": {
+          "confidence": 0.8042,
+          "x": 0.45782,
+          "y": 0.2968
+        }
+      },
+      "timestampMs": 801
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.707,
+          "x": 0.51357,
+          "y": 0.49809
+        },
+        "leftShoulder": {
+          "confidence": 0.8237,
+          "x": 0.51842,
+          "y": 0.28867
+        },
+        "rightHip": {
+          "confidence": 0.7812,
+          "x": 0.46683,
+          "y": 0.5019
+        },
+        "rightShoulder": {
+          "confidence": 0.792,
+          "x": 0.45703,
+          "y": 0.28491
+        }
+      },
+      "timestampMs": 868
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7583,
+          "x": 0.51525,
+          "y": 0.49417
+        },
+        "leftShoulder": {
+          "confidence": 0.8374,
+          "x": 0.51615,
+          "y": 0.28257
+        },
+        "rightHip": {
+          "confidence": 0.7666,
+          "x": 0.46771,
+          "y": 0.49805
+        },
+        "rightShoulder": {
+          "confidence": 0.7778,
+          "x": 0.45861,
+          "y": 0.27046
+        }
+      },
+      "timestampMs": 934
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7646,
+          "x": 0.51546,
+          "y": 0.49535
+        },
+        "leftShoulder": {
+          "confidence": 0.8096,
+          "x": 0.51531,
+          "y": 0.28561
+        },
+        "rightHip": {
+          "confidence": 0.7725,
+          "x": 0.46851,
+          "y": 0.50173
+        },
+        "rightShoulder": {
+          "confidence": 0.8003,
+          "x": 0.45915,
+          "y": 0.27182
+        }
+      },
+      "timestampMs": 1001
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7632,
+          "x": 0.51425,
+          "y": 0.50404
+        },
+        "leftShoulder": {
+          "confidence": 0.8193,
+          "x": 0.51552,
+          "y": 0.29864
+        },
+        "rightHip": {
+          "confidence": 0.8047,
+          "x": 0.46787,
+          "y": 0.51196
+        },
+        "rightShoulder": {
+          "confidence": 0.7915,
+          "x": 0.4591,
+          "y": 0.2867
+        }
+      },
+      "timestampMs": 1068
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7764,
+          "x": 0.51479,
+          "y": 0.50567
+        },
+        "leftShoulder": {
+          "confidence": 0.8267,
+          "x": 0.51346,
+          "y": 0.30435
+        },
+        "rightHip": {
+          "confidence": 0.7729,
+          "x": 0.46982,
+          "y": 0.51648
+        },
+        "rightShoulder": {
+          "confidence": 0.8105,
+          "x": 0.45806,
+          "y": 0.29607
+        }
+      },
+      "timestampMs": 1134
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7598,
+          "x": 0.51368,
+          "y": 0.50478
+        },
+        "leftShoulder": {
+          "confidence": 0.8169,
+          "x": 0.51362,
+          "y": 0.30673
+        },
+        "rightHip": {
+          "confidence": 0.771,
+          "x": 0.46757,
+          "y": 0.51724
+        },
+        "rightShoulder": {
+          "confidence": 0.8213,
+          "x": 0.4559,
+          "y": 0.30002
+        }
+      },
+      "timestampMs": 1201
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7319,
+          "x": 0.51186,
+          "y": 0.50417
+        },
+        "leftShoulder": {
+          "confidence": 0.8184,
+          "x": 0.51241,
+          "y": 0.29808
+        },
+        "rightHip": {
+          "confidence": 0.771,
+          "x": 0.4652,
+          "y": 0.5176
+        },
+        "rightShoulder": {
+          "confidence": 0.8145,
+          "x": 0.45274,
+          "y": 0.2965
+        }
+      },
+      "timestampMs": 1268
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.77,
+          "x": 0.50896,
+          "y": 0.49362
+        },
+        "leftShoulder": {
+          "confidence": 0.8076,
+          "x": 0.51121,
+          "y": 0.28742
+        },
+        "rightHip": {
+          "confidence": 0.7515,
+          "x": 0.46274,
+          "y": 0.5059
+        },
+        "rightShoulder": {
+          "confidence": 0.7759,
+          "x": 0.44897,
+          "y": 0.28606
+        }
+      },
+      "timestampMs": 1335
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7715,
+          "x": 0.5039,
+          "y": 0.48283
+        },
+        "leftShoulder": {
+          "confidence": 0.8008,
+          "x": 0.50839,
+          "y": 0.27069
+        },
+        "rightHip": {
+          "confidence": 0.7686,
+          "x": 0.45713,
+          "y": 0.49015
+        },
+        "rightShoulder": {
+          "confidence": 0.8042,
+          "x": 0.44466,
+          "y": 0.27506
+        }
+      },
+      "timestampMs": 1401
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7183,
+          "x": 0.50034,
+          "y": 0.48243
+        },
+        "leftShoulder": {
+          "confidence": 0.7568,
+          "x": 0.50501,
+          "y": 0.25691
+        },
+        "rightHip": {
+          "confidence": 0.7607,
+          "x": 0.45303,
+          "y": 0.48398
+        },
+        "rightShoulder": {
+          "confidence": 0.7607,
+          "x": 0.44111,
+          "y": 0.27029
+        }
+      },
+      "timestampMs": 1468
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7363,
+          "x": 0.49752,
+          "y": 0.47598
+        },
+        "leftShoulder": {
+          "confidence": 0.7407,
+          "x": 0.50133,
+          "y": 0.25328
+        },
+        "rightHip": {
+          "confidence": 0.6924,
+          "x": 0.45068,
+          "y": 0.47954
+        },
+        "rightShoulder": {
+          "confidence": 0.7383,
+          "x": 0.43946,
+          "y": 0.27253
+        }
+      },
+      "timestampMs": 1535
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7671,
+          "x": 0.49405,
+          "y": 0.48211
+        },
+        "leftShoulder": {
+          "confidence": 0.7979,
+          "x": 0.4989,
+          "y": 0.26538
+        },
+        "rightHip": {
+          "confidence": 0.7744,
+          "x": 0.44664,
+          "y": 0.48339
+        },
+        "rightShoulder": {
+          "confidence": 0.7285,
+          "x": 0.43819,
+          "y": 0.28407
+        }
+      },
+      "timestampMs": 1602
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7305,
+          "x": 0.48886,
+          "y": 0.48331
+        },
+        "leftShoulder": {
+          "confidence": 0.8135,
+          "x": 0.49813,
+          "y": 0.27429
+        },
+        "rightHip": {
+          "confidence": 0.7822,
+          "x": 0.44191,
+          "y": 0.4844
+        },
+        "rightShoulder": {
+          "confidence": 0.71,
+          "x": 0.43582,
+          "y": 0.29169
+        }
+      },
+      "timestampMs": 1668
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7598,
+          "x": 0.48191,
+          "y": 0.48751
+        },
+        "leftShoulder": {
+          "confidence": 0.8394,
+          "x": 0.49474,
+          "y": 0.2785
+        },
+        "rightHip": {
+          "confidence": 0.7646,
+          "x": 0.43463,
+          "y": 0.48703
+        },
+        "rightShoulder": {
+          "confidence": 0.7368,
+          "x": 0.43127,
+          "y": 0.29084
+        }
+      },
+      "timestampMs": 1735
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7319,
+          "x": 0.47817,
+          "y": 0.48708
+        },
+        "leftShoulder": {
+          "confidence": 0.8237,
+          "x": 0.49068,
+          "y": 0.27654
+        },
+        "rightHip": {
+          "confidence": 0.7886,
+          "x": 0.43112,
+          "y": 0.48537
+        },
+        "rightShoulder": {
+          "confidence": 0.7388,
+          "x": 0.42718,
+          "y": 0.28492
+        }
+      },
+      "timestampMs": 1802
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7363,
+          "x": 0.47724,
+          "y": 0.48206
+        },
+        "leftShoulder": {
+          "confidence": 0.7744,
+          "x": 0.48749,
+          "y": 0.26887
+        },
+        "rightHip": {
+          "confidence": 0.7612,
+          "x": 0.43001,
+          "y": 0.48063
+        },
+        "rightShoulder": {
+          "confidence": 0.7578,
+          "x": 0.42341,
+          "y": 0.27514
+        }
+      },
+      "timestampMs": 1869
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7363,
+          "x": 0.47772,
+          "y": 0.47413
+        },
+        "leftShoulder": {
+          "confidence": 0.8525,
+          "x": 0.4887,
+          "y": 0.26004
+        },
+        "rightHip": {
+          "confidence": 0.7456,
+          "x": 0.43192,
+          "y": 0.47459
+        },
+        "rightShoulder": {
+          "confidence": 0.7852,
+          "x": 0.42406,
+          "y": 0.25972
+        }
+      },
+      "timestampMs": 1935
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7202,
+          "x": 0.47674,
+          "y": 0.47533
+        },
+        "leftShoulder": {
+          "confidence": 0.8667,
+          "x": 0.48712,
+          "y": 0.26059
+        },
+        "rightHip": {
+          "confidence": 0.7349,
+          "x": 0.43054,
+          "y": 0.47857
+        },
+        "rightShoulder": {
+          "confidence": 0.834,
+          "x": 0.41862,
+          "y": 0.25503
+        }
+      },
+      "timestampMs": 2002
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6924,
+          "x": 0.47552,
+          "y": 0.47727
+        },
+        "leftShoulder": {
+          "confidence": 0.8589,
+          "x": 0.48438,
+          "y": 0.26554
+        },
+        "rightHip": {
+          "confidence": 0.7554,
+          "x": 0.42972,
+          "y": 0.48088
+        },
+        "rightShoulder": {
+          "confidence": 0.8599,
+          "x": 0.41473,
+          "y": 0.25787
+        }
+      },
+      "timestampMs": 2069
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7266,
+          "x": 0.47645,
+          "y": 0.489
+        },
+        "leftShoulder": {
+          "confidence": 0.894,
+          "x": 0.48402,
+          "y": 0.27764
+        },
+        "rightHip": {
+          "confidence": 0.7461,
+          "x": 0.42914,
+          "y": 0.49263
+        },
+        "rightShoulder": {
+          "confidence": 0.8325,
+          "x": 0.41361,
+          "y": 0.26486
+        }
+      },
+      "timestampMs": 2135
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7017,
+          "x": 0.47693,
+          "y": 0.49722
+        },
+        "leftShoulder": {
+          "confidence": 0.8608,
+          "x": 0.48653,
+          "y": 0.28363
+        },
+        "rightHip": {
+          "confidence": 0.7456,
+          "x": 0.43006,
+          "y": 0.50089
+        },
+        "rightShoulder": {
+          "confidence": 0.7749,
+          "x": 0.41345,
+          "y": 0.27154
+        }
+      },
+      "timestampMs": 2202
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7012,
+          "x": 0.47671,
+          "y": 0.4975
+        },
+        "leftShoulder": {
+          "confidence": 0.8774,
+          "x": 0.48851,
+          "y": 0.28415
+        },
+        "rightHip": {
+          "confidence": 0.7676,
+          "x": 0.43008,
+          "y": 0.50228
+        },
+        "rightShoulder": {
+          "confidence": 0.7876,
+          "x": 0.4153,
+          "y": 0.26903
+        }
+      },
+      "timestampMs": 2269
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7412,
+          "x": 0.48003,
+          "y": 0.49481
+        },
+        "leftShoulder": {
+          "confidence": 0.8789,
+          "x": 0.48841,
+          "y": 0.27944
+        },
+        "rightHip": {
+          "confidence": 0.7812,
+          "x": 0.43134,
+          "y": 0.50168
+        },
+        "rightShoulder": {
+          "confidence": 0.7778,
+          "x": 0.41664,
+          "y": 0.26315
+        }
+      },
+      "timestampMs": 2336
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7563,
+          "x": 0.48154,
+          "y": 0.48193
+        },
+        "leftShoulder": {
+          "confidence": 0.8486,
+          "x": 0.48691,
+          "y": 0.26309
+        },
+        "rightHip": {
+          "confidence": 0.7837,
+          "x": 0.43171,
+          "y": 0.48657
+        },
+        "rightShoulder": {
+          "confidence": 0.7393,
+          "x": 0.41751,
+          "y": 0.25108
+        }
+      },
+      "timestampMs": 2402
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7578,
+          "x": 0.48286,
+          "y": 0.47231
+        },
+        "leftShoulder": {
+          "confidence": 0.8213,
+          "x": 0.48742,
+          "y": 0.24443
+        },
+        "rightHip": {
+          "confidence": 0.7666,
+          "x": 0.43189,
+          "y": 0.47234
+        },
+        "rightShoulder": {
+          "confidence": 0.752,
+          "x": 0.42185,
+          "y": 0.236
+        }
+      },
+      "timestampMs": 2469
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7505,
+          "x": 0.48304,
+          "y": 0.46517
+        },
+        "leftShoulder": {
+          "confidence": 0.8643,
+          "x": 0.48814,
+          "y": 0.24016
+        },
+        "rightHip": {
+          "confidence": 0.7676,
+          "x": 0.43361,
+          "y": 0.46472
+        },
+        "rightShoulder": {
+          "confidence": 0.75,
+          "x": 0.42171,
+          "y": 0.23062
+        }
+      },
+      "timestampMs": 2536
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7339,
+          "x": 0.48394,
+          "y": 0.47436
+        },
+        "leftShoulder": {
+          "confidence": 0.8286,
+          "x": 0.49059,
+          "y": 0.24767
+        },
+        "rightHip": {
+          "confidence": 0.6929,
+          "x": 0.43562,
+          "y": 0.47327
+        },
+        "rightShoulder": {
+          "confidence": 0.8403,
+          "x": 0.4222,
+          "y": 0.23571
+        }
+      },
+      "timestampMs": 2603
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7476,
+          "x": 0.48355,
+          "y": 0.48146
+        },
+        "leftShoulder": {
+          "confidence": 0.8896,
+          "x": 0.49115,
+          "y": 0.2555
+        },
+        "rightHip": {
+          "confidence": 0.7085,
+          "x": 0.43652,
+          "y": 0.48174
+        },
+        "rightShoulder": {
+          "confidence": 0.8154,
+          "x": 0.42277,
+          "y": 0.24733
+        }
+      },
+      "timestampMs": 2669
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7979,
+          "x": 0.48275,
+          "y": 0.48509
+        },
+        "leftShoulder": {
+          "confidence": 0.877,
+          "x": 0.49249,
+          "y": 0.25797
+        },
+        "rightHip": {
+          "confidence": 0.7773,
+          "x": 0.43423,
+          "y": 0.48575
+        },
+        "rightShoulder": {
+          "confidence": 0.8174,
+          "x": 0.42335,
+          "y": 0.24853
+        }
+      },
+      "timestampMs": 2736
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7886,
+          "x": 0.48278,
+          "y": 0.48392
+        },
+        "leftShoulder": {
+          "confidence": 0.8555,
+          "x": 0.4936,
+          "y": 0.25874
+        },
+        "rightHip": {
+          "confidence": 0.7842,
+          "x": 0.43439,
+          "y": 0.48456
+        },
+        "rightShoulder": {
+          "confidence": 0.8042,
+          "x": 0.4246,
+          "y": 0.24837
+        }
+      },
+      "timestampMs": 2803
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7661,
+          "x": 0.48357,
+          "y": 0.4831
+        },
+        "leftShoulder": {
+          "confidence": 0.8652,
+          "x": 0.49443,
+          "y": 0.25772
+        },
+        "rightHip": {
+          "confidence": 0.7554,
+          "x": 0.43522,
+          "y": 0.48457
+        },
+        "rightShoulder": {
+          "confidence": 0.8384,
+          "x": 0.42612,
+          "y": 0.24305
+        }
+      },
+      "timestampMs": 2870
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7046,
+          "x": 0.48721,
+          "y": 0.47442
+        },
+        "leftShoulder": {
+          "confidence": 0.8223,
+          "x": 0.4948,
+          "y": 0.25048
+        },
+        "rightHip": {
+          "confidence": 0.6987,
+          "x": 0.43701,
+          "y": 0.4796
+        },
+        "rightShoulder": {
+          "confidence": 0.8535,
+          "x": 0.42607,
+          "y": 0.23369
+        }
+      },
+      "timestampMs": 2936
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7349,
+          "x": 0.49036,
+          "y": 0.47279
+        },
+        "leftShoulder": {
+          "confidence": 0.8535,
+          "x": 0.49641,
+          "y": 0.2419
+        },
+        "rightHip": {
+          "confidence": 0.7212,
+          "x": 0.43949,
+          "y": 0.47919
+        },
+        "rightShoulder": {
+          "confidence": 0.8271,
+          "x": 0.42675,
+          "y": 0.22419
+        }
+      },
+      "timestampMs": 3003
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7397,
+          "x": 0.4924,
+          "y": 0.47726
+        },
+        "leftShoulder": {
+          "confidence": 0.7993,
+          "x": 0.49732,
+          "y": 0.24811
+        },
+        "rightHip": {
+          "confidence": 0.752,
+          "x": 0.44018,
+          "y": 0.48408
+        },
+        "rightShoulder": {
+          "confidence": 0.8047,
+          "x": 0.42618,
+          "y": 0.22565
+        }
+      },
+      "timestampMs": 3070
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6973,
+          "x": 0.49081,
+          "y": 0.48027
+        },
+        "leftShoulder": {
+          "confidence": 0.8418,
+          "x": 0.49941,
+          "y": 0.2579
+        },
+        "rightHip": {
+          "confidence": 0.7217,
+          "x": 0.43988,
+          "y": 0.48918
+        },
+        "rightShoulder": {
+          "confidence": 0.8521,
+          "x": 0.42501,
+          "y": 0.2377
+        }
+      },
+      "timestampMs": 3136
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7485,
+          "x": 0.49261,
+          "y": 0.48719
+        },
+        "leftShoulder": {
+          "confidence": 0.8354,
+          "x": 0.502,
+          "y": 0.27188
+        },
+        "rightHip": {
+          "confidence": 0.6777,
+          "x": 0.441,
+          "y": 0.48998
+        },
+        "rightShoulder": {
+          "confidence": 0.7881,
+          "x": 0.42424,
+          "y": 0.24846
+        }
+      },
+      "timestampMs": 3203
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7271,
+          "x": 0.4935,
+          "y": 0.49376
+        },
+        "leftShoulder": {
+          "confidence": 0.874,
+          "x": 0.50407,
+          "y": 0.27342
+        },
+        "rightHip": {
+          "confidence": 0.7314,
+          "x": 0.44225,
+          "y": 0.50234
+        },
+        "rightShoulder": {
+          "confidence": 0.7803,
+          "x": 0.42486,
+          "y": 0.25004
+        }
+      },
+      "timestampMs": 3270
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6787,
+          "x": 0.4998,
+          "y": 0.49717
+        },
+        "leftShoulder": {
+          "confidence": 0.8262,
+          "x": 0.50601,
+          "y": 0.26914
+        },
+        "rightHip": {
+          "confidence": 0.7339,
+          "x": 0.44035,
+          "y": 0.50784
+        },
+        "rightShoulder": {
+          "confidence": 0.8081,
+          "x": 0.42554,
+          "y": 0.25034
+        }
+      },
+      "timestampMs": 3337
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7275,
+          "x": 0.50077,
+          "y": 0.49074
+        },
+        "leftShoulder": {
+          "confidence": 0.8755,
+          "x": 0.50857,
+          "y": 0.2603
+        },
+        "rightHip": {
+          "confidence": 0.7524,
+          "x": 0.44364,
+          "y": 0.50233
+        },
+        "rightShoulder": {
+          "confidence": 0.8398,
+          "x": 0.4263,
+          "y": 0.24657
+        }
+      },
+      "timestampMs": 3403
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7158,
+          "x": 0.4992,
+          "y": 0.48289
+        },
+        "leftShoulder": {
+          "confidence": 0.8232,
+          "x": 0.51173,
+          "y": 0.24439
+        },
+        "rightHip": {
+          "confidence": 0.7686,
+          "x": 0.44244,
+          "y": 0.48932
+        },
+        "rightShoulder": {
+          "confidence": 0.918,
+          "x": 0.429,
+          "y": 0.23662
+        }
+      },
+      "timestampMs": 3470
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6982,
+          "x": 0.49817,
+          "y": 0.47753
+        },
+        "leftShoulder": {
+          "confidence": 0.877,
+          "x": 0.51365,
+          "y": 0.23454
+        },
+        "rightHip": {
+          "confidence": 0.752,
+          "x": 0.44305,
+          "y": 0.48207
+        },
+        "rightShoulder": {
+          "confidence": 0.9155,
+          "x": 0.43108,
+          "y": 0.23588
+        }
+      },
+      "timestampMs": 3537
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7065,
+          "x": 0.49861,
+          "y": 0.4817
+        },
+        "leftShoulder": {
+          "confidence": 0.8965,
+          "x": 0.51445,
+          "y": 0.23593
+        },
+        "rightHip": {
+          "confidence": 0.7534,
+          "x": 0.44148,
+          "y": 0.48839
+        },
+        "rightShoulder": {
+          "confidence": 0.8535,
+          "x": 0.43359,
+          "y": 0.24646
+        }
+      },
+      "timestampMs": 3604
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6797,
+          "x": 0.49942,
+          "y": 0.49683
+        },
+        "leftShoulder": {
+          "confidence": 0.8188,
+          "x": 0.51482,
+          "y": 0.24839
+        },
+        "rightHip": {
+          "confidence": 0.7446,
+          "x": 0.44201,
+          "y": 0.50534
+        },
+        "rightShoulder": {
+          "confidence": 0.9053,
+          "x": 0.4332,
+          "y": 0.26122
+        }
+      },
+      "timestampMs": 3670
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7314,
+          "x": 0.49656,
+          "y": 0.50814
+        },
+        "leftShoulder": {
+          "confidence": 0.8896,
+          "x": 0.51372,
+          "y": 0.2562
+        },
+        "rightHip": {
+          "confidence": 0.7275,
+          "x": 0.43921,
+          "y": 0.51143
+        },
+        "rightShoulder": {
+          "confidence": 0.8599,
+          "x": 0.43062,
+          "y": 0.26904
+        }
+      },
+      "timestampMs": 3737
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7256,
+          "x": 0.49228,
+          "y": 0.50526
+        },
+        "leftShoulder": {
+          "confidence": 0.8462,
+          "x": 0.51115,
+          "y": 0.25592
+        },
+        "rightHip": {
+          "confidence": 0.7344,
+          "x": 0.43567,
+          "y": 0.50952
+        },
+        "rightShoulder": {
+          "confidence": 0.8628,
+          "x": 0.42915,
+          "y": 0.2687
+        }
+      },
+      "timestampMs": 3804
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7256,
+          "x": 0.49213,
+          "y": 0.50937
+        },
+        "leftShoulder": {
+          "confidence": 0.8652,
+          "x": 0.51011,
+          "y": 0.25698
+        },
+        "rightHip": {
+          "confidence": 0.7432,
+          "x": 0.43428,
+          "y": 0.51052
+        },
+        "rightShoulder": {
+          "confidence": 0.8423,
+          "x": 0.42667,
+          "y": 0.26828
+        }
+      },
+      "timestampMs": 3871
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7026,
+          "x": 0.49096,
+          "y": 0.50593
+        },
+        "leftShoulder": {
+          "confidence": 0.8691,
+          "x": 0.50935,
+          "y": 0.25534
+        },
+        "rightHip": {
+          "confidence": 0.7314,
+          "x": 0.43421,
+          "y": 0.50652
+        },
+        "rightShoulder": {
+          "confidence": 0.8813,
+          "x": 0.42309,
+          "y": 0.25736
+        }
+      },
+      "timestampMs": 3937
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7197,
+          "x": 0.49178,
+          "y": 0.49538
+        },
+        "leftShoulder": {
+          "confidence": 0.8618,
+          "x": 0.50892,
+          "y": 0.24376
+        },
+        "rightHip": {
+          "confidence": 0.6777,
+          "x": 0.43646,
+          "y": 0.49903
+        },
+        "rightShoulder": {
+          "confidence": 0.8906,
+          "x": 0.42205,
+          "y": 0.23859
+        }
+      },
+      "timestampMs": 4004
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7388,
+          "x": 0.4923,
+          "y": 0.48418
+        },
+        "leftShoulder": {
+          "confidence": 0.8892,
+          "x": 0.50727,
+          "y": 0.23856
+        },
+        "rightHip": {
+          "confidence": 0.7163,
+          "x": 0.43877,
+          "y": 0.49159
+        },
+        "rightShoulder": {
+          "confidence": 0.8555,
+          "x": 0.42117,
+          "y": 0.23031
+        }
+      },
+      "timestampMs": 4071
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7402,
+          "x": 0.4927,
+          "y": 0.48656
+        },
+        "leftShoulder": {
+          "confidence": 0.8325,
+          "x": 0.50537,
+          "y": 0.24815
+        },
+        "rightHip": {
+          "confidence": 0.6694,
+          "x": 0.43764,
+          "y": 0.49915
+        },
+        "rightShoulder": {
+          "confidence": 0.9175,
+          "x": 0.42016,
+          "y": 0.23703
+        }
+      },
+      "timestampMs": 4137
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.75,
+          "x": 0.49512,
+          "y": 0.50602
+        },
+        "leftShoulder": {
+          "confidence": 0.8682,
+          "x": 0.50178,
+          "y": 0.25853
+        },
+        "rightHip": {
+          "confidence": 0.7075,
+          "x": 0.43837,
+          "y": 0.51806
+        },
+        "rightShoulder": {
+          "confidence": 0.8833,
+          "x": 0.41963,
+          "y": 0.24346
+        }
+      },
+      "timestampMs": 4204
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.75,
+          "x": 0.49525,
+          "y": 0.50576
+        },
+        "leftShoulder": {
+          "confidence": 0.8032,
+          "x": 0.50076,
+          "y": 0.26783
+        },
+        "rightHip": {
+          "confidence": 0.7251,
+          "x": 0.43911,
+          "y": 0.51726
+        },
+        "rightShoulder": {
+          "confidence": 0.7988,
+          "x": 0.42265,
+          "y": 0.2467
+        }
+      },
+      "timestampMs": 4271
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7485,
+          "x": 0.49589,
+          "y": 0.50732
+        },
+        "leftShoulder": {
+          "confidence": 0.8179,
+          "x": 0.50241,
+          "y": 0.26769
+        },
+        "rightHip": {
+          "confidence": 0.7124,
+          "x": 0.43868,
+          "y": 0.5182
+        },
+        "rightShoulder": {
+          "confidence": 0.7456,
+          "x": 0.42646,
+          "y": 0.24745
+        }
+      },
+      "timestampMs": 4338
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7368,
+          "x": 0.49713,
+          "y": 0.5045
+        },
+        "leftShoulder": {
+          "confidence": 0.8545,
+          "x": 0.50544,
+          "y": 0.25849
+        },
+        "rightHip": {
+          "confidence": 0.7256,
+          "x": 0.4387,
+          "y": 0.51522
+        },
+        "rightShoulder": {
+          "confidence": 0.7148,
+          "x": 0.42943,
+          "y": 0.24823
+        }
+      },
+      "timestampMs": 4404
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7529,
+          "x": 0.49694,
+          "y": 0.48568
+        },
+        "leftShoulder": {
+          "confidence": 0.7886,
+          "x": 0.50446,
+          "y": 0.2373
+        },
+        "rightHip": {
+          "confidence": 0.707,
+          "x": 0.43937,
+          "y": 0.4949
+        },
+        "rightShoulder": {
+          "confidence": 0.6885,
+          "x": 0.42878,
+          "y": 0.24756
+        }
+      },
+      "timestampMs": 4471
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7041,
+          "x": 0.49772,
+          "y": 0.48188
+        },
+        "leftShoulder": {
+          "confidence": 0.7563,
+          "x": 0.50289,
+          "y": 0.20955
+        },
+        "rightHip": {
+          "confidence": 0.6924,
+          "x": 0.43972,
+          "y": 0.47965
+        },
+        "rightShoulder": {
+          "confidence": 0.6763,
+          "x": 0.42838,
+          "y": 0.23806
+        }
+      },
+      "timestampMs": 4538
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.708,
+          "x": 0.49719,
+          "y": 0.47179
+        },
+        "leftShoulder": {
+          "confidence": 0.7783,
+          "x": 0.50696,
+          "y": 0.1948
+        },
+        "rightHip": {
+          "confidence": 0.7441,
+          "x": 0.44092,
+          "y": 0.46828
+        },
+        "rightShoulder": {
+          "confidence": 0.6353,
+          "x": 0.43027,
+          "y": 0.22785
+        }
+      },
+      "timestampMs": 4605
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6753,
+          "x": 0.49922,
+          "y": 0.48363
+        },
+        "leftShoulder": {
+          "confidence": 0.8159,
+          "x": 0.50982,
+          "y": 0.19876
+        },
+        "rightHip": {
+          "confidence": 0.7256,
+          "x": 0.44182,
+          "y": 0.47619
+        },
+        "rightShoulder": {
+          "confidence": 0.6523,
+          "x": 0.43174,
+          "y": 0.24382
+        }
+      },
+      "timestampMs": 4671
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6704,
+          "x": 0.49945,
+          "y": 0.49213
+        },
+        "leftShoulder": {
+          "confidence": 0.7617,
+          "x": 0.51157,
+          "y": 0.20938
+        },
+        "rightHip": {
+          "confidence": 0.7539,
+          "x": 0.44241,
+          "y": 0.49087
+        },
+        "rightShoulder": {
+          "confidence": 0.6367,
+          "x": 0.43405,
+          "y": 0.25128
+        }
+      },
+      "timestampMs": 4738
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6919,
+          "x": 0.49888,
+          "y": 0.49102
+        },
+        "leftShoulder": {
+          "confidence": 0.8442,
+          "x": 0.51234,
+          "y": 0.21549
+        },
+        "rightHip": {
+          "confidence": 0.7646,
+          "x": 0.44276,
+          "y": 0.48766
+        },
+        "rightShoulder": {
+          "confidence": 0.6768,
+          "x": 0.43556,
+          "y": 0.25569
+        }
+      },
+      "timestampMs": 4805
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.689,
+          "x": 0.49911,
+          "y": 0.48719
+        },
+        "leftShoulder": {
+          "confidence": 0.8633,
+          "x": 0.51404,
+          "y": 0.21557
+        },
+        "rightHip": {
+          "confidence": 0.7573,
+          "x": 0.44241,
+          "y": 0.48126
+        },
+        "rightShoulder": {
+          "confidence": 0.6431,
+          "x": 0.43653,
+          "y": 0.2501
+        }
+      },
+      "timestampMs": 4872
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6997,
+          "x": 0.50109,
+          "y": 0.49
+        },
+        "leftShoulder": {
+          "confidence": 0.8667,
+          "x": 0.51458,
+          "y": 0.21544
+        },
+        "rightHip": {
+          "confidence": 0.7568,
+          "x": 0.44347,
+          "y": 0.48483
+        },
+        "rightShoulder": {
+          "confidence": 0.7129,
+          "x": 0.43354,
+          "y": 0.23967
+        }
+      },
+      "timestampMs": 4938
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6929,
+          "x": 0.50272,
+          "y": 0.47655
+        },
+        "leftShoulder": {
+          "confidence": 0.8345,
+          "x": 0.51359,
+          "y": 0.21457
+        },
+        "rightHip": {
+          "confidence": 0.7241,
+          "x": 0.44504,
+          "y": 0.47492
+        },
+        "rightShoulder": {
+          "confidence": 0.7549,
+          "x": 0.43417,
+          "y": 0.21873
+        }
+      },
+      "timestampMs": 5005
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7207,
+          "x": 0.50434,
+          "y": 0.46266
+        },
+        "leftShoulder": {
+          "confidence": 0.7988,
+          "x": 0.51335,
+          "y": 0.21101
+        },
+        "rightHip": {
+          "confidence": 0.7153,
+          "x": 0.44828,
+          "y": 0.46694
+        },
+        "rightShoulder": {
+          "confidence": 0.7915,
+          "x": 0.43529,
+          "y": 0.20016
+        }
+      },
+      "timestampMs": 5072
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7168,
+          "x": 0.50394,
+          "y": 0.4641
+        },
+        "leftShoulder": {
+          "confidence": 0.8013,
+          "x": 0.5121,
+          "y": 0.21453
+        },
+        "rightHip": {
+          "confidence": 0.6992,
+          "x": 0.45099,
+          "y": 0.46897
+        },
+        "rightShoulder": {
+          "confidence": 0.8013,
+          "x": 0.43508,
+          "y": 0.18698
+        }
+      },
+      "timestampMs": 5138
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7256,
+          "x": 0.50639,
+          "y": 0.4698
+        },
+        "leftShoulder": {
+          "confidence": 0.7104,
+          "x": 0.51154,
+          "y": 0.22613
+        },
+        "rightHip": {
+          "confidence": 0.7065,
+          "x": 0.45209,
+          "y": 0.48033
+        },
+        "rightShoulder": {
+          "confidence": 0.8545,
+          "x": 0.43602,
+          "y": 0.1926
+        }
+      },
+      "timestampMs": 5205
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7153,
+          "x": 0.5089,
+          "y": 0.47543
+        },
+        "leftShoulder": {
+          "confidence": 0.7651,
+          "x": 0.51164,
+          "y": 0.23972
+        },
+        "rightHip": {
+          "confidence": 0.7598,
+          "x": 0.45539,
+          "y": 0.48815
+        },
+        "rightShoulder": {
+          "confidence": 0.8203,
+          "x": 0.43807,
+          "y": 0.20277
+        }
+      },
+      "timestampMs": 5272
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7192,
+          "x": 0.51015,
+          "y": 0.47457
+        },
+        "leftShoulder": {
+          "confidence": 0.7871,
+          "x": 0.51364,
+          "y": 0.25157
+        },
+        "rightHip": {
+          "confidence": 0.7485,
+          "x": 0.45775,
+          "y": 0.49152
+        },
+        "rightShoulder": {
+          "confidence": 0.8486,
+          "x": 0.43889,
+          "y": 0.21289
+        }
+      },
+      "timestampMs": 5339
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6807,
+          "x": 0.5132,
+          "y": 0.47466
+        },
+        "leftShoulder": {
+          "confidence": 0.7485,
+          "x": 0.51314,
+          "y": 0.24656
+        },
+        "rightHip": {
+          "confidence": 0.7271,
+          "x": 0.45932,
+          "y": 0.49167
+        },
+        "rightShoulder": {
+          "confidence": 0.8833,
+          "x": 0.44078,
+          "y": 0.21433
+        }
+      },
+      "timestampMs": 5405
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7007,
+          "x": 0.51499,
+          "y": 0.47498
+        },
+        "leftShoulder": {
+          "confidence": 0.7749,
+          "x": 0.51463,
+          "y": 0.2399
+        },
+        "rightHip": {
+          "confidence": 0.7114,
+          "x": 0.46007,
+          "y": 0.48941
+        },
+        "rightShoulder": {
+          "confidence": 0.8828,
+          "x": 0.44274,
+          "y": 0.21374
+        }
+      },
+      "timestampMs": 5472
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7231,
+          "x": 0.51592,
+          "y": 0.47195
+        },
+        "leftShoulder": {
+          "confidence": 0.7764,
+          "x": 0.51998,
+          "y": 0.22661
+        },
+        "rightHip": {
+          "confidence": 0.7065,
+          "x": 0.46009,
+          "y": 0.47974
+        },
+        "rightShoulder": {
+          "confidence": 0.835,
+          "x": 0.44503,
+          "y": 0.20565
+        }
+      },
+      "timestampMs": 5539
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7075,
+          "x": 0.51577,
+          "y": 0.46536
+        },
+        "leftShoulder": {
+          "confidence": 0.7544,
+          "x": 0.51909,
+          "y": 0.20715
+        },
+        "rightHip": {
+          "confidence": 0.71,
+          "x": 0.46026,
+          "y": 0.4673
+        },
+        "rightShoulder": {
+          "confidence": 0.8081,
+          "x": 0.44739,
+          "y": 0.20065
+        }
+      },
+      "timestampMs": 5606
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6943,
+          "x": 0.51519,
+          "y": 0.46384
+        },
+        "leftShoulder": {
+          "confidence": 0.791,
+          "x": 0.52101,
+          "y": 0.19729
+        },
+        "rightHip": {
+          "confidence": 0.7007,
+          "x": 0.46101,
+          "y": 0.46445
+        },
+        "rightShoulder": {
+          "confidence": 0.7598,
+          "x": 0.45201,
+          "y": 0.20222
+        }
+      },
+      "timestampMs": 5672
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.686,
+          "x": 0.51428,
+          "y": 0.47228
+        },
+        "leftShoulder": {
+          "confidence": 0.7886,
+          "x": 0.51917,
+          "y": 0.19944
+        },
+        "rightHip": {
+          "confidence": 0.7036,
+          "x": 0.46001,
+          "y": 0.47283
+        },
+        "rightShoulder": {
+          "confidence": 0.7495,
+          "x": 0.45205,
+          "y": 0.21537
+        }
+      },
+      "timestampMs": 5739
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.667,
+          "x": 0.51413,
+          "y": 0.4805
+        },
+        "leftShoulder": {
+          "confidence": 0.7354,
+          "x": 0.51891,
+          "y": 0.20311
+        },
+        "rightHip": {
+          "confidence": 0.686,
+          "x": 0.46078,
+          "y": 0.4809
+        },
+        "rightShoulder": {
+          "confidence": 0.7534,
+          "x": 0.45348,
+          "y": 0.2281
+        }
+      },
+      "timestampMs": 5806
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6582,
+          "x": 0.51241,
+          "y": 0.47481
+        },
+        "leftShoulder": {
+          "confidence": 0.7178,
+          "x": 0.52235,
+          "y": 0.20752
+        },
+        "rightHip": {
+          "confidence": 0.7065,
+          "x": 0.45873,
+          "y": 0.47571
+        },
+        "rightShoulder": {
+          "confidence": 0.6963,
+          "x": 0.45138,
+          "y": 0.2297
+        }
+      },
+      "timestampMs": 5873
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6606,
+          "x": 0.51155,
+          "y": 0.47601
+        },
+        "leftShoulder": {
+          "confidence": 0.7285,
+          "x": 0.52437,
+          "y": 0.21019
+        },
+        "rightHip": {
+          "confidence": 0.7153,
+          "x": 0.45674,
+          "y": 0.47657
+        },
+        "rightShoulder": {
+          "confidence": 0.6768,
+          "x": 0.44821,
+          "y": 0.23244
+        }
+      },
+      "timestampMs": 5939
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6597,
+          "x": 0.51274,
+          "y": 0.4749
+        },
+        "leftShoulder": {
+          "confidence": 0.7549,
+          "x": 0.52374,
+          "y": 0.21135
+        },
+        "rightHip": {
+          "confidence": 0.7168,
+          "x": 0.45766,
+          "y": 0.47461
+        },
+        "rightShoulder": {
+          "confidence": 0.7437,
+          "x": 0.44581,
+          "y": 0.22094
+        }
+      },
+      "timestampMs": 6006
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6934,
+          "x": 0.51336,
+          "y": 0.46265
+        },
+        "leftShoulder": {
+          "confidence": 0.7148,
+          "x": 0.52467,
+          "y": 0.2041
+        },
+        "rightHip": {
+          "confidence": 0.7358,
+          "x": 0.45838,
+          "y": 0.46544
+        },
+        "rightShoulder": {
+          "confidence": 0.7632,
+          "x": 0.44253,
+          "y": 0.20405
+        }
+      },
+      "timestampMs": 6073
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6816,
+          "x": 0.51222,
+          "y": 0.45614
+        },
+        "leftShoulder": {
+          "confidence": 0.8169,
+          "x": 0.52204,
+          "y": 0.1981
+        },
+        "rightHip": {
+          "confidence": 0.7393,
+          "x": 0.45833,
+          "y": 0.46563
+        },
+        "rightShoulder": {
+          "confidence": 0.792,
+          "x": 0.43855,
+          "y": 0.19329
+        }
+      },
+      "timestampMs": 6139
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6987,
+          "x": 0.51066,
+          "y": 0.45648
+        },
+        "leftShoulder": {
+          "confidence": 0.8286,
+          "x": 0.51869,
+          "y": 0.20486
+        },
+        "rightHip": {
+          "confidence": 0.7603,
+          "x": 0.45667,
+          "y": 0.46958
+        },
+        "rightShoulder": {
+          "confidence": 0.8369,
+          "x": 0.43638,
+          "y": 0.1932
+        }
+      },
+      "timestampMs": 6206
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7188,
+          "x": 0.50981,
+          "y": 0.46531
+        },
+        "leftShoulder": {
+          "confidence": 0.8467,
+          "x": 0.51764,
+          "y": 0.22397
+        },
+        "rightHip": {
+          "confidence": 0.7407,
+          "x": 0.45598,
+          "y": 0.47529
+        },
+        "rightShoulder": {
+          "confidence": 0.853,
+          "x": 0.43512,
+          "y": 0.20243
+        }
+      },
+      "timestampMs": 6273
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7153,
+          "x": 0.50963,
+          "y": 0.47368
+        },
+        "leftShoulder": {
+          "confidence": 0.8862,
+          "x": 0.51674,
+          "y": 0.23581
+        },
+        "rightHip": {
+          "confidence": 0.7637,
+          "x": 0.45647,
+          "y": 0.48632
+        },
+        "rightShoulder": {
+          "confidence": 0.8667,
+          "x": 0.43639,
+          "y": 0.21461
+        }
+      },
+      "timestampMs": 6340
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7446,
+          "x": 0.50931,
+          "y": 0.47122
+        },
+        "leftShoulder": {
+          "confidence": 0.8804,
+          "x": 0.51899,
+          "y": 0.24024
+        },
+        "rightHip": {
+          "confidence": 0.7539,
+          "x": 0.45703,
+          "y": 0.48368
+        },
+        "rightShoulder": {
+          "confidence": 0.8359,
+          "x": 0.43747,
+          "y": 0.21616
+        }
+      },
+      "timestampMs": 6406
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7363,
+          "x": 0.50964,
+          "y": 0.47202
+        },
+        "leftShoulder": {
+          "confidence": 0.8594,
+          "x": 0.51895,
+          "y": 0.24309
+        },
+        "rightHip": {
+          "confidence": 0.7642,
+          "x": 0.4558,
+          "y": 0.48575
+        },
+        "rightShoulder": {
+          "confidence": 0.8477,
+          "x": 0.43716,
+          "y": 0.21526
+        }
+      },
+      "timestampMs": 6473
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7427,
+          "x": 0.50653,
+          "y": 0.46586
+        },
+        "leftShoulder": {
+          "confidence": 0.8809,
+          "x": 0.5176,
+          "y": 0.23725
+        },
+        "rightHip": {
+          "confidence": 0.7012,
+          "x": 0.4516,
+          "y": 0.47416
+        },
+        "rightShoulder": {
+          "confidence": 0.8057,
+          "x": 0.43656,
+          "y": 0.20993
+        }
+      },
+      "timestampMs": 6540
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7251,
+          "x": 0.50424,
+          "y": 0.45935
+        },
+        "leftShoulder": {
+          "confidence": 0.897,
+          "x": 0.51783,
+          "y": 0.21886
+        },
+        "rightHip": {
+          "confidence": 0.7109,
+          "x": 0.44753,
+          "y": 0.46133
+        },
+        "rightShoulder": {
+          "confidence": 0.856,
+          "x": 0.4358,
+          "y": 0.20133
+        }
+      },
+      "timestampMs": 6607
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6938,
+          "x": 0.50017,
+          "y": 0.45332
+        },
+        "leftShoulder": {
+          "confidence": 0.8555,
+          "x": 0.51948,
+          "y": 0.205
+        },
+        "rightHip": {
+          "confidence": 0.7422,
+          "x": 0.44311,
+          "y": 0.45167
+        },
+        "rightShoulder": {
+          "confidence": 0.8535,
+          "x": 0.43647,
+          "y": 0.19884
+        }
+      },
+      "timestampMs": 6673
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6899,
+          "x": 0.5005,
+          "y": 0.46146
+        },
+        "leftShoulder": {
+          "confidence": 0.8286,
+          "x": 0.51971,
+          "y": 0.20777
+        },
+        "rightHip": {
+          "confidence": 0.7202,
+          "x": 0.44197,
+          "y": 0.45954
+        },
+        "rightShoulder": {
+          "confidence": 0.814,
+          "x": 0.43688,
+          "y": 0.21016
+        }
+      },
+      "timestampMs": 6740
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7139,
+          "x": 0.49792,
+          "y": 0.46502
+        },
+        "leftShoulder": {
+          "confidence": 0.8984,
+          "x": 0.51881,
+          "y": 0.2146
+        },
+        "rightHip": {
+          "confidence": 0.7314,
+          "x": 0.44191,
+          "y": 0.46624
+        },
+        "rightShoulder": {
+          "confidence": 0.8325,
+          "x": 0.43739,
+          "y": 0.223
+        }
+      },
+      "timestampMs": 6807
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.73,
+          "x": 0.49371,
+          "y": 0.46629
+        },
+        "leftShoulder": {
+          "confidence": 0.896,
+          "x": 0.51611,
+          "y": 0.21959
+        },
+        "rightHip": {
+          "confidence": 0.6978,
+          "x": 0.43896,
+          "y": 0.46869
+        },
+        "rightShoulder": {
+          "confidence": 0.832,
+          "x": 0.43453,
+          "y": 0.22855
+        }
+      },
+      "timestampMs": 6874
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7285,
+          "x": 0.4911,
+          "y": 0.46584
+        },
+        "leftShoulder": {
+          "confidence": 0.8823,
+          "x": 0.51364,
+          "y": 0.21676
+        },
+        "rightHip": {
+          "confidence": 0.7358,
+          "x": 0.43514,
+          "y": 0.465
+        },
+        "rightShoulder": {
+          "confidence": 0.8696,
+          "x": 0.43073,
+          "y": 0.22525
+        }
+      },
+      "timestampMs": 6940
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.687,
+          "x": 0.48916,
+          "y": 0.46402
+        },
+        "leftShoulder": {
+          "confidence": 0.8545,
+          "x": 0.51107,
+          "y": 0.21928
+        },
+        "rightHip": {
+          "confidence": 0.7388,
+          "x": 0.43242,
+          "y": 0.46433
+        },
+        "rightShoulder": {
+          "confidence": 0.8799,
+          "x": 0.42716,
+          "y": 0.2211
+        }
+      },
+      "timestampMs": 7007
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6592,
+          "x": 0.4896,
+          "y": 0.45887
+        },
+        "leftShoulder": {
+          "confidence": 0.8823,
+          "x": 0.50814,
+          "y": 0.21285
+        },
+        "rightHip": {
+          "confidence": 0.7324,
+          "x": 0.4314,
+          "y": 0.463
+        },
+        "rightShoulder": {
+          "confidence": 0.835,
+          "x": 0.42424,
+          "y": 0.21134
+        }
+      },
+      "timestampMs": 7074
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6763,
+          "x": 0.48761,
+          "y": 0.44984
+        },
+        "leftShoulder": {
+          "confidence": 0.8809,
+          "x": 0.50693,
+          "y": 0.20212
+        },
+        "rightHip": {
+          "confidence": 0.7202,
+          "x": 0.43103,
+          "y": 0.45325
+        },
+        "rightShoulder": {
+          "confidence": 0.8774,
+          "x": 0.42204,
+          "y": 0.19308
+        }
+      },
+      "timestampMs": 7140
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6929,
+          "x": 0.48779,
+          "y": 0.44179
+        },
+        "leftShoulder": {
+          "confidence": 0.8828,
+          "x": 0.50406,
+          "y": 0.20238
+        },
+        "rightHip": {
+          "confidence": 0.7534,
+          "x": 0.43011,
+          "y": 0.44691
+        },
+        "rightShoulder": {
+          "confidence": 0.8545,
+          "x": 0.41932,
+          "y": 0.18507
+        }
+      },
+      "timestampMs": 7207
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6865,
+          "x": 0.48641,
+          "y": 0.44523
+        },
+        "leftShoulder": {
+          "confidence": 0.8638,
+          "x": 0.50144,
+          "y": 0.21435
+        },
+        "rightHip": {
+          "confidence": 0.7251,
+          "x": 0.43115,
+          "y": 0.45336
+        },
+        "rightShoulder": {
+          "confidence": 0.9043,
+          "x": 0.41752,
+          "y": 0.19281
+        }
+      },
+      "timestampMs": 7274
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6631,
+          "x": 0.48626,
+          "y": 0.45653
+        },
+        "leftShoulder": {
+          "confidence": 0.7715,
+          "x": 0.49935,
+          "y": 0.22754
+        },
+        "rightHip": {
+          "confidence": 0.7354,
+          "x": 0.43131,
+          "y": 0.46542
+        },
+        "rightShoulder": {
+          "confidence": 0.8691,
+          "x": 0.41632,
+          "y": 0.20246
+        }
+      },
+      "timestampMs": 7341
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6792,
+          "x": 0.48541,
+          "y": 0.4615
+        },
+        "leftShoulder": {
+          "confidence": 0.8306,
+          "x": 0.50089,
+          "y": 0.23203
+        },
+        "rightHip": {
+          "confidence": 0.7202,
+          "x": 0.43056,
+          "y": 0.46926
+        },
+        "rightShoulder": {
+          "confidence": 0.8315,
+          "x": 0.41666,
+          "y": 0.20732
+        }
+      },
+      "timestampMs": 7407
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6709,
+          "x": 0.48569,
+          "y": 0.46451
+        },
+        "leftShoulder": {
+          "confidence": 0.8359,
+          "x": 0.5011,
+          "y": 0.23122
+        },
+        "rightHip": {
+          "confidence": 0.7104,
+          "x": 0.42871,
+          "y": 0.47035
+        },
+        "rightShoulder": {
+          "confidence": 0.8506,
+          "x": 0.4169,
+          "y": 0.20454
+        }
+      },
+      "timestampMs": 7474
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6602,
+          "x": 0.4876,
+          "y": 0.46597
+        },
+        "leftShoulder": {
+          "confidence": 0.8223,
+          "x": 0.50177,
+          "y": 0.22582
+        },
+        "rightHip": {
+          "confidence": 0.6982,
+          "x": 0.42974,
+          "y": 0.47126
+        },
+        "rightShoulder": {
+          "confidence": 0.8462,
+          "x": 0.4182,
+          "y": 0.20554
+        }
+      },
+      "timestampMs": 7541
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6548,
+          "x": 0.48916,
+          "y": 0.4564
+        },
+        "leftShoulder": {
+          "confidence": 0.896,
+          "x": 0.50419,
+          "y": 0.21347
+        },
+        "rightHip": {
+          "confidence": 0.7212,
+          "x": 0.42939,
+          "y": 0.4624
+        },
+        "rightShoulder": {
+          "confidence": 0.9038,
+          "x": 0.41973,
+          "y": 0.19522
+        }
+      },
+      "timestampMs": 7608
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6655,
+          "x": 0.48801,
+          "y": 0.44852
+        },
+        "leftShoulder": {
+          "confidence": 0.8857,
+          "x": 0.50836,
+          "y": 0.1954
+        },
+        "rightHip": {
+          "confidence": 0.7231,
+          "x": 0.42816,
+          "y": 0.44909
+        },
+        "rightShoulder": {
+          "confidence": 0.8262,
+          "x": 0.42236,
+          "y": 0.1872
+        }
+      },
+      "timestampMs": 7674
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6987,
+          "x": 0.48645,
+          "y": 0.4474
+        },
+        "leftShoulder": {
+          "confidence": 0.8735,
+          "x": 0.50941,
+          "y": 0.19197
+        },
+        "rightHip": {
+          "confidence": 0.7212,
+          "x": 0.42811,
+          "y": 0.44723
+        },
+        "rightShoulder": {
+          "confidence": 0.8711,
+          "x": 0.42227,
+          "y": 0.19176
+        }
+      },
+      "timestampMs": 7741
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7002,
+          "x": 0.48554,
+          "y": 0.4557
+        },
+        "leftShoulder": {
+          "confidence": 0.8647,
+          "x": 0.50931,
+          "y": 0.19718
+        },
+        "rightHip": {
+          "confidence": 0.6958,
+          "x": 0.4278,
+          "y": 0.45972
+        },
+        "rightShoulder": {
+          "confidence": 0.8301,
+          "x": 0.423,
+          "y": 0.20512
+        }
+      },
+      "timestampMs": 7808
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7271,
+          "x": 0.48416,
+          "y": 0.46506
+        },
+        "leftShoulder": {
+          "confidence": 0.8081,
+          "x": 0.50847,
+          "y": 0.2069
+        },
+        "rightHip": {
+          "confidence": 0.7114,
+          "x": 0.42748,
+          "y": 0.46682
+        },
+        "rightShoulder": {
+          "confidence": 0.8784,
+          "x": 0.42211,
+          "y": 0.21604
+        }
+      },
+      "timestampMs": 7875
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7139,
+          "x": 0.48265,
+          "y": 0.45727
+        },
+        "leftShoulder": {
+          "confidence": 0.8442,
+          "x": 0.50691,
+          "y": 0.20849
+        },
+        "rightHip": {
+          "confidence": 0.6709,
+          "x": 0.42577,
+          "y": 0.45894
+        },
+        "rightShoulder": {
+          "confidence": 0.8857,
+          "x": 0.4215,
+          "y": 0.21878
+        }
+      },
+      "timestampMs": 7941
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7031,
+          "x": 0.48118,
+          "y": 0.45857
+        },
+        "leftShoulder": {
+          "confidence": 0.8276,
+          "x": 0.5065,
+          "y": 0.20628
+        },
+        "rightHip": {
+          "confidence": 0.6743,
+          "x": 0.4253,
+          "y": 0.46001
+        },
+        "rightShoulder": {
+          "confidence": 0.8955,
+          "x": 0.42021,
+          "y": 0.21586
+        }
+      },
+      "timestampMs": 8008
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7017,
+          "x": 0.48152,
+          "y": 0.45597
+        },
+        "leftShoulder": {
+          "confidence": 0.8726,
+          "x": 0.50726,
+          "y": 0.2019
+        },
+        "rightHip": {
+          "confidence": 0.6748,
+          "x": 0.42483,
+          "y": 0.45961
+        },
+        "rightShoulder": {
+          "confidence": 0.8462,
+          "x": 0.41766,
+          "y": 0.20788
+        }
+      },
+      "timestampMs": 8075
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6895,
+          "x": 0.48483,
+          "y": 0.44502
+        },
+        "leftShoulder": {
+          "confidence": 0.9058,
+          "x": 0.50556,
+          "y": 0.19345
+        },
+        "rightHip": {
+          "confidence": 0.7036,
+          "x": 0.42651,
+          "y": 0.44825
+        },
+        "rightShoulder": {
+          "confidence": 0.8984,
+          "x": 0.41768,
+          "y": 0.19058
+        }
+      },
+      "timestampMs": 8141
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6597,
+          "x": 0.48511,
+          "y": 0.44099
+        },
+        "leftShoulder": {
+          "confidence": 0.8633,
+          "x": 0.50455,
+          "y": 0.18939
+        },
+        "rightHip": {
+          "confidence": 0.7246,
+          "x": 0.42862,
+          "y": 0.4482
+        },
+        "rightShoulder": {
+          "confidence": 0.8843,
+          "x": 0.41717,
+          "y": 0.18182
+        }
+      },
+      "timestampMs": 8208
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7046,
+          "x": 0.48829,
+          "y": 0.44641
+        },
+        "leftShoulder": {
+          "confidence": 0.8828,
+          "x": 0.50326,
+          "y": 0.20026
+        },
+        "rightHip": {
+          "confidence": 0.7495,
+          "x": 0.43232,
+          "y": 0.4528
+        },
+        "rightShoulder": {
+          "confidence": 0.8467,
+          "x": 0.41589,
+          "y": 0.18964
+        }
+      },
+      "timestampMs": 8275
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7129,
+          "x": 0.49019,
+          "y": 0.45413
+        },
+        "leftShoulder": {
+          "confidence": 0.8682,
+          "x": 0.50135,
+          "y": 0.2154
+        },
+        "rightHip": {
+          "confidence": 0.7495,
+          "x": 0.43436,
+          "y": 0.46382
+        },
+        "rightShoulder": {
+          "confidence": 0.8516,
+          "x": 0.41471,
+          "y": 0.20101
+        }
+      },
+      "timestampMs": 8342
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7065,
+          "x": 0.4908,
+          "y": 0.46009
+        },
+        "leftShoulder": {
+          "confidence": 0.8125,
+          "x": 0.50033,
+          "y": 0.2237
+        },
+        "rightHip": {
+          "confidence": 0.7124,
+          "x": 0.43555,
+          "y": 0.47015
+        },
+        "rightShoulder": {
+          "confidence": 0.8286,
+          "x": 0.41564,
+          "y": 0.20699
+        }
+      },
+      "timestampMs": 8408
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7227,
+          "x": 0.49116,
+          "y": 0.45508
+        },
+        "leftShoulder": {
+          "confidence": 0.7866,
+          "x": 0.49868,
+          "y": 0.22741
+        },
+        "rightHip": {
+          "confidence": 0.7417,
+          "x": 0.43428,
+          "y": 0.46805
+        },
+        "rightShoulder": {
+          "confidence": 0.8447,
+          "x": 0.41562,
+          "y": 0.20621
+        }
+      },
+      "timestampMs": 8475
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.666,
+          "x": 0.48884,
+          "y": 0.45993
+        },
+        "leftShoulder": {
+          "confidence": 0.8291,
+          "x": 0.49735,
+          "y": 0.22408
+        },
+        "rightHip": {
+          "confidence": 0.7314,
+          "x": 0.4329,
+          "y": 0.4689
+        },
+        "rightShoulder": {
+          "confidence": 0.8501,
+          "x": 0.41564,
+          "y": 0.20519
+        }
+      },
+      "timestampMs": 8542
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6934,
+          "x": 0.48555,
+          "y": 0.45199
+        },
+        "leftShoulder": {
+          "confidence": 0.8638,
+          "x": 0.49825,
+          "y": 0.21552
+        },
+        "rightHip": {
+          "confidence": 0.7212,
+          "x": 0.42801,
+          "y": 0.461
+        },
+        "rightShoulder": {
+          "confidence": 0.8711,
+          "x": 0.41468,
+          "y": 0.20008
+        }
+      },
+      "timestampMs": 8609
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7026,
+          "x": 0.48462,
+          "y": 0.44764
+        },
+        "leftShoulder": {
+          "confidence": 0.835,
+          "x": 0.4988,
+          "y": 0.20239
+        },
+        "rightHip": {
+          "confidence": 0.7017,
+          "x": 0.42619,
+          "y": 0.45264
+        },
+        "rightShoulder": {
+          "confidence": 0.8799,
+          "x": 0.41428,
+          "y": 0.1927
+        }
+      },
+      "timestampMs": 8675
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7305,
+          "x": 0.48228,
+          "y": 0.44524
+        },
+        "leftShoulder": {
+          "confidence": 0.8745,
+          "x": 0.49762,
+          "y": 0.19504
+        },
+        "rightHip": {
+          "confidence": 0.7427,
+          "x": 0.42339,
+          "y": 0.44748
+        },
+        "rightShoulder": {
+          "confidence": 0.8608,
+          "x": 0.4134,
+          "y": 0.19636
+        }
+      },
+      "timestampMs": 8742
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7065,
+          "x": 0.48016,
+          "y": 0.45556
+        },
+        "leftShoulder": {
+          "confidence": 0.8452,
+          "x": 0.49628,
+          "y": 0.20382
+        },
+        "rightHip": {
+          "confidence": 0.7051,
+          "x": 0.42327,
+          "y": 0.4589
+        },
+        "rightShoulder": {
+          "confidence": 0.8291,
+          "x": 0.41205,
+          "y": 0.21063
+        }
+      },
+      "timestampMs": 8809
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7202,
+          "x": 0.47959,
+          "y": 0.46659
+        },
+        "leftShoulder": {
+          "confidence": 0.8989,
+          "x": 0.49225,
+          "y": 0.21561
+        },
+        "rightHip": {
+          "confidence": 0.7246,
+          "x": 0.42274,
+          "y": 0.46825
+        },
+        "rightShoulder": {
+          "confidence": 0.876,
+          "x": 0.41009,
+          "y": 0.22032
+        }
+      },
+      "timestampMs": 8876
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.686,
+          "x": 0.47656,
+          "y": 0.46826
+        },
+        "leftShoulder": {
+          "confidence": 0.873,
+          "x": 0.49135,
+          "y": 0.22227
+        },
+        "rightHip": {
+          "confidence": 0.7266,
+          "x": 0.42044,
+          "y": 0.47084
+        },
+        "rightShoulder": {
+          "confidence": 0.8242,
+          "x": 0.40931,
+          "y": 0.2289
+        }
+      },
+      "timestampMs": 8942
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7256,
+          "x": 0.47083,
+          "y": 0.46925
+        },
+        "leftShoulder": {
+          "confidence": 0.8701,
+          "x": 0.49023,
+          "y": 0.22184
+        },
+        "rightHip": {
+          "confidence": 0.7559,
+          "x": 0.4164,
+          "y": 0.47006
+        },
+        "rightShoulder": {
+          "confidence": 0.8672,
+          "x": 0.40899,
+          "y": 0.23166
+        }
+      },
+      "timestampMs": 9009
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.6631,
+          "x": 0.46374,
+          "y": 0.46202
+        },
+        "leftShoulder": {
+          "confidence": 0.8916,
+          "x": 0.48931,
+          "y": 0.21387
+        },
+        "rightHip": {
+          "confidence": 0.686,
+          "x": 0.41285,
+          "y": 0.46304
+        },
+        "rightShoulder": {
+          "confidence": 0.8887,
+          "x": 0.41537,
+          "y": 0.22058
+        }
+      },
+      "timestampMs": 9076
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.666,
+          "x": 0.4614,
+          "y": 0.45658
+        },
+        "leftShoulder": {
+          "confidence": 0.8462,
+          "x": 0.48629,
+          "y": 0.19972
+        },
+        "rightHip": {
+          "confidence": 0.7163,
+          "x": 0.41397,
+          "y": 0.45106
+        },
+        "rightShoulder": {
+          "confidence": 0.8491,
+          "x": 0.42372,
+          "y": 0.21117
+        }
+      },
+      "timestampMs": 9142
+    },
+    {
+      "landmarks": {
+        "leftHip": {
+          "confidence": 0.7236,
+          "x": 0.44691,
+          "y": 0.44877
+        },
+        "leftShoulder": {
+          "confidence": 0.8223,
+          "x": 0.47302,
+          "y": 0.18744
+        },
+        "rightHip": {
+          "confidence": 0.6582,
+          "x": 0.41938,
+          "y": 0.4449
+        },
+        "rightShoulder": {
+          "confidence": 0.7505,
+          "x": 0.44074,
+          "y": 0.18913
+        }
+      },
+      "timestampMs": 9209
+    }
+  ],
+  "source": "Mixkit",
+  "sourceId": "4856",
+  "sourceUrl": "https://assets.mixkit.co/videos/4856/4856-720.mp4"
+}

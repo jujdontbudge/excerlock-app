@@ -71,6 +71,42 @@ describe("GaitPeriodicityDetector", () => {
     });
   });
 
+  it("survives pose jitter injected into a genuine stride sequence", () => {
+    // Measured against real Vision output: pose estimation wobbles frame to
+    // frame, producing tiny local maxima between true stride peaks. Such a
+    // wobble must be discarded, not treated as a stride boundary — otherwise it
+    // becomes the reference for the next interval, yields an out-of-band
+    // period, and resets an otherwise clean run. Real footage showed 17 of 22
+    // detected peaks were jitter of this kind.
+    const detector = new GaitPeriodicityDetector({ startedAtMs: 0 });
+    const frequencyHz = 2;
+    const troughOffset = -0.02;
+    const jittered: GaitKeypointSample[] = [];
+    for (let elapsedMs = 0; elapsedMs <= 4_000; elapsedMs += 50) {
+      const phase = (elapsedMs / 1_000) * frequencyHz * Math.PI * 2;
+      jittered.push(bodySample(elapsedMs, Math.sin(phase) * 0.02));
+      // A wobble sitting just above every stride trough: a true local maximum,
+      // but with a prominence far below a real stride's. Real footage showed 17
+      // of 22 detected peaks were jitter like this, so a detector that survives
+      // only occasional wobbles is not good enough.
+      if ((elapsedMs - 350) % 500 === 0) {
+        jittered.push(bodySample(elapsedMs + 10, troughOffset));
+        jittered.push(bodySample(elapsedMs + 20, troughOffset + 0.001));
+        jittered.push(bodySample(elapsedMs + 30, troughOffset));
+      }
+    }
+
+    let result = detector.getResult(0);
+    for (const sample of jittered) {
+      result = detector.process(sample);
+      if (result.complete) {
+        break;
+      }
+    }
+
+    expect(result).toMatchObject({ classification: "walking", complete: true });
+  });
+
   it("rejects a person standing still when the five-second scan ends", () => {
     const detector = new GaitPeriodicityDetector({ startedAtMs: 0 });
     for (let timestampMs = 0; timestampMs < 5_000; timestampMs += 100) {

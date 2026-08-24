@@ -155,7 +155,16 @@ export class GaitPeriodicityDetector {
   }
 
   private recordPeak(peak: SignalPoint): void {
-    const verticalRange = peak.value - this.segmentMinimum;
+    // A local maximum is only a stride if it rises far enough above the trough
+    // before it. Real pose estimation jitters frame to frame, so without this
+    // guard a sub-pixel wobble both becomes the reference for the next interval
+    // and resets a run of genuine strides — one noisy frame destroys the scan.
+    // Discard it outright and keep the existing trough, because the real stride
+    // we are still climbing out of has not peaked yet.
+    if (peak.value - this.segmentMinimum < MIN_NORMALIZED_VERTICAL_RANGE) {
+      return;
+    }
+
     const previousPeakAtMs = this.lastPeakAtMs;
     this.lastPeakAtMs = peak.timestampMs;
     this.segmentMinimum = peak.value;
@@ -168,11 +177,7 @@ export class GaitPeriodicityDetector {
       1_000 / GAIT_MAX_FREQUENCY_HZ - this.samplingToleranceMs;
     const maximumPeriodMs =
       1_000 / GAIT_MIN_FREQUENCY_HZ + this.samplingToleranceMs;
-    if (
-      periodMs >= minimumPeriodMs &&
-      periodMs <= maximumPeriodMs &&
-      verticalRange >= MIN_NORMALIZED_VERTICAL_RANGE
-    ) {
+    if (periodMs >= minimumPeriodMs && periodMs <= maximumPeriodMs) {
       this.qualifyingStrides += 1;
       return;
     }
