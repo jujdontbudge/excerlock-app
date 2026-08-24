@@ -36,7 +36,8 @@ a rendering of a rule owned elsewhere — the one genuine exception is documente
 | `signals/fixtureFeed.ts` | Phase-2 composition root: fixture providers, real-time playback |
 | `signals/useHomeSignals.ts` | Subscribes a mounted screen to a feed |
 | `signals/gymPresenceController.ts` | Owns manual arrival check-in, explicit auto-detect opt-in, and persisted visit claims |
-| `signals/walkingSessionController.ts` | Owns explicit live verification sessions, the watchdog, active window, and sensor lifetime. Every composition root must hand it to the feed as `walkingState` — with `walking: null` and no `walkingState`, `activeSignals` can never report walking and the hold state is unreachable (this silently broke the E2E composition once, 2026-08-04) |
+| `signals/walkingSessionController.ts` | Owns explicit live verification sessions, treadmill placement phases, watchdogs, active window, and sensor lifetime. Every composition root must hand it to the feed as `walkingState` — with `walking: null` and no `walkingState`, `activeSignals` can never report walking and the hold state is unreachable (this silently broke the E2E composition once, 2026-08-04) |
+| `signals/walkingPlacementRuntime.ts` | Selects native `CMDeviceMotion` placement sensing for iOS builds and deterministic fixtures elsewhere. |
 | `signals/SignalRuntimeHosts.tsx` | Reconciles persisted condition/settings changes after build-specific composition is installed |
 | `store/homeState.ts` | Owned state shape, Unlimited default, and projections used by Home/Manage/lock |
 | `store/homeStore.ts` | Mutates conditions, journal and ledger config; wires the state to AsyncStorage |
@@ -75,7 +76,10 @@ the card the user approves is the card they get.
 - **Walking is an explicit session, never an ambient feed.** Creating the condition does not start
   Motion or Location. Its card starts the shared session; the same verified snapshot drives Home and
   Lock, and removing/disabling the condition stops native work. The condition's active window is the
-  only precedence restraint.
+  only precedence restraint. Propped starts enter scanning explicitly, keep the location background
+  lifetime alive, move through propped → handheld → handoff, and return to a shielded scan after the
+  fixed 60-second set-down window. Pickup allows 20 seconds for cadence before the configured exit
+  grace begins; set-down pauses that exit path rather than racing it.
 - **Gym check-in is foreground-first.** The arrival card samples the saved circle on demand with
   When-In-Use permission. Settings presents auto-detect as an optional hands-free upgrade and is the
   only `Always` permission boundary. Runtime reconciliation never promotes permission on its own.
