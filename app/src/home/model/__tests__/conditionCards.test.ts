@@ -124,6 +124,7 @@ describe("toConditionCards", () => {
       active: true,
       statusLabel: "Active · apps unlocked",
       graceLabel: "2 min grace",
+      startsProppedWalkingSession: true,
     });
   });
 
@@ -131,6 +132,7 @@ describe("toConditionCards", () => {
     const [card] = toConditionCards({ conditions: [walking], reading: EMPTY_READING });
 
     expect(card).toMatchObject({ active: false, statusLabel: "Waiting to start" });
+    expect(card).toMatchObject({ startsProppedWalkingSession: true });
   });
 
   it("builds a rate card as the ratio plus today's banked total", () => {

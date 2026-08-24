@@ -23,3 +23,4 @@ export type {
   GaitVisionModuleClient,
   GaitVisionModuleSubscription,
 } from "./GaitVisionModuleClient";
+export { createExcerlockGaitVisionModuleClient } from "./GaitVisionModuleClient";

@@ -156,6 +156,25 @@ describe("HomeScreen", () => {
     expect(start).toHaveBeenCalledWith("c-state");
   });
 
+  it("starts a propped session from copy that describes putting the phone down", async () => {
+    const start = jest.fn().mockResolvedValue(true);
+    const openProppedScan = jest.fn();
+    seed(walking);
+    await render(
+      <HomeScreen
+        feed={stubFeed()}
+        now={now}
+        walkingSessionController={{ start }}
+        openProppedScan={openProppedScan}
+      />,
+    );
+
+    await press("I'm propping my phone");
+
+    expect(start).toHaveBeenCalledWith("c-state", "propped");
+    expect(openProppedScan).toHaveBeenCalledWith("c-state");
+  });
+
   it("routes the gym card's Check in action through location confirmation", async () => {
     const checkIn = jest.fn().mockResolvedValue(true);
     seed(gymArrival);

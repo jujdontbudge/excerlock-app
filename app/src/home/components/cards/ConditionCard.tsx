@@ -8,16 +8,24 @@ export function ConditionCard({
   model,
   onComplete,
   onStartSession,
+  onStartProppedSession,
 }: {
   model: ConditionCardModel;
   onComplete: (conditionId: string) => void;
   onStartSession?: (conditionId: string) => void;
+  onStartProppedSession?: (conditionId: string) => void;
 }) {
   switch (model.kind) {
     case "event":
       return <EventCard model={model} onComplete={onComplete} />;
     case "state":
-      return <StateCard model={model} onStartSession={onStartSession} />;
+      return (
+        <StateCard
+          model={model}
+          onStartSession={onStartSession}
+          onStartProppedSession={onStartProppedSession}
+        />
+      );
     case "rate":
       return <RateCard model={model} />;
   }

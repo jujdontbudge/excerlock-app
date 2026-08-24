@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, View } from "react-native";
 
@@ -45,6 +45,7 @@ export interface HomeScreenProps {
   bannerPhotoPicker?: BannerPhotoPicker;
   gymPresenceController?: Pick<GymPresenceController, "checkIn">;
   walkingSessionController?: Pick<WalkingSessionController, "start">;
+  openProppedScan?: (conditionId: string) => void;
   reviewCoordinator?: Pick<ReviewCoordinatorContract, "initialize" | "onUnlockMoment">;
 }
 
@@ -59,6 +60,10 @@ export function HomeScreen({
   bannerPhotoPicker = expoBannerPhotoPicker,
   gymPresenceController = getGymPresenceController(),
   walkingSessionController = getWalkingSessionController(),
+  openProppedScan = (conditionId) =>
+    router.push(
+      `/treadmill-scan?conditionId=${encodeURIComponent(conditionId)}` as Href,
+    ),
   reviewCoordinator = defaultReviewCoordinator,
 }: HomeScreenProps = {}) {
   const appRuntime =
@@ -112,6 +117,11 @@ export function HomeScreen({
 
     await gymPresenceController.checkIn(conditionId);
   };
+  const startProppedSession = async (conditionId: string) => {
+    if (await walkingSessionController.start(conditionId, "propped")) {
+      openProppedScan(conditionId);
+    }
+  };
 
   const hero = deriveLockHero({ journal, config: ledgerConfig, atMs, liveStates: liveStates(cards) });
   const firstObservedAtMs = useRef(atMs);
@@ -153,6 +163,7 @@ export function HomeScreen({
                 model={card}
                 onComplete={(id) => void completeCondition(id)}
                 onStartSession={(id) => void walkingSessionController.start(id)}
+                onStartProppedSession={(id) => void startProppedSession(id)}
               />
             ))}
           </View>

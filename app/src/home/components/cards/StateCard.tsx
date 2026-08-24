@@ -12,9 +12,11 @@ import { CardShell } from "./CardShell";
 export function StateCard({
   model,
   onStartSession,
+  onStartProppedSession,
 }: {
   model: StateCardModel;
   onStartSession?: (conditionId: string) => void;
+  onStartProppedSession?: (conditionId: string) => void;
 }) {
   const { colors, spacing, typography } = useTheme();
 
@@ -32,11 +34,20 @@ export function StateCard({
       </View>
       <Text style={typography.caption}>{model.graceLabel}</Text>
       {model.startsWalkingSession && !model.active ? (
-        <PillButton
-          label="Start Walk Session"
-          onPress={() => onStartSession?.(model.id)}
-          variant="white"
-        />
+        <View style={{ gap: spacing.sm }}>
+          <PillButton
+            label="Start Walk Session"
+            onPress={() => onStartSession?.(model.id)}
+            variant="white"
+          />
+          {model.startsProppedWalkingSession ? (
+            <PillButton
+              label="I'm propping my phone"
+              onPress={() => onStartProppedSession?.(model.id)}
+              variant="secondary"
+            />
+          ) : null}
+        </View>
       ) : null}
     </CardShell>
   );

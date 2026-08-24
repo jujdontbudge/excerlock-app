@@ -10,6 +10,8 @@ Local iOS Expo Module for the foreground propped-phone treadmill check.
   recognition, or frame retry.
 - Requests camera permission only when `start()` is first called and tears the
   capture session down when `stop()` is called.
+- Exposes a native preview view backed by the same capture session; it never
+  opens a second camera session or retains a frame.
 
 `NativeGaitVisionProvider` is the stable SignalKit adapter. The scan owner stops
 the provider as soon as `GaitPeriodicityDetector` completes; the native session

@@ -9,6 +9,12 @@ public final class ExcerlockGaitVisionModule: Module {
     Name("ExcerlockGaitVision")
     Events(gaitSampleEvent)
 
+    View(GaitVisionPreviewView.self) {
+      Prop("active") { (view: GaitVisionPreviewView, active: Bool) in
+        self.vision.setPreview(view, active: active)
+      }
+    }
+
     AsyncFunction("start") { (promise: Promise) in
       self.vision.start(
         onSample: { [weak self] payload in

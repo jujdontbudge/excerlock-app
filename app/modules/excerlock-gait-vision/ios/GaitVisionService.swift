@@ -19,6 +19,7 @@ final class GaitVisionService: NSObject,
   private let poseRequest = VNDetectHumanBodyPoseRequest()
   private var frameIndex = 0
   private var onSample: ((GaitVisionPayload) -> Void)?
+  private weak var previewView: GaitVisionPreviewView?
   private var session: AVCaptureSession?
   private var started = false
 
@@ -55,6 +56,26 @@ final class GaitVisionService: NSObject,
       self.session?.stopRunning()
       self.session = nil
       completion?()
+    }
+  }
+
+  func setPreview(_ view: GaitVisionPreviewView, active: Bool) {
+    if active {
+      stateLock.lock()
+      let currentSession = session
+      stateLock.unlock()
+      DispatchQueue.main.async { [weak self, weak view] in
+        guard let self, let view else { return }
+        self.previewView?.attach(session: nil)
+        self.previewView = view
+        view.attach(session: currentSession)
+      }
+    } else {
+      DispatchQueue.main.async { [weak self, weak view] in
+        guard let self, let view, self.previewView === view else { return }
+        view.attach(session: nil)
+        self.previewView = nil
+      }
     }
   }
 
@@ -190,6 +211,9 @@ final class GaitVisionService: NSObject,
     frameIndex = 0
     started = true
     stateLock.unlock()
+    DispatchQueue.main.async { [weak self] in
+      self?.previewView?.attach(session: session)
+    }
   }
 
   private func setStopped() {
@@ -198,5 +222,8 @@ final class GaitVisionService: NSObject,
     onSample = nil
     frameIndex = 0
     stateLock.unlock()
+    DispatchQueue.main.async { [weak self] in
+      self?.previewView?.attach(session: nil)
+    }
   }
 }

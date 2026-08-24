@@ -59,6 +59,7 @@ export interface StateCardModel extends CardBase {
   readonly statusLabel: string;
   readonly graceLabel: string;
   readonly startsWalkingSession: boolean;
+  readonly startsProppedWalkingSession: boolean;
 }
 
 export interface RateCardModel extends CardBase {
@@ -168,6 +169,7 @@ function stateCard(
     statusLabel: active ? "Active · apps unlocked" : "Waiting to start",
     graceLabel: `${formatGrace(exitGraceMs)} grace`,
     startsWalkingSession: entry.signal === "walking",
+    startsProppedWalkingSession: entry.signal === "walking",
   };
 }
 
