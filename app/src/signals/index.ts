@@ -6,6 +6,7 @@ export type {
   SignalDomain,
   SignalFixtureManifest,
 } from "./fixtureCatalog";
+export * from "./gait";
 export * from "./health";
 export * from "./location";
 export * from "./motion";

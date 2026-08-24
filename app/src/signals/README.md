@@ -1,11 +1,11 @@
 # SignalKit
 
-Contract: exposes provider interfaces for health, motion, location, screen time, and vendors. Each signal
+Contract: exposes provider interfaces for gait vision, health, motion, location, screen time, and vendors. Each signal
 gets a native implementation and a fixture implementation; selection happens once at the composition
 root. Screens never branch on provider availability.
 
 This module ships the interfaces, fixture implementations, shared `TimelinePlayer`, canonical JSON
-fixture libraries, and JS-only `WalkVerifier`. The health, motion and location domains now have
+fixture libraries, and JS-only `WalkVerifier` and `GaitPeriodicityDetector`. The health, motion and location domains now have
 Phase-3 native adapters — `NativeHealthProvider`, `NativeMotionProvider` and the Expo Location
 geofencing adapter. HealthKit remains dev-client-selected; Motion and Location fail toward native in
 every non-Expo-Go iOS app runtime, including Standalone releases. Tests, Expo Go, and non-iOS keep
