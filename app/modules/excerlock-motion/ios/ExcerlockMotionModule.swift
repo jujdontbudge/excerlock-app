@@ -2,13 +2,14 @@ import ExpoModulesCore
 
 private let activityEvent = "onActivityChange"
 private let cadenceEvent = "onCadence"
+private let deviceMotionEvent = "onDeviceMotion"
 
 public final class ExcerlockMotionModule: Module {
   private let motion = CoreMotionService()
 
   public func definition() -> ModuleDefinition {
     Name("ExcerlockMotion")
-    Events(activityEvent, cadenceEvent)
+    Events(activityEvent, cadenceEvent, deviceMotionEvent)
 
     Function("getAvailability") {
       motion.availability()
@@ -39,6 +40,16 @@ public final class ExcerlockMotionModule: Module {
       self.motion.stop()
     }
 
+    AsyncFunction("startDeviceMotion") { () throws -> Void in
+      try self.motion.startDeviceMotion { [weak self] payload in
+        self?.sendEvent(deviceMotionEvent, payload)
+      }
+    }
+
+    AsyncFunction("stopDeviceMotion") {
+      self.motion.stopDeviceMotion()
+    }
+
     AsyncFunction("queryActivity") {
       (fromMs: Double, toMs: Double, promise: Promise) in
       self.motion.queryActivity(fromMs: fromMs, toMs: toMs) { result in
@@ -65,6 +76,7 @@ public final class ExcerlockMotionModule: Module {
 
     OnDestroy {
       self.motion.stop()
+      self.motion.stopDeviceMotion()
     }
   }
 }

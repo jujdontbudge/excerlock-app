@@ -33,7 +33,20 @@ export interface MotionAvailability {
   readonly stepCounting: boolean;
 }
 
+export interface MotionVector3 {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+}
+
+export interface DeviceMotionSample {
+  readonly timestampMs: number;
+  readonly gravity: MotionVector3;
+  readonly rotationRate: MotionVector3;
+}
+
 export type ExcerlockMotionModuleEvents = {
   onActivityChange: (sample: ActivitySample) => void;
   onCadence: (sample: CadenceSample) => void;
+  onDeviceMotion: (sample: DeviceMotionSample) => void;
 };

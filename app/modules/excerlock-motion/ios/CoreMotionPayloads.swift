@@ -55,6 +55,29 @@ func cadencePayload(_ data: CMPedometerData) -> MotionPayload {
   ]
 }
 
+func deviceMotionPayload(
+  _ data: CMDeviceMotion,
+  receivedAt: Date = Date()
+) -> MotionPayload {
+  [
+    "timestampMs": epochMilliseconds(receivedAt),
+    "gravity": vectorPayload(
+      x: data.gravity.x,
+      y: data.gravity.y,
+      z: data.gravity.z
+    ),
+    "rotationRate": vectorPayload(
+      x: data.rotationRate.x,
+      y: data.rotationRate.y,
+      z: data.rotationRate.z
+    )
+  ]
+}
+
+private func vectorPayload(x: Double, y: Double, z: Double) -> MotionPayload {
+  ["x": x, "y": y, "z": z]
+}
+
 private func motionConfidence(_ confidence: CMMotionActivityConfidence) -> String {
   switch confidence {
   case .low:

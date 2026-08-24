@@ -1,6 +1,6 @@
 # SignalKit
 
-Contract: exposes provider interfaces for gait vision, health, motion, location, screen time, and vendors. Each signal
+Contract: exposes provider interfaces for gait vision, health, motion, phone placement, location, screen time, and vendors. Each signal
 gets a native implementation and a fixture implementation; selection happens once at the composition
 root. Screens never branch on provider availability.
 

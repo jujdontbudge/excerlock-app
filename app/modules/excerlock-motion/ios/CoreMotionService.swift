@@ -4,6 +4,7 @@ import Foundation
 
 final class CoreMotionService {
   private let activityManager = CMMotionActivityManager()
+  private let deviceMotionManager = CMMotionManager()
   private let pedometer = CMPedometer()
   private let operationQueue: OperationQueue = {
     let queue = OperationQueue()
@@ -14,6 +15,7 @@ final class CoreMotionService {
   }()
   private let stateLock = NSLock()
   private var started = false
+  private var deviceMotionStarted = false
 
   func availability() -> MotionPayload {
     motionAvailabilityPayload()
@@ -65,6 +67,36 @@ final class CoreMotionService {
 
     activityManager.stopActivityUpdates()
     pedometer.stopUpdates()
+  }
+
+  func startDeviceMotion(
+    onDeviceMotion: @escaping (MotionPayload) -> Void
+  ) throws {
+    stateLock.lock()
+    defer { stateLock.unlock() }
+    if deviceMotionStarted {
+      return
+    }
+    guard deviceMotionManager.isDeviceMotionAvailable else {
+      throw MotionUnavailableException()
+    }
+    deviceMotionStarted = true
+    deviceMotionManager.deviceMotionUpdateInterval = 0.1
+    deviceMotionManager.startDeviceMotionUpdates(to: operationQueue) {
+      [weak self] data, _ in
+      guard let self, self.isDeviceMotionStarted, let data else { return }
+      onDeviceMotion(deviceMotionPayload(data))
+    }
+  }
+
+  func stopDeviceMotion() {
+    stateLock.lock()
+    let wasStarted = deviceMotionStarted
+    deviceMotionStarted = false
+    stateLock.unlock()
+    if wasStarted {
+      deviceMotionManager.stopDeviceMotionUpdates()
+    }
   }
 
   func queryActivity(
@@ -131,6 +163,12 @@ final class CoreMotionService {
     stateLock.lock()
     defer { stateLock.unlock() }
     return started
+  }
+
+  private var isDeviceMotionStarted: Bool {
+    stateLock.lock()
+    defer { stateLock.unlock() }
+    return deviceMotionStarted
   }
 
   private func assertUsable() throws {

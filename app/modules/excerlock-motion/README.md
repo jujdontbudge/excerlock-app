@@ -1,15 +1,16 @@
 # excerlock-motion
 
-`excerlock-motion` is ExcerLock's local iOS Expo Module for the two live Core Motion signals required
+`excerlock-motion` is ExcerLock's local iOS Expo Module for the live Core Motion signals required
 by Walk & Scroll. It streams `CMMotionActivityManager` classification and
-`CMPedometer.currentCadence`, and exposes historical activity and step queries. The module is a dumb
+`CMPedometer.currentCadence`, exposes historical activity and step queries, and streams
+`CMDeviceMotion` gravity and rotation rate for phone-placement classification. The module is a dumb
 sensor pipe: qualification remains in SignalKit's `WalkVerifier`.
 
 ## Contract
 
 The TypeScript surface exposes availability and authorization status, authorization requests,
-idempotent `start`/`stop`, historical `queryActivity`/`querySteps`, and the `onActivityChange` and
-`onCadence` events. `NativeMotionProvider` adapts those names to the unchanged `MotionProvider`
+idempotent `start`/`stop`, historical `queryActivity`/`querySteps`, device-motion start/stop, and the
+`onActivityChange`, `onCadence`, and `onDeviceMotion` events. `NativeMotionProvider` adapts the walking signals to the unchanged `MotionProvider`
 contract. Expo autolinking discovers the pod through `expo-module.config.json`; the config plugin
 adds `NSMotionUsageDescription`, so `expo prebuild --clean` regenerates all required native wiring.
 

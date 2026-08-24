@@ -10,6 +10,7 @@ export * from "./gait";
 export * from "./health";
 export * from "./location";
 export * from "./motion";
+export * from "./placement";
 export * from "./screentime";
 export * from "./timeline";
 export * from "./vendor";

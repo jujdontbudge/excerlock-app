@@ -16,8 +16,10 @@ export type {
   ActivityClass,
   ActivitySample,
   CadenceSample,
+  DeviceMotionSample,
   ExcerlockMotionModuleEvents,
   MotionAuthStatus,
   MotionAvailability,
   MotionConfidence,
+  MotionVector3,
 } from "./src/ExcerlockMotion.types";

@@ -3,6 +3,7 @@ import { NativeModule, requireNativeModule } from "expo";
 import type {
   ActivitySample,
   CadenceSample,
+  DeviceMotionSample,
   ExcerlockMotionModuleEvents,
   MotionAuthStatus,
   MotionAvailability,
@@ -14,6 +15,8 @@ export class ExcerlockMotionModule extends NativeModule<ExcerlockMotionModuleEve
   public requestAuthorization!: () => Promise<MotionAuthStatus>;
   public start!: () => Promise<void>;
   public stop!: () => Promise<void>;
+  public startDeviceMotion!: () => Promise<void>;
+  public stopDeviceMotion!: () => Promise<void>;
   public queryActivity!: (
     fromMs: number,
     toMs: number,
