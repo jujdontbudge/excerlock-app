@@ -71,6 +71,34 @@ These are source-audit results, not substitutes for device behavior.
 | GEO-03 | BLOCKED | Terminated-app region wake cannot be armed from the product |
 | GEO-04 | BLOCKED | Continuous Walk Session has no production start/stop caller |
 
+### Blocker re-check, 2026-08-24
+
+The `BLOCKED` rows above were recorded against a build that no longer exists.
+Re-verified against `main` at `72c2dc3`; **three of those blockers are gone and
+those IDs are now runnable.** The recorded statuses above are left untouched —
+they are an honest record of that run, not of this one.
+
+| Previously blocked | Now | Evidence |
+|---|---|---|
+| Walk Session — "no production caller invokes `startWalkKeepAlive()`" | **Unblocked** | `walkingSessionController.ts:207` calls it, and #119 added the Stop control the test requires |
+| Walk-to-shield — "shared lock controller constructed with default `walking: false`" | **Unblocked** | `lockController.ts:104-119` now defaults to the walking session snapshot and subscribes to it |
+| Shield notification permission — "`getNotificationModule()` still returns `MockNotificationModule`" | **Unblocked** | `notifications/accessor.ts` returns `ExpoNotificationModule` outside tests; the mock is test-only |
+
+So **WLK-01, GEO-04, and SH-02 are now device-runnable**, and MOT-01/MOT-02 can
+finally drive shields rather than only rendering an active card.
+
+**Gym geofence remains genuinely blocked, and not by hardware.** A gym region
+comes from `savedPlaces` entries carrying a `geofence`
+(`gymPresenceController.ts:141-160`). `savedPlaces` is persisted and read, but
+**nothing in the app ever writes it** — there is no screen that saves a gym
+circle. Settings can toggle auto-detect and Home can check in, but with an
+empty `savedPlaces` `enableAutoDetect()` returns `false` immediately. **GEO-01,
+GEO-02 and GEO-03 cannot be run until that control is built; a trip to the gym
+would prove nothing.** GEO-04 is unaffected — it rides on the walk session, not
+on a region.
+
+Treadmill mode (#111) adds its own device work, tracked in #120 and #113.
+
 ### Required continuation
 
 Connect `Il` with a USB-C-to-Lightning data cable, complete the signing and
