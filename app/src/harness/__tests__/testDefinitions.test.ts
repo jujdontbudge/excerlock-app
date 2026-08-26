@@ -30,7 +30,7 @@ describe("test definition validation", () => {
     },
   );
 
-  it("defines M6 and M7 as five-minute stationary truth tasks with motion on every run", () => {
+  it("defines M6 and M7 as five-minute stationary truth tasks", () => {
     expect(HARNESS_TEST_DEFINITIONS).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -47,6 +47,17 @@ describe("test definition validation", () => {
         }),
       ]),
     );
-    expect(HARNESS_TEST_DEFINITIONS.every(({ signalSources }) => signalSources.includes("motion"))).toBe(true);
+  });
+
+  it("defines P3 in the tester's own terms without an on-device verdict", () => {
+    expect(HARNESS_TEST_DEFINITIONS).toContainEqual({
+      id: "P3",
+      title: "Phone propped on a running treadmill",
+      kind: "declare-truth",
+      countdownMs: 10_000,
+      defaultDurationMs: 120_000,
+      markerLabels: ["The phone is propped", "The belt is running"],
+      signalSources: ["placement"],
+    });
   });
 });

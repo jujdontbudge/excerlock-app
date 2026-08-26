@@ -30,3 +30,11 @@ the next declaration, including the elapsed time from declaration to sample. A
 missing sample is printed as `never responded`; empty and incomplete runs are
 reported explicitly. This keeps the comparison generic as new signal providers
 and tracks are added.
+
+`PlacementHarnessSignalSource` decorates the production
+`PhonePlacementProvider` and feeds every raw device-motion sample through the
+production `PhonePlacementClassifier`. It records `raw-device-motion` and
+`placement-classification` as separate tracks; the latter includes pickup and
+set-down transitions. The native composition is installed by
+`createDefaultHarnessSources`, while Jest uses
+`FixturePhonePlacementProvider` through the same provider interface.

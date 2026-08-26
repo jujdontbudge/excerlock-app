@@ -144,7 +144,12 @@ function HarnessRunScreen({
   store: HarnessRunStore;
 }>) {
   const engine = useMemo(
-    () => new HarnessRunEngine({ buildCommit, now: () => Date.now(), recorder: store, sources }),
+    () => new HarnessRunEngine({
+      buildCommit,
+      now: () => Date.now(),
+      recorder: store,
+      sources,
+    }),
     [buildCommit, sources, store],
   );
   const snapshot = useSyncExternalStore(

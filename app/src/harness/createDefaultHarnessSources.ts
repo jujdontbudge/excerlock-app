@@ -1,12 +1,15 @@
 import {
   NativeMotionProvider,
+  NativePhonePlacementProvider,
   createExcerlockMotionModuleClient,
+  createPhonePlacementModuleClient,
 } from "@/signals";
 import type {
   HarnessSignalSource,
   HarnessSignalSourceId,
 } from "./HarnessRunEngine";
 import { MotionHarnessSource } from "./sources/MotionHarnessSource";
+import { PlacementHarnessSignalSource } from "./PlacementHarnessSignalSource";
 
 /** Physical-device composition; adapters retain the production signal seams. */
 export function createDefaultHarnessSources(): Partial<
@@ -15,6 +18,9 @@ export function createDefaultHarnessSources(): Partial<
   return {
     motion: new MotionHarnessSource(
       () => new NativeMotionProvider(createExcerlockMotionModuleClient()),
+    ),
+    placement: new PlacementHarnessSignalSource(
+      () => new NativePhonePlacementProvider(createPhonePlacementModuleClient()),
     ),
   };
 }
