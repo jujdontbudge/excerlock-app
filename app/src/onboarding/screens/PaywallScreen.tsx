@@ -18,6 +18,7 @@ export function PaywallScreen({
       confessedDailyMinutes={confessedDailyMinutes}
       onEntitled={onContinue}
       onBack={onBack}
+      onContinueWithoutPlan={onContinue}
     />
   );
 }

@@ -12,12 +12,21 @@ import { useAccountSnapshot } from "./useAccountSnapshot";
 type AccountOnboardingProps = {
   onAuthenticated: () => void;
   onBack?: () => void;
+  /**
+   * Escape hatch for a flow that cannot end here. Onboarding supplies it
+   * because a keyless or offline build fails every attempt, and sign-up is the
+   * final step -- without an exit the rail never completes and every cold start
+   * re-enters onboarding. Shown only after an attempt has actually failed, so a
+   * build where sign-up works is unaffected.
+   */
+  onContinueWithoutAccount?: () => void;
   account?: AccountModule;
 };
 
 export function AccountOnboarding({
   onAuthenticated,
   onBack,
+  onContinueWithoutAccount,
   account = getAccountModule(),
 }: AccountOnboardingProps) {
   const { colors, spacing, typography } = useTheme();
@@ -79,6 +88,8 @@ export function AccountOnboarding({
   const isSigningIn = snapshot.intent.status === "signingIn";
   const isSigningUp = snapshot.intent.status === "signingUp";
   const isBusy = snapshot.intent.status !== "idle";
+  const hasFailedAttempt =
+    snapshot.intent.status === "idle" && snapshot.intent.error !== null;
   const finishAuthentication = (result: AuthenticationResult) => {
     if (result.status === "authenticated") {
       onAuthenticated();
@@ -136,6 +147,13 @@ export function AccountOnboarding({
             onPress={() => account.signIn().then(finishAuthentication)}
             variant="secondary"
           />
+          {hasFailedAttempt && onContinueWithoutAccount !== undefined ? (
+            <PillButton
+              label="Continue without an account"
+              onPress={onContinueWithoutAccount}
+              variant="secondary"
+            />
+          ) : null}
           {onBack === undefined ? null : (
             <PillButton label="Back" onPress={onBack} variant="secondary" />
           )}

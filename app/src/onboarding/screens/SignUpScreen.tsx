@@ -12,6 +12,7 @@ export function SignUpScreen({
     <AccountOnboarding
       account={account}
       onAuthenticated={onContinue}
+      onContinueWithoutAccount={onContinue}
       onBack={onBack}
     />
   );

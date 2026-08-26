@@ -8,6 +8,7 @@ import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { AccountOnboarding } from "../AccountOnboarding";
 import { MockAccountModule } from "../MockAccountModule";
+import { NoopAccountModule } from "../NoopAccountModule";
 
 describe("AccountOnboarding", () => {
   beforeEach(async () => {
@@ -108,5 +109,54 @@ describe("AccountOnboarding", () => {
     );
 
     expect(onAuthenticated).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("AccountOnboarding when account creation cannot succeed", () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it("offers a way forward once an attempt has actually failed", async () => {
+    // NoopAccountModule is what a build without a Clerk key gets, and it fails
+    // every attempt. Sign-up is the final onboarding step, so with no exit the
+    // rail never reaches isComplete and every cold start re-enters onboarding.
+    const onContinueWithoutAccount = jest.fn();
+    await render(
+      <AccountOnboarding
+        account={new NoopAccountModule()}
+        onAuthenticated={jest.fn()}
+        onContinueWithoutAccount={onContinueWithoutAccount}
+      />,
+    );
+
+    await screen.findByRole("header", { name: "Create your account" });
+    expect(
+      screen.queryByRole("button", { name: "Continue without an account" }),
+    ).not.toBeOnTheScreen();
+
+    fireEvent.press(screen.getByRole("button", { name: "Create account" }));
+
+    const exit = await screen.findByRole("button", {
+      name: "Continue without an account",
+    });
+    fireEvent.press(exit);
+
+    expect(onContinueWithoutAccount).toHaveBeenCalledTimes(1);
+  });
+
+  it("never offers the exit while sign-up is still working", async () => {
+    await render(
+      <AccountOnboarding
+        account={new MockAccountModule()}
+        onAuthenticated={jest.fn()}
+        onContinueWithoutAccount={jest.fn()}
+      />,
+    );
+
+    await screen.findByRole("header", { name: "Create your account" });
+    expect(
+      screen.queryByRole("button", { name: "Continue without an account" }),
+    ).not.toBeOnTheScreen();
   });
 });

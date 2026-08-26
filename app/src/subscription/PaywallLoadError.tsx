@@ -6,12 +6,19 @@ type PaywallLoadErrorProps = {
   message: string;
   onRetry: () => Promise<void>;
   onBack?: () => void;
+  /**
+   * Escape hatch for a caller whose flow cannot end here. Onboarding supplies
+   * it because a keyless or offline build errors on every load, and a step that
+   * can never succeed would otherwise trap the user before completion.
+   */
+  onContinueWithoutPlan?: () => void;
 };
 
 export function PaywallLoadError({
   message,
   onRetry,
   onBack,
+  onContinueWithoutPlan,
 }: PaywallLoadErrorProps) {
   const { colors, spacing, typography } = useTheme();
 
@@ -49,6 +56,13 @@ export function PaywallLoadError({
             onPress={onRetry}
             variant="white"
           />
+          {onContinueWithoutPlan === undefined ? null : (
+            <PillButton
+              label="Continue without a plan"
+              onPress={onContinueWithoutPlan}
+              variant="secondary"
+            />
+          )}
           {onBack === undefined ? null : (
             <PillButton label="Back" onPress={onBack} variant="secondary" />
           )}

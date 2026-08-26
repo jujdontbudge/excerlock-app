@@ -20,6 +20,8 @@ type SubscriptionPaywallProps = {
   confessedDailyMinutes: number | null;
   onEntitled: () => void;
   onBack?: () => void;
+  /** Supplied by flows that must not dead-end when the paywall cannot load. */
+  onContinueWithoutPlan?: () => void;
   subscription?: SubscriptionModule;
 };
 
@@ -28,6 +30,7 @@ export function SubscriptionPaywall({
   confessedDailyMinutes,
   onEntitled,
   onBack,
+  onContinueWithoutPlan,
   subscription = getSubscriptionModule(),
 }: SubscriptionPaywallProps) {
   const { colors, spacing, typography } = useTheme();
@@ -48,6 +51,7 @@ export function SubscriptionPaywall({
         message={snapshot.paywall.error.message}
         onRetry={() => subscription.loadPaywall(placement)}
         onBack={onBack}
+        onContinueWithoutPlan={onContinueWithoutPlan}
       />
     );
   }

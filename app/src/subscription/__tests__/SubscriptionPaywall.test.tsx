@@ -7,6 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { MockSubscriptionModule } from "../MockSubscriptionModule";
+import { NoopSubscriptionModule } from "../NoopSubscriptionModule";
 import { SubscriptionPaywall } from "../SubscriptionPaywall";
 import { ManualSubscriptionClock } from "../clock";
 
@@ -215,5 +216,69 @@ describe("SubscriptionPaywall", () => {
     expect(
       screen.getByRole("header", { name: "Your ExcerLock plan is active" }),
     ).toBeOnTheScreen();
+  });
+});
+
+describe("SubscriptionPaywall when plans cannot load", () => {
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  it("offers a way forward so a failed load is never a dead end", async () => {
+    // NoopSubscriptionModule is what a keyless build gets, and its loadPaywall
+    // always errors. Without an exit the onboarding rail can never reach
+    // isComplete, so every cold start re-enters onboarding forever.
+    const onContinueWithoutPlan = jest.fn();
+    await render(
+      <SubscriptionPaywall
+        placement="onboarding"
+        confessedDailyMinutes={300}
+        onEntitled={jest.fn()}
+        onContinueWithoutPlan={onContinueWithoutPlan}
+        subscription={new NoopSubscriptionModule()}
+      />,
+    );
+
+    const exit = await screen.findByRole("button", {
+      name: "Continue without a plan",
+    });
+    fireEvent.press(exit);
+
+    expect(onContinueWithoutPlan).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a loaded paywall unchanged, so the exit never weakens a real offer", async () => {
+    await render(
+      <SubscriptionPaywall
+        placement="onboarding"
+        confessedDailyMinutes={300}
+        onEntitled={jest.fn()}
+        onContinueWithoutPlan={jest.fn()}
+        subscription={new MockSubscriptionModule()}
+      />,
+    );
+
+    await screen.findByRole("header", {
+      name: "Unlock the full ExcerLock plan",
+    });
+    expect(
+      screen.queryByRole("button", { name: "Continue without a plan" }),
+    ).not.toBeOnTheScreen();
+  });
+
+  it("shows no exit when the caller supplies none", async () => {
+    await render(
+      <SubscriptionPaywall
+        placement="onboarding"
+        confessedDailyMinutes={300}
+        onEntitled={jest.fn()}
+        subscription={new NoopSubscriptionModule()}
+      />,
+    );
+
+    await screen.findByRole("header", { name: "Plans couldn't load" });
+    expect(
+      screen.queryByRole("button", { name: "Continue without a plan" }),
+    ).not.toBeOnTheScreen();
   });
 });
