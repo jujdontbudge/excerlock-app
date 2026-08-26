@@ -12,11 +12,28 @@ import { SignalRuntimeHosts } from "@/home/signals";
 import { ExperimentRuntimeRoot } from "@/experiments";
 import { installDiagnostics } from "@/diagnostics";
 
-// Must run before any surface asks for a walking session, so the recorder owns
-// the shared controller rather than racing a plain one into place.
-installDiagnostics();
-
 export default function RootLayout() {
+  const productRuntime = <ProductRuntime />;
+  if (process.env.EXPO_PUBLIC_TEST_HARNESS === "1") {
+    const { HarnessBuildRoot } = require(
+      "../src/harness/HarnessBuildRoot"
+    ) as {
+      HarnessBuildRoot: ComponentType<{ productRuntime: ReactNode }>;
+    };
+    return <HarnessBuildRoot productRuntime={productRuntime} />;
+  }
+  return productRuntime;
+}
+
+let diagnosticsInstalled = false;
+
+function ProductRuntime() {
+  // Must happen only inside the product branch: harness mode must not install
+  // the shared walking controller it is intended to observe in isolation.
+  if (!diagnosticsInstalled) {
+    installDiagnostics();
+    diagnosticsInstalled = true;
+  }
   const runtime = (
     <>
       <NativeScreenTimePickerHost />
