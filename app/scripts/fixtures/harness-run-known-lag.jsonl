@@ -1,0 +1,8 @@
+{"recordType":"run","run":{"version":1,"id":"m6-1000","testId":"m6-standing-scroll","buildCommit":"abc123","startedAtMs":1000,"endedAtMs":5000,"endReason":"stopped"}}
+{"recordType":"event","runId":"m6-1000","event":{"type":"marker","atMs":1500,"label":"I am walking"}}
+{"recordType":"event","runId":"m6-1000","event":{"type":"signal","atMs":1900,"source":"motion","track":"raw.cadence","payload":{"stepsPerSecond":1.3}}}
+{"recordType":"event","runId":"m6-1000","event":{"type":"signal","atMs":2300,"source":"motion","track":"derived.verdict","payload":{"walking":true}}}
+{"recordType":"event","runId":"m6-1000","event":{"type":"signal","atMs":2500,"source":"placement","track":"derived.classification","payload":{"placement":"handheld"}}}
+{"recordType":"event","runId":"m6-1000","event":{"type":"marker","atMs":4000,"label":"I have stopped"}}
+{"recordType":"event","runId":"m6-1000","event":{"type":"signal","atMs":4200,"source":"motion","track":"raw.cadence","payload":{"stepsPerSecond":0}}}
+{"recordType":"event","runId":"m6-1000","event":{"type":"signal","atMs":4700,"source":"placement","track":"derived.classification","payload":{"placement":"propped"}}}

@@ -15,3 +15,18 @@ that explicitly request them.
 The motion adapter records provider payloads unchanged as `raw.activity` and
 `raw.cadence`. It runs the production `WalkVerifier` without a session, unlock,
 or lease callback and records those conclusions as `derived.verdict`.
+
+## Analyze an export
+
+From `app/`, run:
+
+```sh
+npm run analyze:harness -- /path/to/export.jsonl
+```
+
+The analyzer treats every unique `source` + `track` pair as a signal layer. For
+each declared marker it prints the first sample from every observed layer before
+the next declaration, including the elapsed time from declaration to sample. A
+missing sample is printed as `never responded`; empty and incomplete runs are
+reported explicitly. This keeps the comparison generic as new signal providers
+and tracks are added.

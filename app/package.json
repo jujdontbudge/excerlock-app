@@ -66,6 +66,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "analyze:harness": "node scripts/analyze-harness-run.js",
     "prebuild:guardrails": "EXPO_NO_GIT_STATUS=1 expo prebuild --platform ios --clean --no-install",
     "prebuild:ios": "expo prebuild --platform ios --no-install",
     "test": "jest --runInBand",
