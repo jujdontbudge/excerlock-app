@@ -39,6 +39,8 @@ describe("HarnessApp", () => {
     );
 
     await fireEvent.press(screen.getByText("Marker-only harness check"));
+    await fireEvent.changeText(screen.getByLabelText("Run note"), "Quiet room");
+    await fireEvent.press(screen.getByText("Start run"));
     expect(screen.getByText("Countdown")).toBeOnTheScreen();
 
     await act(async () => jest.advanceTimersByTimeAsync(3_000));
@@ -51,6 +53,7 @@ describe("HarnessApp", () => {
     expect(screen.getByText("marker-only-4000")).toBeOnTheScreen();
     await fireEvent.press(screen.getByText("marker-only-4000"));
     expect(screen.getByText("Ended: stopped")).toBeOnTheScreen();
+    expect(screen.getByText("Note: Quiet room")).toBeOnTheScreen();
     expect(screen.getByText("I started @ 4250")).toBeOnTheScreen();
 
     const share = jest.spyOn(Share, "share").mockResolvedValue({
@@ -91,9 +94,29 @@ describe("HarnessApp", () => {
     await fireEvent.press(screen.getByText("C1 — treadmill walking"));
 
     expect(screen.getByLabelText("Live camera preview")).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText("Start run"));
     expect(camera.prepare).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("Walking throughout the recording")).toBeNull();
     await act(async () => jest.advanceTimersByTimeAsync(10_000));
     expect(screen.getByText("Walking throughout the recording")).toBeOnTheScreen();
+  });
+
+  it("collects M4 speed and a note before the run starts", async () => {
+    const store = new HarnessRunStore(memoryStorage());
+    await render(<HarnessApp buildCommit="abc123" store={store} sources={{}} />);
+
+    await fireEvent.press(screen.getByText("Treadmill walking, phone in hand"));
+    expect(screen.getByText("Set up run")).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByLabelText("Treadmill speed"), "2.5");
+    await fireEvent.changeText(screen.getByLabelText("Run note"), "Belt juddered once");
+    await fireEvent.press(screen.getByText("Start run"));
+    await act(async () => jest.advanceTimersByTimeAsync(3_000));
+    await fireEvent.press(screen.getByText("Stop run"));
+    await fireEvent.press(screen.getByText("Back to tasks"));
+    await act(async () => undefined);
+    await fireEvent.press(screen.getByText("M4-4000"));
+
+    expect(screen.getByText("Parameter treadmillSpeedMph: 2.5")).toBeOnTheScreen();
+    expect(screen.getByText("Note: Belt juddered once")).toBeOnTheScreen();
   });
 });

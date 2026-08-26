@@ -181,4 +181,32 @@ describe("HarnessRunEngine", () => {
     });
     expect(placement.stop).toHaveBeenCalledTimes(1);
   });
+
+  it("puts structured parameters, including blanks, and the note in the run header", async () => {
+    const engine = new HarnessRunEngine({
+      buildCommit: "abc123",
+      now: () => Date.now(),
+      recorder: { save: async () => undefined },
+    });
+
+    const starting = engine.start(
+      {
+        ...MARKER_TASK,
+        parameters: [
+          { id: "treadmillSpeedMph", label: "Treadmill speed", unit: "mph" },
+        ],
+      },
+      {
+        parameters: { treadmillSpeedMph: "" },
+        note: "Belt juddered once",
+      },
+    );
+    jest.advanceTimersByTime(3_000);
+    await starting;
+
+    expect(engine.getSnapshot().run).toMatchObject({
+      parameters: { treadmillSpeedMph: "" },
+      note: "Belt juddered once",
+    });
+  });
 });

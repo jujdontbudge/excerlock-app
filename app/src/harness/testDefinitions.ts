@@ -20,6 +20,19 @@ export function assertValidTestDefinitions(
     if (definition.defaultDurationMs <= 0 || definition.countdownMs < 0) {
       throw new Error(`${definition.id} requires a positive duration`);
     }
+    const parameterIds = new Set<string>();
+    for (const parameter of definition.parameters ?? []) {
+      if (parameter.id.trim().length === 0) {
+        throw new Error(`${definition.id} requires a parameter identifier`);
+      }
+      if (parameter.label.trim().length === 0) {
+        throw new Error(`${definition.id} requires a parameter label`);
+      }
+      if (parameterIds.has(parameter.id)) {
+        throw new Error(`${definition.id} has a duplicate parameter identifier`);
+      }
+      parameterIds.add(parameter.id);
+    }
   }
 }
 
@@ -32,6 +45,40 @@ export const HARNESS_TEST_DEFINITIONS: readonly HarnessTestDefinition[] = [
     defaultDurationMs: 30_000,
     markerLabels: ["I started", "I stopped"],
     signalSources: ["motion"],
+  },
+  {
+    id: "M2",
+    title: "Walking outdoors, phone in hand",
+    kind: "declare-truth",
+    countdownMs: 3_000,
+    defaultDurationMs: 300_000,
+    markerLabels: [
+      "I started walking",
+      "The phone is in my hand",
+      "I stopped walking",
+    ],
+    signalSources: ["motion"],
+    parameters: [],
+  },
+  {
+    id: "M4",
+    title: "Treadmill walking, phone in hand",
+    kind: "declare-truth",
+    countdownMs: 3_000,
+    defaultDurationMs: 300_000,
+    markerLabels: [
+      "I started walking",
+      "The phone is in my hand",
+      "I stopped walking",
+    ],
+    signalSources: ["motion"],
+    parameters: [
+      {
+        id: "treadmillSpeedMph",
+        label: "Treadmill speed",
+        unit: "mph",
+      },
+    ],
   },
   {
     id: "M6",

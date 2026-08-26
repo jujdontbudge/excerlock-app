@@ -5,6 +5,12 @@ export type HarnessTaskKind =
 
 export type HarnessSignalSourceId = "motion" | "placement" | "camera";
 
+export interface HarnessParameterDefinition {
+  readonly id: string;
+  readonly label: string;
+  readonly unit?: string;
+}
+
 const ALWAYS_ON_SIGNAL_SOURCES: readonly HarnessSignalSourceId[] = [
   "motion",
   "placement",
@@ -20,6 +26,7 @@ export interface HarnessTestDefinition {
   readonly signalSources: readonly HarnessSignalSourceId[];
   readonly panel?: string;
   readonly handsFreePlan?: string;
+  readonly parameters?: readonly HarnessParameterDefinition[];
 }
 
 export type HarnessRunEndReason = "timeout" | "stopped";
@@ -59,7 +66,14 @@ export interface HarnessRun {
   readonly endedAtMs?: number;
   readonly endReason?: HarnessRunEndReason;
   readonly footage?: Readonly<{ fileUri: string }>;
+  readonly parameters?: Readonly<Record<string, string>>;
+  readonly note?: string;
   readonly events: readonly HarnessRunEvent[];
+}
+
+export interface HarnessRunInput {
+  readonly parameters: Readonly<Record<string, string>>;
+  readonly note: string;
 }
 
 export interface HarnessRunRecorder {
@@ -123,7 +137,10 @@ export class HarnessRunEngine {
     return () => this.listeners.delete(listener);
   }
 
-  public async start(definition: HarnessTestDefinition): Promise<void> {
+  public async start(
+    definition: HarnessTestDefinition,
+    input: HarnessRunInput = { parameters: {}, note: "" },
+  ): Promise<void> {
     if (this.snapshot.phase !== "idle") {
       throw new Error("A harness run is already active");
     }
@@ -165,6 +182,13 @@ export class HarnessRunEngine {
       ...(this.pendingFootage === undefined
         ? {}
         : { footage: this.pendingFootage }),
+      parameters: Object.fromEntries(
+        (definition.parameters ?? []).map(({ id }) => [
+          id,
+          input.parameters[id] ?? "",
+        ]),
+      ),
+      note: input.note,
       events: [],
     };
     this.snapshot = { phase: "recording", run, currentMarker: null };

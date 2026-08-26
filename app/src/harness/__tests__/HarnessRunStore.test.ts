@@ -16,6 +16,8 @@ const RUN: HarnessRun = {
   startedAtMs: 1_000,
   endedAtMs: 2_000,
   endReason: "timeout",
+  parameters: { treadmillSpeedMph: "2.5" },
+  note: "Belt juddered once",
   events: [{ type: "marker", atMs: 1_250, label: "Started" }],
 };
 

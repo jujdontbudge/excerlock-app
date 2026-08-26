@@ -23,6 +23,7 @@ describe("test definition validation", () => {
     [[valid, valid], "duplicate test identifier"],
     [[{ ...valid, markerLabels: [""] }], "labelled marker"],
     [[{ ...valid, defaultDurationMs: 0 }], "positive duration"],
+    [[{ ...valid, parameters: [{ id: "", label: "Speed" }] }], "parameter identifier"],
   ] satisfies ReadonlyArray<readonly [readonly HarnessTestDefinition[], string]>) (
     "rejects an invalid catalog: %s",
     (definitions, message) => {
@@ -84,5 +85,23 @@ describe("test definition validation", () => {
       markerLabels: ["The phone is propped", "The belt is running"],
       signalSources: ["placement"],
     });
+  });
+
+  it("defines M2/M4 walking baselines and a structured treadmill speed for M4", () => {
+    expect(HARNESS_TEST_DEFINITIONS).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "M2", parameters: [] }),
+        expect.objectContaining({
+          id: "M4",
+          parameters: [
+            {
+              id: "treadmillSpeedMph",
+              label: "Treadmill speed",
+              unit: "mph",
+            },
+          ],
+        }),
+      ]),
+    );
   });
 });

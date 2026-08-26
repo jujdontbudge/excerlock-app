@@ -53,3 +53,10 @@ fps. A run retains the sandbox URI so footage can be associated locally, but
 `serializeHarnessJsonLines` deliberately removes that field. The task list's
 single delete action removes every captured movie and then strips all retained
 URIs from saved runs.
+
+## Run context
+
+Definitions may declare structured parameters. The setup screen records every
+declared key, preserving a blank value rather than inventing one, plus a free
+note for unanticipated circumstances. Both live in the run header and therefore
+round-trip through persistence and JSON Lines export.

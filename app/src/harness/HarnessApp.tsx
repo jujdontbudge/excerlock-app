@@ -166,6 +166,13 @@ function HarnessRunScreen({
   sources?: Partial<Record<HarnessSignalSourceId, HarnessSignalSource>>;
   store: HarnessRunStore;
 }>) {
+  const [note, setNote] = useState("");
+  const [parameters, setParameters] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      (definition.parameters ?? []).map(({ id }) => [id, ""]),
+    ),
+  );
+  const [started, setStarted] = useState(false);
   const engine = useMemo(
     () => new HarnessRunEngine({
       buildCommit,
@@ -181,20 +188,28 @@ function HarnessRunScreen({
   );
 
   useEffect(() => {
-    void engine.start(definition);
     const subscription = AppState.addEventListener("change", (state) => {
       if (state === "active" || state === "background" || state === "inactive") {
         void engine.recordAppState(state);
       }
     });
     return () => subscription.remove();
-  }, [definition, engine]);
+  }, [engine]);
+
+  const startRun = () => {
+    setStarted(true);
+    void engine.start(definition, { parameters, note });
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
       <Text style={styles.title}>{definition.title}</Text>
       <Text style={styles.phase}>
-        {snapshot.phase === "countdown" ? "Countdown" : snapshot.phase}
+        {!started
+          ? "Set up run"
+          : snapshot.phase === "countdown"
+            ? "Countdown"
+            : snapshot.phase}
       </Text>
       {definition.handsFreePlan ? (
         <Text style={styles.copy}>{definition.handsFreePlan}</Text>
@@ -203,6 +218,40 @@ function HarnessRunScreen({
         <CameraPreview active style={styles.panel} />
       ) : definition.panel ? (
         <View accessibilityLabel={`${definition.panel} panel`} style={styles.panel} />
+      ) : null}
+      {!started ? (
+        <>
+          {(definition.parameters ?? []).map((parameter) => (
+            <View key={parameter.id} style={styles.field}>
+              <Text style={styles.copy}>
+                {parameter.label}{parameter.unit ? ` (${parameter.unit})` : ""}
+              </Text>
+              <TextInput
+                accessibilityLabel={parameter.label}
+                keyboardType="decimal-pad"
+                onChangeText={(value) =>
+                  setParameters((current) => ({
+                    ...current,
+                    [parameter.id]: value,
+                  }))
+                }
+                style={styles.input}
+                value={parameters[parameter.id] ?? ""}
+              />
+            </View>
+          ))}
+          <View style={styles.field}>
+            <Text style={styles.copy}>Run note</Text>
+            <TextInput
+              accessibilityLabel="Run note"
+              multiline
+              onChangeText={setNote}
+              style={styles.input}
+              value={note}
+            />
+          </View>
+          <ActionButton label="Start run" onPress={startRun} />
+        </>
       ) : null}
       {snapshot.phase === "recording"
         ? definition.markerLabels.map((label) => (
@@ -233,6 +282,10 @@ function SavedRunScreen({ run, onBack }: Readonly<{ run: HarnessRun; onBack: () 
       <Text style={styles.copy}>Test: {run.testId}</Text>
       <Text style={styles.copy}>Build: {run.buildCommit}</Text>
       <Text style={styles.copy}>Ended: {run.endReason ?? "in progress"}</Text>
+      <Text style={styles.copy}>Note: {run.note ?? ""}</Text>
+      {Object.entries(run.parameters ?? {}).map(([id, value]) => (
+        <Text key={id} style={styles.copy}>Parameter {id}: {value}</Text>
+      ))}
       {run.events.map((event, index) => (
         <Text key={`${event.atMs}-${index}`} style={styles.event}>
           {event.type === "marker"
@@ -297,6 +350,16 @@ const styles = StyleSheet.create({
   savedRun: { borderRadius: 10, borderWidth: 1, borderColor: "#334155", padding: 14 },
   cardTitle: { color: "white", fontSize: 17, fontWeight: "600" },
   panel: { minHeight: 180, borderRadius: 12, backgroundColor: "#020617" },
+  field: { gap: 6 },
+  input: {
+    minHeight: 48,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#475569",
+    color: "white",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   event: { color: "#E2E8F0", fontFamily: "Courier", fontSize: 13 },
   button: { minHeight: 50, borderRadius: 12, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
   disabled: { opacity: 0.4 },
