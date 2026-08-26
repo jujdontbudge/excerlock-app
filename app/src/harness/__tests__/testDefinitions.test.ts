@@ -1,4 +1,5 @@
 import {
+  HARNESS_TEST_DEFINITIONS,
   assertValidTestDefinitions,
   type HarnessTestDefinition,
 } from "../testDefinitions";
@@ -28,4 +29,16 @@ describe("test definition validation", () => {
       expect(() => assertValidTestDefinitions(definitions)).toThrow(message);
     },
   );
+
+  it("defines P3 in the tester's own terms without an on-device verdict", () => {
+    expect(HARNESS_TEST_DEFINITIONS).toContainEqual({
+      id: "P3",
+      title: "Phone propped on a running treadmill",
+      kind: "declare-truth",
+      countdownMs: 10_000,
+      defaultDurationMs: 120_000,
+      markerLabels: ["The phone is propped", "The belt is running"],
+      signalSources: ["placement"],
+    });
+  });
 });

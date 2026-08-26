@@ -5,6 +5,10 @@ export type HarnessTaskKind =
 
 export type HarnessSignalSourceId = "motion" | "placement" | "camera";
 
+const ALWAYS_ON_SIGNAL_SOURCES: readonly HarnessSignalSourceId[] = [
+  "placement",
+];
+
 export interface HarnessTestDefinition {
   readonly id: string;
   readonly title: string;
@@ -128,7 +132,11 @@ export class HarnessRunEngine {
     this.snapshot = { phase: "recording", run, currentMarker: null };
     this.notify();
     await this.options.recorder.save(run);
-    for (const sourceId of definition.signalSources) {
+    const sourceIds = new Set([
+      ...ALWAYS_ON_SIGNAL_SOURCES,
+      ...definition.signalSources,
+    ]);
+    for (const sourceId of sourceIds) {
       const source = this.options.sources?.[sourceId];
       if (source === undefined) {
         continue;

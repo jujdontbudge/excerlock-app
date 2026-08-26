@@ -22,6 +22,7 @@ import {
   serializeHarnessJsonLines,
 } from "./HarnessRunStore";
 import { HARNESS_TEST_DEFINITIONS } from "./testDefinitions";
+import { createDefaultHarnessSignalSources } from "./defaultSignalSources";
 
 type HarnessAppProps = Readonly<{
   buildCommit?: string;
@@ -138,9 +139,18 @@ function HarnessRunScreen({
   sources?: Partial<Record<HarnessSignalSourceId, HarnessSignalSource>>;
   store: HarnessRunStore;
 }>) {
+  const activeSources = useMemo(
+    () => sources ?? createDefaultHarnessSignalSources(),
+    [sources],
+  );
   const engine = useMemo(
-    () => new HarnessRunEngine({ buildCommit, now: () => Date.now(), recorder: store, sources }),
-    [buildCommit, sources, store],
+    () => new HarnessRunEngine({
+      buildCommit,
+      now: () => Date.now(),
+      recorder: store,
+      sources: activeSources,
+    }),
+    [activeSources, buildCommit, store],
   );
   const snapshot = useSyncExternalStore(
     (listener) => engine.subscribe(listener),

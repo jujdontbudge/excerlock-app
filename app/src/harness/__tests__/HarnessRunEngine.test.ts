@@ -112,4 +112,39 @@ describe("HarnessRunEngine", () => {
     expect(fixture.stop).toHaveBeenCalledTimes(1);
     expect(saved.at(-1)).toEqual(run);
   });
+
+  it("records placement in every run even when the task does not request it", async () => {
+    let emitPlacement:
+      | ((payload: Readonly<Record<string, unknown>>) => void)
+      | undefined;
+    const placement: HarnessSignalSource = {
+      id: "placement",
+      start: jest.fn(async ({ record }) => {
+        emitPlacement = (payload) => record("placement-classification", payload);
+      }),
+      stop: jest.fn(async () => undefined),
+    };
+    const engine = new HarnessRunEngine({
+      buildCommit: "abc123",
+      now: () => Date.now(),
+      recorder: { save: async () => undefined },
+      sources: { placement },
+    });
+
+    const starting = engine.start(MARKER_TASK);
+    jest.advanceTimersByTime(3_000);
+    await starting;
+    emitPlacement?.({ placement: "propped" });
+    await engine.stop();
+
+    expect(placement.start).toHaveBeenCalledTimes(1);
+    expect(engine.getSnapshot().run?.events).toContainEqual({
+      type: "signal",
+      atMs: 4_000,
+      source: "placement",
+      track: "placement-classification",
+      payload: { placement: "propped" },
+    });
+    expect(placement.stop).toHaveBeenCalledTimes(1);
+  });
 });

@@ -3,6 +3,8 @@ import { Share } from "react-native";
 import type { DiagnosticsStorage } from "@/diagnostics/DiagnosticsLog";
 import { HarnessApp } from "../HarnessApp";
 import { HarnessRunStore } from "../HarnessRunStore";
+import { PlacementHarnessSignalSource } from "../PlacementHarnessSignalSource";
+import { FixturePhonePlacementProvider } from "@/signals/placement";
 
 function memoryStorage(): DiagnosticsStorage {
   const values = new Map<string, string>();
@@ -23,7 +25,17 @@ describe("HarnessApp", () => {
 
   it("opens a declarative task, records truth, and reopens the saved run", async () => {
     const store = new HarnessRunStore(memoryStorage());
-    await render(<HarnessApp buildCommit="abc123" store={store} />);
+    await render(
+      <HarnessApp
+        buildCommit="abc123"
+        sources={{
+          placement: new PlacementHarnessSignalSource(
+            new FixturePhonePlacementProvider([]),
+          ),
+        }}
+        store={store}
+      />,
+    );
 
     await fireEvent.press(screen.getByText("Marker-only harness check"));
     expect(screen.getByText("Countdown")).toBeOnTheScreen();

@@ -23,7 +23,7 @@ describe("HarnessBuildRoot", () => {
     await fireEvent.press(screen.getByText("Test harness"));
 
     expect(screen.getByText("Physical test tasks")).toBeOnTheScreen();
-    expect(screen.getByText("declare-truth")).toBeOnTheScreen();
+    expect(screen.getAllByText("declare-truth")).not.toHaveLength(0);
     expect(productMounted).not.toHaveBeenCalled();
   });
 

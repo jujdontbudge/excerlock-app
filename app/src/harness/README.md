@@ -9,3 +9,11 @@ policy or renders a pass/fail verdict.
 Harness storage must remain separate from product storage. Cheap motion and
 placement sources attach to every run; camera sources attach only to definitions
 that explicitly request them.
+
+`PlacementHarnessSignalSource` decorates the production
+`PhonePlacementProvider` and feeds every raw device-motion sample through the
+production `PhonePlacementClassifier`. It records `raw-device-motion` and
+`placement-classification` as separate tracks; the latter includes pickup and
+set-down transitions. The native composition is installed by
+`createDefaultHarnessSignalSources`, while Jest uses
+`FixturePhonePlacementProvider` through the same provider interface.

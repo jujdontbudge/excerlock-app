@@ -33,6 +33,15 @@ export const HARNESS_TEST_DEFINITIONS: readonly HarnessTestDefinition[] = [
     markerLabels: ["I started", "I stopped"],
     signalSources: [],
   },
+  {
+    id: "P3",
+    title: "Phone propped on a running treadmill",
+    kind: "declare-truth",
+    countdownMs: 10_000,
+    defaultDurationMs: 120_000,
+    markerLabels: ["The phone is propped", "The belt is running"],
+    signalSources: ["placement"],
+  },
 ];
 
 assertValidTestDefinitions(HARNESS_TEST_DEFINITIONS);
