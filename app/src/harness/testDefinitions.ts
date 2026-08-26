@@ -33,6 +33,30 @@ export const HARNESS_TEST_DEFINITIONS: readonly HarnessTestDefinition[] = [
     markerLabels: ["I started", "I stopped"],
     signalSources: [],
   },
+  {
+    id: "c1-treadmill-walking",
+    title: "C1 — treadmill walking",
+    kind: "declare-truth",
+    countdownMs: 10_000,
+    defaultDurationMs: 10_000,
+    markerLabels: ["Walking throughout the recording"],
+    signalSources: ["camera"],
+    panel: "camera-preview",
+    handsFreePlan:
+      "Frame your shoulders and hips, start the treadmill, then walk throughout the fixed recording window.",
+  },
+  {
+    id: "c2-empty-running-belt",
+    title: "C2 — empty running belt",
+    kind: "declare-truth",
+    countdownMs: 10_000,
+    defaultDurationMs: 10_000,
+    markerLabels: ["Belt empty throughout the recording"],
+    signalSources: ["camera"],
+    panel: "camera-preview",
+    handsFreePlan:
+      "Frame the empty running belt, start it, then remain out of view throughout the fixed recording window.",
+  },
 ];
 
 assertValidTestDefinitions(HARNESS_TEST_DEFINITIONS);

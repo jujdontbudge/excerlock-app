@@ -1,4 +1,5 @@
 import {
+  HARNESS_TEST_DEFINITIONS,
   assertValidTestDefinitions,
   type HarnessTestDefinition,
 } from "../testDefinitions";
@@ -28,4 +29,29 @@ describe("test definition validation", () => {
       expect(() => assertValidTestDefinitions(definitions)).toThrow(message);
     },
   );
+
+  it("declares the C1/C2 hands-free discrimination pair as camera-only tasks", () => {
+    expect(
+      HARNESS_TEST_DEFINITIONS.filter((definition) =>
+        definition.id.startsWith("c"),
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "c1-treadmill-walking",
+          countdownMs: expect.any(Number),
+          handsFreePlan: expect.any(String),
+          panel: "camera-preview",
+          signalSources: ["camera"],
+        }),
+        expect.objectContaining({
+          id: "c2-empty-running-belt",
+          countdownMs: expect.any(Number),
+          handsFreePlan: expect.any(String),
+          panel: "camera-preview",
+          signalSources: ["camera"],
+        }),
+      ]),
+    );
+  });
 });

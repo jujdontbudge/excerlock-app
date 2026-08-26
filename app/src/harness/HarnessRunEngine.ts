@@ -14,6 +14,7 @@ export interface HarnessTestDefinition {
   readonly markerLabels: readonly string[];
   readonly signalSources: readonly HarnessSignalSourceId[];
   readonly panel?: string;
+  readonly handsFreePlan?: string;
 }
 
 export type HarnessRunEndReason = "timeout" | "stopped";
@@ -52,6 +53,7 @@ export interface HarnessRun {
   readonly startedAtMs: number;
   readonly endedAtMs?: number;
   readonly endReason?: HarnessRunEndReason;
+  readonly footage?: Readonly<{ fileUri: string }>;
   readonly events: readonly HarnessRunEvent[];
 }
 
@@ -65,8 +67,14 @@ export interface HarnessSignalRecorder {
 
 export interface HarnessSignalSource {
   readonly id: HarnessSignalSourceId;
+  prepare?(context: HarnessSignalPreparationContext): Promise<void>;
   start(recorder: HarnessSignalRecorder): Promise<void>;
   stop(): Promise<void>;
+}
+
+export interface HarnessSignalPreparationContext {
+  readonly captureId: string;
+  attachFootage(fileUri: string): void;
 }
 
 export type HarnessRunSnapshot = Readonly<{
@@ -92,6 +100,11 @@ export class HarnessRunEngine {
   private deadlineMs: number | undefined;
   private readonly listeners = new Set<() => void>();
   private readonly runningSources: HarnessSignalSource[] = [];
+  private readonly preparedSources: HarnessSignalSource[] = [];
+  private pendingFootage: HarnessRun["footage"];
+  private readonly pendingSourceErrors: Array<
+    Readonly<{ source: HarnessSignalSourceId; message: string }>
+  > = [];
   private recordingTimer: ReturnType<typeof setTimeout> | undefined;
 
   public constructor(private readonly options: HarnessRunEngineOptions) {}
@@ -112,6 +125,27 @@ export class HarnessRunEngine {
     this.definition = definition;
     this.snapshot = { phase: "countdown", run: null, currentMarker: null };
     this.notify();
+    const captureId = `${definition.id}-${this.options.now()}`;
+    for (const sourceId of definition.signalSources) {
+      const source = this.options.sources?.[sourceId];
+      if (source?.prepare === undefined) {
+        continue;
+      }
+      try {
+        await source.prepare({
+          captureId,
+          attachFootage: (fileUri) => {
+            this.pendingFootage = { fileUri };
+          },
+        });
+        this.preparedSources.push(source);
+      } catch (error) {
+        this.pendingSourceErrors.push({
+          source: sourceId,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
     await new Promise<void>((resolve) => {
       setTimeout(resolve, definition.countdownMs);
     });
@@ -123,14 +157,28 @@ export class HarnessRunEngine {
       testId: definition.id,
       buildCommit: this.options.buildCommit,
       startedAtMs,
+      ...(this.pendingFootage === undefined
+        ? {}
+        : { footage: this.pendingFootage }),
       events: [],
     };
     this.snapshot = { phase: "recording", run, currentMarker: null };
     this.notify();
     await this.options.recorder.save(run);
+    this.pendingSourceErrors.splice(0).forEach(({ source, message }) => {
+      this.appendEvent({
+        type: "source-error",
+        atMs: this.options.now(),
+        source,
+        message,
+      });
+    });
     for (const sourceId of definition.signalSources) {
       const source = this.options.sources?.[sourceId];
-      if (source === undefined) {
+      if (
+        source === undefined ||
+        (source.prepare !== undefined && !this.preparedSources.includes(source))
+      ) {
         continue;
       }
       try {
@@ -218,7 +266,10 @@ export class HarnessRunEngine {
       clearTimeout(this.recordingTimer);
     }
     await Promise.all(
-      this.runningSources.splice(0).map((source) =>
+      [...new Set([
+        ...this.runningSources.splice(0),
+        ...this.preparedSources.splice(0),
+      ])].map((source) =>
         source.stop().catch(() => undefined),
       ),
     );
