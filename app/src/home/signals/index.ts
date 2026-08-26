@@ -4,6 +4,7 @@ export {
   installGymPresenceController,
 } from "./gymPresenceController";
 export {
+  createDefaultWalkingSessionDependencies,
   getWalkingSessionController,
   installWalkingSessionController,
   PICKUP_CADENCE_GRACE_MS,

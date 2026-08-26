@@ -10,6 +10,11 @@ import { NativeScreenTimePickerHost } from "@/screentime/native/NativeScreenTime
 import { NativeShieldNotificationResponseHost } from "@/notifications";
 import { SignalRuntimeHosts } from "@/home/signals";
 import { ExperimentRuntimeRoot } from "@/experiments";
+import { installDiagnostics } from "@/diagnostics";
+
+// Must run before any surface asks for a walking session, so the recorder owns
+// the shared controller rather than racing a plain one into place.
+installDiagnostics();
 
 export default function RootLayout() {
   const runtime = (

@@ -567,10 +567,15 @@ export class WalkingSessionController {
 
 let sharedController: WalkingSessionController | undefined;
 
-/** App-lifetime session; both sensor adapters remain lazy until start(). */
-export function getWalkingSessionController(): WalkingSessionController {
+/**
+ * The production dependency set, exported so instrumentation can decorate it
+ * rather than rebuild it. Diagnostics used to hand-assemble its own copy, which
+ * silently lost `createPlacement` and `leaseWarning` when those were added --
+ * disabling propped mode in the very build meant to test it.
+ */
+export function createDefaultWalkingSessionDependencies(): WalkingSessionDependencies {
   let sessionNow = Date.now;
-  sharedController ??= new WalkingSessionController({
+  return {
     createMotion: () => {
       const runtime = createWalkingMotionRuntime();
       sessionNow = runtime.now;
@@ -582,7 +587,14 @@ export function getWalkingSessionController(): WalkingSessionController {
     now: () => sessionNow(),
     wallClockNow: localWallClockNow,
     leaseWarning: createWalkLeaseWarningNotifier(),
-  });
+  };
+}
+
+/** App-lifetime session; both sensor adapters remain lazy until start(). */
+export function getWalkingSessionController(): WalkingSessionController {
+  sharedController ??= new WalkingSessionController(
+    createDefaultWalkingSessionDependencies(),
+  );
   return sharedController;
 }
 

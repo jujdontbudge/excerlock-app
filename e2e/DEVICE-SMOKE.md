@@ -49,6 +49,39 @@ installs, and starts the development client. A successful build is not an
 installation result until the ExcerLock icon is visible on the phone and the
 app opens without an untrusted-developer alert.
 
+### Offline test build (use this one for motion, walking and treadmill legs)
+
+The dev-client recipe above needs Metro on a reachable network. Several legs
+cannot satisfy that: MOT-02 walks away from coverage, WLK-01 and GEO-04 run with
+the phone pocketed and the Mac left behind, and treadmill mode (#111) is a gym.
+A build that dies without Wi-Fi cannot test any of them.
+
+Build **Release** instead. It embeds the JS bundle, so the app launches with no
+Metro, no LAN, and no network at all, and survives reboot:
+
+```sh
+cd /Users/johansardar/ExcerLock/app
+EXPO_NO_DOTENV=1 EXPO_PUBLIC_E2E=0 EXPO_PUBLIC_DIAGNOSTICS=1 \
+  npx expo run:ios --device 00008110-000E5041260BA01E --configuration Release
+```
+
+`EXPO_PUBLIC_DIAGNOSTICS=1` enables the on-device recorder and the
+`excerlock://diagnostics` screen (`app/src/diagnostics/README.md`). It records
+cadence, activity classification, keep-alive calls and every walking-session
+transition, persists them across force-quit and reboot, and renders them **on
+the phone** with a Share button. Without it a walk leaves no evidence, because
+`console.log` needs a Metro that is not there.
+
+Read the log by opening `excerlock://diagnostics` after the walk. Share exports
+the whole thing as text.
+
+**Note on the keyless build.** `EXPO_NO_DOTENV=1` suppresses both the Adapty and
+Clerk keys, so the build gets `NoopSubscriptionModule` and `NoopAccountModule`.
+Until `3b2cb9d` those made onboarding impossible to finish -- both failed every
+call, and they are the last two steps in the rail -- which is why earlier runs
+found deep links to be the only way in. Onboarding now offers a way past each on
+failure, so a keyless build reaches the app normally.
+
 For later launches, start Metro with the same gate and keep the Mac and iPhone
 on a reachable network:
 
