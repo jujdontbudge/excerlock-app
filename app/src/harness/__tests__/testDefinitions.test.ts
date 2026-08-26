@@ -1,4 +1,5 @@
 import {
+  HARNESS_TEST_DEFINITIONS,
   assertValidTestDefinitions,
   type HarnessTestDefinition,
 } from "../testDefinitions";
@@ -28,4 +29,24 @@ describe("test definition validation", () => {
       expect(() => assertValidTestDefinitions(definitions)).toThrow(message);
     },
   );
+
+  it("defines M6 and M7 as five-minute stationary truth tasks with motion on every run", () => {
+    expect(HARNESS_TEST_DEFINITIONS).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "M6",
+          defaultDurationMs: 300_000,
+          markerLabels: expect.arrayContaining(["I am stationary"]),
+          signalSources: expect.arrayContaining(["motion"]),
+        }),
+        expect.objectContaining({
+          id: "M7",
+          defaultDurationMs: 300_000,
+          markerLabels: expect.arrayContaining(["I am stationary"]),
+          signalSources: expect.arrayContaining(["motion"]),
+        }),
+      ]),
+    );
+    expect(HARNESS_TEST_DEFINITIONS.every(({ signalSources }) => signalSources.includes("motion"))).toBe(true);
+  });
 });

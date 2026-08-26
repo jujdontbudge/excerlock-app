@@ -22,6 +22,7 @@ import {
   serializeHarnessJsonLines,
 } from "./HarnessRunStore";
 import { HARNESS_TEST_DEFINITIONS } from "./testDefinitions";
+import { createDefaultHarnessSources } from "./createDefaultHarnessSources";
 
 type HarnessAppProps = Readonly<{
   buildCommit?: string;
@@ -43,6 +44,10 @@ export function HarnessApp({
     () => suppliedStore ?? createDefaultHarnessRunStore(),
     [suppliedStore],
   );
+  const attachedSources = useMemo(
+    () => sources ?? createDefaultHarnessSources(),
+    [sources],
+  );
   const [selection, setSelection] = useState<Selection>({ kind: "tasks" });
 
   if (selection.kind === "task") {
@@ -51,7 +56,7 @@ export function HarnessApp({
         buildCommit={buildCommit}
         definition={selection.definition}
         onBack={() => setSelection({ kind: "tasks" })}
-        sources={sources}
+        sources={attachedSources}
         store={store}
       />
     );

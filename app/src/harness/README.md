@@ -9,3 +9,9 @@ policy or renders a pass/fail verdict.
 Harness storage must remain separate from product storage. Cheap motion and
 placement sources attach to every run; camera sources attach only to definitions
 that explicitly request them.
+
+## Tracks
+
+The motion adapter records provider payloads unchanged as `raw.activity` and
+`raw.cadence`. It runs the production `WalkVerifier` without a session, unlock,
+or lease callback and records those conclusions as `derived.verdict`.

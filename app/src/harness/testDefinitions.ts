@@ -31,7 +31,33 @@ export const HARNESS_TEST_DEFINITIONS: readonly HarnessTestDefinition[] = [
     countdownMs: 3_000,
     defaultDurationMs: 30_000,
     markerLabels: ["I started", "I stopped"],
-    signalSources: [],
+    signalSources: ["motion"],
+  },
+  {
+    id: "M6",
+    title: "Standing still, scrolling",
+    kind: "declare-truth",
+    countdownMs: 3_000,
+    defaultDurationMs: 300_000,
+    markerLabels: [
+      "I am stationary",
+      "I started scrolling",
+      "I stopped scrolling",
+    ],
+    signalSources: ["motion"],
+  },
+  {
+    id: "M7",
+    title: "Sitting, scrolling",
+    kind: "declare-truth",
+    countdownMs: 3_000,
+    defaultDurationMs: 300_000,
+    markerLabels: [
+      "I am stationary",
+      "I started scrolling",
+      "I stopped scrolling",
+    ],
+    signalSources: ["motion"],
   },
 ];
 

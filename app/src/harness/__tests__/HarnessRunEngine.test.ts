@@ -112,4 +112,38 @@ describe("HarnessRunEngine", () => {
     expect(fixture.stop).toHaveBeenCalledTimes(1);
     expect(saved.at(-1)).toEqual(run);
   });
+
+  it("records a source failure and keeps the run alive", async () => {
+    const engine = new HarnessRunEngine({
+      buildCommit: "abc123",
+      now: () => Date.now(),
+      recorder: { save: async () => undefined },
+      sources: {
+        motion: {
+          id: "motion",
+          start: async () => {
+            throw new Error("sensor unavailable");
+          },
+          stop: async () => undefined,
+        },
+      },
+    });
+
+    const starting = engine.start({ ...MARKER_TASK, signalSources: ["motion"] });
+    jest.advanceTimersByTime(3_000);
+    await starting;
+
+    expect(engine.getSnapshot()).toMatchObject({
+      phase: "recording",
+      run: {
+        events: [
+          {
+            type: "source-error",
+            source: "motion",
+            message: "sensor unavailable",
+          },
+        ],
+      },
+    });
+  });
 });
