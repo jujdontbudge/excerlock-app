@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type ComponentType,
+} from "react";
 import {
   AppState,
   Pressable,
@@ -10,6 +17,8 @@ import {
   View,
 } from "react-native";
 import type { DiagnosticsStorage } from "@/diagnostics/DiagnosticsLog";
+import type { GaitVisionPreviewProps } from "../../modules/excerlock-gait-vision";
+import type { HarnessFootageCapture } from "./HarnessCameraSource";
 import {
   HarnessRunEngine,
   type HarnessRun,
@@ -26,6 +35,8 @@ import { createDefaultHarnessSources } from "./createDefaultHarnessSources";
 
 type HarnessAppProps = Readonly<{
   buildCommit?: string;
+  CameraPreview?: ComponentType<GaitVisionPreviewProps>;
+  footage?: Pick<HarnessFootageCapture, "deleteAll">;
   store?: HarnessRunStore;
   sources?: Partial<Record<HarnessSignalSourceId, HarnessSignalSource>>;
 }>;
@@ -37,12 +48,14 @@ type Selection =
 
 export function HarnessApp({
   buildCommit = process.env.EXPO_PUBLIC_BUILD_COMMIT ?? "unknown",
+  CameraPreview,
+  footage,
   store: suppliedStore,
   sources,
 }: HarnessAppProps) {
   const store = useMemo(
-    () => suppliedStore ?? createDefaultHarnessRunStore(),
-    [suppliedStore],
+    () => suppliedStore ?? createDefaultHarnessRunStore(footage),
+    [footage, suppliedStore],
   );
   const attachedSources = useMemo(
     () => sources ?? createDefaultHarnessSources(),
@@ -54,6 +67,7 @@ export function HarnessApp({
     return (
       <HarnessRunScreen
         buildCommit={buildCommit}
+        CameraPreview={CameraPreview}
         definition={selection.definition}
         onBack={() => setSelection({ kind: "tasks" })}
         sources={attachedSources}
@@ -126,18 +140,27 @@ function TaskList({
         label="Export all runs"
         onPress={() => shareRuns(runs)}
       />
+      <ActionButton
+        label="Delete all captured footage"
+        onPress={async () => {
+          await store.deleteAllFootage();
+          reload();
+        }}
+      />
     </ScrollView>
   );
 }
 
 function HarnessRunScreen({
   buildCommit,
+  CameraPreview,
   definition,
   onBack,
   sources,
   store,
 }: Readonly<{
   buildCommit: string;
+  CameraPreview?: ComponentType<GaitVisionPreviewProps>;
   definition: HarnessTestDefinition;
   onBack: () => void;
   sources?: Partial<Record<HarnessSignalSourceId, HarnessSignalSource>>;
@@ -173,7 +196,12 @@ function HarnessRunScreen({
       <Text style={styles.phase}>
         {snapshot.phase === "countdown" ? "Countdown" : snapshot.phase}
       </Text>
-      {definition.panel ? (
+      {definition.handsFreePlan ? (
+        <Text style={styles.copy}>{definition.handsFreePlan}</Text>
+      ) : null}
+      {definition.panel === "camera-preview" && CameraPreview ? (
+        <CameraPreview active style={styles.panel} />
+      ) : definition.panel ? (
         <View accessibilityLabel={`${definition.panel} panel`} style={styles.panel} />
       ) : null}
       {snapshot.phase === "recording"
@@ -246,14 +274,16 @@ async function shareRuns(runs: readonly HarnessRun[]): Promise<void> {
   });
 }
 
-function createDefaultHarnessRunStore(): HarnessRunStore {
+function createDefaultHarnessRunStore(
+  footage?: Pick<HarnessFootageCapture, "deleteAll">,
+): HarnessRunStore {
   const loaded = require(
     "@react-native-async-storage/async-storage"
   ) as typeof import("@react-native-async-storage/async-storage") & {
     default?: DiagnosticsStorage;
   };
   const AsyncStorage = loaded.default ?? (loaded as unknown as DiagnosticsStorage);
-  return new HarnessRunStore(AsyncStorage as DiagnosticsStorage);
+  return new HarnessRunStore(AsyncStorage as DiagnosticsStorage, footage);
 }
 
 const styles = StyleSheet.create({

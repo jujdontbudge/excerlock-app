@@ -38,3 +38,18 @@ production `PhonePlacementClassifier`. It records `raw-device-motion` and
 set-down transitions. The native composition is installed by
 `createDefaultHarnessSources`, while Jest uses
 `FixturePhonePlacementProvider` through the same provider interface.
+
+## Camera runs
+
+`HarnessCameraSource` decorates the production `GaitVisionProvider` and
+`GaitPeriodicityDetector`. It records landmarks and detector results on separate
+tracks without applying a pass/fail decision. Camera sources may prepare during
+the countdown so the native preview is live before the fixed hands-free window
+begins; sources that are not declared by the task are never prepared or started.
+
+The native capture override is harness-only. It stores 640×480 H.264 footage in
+the app's Application Support directory at the camera session's configured 15
+fps. A run retains the sandbox URI so footage can be associated locally, but
+`serializeHarnessJsonLines` deliberately removes that field. The task list's
+single delete action removes every captured movie and then strips all retained
+URIs from saved runs.

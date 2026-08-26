@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -7,6 +7,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HarnessApp } from "./HarnessApp";
+import { createHarnessCameraRuntime } from "./HarnessCameraRuntime";
+import { createDefaultHarnessSources } from "./createDefaultHarnessSources";
 
 type BuildMode = "choose" | "harness" | "product";
 
@@ -30,18 +32,7 @@ export function HarnessBuildRoot({
     );
   }
   if (mode === "harness") {
-    return (
-      <View style={styles.productContainer}>
-        <HarnessApp />
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setMode("choose")}
-          style={styles.modeSwitch}
-        >
-          <Text style={styles.modeSwitchLabel}>Switch mode</Text>
-        </Pressable>
-      </View>
-    );
+    return <HarnessMode onSwitch={() => setMode("choose")} />;
   }
   return (
     <HarnessPage>
@@ -53,6 +44,30 @@ export function HarnessBuildRoot({
       <ModeButton label="Test harness" onPress={() => setMode("harness")} />
       <ModeButton label="Real app" onPress={() => setMode("product")} />
     </HarnessPage>
+  );
+}
+
+function HarnessMode({ onSwitch }: Readonly<{ onSwitch: () => void }>) {
+  const camera = useMemo(createHarnessCameraRuntime, []);
+  const sources = useMemo(
+    () => ({ ...createDefaultHarnessSources(), camera: camera.source }),
+    [camera],
+  );
+  return (
+    <View style={styles.productContainer}>
+      <HarnessApp
+        CameraPreview={camera.Preview}
+        footage={camera.capture}
+        sources={sources}
+      />
+      <Pressable
+        accessibilityRole="button"
+        onPress={onSwitch}
+        style={styles.modeSwitch}
+      >
+        <Text style={styles.modeSwitchLabel}>Switch mode</Text>
+      </Pressable>
+    </View>
   );
 }
 

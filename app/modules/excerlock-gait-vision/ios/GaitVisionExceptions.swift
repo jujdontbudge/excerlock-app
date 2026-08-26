@@ -16,3 +16,10 @@ final class GaitVisionConfigurationException: Exception, @unchecked Sendable {
     "The front-camera body-pose session could not be configured"
   }
 }
+
+final class GaitVisionCaptureException: Exception, @unchecked Sendable {
+  override var code: String { "ERR_GAIT_VISION_CAPTURE" }
+  override var reason: String {
+    "Harness footage could not be recorded in the app sandbox"
+  }
+}

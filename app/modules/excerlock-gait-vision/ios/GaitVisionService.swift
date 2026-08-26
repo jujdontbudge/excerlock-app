@@ -17,11 +17,13 @@ final class GaitVisionService: NSObject,
   )
   private let stateLock = NSLock()
   private let poseRequest = VNDetectHumanBodyPoseRequest()
-  private var frameIndex = 0
   private var onSample: ((GaitVisionPayload) -> Void)?
   private weak var previewView: GaitVisionPreviewView?
   private var session: AVCaptureSession?
   private var started = false
+  private var harnessWriter: AVAssetWriter?
+  private var harnessWriterInput: AVAssetWriterInput?
+  private var harnessWriterStarted = false
 
   func start(
     onSample: @escaping (GaitVisionPayload) -> Void,
@@ -79,11 +81,106 @@ final class GaitVisionService: NSObject,
     }
   }
 
+  func beginHarnessCapture(
+    id: String,
+    completion: @escaping (Result<String, Exception>) -> Void
+  ) {
+    visionQueue.async { [weak self] in
+      guard let self else { return }
+      guard self.harnessWriter == nil else {
+        completion(.failure(GaitVisionCaptureException()))
+        return
+      }
+      do {
+        let directory = try self.harnessCaptureDirectory()
+        let safeId = id.replacingOccurrences(
+          of: "[^A-Za-z0-9._-]",
+          with: "-",
+          options: .regularExpression
+        )
+        let url = directory.appendingPathComponent(safeId).appendingPathExtension("mp4")
+        try? FileManager.default.removeItem(at: url)
+        let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
+        let input = AVAssetWriterInput(
+          mediaType: .video,
+          outputSettings: [
+            AVVideoCodecKey: AVVideoCodecType.h264,
+            AVVideoWidthKey: 640,
+            AVVideoHeightKey: 480,
+            AVVideoCompressionPropertiesKey: [
+              AVVideoAverageBitRateKey: 700_000,
+              AVVideoExpectedSourceFrameRateKey: 15,
+              AVVideoMaxKeyFrameIntervalKey: 15
+            ]
+          ]
+        )
+        input.expectsMediaDataInRealTime = true
+        guard writer.canAdd(input) else {
+          throw GaitVisionCaptureException()
+        }
+        writer.add(input)
+        self.harnessWriter = writer
+        self.harnessWriterInput = input
+        self.harnessWriterStarted = false
+        completion(.success(url.absoluteString))
+      } catch let exception as Exception {
+        completion(.failure(exception))
+      } catch {
+        completion(.failure(GaitVisionCaptureException()))
+      }
+    }
+  }
+
+  func endHarnessCapture(completion: @escaping () -> Void) {
+    visionQueue.async { [weak self] in
+      guard let self, let writer = self.harnessWriter else {
+        completion()
+        return
+      }
+      let input = self.harnessWriterInput
+      let started = self.harnessWriterStarted
+      self.harnessWriter = nil
+      self.harnessWriterInput = nil
+      self.harnessWriterStarted = false
+      guard started else {
+        writer.cancelWriting()
+        completion()
+        return
+      }
+      input?.markAsFinished()
+      writer.finishWriting(completionHandler: completion)
+    }
+  }
+
+  func deleteHarnessCaptures(completion: @escaping (Result<Void, Exception>) -> Void) {
+    visionQueue.async { [weak self] in
+      guard let self else { return }
+      guard self.harnessWriter == nil else {
+        completion(.failure(GaitVisionCaptureException()))
+        return
+      }
+      do {
+        let directory = try self.harnessCaptureDirectory()
+        let files = try FileManager.default.contentsOfDirectory(
+          at: directory,
+          includingPropertiesForKeys: nil
+        )
+        for file in files where file.pathExtension == "mp4" {
+          try FileManager.default.removeItem(at: file)
+        }
+        completion(.success(()))
+      } catch {
+        completion(.failure(GaitVisionCaptureException()))
+      }
+    }
+  }
+
   func captureOutput(
     _ output: AVCaptureOutput,
     didOutput sampleBuffer: CMSampleBuffer,
     from connection: AVCaptureConnection
   ) {
+    appendHarnessFrame(sampleBuffer)
     guard shouldAnalyzeNextFrame() else { return }
     let handler = VNImageRequestHandler(
       cmSampleBuffer: sampleBuffer,
@@ -101,6 +198,43 @@ final class GaitVisionService: NSObject,
       // A dropped Vision frame is not retained or retried. The gait detector's
       // signal-quality timeout owns user-visible failure handling.
     }
+  }
+
+  private func appendHarnessFrame(_ sampleBuffer: CMSampleBuffer) {
+    guard
+      let writer = harnessWriter,
+      let input = harnessWriterInput
+    else { return }
+    if !harnessWriterStarted {
+      guard writer.startWriting() else { return }
+      writer.startSession(atSourceTime: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
+      harnessWriterStarted = true
+    }
+    if input.isReadyForMoreMediaData {
+      input.append(sampleBuffer)
+    }
+  }
+
+  private func harnessCaptureDirectory() throws -> URL {
+    let root = try FileManager.default.url(
+      for: .applicationSupportDirectory,
+      in: .userDomainMask,
+      appropriateFor: nil,
+      create: true
+    )
+    let directory = root.appendingPathComponent(
+      "HarnessFootage",
+      isDirectory: true
+    )
+    try FileManager.default.createDirectory(
+      at: directory,
+      withIntermediateDirectories: true
+    )
+    var values = URLResourceValues()
+    values.isExcludedFromBackup = true
+    var mutableDirectory = directory
+    try mutableDirectory.setResourceValues(values)
+    return directory
   }
 
   private func configureAndStart(
@@ -182,11 +316,7 @@ final class GaitVisionService: NSObject,
   }
 
   private func shouldAnalyzeNextFrame() -> Bool {
-    stateLock.lock()
-    defer { stateLock.unlock() }
-    guard started else { return false }
-    frameIndex += 1
-    return frameIndex.isMultiple(of: 2)
+    isStarted
   }
 
   private var isStarted: Bool {
@@ -208,7 +338,6 @@ final class GaitVisionService: NSObject,
     stateLock.lock()
     self.session = session
     self.onSample = onSample
-    frameIndex = 0
     started = true
     stateLock.unlock()
     DispatchQueue.main.async { [weak self] in
@@ -220,7 +349,6 @@ final class GaitVisionService: NSObject,
     stateLock.lock()
     started = false
     onSample = nil
-    frameIndex = 0
     stateLock.unlock()
     DispatchQueue.main.async { [weak self] in
       self?.previewView?.attach(session: nil)

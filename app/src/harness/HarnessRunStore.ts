@@ -1,11 +1,15 @@
 import type { DiagnosticsStorage } from "@/diagnostics/DiagnosticsLog";
 import type { HarnessRun, HarnessRunEvent } from "./HarnessRunEngine";
+import type { HarnessFootageCapture } from "./HarnessCameraSource";
 
 export const HARNESS_RUN_INDEX_KEY = "excerlock.harness.runs.v1.index";
 export const HARNESS_RUN_KEY_PREFIX = "excerlock.harness.runs.v1.run.";
 
 export class HarnessRunStore {
-  public constructor(private readonly storage: DiagnosticsStorage) {}
+  public constructor(
+    private readonly storage: DiagnosticsStorage,
+    private readonly footage?: Pick<HarnessFootageCapture, "deleteAll">,
+  ) {}
 
   public async save(run: HarnessRun): Promise<void> {
     await this.storage.setItem(
@@ -32,6 +36,16 @@ export class HarnessRunStore {
       (await this.readIndex()).map((id) => this.get(id)),
     );
     return runs.filter((run): run is HarnessRun => run !== null);
+  }
+
+  public async deleteAllFootage(): Promise<void> {
+    await this.footage?.deleteAll();
+    const runs = await this.list();
+    await Promise.all(
+      runs
+        .filter((run) => run.footage !== undefined)
+        .map(({ footage: _footage, ...run }) => this.save(run)),
+    );
   }
 
   private async readIndex(): Promise<readonly string[]> {
@@ -65,7 +79,7 @@ export function serializeHarnessJsonLines(
 ): string {
   return runs
     .flatMap((run): ExportRecord[] => {
-      const { events, ...header } = run;
+      const { events, footage: _footage, ...header } = run;
       return [
         { recordType: "run", run: header },
         ...events.map((event) => ({
