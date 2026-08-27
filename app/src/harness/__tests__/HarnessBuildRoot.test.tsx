@@ -18,7 +18,7 @@ describe("HarnessBuildRoot", () => {
     await render(<HarnessBuildRoot productRuntime={<ProductRuntime />} />);
 
     expect(screen.getByText("Physical test tasks")).toBeOnTheScreen();
-    expect(screen.getAllByText("declare-truth").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Open ›").length).toBeGreaterThan(0);
     expect(productMounted).not.toHaveBeenCalled();
   });
 

@@ -33,6 +33,39 @@ import {
 import { HARNESS_TEST_DEFINITIONS } from "./testDefinitions";
 import { createDefaultHarnessSources } from "./createDefaultHarnessSources";
 
+/**
+ * A run screen with no moving parts reads as a printed page: a tester cannot
+ * tell a live recording from a frozen one, and stops trusting the harness.
+ * Every phase therefore shows a second that changes.
+ */
+function useTick(active: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(timer);
+  }, [active]);
+  return now;
+}
+
+function formatClock(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
+function describeTask(definition: HarnessTestDefinition): string {
+  const seconds = Math.round(definition.defaultDurationMs / 1000);
+  const duration =
+    seconds < 60
+      ? `${seconds} seconds`
+      : `${Math.round(seconds / 60)} minute${seconds >= 120 ? "s" : ""}`;
+  const count = definition.markerLabels.length;
+  return `${duration} · ${count} button${count === 1 ? "" : "s"} to press`;
+}
+
 type HarnessAppProps = Readonly<{
   buildCommit?: string;
   CameraPreview?: ComponentType<GaitVisionPreviewProps>;
@@ -119,7 +152,8 @@ function TaskList({
           style={styles.card}
         >
           <Text style={styles.cardTitle}>{definition.title}</Text>
-          <Text style={styles.kind}>{definition.kind}</Text>
+          <Text style={styles.kind}>{describeTask(definition)}</Text>
+          <Text style={styles.open}>Open ›</Text>
         </Pressable>
       ))}
       <Text style={styles.section}>Saved runs</Text>
@@ -196,6 +230,19 @@ function HarnessRunScreen({
     return () => subscription.remove();
   }, [engine]);
 
+  const now = useTick(
+    snapshot.phase === "countdown" || snapshot.phase === "recording",
+  );
+  const markerPresses = useMemo(() => {
+    const pressed = new Map<string, number>();
+    for (const event of snapshot.run?.events ?? []) {
+      if (event.type === "marker") {
+        pressed.set(event.label, event.atMs);
+      }
+    }
+    return pressed;
+  }, [snapshot.run]);
+
   const startRun = () => {
     setStarted(true);
     void engine.start(definition, { parameters, note });
@@ -211,6 +258,21 @@ function HarnessRunScreen({
             ? "Countdown"
             : snapshot.phase}
       </Text>
+      {snapshot.phase === "countdown" && snapshot.countdownEndsAtMs !== null ? (
+        <Text style={styles.clock}>
+          {`Starting in ${Math.max(0, Math.ceil((snapshot.countdownEndsAtMs - now) / 1000))}s`}
+        </Text>
+      ) : null}
+      {snapshot.phase === "recording" && snapshot.deadlineMs !== null ? (
+        <>
+          <Text style={styles.clock}>
+            {`${formatClock(snapshot.deadlineMs - now)} left`}
+          </Text>
+          <Text style={styles.copy}>
+            {`Recording · ${formatClock(now - (snapshot.run?.startedAtMs ?? now))} elapsed`}
+          </Text>
+        </>
+      ) : null}
       {definition.handsFreePlan ? (
         <Text style={styles.copy}>{definition.handsFreePlan}</Text>
       ) : null}
@@ -251,6 +313,7 @@ function HarnessRunScreen({
             />
           </View>
           <ActionButton label="Start run" onPress={startRun} />
+          <ActionButton label="Back to tasks" onPress={onBack} tone="quiet" />
         </>
       ) : null}
       {snapshot.phase === "recording"
@@ -258,7 +321,16 @@ function HarnessRunScreen({
             <ActionButton
               key={label}
               label={label}
+              note={
+                markerPresses.has(label)
+                  ? `recorded at ${formatClock(
+                      (markerPresses.get(label) ?? 0) -
+                        (snapshot.run?.startedAtMs ?? 0),
+                    )}`
+                  : "not yet pressed"
+              }
               onPress={() => engine.pressMarker(label)}
+              tone={markerPresses.has(label) ? "done" : "primary"}
             />
           ))
         : null}
@@ -302,20 +374,30 @@ function SavedRunScreen({ run, onBack }: Readonly<{ run: HarnessRun; onBack: () 
 function ActionButton({
   disabled = false,
   label,
+  note,
   onPress,
+  tone = "primary",
 }: Readonly<{
   disabled?: boolean;
   label: string;
+  note?: string;
   onPress: () => void | Promise<void>;
+  tone?: "primary" | "done" | "quiet";
 }>) {
   return (
     <Pressable
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
-      style={[styles.button, disabled && styles.disabled]}
+      style={[
+        styles.button,
+        tone === "done" && styles.buttonDone,
+        tone === "quiet" && styles.buttonQuiet,
+        disabled && styles.disabled,
+      ]}
     >
       <Text style={styles.buttonLabel}>{label}</Text>
+      {note === undefined ? null : <Text style={styles.buttonNote}>{note}</Text>}
     </Pressable>
   );
 }
@@ -340,7 +422,16 @@ function createDefaultHarnessRunStore(
 }
 
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, gap: 14, padding: 24, backgroundColor: "#111827" },
+  page: {
+    flexGrow: 1,
+    gap: 14,
+    padding: 24,
+    // The screen has no navigation bar, so the top inset is our own problem:
+    // without it the title sits under the notch and the page looks broken.
+    paddingTop: 72,
+    paddingBottom: 72,
+    backgroundColor: "#111827",
+  },
   title: { color: "white", fontSize: 28, fontWeight: "700" },
   section: { color: "white", fontSize: 21, fontWeight: "700", marginTop: 14 },
   copy: { color: "#CBD5E1", fontSize: 15 },
@@ -361,7 +452,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   event: { color: "#E2E8F0", fontFamily: "Courier", fontSize: 13 },
-  button: { minHeight: 50, borderRadius: 12, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center", paddingHorizontal: 16 },
+  clock: { color: "white", fontSize: 44, fontWeight: "800", fontVariant: ["tabular-nums"] },
+  open: { color: "#93C5FD", fontSize: 13, fontWeight: "700", marginTop: 8 },
+  button: { minHeight: 64, gap: 2, borderRadius: 12, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center", paddingHorizontal: 16, paddingVertical: 12 },
+  buttonDone: { backgroundColor: "#166534" },
+  buttonQuiet: { backgroundColor: "#1E293B" },
+  buttonNote: { color: "#DBEAFE", fontSize: 13 },
   disabled: { opacity: 0.4 },
   buttonLabel: { color: "white", fontSize: 16, fontWeight: "700" },
 });

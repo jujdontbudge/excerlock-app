@@ -120,3 +120,73 @@ describe("HarnessApp", () => {
     expect(screen.getByText("Note: Belt juddered once")).toBeOnTheScreen();
   });
 });
+
+describe("HarnessApp liveness", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(1_000);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it("leaves a task without starting a run, so opening one is not a trap", async () => {
+    await render(<HarnessApp buildCommit="abc123" store={new HarnessRunStore(memoryStorage())} />);
+
+    await fireEvent.press(screen.getByText("Marker-only harness check"));
+    expect(screen.getByText("Set up run")).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByText("Back to tasks"));
+
+    expect(screen.getByText("Physical test tasks")).toBeOnTheScreen();
+  });
+
+  it("counts the countdown down in seconds", async () => {
+    await render(<HarnessApp buildCommit="abc123" store={new HarnessRunStore(memoryStorage())} />);
+
+    await fireEvent.press(screen.getByText("Marker-only harness check"));
+    await fireEvent.press(screen.getByText("Start run"));
+
+    expect(screen.getByText("Starting in 3s")).toBeOnTheScreen();
+    await act(async () => {
+      jest.advanceTimersByTime(1_000);
+    });
+    expect(screen.getByText("Starting in 2s")).toBeOnTheScreen();
+  });
+
+  it("shows time remaining while recording so a live run never looks frozen", async () => {
+    await render(<HarnessApp buildCommit="abc123" store={new HarnessRunStore(memoryStorage())} />);
+
+    await fireEvent.press(screen.getByText("Marker-only harness check"));
+    await fireEvent.press(screen.getByText("Start run"));
+    await act(async () => {
+      jest.advanceTimersByTime(3_000);
+    });
+
+    expect(screen.getByText("0:30 left")).toBeOnTheScreen();
+    await act(async () => {
+      jest.advanceTimersByTime(5_000);
+    });
+    expect(screen.getByText("0:25 left")).toBeOnTheScreen();
+  });
+
+  it("confirms a marker press on the button itself", async () => {
+    await render(<HarnessApp buildCommit="abc123" store={new HarnessRunStore(memoryStorage())} />);
+
+    await fireEvent.press(screen.getByText("Marker-only harness check"));
+    await fireEvent.press(screen.getByText("Start run"));
+    await act(async () => {
+      jest.advanceTimersByTime(3_000);
+    });
+
+    expect(screen.getAllByText("not yet pressed")).toHaveLength(2);
+    await fireEvent.press(screen.getByText("I started"));
+
+    expect(screen.getByText("recorded at 0:00")).toBeOnTheScreen();
+  });
+
+  it("describes each task in plain words instead of an internal kind", async () => {
+    await render(<HarnessApp buildCommit="abc123" store={new HarnessRunStore(memoryStorage())} />);
+
+    expect(screen.queryByText("declare-truth")).not.toBeOnTheScreen();
+    expect(screen.getByText("30 seconds · 2 buttons to press")).toBeOnTheScreen();
+  });
+});

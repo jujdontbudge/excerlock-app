@@ -100,6 +100,14 @@ export type HarnessRunSnapshot = Readonly<{
   phase: "idle" | "countdown" | "recording" | "finished";
   run: HarnessRun | null;
   currentMarker: string | null;
+  /**
+   * Wall-clock instants the screen needs to show a live clock. A tester
+   * standing on a treadmill cannot tell a working run from a frozen one
+   * without seconds ticking, so the engine publishes the deadlines rather
+   * than making the screen re-derive them.
+   */
+  countdownEndsAtMs: number | null;
+  deadlineMs: number | null;
 }>;
 
 export interface HarnessRunEngineOptions {
@@ -114,6 +122,8 @@ export class HarnessRunEngine {
     phase: "idle",
     run: null,
     currentMarker: null,
+    countdownEndsAtMs: null,
+    deadlineMs: null,
   };
   private definition: HarnessTestDefinition | undefined;
   private deadlineMs: number | undefined;
@@ -145,7 +155,13 @@ export class HarnessRunEngine {
       throw new Error("A harness run is already active");
     }
     this.definition = definition;
-    this.snapshot = { phase: "countdown", run: null, currentMarker: null };
+    this.snapshot = {
+      phase: "countdown",
+      run: null,
+      currentMarker: null,
+      countdownEndsAtMs: this.options.now() + definition.countdownMs,
+      deadlineMs: null,
+    };
     this.notify();
     const captureId = `${definition.id}-${this.options.now()}`;
     for (const sourceId of definition.signalSources) {
@@ -191,7 +207,13 @@ export class HarnessRunEngine {
       note: input.note,
       events: [],
     };
-    this.snapshot = { phase: "recording", run, currentMarker: null };
+    this.snapshot = {
+      phase: "recording",
+      run,
+      currentMarker: null,
+      countdownEndsAtMs: null,
+      deadlineMs: startedAtMs + definition.defaultDurationMs,
+    };
     this.notify();
     await this.options.recorder.save(run);
     this.pendingSourceErrors.splice(0).forEach(({ source, message }) => {
@@ -272,6 +294,7 @@ export class HarnessRunEngine {
       throw new Error("A positive extension requires an active run");
     }
     this.deadlineMs = (this.deadlineMs ?? this.options.now()) + durationMs;
+    this.snapshot = { ...this.snapshot, deadlineMs: this.deadlineMs };
     this.appendEvent({
       type: "extension",
       atMs: this.options.now(),
@@ -310,6 +333,8 @@ export class HarnessRunEngine {
       phase: "finished",
       run: finished,
       currentMarker: this.snapshot.currentMarker,
+      countdownEndsAtMs: null,
+      deadlineMs: null,
     };
     this.notify();
     this.recordingTimer = undefined;
