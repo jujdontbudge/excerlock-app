@@ -5,17 +5,23 @@ import {
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { HarnessApp } from "./HarnessApp";
 import { createHarnessCameraRuntime } from "./HarnessCameraRuntime";
 import { createDefaultHarnessSources } from "./createDefaultHarnessSources";
 
-type BuildMode = "choose" | "harness" | "product";
+type BuildMode = "harness" | "product";
 
+/**
+ * A test build lands on the harness. There is deliberately no chooser: an
+ * intermediate screen with two equally weighted buttons put the product one
+ * mistaken tap away, which is the single thing this build exists to keep off
+ * the phone. Reaching the product is still possible, but it is a demoted link
+ * you have to mean.
+ */
 export function HarnessBuildRoot({
   productRuntime,
 }: Readonly<{ productRuntime: ReactNode }>) {
-  const [mode, setMode] = useState<BuildMode>("choose");
+  const [mode, setMode] = useState<BuildMode>("harness");
 
   if (mode === "product") {
     return (
@@ -23,28 +29,15 @@ export function HarnessBuildRoot({
         {productRuntime}
         <Pressable
           accessibilityRole="button"
-          onPress={() => setMode("choose")}
+          onPress={() => setMode("harness")}
           style={styles.modeSwitch}
         >
-          <Text style={styles.modeSwitchLabel}>Switch mode</Text>
+          <Text style={styles.modeSwitchLabel}>Test harness</Text>
         </Pressable>
       </View>
     );
   }
-  if (mode === "harness") {
-    return <HarnessMode onSwitch={() => setMode("choose")} />;
-  }
-  return (
-    <HarnessPage>
-      <Text style={styles.title}>Choose a mode</Text>
-      <Text style={styles.body}>
-        The test harness observes signals without mounting ExcerLock runtime
-        policy.
-      </Text>
-      <ModeButton label="Test harness" onPress={() => setMode("harness")} />
-      <ModeButton label="Real app" onPress={() => setMode("product")} />
-    </HarnessPage>
-  );
+  return <HarnessMode onSwitch={() => setMode("product")} />;
 }
 
 function HarnessMode({ onSwitch }: Readonly<{ onSwitch: () => void }>) {
@@ -63,47 +56,15 @@ function HarnessMode({ onSwitch }: Readonly<{ onSwitch: () => void }>) {
       <Pressable
         accessibilityRole="button"
         onPress={onSwitch}
-        style={styles.modeSwitch}
+        style={styles.escapeHatch}
       >
-        <Text style={styles.modeSwitchLabel}>Switch mode</Text>
+        <Text style={styles.escapeHatchLabel}>Real app</Text>
       </Pressable>
     </View>
   );
 }
 
-function HarnessPage({ children }: Readonly<{ children: ReactNode }>) {
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.page}>{children}</View>
-    </SafeAreaView>
-  );
-}
-
-function ModeButton({
-  label,
-  onPress,
-}: Readonly<{ label: string; onPress: () => void }>) {
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.button}>
-      <Text style={styles.buttonLabel}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#111827" },
-  page: { flex: 1, gap: 16, padding: 24, justifyContent: "center" },
-  title: { color: "white", fontSize: 28, fontWeight: "700" },
-  body: { color: "#CBD5E1", fontSize: 16, lineHeight: 24 },
-  button: {
-    minHeight: 52,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 12,
-    backgroundColor: "#2563EB",
-    paddingHorizontal: 18,
-  },
-  buttonLabel: { color: "white", fontSize: 17, fontWeight: "700" },
   card: {
     borderRadius: 12,
     borderWidth: 1,
@@ -124,4 +85,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   modeSwitchLabel: { color: "white", fontSize: 13, fontWeight: "700" },
+  escapeHatch: {
+    position: "absolute",
+    right: 12,
+    bottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  escapeHatchLabel: {
+    color: "#64748B",
+    fontSize: 12,
+    textDecorationLine: "underline",
+  },
 });

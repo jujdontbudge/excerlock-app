@@ -1,3 +1,8 @@
+jest.mock(
+  "@react-native-async-storage/async-storage",
+  () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
+
 import { render, screen } from "@testing-library/react-native";
 
 import RootLayout from "../../../app/_layout";
@@ -40,12 +45,12 @@ describe("RootLayout account composition", () => {
     expect(mockAccountRuntimeRoot).toHaveBeenCalledTimes(1);
   });
 
-  it("offers harness selection before mounting any product runtime host", async () => {
+  it("lands on the harness without mounting any product runtime host", async () => {
     process.env.EXPO_PUBLIC_TEST_HARNESS = "1";
 
     await render(<RootLayout />);
 
-    expect(screen.getByText("Choose a mode")).toBeOnTheScreen();
+    expect(screen.getByText("Physical test tasks")).toBeOnTheScreen();
     expect(mockAccountRuntimeRoot).not.toHaveBeenCalled();
   });
 });
