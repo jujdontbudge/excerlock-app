@@ -28,6 +28,22 @@ describe("PhonePlacementClassifier", () => {
     });
   });
 
+  it("classifies an irregular 10 Hz stream without requiring a sample exactly on the window boundary", () => {
+    const classifier = new PhonePlacementClassifier();
+    let result = classifier.getResult();
+    const intervalsMs = [99.4, 101.3, 98.8, 100.7, 99.9, 101.1, 99.2, 100.6, 99.7, 101.5];
+    let timestampMs = 0.37;
+
+    result = classifier.process(sample(timestampMs));
+    for (const intervalMs of intervalsMs) {
+      timestampMs += intervalMs;
+      result = classifier.process(sample(timestampMs));
+    }
+
+    expect(timestampMs).toBeGreaterThan(1_000);
+    expect(result.placement).toBe("propped");
+  });
+
   it("classifies a phone resting at a treadmill-console angle as propped", () => {
     const classifier = new PhonePlacementClassifier();
     let result = classifier.getResult();

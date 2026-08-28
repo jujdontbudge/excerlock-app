@@ -51,6 +51,7 @@ export class PhonePlacementClassifier {
   private placement: PhonePlacement = "unknown";
   private pending: PendingPlacement | undefined;
   private samples: DeviceMotionSample[] = [];
+  private observationStartedAtMs: number | null = null;
   private evaluatedAtMs: number | null = null;
 
   public process(sample: DeviceMotionSample): PhonePlacementResult {
@@ -60,6 +61,7 @@ export class PhonePlacementClassifier {
     ) {
       throw new Error("Device-motion samples must have increasing timestamps");
     }
+    this.observationStartedAtMs ??= sample.timestampMs;
     this.evaluatedAtMs = sample.timestampMs;
     this.samples.push(sample);
     const windowStartsAt = sample.timestampMs - PLACEMENT_OBSERVATION_WINDOW_MS;
@@ -108,8 +110,9 @@ export class PhonePlacementClassifier {
   private classifyWindow(): PhonePlacement {
     if (
       this.samples.length < MIN_SAMPLE_PAIRS + 1 ||
-      this.samples[this.samples.length - 1].timestampMs -
-        this.samples[0].timestampMs <
+      this.observationStartedAtMs === null ||
+      this.evaluatedAtMs === null ||
+      this.evaluatedAtMs - this.observationStartedAtMs <
         PLACEMENT_OBSERVATION_WINDOW_MS
     ) {
       return "unknown";
