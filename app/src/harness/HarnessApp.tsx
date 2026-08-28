@@ -242,6 +242,13 @@ function HarnessRunScreen({
     }
     return pressed;
   }, [snapshot.run]);
+  const sourceErrors = useMemo(
+    () =>
+      (snapshot.run?.events ?? []).filter(
+        (event) => event.type === "source-error",
+      ),
+    [snapshot.run],
+  );
 
   const startRun = () => {
     setStarted(true);
@@ -281,6 +288,15 @@ function HarnessRunScreen({
       ) : definition.panel ? (
         <View accessibilityLabel={`${definition.panel} panel`} style={styles.panel} />
       ) : null}
+      {sourceErrors.map((error, index) => (
+        <Text
+          accessibilityRole="alert"
+          key={`${error.source}-${error.atMs}-${index}`}
+          style={styles.error}
+        >
+          {`${error.source[0].toUpperCase()}${error.source.slice(1)} failed: ${error.message}`}
+        </Text>
+      ))}
       {!started ? (
         <>
           {(definition.parameters ?? []).map((parameter) => (
@@ -452,6 +468,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   event: { color: "#E2E8F0", fontFamily: "Courier", fontSize: 13 },
+  error: {
+    borderRadius: 10,
+    backgroundColor: "#7F1D1D",
+    color: "white",
+    fontSize: 15,
+    fontWeight: "700",
+    padding: 12,
+  },
   clock: { color: "white", fontSize: 44, fontWeight: "800", fontVariant: ["tabular-nums"] },
   open: { color: "#93C5FD", fontSize: 13, fontWeight: "700", marginTop: 8 },
   button: { minHeight: 64, gap: 2, borderRadius: 12, backgroundColor: "#2563EB", alignItems: "center", justifyContent: "center", paddingHorizontal: 16, paddingVertical: 12 },

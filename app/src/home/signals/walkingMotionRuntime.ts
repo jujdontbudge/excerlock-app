@@ -9,7 +9,10 @@ import {
   type MotionProvider,
 } from "@/signals";
 
-import type { HomeRuntimeEnvironment } from "./runtimeSelection";
+import {
+  shouldUseNativeIosRuntime,
+  type NativeIosRuntimeEnvironment,
+} from "@/runtime/nativeIosRuntime";
 
 export type WalkingMotionRuntime = Readonly<{
   provider: MotionProvider;
@@ -17,13 +20,13 @@ export type WalkingMotionRuntime = Readonly<{
   now: () => number;
 }>;
 
-/** Applies the existing dev-client-only native selection to Walk Sessions. */
+/** Selects the real motion provider in native iOS builds. */
 export function createWalkingMotionRuntime(
-  environment: HomeRuntimeEnvironment = currentEnvironment(),
+  environment: NativeIosRuntimeEnvironment = currentEnvironment(),
   createNative: () => MotionProvider = () =>
     new NativeMotionProvider(createExcerlockMotionModuleClient()),
 ): WalkingMotionRuntime {
-  if (shouldUseNativeWalkingMotion(environment)) {
+  if (shouldUseNativeIosRuntime(environment)) {
     return { provider: createNative(), now: Date.now };
   }
 
@@ -33,21 +36,10 @@ export function createWalkingMotionRuntime(
   return { provider, now: () => provider.currentTimeMs };
 }
 
-function shouldUseNativeWalkingMotion(
-  environment: HomeRuntimeEnvironment,
-): boolean {
-  return (
-    environment.nodeEnv !== "test" &&
-    environment.platform === "ios" &&
-    !environment.hasExpoGoConfig
-  );
-}
-
-function currentEnvironment(): HomeRuntimeEnvironment {
+function currentEnvironment(): NativeIosRuntimeEnvironment {
   return {
-    executionEnvironment: Constants.executionEnvironment,
-    hasExpoGoConfig: Constants.expoGoConfig !== null,
     nodeEnv: process.env.NODE_ENV,
     platform: Platform.OS,
+    expoVersion: Constants.expoVersion,
   };
 }

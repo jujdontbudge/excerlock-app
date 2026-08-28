@@ -101,6 +101,34 @@ describe("HarnessApp", () => {
     expect(screen.getByText("Walking throughout the recording")).toBeOnTheScreen();
   });
 
+  it("shows a camera source failure on screen instead of leaving an unexplained black panel", async () => {
+    const camera = {
+      id: "camera" as const,
+      prepare: jest.fn(async () => {
+        throw new Error("native camera unavailable");
+      }),
+      start: jest.fn(async () => undefined),
+      stop: jest.fn(async () => undefined),
+    };
+    await render(
+      <HarnessApp
+        buildCommit="abc123"
+        CameraPreview={() => <View accessibilityLabel="Camera panel" />}
+        sources={{ camera }}
+        store={new HarnessRunStore(memoryStorage())}
+      />,
+    );
+
+    await fireEvent.press(screen.getByText("C1 — treadmill walking"));
+    await fireEvent.press(screen.getByText("Start run"));
+    await act(async () => jest.advanceTimersByTimeAsync(10_000));
+
+    expect(
+      screen.getByText("Camera failed: native camera unavailable"),
+    ).toBeOnTheScreen();
+    expect(camera.start).not.toHaveBeenCalled();
+  });
+
   it("collects M4 speed and a note before the run starts", async () => {
     const store = new HarnessRunStore(memoryStorage());
     await render(<HarnessApp buildCommit="abc123" store={store} sources={{}} />);

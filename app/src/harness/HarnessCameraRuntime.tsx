@@ -5,6 +5,10 @@ import {
   NativeGaitVisionProvider,
   type GaitVisionModuleClient,
 } from "@/signals/gait";
+import {
+  shouldUseNativeIosRuntime,
+  type NativeIosRuntimeEnvironment,
+} from "@/runtime/nativeIosRuntime";
 import type { GaitVisionPreviewProps } from "../../modules/excerlock-gait-vision";
 import {
   HarnessCameraSource,
@@ -17,6 +21,11 @@ interface HarnessCaptureModuleClient extends GaitVisionModuleClient {
   deleteHarnessCaptures(): Promise<void>;
 }
 
+interface NativeHarnessCameraParts {
+  readonly client: HarnessCaptureModuleClient;
+  readonly Preview: ComponentType<GaitVisionPreviewProps>;
+}
+
 export type HarnessCameraRuntime = Readonly<{
   Preview: ComponentType<GaitVisionPreviewProps>;
   capture: HarnessFootageCapture;
@@ -24,31 +33,45 @@ export type HarnessCameraRuntime = Readonly<{
 }>;
 
 /** Loads the same singleton camera module used by the production gait adapter. */
-export function createHarnessCameraRuntime(): HarnessCameraRuntime {
-  if (
-    process.env.NODE_ENV === "test" ||
-    Platform.OS !== "ios" ||
-    Constants.expoGoConfig !== null
-  ) {
+export function createHarnessCameraRuntime(
+  environment: NativeIosRuntimeEnvironment = currentEnvironment(),
+  loadNative: () => NativeHarnessCameraParts = loadNativeParts,
+): HarnessCameraRuntime {
+  if (!shouldUseNativeIosRuntime(environment)) {
     return unavailableRuntime();
   }
-  const surface = require("../../modules/excerlock-gait-vision") as {
-    getExcerlockGaitVisionModule(): HarnessCaptureModuleClient;
-    getExcerlockGaitVisionPreview(): ComponentType<GaitVisionPreviewProps>;
-  };
-  const client = surface.getExcerlockGaitVisionModule();
+  const { client, Preview } = loadNative();
   const capture: HarnessFootageCapture = {
     begin: (captureId) => client.beginHarnessCapture(captureId),
     end: () => client.endHarnessCapture(),
     deleteAll: () => client.deleteHarnessCaptures(),
   };
   return {
-    Preview: surface.getExcerlockGaitVisionPreview(),
+    Preview,
     capture,
     source: new HarnessCameraSource({
       capture,
       provider: new NativeGaitVisionProvider(client),
     }),
+  };
+}
+
+function currentEnvironment(): NativeIosRuntimeEnvironment {
+  return {
+    nodeEnv: process.env.NODE_ENV,
+    platform: Platform.OS,
+    expoVersion: Constants.expoVersion,
+  };
+}
+
+function loadNativeParts(): NativeHarnessCameraParts {
+  const surface = require("../../modules/excerlock-gait-vision") as {
+    getExcerlockGaitVisionModule(): HarnessCaptureModuleClient;
+    getExcerlockGaitVisionPreview(): ComponentType<GaitVisionPreviewProps>;
+  };
+  return {
+    client: surface.getExcerlockGaitVisionModule(),
+    Preview: surface.getExcerlockGaitVisionPreview(),
   };
 }
 
@@ -65,7 +88,7 @@ function unavailableRuntime(): HarnessCameraRuntime {
       capture,
       provider: {
         start: async () => {
-          throw new Error("Harness camera requires an iOS development build");
+          throw new Error("Harness camera requires an iOS native build");
         },
         stop: async () => undefined,
         onSample: () => () => undefined,

@@ -8,10 +8,9 @@ describe("walking placement runtime selection", () => {
 
     const provider = createWalkingPlacementRuntime(
       {
-        executionEnvironment: "storeClient",
-        hasExpoGoConfig: false,
         nodeEnv: "test",
         platform: "ios",
+        expoVersion: null,
       },
       createNative,
     );
@@ -20,16 +19,15 @@ describe("walking placement runtime selection", () => {
     expect(createNative).not.toHaveBeenCalled();
   });
 
-  it("selects native placement sensing in an iOS Standalone release", () => {
+  it("selects native placement sensing in an embedded iOS Release build", () => {
     const native = {} as never;
     const createNative = jest.fn(() => native);
 
     const provider = createWalkingPlacementRuntime(
       {
-        executionEnvironment: "standalone",
-        hasExpoGoConfig: false,
         nodeEnv: "production",
         platform: "ios",
+        expoVersion: undefined,
       },
       createNative,
     );

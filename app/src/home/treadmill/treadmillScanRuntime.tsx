@@ -6,7 +6,10 @@ import {
   type GaitVisionModuleClient,
   type GaitVisionProvider,
 } from "@/signals";
-import type { HomeRuntimeEnvironment } from "../signals/runtimeSelection";
+import {
+  shouldUseNativeIosRuntime,
+  type NativeIosRuntimeEnvironment,
+} from "@/runtime/nativeIosRuntime";
 
 import type { GaitPreviewComponent } from "./TreadmillScanScreen";
 
@@ -22,10 +25,10 @@ export type TreadmillScanRuntime = Readonly<{
 
 /** Keeps the local camera module lazy and unavailable to Expo Go and tests. */
 export function createTreadmillScanRuntime(
-  environment: HomeRuntimeEnvironment = currentEnvironment(),
+  environment: NativeIosRuntimeEnvironment = currentEnvironment(),
   createNative: () => NativeTreadmillScanParts = loadNativeParts,
 ): TreadmillScanRuntime {
-  if (shouldUseNativeGaitVision(environment)) {
+  if (shouldUseNativeIosRuntime(environment)) {
     const native = createNative();
     return {
       provider: new NativeGaitVisionProvider(native.client),
@@ -49,22 +52,11 @@ function loadNativeParts(): NativeTreadmillScanParts {
   };
 }
 
-function shouldUseNativeGaitVision(
-  environment: HomeRuntimeEnvironment,
-): boolean {
-  return (
-    environment.nodeEnv !== "test" &&
-    environment.platform === "ios" &&
-    !environment.hasExpoGoConfig
-  );
-}
-
-function currentEnvironment(): HomeRuntimeEnvironment {
+function currentEnvironment(): NativeIosRuntimeEnvironment {
   return {
-    executionEnvironment: Constants.executionEnvironment,
-    hasExpoGoConfig: Constants.expoGoConfig !== null,
     nodeEnv: process.env.NODE_ENV,
     platform: Platform.OS,
+    expoVersion: Constants.expoVersion,
   };
 }
 
