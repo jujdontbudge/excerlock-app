@@ -92,7 +92,7 @@ function emitProppedThenPickup(
       rotationRate: { x: 0, y: 0, z: 0 },
     });
   }
-  for (let timestampMs = 1_100; timestampMs <= 2_200; timestampMs += 100) {
+  for (let timestampMs = 1_100; timestampMs <= 3_300; timestampMs += 100) {
     emitPlacement({
       timestampMs,
       gravity: { x: (timestampMs - 1_000) / 5_000, y: -1, z: 0 },
@@ -104,7 +104,7 @@ function emitProppedThenPickup(
 function emitSetDown(
   emitPlacement: (sample: DeviceMotionSample) => void,
 ): void {
-  for (let timestampMs = 2_300; timestampMs <= 3_700; timestampMs += 100) {
+  for (let timestampMs = 3_400; timestampMs <= 5_000; timestampMs += 100) {
     emitPlacement({
       timestampMs,
       gravity: { x: 0, y: -1, z: 0 },
@@ -665,20 +665,7 @@ describe("WalkingSessionController", () => {
     });
     await controller.start("walking-condition", "propped");
     controller.completeProppedScan();
-    for (let timestampMs = 0; timestampMs <= 1_000; timestampMs += 100) {
-      onPlacementSample({
-        timestampMs,
-        gravity: { x: 0, y: -1, z: 0 },
-        rotationRate: { x: 0, y: 0, z: 0 },
-      });
-    }
-    for (let timestampMs = 1_100; timestampMs <= 2_200; timestampMs += 100) {
-      onPlacementSample({
-        timestampMs,
-        gravity: { x: (timestampMs - 1_000) / 5_000, y: -1, z: 0 },
-        rotationRate: { x: 0.18, y: 0.14, z: 0.1 },
-      });
-    }
+    emitProppedThenPickup(onPlacementSample);
 
     expect(controller.getTreadmillSnapshot()).toEqual({
       mode: "propped",

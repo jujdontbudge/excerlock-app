@@ -90,6 +90,37 @@ describe("PhonePlacementClassifier", () => {
     expect(result.placement).toBe("inHand");
   });
 
+  it("does not commit a transient first placement window before the signal settles", () => {
+    const classifier = new PhonePlacementClassifier();
+    const placements: string[] = [];
+    for (let timestampMs = 0; timestampMs <= 1_000; timestampMs += 100) {
+      const direction = timestampMs % 200 === 0 ? 1 : -1;
+      placements.push(
+        classifier.process(
+          sample(
+            timestampMs,
+            { x: direction * 0.015, y: -0.7, z: -0.714 },
+            { x: direction * 0.4, y: direction * 0.2, z: 0.1 },
+          ),
+        ).placement,
+      );
+    }
+    for (let timestampMs = 1_100; timestampMs <= 2_000; timestampMs += 100) {
+      placements.push(
+        classifier.process(
+          sample(
+            timestampMs,
+            { x: (timestampMs - 1_000) / 2_000, y: -1, z: 0 },
+            { x: 0.18, y: 0.14, z: 0.1 },
+          ),
+        ).placement,
+      );
+    }
+
+    expect(placements).not.toContain("propped");
+    expect(classifier.getResult().placement).toBe("inHand");
+  });
+
   it("emits a timestamped pickup transition after sustained in-hand evidence", () => {
     const classifier = new PhonePlacementClassifier();
     for (let timestampMs = 0; timestampMs <= 1_000; timestampMs += 100) {
@@ -97,7 +128,7 @@ describe("PhonePlacementClassifier", () => {
     }
 
     let pickup: PhonePlacementTransition | null = null;
-    for (let timestampMs = 1_100; timestampMs <= 2_200; timestampMs += 100) {
+    for (let timestampMs = 1_100; timestampMs <= 3_300; timestampMs += 100) {
       const result = classifier.process(
         sample(timestampMs, { x: (timestampMs - 1_000) / 5_000, y: -1, z: 0 }, {
           x: 0.18,
@@ -110,7 +141,7 @@ describe("PhonePlacementClassifier", () => {
 
     expect(pickup).toMatchObject({ kind: "pickedUp" });
     expect(pickup?.timestampMs).toBeGreaterThanOrEqual(1_800);
-    expect(pickup?.timestampMs).toBeLessThanOrEqual(2_100);
+    expect(pickup?.timestampMs).toBeLessThanOrEqual(3_100);
     expect(classifier.getResult().placement).toBe("inHand");
   });
 
@@ -138,6 +169,34 @@ describe("PhonePlacementClassifier", () => {
     expect(classifier.getResult().placement).toBe("propped");
   });
 
+  it("does not report a pickup for a short handling-like burst on a vibrating console", () => {
+    const classifier = new PhonePlacementClassifier();
+    for (let timestampMs = 0; timestampMs <= 1_000; timestampMs += 100) {
+      classifier.process(sample(timestampMs));
+    }
+
+    const transitions: PhonePlacementTransition[] = [];
+    for (let timestampMs = 1_100; timestampMs <= 3_000; timestampMs += 100) {
+      const burst = timestampMs <= 1_600;
+      const direction = timestampMs % 200 === 0 ? 1 : -1;
+      const result = classifier.process(
+        burst
+          ? sample(
+              timestampMs,
+              { x: direction * 0.08, y: -0.99, z: 0 },
+              { x: direction * 0.2, y: 0.14, z: 0.1 },
+            )
+          : sample(timestampMs),
+      );
+      if (result.transition !== null) {
+        transitions.push(result.transition);
+      }
+    }
+
+    expect(transitions).toEqual([]);
+    expect(classifier.getResult().placement).toBe("propped");
+  });
+
   it("debounces a single bump without reporting a pickup", () => {
     const classifier = new PhonePlacementClassifier();
     for (let timestampMs = 0; timestampMs <= 1_000; timestampMs += 100) {
@@ -158,6 +217,27 @@ describe("PhonePlacementClassifier", () => {
 
     expect(transitions).toEqual([]);
     expect(classifier.getResult().placement).toBe("propped");
+  });
+
+  it("keeps a high-vibration treadmill phone propped when its overall pose remains stable", () => {
+    const classifier = new PhonePlacementClassifier();
+    let result = classifier.getResult();
+    let timestampMs = 0.41;
+
+    for (let index = 0; index < 30; index += 1) {
+      const direction = index % 2 === 0 ? 1 : -1;
+      result = classifier.process(
+        sample(
+          timestampMs,
+          { x: direction * 0.015, y: -0.7, z: -0.714 },
+          { x: direction * 0.4, y: direction * 0.2, z: 0.1 },
+        ),
+      );
+      timestampMs += index % 3 === 0 ? 99.3 : 100.4;
+    }
+
+    expect(result.placement).toBe("propped");
+    expect(result.transition).toBeNull();
   });
 
   it("keeps a treadmill-vibrating phone classified as propped", () => {

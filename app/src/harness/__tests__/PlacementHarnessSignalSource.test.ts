@@ -117,14 +117,14 @@ describe("PlacementHarnessSignalSource", () => {
         rotationRate: { x: 0.005, y: -0.004, z: 0.003 },
       });
     }
-    for (let timestampMs = 1_100; timestampMs <= 2_300; timestampMs += 100) {
+    for (let timestampMs = 1_100; timestampMs <= 3_300; timestampMs += 100) {
       samples.push({
         timestampMs,
         gravity: { x: (timestampMs - 1_000) / 5_000, y: -1, z: 0 },
         rotationRate: { x: 0.18, y: 0.14, z: 0.1 },
       });
     }
-    for (let timestampMs = 2_400; timestampMs <= 3_800; timestampMs += 100) {
+    for (let timestampMs = 3_400; timestampMs <= 5_000; timestampMs += 100) {
       samples.push({
         timestampMs,
         gravity: { x: 0, y: 0, z: -1 },
@@ -142,7 +142,7 @@ describe("PlacementHarnessSignalSource", () => {
         }
       },
     });
-    provider.advanceTo(3_800);
+    provider.advanceTo(5_000);
     await source.stop();
 
     expect(transitions).toEqual([
