@@ -40,7 +40,14 @@ export function createHarnessCameraRuntime(
   if (!shouldUseNativeIosRuntime(environment)) {
     return unavailableRuntime();
   }
-  const { client, Preview } = loadNative();
+  let native: NativeHarnessCameraParts;
+  try {
+    native = loadNative();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return unavailableRuntime(`Camera unavailable: ${message}`);
+  }
+  const { client, Preview } = native;
   const capture: HarnessFootageCapture = {
     begin: (captureId) => client.beginHarnessCapture(captureId),
     end: () => client.endHarnessCapture(),
@@ -75,7 +82,9 @@ function loadNativeParts(): NativeHarnessCameraParts {
   };
 }
 
-function unavailableRuntime(): HarnessCameraRuntime {
+function unavailableRuntime(
+  message = "Harness camera requires an iOS native build",
+): HarnessCameraRuntime {
   const capture: HarnessFootageCapture = {
     begin: async () => undefined,
     end: async () => undefined,
@@ -88,7 +97,7 @@ function unavailableRuntime(): HarnessCameraRuntime {
       capture,
       provider: {
         start: async () => {
-          throw new Error("Harness camera requires an iOS native build");
+          throw new Error(message);
         },
         stop: async () => undefined,
         onSample: () => () => undefined,

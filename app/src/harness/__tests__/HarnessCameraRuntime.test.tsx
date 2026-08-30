@@ -28,4 +28,22 @@ describe("HarnessCameraRuntime", () => {
     );
     expect(beginHarnessCapture).toHaveBeenCalledWith("c1-123");
   });
+
+  it("keeps the harness bootable and surfaces an error when the native module is absent", async () => {
+    const runtime = createHarnessCameraRuntime(
+      { nodeEnv: "production", platform: "ios", expoVersion: undefined },
+      () => {
+        throw new Error("Cannot find native module 'ExcerlockGaitVision'");
+      },
+    );
+
+    await expect(
+      runtime.source.prepare({
+        captureId: "c1-missing",
+        attachFootage: jest.fn(),
+      }),
+    ).rejects.toThrow(
+      "Camera unavailable: Cannot find native module 'ExcerlockGaitVision'",
+    );
+  });
 });
