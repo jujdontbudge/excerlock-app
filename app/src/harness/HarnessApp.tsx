@@ -32,6 +32,7 @@ import {
 } from "./HarnessRunStore";
 import { HARNESS_TEST_DEFINITIONS } from "./testDefinitions";
 import { createDefaultHarnessSources } from "./createDefaultHarnessSources";
+import { parseHarnessLaunchRequest } from "./harnessLaunchRequest";
 
 /**
  * A run screen with no moving parts reads as a printed page: a tester cannot
@@ -67,6 +68,8 @@ function describeTask(definition: HarnessTestDefinition): string {
 }
 
 type HarnessAppProps = Readonly<{
+  /** e.g. excerlock://harness?test=c1-treadmill-walking&start=1 */
+  launchUrl?: string | null;
   buildCommit?: string;
   CameraPreview?: ComponentType<GaitVisionPreviewProps>;
   footage?: Pick<HarnessFootageCapture, "deleteAll">;
@@ -76,13 +79,23 @@ type HarnessAppProps = Readonly<{
 
 type Selection =
   | Readonly<{ kind: "tasks" }>
-  | Readonly<{ kind: "task"; definition: HarnessTestDefinition }>
+  | Readonly<{ kind: "task"; definition: HarnessTestDefinition; autoStart?: boolean }>
   | Readonly<{ kind: "run"; run: HarnessRun }>;
+
+function selectionForLaunch(launchUrl: string | null | undefined): Selection {
+  const request = parseHarnessLaunchRequest(launchUrl);
+  const definition = HARNESS_TEST_DEFINITIONS.find(
+    (candidate) => candidate.id === request?.testId,
+  );
+  if (!request || !definition) return { kind: "tasks" };
+  return { kind: "task", definition, autoStart: request.autoStart };
+}
 
 export function HarnessApp({
   buildCommit = process.env.EXPO_PUBLIC_BUILD_COMMIT ?? "unknown",
   CameraPreview,
   footage,
+  launchUrl,
   store: suppliedStore,
   sources,
 }: HarnessAppProps) {
@@ -94,11 +107,14 @@ export function HarnessApp({
     () => sources ?? createDefaultHarnessSources(),
     [sources],
   );
-  const [selection, setSelection] = useState<Selection>({ kind: "tasks" });
+  const [selection, setSelection] = useState<Selection>(() =>
+    selectionForLaunch(launchUrl),
+  );
 
   if (selection.kind === "task") {
     return (
       <HarnessRunScreen
+        autoStart={selection.autoStart}
         buildCommit={buildCommit}
         CameraPreview={CameraPreview}
         definition={selection.definition}
@@ -186,6 +202,7 @@ function TaskList({
 }
 
 function HarnessRunScreen({
+  autoStart = false,
   buildCommit,
   CameraPreview,
   definition,
@@ -193,6 +210,7 @@ function HarnessRunScreen({
   sources,
   store,
 }: Readonly<{
+  autoStart?: boolean;
   buildCommit: string;
   CameraPreview?: ComponentType<GaitVisionPreviewProps>;
   definition: HarnessTestDefinition;
@@ -254,6 +272,11 @@ function HarnessRunScreen({
     setStarted(true);
     void engine.start(definition, { parameters, note });
   };
+  useEffect(() => {
+    if (autoStart) startRun();
+    // Launch-url auto start fires once, on mount only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <ScrollView contentContainerStyle={styles.page}>

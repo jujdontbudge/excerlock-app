@@ -5,6 +5,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useURL } from "expo-linking";
 import { HarnessApp } from "./HarnessApp";
 import { createHarnessCameraRuntime } from "./HarnessCameraRuntime";
 import { createDefaultHarnessSources } from "./createDefaultHarnessSources";
@@ -46,9 +47,14 @@ function HarnessMode({ onSwitch }: Readonly<{ onSwitch: () => void }>) {
     () => ({ ...createDefaultHarnessSources(), camera: camera.source }),
     [camera],
   );
+  // A launch url (excerlock://harness?test=…&start=1) opens and starts a task;
+  // keying on it lets a second launch of the running app open a new task.
+  const launchUrl = useURL();
   return (
     <View style={styles.productContainer}>
       <HarnessApp
+        key={launchUrl ?? "no-launch-url"}
+        launchUrl={launchUrl}
         CameraPreview={camera.Preview}
         footage={camera.capture}
         sources={sources}

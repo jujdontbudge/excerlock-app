@@ -218,3 +218,38 @@ describe("HarnessApp liveness", () => {
     expect(screen.getByText("30 seconds · 2 buttons to press")).toBeOnTheScreen();
   });
 });
+
+describe("HarnessApp launch url", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(1_000);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it("opens the named task and starts it when the url says start=1", async () => {
+    await render(
+      <HarnessApp
+        buildCommit="abc123"
+        launchUrl="excerlock://harness?test=marker-only&start=1"
+        sources={{}}
+        store={new HarnessRunStore(memoryStorage())}
+      />,
+    );
+    await act(async () => undefined);
+    expect(screen.getByText("Marker-only harness check")).toBeOnTheScreen();
+    expect(screen.getByText("Countdown")).toBeOnTheScreen();
+  });
+
+  it("ignores a url that names no known task", async () => {
+    await render(
+      <HarnessApp
+        buildCommit="abc123"
+        launchUrl="excerlock://harness?test=bogus&start=1"
+        sources={{}}
+        store={new HarnessRunStore(memoryStorage())}
+      />,
+    );
+    await act(async () => undefined);
+    expect(screen.queryByText("Countdown")).toBeNull();
+  });
+});

@@ -60,3 +60,16 @@ Definitions may declare structured parameters. The setup screen records every
 declared key, preserving a blank value rather than inventing one, plus a free
 note for unanticipated circumstances. Both live in the run header and therefore
 round-trip through persistence and JSON Lines export.
+
+## Launching a task from a Mac
+
+The harness accepts a launch url so a task can be opened and started without
+touching the phone (see `harnessLaunchRequest.ts`):
+
+```sh
+xcrun devicectl device process launch --device <uuid> --terminate-existing \
+  --payload-url "excerlock://harness?test=c1-treadmill-walking&start=1" \
+  com.johansardar.excerlock
+```
+
+`test` must be a known definition id; `start=1` presses "Start run" on mount.
