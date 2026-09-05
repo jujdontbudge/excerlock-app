@@ -6,10 +6,14 @@ sensor pipe; fixture playback and classification stay deterministic in
 TypeScript.
 
 `NativePhonePlacementProvider` adapts the local `excerlock-motion` module's
-device-motion stream. `PhonePlacementClassifier` uses a one-second evidence window. It distinguishes
-orientation drift from high-frequency rotation: a running deck may produce
-large gyro deltas while the phone's gravity pose stays bounded. Vibration-based
-initial placement settles briefly before commitment, and leaving `propped`
-requires 1.5 seconds of continuous hand evidence; set-downs remain faster.
-Captured-device replays cover both an in-hand outdoor walk and a phone resting
-on a running treadmill, in addition to synthetic fixtures with irregular timing.
+device-motion stream. `PhonePlacementClassifier` computes two features per
+one-second window — the largest gravity deviation from the window mean, and the
+median rotation-rate magnitude — and decides on their medians over a three-second
+horizon. A walking hand cannot hold a pose: measured on a treadmill it swings
+gravity by ≥0.039 g in 95 % of windows and rotates at ≥0.32 rad/s, while a phone
+propped on the running console stays within 0.015 g and 0.26 rad/s apart from
+sub-second jolts. The thresholds (0.03 g, 0.45 rad/s) sit between those bands
+and the pooled horizon absorbs the jolts. Leaving `propped` needs three seconds
+of continuous hand evidence; a set-down needs 1.5 seconds. Real device
+recordings of both cases live in `__tests__/fixtures/treadmillRecordings.json`
+and pin the behaviour, alongside synthetic fixtures with irregular timing.

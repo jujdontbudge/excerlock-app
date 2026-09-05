@@ -117,14 +117,15 @@ describe("PlacementHarnessSignalSource", () => {
         rotationRate: { x: 0.005, y: -0.004, z: 0.003 },
       });
     }
-    for (let timestampMs = 1_100; timestampMs <= 3_300; timestampMs += 100) {
+    for (let timestampMs = 1_100; timestampMs <= 4_800; timestampMs += 100) {
+      const phase = (timestampMs / 1_000) * Math.PI * 4;
       samples.push({
         timestampMs,
-        gravity: { x: (timestampMs - 1_000) / 5_000, y: -1, z: 0 },
-        rotationRate: { x: 0.18, y: 0.14, z: 0.1 },
+        gravity: { x: Math.sin(phase) * 0.08, y: -0.8, z: -0.6 },
+        rotationRate: { x: 0.2, y: Math.cos(phase) * 0.15, z: 0.1 },
       });
     }
-    for (let timestampMs = 3_400; timestampMs <= 5_000; timestampMs += 100) {
+    for (let timestampMs = 4_900; timestampMs <= 10_000; timestampMs += 100) {
       samples.push({
         timestampMs,
         gravity: { x: 0, y: 0, z: -1 },
@@ -142,7 +143,7 @@ describe("PlacementHarnessSignalSource", () => {
         }
       },
     });
-    provider.advanceTo(5_000);
+    provider.advanceTo(10_000);
     await source.stop();
 
     expect(transitions).toEqual([

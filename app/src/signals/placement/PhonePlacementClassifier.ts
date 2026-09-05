@@ -4,20 +4,28 @@ import type {
 } from "./PhonePlacementProvider";
 
 export const PLACEMENT_OBSERVATION_WINDOW_MS = 1_000;
-export const PLACEMENT_TRANSITION_DEBOUNCE_MS = 300;
+/** Set-down: a propped phone must read propped this long before it counts. */
+export const PLACEMENT_TRANSITION_DEBOUNCE_MS = 1_500;
+/** Pickup: a real pickup stays in hand far longer than a console rattle. */
+export const PICKUP_DEBOUNCE_MS = 3_000;
 
 const INITIAL_PLACEMENT_DEBOUNCE_MS = 400;
-const PICKUP_DEBOUNCE_MS = 1_500;
 const MIN_SAMPLE_PAIRS = 8;
+/** Per-window features are pooled over this horizon before deciding. */
+const FEATURE_HORIZON_MS = 3_000;
 const GRAVITY_STILL_DELTA = 0.006;
-const GRAVITY_IN_HAND_DELTA = 0.012;
-const GRAVITY_STABLE_POSE_DELTA = 0.04;
 const GYRO_STILL_DELTA = 0.11;
-const GYRO_IN_HAND_DELTA = 0.18;
-const GYRO_VIBRATION_DELTA = 0.5;
 const PROPPED_EVIDENCE_RATIO = 0.8;
-const VIBRATION_EVIDENCE_RATIO = 0.4;
-const IN_HAND_EVIDENCE_RATIO = 0.6;
+/**
+ * Measured on a physical treadmill (2026-09-05, #128): a hand holding a phone
+ * while walking swings gravity by ≥0.039 g per second in 95 % of windows and
+ * rotates at a median ≥0.32 rad/s, whereas a phone propped on the running
+ * console stays within 0.015 g and 0.26 rad/s except for sub-second jolts.
+ * The medians below sit between those bands; the pooled horizon absorbs the
+ * jolts.
+ */
+const IN_HAND_GRAVITY_RANGE = 0.03;
+const IN_HAND_ROTATION_RATE = 0.45;
 
 export type PhonePlacement = "propped" | "inHand" | "unknown";
 export type PhonePlacementTransitionKind = "pickedUp" | "setDown";
@@ -43,6 +51,20 @@ interface PlacementCandidate {
   readonly initialDebounceMs: number;
 }
 
+interface WindowFeatures {
+  readonly timestampMs: number;
+  /** Largest deviation of gravity from the window mean, in g. */
+  readonly gravityRange: number;
+  /** Median rotation-rate magnitude, rad/s. */
+  readonly rotationRate: number;
+  readonly quietAndStill: boolean;
+}
+
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((left, right) => left - right);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
 function magnitude(vector: MotionVector3): number {
   return Math.sqrt(
     vector.x * vector.x + vector.y * vector.y + vector.z * vector.z,
@@ -61,6 +83,7 @@ export class PhonePlacementClassifier {
   private placement: PhonePlacement = "unknown";
   private pending: PendingPlacement | undefined;
   private samples: DeviceMotionSample[] = [];
+  private features: WindowFeatures[] = [];
   private observationStartedAtMs: number | null = null;
   private evaluatedAtMs: number | null = null;
 
@@ -149,66 +172,63 @@ export class PhonePlacementClassifier {
       return { placement: "unknown", initialDebounceMs: 0 };
     }
 
-    let gravityInHandEvidence = 0;
+    const window = this.samples;
+    const pairs = window.length - 1;
     let gravityStillEvidence = 0;
-    let stablePoseEvidence = 0;
     let gyroStillEvidence = 0;
-    let gyroInHandEvidence = 0;
-    let gyroVibrationEvidence = 0;
-    for (let index = 1; index < this.samples.length; index += 1) {
-      const previous = this.samples[index - 1];
-      const current = this.samples[index];
-      const gravityDelta = distance(current.gravity, previous.gravity);
-      const gyroDelta = distance(current.rotationRate, previous.rotationRate);
-      if (gravityDelta >= GRAVITY_IN_HAND_DELTA) {
-        gravityInHandEvidence += 1;
-      }
-      if (gravityDelta <= GRAVITY_STILL_DELTA) {
+    const mean = { x: 0, y: 0, z: 0 };
+    for (const { gravity } of window) {
+      mean.x += gravity.x / window.length;
+      mean.y += gravity.y / window.length;
+      mean.z += gravity.z / window.length;
+    }
+    let gravityRange = 0;
+    const rotationRates: number[] = [];
+    for (let index = 0; index < window.length; index += 1) {
+      const current = window[index];
+      gravityRange = Math.max(gravityRange, distance(current.gravity, mean));
+      rotationRates.push(magnitude(current.rotationRate));
+      if (index === 0) continue;
+      const previous = window[index - 1];
+      if (distance(current.gravity, previous.gravity) <= GRAVITY_STILL_DELTA) {
         gravityStillEvidence += 1;
       }
-      if (gravityDelta <= GRAVITY_STABLE_POSE_DELTA) {
-        stablePoseEvidence += 1;
-      }
-      if (gyroDelta <= GYRO_STILL_DELTA) {
+      if (
+        distance(current.rotationRate, previous.rotationRate) <= GYRO_STILL_DELTA
+      ) {
         gyroStillEvidence += 1;
       }
-      if (
-        gyroDelta >= GYRO_IN_HAND_DELTA &&
-        gyroDelta < GYRO_VIBRATION_DELTA
-      ) {
-        gyroInHandEvidence += 1;
-      }
-      if (gyroDelta >= GYRO_VIBRATION_DELTA) {
-        gyroVibrationEvidence += 1;
-      }
     }
+    const latest = window[window.length - 1].timestampMs;
+    this.features.push({
+      timestampMs: latest,
+      gravityRange,
+      rotationRate: median(rotationRates),
+      quietAndStill:
+        gravityStillEvidence / pairs >= PROPPED_EVIDENCE_RATIO &&
+        gyroStillEvidence / pairs >= PROPPED_EVIDENCE_RATIO,
+    });
+    this.features = this.features.filter(
+      ({ timestampMs }) => timestampMs >= latest - FEATURE_HORIZON_MS,
+    );
 
-    const pairs = this.samples.length - 1;
-    // A running deck creates large, fast gyro deltas even though the phone's
-    // overall gravity pose stays bounded. Treating gyro movement alone as a
-    // hand signal turns every real treadmill into a false pickup.
-    const phoneIsQuietAndStill =
-      gravityStillEvidence / pairs >= PROPPED_EVIDENCE_RATIO &&
-      gyroStillEvidence / pairs >= PROPPED_EVIDENCE_RATIO;
-    const phoneIsVibratingInAStablePose =
-      stablePoseEvidence / pairs >= PROPPED_EVIDENCE_RATIO &&
-      gyroVibrationEvidence / pairs >= VIBRATION_EVIDENCE_RATIO;
-    if (phoneIsQuietAndStill) {
-      return { placement: "propped", initialDebounceMs: 0 };
-    }
-    if (phoneIsVibratingInAStablePose) {
-      return {
-        placement: "propped",
-        initialDebounceMs: INITIAL_PLACEMENT_DEBOUNCE_MS,
-      };
-    }
+    // A running deck creates fast, jagged gyro deltas and sub-second jolts,
+    // but the phone's pose stays put. A hand cannot hold a pose that steadily
+    // while its owner walks: gravity swings with every stride. Pooling the
+    // per-window features over a few seconds lets one jolt pass unnoticed.
+    const pooledRange = median(this.features.map((f) => f.gravityRange));
+    const pooledRotation = median(this.features.map((f) => f.rotationRate));
     if (
-      gravityInHandEvidence / pairs >= IN_HAND_EVIDENCE_RATIO ||
-      gyroInHandEvidence / pairs >= IN_HAND_EVIDENCE_RATIO
+      pooledRange > IN_HAND_GRAVITY_RANGE ||
+      pooledRotation > IN_HAND_ROTATION_RATE
     ) {
       return { placement: "inHand", initialDebounceMs: 0 };
     }
-    return { placement: "unknown", initialDebounceMs: 0 };
+    const quiet = this.features[this.features.length - 1].quietAndStill;
+    return {
+      placement: "propped",
+      initialDebounceMs: quiet ? 0 : INITIAL_PLACEMENT_DEBOUNCE_MS,
+    };
   }
 
   private result(

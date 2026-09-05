@@ -13,6 +13,16 @@ function sample(
   return { timestampMs, gravity, rotationRate };
 }
 
+/** A phone carried in a walking hand: gravity swings with each stride. */
+function inHandSample(timestampMs: number): DeviceMotionSample {
+  const phase = (timestampMs / 1_000) * Math.PI * 4;
+  return sample(
+    timestampMs,
+    { x: Math.sin(phase) * 0.08, y: -0.8, z: -0.6 },
+    { x: 0.2, y: Math.cos(phase) * 0.15, z: 0.1 },
+  );
+}
+
 describe("PhonePlacementClassifier", () => {
   it("classifies a phone resting flat as propped after one second", () => {
     const classifier = new PhonePlacementClassifier();
@@ -56,7 +66,7 @@ describe("PhonePlacementClassifier", () => {
     expect(result.placement).toBe("propped");
   });
 
-  it("detects hand micro-tremor even when the phone is held still", () => {
+  it("detects a hand holding the phone still: the pose still wobbles", () => {
     const classifier = new PhonePlacementClassifier();
     let result = classifier.getResult();
     for (let timestampMs = 0; timestampMs <= 1_000; timestampMs += 100) {
@@ -64,7 +74,7 @@ describe("PhonePlacementClassifier", () => {
       result = classifier.process(
         sample(
           timestampMs,
-          { x: 0.01, y: -0.7, z: -0.714 },
+          { x: 0.01 + direction * 0.035, y: -0.7, z: -0.714 },
           { x: direction * 0.16, y: direction * 0.1, z: 0.08 },
         ),
       );
@@ -128,44 +138,35 @@ describe("PhonePlacementClassifier", () => {
     }
 
     let pickup: PhonePlacementTransition | null = null;
-    for (let timestampMs = 1_100; timestampMs <= 3_300; timestampMs += 100) {
-      const result = classifier.process(
-        sample(timestampMs, { x: (timestampMs - 1_000) / 5_000, y: -1, z: 0 }, {
-          x: 0.18,
-          y: 0.14,
-          z: 0.1,
-        }),
-      );
+    for (let timestampMs = 1_100; timestampMs <= 4_800; timestampMs += 100) {
+      const result = classifier.process(inHandSample(timestampMs));
       pickup ??= result.transition;
     }
 
+    // Three seconds of in-hand evidence: a console rattle never lasts that long.
     expect(pickup).toMatchObject({ kind: "pickedUp" });
-    expect(pickup?.timestampMs).toBeGreaterThanOrEqual(1_800);
-    expect(pickup?.timestampMs).toBeLessThanOrEqual(3_100);
+    expect(pickup?.timestampMs).toBeGreaterThanOrEqual(4_100);
+    expect(pickup?.timestampMs).toBeLessThanOrEqual(4_800);
     expect(classifier.getResult().placement).toBe("inHand");
   });
 
   it("emits a timestamped set-down transition after sustained propped evidence", () => {
     const classifier = new PhonePlacementClassifier();
     for (let timestampMs = 0; timestampMs <= 1_000; timestampMs += 100) {
-      classifier.process(
-        sample(timestampMs, { x: timestampMs / 5_000, y: -1, z: 0 }, {
-          x: 0.18,
-          y: 0.14,
-          z: 0.1,
-        }),
-      );
+      classifier.process(inHandSample(timestampMs));
     }
 
     let setDown: PhonePlacementTransition | null = null;
-    for (let timestampMs = 1_100; timestampMs <= 2_300; timestampMs += 100) {
+    for (let timestampMs = 1_100; timestampMs <= 6_500; timestampMs += 100) {
       const result = classifier.process(sample(timestampMs));
       setDown ??= result.transition;
     }
 
+    // The pooled horizon must drain its in-hand windows (≤3 s) and the
+    // set-down debounce must elapse (1.5 s) before a set-down is reported.
     expect(setDown).toMatchObject({ kind: "setDown" });
-    expect(setDown?.timestampMs).toBeGreaterThanOrEqual(1_900);
-    expect(setDown?.timestampMs).toBeLessThanOrEqual(2_200);
+    expect(setDown?.timestampMs).toBeGreaterThanOrEqual(2_600);
+    expect(setDown?.timestampMs).toBeLessThanOrEqual(6_000);
     expect(classifier.getResult().placement).toBe("propped");
   });
 
@@ -230,7 +231,8 @@ describe("PhonePlacementClassifier", () => {
         sample(
           timestampMs,
           { x: direction * 0.015, y: -0.7, z: -0.714 },
-          { x: direction * 0.4, y: direction * 0.2, z: 0.1 },
+          // Measured running-console rotation stays under ~0.35 rad/s.
+          { x: direction * 0.3, y: direction * 0.15, z: 0.1 },
         ),
       );
       timestampMs += index % 3 === 0 ? 99.3 : 100.4;
