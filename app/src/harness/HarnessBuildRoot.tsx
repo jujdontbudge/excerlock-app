@@ -47,7 +47,7 @@ function HarnessMode({ onSwitch }: Readonly<{ onSwitch: () => void }>) {
     () => ({ ...createDefaultHarnessSources(), camera: camera.source }),
     [camera],
   );
-  // A launch url (excerlock://harness?test=…&start=1) opens and starts a task;
+  // A launch url (excerlock://?test=…&start=1) opens and starts a task;
   // keying on it lets a second launch of the running app open a new task.
   const launchUrl = useURL();
   return (

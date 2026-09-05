@@ -68,8 +68,11 @@ touching the phone (see `harnessLaunchRequest.ts`):
 
 ```sh
 xcrun devicectl device process launch --device <uuid> --terminate-existing \
-  --payload-url "excerlock://harness?test=c1-treadmill-walking&start=1" \
+  --payload-url "excerlock://?test=c1-treadmill-walking&start=1" \
   com.johansardar.excerlock
 ```
 
 `test` must be a known definition id; `start=1` presses "Start run" on mount.
+Keep the path at `/`: any other path is swallowed by expo-router's "Unmatched
+Route" screen. A cold launch can drop the url before JS listens, so open the
+app first and send the url to the running app (omit `--terminate-existing`).

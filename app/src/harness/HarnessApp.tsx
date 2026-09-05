@@ -68,7 +68,7 @@ function describeTask(definition: HarnessTestDefinition): string {
 }
 
 type HarnessAppProps = Readonly<{
-  /** e.g. excerlock://harness?test=c1-treadmill-walking&start=1 */
+  /** e.g. excerlock://?test=c1-treadmill-walking&start=1 */
   launchUrl?: string | null;
   buildCommit?: string;
   CameraPreview?: ComponentType<GaitVisionPreviewProps>;

@@ -4,7 +4,11 @@ import { HARNESS_TEST_DEFINITIONS } from "./testDefinitions";
  * A launch URL lets a tester (or a Mac driving the phone over USB) open a
  * specific task and start it without touching the screen:
  *
- *   excerlock://harness?test=c1-treadmill-walking&start=1
+ *   excerlock://?test=c1-treadmill-walking&start=1
+ *
+ * The path must stay "/" — the harness is mounted inside the expo-router root
+ * layout, and any other path makes the router replace it with "Unmatched
+ * Route".
  *
  * Anything that does not name a known test is ignored so a stray link can
  * never put the harness into an undefined state.

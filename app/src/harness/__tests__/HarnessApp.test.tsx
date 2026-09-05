@@ -230,7 +230,7 @@ describe("HarnessApp launch url", () => {
     await render(
       <HarnessApp
         buildCommit="abc123"
-        launchUrl="excerlock://harness?test=marker-only&start=1"
+        launchUrl="excerlock://?test=marker-only&start=1"
         sources={{}}
         store={new HarnessRunStore(memoryStorage())}
       />,
@@ -244,7 +244,7 @@ describe("HarnessApp launch url", () => {
     await render(
       <HarnessApp
         buildCommit="abc123"
-        launchUrl="excerlock://harness?test=bogus&start=1"
+        launchUrl="excerlock://?test=bogus&start=1"
         sources={{}}
         store={new HarnessRunStore(memoryStorage())}
       />,
