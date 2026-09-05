@@ -49,6 +49,14 @@ type HomeStore = HomeStoreValues & {
   removeCondition: (conditionId: string) => void;
   /** Save a gym circle (max five); a repeated id is ignored. */
   addSavedPlace: (place: SavedPlace) => void;
+  /** Rename a saved gym. A blank name or an unknown gym changes nothing. */
+  renameSavedPlace: (placeId: string, name: string) => void;
+  /**
+   * Forget a gym and every condition that pointed at it — a condition whose
+   * place is gone can never fire again, and leaving it behind would hold its
+   * catalog slot against a gym the user no longer has.
+   */
+  removeSavedPlace: (placeId: string) => void;
   setConditionEnabled: (conditionId: string, enabled: boolean) => void;
   /** Bank an event condition's payout. Idempotent per condition per ledger day. */
   recordEventPayout: (conditionId: string, atMs: number) => void;
@@ -109,6 +117,36 @@ export const useHomeStore = create<HomeStore>()(
             ? {}
             : { savedPlaces: [...savedPlaces, place] },
         );
+      },
+
+      renameSavedPlace: (placeId, name) => {
+        const trimmed = name.trim();
+        if (trimmed.length === 0) {
+          return;
+        }
+        set(({ savedPlaces }) => ({
+          savedPlaces: savedPlaces.map((place) =>
+            place.id === placeId ? { ...place, name: trimmed } : place,
+          ),
+        }));
+      },
+
+      removeSavedPlace: (placeId) => {
+        set(({ conditions, conditionBanners, disabledConditionIds, savedPlaces }) => {
+          const orphaned = conditions
+            .filter((condition) => condition.placeId === placeId)
+            .map(({ id }) => id);
+          return {
+            savedPlaces: savedPlaces.filter(({ id }) => id !== placeId),
+            conditions: conditions.filter(({ id }) => !orphaned.includes(id)),
+            conditionBanners: Object.fromEntries(
+              Object.entries(conditionBanners).filter(([id]) => !orphaned.includes(id)),
+            ),
+            disabledConditionIds: disabledConditionIds.filter(
+              (id) => !orphaned.includes(id),
+            ),
+          };
+        });
       },
 
       removeCondition: (conditionId) => {

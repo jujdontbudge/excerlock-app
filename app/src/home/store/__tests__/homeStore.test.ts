@@ -352,6 +352,25 @@ describe("useHomeStore", () => {
 });
 
 describe("saved gyms", () => {
+  const gymHome = {
+    id: "gym-home",
+    name: "Home gym",
+    geofence: { latitude: 40.741, longitude: -73.989, radiusMeters: 100 },
+  };
+  const gymArrival: ConfiguredCondition = {
+    id: "c-gym",
+    catalogId: "gym-arrival",
+    source: "location",
+    placeId: "gym-home",
+    settings: {
+      kind: "event",
+      reward: { type: "fixedMinutes", minutes: 30 },
+      repeatable: false,
+      perDayCap: null,
+      cooldownMs: 0,
+    },
+  };
+
   beforeEach(() => useHomeStore.getState().reset());
 
   it("adds a gym circle, ignores duplicates, and stops at five", () => {
@@ -366,5 +385,49 @@ describe("saved gyms", () => {
     const ids = useHomeStore.getState().savedPlaces.map(({ id }) => id);
     expect(ids).toEqual(["place-0", "place-1", "place-2", "place-3", "place-4"]);
     expect(selectPickerContext(useHomeStore.getState()).savedPlaceIds).toEqual(ids);
+  });
+
+  it("renames a gym, trimming what the user typed", () => {
+    useHomeStore.getState().addSavedPlace(gymHome);
+    useHomeStore.getState().renameSavedPlace("gym-home", "  Iron Works  ");
+
+    expect(useHomeStore.getState().savedPlaces).toEqual([
+      { ...gymHome, name: "Iron Works" },
+    ]);
+  });
+
+  it("keeps the old name when the new one is blank or the gym is unknown", () => {
+    useHomeStore.getState().addSavedPlace(gymHome);
+    useHomeStore.getState().renameSavedPlace("gym-home", "   ");
+    useHomeStore.getState().renameSavedPlace("no-such-gym", "Elsewhere");
+
+    expect(useHomeStore.getState().savedPlaces).toEqual([gymHome]);
+  });
+
+  it("takes the conditions that point at a removed gym with it", () => {
+    useHomeStore.getState().addSavedPlace(gymHome);
+    useHomeStore.getState().addCondition(gymArrival, { kind: "default" });
+    useHomeStore.getState().addCondition(stepGoal);
+    useHomeStore.getState().setConditionEnabled("c-gym", false);
+
+    useHomeStore.getState().removeSavedPlace("gym-home");
+
+    const state = useHomeStore.getState();
+    expect(state.savedPlaces).toEqual([]);
+    expect(state.conditions).toEqual([stepGoal]);
+    expect(state.conditionBanners["c-gym"]).toBeUndefined();
+    expect(state.disabledConditionIds).toEqual([]);
+    expect(selectPickerContext(state).savedPlaceIds).toEqual([]);
+  });
+
+  it("leaves conditions at other gyms alone", () => {
+    useHomeStore.getState().addSavedPlace(gymHome);
+    useHomeStore.getState().addSavedPlace({ ...gymHome, id: "gym-two", name: "Second gym" });
+    useHomeStore.getState().addCondition(gymArrival);
+
+    useHomeStore.getState().removeSavedPlace("gym-two");
+
+    expect(useHomeStore.getState().savedPlaces.map(({ id }) => id)).toEqual(["gym-home"]);
+    expect(useHomeStore.getState().conditions).toEqual([gymArrival]);
   });
 });
