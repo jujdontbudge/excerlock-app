@@ -21,12 +21,14 @@ cd app
 npx expo run:ios --device <simulator-udid>     # add --no-bundler to skip Metro
 ```
 
-The npm `preios` lifecycle runs the pinned `pod-install` tool before Expo,
-then Expo compiles the `ExcerLock` scheme (Debug), installs, and launches. The
-Pod sync is not optional: an existing generated `ios/` directory can otherwise
-omit a newly added local Expo module while still producing a successful build;
-the app then crashes when JavaScript calls `requireNativeModule`. If invoking
-`npx expo run:ios` directly for a special build, run `npx pod-install ios` first. The built product carries all three Screen Time
+The npm `preios` lifecycle re-runs `expo prebuild --platform ios` and then the
+pinned `pod-install` tool before Expo compiles the `ExcerLock` scheme (Debug),
+installs, and launches. Neither step is optional: a stale generated `ios/`
+directory can omit a newly added local Expo module (the app then crashes when
+JavaScript calls `requireNativeModule`) or a config-plugin `Info.plist` key such
+as `NSCameraUsageDescription` (iOS kills the app the moment the camera is
+requested). If invoking `npx expo run:ios` directly for a special build, run
+`npx expo prebuild --platform ios --no-install && npx pod-install ios` first. The built product carries all three Screen Time
 extension targets (`DeviceActivityMonitorExtension.appex`, `ShieldAction.appex`,
 `ShieldConfiguration.appex`) and the `ExcerLock.entitlements` with
 `com.apple.developer.family-controls` — this is the same build path #84 needs
