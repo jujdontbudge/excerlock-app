@@ -88,13 +88,10 @@ export function builderReducer(draft: BuilderDraft, action: BuilderAction): Buil
         step: draft.hasSourceChoice === true ? "source" : "configure",
         placeId: action.placeId,
       };
+    // The gym step is the only owner of `placeId`, so a source option's own
+    // place — one row per saved gym — never overwrites the gym already chosen.
     case "pickSource":
-      return {
-        ...draft,
-        step: "configure",
-        source: action.option.source,
-        ...(action.option.placeId === undefined ? {} : { placeId: action.option.placeId }),
-      };
+      return { ...draft, step: "configure", source: action.option.source };
     case "setThreshold":
       return { ...draft, threshold: action.value };
     case "setRateMinutes":
