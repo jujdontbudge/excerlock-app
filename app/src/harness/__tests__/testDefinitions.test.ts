@@ -78,13 +78,30 @@ describe("test definition validation", () => {
   it("defines P3 in the tester's own terms without an on-device verdict", () => {
     expect(HARNESS_TEST_DEFINITIONS).toContainEqual({
       id: "P3",
-      title: "Phone propped on a running treadmill",
+      title: "Placement sensor only: phone propped on a running belt",
       kind: "declare-truth",
       countdownMs: 10_000,
       defaultDurationMs: 120_000,
       markerLabels: ["The phone is propped", "The belt is running"],
       signalSources: ["placement"],
+      handsFreePlan: expect.stringContaining("No camera"),
     });
+  });
+
+  it("defines T1 as the whole propped flow: motion, placement, and camera together", () => {
+    expect(HARNESS_TEST_DEFINITIONS).toContainEqual(
+      expect.objectContaining({
+        id: "t1-propped-flow",
+        signalSources: ["motion", "placement", "camera"],
+        panel: "camera-preview",
+        markerLabels: [
+          "I propped the phone",
+          "I see myself walking in the preview",
+          "I picked the phone up",
+          "I set it down again",
+        ],
+      }),
+    );
   });
 
   it("defines M2/M4 walking baselines and a structured treadmill speed for M4", () => {

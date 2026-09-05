@@ -76,3 +76,13 @@ xcrun devicectl device process launch --device <uuid> --terminate-existing \
 Keep the path at `/`: any other path is swallowed by expo-router's "Unmatched
 Route" screen. A cold launch can drop the url before JS listens, so open the
 app first and send the url to the running app (omit `--terminate-existing`).
+
+## Which task tests what
+
+| Product step | Task |
+| --- | --- |
+| Walking with the phone in hand (motion only) | M2, M4 |
+| Standing or sitting while scrolling (must read not walking) | M6, M7 |
+| Placement sensor says "propped" while the belt vibrates (no camera) | P3 |
+| Camera sees a walker / an empty belt while propped | C1, C2 |
+| The whole propped flow: prop → camera confirms → pick up → set down | T1 |
