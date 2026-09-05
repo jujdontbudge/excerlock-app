@@ -12,25 +12,51 @@ private let gaitJointNames: [
   ("rightHip", .rightHip)
 ]
 
+/**
+ * One sample per analysed frame. Body landmarks come from pose detection and
+ * are absent whenever Vision finds no body — the normal case on a treadmill
+ * console, where the phone sees head and shoulders only. The head comes from
+ * face detection, which stays reliable at that framing; the gait detector
+ * reads walking from head bob when hips are out of view.
+ */
 func gaitVisionPayload(
-  _ observation: VNHumanBodyPoseObservation,
+  body: VNHumanBodyPoseObservation?,
+  face: VNFaceObservation?,
   receivedAt: Date = Date()
 ) -> GaitVisionPayload {
   var landmarks: [String: GaitVisionPayload] = [:]
-  for joint in gaitJointNames {
-    guard let point = try? observation.recognizedPoint(joint.visionName) else {
-      continue
+  if let body {
+    for joint in gaitJointNames {
+      guard let point = try? body.recognizedPoint(joint.visionName) else {
+        continue
+      }
+      landmarks[joint.eventName] = [
+        "x": Double(point.location.x),
+        "y": 1 - Double(point.location.y),
+        "confidence": Double(point.confidence)
+      ]
     }
-    landmarks[joint.eventName] = [
-      "x": Double(point.location.x),
-      "y": 1 - Double(point.location.y),
-      "confidence": Double(point.confidence)
-    ]
   }
-  return [
+  var payload: GaitVisionPayload = [
     "timestampMs": receivedAt.timeIntervalSince1970 * 1_000,
     "landmarks": landmarks
   ]
+  if let face {
+    let box = face.boundingBox
+    payload["head"] = [
+      "x": Double(box.midX),
+      "y": 1 - Double(box.midY),
+      "height": Double(box.height),
+      "confidence": Double(face.confidence)
+    ]
+  }
+  return payload
+}
+
+func largestFace(_ observations: [VNFaceObservation]) -> VNFaceObservation? {
+  observations.max { left, right in
+    left.boundingBox.height < right.boundingBox.height
+  }
 }
 
 func largestCentralBody(

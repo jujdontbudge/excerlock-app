@@ -10,9 +10,19 @@ export interface GaitLandmark {
   readonly confidence: number;
 }
 
+/** Face box centre; `height` is the box height in normalized frame units. */
+export interface GaitHeadLandmark {
+  readonly x: number;
+  readonly y: number;
+  readonly height: number;
+  readonly confidence: number;
+}
+
 export interface GaitKeypointSample {
   readonly timestampMs: number;
   readonly landmarks: Partial<Record<GaitLandmarkName, GaitLandmark>>;
+  /** Present when face detection found a head, even with no body landmarks. */
+  readonly head?: GaitHeadLandmark;
 }
 
 export type GaitSampleSubscription = () => void;

@@ -17,6 +17,7 @@ final class GaitVisionService: NSObject,
   )
   private let stateLock = NSLock()
   private let poseRequest = VNDetectHumanBodyPoseRequest()
+  private let faceRequest = VNDetectFaceRectanglesRequest()
   private var onSample: ((GaitVisionPayload) -> Void)?
   private weak var previewView: GaitVisionPreviewView?
   private var session: AVCaptureSession?
@@ -188,12 +189,12 @@ final class GaitVisionService: NSObject,
       options: [:]
     )
     do {
-      try handler.perform([poseRequest])
-      guard
-        isStarted,
-        let body = largestCentralBody(poseRequest.results ?? [])
-      else { return }
-      currentSampleHandler()?(gaitVisionPayload(body))
+      try handler.perform([poseRequest, faceRequest])
+      guard isStarted else { return }
+      let body = largestCentralBody(poseRequest.results ?? [])
+      let face = largestFace(faceRequest.results ?? [])
+      guard body != nil || face != nil else { return }
+      currentSampleHandler()?(gaitVisionPayload(body: body, face: face))
     } catch {
       // A dropped Vision frame is not retained or retried. The gait detector's
       // signal-quality timeout owns user-visible failure handling.

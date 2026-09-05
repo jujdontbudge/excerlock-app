@@ -10,7 +10,11 @@ export const GAIT_MAX_FREQUENCY_HZ = 3;
 export const GAIT_REQUIRED_QUALIFYING_STRIDES = 4;
 
 const LANDMARK_CONFIDENCE_THRESHOLD = 0.6;
+const HEAD_CONFIDENCE_THRESHOLD = 0.5;
 const MIN_TORSO_HEIGHT = 0.05;
+const MIN_HEAD_HEIGHT = 0.05;
+/** Face-box height jitters frame to frame; scale by a recent median instead. */
+const HEAD_SCALE_HISTORY = 15;
 const MIN_NORMALIZED_VERTICAL_RANGE = 0.04;
 const MIN_VALID_SAMPLES_FOR_SIGNAL = 10;
 const MIN_VALID_SAMPLE_RATIO = 0.6;
@@ -61,20 +65,42 @@ function validLandmarks(
   return landmarks as readonly GaitLandmark[];
 }
 
+/**
+ * Vertical position in body-relative units. Torso (shoulders + hips) when the
+ * whole trunk is in view; otherwise the head, scaled by face height. A phone
+ * propped on a treadmill console sees head and shoulders only, and the head
+ * bobs once per step, so the head path is the common one (verified against a
+ * console recording: 1.64 Hz head bob at 1.62 steps/s, 2026-09-05).
+ */
 function normalizedVerticalPosition(
   sample: GaitKeypointSample,
+  headScale: (height: number) => number,
 ): number | undefined {
   const landmarks = validLandmarks(sample);
-  if (landmarks === undefined) {
+  if (landmarks !== undefined) {
+    const shoulderY = (landmarks[0].y + landmarks[1].y) / 2;
+    const hipY = (landmarks[2].y + landmarks[3].y) / 2;
+    const torsoHeight = Math.abs(hipY - shoulderY);
+    if (torsoHeight >= MIN_TORSO_HEIGHT) {
+      return (shoulderY + hipY) / 2 / torsoHeight;
+    }
+  }
+  const head = sample.head;
+  if (
+    head === undefined ||
+    !Number.isFinite(head.y) ||
+    !Number.isFinite(head.height) ||
+    head.confidence < HEAD_CONFIDENCE_THRESHOLD ||
+    head.height < MIN_HEAD_HEIGHT
+  ) {
     return undefined;
   }
-  const shoulderY = (landmarks[0].y + landmarks[1].y) / 2;
-  const hipY = (landmarks[2].y + landmarks[3].y) / 2;
-  const torsoHeight = Math.abs(hipY - shoulderY);
-  if (torsoHeight < MIN_TORSO_HEIGHT) {
-    return undefined;
-  }
-  return (shoulderY + hipY) / 2 / torsoHeight;
+  return head.y / headScale(head.height);
+}
+
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((left, right) => left - right);
+  return sorted[Math.floor(sorted.length / 2)];
 }
 
 export class GaitPeriodicityDetector {
@@ -87,6 +113,7 @@ export class GaitPeriodicityDetector {
   private totalSamples = 0;
   private validSamples = 0;
   private samplingToleranceMs = 0;
+  private headHeights: number[] = [];
 
   public constructor(options: GaitPeriodicityDetectorOptions) {
     if (!Number.isFinite(options.startedAtMs)) {
@@ -104,7 +131,13 @@ export class GaitPeriodicityDetector {
     }
 
     this.totalSamples += 1;
-    const value = normalizedVerticalPosition(sample);
+    const value = normalizedVerticalPosition(sample, (height) => {
+      this.headHeights.push(height);
+      if (this.headHeights.length > HEAD_SCALE_HISTORY) {
+        this.headHeights.shift();
+      }
+      return median(this.headHeights);
+    });
     if (value === undefined) {
       this.resetConsecutiveSignal();
       return this.currentResult(sample.timestampMs);

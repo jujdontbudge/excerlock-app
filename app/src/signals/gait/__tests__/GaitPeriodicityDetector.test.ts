@@ -33,6 +33,57 @@ function walkingSamples(
   return samples;
 }
 
+/** Console framing: no body landmarks at all, only a face box. */
+function headSample(timestampMs: number, verticalOffset = 0, confidence = 0.9): GaitKeypointSample {
+  return {
+    timestampMs,
+    landmarks: {},
+    head: { x: 0.5, y: 0.45 + verticalOffset, height: 0.23, confidence },
+  };
+}
+
+function headWalkingSamples(frequencyHz: number, durationMs: number): GaitKeypointSample[] {
+  const samples: GaitKeypointSample[] = [];
+  for (let elapsedMs = 0; elapsedMs <= durationMs; elapsedMs += 66) {
+    const phase = (elapsedMs / 1_000) * frequencyHz * Math.PI * 2;
+    samples.push(headSample(elapsedMs, Math.sin(phase) * 0.03));
+  }
+  return samples;
+}
+
+describe("GaitPeriodicityDetector head-only (treadmill console framing)", () => {
+  it("recognizes walking from head bob when no body landmarks exist", () => {
+    const detector = new GaitPeriodicityDetector({ startedAtMs: 0 });
+    let result = detector.getResult(0);
+    for (const sample of headWalkingSamples(1.64, 4_950)) {
+      result = detector.process(sample);
+    }
+    expect(result).toMatchObject({ classification: "walking" });
+  });
+
+  it("rejects a still head when the scan ends", () => {
+    const detector = new GaitPeriodicityDetector({ startedAtMs: 0 });
+    for (let timestampMs = 0; timestampMs < 5_000; timestampMs += 66) {
+      detector.process(headSample(timestampMs));
+    }
+    expect(detector.getResult(5_000)).toMatchObject({
+      classification: "notWalking",
+      complete: true,
+    });
+  });
+
+  it("ignores a low-confidence head", () => {
+    const detector = new GaitPeriodicityDetector({ startedAtMs: 0 });
+    for (const sample of headWalkingSamples(1.64, 4_950)) {
+      detector.process({ ...sample, head: { ...sample.head!, confidence: 0.3 } });
+    }
+    expect(detector.getResult(5_000)).toMatchObject({
+      classification: "insufficientSignal",
+      complete: true,
+    });
+  });
+});
+
 describe("GaitPeriodicityDetector", () => {
   it("recognizes four consecutive strides in the walking band before timeout", () => {
     const detector = new GaitPeriodicityDetector({ startedAtMs: 0 });

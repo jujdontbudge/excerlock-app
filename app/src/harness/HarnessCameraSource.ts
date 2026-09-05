@@ -52,6 +52,7 @@ export class HarnessCameraSource implements HarnessSignalSource {
       recorder.record("landmarks", {
         timestampMs: sample.timestampMs,
         landmarks: sample.landmarks,
+        ...(sample.head === undefined ? {} : { head: sample.head }),
       });
       recorder.record("detector", { ...detector.process(sample) });
     });
