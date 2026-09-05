@@ -350,3 +350,21 @@ describe("useHomeStore", () => {
     expect(useHomeStore.getState().conditions).toEqual([stepGoal]);
   });
 });
+
+describe("saved gyms", () => {
+  beforeEach(() => useHomeStore.getState().reset());
+
+  it("adds a gym circle, ignores duplicates, and stops at five", () => {
+    const place = (i: number) => ({
+      id: `place-${i}`,
+      name: `Gym ${i}`,
+      geofence: { latitude: 40.7 + i / 1_000, longitude: -73.9, radiusMeters: 100 },
+    });
+    for (let i = 0; i < 6; i += 1) useHomeStore.getState().addSavedPlace(place(i));
+    useHomeStore.getState().addSavedPlace(place(0));
+
+    const ids = useHomeStore.getState().savedPlaces.map(({ id }) => id);
+    expect(ids).toEqual(["place-0", "place-1", "place-2", "place-3", "place-4"]);
+    expect(selectPickerContext(useHomeStore.getState()).savedPlaceIds).toEqual(ids);
+  });
+});

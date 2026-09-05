@@ -22,7 +22,9 @@ import {
   selectActiveConditions,
   selectAllowance,
   type HomeStoreValues,
+  type SavedPlace,
 } from "./homeState";
+import { MAX_SAVED_GYMS } from "@/signals";
 import { readPersistedHomeState } from "./homeStorePersistence";
 import type { BannerSelection } from "../banners/bannerCatalog";
 
@@ -45,6 +47,8 @@ type HomeStore = HomeStoreValues & {
   /** Replace a condition in place — the edit path, so the id and slot survive. */
   updateCondition: (condition: ConfiguredCondition, banner?: BannerSelection) => void;
   removeCondition: (conditionId: string) => void;
+  /** Save a gym circle (max five); a repeated id is ignored. */
+  addSavedPlace: (place: SavedPlace) => void;
   setConditionEnabled: (conditionId: string, enabled: boolean) => void;
   /** Bank an event condition's payout. Idempotent per condition per ledger day. */
   recordEventPayout: (conditionId: string, atMs: number) => void;
@@ -96,6 +100,15 @@ export const useHomeStore = create<HomeStore>()(
             ? {}
             : { conditionBanners: { ...conditionBanners, [condition.id]: banner } }),
         }));
+      },
+
+      addSavedPlace: (place) => {
+        set(({ savedPlaces }) =>
+          savedPlaces.length >= MAX_SAVED_GYMS ||
+          savedPlaces.some(({ id }) => id === place.id)
+            ? {}
+            : { savedPlaces: [...savedPlaces, place] },
+        );
       },
 
       removeCondition: (conditionId) => {

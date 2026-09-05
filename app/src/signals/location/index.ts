@@ -25,6 +25,7 @@ export {
 export type { LocationFixtureName } from "./fixtures";
 export type {
   AppLocationProvider,
+  GymSetupLocator,
   ManualGymCheckIn,
 } from "./ManualGymCheckIn";
 export type {

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { SectionHeader, useTheme } from "@/ui";
@@ -12,9 +13,12 @@ import type { CatalogGroup, CatalogOption } from "../builderCatalog";
 export function CatalogStep({
   groups,
   onPick,
+  gymSetup,
 }: {
   groups: readonly CatalogGroup[];
   onPick: (option: CatalogOption) => void;
+  /** Where a gym gets saved; gym conditions stay hidden until one exists. */
+  gymSetup?: ReactNode;
 }) {
   const { spacing } = useTheme();
 
@@ -28,6 +32,7 @@ export function CatalogStep({
           ))}
         </View>
       ))}
+      {gymSetup ?? null}
     </View>
   );
 }

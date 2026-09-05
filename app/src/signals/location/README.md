@@ -14,7 +14,9 @@ releases, bare builds, and future execution-environment values.
 that translates `expo-location` calls. Constructing the provider never requests permission or starts
 monitoring.
 
-Manual check-in requests foreground (`When In Use`) permission, takes one high-accuracy sample, and
+Saving a gym (`GymSetupLocator.locateForGymSetup`) requests foreground (`When In Use`) permission and
+takes one high-accuracy sample while the user stands in the gym; Home's `SaveGymCard` turns it into a
+`SavedPlace` circle. Manual check-in requests the same permission, takes one sample, and
 checks that sample against the saved circle on device. Starting auto-detect is the explicit opt-in
 boundary: it requests foreground permission first, then background (`Always`) permission, and only
 then registers regions. At most five gyms are accepted. The public radius constants are 100 m default,

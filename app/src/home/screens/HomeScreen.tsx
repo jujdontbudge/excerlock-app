@@ -13,6 +13,7 @@ import { PillButton, Screen, SectionHeader } from "@/ui";
 import { useTheme } from "@/ui";
 
 import { ConditionBuilderSheet } from "../builder/ConditionBuilderSheet";
+import { SaveGymCard } from "../builder/components/SaveGymCard";
 import { ConditionCard } from "../components/cards/ConditionCard";
 import { EmptyStart } from "../components/EmptyStart";
 import { LockHero } from "../components/LockHero";
@@ -38,6 +39,7 @@ import {
   reviewCoordinator as defaultReviewCoordinator,
   type ReviewCoordinatorContract,
 } from "@/review";
+import { getLocationProvider } from "@/signals";
 import {
   expoBannerPhotoPicker,
   type BannerPhotoPicker,
@@ -105,6 +107,7 @@ export function HomeScreen({
   const savedPlaces = useHomeStore((state) => state.savedPlaces);
   const connectedSources = useHomeStore((state) => state.connectedSources);
   const addCondition = useHomeStore((state) => state.addCondition);
+  const addSavedPlace = useHomeStore((state) => state.addSavedPlace);
   const recordEventPayout = useHomeStore((state) => state.recordEventPayout);
   const firedConditionIds = useHomeStore((state) => state.firedConditionIds);
 
@@ -218,6 +221,13 @@ export function HomeScreen({
         onSave={addCondition}
         bannerPhotoPicker={bannerPhotoPicker}
         onClose={() => setBuilderOpen(false)}
+        gymSetup={
+          <SaveGymCard
+            savedPlaces={savedPlaces}
+            locate={() => getLocationProvider().locateForGymSetup()}
+            onSave={addSavedPlace}
+          />
+        }
       />
     </>
   );

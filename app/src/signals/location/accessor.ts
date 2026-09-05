@@ -5,12 +5,12 @@ import { FixtureLocationProvider } from "./FixtureLocationProvider";
 import type { AppLocationProvider } from "./ManualGymCheckIn";
 import { getLocationFixture } from "./fixtures";
 
-type LocationRuntime = Readonly<{
-  nodeEnv: string | undefined;
-  platform: string;
-  executionEnvironment: string | null | undefined;
-  expoGoConfig: unknown | null;
-}>;
+import {
+  shouldUseNativeIosRuntime,
+  type NativeIosRuntimeEnvironment,
+} from "@/runtime/nativeIosRuntime";
+
+type LocationRuntime = NativeIosRuntimeEnvironment;
 
 let locationProvider: AppLocationProvider | undefined;
 
@@ -20,14 +20,11 @@ export function getLocationProvider(): AppLocationProvider {
   return locationProvider;
 }
 
+/** Same discriminator as the other native runtimes (#130): `expoGoConfig` is non-null in bare Release builds. */
 export function shouldUseNativeLocationProvider(
   runtime: LocationRuntime,
 ): boolean {
-  return (
-    runtime.nodeEnv !== "test" &&
-    runtime.platform === "ios" &&
-    runtime.expoGoConfig === null
-  );
+  return shouldUseNativeIosRuntime(runtime);
 }
 
 function createLocationProvider(): AppLocationProvider {
@@ -35,8 +32,7 @@ function createLocationProvider(): AppLocationProvider {
     shouldUseNativeLocationProvider({
       nodeEnv: process.env.NODE_ENV,
       platform: Platform.OS,
-      executionEnvironment: Constants.executionEnvironment,
-      expoGoConfig: Constants.expoGoConfig,
+      expoVersion: Constants.expoVersion,
     })
   ) {
     const { createNativeLocationProvider } = require(

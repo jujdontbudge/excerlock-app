@@ -1,5 +1,5 @@
 import type { ConfiguredCondition, PickerContext } from "@excerlock/condition-model";
-import { useMemo, useReducer } from "react";
+import { useMemo, useReducer, type ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
@@ -55,6 +55,7 @@ export function ConditionBuilderSheet({
   onClose,
   createId = () => `condition-${Date.now()}`,
   bannerPhotoPicker = expoBannerPhotoPicker,
+  gymSetup,
 }: {
   visible: boolean;
   context: PickerContext;
@@ -70,6 +71,8 @@ export function ConditionBuilderSheet({
   onClose: () => void;
   createId?: () => string;
   bannerPhotoPicker?: BannerPhotoPicker;
+  /** Rendered under the catalog so a gym can be saved without leaving the sheet. */
+  gymSetup?: ReactNode;
 }) {
   const { colors, radius, spacing, typography } = useTheme();
   const [draft, dispatch] = useReducer(builderReducer, initialDraft);
@@ -133,7 +136,11 @@ export function ConditionBuilderSheet({
             showsVerticalScrollIndicator={false}
           >
             {draft.step === "catalog" ? (
-              <CatalogStep groups={groups} onPick={(option) => dispatch({ type: "pickCatalog", option })} />
+              <CatalogStep
+                groups={groups}
+                gymSetup={gymSetup}
+                onPick={(option) => dispatch({ type: "pickCatalog", option })}
+              />
             ) : null}
 
             {draft.step === "source" && option !== undefined ? (

@@ -19,10 +19,10 @@ import {
 } from "./fixtureManifest";
 import { PRESENCE_CONFIRMATION_MS } from "./GeofenceEventProcessor";
 import { assertGymRegionsAllowed } from "./gymRegions";
-import type { ManualGymCheckIn } from "./ManualGymCheckIn";
+import type { GymSetupLocator, ManualGymCheckIn } from "./ManualGymCheckIn";
 import { isSampleInsideRegion } from "./regionPresence";
 
-export class FixtureLocationProvider implements LocationProvider, ManualGymCheckIn {
+export class FixtureLocationProvider implements LocationProvider, ManualGymCheckIn, GymSetupLocator {
   private readonly authorizationCallbacks =
     new Set<(status: LocationAuthorizationStatus) => void>();
   private readonly locationCallbacks =
@@ -86,6 +86,20 @@ export class FixtureLocationProvider implements LocationProvider, ManualGymCheck
   }
 
   public getLastLocation(): LocationSample | null {
+    return this.lastLocation;
+  }
+
+  public async locateForGymSetup(): Promise<LocationSample> {
+    const authorization = await this.requestAuthorization();
+    if (
+      authorization !== "authorizedWhenInUse" &&
+      authorization !== "authorizedAlways"
+    ) {
+      throw new Error("Location authorization is required to save a gym");
+    }
+    if (this.lastLocation === null) {
+      throw new Error("No location fix is available yet");
+    }
     return this.lastLocation;
   }
 

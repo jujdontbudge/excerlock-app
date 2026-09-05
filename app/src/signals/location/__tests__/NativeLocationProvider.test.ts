@@ -244,3 +244,28 @@ const sample: LocationSample = {
   accuracy: 8,
   atMs: 1_000,
 };
+
+describe("NativeLocationProvider gym setup fix", () => {
+  it("asks for foreground permission once and returns one fix", async () => {
+    const client = new ContractLocationClient("notDetermined");
+    const provider = new NativeLocationProvider(client);
+
+    const fix = await provider.locateForGymSetup();
+
+    expect(client.currentLocationRequests).toBe(1);
+    expect(provider.getAuthorizationStatus()).toBe("authorizedWhenInUse");
+    expect(provider.getLastLocation()).toEqual(fix);
+    provider.dispose();
+  });
+
+  it("refuses to take a fix without permission", async () => {
+    const client = new ContractLocationClient("denied");
+    const provider = new NativeLocationProvider(client);
+
+    await expect(provider.locateForGymSetup()).rejects.toThrow(
+      "Location authorization is required to save a gym",
+    );
+    expect(client.currentLocationRequests).toBe(0);
+    provider.dispose();
+  });
+});

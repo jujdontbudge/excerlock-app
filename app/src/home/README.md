@@ -35,6 +35,7 @@ a rendering of a rule owned elsewhere — the one genuine exception is documente
 | `signals/appRuntime.ts` | Holds the one build-selected feed and clock installed by the app composition root |
 | `signals/fixtureFeed.ts` | Phase-2 composition root: fixture providers, real-time playback |
 | `signals/useHomeSignals.ts` | Subscribes a mounted screen to a feed |
+| `builder/components/SaveGymCard.tsx` | Names a gym and saves one location fix as its 100 m circle; gym conditions stay hidden until a gym exists |
 | `signals/gymPresenceController.ts` | Owns manual arrival check-in, explicit auto-detect opt-in, and persisted visit claims |
 | `signals/walkingSessionController.ts` | Owns explicit live verification sessions, treadmill placement phases, watchdogs, active window, and sensor lifetime. Every composition root must hand it to the feed as `walkingState` — with `walking: null` and no `walkingState`, `activeSignals` can never report walking and the hold state is unreachable (this silently broke the E2E composition once, 2026-08-04) |
 | `signals/walkingPlacementRuntime.ts` | Selects native `CMDeviceMotion` placement sensing for iOS builds and deterministic fixtures elsewhere. |

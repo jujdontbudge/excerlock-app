@@ -7,8 +7,7 @@ import {
 const developmentClient = {
   nodeEnv: "development",
   platform: "ios",
-  executionEnvironment: "storeClient",
-  expoGoConfig: null,
+  expoVersion: null,
 } as const;
 
 describe("LocationProvider composition seam", () => {
@@ -42,19 +41,13 @@ describe("LocationProvider composition seam", () => {
     expect(
       shouldUseNativeLocationProvider({
         ...developmentClient,
-        executionEnvironment: "standalone",
+        nodeEnv: "production",
       }),
     ).toBe(true);
     expect(
       shouldUseNativeLocationProvider({
         ...developmentClient,
-        executionEnvironment: "future-runtime",
-      }),
-    ).toBe(true);
-    expect(
-      shouldUseNativeLocationProvider({
-        ...developmentClient,
-        expoGoConfig: {},
+        expoVersion: "54.0.0",
       }),
     ).toBe(false);
   });
