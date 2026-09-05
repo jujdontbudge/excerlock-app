@@ -1,5 +1,6 @@
 import { ExpoLocationClient, type ExpoLocationModule } from "../ExpoLocationClient";
 import { LocationTaskRuntime } from "../LocationTaskRuntime";
+import { MemoryPendingRegionEntryLog } from "../testing/MemoryPendingRegionEntryLog";
 import {
   GEOFENCE_TASK_NAME,
   WALK_LOCATION_TASK_NAME,
@@ -10,7 +11,10 @@ describe("ExpoLocationClient", () => {
     const expo = new RecordingExpoLocationModule();
     const client = new ExpoLocationClient(
       expo,
-      new LocationTaskRuntime({ append: async () => undefined }),
+      new LocationTaskRuntime(
+        { append: async () => undefined },
+        new MemoryPendingRegionEntryLog(),
+      ),
     );
 
     await client.hydrateState();
@@ -23,7 +27,10 @@ describe("ExpoLocationClient", () => {
     const expo = new RecordingExpoLocationModule();
     const client = new ExpoLocationClient(
       expo,
-      new LocationTaskRuntime({ append: async () => undefined }),
+      new LocationTaskRuntime(
+        { append: async () => undefined },
+        new MemoryPendingRegionEntryLog(),
+      ),
     );
 
     expect(client.getAuthorizationStatus()).toBe("notDetermined");

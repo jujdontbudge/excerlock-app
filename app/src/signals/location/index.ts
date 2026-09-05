@@ -1,8 +1,18 @@
 export { FixtureLocationProvider } from "./FixtureLocationProvider";
 export { getLocationProvider } from "./accessor";
 export { NativeLocationProvider } from "./NativeLocationProvider";
-export { createAsyncStorageGymVisitLog } from "./gymVisitLogAccessor";
-export type { GymVisit, GymVisitLog } from "./GymVisitLog";
+export { createConfirmedGymVisits } from "./confirmedGymVisitsAccessor";
+export type { ConfirmedGymVisits } from "./ConfirmedGymVisits";
+export type {
+  GymVisit,
+  GymVisitLog,
+  ReadableGymVisitLog,
+} from "./GymVisitLog";
+export type {
+  PendingRegionEntry,
+  PendingRegionEntryLog,
+} from "./PendingRegionEntryLog";
+export { PRESENCE_CONFIRMATION_MS } from "./presenceDwell";
 export {
   GYM_RADIUS_METERS,
   MAX_SAVED_GYMS,

@@ -1,11 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import type { GymVisit, GymVisitLog } from "./GymVisitLog";
+import type { GymVisit, ReadableGymVisitLog } from "./GymVisitLog";
 
 export const GYM_VISIT_LOG_STORAGE_KEY =
   "@excerlock/location/confirmed-gym-visits/v1";
 
-export class AsyncStorageGymVisitLog implements GymVisitLog {
+export class AsyncStorageGymVisitLog implements ReadableGymVisitLog {
   private writes: Promise<void> = Promise.resolve();
 
   public append(visit: GymVisit): Promise<void> {

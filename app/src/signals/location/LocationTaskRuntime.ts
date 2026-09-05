@@ -5,6 +5,7 @@ import type {
   LocationUnsubscribe,
   RegionTransition,
 } from "./LocationProvider";
+import type { PendingRegionEntryLog } from "./PendingRegionEntryLog";
 
 const EXPO_GEOFENCE_EVENT = {
   enter: 1,
@@ -43,8 +44,9 @@ export class LocationTaskRuntime {
   private readonly processor: GeofenceEventProcessor;
   private lastLocation: LocationSample | null = null;
 
-  public constructor(log: GymVisitLog) {
+  public constructor(log: GymVisitLog, entries: PendingRegionEntryLog) {
     this.processor = new GeofenceEventProcessor({
+      entries,
       log,
       onPresence: (transition) => {
         this.presenceListeners.forEach((listener) => listener(transition));
@@ -64,13 +66,16 @@ export class LocationTaskRuntime {
     ) {
       return Promise.resolve();
     }
-    return this.confirmRegionPresence({
+    // A headless wake gets roughly ten seconds: answer as soon as the event is
+    // durable and let the dwell settle from timestamps, not from a live timer.
+    return this.processor.receive({
       type: data.eventType === EXPO_GEOFENCE_EVENT.enter ? "enter" : "exit",
       regionId,
       atMs: Date.now(),
     });
   }
 
+  /** Manual check-in stays foreground: it waits out the whole dwell. */
   public confirmRegionPresence(transition: RegionTransition): Promise<void> {
     return this.processor.process(transition);
   }

@@ -28,32 +28,54 @@ manual check-in intact. With no enabled location condition, the host neither sel
 reads location.
 
 Raw presence changes immediately when a region event arrives: there is no dwell state and
-`isInsideRegion` does not wait. A separate, invisible 30-second confirmation debounce delays when the
-arrival counts; an exit during that window cancels the arrival. Manual and automatic arrivals share
-that processor. Confirmed arrivals append only `{regionId, atMs}` to AsyncStorage. Coordinates are used
-only in memory for the OS boundary and distance calculation; they are never logged or sent to
-analytics.
+`isInsideRegion` does not wait. A separate, invisible 30-second dwell delays when the arrival counts;
+an exit inside that window cancels the arrival. Manual and automatic arrivals share that processor.
+Confirmed arrivals append only `{regionId, atMs}` to AsyncStorage. Coordinates are used only in memory
+for the OS boundary and distance calculation; they are never logged or sent to analytics.
 
-The app-open reconciliation also claims coordinate-free visits persisted by a background task. Ledger
-event ids make replay idempotent, so reading the on-device visit log again cannot double-pay an arrival.
-The E2E composition root installs its selected `FixtureLocationProvider` before runtime hosts mount;
-production and scenario adapters cannot be mixed.
+**The dwell is two timestamps, never a running timer.** iOS gives a background-launched app roughly ten
+seconds to handle a region event, so a 30-second `setTimeout` inside that wake would never fire for a
+killed or suspended app and the visit would be lost. `GeofenceEventProcessor` therefore writes the raw
+enter to `AsyncStoragePendingRegionEntryLog` (`{regionId, atMs}`, no coordinates) before anything else,
+and the visit is booked by whichever path first *takes* that entry back:
+
+- the matching exit, when `exit.atMs - enter.atMs >= PRESENCE_CONFIRMATION_MS` — this works in a
+  relaunched process that has no in-memory presence at all;
+- the foreground timer, while the app happens to stay alive through the whole dwell;
+- the next claim, when `ConfirmedGymVisits.readAll()` settles every enter that reached the dwell and no
+  exit closed.
+
+`PendingRegionEntryLog.take` hands an entry to exactly one caller, so those three paths cannot
+double-book the same arrival. An exit that beats the dwell simply discards the entry, and a region that
+is already open keeps its first enter time, so a re-delivered enter cannot push the dwell out forever.
+
+The processor has two entry points for the two execution budgets. `receive` is the background path: it
+resolves as soon as the event is durable, so a headless wake returns in milliseconds instead of holding
+the Task Manager window open for thirty seconds it will not get. `process` is the foreground path and
+still resolves only once the dwell has been decided, which is what manual check-in awaits.
+
+The app-open reconciliation claims coordinate-free visits persisted by a background task, and reading
+them settles any dwell that elapsed while the app was suspended: `GymPresenceController.reconcileAutoDetect`
+calls `claimConfirmedVisits`, which reads `ConfirmedGymVisits`. Ledger event ids make replay idempotent,
+so reading the on-device visit log again cannot double-pay an arrival. The E2E composition root installs
+its selected `FixtureLocationProvider` before runtime hosts mount; production and scenario adapters
+cannot be mixed.
 
 `registerLocationTasks` is imported at the Expo Router entry module so Task Manager can find both task
-definitions during a headless launch. The geofence task owns the confirmation processor and on-device
-visit log. The Walk task maps continuous background locations into `LocationSample` callbacks without
-persisting them. Walk keep-alive starts foreground-authorized high-accuracy Fitness updates with the
-iOS background-location indicator visible, and stops them explicitly. Expo permission and registered
-task state are rehydrated after a JS reload.
+definitions during a headless launch. The geofence task owns the confirmation processor, the pending
+enter log, and the on-device visit log. The Walk task maps continuous background locations into
+`LocationSample` callbacks without persisting them. Walk keep-alive starts foreground-authorized
+high-accuracy Fitness updates with the iOS background-location indicator visible, and stops them
+explicitly. Expo permission and registered task state are rehydrated after a JS reload.
 
 Automated tests cover the shared provider contract, five-gym/radius limits, exact 30-second timing,
-quick enter-exit cancellation, permission prompt timing, SDK translation, module-scope registration,
-fixture-default selection, coordinate-free persistence, and native-state hydration. This lane had no
-physical iPhone. Simulator tests cannot establish that iOS relaunches the app for a real region event
-or grants the headless task enough execution time to finish the 30-second debounce and persist the
-visit; those checks remain mandatory before claiming physical-device geofencing. If the Task Manager
-window is too short, the debounce must move into a small native Swift module without widening
-`LocationProvider`.
+quick enter-exit cancellation, dwell settlement in a relaunched process, claim-time settlement of a
+dwell the app slept through, permission prompt timing, SDK translation, module-scope registration,
+fixture-default selection, coordinate-free persistence of both logs, and native-state hydration. This
+lane had no physical iPhone. Simulator tests cannot establish that iOS actually relaunches the app for
+a real region event; that check remains mandatory before claiming physical-device geofencing. It no
+longer has to establish that the headless task gets 30 seconds of execution, because the dwell no
+longer runs inside it — only the enter write does.
 
 Canonical fixtures: `gym-enter-exit`, `region-blip`, and `quiet`. Test with
 `npm run test --workspace app -- signals/location`.

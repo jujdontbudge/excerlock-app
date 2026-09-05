@@ -1,6 +1,7 @@
 import * as TaskManager from "expo-task-manager";
 
 import { AsyncStorageGymVisitLog } from "./AsyncStorageGymVisitLog";
+import { AsyncStoragePendingRegionEntryLog } from "./AsyncStoragePendingRegionEntryLog";
 import {
   LocationTaskRuntime,
   type GeofencingTaskData,
@@ -15,6 +16,7 @@ export { GEOFENCE_TASK_NAME, WALK_LOCATION_TASK_NAME };
 
 export const locationTaskRuntime = new LocationTaskRuntime(
   new AsyncStorageGymVisitLog(),
+  new AsyncStoragePendingRegionEntryLog(),
 );
 
 if (!TaskManager.isTaskDefined(GEOFENCE_TASK_NAME)) {

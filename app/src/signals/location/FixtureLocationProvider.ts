@@ -17,7 +17,7 @@ import {
   type LocationFixtureManifest,
   type LocationFixturePayload,
 } from "./fixtureManifest";
-import { PRESENCE_CONFIRMATION_MS } from "./GeofenceEventProcessor";
+import { PRESENCE_CONFIRMATION_MS } from "./presenceDwell";
 import { assertGymRegionsAllowed } from "./gymRegions";
 import type { ManualGymCheckIn } from "./ManualGymCheckIn";
 import { isSampleInsideRegion } from "./regionPresence";
