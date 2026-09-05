@@ -4,6 +4,13 @@ export { NativeLocationProvider } from "./NativeLocationProvider";
 export { createAsyncStorageGymVisitLog } from "./gymVisitLogAccessor";
 export type { GymVisit, GymVisitLog } from "./GymVisitLog";
 export {
+  FixtureGymSearchClient,
+  FIXTURE_GYM_RESULTS,
+} from "./FixtureGymSearchClient";
+export { getGymSearchClient } from "./gymSearchAccessor";
+export { GYM_SEARCH_RESULT_LIMIT } from "./GymSearchClient";
+export type { GymSearchClient, GymSearchResult } from "./GymSearchClient";
+export {
   GYM_RADIUS_METERS,
   MAX_SAVED_GYMS,
 } from "./gymRegions";
