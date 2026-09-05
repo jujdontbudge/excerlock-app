@@ -51,7 +51,9 @@ function formatRun(run) {
     lines.push(
       run.endReason === "stopped"
         ? `Ended: stopped early after ${duration}`
-        : `Ended: timed out after ${duration}`,
+        : run.endReason === "stranded"
+          ? `Ended: stranded after ${duration} (end reconstructed, not observed)`
+          : `Ended: timed out after ${duration}`,
     );
   }
 

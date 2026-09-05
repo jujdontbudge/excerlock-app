@@ -12,6 +12,11 @@ const EMPTY_FIXTURE = path.join(
   "fixtures",
   "harness-run-empty.jsonl",
 );
+const STRANDED_FIXTURE = path.join(
+  __dirname,
+  "fixtures",
+  "harness-run-stranded.jsonl",
+);
 
 function analyze(file = FIXTURE): string {
   return execFileSync(process.execPath, [SCRIPT, file], {
@@ -38,6 +43,12 @@ describe("analyze-harness-run", () => {
         '  placement / derived.classification: +0.700s => {"placement":"propped"}',
         "",
       ].join("\n"),
+    );
+  });
+
+  it("does not pass a reconstructed end off as a clean timeout", () => {
+    expect(analyze(STRANDED_FIXTURE)).toContain(
+      "Ended: stranded after 66.500s (end reconstructed, not observed)",
     );
   });
 

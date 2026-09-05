@@ -29,7 +29,13 @@ export interface HarnessTestDefinition {
   readonly parameters?: readonly HarnessParameterDefinition[];
 }
 
-export type HarnessRunEndReason = "timeout" | "stopped";
+/**
+ * `stranded` is the run whose end nobody watched: iOS suspended the app, or
+ * killed it, and the end had to be reconstructed from the wall clock. It is
+ * deliberately not `timeout` — the analyzer and the tester both need to know
+ * the difference between a window that closed and one that was closed for it.
+ */
+export type HarnessRunEndReason = "timeout" | "stopped" | "stranded";
 
 export type HarnessRunEvent =
   | Readonly<{ type: "marker"; atMs: number; label: string }>
@@ -55,6 +61,12 @@ export type HarnessRunEvent =
       type: "extension";
       atMs: number;
       durationMs: number;
+    }>
+  | Readonly<{
+      type: "keep-alive";
+      atMs: number;
+      state: "started" | "failed";
+      message?: string;
     }>;
 
 export interface HarnessRun {
@@ -110,12 +122,30 @@ export type HarnessRunSnapshot = Readonly<{
   deadlineMs: number | null;
 }>;
 
+/**
+ * Whatever keeps iOS from suspending the app while a run is in flight. The
+ * product holds a walk open with background location updates
+ * (`WalkingSessionController`); the harness borrows the same two calls so a
+ * pocketed phone does not freeze the run it is recording.
+ */
+export interface HarnessKeepAlive {
+  start(): Promise<void>;
+  stop(): Promise<void>;
+}
+
 export interface HarnessRunEngineOptions {
   readonly buildCommit: string;
   readonly now: () => number;
   readonly recorder: HarnessRunRecorder;
+  readonly keepAlive?: HarnessKeepAlive;
   readonly sources?: Partial<Record<HarnessSignalSourceId, HarnessSignalSource>>;
 }
+
+/**
+ * How late an end may be and still count as watched. A foregrounded app fires
+ * its timer within milliseconds; anything later means the phone was asleep.
+ */
+const END_OBSERVATION_GRACE_MS = 2_000;
 
 export class HarnessRunEngine {
   private snapshot: HarnessRunSnapshot = {
@@ -224,6 +254,7 @@ export class HarnessRunEngine {
         message,
       });
     });
+    await this.holdPhoneAwake();
     const sourceIds = new Set([
       ...ALWAYS_ON_SIGNAL_SOURCES,
       ...definition.signalSources,
@@ -287,6 +318,11 @@ export class HarnessRunEngine {
       state,
     });
     await this.persistCurrentRun();
+    // The app was away; a timer that should have ended the run may never have
+    // run. The wall clock is the only witness that survives suspension.
+    if (this.deadlineMs !== undefined && this.options.now() >= this.deadlineMs) {
+      await this.finishAtDeadline();
+    }
   }
 
   public async extend(durationMs: number): Promise<void> {
@@ -308,27 +344,25 @@ export class HarnessRunEngine {
     await this.finish("stopped");
   }
 
-  private async finish(endReason: HarnessRunEndReason): Promise<void> {
+  private async finish(
+    endReason: HarnessRunEndReason,
+    endedAtMs: number = this.options.now(),
+  ): Promise<void> {
     const run = this.snapshot.run;
     if (this.snapshot.phase !== "recording" || run === null) {
       return;
     }
-    const finished: HarnessRun = {
-      ...run,
-      endedAtMs: this.options.now(),
-      endReason,
-    };
+    const finished: HarnessRun = { ...run, endedAtMs, endReason };
     if (this.recordingTimer !== undefined) {
       clearTimeout(this.recordingTimer);
     }
-    await Promise.all(
-      [...new Set([
+    await Promise.all([
+      ...[...new Set([
         ...this.runningSources.splice(0),
         ...this.preparedSources.splice(0),
-      ])].map((source) =>
-        source.stop().catch(() => undefined),
-      ),
-    );
+      ])].map((source) => source.stop().catch(() => undefined)),
+      this.options.keepAlive?.stop().catch(() => undefined),
+    ]);
     this.snapshot = {
       phase: "finished",
       run: finished,
@@ -369,8 +403,52 @@ export class HarnessRunEngine {
       (this.deadlineMs ?? this.options.now()) - this.options.now(),
     );
     this.recordingTimer = setTimeout(() => {
-      void this.finish("timeout");
+      void this.finishAtDeadline();
     }, remainingMs);
+  }
+
+  /**
+   * A run ends where it said it would, whoever notices. Stamping the declared
+   * deadline rather than the moment of noticing keeps a suspended phone from
+   * inventing a recording window nobody was recording in — and the lateness of
+   * the noticing is what tells a watched end from a stranded one.
+   */
+  private async finishAtDeadline(): Promise<void> {
+    const deadlineMs = this.deadlineMs;
+    if (deadlineMs === undefined) {
+      return;
+    }
+    const lateByMs = this.options.now() - deadlineMs;
+    await this.finish(
+      lateByMs > END_OBSERVATION_GRACE_MS ? "stranded" : "timeout",
+      deadlineMs,
+    );
+  }
+
+  /**
+   * Denied location permission costs the run its background lifeline, not the
+   * run itself: the refusal is recorded so the export explains a short run.
+   */
+  private async holdPhoneAwake(): Promise<void> {
+    const keepAlive = this.options.keepAlive;
+    if (keepAlive === undefined) {
+      return;
+    }
+    try {
+      await keepAlive.start();
+      this.appendEvent({
+        type: "keep-alive",
+        atMs: this.options.now(),
+        state: "started",
+      });
+    } catch (error) {
+      this.appendEvent({
+        type: "keep-alive",
+        atMs: this.options.now(),
+        state: "failed",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   private notify(): void {

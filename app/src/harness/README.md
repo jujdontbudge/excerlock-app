@@ -10,6 +10,39 @@ Harness storage must remain separate from product storage. Cheap motion and
 placement sources attach to every run; camera sources attach only to definitions
 that explicitly request them.
 
+## A run outlives a pocketed phone
+
+The tests that matter most are the ones where putting the phone away is the
+correct gesture — an outdoor walk, scrolling in another app — and iOS suspends
+JavaScript the moment it can. Two independent mechanisms keep a run honest
+through that.
+
+**The phone is held awake the way the product holds it.** For the length of a
+run the engine opens the same background location updates
+`WalkingSessionController` uses for a walk (`createLocationKeepAlive` →
+`getLocationProvider()`), and closes them when the run ends. A refusal — denied
+permission, no provider — is recorded as a `keep-alive` event with the reason
+and the run continues; the export then explains why a run went quiet.
+
+**The end is computed from the wall clock, never from a timer tick.** A run ends
+at its declared deadline (`startedAtMs + defaultDurationMs`, plus any
+extension), whoever notices it. The engine also checks the deadline on every
+app-state change, so a run whose deadline passed while the app was suspended is
+closed on the next foreground rather than running on. How late the noticing was
+picks the end reason:
+
+| End reason | Meaning |
+| --- | --- |
+| `stopped` | The tester ended the run. |
+| `timeout` | The deadline arrived and something was awake to see it (within 2 s). |
+| `stranded` | The deadline passed unwatched: the phone was asleep, or the app was killed. `endedAtMs` is reconstructed, not observed. |
+
+`finalizeStrandedRuns` runs at every launch and closes any persisted run that
+still has no `endedAtMs`, stamping the last instant there is evidence for — its
+final event, or its start. Nothing stays "in progress" across a launch, and the
+task list prints a stranded or unfinished run as **needs attention** instead of
+filing it with the clean results.
+
 ## Tracks
 
 The motion adapter records provider payloads unchanged as `raw.activity` and

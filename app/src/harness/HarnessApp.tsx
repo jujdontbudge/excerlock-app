@@ -21,6 +21,7 @@ import type { GaitVisionPreviewProps } from "../../modules/excerlock-gait-vision
 import type { HarnessFootageCapture } from "./HarnessCameraSource";
 import {
   HarnessRunEngine,
+  type HarnessKeepAlive,
   type HarnessRun,
   type HarnessSignalSource,
   type HarnessSignalSourceId,
@@ -32,7 +33,9 @@ import {
 } from "./HarnessRunStore";
 import { HARNESS_TEST_DEFINITIONS } from "./testDefinitions";
 import { createDefaultHarnessSources } from "./createDefaultHarnessSources";
+import { createLocationKeepAlive } from "./harnessKeepAlive";
 import { parseHarnessLaunchRequest } from "./harnessLaunchRequest";
+import { describeRunOutcome, finalizeStrandedRuns } from "./strandedRuns";
 
 /**
  * A run screen with no moving parts reads as a printed page: a tester cannot
@@ -73,6 +76,7 @@ type HarnessAppProps = Readonly<{
   buildCommit?: string;
   CameraPreview?: ComponentType<GaitVisionPreviewProps>;
   footage?: Pick<HarnessFootageCapture, "deleteAll">;
+  keepAlive?: HarnessKeepAlive;
   store?: HarnessRunStore;
   sources?: Partial<Record<HarnessSignalSourceId, HarnessSignalSource>>;
 }>;
@@ -95,6 +99,7 @@ export function HarnessApp({
   buildCommit = process.env.EXPO_PUBLIC_BUILD_COMMIT ?? "unknown",
   CameraPreview,
   footage,
+  keepAlive: suppliedKeepAlive,
   launchUrl,
   store: suppliedStore,
   sources,
@@ -103,9 +108,21 @@ export function HarnessApp({
     () => suppliedStore ?? createDefaultHarnessRunStore(footage),
     [footage, suppliedStore],
   );
+  const keepAlive = useMemo(
+    () => suppliedKeepAlive ?? createLocationKeepAlive(),
+    [suppliedKeepAlive],
+  );
   const attachedSources = useMemo(
     () => sources ?? createDefaultHarnessSources(),
     [sources],
+  );
+  // Mounting is this build's "next launch": whatever the last session left
+  // open is closed here, before the list can report it as merely in progress.
+  // Storage that refuses still yields a list — an unclosed run then reads as
+  // needing attention, which is what it is.
+  const reconciled = useMemo(
+    () => finalizeStrandedRuns(store).catch(() => []),
+    [store],
   );
   const [selection, setSelection] = useState<Selection>(() =>
     selectionForLaunch(launchUrl),
@@ -118,6 +135,7 @@ export function HarnessApp({
         buildCommit={buildCommit}
         CameraPreview={CameraPreview}
         definition={selection.definition}
+        keepAlive={keepAlive}
         onBack={() => setSelection({ kind: "tasks" })}
         sources={attachedSources}
         store={store}
@@ -134,6 +152,7 @@ export function HarnessApp({
   }
   return (
     <TaskList
+      reconciled={reconciled}
       store={store}
       onSelectRun={(run) => setSelection({ kind: "run", run })}
       onSelectTask={(definition) => setSelection({ kind: "task", definition })}
@@ -144,16 +163,19 @@ export function HarnessApp({
 function TaskList({
   onSelectRun,
   onSelectTask,
+  reconciled,
   store,
 }: Readonly<{
   onSelectRun: (run: HarnessRun) => void;
   onSelectTask: (definition: HarnessTestDefinition) => void;
+  /** Resolves once runs the last session left open have been closed. */
+  reconciled: Promise<unknown>;
   store: HarnessRunStore;
 }>) {
   const [runs, setRuns] = useState<readonly HarnessRun[]>([]);
   const reload = useCallback(() => {
-    void store.list().then(setRuns);
-  }, [store]);
+    void reconciled.then(() => store.list()).then(setRuns);
+  }, [reconciled, store]);
   useEffect(reload, [reload]);
 
   return (
@@ -182,7 +204,7 @@ function TaskList({
           style={styles.savedRun}
         >
           <Text style={styles.cardTitle}>{run.id}</Text>
-          <Text style={styles.copy}>{run.endReason ?? "in progress"}</Text>
+          <RunOutcome run={run} />
         </Pressable>
       ))}
       <ActionButton
@@ -201,11 +223,19 @@ function TaskList({
   );
 }
 
+function RunOutcome({ run }: Readonly<{ run: HarnessRun }>) {
+  const { label, needsAttention } = describeRunOutcome(run);
+  return (
+    <Text style={needsAttention ? styles.attention : styles.copy}>{label}</Text>
+  );
+}
+
 function HarnessRunScreen({
   autoStart = false,
   buildCommit,
   CameraPreview,
   definition,
+  keepAlive,
   onBack,
   sources,
   store,
@@ -214,6 +244,7 @@ function HarnessRunScreen({
   buildCommit: string;
   CameraPreview?: ComponentType<GaitVisionPreviewProps>;
   definition: HarnessTestDefinition;
+  keepAlive?: HarnessKeepAlive;
   onBack: () => void;
   sources?: Partial<Record<HarnessSignalSourceId, HarnessSignalSource>>;
   store: HarnessRunStore;
@@ -228,11 +259,12 @@ function HarnessRunScreen({
   const engine = useMemo(
     () => new HarnessRunEngine({
       buildCommit,
+      keepAlive,
       now: () => Date.now(),
       recorder: store,
       sources,
     }),
-    [buildCommit, sources, store],
+    [buildCommit, keepAlive, sources, store],
   );
   const snapshot = useSyncExternalStore(
     (listener) => engine.subscribe(listener),
@@ -474,6 +506,7 @@ const styles = StyleSheet.create({
   title: { color: "white", fontSize: 28, fontWeight: "700" },
   section: { color: "white", fontSize: 21, fontWeight: "700", marginTop: 14 },
   copy: { color: "#CBD5E1", fontSize: 15 },
+  attention: { color: "#FCA5A5", fontSize: 15, fontWeight: "700" },
   phase: { color: "#93C5FD", fontSize: 18, fontWeight: "700" },
   kind: { color: "#93C5FD", fontSize: 13, marginTop: 6 },
   card: { borderRadius: 12, backgroundColor: "#1E293B", padding: 16 },

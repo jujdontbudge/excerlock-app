@@ -1,0 +1,2 @@
+{"recordType":"run","run":{"version":1,"id":"m2-1000","testId":"m2-outdoor-walk","buildCommit":"def456","startedAtMs":1000,"endedAtMs":67500,"endReason":"stranded"}}
+{"recordType":"event","runId":"m2-1000","event":{"type":"app-state","atMs":67500,"state":"background"}}

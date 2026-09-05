@@ -149,6 +149,33 @@ describe("HarnessApp", () => {
   });
 });
 
+describe("HarnessApp stranded runs", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(1_000);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it("closes a run left open by a killed app and flags it in the list", async () => {
+    const store = new HarnessRunStore(memoryStorage());
+    await store.save({
+      version: 1,
+      id: "M2-500",
+      testId: "M2",
+      buildCommit: "abc123",
+      startedAtMs: 500,
+      events: [{ type: "app-state", atMs: 67_500, state: "background" }],
+    });
+
+    await render(<HarnessApp buildCommit="abc123" sources={{}} store={store} />);
+    await act(async () => undefined);
+
+    expect(screen.getByText("stranded · needs attention")).toBeOnTheScreen();
+    await fireEvent.press(screen.getByText("M2-500"));
+    expect(screen.getByText("Ended: stranded")).toBeOnTheScreen();
+  });
+});
+
 describe("HarnessApp liveness", () => {
   beforeEach(() => {
     jest.useFakeTimers();

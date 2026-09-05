@@ -209,4 +209,105 @@ describe("HarnessRunEngine", () => {
       note: "Belt juddered once",
     });
   });
+  it("holds the phone awake for the length of the run", async () => {
+    const keepAlive = {
+      start: jest.fn(async () => undefined),
+      stop: jest.fn(async () => undefined),
+    };
+    const engine = new HarnessRunEngine({
+      buildCommit: "abc123",
+      keepAlive,
+      now: () => Date.now(),
+      recorder: { save: async () => undefined },
+    });
+
+    const starting = engine.start(MARKER_TASK);
+    jest.advanceTimersByTime(3_000);
+    await starting;
+
+    expect(keepAlive.start).toHaveBeenCalledTimes(1);
+    expect(keepAlive.stop).not.toHaveBeenCalled();
+    expect(engine.getSnapshot().run?.events).toContainEqual({
+      type: "keep-alive",
+      atMs: 4_000,
+      state: "started",
+    });
+
+    await engine.stop();
+
+    expect(keepAlive.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("records a refused keep-alive and records the run anyway", async () => {
+    const engine = new HarnessRunEngine({
+      buildCommit: "abc123",
+      keepAlive: {
+        start: async () => {
+          throw new Error("Location authorization is required");
+        },
+        stop: async () => undefined,
+      },
+      now: () => Date.now(),
+      recorder: { save: async () => undefined },
+    });
+
+    const starting = engine.start(MARKER_TASK);
+    jest.advanceTimersByTime(3_000);
+    await starting;
+
+    expect(engine.getSnapshot()).toMatchObject({ phase: "recording" });
+    expect(engine.getSnapshot().run?.events).toContainEqual({
+      type: "keep-alive",
+      atMs: 4_000,
+      state: "failed",
+      message: "Location authorization is required",
+    });
+  });
+
+  it("ends a run whose deadline passed while the phone was asleep", async () => {
+    const saved: HarnessRun[] = [];
+    let wallClockMs = 1_000;
+    const engine = new HarnessRunEngine({
+      buildCommit: "abc123",
+      now: () => wallClockMs,
+      recorder: { save: async (run) => void saved.push(run) },
+    });
+
+    const starting = engine.start(MARKER_TASK);
+    wallClockMs = 4_000;
+    jest.advanceTimersByTime(3_000);
+    await starting;
+
+    // iOS suspended the app: the wall clock ran on, the timer queue did not.
+    wallClockMs = 86_000;
+    await engine.recordAppState("active");
+
+    expect(engine.getSnapshot()).toMatchObject({
+      phase: "finished",
+      run: { endedAtMs: 14_000, endReason: "stranded" },
+    });
+    expect(saved.at(-1)?.endReason).toBe("stranded");
+  });
+
+  it("ends at the declared deadline when the timer itself runs late", async () => {
+    let wallClockMs = 1_000;
+    const engine = new HarnessRunEngine({
+      buildCommit: "abc123",
+      now: () => wallClockMs,
+      recorder: { save: async () => undefined },
+    });
+
+    const starting = engine.start(MARKER_TASK);
+    wallClockMs = 4_000;
+    jest.advanceTimersByTime(3_000);
+    await starting;
+
+    wallClockMs = 86_000;
+    await jest.advanceTimersByTimeAsync(10_000);
+
+    expect(engine.getSnapshot()).toMatchObject({
+      phase: "finished",
+      run: { endedAtMs: 14_000, endReason: "stranded" },
+    });
+  });
 });
