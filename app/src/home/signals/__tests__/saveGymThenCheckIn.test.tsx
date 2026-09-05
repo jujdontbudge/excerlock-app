@@ -9,14 +9,15 @@ import type { ConfiguredCondition } from "@excerlock/condition-model";
 import { FixtureLocationProvider } from "@/signals";
 import { PRESENCE_CONFIRMATION_MS } from "@/signals/location/GeofenceEventProcessor";
 
-import { SaveGymCard } from "../../builder/components/SaveGymCard";
+import { GymFinder } from "../../builder/components/GymFinder";
 import { useHomeStore } from "../../store/homeStore";
 import { GymPresenceController } from "../gymPresenceController";
 
 /**
- * The user journey end to end: stand in the gym, save it from the card, add
- * a gym condition for it, then check in from the same spot. Only the location
- * source is a fixture; the card, store, and controller are the real ones.
+ * The user journey end to end: stand in the gym, save it from the gym step of
+ * the builder, add a gym condition for it, then check in from the same spot.
+ * Only the location source is a fixture; the finder, store, and controller are
+ * the real ones.
  */
 describe("save a gym, then check in from it", () => {
   const phoneInGym = { lat: 40.741, lon: -73.989, accuracy: 8 };
@@ -35,15 +36,21 @@ describe("save a gym, then check in from it", () => {
     location.advanceTo(1_000);
 
     await render(
-      <SaveGymCard
-        savedPlaces={[]}
-        locate={() => location.locateForGymSetup()}
-        onSave={useHomeStore.getState().addSavedPlace}
-        createId={() => "gym-home"}
+      <GymFinder
+        setup={{
+          savedPlaces: [],
+          locate: () => location.locateForGymSetup(),
+          search: async () => [],
+          save: useHomeStore.getState().addSavedPlace,
+          rename: useHomeStore.getState().renameSavedPlace,
+          remove: useHomeStore.getState().removeSavedPlace,
+          createId: () => "gym-home",
+        }}
+        onSaved={() => undefined}
       />,
     );
     await fireEvent.changeText(screen.getByLabelText("Gym name"), "Home gym");
-    await fireEvent.press(screen.getByText("Save my current location"));
+    await fireEvent.press(screen.getByText("Use my current location"));
     await act(async () => undefined);
 
     expect(useHomeStore.getState().savedPlaces).toEqual([

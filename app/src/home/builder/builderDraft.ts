@@ -23,7 +23,7 @@ import {
  * configure step until every control its kind demands has an explicit value.
  */
 
-export type BuilderStep = "catalog" | "source" | "configure" | "banner" | "preview";
+export type BuilderStep = "catalog" | "place" | "source" | "configure" | "banner" | "preview";
 
 export interface BuilderDraft {
   readonly step: BuilderStep;
@@ -32,6 +32,8 @@ export interface BuilderDraft {
   readonly placeId?: string;
   /** Whether the source step was offered — `back` has to retrace the same path. */
   readonly hasSourceChoice?: boolean;
+  /** Whether the gym step was offered — the same retracing rule. */
+  readonly hasPlaceChoice?: boolean;
   readonly threshold?: number;
   /** Minutes the user assigned to the catalog's fixed quantum. */
   readonly rateMinutes?: number;
@@ -65,6 +67,7 @@ export const GRACE_OPTIONS_MS: readonly number[] = Object.freeze([
 
 export type BuilderAction =
   | { readonly type: "pickCatalog"; readonly option: CatalogOption }
+  | { readonly type: "pickPlace"; readonly placeId: string }
   | { readonly type: "pickSource"; readonly option: SourceOption }
   | { readonly type: "setThreshold"; readonly value: number }
   | { readonly type: "setRateMinutes"; readonly value: number }
@@ -79,6 +82,12 @@ export function builderReducer(draft: BuilderDraft, action: BuilderAction): Buil
   switch (action.type) {
     case "pickCatalog":
       return pickCatalog(action.option);
+    case "pickPlace":
+      return {
+        ...draft,
+        step: draft.hasSourceChoice === true ? "source" : "configure",
+        placeId: action.placeId,
+      };
     case "pickSource":
       return {
         ...draft,
@@ -108,22 +117,25 @@ export function builderReducer(draft: BuilderDraft, action: BuilderAction): Buil
 /**
  * The source step only exists when more than one source can provide the signal
  * (PRD §3.3 builder step 2); a single selectable source is chosen for the user.
+ * A place-required entry offers its sources once per saved gym, so the count
+ * that decides the source step is of distinct sources, not of source options.
+ *
+ * The gym step always comes first for those entries (#134): which gym this is
+ * about is the question the user came to answer, and it is where a gym gets
+ * saved — so the entry is reachable before any gym exists.
  */
 function pickCatalog(option: CatalogOption): BuilderDraft {
   const selectable = option.sources.filter(({ selectable: free }) => free);
-  const only = selectable.length === 1 ? selectable[0] : undefined;
+  const distinct = new Set(selectable.map(({ source }) => source));
+  const only = distinct.size === 1 ? selectable[0] : undefined;
 
   return {
-    step: only === undefined ? "source" : "configure",
+    step: option.requiresPlace ? "place" : only === undefined ? "source" : "configure",
     catalogId: option.catalogId,
     banner: defaultBannerForCatalog(option.catalogId),
     hasSourceChoice: only === undefined,
-    ...(only === undefined
-      ? {}
-      : {
-          source: only.source,
-          ...(only.placeId === undefined ? {} : { placeId: only.placeId }),
-        }),
+    hasPlaceChoice: option.requiresPlace,
+    ...(only === undefined ? {} : { source: only.source }),
   };
 }
 
@@ -131,6 +143,8 @@ export function canAdvance(draft: BuilderDraft): boolean {
   switch (draft.step) {
     case "catalog":
       return draft.catalogId !== undefined && draft.source !== undefined;
+    case "place":
+      return draft.placeId !== undefined;
     case "source":
       return draft.source !== undefined;
     case "configure":
@@ -145,6 +159,12 @@ export function canAdvance(draft: BuilderDraft): boolean {
 function nextStep(draft: BuilderDraft): BuilderStep {
   switch (draft.step) {
     case "catalog":
+      return draft.hasPlaceChoice === true
+        ? "place"
+        : draft.hasSourceChoice === true
+          ? "source"
+          : "configure";
+    case "place":
       return draft.hasSourceChoice === true ? "source" : "configure";
     case "source":
       return "configure";
@@ -164,7 +184,13 @@ function previousStep(draft: BuilderDraft): BuilderStep {
     case "banner":
       return "configure";
     case "configure":
-      return draft.hasSourceChoice === true ? "source" : "catalog";
+      return draft.hasSourceChoice === true
+        ? "source"
+        : draft.hasPlaceChoice === true
+          ? "place"
+          : "catalog";
+    case "source":
+      return draft.hasPlaceChoice === true ? "place" : "catalog";
     default:
       return "catalog";
   }
@@ -226,6 +252,7 @@ export function draftFromCondition(
     source: condition.source,
     ...(condition.placeId === undefined ? {} : { placeId: condition.placeId }),
     hasSourceChoice: false,
+    hasPlaceChoice: false,
     banner,
   };
   const form = configureForm(condition.catalogId);

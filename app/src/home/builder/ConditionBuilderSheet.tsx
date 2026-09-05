@@ -1,5 +1,5 @@
 import type { ConfiguredCondition, PickerContext } from "@excerlock/condition-model";
-import { useMemo, useReducer, type ReactNode } from "react";
+import { useMemo, useReducer } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
@@ -20,6 +20,7 @@ import {
   type BuilderStep,
 } from "./builderDraft";
 import { CatalogStep } from "./steps/CatalogStep";
+import { GymStep } from "./steps/GymStep";
 import { ConfigureStep } from "./steps/ConfigureStep";
 import { PreviewStep } from "./steps/PreviewStep";
 import { SourceStep } from "./steps/SourceStep";
@@ -29,9 +30,11 @@ import {
   type BannerPhotoPicker,
 } from "../banners/bannerPhotoPicker";
 import type { BannerSelection } from "../banners/bannerCatalog";
+import type { GymSetup } from "./gymSetup";
 
 const STEP_TITLES: Readonly<Record<BuilderStep, string>> = {
   catalog: "Pick a condition",
+  place: "Which gym?",
   source: "Pick a source",
   configure: "Set it up",
   banner: "Choose a banner",
@@ -71,8 +74,11 @@ export function ConditionBuilderSheet({
   onClose: () => void;
   createId?: () => string;
   bannerPhotoPicker?: BannerPhotoPicker;
-  /** Rendered under the catalog so a gym can be saved without leaving the sheet. */
-  gymSetup?: ReactNode;
+  /**
+   * How the gym step finds, saves and edits gyms. Absent on a surface that only
+   * re-opens saved conditions, which never reaches that step.
+   */
+  gymSetup?: GymSetup;
 }) {
   const { colors, radius, spacing, typography } = useTheme();
   const [draft, dispatch] = useReducer(builderReducer, initialDraft);
@@ -138,8 +144,16 @@ export function ConditionBuilderSheet({
             {draft.step === "catalog" ? (
               <CatalogStep
                 groups={groups}
-                gymSetup={gymSetup}
                 onPick={(option) => dispatch({ type: "pickCatalog", option })}
+              />
+            ) : null}
+
+            {draft.step === "place" && option !== undefined ? (
+              <GymStep
+                option={option}
+                {...(gymSetup === undefined ? {} : { setup: gymSetup })}
+                {...(draft.placeId === undefined ? {} : { selectedPlaceId: draft.placeId })}
+                onPick={(placeId) => dispatch({ type: "pickPlace", placeId })}
               />
             ) : null}
 
@@ -190,6 +204,15 @@ export function ConditionBuilderSheet({
                 style={styles.action}
               />
             )}
+            {draft.step === "place" ? (
+              <PillButton
+                label="Continue"
+                variant="white"
+                disabled={!canAdvance(draft)}
+                onPress={() => dispatch({ type: "next" })}
+                style={styles.action}
+              />
+            ) : null}
             {draft.step === "configure" ? (
               <PillButton
                 label="Choose banner"

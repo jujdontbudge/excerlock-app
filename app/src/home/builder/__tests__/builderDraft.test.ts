@@ -38,6 +38,7 @@ describe("builderReducer", () => {
       step: "configure",
       catalogId: "steps-goal",
       source: "appleHealth",
+      hasPlaceChoice: false,
       hasSourceChoice: false,
     });
   });
@@ -64,14 +65,52 @@ describe("builderReducer", () => {
     expect(draft).toMatchObject({ step: "configure", source: "strava" });
   });
 
-  it("carries the saved gym through as the condition's place", () => {
-    const context: PickerContext = { ...EMPTY, savedPlaceIds: ["gym-1"] };
-    const draft = builderReducer(EMPTY_DRAFT, {
-      type: "pickCatalog",
-      option: option("gym-presence", context),
-    });
+  it("asks which gym before anything else, saved gyms or not", () => {
+    const withGyms: PickerContext = { ...EMPTY, savedPlaceIds: ["gym-1", "gym-2"] };
 
-    expect(draft).toMatchObject({ source: "location", placeId: "gym-1" });
+    for (const context of [EMPTY, withGyms]) {
+      const draft = builderReducer(EMPTY_DRAFT, {
+        type: "pickCatalog",
+        option: option("gym-presence", context),
+      });
+
+      expect(draft).toMatchObject({
+        step: "place",
+        source: "location",
+        hasPlaceChoice: true,
+        hasSourceChoice: false,
+      });
+      expect(draft.placeId).toBeUndefined();
+      expect(canAdvance(draft)).toBe(false);
+    }
+  });
+
+  it("carries the chosen gym through as the condition's place", () => {
+    const context: PickerContext = { ...EMPTY, savedPlaceIds: ["gym-1", "gym-2"] };
+    const draft = builderReducer(
+      builderReducer(EMPTY_DRAFT, {
+        type: "pickCatalog",
+        option: option("gym-presence", context),
+      }),
+      { type: "pickPlace", placeId: "gym-2" },
+    );
+
+    expect(draft).toMatchObject({ step: "configure", source: "location", placeId: "gym-2" });
+  });
+
+  it("walks back through the gym step to the catalog", () => {
+    const context: PickerContext = { ...EMPTY, savedPlaceIds: ["gym-1"] };
+    const configuring = builderReducer(
+      builderReducer(EMPTY_DRAFT, {
+        type: "pickCatalog",
+        option: option("gym-arrival", context),
+      }),
+      { type: "pickPlace", placeId: "gym-1" },
+    );
+
+    const place = builderReducer(configuring, { type: "back" });
+    expect(place.step).toBe("place");
+    expect(builderReducer(place, { type: "back" }).step).toBe("catalog");
   });
 
   it("walks back to the catalog when there was no source step", () => {
@@ -109,6 +148,7 @@ describe("builderReducer", () => {
       type: "pickCatalog",
       option: option("gym-arrival", context),
     });
+    draft = builderReducer(draft, { type: "pickPlace", placeId: "gym-1" });
     expect(canAdvance(draft)).toBe(false);
 
     draft = builderReducer(draft, { type: "setReward", reward: { type: "restOfDay" } });
@@ -197,6 +237,7 @@ describe("draftCondition", () => {
       type: "pickCatalog",
       option: option("gym-presence", context),
     });
+    draft = builderReducer(draft, { type: "pickPlace", placeId: "gym-1" });
     draft = builderReducer(draft, { type: "setGraceMs", value: 120_000 });
 
     expect(draftCondition(draft, "new-3")).toEqual({
@@ -234,6 +275,7 @@ describe("draftFromCondition", () => {
       catalogId: "steps-goal",
       source: "appleHealth",
       hasSourceChoice: false,
+      hasPlaceChoice: false,
       banner: { kind: "curated", id: "walk-1" },
       threshold: 10_000,
       reward: { type: "fixedMinutes", minutes: 30 },

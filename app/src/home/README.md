@@ -35,7 +35,6 @@ a rendering of a rule owned elsewhere — the one genuine exception is documente
 | `signals/appRuntime.ts` | Holds the one build-selected feed and clock installed by the app composition root |
 | `signals/fixtureFeed.ts` | Phase-2 composition root: fixture providers, real-time playback |
 | `signals/useHomeSignals.ts` | Subscribes a mounted screen to a feed |
-| `builder/components/SaveGymCard.tsx` | Names a gym and saves one location fix as its 100 m circle; gym conditions stay hidden until a gym exists |
 | `signals/gymPresenceController.ts` | Owns manual arrival check-in, explicit auto-detect opt-in, and persisted visit claims |
 | `signals/walkingSessionController.ts` | Owns explicit live verification sessions, treadmill placement phases, watchdogs, active window, and sensor lifetime. Every composition root must hand it to the feed as `walkingState` — with `walking: null` and no `walkingState`, `activeSignals` can never report walking and the hold state is unreachable (this silently broke the E2E composition once, 2026-08-04) |
 | `signals/walkingPlacementRuntime.ts` | Selects native `CMDeviceMotion` placement sensing for iOS builds and deterministic fixtures elsewhere. |
@@ -46,17 +45,28 @@ a rendering of a rule owned elsewhere — the one genuine exception is documente
 | `model/allowance.ts` | Base-allowance grid and Full Lock's zero/restore transitions |
 | `components/` | Presentational only — every one renders a model and computes nothing |
 | `builder/` | The create-condition sheet (below) |
+| `builder/gymSetup.ts` | The gym step's seam and the one shape a gym is saved in — a name and a 100 m circle |
+| `builder/useGymSetup.ts` | Wires that seam to the store, the location provider and the gym search client |
 | `testing/stubFeed.ts` | A feed that reports one fixed reading, for screen tests |
 
 ## The builder
 
-`builder/ConditionBuilderSheet.tsx` walks **catalog → source → configure → banner → preview → save**. The source
-step only appears when more than one source can supply the signal; a single selectable source is chosen
-for the user.
+`builder/ConditionBuilderSheet.tsx` walks **catalog → gym → source → configure → banner → preview → save**.
+The gym step only appears for a place-required entry; the source step only when more than one source
+can supply the signal, and a single selectable source is chosen for the user.
 
 Availability is not this module's call. `builder/builderCatalog.ts` reads `listPickerVerdicts` and only
 groups, orders and drops `hidden` — so promoted / weak / impossible coverage, "already taken" and
-"connect Strava first" all render straight from the picker's own verdicts and reasons.
+"connect Strava first" all render straight from the picker's own verdicts and reasons. The one verdict
+it rewrites is "Choose a saved gym first" (#134): that reason is no longer a dead end, because the gym
+step is where a gym gets chosen or saved, so an entry hidden *only* for its missing place is offered
+and routed there.
+
+**Which gym? is the first question a gym condition asks** (#134). `builder/steps/GymStep.tsx` searches
+by name or address through `GymSearchClient`, offers "Use my current location" as one option among the
+results, and renames or forgets a saved gym in place — forgetting one takes its conditions with it.
+A gym saved there is picked straight away, and the picker's verdicts grey the gyms whose condition
+already exists. Everything the step needs arrives as one `GymSetup` object, so it reads no store.
 
 `builder/builderDraft.ts` is the whole flow as a pure reducer, which is why the sheet is a renderer
 rather than a state machine. `draftFromCondition` is its inverse — the draft that re-opens a *saved*

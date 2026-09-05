@@ -1,9 +1,8 @@
 import { StyleSheet, Switch, Text, View } from "react-native";
 
-import { Card, PillButton, useTheme } from "@/ui";
+import { Card, PillButton, RowAction, useTheme } from "@/ui";
 
 import type { ConditionRowModel } from "../model/conditionRows";
-import { RowAction } from "./RowAction";
 
 /**
  * One saved condition: what it is, what it earns, whether it is on, and the two

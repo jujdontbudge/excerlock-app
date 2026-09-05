@@ -21,6 +21,11 @@ import {
  * Every rule here comes from `listPickerVerdicts` — this file only groups the
  * verdicts by activity, drops the hidden ones, and orders what is left. It
  * decides nothing about availability; the builder screens render verdicts.
+ *
+ * The one verdict it rewrites is "Choose a saved gym first" (#134). That is no
+ * longer a dead end: the gym step *is* where a gym is chosen or saved, so an
+ * entry hidden only for its missing place is offered and routed there. Every
+ * other hidden verdict — no connected app, an incompatible source — still goes.
  */
 
 const GROUP_TITLES: Readonly<Record<ActivityGroup, string>> = {
@@ -68,6 +73,8 @@ export interface CatalogOption {
   readonly status: Exclude<PickerStatus, "hidden">;
   readonly reason?: string;
   readonly selectable: boolean;
+  /** Whether the builder owes this entry a gym before it can be configured. */
+  readonly requiresPlace: boolean;
   readonly sources: readonly SourceOption[];
 }
 
@@ -80,7 +87,8 @@ export interface CatalogGroup {
 /** Every entry the user could reasonably see, grouped the way the sheet lists it. */
 export function builderCatalog(context: PickerContext): readonly CatalogGroup[] {
   const byEntry = new Map<CatalogId, PickerVerdict[]>();
-  for (const verdict of listPickerVerdicts(context)) {
+  for (const hidden of listPickerVerdicts(context)) {
+    const verdict = awaitingPlace(hidden) ? offered(hidden) : hidden;
     if (verdict.status === "hidden") {
       continue;
     }
@@ -114,6 +122,16 @@ export function findOption(
     .find((option) => option.catalogId === catalogId);
 }
 
+/** Hidden only because no gym is saved yet — the gym step answers exactly this. */
+function awaitingPlace(verdict: PickerVerdict): boolean {
+  return verdict.status === "hidden" && verdict.reason?.code === "place-required";
+}
+
+function offered(verdict: PickerVerdict): PickerVerdict {
+  const { reason: _asked, ...rest } = verdict;
+  return { ...rest, status: "available" };
+}
+
 function toOption(catalogId: CatalogId, verdicts: readonly PickerVerdict[]): CatalogOption {
   const entry = getCatalogEntry(catalogId);
   const sources = [...verdicts].sort(compareVerdicts).map((verdict) => toSourceOption(verdict, entry.signal));
@@ -128,6 +146,7 @@ function toOption(catalogId: CatalogId, verdicts: readonly PickerVerdict[]): Cat
     status,
     ...(reason === undefined ? {} : { reason }),
     selectable: status === "available",
+    requiresPlace: entry.placeRequired === true,
     sources,
   };
 }

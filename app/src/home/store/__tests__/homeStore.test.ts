@@ -406,7 +406,7 @@ describe("saved gyms", () => {
 
   it("takes the conditions that point at a removed gym with it", () => {
     useHomeStore.getState().addSavedPlace(gymHome);
-    useHomeStore.getState().addCondition(gymArrival, { kind: "default" });
+    useHomeStore.getState().addCondition(gymArrival, { kind: "curated", id: "gym-1" });
     useHomeStore.getState().addCondition(stepGoal);
     useHomeStore.getState().setConditionEnabled("c-gym", false);
 

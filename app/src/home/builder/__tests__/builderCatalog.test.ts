@@ -13,6 +13,7 @@ describe("builderCatalog", () => {
     const groups = builderCatalog(EMPTY);
 
     expect(groups.map((group) => group.title)).toEqual([
+      "Gym",
       "Walking",
       "Running",
       "Cycling",
@@ -21,17 +22,27 @@ describe("builderCatalog", () => {
     ]);
   });
 
-  it("hides gym entries until a gym is saved", () => {
-    expect(optionIds(EMPTY)).not.toContain("gym-arrival");
-
-    const withGym = builderCatalog({ ...EMPTY, savedPlaceIds: ["gym-1"] });
-    const gymGroup = withGym.find((group) => group.title === "Gym");
+  it("offers gym entries before a gym is saved, marked as needing one", () => {
+    const gymGroup = builderCatalog(EMPTY).find((group) => group.title === "Gym");
 
     expect(gymGroup?.options.map((option) => option.catalogId)).toEqual([
       "gym-arrival",
       "gym-presence",
       "gym-time-rate",
     ]);
+    expect(findOption(builderCatalog(EMPTY), "gym-arrival")).toMatchObject({
+      status: "available",
+      selectable: true,
+      requiresPlace: true,
+    });
+    expect(findOption(builderCatalog(EMPTY), "gym-arrival")?.reason).toBeUndefined();
+    expect(findOption(builderCatalog(EMPTY), "steps-goal")).toMatchObject({
+      requiresPlace: false,
+    });
+  });
+
+  it("still hides an entry the picker hides for any other reason", () => {
+    expect(optionIds(EMPTY)).not.toContain("whoop-strain-goal");
   });
 
   it("offers one source option per saved gym", () => {

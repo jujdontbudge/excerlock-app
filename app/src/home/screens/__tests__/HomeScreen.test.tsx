@@ -5,7 +5,7 @@ jest.mock(
 
 import type { ConfiguredCondition } from "@excerlock/condition-model";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { act, fireEvent, render, screen } from "@testing-library/react-native";
 
 import { stubFeed } from "../../testing/stubFeed";
 import { DEFAULT_HOME_STATE } from "../../store/homeState";
@@ -238,6 +238,23 @@ describe("HomeScreen", () => {
 
     expect(checkIn).toHaveBeenCalledWith("c-gym");
     expect(screen.queryByRole("button", { name: "Complete" })).toBeNull();
+  });
+
+  it("names the saved gym on the condition card, and follows a rename", async () => {
+    seed(gymArrival);
+    useHomeStore.getState().addSavedPlace({
+      id: "gym-one",
+      name: "Home gym",
+      geofence: { latitude: 40.741, longitude: -73.989, radiusMeters: 100 },
+    });
+    await render(<HomeScreen feed={stubFeed()} now={now} />);
+
+    expect(screen.getByText("Home gym")).toBeOnTheScreen();
+
+    await act(async () => useHomeStore.getState().renameSavedPlace("gym-one", "Iron Works"));
+
+    expect(screen.getByText("Iron Works")).toBeOnTheScreen();
+    expect(screen.queryByText("Home gym")).toBeNull();
   });
 
   it("renders one card per condition in its kind's variant", async () => {

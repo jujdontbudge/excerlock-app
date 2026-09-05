@@ -15,8 +15,17 @@ that translates `expo-location` calls. Constructing the provider never requests 
 monitoring.
 
 Saving a gym (`GymSetupLocator.locateForGymSetup`) requests foreground (`When In Use`) permission and
-takes one high-accuracy sample while the user stands in the gym; Home's `SaveGymCard` turns it into a
-`SavedPlace` circle. Manual check-in requests the same permission, takes one sample, and
+takes one high-accuracy sample while the user stands in the gym; Home's gym step turns it into a
+`SavedPlace` circle.
+
+`GymSearchClient` is the other way to find a gym, and the reason a rule can be built at home (#134):
+a typed query in, a short list of `{name, address, latitude, longitude}` out. `ExpoGymSearchClient`
+is the only module that translates `expo-location`'s geocoder — `geocodeAsync` answers with
+coordinates alone, so each match gets one `reverseGeocodeAsync` for its address line, and a reverse
+lookup that fails still yields a saveable place. `FixtureGymSearchClient` is the default everywhere
+the geocoder is absent (Jest, Expo Go, E2E), selected by the same `expoVersion` discriminator as the
+location provider. The query is the only thing that leaves the device; results are never persisted
+beyond the circle the user saves. Manual check-in requests the same permission, takes one sample, and
 checks that sample against the saved circle on device. Starting auto-detect is the explicit opt-in
 boundary: it requests foreground permission first, then background (`Always`) permission, and only
 then registers regions. At most five gyms are accepted. The public radius constants are 100 m default,
@@ -48,7 +57,7 @@ persisting them. Walk keep-alive starts foreground-authorized high-accuracy Fitn
 iOS background-location indicator visible, and stops them explicitly. Expo permission and registered
 task state are rehydrated after a JS reload.
 
-Automated tests cover the shared provider contract, five-gym/radius limits, exact 30-second timing,
+Automated tests cover the shared provider contract, gym search and its fixture, five-gym/radius limits, exact 30-second timing,
 quick enter-exit cancellation, permission prompt timing, SDK translation, module-scope registration,
 fixture-default selection, coordinate-free persistence, and native-state hydration. This lane had no
 physical iPhone. Simulator tests cannot establish that iOS relaunches the app for a real region event

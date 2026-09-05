@@ -30,6 +30,7 @@ it contains no domain calculation and no store.
 | `components/Card.tsx` | translucent borderless card |
 | `components/DismissalBlur.tsx` | light-ivory Expo Blur material + accessible sheet dismissal action |
 | `components/PillButton.tsx` | stadium pill, three variants, press-spring feedback |
+| `components/RowAction.tsx` | the quiet in-row button, with an accessible name of its own (`PillButton` takes its name from its visible label) |
 | `components/SectionHeader.tsx` | 13pt uppercase group label |
 | `icons/manifest.ts` | glyph assets + their alpha crops + the tab mapping |
 | `icons/Glyph.tsx` | draws one glyph cropped to its ink and tinted |

@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text } from "react-native";
 
-import { useTheme } from "@/ui";
+import { useTheme } from "../theme";
 
 /**
  * A quiet in-row action. `PillButton` is the screen-level pill and takes its

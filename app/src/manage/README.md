@@ -30,7 +30,6 @@ one persisted owner.
 | `components/AllowanceCard.tsx` | 0–4 h stepper with Full Lock confirmations and Unlimited past the top |
 | `model/conditionRows.ts` | One row model per condition — title, source, what it earns, on/off |
 | `components/ConditionRow.tsx` | One row: switch, earn line, and either the actions or the delete confirmation |
-| `components/RowAction.tsx` | The quiet in-row button (`PillButton` is the screen-level pill) |
 | `components/ManageEmpty.tsx` | Nothing to manage yet → go to Home |
 
 ## Editing reuses Home's builder
