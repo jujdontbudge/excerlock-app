@@ -1,4 +1,4 @@
-import { Switch, View } from 'react-native';
+import { Switch, View, useWindowDimensions } from 'react-native';
 import { Icon, IconName } from '../icons/Icon';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
@@ -21,6 +21,7 @@ export function SettingsRow({
   onToggle?: (value: boolean) => void;
   destructive?: boolean;
 }) {
+  const stacked = useWindowDimensions().fontScale > 1;
   const content = (
     <View
       style={{
@@ -31,12 +32,22 @@ export function SettingsRow({
         gap: t.space.md,
       }}>
       {icon ? <Icon name={icon} size={t.space.xxl} /> : null}
-      <Label style={{ flex: 1, color: destructive ? t.state.error : t.text.primary }}>{title}</Label>
-      {value ? (
-        <Label tone="secondary" variant="support" style={{ flexShrink: 1 }}>
-          {value}
+      <View
+        style={{
+          flex: 1,
+          flexDirection: stacked ? 'column' : 'row',
+          alignItems: stacked ? 'flex-start' : 'center',
+          gap: t.space.sm,
+        }}>
+        <Label style={{ flex: stacked ? undefined : 1, color: destructive ? t.state.error : t.text.primary }}>
+          {title}
         </Label>
-      ) : null}
+        {value ? (
+          <Label tone="secondary" variant="support" style={{ flexShrink: 1 }}>
+            {value}
+          </Label>
+        ) : null}
+      </View>
       {onToggle ? (
         <Switch
           accessibilityLabel={title}

@@ -1,7 +1,6 @@
 import { AuthPort } from '../../ports/AuthPort';
 import { Session } from '../../domain/types';
 import { sessionStore } from '../../state/sessionStore';
-import { resetStores } from '../../state/stores';
 import { FakeContext } from '../FakeContext';
 export function AuthFake(ctx: FakeContext): AuthPort {
   let email = 'alex@example.test';
@@ -33,7 +32,7 @@ export function AuthFake(ctx: FakeContext): AuthPort {
     },
     deleteAccount: async () => {
       ctx.result();
-      resetStores();
+      sessionStore.getState().patch({ session: { kind: 'anonymous' } });
       ctx.log('account_deleted');
     },
     subscribe: (callback) => sessionStore.subscribe((s) => callback(s.data.session)),

@@ -1,3 +1,4 @@
+import { SupportPort } from '../ports/SupportPort';
 import { ScreenTimePort } from '../ports/ScreenTimePort';
 import { StepsPort } from '../ports/StepsPort';
 import { WalkingPort } from '../ports/WalkingPort';
@@ -22,6 +23,7 @@ export type Runtime = {
   analytics: AnalyticsPort;
   notifications: NotificationsPort;
   sync: SyncPort;
+  support: SupportPort;
   clock: ClockPort;
   dev: RuntimeControls;
   dispose: () => void;

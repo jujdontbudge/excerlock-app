@@ -15,3 +15,5 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
 - ClockPort: Phase 2 observes system time and timezone changes.
 
 models.ts defines shared facts. RuntimeControls is a local-only developer interface and is never a product service adapter.
+
+`SupportPort` is a local request contract added with Settings. Its Phase 1 fake simulates latency/outcomes and sends no message over a network.

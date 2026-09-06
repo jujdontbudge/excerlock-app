@@ -1,3 +1,4 @@
+import { SupportFake } from './fakes/SupportFake';
 import { Runtime } from '../runtime/Runtime';
 import { dayKey } from '../domain/schedule';
 import { contextPersistence } from './contextPersistence';
@@ -34,6 +35,7 @@ export function FakeRuntime(): Runtime {
     analytics: AnalyticsFake(ctx),
     notifications: NotificationsFake(ctx),
     sync: SyncFake(),
+    support: SupportFake(ctx),
     dev: {
       ready: () => persistence.ready,
       flush: persistence.flush,
