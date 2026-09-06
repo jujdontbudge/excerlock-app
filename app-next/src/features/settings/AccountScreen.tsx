@@ -52,14 +52,16 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
           <Label>{note}</Label>
         </Reveal>
       ) : null}
-      {session.kind === 'anonymous' ? (
-        <PrimaryButton label={c.signIn} onPress={onSignIn} />
-      ) : (
-        <>
-          <SecondaryButton label={c.signOut} disabled={busy} onPress={() => void action(false)} />
-          <SecondaryButton label={c.delete} onPress={() => setConfirm(true)} />
-        </>
-      )}
+      <Reveal key={session.kind === 'anonymous' ? 'anonymous' : 'signedIn'}>
+        {session.kind === 'anonymous' ? (
+          <PrimaryButton label={c.signIn} onPress={onSignIn} />
+        ) : (
+          <>
+            <SecondaryButton label={c.signOut} disabled={busy} onPress={() => void action(false)} />
+            <SecondaryButton label={c.delete} onPress={() => setConfirm(true)} />
+          </>
+        )}
+      </Reveal>
     </SettingsPage>
   );
 }

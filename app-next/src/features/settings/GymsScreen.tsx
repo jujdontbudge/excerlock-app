@@ -31,7 +31,7 @@ export function GymsScreen({ onBack }: { onBack: () => void }) {
         </>
       }>
       <Heading title={c.gyms} />
-      <LivingIcon name="map-pin" />
+      {gyms.length ? <LivingIcon name="map-pin" /> : null}
       {gyms.length ? (
         <SettingsGroup>
           {gyms.map((g) => (

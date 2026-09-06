@@ -61,7 +61,7 @@ export function AnalyticsScreen() {
           <Icon name="chevron" variant="utility" />
         </PressableScale>
       </View>
-      <LivingIcon name="clock" size={t.space.hero} />
+      {model.reclaimed.measuredDays ? <LivingIcon name="clock" size={t.space.hero} /> : null}
       {model.reclaimed.measuredDays ? (
         <>
           <TickingNumber value={model.reclaimed.minutes} label={c.reclaimed} />

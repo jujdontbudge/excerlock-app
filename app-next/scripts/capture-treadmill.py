@@ -2,7 +2,8 @@
 from sim import *
 out=ROOT/'evidence/T13'
 def go(path):open_url('excerlock://'+path);time.sleep(1)
-def capture(name):time.sleep(.7);screenshot(out/f'{name}.png');(out/f'{name}.json').write_text(json.dumps(tree()))
+def capture(name):
+ time.sleep(.7);screenshot(out/f'{name}.png');(out/f'{name}.json').write_text(json.dumps(tree()))
 def nextscreen(title):tap('Continue');find(title);time.sleep(.8)
 go('dev?scenario=home-no-rules');go('conditions');tap('Add condition');find('What exercise should unlock your apps?');time.sleep(.8);tap('Walking');nextscreen('Where will you walk?');tap('Treadmill');nextscreen('How should walking unlock your apps?');tap('Unlock while walking');nextscreen('When should blocking be active?');nextscreen('Your plan is ready');tap('Save condition');time.sleep(1);go('home?placement=handheld')
 with recording(out/'treadmill-framing.mp4'):

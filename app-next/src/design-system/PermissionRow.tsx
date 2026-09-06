@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
@@ -14,6 +14,7 @@ export function PermissionRow({
   status: 'Granted' | 'Off' | 'Needed';
   onPress: () => void;
 }) {
+  const stacked = useWindowDimensions().fontScale > 1;
   return (
     <PressableScale
       label={`${title}, ${status}`}
@@ -25,15 +26,23 @@ export function PermissionRow({
         paddingVertical: t.space.md,
       }}>
       <Icon name={icon} />
-      <Label style={{ flex: 1 }}>{title}</Label>
       <View
         style={{
-          paddingHorizontal: t.space.sm,
-          paddingVertical: t.space.xs,
-          borderRadius: t.radius.pill,
-          backgroundColor: status === 'Granted' ? t.icon.mint : t.surface.subtle,
+          flex: 1,
+          flexDirection: stacked ? 'column' : 'row',
+          alignItems: stacked ? 'flex-start' : 'center',
+          gap: t.space.sm,
         }}>
-        <Label variant="badge">{status}</Label>
+        <Label style={{ flex: stacked ? undefined : 1 }}>{title}</Label>
+        <View
+          style={{
+            paddingHorizontal: t.space.sm,
+            paddingVertical: t.space.xs,
+            borderRadius: t.radius.pill,
+            backgroundColor: status === 'Granted' ? t.icon.mint : t.surface.subtle,
+          }}>
+          <Label variant="badge">{status}</Label>
+        </View>
       </View>
       <Icon name="chevron" variant="utility" size={t.space.lg} />
     </PressableScale>

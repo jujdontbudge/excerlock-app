@@ -19,6 +19,7 @@ import { profileStore as useProfileStore } from '../../state/profileStore';
 import { sessionStore as useSessionStore } from '../../state/sessionStore';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
+import { subscriptionCopy } from '../../content/subscription';
 import { settingsCopy as c } from '../../content/settings';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { LivingIcon } from '../../motion/LivingIcon';
@@ -33,6 +34,7 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
     entitlement = useEntitlementStore((s) => s.data.entitlement),
     runtime = useRuntime(),
     [note, setNote] = useState(''),
+    [rateNote, setRateNote] = useState(''),
     [sharing, setSharing] = useState(false),
     [copied, setCopied] = useState(false),
     [taps, setTaps] = useState(0),
@@ -98,7 +100,11 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
           icon="star"
         />
         <SettingsRow title={c.manage} onPress={() => setNote(c.external)} />
-        <SettingsRow title={c.restore} onPress={() => void restore()} />
+        <SettingsRow
+          title={c.restore}
+          value={busy ? subscriptionCopy.restoring : undefined}
+          onPress={() => void restore()}
+        />
       </SettingsGroup>
       {note ? (
         <Reveal key={note}>
@@ -138,8 +144,13 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
             setSharing(true);
           }}
         />
-        <SettingsRow title={c.rate} icon="star" onPress={() => setNote(c.rated)} />
+        <SettingsRow title={c.rate} icon="star" onPress={() => setRateNote(c.rated)} />
       </SettingsGroup>
+      {rateNote ? (
+        <Reveal>
+          <Label accessibilityRole="alert">{rateNote}</Label>
+        </Reveal>
+      ) : null}
       <SettingsGroup title={c.other}>
         <SettingsRow title={c.support} icon="mail" onPress={() => navigate('support')} />
         <SettingsRow title={c.privacy} icon="shield" onPress={() => navigate('legal/privacy')} />

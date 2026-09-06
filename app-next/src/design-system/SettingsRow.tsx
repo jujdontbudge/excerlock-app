@@ -3,6 +3,7 @@ import { Icon, IconName } from '../icons/Icon';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { tokens as t } from './tokens';
+import { ValueReveal } from '../motion/ValueReveal';
 import { feedback } from '../motion/haptics';
 export function SettingsRow({
   title,
@@ -43,9 +44,11 @@ export function SettingsRow({
           {title}
         </Label>
         {value ? (
-          <Label tone="secondary" variant="support" style={{ flexShrink: 1 }}>
-            {value}
-          </Label>
+          <ValueReveal value={value} style={{ flexShrink: 1 }}>
+            <Label tone="secondary" variant="support">
+              {value}
+            </Label>
+          </ValueReveal>
         ) : null}
       </View>
       {onToggle ? (

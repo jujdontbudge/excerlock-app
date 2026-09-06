@@ -3,7 +3,7 @@ import { domainCopy as c } from '../content/domain';
 export function minuteLabel(minute: number): string {
   const hour = Math.floor(minute / 60),
     minutes = minute % 60;
-  return `${hour % 12 || 12}${minutes ? ':' + String(minutes).padStart(2, '0') : ''} ${hour < 12 ? c.am : c.pm}`;
+  return `${hour % 12 || 12}${minutes ? ':' + String(minutes).padStart(2, '0') : ''}\u00a0${hour < 12 ? c.am : c.pm}`;
 }
 export function scheduleLabel(schedule: Schedule): string {
   const days = [...schedule.days].sort((a, b) => (a || 7) - (b || 7));

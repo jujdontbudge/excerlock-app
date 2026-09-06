@@ -51,3 +51,23 @@ test('support blocks empty submissions, shows busy and then success through its 
   });
   expect(screen.getByRole('header', { name: 'Message sent' })).toBeTruthy();
 });
+
+test('restore exposes pending feedback on its own row', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('multi-rule-overlap');
+  let finish!: (value: Awaited<ReturnType<typeof runtime.subscription.restore>>) => void;
+  runtime.subscription.restore = () =>
+    new Promise((resolve) => {
+      finish = resolve;
+    });
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <SettingsScreen navigate={() => {}} onDev={() => {}} />
+    </AppRuntimeProvider>,
+  );
+  await userEvent.press(screen.getByRole('button', { name: 'Restore purchases' }));
+  expect(screen.getByRole('button', { name: 'Restore purchases, Restoring purchases…' })).toBeTruthy();
+  await act(async () => {
+    finish({ status: 'active', renewsAt: null });
+  });
+});
