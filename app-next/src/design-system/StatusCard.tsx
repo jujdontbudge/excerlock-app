@@ -1,0 +1,56 @@
+import { View } from 'react-native';
+import { tokens as t } from './tokens';
+import { Label } from './Label';
+import { LivingIcon } from '../motion/LivingIcon';
+import { Reveal } from '../motion/Reveal';
+export function StatusCard({
+  title,
+  subtitle,
+  nextChange,
+  unlocked = false,
+}: {
+  title: string;
+  subtitle: string;
+  nextChange?: string;
+  unlocked?: boolean;
+}) {
+  return (
+    <Reveal>
+      <View
+        style={{
+          padding: t.space.xl,
+          borderRadius: t.radius.card,
+          borderWidth: t.stroke.hairline,
+          borderColor: t.border.default,
+          backgroundColor: t.surface.card,
+          gap: t.space.lg,
+        }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: t.space.lg,
+            alignItems: 'center',
+          }}>
+          <LivingIcon key={unlocked ? 'open' : 'closed'} name={unlocked ? 'lock-open' : 'lock'} size={t.space.hero} />
+          <View style={{ flex: 1, gap: t.space.sm }}>
+            <Reveal key={title}>
+              <Label accessibilityRole="header" variant="section">
+                {title}
+              </Label>
+            </Reveal>
+            <Label tone="secondary" variant="support">
+              {subtitle}
+            </Label>
+          </View>
+        </View>
+        {nextChange ? (
+          <Reveal key={nextChange}>
+            <Label variant="support" style={{ color: unlocked ? t.state.success : t.text.secondary }}>
+              {nextChange}
+            </Label>
+          </Reveal>
+        ) : null}
+      </View>
+    </Reveal>
+  );
+}

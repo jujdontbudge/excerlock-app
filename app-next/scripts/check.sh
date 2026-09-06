@@ -3,6 +3,7 @@ set -eu
 cd "$(dirname "$0")/.."
 npm run typecheck
 npm test
+node --test scripts/*.test.cjs
 npm run lint
 npx expo install --check
 npx expo-doctor

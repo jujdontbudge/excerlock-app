@@ -47,3 +47,5 @@ evidence/**/*
 !evidence/**/*.json
 
 /build/
+
+__pycache__/
