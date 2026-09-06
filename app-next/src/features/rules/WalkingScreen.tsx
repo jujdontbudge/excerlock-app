@@ -9,16 +9,25 @@ export function WalkingScreen({
   step,
   draft: d,
   onAction,
+  contentOnly = false,
 }: {
   step: 'W1' | 'W2' | 'W3';
+  contentOnly?: boolean;
   draft: RuleDraft;
   onAction: (a: DraftAction) => void;
 }) {
   const valid = Number.isFinite(d.stepGoal) && d.stepGoal >= 500 && d.stepGoal <= 30000 && d.stepGoal % 500 === 0;
   return (
     <>
-      <Heading title={c[step].title} support={c[step].body} />
-      <LivingIcon name={step === 'W2' && d.walkingMode === 'state' ? 'lock-open' : 'walking'} size={t.layout.ring} />
+      {!contentOnly ? (
+        <>
+          <Heading title={c[step].title} support={c[step].body} />
+          <LivingIcon
+            name={step === 'W2' && d.walkingMode === 'state' ? 'lock-open' : 'walking'}
+            size={t.layout.ring}
+          />
+        </>
+      ) : null}
       {step === 'W1'
         ? c.places.map((p, index) => (
             <Reveal key={p.id} index={index + 1}>

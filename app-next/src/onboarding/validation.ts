@@ -1,6 +1,8 @@
 import { scheduleDraft, scheduleIssues } from '../features/rules/scheduleDraft';
 import { Answers } from './types';
 import { choiceQuestions } from '../content/onboardingChoices';
+import { draftFromAnswers } from '../features/rules/answersDraft';
+import { goalRange, validGoal } from '../features/rules/goalRange';
 export function canContinue(step: string, answers: Answers): boolean {
   if (step === 'O04')
     return typeof answers.name === 'string' && answers.name.trim().length > 0 && answers.name.trim().length <= 30;
@@ -17,6 +19,13 @@ export function canContinue(step: string, answers: Answers): boolean {
   if (step === 'W3') {
     const n = Number(answers.stepGoal ?? 5000);
     return n >= 500 && n <= 30000 && n % 500 === 0;
+  }
+  if (['G2', 'R2', 'B2', 'D'].includes(step)) {
+    const draft = draftFromAnswers(answers, 'mi');
+    return validGoal(
+      step === 'D' ? draft.distance : step === 'G2' ? draft.gymMinutes : draft.minutes,
+      goalRange(draft, step === 'D'),
+    );
   }
   return true;
 }

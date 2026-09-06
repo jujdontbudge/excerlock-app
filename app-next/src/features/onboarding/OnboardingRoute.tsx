@@ -1,3 +1,4 @@
+import { useIsFocused } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { TrialScreen } from '../subscription/TrialScreen';
 import { OnboardingShell } from './OnboardingShell';
@@ -15,6 +16,7 @@ import { ReviewWarmup } from '../rules/ReviewWarmup';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { planCopy as c } from '../../content/plan';
 export function OnboardingRoute() {
+  const focused = useIsFocused();
   const flow = useOnboarding(),
     unit = useSettingsStore((s) => s.data.units),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null);
@@ -29,6 +31,8 @@ export function OnboardingRoute() {
     if (flow.step === 'S3') commitPlan(flow.answers, unit, draft);
     flow.advance();
   };
+  // A pushed route can retain an earlier summary while this shared draft is incomplete.
+  if (!focused) return null;
   let body = <PreBranchScreen {...flow} />;
   if (flow.step === 'T1' || flow.step === 'T2' || flow.step === 'T3' || flow.step === 'T4')
     body = <TrialScreen step={flow.step} onContinue={flow.advance} />;

@@ -1,28 +1,12 @@
-import { Activity, Profile } from '../../domain/types';
+import { draftFromAnswers } from './answersDraft';
+import { Profile } from '../../domain/types';
 import { Answers } from '../../onboarding/types';
-import { createDraft, RuleDraft, toRule } from './draft';
+import { RuleDraft, toRule } from './draft';
 import { scheduleDraft, toSchedule } from './scheduleDraft';
 import { rulesStore } from '../../state/rulesStore';
 import { profileStore } from '../../state/profileStore';
 import { onboardingStore } from '../../state/onboardingStore';
-export function draftFromAnswers(a: Answers, unit: 'km' | 'mi', base?: RuleDraft): RuleDraft {
-  const activity = (a.activity ?? 'walking') as Activity;
-  const d = base?.activity === activity ? base : createDraft(activity, unit);
-  return {
-    ...d,
-    id: String(a.ruleId ?? d.id),
-    createdAt: String(a.ruleCreatedAt ?? d.createdAt),
-    place: (a.walkPlace ?? 'outside') as RuleDraft['place'],
-    walkingMode: a.walkingMode === 'state' ? 'state' : 'target',
-    stepGoal: Number(a.stepGoal ?? 5000),
-    gymMode: a.gymMode === 'arrival' ? 'arrival' : 'time',
-    gymMinutes: Number(a.gymMinutes ?? 30),
-    runMode: a[activity === 'biking' ? 'bikeMode' : 'runMode'] === 'distance' ? 'distance' : 'minutes',
-    minutes: Number(a.minutes ?? d.minutes),
-    distance: Number(a.distance ?? d.distance),
-    unit: (a.unit ?? unit) as 'km' | 'mi',
-  };
-}
+export { draftFromAnswers } from './answersDraft';
 export function commitPlan(a: Answers, unit: 'km' | 'mi', base?: RuleDraft) {
   const draft = draftFromAnswers(a, unit, base),
     rule = toRule(draft, toSchedule(scheduleDraft(a)));

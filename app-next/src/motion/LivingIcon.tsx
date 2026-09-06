@@ -1,4 +1,4 @@
-import Animated from 'react-native-reanimated';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 import { Icon, IconName } from '../icons/Icon';
 import { tokens as t } from '../design-system/tokens';
 import { useMotion } from './useMotion';
@@ -6,7 +6,11 @@ import { popIn, fadeOut, fadeIn } from './presets';
 export function LivingIcon({ name, size = t.layout.heroIcon }: { name: IconName; size?: number }) {
   const m = useMotion();
   return (
-    <Animated.View entering={popIn(m.reduced)} exiting={fadeOut} style={{ alignSelf: 'center' }}>
+    <Animated.View
+      entering={popIn(m.reduced)}
+      exiting={fadeOut}
+      layout={LinearTransition.duration(m.reduced ? 0 : m.duration.standard)}
+      style={{ alignSelf: 'center' }}>
       <Animated.View
         style={{
           alignSelf: 'center',

@@ -5,6 +5,7 @@ import { onboardingStore as useOnboardingStore } from '../../state/onboardingSto
 import { nextStep, prevStep, progressFraction, resumeStep } from '../../onboarding/flow';
 import { createDraft } from '../rules/draft';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { Answers } from '../../onboarding/types';
 export function useOnboarding() {
   const params = useLocalSearchParams<{ step: string; returnTo?: string }>(),
     router = useRouter(),
@@ -43,20 +44,29 @@ export function useOnboarding() {
         useOnboardingStore.getState().patch({ answers: { ...state.answers, estimatedDailyMinutes: 180 } });
       const destination = params.returnTo || String(state.answers.returnTo || '');
       if (destination) {
-        useOnboardingStore.getState().patch({ answers: { ...state.answers, returnTo: '' } });
+        useOnboardingStore.getState().patch({ answers: { ...state.answers, returnTo: '', editBackup: '' } });
         router.setParams({ returnTo: undefined });
         move(destination);
       } else move(nextStep(flow));
     },
     edit: (target: string) => {
-      useOnboardingStore.getState().patch({ answers: { ...state.answers, returnTo: 'S3' } });
+      useOnboardingStore
+        .getState()
+        .patch({ answers: { ...state.answers, returnTo: 'S3', editBackup: JSON.stringify(state.answers) } });
       setDirection('back');
       router.setParams({ step: target, returnTo: 'S3' });
     },
     back: () => {
       const destination = params.returnTo || String(state.answers.returnTo || '');
       if (destination) {
-        useOnboardingStore.getState().patch({ answers: { ...state.answers, returnTo: '' } });
+        let restored = state.answers;
+        try {
+          const backup = JSON.parse(String(state.answers.editBackup || 'null'));
+          if (backup && typeof backup === 'object' && !Array.isArray(backup)) restored = backup as Answers;
+        } catch {
+          /* An older draft may not have a saved edit snapshot. */
+        }
+        useOnboardingStore.getState().patch({ answers: { ...restored, returnTo: '', editBackup: '' } });
         router.setParams({ returnTo: undefined });
         move(destination);
       } else move(prevStep(flow), true);

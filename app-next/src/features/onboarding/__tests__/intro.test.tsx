@@ -5,6 +5,7 @@ import { onboardingStore } from '../../../state/onboardingStore';
 const mockParams = { step: 'O01' };
 const mockSetParams = jest.fn();
 jest.mock('expo-router', () => ({
+  useIsFocused: () => true,
   useLocalSearchParams: () => mockParams,
   useRouter: () => ({ setParams: mockSetParams, replace: jest.fn() }),
 }));

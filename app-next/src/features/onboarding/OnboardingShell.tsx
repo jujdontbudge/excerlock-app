@@ -37,7 +37,13 @@ export function OnboardingShell({
   hideBack?: boolean;
 }>) {
   const m = useMotion(),
-    family = ['O12', 'O13', 'O14'].includes(step) ? 'dots' : ['O16', 'O17', 'O18'].includes(step) ? 'loop' : step;
+    family = ['W1', 'W2', 'W3', 'G1', 'G2', 'R1', 'R2', 'B1', 'B2', 'D'].includes(step)
+      ? 'branch'
+      : ['O12', 'O13', 'O14'].includes(step)
+        ? 'dots'
+        : ['O16', 'O17', 'O18'].includes(step)
+          ? 'loop'
+          : step;
   const enter = m.reduced
     ? FadeIn.duration(m.duration.standard)
     : (direction === 'forward' ? SlideInRight : SlideInLeft).duration(m.duration.sheet);
