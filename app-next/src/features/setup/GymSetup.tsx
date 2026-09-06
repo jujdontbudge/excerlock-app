@@ -69,6 +69,7 @@ export function GymSetup({ onContinue, onChoose }: { onContinue: () => void; onC
           <View style={{ flexDirection: 'row', gap: t.space.lg, alignItems: 'center' }}>
             <Label style={{ flex: 1 }}>{c.autoDetect}</Label>
             <Switch
+              accessibilityRole="switch"
               accessibilityLabel={c.autoDetect}
               value={settings.gymAutoDetect}
               disabled={busy}

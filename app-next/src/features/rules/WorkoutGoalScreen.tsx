@@ -33,6 +33,9 @@ export function WorkoutGoalScreen({
       <Reveal index={1} style={{ gap: t.space.lg }}>
         <NumberField
           label={distance ? c.distance : c.goal}
+          min={range[0]}
+          max={range[1]}
+          step={distance ? range[0] : 5}
           value={Number.isNaN(value) ? '' : String(value)}
           unit={unit}
           units={distance ? ['mi', 'km'] : undefined}

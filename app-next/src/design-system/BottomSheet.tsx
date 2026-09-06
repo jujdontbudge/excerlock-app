@@ -1,9 +1,8 @@
+import { opacityIn, opacityOut } from '../motion/presets';
 import { PropsWithChildren, ReactNode, useEffect, useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
-  FadeIn,
-  FadeOut,
   FadeOutDown,
   useAnimatedStyle,
   useSharedValue,
@@ -11,7 +10,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
 import { Icon } from '../icons/Icon';
@@ -27,7 +26,15 @@ type Props = PropsWithChildren<{
   onDismiss: () => void;
 }>;
 export function BottomSheet(props: Props) {
-  return props.open ? <SheetPanel {...props} /> : null;
+  return props.open ? (
+    <Modal transparent visible animationType="fade" onRequestClose={props.onDismiss}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <SheetPanel {...props} />
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </Modal>
+  ) : null;
 }
 function SheetPanel({ title, onDismiss, children, footer }: Props) {
   const { height } = useWindowDimensions(),
@@ -61,8 +68,8 @@ function SheetPanel({ title, onDismiss, children, footer }: Props) {
   return (
     <Animated.View
       accessibilityViewIsModal
-      entering={FadeIn.duration(m.duration.fast)}
-      exiting={FadeOut.duration(m.duration.sheet)}
+      entering={opacityIn(m.duration.fast)}
+      exiting={opacityOut(m.duration.sheet)}
       style={[StyleSheet.absoluteFill, { zIndex: 100, backgroundColor: t.surface.scrim }]}>
       <Pressable
         style={StyleSheet.absoluteFill}
@@ -74,7 +81,7 @@ function SheetPanel({ title, onDismiss, children, footer }: Props) {
         }}
       />
       <Animated.View
-        exiting={m.reduced ? FadeOut.duration(m.duration.fast) : FadeOutDown.duration(m.duration.sheet)}
+        exiting={m.reduced ? opacityOut(m.duration.fast) : FadeOutDown.duration(m.duration.sheet)}
         style={[
           {
             position: 'absolute',
@@ -130,7 +137,9 @@ function SheetPanel({ title, onDismiss, children, footer }: Props) {
           }}>
           {children}
         </ScrollView>
-        {footer ? <View style={{ paddingHorizontal: t.space.xl, paddingTop: t.space.md }}>{footer}</View> : null}
+        {footer ? (
+          <View style={{ paddingHorizontal: t.space.xl, paddingTop: t.space.md, gap: t.space.sm }}>{footer}</View>
+        ) : null}
       </Animated.View>
     </Animated.View>
   );

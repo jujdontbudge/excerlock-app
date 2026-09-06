@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
 import { LivingIcon } from '../motion/LivingIcon';
+import { ValueReveal } from '../motion/ValueReveal';
 import { Reveal } from '../motion/Reveal';
 export function StatusCard({
   title,
@@ -36,24 +37,24 @@ export function StatusCard({
           }}>
           {hero ?? <LivingIcon name={unlocked ? 'lock-open' : 'lock'} size={t.space.hero} />}
           <View style={{ flex: 1, gap: t.space.sm }}>
-            <Reveal key={title}>
+            <ValueReveal value={title}>
               <Label accessibilityRole="header" variant="section">
                 {title}
               </Label>
-            </Reveal>
-            <Reveal key={subtitle}>
+            </ValueReveal>
+            <ValueReveal value={subtitle}>
               <Label tone="secondary" variant="support">
                 {subtitle}
               </Label>
-            </Reveal>
+            </ValueReveal>
           </View>
         </View>
         {nextChange ? (
-          <Reveal key={nextChange}>
+          <ValueReveal value={nextChange}>
             <Label variant="support" style={{ color: unlocked ? t.state.success : t.text.secondary }}>
               {nextChange}
             </Label>
-          </Reveal>
+          </ValueReveal>
         ) : null}
       </View>
     </Reveal>

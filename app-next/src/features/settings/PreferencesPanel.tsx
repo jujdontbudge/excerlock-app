@@ -44,6 +44,7 @@ export function Preferences({ onGrace }: { onGrace: () => void }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
           <Label style={{ flex: 1 }}>{c.auto}</Label>
           <Switch
+            accessibilityRole="switch"
             accessibilityLabel={c.auto}
             value={s.gymAutoDetect}
             trackColor={{ true: t.brand.primary }}
@@ -60,6 +61,7 @@ export function Preferences({ onGrace }: { onGrace: () => void }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
           <Label style={{ flex: 1 }}>{c.haptics}</Label>
           <Switch
+            accessibilityRole="switch"
             accessibilityLabel={c.haptics}
             value={s.haptics}
             trackColor={{ true: t.brand.primary }}

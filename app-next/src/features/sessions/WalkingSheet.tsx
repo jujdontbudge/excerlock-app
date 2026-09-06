@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ValueReveal } from '../../motion/ValueReveal';
 import { View } from 'react-native';
 import { BottomSheet, Label, PrimaryButton, SecondaryButton, Heading } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
@@ -85,13 +86,17 @@ export function WalkingSheet({ rule, onDismiss }: { rule: Rule; onDismiss: () =>
       </Reveal>
       {phase === 'walking' && active ? (
         <Reveal>
-          <Label variant="metricSmall">{leaseClock(active.leaseUntil, now)}</Label>
+          <ValueReveal value={leaseClock(active.leaseUntil, now)}>
+            <Label variant="metricSmall">{leaseClock(active.leaseUntil, now)}</Label>
+          </ValueReveal>
           <Label>{c.renewal}</Label>
         </Reveal>
       ) : null}
       {phase === 'grace' && detail.graceUntil ? (
         <Reveal>
-          <Label variant="metricSmall">{leaseClock(detail.graceUntil, now)}</Label>
+          <ValueReveal value={leaseClock(detail.graceUntil, now)}>
+            <Label variant="metricSmall">{leaseClock(detail.graceUntil, now)}</Label>
+          </ValueReveal>
         </Reveal>
       ) : null}
       {active ? (

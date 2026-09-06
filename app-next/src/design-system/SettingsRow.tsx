@@ -50,6 +50,7 @@ export function SettingsRow({
       </View>
       {onToggle ? (
         <Switch
+          accessibilityRole="switch"
           accessibilityLabel={title}
           value={toggle}
           onValueChange={(v) => {

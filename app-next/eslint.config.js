@@ -2,6 +2,12 @@ const { defineConfig } = require('eslint/config');
 const expo = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expo,
+  {
+    files: ['src/**/*.tsx'],
+    ignores: ['**/__tests__/**'],
+    plugins: { a11y: require('./eslint-a11y.cjs') },
+    rules: { 'a11y/named-controls': 'error' },
+  },
   { ignores: ['ios/**', 'build/**', 'evidence/**', 'coverage/**', 'dist/**'] },
   {
     files: ['src/**/*.{ts,tsx}'],

@@ -1,10 +1,14 @@
-import { Easing, FadeIn, FadeOut, FadeInDown, ZoomIn, LinearTransition } from 'react-native-reanimated';
+import { Easing, FadeIn, FadeOut, FadeInDown, ZoomIn, LinearTransition, ReduceMotion } from 'react-native-reanimated';
 import { tokens } from '../design-system/tokens';
 const m = tokens.motion;
-export const fadeIn = FadeIn.duration(m.duration.standard);
-export const fadeOut = FadeOut.duration(m.duration.fast);
+export const opacityIn = (duration: number = m.duration.standard) =>
+  FadeIn.duration(duration).reduceMotion(ReduceMotion.Never);
+export const fadeIn = opacityIn();
+export const opacityOut = (duration: number = m.duration.fast) =>
+  FadeOut.duration(duration).reduceMotion(ReduceMotion.Never);
+export const fadeOut = opacityOut();
 export function slideUp(reduced: boolean, index = 0) {
-  if (reduced) return FadeIn.duration(m.duration.standard).delay(index * m.stagger.list);
+  if (reduced) return opacityIn().delay(index * m.stagger.list);
   return FadeInDown.withInitialValues({ translateY: m.distance.enter })
     .duration(m.duration.slow)
     .delay(index * m.stagger.list)

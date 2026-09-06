@@ -30,6 +30,7 @@ export function TimeRangeRow({
         }}>
         <Label>{controls.allDay}</Label>
         <Switch
+          accessibilityRole="switch"
           accessibilityLabel={controls.allDay}
           value={allDay}
           onValueChange={(v) => {

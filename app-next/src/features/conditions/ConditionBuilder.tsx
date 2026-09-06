@@ -1,13 +1,7 @@
+import { opacityIn, opacityOut } from '../../motion/presets';
 import { useState } from 'react';
 import { View } from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeOut,
-  SlideInRight,
-  SlideInLeft,
-  SlideOutLeft,
-  SlideOutRight,
-} from 'react-native-reanimated';
+import Animated, { SlideInRight, SlideInLeft, SlideOutLeft, SlideOutRight } from 'react-native-reanimated';
 import { ScreenShell, PrimaryButton, PressableScale, Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
@@ -26,10 +20,15 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
     m = useMotion(),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null);
   const branch = !['O20', 'S1', 'S3'].includes(f.step);
-  const enter = m.reduced ? FadeIn : f.direction === 'forward' ? SlideInRight : SlideInLeft;
-  const exit = m.reduced ? FadeOut : f.direction === 'forward' ? SlideOutLeft : SlideOutRight;
+  const enter = m.reduced
+    ? opacityIn(m.duration.sheet)
+    : (f.direction === 'forward' ? SlideInRight : SlideInLeft).duration(m.duration.sheet);
+  const exit = m.reduced
+    ? opacityOut(m.duration.slow)
+    : (f.direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.slow);
   return (
     <ScreenShell
+      scrollResetKey={f.step}
       header={
         <View
           style={{
@@ -70,11 +69,7 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
           />
         </>
       }>
-      <Animated.View
-        key={branch ? 'branch' : f.step}
-        entering={enter.duration(m.duration.sheet)}
-        exiting={exit.duration(m.duration.slow)}
-        style={{ gap: t.space.xl }}>
+      <Animated.View key={branch ? 'branch' : f.step} entering={enter} exiting={exit} style={{ gap: t.space.xl }}>
         {f.step === 'O20' ? (
           <O20
             answers={f.chosen ? { activity: f.draft.activity } : {}}

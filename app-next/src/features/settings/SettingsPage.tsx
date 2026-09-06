@@ -9,9 +9,16 @@ export function SettingsPage({
   onBack,
   overlay,
   footer,
-}: PropsWithChildren<{ onBack: () => void; overlay?: ReactNode; footer?: ReactNode }>) {
+  scrollToEndOnKeyboard,
+}: PropsWithChildren<{
+  onBack: () => void;
+  overlay?: ReactNode;
+  footer?: ReactNode;
+  scrollToEndOnKeyboard?: boolean;
+}>) {
   return (
     <ScreenShell
+      scrollToEndOnKeyboard={scrollToEndOnKeyboard}
       header={
         <View style={{ paddingHorizontal: t.layout.page, paddingVertical: t.space.sm }}>
           <PressableScale label={c.back} onPress={onBack}>

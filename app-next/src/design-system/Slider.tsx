@@ -56,7 +56,7 @@ export function Slider({
       accessible
       accessibilityRole="adjustable"
       accessibilityLabel={label}
-      accessibilityValue={{ min, max, now: value }}
+      accessibilityValue={{ min, max, now: value, text: String(value) }}
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={(e) => commit(value + (e.nativeEvent.actionName === 'increment' ? step : -step))}
       onLayout={(e) => {

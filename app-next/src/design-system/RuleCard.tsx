@@ -91,6 +91,7 @@ export function RuleCard({
             </PressableScale>
           </View>
           <Switch
+            accessibilityRole="switch"
             accessibilityLabel={title}
             value={enabled}
             onValueChange={(v) => {

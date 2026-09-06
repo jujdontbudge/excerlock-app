@@ -47,7 +47,7 @@ test('relock and lease clocks are formatted using the scenario timezone', () => 
   expect(
     statusContent({ ...common, decision: { state: 'unlockedMet', byRuleId: 'walk', relockAt: '2026-09-08T13:00:00Z' } })
       .subtitle,
-  ).toBe('Blocking resumes tomorrow at 9:00 AM');
+  ).toBe('Blocking resumes tomorrow at 9:00\u00a0AM');
   expect(
     statusContent({
       ...common,

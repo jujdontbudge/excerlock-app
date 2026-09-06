@@ -58,6 +58,9 @@ export function WalkingScreen({
         <Reveal index={1} style={{ gap: t.space.lg }}>
           <NumberField
             label={c.goal}
+            step={500}
+            min={500}
+            max={30000}
             value={Number.isNaN(d.stepGoal) ? '' : String(d.stepGoal)}
             unit={c.unit}
             onChange={(value) => onAction({ type: 'setStepGoal', value: value.trim() ? Number(value) : NaN })}

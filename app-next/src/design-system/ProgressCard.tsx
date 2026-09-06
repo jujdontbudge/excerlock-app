@@ -4,6 +4,7 @@ import { Label } from './Label';
 import { Icon, IconName } from '../icons/Icon';
 import { ProgressBar } from './ProgressBar';
 import { SecondaryButton } from './SecondaryButton';
+import { ValueReveal } from '../motion/ValueReveal';
 import { Reveal } from '../motion/Reveal';
 export function ProgressCard({
   title,
@@ -43,11 +44,11 @@ export function ProgressCard({
           </Label>
         </View>
         <ProgressBar value={value} label={title} />
-        <Reveal key={detail}>
+        <ValueReveal value={detail}>
           <Label variant="support" tone="secondary">
             {detail}
           </Label>
-        </Reveal>
+        </ValueReveal>
         {action && onAction ? <SecondaryButton label={action} onPress={onAction} /> : null}
       </View>
     </Reveal>

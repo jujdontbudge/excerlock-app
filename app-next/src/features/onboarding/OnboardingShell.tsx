@@ -1,13 +1,7 @@
+import { opacityIn, opacityOut } from '../../motion/presets';
 import { PropsWithChildren, ReactNode } from 'react';
 import { View } from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeOut,
-  SlideInRight,
-  SlideInLeft,
-  SlideOutLeft,
-  SlideOutRight,
-} from 'react-native-reanimated';
+import Animated, { SlideInRight, SlideInLeft, SlideOutLeft, SlideOutRight } from 'react-native-reanimated';
 import { ScreenShell, OnboardingHeader, PrimaryButton } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
@@ -45,13 +39,14 @@ export function OnboardingShell({
           ? 'loop'
           : step;
   const enter = m.reduced
-    ? FadeIn.duration(m.duration.standard)
+    ? opacityIn(m.duration.standard)
     : (direction === 'forward' ? SlideInRight : SlideInLeft).duration(m.duration.sheet);
   const exit = m.reduced
-    ? FadeOut.duration(m.duration.standard)
+    ? opacityOut(m.duration.standard)
     : (direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.slow);
   return (
     <ScreenShell
+      scrollResetKey={step}
       overlay={overlay}
       header={<OnboardingHeader progress={progress} onBack={step === 'O01' || hideBack ? undefined : onBack} />}
       footer={

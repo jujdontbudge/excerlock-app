@@ -13,3 +13,11 @@ test('numeric editing and unit selection keep the typed value independent of the
   expect(unit).toHaveBeenCalledWith('mi');
   expect(change).toHaveBeenCalledTimes(1);
 });
+test('VoiceOver can read and adjust a numeric goal in its correct increment', async () => {
+  const change = jest.fn();
+  await render(<NumberField label="Daily step goal" value="5000" unit="steps" onChange={change} step={500} min={500} max={30000} />);
+  const field = screen.getByRole('adjustable', {name:'Daily step goal'});
+  expect(field.props.accessibilityValue).toEqual({now:5000, min:500, max:30000, text:'5000 steps'});
+  await fireEvent(field, 'accessibilityAction', {nativeEvent:{actionName:'increment'}});
+  expect(change).toHaveBeenCalledWith('5500');
+});

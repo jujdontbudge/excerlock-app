@@ -1,5 +1,5 @@
-import { PropsWithChildren, ReactNode } from 'react';
-import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { PropsWithChildren, ReactNode, useEffect, useLayoutEffect, useRef } from 'react';
+import { Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { tokens as t } from './tokens';
@@ -10,13 +10,26 @@ export function ScreenShell({
   overlay,
   safeBottom = true,
   tinted = true,
+  scrollToEndOnKeyboard = false,
+  scrollResetKey,
 }: PropsWithChildren<{
   footer?: ReactNode;
   header?: ReactNode;
   overlay?: ReactNode;
   safeBottom?: boolean;
   tinted?: boolean;
+  scrollToEndOnKeyboard?: boolean;
+  scrollResetKey?: string;
 }>) {
+  const scroll = useRef<ScrollView>(null);
+  useLayoutEffect(() => {
+    if (scrollResetKey !== undefined) scroll.current?.scrollTo({ y: 0, animated: false });
+  }, [scrollResetKey]);
+  useEffect(() => {
+    if (!scrollToEndOnKeyboard) return;
+    const listener = Keyboard.addListener('keyboardDidShow', () => scroll.current?.scrollToEnd({ animated: true }));
+    return () => listener.remove();
+  }, [scrollToEndOnKeyboard]);
   return (
     <View style={s.root}>
       {tinted ? (
@@ -31,6 +44,7 @@ export function ScreenShell({
         <KeyboardAvoidingView behavior="padding" style={s.rootClear}>
           {header}
           <ScrollView
+            ref={scroll}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={s.content}
             showsVerticalScrollIndicator={false}>

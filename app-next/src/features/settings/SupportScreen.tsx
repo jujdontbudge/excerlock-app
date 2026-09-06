@@ -31,6 +31,7 @@ export function SupportScreen({ onBack = () => {} }: { onBack?: () => void }) {
     );
   return (
     <SettingsPage
+      scrollToEndOnKeyboard
       onBack={onBack}
       footer={
         <PrimaryButton

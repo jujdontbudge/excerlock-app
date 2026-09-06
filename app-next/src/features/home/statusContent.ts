@@ -27,7 +27,7 @@ export function leaseClock(until: string, now: string) {
 }
 export function statusContent({ decision: d, rules, permissions, apps, now, timezone }: Input): StatusModel {
   const time = (at: string) =>
-    new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: timezone }).format(new Date(at)).replace(/\s/g, ' ');
+    new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: timezone }).format(new Date(at)).replace(/\s(?=[AP]M$)/, '\u00a0');
   const resume = (at: string | null) => {
     if (!at) return c.noNext;
     const day = dayKey(at, timezone),

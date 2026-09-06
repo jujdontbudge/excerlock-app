@@ -5,7 +5,7 @@ exports[`home-before-window status content 1`] = `
   "icon": "lock-open",
   "state": "beforeWindow",
   "subtitle": "Get ahead: walk 5,000 steps now",
-  "title": "Blocking starts at 9:00 AM",
+  "title": "Blocking starts at 9:00 AM",
   "unlocked": true,
 }
 `;
@@ -57,7 +57,7 @@ exports[`home-unlocked-met status content 1`] = `
 {
   "icon": "lock-open",
   "state": "unlockedMet",
-  "subtitle": "Blocking resumes tomorrow at 9:00 AM",
+  "subtitle": "Blocking resumes tomorrow at 9:00 AM",
   "title": "Unlocked for the rest of today",
   "unlocked": true,
 }

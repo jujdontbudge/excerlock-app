@@ -15,6 +15,9 @@ export function NumberField({
   units,
   onUnitChange,
   error,
+  step = 1,
+  min = 0,
+  max,
 }: {
   label: string;
   value: string;
@@ -23,6 +26,9 @@ export function NumberField({
   units?: readonly string[];
   onUnitChange?: (unit: string) => void;
   error?: string;
+  step?: number;
+  min?: number;
+  max?: number;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -31,6 +37,20 @@ export function NumberField({
         <View style={{ flex: 1 }}>
           <TextField
             label={label}
+            accessibilityRole="adjustable"
+            accessibilityValue={{
+              now: value.trim() && Number.isFinite(Number(value)) ? Number(value) : undefined,
+              min,
+              max,
+              text: `${value} ${unit}`.trim(),
+            }}
+            accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+            onAccessibilityAction={(e) => {
+              if (!['increment', 'decrement'].includes(e.nativeEvent.actionName)) return;
+              const current = Number(value) || min,
+                next = current + (e.nativeEvent.actionName === 'increment' ? step : -step);
+              onChange(String(Math.min(max ?? Infinity, Math.max(min, Number(next.toFixed(4))))));
+            }}
             value={value}
             onChangeText={onChange}
             keyboardType="decimal-pad"
