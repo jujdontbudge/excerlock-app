@@ -35,7 +35,7 @@ export function GymsScreen({ onBack }: { onBack: () => void }) {
       {gyms.length ? (
         <SettingsGroup>
           {gyms.map((g) => (
-            <SettingsRow key={g.id} title={g.name} value={g.address} icon="gym" onPress={() => setDeleting(g.id)} />
+            <SettingsRow key={g.id} title={g.name} subtitle={g.address} icon="gym" onPress={() => setDeleting(g.id)} />
           ))}
         </SettingsGroup>
       ) : (

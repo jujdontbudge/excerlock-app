@@ -4,7 +4,7 @@ import { permissionsStore } from '../../state/permissionsStore';
 import { settingsStore } from '../../state/settingsStore';
 import { rulesStore } from '../../state/rulesStore';
 import { ruleDaysStore } from '../../state/ruleDaysStore';
-import { dayKey } from '../../domain/schedule';
+import { dayKey, currentInstances } from '../../domain/schedule';
 import { applyProgress } from '../../domain/progress';
 import { places } from '../places';
 import { FakeContext } from '../FakeContext';
@@ -22,9 +22,12 @@ export function GymFake(ctx: FakeContext): GymPort & { dispose: () => void } {
     savePlace: async (place) => {
       if (!place.name.trim()) throw new Error('Gym name required');
       if (list().length >= 5 && !list().some((p) => p.id === place.id)) throw new Error('Maximum five gyms');
-      settingsStore
-        .getState()
-        .patch({ gymPlaces: [...list().filter((p) => p.id !== place.id), { ...place, name: place.name.trim() }] });
+      settingsStore.getState().patch({
+        gymPlaces: [
+          ...list().filter((p) => p.id !== place.id),
+          { ...place, name: place.name.trim(), radiusMeters: 100 },
+        ],
+      });
       ctx.log('gym_saved', { id: place.id });
     },
     listPlaces: list,
@@ -33,13 +36,15 @@ export function GymFake(ctx: FakeContext): GymPort & { dispose: () => void } {
       if (ctx.snapshot().presence !== 'inside') throw new Error('Outside saved gym');
       if (!list().some((p) => p.id === id)) throw new Error('Gym not found');
       progress.arrive();
-      const day = dayKey(ctx.clock.now(), ctx.clock.timezone()),
-        current = ruleDaysStore.getState().data.days;
+      const current = ruleDaysStore.getState().data.days;
       const updates = rulesStore
         .getState()
         .data.rules.filter((r) => r.activity === 'gym' && r.enabled)
-        .map((rule) =>
-          applyProgress(
+        .map((rule) => {
+          const day =
+            currentInstances(rule, ctx.clock.now(), ctx.clock.timezone())[0]?.day ??
+            dayKey(ctx.clock.now(), ctx.clock.timezone());
+          return applyProgress(
             rule,
             current.find((d) => d.ruleId === rule.id && d.day === day) ?? {
               ruleId: rule.id,
@@ -52,8 +57,8 @@ export function GymFake(ctx: FakeContext): GymPort & { dispose: () => void } {
               ? 1
               : (current.find((d) => d.ruleId === rule.id && d.day === day)?.progress ?? 0),
             ctx.clock.now(),
-          ),
-        );
+          );
+        });
       ruleDaysStore.getState().patch({
         days: [...current.filter((d) => !updates.some((u) => u.ruleId === d.ruleId && u.day === d.day)), ...updates],
       });

@@ -1,4 +1,4 @@
-import { opacityIn, opacityOut } from '../motion/presets';
+import { opacityIn, opacityOut, layoutTransition } from '../motion/presets';
 import { PropsWithChildren, ReactNode, useEffect, useMemo } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -22,6 +22,7 @@ import { useSheetKeyboard } from '../motion/useSheetKeyboard';
 type Props = PropsWithChildren<{
   open: boolean;
   footer?: ReactNode;
+  expanded?: boolean;
   title: string;
   onDismiss: () => void;
 }>;
@@ -36,7 +37,7 @@ export function BottomSheet(props: Props) {
     </Modal>
   ) : null;
 }
-function SheetPanel({ title, onDismiss, children, footer }: Props) {
+function SheetPanel({ title, onDismiss, children, footer, expanded = false }: Props) {
   const { height } = useWindowDimensions(),
     insets = useSafeAreaInsets(),
     m = useMotion(),
@@ -81,6 +82,7 @@ function SheetPanel({ title, onDismiss, children, footer }: Props) {
         }}
       />
       <Animated.View
+        layout={layoutTransition}
         exiting={m.reduced ? opacityOut(m.duration.fast) : FadeOutDown.duration(m.duration.sheet)}
         style={[
           {
@@ -88,6 +90,7 @@ function SheetPanel({ title, onDismiss, children, footer }: Props) {
             bottom: 0,
             left: 0,
             right: 0,
+            height: expanded ? height * t.layout.sheetMax : undefined,
             maxHeight: height * t.layout.sheetMax,
             backgroundColor: t.surface.canvas,
             borderTopLeftRadius: t.radius.sheet,

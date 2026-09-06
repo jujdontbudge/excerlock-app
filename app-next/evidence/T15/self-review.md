@@ -16,3 +16,5 @@ Further flow observations are appended after their recordings complete. Recordin
 
 - **Onboarding, 1–3 s:** inspected O01→O02→O03 at 8 fps. The body travels while opacity changes; the chart draws progressively and summary rows arrive in sequence. The complete walking-goal journey reaches Home with “Walk 5,000 steps” and the entered name (see `onboarding.log` and `onboarding.mp4`).
 - **Final XL/Reduced Motion fixes:** inspected `xl-permission-layout.png` and grouped empty-state captures. Notifications now stays on one line with its badge below; Analytics and Saved gyms each have one living empty-state hero. Long screens continue to scroll, including the gym action and schedule summary.
+
+- **T16 follow-up:** the picker size change noted above was reproduced as a failing native position test, then resolved with stable expanded sizing. See [T16 red/green evidence](../T16/ACCEPTANCE.md). Current-day Analytics and the five-gym layout were also verified there.

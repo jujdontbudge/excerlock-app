@@ -8,6 +8,7 @@ import { feedback } from '../motion/haptics';
 export function SettingsRow({
   title,
   value,
+  subtitle,
   icon,
   onPress,
   toggle,
@@ -16,13 +17,16 @@ export function SettingsRow({
 }: {
   title: string;
   value?: string;
+  subtitle?: string;
   icon?: IconName;
   onPress?: () => void;
   toggle?: boolean;
   onToggle?: (value: boolean) => void;
   destructive?: boolean;
 }) {
-  const stacked = useWindowDimensions().fontScale > 1;
+  const fontScale = useWindowDimensions().fontScale;
+  const stacked = !!subtitle || fontScale > 1;
+  const detail = subtitle ?? value;
   const content = (
     <View
       style={{
@@ -43,10 +47,10 @@ export function SettingsRow({
         <Label style={{ flex: stacked ? undefined : 1, color: destructive ? t.state.error : t.text.primary }}>
           {title}
         </Label>
-        {value ? (
-          <ValueReveal value={value} style={{ flexShrink: 1 }}>
+        {detail ? (
+          <ValueReveal value={detail} style={{ flexShrink: 1 }}>
             <Label tone="secondary" variant="support">
-              {value}
+              {detail}
             </Label>
           </ValueReveal>
         ) : null}
@@ -68,7 +72,7 @@ export function SettingsRow({
     </View>
   );
   return onPress && !onToggle ? (
-    <PressableScale label={value ? `${title}, ${value}` : title} onPress={onPress}>
+    <PressableScale label={detail ? `${title}, ${detail}` : title} onPress={onPress}>
       {content}
     </PressableScale>
   ) : (

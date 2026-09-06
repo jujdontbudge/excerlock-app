@@ -1,3 +1,4 @@
+import { activityHistory } from './activityHistory';
 import { stores } from '../state/stores';
 import { SupportFake } from './fakes/SupportFake';
 import { Runtime } from '../runtime/Runtime';
@@ -24,6 +25,7 @@ export function FakeRuntime(): Runtime {
     walking = WalkingFake(ctx),
     persistence = contextPersistence(ctx),
     gym = GymFake(ctx),
+    activity = activityHistory(ctx),
     ready = persistence.ready.then(async () => {
       await Promise.all(
         stores
@@ -39,6 +41,7 @@ export function FakeRuntime(): Runtime {
           ),
       );
       walking.resume();
+      activity.refresh();
     });
   return {
     kind: 'fake',
@@ -111,6 +114,7 @@ export function FakeRuntime(): Runtime {
       subscribe: ctx.subscribe,
     },
     dispose: () => {
+      activity.dispose();
       persistence.dispose();
       walking.disconnect();
       gym.dispose();

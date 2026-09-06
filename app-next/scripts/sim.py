@@ -16,7 +16,7 @@ def find(label, timeout=8):
 def tap(label):
  candidates=[n for n in tree() if (n.get('AXLabel') or '').replace('\u00a0',' ')==label.replace('\u00a0',' ') and n.get('type')=='Button']
  frame=(candidates[0] if candidates else find(label))['frame']; run('idb','ui','tap','--udid',SIM,round(frame['x']+frame['width']/2),round(frame['y']+frame['height']/2))
-def swipe(x,y,end_x,end_y,duration=.8): run('idb','ui','swipe','--udid',SIM,x,y,end_x,end_y,'--duration',duration)
+def swipe(x,y,end_x,end_y,duration=.8): run('idb','ui','swipe','--udid',SIM,x,y,end_x,end_y,'--duration',duration,'--delta',10)
 def open_url(url): run('xcrun','simctl','openurl',SIM,url)
 def screenshot(path): run('xcrun','simctl','io',SIM,'screenshot',str(Path(path).resolve()))
 @contextlib.contextmanager

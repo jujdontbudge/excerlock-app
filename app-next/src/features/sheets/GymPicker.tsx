@@ -53,6 +53,7 @@ function Picker({ onDismiss, onSaved }: { onDismiss: () => void; onSaved?: () =>
   return (
     <BottomSheet
       open
+      expanded
       title={c.gymTitle}
       onDismiss={onDismiss}
       footer={

@@ -1,3 +1,4 @@
+import { dayKey } from '../../domain/calendar';
 import { ScreenTimePort } from '../../ports/ScreenTimePort';
 import { permissionsStore } from '../../state/permissionsStore';
 import { rulesStore } from '../../state/rulesStore';
@@ -15,8 +16,15 @@ export function ScreenTimeFake(ctx: FakeContext): ScreenTimePort {
     },
     applyLock: (decision) => ctx.log('lock_applied', { state: decision.state }),
     observeUsage: (callback) => {
-      callback(ctx.scenario.usageMinutesToday);
-      return ctx.subscribe(() => callback(ctx.scenario.usageMinutesToday));
+      const update = () =>
+        callback(
+          dayKey(ctx.clock.now(), ctx.clock.timezone()) === dayKey(ctx.scenario.clock.now, ctx.clock.timezone())
+            ? ctx.scenario.usageMinutesToday
+            : null,
+        );
+      update();
+      const stops = [ctx.subscribe(update), ctx.clock.observe(update)];
+      return () => stops.forEach((stop) => stop());
     },
   };
 }

@@ -113,7 +113,7 @@ export function AnalyticsScreen() {
                 key={a}
                 title={c.activities[a]}
                 icon={a}
-                value={`${model.activities[a].toLocaleString('en-US')} ${c.activityUnit(a)}`}
+                value={`${Math.round(model.activities[a]).toLocaleString('en-US')} ${c.activityUnit(a)}`}
               />
             ))}
             <SettingsRow title={c.current} value={`${model.streak.current} ${c.days}`} />

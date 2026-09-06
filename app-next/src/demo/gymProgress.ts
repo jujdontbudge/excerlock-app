@@ -3,7 +3,7 @@ import { rulesStore } from '../state/rulesStore';
 import { ruleDaysStore } from '../state/ruleDaysStore';
 import { settingsStore } from '../state/settingsStore';
 import { permissionsStore } from '../state/permissionsStore';
-import { dayKey } from '../domain/calendar';
+import { dayKey, currentInstances } from '../domain/schedule';
 import { applyProgress } from '../domain/progress';
 /** Local presence clock: time is credited only after a manual or authorized automatic arrival. */
 export function gymProgress(ctx: FakeContext) {
@@ -33,20 +33,25 @@ export function gymProgress(ctx: FakeContext) {
         .getState()
         .data.rules.filter((r) => r.enabled && r.activity === 'gym')
         .map((rule) => {
-          const row = days.find((d) => d.ruleId === rule.id && d.day === day) ?? {
+          const progressDay = currentInstances(rule, now, ctx.clock.timezone())[0]?.day ?? day;
+          const row = days.find((d) => d.ruleId === rule.id && d.day === progressDay) ?? {
             ruleId: rule.id,
-            day,
+            day: progressDay,
             progress: 0,
             met: false,
             metAt: null,
           };
           return applyProgress(rule, row, rule.mode.kind === 'event' ? 1 : row.progress + minutes, now);
         });
-    ruleDaysStore
-      .getState()
-      .patch({
-        days: [...days.filter((d) => !updates.some((u) => u.ruleId === d.ruleId && u.day === d.day)), ...updates],
-      });
+    const history = ctx
+      .snapshot()
+      .history.map((row) =>
+        row.day === day ? { ...row, activity: { ...row.activity, gym: row.activity.gym + minutes } } : row,
+      );
+    ruleDaysStore.getState().patch({
+      days: [...days.filter((d) => !updates.some((u) => u.ruleId === d.ruleId && u.day === d.day)), ...updates],
+    });
+    ctx.update({ history });
   });
   return {
     arrive,

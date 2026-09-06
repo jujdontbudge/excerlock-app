@@ -1,7 +1,8 @@
 """Replay proven AX journeys against final UI, one normal-speed recording per flow."""
 from sim import *
-import sys,re
-out=ROOT/'evidence/T15';out.mkdir(exist_ok=True)
+import sys,re,os
+evidence=os.environ.get('EXCER_FINAL_EVIDENCE','evidence/T15')
+out=ROOT/evidence;out.mkdir(exist_ok=True)
 flow=sys.argv[1]
 flows={'home':['capture-home.py'],'conditions':['capture-conditions.py'],'analytics':['capture-analytics.py'],'settings':['capture-settings.py'],'setup':['capture-setup.py','capture-gym-setup.py'],'sheets-and-paywall':['capture-trial.py','capture-sessions.py','capture-treadmill.py']}
 run('xcrun','simctl','ui',SIM,'content_size','large')
@@ -12,7 +13,7 @@ with recording(out/(flow+'.mp4')):
  for script in flows[flow]:
   code=(ROOT/'scripts'/script).read_text()
   code=code.split("run('xcrun','simctl','ui',SIM,'content_size','accessibility-extra-extra-extra-large')")[0]
-  code=re.sub(r"out=ROOT/'evidence/T\d+'", "out=ROOT/'evidence/T15'",code)
+  code=re.sub(r"out=ROOT/'evidence/T\d+'", "out=ROOT/"+repr(evidence),code)
   code=re.sub(r'with recording\([^\n]+\):', 'if True:',code)
   code=code.replace("tap('Dismiss sheet')","tap('Close')")
   code=code.replace("find('/home')","find('Hi, Alex')").replace("find('X1')","find('Let ExcerLock block your apps')")

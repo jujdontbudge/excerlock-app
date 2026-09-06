@@ -19,3 +19,16 @@ test.each([
   expect(screen.getByText('This month')).toBeTruthy();
   expect(screen.queryByText('Your weekly recap')).toBeNull();
 });
+test('weekly recap uses readable whole-minute activity totals as the fake gym clock ticks', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('gym-time-user');
+  await runtime.gym.checkIn(runtime.gym.listPlaces()[0].id);
+  runtime.dev.advance(18 * 60000 + 9000);
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <AnalyticsScreen />
+    </AppRuntimeProvider>,
+  );
+  expect(screen.getByText('30 minutes')).toBeTruthy();
+  runtime.dispose();
+});
