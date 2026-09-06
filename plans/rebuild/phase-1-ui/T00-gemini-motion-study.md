@@ -6,11 +6,21 @@ graded against it. Gemini writes it; Codex runs Gemini and files the output. Thi
 
 ## Prerequisites (blocking; see `00-decisions.md` §E1–E3)
 
-1. **Gemini auth.** `gemini --version` is 0.35.1. Its configured auth (`~/.gemini/settings.json`,
-   `security.auth.selectedType: "oauth-personal"`) fails with `IneligibleTierError` (Google retired that tier
-   for this client). Johan must provide an AI Studio key: `echo 'GEMINI_API_KEY=...' >> ~/.gemini/.env` (or
-   export it), then `gemini -p "say ok"` must answer. Codex does not proceed until it does. Do not paste keys
-   into the repo.
+1. **Use `agy`, not `gemini`.** The old `gemini` binary (0.35.1) is retired by Google and fails with
+   `IneligibleTierError`. Johan's subscription runs through the Antigravity CLI: `agy --version` → 1.1.27
+   (`~/.local/bin/agy`). Verified command shape (2026-09-06, on a 20-second clip, returned per-frame
+   displacement curves):
+
+   ```sh
+   agy -p "Watch the whole app screen recording at /abs/path/clip.mp4, every frame. <task>" \
+       --model gemini-3.7-flash-high --dangerously-skip-permissions --add-dir /abs/path/dir \
+       > out.md 2> err.log
+   ```
+
+   Rules: write the absolute file path inside the prompt (no `@file` syntax); pass the containing directory
+   with `--add-dir`; always redirect stdout to a file (piping through `tail`/`time` killed one run with exit
+   144); one video per call; `--output-format json` exists if structured output is wanted. Codex checks
+   `agy -p "say ok" --model gemini-3.7-flash-high --dangerously-skip-permissions` before starting.
 2. **Recordings.** Present: `design/research/otter-replay/replay.mp4` (OtterLife, 25 min, 74 MB, full
    product replay; only 139–171 s was ever reviewed). Missing: AppBlock and Unrot replays. Obtain them:
    - Preferred: ScreensDesign MCP. Add to this repo's `.mcp.json`:
@@ -37,14 +47,13 @@ graded against it. Gemini writes it; Codex runs Gemini and files the output. Thi
 
 ## Method
 
-1. **Clip the videos.** Gemini CLI attaches files inline; a 74 MB file may exceed the request limit. Split
-   each replay into ≤ 3-minute, ≤ 20 MB segments with the hardware encoder (there is no `libx264` in this
-   ffmpeg build):
+1. **Clip the videos.** Split each replay into 3-minute segments so every call stays fast and the model
+   watches every frame. Verified 2026-09-06: a 180-second, 540-px-wide, 25 MB segment of the OtterLife replay
+   returned a 533-line screen inventory with timestamps, layout regions and animations in one `agy` call
+   (about 5 minutes wall clock). Use the hardware encoder (there is no `libx264` in this ffmpeg build):
    `ffmpeg -ss <start> -t 180 -i replay.mp4 -vf scale=540:-2 -an -c:v h264_videotoolbox -b:v 1200k seg-NN.mp4`.
-   Keep a `segments.md` index (start time → what is on screen) next to the clips. If a clip still fails to
-   attach, use the Gemini API's file upload (`@google/genai`, `ai.files.upload`, then reference the file in
-   `generateContent`) from a small Node script in `tools/gemini-video/`; verify the current API shape in the
-   official docs before writing it, and commit the script with a README.
+   Keep a `segments.md` index (start time → what is on screen) next to the clips, under
+   `design/research/<app>-replay/segments/` (gitignored like the replays; the index file is committed).
 2. **Pass A — inventory (per app).** For each segment: list every screen shown, in order, with timestamps;
    for each screen: layout regions top to bottom (header, hero, content, footer), component types, what is
    fixed vs scrolls, tab bar presence. Output `design/motion/inventory-<app>.md`.

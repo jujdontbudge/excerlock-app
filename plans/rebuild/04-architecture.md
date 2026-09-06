@@ -154,5 +154,5 @@ component previews, shield preview, "record flow" helper that prints the `xcrun 
 
 - Expo MCP for every Expo question, dependency add, and build recipe. Codex confirms `/mcp` shows expo connected before T01.
 - Simulator: one at a time, headless; create `ExcerLock-Next` (iPhone 17 Pro, latest iOS) if missing; `xcrun simctl shutdown all` when done.
-- Gemini CLI: `gemini -p "..."` with `@file` references; see T00 for the auth prerequisite and the file-size fallback.
+- Gemini runs through the Antigravity CLI: `agy -p "..." --model gemini-3.7-flash-high --dangerously-skip-permissions --add-dir <dir>`, file paths written in the prompt. Never the retired `gemini` binary. See T00.
 - No Maestro. No opening Simulator.app unless Johan asks.

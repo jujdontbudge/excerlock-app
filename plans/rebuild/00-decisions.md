@@ -67,7 +67,7 @@ anything that depends on it. "Prerequisite" means Johan or Fable must do it befo
 
 | # | Item | Blocks |
 | --- | --- | --- |
-| E1 | **Gemini CLI auth is broken.** The installed CLI (0.35.1) uses "Code Assist for individuals" OAuth, which Google has retired for this client. Johan must either set `GEMINI_API_KEY` (AI Studio key) in `~/.gemini/.env` or switch the CLI's auth type. Until then, Phase 1 task T00 cannot run. | Phase 1 T00, T15 |
+| E1 | ~~Gemini CLI auth is broken.~~ **Resolved 2026-09-06.** The old `gemini` binary (0.35.1, `/usr/local/bin/gemini`) is retired by Google and fails with `IneligibleTierError`. Johan's subscription runs through the **Antigravity CLI `agy`** (1.1.27, `~/.local/bin/agy`), which other agents already use for video analysis. Every "Gemini" step in this plan means `agy -p "<prompt>" --model gemini-3.7-flash-high --dangerously-skip-permissions --add-dir <dir>` with absolute file paths written in the prompt; verified on a 20-second clip (frame-accurate output). Never call `gemini`. | none |
 | E2 | **AppBlock and Unrot replay videos** are not on disk. Only OtterLife's full 25-minute replay is (`design/research/otter-replay/replay.mp4`). Codex fetches the others through the ScreensDesign MCP (`https://api.screensdesign.com/v1/mcp`, currently configured for another project) or Johan screen-records them. | Phase 1 T00 |
 | E3 | The exact **OtterLife main-app layout** (tabs, Home, Settings order) has not been extracted yet; only the trial/paywall segment was reviewed. T00 produces it. | Phase 1 T09–T12 |
 | E4 | Real **prices, trial length and offer** come from the Adapty dashboard. The 7-day trial in mockups is a design example. | Phase 2 |

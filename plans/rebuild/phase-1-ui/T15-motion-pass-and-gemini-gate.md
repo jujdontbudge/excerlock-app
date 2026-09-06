@@ -11,8 +11,8 @@ judgment. This task runs partially at M1 (onboarding + Home) and fully at M3.
    (or the dev-menu "Record flow" helper which prints the exact sequence). Recordings must show the whole
    flow at normal speed; do not speed them up. Convert with the hardware encoder if a file exceeds 20 MB
    (see T00 step 1).
-2. **Grade.** For each recording, run Gemini with the flow's bible file and its review checklist:
-   `gemini -p "@design/motion/<flow>.md @evidence/T15/<flow>.mp4 <grading prompt from design/motion/README.md>"`.
+2. **Grade.** For each recording, run Gemini through `agy` with the flow's bible file and its review checklist:
+   `agy -p "Read the bible at /abs/design/motion/<flow>.md, then watch every frame of /abs/app-next/evidence/T15/<flow>.mp4. <grading prompt from design/motion/README.md>" --model gemini-3.7-flash-high --dangerously-skip-permissions --add-dir /abs/design/motion --add-dir /abs/app-next/evidence/T15 > evidence/T15/<flow>-gemini.md`.
    The grading prompt asks for a table: checklist item · observed (yes/no/partial) · timestamp · what differs ·
    suggested fix, and an overall PASS/FAIL where any "no" on a required item is FAIL. Save the raw output to
    `evidence/T15/<flow>-gemini.md`.
