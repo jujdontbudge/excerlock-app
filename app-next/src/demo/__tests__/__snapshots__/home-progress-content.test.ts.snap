@@ -1,0 +1,59 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`biker-time progress variant 1`] = `
+{
+  "detail": "18 / 30 minutes",
+  "icon": "biking",
+  "title": "Bike 30 minutes",
+  "value": 0.6,
+}
+`;
+
+exports[`gym-arrival-user progress variant 1`] = `
+{
+  "action": "checkin",
+  "detail": "Your next visit counts · Auto-detect off",
+  "icon": "gym",
+  "label": "Check in",
+  "title": "Arrive at the gym",
+  "value": 0,
+}
+`;
+
+exports[`gym-time-user progress variant 1`] = `
+{
+  "detail": "12 / 30 minutes",
+  "icon": "gym",
+  "title": "Spend 30 minutes at the gym",
+  "value": 0.4,
+}
+`;
+
+exports[`home-locked-walking progress variant 1`] = `
+{
+  "detail": "3,200 / 5,000 steps",
+  "icon": "walking",
+  "title": "Walk 5,000 steps",
+  "value": 0.64,
+}
+`;
+
+exports[`home-walking-session progress variant 1`] = `
+{
+  "action": "stop",
+  "detail": "15:00 left",
+  "icon": "walking",
+  "label": "Stop walk",
+  "title": "Unlock while walking",
+  "value": 1,
+}
+`;
+
+exports[`runner-distance progress variant 1`] = `
+{
+  "detail": "1.2 / 2 mi",
+  "icon": "running",
+  "title": "Run 2 mi",
+  "value": 0.6,
+}
+`;

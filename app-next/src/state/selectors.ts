@@ -1,3 +1,4 @@
+import { todayHistory } from './todayHistory';
 import { useMemo, useSyncExternalStore } from 'react';
 import { useRuntime } from '../runtime/AppRuntimeProvider';
 import { resolveLock } from '../domain/resolveLock';
@@ -35,31 +36,44 @@ export function useTodayProgress() {
     days = useRuleDaysStore((s) => s.data.days);
   return useMemo(
     () =>
-      rules.flatMap((rule) => {
-        const instance = currentInstances(rule, now, tz)[0] ?? windowInstances(rule, dayKey(now, tz), tz)[0];
-        if (!instance) return [];
-        const row = days.find((d) => d.ruleId === rule.id && d.day === instance.day) ?? {
-          ruleId: rule.id,
-          day: instance.day,
-          progress: 0,
-          met: false,
-          metAt: null,
-        };
-        return [{ rule, row, instance }];
-      }),
+      rules
+        .filter((rule) => rule.enabled)
+        .flatMap((rule) => {
+          const instance = currentInstances(rule, now, tz)[0] ?? windowInstances(rule, dayKey(now, tz), tz)[0];
+          if (!instance) return [];
+          const row = days.find((d) => d.ruleId === rule.id && d.day === instance.day) ?? {
+            ruleId: rule.id,
+            day: instance.day,
+            progress: 0,
+            met: false,
+            metAt: null,
+          };
+          return [{ rule, row, instance }];
+        }),
     [rules, days, now, tz],
+  );
+}
+export function useHistory() {
+  const runtime = useRuntime(),
+    now = useClock(),
+    { history } = useDevSnapshot(),
+    rules = useRulesStore((s) => s.data.rules),
+    days = useRuleDaysStore((s) => s.data.days);
+  return useMemo(
+    () => todayHistory(history, rules, days, now, runtime.clock.timezone()),
+    [history, rules, days, now, runtime],
   );
 }
 export function useStreak() {
   const runtime = useRuntime(),
     now = useClock(),
-    { history } = useDevSnapshot();
+    history = useHistory();
   return useMemo(() => streak(history, dayKey(now, runtime.clock.timezone())), [history, now, runtime]);
 }
 export function useAnalytics(period: 'Week' | 'Month' | 'Year') {
   const runtime = useRuntime(),
     now = useClock(),
-    { history } = useDevSnapshot(),
+    history = useHistory(),
     baseline = useProfileStore((s) => s.data.estimatedDailyMinutes),
     today = dayKey(now, runtime.clock.timezone());
   return useMemo(() => {

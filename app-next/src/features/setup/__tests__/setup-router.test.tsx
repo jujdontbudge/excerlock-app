@@ -1,3 +1,4 @@
+import { Slot } from 'expo-router';
 import { Text } from 'react-native';
 import { fireEvent } from '@testing-library/react-native';
 import { renderRouter, screen } from 'expo-router/testing-library';
@@ -26,6 +27,8 @@ test.each([
     'setup/[step]': SetupRoute,
     'onboarding/[step]': () => <Text>Onboarding</Text>,
     paywall: () => <Text>Paywall</Text>,
+    '(tabs)/_layout': () => <Slot />,
+    builder: () => <Text>Builder</Text>,
     '(tabs)/home': () => <Text>Home</Text>,
     dev: () => <Text>Dev</Text>,
   };
@@ -50,7 +53,9 @@ test('skips preserve missing grants and X5 reports them before completing', asyn
       'setup/[step]': SetupRoute,
       'onboarding/[step]': () => <Text>Onboarding</Text>,
       paywall: () => <Text>Paywall</Text>,
-      '(tabs)/home': () => <Text>Home</Text>,
+      '(tabs)/_layout': () => <Slot />,
+    builder: () => <Text>Builder</Text>,
+    '(tabs)/home': () => <Text>Home</Text>,
       dev: () => <Text>Dev</Text>,
     },
     { initialUrl: '/setup/X5' },

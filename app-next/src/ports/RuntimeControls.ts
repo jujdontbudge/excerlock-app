@@ -4,6 +4,9 @@ export type FakePrompt =
   { kind: 'permission'; name: keyof Permissions; scope?: 'always' } | { kind: 'picker'; initial: LockedApps };
 export type RuntimeEvent = { at: string; event: string; props: Record<string, unknown> };
 export type DevSnapshot = {
+  hydrated?: boolean;
+  loading?: boolean;
+  stepsOverride?: { value: number; day: string; at: string };
   scenarioId: string;
   promptMode: 'grant' | 'deny' | 'ask';
   prompt: FakePrompt | null;
@@ -15,9 +18,12 @@ export type DevSnapshot = {
   presence: 'inside' | 'outside';
 };
 export interface RuntimeControls {
+  ready(): Promise<void>;
+  flush(): Promise<void>;
   scenarios: { id: string; title: string }[];
   load(id: string, keepEdits?: boolean): Promise<void>;
   advance(ms: number): void;
+  setSteps(value: number): void;
   setTime(now: string, timezone?: string): void;
   setPromptMode(mode: DevSnapshot['promptMode']): void;
   setPermission(name: keyof Permissions, status: Permissions[keyof Permissions]): void;

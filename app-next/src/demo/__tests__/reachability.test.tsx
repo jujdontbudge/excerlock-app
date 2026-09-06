@@ -1,10 +1,13 @@
+import { Slot } from 'expo-router';
 import { Text } from 'react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import { BootGate } from '../../features/launch/BootGate';
 import { scenarios } from '../scenarios';
-import { loadScenario } from '../scenarioLoader';
+import { createRuntime } from '../../runtime/createRuntime';
+import { AppRuntimeProvider } from '../../runtime/AppRuntimeProvider';
 test.each(scenarios.map((s) => [s.id, s] as const))('%s reaches its expected boot route', async (_, scenario) => {
-  await loadScenario(scenario);
+  const runtime = createRuntime();
+  await runtime.dev.load(scenario.id);
   const expected =
     scenario.onboarding === 'fresh'
       ? '/onboarding/O01'
@@ -15,10 +18,13 @@ test.each(scenarios.map((s) => [s.id, s] as const))('%s reaches its expected boo
           : '/paywall';
   const router = renderRouter(
     {
+      _layout: () => <AppRuntimeProvider runtime={runtime}><Slot /></AppRuntimeProvider>,
       index: BootGate,
       'onboarding/[step]': () => <Text>Onboarding</Text>,
       paywall: () => <Text>Paywall</Text>,
-      '(tabs)/home': () => <Text>Home</Text>,
+      '(tabs)/_layout': () => <Slot />,
+    builder: () => <Text>Builder</Text>,
+    '(tabs)/home': () => <Text>Home</Text>,
     },
     { initialUrl: '/' },
   );

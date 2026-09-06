@@ -1,3 +1,4 @@
+import { rulesStore } from '../../state/rulesStore';
 import { subscriptionCopy } from '../../content/subscription';
 import { useState } from 'react';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
@@ -18,6 +19,20 @@ export function DevControls() {
   return (
     <>
       <SettingsGroup title={c.clock}>
+        <SettingsRow
+          title={c.addSteps}
+          onPress={() => {
+            void runtime.steps.stepsSince(now).then((value) => runtime.dev.setSteps(value + 1000));
+          }}
+        />
+        <SettingsRow
+          title={c.pauseAll}
+          onPress={() =>
+            rulesStore
+              .getState()
+              .patch({ rules: rulesStore.getState().data.rules.map((rule) => ({ ...rule, enabled: false })) })
+          }
+        />
         <Label>{now}</Label>
         <SettingsRow title={c.hour} onPress={() => runtime.dev.advance(3600000)} />
         <SettingsRow title={c.day} onPress={() => runtime.dev.advance(86400000)} />

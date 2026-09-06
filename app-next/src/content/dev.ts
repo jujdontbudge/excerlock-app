@@ -1,4 +1,6 @@
 export const devCopy = {
+  addSteps: 'Add 1,000 steps',
+  pauseAll: 'Pause all conditions',
   title: 'Developer menu',
   support: 'Local scenarios and component previews.',
   current: 'Current scenario',

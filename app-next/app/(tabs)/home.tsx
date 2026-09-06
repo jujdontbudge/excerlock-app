@@ -1,1 +1,1 @@
-export { StagePreview as default } from '../../src/features/dev/StagePreview';
+export { HomeScreen as default } from '../../src/features/home/HomeScreen';

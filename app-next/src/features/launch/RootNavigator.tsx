@@ -4,8 +4,10 @@ import { entitlementStore as useEntitlementStore } from '../../state/entitlement
 import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
 import { tokens as t } from '../../design-system/tokens';
 import { FakePromptHost } from '../permissions/FakePromptHost';
+import { useDevSnapshot } from '../../state/selectors';
 export function RootNavigator() {
   const motion = useMotion();
+  const loading = Boolean(useDevSnapshot().loading);
   const status = useEntitlementStore((s) => s.data.entitlement.status),
     onboarding = useOnboardingStore((s) => s.data),
     entitled = status === 'trial' || status === 'active';
@@ -19,17 +21,18 @@ export function RootNavigator() {
         }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="dev" />
-        <Stack.Protected guard={!onboarding.complete && onboarding.step !== 'P' && !entitled}>
+        <Stack.Protected guard={loading || (!onboarding.complete && onboarding.step !== 'P' && !entitled)}>
           <Stack.Screen name="onboarding/[step]" />
         </Stack.Protected>
-        <Stack.Protected guard={!entitled}>
+        <Stack.Protected guard={loading || !entitled}>
           <Stack.Screen name="paywall" options={{ gestureEnabled: false }} />
         </Stack.Protected>
-        <Stack.Protected guard={entitled && !onboarding.setupComplete}>
+        <Stack.Protected guard={loading || (entitled && !onboarding.setupComplete)}>
           <Stack.Screen name="setup/[step]" />
         </Stack.Protected>
-        <Stack.Protected guard={entitled && onboarding.setupComplete}>
-          <Stack.Screen name="(tabs)/home" />
+        <Stack.Protected guard={loading || (entitled && onboarding.setupComplete)}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="builder" options={{ presentation: 'fullScreenModal' }} />
         </Stack.Protected>
       </Stack>
       <FakePromptHost />

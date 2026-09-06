@@ -1,7 +1,7 @@
+import { Slot, router } from 'expo-router';
 import { act, fireEvent } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { renderRouter, screen } from 'expo-router/testing-library';
-import { router } from 'expo-router';
 import { RootNavigator } from '../../launch/RootNavigator';
 import { BootGate } from '../../launch/BootGate';
 import { OnboardingRoute } from '../../onboarding/OnboardingRoute';
@@ -24,6 +24,8 @@ async function mount(scenario = 'fresh-install', initialUrl = '/paywall') {
     'onboarding/[step]': OnboardingRoute,
     paywall: PaywallSlot,
     'setup/[step]': () => <Text>Setup</Text>,
+    '(tabs)/_layout': () => <Slot />,
+    builder: () => <Text>Builder</Text>,
     '(tabs)/home': () => <Text>Home</Text>,
     dev: () => <Text>Dev</Text>,
   };

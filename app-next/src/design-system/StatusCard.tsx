@@ -1,4 +1,5 @@
 import { View } from 'react-native';
+import { ReactNode } from 'react';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
 import { LivingIcon } from '../motion/LivingIcon';
@@ -8,11 +9,13 @@ export function StatusCard({
   subtitle,
   nextChange,
   unlocked = false,
+  hero,
 }: {
   title: string;
   subtitle: string;
   nextChange?: string;
   unlocked?: boolean;
+  hero?: ReactNode;
 }) {
   return (
     <Reveal>
@@ -31,16 +34,18 @@ export function StatusCard({
             gap: t.space.lg,
             alignItems: 'center',
           }}>
-          <LivingIcon key={unlocked ? 'open' : 'closed'} name={unlocked ? 'lock-open' : 'lock'} size={t.space.hero} />
+          {hero ?? <LivingIcon name={unlocked ? 'lock-open' : 'lock'} size={t.space.hero} />}
           <View style={{ flex: 1, gap: t.space.sm }}>
             <Reveal key={title}>
               <Label accessibilityRole="header" variant="section">
                 {title}
               </Label>
             </Reveal>
-            <Label tone="secondary" variant="support">
-              {subtitle}
-            </Label>
+            <Reveal key={subtitle}>
+              <Label tone="secondary" variant="support">
+                {subtitle}
+              </Label>
+            </Reveal>
           </View>
         </View>
         {nextChange ? (

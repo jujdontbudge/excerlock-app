@@ -24,6 +24,7 @@ export function DevMenu() {
       <LivingIcon name="gear" />
       <Heading title={c.title} support={c.support} />
       <Label>{view.scenarioId}</Label>
+      <DevControls />
       <SettingsGroup>
         {runtime.dev.scenarios.map((s) => (
           <SettingsGroup key={s.id} title={s.title}>
@@ -43,7 +44,6 @@ export function DevMenu() {
           </SettingsGroup>
         ))}
       </SettingsGroup>
-      <DevControls />
       <SettingsGroup>
         <SettingsRow title={c.previews} onPress={() => router.push('/dev?gallery=1' as Href)} />
         <SettingsRow title={c.shield} onPress={() => router.push('/dev?stage=shield' as Href)} />
