@@ -55,7 +55,13 @@ has no app code.
    fps), easing character (linear / ease-out / spring with or without overshoot, with per-frame displacement
    where visible), stagger between siblings, gesture-driven vs tap-driven, visible haptic cues. Merge into
    `design/motion/reference/motion-<app>.md`.
-4. Save prompts verbatim in `design/motion/reference/PROMPTS.md` with model and date; raw outputs under
+4. **Frame strips for Codex.** Codex cannot watch video but can view images. For every transition and
+   micro-interaction Gemini lists with a timestamp, cut a horizontal strip of frames around it:
+   `ffmpeg -ss <t-0.2> -t 1.2 -i seg.mp4 -vf "fps=12,scale=200:-2,tile=15x1" strips/<app>-<id>.png`
+   (one strip per moment, 15 frames at 12 fps, named by app and the motion id from the motion file). Also
+   one contact sheet per screen for layout (`design/motion/reference/strips/<app>-screens.png`). Commit the
+   strips (small PNGs); they are what Codex looks at while building.
+5. Save prompts verbatim in `design/motion/reference/PROMPTS.md` with model and date; raw outputs under
    `design/motion/reference/raw/` before merging.
 
 That is the whole task. No ExcerLock mapping, no per-screen spec, no checklist: Codex does that while
@@ -69,3 +75,4 @@ building each screen, and records what it took from the references in each task'
 - [ ] OtterLife inventory covers onboarding, the trial/paywall sequence, every main tab and the whole Settings
       screen; AppBlock inventory covers the app picker, schedule editor and blocking status screens.
 - [ ] Motion files give numbers (ms, fps, per-frame displacement where visible), not adjectives.
+- [ ] `strips/` has one frame strip per listed motion and one contact sheet per screen, for all three apps.

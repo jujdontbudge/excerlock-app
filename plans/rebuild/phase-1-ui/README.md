@@ -40,6 +40,27 @@ first path is proven end to end before multiplying branches (handoff §7 "priori
    in T00 and asset FOUNDRY manifests when generating icons).
 9. **Ask Johan** only for items listed as Open in `00-decisions.md` §E. Everything else is decided.
 
+## Motion bar (applies to every task that builds a screen)
+
+Rich motion is a requirement, not polish. Minimum per screen, checked in T15 and by Johan:
+
+- **Entrance and exit.** Every screen enters and leaves with a designed transition (push, modal, in-place
+  state change), never a hard cut.
+- **Something alive above the fold.** A hero illustration that animates in, a chart that draws, a number that
+  ticks, a diagram that morphs, or a list that staggers in. Static screens are not accepted.
+- **Feedback on every interaction.** Press scale and haptic on pressables, selection highlight that moves
+  rather than flips, switches that slide, progress that fills, fields that focus with a visible change.
+- **Nothing pops.** No element appears or disappears without an animation, including validation errors,
+  badges, chips, sheet content and tab content.
+- **Gestures where OtterLife has them.** Sheets drag to dismiss, rows swipe, sliders track the finger, tab
+  content responds to the indicator.
+- **Continuity.** Elements that persist across screens (progress bar, hero lock, plan summary rows) move,
+  not re-mount.
+- **Reduce Motion** still shows every state change, as a crossfade.
+
+Codex studies the reference frame strips in `design/motion/reference/strips/` before building each flow and
+writes what it took from them in the task's motion notes.
+
 ## Definition of done for Phase 1
 
 - Every screen id in `02-screen-inventory.md` exists, with every listed state reachable from a dev-menu scenario.
