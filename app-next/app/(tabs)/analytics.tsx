@@ -1,4 +1,1 @@
-import { TabPlaceholder } from '../../src/features/home/TabPlaceholder';
-export default function Screen() {
-  return <TabPlaceholder tab="analytics" />;
-}
+export { AnalyticsScreen as default } from '../../src/features/analytics/AnalyticsScreen';
