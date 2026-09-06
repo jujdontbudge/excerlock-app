@@ -16,7 +16,11 @@ export function Heading({
   return (
     <Reveal>
       <View style={{ gap: t.space.md }}>
-        <Label accessibilityRole="header" variant={variant} style={{ textAlign: centered ? 'center' : 'left' }}>
+        <Label
+          accessibilityLabel={title.replace(/\s+/g, ' ')}
+          accessibilityRole="header"
+          variant={variant}
+          style={{ textAlign: centered ? 'center' : 'left' }}>
           {title}
         </Label>
         {support ? (

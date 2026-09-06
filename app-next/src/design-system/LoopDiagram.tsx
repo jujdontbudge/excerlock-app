@@ -1,3 +1,4 @@
+import { fadeIn, fadeOut } from '../motion/presets';
 import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import Animated from 'react-native-reanimated';
@@ -19,7 +20,7 @@ export function LoopDiagram({
       <View style={{ flexDirection: 'row', gap: t.space.lg }}>
         {labels.map((label, i) => (
           <Animated.View
-            key={label}
+            key={i}
             style={{
               flex: 1,
               alignItems: 'center',
@@ -29,14 +30,16 @@ export function LoopDiagram({
               transitionDuration: t.motion.duration.standard,
             }}>
             <LivingIcon name={icons[i]} size={t.space.hero} />
-            <Label
-              variant="support"
-              style={{
-                textAlign: 'center',
-                color: i === phase ? t.brand.primary : t.text.secondary,
-              }}>
-              {label}
-            </Label>
+            <Animated.View key={label} entering={fadeIn} exiting={fadeOut}>
+              <Label
+                variant="support"
+                style={{
+                  textAlign: 'center',
+                  color: i === phase ? t.brand.primary : t.text.secondary,
+                }}>
+                {label}
+              </Label>
+            </Animated.View>
           </Animated.View>
         ))}
       </View>

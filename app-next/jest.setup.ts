@@ -1,5 +1,9 @@
 jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock'));
 import 'react-native-gesture-handler/jestSetup';
+jest.mock('react-native-reanimated/mock', () => ({
+  ...jest.requireActual('react-native-reanimated/mock'),
+  useReducedMotion: () => true,
+}));
 jest.mock('react-native-reanimated', () => ({
   ...require('react-native-reanimated/mock'),
   useReducedMotion: () => true,

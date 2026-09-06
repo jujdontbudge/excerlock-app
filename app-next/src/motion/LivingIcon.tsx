@@ -2,7 +2,7 @@ import Animated from 'react-native-reanimated';
 import { Icon, IconName } from '../icons/Icon';
 import { tokens as t } from '../design-system/tokens';
 import { useMotion } from './useMotion';
-import { popIn, fadeOut } from './presets';
+import { popIn, fadeOut, fadeIn } from './presets';
 export function LivingIcon({ name, size = t.layout.heroIcon }: { name: IconName; size?: number }) {
   const m = useMotion();
   return (
@@ -21,7 +21,9 @@ export function LivingIcon({ name, size = t.layout.heroIcon }: { name: IconName;
           animationIterationCount: 'infinite',
           animationTimingFunction: 'ease-in-out',
         }}>
-        <Icon name={name} size={size} />
+        <Animated.View key={name} entering={fadeIn} exiting={fadeOut}>
+          <Icon name={name} size={size} />
+        </Animated.View>
       </Animated.View>
     </Animated.View>
   );
