@@ -16,5 +16,5 @@ with recording(ROOT/'evidence/T04/onboarding-O01-O20.mp4'):
   screenshot(ROOT/f'evidence/T04/{step}-default.png');(ROOT/f'evidence/T04/{step}-default.json').write_text(json.dumps(nodes))
   print(step,flush=True)
   tap('Get started' if i==1 else 'Continue');time.sleep(.55)
-find('W1')
+find('Where will you walk?')
 print('Reached W1',flush=True)

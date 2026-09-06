@@ -12,5 +12,9 @@ export function canContinue(step: string, answers: Answers): boolean {
     const minutes = answers.estimatedDailyMinutes ?? 180;
     return typeof minutes === 'number' && minutes >= 60 && minutes <= 720 && minutes % 30 === 0;
   }
+  if (step === 'W3') {
+    const n = Number(answers.stepGoal ?? 5000);
+    return n >= 500 && n <= 30000 && n % 500 === 0;
+  }
   return true;
 }
