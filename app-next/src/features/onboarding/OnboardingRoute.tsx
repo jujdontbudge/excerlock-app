@@ -1,18 +1,59 @@
+import { useMemo, useState } from 'react';
 import { OnboardingShell } from './OnboardingShell';
 import { useOnboarding } from './useOnboarding';
 import { canContinue } from '../../onboarding/validation';
 import { PreBranchScreen } from './PreBranchScreen';
+import { ScheduleScreen } from '../rules/ScheduleScreen';
+import { TimeSheet } from '../rules/TimeSheet';
+import { scheduleDraft, reduceSchedule, scheduleAnswers, toSchedule, ScheduleAction } from '../rules/scheduleDraft';
+import { draftFromAnswers, commitPlan } from '../rules/plan';
+import { createDraft, toRule } from '../rules/draft';
+import { PlanBuild } from '../rules/PlanBuild';
+import { PlanSummary } from '../rules/PlanSummary';
+import { ReviewWarmup } from '../rules/ReviewWarmup';
+import { settingsStore as useSettingsStore } from '../../state/settingsStore';
+import { planCopy as c } from '../../content/plan';
 export function OnboardingRoute() {
-  const flow = useOnboarding();
+  const flow = useOnboarding(),
+    unit = useSettingsStore((s) => s.data.units),
+    [wheel, setWheel] = useState<'start' | 'end' | null>(null);
+  const base = useMemo(() => createDraft('walking', unit), [unit]);
+  const draft = draftFromAnswers(flow.answers, unit, base),
+    schedule = scheduleDraft(flow.answers);
+  const onSchedule = (action: ScheduleAction) =>
+    Object.entries(scheduleAnswers(reduceSchedule(schedule, action))).forEach(([key, value]) =>
+      flow.setAnswer(key, value),
+    );
+  const advance = () => {
+    if (flow.step === 'S3') commitPlan(flow.answers, unit, draft);
+    flow.advance();
+  };
+  let body = <PreBranchScreen {...flow} />;
+  if (flow.step === 'S1') body = <ScheduleScreen draft={schedule} onAction={onSchedule} onChoose={setWheel} />;
+  if (flow.step === 'S2') body = <PlanBuild rule={toRule(draft, toSchedule(schedule))} onComplete={flow.advance} />;
+  if (flow.step === 'S3') body = <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} />;
+  if (flow.step === 'S4') body = <ReviewWarmup onSkip={flow.advance} />;
   return (
     <OnboardingShell
       step={flow.step}
       progress={flow.progress}
       direction={flow.direction}
       onBack={flow.back}
-      onContinue={flow.advance}
-      valid={canContinue(flow.step, flow.answers)}>
-      <PreBranchScreen {...flow} />
+      onContinue={advance}
+      valid={canContinue(flow.step, flow.answers)}
+      continueLabel={flow.step === 'S3' ? c.use : undefined}
+      hideContinue={flow.step === 'S2'}
+      overlay={
+        <TimeSheet
+          which={wheel}
+          value={wheel ? schedule[wheel] : schedule.start}
+          onChange={(value) => {
+            if (wheel) onSchedule({ type: wheel, value });
+          }}
+          onDismiss={() => setWheel(null)}
+        />
+      }>
+      {body}
     </OnboardingShell>
   );
 }

@@ -14,5 +14,5 @@ export function scheduleLabel(schedule: Schedule): string {
         ? c.weekdays
         : days.map((d) => c.days[d]).join(', ');
   const w = schedule.window;
-  return `${dayLabel} · ${w.kind === 'allDay' ? c.allDay : `${minuteLabel(w.startMinute)}–${minuteLabel(w.endMinute)}`}`;
+  return `${dayLabel} · ${w.kind === 'allDay' ? c.allDay : `${minuteLabel(w.startMinute)}–${minuteLabel(w.endMinute)}${w.endMinute <= w.startMinute ? c.endsNextDay : ''}`}`;
 }

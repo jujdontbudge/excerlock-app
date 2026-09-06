@@ -57,6 +57,7 @@ export type WalkingSession = {
 };
 
 export type Profile = {
+  warmupRating?: number | null;
   name: string;
   referralSource: string; // one of the referral options
   ageBand: string; // option id

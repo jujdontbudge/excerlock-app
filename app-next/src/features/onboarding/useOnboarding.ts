@@ -3,9 +3,10 @@ import { Keyboard } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
 import { nextStep, prevStep, progressFraction, resumeStep } from '../../onboarding/flow';
+import { createDraft } from '../rules/draft';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 export function useOnboarding() {
-  const params = useLocalSearchParams<{ step: string }>(),
+  const params = useLocalSearchParams<{ step: string; returnTo?: string }>(),
     router = useRouter(),
     runtime = useRuntime(),
     state = useOnboardingStore((s) => s.data),
@@ -14,6 +15,13 @@ export function useOnboarding() {
     flow = { step, answers: state.answers };
   useEffect(() => {
     useOnboardingStore.getState().patch({ step });
+    const current = useOnboardingStore.getState().data.answers;
+    if (step.startsWith('S') && !current.ruleId) {
+      const draft = createDraft('walking');
+      useOnboardingStore
+        .getState()
+        .patch({ answers: { ...current, ruleId: draft.id, ruleCreatedAt: draft.createdAt } });
+    }
     runtime.analytics.screen(step);
   }, [step, runtime]);
   const move = (next: string, back = false) => {
@@ -33,8 +41,25 @@ export function useOnboarding() {
     advance: () => {
       if (step === 'O10' && state.answers.estimatedDailyMinutes === undefined)
         useOnboardingStore.getState().patch({ answers: { ...state.answers, estimatedDailyMinutes: 180 } });
-      move(nextStep(flow));
+      const destination = params.returnTo || String(state.answers.returnTo || '');
+      if (destination) {
+        useOnboardingStore.getState().patch({ answers: { ...state.answers, returnTo: '' } });
+        router.setParams({ returnTo: undefined });
+        move(destination);
+      } else move(nextStep(flow));
     },
-    back: () => move(prevStep(flow), true),
+    edit: (target: string) => {
+      useOnboardingStore.getState().patch({ answers: { ...state.answers, returnTo: 'S3' } });
+      setDirection('back');
+      router.setParams({ step: target, returnTo: 'S3' });
+    },
+    back: () => {
+      const destination = params.returnTo || String(state.answers.returnTo || '');
+      if (destination) {
+        useOnboardingStore.getState().patch({ answers: { ...state.answers, returnTo: '' } });
+        router.setParams({ returnTo: undefined });
+        move(destination);
+      } else move(prevStep(flow), true);
+    },
   };
 }

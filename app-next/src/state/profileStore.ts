@@ -5,6 +5,7 @@ export const defaultUnits = Intl.DateTimeFormat().resolvedOptions().locale.endsW
 export const profileStore = createPersistedStore<Profile>(
   'profile',
   {
+    warmupRating: null,
     name: '',
     referralSource: '',
     ageBand: '',
@@ -15,6 +16,8 @@ export const profileStore = createPersistedStore<Profile>(
     units: defaultUnits,
   },
   {
+    warmupRating: (value) =>
+      value === null || (typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 5),
     name: v.text,
     referralSource: v.text,
     ageBand: v.text,

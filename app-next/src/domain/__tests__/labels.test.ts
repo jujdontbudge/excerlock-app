@@ -29,7 +29,7 @@ test('condition names and schedules use the product vocabulary', () => {
   expect(scheduleLabel(rule.schedule)).toBe('Mon–Fri · 9 AM–9 PM');
   expect(scheduleLabel({ days: [0, 1, 2, 3, 4, 5, 6], window: { kind: 'allDay' } })).toBe('Every day · All day');
   expect(scheduleLabel({ days: [6, 0], window: { kind: 'range', startMinute: 1200, endMinute: 120 } })).toBe(
-    'Sat, Sun · 8 PM–2 AM',
+    'Sat, Sun · 8 PM–2 AM, ends next day',
   );
   expect(scheduleLabel({ days: [2], window: { kind: 'range', startMinute: 0, endMinute: 750 } })).toBe(
     'Tue · 12 AM–12:30 PM',

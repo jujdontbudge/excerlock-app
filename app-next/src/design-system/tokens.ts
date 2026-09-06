@@ -99,6 +99,8 @@ export const tokens = {
       sheet: 360,
       reveal: 600,
       tick: 900,
+      planCheck: 400,
+      planBuild: 1500,
       navigation: 460,
       breathe: 3600,
       frame: 16,

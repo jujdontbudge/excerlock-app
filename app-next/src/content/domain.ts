@@ -9,6 +9,7 @@ export const domainCopy = {
   weekdays: 'Mon–Fri',
   allDay: 'All day',
   days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+  endsNextDay: ', ends next day',
   am: 'AM',
   pm: 'PM',
 } as const;

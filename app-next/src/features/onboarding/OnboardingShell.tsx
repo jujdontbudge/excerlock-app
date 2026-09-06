@@ -1,4 +1,4 @@
-import { PropsWithChildren } from 'react';
+import { PropsWithChildren, ReactNode } from 'react';
 import { View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -20,6 +20,9 @@ export function OnboardingShell({
   onBack,
   onContinue,
   valid = true,
+  overlay,
+  continueLabel,
+  hideContinue = false,
 }: PropsWithChildren<{
   step: string;
   progress: number;
@@ -27,6 +30,9 @@ export function OnboardingShell({
   onBack: () => void;
   onContinue: () => void;
   valid?: boolean;
+  overlay?: ReactNode;
+  continueLabel?: string;
+  hideContinue?: boolean;
 }>) {
   const m = useMotion(),
     family = ['O12', 'O13', 'O14'].includes(step) ? 'dots' : ['O16', 'O17', 'O18'].includes(step) ? 'loop' : step;
@@ -38,8 +44,17 @@ export function OnboardingShell({
     : (direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.slow);
   return (
     <ScreenShell
+      overlay={overlay}
       header={<OnboardingHeader progress={progress} onBack={step === 'O01' ? undefined : onBack} />}
-      footer={<PrimaryButton label={step === 'O01' ? c.start : c.continue} onPress={onContinue} disabled={!valid} />}>
+      footer={
+        hideContinue ? undefined : (
+          <PrimaryButton
+            label={continueLabel ?? (step === 'O01' ? c.start : c.continue)}
+            onPress={onContinue}
+            disabled={!valid}
+          />
+        )
+      }>
       <View style={{ flexGrow: 1 }}>
         <Animated.View key={family} entering={enter} exiting={exit} style={{ flexGrow: 1, gap: t.space.xl }}>
           {children}

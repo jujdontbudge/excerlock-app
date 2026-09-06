@@ -1,3 +1,4 @@
+import { scheduleDraft, scheduleIssues } from '../features/rules/scheduleDraft';
 import { Answers } from './types';
 import { choiceQuestions } from '../content/onboardingChoices';
 export function canContinue(step: string, answers: Answers): boolean {
@@ -12,6 +13,7 @@ export function canContinue(step: string, answers: Answers): boolean {
     const minutes = answers.estimatedDailyMinutes ?? 180;
     return typeof minutes === 'number' && minutes >= 60 && minutes <= 720 && minutes % 30 === 0;
   }
+  if (step === 'S1') return scheduleIssues(scheduleDraft(answers)).length === 0;
   if (step === 'W3') {
     const n = Number(answers.stepGoal ?? 5000);
     return n >= 500 && n <= 30000 && n % 500 === 0;

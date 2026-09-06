@@ -1,3 +1,5 @@
+import Animated from 'react-native-reanimated';
+import { layoutTransition } from '../motion/presets';
 import { Switch, View } from 'react-native';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
@@ -19,7 +21,7 @@ export function TimeRangeRow({
   onChoose: (which: 'start' | 'end') => void;
 }) {
   return (
-    <View style={{ gap: t.space.lg }}>
+    <Animated.View layout={layoutTransition} style={{ gap: t.space.lg }}>
       <View
         style={{
           flexDirection: 'row',
@@ -59,6 +61,6 @@ export function TimeRangeRow({
           ))}
         </Reveal>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
