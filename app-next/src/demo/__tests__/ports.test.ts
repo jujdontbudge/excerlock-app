@@ -1,0 +1,57 @@
+import { createRuntime } from '../../runtime/createRuntime';
+import { permissionsStore } from '../../state/permissionsStore';
+import { rulesStore } from '../../state/rulesStore';
+import { ruleDaysStore } from '../../state/ruleDaysStore';
+test('fake permission and app-picker prompts resolve through local controls', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('fresh-install');
+  const permission = runtime.screenTime.requestAuthorization();
+  expect(runtime.dev.snapshot().prompt).toEqual({ kind: 'permission', name: 'screenTime' });
+  runtime.dev.resolvePrompt(false);
+  expect(await permission).toBe('denied');
+  runtime.dev.setPromptMode('grant');
+  expect(await runtime.health.request()).toBe('granted');
+  const picker = runtime.screenTime.presentAppPicker();
+  const selection = { handle: { token: 'opaque-fake' }, appCount: 2, categoryCount: 1 };
+  runtime.dev.resolvePrompt(selection);
+  expect(await picker).toEqual(selection);
+  expect(rulesStore.getState().data.lockedApps).toEqual(selection);
+  runtime.dispose();
+});
+test('scripted walking phases and gym arrivals update observable local facts', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('home-walking-session');
+  const phases: string[] = [];
+  const stop = runtime.walking.observe((s) => {
+    if (s) phases.push(s.phase);
+  });
+  await runtime.walking.start(rulesStore.getState().data.rules[0]);
+  runtime.dev.advance(6000);
+  runtime.dev.advance(6000);
+  runtime.dev.advance(6000);
+  expect(phases).toEqual(expect.arrayContaining(['verifying', 'walking', 'grace', 'ended']));
+  stop();
+  await runtime.dev.load('gym-arrival-user');
+  const gym = runtime.gym.listPlaces()[0];
+  await runtime.gym.checkIn(gym.id);
+  expect(ruleDaysStore.getState().data.days[0].met).toBe(true);
+  runtime.dev.setPromptMode('grant');
+  expect(await runtime.gym.enableAutoDetect()).toBe(true);
+  expect(permissionsStore.getState().data.location).toBe('always');
+  runtime.dispose();
+});
+test('cancelled or failed identity requests do not grant a session', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('fresh-install');
+  runtime.dev.setOutcome('cancel');
+  expect(await runtime.auth.signInWithApple()).toEqual({ kind: 'anonymous' });
+  runtime.dev.setOutcome('error');
+  await expect(runtime.auth.signInWithGoogle()).rejects.toThrow();
+  runtime.dev.setOutcome('success');
+  await runtime.auth.sendEmailCode('alex@example.test');
+  await expect(runtime.auth.verifyEmailCode('000000')).rejects.toThrow();
+  expect((await runtime.auth.verifyEmailCode('123456')).kind).toBe('signedIn');
+  await runtime.auth.signOut();
+  expect(runtime.auth.session().kind).toBe('anonymous');
+  runtime.dispose();
+});

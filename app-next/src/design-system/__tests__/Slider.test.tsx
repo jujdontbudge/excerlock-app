@@ -1,4 +1,6 @@
-import { render, screen, fireEvent } from '@testing-library/react-native';
+import { getByGestureTestId, fireGestureHandler } from 'react-native-gesture-handler/jest-utils';
+import { State } from 'react-native-gesture-handler';
+import { render, screen, fireEvent, act } from '@testing-library/react-native';
 import { Slider } from '../Slider';
 test('the slider supports accessible increments without exceeding its range', async () => {
   const change = jest.fn();
@@ -12,9 +14,6 @@ test('the slider supports accessible increments without exceeding its range', as
 });
 
 test('touching the track sets a value immediately, without requiring a drag', async () => {
-  const { getByGestureTestId, fireGestureHandler } = require('react-native-gesture-handler/jest-utils');
-  const { State } = require('react-native-gesture-handler');
-  const { act } = require('@testing-library/react-native');
   const change = jest.fn();
   await render(<Slider label="Track touch" value={3} min={0} max={12} step={0.5} onChange={change} />);
   await fireEvent(screen.getByRole('adjustable'), 'layout', {

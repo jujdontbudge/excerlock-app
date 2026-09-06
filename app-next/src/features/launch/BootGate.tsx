@@ -1,0 +1,13 @@
+import { Redirect, Href } from 'expo-router';
+import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
+import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
+import { useHydrated } from '../../state/useHydrated';
+import { bootDestination } from '../../onboarding/bootDestination';
+import { BootScreen } from './BootScreen';
+export function BootGate() {
+  const hydrated = useHydrated(),
+    { complete, step } = useOnboardingStore((s) => s.data),
+    { entitlement } = useEntitlementStore((s) => s.data);
+  const destination = bootDestination(complete, step, entitlement.status);
+  return hydrated && destination ? <Redirect href={destination as Href} /> : <BootScreen />;
+}

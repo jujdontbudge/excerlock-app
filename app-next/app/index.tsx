@@ -1,1 +1,1 @@
-export { BootScreen as default } from '../src/features/launch/BootScreen';
+export { BootGate as default } from '../src/features/launch/BootGate';

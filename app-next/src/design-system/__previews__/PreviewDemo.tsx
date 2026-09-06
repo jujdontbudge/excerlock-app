@@ -58,7 +58,7 @@ export function PreviewDemo({ name, alternate }: { name: (typeof previewNames)[n
             onPress={() => show(previewNames[(previewNames.indexOf(name) + 1) % previewNames.length], 'default')}
           />
           <SecondaryButton label={c.variants} onPress={() => show(name, alternate ? 'default' : 'alternate')} />
-          <SecondaryButton label={c.gallery} variant="tertiary" onPress={() => router.replace('/dev')} />
+          <SecondaryButton label={c.gallery} variant="tertiary" onPress={() => router.replace('/dev?gallery=1')} />
         </>
       }>
       <Heading title={name} support={alternate ? c.alternate : c.standard} />

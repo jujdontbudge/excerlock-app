@@ -1,5 +1,5 @@
 import { renderRouter, screen } from 'expo-router/testing-library';
-import Boot from '../../../../app/index';
+import { BootScreen as Boot } from '../BootScreen';
 test('the root route mounts the boot surface', async () => {
   await renderRouter({ index: Boot }, { initialUrl: '/' });
   expect(await screen.findByTestId('boot')).toBeTruthy();

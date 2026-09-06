@@ -1,0 +1,38 @@
+import { scenarios } from '../scenarios';
+import { validateScenario } from '../validateScenario';
+test('all 24 required scenarios are valid and the analytics fixture has six weeks of measurements', () => {
+  expect(scenarios.map((s) => s.id)).toEqual([
+    'fresh-install',
+    'onboarding-walking-resume',
+    'home-locked-walking',
+    'home-unlocked-met',
+    'home-walking-session',
+    'home-before-window',
+    'home-no-rules',
+    'home-permission-needed',
+    'home-no-apps',
+    'gym-arrival-user',
+    'gym-time-user',
+    'runner-distance',
+    'biker-time',
+    'multi-rule-overlap',
+    'window-crosses-midnight',
+    'trial-active',
+    'trial-expired',
+    'billing-issue',
+    'signed-in-apple',
+    'analytics-6-weeks',
+    'analytics-day-zero',
+    'analytics-no-measurement',
+    'dynamic-type-xl',
+    'reduce-motion',
+  ]);
+  for (const s of scenarios) expect(validateScenario(s)).toEqual([]);
+  expect(scenarios.find((s) => s.id === 'analytics-6-weeks')!.history).toHaveLength(42);
+  expect(scenarios.find((s) => s.id === 'window-crosses-midnight')!.rules[0].schedule.window).toEqual({
+    kind: 'range',
+    startMinute: 1200,
+    endMinute: 120,
+  });
+  expect(validateScenario({})).not.toEqual([]);
+});

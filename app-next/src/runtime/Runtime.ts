@@ -1,0 +1,28 @@
+import { ScreenTimePort } from '../ports/ScreenTimePort';
+import { StepsPort } from '../ports/StepsPort';
+import { WalkingPort } from '../ports/WalkingPort';
+import { GymPort } from '../ports/GymPort';
+import { HealthPort } from '../ports/HealthPort';
+import { AuthPort } from '../ports/AuthPort';
+import { SubscriptionPort } from '../ports/SubscriptionPort';
+import { AnalyticsPort } from '../ports/AnalyticsPort';
+import { NotificationsPort } from '../ports/NotificationsPort';
+import { SyncPort } from '../ports/SyncPort';
+import { ClockPort } from '../ports/ClockPort';
+import { RuntimeControls } from '../ports/RuntimeControls';
+export type Runtime = {
+  readonly kind: 'fake';
+  screenTime: ScreenTimePort;
+  steps: StepsPort;
+  walking: WalkingPort;
+  gym: GymPort;
+  health: HealthPort;
+  auth: AuthPort;
+  subscription: SubscriptionPort;
+  analytics: AnalyticsPort;
+  notifications: NotificationsPort;
+  sync: SyncPort;
+  clock: ClockPort;
+  dev: RuntimeControls;
+  dispose: () => void;
+};
