@@ -1,3 +1,4 @@
+import { subscriptionCopy } from '../../content/subscription';
 import { useState } from 'react';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { useClock, useDevSnapshot } from '../../state/selectors';
@@ -45,6 +46,14 @@ export function DevControls() {
           options={c.outcomes}
           value={view.outcome}
           onChange={(outcome) => runtime.dev.setOutcome(outcome as typeof view.outcome)}
+        />
+      </SettingsGroup>
+      <SettingsGroup title={subscriptionCopy.restoreOutcome}>
+        <Label>{subscriptionCopy.devNote}</Label>
+        <SegmentedControl
+          options={subscriptionCopy.restoreOutcomes}
+          value={view.restoreOutcome}
+          onChange={(value) => runtime.dev.setRestoreOutcome(value as typeof view.restoreOutcome)}
         />
       </SettingsGroup>
       <SettingsGroup title={c.permissions}>

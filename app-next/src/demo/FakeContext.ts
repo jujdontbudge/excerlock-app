@@ -20,6 +20,7 @@ export class FakeContext {
       history: scenario.history,
       accessibility: scenario.accessibility,
       outcome: 'success',
+      restoreOutcome: ['trial', 'active'].includes(scenario.entitlement.status) ? 'restored' : 'notFound',
       presence: scenario.gym?.presence ?? 'outside',
     };
   }

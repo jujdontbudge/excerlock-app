@@ -69,6 +69,7 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
       "planBuild": 1500,
       "planCheck": 400,
       "press": 100,
+      "purchase": 800,
       "reveal": 600,
       "sheet": 360,
       "slow": 320,

@@ -43,6 +43,8 @@ export function FakeRuntime(): Runtime {
         ctx.clock.set(scenario.clock.now, scenario.clock.timezone);
         ctx.update({
           scenarioId: id,
+          outcome: 'success',
+          restoreOutcome: ['trial', 'active'].includes(scenario.entitlement.status) ? 'restored' : 'notFound',
           promptMode: scenario.fakeSystemPrompts,
           history: scenario.history,
           events: [],
@@ -59,6 +61,7 @@ export function FakeRuntime(): Runtime {
           .getState()
           .patch({ entitlement: { status, renewsAt: entitlementStore.getState().data.entitlement.renewsAt } }),
       setSession: (session) => sessionStore.getState().patch({ session }),
+      setRestoreOutcome: (restoreOutcome) => ctx.update({ restoreOutcome }),
       setOutcome: (outcome) => ctx.update({ outcome }),
       resolvePrompt: ctx.resolve,
       snapshot: ctx.snapshot,

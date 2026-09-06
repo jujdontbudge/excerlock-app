@@ -9,6 +9,7 @@ export type DevSnapshot = {
   events: RuntimeEvent[];
   history: HistoryDay[];
   accessibility?: 'xl' | 'reduceMotion';
+  restoreOutcome: 'restored' | 'notFound';
   outcome: 'success' | 'cancel' | 'error';
   presence: 'inside' | 'outside';
 };
@@ -21,6 +22,7 @@ export interface RuntimeControls {
   setPermission(name: keyof Permissions, status: Permissions[keyof Permissions]): void;
   setEntitlement(status: Entitlement['status']): void;
   setSession(session: Session): void;
+  setRestoreOutcome(outcome: DevSnapshot['restoreOutcome']): void;
   setOutcome(outcome: DevSnapshot['outcome']): void;
   resolvePrompt(result: boolean | LockedApps): void;
   snapshot(): DevSnapshot;

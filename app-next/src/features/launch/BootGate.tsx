@@ -6,8 +6,8 @@ import { bootDestination } from '../../onboarding/bootDestination';
 import { BootScreen } from './BootScreen';
 export function BootGate() {
   const hydrated = useHydrated(),
-    { complete, step } = useOnboardingStore((s) => s.data),
+    { complete, step, setupComplete, setupStep } = useOnboardingStore((s) => s.data),
     { entitlement } = useEntitlementStore((s) => s.data);
-  const destination = bootDestination(complete, step, entitlement.status);
+  const destination = bootDestination(complete, step, entitlement.status, setupComplete, setupStep);
   return hydrated && destination ? <Redirect href={destination as Href} /> : <BootScreen />;
 }

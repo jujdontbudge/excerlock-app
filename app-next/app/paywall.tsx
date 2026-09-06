@@ -1,1 +1,1 @@
-export { StagePreview as default } from '../src/features/dev/StagePreview';
+export { PaywallSlot as default } from '../src/features/subscription/PaywallSlot';

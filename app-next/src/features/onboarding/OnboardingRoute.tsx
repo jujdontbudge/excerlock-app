@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { TrialScreen } from '../subscription/TrialScreen';
 import { OnboardingShell } from './OnboardingShell';
 import { useOnboarding } from './useOnboarding';
 import { canContinue } from '../../onboarding/validation';
@@ -29,6 +30,8 @@ export function OnboardingRoute() {
     flow.advance();
   };
   let body = <PreBranchScreen {...flow} />;
+  if (flow.step === 'T1' || flow.step === 'T2' || flow.step === 'T3' || flow.step === 'T4')
+    body = <TrialScreen step={flow.step} onContinue={flow.advance} />;
   if (flow.step === 'S1') body = <ScheduleScreen draft={schedule} onAction={onSchedule} onChoose={setWheel} />;
   if (flow.step === 'S2') body = <PlanBuild rule={toRule(draft, toSchedule(schedule))} onComplete={flow.advance} />;
   if (flow.step === 'S3') body = <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} />;
@@ -42,7 +45,7 @@ export function OnboardingRoute() {
       onContinue={advance}
       valid={canContinue(flow.step, flow.answers)}
       continueLabel={flow.step === 'S3' ? c.use : undefined}
-      hideContinue={flow.step === 'S2'}
+      hideContinue={flow.step === 'S2' || flow.step === 'T3'}
       overlay={
         <TimeSheet
           which={wheel}

@@ -1,8 +1,9 @@
+import { fakeOffer } from '../../content/subscription';
 import { SubscriptionPort } from '../../ports/SubscriptionPort';
 import { entitlementStore } from '../../state/entitlementStore';
 import { FakeContext } from '../FakeContext';
 export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
-  const entitlement = () => entitlementStore.getState().data.entitlement;
+  const entitlement = () => ({ ...entitlementStore.getState().data.entitlement, offer: fakeOffer });
   return {
     entitlement,
     presentPaywall: async (placement) => {
@@ -16,9 +17,13 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
       return next;
     },
     restore: async () => {
-      ctx.result();
+      if (ctx.result() === 'cancel') return entitlement();
       ctx.log('restore');
-      entitlementStore.getState().patch({ entitlement: ctx.scenario.entitlement });
+      const next =
+        ctx.snapshot().restoreOutcome === 'restored'
+          ? { status: 'active' as const, renewsAt: new Date(Date.parse(ctx.clock.now()) + 30 * 86400000).toISOString() }
+          : { status: 'none' as const, renewsAt: null };
+      entitlementStore.getState().patch({ entitlement: next });
       return entitlement();
     },
     identify: (id) => ctx.log('subscription_identify', { id }),

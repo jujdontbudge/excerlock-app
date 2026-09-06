@@ -101,6 +101,7 @@ export const tokens = {
       tick: 900,
       planCheck: 400,
       planBuild: 1500,
+      purchase: 800,
       navigation: 460,
       breathe: 3600,
       frame: 16,

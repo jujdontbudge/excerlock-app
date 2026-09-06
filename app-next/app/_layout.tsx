@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { RootNavigator } from '../src/features/launch/RootNavigator';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -9,7 +9,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AppRuntimeProvider>
           <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false }} />
+          <RootNavigator />
         </AppRuntimeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
