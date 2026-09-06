@@ -3,8 +3,7 @@
 Authority: the handoff's "Visual direction — non-negotiable", `design/STYLE.md` (with its 2026-09-06 and
 2026-09-05 overrides at the top), and `design/research/appblock-orange/DESIGN-SYSTEM.md` §5–§8 for tokens and
 component contracts. Where that document's §9 "illustration grammar" describes dimensional objects, it is
-**superseded** by the 2026-09-06 icon correction below. The Gemini bible (`design/motion/`) owns layout
-placement and motion; this file owns tokens and component anatomy.
+**superseded** by the 2026-09-06 icon correction below. Codex owns layout placement and motion, informed by Gemini's reference study in `design/motion/reference/`; this file owns tokens and component anatomy.
 
 ## 1. Tokens (`app-next/src/design-system/tokens.ts`, the only place values live)
 
@@ -68,10 +67,10 @@ survive the XL accessibility size without clipping the CTA (test in T16).
 - Standard glyph 20–24 pt, stroke ~1.75–2 pt (utility icons). Activity/feature icons 40–56 pt.
 - Shadow only on the primary CTA and hero objects: y 4, blur 12, 8% black. Cards use border/fill.
 - Tab bar: native height (49 + safe area), white, top hairline `border.default`, active tint `brand.primary`,
-  inactive `text.muted`, label under icon (OtterLife style; confirm in the bible).
+  inactive `text.muted`, label under icon (OtterLife style; confirm against the reference inventory).
 - Logical canvas target 402 × 874 pt (iPhone 17 Pro); everything is relative, safe areas resolved at runtime.
 
-### Motion tokens (the floor; the bible may add named curves, never replace these names)
+### Motion tokens (the floor; Codex may add named curves, never replace these names)
 
 ```ts
 duration: { press: 100, fast: 180, standard: 240, slow: 320, sheet: 360, reveal: 600, tick: 900 }
@@ -130,7 +129,7 @@ met / unlocked → `notificationAsync(Success)`; validation error → `notificat
 | `BarChart` / `LineChart` | SVG, orange + comparison series, direct labels | No chart library. |
 | `StatTile` | metric + label | |
 | `StreakBadge` | flame + number | |
-| `SettingsGroup` / `SettingsRow` | inset grouped list, 1 pt separators, native-looking chevrons, value text, switch | Order and grouping per the bible's OtterLife mapping. |
+| `SettingsGroup` / `SettingsRow` | inset grouped list, 1 pt separators, native-looking chevrons, value text, switch | Order and grouping per Codex's OtterLife mapping (from the reference study). |
 | `PermissionRow` | icon, name, status pill (Granted / Off / Needed), action | |
 | `BottomSheet` | 28 pt corners, grabber, dim backdrop, spring `sheet`, drag-to-dismiss | Gesture Handler + Reanimated, not a RN `Modal`. |
 | `Toast` | none | Not used. State changes are shown in place. |

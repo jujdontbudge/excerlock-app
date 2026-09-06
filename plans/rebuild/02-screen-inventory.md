@@ -1,11 +1,11 @@
 # 02 — Screen, state and transition inventory
 
 Every screen the new app has, in flow order, with its states and where it goes. Screen ids (`O01`, `W2`,
-`H`, `S-...`) are used by the task files, the Gemini bible and the dev menu. Copy in quotes is the approved
+`H`, `S-...`) are used by the task files, the reference study and the dev menu. Copy in quotes is the approved
 heading from the board generator; body copy is Codex's to draft within `03-design-system.md` §4 unless quoted.
 
-Layout mapping law (decision C3): for each screen, the bible names the OtterLife screen it maps to and the
-placement/order of its components. Where the table below says "AppBlock", OtterLife has no equivalent.
+Layout mapping law (decision C3): for each screen, Codex picks the OtterLife screen it maps to and copies the
+placement/order of its components, using Gemini's inventory in `design/motion/reference/`. Where the table below says "AppBlock", OtterLife has no equivalent.
 
 ## 1. Launch
 
@@ -22,7 +22,7 @@ CTA. Answers persist immediately so killing the app resumes at the same step.
 
 | Id | Screen | Content | Interaction / states | OtterLife map |
 | --- | --- | --- | --- | --- |
-| O01 | "Block apps. Exercise more." | `ScheduleWidget` hero: blocked 12 PM–8 PM until arrival at the gym, gym icon, blocked-time line. One-line body. | Animated widget entrance (bible). | OtterLife intro card 1 |
+| O01 | "Block apps. Exercise more." | `ScheduleWidget` hero: blocked 12 PM–8 PM until arrival at the gym, gym icon, blocked-time line. One-line body. | Animated widget entrance modeled on OtterLife's intro cards. | OtterLife intro card 1 |
 | O02 | "See your progress" | Trend hero: screen time down, exercise up. | | intro 2 |
 | O03 | "Stay in control" | Lock + rule tiles hero; short copy. | | intro 3 |
 | O04 | "What should we call you?" | `TextField`, keyboard up on enter, CTA rides keyboard. | empty (CTA disabled) · valid · >30 chars error | name screen |
@@ -32,9 +32,9 @@ CTA. Answers persist immediately so killing the app resumes at the same step.
 | O08 | "What do you want to improve first?" | More exercise · Less screen time · Overall wellness. "Pick one. You can change it later." | | goal-style single choice |
 | O09 | "What's the main reason you want to make a change?" | Options adapted from DAWG 017 (`fitness/01-dawg/017-*.png`): reword into ExcerLock voice, 5–6 options. | | motivation |
 | O10 | "How many hours do you currently spend scrolling each day?" | `Slider` 1–12 h in 30-min steps, big live number. Persists `estimatedDailyMinutes`. | value changes with haptic ticks | Unrot 023 structure, OtterLife visual |
-| O11 | "Here's some quick math" | hours/day → hours/month → days/year, numbers tick up in sequence (bible). | | reveal |
+| O11 | "Here's some quick math" | hours/day → hours/month → days/year, numbers tick up in sequence (timing modeled on Unrot's math screen). | | reveal |
 | O12 | "This is a year in your life" | `DotGrid` 365 dots, all neutral. | | reveal |
-| O13 | "This is the free time left" | Same grid; the free-time subset fills (animation: bible). Unit labeled ("after sleep and work, roughly N hours a day"). | | reveal |
+| O13 | "This is the free time left" | Same grid; the free-time subset fills (timing modeled on Unrot's dot reveals). Unit labeled ("after sleep and work, roughly N hours a day"). | | reveal |
 | O14 | "This is how much time you spend scrolling" | Same grid; scrolling subset in orange, with the number from O10. | | reveal |
 | O15 | "Less scrolling. More moving." | `LineChart` trend: screen time down, exercise up, labeled "illustrative". | | outcome chart |
 | O16 | "Stuck in the scroll loop?" | `LoopDiagram` state 1: urge → scroll → reward → repeat. | Continue → O17 animates in place | explainer |
@@ -85,7 +85,7 @@ Each branch is a sequence inside the same flow machine; Back walks the actual pa
 | Id | Screen | Content | States | Next |
 | --- | --- | --- | --- | --- |
 | S1 | "When should blocking be active?" | `DayPicker` (Mon–Fri pre-selected) + `TimeRangeRow` (9:00 AM–9:00 PM pre-selected) + "All day" switch + live summary line "Mon–Fri · 9 AM–9 PM". (The old "reward" screens are removed.) | no days error · window < 15 min error · all-day | S2 |
-| S2 | "Setting up your plan…" | `Checklist` animating: Exercise ✓ · Unlock rule ✓ · Days and times ✓. Auto-advances when done (≈1.5 s, bible). No fake countdown. | | S3 |
+| S2 | "Setting up your plan…" | `Checklist` animating: Exercise ✓ · Unlock rule ✓ · Days and times ✓. Auto-advances when done (≈1.5 s, modeled on OtterLife's plan-building screen). No fake countdown. | | S3 |
 | S3 | "Your plan is ready" | `PlanSummary` card computed from answers: activity + mode + goal, days, times, "Unlocks your apps for the rest of the day" (or "while you walk"). Each row has Edit → jumps to that screen and returns here. CTA "Use this plan". | | S4 |
 | S4 | "Help us make ExcerLock better" | Five star targets, helper, CTA "Continue", secondary "Not now". No fake reviews. Rating request is a warm-up only (real `StoreReview` call happens in Phase 2 policy, not here). | unselected · selected | T1 |
 | T1 | "Try ExcerLock free" | Trial offer: benefits list, "7-day free trial" placeholder label (from Adapty in Phase 2), CTA "Continue". | | T2 |
@@ -110,11 +110,11 @@ and the relevant message, above the tabs.
 ## 6. Main app — tabs
 
 Tab bar: Home · Conditions · Analytics · Settings (labels + line icons). Tab switch animates in place
-(no cross-fade through black; bible defines the indicator motion).
+(no cross-fade through black; indicator motion modeled on OtterLife's tab bar).
 
 ### H — Home
 
-Component order is decided by the bible's OtterLife mapping; required content:
+Component order is decided by Codex's OtterLife mapping (from the reference study); required content:
 
 1. `StatusCard` — driven by `LockDecision`:
    - `locked`: lock icon, "Apps are blocked", subtitle = `nextUnlockHint`, "until you …".
@@ -153,12 +153,12 @@ summary with Edit links. Cancel confirms if dirty.
 6. Weekly recap card (Week only): rows per `01-product-model.md` §7.
 7. Empty states: day zero ("Your first week starts today"), no measurement yet (usage monitor not available), no rules.
 
-Charts are SVG, animate on period change (bars grow, bible), and never show placeholder data outside the dev
+Charts are SVG, animate on period change (bars grow, timing modeled on AppBlock/OtterLife insights screens), and never show placeholder data outside the dev
 menu scenarios.
 
 ### S — Settings
 
-Grouping and order follow the bible's OtterLife settings mapping. Required rows:
+Grouping and order follow OtterLife's settings screen as inventoried in the reference study; Codex places our rows where OtterLife would. Required rows:
 
 - Profile header: name, sign-in state (Signed in with Apple · Not signed in → Sign in).
 - Subscription: plan and renewal (from Entitlement), Manage subscription (App Store), Restore purchases.
@@ -191,7 +191,7 @@ Sub-screens: `settings/support`, `settings/legal/[doc]`, `settings/permission/[n
   builds a `ShieldPreview` screen in the dev menu that renders the same content model so the copy and layout
   are approved before Phase 2 ports the Swift.
 
-## 9. Transitions (defaults; the bible overrides per screen)
+## 9. Transitions (defaults; Codex adjusts per screen from the reference study)
 
 - Onboarding: horizontal push (native stack), 320 ms `standard`; Back pops. In-place state screens (O16–O18) animate content, not the route.
 - Sheets: `sheet` spring from bottom, backdrop fade 180 ms, drag to dismiss.

@@ -3,7 +3,7 @@
 ## Inputs
 
 `02-screen-inventory.md` §5 and §7 (SH-apps, SH-gym, SH-permission-fake). AppBlock replay 8/40/120 for the
-sheet and permission-primer structure. Bible `20-setup.md`. Old app copy for permission explanations lives in
+sheet and permission-primer structure. Reference study (`design/motion/reference/`). Old app copy for permission explanations lives in
 `app/src/lock/PERMISSION_COPY` (read for facts about what Screen Time can and cannot see; rewrite in the new
 voice).
 
@@ -31,7 +31,7 @@ voice).
 6. X5 "You're all set" checklist reflecting actual grants; "Go to Home".
 7. `SH-apps` and `SH-gym` are also opened from Home/Conditions/Settings later; export them from
    `src/features/sheets/`.
-8. Evidence for every screen and prompt result; bible checklist.
+8. Evidence for every screen and prompt result; motion notes.
 
 ## Acceptance
 

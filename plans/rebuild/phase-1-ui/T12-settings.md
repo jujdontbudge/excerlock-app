@@ -2,14 +2,14 @@
 
 ## Inputs
 
-`02-screen-inventory.md` §6 (Settings) for the required rows, bible `60-settings.md` for **grouping and order
+`02-screen-inventory.md` §6 (Settings) for the required rows, reference study (`design/motion/reference/`) for **grouping and order
 per OtterLife** (decision C3: rows go where OtterLife puts them, in OtterLife's order; rows OtterLife lacks
-are modeled on the OtterLife row the bible names). Mockup `main-settings-v3.png` is a first-viewport concept
+are modeled on the closest OtterLife row Codex picks from the inventory). Mockup `main-settings-v3.png` is a first-viewport concept
 only. Old copy for delete-account explanation: `app/src/account/AccountSettingsCard.tsx` (facts), reworded.
 
 ## Steps
 
-1. `SettingsScreen` composed from `SettingsGroup`s in the bible's order, with every required row: profile
+1. `SettingsScreen` composed from `SettingsGroup`s in the OtterLife-mapped order Codex derives from the reference study, with every required row: profile
    header; subscription (plan/renewal from `entitlementStore`, Manage subscription → fake external link
    note, Restore → `SubscriptionPort.restore()`); permissions (`PermissionRow` × 6 with Fix → opens
    `settings/permission/[name]`); preferences (Units segmented km/mi, Walk & Scroll stop grace picker, Gym
@@ -29,6 +29,6 @@ only. Old copy for delete-account explanation: `app/src/account/AccountSettingsC
 
 ## Acceptance
 
-- [ ] Every required row exists; the order matches `60-settings.md` and the bible checklist is ticked.
+- [ ] Every required row exists; the order follows the OtterLife settings inventory and the motion notes are written.
 - [ ] Delete-account flow ends in the signed-out anonymous state with rules intact (local-first law test).
 - [ ] Dev menu opens from 7 footer taps.

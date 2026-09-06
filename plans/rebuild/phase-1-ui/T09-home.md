@@ -3,15 +3,15 @@
 ## Inputs
 
 `02-screen-inventory.md` §6 (Home), mockup `main-home-v3.png` (concept only), AppBlock replay 50 (`reference/
-replay-50.png`) for the blocking status card, bible `30-home.md` (component order per OtterLife) and
+replay-50.png`) for the blocking status card, reference study (`design/motion/reference/`) (component order per OtterLife) and
 `00-principles.md`. `01-product-model.md` §3 (LockDecision), §6 (unlock hint).
 
 ## Steps
 
 1. `app/(tabs)/_layout.tsx` with the custom `TabBar` from T02: Home · Conditions · Analytics · Settings, labels
-   and line icons, indicator motion per bible, content stays mounted, no cross-fade through black.
+   and line icons, indicator motion modeled on OtterLife's (reference study), content stays mounted, no cross-fade through black.
    Conditions/Analytics/Settings render `EmptyState` placeholders until T10–T12.
-2. `src/features/home/HomeScreen.tsx` composing, in the bible's order: `StatusCard`, `ProgressCard` list,
+2. `src/features/home/HomeScreen.tsx` composing, in the OtterLife-mapped order Codex derives from the reference study: `StatusCard`, `ProgressCard` list,
    locked-apps row, streak chip, "Add condition". Header per OtterLife mapping (greeting with `profile.name`,
    date).
 3. `StatusCard` content model: `src/features/home/statusContent.ts` maps `LockDecision` + permissions +
@@ -35,6 +35,6 @@ replay-50.png`) for the blocking status card, bible `30-home.md` (component orde
 
 - [ ] All ten Home states render from scenarios with correct copy (snapshot tests of `statusContent`).
 - [ ] Fake clock and fake steps drive `locked` → `unlockedMet` live, with the haptic call asserted in a test.
-- [ ] Tab switch keeps Home scroll position; indicator animation per bible checklist.
+- [ ] Tab switch keeps Home scroll position; indicator animation matches the OtterLife tab motion in the reference study.
 - [ ] M1 gate: fresh install → walking onboarding → paywall stand-in → setup → Home, recorded end to end in
       `evidence/T09/m1-end-to-end.mp4`, and Johan has looked at it.

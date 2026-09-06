@@ -9,7 +9,7 @@ ExcerLock/
   server/         ← VPS API (touched only in Phase 2)
   packages/       ← analytics-events reused in Phase 2; condition-model and ledger not used
   plans/rebuild/  ← this plan
-  design/motion/  ← Gemini bible (Phase 1 T00 output)
+  design/motion/  ← Gemini reference study of OtterLife/AppBlock/Unrot (Phase 1 T00 output)
 ```
 
 `app-next` is added to the root `package.json` workspaces. Node ≥ 22. Expo SDK 57, Expo Router, React

@@ -4,7 +4,7 @@
 
 Mockups `final-schedule.png`, `final-loading.png`, `final-summary.png`, `final-review-v3.png`. AppBlock
 replay 41 (`design/research/appblock-orange/reference/replay-41.png`) is the functional reference for the
-combined days-and-times screen. Bible `10-onboarding.md` tail section. `01-product-model.md` §2 (schedule
+combined days-and-times screen. Reference study (`design/motion/reference/`). `01-product-model.md` §2 (schedule
 validation), §4 (instances).
 
 ## Steps
@@ -14,7 +14,7 @@ validation), §4 (instances).
    "All day" switch that collapses the time row, live summary via `domain/scheduleLabel`. Errors: no days,
    window under 15 min. Cross-midnight is allowed and labeled ("8 PM–2 AM, ends next day").
    Tests: reducer for the schedule draft; rendered test for each error; label updates live.
-2. S2 "Setting up your plan…": `Checklist` items animate in sequence (bible timing), then auto-advance. The
+2. S2 "Setting up your plan…": `Checklist` items animate in sequence (timing modeled on OtterLife's checklist screens), then auto-advance. The
    items are real facts from the draft (activity, rule, days/times). No countdown, no fake analysis claims.
    Test: advances after the last check; Reduce Motion shortens to a single fade and still advances.
 3. S3 "Your plan is ready": `PlanSummary` built from `toRule(draft, schedule)` and `ruleName` /
@@ -25,7 +25,7 @@ validation), §4 (instances).
    Tests: summary text matches every branch's draft; Edit→return keeps other answers; commit writes one rule.
 4. S4 "Help us make ExcerLock better": five star targets (44 pt), helper, Continue / Not now. Stores the
    rating locally (`profileStore.warmupRating`), no store prompt in Phase 1. Test: both paths advance.
-5. Evidence, bible checklist, XL screenshots for S1 and S3.
+5. Evidence, motion notes, XL screenshots for S1 and S3.
 
 ## Acceptance
 

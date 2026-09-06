@@ -9,7 +9,7 @@ the hard-paywall behavior, and the entitlement states are all testable now.
 Mockups `final-trial-offer-v3.png`, `final-trial-reminder-v3.png`, `final-notification-v3.png`,
 `final-timeline-v3.png`, `final-paywall-top-v3.png`, `final-paywall-bottom-v3.png` (the last two describe the
 structure Johan will reproduce in the builder; the stand-in approximates them). OtterLife replay 139–171 s
-and `design/research/otter-replay/trial-paywall.jpg`. Bible `70-sheets-and-paywall.md`.
+and `design/research/otter-replay/trial-paywall.jpg`. Reference study (`design/motion/reference/`).
 
 ## Steps
 
@@ -30,7 +30,7 @@ and `design/research/otter-replay/trial-paywall.jpg`. Bible `70-sheets-and-paywa
 6. Re-entry states: `trial-expired` and `billing-issue` scenarios boot to P with the matching message banner
    above the plans, placement `in_app`.
 7. On `trial`/`active`: route to X1 (setup) if setup not complete, else tabs. Test all transitions.
-8. Evidence, bible checklist.
+8. Evidence, motion notes.
 
 ## Acceptance
 
