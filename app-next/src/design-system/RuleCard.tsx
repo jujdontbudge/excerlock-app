@@ -1,8 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Switch, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
+import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Animated from 'react-native-reanimated';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
 import { Icon, IconName } from '../icons/Icon';
@@ -26,31 +25,8 @@ export function RuleCard({
   onToggle: (enabled: boolean) => void;
   onDelete: () => void;
 }) {
-  const x = useSharedValue(0),
-    start = useSharedValue(0),
-    [opened, setOpened] = useState(false);
+  const [opened, setOpened] = useState(false);
   const reveal = t.space.hero + t.space.lg;
-  const gesture = useMemo(
-    () =>
-      Gesture.Pan()
-        .activeOffsetX([-t.space.md, t.space.md])
-        .failOffsetY([-t.space.md, t.space.md])
-        .onBegin(() => {
-          start.set(x.get());
-        })
-        .onUpdate((e) => {
-          x.set(Math.min(0, Math.max(-reveal, start.get() + e.translationX)));
-        })
-        .onEnd(() => {
-          const open = x.get() < -reveal / 2;
-          x.set(withSpring(open ? -reveal : 0, t.motion.spring.control));
-          scheduleOnRN(setOpened, open);
-        }),
-    [x, start, reveal],
-  );
-  const offset = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.get() }],
-  }));
   return (
     <View
       style={{
@@ -58,25 +34,27 @@ export function RuleCard({
         overflow: 'hidden',
         backgroundColor: t.state.error,
       }}>
-      <View
-        accessibilityElementsHidden={!opened}
-        importantForAccessibility={opened ? 'auto' : 'no-hide-descendants'}
-        style={{
-          position: 'absolute',
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: reveal,
-          justifyContent: 'center',
-        }}>
-        <PressableScale label={controls.remove} onPress={onDelete} style={{ alignItems: 'center' }}>
-          <Icon name="trash" variant="utility" tint={t.text.onAccent} size={t.layout.glyph} />
-          <Label variant="support" tone="onAccent">
-            {controls.remove}
-          </Label>
-        </PressableScale>
-      </View>
-      <GestureDetector gesture={gesture}>
+      <Swipeable
+        overshootRight={false}
+        onSwipeableOpen={() => setOpened(true)}
+        onSwipeableClose={() => setOpened(false)}
+        renderRightActions={() => (
+          <View
+            accessibilityElementsHidden={!opened}
+            importantForAccessibility={opened ? 'auto' : 'no-hide-descendants'}
+            style={{
+              backgroundColor: t.state.error,
+              width: reveal,
+              justifyContent: 'center',
+            }}>
+            <PressableScale label={controls.remove} onPress={onDelete} style={{ alignItems: 'center' }}>
+              <Icon name="trash" variant="utility" tint={t.text.onAccent} size={t.layout.glyph} />
+              <Label variant="support" tone="onAccent">
+                {controls.remove}
+              </Label>
+            </PressableScale>
+          </View>
+        )}>
         <Animated.View
           style={[
             {
@@ -89,7 +67,6 @@ export function RuleCard({
               alignItems: 'center',
               gap: t.space.md,
             },
-            offset,
           ]}>
           <View style={{ flex: 1 }}>
             <PressableScale
@@ -124,7 +101,7 @@ export function RuleCard({
           />
           <Icon name="chevron" variant="utility" size={t.space.lg} />
         </Animated.View>
-      </GestureDetector>
+      </Swipeable>
     </View>
   );
 }

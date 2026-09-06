@@ -1,11 +1,13 @@
-import { create } from 'zustand';
+import { create, createStore, StateCreator } from 'zustand';
 import { createDraft, DraftAction, reduceDraft, RuleDraft } from './draft';
-export const useRuleDraftStore = create<{
-  draft: RuleDraft;
-  replace: (draft: RuleDraft) => void;
-  dispatch: (action: DraftAction) => void;
-}>((set) => ({
-  draft: createDraft('walking'),
-  replace: (draft) => set({ draft }),
-  dispatch: (action) => set((s) => ({ draft: reduceDraft(s.draft, action) })),
-}));
+type DraftState = { draft: RuleDraft; replace: (draft: RuleDraft) => void; dispatch: (action: DraftAction) => void };
+const state =
+  (draft: RuleDraft): StateCreator<DraftState> =>
+  (set) => ({
+    draft,
+    replace: (draft) => set({ draft }),
+    dispatch: (action) => set((s) => ({ draft: reduceDraft(s.draft, action) })),
+  });
+export const useRuleDraftStore = create(state(createDraft('walking')));
+/** A modal owns a separate transaction, including while another route is retained. */
+export const createRuleDraftStore = (draft: RuleDraft) => createStore(state(draft));
