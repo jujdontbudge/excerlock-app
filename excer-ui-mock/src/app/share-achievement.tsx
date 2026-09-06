@@ -5,11 +5,12 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { milestoneFixtures } from '@/content';
 import {
   AccessibleModal,
-  AccessibleModalTitle,
+  FullScreenModalPage,
   PillowCard,
   PillButton,
   SettingsRow,
   colors,
+  radius,
   space,
   type,
 } from '@/design-system';
@@ -65,14 +66,16 @@ export default function ShareAchievementRoute() {
       />
       <AccessibleModal
         accessibilityTitle={previewTitle}
-        animationType="slide"
+        contentContainerStyle={styles.modalPage}
         onRequestClose={closePreview}
+        scrollEnabled={false}
         style={styles.backdrop}
         visible={preview !== null}
       >
-        <PillowCard style={styles.card} variant="light">
-          <AccessibleModalTitle style={styles.title}>{previewTitle}</AccessibleModalTitle>
-          <Text style={styles.body}>Simulated native surface · no data leaves this prototype.</Text>
+        <PillowCard style={[styles.card, styles.cardFull]} variant="light">
+          <FullScreenModalPage
+            footer={<PillButton fullWidth label={result ? 'Done' : preview === 'share' ? 'Cancel' : 'Done'} onPress={closePreview} variant={result || preview === 'save' ? 'screen' : 'text'} />}
+          >
           {preview === 'share' ? (
             result ? (
               <View accessibilityLiveRegion="polite" style={styles.acknowledgement}>
@@ -100,7 +103,7 @@ export default function ShareAchievementRoute() {
             <SettingsRow onPress={() => setResult('Save acknowledged locally')} showChevron={false} title="Save to Photos preview" tone="light" />
           )}
           {preview === 'save' && result ? <Text accessibilityLiveRegion="polite" style={styles.result}>{result}</Text> : null}
-          {preview === 'share' && result ? null : <PillButton fullWidth label={preview === 'share' ? 'Cancel' : 'Done'} onPress={closePreview} variant="dark" />}
+          </FullScreenModalPage>
         </PillowCard>
       </AccessibleModal>
     </>
@@ -110,13 +113,13 @@ export default function ShareAchievementRoute() {
 const styles = StyleSheet.create({
   acknowledgement: { alignItems: 'center', gap: space[2], minHeight: 170, justifyContent: 'center' },
   acknowledgementTitle: { ...type.screenLarge, color: colors.text.ink },
-  backdrop: { backgroundColor: colors.surface.scrim, flex: 1, justifyContent: 'flex-end', padding: space[4] },
-  body: { ...type.body, color: colors.text.ink, opacity: 0.7 },
+  backdrop: { flex: 1 },
   card: { gap: space[3], padding: space[5] },
-  result: { ...type.label, color: colors.brand.burnt },
-  sectionLabel: { ...type.micro, color: colors.text.ink, opacity: 0.58 },
+  cardFull: { flex: 1, paddingBottom: 0, paddingTop: 0 },
+  modalPage: { flex: 1 },
+  result: { ...type.label, color: colors.text.primary },
+  sectionLabel: { ...type.micro, color: colors.text.ink },
   shareSheetContent: { alignItems: 'stretch', gap: space[2] },
-  systemList: { backgroundColor: colors.surface.cardElevated, borderRadius: 16, overflow: 'hidden' },
+  systemList: { backgroundColor: colors.surface.cardElevated, borderRadius: radius.card, overflow: 'hidden' },
   targets: { gap: space[1] },
-  title: { ...type.screenTitle, color: colors.text.ink },
 });

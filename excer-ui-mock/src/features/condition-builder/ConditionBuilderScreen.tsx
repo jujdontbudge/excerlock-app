@@ -1,16 +1,24 @@
 import { useState } from 'react';
 import { ImageBackground, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
+import Animated, { FadeIn, cubicBezier, useReducedMotion } from 'react-native-reanimated';
 
 import {
   AccessibleModal,
-  AccessibleModalTitle,
+  AppHeader,
   ConditionCard,
+  FullScreenModalPage,
+  GradientScreen,
   PillowCard,
   PillButton,
   PressableScale,
-  SheetFrame,
+  SelectableBubble,
   SwitchRow,
+  VectorIcon,
   colors,
+  iconSize,
+  layout,
+  motion,
   radius,
   space,
   type,
@@ -31,6 +39,7 @@ import {
   getRateQuantumSummary,
   getRewardSummary,
   type BuilderDraft,
+  type BuilderCategory,
   type DemoCondition,
   type RewardKind,
   type SavedGym,
@@ -40,6 +49,17 @@ import { OptionRow, PrototypeNotice } from '@/features/shared';
 import { getCatalogAvailability, getPlaceAvailability } from './builderAvailability';
 
 type BannerAssetId = AssetId<'banners'>;
+
+function catalogGlyph(entry: (typeof conditionCatalog)[number]): keyof typeof assetRegistry.glyphs {
+  if (entry.id.startsWith('gym-')) return 'icon-activity-gym';
+  if (entry.id.startsWith('walk-')) return 'icon-activity-walk';
+  if (entry.id.startsWith('run-')) return 'icon-activity-run';
+  if (entry.id.startsWith('cycle-')) return 'icon-activity-cycle';
+  if (entry.id.startsWith('swim-')) return 'icon-activity-swim';
+  if (entry.id.startsWith('calories-')) return 'icon-active-calories';
+  if (entry.id.startsWith('active-minutes-')) return 'icon-health';
+  return 'icon-tab-mountain';
+}
 
 function isBannerAssetId(id: string): id is BannerAssetId {
   return Object.prototype.hasOwnProperty.call(assetRegistry.banners, id);
@@ -63,6 +83,15 @@ const runtimeBannerOptions = allBannerOptions.filter(
 
 const SAMPLE_PHOTO_BANNER_ID: BannerAssetId = 'general-city-motion';
 
+const builderCategories: readonly { label: string; value: BuilderCategory }[] = [
+  { label: 'Gym', value: 'Gym' },
+  { label: 'Walking', value: 'Walking' },
+  { label: 'Running', value: 'Running' },
+  { label: 'Cycling', value: 'Cycling' },
+  { label: 'Swimming', value: 'Swimming' },
+  { label: 'Other activity', value: 'Any activity' },
+];
+
 export type ConditionBuilderScreenProps = {
   appleHealthAvailable?: boolean;
   canContinue: boolean;
@@ -79,6 +108,7 @@ export type ConditionBuilderScreenProps = {
   onSelectActiveWindow: (value: BuilderDraft['activeWindow']) => void;
   onSelectActiveWindowTime: (edge: 'start' | 'end', minutes: number) => void;
   onSelectBanner: (bannerId: string) => void;
+  onSelectCategory: (category: BuilderCategory) => void;
   onSelectCatalog: (catalogId: string) => void;
   onSelectCooldown: (minutes: number) => void;
   onSelectDailyCap: (value: number | 'unlimited') => void;
@@ -112,6 +142,7 @@ export function ConditionBuilderScreen({
   onSelectActiveWindow,
   onSelectActiveWindowTime,
   onSelectBanner,
+  onSelectCategory,
   onSelectCatalog,
   onSelectCooldown,
   onSelectDailyCap,
@@ -128,11 +159,11 @@ export function ConditionBuilderScreen({
   title,
   units = 'kilometers',
 }: ConditionBuilderScreenProps) {
-  const [catalogFilter, setCatalogFilter] = useState('All');
+  const reduceMotion = useReducedMotion();
   const [bannerFilter, setBannerFilter] = useState('All');
   const [photoPhase, setPhotoPhase] = useState<'picker' | 'crop' | null>(null);
   const showBack = draft.path.indexOf(draft.step) > 0;
-  const visibleCatalog = conditionCatalog.filter((entry) => catalogFilter === 'All' || entry.group === catalogFilter);
+  const visibleCatalog = conditionCatalog.filter((entry) => entry.group === draft.catalogGroup);
   const visibleBanners = runtimeBannerOptions.filter((option) => {
     if (bannerFilter === 'All') return true;
     const family = bannerOptions.find((group) => group.options.some((entry) => entry.id === option.id))?.family;
@@ -151,7 +182,7 @@ export function ConditionBuilderScreen({
       })
     : { available: true };
   const ruleSummary = getBuilderRuleSummary(draft, units, selectedGym?.name);
-  const footer = draft.step === 'catalog' ? undefined : (
+  const footer = (
     <PillButton
       disabled={!canContinue}
       fullWidth
@@ -162,11 +193,26 @@ export function ConditionBuilderScreen({
   );
 
   return (
-    <SheetFrame footer={footer} onBack={showBack ? onBack : undefined} onClose={onClose} title={title}>
+    <GradientScreen variant="content">
+    <View style={styles.screen}>
+      <AppHeader onBack={showBack ? onBack : onClose} title={title} />
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: `${((draft.path.indexOf(draft.step) + 1) / draft.path.length) * 100}%` }]} />
       </View>
-      <Text style={styles.body}>{bodyForStep(draft.step)}</Text>
+      <Animated.View
+        entering={reduceMotion || process.env.NODE_ENV === 'test'
+          ? undefined
+          : FadeIn.duration(motion.duration.fast)}
+        key={draft.step}
+        style={styles.stepPage}
+      >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        style={styles.scroll}
+      >
+      <Text style={styles.body}>{bodyForStep(draft.step, draft.catalogGroup)}</Text>
 
       {draft.editingConditionId && draft.step !== 'catalog' ? (
         <PillowCard padding="none" style={styles.editIdentity} variant="grouped">
@@ -195,22 +241,23 @@ export function ConditionBuilderScreen({
       ) : null}
 
       {draft.step === 'catalog' ? (
+        <View accessibilityLabel="Ways to earn" accessibilityRole="radiogroup" style={styles.categoryGrid}>
+          {builderCategories.map((category) => (
+            <SelectableBubble
+              contentStyle={styles.categoryChoiceSurface}
+              key={category.value}
+              label={category.label}
+              onPress={() => onSelectCategory(category.value)}
+              role="radio"
+              selected={draft.catalogGroup === category.value}
+              style={styles.categoryChoice}
+            />
+          ))}
+        </View>
+      ) : null}
+
+      {draft.step === 'method' ? (
         <View style={styles.list}>
-          <View accessibilityLabel="Condition categories" accessibilityRole="radiogroup" style={styles.filterRow}>
-            {['All', ...new Set(conditionCatalog.map((entry) => entry.group))].map((filter) => (
-              <PressableScale
-                accessibilityLabel={`Show ${filter} conditions`}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: catalogFilter === filter }}
-                key={filter}
-                onPress={() => setCatalogFilter(filter)}
-              >
-                <View style={[styles.filterChip, catalogFilter === filter && styles.filterChipSelected]}>
-                  <Text style={[styles.filterText, catalogFilter === filter && styles.choiceLabelSelected]}>{filter}</Text>
-                </View>
-              </PressableScale>
-            ))}
-          </View>
           {visibleCatalog.map((entry) => {
             const availability = getCatalogAvailability({
               appleHealthAvailable,
@@ -219,14 +266,21 @@ export function ConditionBuilderScreen({
               savedGyms,
             });
             return (
-              <OptionRow
-                disabled={!availability.available}
-                key={entry.id}
-                label={entry.label}
-                onPress={() => onSelectCatalog(entry.id)}
-                subtitle={availability.reason ?? `${entry.sourceLabel} · ${entry.description}`}
-                trailing={!availability.available ? 'Unavailable' : undefined}
-              />
+              <View key={entry.id} style={styles.catalogRow}>
+                <View style={styles.catalogGlyph}>
+                  <VectorIcon source={assetRegistry.glyphs[catalogGlyph(entry)]} />
+                </View>
+                <View style={styles.catalogChoice}>
+                  <OptionRow
+                    disabled={!availability.available}
+                    label={entry.label}
+                    onPress={() => onSelectCatalog(entry.id)}
+                    trailing={draft.catalogId === entry.id
+                      ? 'Selected'
+                      : !availability.available ? 'Unavailable' : undefined}
+                  />
+                </View>
+              </View>
             );
           })}
         </View>
@@ -303,11 +357,6 @@ export function ConditionBuilderScreen({
             onSelect={onSelectStateGrace}
             selected={draft.stateGraceSeconds}
           />
-          <ActiveWindowPicker
-            draft={draft}
-            onSelectMode={onSelectActiveWindow}
-            onSelectTime={onSelectActiveWindowTime}
-          />
         </View>
       ) : null}
 
@@ -320,11 +369,6 @@ export function ConditionBuilderScreen({
               {getRateQuantumSummary(draft.catalogId, draft.rateMinutes, units)}
             </Text>
           ) : null}
-          <ActiveWindowPicker
-            draft={draft}
-            onSelectMode={onSelectActiveWindow}
-            onSelectTime={onSelectActiveWindowTime}
-          />
           <PrototypeNotice>Rate conditions credit continuously and never have a daily cap or Claim action.</PrototypeNotice>
         </>
       ) : null}
@@ -360,6 +404,11 @@ export function ConditionBuilderScreen({
               value={draft.rewardMinutes}
             />
           ) : null}
+        </View>
+      ) : null}
+
+      {draft.step === 'daily-cap' ? (
+        <View style={styles.list}>
           <Text style={styles.fieldLabel}>Completions per day</Text>
           <StringChoiceGrid
             onSelect={(value) => onSelectDailyCap(value === 'unlimited' ? 'unlimited' : Number(value))}
@@ -372,6 +421,11 @@ export function ConditionBuilderScreen({
             ]}
             selected={String(draft.dailyCap ?? '')}
           />
+        </View>
+      ) : null}
+
+      {draft.step === 'cooldown' ? (
+        <View style={styles.list}>
           <Text style={styles.fieldLabel}>Cooldown</Text>
           <ChoiceGrid
             onSelect={onSelectCooldown}
@@ -395,6 +449,11 @@ export function ConditionBuilderScreen({
             step={15}
             value={draft.cooldownMinutes}
           />
+        </View>
+      ) : null}
+
+      {draft.step === 'repeatable' ? (
+        <View style={styles.list}>
           <Text style={styles.fieldLabel}>Repeatable</Text>
           <StringChoiceGrid
             onSelect={(value) => onSelectRepeatable(value === 'yes')}
@@ -404,6 +463,11 @@ export function ConditionBuilderScreen({
           <PrototypeNotice>
             No allows one completion, so a higher selected cap stays visible but inactive. With Yes, the daily cap and cooldown govern each later local demo completion.
           </PrototypeNotice>
+        </View>
+      ) : null}
+
+      {draft.step === 'active-window' ? (
+        <View style={styles.list}>
           <ActiveWindowPicker
             draft={draft}
             onSelectMode={onSelectActiveWindow}
@@ -418,17 +482,17 @@ export function ConditionBuilderScreen({
           <PrototypeNotice>The photo picker is simulated and never requests library access.</PrototypeNotice>
           <View accessibilityLabel="Artwork categories" accessibilityRole="radiogroup" style={styles.filterRow}>
             {['All', ...bannerOptions.filter((group) => group.family !== 'User').map((group) => group.family)].map((filter) => (
-              <PressableScale
+              <SelectableBubble
                 accessibilityLabel={`Show ${filter} artwork`}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: bannerFilter === filter }}
+                compact
+                contentStyle={styles.filterChoiceSurface}
                 key={filter}
+                label={filter}
                 onPress={() => setBannerFilter(filter)}
-              >
-                <View style={[styles.filterChip, bannerFilter === filter && styles.filterChipSelected]}>
-                  <Text style={[styles.filterText, bannerFilter === filter && styles.choiceLabelSelected]}>{filter}</Text>
-                </View>
-              </PressableScale>
+                role="radio"
+                selected={bannerFilter === filter}
+                style={styles.filterChoice}
+              />
             ))}
           </View>
           <View style={styles.bannerGrid}>{visibleBanners.map((option) => (
@@ -436,6 +500,15 @@ export function ConditionBuilderScreen({
               accessibilityLabel={`${option.label}${draft.bannerId === option.id ? ', selected' : ''}`}
               accessibilityRole="button"
               accessibilityState={{ selected: draft.bannerId === option.id }}
+              contentStyle={[
+                styles.bannerFrame,
+                draft.bannerId === option.id && styles.bannerFrameSelected,
+                {
+                  transitionDuration: reduceMotion ? 0 : motion.duration.fast,
+                  transitionProperty: 'borderColor',
+                  transitionTimingFunction: cubicBezier(0.16, 1, 0.3, 1),
+                },
+              ]}
               key={option.id}
               onPress={() => onSelectBanner(option.id)}
               style={styles.bannerHost}
@@ -443,7 +516,7 @@ export function ConditionBuilderScreen({
               <ImageBackground
                 imageStyle={styles.bannerImage}
                 source={assetRegistry.banners[option.id]}
-                style={[styles.bannerChoice, draft.bannerId === option.id && styles.bannerSelected]}
+                style={styles.bannerChoice}
               >
                 <View style={styles.bannerScrim}><Text style={styles.bannerLabel}>{option.label}</Text></View>
               </ImageBackground>
@@ -511,25 +584,35 @@ export function ConditionBuilderScreen({
         </View>
       ) : null}
 
+      </ScrollView>
+      <View style={styles.footer}>{footer}</View>
+      </Animated.View>
+
       <AccessibleModal
         accessibilityTitle={photoPhase === 'crop' ? 'Crop sample photo' : 'Sample photo library'}
-        animationType="slide"
+        contentContainerStyle={styles.photoModalPage}
         onRequestClose={() => setPhotoPhase(null)}
+        scrollEnabled={false}
         style={styles.photoModalBackdrop}
         visible={photoPhase !== null}
       >
         <View style={styles.photoSheet}>
-          <Text style={styles.photoEyebrow}>
-            {photoPhase === 'crop' ? 'LOCAL CROP PREVIEW' : 'SIMULATED NATIVE PHOTO PICKER'}
-          </Text>
-          <AccessibleModalTitle style={styles.photoTitle}>
-            {photoPhase === 'crop' ? 'Crop sample photo' : 'Sample photo library'}
-          </AccessibleModalTitle>
-          <Text style={styles.photoBody}>
-            {photoPhase === 'crop'
+          <FullScreenModalPage
+            body={photoPhase === 'crop'
               ? 'This hardcoded local crop preview uses bundled artwork. Dragging and zooming are intentionally simulated.'
               : 'No photo-library permission is requested. This fixture offers one bundled sample and never reads device photos.'}
-          </Text>
+            footer={photoPhase === 'crop' ? (
+              <>
+                <PillButton fullWidth label="Use crop" onPress={() => { onSelectBanner(SAMPLE_PHOTO_BANNER_ID); setPhotoPhase(null); }} variant="screen" />
+                <PillButton fullWidth label="Choose another" onPress={() => setPhotoPhase('picker')} variant="secondary" />
+              </>
+            ) : (
+              <>
+                <PillButton fullWidth label="Choose sample photo" onPress={() => setPhotoPhase('crop')} variant="screen" />
+                <PillButton fullWidth label="Cancel" onPress={() => setPhotoPhase(null)} variant="text" />
+              </>
+            )}
+          >
           <ImageBackground
             accessibilityLabel={photoPhase === 'crop' ? 'Hardcoded city-motion crop preview' : 'Bundled city-motion sample photo'}
             imageStyle={styles.photoImage}
@@ -538,23 +621,11 @@ export function ConditionBuilderScreen({
           >
             {photoPhase === 'crop' ? <View accessibilityLabel="Crop boundary" style={styles.cropBoundary} /> : null}
           </ImageBackground>
-          {photoPhase === 'crop' ? (
-            <View style={styles.photoActions}>
-              <PillButton fullWidth label="Use crop" onPress={() => {
-                onSelectBanner(SAMPLE_PHOTO_BANNER_ID);
-                setPhotoPhase(null);
-              }} variant="dark" />
-              <PillButton fullWidth label="Choose another" onPress={() => setPhotoPhase('picker')} variant="secondary" />
-            </View>
-          ) : (
-            <View style={styles.photoActions}>
-              <PillButton fullWidth label="Choose sample photo" onPress={() => setPhotoPhase('crop')} variant="dark" />
-              <PillButton fullWidth label="Cancel" onPress={() => setPhotoPhase(null)} variant="secondary" />
-            </View>
-          )}
+          </FullScreenModalPage>
         </View>
       </AccessibleModal>
-    </SheetFrame>
+    </View>
+    </GradientScreen>
   );
 }
 
@@ -570,17 +641,16 @@ function StringChoiceGrid<T extends string>({
   return (
     <View style={styles.choiceGrid}>
       {options.map((option) => (
-        <PressableScale
+        <SelectableBubble
           accessibilityLabel={option.label}
-          accessibilityRole="button"
-          accessibilityState={{ selected: selected === option.value }}
+          compact
+          contentStyle={styles.choiceSize}
           key={option.value}
+          label={option.label}
           onPress={() => onSelect(option.value)}
-        >
-          <View style={[styles.choice, selected === option.value && styles.choiceSelected]}>
-            <Text style={[styles.choiceLabel, selected === option.value && styles.choiceLabelSelected]}>{option.label}</Text>
-          </View>
-        </PressableScale>
+          selected={selected === option.value}
+          style={styles.choiceHost}
+        />
       ))}
     </View>
   );
@@ -723,30 +793,34 @@ function ChoiceGrid({
   return (
     <View style={styles.choiceGrid}>
       {options.map((option) => (
-        <PressableScale
+        <SelectableBubble
           accessibilityLabel={option.label}
-          accessibilityRole="button"
-          accessibilityState={{ selected: selected === option.value }}
+          compact
+          contentStyle={styles.choiceSize}
           key={option.value}
+          label={option.label}
           onPress={() => onSelect(option.value)}
-        >
-          <View style={[styles.choice, selected === option.value && styles.choiceSelected]}>
-            <Text style={[styles.choiceLabel, selected === option.value && styles.choiceLabelSelected]}>{option.label}</Text>
-          </View>
-        </PressableScale>
+          selected={selected === option.value}
+          style={styles.choiceHost}
+        />
       ))}
     </View>
   );
 }
 
-function bodyForStep(step: BuilderDraft['step']) {
+function bodyForStep(step: BuilderDraft['step'], category: BuilderCategory | null) {
   switch (step) {
-    case 'catalog': return 'Pick the outcome that feels natural. The condition kind stays behind the scenes.';
+    case 'catalog': return 'Choose the movement that should earn screen time.';
+    case 'method': return `Choose how ${category === 'Any activity' ? 'your activity' : category?.toLowerCase() ?? 'this movement'} should count.`;
     case 'place': return 'Select a saved sample place or add one locally.';
     case 'configure-event': return 'Choose the threshold that makes this count. Nothing is prefilled.';
-    case 'configure-state': return 'Choose a grace period and, if useful, an active window.';
+    case 'configure-state': return 'Choose how long movement can pause before this condition stops.';
     case 'configure-rate': return 'Choose how many minutes this signal adds. Nothing is prefilled.';
     case 'reward': return 'Decide what one completed event adds or opens.';
+    case 'daily-cap': return 'Choose how many times this can earn in one day.';
+    case 'cooldown': return 'Choose how long to wait before it can earn again.';
+    case 'repeatable': return 'Choose whether this can earn more than once per day.';
+    case 'active-window': return 'Choose when this condition is available.';
     case 'banner': return 'Pick the banner this condition will wear on Home and Manage.';
     case 'preview': return 'This is the exact card that will appear on Home.';
   }
@@ -755,16 +829,26 @@ function bodyForStep(step: BuilderDraft['step']) {
 const styles = StyleSheet.create({
   bannerChoice: { height: 112, justifyContent: 'flex-end' },
   bannerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[3], marginTop: space[4] },
+  bannerFrame: { borderColor: 'transparent', borderRadius: radius.card, borderWidth: 3, overflow: 'hidden' },
+  bannerFrameSelected: { borderColor: colors.surface.light },
   bannerHost: { width: '47%' },
   bannerImage: { borderRadius: radius.card },
   bannerLabel: { ...type.label, color: colors.text.primary },
-  bannerScrim: { backgroundColor: 'rgba(18,12,5,0.64)', borderBottomLeftRadius: radius.card, borderBottomRightRadius: radius.card, padding: space[3] },
-  bannerSelected: { borderColor: colors.brand.signatureAmber, borderRadius: radius.card, borderWidth: 3 },
+  bannerScrim: { backgroundColor: colors.surface.mediaScrim, borderBottomLeftRadius: radius.card, borderBottomRightRadius: radius.card, padding: space[3] },
+  bannerSelected: { borderColor: colors.surface.light, borderRadius: radius.card, borderWidth: 3 },
   body: { ...type.body, color: colors.text.secondary, marginTop: space[3] },
-  choice: { alignItems: 'center', backgroundColor: colors.surface.cardElevated, borderRadius: radius.pill, justifyContent: 'center', minHeight: 50, minWidth: 88, paddingHorizontal: space[3] },
+  categoryChoice: { flexBasis: '48%', flexGrow: 1 },
+  categoryChoiceSurface: { minHeight: layout.rowHeight, width: '100%' },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[3], marginTop: space[8] },
+  catalogChoice: { flex: 1, minWidth: 0 },
+  catalogGlyph: { height: iconSize.feature, width: iconSize.feature },
+  catalogRow: { alignItems: 'center', flexDirection: 'row', gap: space[3] },
+  choice: { alignItems: 'center', backgroundColor: colors.surface.cardElevated, borderRadius: radius.control, justifyContent: 'center', minHeight: layout.controlHeight, minWidth: 88, paddingHorizontal: space[3] },
   choiceGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2], marginTop: space[4] },
+  choiceHost: { flexBasis: '48%', flexGrow: 1 },
+  choiceSize: { width: '100%' },
   choiceLabel: { ...type.label, color: colors.text.primary },
-  choiceLabelSelected: { color: colors.text.ink },
+  choiceLabelSelected: { color: colors.text.onLight },
   choiceSelected: { backgroundColor: colors.surface.light },
   editIdentity: { marginTop: space[4] },
   emptyGymCard: { gap: space[1] },
@@ -772,30 +856,35 @@ const styles = StyleSheet.create({
   filterChip: { backgroundColor: colors.surface.cardElevated, borderRadius: radius.pill, paddingHorizontal: space[3], paddingVertical: space[2] },
   filterChipSelected: { backgroundColor: colors.surface.light },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  filterChoice: { flexBasis: '48%', flexGrow: 1 },
+  filterChoiceSurface: { width: '100%' },
   filterText: { ...type.caption, color: colors.text.primary },
+  footer: { paddingBottom: space[2], paddingTop: space[4] },
   gymChoice: { flex: 1, minWidth: 0 },
   gymRow: { alignItems: 'center', flexDirection: 'row', gap: space[1] },
   identityDivider: { backgroundColor: colors.surface.divider, height: StyleSheet.hairlineWidth },
   list: { gap: space[2], marginTop: space[4] },
   nameField: { gap: space[2], padding: space[4] },
-  nameInput: { ...type.body, backgroundColor: colors.surface.cardStrong, borderRadius: radius.actionRow, color: colors.text.primary, minHeight: 48, paddingHorizontal: space[3] },
+  nameInput: { ...type.body, backgroundColor: colors.surface.field, borderRadius: radius.control, color: colors.text.primary, minHeight: layout.controlHeight, paddingHorizontal: space[4] },
   preview: { gap: space[4], marginTop: space[5] },
   previewBody: { ...type.body, color: colors.text.secondary, marginTop: space[2] },
   previewTitle: { ...type.cardTitle, color: colors.text.primary },
   cropBoundary: { borderColor: colors.surface.light, borderWidth: 2, flex: 1, margin: space[4] },
-  photoActions: { gap: space[2] },
-  photoBody: { ...type.body, color: colors.text.secondary },
   photoEyebrow: { ...type.micro, color: colors.brand.signatureAmber },
   photoImage: { borderRadius: radius.card },
-  photoModalBackdrop: { backgroundColor: 'rgba(0,0,0,0.58)', flex: 1, justifyContent: 'flex-end' },
+  photoModalBackdrop: { flex: 1 },
+  photoModalPage: { flex: 1 },
   photoPreview: { borderRadius: radius.card, height: 210, justifyContent: 'center', overflow: 'hidden' },
-  photoSheet: { backgroundColor: colors.surface.cardStrong, borderTopLeftRadius: radius.cardLarge, borderTopRightRadius: radius.cardLarge, gap: space[4], padding: space[5], paddingBottom: space[8] },
-  photoTitle: { ...type.sectionTitle, color: colors.text.primary },
+  photoSheet: { flex: 1, padding: space[5], paddingBottom: 0, paddingTop: 0 },
   progressFill: { backgroundColor: colors.brand.signatureAmber, borderRadius: radius.pill, height: 4 },
-  progressTrack: { backgroundColor: colors.surface.trackDark, borderRadius: radius.pill, height: 4 },
+  progressTrack: { backgroundColor: colors.surface.trackDark, borderRadius: radius.pill, height: 4, marginBottom: space[2] },
+  screen: { flex: 1 },
+  scroll: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingBottom: space[8] },
+  stepPage: { flex: 1 },
   stepper: { alignItems: 'center', flexDirection: 'row', gap: space[4], justifyContent: 'center', marginTop: space[3] },
   stepperButton: { alignItems: 'center', backgroundColor: colors.surface.light, borderRadius: radius.pill, height: 48, justifyContent: 'center', width: 48 },
-  stepperButtonText: { ...type.sectionTitle, color: colors.text.ink },
+  stepperButtonText: { ...type.sectionTitle, color: colors.text.onLight },
   stepperValue: { ...type.sectionTitle, color: colors.text.primary, minWidth: 140, textAlign: 'center' },
   windowPicker: { gap: space[2] },
 });

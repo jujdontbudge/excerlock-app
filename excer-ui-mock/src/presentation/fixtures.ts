@@ -1,5 +1,6 @@
 import type {
   BuilderDraft,
+  BuilderCategory,
   BuilderStep,
   ConditionKind,
   DemoCondition,
@@ -23,9 +24,41 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
 ];
 
 export const BUILDER_PATHS: Record<ConditionKind, readonly BuilderStep[]> = {
-  event: ['catalog', 'place', 'configure-event', 'reward', 'banner', 'preview'],
-  state: ['catalog', 'configure-state', 'banner', 'preview'],
-  rate: ['catalog', 'configure-rate', 'banner', 'preview'],
+  event: [
+    'catalog',
+    'method',
+    'place',
+    'configure-event',
+    'reward',
+    'daily-cap',
+    'cooldown',
+    'repeatable',
+    'active-window',
+    'banner',
+    'preview',
+  ],
+  state: ['catalog', 'method', 'configure-state', 'active-window', 'banner', 'preview'],
+  rate: ['catalog', 'method', 'configure-rate', 'active-window', 'banner', 'preview'],
+};
+
+export const CATALOG_GROUP: Record<string, BuilderCategory> = {
+  'gym-arrive': 'Gym',
+  'gym-present': 'Gym',
+  'gym-time': 'Gym',
+  'walk-state': 'Walking',
+  'walk-steps-rate': 'Walking',
+  'walk-steps-event': 'Walking',
+  'run-distance-event': 'Running',
+  'run-distance-rate': 'Running',
+  'cycle-distance-event': 'Cycling',
+  'cycle-distance-rate': 'Cycling',
+  'swim-distance-event': 'Swimming',
+  'swim-distance-rate': 'Swimming',
+  'calories-event': 'Any activity',
+  'calories-rate': 'Any activity',
+  'active-minutes-event': 'Any activity',
+  'active-minutes-rate': 'Any activity',
+  'workout-duration-event': 'Any activity',
 };
 
 export const CATALOG_KIND: Record<string, ConditionKind> = {
@@ -52,7 +85,8 @@ export const EMPTY_BUILDER: BuilderDraft = {
   active: false,
   editingConditionId: null,
   step: 'catalog',
-  path: BUILDER_PATHS.event.filter((step) => step !== 'place'),
+  path: ['catalog', 'method'],
+  catalogGroup: null,
   catalogId: null,
   kind: null,
   name: '',

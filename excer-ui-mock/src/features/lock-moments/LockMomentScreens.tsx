@@ -1,5 +1,4 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { lowTimeNotice, shieldVariants, timeOutNotice } from '@/content';
 import {
@@ -62,7 +61,6 @@ export function TimeOutScreen({
   return (
     <GradientScreen variant="night">
       <View style={styles.timeOut}>
-        <Text style={styles.previewLabel}>LOCAL LOCK-MOMENT PREVIEW</Text>
         <View style={styles.timeOutHero}>
           <HeroLock accessibilityLabel="Apps locked in this local preview" size={210} state="locked" />
           <Text style={styles.timeOutTitle}>{timeOutNotice.title}</Text>
@@ -89,21 +87,22 @@ export interface ShieldPreviewScreenProps {
 export function ShieldPreviewScreen({ onClose, onPrimary, subtitle, variant }: ShieldPreviewScreenProps) {
   const fixture = shieldVariants.find((item) => item.id === variant) ?? shieldVariants[0];
   return (
-    <SafeAreaView accessibilityLabel={fixture.accessibilityLabel} style={styles.shieldScreen}>
-      <View style={styles.shieldDisclosure}>
-        <Text style={styles.shieldPreviewLabel}>PROTOTYPE SHIELD PREVIEW</Text>
-        <Text style={styles.shieldPreviewBody}>No installed app is blocked. No Screen Time state, haptic, or sound is used.</Text>
+    <GradientScreen edgeToEdge variant="home">
+      <View accessibilityLabel={fixture.accessibilityLabel} style={styles.shieldScreen}>
+        <View style={styles.shieldDisclosure}>
+          <Text style={styles.shieldPreviewBody}>No installed app is blocked. No Screen Time state, haptic, or sound is used.</Text>
+        </View>
+        <View style={styles.shieldHero}>
+          <HeroLock accessibilityLabel="Closed ExcerLock sample lock" size={210} state="locked" />
+          <Text style={styles.shieldTitle}>{fixture.title}</Text>
+          <Text style={styles.shieldSubtitle}>{subtitle ?? fixture.subtitle}</Text>
+        </View>
+        <View style={styles.actions}>
+          <PillButton fullWidth label={fixture.primary} onPress={() => onPrimary(fixture.id)} variant="primary" />
+          {fixture.secondary ? <PillButton fullWidth label={fixture.secondary} onPress={onClose} variant="screen" /> : null}
+        </View>
       </View>
-      <View style={styles.shieldHero}>
-        <HeroLock accessibilityLabel="Closed ExcerLock sample lock" size={210} state="locked" />
-        <Text style={styles.shieldTitle}>{fixture.title}</Text>
-        <Text style={styles.shieldSubtitle}>{subtitle ?? fixture.subtitle}</Text>
-      </View>
-      <View style={styles.actions}>
-        <PillButton fullWidth label={fixture.primary} onPress={() => onPrimary(fixture.id)} variant="primary" />
-        {fixture.secondary ? <PillButton fullWidth label={fixture.secondary} onPress={onClose} variant="screen" /> : null}
-      </View>
-    </SafeAreaView>
+    </GradientScreen>
   );
 }
 
@@ -118,13 +117,13 @@ const styles = StyleSheet.create({
   lowCopyHost: { alignSelf: 'stretch' },
   lowTitle: { ...type.cardTitle, color: colors.text.primary },
   previewLabel: { ...type.micro, color: colors.brand.signatureAmber, textAlign: 'center' },
-  shieldDisclosure: { backgroundColor: colors.surface.light, borderRadius: radius.card, gap: space[1], padding: space[3] },
+  shieldDisclosure: { backgroundColor: colors.surface.bubble, borderColor: colors.surface.bubbleBorder, borderRadius: radius.card, borderWidth: 1, gap: space[1], padding: space[3] },
   shieldHero: { alignItems: 'center', flex: 1, justifyContent: 'center', paddingHorizontal: space[4] },
   shieldPreviewBody: { ...type.caption, color: colors.text.ink, textAlign: 'center' },
   shieldPreviewLabel: { ...type.micro, color: colors.brand.burnt, textAlign: 'center' },
-  shieldScreen: { backgroundColor: colors.canvas.ivory, flex: 1, gap: space[4], justifyContent: 'space-between', padding: space[5] },
-  shieldSubtitle: { ...type.callout, color: colors.text.ink, marginTop: space[2], maxWidth: 310, textAlign: 'center' },
-  shieldTitle: { ...type.screenLarge, color: colors.text.ink, marginTop: space[3], textAlign: 'center' },
+  shieldScreen: { flex: 1, gap: space[4], justifyContent: 'space-between', padding: space[5] },
+  shieldSubtitle: { ...type.callout, color: colors.text.secondary, marginTop: space[2], maxWidth: 310, textAlign: 'center' },
+  shieldTitle: { ...type.screenLarge, color: colors.text.primary, marginTop: space[3], textAlign: 'center' },
   timeOut: { alignItems: 'center', flex: 1, gap: space[4], justifyContent: 'space-between', paddingVertical: space[4] },
   timeOutBody: { ...type.callout, color: colors.text.secondary, maxWidth: 310, textAlign: 'center' },
   timeOutHero: { alignItems: 'center', flex: 1, justifyContent: 'center' },

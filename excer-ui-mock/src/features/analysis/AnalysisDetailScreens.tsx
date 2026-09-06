@@ -15,9 +15,11 @@ import {
 } from '@/content';
 import {
   AccessibleModal,
-  AccessibleModalTitle,
+  ChevronIcon,
   BarChart,
+  DottedSeparator,
   GradientScreen,
+  FullScreenModalPage,
   LiveRing,
   PillButton,
   PillowCard,
@@ -263,7 +265,7 @@ function formatDetailMinutes(minutes: number) {
 function PeriodButton({ accessibilityLabel, label, onPress }: { accessibilityLabel: string; label: string; onPress: () => void }) {
   return (
     <PressableScale accessibilityLabel={accessibilityLabel} accessibilityRole="button" onPress={onPress}>
-      <View style={styles.periodButton}><Text style={styles.periodLabel}>{label}</Text></View>
+      <View style={styles.periodButton}><ChevronIcon direction={label === '‹' ? 'left' : 'right'} /></View>
     </PressableScale>
   );
 }
@@ -351,7 +353,7 @@ export function EarningDetailScreen({ fallbackConditionId, focusedConditionId, n
             <PillowCard padding="none" variant="grouped">
               {naturalRows.map((row, index) => (
                 <View key={row.id}>
-                  {index > 0 ? <View style={styles.divider} /> : null}
+                  {index > 0 ? <DottedSeparator /> : null}
                   <SettingsRow
                     accessibilityLabel={`Open ${row.name} condition detail`}
                     onPress={() => onConditionPress(row.id)}
@@ -390,7 +392,7 @@ export function EarningDetailScreen({ fallbackConditionId, focusedConditionId, n
         <PillowCard padding="none" variant="grouped">
           {earningBreakdownFixture.rows.map((row, index) => (
             <View key={row.condition}>
-              {index > 0 ? <View style={styles.divider} /> : null}
+              {index > 0 ? <DottedSeparator /> : null}
               <SettingsRow
                 accessibilityLabel={`Open ${row.condition} condition detail`}
                 onPress={() => onConditionPress(row.id)}
@@ -414,18 +416,19 @@ export function EarningDetailScreen({ fallbackConditionId, focusedConditionId, n
       </ScrollView>
       <AccessibleModal
         accessibilityTitle={fallbackCondition?.condition ?? 'Condition earning detail'}
-        animationType="slide"
+        contentContainerStyle={styles.modalPage}
         onRequestClose={() => onDismissFallbackCondition?.()}
+        scrollEnabled={false}
         style={styles.modalBackdrop}
         visible={Boolean(fallbackCondition)}
       >
-        <PillowCard style={styles.modalCard} variant="light">
-          <Eyebrow>CONDITION EARNING DETAIL</Eyebrow>
-          <AccessibleModalTitle style={styles.modalTitle}>{fallbackCondition?.condition}</AccessibleModalTitle>
-          <Text style={styles.modalBody}>{fallbackCondition?.subtitle}</Text>
+        <PillowCard style={[styles.modalCard, styles.modalCardFull]} variant="light">
+          <FullScreenModalPage
+            body={fallbackCondition?.subtitle}
+            footer={<PillButton fullWidth label="Done" onPress={() => onDismissFallbackCondition?.()} variant="screen" />}
+          >
           <Text style={styles.modalStat}>{fallbackCondition ? `${fallbackCondition.minutes} min · ${fallbackCondition.sharePercent}% this month` : ''}</Text>
-          <Text style={styles.modalBody}>This is the exact local sample source from the earning ledger. No device activity is read.</Text>
-          <PillButton fullWidth label="Done" onPress={() => onDismissFallbackCondition?.()} variant="dark" />
+          </FullScreenModalPage>
         </PillowCard>
       </AccessibleModal>
     </GradientScreen>
@@ -510,7 +513,7 @@ const styles = {
   dayGlyph: { alignItems: 'center' as const, borderRadius: radius.pill, height: 74, justifyContent: 'center' as const, width: 74 },
   dayGlyphText: { ...type.screenLarge, color: colors.text.primary },
   dayStatus: { ...type.sectionTitle, color: colors.text.primary, textAlign: 'center' as const },
-  divider: { backgroundColor: colors.surface.divider, height: 1 },
+  divider: { borderTopColor: colors.surface.divider, borderTopWidth: 1, height: 1 },
   earningHero: { ...type.screenLarge, color: colors.text.primary },
   focusedRow: { backgroundColor: colors.surface.cardElevated },
   periodButton: { alignItems: 'center' as const, backgroundColor: colors.surface.cardElevated, borderRadius: radius.pill, height: 44, justifyContent: 'center' as const, width: 44 },
@@ -524,11 +527,11 @@ const styles = {
   badgeArtHost: { alignItems: 'center' as const, alignSelf: 'center' as const, justifyContent: 'center' as const, minHeight: 124, minWidth: 124 },
   badgeArtLocked: { opacity: 0.3 },
   badgeGlint: { ...type.screenLarge, color: colors.brand.signatureAmber, position: 'absolute' as const, right: -4, top: -8 },
-  modalBackdrop: { backgroundColor: colors.surface.scrim, flex: 1, justifyContent: 'flex-end' as const, padding: space[3] },
-  modalBody: { ...type.body, color: colors.text.ink },
+  modalBackdrop: { flex: 1 },
   modalCard: { gap: space[3], padding: space[5] },
-  modalStat: { ...type.statValue, color: colors.brand.burnt },
-  modalTitle: { ...type.screenTitle, color: colors.text.ink },
+  modalCardFull: { flex: 1, paddingBottom: 0, paddingTop: 0 },
+  modalStat: { ...type.statValue, color: colors.text.primary },
+  modalPage: { flex: 1 },
 };
 
 function formatBadgeHero(badge: MilestoneFixture, locked: boolean, currentProgress = badge.progress.current) {

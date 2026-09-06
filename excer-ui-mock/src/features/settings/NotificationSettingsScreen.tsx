@@ -5,7 +5,8 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { notificationSettingsCopy, type NotificationEntryKind } from '@/content';
 import {
   AccessibleModal,
-  AccessibleModalTitle,
+  DottedSeparator,
+  FullScreenModalPage,
   GradientScreen,
   PillButton,
   PillowCard,
@@ -66,7 +67,7 @@ export function NotificationSettingsScreen({
           <PillowCard padding="none" variant="grouped">
             {notificationSettingsCopy.toggles.map((toggle, index) => (
               <View key={toggle.id}>
-                {index > 0 ? <View style={s.divider} /> : null}
+                {index > 0 ? <DottedSeparator /> : null}
                 <SwitchRow
                   onValueChange={(enabled) => requestToggle(toggle.id, enabled)}
                   subtitle={toggle.subtitle}
@@ -77,7 +78,7 @@ export function NotificationSettingsScreen({
             ))}
             {values.afternoonNudge ? (
               <>
-                <View style={s.divider} />
+                <DottedSeparator />
                 <SettingsRow onPress={onOpenNudgeTime} subtitle="Prototype time wheel" title={notificationSettingsCopy.nudgeTime.title} value={nudgeTime} />
               </>
             ) : null}
@@ -88,52 +89,39 @@ export function NotificationSettingsScreen({
       </GradientScreen>
 
       <AccessibleModal
-        accessibilityTitle={primerPhase === 'permission' ? 'Notification permission preview' : notificationSettingsCopy.firstTogglePrimer.title}
-        animationType="fade"
+        accessibilityTitle={primerPhase === 'permission' ? 'Allow ExcerLock notifications in this demo?' : notificationSettingsCopy.firstTogglePrimer.title}
+        contentContainerStyle={styles.modalPage}
         onRequestClose={closePrimer}
+        scrollEnabled={false}
         style={styles.backdrop}
         visible={primerPhase !== null}
       >
-        <PillowCard style={styles.modalCard} variant="light">
-          <Text style={styles.eyebrow}>SIMULATED SYSTEM PERMISSION · NO OS REQUEST</Text>
-          <AccessibleModalTitle style={styles.title}>
-            {primerPhase === 'permission'
-              ? 'Allow ExcerLock notifications in this demo?'
-              : notificationSettingsCopy.firstTogglePrimer.title}
-          </AccessibleModalTitle>
-          <Text style={styles.body}>
-            {primerPhase === 'permission'
+        <PillowCard style={[styles.modalCard, styles.modalCardFull]} variant="light">
+          <FullScreenModalPage
+            body={primerPhase === 'permission'
               ? 'Allow enables only the selected local switch. Nothing is scheduled or delivered.'
               : notificationSettingsCopy.firstTogglePrimer.body}
-          </Text>
-          {primerPhase === 'permission' ? (
-            <>
-              <PillButton
-                fullWidth
-                label="Allow in demo"
-                onPress={() => {
-                  if (pendingKind) onToggle(pendingKind, true);
-                  onPermissionPreviewed('allowed');
-                  closePrimer();
-                }}
-                variant="dark"
-              />
-              <PillButton
-                fullWidth
-                label="Not now"
-                onPress={() => {
-                  onPermissionPreviewed('denied');
-                  closePrimer();
-                }}
-                variant="text"
-              />
-            </>
-          ) : (
-            <>
-              <PillButton fullWidth label={notificationSettingsCopy.firstTogglePrimer.primary} onPress={() => setPrimerPhase('permission')} variant="dark" />
-              <PillButton fullWidth label={notificationSettingsCopy.firstTogglePrimer.secondary} onPress={closePrimer} variant="text" />
-            </>
-          )}
+            footer={primerPhase === 'permission' ? (
+              <>
+                <PillButton
+                  fullWidth
+                  label="Allow in demo"
+                  onPress={() => {
+                    if (pendingKind) onToggle(pendingKind, true);
+                    onPermissionPreviewed('allowed');
+                    closePrimer();
+                  }}
+                  variant="screen"
+                />
+                <PillButton fullWidth label="Not now" onPress={() => { onPermissionPreviewed('denied'); closePrimer(); }} variant="text" />
+              </>
+            ) : (
+              <>
+                <PillButton fullWidth label={notificationSettingsCopy.firstTogglePrimer.primary} onPress={() => setPrimerPhase('permission')} variant="screen" />
+                <PillButton fullWidth label={notificationSettingsCopy.firstTogglePrimer.secondary} onPress={closePrimer} variant="text" />
+              </>
+            )}
+          />
         </PillowCard>
       </AccessibleModal>
     </>
@@ -141,9 +129,9 @@ export function NotificationSettingsScreen({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { backgroundColor: colors.surface.scrim, flex: 1, justifyContent: 'center', padding: space[4] },
-  body: { ...type.body, color: colors.text.ink, opacity: 0.72 },
+  backdrop: { flex: 1 },
   eyebrow: { ...type.micro, color: colors.brand.burnt },
   modalCard: { gap: space[4] },
-  title: { ...type.screenTitle, color: colors.text.ink },
+  modalCardFull: { flex: 1, paddingBottom: 0, paddingTop: 0 },
+  modalPage: { flex: 1 },
 });

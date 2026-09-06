@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { shareAchievementFixtures, type MilestoneFixture } from '@/content';
-import { PillButton, SegmentedControl, SheetFrame, colors, radius, space, type } from '@/design-system';
+import { GradientScreen, PillButton, SegmentedControl, SheetFrame, colors, radius, space, type } from '@/design-system';
 
 import { Eyebrow, analysisFeatureStyles as s } from './components';
 
@@ -22,6 +22,7 @@ const formats = [{ label: '9:16', value: 'story' }, { label: '1:1', value: 'squa
 
 export function ShareAchievementScreen({ badge, format, kind, onChangeFormat, onClose, onPreviewSave, onPreviewShare }: ShareAchievementScreenProps) {
   return (
+    <GradientScreen edgeToEdge variant="content">
     <SheetFrame
       footer={
         <View style={styles.footer}>
@@ -40,6 +41,7 @@ export function ShareAchievementScreen({ badge, format, kind, onChangeFormat, on
         <Text style={s.note}>No share sheet opens and no image is written until the router presents the labeled local preview.</Text>
       </View>
     </SheetFrame>
+    </GradientScreen>
   );
 }
 

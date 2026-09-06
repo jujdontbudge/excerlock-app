@@ -2,7 +2,10 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, View } from 'react-native';
 import Animated, { cubicBezier, useReducedMotion } from 'react-native-reanimated';
 
+import { assetRegistry } from '@/content';
+
 import { motion } from './tokens';
+import { StaticVectorImage } from './StaticVectorImage';
 
 export type HeroLockState = 'locked' | 'unlocked' | 'transitioning' | 'paused';
 
@@ -14,32 +17,25 @@ export interface HeroLockProps {
   testID?: string;
 }
 
-const lockBody = require('../../assets/heroes/lock-body.png');
-const lockShackle = require('../../assets/heroes/lock-shackle.png');
+const lockUnified = assetRegistry.heroes['lock-unified'];
 
 export function HeroLock({ accessibilityLabel, size = 180, state, style, testID }: HeroLockProps) {
   const reduceMotion = useReducedMotion();
   const open = state === 'unlocked' || state === 'transitioning';
-  const duration = reduceMotion ? motion.duration.fast : 650;
-  const bodySize = size * 0.72;
-  const shackleSize = size * 0.62;
-  const shackleBase = {
-    height: shackleSize,
-    left: (size - shackleSize) / 2,
-    position: 'absolute' as const,
-    top: size * 0.03,
-    width: shackleSize,
-  };
+  const duration = reduceMotion ? 0 : motion.duration.ring;
   const lockedPose = [
     { translateX: 0 },
-    { translateY: size * 0.08 },
+    { translateY: 0 },
     { rotate: '0deg' },
+    { scale: 1 },
   ];
   const openPose = [
-    { translateX: size * 0.16 },
-    { translateY: -size * 0.1 },
-    { rotate: '4deg' },
+    { translateX: size * 0.025 },
+    { translateY: -size * 0.035 },
+    { rotate: '2deg' },
+    { scale: 1.025 },
   ];
+  const targetPose = open ? openPose : lockedPose;
 
   return (
     <View
@@ -48,70 +44,31 @@ export function HeroLock({ accessibilityLabel, size = 180, state, style, testID 
       style={[styles.host, { height: size, width: size }, state === 'paused' && styles.paused, style]}
       testID={testID}
     >
-      {reduceMotion ? (
-        <>
-          <Animated.Image
-            accessibilityIgnoresInvertColors
-            resizeMode="contain"
-            source={lockShackle}
-            style={{
-              ...shackleBase,
-              opacity: open ? 0 : 1,
-              transform: lockedPose,
-              transitionDuration: motion.duration.fast,
-              transitionProperty: 'opacity',
-              transitionTimingFunction: cubicBezier(0.2, 0, 0, 1),
-            }}
-          />
-          <Animated.Image
-            accessibilityIgnoresInvertColors
-            resizeMode="contain"
-            source={lockShackle}
-            style={{
-              ...shackleBase,
-              opacity: open ? 1 : 0,
-              transform: openPose,
-              transitionDuration: motion.duration.fast,
-              transitionProperty: 'opacity',
-              transitionTimingFunction: cubicBezier(0.2, 0, 0, 1),
-            }}
-          />
-        </>
-      ) : (
-        <Animated.Image
-          accessibilityIgnoresInvertColors
-          resizeMode="contain"
-          source={lockShackle}
-          style={{
-            ...shackleBase,
-            transform: open ? openPose : lockedPose,
-            transitionDuration: duration,
-            transitionProperty: 'transform',
-            transitionTimingFunction: cubicBezier(0.16, 1, 0.3, 1),
-          }}
-        />
-      )}
-      <Animated.Image
-        accessibilityIgnoresInvertColors
-        resizeMode="contain"
-        source={lockBody}
+      <Animated.View
         style={{
-          bottom: 0,
-          height: bodySize,
-          left: (size - bodySize) / 2,
+          height: size,
+          left: 0,
           position: 'absolute',
-          transform: state === 'transitioning' && !reduceMotion ? [{ scale: 1.04 }, { rotate: '-2deg' }] : [{ scale: 1 }, { rotate: '0deg' }],
+          top: 0,
+          transform: reduceMotion
+            ? targetPose
+            : state === 'transitioning'
+              ? [{ translateX: 0 }, { translateY: -size * 0.02 }, { rotate: '-1.5deg' }, { scale: 1.04 }]
+              : targetPose,
           transitionDuration: duration,
           transitionProperty: 'transform',
           transitionTimingFunction: cubicBezier(0.16, 1, 0.3, 1),
-          width: bodySize,
+          width: size,
         }}
-      />
+      >
+        <StaticVectorImage source={lockUnified} style={styles.art} />
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  art: { height: '100%', width: '100%' },
   host: { alignSelf: 'center' },
   paused: { opacity: 0.6 },
 });

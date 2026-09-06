@@ -23,8 +23,8 @@ describe('primary rendered navigation seam', () => {
     await press('Next');
     await expectPathname(result, '/onboarding/confession');
 
-    await pressTimes('Increase', 5);
-    expect(screen.getByText('5 hours')).toBeTruthy();
+    await fireEvent(screen.getByTestId('phone-use-slider'), 'valueChange', 5);
+    expect(screen.getByText('5h')).toBeTruthy();
     await press('Next');
     await expectPathname(result, '/onboarding/mirror');
 
@@ -50,7 +50,7 @@ describe('primary rendered navigation seam', () => {
     await press('Allowed in demo');
     await expectPathname(result, '/onboarding/allowance');
 
-    await pressTimes('Increase', 10);
+    await fireEvent(screen.getByTestId('allowance-slider'), 'valueChange', 45);
     expect(screen.getByLabelText('Daily free allowance, zero through four hours in five minute steps'))
       .toHaveAccessibilityValue({ now: 45, text: '45 min' });
     await press('Done');
@@ -79,7 +79,10 @@ describe('primary rendered navigation seam', () => {
 
     await press('Add condition');
     await expectPathname(result, '/condition-builder');
+    await press('Gym');
+    await press('Next');
     await press('Arrive at gym');
+    await press('Next');
     expect(screen.getByText('No saved gyms yet')).toBeTruthy();
     await press('Add a sample gym');
     await expectPathname(result, '/gym/new');
@@ -90,9 +93,13 @@ describe('primary rendered navigation seam', () => {
     await press('Next');
     await press('Add a fixed amount');
     await pressTimes('Increase minutes added', 6);
+    await press('Next');
     await press('Once');
+    await press('Next');
     await press('4 hours');
+    await press('Next');
     await press('No');
+    await press('Next');
     await press('Anytime');
     await press('Next');
     await press('Weights floor');
@@ -100,9 +107,9 @@ describe('primary rendered navigation seam', () => {
     await press('Save condition');
     await expectPathname(result, '/home');
     expect(screen.getByText('Go to gym')).toBeTruthy();
-    expect(screen.getByText('0 min earned today')).toBeTruthy();
-    expect(screen.getByText('Today’s goal is ready')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'No streak yet; active day.' })).toBeTruthy();
+    expect(screen.getByText('0 min')).toBeTruthy();
+    expect(screen.queryByText('Today’s goal is ready')).toBeNull();
+    expect(screen.queryByText('Friday · Active day')).toBeNull();
     expect(screen.queryByText('2h 05m earned today')).toBeNull();
 
     await fireEvent.press(screen.getByRole('tab', { name: 'Analysis' }));
@@ -120,7 +127,7 @@ describe('primary rendered navigation seam', () => {
     await expectPathname(result, '/home');
     expect(screen.getByText('Adding 30 min')).toBeTruthy();
     await act(() => jest.advanceTimersByTime(900));
-    expect(screen.getByText('30 min earned today')).toBeTruthy();
+    expect(screen.queryByText('30 min earned today')).toBeNull();
 
     await fireEvent.press(screen.getByRole('tab', { name: 'Analysis' }));
     await expectPathname(result, '/analysis');

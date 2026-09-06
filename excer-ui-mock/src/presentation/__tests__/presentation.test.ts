@@ -98,18 +98,27 @@ describe('presentation-state transitions', () => {
       },
     });
     state = transitionDemo(state, { type: 'builder/start' });
+    state = transitionDemo(state, { type: 'builder/select-category', category: 'Gym' });
+    state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/select-catalog', catalogId: 'gym-arrive' });
 
     expect(BUILDER_PATHS.event).toEqual([
       'catalog',
+      'method',
       'place',
       'configure-event',
       'reward',
+      'daily-cap',
+      'cooldown',
+      'repeatable',
+      'active-window',
       'banner',
       'preview',
     ]);
-    expect(getBuilderScreen(state).canContinue).toBe(false);
+    expect(getBuilderScreen(state).canContinue).toBe(true);
 
+    state = transitionDemo(state, { type: 'builder/continue' });
+    expect(getBuilderScreen(state).canContinue).toBe(false);
     state = transitionDemo(state, { type: 'builder/set-place', gymId: 'riverfront-club' });
     state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/set-event-threshold', value: 1 });
@@ -120,6 +129,10 @@ describe('presentation-state transitions', () => {
     state = transitionDemo(state, { type: 'builder/set-repeatable', value: false });
     state = transitionDemo(state, { type: 'builder/set-active-window', value: 'anytime' });
     expect(getBuilderScreen(state).canContinue).toBe(true);
+    state = transitionDemo(state, { type: 'builder/continue' });
+    state = transitionDemo(state, { type: 'builder/continue' });
+    state = transitionDemo(state, { type: 'builder/continue' });
+    state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/set-banner', bannerId: 'gym-weights-floor' });
     state = transitionDemo(state, { type: 'builder/continue' });
@@ -205,6 +218,10 @@ describe('presentation-state transitions', () => {
     state = transitionDemo(state, { type: 'builder/set-enabled', enabled: false });
     state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/set-reward', reward: 'fixed', minutes: 45 });
+    state = transitionDemo(state, { type: 'builder/continue' });
+    state = transitionDemo(state, { type: 'builder/continue' });
+    state = transitionDemo(state, { type: 'builder/continue' });
+    state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/save' });

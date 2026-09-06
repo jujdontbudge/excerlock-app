@@ -1,0 +1,4 @@
+html, body, #root { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { background: #121517; }
+.excalidraw { --color-surface-low: #121517; }
+.loading { height: 100%; display: grid; place-items: center; color: white; font: 600 18px system-ui; }

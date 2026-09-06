@@ -52,7 +52,7 @@ paywall/restore, Settings, and all three notification-entry destinations.
 Reducer and component suites cover presentation transitions, Home, sessions,
 Analysis, Manage, content, and the event/state/rate card seam.
 
-The frozen 2026-08-07 acceptance run passed TypeScript, **32 Jest suites / 261
+The latest verified acceptance run passed TypeScript, **33 Jest suites / 267
 tests**, Expo Doctor **20/20**, and `expo install --check` with dependencies up
 to date. The iOS static export bundled 1,759 modules and 102 assets into one
 4.3 MB Hermes bytecode bundle (104 files / 71 MB total). Run the commands above

@@ -10,10 +10,12 @@ import {
   weeklyRulesFixture,
 } from '@/content';
 import {
+  DottedSeparator,
   GradientScreen,
   PillButton,
   PillowCard,
   PressableScale,
+  SelectableBubble,
   SettingsRow,
   SwitchRow,
   colors,
@@ -186,9 +188,9 @@ export function WeeklyRulesScreen({
           />
           {lockWindowEnabled ? (
             <>
-              <View style={s.divider} />
+              <DottedSeparator />
               <SettingsRow onPress={() => setPicker({ kind: 'time', edge: 'from', draft: lockWindowFrom })} title="From" value={lockWindowFrom} />
-              <View style={s.divider} />
+              <DottedSeparator />
               <SettingsRow onPress={() => setPicker({ kind: 'time', edge: 'to', draft: lockWindowTo })} title="To" value={lockWindowTo} />
             </>
           ) : null}
@@ -200,7 +202,7 @@ export function WeeklyRulesScreen({
           <PillowCard padding="none" variant="grouped">
             {plannedDaysOff.map((day, index) => (
               <View key={day.date}>
-                {index > 0 ? <View style={s.divider} /> : null}
+                {index > 0 ? <DottedSeparator /> : null}
                 <SettingsRow
                   onPress={() => onRemoveDayOff(day.date, day.label)}
                   subtitle="Tap to remove with confirmation"
@@ -270,19 +272,18 @@ export function WeeklyRulesScreen({
                 const selected = picker.draft === date;
                 const planned = plannedDaysOff.some((item) => item.date === date);
                 return (
-                  <PressableScale
+                  <SelectableBubble
                     accessibilityLabel={`${septemberLabel(day)}${planned ? ', already planned off' : ''}`}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
+                    compact
+                    contentStyle={[styles.calendarDay, planned && styles.plannedDay]}
                     key={date}
+                    label={String(day)}
                     onPress={() => setPicker({ kind: 'calendar', draft: date })}
+                    role="radio"
+                    selected={selected}
                     style={styles.calendarDayHost}
-                  >
-                    <View style={[styles.calendarDay, planned && styles.plannedDay, selected && styles.selectedDay]}>
-                      <Text style={[styles.calendarDayLabel, selected && styles.selectedDayLabel]}>{day}</Text>
-                      {planned ? <View style={styles.plannedDot} /> : null}
-                    </View>
-                  </PressableScale>
+                    trailing={planned ? <View style={styles.plannedDot} /> : undefined}
+                  />
                 );
               })}
             </View>
@@ -364,7 +365,7 @@ export function CustomDayScreen({
             <PillowCard padding="none" variant="grouped">
               {customDayCopy.rows.map((row, index) => (
                 <View key={row.id}>
-                  {index > 0 ? <View style={s.divider} /> : null}
+                  {index > 0 ? <DottedSeparator /> : null}
                   <SettingsRow
                     onPress={() => {
                       if (row.id === 'rewards') setRewardPicker({ screen: 'conditions' });
@@ -423,7 +424,7 @@ export function CustomDayScreen({
                   const override = customValues.rewardOverrides[condition.id];
                   return (
                     <View key={condition.id}>
-                      {index > 0 ? <View style={s.divider} /> : null}
+                      {index > 0 ? <DottedSeparator /> : null}
                       <SettingsRow
                         onPress={() => setRewardPicker({
                           screen: 'choice',
@@ -523,7 +524,7 @@ export function CustomDayScreen({
                   title="From"
                   value={fieldPicker.from}
                 />
-                <View style={s.divider} />
+                <DottedSeparator />
                 <SettingsRow
                   onPress={() => setFieldPicker({ screen: 'window-time', edge: 'to', from: fieldPicker.from, to: fieldPicker.to })}
                   title="To"
@@ -638,13 +639,13 @@ const styles = StyleSheet.create({
   dayHost: { flex: 1 },
   dayLetter: { ...type.cardTitle, color: colors.text.primary },
   dayMode: { ...type.micro, color: colors.text.primary },
-  duplicateNote: { ...type.caption, color: colors.brand.signatureAmber },
+  duplicateNote: { ...type.caption, color: colors.text.primary },
   monthTitle: { ...type.cardTitle, color: colors.text.primary, marginVertical: space[4], textAlign: 'center' },
   plannedDay: { backgroundColor: colors.surface.cardElevated },
-  plannedDot: { backgroundColor: colors.brand.signatureAmber, borderRadius: radius.pill, height: 4, marginTop: 2, width: 4 },
+  plannedDot: { backgroundColor: colors.brand.signatureAmber, borderRadius: radius.pill, height: 4, marginTop: space.optical, width: 4 },
   restCell: { backgroundColor: colors.surface.cardElevated },
   selectedDay: { backgroundColor: colors.surface.light },
-  selectedDayLabel: { color: colors.text.ink },
+  selectedDayLabel: { color: colors.text.onLight },
   weekdayLabel: { ...type.micro, color: colors.text.secondary, textAlign: 'center', width: '14.2857%' },
   weekGrid: { flexDirection: 'row' as const, gap: space[1] },
 });

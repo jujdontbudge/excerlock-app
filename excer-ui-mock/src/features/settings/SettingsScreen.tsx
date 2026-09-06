@@ -9,12 +9,16 @@ import {
   settingsRootSections,
 } from '@/content';
 import {
+  ContentFadeMask,
+  ChevronIcon,
+  DottedSeparator,
   GradientScreen,
   IconChip,
   PillowCard,
   PressableScale,
   SettingsRow,
   colors,
+  layout,
   space,
   type,
 } from '@/design-system';
@@ -22,13 +26,11 @@ import {
 import { SectionLabel, SettingsHeader, settingsFeatureStyles as s } from './components';
 
 export interface SettingsScreenProps {
-  accountSignedIn?: boolean;
   onFooterTap: () => void;
   onOpenPermissions: () => void;
   onOpenRow: (rowId: string, route: string) => void;
   permissionHealth?: 'attention' | 'healthy';
   scrollRef?: RefObject<SettingsScrollHandle | null>;
-  summaryOverrides?: Partial<Record<'subscription' | 'notifications' | 'general' | 'connections', string>>;
 }
 
 export type SettingsScrollHandle = ComponentRef<typeof ScrollView>;
@@ -49,21 +51,20 @@ const rowGlyph = {
 } as const;
 
 export function SettingsScreen({
-  accountSignedIn = true,
   onFooterTap,
   onOpenPermissions,
   onOpenRow,
   permissionHealth = 'attention',
   scrollRef,
-  summaryOverrides = {},
 }: SettingsScreenProps) {
   const panel = settingsPermissionPanels[permissionHealth];
   return (
     <GradientScreen edges={['top', 'left', 'right']} variant="content">
-      <ScrollView ref={scrollRef} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ContentFadeMask>
+        <ScrollView ref={scrollRef} contentContainerStyle={[s.content, styles.tabContent]} showsVerticalScrollIndicator={false}>
         <SettingsHeader title={settingsRootCopy.title} />
         <PressableScale accessibilityLabel={`${panel.title}, ${panel.status}. ${panel.action}`} accessibilityRole="button" onPress={onOpenPermissions} pressedScale={0.98}>
-          <PillowCard style={styles.permissionCard} variant="elevated">
+          <PillowCard style={styles.permissionCard} variant="bubble">
             <View style={s.row}>
               <IconChip size="lg" source={assetRegistry.glyphs['icon-health']} variant={permissionHealth === 'healthy' ? 'success' : 'energy'} />
               <View style={s.rowCopy}>
@@ -72,7 +73,7 @@ export function SettingsScreen({
               </View>
             </View>
             <Text style={s.body}>{panel.body}</Text>
-            <Text style={styles.reviewLabel}>{panel.action} ›</Text>
+            <View style={styles.reviewRow}><Text style={styles.reviewLabel}>{panel.action}</Text><ChevronIcon /></View>
           </PillowCard>
         </PressableScale>
 
@@ -82,15 +83,10 @@ export function SettingsScreen({
             <PillowCard padding="none" variant="grouped">
               {section.rows.map((row, index) => (
                 <View key={row.id}>
-                  {index > 0 ? <View style={s.divider} /> : null}
+                  {index > 0 ? <DottedSeparator /> : null}
                   <SettingsRow
                     leading={<IconChip size="sm" source={rowGlyph[row.id]} variant="dark" />}
                     onPress={() => onOpenRow(row.id, row.route)}
-                    subtitle={row.id === 'account' && !accountSignedIn
-                      ? settingsRootCopy.signedOutAccountSubtitle
-                      : row.id in summaryOverrides
-                        ? summaryOverrides[row.id as keyof typeof summaryOverrides]
-                        : row.subtitle}
                     title={row.label}
                   />
                 </View>
@@ -101,15 +97,18 @@ export function SettingsScreen({
         <PressableScale accessibilityLabel="Prototype version. Tap for local debug entry" accessibilityRole="button" onPress={onFooterTap}>
           <View style={styles.footer}><Text style={styles.footerText}>{settingsRootCopy.footer}</Text></View>
         </PressableScale>
-      </ScrollView>
+        </ScrollView>
+      </ContentFadeMask>
     </GradientScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  footer: { alignItems: 'center', minHeight: 52, justifyContent: 'center' },
+  footer: { alignItems: 'center', minHeight: layout.rowHeight, justifyContent: 'center' },
   footerText: { ...type.caption, color: colors.text.tertiary },
   permissionCard: { gap: space[3] },
-  permissionStatus: { ...type.label, color: colors.brand.signatureAmber, marginTop: space[1] },
+  permissionStatus: { ...type.label, color: colors.text.primary, marginTop: space[1] },
   reviewLabel: { ...type.label, color: colors.text.primary },
+  reviewRow: { alignItems: 'center', flexDirection: 'row', gap: space[2] },
+  tabContent: { paddingBottom: layout.tabBarContentInset },
 });

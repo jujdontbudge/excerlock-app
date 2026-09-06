@@ -1,20 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import { Image, ImageBackground, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
+import { ImageBackground, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
 
 import {
   AccessibleModal,
-  AccessibleModalTitle,
+  FullScreenModalPage,
   LiveRing,
   PillowCard,
   PillButton,
   PressableScale,
   SettingsRow,
+  StaticVectorImage,
   SwitchRow,
   colors,
+  radius,
   space,
   type,
 } from '@/design-system';
 import { walkSessionAlerts, walkSessionStates } from '@/content/sessions';
+import { assetRegistry } from '@/content';
 import type { GymPhase, WalkPhase } from '@/presentation';
 import { FeatureScaffold, PrototypeNotice } from '@/features/shared';
 
@@ -125,6 +128,17 @@ export function WalkSessionScreen({
         : overlay?.kind === 'why'
           ? walkSessionAlerts.whyLocked.title
           : 'Walk action';
+  const overlayBody = overlay?.kind === 'pause'
+    ? walkSessionAlerts.pause.body
+    : overlay?.kind === 'end'
+      ? walkSessionAlerts.end.body
+      : overlay?.kind === 'details'
+        ? 'The sample balance drained normally while access stayed open.'
+        : overlay?.kind === 'condition'
+          ? 'Access stays open while the fake walking session remains active. The sample balance drains normally.'
+          : overlay?.kind === 'why'
+            ? walkSessionAlerts.whyLocked.body
+            : undefined;
 
   return (
     <>
@@ -151,10 +165,8 @@ export function WalkSessionScreen({
         ) : null}
 
         {phase === 'ready' ? (
-          <Image
-            accessibilityIgnoresInvertColors
-            resizeMode="contain"
-            source={require('../../../assets/heroes/permission-health-motion.png')}
+          <StaticVectorImage
+            source={assetRegistry.heroes['permission-health-motion']}
             style={styles.sessionHero}
           />
         ) : (
@@ -168,7 +180,7 @@ export function WalkSessionScreen({
         )}
 
         {phase === 'ready' ? (
-          <PillowCard padding="none" variant="night">
+          <PillowCard padding="none" style={styles.statusCard} variant="night">
             {walkSessionStates.ready.statusRows.map((row) => {
               const permissionTarget = walkPermissionTarget(row.label);
               return (
@@ -241,17 +253,17 @@ export function WalkSessionScreen({
 
       <AccessibleModal
         accessibilityTitle={overlayTitle}
-        animationType="fade"
+        contentContainerStyle={styles.modalPage}
         onRequestClose={() => setOverlay(null)}
+        scrollEnabled={false}
         style={styles.modalBackdrop}
         visible={overlay !== null}
       >
-        <PillowCard style={styles.modalCard} variant="light">
-          <Text style={styles.modalEyebrow}>LOCAL SESSION PREVIEW</Text>
-          <AccessibleModalTitle style={styles.modalTitle}>{overlayTitle}</AccessibleModalTitle>
-          {overlay?.kind === 'pause' ? (
-            <>
-              <Text style={styles.modalBody}>{walkSessionAlerts.pause.body}</Text>
+        <PillowCard style={[styles.modalCard, styles.modalCardFull]} variant="light">
+          <FullScreenModalPage
+            body={overlayBody}
+            footer={overlay?.kind === 'pause' ? (
+              <>
               <PillButton
                 accessibilityLabel="Confirm pause"
                 fullWidth
@@ -260,14 +272,12 @@ export function WalkSessionScreen({
                   setOverlay(null);
                   onPause();
                 }}
-                variant="dark"
+                variant="screen"
               />
               <PillButton fullWidth label="Keep walking" onPress={() => setOverlay(null)} variant="text" />
-            </>
-          ) : null}
-          {overlay?.kind === 'end' ? (
-            <>
-              <Text style={styles.modalBody}>{walkSessionAlerts.end.body}</Text>
+              </>
+            ) : overlay?.kind === 'end' ? (
+              <>
               <PillButton
                 accessibilityLabel="Confirm end session"
                 fullWidth
@@ -277,43 +287,29 @@ export function WalkSessionScreen({
                   setOverlay(null);
                   onEnd(reason);
                 }}
-                variant="dark"
+                variant="screen"
               />
               <PillButton fullWidth label="Keep walking" onPress={() => setOverlay(null)} variant="text" />
-            </>
-          ) : null}
-          {overlay?.kind === 'details' ? (
-            <>
+              </>
+            ) : overlay?.kind === 'details' ? (
+              <PillButton accessibilityLabel="Close walk details" fullWidth label="Done" onPress={() => setOverlay(null)} variant="screen" />
+            ) : overlay?.kind === 'condition' && conditionSummary ? (
+              <PillButton fullWidth label="Done" onPress={() => setOverlay(null)} variant="screen" />
+            ) : overlay?.kind === 'why' ? (
+              <>
+                <PillButton fullWidth label="View lock moment" onPress={() => { setOverlay(null); onWhyLocked(); }} variant="screen" />
+                <PillButton fullWidth label="Got it" onPress={() => setOverlay(null)} variant="text" />
+              </>
+            ) : null}
+          >
+            {overlay?.kind === 'details' ? (
+              <View style={styles.modalMetrics}>
               <Text style={styles.modalDetail}>24:18 moving</Text>
               <Text style={styles.modalDetail}>2,804 sample steps</Text>
               <Text style={styles.modalDetail}>24 min access kept open</Text>
-              <Text style={styles.modalBody}>The sample balance drained normally while access stayed open.</Text>
-              <PillButton accessibilityLabel="Close walk details" fullWidth label="Done" onPress={() => setOverlay(null)} variant="dark" />
-            </>
-          ) : null}
-          {overlay?.kind === 'condition' && conditionSummary ? (
-            <>
-              <Text style={styles.modalDetail}>{conditionSummary.title}</Text>
-              <Text style={styles.modalBody}>{conditionSummary.ruleSummary}</Text>
-              <Text style={styles.modalBody}>Access stays open while the fake walking session remains active. The sample balance drains normally.</Text>
-              <PillButton fullWidth label="Done" onPress={() => setOverlay(null)} variant="dark" />
-            </>
-          ) : null}
-          {overlay?.kind === 'why' ? (
-            <>
-              <Text style={styles.modalBody}>{walkSessionAlerts.whyLocked.body}</Text>
-              <PillButton
-                fullWidth
-                label="View lock moment"
-                onPress={() => {
-                  setOverlay(null);
-                  onWhyLocked();
-                }}
-                variant="dark"
-              />
-              <PillButton fullWidth label="Got it" onPress={() => setOverlay(null)} variant="text" />
-            </>
-          ) : null}
+              </View>
+            ) : null}
+          </FullScreenModalPage>
         </PillowCard>
       </AccessibleModal>
     </>
@@ -417,7 +413,7 @@ export function GymSessionScreen({ condition, gym, onBack, onCancel, onDone, onO
             </View>
           </ImageBackground>
         )}
-        <PillowCard padding="none" variant="night">
+        <PillowCard padding="none" style={styles.statusCard} variant="night">
           <SettingsRow
             onPress={onOpenPermission}
             subtitle={locationHealth.subtitle}
@@ -524,30 +520,33 @@ function gymContent(
 }
 
 const styles = StyleSheet.create({
-  actions: { gap: space[2], width: '100%' },
-  activeChip: { ...type.micro, alignSelf: 'center', backgroundColor: colors.surface.cardStrong, borderRadius: 999, color: colors.semantic.success, overflow: 'hidden', paddingHorizontal: space[3], paddingVertical: space[2] },
+  actions: { gap: space[2], marginTop: 'auto', width: '100%' },
+  activeChip: { ...type.micro, alignSelf: 'center', backgroundColor: colors.surface.cardStrong, borderRadius: radius.pill, color: colors.semantic.success, overflow: 'hidden', paddingHorizontal: space[3], paddingVertical: space[2] },
   body: { ...type.body, color: colors.text.secondary, textAlign: 'center' },
-  conditionEyebrow: { ...type.micro, color: colors.brand.signatureAmber },
+  conditionEyebrow: { ...type.label, color: colors.text.primary },
   conditionRule: { ...type.caption, color: colors.text.secondary },
   conditionSummary: { alignSelf: 'stretch', gap: space[1] },
   conditionTitle: { ...type.cardTitle, color: colors.text.primary },
   gymBanner: { height: 180, justifyContent: 'flex-end', overflow: 'hidden', width: '100%' },
-  gymBannerImage: { borderRadius: 24 },
-  gymBannerScrim: { backgroundColor: 'rgba(18,12,5,0.72)', borderBottomLeftRadius: 24, borderBottomRightRadius: 24, gap: space[1], padding: space[4] },
+  gymBannerImage: { borderRadius: radius.condition },
+  gymBannerScrim: { backgroundColor: colors.surface.mediaScrim, borderBottomLeftRadius: radius.condition, borderBottomRightRadius: radius.condition, gap: space[1], padding: space[4] },
   gymMeta: { ...type.caption, color: colors.text.secondary },
   gymName: { ...type.cardTitle, color: colors.text.primary },
   gymVerifyName: { ...type.cardTitle, color: colors.text.primary, textAlign: 'center' },
   metric: { ...type.statValue, color: colors.text.primary, textAlign: 'center' },
-  modalBackdrop: { backgroundColor: colors.surface.scrim, flex: 1, justifyContent: 'flex-end', padding: space[4] },
-  modalBody: { ...type.body, color: colors.text.ink, opacity: 0.72 },
+  modalBackdrop: { flex: 1 },
+  modalBody: { ...type.body, color: colors.text.ink },
   modalCard: { gap: space[3], padding: space[5] },
+  modalCardFull: { flex: 1, paddingBottom: 0, paddingTop: 0 },
   modalDetail: { ...type.sectionTitle, color: colors.text.ink },
-  modalEyebrow: { ...type.micro, color: colors.brand.burnt },
-  modalTitle: { ...type.screenTitle, color: colors.text.ink },
+  modalEyebrow: { ...type.micro, color: colors.text.primary },
+  modalMetrics: { alignItems: 'center', gap: space[3] },
+  modalPage: { flex: 1 },
   rowDivider: { backgroundColor: colors.surface.divider, height: 1 },
-  session: { alignItems: 'center', flex: 1, gap: space[5], justifyContent: 'center', paddingBottom: space[4] },
-  sessionCopy: { gap: space[2] },
-  sessionHero: { height: 210, width: 230 },
+  session: { alignItems: 'center', flex: 1, gap: space[4], paddingBottom: space[4], paddingTop: space[3] },
+  sessionCopy: { alignSelf: 'stretch', gap: space[2] },
+  sessionHero: { height: 168, width: 184 },
+  statusCard: { alignSelf: 'stretch' },
   summaryCard: { alignSelf: 'stretch', gap: space[2] },
   summaryTitle: { ...type.cardTitle, color: colors.text.primary },
   title: { ...type.screenLarge, color: colors.text.primary, textAlign: 'center' },

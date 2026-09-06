@@ -4,9 +4,26 @@ Consolidated and revalidated 2026-08-07. This directory is the complete
 Family B glyph library for the standalone `excer-ui-mock` app: **exactly 26
 runtime keyed finals and exactly 26 neighboring opaque edit targets**.
 
-Runtime code imports keyed finals (`icon-*.png`) only. Files ending in
-`-opaque.png` are magenta-backed foundry/edit targets and must never be
-imported by runtime code.
+The accepted keyed finals (`icon-*.png`) remain the immutable visual sources.
+Runtime code imports the neighboring `icon-*.svg` derivatives produced from
+those finals with VisionCortex VTracer. Files ending in `-opaque.png` are
+magenta-backed foundry/edit targets and must never be imported by runtime
+code.
+
+## Runtime SVG derivatives
+
+- Tool: VisionCortex VTracer Python binding 0.6.15.
+- Install: `python3 -m pip install --user vtracer==0.6.15`.
+- Command: `python3 scripts/vectorize_icons.py`.
+- Inventory check: `npm run vectors:check`.
+- Policy: every accepted keyed PNG has exactly one same-basename SVG; the PNG
+  is retained for source provenance and visual comparison.
+- Glyph trace profile: color, stacked hierarchy, spline fitting, 8-bit color
+  precision, 12-point layer difference, four-pixel speckle filter, four-pixel
+  length threshold, ten iterations, two-decimal path precision.
+- Runtime consumers: the four-tab dock, Settings and permission glyphs, Home
+  affordances, builder activity catalog, analysis affordances, and disclosure
+  arrows use the SVG derivatives.
 
 Every glyph was generated with GPT Image 2 through Codex built-in
 `image_gen`. This follows the user's explicit GPT Image 2 asset override; no

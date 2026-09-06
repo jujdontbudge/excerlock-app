@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { colors } from '@/design-system';
+import { gradients } from '@/design-system';
 import { DemoProvider, useDemo } from '@/presentation';
 
 function AutomaticReviewNavigator() {
@@ -32,21 +33,29 @@ export default function RootLayout() {
         <DemoProvider>
           <AutomaticReviewNavigator />
           <StatusBar style="light" />
-          <Stack
-            screenOptions={{
-              animation: 'fade',
-              contentStyle: { backgroundColor: colors.canvas.contentTop },
-              headerShown: false,
-            }}
+          <LinearGradient
+            colors={gradients.homeHeat.colors}
+            locations={gradients.homeHeat.locations}
+            style={{ flex: 1 }}
           >
-            <Stack.Screen name="index" />
-            <Stack.Screen name="onboarding/[step]" />
-            <Stack.Screen name="paywall" options={{ gestureEnabled: false }} />
-            <Stack.Screen name="signup" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-            <Stack.Screen name="condition-builder" options={{ presentation: 'formSheet', sheetAllowedDetents: [0.92] }} />
-            <Stack.Screen name="share-achievement" options={{ presentation: 'formSheet', sheetAllowedDetents: [0.72] }} />
-          </Stack>
+            <Stack
+              screenOptions={{
+                animation: 'slide_from_right',
+                contentStyle: { backgroundColor: 'transparent' },
+                fullScreenGestureEnabled: true,
+                gestureEnabled: true,
+                headerShown: false,
+              }}
+            >
+              <Stack.Screen name="index" />
+              <Stack.Screen name="onboarding/[step]" />
+              <Stack.Screen name="paywall" options={{ gestureEnabled: false }} />
+              <Stack.Screen name="signup" />
+              <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+              <Stack.Screen name="condition-builder" />
+              <Stack.Screen name="share-achievement" />
+            </Stack>
+          </LinearGradient>
         </DemoProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

@@ -1,6 +1,7 @@
 # Design system
 
-This module is the only source of ExcerLock visual geometry. Feature screens
+This module is the only source of ExcerLock visual geometry. The current
+research-backed contract is documented in `docs/UI_SYSTEM_RESEARCH.md`. Feature screens
 import from `@/design-system`; they should not introduce new colors, radii,
 button shapes, or card translucency.
 
@@ -24,8 +25,11 @@ Every prop interface and discriminated model is exported by the same barrel.
 
 ## Composition rules
 
-- Start each native page with `GradientScreen`. Use `home` only for Home and
-  direct Home previews; prefer `content`, `detail`, or `night` elsewhere.
+- Start each native page with `GradientScreen`. All variants currently resolve
+  to the same full-bleed blue-violet canvas so safe areas and route transitions
+  never expose a different color.
+- Use `AppHeader` for navigation geometry, `ChevronIcon` for directional
+  arrows, 56pt controls, 60pt rows, and 24pt standard page insets.
 - The root Router layout owns `GestureHandlerRootView` and `SafeAreaProvider`.
   `GradientScreen`, `SheetFrame`, and `BottomTabBar` consume safe-area context.
 - Use `PressableScale` for custom taps. It uses Gesture Handler and a Reanimated
@@ -39,8 +43,8 @@ Every prop interface and discriminated model is exported by the same barrel.
   focuses or announces `AccessibleModalTitle`, closes through native request and
   accessibility-escape paths, and restores an explicit or fallback focus target
   (with a dismissal announcement as its final fallback).
-- `HeroLock` uses the approved separate `lock-body.png` and
-  `lock-shackle.png` runtime assets so the shackle can open without swapping in
+- `HeroLock` uses the approved unified high-detail `lock-unified.svg` runtime
+  asset and animates the complete illustrated lock without swapping in
   unrelated art.
 
 ## ConditionCard seam

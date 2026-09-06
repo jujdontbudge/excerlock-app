@@ -38,7 +38,6 @@ export function NotificationPreviewScreen({
     <GradientScreen variant="night">
       <View style={styles.screen}>
         <View style={styles.disclosure}>
-          <Text style={styles.previewLabel}>LOCAL NOTIFICATION PREVIEW · {fixture.designId}</Text>
           <Text style={styles.previewBody}>No notification was scheduled or delivered. Opening this card only changes local demo navigation.</Text>
         </View>
 
@@ -60,7 +59,6 @@ export function NotificationPreviewScreen({
               <Text style={styles.entryChip}>{fixture.entryChip}</Text>
               <Text style={styles.destinationTitle}>{fixture.conclusion}</Text>
               <Text style={styles.destinationBody}>{fixture.body}</Text>
-              <Text style={styles.focusLabel}>FOCUS TARGET</Text>
               <Text style={styles.destinationFocus}>{fixture.focus}</Text>
               <Text style={styles.localDisclosure}>{notificationEntrySharedCopy.disclosure}</Text>
             </PillowCard>
@@ -92,15 +90,15 @@ const styles = StyleSheet.create({
   destinationFocus: { ...type.body, color: colors.text.primary },
   destinationTitle: { ...type.screenTitle, color: colors.text.primary },
   disclosure: { alignItems: 'center', gap: space[1] },
-  entryChip: { ...type.micro, alignSelf: 'flex-start', backgroundColor: colors.brand.primary, borderRadius: radius.pill, color: colors.text.ink, overflow: 'hidden', paddingHorizontal: space[3], paddingVertical: space[2] },
+  entryChip: { ...type.label, alignSelf: 'flex-start', backgroundColor: colors.brand.primary, borderRadius: radius.pill, color: colors.text.primary, overflow: 'hidden', paddingHorizontal: space[3], paddingVertical: space[2] },
   focusLabel: { ...type.micro, color: colors.brand.signatureAmber },
   localDisclosure: { ...type.caption, color: colors.text.tertiary },
   notificationBody: { ...type.body, color: colors.text.ink, marginTop: space[1] },
-  notificationCard: { backgroundColor: colors.surface.ivoryBlur, gap: space[1], shadowColor: colors.canvas.contentTop, shadowOffset: { height: 8, width: 0 }, shadowOpacity: 0.24, shadowRadius: 20 },
+  notificationCard: { backgroundColor: colors.surface.bubbleStrong, gap: space[1], shadowColor: colors.canvas.contentTop, shadowOffset: { height: 8, width: 0 }, shadowOpacity: 0.24, shadowRadius: 20 },
   notificationHeader: { alignItems: 'center', flexDirection: 'row', gap: space[2], marginBottom: space[2] },
   notificationTitle: { ...type.cardTitle, color: colors.text.ink },
   previewBody: { ...type.caption, color: colors.text.secondary, textAlign: 'center' },
   previewLabel: { ...type.micro, color: colors.brand.signatureAmber, textAlign: 'center' },
   screen: { flex: 1, gap: space[4], paddingBottom: space[4], paddingTop: space[2] },
-  time: { ...type.caption, color: colors.icon.dark },
+  time: { ...type.caption, color: colors.text.primary },
 });

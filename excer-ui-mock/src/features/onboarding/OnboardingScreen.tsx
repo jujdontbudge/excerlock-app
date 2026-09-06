@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   Alert,
-  Image,
+  Easing,
   StyleSheet,
   Text,
   TextInput,
@@ -9,15 +10,16 @@ import {
   type ImageSourcePropType,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useReducedMotion } from 'react-native-reanimated';
 
-import { AccessibleModal, AccessibleModalTitle, HeroLock, PressableScale, colors, radius, space, type } from '@/design-system';
+import { AccessibleModal, BrandedSlider, FullScreenModalPage, HeaderBackButton, HeroLock, PressableScale, SelectableBubble, VectorIcon, colors, layout, motion, radius, space, type } from '@/design-system';
 import {
-  allowancePicker,
   onboardingPermissionRepair,
   onboardingScreens,
   privacyDetail,
   sampleAppGroups,
 } from '@/content/onboarding';
+import { assetRegistry } from '@/content';
 import type {
   OnboardingPermissionKey,
   OnboardingStep,
@@ -26,23 +28,16 @@ import type {
 import { FeatureScaffold, OptionRow, PrototypeNotice, ScreenAction } from '@/features/shared';
 
 const routeForStep = (step: OnboardingStep) => `/onboarding/${step}`;
+const onboardingFlowScreens = onboardingScreens.filter((item) => item.route.startsWith('/onboarding/'));
 
 const heroes: Partial<Record<OnboardingStep, ImageSourcePropType>> = {
-  'screen-time': require('../../../assets/heroes/permission-screen-time.png'),
-  motion: require('../../../assets/heroes/permission-health-motion.png'),
-  health: require('../../../assets/heroes/permission-health-motion.png'),
-  location: require('../../../assets/heroes/permission-location.png'),
-  allowance: require('../../../assets/heroes/allowance-clock.png'),
-  done: require('../../../assets/heroes/paywall-hero.png'),
+  'screen-time': assetRegistry.heroes['permission-screen-time'],
+  motion: assetRegistry.heroes['permission-health-motion'],
+  health: assetRegistry.heroes['permission-health-motion'],
+  location: assetRegistry.heroes['permission-location'],
+  allowance: assetRegistry.heroes['allowance-clock'],
+  done: assetRegistry.heroes['paywall-hero'],
 };
-
-function allowanceConsequence(value: number | 'unlimited' | null) {
-  if (value === null) return 'Choose a sample allowance to preview when movement starts earning room.';
-  if (value === 'unlimited') return 'Apps would stay available without a daily free-time limit in this demo.';
-  if (value === 0) return 'Apps would lock immediately, then open again when you earn time.';
-  if (value === 45) return allowancePicker.guidedConsequence;
-  return `Apps would lock after ${value} minutes, then open again when you earn time.`;
-}
 
 export type OnboardingScreenProps = {
   allowanceMinutes: number | 'unlimited' | null;
@@ -81,6 +76,9 @@ export function OnboardingScreen({
   const [stagedApps, setStagedApps] = useState(() => [...selectedApps]);
   const initialSelectedApps = useRef([...selectedApps]);
   const previousStep = useRef(step);
+  const contentOpacity = useRef(new Animated.Value(0)).current;
+  const contentOffset = useRef(new Animated.Value(14)).current;
+  const reduceMotion = useReducedMotion();
   const screen = onboardingScreens.find((item) => item.route === routeForStep(step));
 
   useEffect(() => {
@@ -91,13 +89,43 @@ export function OnboardingScreen({
     previousStep.current = step;
   }, [selectedApps, step]);
 
+  useEffect(() => {
+    contentOpacity.stopAnimation();
+    contentOffset.stopAnimation();
+
+    if (reduceMotion) {
+      contentOpacity.setValue(1);
+      contentOffset.setValue(0);
+      return undefined;
+    }
+
+    contentOpacity.setValue(0);
+    contentOffset.setValue(14);
+    const animation = Animated.parallel([
+      Animated.timing(contentOpacity, {
+        duration: motion.duration.standard,
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+      Animated.timing(contentOffset, {
+        duration: motion.duration.standard,
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
+        toValue: 0,
+        useNativeDriver: true,
+      }),
+    ]);
+    animation.start();
+    return () => animation.stop();
+  }, [contentOffset, contentOpacity, reduceMotion, step]);
+
   if (!screen) return null;
 
   const hero = heroes[step];
+  const flowIndex = onboardingFlowScreens.indexOf(screen);
+  const progressStep = Math.max(1, flowIndex + 1);
+  const choiceFocused = step === 'confession' || step === 'apps' || step === 'allowance' || step === 'review';
   const annualDays = phoneUseHours === null ? null : Math.round((phoneUseHours * 365) / 24);
-  const displayEyebrow = step === 'mirror' && phoneUseHours !== null
-    ? `At ${phoneUseHours} ${phoneUseHours === 1 ? 'hour' : 'hours'} a day.`
-    : 'eyebrow' in screen ? screen.eyebrow : undefined;
   const displayTitle = step === 'mirror' && annualDays !== null
     ? `That’s about ${annualDays} days a year.`
     : screen.title;
@@ -182,40 +210,44 @@ export function OnboardingScreen({
 
   return (
     <>
-      <StatusBar style={step === 'apps' ? 'dark' : 'light'} />
+      <StatusBar style="light" />
       <FeatureScaffold
         accessibilityLabel={screen.title}
+        floatingFooter
         footer={
           <View style={styles.footerActions}>
             <ScreenAction
               disabled={!canSubmit}
               label={screen.primary?.label ?? 'Continue'}
               onPress={primary}
-              tone={step === 'apps' ? 'light' : 'dark'}
-              variant={step === 'apps' ? 'dark' : 'screen'}
+              tone="dark"
+              variant="screen"
             />
             {secondaryLabel ? (
-              <ScreenAction label={secondaryLabel} onPress={secondary} tone={step === 'apps' ? 'light' : 'dark'} variant="text" />
+              <ScreenAction label={secondaryLabel} onPress={secondary} tone="dark" variant="text" />
             ) : null}
           </View>
         }
-        canvasVariant={step === 'apps' ? 'ivory' : undefined}
-        onBack={step !== 'value' && step !== 'done' ? requestBack : undefined}
-        tone={step === 'apps' ? 'light' : 'dark'}
+        scroll={step === 'apps'}
+        tone="dark"
       >
-        <View style={[styles.progressTrack, step === 'apps' && styles.progressTrackLight]}>
-          <View
-            accessibilityLabel={`Onboarding step ${Math.max(1, onboardingScreens.indexOf(screen))} of 12`}
-            accessibilityRole="progressbar"
-            style={[
-              styles.progressFill,
-              step === 'apps' && styles.progressFillLight,
-              { width: `${Math.max(7, (Math.max(1, onboardingScreens.indexOf(screen)) / 12) * 100)}%` },
-            ]}
-          />
-        </View>
+        <OnboardingHeader
+          currentStep={progressStep}
+          onBack={step === 'value' ? undefined : requestBack}
+          totalSteps={onboardingFlowScreens.length}
+        />
 
-        <View style={styles.main}>
+        <Animated.View
+          style={[
+            styles.main,
+            styles.mainTopAligned,
+            { opacity: contentOpacity, transform: [{ translateY: contentOffset }] },
+          ]}
+          testID="onboarding-main"
+        >
+          <Text style={styles.title}>{displayTitle}</Text>
+          {displayBody ? <Text style={styles.body}>{displayBody}</Text> : null}
+
           {step === 'value' || step === 'privacy' ? (
             <HeroLock
               accessibilityLabel={step === 'privacy' ? 'Your activity stays private' : 'Friendly ExcerLock padlock'}
@@ -223,19 +255,10 @@ export function OnboardingScreen({
               state={step === 'privacy' ? 'unlocked' : 'locked'}
               style={styles.heroLock}
             />
-          ) : hero ? (
-            <Image
-              accessibilityIgnoresInvertColors
-              resizeMode="contain"
-              source={hero}
-              style={[styles.hero, step === 'done' && styles.heroDone]}
-            />
-          ) : null}
-          {displayEyebrow ? <Text style={[styles.eyebrow, step === 'apps' && styles.eyebrowLight]}>{displayEyebrow}</Text> : null}
-          <Text style={[styles.title, step === 'apps' && styles.inkText]}>{displayTitle}</Text>
-          {displayBody ? <Text style={[styles.body, step === 'apps' && styles.inkSecondary]}>{displayBody}</Text> : null}
-          {'operationalNote' in screen && screen.operationalNote ? (
-            <PrototypeNotice>{screen.operationalNote}</PrototypeNotice>
+          ) : hero && !choiceFocused ? (
+            <View style={[styles.hero, step === 'done' && styles.heroDone]}>
+              <VectorIcon source={hero} style={styles.heroAsset} />
+            </View>
           ) : null}
 
           {permissionStep && permissionStep !== 'screenTime' && permissionOutcomes[permissionStep] === 'denied' ? (
@@ -257,53 +280,51 @@ export function OnboardingScreen({
           ) : null}
 
           {step === 'confession' ? (
-            <View style={styles.choiceBlock}>
-              <Text accessibilityLiveRegion="polite" style={styles.heroValue}>
-                {phoneUseHours ? `${phoneUseHours} hours` : 'Choose'}
-              </Text>
-              <RangeStepper
+            <View style={styles.sliderBlock}>
+              <BrandedSlider
                 accessibilityLabel="Daily phone use, 1 through 12 or more hours"
-                displayValue={phoneUseHours ? `${phoneUseHours}${phoneUseHours === 12 ? '+' : ''} h` : 'Not chosen'}
-                max={12}
-                min={1}
+                displayValue={`${phoneUseHours ?? 3}${phoneUseHours === 12 ? '+' : ''}h`}
+                maximumLabel="12+h"
+                maximumValue={12}
+                minimumLabel="1h"
+                minimumValue={1}
                 onChange={onSetPhoneUse}
                 step={1}
-                value={phoneUseHours}
+                testID="phone-use-slider"
+                value={phoneUseHours ?? 3}
               />
-              <Text style={styles.rangeHint}>1 hour · 12+ hours</Text>
             </View>
           ) : null}
 
           {step === 'apps' ? (
             <View style={styles.listBlock}>
-              <PrototypeNotice tone="light">Sample apps only — installed apps are never inspected.</PrototypeNotice>
-              <Text style={[styles.selectionCount, styles.inkSecondary]}>{stagedApps.length} selected</Text>
+              <Text style={styles.selectionCount}>{stagedApps.length} selected</Text>
               <TextInput
                 accessibilityLabel="Search sample apps"
                 onChangeText={setAppSearch}
                 placeholder="Search sample apps"
-                placeholderTextColor={colors.text.ink}
-                style={[styles.searchInput, styles.searchInputLight]}
+                placeholderTextColor={colors.text.tertiary}
+                style={styles.searchInput}
                 value={appSearch}
               />
               <View accessibilityLabel="App categories" accessibilityRole="radiogroup" style={styles.categoryRow}>
                 {[{ id: 'all', label: 'All' }, ...sampleAppGroups].map((group) => (
-                  <PressableScale
+                  <SelectableBubble
                     accessibilityLabel={group.label}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: appCategory === group.id }}
+                    compact
+                    contentStyle={styles.categoryChoiceSurface}
                     key={group.id}
+                    label={group.label}
                     onPress={() => setAppCategory(group.id)}
-                  >
-                    <View style={[styles.categoryChip, styles.categoryChipLight, appCategory === group.id && styles.categoryChipSelected]}>
-                      <Text style={[styles.categoryText, styles.inkText, appCategory === group.id && styles.choiceChipTextSelected]}>{group.label}</Text>
-                    </View>
-                  </PressableScale>
+                    role="radio"
+                    selected={appCategory === group.id}
+                    style={styles.categoryChoice}
+                  />
                 ))}
               </View>
               {visibleGroups.map((group) => (
                 <View key={group.id} style={styles.appGroup}>
-                  <Text style={[styles.groupLabel, styles.inkSecondary]}>{group.label.toUpperCase()}</Text>
+                  <Text style={styles.groupLabel}>{group.label.toUpperCase()}</Text>
                   {group.options.map((app) => (
                     <OptionRow
                       key={app.id}
@@ -313,52 +334,39 @@ export function OnboardingScreen({
                         : [...current, app.id])}
                       selected={stagedApps.includes(app.id)}
                       subtitle={app.subtitle}
-                      tone="light"
+                      tone="dark"
                     />
                   ))}
                 </View>
               ))}
-              {visibleGroups.length === 0 ? <Text style={[styles.rangeHint, styles.inkSecondary]}>No sample apps match.</Text> : null}
+              {visibleGroups.length === 0 ? <Text style={styles.rangeHint}>No sample apps match.</Text> : null}
             </View>
           ) : null}
 
           {step === 'allowance' ? (
-            <View style={styles.choiceBlock}>
-              <Text accessibilityLiveRegion="polite" style={styles.heroValue}>
-                {allowanceMinutes === null
-                  ? 'Choose'
-                  : allowanceMinutes === 'unlimited'
-                    ? 'Unlimited'
-                    : allowanceMinutes === 0
-                      ? 'Full Lock'
-                      : `${allowanceMinutes} min`}
-              </Text>
-              <RangeStepper
+            <View style={styles.sliderBlock}>
+              <BrandedSlider
                 accessibilityLabel="Daily free allowance, zero through four hours in five minute steps"
-                displayValue={typeof allowanceMinutes === 'number' ? `${allowanceMinutes} min` : 'Not chosen'}
-                max={240}
-                min={0}
+                displayValue={allowanceMinutes === 'unlimited'
+                  ? 'Unlimited'
+                  : `${typeof allowanceMinutes === 'number' ? allowanceMinutes : 45} min`}
+                maximumLabel="4h"
+                maximumValue={240}
+                minimumLabel="Full Lock"
+                minimumValue={0}
                 onChange={onSetAllowance}
                 step={5}
-                value={typeof allowanceMinutes === 'number' ? allowanceMinutes : null}
+                testID="allowance-slider"
+                value={typeof allowanceMinutes === 'number' ? allowanceMinutes : 45}
               />
-              <View style={styles.chipGrid}>
-                <PressableScale
-                  accessibilityLabel="Unlimited"
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: allowanceMinutes === 'unlimited' }}
-                  onPress={() => onSetAllowance('unlimited')}
-                >
-                  <View style={[styles.choiceChip, allowanceMinutes === 'unlimited' && styles.choiceChipSelected]}>
-                    <Text style={[styles.choiceChipText, allowanceMinutes === 'unlimited' && styles.choiceChipTextSelected]}>
-                      Unlimited
-                    </Text>
-                  </View>
-                </PressableScale>
-              </View>
-              <Text style={styles.consequence}>
-                {allowanceConsequence(allowanceMinutes)}
-              </Text>
+              <SelectableBubble
+                accessibilityLabel="Unlimited"
+                fullWidth
+                label="Unlimited"
+                onPress={() => onSetAllowance('unlimited')}
+                role="radio"
+                selected={allowanceMinutes === 'unlimited'}
+              />
             </View>
           ) : null}
 
@@ -380,27 +388,22 @@ export function OnboardingScreen({
           ) : null}
 
           {step === 'done' ? <Text style={styles.doneNote}>A calm plan. Your choices. No real device changes.</Text> : null}
-        </View>
+        </Animated.View>
       </FeatureScaffold>
 
       <AccessibleModal
-        accessibilityTitle={overlay === 'privacy' ? privacyDetail.title : `Allow ExcerLock to preview ${screen.title.toLowerCase()}`}
-        animationType="fade"
+        accessibilityTitle={overlay === 'privacy' ? privacyDetail.title : `Allow “ExcerLock” to preview ${screen.title.toLowerCase()}`}
+        contentContainerStyle={styles.modalPage}
         onRequestClose={() => setOverlay(null)}
+        scrollEnabled={false}
         style={styles.modalBackdrop}
         visible={overlay !== null}
       >
-          <View accessibilityViewIsModal style={styles.modalCard}>
-            <Text style={styles.modalEyebrow}>Prototype preview</Text>
-            <AccessibleModalTitle style={styles.modalTitle}>
-              {overlay === 'privacy' ? privacyDetail.title : `Allow “ExcerLock” to preview ${screen.title.toLowerCase()}`}
-            </AccessibleModalTitle>
-            {overlay === 'privacy' ? privacyDetail.paragraphs.map((paragraph) => (
-              <Text key={paragraph} style={styles.modalBody}>{paragraph}</Text>
-            )) : (
-              <Text style={styles.modalBody}>No permission is requested and no device data is read. This choice changes only the local demo label.</Text>
-            )}
-            <View style={styles.modalActions}>
+          <View accessibilityViewIsModal style={[styles.modalCard, styles.modalCardFull]}>
+            <FullScreenModalPage
+              body={overlay === 'privacy' ? undefined : 'No permission is requested and no device data is read. This choice changes only the local demo label.'}
+              footer={(
+                <>
               {overlay === 'permission' ? (
                 <ScreenAction
                   label="Not now"
@@ -421,123 +424,121 @@ export function OnboardingScreen({
                     onContinue();
                   }
                 }}
-                variant="dark"
+                variant="screen"
               />
-            </View>
+                </>
+              )}
+            >
+              {overlay === 'privacy' ? (
+                <View style={styles.modalParagraphs}>
+                  {privacyDetail.paragraphs.map((paragraph) => (
+                    <Text key={paragraph} style={styles.modalBody}>{paragraph}</Text>
+                  ))}
+                </View>
+              ) : null}
+            </FullScreenModalPage>
           </View>
       </AccessibleModal>
     </>
   );
 }
 
-function RangeStepper({
-  accessibilityLabel,
-  displayValue,
-  max,
-  min,
-  onChange,
-  step,
-  value,
+function OnboardingHeader({
+  currentStep,
+  onBack,
+  totalSteps,
 }: {
-  accessibilityLabel: string;
-  displayValue: string;
-  max: number;
-  min: number;
-  onChange: (value: number) => void;
-  step: number;
-  value: number | null;
+  currentStep: number;
+  onBack?: () => void;
+  totalSteps: number;
 }) {
-  const canDecrease = value !== null && value > min;
-  const canIncrease = value === null || value < max;
-  const update = (direction: -1 | 1) => {
-    const next = value === null
-      ? min
-      : Math.min(max, Math.max(min, value + direction * step));
-    onChange(next);
-  };
   return (
-    <View
-      accessible
-      accessibilityActions={[
-        ...(canDecrease ? [{ label: 'Decrease', name: 'decrement' as const }] : []),
-        ...(canIncrease ? [{ label: 'Increase', name: 'increment' as const }] : []),
-      ]}
-      accessibilityLabel={accessibilityLabel}
-      accessibilityRole="adjustable"
-      accessibilityValue={{ min, max, now: value ?? undefined, text: displayValue }}
-      onAccessibilityAction={(event) => {
-        if (event.nativeEvent.actionName === 'decrement' && canDecrease) update(-1);
-        if (event.nativeEvent.actionName === 'increment' && canIncrease) update(1);
-      }}
-      style={styles.stepper}
-    >
-      <PressableScale accessibilityLabel="Decrease" accessibilityRole="button" disabled={!canDecrease} onPress={() => update(-1)}>
-        <View style={styles.stepperButton}><Text style={styles.stepperButtonText}>−</Text></View>
-      </PressableScale>
-      <Text accessibilityLiveRegion="polite" style={styles.stepperValue}>{displayValue}</Text>
-      <PressableScale accessibilityLabel="Increase" accessibilityRole="button" disabled={!canIncrease} onPress={() => update(1)}>
-        <View style={styles.stepperButton}><Text style={styles.stepperButtonText}>+</Text></View>
-      </PressableScale>
+    <View style={styles.header} testID="onboarding-top-row">
+      {onBack ? <HeaderBackButton onPress={onBack} /> : <View style={styles.backButton} />}
+      <View
+        accessible
+        accessibilityLabel={`Onboarding step ${currentStep} of ${totalSteps}`}
+        accessibilityRole="progressbar"
+        accessibilityValue={{ max: totalSteps, min: 1, now: currentStep }}
+        style={styles.progressTrack}
+        testID="onboarding-progress"
+      >
+        <View
+          style={[
+            styles.progressFill,
+            { width: `${Math.max(6, (currentStep / totalSteps) * 100)}%` },
+          ]}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  body: { ...type.body, color: colors.text.secondary, textAlign: 'center' },
+  backButton: { alignItems: 'flex-start', height: 44, justifyContent: 'center', width: 44 },
+  body: { ...type.body, color: colors.text.secondary, textAlign: 'left' },
   appGroup: { gap: space[2] },
   categoryChip: { backgroundColor: colors.surface.cardElevated, borderRadius: radius.pill, paddingHorizontal: space[3], paddingVertical: space[2] },
   categoryChipLight: { backgroundColor: colors.surface.ivoryBlur },
   categoryChipSelected: { backgroundColor: colors.surface.light },
   categoryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  categoryChoice: { flexBasis: '48%', flexGrow: 1 },
+  categoryChoiceSurface: { width: '100%' },
   categoryText: { ...type.caption, color: colors.text.primary },
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2], justifyContent: 'center' },
-  choiceBlock: { gap: space[4], marginTop: space[3] },
   choiceChip: {
     alignItems: 'center',
     backgroundColor: colors.surface.cardElevated,
-    borderRadius: radius.pill,
+    borderRadius: radius.control,
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: layout.controlHeightCompact,
     minWidth: 72,
     paddingHorizontal: space[4],
   },
   choiceChipSelected: { backgroundColor: colors.surface.light },
   choiceChipText: { ...type.label, color: colors.text.primary },
-  choiceChipTextSelected: { color: colors.text.ink },
+  choiceChipTextSelected: { color: colors.text.onLight },
   consequence: { ...type.caption, color: colors.text.secondary, textAlign: 'center' },
   doneNote: { ...type.caption, color: colors.text.secondary, marginTop: space[3], textAlign: 'center' },
   eyebrow: { ...type.micro, color: colors.brand.signatureAmber, textAlign: 'center', textTransform: 'uppercase' },
   eyebrowLight: { color: colors.brand.burnt },
   footerActions: { gap: space[1] },
-  hero: { alignSelf: 'center', height: 168, marginBottom: space[2], width: 190 },
+  hero: { alignSelf: 'center', height: 168, marginTop: space[6], width: 190 },
+  heroAsset: { height: '100%', width: '100%' },
   heroDone: { height: 196, width: 220 },
-  heroLock: { marginBottom: space[2] },
+  heroLock: { marginTop: space[6] },
   heroValue: { ...type.heroMd, color: colors.text.primary, textAlign: 'center' },
-  inkSecondary: { color: colors.text.ink, opacity: 0.68 },
+  header: { alignItems: 'center', flexDirection: 'row', gap: space[3] },
+  inkSecondary: { color: colors.text.ink },
   inkText: { color: colors.text.ink },
   groupLabel: { ...type.micro, color: colors.text.secondary, marginTop: space[2] },
   listBlock: { gap: space[2], marginTop: space[4] },
   main: { flex: 1, gap: space[3], justifyContent: 'center', paddingBottom: space[8], paddingTop: space[6] },
+  mainTopAligned: { justifyContent: 'flex-start', paddingTop: space[6] },
   modalActions: { gap: space[2], marginTop: space[3] },
-  modalBackdrop: { alignItems: 'center', backgroundColor: colors.surface.scrim, flex: 1, justifyContent: 'center', padding: space[5] },
-  modalBody: { ...type.body, color: colors.text.ink, opacity: 0.74 },
-  modalCard: { backgroundColor: colors.surface.light, borderRadius: radius.cardLarge, gap: space[3], maxWidth: 390, padding: space[5], width: '100%' },
-  modalEyebrow: { ...type.micro, color: colors.brand.burnt, textTransform: 'uppercase' },
+  modalBackdrop: { flex: 1 },
+  modalBody: { ...type.body, color: colors.text.ink },
+  modalCard: { gap: space[3], maxWidth: 390, padding: space[5], width: '100%' },
+  modalCardFull: { flex: 1, paddingBottom: 0, paddingTop: 0 },
+  modalPage: { flex: 1 },
+  modalParagraphs: { gap: space[3] },
+  modalEyebrow: { ...type.micro, color: colors.text.primary, textTransform: 'uppercase' },
   modalTitle: { ...type.sheetTitle, color: colors.text.ink },
   progressFill: { backgroundColor: colors.surface.light, borderRadius: radius.pill, height: 4 },
   progressFillLight: { backgroundColor: colors.brand.primary },
-  progressTrack: { backgroundColor: colors.surface.trackDark, borderRadius: radius.pill, height: 4, marginTop: space[2], overflow: 'hidden' },
+  progressTrack: { backgroundColor: colors.surface.trackDark, borderRadius: radius.pill, flex: 1, height: 7, overflow: 'hidden' },
   progressTrackLight: { backgroundColor: colors.asset.clayShade },
   repairBody: { ...type.caption, color: colors.text.secondary },
   repairCard: { backgroundColor: colors.surface.cardElevated, borderRadius: radius.card, gap: space[2], padding: space[4] },
   repairTitle: { ...type.cardTitle, color: colors.text.primary },
   rangeHint: { ...type.caption, color: colors.text.tertiary, textAlign: 'center' },
-  searchInput: { ...type.body, backgroundColor: colors.surface.cardElevated, borderRadius: radius.actionRow, color: colors.text.primary, minHeight: 48, paddingHorizontal: space[4] },
-  searchInputLight: { backgroundColor: colors.surface.ivoryBlur, color: colors.text.ink },
+  searchInput: { ...type.body, backgroundColor: colors.surface.field, borderRadius: radius.control, color: colors.text.primary, minHeight: layout.controlHeight, paddingHorizontal: space[4] },
+  searchInputLight: { backgroundColor: colors.surface.bubble, color: colors.text.primary },
   selectionCount: { ...type.label, color: colors.text.secondary, textAlign: 'right' },
+  sliderBlock: { alignSelf: 'stretch', gap: space[5], marginTop: space[8], width: '100%' },
   stepper: { alignItems: 'center', flexDirection: 'row', gap: space[4], justifyContent: 'center' },
   stepperButton: { alignItems: 'center', backgroundColor: colors.surface.light, borderRadius: radius.pill, height: 48, justifyContent: 'center', width: 48 },
-  stepperButtonText: { ...type.sectionTitle, color: colors.text.ink },
+  stepperButtonText: { ...type.sectionTitle, color: colors.text.onLight },
   stepperValue: { ...type.sectionTitle, color: colors.text.primary, minWidth: 112, textAlign: 'center' },
-  title: { ...type.screenLarge, color: colors.text.primary, textAlign: 'center' },
+  title: { ...type.screenLarge, color: colors.text.primary, textAlign: 'left' },
 });

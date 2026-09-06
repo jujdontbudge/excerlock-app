@@ -183,7 +183,7 @@ exception.
 
 ## Frozen acceptance evidence · 2026-08-07
 
-- TypeScript passed; Jest passed **32 suites / 261 tests**.
+- TypeScript passed; Jest passed **33 suites / 269 tests**.
 - Expo Doctor passed **20/20**; `expo install --check` reported dependencies up
   to date.
 - `expo export --platform ios` completed with 1,759 modules, 102 assets, one

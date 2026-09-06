@@ -60,7 +60,9 @@ describe('execution policy acceptance invariants', () => {
   it('starts non-Anytime active windows blank and gates Next until every selected edge is chosen', () => {
     let state = transitionDemo(createDemoState({ stage: 'home' }), { type: 'builder/start' });
     state = transitionDemo(state, { type: 'builder/select-catalog', catalogId: 'walk-state' });
+    state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/set-state-grace', seconds: 120 });
+    state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/set-active-window', value: 'start-end' });
 
     expect(state.builder).toMatchObject({

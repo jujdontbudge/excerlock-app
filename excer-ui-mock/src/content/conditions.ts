@@ -57,11 +57,16 @@ export const conditionCatalogCopy = {
 
 export const builderSteps = [
   { id: "catalog", title: "Choose a way to earn", body: "Pick the outcome that feels natural.", primary: null },
+  { id: "method", title: "How should it count?", body: "Choose the rule that should measure this movement.", primary: "Next" },
   { id: "place", title: "Choose a gym", body: "Select a saved place or add a sample gym.", primary: "Next" },
   { id: "configure-state", title: "Set the walking rule", body: "Choose a grace period and, if useful, an active window.", primary: "Next" },
   { id: "configure-rate", title: "Set the exchange", body: "Choose how many minutes this signal adds. Nothing is prefilled.", primary: "Next" },
   { id: "configure-event", title: "Set the goal", body: "Choose the threshold that makes this count. Nothing is prefilled.", primary: "Next" },
   { id: "reward", title: "Choose the reward", body: "Decide what one completed event adds or opens.", primary: "Next" },
+  { id: "daily-cap", title: "Completions per day", body: "Choose how many times this can earn in one day.", primary: "Next" },
+  { id: "cooldown", title: "Choose a cooldown", body: "Choose how long to wait before it can earn again.", primary: "Next" },
+  { id: "repeatable", title: "Can it repeat?", body: "Choose whether this can earn more than once per day.", primary: "Next" },
+  { id: "active-window", title: "When is it active?", body: "Choose when this condition is available.", primary: "Next" },
   { id: "banner", title: "Choose card artwork", body: "Pick the banner this condition will wear on Home and Manage.", primary: "Next" },
   { id: "preview", title: "Preview your condition", body: "This is the exact card that will appear on Home.", primary: "Save condition" },
   { id: "edit", title: "Edit condition", body: "Changes update this condition everywhere in the demo.", primary: "Done" },

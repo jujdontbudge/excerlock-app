@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { colors, radius, space } from './tokens';
 
-export type PillowCardVariant = 'subtle' | 'elevated' | 'strong' | 'grouped' | 'light' | 'night';
+export type PillowCardVariant = 'subtle' | 'elevated' | 'strong' | 'grouped' | 'light' | 'night' | 'bubble';
 export type PillowCardPadding = 'none' | 'compact' | 'standard';
 
 export interface PillowCardProps extends PropsWithChildren {
@@ -15,12 +15,13 @@ export interface PillowCardProps extends PropsWithChildren {
 }
 
 const fills: Record<PillowCardVariant, string> = {
-  subtle: colors.surface.card,
-  elevated: colors.surface.cardElevated,
+  subtle: 'transparent',
+  elevated: 'transparent',
   strong: colors.surface.cardStrong,
-  grouped: colors.surface.card,
-  light: colors.surface.light,
-  night: 'rgba(255,255,255,0.07)',
+  grouped: 'transparent',
+  light: 'transparent',
+  night: colors.surface.bubble,
+  bubble: colors.surface.bubble,
 };
 
 export function PillowCard({ children, padding = 'standard', style, testID, variant = 'subtle' }: PillowCardProps) {
@@ -28,7 +29,8 @@ export function PillowCard({ children, padding = 'standard', style, testID, vari
     <View
       style={[
         styles.base,
-        variant === 'grouped' || variant === 'light' || variant === 'night' ? styles.large : null,
+        variant === 'subtle' || variant === 'elevated' || variant === 'grouped' || variant === 'light' ? styles.open : null,
+        variant === 'strong' || variant === 'night' || variant === 'bubble' ? styles.bubble : null,
         { backgroundColor: fills[variant] },
         padding === 'compact' ? styles.compact : padding === 'standard' ? styles.standard : null,
         style,
@@ -41,8 +43,9 @@ export function PillowCard({ children, padding = 'standard', style, testID, vari
 }
 
 const styles = StyleSheet.create({
-  base: { borderRadius: radius.card, overflow: 'hidden' },
+  base: { overflow: 'hidden' },
+  bubble: { borderColor: colors.surface.bubbleBorder, borderRadius: radius.card, borderWidth: 1 },
   compact: { padding: space[3] },
-  large: { borderRadius: radius.cardLarge },
+  open: { borderRadius: 0, overflow: 'visible' },
   standard: { padding: space[4] },
 });

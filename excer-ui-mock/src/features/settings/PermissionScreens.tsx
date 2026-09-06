@@ -4,21 +4,24 @@ import { ScrollView } from 'react-native-gesture-handler';
 
 import {
   aboutPermissionsSections,
-  assetRegistry,
   permissionDetails,
   permissionHealthFixtures,
   permissionsScreenCopy,
+  assetRegistry,
   type PermissionDetailId,
 } from '@/content';
 import {
   AccessibleModal,
-  AccessibleModalTitle,
+  DottedSeparator,
+  FullScreenModalPage,
   GradientScreen,
   IconChip,
   PillButton,
   PillowCard,
   SettingsRow,
+  VectorIcon,
   colors,
+  iconSize,
   space,
   type,
 } from '@/design-system';
@@ -53,9 +56,13 @@ export function PermissionsScreen({ onBack, onOpenAbout, onOpenPermission, statu
                 : 'Needs attention';
             return (
               <View key={id}>
-                {index > 0 ? <View style={s.divider} /> : null}
+                {index > 0 ? <DottedSeparator /> : null}
                 <SettingsRow
-                  leading={<View style={[stylesStatus.dot, { backgroundColor: attention ? colors.semantic.attention : colors.semantic.success }]} />}
+                  leading={(
+                    <View style={styles.permissionRowIcon}>
+                      <VectorIcon source={permissionGlyph(id)} />
+                    </View>
+                  )}
                   onPress={() => onOpenPermission(id)}
                   title={permission.label}
                   value={status}
@@ -83,18 +90,24 @@ export interface PermissionDetailScreenProps {
 export function PermissionDetailScreen({ id, onAboutData, onBack, onMarkNotAsked, onOpenSettingsPreview, onRetry, status }: PermissionDetailScreenProps) {
   const [settingsPreviewVisible, setSettingsPreviewVisible] = useState(false);
   const detail = permissionDetails[id];
-  const source = id === 'location'
-    ? assetRegistry.glyphs['icon-location']
-    : id === 'notifications'
-      ? assetRegistry.glyphs['icon-notifications']
-      : assetRegistry.glyphs['icon-health'];
+  const source = id === 'screenTime'
+    ? assetRegistry.heroes['permission-screen-time']
+    : id === 'location'
+      ? assetRegistry.heroes['permission-location']
+      : id === 'notifications'
+        ? assetRegistry.glyphs['icon-notifications']
+        : assetRegistry.heroes['permission-health-motion'];
   return (
     <>
       <GradientScreen variant="detail">
         <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <SettingsHeader onBack={onBack} title={detail.permission} />
         <View style={s.center}>
-          <IconChip size="hero" source={source} variant={status === 'healthy' ? 'success' : 'energy'} />
+          {id === 'notifications' ? (
+            <IconChip size="hero" source={source} variant={status === 'healthy' ? 'success' : 'energy'} />
+          ) : (
+            <VectorIcon accessibilityLabel={`${detail.permission} illustration`} source={source} style={styles.permissionHero} />
+          )}
           <Text style={s.sectionTitle}>{detail.title}</Text>
           <Text style={s.body}>{detail.body}</Text>
         </View>
@@ -117,29 +130,34 @@ export function PermissionDetailScreen({ id, onAboutData, onBack, onMarkNotAsked
       </GradientScreen>
 
       <AccessibleModal
-        accessibilityTitle="iOS Settings preview"
-        animationType="slide"
+        accessibilityTitle={`ExcerLock · ${detail.permission}`}
+        contentContainerStyle={styles.modalPage}
         onRequestClose={() => setSettingsPreviewVisible(false)}
+        scrollEnabled={false}
         style={styles.backdrop}
         visible={settingsPreviewVisible}
       >
-        <PillowCard style={styles.modalCard} variant="light">
-          <Text style={styles.eyebrow}>SIMULATED IOS SETTINGS · NO SYSTEM PAGE</Text>
-          <AccessibleModalTitle style={styles.modalTitle}>ExcerLock · {detail.permission}</AccessibleModalTitle>
-          <Text style={styles.modalBody}>This sheet previews the handoff only. Choose Allow in demo to update the local permission-health fixture.</Text>
+        <PillowCard style={[styles.modalCard, styles.modalCardFull]} variant="light">
+          <FullScreenModalPage
+            footer={(
+              <>
+                <PillButton
+                  fullWidth
+                  label="Allow in demo"
+                  onPress={() => {
+                    setSettingsPreviewVisible(false);
+                    onOpenSettingsPreview();
+                  }}
+                  variant="screen"
+                />
+                <PillButton fullWidth label="Cancel" onPress={() => setSettingsPreviewVisible(false)} variant="text" />
+              </>
+            )}
+          >
           <PillowCard padding="none" variant="grouped">
             <SettingsRow showChevron={false} title={detail.permission} value="Needs attention" />
           </PillowCard>
-          <PillButton
-            fullWidth
-            label="Allow in demo"
-            onPress={() => {
-              setSettingsPreviewVisible(false);
-              onOpenSettingsPreview();
-            }}
-            variant="dark"
-          />
-          <PillButton fullWidth label="Cancel" onPress={() => setSettingsPreviewVisible(false)} variant="text" />
+          </FullScreenModalPage>
         </PillowCard>
       </AccessibleModal>
     </>
@@ -161,14 +179,19 @@ export function AboutPermissionsScreen({ onBack }: AboutPermissionsScreenProps) 
   );
 }
 
-const stylesStatus = {
-  dot: { borderRadius: 5, height: 10, width: 10 },
-};
+function permissionGlyph(id: PermissionDetailId) {
+  if (id === 'screenTime') return assetRegistry.glyphs['icon-padlock-chip'];
+  if (id === 'location') return assetRegistry.glyphs['icon-location'];
+  if (id === 'notifications') return assetRegistry.glyphs['icon-notifications'];
+  return assetRegistry.glyphs['icon-health'];
+}
 
 const styles = StyleSheet.create({
-  backdrop: { backgroundColor: colors.surface.scrim, flex: 1, justifyContent: 'flex-end', padding: space[3] },
+  backdrop: { flex: 1 },
   eyebrow: { ...type.micro, color: colors.brand.burnt },
-  modalBody: { ...type.body, color: colors.text.ink, opacity: 0.72 },
   modalCard: { gap: space[4] },
-  modalTitle: { ...type.screenTitle, color: colors.text.ink },
+  modalCardFull: { flex: 1, paddingBottom: 0, paddingTop: 0 },
+  modalPage: { flex: 1 },
+  permissionHero: { height: 156, width: 156 },
+  permissionRowIcon: { height: iconSize.standard, width: iconSize.standard },
 });

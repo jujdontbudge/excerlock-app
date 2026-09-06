@@ -13,7 +13,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#F25A16",
+        "backgroundColor": "#3445E6",
         "foregroundImage": "./assets/icon.png"
       },
       "predictiveBackGestureEnabled": false,
@@ -28,11 +28,12 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F25A16",
+          "backgroundColor": "#3445E6",
           "image": "./assets/splash-logo.png",
           "imageWidth": 132
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

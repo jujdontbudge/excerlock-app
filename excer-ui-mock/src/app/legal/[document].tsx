@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { AccessibleModal, AccessibleModalTitle, PillowCard, PillButton, colors, space, type } from '@/design-system';
+import { AccessibleModal, FullScreenModalPage, PillowCard, PillButton, space } from '@/design-system';
 import { LegalDocumentScreen } from '@/features/settings';
 
 export default function LegalDocumentRoute() {
@@ -21,15 +21,17 @@ export default function LegalDocumentRoute() {
       />
       <AccessibleModal
         accessibilityTitle="Document share preview"
-        animationType="slide"
+        contentContainerStyle={styles.modalPage}
         onRequestClose={() => setSharePreview(false)}
+        scrollEnabled={false}
         style={styles.backdrop}
         visible={sharePreview}
       >
-          <PillowCard style={styles.card} variant="light">
-            <AccessibleModalTitle style={styles.title}>Document share preview</AccessibleModalTitle>
-            <Text style={styles.body}>No browser opens, and no document or link is shared.</Text>
-            <PillButton fullWidth label="Done" onPress={() => setSharePreview(false)} variant="dark" />
+          <PillowCard style={[styles.card, styles.cardFull]} variant="light">
+            <FullScreenModalPage
+              body="No browser opens, and no document or link is shared."
+              footer={<PillButton fullWidth label="Done" onPress={() => setSharePreview(false)} variant="screen" />}
+            />
           </PillowCard>
       </AccessibleModal>
     </>
@@ -37,8 +39,8 @@ export default function LegalDocumentRoute() {
 }
 
 const styles = StyleSheet.create({
-  backdrop: { backgroundColor: colors.surface.scrim, flex: 1, justifyContent: 'flex-end', padding: space[4] },
-  body: { ...type.body, color: colors.text.ink },
+  backdrop: { flex: 1 },
   card: { gap: space[3] },
-  title: { ...type.screenTitle, color: colors.text.ink },
+  cardFull: { flex: 1, paddingBottom: 0, paddingTop: 0 },
+  modalPage: { flex: 1 },
 });

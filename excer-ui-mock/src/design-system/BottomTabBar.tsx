@@ -1,12 +1,28 @@
-import type { ImageSourcePropType } from 'react-native';
-import { Image, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import Animated, {
+  useReducedMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PressableScale } from './PressableScale';
-import { colors, layout, space, type } from './tokens';
+import { TabBarIcon, type TabBarIconName } from './TabBarIcon';
+import {
+  DOCK_ACTIVE_SCALE,
+  DOCK_BAR_HEIGHT,
+  DOCK_ICON_SIZE,
+  DOCK_INACTIVE_OPACITY,
+  DOCK_SAFE_AREA_MIN,
+} from './dockGeometry';
+import { colors, motion } from './tokens';
+
+export { DOCK_BAR_HEIGHT, DOCK_ICON_SIZE } from './dockGeometry';
 
 export interface BottomTabItem<T extends string = string> {
-  icon: ImageSourcePropType;
+  icon: TabBarIconName;
   key: T;
   label: string;
 }
@@ -19,58 +35,114 @@ export interface BottomTabBarProps<T extends string = string> {
 }
 
 export function BottomTabBar<T extends string>({ activeKey, items, milestoneKey, onSelect }: BottomTabBarProps<T>) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView edges={['bottom']} style={styles.safeArea}>
-      <View accessibilityRole="tablist" style={styles.bar}>
-        {items.map((item) => {
-          const active = item.key === activeKey;
-          return (
-            <PressableScale
-              accessibilityLabel={item.label}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: active }}
-              contentStyle={styles.tab}
+    <View pointerEvents="box-none" style={styles.dock} testID="bottom-tab-dock">
+      <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, DOCK_SAFE_AREA_MIN) }]} testID="bottom-tab-bar">
+        <View accessibilityRole="tablist" style={styles.row}>
+          {items.map((item) => (
+            <DockTab
+              active={item.key === activeKey}
+              item={item}
               key={item.key}
-              onPress={() => onSelect(item.key)}
-              pressedScale={0.96}
-              style={styles.tabHost}
-            >
-              <View style={styles.iconFrame}>
-                <Image
-                  accessibilityIgnoresInvertColors
-                  resizeMode="contain"
-                  source={item.icon}
-                  style={styles.icon}
-                  testID={`bottom-tab-icon-${item.key}`}
-                  tintColor={active ? colors.icon.primary : colors.icon.inactive}
-                />
-                {item.key === milestoneKey ? <View accessibilityLabel={`New item in ${item.label}`} style={styles.dot} /> : null}
-              </View>
-              <Text style={[styles.label, !active && styles.inactive]}>{item.label}</Text>
-            </PressableScale>
-          );
-        })}
+              milestone={item.key === milestoneKey}
+              onPress={() => {
+                void Haptics.selectionAsync();
+                onSelect(item.key);
+              }}
+            />
+          ))}
+        </View>
       </View>
-    </SafeAreaView>
+    </View>
+  );
+}
+
+function DockTab<T extends string>({
+  active,
+  item,
+  milestone,
+  onPress,
+}: {
+  active: boolean;
+  item: BottomTabItem<T>;
+  milestone: boolean;
+  onPress: () => void;
+}) {
+  const pressed = useSharedValue(1);
+  const activeValue = useSharedValue(active ? 1 : 0);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    activeValue.value = withTiming(active ? 1 : 0, { duration: reduceMotion ? 0 : motion.duration.fast });
+  }, [active, activeValue, reduceMotion]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: DOCK_INACTIVE_OPACITY + activeValue.value * (1 - DOCK_INACTIVE_OPACITY),
+    transform: [{ scale: pressed.value * (1 + activeValue.value * (DOCK_ACTIVE_SCALE - 1)) }],
+  }));
+
+  return (
+    <Pressable
+      accessibilityLabel={item.label}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      onPressIn={() => {
+        pressed.value = withTiming(reduceMotion ? 1 : 0.94, { duration: motion.duration.press });
+      }}
+      onPressOut={() => {
+        pressed.value = withTiming(1, { duration: motion.duration.press });
+      }}
+      style={styles.tab}
+      testID={`bottom-tab-item-${item.key}`}
+    >
+      <Animated.View style={animatedStyle}>
+        <TabBarIcon
+          color={colors.text.primary}
+          name={item.icon}
+          size={DOCK_ICON_SIZE}
+          testID={`bottom-tab-icon-${item.key}`}
+        />
+        {milestone ? <View accessibilityLabel={`New item in ${item.label}`} style={styles.dot} /> : null}
+      </Animated.View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', height: layout.tabBarHeight, width: '100%' },
+  bar: { backgroundColor: 'transparent', width: '100%' },
+  dock: {
+    backgroundColor: 'transparent',
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    width: '100%',
+  },
   dot: {
-    backgroundColor: colors.brand.energy,
+    backgroundColor: colors.brand.signatureAmber,
     borderRadius: 3,
     height: 6,
     position: 'absolute',
-    right: -2,
-    top: -1,
+    right: -3,
+    top: -2,
     width: 6,
   },
-  icon: { height: 29, width: 29 },
-  iconFrame: { alignItems: 'center', justifyContent: 'center' },
-  inactive: { color: colors.icon.inactive },
-  label: { ...type.tab, color: colors.text.primary, marginTop: space[1] },
-  safeArea: { backgroundColor: 'rgba(40,16,8,0.34)' },
-  tab: { alignItems: 'center', justifyContent: 'center' },
-  tabHost: { flex: 1, minWidth: 64 },
+  row: {
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    height: DOCK_BAR_HEIGHT,
+  },
+  tab: {
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    flex: 1,
+    height: DOCK_BAR_HEIGHT,
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 44,
+  },
 });

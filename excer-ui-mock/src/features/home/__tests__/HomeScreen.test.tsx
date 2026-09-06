@@ -51,7 +51,7 @@ describe('HomeScreen entry focus and local detail actions', () => {
 
   it.each([
     ['nudge', 'Afternoon nudge opened. While walking is highlighted.'],
-    ['lastCall', 'Streak last call opened. Goal progress and While walking are highlighted.'],
+    ['lastCall', 'Streak last call opened. While walking is highlighted.'],
   ] as const)('announces the %s focus target', async (entry, announcement) => {
     const announce = jest
       .spyOn(AccessibilityInfo, 'announceForAccessibility')
@@ -112,23 +112,22 @@ describe('HomeScreen entry focus and local detail actions', () => {
       <HomeScreen {...createProps({ conditions: [gymPresence], onStartCondition })} />,
     );
 
-    expect(view.getByText('Check in at Northside Community Gym to keep apps open')).toBeTruthy();
+    expect(view.queryByText('Check in at Northside Community Gym to keep apps open')).toBeNull();
     await fireEvent.press(view.getByRole('button', { name: 'Check in for Stay at Northside' }));
     expect(onStartCondition).toHaveBeenCalledWith('gym-presence-northside');
   });
 
-  it('routes goal progress and each stat to its documented destination', async () => {
-    const onAnalysis = jest.fn();
+  it('routes each stat to its documented destination without the removed summary header', async () => {
     const onOpenTimeLocked = jest.fn();
-    const view = await renderScreen(<HomeScreen {...createProps({ onAnalysis, onOpenTimeLocked })} />);
+    const view = await renderScreen(<HomeScreen {...createProps({ onOpenTimeLocked })} />);
 
-    await fireEvent.press(view.getByRole('button', { name: '50% of today’s streak goal completed.' }));
     await fireEvent.press(view.getByRole('button', { name: 'Open today’s Time Locked detail' }));
     await fireEvent.press(view.getByRole('button', { name: 'Open Screen Time balance details' }));
 
-    expect(onAnalysis).toHaveBeenCalledTimes(1);
     expect(onOpenTimeLocked).toHaveBeenCalledTimes(1);
     expect(view.getByRole('header', { name: 'Today’s balance' })).toBeTruthy();
+    expect(view.queryByText('Friday · Active day')).toBeNull();
+    expect(view.queryByText('50% of goal completed')).toBeNull();
   });
 
   it('opens the weekly Rules summary during a rule holiday', async () => {
@@ -245,7 +244,7 @@ describe('HomeScreen entry focus and local detail actions', () => {
     );
 
     expect(view.getByText('OFF TODAY')).toBeTruthy();
-    expect(view.getByText('Off this weekday. This condition cannot earn credit today.')).toBeTruthy();
+    expect(view.queryByText('Off this weekday. This condition cannot earn credit today.')).toBeNull();
     expect(view.queryByRole('button', { name: 'Start walking for While walking' })).toBeNull();
     expect(onStartCondition).not.toHaveBeenCalled();
 
@@ -278,11 +277,9 @@ describe('HomeScreen entry focus and local detail actions', () => {
       />,
     );
 
-    expect(view.getByText('0 min earned today')).toBeTruthy();
-    expect(view.getByText('Today’s goal is ready')).toBeTruthy();
-    expect(view.getByRole('button', { name: 'No streak yet; active day.' })).toBeTruthy();
-    expect(view.getByRole('button', { name: 'Today’s meaningful-activity goal has not started.' })).toBeTruthy();
     expect(view.getByText('45 min')).toBeTruthy();
+    expect(view.queryByText('0 min earned today')).toBeNull();
+    expect(view.queryByText('Today’s goal is ready')).toBeNull();
     expect(view.queryByText('2h 05m earned today')).toBeNull();
     expect(view.queryByRole('button', { name: '50% of today’s streak goal completed.' })).toBeNull();
   });
@@ -319,7 +316,7 @@ describe('HomeScreen entry focus and local detail actions', () => {
       <HomeScreen {...createProps({ conditions: [activeMinutesEvent] })} />,
     );
 
-    expect(view.getByText('35 active min · add 20 min')).toBeTruthy();
+    expect(view.queryByText('35 active min · add 20 min')).toBeNull();
     expect(view.queryByText(/Harbor Strength/)).toBeNull();
   });
 
@@ -391,7 +388,6 @@ describe('HomeScreen entry focus and local detail actions', () => {
     );
 
     await fireEvent.press(view.getByRole('button', { name: 'About Go to gym' }));
-    expect(view.getByText('EXACT RULE')).toBeTruthy();
     expect(view.getByText('Not completed today.')).toBeTruthy();
     expect(view.getByText('6:00 AM–10:00 PM')).toBeTruthy();
     await fireEvent.press(view.getByRole('button', { name: 'Check in' }));
@@ -410,7 +406,7 @@ describe('HomeScreen entry focus and local detail actions', () => {
     expect(onOpenEarning).toHaveBeenCalledWith('demo-steps');
   });
 
-  it('makes rule-holiday header, goal, and streak semantics visibly neutral', async () => {
+  it('keeps rule-holiday state in the primary Home content after removing the summary header', async () => {
     const view = await renderScreen(
       <HomeScreen
         {...createProps({
@@ -421,11 +417,9 @@ describe('HomeScreen entry focus and local detail actions', () => {
       />,
     );
 
-    expect(view.getByText('Sunday · Rest day')).toBeTruthy();
-    expect(view.getByText('No goal today · streak unchanged')).toBeTruthy();
-    expect(view.getByText('Rest day · goal paused')).toBeTruthy();
-    expect(view.getByRole('button', { name: '12-day streak, unchanged on this Rest day.' })).toBeTruthy();
-    expect(view.getByRole('button', { name: 'Rest day. Today’s goal is paused and the streak is unchanged.' })).toBeTruthy();
+    expect(view.getByText('No limits today')).toBeTruthy();
+    expect(view.getByText('Your streak stays neutral.')).toBeTruthy();
+    expect(view.queryByText('Sunday · Rest day')).toBeNull();
   });
 
   it('makes Allowance only Rest days neutral and keeps earning controls read-only', async () => {
@@ -440,9 +434,7 @@ describe('HomeScreen entry focus and local detail actions', () => {
       />,
     );
 
-    expect(view.getByText('Friday · Rest day')).toBeTruthy();
-    expect(view.getByText('Allowance only · streak unchanged')).toBeTruthy();
-    expect(view.getByText('Rest day · earning paused')).toBeTruthy();
+    expect(view.queryByText('Friday · Rest day')).toBeNull();
     expect(view.getByText('REST DAY · Conditions are read-only right now')).toBeTruthy();
     expect(view.queryByRole('button', { name: 'Start walking for While walking' })).toBeNull();
     await fireEvent.press(view.getByRole('button', { name: 'About Go to gym' }));
@@ -476,7 +468,7 @@ describe('HomeScreen entry focus and local detail actions', () => {
     );
 
     expect(view.getAllByText('OPEN TIME')).toHaveLength(2);
-    expect(view.getByText('Unlocked for today · balance on hold.')).toBeTruthy();
+    expect(view.queryByText('Unlocked for today · balance on hold.')).toBeNull();
     await fireEvent.press(view.getByRole('button', { name: 'Open balance and access details' }));
     expect(view.getByText('Go to gym opened the selected apps for the rest of today.')).toBeTruthy();
     expect(view.getByText('Midnight')).toBeTruthy();

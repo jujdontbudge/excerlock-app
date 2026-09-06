@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/johansardar/.claude/agent-tooling/doctor.py --repo \"$CLAUDE_PROJECT_DIR\" --hook"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/johansardar/.claude/agent-tooling/hooks/block_dashboards.py"
+          }
+        ],
+        "matcher": "mcp__claude-in-chrome__navigate|mcp__claude-in-chrome__tabs_create_mcp|mcp__playwright__browser_navigate"
+      }
+    ]
+  }
+}

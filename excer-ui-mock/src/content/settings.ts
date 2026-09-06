@@ -20,45 +20,44 @@ export const settingsRootSections = [
     id: "account",
     title: "ACCOUNT",
     rows: [
-      { id: "account", label: "Account", subtitle: "jordan@example.com", route: "/settings/account" },
-      { id: "subscription", label: "Manage Subscription", subtitle: "Free trial · Ends Aug 14, 2026", route: "/settings/subscription" },
-      { id: "notifications", label: "Notifications", subtitle: "All off", route: "/settings/notifications" },
+      { id: "account", label: "Account", route: "/settings/account" },
+      { id: "subscription", label: "Manage Subscription", route: "/settings/subscription" },
+      { id: "notifications", label: "Notifications", route: "/settings/notifications" },
     ],
   },
   {
     id: "general",
     title: "GENERAL",
-    rows: [{ id: "general", label: "General", subtitle: "Auto appearance · Miles · Midnight", route: "/settings/general" }],
+    rows: [{ id: "general", label: "General", route: "/settings/general" }],
   },
   {
     id: "data-connections",
     title: "DATA & CONNECTIONS",
     rows: [
-      { id: "connections", label: "Connections", subtitle: "Apple Health demo · 1 shortcut added", route: "/settings/connections" },
-      { id: "data", label: "Manage data", subtitle: "Exports, resets, and local deletion", route: "/settings/data" },
+      { id: "connections", label: "Connections", route: "/settings/connections" },
+      { id: "data", label: "Manage data", route: "/settings/data" },
     ],
   },
   {
     id: "support",
     title: "SUPPORT & FEEDBACK",
     rows: [
-      { id: "help", label: "Help & FAQ", subtitle: "Locking, earning, permissions, and billing", route: "/support/help" },
-      { id: "contact", label: "Contact support", subtitle: "Preview a support message", route: "/support/contact" },
-      { id: "bug", label: "Report a bug", subtitle: "Preview a bug report", route: "/support/bug" },
-      { id: "idea", label: "Request a feature", subtitle: "Save a sample idea locally", route: "/support/idea" },
-      { id: "diagnostics", label: "Send diagnostics", subtitle: "Status-only sample bundle", route: "/support/diagnostics" },
+      { id: "help", label: "Help & FAQ", route: "/support/help" },
+      { id: "contact", label: "Contact support", route: "/support/contact" },
+      { id: "bug", label: "Report a bug", route: "/support/bug" },
+      { id: "idea", label: "Request a feature", route: "/support/idea" },
+      { id: "diagnostics", label: "Send diagnostics", route: "/support/diagnostics" },
     ],
   },
   {
     id: "about",
     title: "ABOUT",
-    rows: [{ id: "about", label: "About ExcerLock", subtitle: "What’s new, share, legal, and credits", route: "/settings/about" }],
+    rows: [{ id: "about", label: "About ExcerLock", route: "/settings/about" }],
   },
 ] as const;
 
 export const settingsRootCopy = {
   title: "Settings",
-  signedOutAccountSubtitle: "Signed out · Setup kept",
   footer: "ExcerLock 1.0.0 (100) · Prototype",
   debugTapCount: 7,
 } as const;
@@ -274,7 +273,7 @@ export const generalSettingsRows = [
 export const generalSettingsOptions = {
   appearance: {
     options: ["Auto", "Light", "Dark"],
-    helper: "Orange remains the brand; Light uses warm ivory and Dark uses warm near-black.",
+    helper: "Blue remains the brand; Light uses cool white and Dark uses deep indigo.",
   },
   language: {
     title: "Language",

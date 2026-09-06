@@ -1,16 +1,15 @@
 import { Tabs } from 'expo-router';
 
-import { assetRegistry } from '@/content';
 import { BottomTabBar, type BottomTabItem } from '@/design-system';
 import { useDemo } from '@/presentation';
 
 type TabKey = 'home' | 'manage' | 'analysis' | 'settings';
 
 const items: readonly BottomTabItem<TabKey>[] = [
-  { key: 'home', label: 'Home', icon: assetRegistry.glyphs['icon-tab-home'] },
-  { key: 'manage', label: 'Manage', icon: assetRegistry.glyphs['icon-tab-manage'] },
-  { key: 'analysis', label: 'Analysis', icon: assetRegistry.glyphs['icon-tab-chart'] },
-  { key: 'settings', label: 'Settings', icon: assetRegistry.glyphs['icon-tab-settings'] },
+  { key: 'home', label: 'Home', icon: 'home' },
+  { key: 'manage', label: 'Manage', icon: 'manage' },
+  { key: 'analysis', label: 'Analysis', icon: 'analysis' },
+  { key: 'settings', label: 'Settings', icon: 'settings' },
 ];
 
 export default function TabLayout() {
@@ -20,7 +19,18 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerShown: false,
+        sceneStyle: { backgroundColor: 'transparent' },
+        tabBarHideOnKeyboard: true,
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
+          position: 'absolute',
+        },
+      }}
       tabBar={({ state, navigation }) => {
         const activeKey = state.routes[state.index]?.name as TabKey;
         return (

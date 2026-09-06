@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { Alert, type AlertButton } from 'react-native';
+import { Alert, StyleSheet, type AlertButton } from 'react-native';
 import { act, fireEvent, render } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -74,7 +74,7 @@ describe('OnboardingScreen required choices', () => {
     expect(onContinue).toHaveBeenCalledTimes(1);
   });
 
-  it('turns the first stepper press into an explicit phone-use choice', async () => {
+  it('uses a true slider with the bePresent-style three-hour preview', async () => {
     const onSetPhoneUse = jest.fn();
     const view = await renderScreen(
       <OnboardingScreen
@@ -85,11 +85,12 @@ describe('OnboardingScreen required choices', () => {
     expect(view.getByLabelText('Daily phone use, 1 through 12 or more hours')).toHaveAccessibilityValue({
       min: 1,
       max: 12,
-      text: 'Not chosen',
+      now: 3,
+      text: '3h',
     });
-    await fireEvent.press(view.getByRole('button', { name: 'Increase' }));
+    await fireEvent(view.getByTestId('phone-use-slider'), 'valueChange', 5);
 
-    expect(onSetPhoneUse).toHaveBeenCalledWith(1);
+    expect(onSetPhoneUse).toHaveBeenCalledWith(5);
   });
 
   it('lets assistive technology adjust the phone-use choice directly', async () => {
@@ -107,7 +108,54 @@ describe('OnboardingScreen required choices', () => {
       nativeEvent: { actionName: 'increment' },
     });
 
-    expect(onSetPhoneUse).toHaveBeenCalledWith(1);
+    expect(onSetPhoneUse).toHaveBeenCalledWith(4);
+  });
+
+  it('places the white back control and progress in one top row', async () => {
+    const view = await renderScreen(
+      <OnboardingScreen {...createProps({ step: 'confession' })} />,
+    );
+
+    expect(view.getByTestId('onboarding-top-row')).toBeTruthy();
+    expect(view.getByRole('button', { name: 'Back' })).toBeTruthy();
+    expect(view.getByRole('progressbar', { name: 'Onboarding step 2 of 12' }))
+      .toHaveAccessibilityValue({ min: 1, max: 12, now: 2 });
+  });
+
+  it('floats the action over the uninterrupted screen and avoids scrolling on a standard step', async () => {
+    const view = await renderScreen(
+      <OnboardingScreen {...createProps({ step: 'screen-time' })} />,
+    );
+
+    expect(StyleSheet.flatten(view.getByTestId('feature-scaffold-footer').props.style)).toMatchObject({
+      bottom: 0,
+      left: 0,
+      position: 'absolute',
+      right: 0,
+    });
+    expect(view.queryByTestId('feature-scaffold-scroll')).toBeNull();
+  });
+
+  it('starts onboarding copy beneath the progress row instead of centering it mid-screen', async () => {
+    const view = await renderScreen(
+      <OnboardingScreen {...createProps({ step: 'value' })} />,
+    );
+
+    expect(StyleSheet.flatten(view.getByTestId('onboarding-main').props.style)).toMatchObject({
+      justifyContent: 'flex-start',
+    });
+    expect(StyleSheet.flatten(view.getByText('Earn your screen time.').props.style)).toMatchObject({
+      textAlign: 'left',
+    });
+  });
+
+  it('keeps the long app picker scrollable behind the floating action', async () => {
+    const view = await renderScreen(
+      <OnboardingScreen {...createProps({ step: 'apps' })} />,
+    );
+
+    expect(view.getByTestId('feature-scaffold-scroll')).toBeTruthy();
+    expect(view.getByTestId('feature-scaffold-footer').props.pointerEvents).toBe('box-none');
   });
 
   it('stages app changes and restores the entry selection on discard', async () => {
@@ -191,7 +239,7 @@ describe('OnboardingScreen required choices', () => {
       />,
     );
 
-    expect(view.getByText(/is off in this demo/)).toBeTruthy();
+    expect(view.queryByText(/is off in this demo/)).toBeNull();
     await fireEvent.press(view.getByRole('button', { name: 'Not now' }));
     expect(onSetPermission).toHaveBeenCalledWith('motion', 'denied');
     expect(onContinue).toHaveBeenCalledTimes(1);
@@ -201,7 +249,6 @@ describe('OnboardingScreen required choices', () => {
     const mirror = await renderScreen(
       <OnboardingScreen {...createProps({ phoneUseHours: 3, step: 'mirror' })} />,
     );
-    expect(mirror.getByText('At 3 hours a day.')).toBeTruthy();
     expect(mirror.getByText('That’s about 46 days a year.')).toBeTruthy();
     expect(mirror.getByText(/roughly 1095 hours/)).toBeTruthy();
   });

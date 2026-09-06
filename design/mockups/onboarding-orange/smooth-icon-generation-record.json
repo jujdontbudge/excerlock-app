@@ -1,0 +1,248 @@
+{
+  "entries": [
+    {
+      "id": "main-home-v3",
+      "key": "main-home-v3-fixed",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-home-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-12964514-50b6-413f-96d6-f538bb3b24ca.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-home-v3.png"
+    },
+    {
+      "id": "main-conditions-v3",
+      "key": "main-conditions-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-conditions-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-6ad8ae07-4d14-4118-b60e-f2b9a8958bde.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-conditions-v3.png"
+    },
+    {
+      "id": "main-analytics-v3",
+      "key": "main-analytics-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-analytics-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-8706038b-746b-43c7-9006-8c7ed4fb244f.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-analytics-v3.png"
+    },
+    {
+      "id": "main-settings-v3",
+      "key": "main-settings-v3-final",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-settings-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-f7eb0bee-2039-4a53-91b1-80988e2ef6e5.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-settings-v3.png"
+    },
+    {
+      "id": "loop-reward-v3",
+      "key": "loop-reward-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/loop-reward-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-adddd6ee-c353-465f-a074-6ad710057d5e.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/loop-reward-v3.png"
+    },
+    {
+      "id": "final-principles-v3",
+      "key": "final-principles-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-principles-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-82180a57-757e-4b3d-919a-0406b7ac050b.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-principles-v3.png"
+    },
+    {
+      "id": "loop-picker-v3",
+      "key": "loop-picker-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/loop-picker-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-ced6d004-7426-4dc9-a424-04988a4386ec.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/loop-picker-v3.png"
+    },
+    {
+      "id": "final-walk-place-v3",
+      "key": "final-walk-place-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-walk-place-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-45875983-4b5d-4656-93e6-5fff9470ffa7.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-walk-place-v3.png"
+    },
+    {
+      "id": "final-walk-rule-v3",
+      "key": "final-walk-rule-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-walk-rule-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-f73fc362-6728-40da-baab-61a6acad4b86.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-walk-rule-v3.png"
+    },
+    {
+      "id": "final-walk-target-v3",
+      "key": "final-walk-target-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-walk-target-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-9af68349-ed7d-41ee-9b2b-3ac6272f1a7e.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-walk-target-v3.png"
+    },
+    {
+      "id": "final-review-v3",
+      "key": "final-review-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-review-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-65eb9fb9-1400-4335-a0ca-5587cd883ce1.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-review-v3.png"
+    },
+    {
+      "id": "final-trial-offer-v3",
+      "key": "final-trial-offer-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-trial-offer-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-76c1a869-dbbd-413a-9d64-424c0c33b868.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-trial-offer-v3.png"
+    },
+    {
+      "id": "final-trial-reminder-v3",
+      "key": "final-trial-reminder-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-trial-reminder-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-ca24e2d5-ae56-421c-9d9e-a49614c9d817.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-trial-reminder-v3.png"
+    },
+    {
+      "id": "final-notification-v3",
+      "key": "final-notification-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-notification-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-9cb5ba92-47a8-465c-8c41-806fbc9f735b.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-notification-v3.png"
+    },
+    {
+      "id": "final-timeline-v3",
+      "key": "final-timeline-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-timeline-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-328fd94d-7df2-43e3-a2ce-393e7911ca8e.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-timeline-v3.png"
+    },
+    {
+      "id": "final-paywall-top-v3",
+      "key": "final-paywall-top-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-paywall-top-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-8b2461dd-2dba-4db6-8a69-a62feabf2e5c.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-paywall-top-v3.png"
+    },
+    {
+      "id": "final-paywall-bottom-v3",
+      "key": "final-paywall-bottom-v3",
+      "input": [
+        "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-paywall-bottom-v2.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103630-EC3640CC.png",
+        "/var/folders/rx/w6wxv0p97bv7hpvzqlv9jy7r0000gn/T/clipboard-2026-09-06-103633-40E3F2D0.png"
+      ],
+      "prompt": "Use case: precise-object-edit. Image1 is the exact ExcerLock screen to edit. Images2 and3 are ONLY icon-style references supplied by the user: small soft minimal colorful graphic symbols, not detailed emoji. Preserve Image1's complete text, layout, controls, orange accents, white background with faint orange at top, spacing, functional card outlines and selection state. Change ALL illustrative icons and hero objects to the references' simple rounded smooth graphic style: 2D vector-like silhouettes with just 2 or 3 broad color areas and very subtle tonal gradient. Use different colors per subject (mint, lilac, sky blue, coral, warm yellow), not an all-orange set. NO realistic emoji, NO realistic faces/people, NO metal, shiny gold, reflections, texture, shoelaces, photorealistic shoes, anatomy, intricate bicycle spokes or 3D render shadows. Human activity uses simple faceless rounded walking/running pictograms like the small orange Walk symbol in image3. Dumbbell becomes simple lilac rounded dumbbell, lock coral body with lavender curved shackle, sneaker becomes a simple blue curved shoe silhouette without laces, trophy warm yellow simple cup, bell simple yellow/lilac curve, phone simple blue rounded slab and 2-3 blocks, calendar simple coral-and-white rounded outline with minimal marks. REMOVE any decorative colored circle, square, pill or pedestal behind an icon; icons sit directly on existing white UI. Functional cards and input backgrounds remain. Keep artwork's approximate size/location but no extra decoration. Preserve all numerical data, price placeholders and legal wording. If there is a bottom tab bar, use the same simple outline home/closed-padlock/bar-chart/gear icons across screens, active orange, others gray. Target portrait iPhone17Pro 1206x2622, black outside rounded display corners, black Dynamic Island x415y42w376h110, native status/home indicator, no outer phone body. Output only the edited screen. This is simplification, NOT a new layout.",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-bee94d52-aa4a-4994-8ce2-a8090e46bce6.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-paywall-bottom-v3.png"
+    },
+    {
+      "id": "main-home-v3-rejected",
+      "key": "main-home-v3",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-a38d69e5-c4ef-464d-a61f-1878569bbaca.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-home-v3-rejected.png",
+      "status": "superseded"
+    },
+    {
+      "id": "main-settings-v3-rejected",
+      "key": "main-settings-v3",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-ecc96db8-d3c5-41e4-a427-84fe277824c2.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-settings-v3-rejected.png",
+      "status": "superseded"
+    },
+    {
+      "id": "main-settings-v3-fixed-rejected",
+      "key": "main-settings-v3-fixed",
+      "source": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-654c2af2-5a19-494b-8025-810f04720f81.png",
+      "output": "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-settings-v3-fixed-rejected.png",
+      "status": "superseded"
+    }
+  ],
+  "fixes": [
+    {
+      "id": "main-home-v3-fixed",
+      "source": "main-home-v3",
+      "prompt": "Precise edit of this ExcerLock screen. Change ONLY the yellow bell beside '5 days' to a simple rounded coral-orange flame pictogram (streak, not notification). Restore walking progress bar to orange. All other text, layout, simple colorful icons, white surface and phone geometry unchanged. No realistic emoji.",
+      "path": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-a38d69e5-c4ef-464d-a61f-1878569bbaca.png"
+    },
+    {
+      "id": "main-settings-v3-fixed",
+      "source": "main-settings-v3",
+      "prompt": "Precise edit of this ExcerLock screen. Fix ONLY two mismatched icons in Preferences: Notifications must have a simple rounded yellow bell with lilac clapper, Units must have a simple blue ruler with just three white tick marks, NOT a phone. Bottom Conditions tab must use a gray closed padlock outline, not clipboard. Preserve everything else including text, layout, white/orange UI, flat rounded simple colorful icon style. No realistic emoji.",
+      "path": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-ecc96db8-d3c5-41e4-a427-84fe277824c2.png"
+    }
+  ],
+  "lastFix": {
+    "id": "main-settings-v3-final",
+    "path": "/Users/johansardar/.codex/generated_images/01a07384-aa4c-7e03-ad78-8461ffd473f4/exec-654c2af2-5a19-494b-8025-810f04720f81.png",
+    "prompt": "Edit ONLY ONE SMALL ICON in this image. In the Preferences section, the row labeled Notifications incorrectly has a yellow ruler to its left. Replace that yellow ruler with a plain small yellow bell silhouette with purple clapper. This is the LOWER Notifications row, immediately beneath the heading Preferences, around x105 y1140 on this image. Do not edit the upper Notifications row. Do not alter the Units row blue ruler. Everything else absolutely unchanged."
+  }
+}

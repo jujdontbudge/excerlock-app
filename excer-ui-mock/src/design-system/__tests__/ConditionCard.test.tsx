@@ -39,7 +39,7 @@ describe('ConditionCard', () => {
     );
 
     expect(card.getByText('ACTIVE')).toBeTruthy();
-    expect(card.getByText('Apps unlocked while you keep moving')).toBeTruthy();
+    expect(card.queryByText('Apps unlocked while you keep moving')).toBeNull();
     expect(card.getByText('Balance drains normally')).toBeTruthy();
     expect(card.queryByRole('button', { name: /Complete Walking/ })).toBeNull();
   });

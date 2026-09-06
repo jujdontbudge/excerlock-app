@@ -1,0 +1,43 @@
+[
+  {
+    "id": "trend",
+    "title": "Less scrolling. More moving.",
+    "prompt": "Create one portrait iPhone 17 Pro ExcerLock onboarding screenshot, target1206x2622. Reference1 defines the UI styling: white background with subtle pale peach gradient at top only; near-black SF Pro-like typography; orange #C94710 rounded bottom Continue button with white text. 24pt margins, clean native rhythm, rounded components, restrained dimensional orange/peach illustrations. Native 9:41/status, black Dynamic Island x415 y42 w376 h110 radius55, black corners outside continuous display mask, bottom home indicator. No exterior device bezel or watermark. Black title 'Less scrolling. More moving.' Large clean line chart: orange solid curve rising left-to-right labelled 'Exercise'; charcoal dashed curve falling left-to-right labelled 'Screen time'. They cross centrally. X-axis 'Today' and 'Your goal'. Pale gray grid, no numeric promises or fabricated clinical data. Small gray caption 'The direction we’re working toward.' Orange Continue. Elegant AppBlock visual hierarchy.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-5-exercise.png"
+    ]
+  },
+  {
+    "id": "loop",
+    "title": "Stuck in the scroll loop?",
+    "prompt": "Create one portrait iPhone 17 Pro ExcerLock onboarding screenshot, target1206x2622. Reference1 defines the UI styling: white background with subtle pale peach gradient at top only; near-black SF Pro-like typography; orange #C94710 rounded bottom Continue button with white text. 24pt margins, clean native rhythm, rounded components, restrained dimensional orange/peach illustrations. Native 9:41/status, black Dynamic Island x415 y42 w376 h110 radius55, black corners outside continuous display mask, bottom home indicator. No exterior device bezel or watermark. Black title 'Stuck in the scroll loop?' Main visual centered small dimensional iPhone with generic scrolling feed; around it four clear clockwise curved orange arrows forming a circular loop, with four simple icons and short labels at cardinal points: 'Feel bored' (thought bubble), 'Open an app' (phone), 'Quick reward' (spark), 'Scroll again' (repeat). Space labels without overlap. Supporting copy 'A quick reward can keep you coming back.' Bottom Continue. This is frame1 of a3frame explainer, white/orange not yellow grunge poster.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-5-exercise.png"
+    ]
+  },
+  {
+    "id": "break",
+    "title": "Let’s break the loop.",
+    "prompt": "Create one portrait iPhone 17 Pro ExcerLock onboarding screenshot, target1206x2622. Reference1 defines the UI styling: white background with subtle pale peach gradient at top only; near-black SF Pro-like typography; orange #C94710 rounded bottom Continue button with white text. 24pt margins, clean native rhythm, rounded components, restrained dimensional orange/peach illustrations. Native 9:41/status, black Dynamic Island x415 y42 w376 h110 radius55, black corners outside continuous display mask, bottom home indicator. No exterior device bezel or watermark. Reference2 is the exact ExcerLock running-lock logo identity. Title 'Let’s break the loop.' Same center iPhone and four-node circular composition as scroll-loop screen, but the circular arrow at right is visibly split into two clean separated sections. Large orange ExcerLock running-lock logo is inserted into this gap, replacing automatic scroll route. Phone now shows a clean blocked state and small label 'Time to move'. Faded old loop icons remain to show interruption. Supporting copy 'ExcerLock adds a pause before you scroll.' Bottom Continue. No shattered glass, no violence. This is frame2 of same visual explainer.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-5-exercise.png",
+      "/Users/johansardar/ExcerLock/design/logo-concepts/2026-09-05/concept-4-v3.png"
+    ]
+  },
+  {
+    "id": "reward",
+    "title": "Make moving the habit.",
+    "prompt": "Create one portrait iPhone 17 Pro ExcerLock onboarding screenshot, target1206x2622. Reference1 defines the UI styling: white background with subtle pale peach gradient at top only; near-black SF Pro-like typography; orange #C94710 rounded bottom Continue button with white text. 24pt margins, clean native rhythm, rounded components, restrained dimensional orange/peach illustrations. Native 9:41/status, black Dynamic Island x415 y42 w376 h110 radius55, black corners outside continuous display mask, bottom home indicator. No exterior device bezel or watermark. Title 'Make moving the habit.' New circular reward path around centered small dimensional iPhone with a simple unlocked checkmark. Four clockwise arrows connect rounded orange/peach icons and exact short labels 'Want to scroll', 'Move your body', 'Unlock your apps', 'Enjoy your reward'. Exercise runner and dumbbell icons make moving central to story. Supporting copy 'Repeat small wins. Build an exercise habit.' Bottom Continue. This is frame3 of same visual explainer. No addiction cure or medical guarantee.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-5-exercise.png"
+    ]
+  },
+  {
+    "id": "picker",
+    "title": "What exercise should unlock your apps?",
+    "prompt": "Create one portrait iPhone 17 Pro ExcerLock onboarding screenshot, target1206x2622. Reference1 defines the UI styling: white background with subtle pale peach gradient at top only; near-black SF Pro-like typography; orange #C94710 rounded bottom Continue button with white text. 24pt margins, clean native rhythm, rounded components, restrained dimensional orange/peach illustrations. Native 9:41/status, black Dynamic Island x415 y42 w376 h110 radius55, black corners outside continuous display mask, bottom home indicator. No exterior device bezel or watermark. Title 'What exercise should unlock your apps?' Gray support 'Pick the one you’ll enjoy doing.' Four large colorful pastel peach/orange rounded square choice cards in exact2columns×2rows grid. Top-left Walking with walkingperson icon, top-right Gym with dumbbell icon, bottom-left Running with runner icon, bottom-right Biking with bicycle icon. Soft dimensional clean illustrations matching reference1 exercise tiles, each large centered icon above black readable label. Walking selected with orange outline and corner checkcircle, remaining neutral. Bottom orange Continue. Orange back chevron and progress line under native status bar. No extra choices.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-5-exercise.png"
+    ]
+  }
+]

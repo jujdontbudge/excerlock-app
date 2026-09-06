@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Image, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { PillowCard, PillButton, colors, radius, space, type } from '@/design-system';
+import { PillowCard, PillButton, StaticVectorImage, colors, layout, radius, space, type } from '@/design-system';
 import { signInCopy, signupCopy } from '@/content/auth';
+import { assetRegistry } from '@/content';
 import { FeatureScaffold, PrototypeNotice } from '@/features/shared';
 
 export type SignupScreenProps = {
@@ -41,16 +42,13 @@ export function SignupScreen({ initialPhase = 'choice', mode = 'postPurchase', o
       scroll={false}
     >
       <View style={styles.screen}>
-        <Image
-          accessibilityIgnoresInvertColors
-          resizeMode="contain"
-          source={require('../../../assets/heroes/lock-body.png')}
+        <StaticVectorImage
+          source={assetRegistry.heroes['lock-unified']}
           style={styles.hero}
         />
 
         {phase === 'success' ? (
           <View style={styles.copyBlock}>
-            <Text style={styles.eyebrow}>Saved only in this demo</Text>
             <Text style={styles.title}>{recovery ? signInCopy.success.title : signupCopy.success.title}</Text>
             <Text style={styles.body}>{recovery ? signInCopy.success.body : signupCopy.success.body}</Text>
             <PillButton
@@ -62,7 +60,6 @@ export function SignupScreen({ initialPhase = 'choice', mode = 'postPurchase', o
           </View>
         ) : phase === 'failure' ? (
           <View style={styles.copyBlock}>
-            <Text style={styles.eyebrow}>Local fixture · setup kept</Text>
             <Text style={styles.title}>{failure.title}</Text>
             {'cause' in failure ? <Text style={styles.body}>{failure.cause}</Text> : null}
             <Text style={styles.body}>{failure.recovery}</Text>
@@ -87,7 +84,7 @@ export function SignupScreen({ initialPhase = 'choice', mode = 'postPurchase', o
                 keyboardType="email-address"
                 onChangeText={setEmail}
                 placeholder={signupCopy.email.placeholder}
-                placeholderTextColor="rgba(26,15,6,0.42)"
+                placeholderTextColor={colors.text.placeholder}
                 style={styles.input}
                 value={email}
               />
@@ -103,7 +100,6 @@ export function SignupScreen({ initialPhase = 'choice', mode = 'postPurchase', o
           </View>
         ) : (
           <View style={styles.copyBlock}>
-            {'eyebrow' in copy ? <Text style={styles.eyebrow}>{copy.eyebrow}</Text> : null}
             <Text style={styles.title}>{copy.title}</Text>
             <Text style={styles.body}>{copy.body}</Text>
             <PrototypeNotice>{copy.statusLabel}</PrototypeNotice>
@@ -153,7 +149,7 @@ const styles = StyleSheet.create({
   eyebrow: { ...type.micro, color: colors.brand.signatureAmber, textAlign: 'center', textTransform: 'uppercase' },
   fieldLabel: { ...type.label, color: colors.text.ink },
   hero: { height: 132, width: 150 },
-  input: { ...type.body, backgroundColor: 'rgba(26,15,6,0.06)', borderRadius: radius.sm, color: colors.text.ink, marginTop: space[2], minHeight: 50, paddingHorizontal: space[3] },
+  input: { ...type.body, backgroundColor: colors.surface.field, borderRadius: radius.control, color: colors.text.primary, marginTop: space[2], minHeight: layout.controlHeight, paddingHorizontal: space[4] },
   legal: { gap: space[1], marginTop: 'auto' },
   legalActions: { flexDirection: 'row', justifyContent: 'center' },
   screen: { alignItems: 'center', flex: 1, gap: space[4], justifyContent: 'center', paddingBottom: space[4] },

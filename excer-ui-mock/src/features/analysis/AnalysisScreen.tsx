@@ -16,6 +16,7 @@ import {
   yearTrendFixture,
 } from '@/content';
 import {
+  ContentFadeMask,
   GradientScreen,
   HeatMap,
   LiveRing,
@@ -24,7 +25,10 @@ import {
   PressableScale,
   SegmentedControl,
   TrendChart,
+  VectorIcon,
   colors,
+  iconSize,
+  layout,
   radius,
   space,
   type,
@@ -148,14 +152,15 @@ export function AnalysisScreen({
 
   return (
     <GradientScreen edges={['top', 'left', 'right']} variant="content">
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={s.content}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-        testID="analysis-scroll"
-      >
+      <ContentFadeMask>
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={[s.content, styles.tabContent]}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          testID="analysis-scroll"
+        >
         <AnalysisHeader title={analysisOverviewCopy.title} />
         <Eyebrow>{analysisOverviewCopy.sampleLabel.toUpperCase()}</Eyebrow>
 
@@ -200,6 +205,9 @@ export function AnalysisScreen({
 
         <PressableScale accessibilityLabel="Open Time Reclaimed trend" accessibilityRole="button" onPress={onTrendPress} pressedScale={0.98}>
           <PillowCard style={styles.heroCard} variant="elevated">
+            <View style={styles.heroGlyph}>
+              <VectorIcon source={assetRegistry.glyphs['icon-tab-spiral']} />
+            </View>
             <Eyebrow>{analysisOverviewCopy.hero.eyebrow.toUpperCase()}</Eyebrow>
             <Text style={styles.heroValue}>{showcasePopulated
               ? analysisOverviewCopy.hero.value
@@ -299,7 +307,8 @@ export function AnalysisScreen({
         </View>
 
         {!hasHistory ? <PillButton fullWidth label={analysisOverviewCopy.empty.primary} onPress={onStartToday} variant="screen" /> : null}
-      </ScrollView>
+        </ScrollView>
+      </ContentFadeMask>
     </GradientScreen>
   );
 }
@@ -320,17 +329,19 @@ const styles = StyleSheet.create({
   badgeLocked: { opacity: 0.32 },
   badgeName: { ...type.caption, color: colors.text.primary, textAlign: 'center' },
   badgeProgress: { ...type.micro, color: colors.text.secondary },
-  earningRow: { alignItems: 'center', borderTopColor: colors.surface.divider, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', marginTop: space[3], paddingTop: space[3] },
+  earningRow: { alignItems: 'center', borderTopColor: colors.surface.divider, borderTopWidth: 1, flexDirection: 'row', justifyContent: 'space-between', marginTop: space[3], paddingTop: space[3] },
   earningTotal: { ...type.statValue, color: colors.text.primary },
   emptyIntro: { gap: space[2] },
   entryContext: { borderColor: colors.brand.signatureAmber, borderWidth: 1, gap: space[2] },
   freshRecap: { borderColor: colors.brand.signatureAmber, borderWidth: 2 },
   heroCard: { alignItems: 'center', gap: space[2], paddingVertical: space[6] },
+  heroGlyph: { height: iconSize.feature, width: iconSize.feature },
   heroValue: { ...type.heroLg, color: colors.text.primary },
   recap: { gap: space[2] },
   recapHero: { ...type.screenLarge, color: colors.text.primary },
   statPair: { flexDirection: 'row', flexWrap: 'wrap', gap: space[3] },
   streakRow: { alignItems: 'center', flexDirection: 'row', gap: space[4], marginBottom: space[3] },
+  tabContent: { paddingBottom: layout.tabBarContentInset },
   weekdayLabel: { ...type.micro, color: colors.text.tertiary, textAlign: 'center', width: '14.2857%' },
   weekdayRow: { flexDirection: 'row', marginBottom: space[1] },
 });

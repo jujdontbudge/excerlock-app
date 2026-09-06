@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 
 import { OnboardingScreen } from '@/features/onboarding';
@@ -20,16 +20,26 @@ export default function OnboardingRoute() {
   const normalizedStep = Array.isArray(rawStep) ? rawStep[0] : rawStep;
   const normalizedReturnTo = Array.isArray(returnTo) ? returnTo[0] : returnTo;
   const step = normalizedStep && isOnboardingStep(normalizedStep) ? normalizedStep : 'value';
+  const syncedRouteStep = useRef<OnboardingStep | null>(null);
   const screenState = state.onboarding.step === step
     ? state
     : { ...state, onboarding: { ...state.onboarding, step } };
   const model = getOnboardingScreen(screenState);
 
   useEffect(() => {
-    if (state.onboarding.step !== step) {
-      dispatch({ type: 'onboarding/set-step', step });
-    }
+    if (state.onboarding.step === step || syncedRouteStep.current === step) return;
+    syncedRouteStep.current = step;
+    dispatch({ type: 'onboarding/set-step', step });
   }, [dispatch, state.onboarding.step, step]);
+
+  useEffect(() => {
+    if (step === 'confession' && state.onboarding.phoneUseHours === null) {
+      dispatch({ type: 'onboarding/set-phone-use', hours: 3 });
+    }
+    if (step === 'allowance' && state.onboarding.allowanceMinutes === null) {
+      dispatch({ type: 'onboarding/set-allowance', minutes: 45 });
+    }
+  }, [dispatch, state.onboarding.allowanceMinutes, state.onboarding.phoneUseHours, step]);
 
   const navigateTo = (target: OnboardingStep, targetReturnTo?: 'review') => {
     dispatch({ type: 'onboarding/set-step', step: target });

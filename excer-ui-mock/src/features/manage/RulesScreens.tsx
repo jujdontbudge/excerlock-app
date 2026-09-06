@@ -11,6 +11,7 @@ import {
   todayOverrideCopy,
 } from '@/content';
 import {
+  DottedSeparator,
   GradientScreen,
   PillButton,
   PillowCard,
@@ -43,7 +44,7 @@ export function RulesHubScreen({ onBack, onOpenRule, onOpenTodayOverride, todayV
         <PillowCard padding="none" variant="grouped">
           {rulesHubCopy.rows.map((row, index) => (
             <View key={row.id}>
-              {index > 0 ? <View style={s.divider} /> : null}
+              {index > 0 ? <DottedSeparator /> : null}
               <SettingsRow
                 onPress={() => onOpenRule(row.id as RuleDestination)}
                 title={row.label}
@@ -141,7 +142,7 @@ export function RolloverScreen({ capMinutes, enabled, onBack, onDone, onSelectCa
           />
           {enabled ? (
             <>
-              <View style={s.divider} />
+              <DottedSeparator />
               <SettingsRow
                 onPress={() => {
                   setCapDraft(capMinutes ?? 60);

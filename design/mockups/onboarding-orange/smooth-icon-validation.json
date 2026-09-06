@@ -1,0 +1,162 @@
+[
+  {
+    "id": "main-home-v3",
+    "chunk_id": "c86f82",
+    "wall_time_seconds": 0.000001375,
+    "exit_code": 1,
+    "original_token_count": 77,
+    "output": "FAIL size: got 853x1844, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        853,\n        1844\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-home-v3.png\"\n}\n"
+  },
+  {
+    "id": "main-conditions-v3",
+    "chunk_id": "be5e0d",
+    "wall_time_seconds": 3.75e-7,
+    "exit_code": 1,
+    "original_token_count": 78,
+    "output": "FAIL size: got 851x1849, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        851,\n        1849\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-conditions-v3.png\"\n}\n"
+  },
+  {
+    "id": "main-analytics-v3",
+    "chunk_id": "5867be",
+    "wall_time_seconds": 1.67e-7,
+    "exit_code": 1,
+    "original_token_count": 78,
+    "output": "FAIL size: got 850x1850, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        850,\n        1850\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-analytics-v3.png\"\n}\n"
+  },
+  {
+    "id": "main-settings-v3",
+    "chunk_id": "f8a01e",
+    "wall_time_seconds": 1.25e-7,
+    "exit_code": 1,
+    "original_token_count": 78,
+    "output": "FAIL size: got 852x1846, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        852,\n        1846\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-settings-v3.png\"\n}\n"
+  },
+  {
+    "id": "loop-reward-v3",
+    "chunk_id": "f5ecaf",
+    "wall_time_seconds": 2.08e-7,
+    "exit_code": 1,
+    "original_token_count": 77,
+    "output": "FAIL size: got 849x1851, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        849,\n        1851\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/loop-reward-v3.png\"\n}\n"
+  },
+  {
+    "id": "final-principles-v3",
+    "chunk_id": "046454",
+    "wall_time_seconds": 1.66e-7,
+    "exit_code": 1,
+    "original_token_count": 79,
+    "output": "FAIL size: got 852x1847, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        852,\n        1847\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-principles-v3.png\"\n}\n"
+  },
+  {
+    "id": "loop-picker-v3",
+    "chunk_id": "fe9590",
+    "wall_time_seconds": 1.67e-7,
+    "exit_code": 1,
+    "original_token_count": 77,
+    "output": "FAIL size: got 850x1851, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        850,\n        1851\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/loop-picker-v3.png\"\n}\n"
+  },
+  {
+    "id": "final-walk-place-v3",
+    "chunk_id": "74c0f2",
+    "wall_time_seconds": 2.08e-7,
+    "exit_code": 1,
+    "original_token_count": 79,
+    "output": "FAIL size: got 850x1850, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        850,\n        1850\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-walk-place-v3.png\"\n}\n"
+  },
+  {
+    "id": "final-walk-rule-v3",
+    "chunk_id": "0d5466",
+    "wall_time_seconds": 1.67e-7,
+    "exit_code": 1,
+    "original_token_count": 78,
+    "output": "FAIL size: got 850x1851, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        850,\n        1851\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-walk-rule-v3.png\"\n}\n"
+  },
+  {
+    "id": "final-walk-target-v3",
+    "chunk_id": "39e680",
+    "wall_time_seconds": 0.000001709,
+    "exit_code": 1,
+    "original_token_count": 79,
+    "output": "FAIL size: got 851x1848, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        851,\n        1848\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-walk-target-v3.png\"\n}\n"
+  },
+  {
+    "id": "final-review-v3",
+    "chunk_id": "9cfdaa",
+    "wall_time_seconds": 0.000001125,
+    "exit_code": 1,
+    "original_token_count": 78,
+    "output": "FAIL size: got 851x1849, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        851,\n        1849\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-review-v3.png\"\n}\n"
+  },
+  {
+    "id": "final-trial-offer-v3",
+    "chunk_id": "d50d35",
+    "wall_time_seconds": 4.17e-7,
+    "exit_code": 1,
+    "original_token_count": 79,
+    "output": "FAIL size: got 852x1846, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        852,\n        1846\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-trial-offer-v3.png\"\n}\n"
+  },
+  {
+    "id": "final-trial-reminder-v3",
+    "chunk_id": "b3fd00",
+    "wall_time_seconds": 0.000001583,
+    "exit_code": 1,
+    "original_token_count": 80,
+    "output": "FAIL size: got 850x1851, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        850,\n        1851\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-trial-reminder-v3.png\"\n}\n"
+  },
+  {
+    "id": "final-notification-v3",
+    "chunk_id": "29c25d",
+    "wall_time_seconds": 0.000002125,
+    "exit_code": 1,
+    "original_token_count": 79,
+    "output": "FAIL size: got 850x1850, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        850,\n        1850\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-notification-v3.png\"\n}\n"
+  },
+  {
+    "id": "final-timeline-v3",
+    "chunk_id": "185089",
+    "wall_time_seconds": 7.5e-7,
+    "exit_code": 1,
+    "original_token_count": 78,
+    "output": "FAIL size: got 851x1847, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        851,\n        1847\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-timeline-v3.png\"\n}\n"
+  },
+  {
+    "id": "final-paywall-top-v3",
+    "chunk_id": "d6912a",
+    "wall_time_seconds": 0.00000125,
+    "exit_code": 1,
+    "original_token_count": 79,
+    "output": "FAIL size: got 852x1847, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        852,\n        1847\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-paywall-top-v3.png\"\n}\n"
+  },
+  {
+    "id": "final-paywall-bottom-v3",
+    "chunk_id": "bbf7d1",
+    "wall_time_seconds": 0.000001125,
+    "exit_code": 1,
+    "original_token_count": 80,
+    "output": "FAIL size: got 851x1848, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        851,\n        1848\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/final-paywall-bottom-v3.png\"\n}\n"
+  },
+  {
+    "id": "main-home-v3-rejected",
+    "chunk_id": "75f6cb",
+    "wall_time_seconds": 4.17e-7,
+    "exit_code": 1,
+    "original_token_count": 79,
+    "output": "FAIL size: got 851x1848, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        851,\n        1848\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-home-v3-rejected.png\"\n}\n"
+  },
+  {
+    "id": "main-settings-v3-rejected",
+    "chunk_id": "a6d84a",
+    "wall_time_seconds": 5.41e-7,
+    "exit_code": 1,
+    "original_token_count": 80,
+    "output": "FAIL size: got 850x1850, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        850,\n        1850\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-settings-v3-rejected.png\"\n}\n"
+  },
+  {
+    "id": "main-settings-v3-fixed-rejected",
+    "chunk_id": "ef81bd",
+    "wall_time_seconds": 0.000001125,
+    "exit_code": 1,
+    "original_token_count": 82,
+    "output": "FAIL size: got 852x1846, expected 1206x2622\n{\n  \"checks\": {\n    \"size\": {\n      \"actual\": [\n        852,\n        1846\n      ],\n      \"expected\": [\n        1206,\n        2622\n      ],\n      \"ok\": false\n    }\n  },\n  \"image\": \"/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/main-settings-v3-fixed-rejected.png\"\n}\n"
+  }
+]

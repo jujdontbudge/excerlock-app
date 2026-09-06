@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { trendDetailCopy } from '@/content';
-import { AccessibleModal, AccessibleModalTitle, PillowCard, PillButton, SettingsRow, colors, space, type } from '@/design-system';
+import { AccessibleModal, FullScreenModalPage, PillButton, SettingsRow, space } from '@/design-system';
 import { firstSearchParam, TrendDetailScreen, type AnalysisRange } from '@/features/analysis';
 import { useDemo } from '@/presentation';
 
@@ -36,37 +36,40 @@ export default function TrendDetailRoute() {
       />
       <AccessibleModal
         accessibilityTitle="Compare with"
-        animationType="slide"
+        contentContainerStyle={styles.modalPage}
         onRequestClose={() => setComparisonOpen(false)}
+        scrollEnabled={false}
         style={styles.backdrop}
         visible={comparisonOpen}
       >
-        <PillowCard style={styles.card} variant="light">
-          <AccessibleModalTitle style={styles.title}>Compare with</AccessibleModalTitle>
-          {trendDetailCopy.comparisonOptions.map((option) => (
-            <SettingsRow
-              key={option}
-              onPress={() => {
-                setComparison(option);
-                setComparisonOpen(false);
-              }}
-              showChevron={false}
-              title={option}
-              tone="light"
-              value={comparison === option ? '✓' : undefined}
-            />
-          ))}
-          <PillButton fullWidth label="Cancel" onPress={() => setComparisonOpen(false)} variant="text" />
-        </PillowCard>
+        <View style={styles.card}>
+          <FullScreenModalPage contentAlignment="top" footer={<PillButton fullWidth label="Cancel" onPress={() => setComparisonOpen(false)} variant="text" />}>
+            <View style={styles.options}>
+              {trendDetailCopy.comparisonOptions.map((option) => (
+                <SettingsRow
+                  key={option}
+                  onPress={() => {
+                    setComparison(option);
+                    setComparisonOpen(false);
+                  }}
+                  selected={comparison === option}
+                  showChevron={false}
+                  title={option}
+                />
+              ))}
+            </View>
+          </FullScreenModalPage>
+        </View>
       </AccessibleModal>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { backgroundColor: colors.surface.scrim, flex: 1, justifyContent: 'flex-end', padding: space[3] },
-  card: { gap: space[2], padding: space[4] },
-  title: { ...type.screenTitle, color: colors.text.ink, marginBottom: space[2] },
+  backdrop: { flex: 1 },
+  card: { flex: 1, padding: space[4], paddingBottom: 0, paddingTop: 0 },
+  modalPage: { flex: 1 },
+  options: { gap: space[2] },
 });
 
 function periodLabel(range: AnalysisRange, offset: number) {

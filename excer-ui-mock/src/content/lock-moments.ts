@@ -76,7 +76,7 @@ export const shieldVariants = [
 export const shieldPresentationContract = {
   background: "light ivory blur",
   lockPose: "closed clay lock",
-  primaryColor: "orange",
+  primaryColor: "blue",
   haptic: false,
   sound: false,
   disclosurePlacement: "debug/demo wrapper",

@@ -1,7 +1,7 @@
 <claude-mem-context>
 # Memory Context
 
-# [ExcerLock] recent context, 2026-08-02 11:04am EDT
+# [ExcerLock] recent context, 2026-08-23 11:04pm EDT
 
 No previous sessions found.
 </claude-mem-context>
@@ -19,3 +19,18 @@ No previous sessions found.
 ## Spec
 
 The product spec is `excerlock-app-prd.md` (root). UI build spec for the prototype: `docs/codex-dashboard-ui-build-spec.md`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues on `JohanSardar/excerlock-app` (via the `gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root (created lazily — proceed silently while they don't exist). See `docs/agents/domain.md`.
+
+<!-- BEGIN AGENT-TOOLING (managed by /setup-agent-tooling; edit TOOLING.md, not this block) -->
+Tool routing for this repo: read `TOOLING.md` before reaching for any external service — it names the CLI/MCP/skill that owns each job (App Store, builds, posting, analytics, VPS).
+If a tool errors or is missing: `python3 ~/.claude/agent-tooling/doctor.py --repo .` fixes or names the fix. The fallback for every dashboard is its CLI, per TOOLING.md.
+<!-- END AGENT-TOOLING -->

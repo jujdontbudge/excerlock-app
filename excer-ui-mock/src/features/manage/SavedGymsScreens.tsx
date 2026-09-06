@@ -4,11 +4,13 @@ import { ScrollView } from 'react-native-gesture-handler';
 
 import { autoDetectPrimer, savedGymDetailFixture, savedGymsCopy } from '@/content';
 import {
+  DottedSeparator,
   GradientScreen,
   PillButton,
   PillowCard,
   SettingsRow,
   colors,
+  layout,
   radius,
   space,
   type,
@@ -47,7 +49,7 @@ export function SavedGymsScreen({ capacity = 5, gyms = savedGymsCopy.rows, onAdd
             {gyms.map((gym) => (
               <PillowCard key={gym.id} padding="none" variant="grouped">
                 <SettingsRow onPress={() => onEdit(gym.id)} subtitle={gym.subtitle} title={gym.name} />
-                <View style={s.divider} />
+                <DottedSeparator />
                 <PillButton label={`Remove ${gym.name}`} onPress={() => onRemove(gym.id)} variant="text" />
               </PillowCard>
             ))}
@@ -166,13 +168,13 @@ export function GymDetailScreen({
 
         <PillowCard padding="none" variant="grouped">
           <SettingsRow onPress={() => openField('name')} title={savedGymDetailFixture.fields.name.label} value={name || 'Required'} />
-          <View style={s.divider} />
+          <DottedSeparator />
           <SettingsRow onPress={() => openField('placeType')} title={savedGymDetailFixture.fields.placeType.label} value={placeType === 'verified' ? 'Verified gym' : 'Honor system'} />
-          <View style={s.divider} />
+          <DottedSeparator />
           <SettingsRow onPress={() => openField('radius')} subtitle="50–200 m" title={savedGymDetailFixture.fields.radius.label} value={`${radiusMeters} m`} />
-          <View style={s.divider} />
+          <DottedSeparator />
           <SettingsRow onPress={() => openField('mode')} title={savedGymDetailFixture.fields.mode.label} value={mode === 'manual' ? 'Manual check-in' : 'Auto-detect'} />
-          <View style={s.divider} />
+          <DottedSeparator />
           <SettingsRow
             onPress={() => openField('wifi')}
             subtitle={savedGymDetailFixture.wifiDisclosure}
@@ -289,23 +291,23 @@ const styles = StyleSheet.create({
   mapSearch: {
     ...type.body,
     alignSelf: 'stretch',
-    backgroundColor: colors.surface.card,
+    backgroundColor: colors.surface.field,
     borderColor: colors.surface.divider,
-    borderRadius: radius.pill,
+    borderRadius: radius.control,
     borderWidth: StyleSheet.hairlineWidth,
     color: colors.text.primary,
-    minHeight: 48,
+    minHeight: layout.controlHeight,
     paddingHorizontal: space[4],
   },
   mapTitle: { ...type.cardTitle, color: colors.text.primary },
   nameInput: {
     ...type.body,
-    backgroundColor: colors.surface.card,
+    backgroundColor: colors.surface.field,
     borderColor: colors.surface.divider,
-    borderRadius: radius.card,
+    borderRadius: radius.control,
     borderWidth: StyleSheet.hairlineWidth,
     color: colors.text.primary,
-    minHeight: 52,
+    minHeight: layout.controlHeight,
     paddingHorizontal: space[4],
   },
   pin: { ...type.sectionTitle, color: colors.brand.primary },

@@ -46,6 +46,7 @@ function createProps(
     onSelectActiveWindow: jest.fn(),
     onSelectActiveWindowTime: jest.fn(),
     onSelectBanner: jest.fn(),
+    onSelectCategory: jest.fn(),
     onSelectCatalog: jest.fn(),
     onSelectCooldown: jest.fn(),
     onSelectDailyCap: jest.fn(),
@@ -104,23 +105,26 @@ describe('ConditionBuilderScreen photo seam', () => {
       .toMatchObject({ selected: true });
   });
 
-  it('exposes catalog filters as a selected radio group', async () => {
+  it('starts with six activity categories and keeps the methods on the next screen', async () => {
     const base = createDemoState({ stage: 'builder' }).builder;
+    const onSelectCategory = jest.fn();
     const view = await renderScreen(
       <ConditionBuilderScreen {...createProps({
         draft: { ...base, active: true, step: 'catalog' },
+        onSelectCategory,
       })} />,
     );
 
-    expect(view.getByRole('radio', { name: 'Show All conditions' }).props.accessibilityState)
-      .toMatchObject({ selected: true });
-    expect(view.getByRole('radio', { name: 'Show Walking conditions' }).props.accessibilityState)
-      .toMatchObject({ selected: false });
+    expect(view.getByRole('radio', { name: 'Gym' })).toBeTruthy();
+    expect(view.getByRole('radio', { name: 'Walking' })).toBeTruthy();
+    expect(view.getByRole('radio', { name: 'Running' })).toBeTruthy();
+    expect(view.getByRole('radio', { name: 'Cycling' })).toBeTruthy();
+    expect(view.getByRole('radio', { name: 'Swimming' })).toBeTruthy();
+    expect(view.getByRole('radio', { name: 'Other activity' })).toBeTruthy();
+    expect(view.queryByRole('button', { name: 'Step goal' })).toBeNull();
 
-    await fireEvent.press(view.getByRole('radio', { name: 'Show Walking conditions' }));
-
-    expect(view.getByRole('radio', { name: 'Show Walking conditions' }).props.accessibilityState)
-      .toMatchObject({ selected: true });
+    await fireEvent.press(view.getByRole('radio', { name: 'Walking' }));
+    expect(onSelectCategory).toHaveBeenCalledWith('Walking');
   });
 });
 
@@ -180,9 +184,9 @@ describe('ConditionBuilderScreen strict rule controls', () => {
           activeWindowEndMinutes: 1320,
           catalogId: 'walk-state',
           kind: 'state',
-          path: ['catalog', 'configure-state', 'banner', 'preview'],
+          path: ['catalog', 'method', 'configure-state', 'active-window', 'banner', 'preview'],
           stateGraceSeconds: 120,
-          step: 'configure-state',
+          step: 'active-window',
         },
         onSelectActiveWindow,
         onSelectActiveWindowTime,
@@ -202,10 +206,9 @@ describe('ConditionBuilderScreen strict rule controls', () => {
     expect(onSelectActiveWindowTime).toHaveBeenCalledWith('start', 421);
   });
 
-  it('exposes caps 1–10, Unlimited, and the 15-minute cooldown wheel', async () => {
-    const onSelectCooldown = jest.fn();
+  it('keeps the daily-cap screen focused on completion limits', async () => {
     const base = createDemoState({ stage: 'builder' }).builder;
-    const view = await renderScreen(
+    const capView = await renderScreen(
       <ConditionBuilderScreen {...createProps({
         draft: {
           ...base,
@@ -213,17 +216,34 @@ describe('ConditionBuilderScreen strict rule controls', () => {
           catalogId: 'active-minutes-event',
           eventThreshold: 30,
           kind: 'event',
-          path: ['catalog', 'configure-event', 'reward', 'banner', 'preview'],
-          step: 'reward',
+          path: ['catalog', 'method', 'configure-event', 'reward', 'daily-cap', 'cooldown', 'repeatable', 'active-window', 'banner', 'preview'],
+          step: 'daily-cap',
+        },
+      })} />,
+    );
+
+    expect(capView.getByRole('button', { name: 'Once' })).toBeTruthy();
+    expect(capView.getByRole('button', { name: '10 times' })).toBeTruthy();
+    expect(capView.getByRole('button', { name: 'Unlimited' })).toBeTruthy();
+    expect(capView.queryByRole('adjustable', { name: 'cooldown, not chosen' })).toBeNull();
+  });
+
+  it('keeps cooldown controls on their own screen', async () => {
+    const onSelectCooldown = jest.fn();
+    const base = createDemoState({ stage: 'builder' }).builder;
+    const cooldownView = await renderScreen(
+      <ConditionBuilderScreen {...createProps({
+        draft: {
+          ...base,
+          active: true,
+          catalogId: 'active-minutes-event',
+          kind: 'event',
+          step: 'cooldown',
         },
         onSelectCooldown,
       })} />,
     );
-
-    expect(view.getByRole('button', { name: 'Once' })).toBeTruthy();
-    expect(view.getByRole('button', { name: '10 times' })).toBeTruthy();
-    expect(view.getByRole('button', { name: 'Unlimited' })).toBeTruthy();
-    await fireEvent.press(view.getByRole('button', { name: 'Increase cooldown' }));
+    await fireEvent.press(cooldownView.getByRole('button', { name: 'Increase cooldown' }));
     expect(onSelectCooldown).toHaveBeenCalledWith(0);
   });
 
@@ -262,8 +282,9 @@ describe('ConditionBuilderScreen strict rule controls', () => {
     )).toBeTruthy();
   });
 
-  it('does not offer a Back action from the first immutable edit step', async () => {
+  it('uses the normal Back action to exit from the first immutable edit step', async () => {
     const base = createDemoState({ stage: 'builder' }).builder;
+    const onClose = jest.fn();
     const view = await renderScreen(
       <ConditionBuilderScreen {...createProps({
         draft: {
@@ -276,9 +297,11 @@ describe('ConditionBuilderScreen strict rule controls', () => {
           stateGraceSeconds: 120,
           step: 'configure-state',
         },
+        onClose,
       })} />,
     );
 
-    expect(view.queryByRole('button', { name: 'Back' })).toBeNull();
+    await fireEvent.press(view.getByRole('button', { name: 'Back' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

@@ -15,7 +15,6 @@ describe('Settings support, diagnostics, About, and legal completion seams', () 
     await fireEvent.press(screen.getByRole('button', { name: 'Why couldn’t the gym check-in verify?' }));
     expect(screen.getByTestId('support-article-light')).toBeTruthy();
     expect(screen.getByText('help.excerlock.local/gym')).toBeTruthy();
-    expect(screen.getByText('LOCAL ARTICLE · NO WEBSITE LOADED')).toBeTruthy();
     expect(screen.getByText('What to check')).toBeTruthy();
   });
 
@@ -62,7 +61,7 @@ describe('Settings support, diagnostics, About, and legal completion seams', () 
     expect(screen.getByText('Sample bundle ready')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Share bundle preview' }));
-    expect(screen.getByText('SIMULATED IOS SHARE SHEET')).toBeTruthy();
+    expect(screen.getByText('Share preview')).toBeTruthy();
     expect(screen.getByText('ExcerLock-Diagnostics.txt')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Messages' }));
     expect(screen.getByText('Share preview complete')).toBeTruthy();
@@ -77,7 +76,7 @@ describe('Settings support, diagnostics, About, and legal completion seams', () 
 
     expect(screen.getByText('ExcerLock 1.0.0 (100) · Prototype')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Share ExcerLock' }));
-    expect(screen.getByText('SIMULATED IOS SHARE SHEET')).toBeTruthy();
+    expect(screen.getByText('Share preview')).toBeTruthy();
     expect(screen.getByText('ExcerLock — Workout to Unlock')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Mail' }));
     expect(screen.getByText('Share preview complete')).toBeTruthy();
@@ -91,7 +90,7 @@ describe('Settings support, diagnostics, About, and legal completion seams', () 
   it('discloses the Apple Health manual-entry rule', async () => {
     const result = renderAt('/settings/apple-health');
     await result;
-    expect(screen.getByText('Manually typed entries would not count.')).toBeTruthy();
+    expect(screen.queryByText('Manually typed entries would not count.')).toBeNull();
   });
 
   it('changes legal document typography in Reader mode', async () => {

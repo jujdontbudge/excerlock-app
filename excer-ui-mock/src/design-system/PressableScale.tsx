@@ -1,13 +1,13 @@
 import { useState, type ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Pressable, type PressableProps } from 'react-native-gesture-handler';
-import Animated, { cubicBezier, useReducedMotion } from 'react-native-reanimated';
+import Animated, { cubicBezier, useReducedMotion, type CSSStyle } from 'react-native-reanimated';
 
 import { layout, motion } from './tokens';
 
 export interface PressableScaleProps extends Omit<PressableProps, 'children' | 'style'> {
   children: ReactNode;
-  contentStyle?: StyleProp<ViewStyle>;
+  contentStyle?: StyleProp<CSSStyle<ViewStyle>>;
   disabledOpacity?: number;
   pressedScale?: number;
   style?: StyleProp<ViewStyle>;
@@ -48,10 +48,10 @@ export function PressableScale({
           {
             minHeight: layout.minimumTarget,
             minWidth: layout.minimumTarget,
-            opacity: disabled ? disabledOpacity : pressed ? 0.88 : 1,
+            opacity: disabled ? disabledOpacity : pressed ? 0.92 : 1,
             transitionDuration: motion.duration.press,
             transitionProperty: reduceMotion ? 'opacity' : ['opacity', 'transform'],
-            transitionTimingFunction: cubicBezier(0.2, 0, 0, 1),
+            transitionTimingFunction: cubicBezier(0.16, 1, 0.3, 1),
             ...(reduceMotion
               ? {}
               : { transform: [{ scale: disabled ? 1 : pressed ? pressedScale : 1 }] }),

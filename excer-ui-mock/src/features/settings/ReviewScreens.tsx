@@ -5,8 +5,9 @@ import {
   GradientScreen,
   PillButton,
   PillowCard,
-  PressableScale,
+  SelectableBubble,
   colors,
+  layout,
   radius,
   space,
   type,
@@ -119,15 +120,17 @@ export function ReviewPromptScreen({
             {visibleState !== 'rated' ? (
               <View accessibilityLabel="Sample star rating" accessibilityRole="radiogroup" style={styles.stars}>
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <PressableScale
+                  <SelectableBubble
                     accessibilityLabel={`${star} star${star === 1 ? '' : 's'}`}
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: stars === star }}
+                    compact
+                    contentStyle={styles.starTarget}
                     key={star}
+                    label="★"
+                    labelStyle={styles.star}
                     onPress={() => onSelectStars(star)}
-                  >
-                    <View style={styles.starTarget}><Text style={[styles.star, star <= (stars ?? 0) && styles.starSelected]}>★</Text></View>
-                  </PressableScale>
+                    role="radio"
+                    selected={stars === star}
+                  />
                 ))}
               </View>
             ) : null}
@@ -149,16 +152,15 @@ export function ReviewPromptScreen({
 const styles = StyleSheet.create({
   bottomActions: { gap: space[2], marginTop: 'auto' },
   lifecycleCard: { gap: space[4] },
-  lifecycleState: { ...type.micro, color: colors.brand.signatureAmber },
+  lifecycleState: { ...type.label, color: colors.text.primary },
   previewDisclosure: { alignItems: 'center', gap: space[1] },
   promptCenter: { flex: 1, justifyContent: 'center' },
   promptScreen: { flex: 1, gap: space[4], paddingBottom: space[4], paddingTop: space[2] },
-  star: { color: colors.icon.inactive, fontSize: 34, lineHeight: 40 },
-  starSelected: { color: colors.brand.signatureAmber },
-  starTarget: { alignItems: 'center', height: 48, justifyContent: 'center', width: 48 },
+  star: { ...type.screenTitle },
+  starTarget: { alignItems: 'center', height: layout.controlHeightCompact, justifyContent: 'center', width: layout.controlHeightCompact },
   stars: { flexDirection: 'row', justifyContent: 'center' },
   systemActions: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2], justifyContent: 'flex-end' },
   systemBody: { ...type.body, color: colors.text.ink, textAlign: 'center' },
-  systemCard: { backgroundColor: colors.surface.light, borderRadius: radius.cardLarge, gap: space[4], padding: space[5] },
+  systemCard: { backgroundColor: colors.surface.bubble, borderColor: colors.surface.bubbleBorder, borderRadius: radius.cardLarge, borderWidth: 1, gap: space[4], padding: space[5] },
   systemTitle: { ...type.sectionTitle, color: colors.text.ink, textAlign: 'center' },
 });

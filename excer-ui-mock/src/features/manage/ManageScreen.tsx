@@ -8,12 +8,16 @@ import {
   showcaseManageConditionRows,
 } from '@/content';
 import {
+  ContentFadeMask,
+  DottedSeparator,
   GradientScreen,
   PillButton,
   PillowCard,
   SettingsRow,
   SwitchRow,
   colors,
+  layout,
+  radius,
   space,
   type,
 } from '@/design-system';
@@ -59,7 +63,8 @@ export function ManageScreen({
 }: ManageScreenProps) {
   return (
     <GradientScreen edges={['top', 'left', 'right']} variant="content">
-      <ScrollView ref={scrollRef} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      <ContentFadeMask>
+        <ScrollView ref={scrollRef} contentContainerStyle={[s.content, styles.tabContent]} showsVerticalScrollIndicator={false}>
         <ScreenHeader action={onAddCondition} actionLabel="Add" title={manageRootCopy.title} />
 
         <SectionLabel>{manageRootCopy.sections.conditions}</SectionLabel>
@@ -83,10 +88,10 @@ export function ManageScreen({
                 <SwitchRow
                   onValueChange={(enabled) => onToggleCondition(condition.id, enabled)}
                   subtitle={condition.subtitle}
-                  title={condition.name}
+                  title="Enabled"
                   value={condition.enabled}
                 />
-                <View style={s.divider} />
+                <DottedSeparator />
                 <View style={styles.conditionActions}>
                   <PillButton label="Edit" onPress={() => onEditCondition(condition.id)} variant="text" />
                   <PillButton label="Move" onPress={() => onMoveCondition(condition.id)} variant="text" />
@@ -94,11 +99,9 @@ export function ManageScreen({
                 </View>
               </PillowCard>
             ))}
-            <Text style={s.note}>{manageRootCopy.disableHelper}</Text>
           </View>
         )}
 
-        <SectionLabel>{manageRootCopy.sections.lockedApps}</SectionLabel>
         <PillowCard padding="none" variant="grouped">
           <SettingsRow
             onPress={onOpenLockedApps}
@@ -108,20 +111,21 @@ export function ManageScreen({
           />
         </PillowCard>
 
-        <SectionLabel>{manageRootCopy.sections.rules}</SectionLabel>
         <PillowCard padding="none" variant="grouped">
           <SettingsRow onPress={onOpenRules} subtitle={rulesSummary} title={manageRootCopy.naturalRulesRow.label} />
         </PillowCard>
-      </ScrollView>
+        </ScrollView>
+      </ContentFadeMask>
     </GradientScreen>
   );
 }
 
 const styles = StyleSheet.create({
   banner: { height: 92, justifyContent: 'flex-end' },
-  bannerImage: { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-  bannerScrim: { backgroundColor: 'rgba(18,12,5,0.68)', padding: space[3] },
+  bannerImage: { borderTopLeftRadius: radius.card, borderTopRightRadius: radius.card },
+  bannerScrim: { backgroundColor: colors.surface.mediaScrim, padding: space[3] },
   bannerTitle: { ...type.cardTitle, color: colors.text.primary },
   centered: { maxWidth: 280, textAlign: 'center' },
   conditionActions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', paddingHorizontal: space[2] },
+  tabContent: { paddingBottom: layout.tabBarContentInset },
 });

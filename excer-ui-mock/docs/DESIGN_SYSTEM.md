@@ -1,6 +1,14 @@
-# ExcerLock UI Design System
+# ExcerLock legacy UI provenance
 
-Pillow DNA, re-skinned to ExcerLock’s orange brand, with the approved Home screen as the visual tie-breaker.
+> **Superseded visual contract (August 14, 2026):** this file preserves the
+> original Pillow/orange measurements and rationale for historical traceability.
+> It is no longer implementation authority for color, spacing, typography,
+> controls, headers, or motion. The live contract is
+> [`UI_SYSTEM_RESEARCH.md`](./UI_SYSTEM_RESEARCH.md) together with
+> `src/design-system/tokens.ts`. Where this document conflicts with either,
+> the unified blue-violet system wins.
+
+Pillow DNA and the retired orange exploration, retained as provenance only.
 
 ## 0. Status, authority, and notation
 

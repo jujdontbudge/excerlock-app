@@ -1,19 +1,22 @@
 import type { ComponentRef, RefObject } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Image, ImageBackground, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, ImageBackground, StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import {
   AccessibleModal,
-  AccessibleModalTitle,
   ConditionCard,
+  ContentFadeMask,
+  ChevronIcon,
+  FullScreenModalPage,
   HeroLock,
   IconChip,
   PillowCard,
   PillButton,
   PressableScale,
   colors,
+  layout,
   radius,
   space,
   type,
@@ -42,7 +45,6 @@ import {
   enabledHomeConditions,
   eventConditionSubtitle,
   homeEntryPresentation,
-  homeHeaderPresentation,
   isHomeModeOpen,
   rateConditionPresentation,
   type HomeSessionStatus,
@@ -148,15 +150,6 @@ export function HomeScreen({
   const executableConditions = visibleConditions.filter((condition) =>
     executableConditionIdSet.has(condition.id),
   );
-  const hasConditions = visibleConditions.length > 0;
-  const header = homeHeaderPresentation(mode, {
-    currentStreakDays,
-    earnedMinutesToday,
-    hasConditions,
-    hasMeaningfulActivityToday,
-    restDayAllowanceOnly,
-    showcase: showcaseAnalysis,
-  });
   const lockOpen = isHomeModeOpen(mode);
   const onHoliday = ['rest-of-day', 'set-period', 'rest-day-no-locking', 'outside-window'].includes(mode);
   const ruleHoliday = mode === 'rest-day-no-locking' || mode === 'outside-window';
@@ -266,7 +259,7 @@ export function HomeScreen({
         ? visibleConditions.length === 0
           ? 'Afternoon nudge opened. Add your first way to earn.'
           : `Afternoon nudge opened. ${cheapestCondition?.name ?? 'Ways to earn'} is highlighted.`
-        : `Streak last call opened. Goal progress and ${cheapestCondition?.name ?? 'the add condition action'} are highlighted.`,
+        : `Streak last call opened. ${cheapestCondition?.name ?? 'The add condition action'} is highlighted.`,
     );
   }, [cheapestCondition?.name, entry, visibleConditions.length]);
 
@@ -294,15 +287,16 @@ export function HomeScreen({
   }, [activeScrollRef, cardListY, conditionsSectionY, entryPresentation, entryTargetY, reduceMotion]);
 
   return (
-    <FeatureScaffold accessibilityLabel="Home" canvasVariant="heat" scroll={false}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        ref={activeScrollRef}
-        showsVerticalScrollIndicator={false}
-      >
+    <FeatureScaffold accessibilityLabel="Home" canvasVariant="heat" dockOverlay scroll={false}>
+      <ContentFadeMask>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          ref={activeScrollRef}
+          showsVerticalScrollIndicator={false}
+        >
       {entryPresentation ? (
-        <PillowCard style={styles.entryCard} variant="elevated">
+        <PillowCard style={styles.entryCard} variant="bubble">
           <View style={styles.entryHeader}>
             <Text style={styles.entryChip}>{entryPresentation.chip}</Text>
             {onDismissEntry ? (
@@ -321,38 +315,6 @@ export function HomeScreen({
         </PillowCard>
       ) : null}
 
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.dayLabel}>{header.dayLabel}</Text>
-          <Text style={styles.earned}>{header.earnedLabel}</Text>
-        </View>
-        <PressableScale accessibilityLabel={header.streakAccessibilityLabel} accessibilityRole="button" onPress={onAnalysis}>
-          <View style={styles.streakChip}>
-            <Image
-              accessibilityIgnoresInvertColors
-              source={assetRegistry.glyphs['icon-sparkle']}
-              style={styles.streakGlyph}
-              tintColor={colors.icon.primary}
-            />
-            <Text style={styles.streakText}>{header.streak}</Text>
-          </View>
-        </PressableScale>
-      </View>
-
-      <PressableScale
-        accessibilityHint="Opens streak progress in Analysis"
-        accessibilityLabel={header.goalAccessibilityLabel}
-        accessibilityRole="button"
-        onPress={onAnalysis}
-        style={[styles.goalBlock, entry === 'lastCall' && styles.entryFocus]}
-      >
-        <View style={styles.goalTrack}>
-          <View style={[styles.goalFill, { width: `${header.goalPercent}%` }]} />
-          <IconChip glyphScale={5} size="xs" source={assetRegistry.glyphs['icon-padlock-mini']} style={[styles.goalThumb, { left: `${Math.max(0, header.goalPercent - 4)}%` }]} variant="white" />
-        </View>
-        <Text style={styles.goalCaption}>{header.goalCaption}</Text>
-      </PressableScale>
-
       <PressableScale
         accessibilityLabel={ruleHoliday ? 'Open rules summary' : 'Open balance and access details'}
         accessibilityRole="button"
@@ -361,7 +323,7 @@ export function HomeScreen({
         <View style={styles.heroBlock}>
           <HeroLock
             accessibilityLabel={lockOpen ? 'Sample apps are open' : 'Sample apps are locked'}
-            size={188}
+            size={224}
             state={transitioning ? 'transitioning' : lockOpen ? 'unlocked' : 'locked'}
           />
           {onHoliday ? <Text style={styles.holidayChip}>{holidayFixture?.chip ?? 'BALANCE ON HOLD'}</Text> : null}
@@ -388,7 +350,7 @@ export function HomeScreen({
           style={styles.statPressable}
         >
           <View style={styles.stat}>
-            <IconChip glyphScale={3} size="xs" source={assetRegistry.glyphs['icon-padlock-chip']} variant="white" />
+            <IconChip size="sm" source={assetRegistry.glyphs['icon-padlock-chip']} variant="white" />
             <View>
               <Text style={styles.statLabel}>Time Locked</Text>
               <Text style={styles.statValue}>{timeLockedLabel}</Text>
@@ -430,13 +392,7 @@ export function HomeScreen({
               onLayout={(event) => entryTargetId === 'empty' && setEntryTargetY(event.nativeEvent.layout.y)}
               testID="home-entry-target-empty"
             >
-              <PillowCard style={[styles.emptyCard, entryTargetId === 'empty' && styles.entryCardFocus]} variant="strong">
-                <Image
-                  accessibilityIgnoresInvertColors
-                  resizeMode="contain"
-                  source={assetRegistry.heroes['empty-conditions']}
-                  style={styles.emptyHero}
-                />
+              <PillowCard style={[styles.emptyCard, entryTargetId === 'empty' && styles.entryCardFocus]} variant="subtle">
                 <Text style={styles.emptyTitle}>{homeShellCopy.natural.emptyCard.title}</Text>
                 <Text style={styles.emptyBody}>{homeShellCopy.natural.emptyCard.body}</Text>
                 <PillButton fullWidth label={homeShellCopy.natural.emptyCard.action} onPress={onAddCondition} variant="screen" />
@@ -594,18 +550,41 @@ export function HomeScreen({
       {remainingMinutes > 0 && mode === 'unlocked' ? (
         <Text style={styles.balanceNote}>{remainingMinutes} minutes remain in this sample balance.</Text>
       ) : null}
-      </ScrollView>
+        </ScrollView>
+      </ContentFadeMask>
 
       <AccessibleModal
-        accessibilityTitle={detail?.type === 'condition' ? selectedCondition?.name ?? 'Condition details' : detail?.type === 'rules' ? 'Rules summary' : 'Today’s balance'}
-        animationType="slide"
+        accessibilityTitle={detail?.type === 'condition' ? selectedCondition?.name ?? 'Condition details' : detail?.type === 'rules' ? statusTitle : 'Today’s balance'}
+        contentContainerStyle={styles.modalPage}
         onRequestClose={() => setDetail(null)}
+        scrollEnabled={false}
         style={styles.modalBackdrop}
         visible={detail !== null}
       >
-        <PillowCard style={styles.modalCard} variant="light">
+        <PillowCard style={[styles.modalCard, styles.modalCardFull]} variant="light">
           {detail?.type === 'condition' && selectedCondition ? (
-            <>
+            <FullScreenModalPage
+              footer={(
+                <>
+                  {!conditionsReadOnly && !selectedConditionUnavailable && selectedPrimaryLabel ? (
+                    <PillButton
+                      fullWidth
+                      label={selectedPrimaryLabel}
+                      onPress={() => {
+                        setDetail(null);
+                        if (selectedCondition.kind === 'rate') onOpenEarning(selectedCondition.id);
+                        else if (selectedCondition.kind === 'state') onStartCondition(selectedCondition.id);
+                        else onEventAction(selectedCondition.id);
+                      }}
+                      variant="screen"
+                    />
+                  ) : null}
+                  <PillButton fullWidth label="Edit condition" onPress={() => { setDetail(null); onOpenCondition(selectedCondition.id); }} variant="secondary" />
+                  <PillButton fullWidth label="Done" onPress={() => setDetail(null)} variant="text" />
+                </>
+              )}
+            >
+              <View style={styles.modalContentStack}>
               <ImageBackground
                 accessibilityIgnoresInvertColors
                 imageStyle={styles.detailBannerImage}
@@ -614,10 +593,9 @@ export function HomeScreen({
               >
                 <View pointerEvents="none" style={styles.detailBannerScrim} />
                 <Text style={styles.detailBannerEyebrow}>{selectedCondition.kind.toUpperCase()} CONDITION</Text>
-                <AccessibleModalTitle style={styles.detailBannerTitle}>{selectedCondition.name}</AccessibleModalTitle>
+                <Text style={styles.detailBannerTitle}>{selectedCondition.name}</Text>
                 <Text style={styles.detailBannerStatus}>{selectedDetail?.status.toUpperCase()}</Text>
               </ImageBackground>
-              <Text style={styles.modalEyebrow}>EXACT RULE</Text>
               <Text style={styles.modalBody}>{selectedDetail?.rule}</Text>
               <ModalMetricRow label="Today" value={selectedDetail?.evidence ?? 'No sample evidence today.'} />
               <ModalMetricRow label="Active window" value={selectedDetail?.window ?? 'Anytime'} />
@@ -635,38 +613,19 @@ export function HomeScreen({
                       ? 'This condition is Off for the current Custom weekday.'
                       : 'This condition is not available in its current active window.'}
                 </Text>
-              ) : selectedPrimaryLabel ? (
-                <PillButton
-                  fullWidth
-                  label={selectedPrimaryLabel}
-                  onPress={() => {
-                    setDetail(null);
-                    if (selectedCondition.kind === 'rate') {
-                      onOpenEarning(selectedCondition.id);
-                    } else if (selectedCondition.kind === 'state') {
-                      onStartCondition(selectedCondition.id);
-                    } else {
-                      onEventAction(selectedCondition.id);
-                    }
-                  }}
-                  variant="dark"
-                />
               ) : null}
-              <PillButton
-                fullWidth
-                label="Edit condition"
-                onPress={() => {
-                  setDetail(null);
-                  onOpenCondition(selectedCondition.id);
-                }}
-                variant="dark"
-              />
-              <PillButton fullWidth label="Done" onPress={() => setDetail(null)} variant="text" />
-            </>
+              </View>
+            </FullScreenModalPage>
           ) : detail?.type === 'rules' ? (
-            <>
-              <Text style={styles.modalEyebrow}>WEEKLY RULES</Text>
-              <AccessibleModalTitle style={styles.modalTitle}>{statusTitle}</AccessibleModalTitle>
+            <FullScreenModalPage
+              footer={(
+                <>
+                  <PillButton fullWidth label="Edit rules" onPress={() => { setDetail(null); onOpenRules(); }} variant="screen" />
+                  <PillButton fullWidth label="Done" onPress={() => setDetail(null)} variant="text" />
+                </>
+              )}
+            >
+              <View style={styles.modalCenteredCopy}>
               <Text style={styles.modalHero}>Balance on hold</Text>
               <Text style={styles.modalBody}>{statusBody}</Text>
               <Text style={styles.modalBody}>
@@ -674,21 +633,25 @@ export function HomeScreen({
                   ? 'Today is a planned Rest day. Your streak stays neutral and limits resume tomorrow.'
                   : 'You are outside the configured lock window. Limits start at 7:00 PM.'}
               </Text>
-              <PillButton
-                fullWidth
-                label="Edit rules"
-                onPress={() => {
-                  setDetail(null);
-                  onOpenRules();
-                }}
-                variant="dark"
-              />
-              <PillButton fullWidth label="Done" onPress={() => setDetail(null)} variant="text" />
-            </>
+              </View>
+            </FullScreenModalPage>
           ) : (
-            <>
-              <Text style={styles.modalEyebrow}>{onHoliday ? 'ACCESS WINDOW' : 'SAMPLE BALANCE'}</Text>
-              <AccessibleModalTitle style={styles.modalTitle}>Today’s balance</AccessibleModalTitle>
+            <FullScreenModalPage
+              footer={(
+                <>
+                  {eventHoliday && holidaySourceCondition ? (
+                    <PillButton fullWidth label="View condition" onPress={() => setDetail({ type: 'condition', id: holidaySourceCondition.id })} variant="screen" />
+                  ) : ruleHoliday || restDayAllowanceOnly ? (
+                    <PillButton fullWidth label="View weekly rules" onPress={() => { setDetail(null); onOpenRules(); }} variant="screen" />
+                  ) : (
+                    <PillButton fullWidth label={visibleConditions.length === 0 ? 'Add a way to earn' : balanceFixture.primary} onPress={() => { setDetail(null); earnMore(); }} variant="screen" />
+                  )}
+                  <PillButton fullWidth label="See trend" onPress={() => { setDetail(null); onOpenTrend(); }} variant="text" />
+                  <PillButton fullWidth label="Done" onPress={() => setDetail(null)} variant="text" />
+                </>
+              )}
+            >
+              <View style={styles.modalContentStack}>
               <Text style={styles.modalHero}>{onHoliday
                 ? holidayFixture?.hero ?? statusTitle
                 : dailyAllowanceMinutes === 'unlimited'
@@ -708,45 +671,8 @@ export function HomeScreen({
               ) : balanceRows.map((row) => (
                 <ModalMetricRow key={row.label} label={row.label} value={row.value} />
               ))}
-              {eventHoliday && holidaySourceCondition ? (
-                <PillButton
-                  fullWidth
-                  label="View condition"
-                  onPress={() => setDetail({ type: 'condition', id: holidaySourceCondition.id })}
-                  variant="dark"
-                />
-              ) : ruleHoliday || restDayAllowanceOnly ? (
-                <PillButton
-                  fullWidth
-                  label="View weekly rules"
-                  onPress={() => {
-                    setDetail(null);
-                    onOpenRules();
-                  }}
-                  variant="dark"
-                />
-              ) : (
-                <PillButton
-                  fullWidth
-                  label={visibleConditions.length === 0 ? 'Add a way to earn' : balanceFixture.primary}
-                  onPress={() => {
-                    setDetail(null);
-                    earnMore();
-                  }}
-                  variant="dark"
-                />
-              )}
-              <PillButton
-                fullWidth
-                label="See trend"
-                onPress={() => {
-                  setDetail(null);
-                  onOpenTrend();
-                }}
-                variant="text"
-              />
-              <PillButton fullWidth label="Done" onPress={() => setDetail(null)} variant="text" />
-            </>
+              </View>
+            </FullScreenModalPage>
           )}
         </PillowCard>
       </AccessibleModal>
@@ -799,7 +725,7 @@ function Shortcut({ label, onPress }: { label: string; onPress: () => void }) {
     <PressableScale accessibilityLabel={label} accessibilityRole="button" onPress={onPress}>
       <View style={styles.shortcut}>
         <Text style={styles.shortcutLabel}>{label}</Text>
-        <Text style={styles.shortcutArrow}>›</Text>
+        <ChevronIcon />
       </View>
     </PressableScale>
   );
@@ -810,51 +736,43 @@ const styles = StyleSheet.create({
   balanceNote: { ...type.caption, color: colors.text.secondary, textAlign: 'center' },
   cardList: { gap: space[3] },
   conditionsSection: { gap: space[3], marginTop: space[5] },
-  dayLabel: { ...type.bodyEmphasis, color: colors.text.primary },
-  earned: { ...type.caption, color: colors.text.secondary, marginTop: space[1] },
-  emptyBody: { ...type.body, color: colors.text.secondary, textAlign: 'center' },
-  emptyCard: { alignItems: 'center', gap: space[3], padding: space[5] },
-  emptyHero: { height: 126, width: 144 },
-  emptyTitle: { ...type.cardHeroTitle, color: colors.text.primary, textAlign: 'center' },
+  emptyBody: { ...type.body, color: colors.text.secondary },
+  emptyCard: { alignItems: 'flex-start', gap: space[3], paddingHorizontal: 0, paddingVertical: space[3] },
+  emptyTitle: { ...type.cardHeroTitle, color: colors.text.primary },
   entryBody: { ...type.body, color: colors.text.secondary },
   entryCard: { borderColor: colors.brand.signatureAmber, borderWidth: 2, gap: space[2], marginBottom: space[4] },
   entryCardFocus: { borderColor: colors.brand.signatureAmber, borderWidth: 3 },
-  entryChip: { ...type.micro, color: colors.brand.signatureAmber },
+  entryChip: { ...type.label, color: colors.text.primary },
   entryConclusion: { ...type.cardHeroTitle, color: colors.text.primary },
   entryDisclosure: { ...type.caption, color: colors.text.tertiary },
   entryDismiss: { ...type.label, color: colors.text.primary, paddingHorizontal: space[2], paddingVertical: space[2] },
-  entryFocus: { borderColor: colors.brand.signatureAmber, borderRadius: radius.card, borderWidth: 2, padding: space[2] },
   entryHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
-  goalBlock: { marginTop: space[4] },
-  goalCaption: { ...type.body, color: colors.text.primary, marginTop: space[3], textAlign: 'center' },
-  goalFill: { backgroundColor: colors.surface.light, borderRadius: radius.pill, height: '100%' },
-  goalThumb: { marginLeft: -2, marginTop: -9, position: 'absolute', top: 0 },
-  goalTrack: { backgroundColor: colors.surface.track, borderRadius: radius.pill, height: 12, marginHorizontal: space[1] },
-  modalBackdrop: { backgroundColor: colors.surface.scrim, flex: 1, justifyContent: 'flex-end', padding: space[3] },
-  modalBody: { ...type.body, color: colors.text.ink, opacity: 0.72 },
+  modalBackdrop: { flex: 1 },
+  modalBody: { ...type.body, color: colors.text.ink },
   modalCard: { gap: space[3], padding: space[5] },
-  modalDisclosure: { ...type.caption, color: colors.text.ink, opacity: 0.58 },
-  modalEyebrow: { ...type.micro, color: colors.brand.burnt },
+  modalCardFull: { flex: 1, paddingBottom: 0, paddingTop: 0 },
+  modalCenteredCopy: { alignItems: 'center', gap: space[3] },
+  modalContentStack: { gap: space[3] },
+  modalDisclosure: { ...type.caption, color: colors.text.ink },
+  modalEyebrow: { ...type.micro, color: colors.text.primary },
   modalHero: { ...type.heroLg, color: colors.text.ink },
-  modalMetricLabel: { ...type.micro, color: colors.brand.burnt, width: 92 },
-  modalMetricRow: { borderTopColor: colors.surface.divider, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: space[3], paddingTop: space[3] },
+  modalMetricLabel: { ...type.label, color: colors.text.primary, width: 92 },
+  modalMetricRow: { borderTopColor: colors.surface.divider, borderTopWidth: 1, flexDirection: 'row', gap: space[3], paddingTop: space[3] },
   modalMetricValue: { ...type.bodyEmphasis, color: colors.text.ink, flex: 1 },
-  modalTitle: { ...type.screenTitle, color: colors.text.ink },
+  modalPage: { flex: 1 },
   detailBanner: { borderRadius: radius.card, gap: space[1], justifyContent: 'flex-end', minHeight: 132, overflow: 'hidden', padding: space[4] },
-  detailBannerEyebrow: { ...type.micro, color: colors.brand.signatureAmber },
+  detailBannerEyebrow: { ...type.label, color: colors.text.primary },
   detailBannerImage: { borderRadius: radius.card },
-  detailBannerScrim: { backgroundColor: 'rgba(18,10,30,0.54)', bottom: 0, left: 0, position: 'absolute', right: 0, top: 0 },
-  detailBannerStatus: { ...type.micro, color: colors.text.secondary },
+  detailBannerScrim: { backgroundColor: colors.surface.mediaScrim, bottom: 0, left: 0, position: 'absolute', right: 0, top: 0 },
+  detailBannerStatus: { ...type.label, color: colors.text.primary },
   detailBannerTitle: { ...type.screenTitle, color: colors.text.primary },
-  header: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingTop: space[2] },
-  heroBlock: { alignItems: 'center', gap: space[2], marginTop: space[3] },
+  heroBlock: { alignItems: 'center', gap: space[2] },
   heroBody: { ...type.body, color: colors.text.secondary, maxWidth: 320, textAlign: 'center' },
   heroTitle: { ...type.screenTitle, color: colors.text.primary, textAlign: 'center' },
-  holidayChip: { ...type.micro, backgroundColor: colors.surface.cardStrong, borderRadius: radius.pill, color: colors.brand.signatureAmber, overflow: 'hidden', paddingHorizontal: space[3], paddingVertical: space[2] },
+  holidayChip: { ...type.label, backgroundColor: colors.surface.cardStrong, borderRadius: radius.pill, color: colors.text.primary, overflow: 'hidden', paddingHorizontal: space[3], paddingVertical: space[2] },
   sectionHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   sectionTitle: { ...type.sectionTitle, color: colors.text.primary },
-  shortcut: { alignItems: 'center', backgroundColor: colors.surface.cardStrong, borderRadius: radius.actionRow, flexDirection: 'row', justifyContent: 'space-between', minHeight: 48, paddingHorizontal: space[4] },
-  shortcutArrow: { color: colors.brand.signatureAmber, fontSize: 28 },
+  shortcut: { alignItems: 'center', backgroundColor: colors.surface.bubble, borderColor: colors.surface.bubbleBorder, borderRadius: radius.card, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', minHeight: layout.controlHeight, paddingHorizontal: space[4] },
   shortcutLabel: { ...type.cardTitle, color: colors.text.primary },
   shortcuts: { gap: space[2], marginBottom: space[6], marginTop: space[3] },
   stat: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: space[2] },
@@ -863,10 +781,7 @@ const styles = StyleSheet.create({
   statRight: { justifyContent: 'flex-end' },
   statValue: { ...type.statValue, color: colors.text.primary },
   statsRow: { alignItems: 'center', flexDirection: 'row', gap: space[4], marginTop: space[3], paddingVertical: space[2] },
-  ruleNotice: { ...type.micro, color: colors.brand.signatureAmber, textAlign: 'center' },
+  ruleNotice: { ...type.label, color: colors.text.primary, textAlign: 'center' },
   ruleCard: { opacity: 0.72 },
-  scrollContent: { paddingBottom: space[6] },
-  streakChip: { alignItems: 'center', backgroundColor: colors.surface.cardStrong, borderRadius: radius.pill, flexDirection: 'row', gap: space[1], minHeight: 44, paddingHorizontal: space[3] },
-  streakGlyph: { height: 22, width: 22 },
-  streakText: { ...type.label, color: colors.text.primary },
+  scrollContent: { paddingBottom: layout.tabBarContentInset },
 });

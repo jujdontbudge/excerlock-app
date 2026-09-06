@@ -29,6 +29,7 @@ export default function ConditionBuilderRoute() {
   const hasDraftChanges = useMemo(
     () => Boolean(
       state.builder.editingConditionId ||
+      state.builder.catalogGroup ||
       state.builder.catalogId ||
       state.builder.gymId ||
       state.builder.eventThreshold !== null ||
@@ -112,6 +113,7 @@ export default function ConditionBuilderRoute() {
         edge,
         minutes,
       })}
+      onSelectCategory={(category) => dispatch({ type: 'builder/select-category', category })}
       onSelectBanner={(bannerId) => dispatch({ type: 'builder/set-banner', bannerId })}
       onSelectCatalog={(catalogId) => dispatch({ type: 'builder/select-catalog', catalogId })}
       onSelectCooldown={(minutes) => dispatch({ type: 'builder/set-cooldown', minutes })}

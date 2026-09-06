@@ -1,5 +1,15 @@
 # ExcerLock Visual Foundry — the universal style constitution
 
+## AppBlock-style mockup revision — 2026-09-06
+
+**Later correction, September 6:** Johan rejects detailed emoji rendering. For these Family D concepts, replace it with simple smooth rounded graphic symbols, minimal two-tone or softly graded fills, varied coral/mint/blue/lilac/yellow colors. No realistic people, faces, shoe stitching, metal, shiny 3D objects, or decorative icon backplates. The user-provided goal/dashboard crops are the current style anchors. Preserve white/orange UI and functional layout. This supersedes the emoji-like instruction in the historical paragraph below.
+
+For the current Family D onboarding and four main-tab concept mockups, Johan explicitly requests white surfaces with a subtle orange tint at the top, orange controls, and freestanding multicolored emoji-like illustrations. Remove decorative peach pill/square/circle backplates behind illustrations. Keep functional selection outlines, input fields, and grouped utility cards. Illustration objects may use natural colors, blue, purple, green, gold, and orange; do not tint every object orange. Main tabs are labeled Home, Conditions, Analytics, Settings in these concepts. This supersedes the old Pillow treatment and monochrome illustration directions for these mockups only; it does not change shipped app assets or implementation. GPT Image generation and manifest/validation requirements still apply.
+
+## Onboarding redesign override — 2026-09-05
+
+For the new onboarding mockups, the user's AppBlock-inspired direction supersedes the former Family D full-screen orange/Pillow treatment: white canvas, subtle pale orange gradient at the top only, orange primary buttons with white text, compact native sans-serif typography, and softly rounded components. See `design/research/appblock-orange/DESIGN-SYSTEM.md` for evidence, proposed tokens, components, and the 24-layout mockup inventory. This override applies to the onboarding redesign; existing source research images and other product surfaces are not retroactively recolored. GPT Image remains the generator for requested raster UI mockups, and the manifest law still applies.
+
 **This file is law.** Any agent (Codex, Claude, Higgsfield workflow, human) about to create ANY visual asset for ExcerLock — icon, glyph, hero illustration, banner, mockup, splash, empty-state art, share card, app icon — MUST read this file first and produce the asset through one of the five families below. If an asset idea doesn't fit a family, stop and ask Johan; never invent a sixth style ad hoc.
 
 Why it exists: the first Codex UI build proved the method (see the shipped record `prototype/assets/icons/FOUNDRY.md` — 13/13 assets passed validation on the proven templates). This doc promotes that method plus `design/pillow-style-guide.md` into the single source of truth.

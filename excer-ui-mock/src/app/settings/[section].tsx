@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 
 import {
@@ -24,12 +23,14 @@ import {
 } from '@/content';
 import {
   AccessibleModal,
-  AccessibleModalTitle,
+  FullScreenModalPage,
   PillowCard,
   PillButton,
   PressableScale,
+  SelectableBubble,
   SettingsRow,
   colors,
+  layout,
   motion,
   radius,
   space,
@@ -135,6 +136,7 @@ export default function SettingsDetailRoute() {
   const [exportKind, setExportKind] = useState<'activity' | 'conditions'>('activity');
   const [aboutShareVisible, setAboutShareVisible] = useState(false);
   const [aboutShareDestination, setAboutShareDestination] = useState<string | null>(null);
+  const [languageDraft, setLanguageDraft] = useState<'system' | 'english' | 'spanish'>('system');
   const aboutFooterTaps = useRef(0);
   const [boundaryDraft, setBoundaryDraft] = useState<Exclude<DemoState['settings']['dayBoundary'], 'midnight'>>(
     state.settings.dayBoundary === 'midnight' ? '4:00 AM' : state.settings.dayBoundary,
@@ -262,7 +264,7 @@ export default function SettingsDetailRoute() {
 
     if (section === 'appearance' && appearanceValues[rowId]) {
       dispatch({ type: 'settings/set-appearance', value: appearanceValues[rowId] });
-      setNotice(`Appearance preview crossfaded to ${rowId}. Orange remains the brand color.`);
+      setNotice(`Appearance preview crossfaded to ${rowId}. Blue remains the brand color.`);
       return;
     }
     if (section === 'units' && unitValues[rowId]) {
@@ -338,112 +340,138 @@ export default function SettingsDetailRoute() {
   };
 
   const closeOverlay = () => setOverlay(null);
+  const handleOverlayBack = () => {
+    if (overlay === 'subscription-winback') {
+      setOverlay('subscription-cancel-reason');
+      return;
+    }
+    if (overlay === 'subscription-confirm') {
+      setOverlay('subscription-winback');
+      return;
+    }
+    closeOverlay();
+  };
   const shortcut = shortcutFixtures.find((item) => item.id === pendingShortcutId) ?? shortcutFixtures[0];
 
   const modalContent = (): ReactNode => {
     switch (overlay) {
       case 'subscription-cancel-reason':
         return (
-          <>
-            <ModalHeader body={cancellationFlow.body} eyebrow="LOCAL CANCELLATION PREVIEW" title={cancellationFlow.title} />
-            <View style={styles.optionList}>
+          <FullScreenModalPage
+            contentAlignment="top"
+            footer={<PillButton disabled={!selectedCancelReason} fullWidth label="Continue" onPress={() => setOverlay('subscription-winback')} variant="screen" />}
+          >
+            <View accessibilityLabel="Cancellation reasons" accessibilityRole="radiogroup" style={styles.optionList}>
               {cancellationFlow.reasons.map((reason) => (
-                <PillButton key={reason} fullWidth label={reason} onPress={() => setSelectedCancelReason(reason)} variant={selectedCancelReason === reason ? 'dark' : 'secondary'} />
+                <SelectableBubble
+                  compact
+                  fullWidth
+                  key={reason}
+                  label={reason}
+                  onPress={() => setSelectedCancelReason(reason)}
+                  selected={selectedCancelReason === reason}
+                />
               ))}
             </View>
-            <PillButton disabled={!selectedCancelReason} fullWidth label="Continue" onPress={() => setOverlay('subscription-winback')} variant="dark" />
-            <PillButton fullWidth label="Back" onPress={closeOverlay} variant="text" />
-          </>
+          </FullScreenModalPage>
         );
       case 'subscription-winback':
         return (
-          <>
-            <ModalHeader body={cancellationFlow.winBack.body} eyebrow={cancellationFlow.winBack.eyebrow} title={cancellationFlow.winBack.title} />
-            <Text style={styles.modalNote}>{cancellationFlow.winBack.renewal}</Text>
-            <PillButton
-              fullWidth
-              label={cancellationFlow.winBack.primary}
-              onPress={() => {
-                dispatch({ type: 'paywall/select-plan', plan: 'annual' });
-                dispatch({ type: 'settings/set-subscription-offer', offer: 'annual-winback' });
-                dispatch({ type: 'settings/set-subscription', status: 'active' });
-                setOverlay('subscription-kept');
-              }}
-              variant="dark"
-            />
-            <PillButton fullWidth label={cancellationFlow.winBack.secondary} onPress={() => setOverlay('subscription-confirm')} variant="text" />
-          </>
+          <FullScreenModalPage
+            footer={(
+              <>
+                <PillButton
+                  fullWidth
+                  label={cancellationFlow.winBack.primary}
+                  onPress={() => {
+                    dispatch({ type: 'paywall/select-plan', plan: 'annual' });
+                    dispatch({ type: 'settings/set-subscription-offer', offer: 'annual-winback' });
+                    dispatch({ type: 'settings/set-subscription', status: 'active' });
+                    setOverlay('subscription-kept');
+                  }}
+                  variant="screen"
+                />
+                <PillButton fullWidth label={cancellationFlow.winBack.secondary} onPress={() => setOverlay('subscription-confirm')} variant="text" />
+              </>
+            )}
+          >
+            <View style={styles.offerCenter}>
+              <Text style={styles.offerPrice}>$29.99</Text>
+              <Text style={styles.offerPeriod}>per year</Text>
+            </View>
+          </FullScreenModalPage>
         );
       case 'subscription-confirm':
         return (
-          <>
-            <ModalHeader
-              body={state.settings.subscriptionStatus === 'trial'
+          <FullScreenModalPage
+            body={state.settings.subscriptionStatus === 'trial'
                 ? cancellationFlow.confirmation.trialBody
                 : state.selectedPlan === 'monthly'
                   ? cancellationFlow.confirmation.monthlyBody
                   : cancellationFlow.confirmation.activeBody}
-              eyebrow="LOCAL CONFIRMATION"
-              title={cancellationFlow.confirmation.title}
-            />
-            <PillButton fullWidth label={cancellationFlow.confirmation.actions[0]} onPress={closeOverlay} variant="dark" />
-            <PillButton
-              fullWidth
-              label={cancellationFlow.confirmation.actions[1]}
-              onPress={() => {
-                dispatch({ type: 'settings/set-subscription', status: 'cancelled' });
-                setOverlay('subscription-cancelled');
-              }}
-              variant="destructive"
-            />
-          </>
+            footer={(
+              <>
+              <PillButton fullWidth label={cancellationFlow.confirmation.actions[0]} onPress={closeOverlay} variant="screen" />
+              <PillButton
+                fullWidth
+                label={cancellationFlow.confirmation.actions[1]}
+                onPress={() => {
+                  dispatch({ type: 'settings/set-subscription', status: 'cancelled' });
+                  setOverlay('subscription-cancelled');
+                }}
+                variant="destructive"
+              />
+              </>
+            )}
+          />
         );
       case 'subscription-cancelled':
-        return <ResultContent body={cancellationFlow.result.body} onDone={closeOverlay} title={cancellationFlow.result.title} />;
+        return <ResultContent body={cancellationFlow.result.body} onDone={closeOverlay} />;
       case 'subscription-kept':
-        return <ResultContent body="The lower-price sample was selected. No App Store subscription changed." onDone={closeOverlay} title="Premium kept in this demo" />;
+        return <ResultContent body="The lower-price sample was selected. No App Store subscription changed." onDone={closeOverlay} />;
       case 'subscription-subscribe':
         return (
-          <>
-            <ModalHeader body="Choose a local plan to restart the cancelled sample. Nothing is charged." eyebrow="SIMULATED APP STORE SHEET" title="Subscribe again" />
-            {paywallPlans.map((plan) => (
-              <PillButton
-                key={plan.id}
-                fullWidth
-                label={`${plan.label} · ${plan.price}`}
-                onPress={() => {
-                  dispatch({ type: 'paywall/select-plan', plan: plan.id });
-                  dispatch({ type: 'settings/set-subscription', status: 'active' });
-                  setOverlay('subscription-subscribed');
-                }}
-                variant="dark"
-              />
-            ))}
-            <PillButton fullWidth label="Cancel" onPress={closeOverlay} variant="text" />
-          </>
+          <FullScreenModalPage contentAlignment="top" footer={<PillButton fullWidth label="Cancel" onPress={closeOverlay} variant="text" />}>
+            <View style={styles.optionList}>
+              {paywallPlans.map((plan) => (
+                <PillButton
+                  key={plan.id}
+                  fullWidth
+                  label={`${plan.label} · ${plan.price}`}
+                  onPress={() => {
+                    dispatch({ type: 'paywall/select-plan', plan: plan.id });
+                    dispatch({ type: 'settings/set-subscription', status: 'active' });
+                    setOverlay('subscription-subscribed');
+                  }}
+                  variant="dark"
+                />
+              ))}
+            </View>
+          </FullScreenModalPage>
         );
       case 'subscription-subscribed':
-        return <ResultContent body="The active subscription fixture is restored locally. No charge was made." onDone={closeOverlay} title="Subscribed in demo" />;
+        return <ResultContent body="The active subscription fixture is restored locally. No charge was made." onDone={closeOverlay} />;
       case 'subscription-learn':
-        return <ResultContent body="One shared balance, movement-based conditions, Analysis, schedules, and clear recovery previews are included." onDone={closeOverlay} title="ExcerLock Premium" />;
+        return <ResultContent body="One shared balance, movement-based conditions, Analysis, schedules, and clear recovery previews are included." onDone={closeOverlay} />;
       case 'subscription-redeem':
-        return <ResultContent body="This is the simulated App Store redeem-code handoff. No system sheet or code service opened." onDone={closeOverlay} title="Redeem code preview" />;
+        return <ResultContent body="This is the simulated App Store redeem-code handoff. No system sheet or code service opened." onDone={closeOverlay} />;
       case 'restore-choice':
         return (
-          <>
-            <ModalHeader body="Choose the deterministic local result. No receipt or App Store account is checked." eyebrow="RESTORE PREVIEW" title="Restore purchases" />
-            <PillButton fullWidth label="Preview restored purchase" onPress={() => { setRestoreOutcome('restored'); setOverlay('restore-loading'); }} variant="dark" />
-            <PillButton fullWidth label="Preview nothing to restore" onPress={() => { setRestoreOutcome('none'); setOverlay('restore-loading'); }} variant="secondary" />
-            <PillButton fullWidth label="Cancel" onPress={closeOverlay} variant="text" />
-          </>
+          <FullScreenModalPage contentAlignment="top" footer={<PillButton fullWidth label="Cancel" onPress={closeOverlay} variant="text" />}>
+            <View style={styles.optionList}>
+              <PillButton fullWidth label="Preview restored purchase" onPress={() => { setRestoreOutcome('restored'); setOverlay('restore-loading'); }} variant="dark" />
+              <PillButton fullWidth label="Preview nothing to restore" onPress={() => { setRestoreOutcome('none'); setOverlay('restore-loading'); }} variant="secondary" />
+            </View>
+          </FullScreenModalPage>
         );
       case 'restore-loading':
         return (
-          <>
-            <ModalHeader body={restoreFixtures.loading.body} eyebrow="LOCAL RESTORE PREVIEW" title={restoreFixtures.loading.title} />
+          <FullScreenModalPage
+            body={restoreFixtures.loading.body}
+            footer={<PillButton fullWidth label={restoreFixtures.loading.action} onPress={closeOverlay} variant="text" />}
+          >
             <PillButton fullWidth label="Checking sample purchases" loading onPress={() => undefined} variant="dark" />
-            <PillButton fullWidth label={restoreFixtures.loading.action} onPress={closeOverlay} variant="text" />
-          </>
+          </FullScreenModalPage>
         );
       case 'restore-restored':
         return (
@@ -453,180 +481,216 @@ export default function SettingsDetailRoute() {
               dispatch({ type: 'settings/set-subscription', status: 'active' });
               closeOverlay();
             }}
-            title={restoreFixtures.restored.title}
           />
         );
       case 'restore-none':
-        return <ResultContent body={restoreFixtures.none.body} onDone={closeOverlay} title={restoreFixtures.none.title} />;
+        return <ResultContent body={restoreFixtures.none.body} onDone={closeOverlay} />;
       case 'shortcut-add':
         return (
-          <>
-            <ModalHeader body={shortcutsDisclosure} eyebrow="SIMULATED ADD TO SIRI SHEET" title={shortcut.title} />
-            <PillowCard variant="strong"><Text style={styles.darkTitle}>“{shortcut.phrase}”</Text></PillowCard>
-            <PillButton
-              fullWidth
-              label="Add shortcut in demo"
-              onPress={() => {
-                dispatch({ type: 'settings/set-shortcut', shortcutId: pendingShortcutId, value: true });
-                setOverlay('shortcut-added');
-              }}
-              variant="dark"
-            />
-            <PillButton fullWidth label="Cancel" onPress={closeOverlay} variant="text" />
-          </>
+          <FullScreenModalPage
+            footer={(
+              <>
+                <PillButton
+                  fullWidth
+                  label="Add shortcut in demo"
+                  onPress={() => {
+                    dispatch({ type: 'settings/set-shortcut', shortcutId: pendingShortcutId, value: true });
+                    setOverlay('shortcut-added');
+                  }}
+                  variant="screen"
+                />
+                <PillButton fullWidth label="Cancel" onPress={closeOverlay} variant="text" />
+              </>
+            )}
+          >
+            <Text style={styles.shortcutPhrase}>“{shortcut.phrase}”</Text>
+          </FullScreenModalPage>
         );
       case 'shortcut-remove':
         return (
-          <>
-            <ModalHeader body="The local Added label will return to Add. No Siri shortcut is removed." eyebrow="LOCAL CONFIRMATION" title={`Remove ${shortcut.title}?`} />
-            <PillButton
-              fullWidth
-              label="Remove in demo"
-              onPress={() => {
-                dispatch({ type: 'settings/set-shortcut', shortcutId: pendingShortcutId, value: false });
-                setOverlay('shortcut-removed');
-              }}
-              variant="destructive"
-            />
-            <PillButton fullWidth label="Keep shortcut" onPress={closeOverlay} variant="text" />
-          </>
+          <FullScreenModalPage
+            body="The local Added label will return to Add. No Siri shortcut is removed."
+            footer={(
+              <>
+                <PillButton
+                  fullWidth
+                  label="Remove in demo"
+                  onPress={() => {
+                    dispatch({ type: 'settings/set-shortcut', shortcutId: pendingShortcutId, value: false });
+                    setOverlay('shortcut-removed');
+                  }}
+                  variant="destructive"
+                />
+                <PillButton fullWidth label="Keep shortcut" onPress={closeOverlay} variant="text" />
+              </>
+            )}
+          />
         );
       case 'shortcut-added':
-        return <ResultContent body="The shortcut is marked Added only in this demo." onDone={closeOverlay} title="Shortcut added" />;
+        return <ResultContent body="The shortcut is marked Added only in this demo." onDone={closeOverlay} />;
       case 'shortcut-removed':
-        return <ResultContent body="The shortcut is marked Add again. No Siri data changed." onDone={closeOverlay} title="Shortcut removed" />;
+        return <ResultContent body="The shortcut is marked Add again. No Siri data changed." onDone={closeOverlay} />;
       case 'data-export-ready':
         return (
-          <>
-            <ModalHeader body={manageDataCopy.exportResult.body} eyebrow="LOCAL JSON EXPORT" title={manageDataCopy.exportResult.title} />
-            <Text style={styles.modalNote}>{exportKind === 'activity' ? 'Activity ledger sample' : `${state.conditions.length} local conditions`}</Text>
-            <PillButton fullWidth label={manageDataCopy.exportResult.primary} onPress={() => setOverlay('data-share')} variant="dark" />
-            <PillButton fullWidth label={manageDataCopy.exportResult.secondary} onPress={closeOverlay} variant="text" />
-          </>
+          <FullScreenModalPage
+            footer={(
+              <>
+                <PillButton fullWidth label={manageDataCopy.exportResult.primary} onPress={() => setOverlay('data-share')} variant="screen" />
+                <PillButton fullWidth label={manageDataCopy.exportResult.secondary} onPress={closeOverlay} variant="text" />
+              </>
+            )}
+          >
+            <Text style={styles.centerValue}>{exportKind === 'activity' ? 'Activity ledger' : `${state.conditions.length} local conditions`}</Text>
+          </FullScreenModalPage>
         );
       case 'data-share':
         return (
-          <>
-            <ModalHeader body="No share extension opened and no file was created." eyebrow="SIMULATED SHARE SHEET" title="Share export preview" />
+          <FullScreenModalPage footer={<PillButton fullWidth label="Done" onPress={closeOverlay} variant="screen" />}>
             <View style={styles.jsonPreview}><Text style={styles.jsonText}>{exportKind === 'activity' ? '{ "activeDays": 5, "earns": 7 }' : `{ "conditions": ${state.conditions.length} }`}</Text></View>
-            <PillButton fullWidth label="Done" onPress={closeOverlay} variant="dark" />
-          </>
+          </FullScreenModalPage>
         );
       case 'data-reset':
         return (
-          <>
-            <ModalHeader body={manageDataCopy.resetAlert.body} eyebrow="LOCAL CONFIRMATION" title={manageDataCopy.resetAlert.title} />
-            <PillButton
-              fullWidth
-              label={manageDataCopy.resetAlert.actions[1]}
-              onPress={() => {
-                dispatch({ type: 'debug/seed-showcase' });
-                setOverlay('data-reset-done');
-              }}
-              variant="destructive"
-            />
-            <PillButton fullWidth label={manageDataCopy.resetAlert.actions[0]} onPress={closeOverlay} variant="text" />
-          </>
+          <FullScreenModalPage
+            body={manageDataCopy.resetAlert.body}
+            footer={(
+              <>
+                <PillButton
+                  fullWidth
+                  label={manageDataCopy.resetAlert.actions[1]}
+                  onPress={() => {
+                    dispatch({ type: 'debug/seed-showcase' });
+                    setOverlay('data-reset-done');
+                  }}
+                  variant="destructive"
+                />
+                <PillButton fullWidth label={manageDataCopy.resetAlert.actions[0]} onPress={closeOverlay} variant="text" />
+              </>
+            )}
+          />
         );
       case 'data-reset-done':
-        return <ResultContent body="Guided showcase history, conditions, and settings are restored locally." onDone={closeOverlay} title="Demo data reset" />;
+        return <ResultContent body="Guided showcase history, conditions, and settings are restored locally." onDone={closeOverlay} />;
       case 'data-delete':
         return (
-          <>
-            <ModalHeader body={manageDataCopy.deleteAlert.body} eyebrow="DESTRUCTIVE LOCAL CONFIRMATION" title={manageDataCopy.deleteAlert.title} />
-            <PillButton
-              fullWidth
-              label={manageDataCopy.deleteAlert.actions[1]}
-              onPress={() => {
-                dispatch({ type: 'debug/reset' });
-                closeOverlay();
-                router.replace('/onboarding/value');
-              }}
-              variant="destructive"
-            />
-            <PillButton fullWidth label={manageDataCopy.deleteAlert.actions[0]} onPress={closeOverlay} variant="text" />
-          </>
+          <FullScreenModalPage
+            body={manageDataCopy.deleteAlert.body}
+            footer={(
+              <>
+                <PillButton
+                  fullWidth
+                  label={manageDataCopy.deleteAlert.actions[1]}
+                  onPress={() => {
+                    dispatch({ type: 'debug/reset' });
+                    closeOverlay();
+                    router.replace('/onboarding/value');
+                  }}
+                  variant="destructive"
+                />
+                <PillButton fullWidth label={manageDataCopy.deleteAlert.actions[0]} onPress={closeOverlay} variant="text" />
+              </>
+            )}
+          />
         );
       case 'day-boundary':
         return (
-          <>
-            <ModalHeader body={generalSettingsOptions.dayBoundary.consequence.replace('4:00 AM', boundaryDraft)} eyebrow="TRANSACTIONAL LOCAL EDIT" title="Choose a custom day boundary" />
+          <FullScreenModalPage
+            contentAlignment="top"
+            footer={(
+              <>
+                <PillButton
+                  fullWidth
+                  label={generalSettingsOptions.dayBoundary.primary}
+                  onPress={() => {
+                    dispatch({ type: 'settings/set-day-boundary', value: boundaryDraft });
+                    setNotice(`Custom day boundary saved at ${boundaryDraft}.`);
+                    closeOverlay();
+                  }}
+                  variant="screen"
+                />
+                <PillButton fullWidth label="Cancel" onPress={closeOverlay} variant="text" />
+              </>
+            )}
+          >
             <View style={styles.optionGrid}>
               {customBoundaryValues.map((value) => (
-                <PillButton key={value} label={value} onPress={() => setBoundaryDraft(value)} variant={boundaryDraft === value ? 'dark' : 'secondary'} />
+                <SelectableBubble
+                  compact
+                  contentStyle={styles.optionGridSurface}
+                  key={value}
+                  label={value}
+                  onPress={() => setBoundaryDraft(value)}
+                  selected={boundaryDraft === value}
+                  style={styles.optionGridItem}
+                />
               ))}
             </View>
-            <PillButton
-              fullWidth
-              label={generalSettingsOptions.dayBoundary.primary}
-              onPress={() => {
-                dispatch({ type: 'settings/set-day-boundary', value: boundaryDraft });
-                setNotice(`Custom day boundary saved at ${boundaryDraft}.`);
-                closeOverlay();
-              }}
-              variant="dark"
-            />
-            <PillButton fullWidth label="Cancel" onPress={closeOverlay} variant="text" />
-          </>
+          </FullScreenModalPage>
         );
       case 'health-disconnect':
         return (
-          <>
-            <ModalHeader body={appleHealthCopy.disconnectAlert.body} eyebrow="LOCAL CONNECTION CONFIRMATION" title={appleHealthCopy.disconnectAlert.title} />
-            <PillButton
-              fullWidth
-              label={appleHealthCopy.disconnectAlert.actions[1]}
-              onPress={() => {
-                dispatch({ type: 'settings/set-health-connected', value: false });
-                setNotice('Apple Health demo disconnected. Conditions now show Needs attention.');
-                closeOverlay();
-              }}
-              variant="destructive"
-            />
-            <PillButton fullWidth label={appleHealthCopy.disconnectAlert.actions[0]} onPress={closeOverlay} variant="text" />
-          </>
+          <FullScreenModalPage
+            body={appleHealthCopy.disconnectAlert.body}
+            footer={(
+              <>
+                <PillButton
+                  fullWidth
+                  label={appleHealthCopy.disconnectAlert.actions[1]}
+                  onPress={() => {
+                    dispatch({ type: 'settings/set-health-connected', value: false });
+                    setNotice('Apple Health demo disconnected. Conditions now show Needs attention.');
+                    closeOverlay();
+                  }}
+                  variant="destructive"
+                />
+                <PillButton fullWidth label={appleHealthCopy.disconnectAlert.actions[0]} onPress={closeOverlay} variant="text" />
+              </>
+            )}
+          />
         );
       case 'health-reconnect':
         return (
-          <>
-            <ModalHeader body="Reconnect changes only the local connection status. No Health authorization is requested." eyebrow="SIMULATED HEALTH PERMISSION SHEET" title="Reconnect Apple Health?" />
-            <PillButton
-              fullWidth
-              label="Reconnect in demo"
-              onPress={() => {
-                dispatch({ type: 'settings/set-health-connected', value: true });
-                setNotice('Apple Health demo reconnected. Sample signals are available again.');
-                closeOverlay();
-              }}
-              variant="dark"
-            />
-            <PillButton fullWidth label="Not now" onPress={closeOverlay} variant="text" />
-          </>
+          <FullScreenModalPage
+            body="Reconnect changes only the local connection status. No Health authorization is requested."
+            footer={(
+              <>
+                <PillButton
+                  fullWidth
+                  label="Reconnect in demo"
+                  onPress={() => {
+                    dispatch({ type: 'settings/set-health-connected', value: true });
+                    setNotice('Apple Health demo reconnected. Sample signals are available again.');
+                    closeOverlay();
+                  }}
+                  variant="screen"
+                />
+                <PillButton fullWidth label="Not now" onPress={closeOverlay} variant="text" />
+              </>
+            )}
+          />
         );
       case 'language-settings':
         return (
-          <>
-            <ModalHeader
-              body="This simulates the iOS per-app language handoff. No Settings page opens and the device language is unchanged."
-              eyebrow="SIMULATED IOS SETTINGS"
-              title="Preferred Language"
-            />
-            <PillowCard padding="none" variant="strong">
-              <SettingsRow showChevron={false} title="System Default" value="English (US) · ✓" />
-              <View style={styles.modalDivider} />
-              <SettingsRow showChevron={false} title="English (US)" />
-              <View style={styles.modalDivider} />
-              <SettingsRow showChevron={false} title="Spanish" value="Preview only" />
-            </PillowCard>
-            <PillButton fullWidth label="Done" onPress={closeOverlay} variant="dark" />
-          </>
+          <FullScreenModalPage contentAlignment="top" footer={<PillButton fullWidth label="Done" onPress={closeOverlay} variant="screen" />}>
+            <View style={styles.optionList}>
+              <SettingsRow onPress={() => setLanguageDraft('system')} selected={languageDraft === 'system'} showChevron={false} subtitle="English (US)" title="System Default" />
+              <SettingsRow onPress={() => setLanguageDraft('english')} selected={languageDraft === 'english'} showChevron={false} title="English (US)" />
+              <SettingsRow onPress={() => setLanguageDraft('spanish')} selected={languageDraft === 'spanish'} showChevron={false} subtitle="Preview only" title="Spanish" />
+            </View>
+          </FullScreenModalPage>
         );
       case 'health-diagnostics':
-        return <ResultContent body={state.settings.healthConnected ? 'Seven sample signal checks passed. No Health data was read.' : 'Connection needs attention. Reconnect the local fixture to restore sample signals.'} onDone={closeOverlay} title={state.settings.healthConnected ? 'Diagnostics complete' : 'Diagnostics found one issue'} />;
+        return <ResultContent body={state.settings.healthConnected ? 'Seven sample signal checks passed. No Health data was read.' : 'Connection needs attention. Reconnect the local fixture to restore sample signals.'} onDone={closeOverlay} />;
       default:
         return null;
     }
   };
+
+  const decisionTitle = settingsOverlayTitle(overlay, {
+    diagnosticTitle: state.settings.healthConnected ? 'Diagnostics complete' : 'Diagnostics found one issue',
+    shortcutTitle: shortcut.title,
+  });
+  const isDecisionOverlay = overlay !== null;
 
   return (
     <>
@@ -662,15 +726,17 @@ export default function SettingsDetailRoute() {
       />
       <AccessibleModal
         accessibilityTitle={overlayTitle(overlay)}
-        animationType="slide"
-        onRequestClose={closeOverlay}
+        contentContainerStyle={isDecisionOverlay ? styles.decisionPage : undefined}
+        headerTitle={decisionTitle}
+        onRequestClose={handleOverlayBack}
+        scrollEnabled={!isDecisionOverlay}
         style={styles.backdrop}
         visible={overlay !== null}
       >
-        <PillowCard style={styles.modalCard} variant="light">
-          <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
+        <PillowCard style={[styles.modalCard, isDecisionOverlay && styles.decisionCard]} variant="light">
+          <View style={[styles.modalScroll, isDecisionOverlay && styles.decisionScroll]}>
             {modalContent()}
-          </ScrollView>
+          </View>
         </PillowCard>
       </AccessibleModal>
       <SimulatedShareSheet
@@ -817,22 +883,12 @@ function routeForRow(section: string, rowId: string): string | null {
   return null;
 }
 
-function ModalHeader({ body, eyebrow, title }: { body: string; eyebrow: string; title: string }) {
+function ResultContent({ body, onDone }: { body: string; onDone: () => void }) {
   return (
-    <>
-      <Text style={styles.modalEyebrow}>{eyebrow}</Text>
-      <AccessibleModalTitle style={styles.modalTitle}>{title}</AccessibleModalTitle>
-      <Text style={styles.modalBody}>{body}</Text>
-    </>
-  );
-}
-
-function ResultContent({ body, onDone, title }: { body: string; onDone: () => void; title: string }) {
-  return (
-    <>
-      <ModalHeader body={body} eyebrow="LOCAL PREVIEW RESULT" title={title} />
-      <PillButton fullWidth label="Done" onPress={onDone} variant="dark" />
-    </>
+    <FullScreenModalPage
+      body={body}
+      footer={<PillButton fullWidth label="Done" onPress={onDone} variant="screen" />}
+    />
   );
 }
 
@@ -854,12 +910,9 @@ function AppearancePreview({ appearance }: { appearance: DemoState['settings']['
       accessibilityLabel={`${appearanceLabels[appearance]} appearance preview`}
       style={[
         styles.appearancePreview,
-        { backgroundColor: light ? colors.canvas.ivory : colors.canvas.night, opacity },
+        { backgroundColor: colors.surface.bubble, opacity },
       ]}
     >
-      <Text style={[styles.appearancePreviewEyebrow, light && styles.appearancePreviewInk]}>
-        LOCAL TOKEN CROSSFADE
-      </Text>
       <Text style={[styles.appearancePreviewTitle, light && styles.appearancePreviewInk]}>
         {appearanceLabels[appearance]} surface
       </Text>
@@ -873,25 +926,65 @@ function overlayTitle(overlay: SettingsOverlay) {
   return overlay.replaceAll('-', ' ').replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
+function settingsOverlayTitle(
+  overlay: SettingsOverlay,
+  context: { diagnosticTitle: string; shortcutTitle: string },
+): string | undefined {
+  switch (overlay) {
+    case 'subscription-cancel-reason': return cancellationFlow.title;
+    case 'subscription-winback': return cancellationFlow.winBack.title;
+    case 'subscription-confirm': return cancellationFlow.confirmation.title;
+    case 'subscription-cancelled': return cancellationFlow.result.title;
+    case 'subscription-kept': return 'Premium kept in this demo';
+    case 'subscription-subscribe': return 'Subscribe again';
+    case 'subscription-subscribed': return 'Subscribed in demo';
+    case 'subscription-learn': return 'ExcerLock Premium';
+    case 'subscription-redeem': return 'Redeem code preview';
+    case 'restore-choice': return 'Restore purchases';
+    case 'restore-loading': return restoreFixtures.loading.title;
+    case 'restore-restored': return restoreFixtures.restored.title;
+    case 'restore-none': return restoreFixtures.none.title;
+    case 'shortcut-add': return context.shortcutTitle;
+    case 'shortcut-remove': return `Remove ${context.shortcutTitle}?`;
+    case 'shortcut-added': return 'Shortcut added';
+    case 'shortcut-removed': return 'Shortcut removed';
+    case 'data-export-ready': return manageDataCopy.exportResult.title;
+    case 'data-share': return 'Share export preview';
+    case 'data-reset': return manageDataCopy.resetAlert.title;
+    case 'data-reset-done': return 'Demo data reset';
+    case 'data-delete': return manageDataCopy.deleteAlert.title;
+    case 'day-boundary': return 'Choose a custom day boundary';
+    case 'health-disconnect': return appleHealthCopy.disconnectAlert.title;
+    case 'health-reconnect': return 'Reconnect Apple Health?';
+    case 'language-settings': return 'Preferred Language';
+    case 'health-diagnostics': return context.diagnosticTitle;
+    default: return undefined;
+  }
+}
+
 const styles = StyleSheet.create({
-  aboutFooter: { alignItems: 'center', justifyContent: 'center', minHeight: 52 },
+  aboutFooter: { alignItems: 'center', justifyContent: 'center', minHeight: layout.rowHeight },
   aboutFooterText: { ...type.caption, color: colors.text.tertiary },
   appearanceAccent: { backgroundColor: colors.brand.signatureOrange, borderRadius: radius.pill, height: 8, width: 80 },
   appearancePreview: { borderRadius: radius.cardLarge, gap: space[2], minHeight: 132, padding: space[5] },
   appearancePreviewEyebrow: { ...type.micro, color: colors.text.secondary },
-  appearancePreviewInk: { color: colors.text.ink },
+  appearancePreviewInk: { color: colors.text.primary },
   appearancePreviewTitle: { ...type.sectionTitle, color: colors.text.primary },
-  backdrop: { backgroundColor: colors.surface.scrim, flex: 1, justifyContent: 'flex-end', padding: space[3] },
-  darkTitle: { ...type.cardTitle, color: colors.text.primary },
+  backdrop: { flex: 1 },
+  centerValue: { ...type.screenTitle, color: colors.text.primary, textAlign: 'center' },
+  decisionCard: { flex: 1, paddingBottom: 0, paddingHorizontal: space[2], paddingTop: 0 },
+  decisionPage: { flex: 1 },
+  decisionScroll: { flex: 1 },
   jsonPreview: { backgroundColor: colors.surface.cardStrong, borderRadius: radius.actionRow, padding: space[4] },
   jsonText: { ...type.caption, color: colors.text.primary },
-  modalBody: { ...type.body, color: colors.text.ink, opacity: 0.72 },
-  modalCard: { gap: space[3], maxHeight: '92%', padding: space[5] },
-  modalDivider: { backgroundColor: colors.surface.divider, height: StyleSheet.hairlineWidth },
-  modalEyebrow: { ...type.micro, color: colors.brand.burnt },
-  modalNote: { ...type.caption, color: colors.text.ink, opacity: 0.62 },
+  modalCard: { gap: space[3], padding: space[5] },
   modalScroll: { gap: space[3] },
-  modalTitle: { ...type.screenTitle, color: colors.text.ink },
+  offerCenter: { alignItems: 'center', flex: 1, justifyContent: 'center' },
+  offerPeriod: { ...type.sectionTitle, color: colors.text.primary },
+  offerPrice: { ...type.heroLg, color: colors.text.primary, textAlign: 'center' },
   optionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  optionGridItem: { flexBasis: '48%', flexGrow: 1 },
+  optionGridSurface: { width: '100%' },
   optionList: { gap: space[2] },
+  shortcutPhrase: { ...type.screenTitle, color: colors.text.primary, textAlign: 'center' },
 });

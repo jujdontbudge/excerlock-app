@@ -53,24 +53,28 @@ export function canContinueBuilder(state: DemoState): boolean {
       && builder.activeWindowEndMinutes !== null);
   switch (builder.step) {
     case 'catalog':
+      return builder.catalogGroup !== null;
+    case 'method':
       return builder.catalogId !== null;
     case 'place':
       return builder.gymId !== null && state.savedGyms.some((gym) => gym.id === builder.gymId);
     case 'configure-event':
       return builder.catalogId === 'gym-arrive' || builder.eventThreshold !== null;
     case 'configure-state':
-      return builder.stateGraceSeconds !== null && activeWindowReady;
+      return builder.stateGraceSeconds !== null;
     case 'configure-rate':
-      return builder.rateMinutes !== null && activeWindowReady;
+      return builder.rateMinutes !== null;
     case 'reward':
-      return (
-        builder.reward !== null &&
-        (builder.reward === 'rest-of-day' || builder.rewardMinutes !== null) &&
-        builder.dailyCap !== null &&
-        builder.cooldownMinutes !== null &&
-        builder.repeatable !== null &&
-        activeWindowReady
-      );
+      return builder.reward !== null
+        && (builder.reward === 'rest-of-day' || builder.rewardMinutes !== null);
+    case 'daily-cap':
+      return builder.dailyCap !== null;
+    case 'cooldown':
+      return builder.cooldownMinutes !== null;
+    case 'repeatable':
+      return builder.repeatable !== null;
+    case 'active-window':
+      return activeWindowReady;
     case 'banner':
       return builder.bannerId !== null;
     case 'preview':
@@ -82,11 +86,16 @@ export function canContinueBuilder(state: DemoState): boolean {
 
 const BUILDER_TITLES: Record<BuilderStep, string> = {
   catalog: 'Choose a way to earn',
+  method: 'How should it count?',
   place: 'Choose a gym',
   'configure-event': 'Set the goal',
   'configure-state': 'Set the walking rule',
   'configure-rate': 'Set the exchange',
   reward: 'Choose the reward',
+  'daily-cap': 'Completions per day',
+  cooldown: 'Choose a cooldown',
+  repeatable: 'Can it repeat?',
+  'active-window': 'When is it active?',
   banner: 'Choose card artwork',
   preview: 'Preview your condition',
 };

@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import type { ImageSourcePropType, StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, View } from 'react-native';
-import { Image } from 'expo-image';
 
 import { PressableScale } from './PressableScale';
-import { colors, radius } from './tokens';
+import { VectorIcon } from './VectorIcon';
+import { colors, iconSize, radius } from './tokens';
 
 export type IconChipSize = 'xs' | 'sm' | 'md' | 'lg' | 'hero';
 export type IconChipVariant = 'white' | 'dark' | 'primary' | 'energy' | 'success' | 'ivory';
@@ -18,21 +18,22 @@ export interface IconChipProps {
   source?: ImageSourcePropType;
   style?: StyleProp<ViewStyle>;
   testID?: string;
+  /** Retained for API compatibility; accepted SVG glyphs keep their authored white fill. */
   tintColor?: string;
   variant?: IconChipVariant;
 }
 
 const sizes: Record<IconChipSize, { host: number; glyph: number }> = {
-  xs: { host: 30, glyph: 17 },
-  sm: { host: 34, glyph: 18 },
-  md: { host: 44, glyph: 23 },
-  lg: { host: 64, glyph: 32 },
-  hero: { host: 120, glyph: 70 },
+  xs: { host: 28, glyph: iconSize.inline },
+  sm: { host: 32, glyph: iconSize.compact },
+  md: { host: 44, glyph: iconSize.standard },
+  lg: { host: 56, glyph: 36 },
+  hero: { host: 112, glyph: 72 },
 };
 
 const fills: Record<IconChipVariant, string> = {
-  white: colors.surface.light,
-  dark: colors.surface.cardStrong,
+  white: 'transparent',
+  dark: 'transparent',
   primary: colors.brand.primary,
   energy: colors.brand.energyAction,
   success: colors.semantic.success,
@@ -48,28 +49,22 @@ export function IconChip({
   source,
   style,
   testID,
-  tintColor,
   variant = 'dark',
 }: IconChipProps) {
   const metrics = sizes[size];
-  const resolvedTint = tintColor ?? (variant === 'white' || variant === 'ivory' ? colors.icon.dark : colors.icon.primary);
   const content = (
     <View
       style={[
         styles.host,
         { backgroundColor: fills[variant], height: metrics.host, width: metrics.host },
-        variant === 'white' && styles.float,
         style,
       ]}
       testID={testID}
     >
       {source ? (
-        <Image
-          accessibilityIgnoresInvertColors
-          contentFit="contain"
+        <VectorIcon
           source={source}
           style={{ height: metrics.glyph * glyphScale, width: metrics.glyph * glyphScale }}
-          tintColor={resolvedTint}
         />
       ) : children}
     </View>
@@ -87,11 +82,5 @@ export function IconChip({
 }
 
 const styles = StyleSheet.create({
-  float: {
-    shadowColor: colors.canvas.contentTop,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.24,
-    shadowRadius: 12,
-  },
   host: { alignItems: 'center', borderRadius: radius.pill, justifyContent: 'center' },
 });

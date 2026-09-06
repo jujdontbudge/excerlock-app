@@ -3,7 +3,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, type Href } from 'expo-router';
 
-import { gradients } from '@/design-system';
+import { colors, gradients, radius } from '@/design-system';
 import { useDemo } from '@/presentation';
 
 export default function SplashScreen() {
@@ -43,8 +43,8 @@ export default function SplashScreen() {
 
 const styles = StyleSheet.create({
   glow: {
-    backgroundColor: 'rgba(255,255,255,0.13)',
-    borderRadius: 180,
+    backgroundColor: colors.surface.cardStrong,
+    borderRadius: radius.pill,
     height: 360,
     position: 'absolute',
     width: 360,

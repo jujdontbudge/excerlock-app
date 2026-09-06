@@ -3,14 +3,16 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { PressableScale } from './PressableScale';
-import { colors, space, type } from './tokens';
-
+import { SelectableBubble } from './SelectableBubble';
+import { ChevronIcon } from './ChevronIcon';
+import { colors, iconSize, layout, space, type } from './tokens';
 export interface SettingsRowProps {
   accessibilityLabel?: string;
   destructive?: boolean;
   disabled?: boolean;
   leading?: ReactNode;
   onPress?: () => void;
+  selected?: boolean;
   showChevron?: boolean;
   style?: StyleProp<ViewStyle>;
   subtitle?: string;
@@ -27,25 +29,49 @@ export function SettingsRow({
   disabled = false,
   leading,
   onPress,
+  selected,
   showChevron = Boolean(onPress),
   style,
-  subtitle,
   testID,
   title,
   tone = 'dark',
   trailing,
   value,
 }: SettingsRowProps) {
+  if (typeof selected === 'boolean' && onPress) {
+    const selectionTrailing = trailing ?? (value ? (
+      <Text numberOfLines={1} style={[styles.value, selected && styles.selectedValue]}>{value}</Text>
+    ) : undefined);
+
+    return (
+      <SelectableBubble
+        accessibilityLabel={accessibilityLabel}
+        disabled={disabled}
+        fullWidth
+        label={title}
+        leading={leading}
+        onPress={onPress}
+        selected={selected}
+        style={style}
+        testID={testID}
+        trailing={selectionTrailing}
+      />
+    );
+  }
+
   const row = (
-    <View style={[styles.row, style]}>
+    <View style={[styles.row, tone === 'light' && styles.rowLight, style]}>
       {leading}
       <View style={styles.copy}>
         <Text style={[styles.title, tone === 'light' && styles.titleLight, destructive && styles.danger]}>{title}</Text>
-        {subtitle ? <Text numberOfLines={2} style={[styles.subtitle, tone === 'light' && styles.secondaryLight]}>{subtitle}</Text> : null}
       </View>
       {value ? <Text numberOfLines={1} style={[styles.value, tone === 'light' && styles.secondaryLight]}>{value}</Text> : null}
       {trailing}
-      {showChevron ? <Text accessibilityElementsHidden style={[styles.chevron, tone === 'light' && styles.secondaryLight]}>›</Text> : null}
+      {showChevron ? (
+        <View accessibilityElementsHidden style={styles.chevron}>
+          <ChevronIcon size={iconSize.inline} />
+        </View>
+      ) : null}
     </View>
   );
 
@@ -71,7 +97,7 @@ export function SettingsRow({
 }
 
 const styles = StyleSheet.create({
-  chevron: { color: colors.text.tertiary, fontSize: 28, fontWeight: '300', lineHeight: 30 },
+  chevron: { height: iconSize.inline, opacity: 1, width: iconSize.inline },
   copy: { flex: 1, minWidth: 0 },
   danger: { color: colors.text.danger },
   disabled: { opacity: 0.45 },
@@ -81,12 +107,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: space[3],
-    minHeight: 64,
-    paddingHorizontal: space[4],
+    minHeight: layout.rowHeight,
+    paddingHorizontal: 0,
     paddingVertical: space[2],
   },
-  secondaryLight: { color: colors.text.ink, opacity: 0.68 },
-  subtitle: { ...type.caption, color: colors.text.secondary, marginTop: space[1] },
+  rowLight: { paddingHorizontal: space[4] },
+  secondaryLight: { color: colors.text.ink },
+  selectedValue: { color: colors.brand.primary },
   title: { ...type.cardTitle, color: colors.text.primary },
   titleLight: { color: colors.text.ink },
   value: { ...type.body, color: colors.text.secondary, flexShrink: 1, textAlign: 'right' },

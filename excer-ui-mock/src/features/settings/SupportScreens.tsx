@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import MaskedView from '@react-native-masked-view/masked-view';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 
@@ -9,12 +11,16 @@ import {
   supportComposerFixtures,
 } from '@/content';
 import {
+  DottedSeparator,
   GradientScreen,
+  HeaderBackButton,
   PillButton,
   PillowCard,
   PressableScale,
   SettingsRow,
   colors,
+  gradients,
+  layout,
   radius,
   space,
   type,
@@ -33,33 +39,49 @@ export function SupportHubScreen({ onBack, onOpenArticle, onOpenContact }: Suppo
   const articles = helpCopy.articles.filter((article) => `${article.title} ${article.subtitle}`.toLowerCase().includes(query.trim().toLowerCase()));
   return (
     <GradientScreen variant="ivory">
-      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} testID="support-hub-light">
-        <SettingsHeader light onBack={onBack} title={helpCopy.title} />
-        <Text style={styles.lightSectionTitle}>{helpCopy.greeting}</Text>
-        <PrototypeLabel light>LOCAL SUPPORT CONTENT</PrototypeLabel>
-        <TextInput
-          accessibilityLabel="Search help"
-          onChangeText={setQuery}
-          placeholder="Search locking, earning, permissions…"
-          placeholderTextColor={colors.icon.dark}
-          style={styles.searchLight}
-          value={query}
-        />
-        <PillowCard padding="none" variant="light">
-          <SettingsRow onPress={onOpenContact} subtitle={helpCopy.contactRow.subtitle} title={helpCopy.contactRow.label} tone="light" />
-        </PillowCard>
-        <SectionLabel light>SAMPLE ARTICLES</SectionLabel>
-        <PillowCard padding="none" variant="light">
-          {articles.map((article, index) => (
-            <View key={article.id}>
-              {index > 0 ? <View style={s.divider} /> : null}
-              <SettingsRow onPress={() => onOpenArticle(article.id)} subtitle={article.subtitle} title={article.title} tone="light" />
+      <View style={styles.supportHub}>
+        <MaskedView
+          maskElement={(
+            <View style={styles.supportMaskElement}>
+              <LinearGradient
+                colors={gradients.contentMask.colors}
+                locations={gradients.contentMask.locations}
+                style={styles.supportTopFade}
+              />
+              <View style={styles.supportOpaqueMask} />
             </View>
-          ))}
-          {articles.length === 0 ? <Text style={styles.noResultsLight}>No local articles match. Try another word.</Text> : null}
-        </PillowCard>
-        <Text style={styles.lightNote}>{helpCopy.browserDisclosure}</Text>
-      </ScrollView>
+          )}
+          style={styles.supportScrollMask}
+          testID="support-top-content-mask"
+        >
+          <ScrollView contentContainerStyle={styles.supportContent} showsVerticalScrollIndicator={false} testID="support-hub-light">
+            <TextInput
+              accessibilityLabel="Search help"
+              onChangeText={setQuery}
+              placeholder="Search locking, earning, permissions…"
+              placeholderTextColor={colors.text.placeholder}
+              style={styles.searchLight}
+              value={query}
+            />
+            <PillowCard padding="none" variant="light">
+              <SettingsRow onPress={onOpenContact} subtitle={helpCopy.contactRow.subtitle} title={helpCopy.contactRow.label} tone="light" />
+            </PillowCard>
+            <SectionLabel>SAMPLE ARTICLES</SectionLabel>
+            <PillowCard padding="none" variant="light">
+              {articles.map((article, index) => (
+                <View key={article.id}>
+                  {index > 0 ? <DottedSeparator /> : null}
+                  <SettingsRow onPress={() => onOpenArticle(article.id)} subtitle={article.subtitle} title={article.title} tone="light" />
+                </View>
+              ))}
+              {articles.length === 0 ? <Text style={styles.noResultsLight}>No local articles match. Try another word.</Text> : null}
+            </PillowCard>
+          </ScrollView>
+        </MaskedView>
+        <View pointerEvents="box-none" style={styles.supportHeader}>
+          <SettingsHeader onBack={onBack} title={helpCopy.greeting} />
+        </View>
+      </View>
     </GradientScreen>
   );
 }
@@ -77,16 +99,13 @@ export function SupportArticleScreen({ articleId, onBack, onOpenRelated }: Suppo
     <GradientScreen variant="ivory">
       <ScrollView contentContainerStyle={styles.articleContent} showsVerticalScrollIndicator={false} testID="support-article-light">
         <View style={styles.browserBar}>
-          <PressableScale accessibilityLabel="Back to Help" accessibilityRole="button" onPress={onBack}>
-            <View style={styles.browserBackTarget}><Text style={styles.browserBack}>‹</Text></View>
-          </PressableScale>
+          <HeaderBackButton onPress={onBack} />
           <View style={styles.addressBar}>
-            <Text style={styles.addressSecurity}>LOCAL</Text>
             <Text numberOfLines={1} style={styles.address}>help.excerlock.local/{article.id}</Text>
           </View>
           <View style={styles.browserBackTarget}><Text accessibilityElementsHidden style={styles.browserMenu}>•••</Text></View>
         </View>
-        <PrototypeLabel light>LOCAL ARTICLE · NO WEBSITE LOADED</PrototypeLabel>
+        <PrototypeLabel>LOCAL ARTICLE · NO WEBSITE LOADED</PrototypeLabel>
         <Text accessibilityRole="header" style={styles.articleTitle}>{article.title}</Text>
         <Text style={styles.articleLede}>{detail.lede}</Text>
         {detail.sections.map((section) => (
@@ -116,23 +135,36 @@ export interface SupportComposerScreenProps {
 
 export function SupportComposerScreen({ loading = false, message, mode, onAddAttachmentPreview, onBack, onMessageChange, onSendPreview }: SupportComposerScreenProps) {
   const fixture = supportComposerFixtures[mode];
+  const [composerFocused, setComposerFocused] = useState(false);
   return (
     <GradientScreen variant="detail">
       <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <SettingsHeader onBack={onBack} title={fixture.title} />
         <PrototypeLabel>NOTHING IS SENT</PrototypeLabel>
-        <TextInput
-          accessibilityLabel={fixture.placeholder}
-          maxLength={1000}
-          multiline
-          onChangeText={onMessageChange}
-          placeholder={fixture.placeholder}
-          placeholderTextColor={colors.text.tertiary}
-          style={styles.composer}
-          textAlignVertical="top"
-          value={message}
-        />
-        <Text style={styles.count}>{message.length}/1000</Text>
+        <LinearGradient
+          colors={composerFocused
+            ? [colors.surface.fieldFocused, colors.surface.bubbleStrong]
+            : [colors.surface.bubbleStrong, colors.surface.bubble]}
+          end={{ x: 0.5, y: 1 }}
+          locations={[0, 1]}
+          start={{ x: 0.5, y: 0 }}
+          style={[styles.composerBubble, composerFocused && styles.composerBubbleFocused]}
+        >
+          <TextInput
+            accessibilityLabel={fixture.placeholder}
+            maxLength={1000}
+            multiline
+            onBlur={() => setComposerFocused(false)}
+            onChangeText={onMessageChange}
+            onFocus={() => setComposerFocused(true)}
+            placeholder={fixture.placeholder}
+            placeholderTextColor={colors.text.placeholder}
+            style={styles.composer}
+            textAlignVertical="top"
+            value={message}
+          />
+          <Text style={styles.count}>{message.length}/1000</Text>
+        </LinearGradient>
         {mode === 'bug' ? (
           <>
             <PillButton label={supportComposerFixtures.shared.bugAttachment} onPress={onAddAttachmentPreview} variant="secondary" />
@@ -167,7 +199,7 @@ export function DiagnosticsScreen({ onBack, onNoDataPreview, onPreparePreview, o
         <PillowCard padding="none" variant="grouped">
           {diagnosticsCopy.fields.map((field, index) => (
             <View key={field.section}>
-              {index > 0 ? <View style={s.divider} /> : null}
+              {index > 0 ? <DottedSeparator /> : null}
               <SettingsRow onPress={() => onRowPress(field.section)} subtitle={field.value} title={field.section} />
             </View>
           ))}
@@ -196,22 +228,39 @@ export function DiagnosticsProgressScreen({ onCancel }: { onCancel: () => void }
 
 const styles = StyleSheet.create({
   address: { ...type.caption, color: colors.text.ink, flex: 1, textAlign: 'center' },
-  addressBar: { alignItems: 'center', backgroundColor: colors.surface.light, borderRadius: radius.pill, flex: 1, flexDirection: 'row', gap: space[2], minHeight: 42, paddingHorizontal: space[3] },
+  addressBar: { alignItems: 'center', backgroundColor: colors.surface.bubble, borderColor: colors.surface.bubbleBorder, borderRadius: radius.pill, borderWidth: 1, flex: 1, flexDirection: 'row', gap: space[2], minHeight: 42, paddingHorizontal: space[3] },
   addressSecurity: { ...type.micro, color: colors.brand.burnt },
-  articleBody: { ...type.body, color: colors.text.ink, opacity: 0.76 },
+  articleBody: { ...type.body, color: colors.text.secondary },
   articleContent: { gap: space[4], paddingBottom: space[16] },
-  articleHeading: { ...type.sectionTitle, color: colors.text.ink },
-  articleLede: { ...type.body, color: colors.text.ink, fontSize: 18, lineHeight: 27 },
-  articleSection: { borderTopColor: colors.asset.clayShade, borderTopWidth: StyleSheet.hairlineWidth, gap: space[2], paddingTop: space[4] },
-  articleTitle: { ...type.screenLarge, color: colors.text.ink },
-  browserBack: { color: colors.text.ink, fontSize: 34, fontWeight: '300', lineHeight: 38 },
+  articleHeading: { ...type.sectionTitle, color: colors.text.primary },
+  articleLede: { ...type.readerBody, color: colors.text.primary },
+  articleSection: { borderTopColor: colors.surface.divider, borderTopWidth: 1, gap: space[2], paddingTop: space[4] },
+  articleTitle: { ...type.screenLarge, color: colors.text.primary },
   browserBackTarget: { alignItems: 'center', height: 44, justifyContent: 'center', width: 44 },
   browserBar: { alignItems: 'center', flexDirection: 'row', gap: space[2] },
-  browserMenu: { ...type.label, color: colors.text.ink },
-  composer: { ...type.body, backgroundColor: colors.surface.cardElevated, borderRadius: radius.cardLarge, color: colors.text.primary, minHeight: 220, padding: space[4] },
-  count: { ...type.caption, color: colors.text.tertiary, textAlign: 'right' },
-  lightNote: { ...type.caption, color: colors.text.ink, opacity: 0.6 },
-  lightSectionTitle: { ...type.sectionTitle, color: colors.text.ink },
-  noResultsLight: { ...type.body, color: colors.text.ink, opacity: 0.68, padding: space[4], textAlign: 'center' },
-  searchLight: { ...type.body, backgroundColor: colors.surface.light, borderRadius: radius.actionRow, color: colors.text.ink, minHeight: 48, paddingHorizontal: space[4] },
+  browserMenu: { ...type.label, color: colors.text.primary },
+  composer: { ...type.callout, color: colors.text.primary, minHeight: layout.largeFieldHeight, padding: 0 },
+  composerBubble: {
+    borderColor: colors.surface.bubbleBorder,
+    borderRadius: radius.card,
+    borderWidth: 1,
+    minHeight: 170,
+    overflow: 'hidden',
+    paddingBottom: space[3],
+    paddingHorizontal: space[5],
+    paddingTop: space[5],
+  },
+  composerBubbleFocused: { borderColor: colors.surface.fieldFocused },
+  count: { ...type.caption, alignSelf: 'flex-end', color: colors.text.primary, marginTop: space[2] },
+  lightNote: { ...type.caption, color: colors.text.tertiary },
+  lightSectionTitle: { ...type.sectionTitle, color: colors.text.primary },
+  noResultsLight: { ...type.body, color: colors.text.ink, padding: space[4], textAlign: 'center' },
+  searchLight: { ...type.body, backgroundColor: colors.surface.field, borderColor: colors.surface.bubbleBorder, borderRadius: radius.control, borderWidth: 1, color: colors.text.primary, minHeight: layout.controlHeight, paddingHorizontal: space[4] },
+  supportContent: { gap: space[4], paddingBottom: space[16], paddingTop: layout.supportHeaderInset },
+  supportHeader: { left: 0, minHeight: 96, position: 'absolute', right: 0, top: 0, zIndex: 2 },
+  supportHub: { flex: 1 },
+  supportMaskElement: { flex: 1 },
+  supportOpaqueMask: { backgroundColor: colors.surface.light, flex: 1 },
+  supportScrollMask: { flex: 1 },
+  supportTopFade: { height: 104 },
 });

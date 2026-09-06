@@ -12,6 +12,7 @@ function saveRepeatableEvent(state: DemoState) {
     type: 'builder/select-catalog',
     catalogId: 'active-minutes-event',
   });
+  next = transitionDemo(next, { type: 'builder/continue' });
   next = transitionDemo(next, { type: 'builder/set-event-threshold', value: 30 });
   next = transitionDemo(next, { type: 'builder/continue' });
   next = transitionDemo(next, { type: 'builder/set-reward', reward: 'fixed', minutes: 10 });
@@ -21,6 +22,10 @@ function saveRepeatableEvent(state: DemoState) {
   next = transitionDemo(next, { type: 'builder/set-active-window', value: 'start-end' });
   next = transitionDemo(next, { type: 'builder/set-active-window-time', edge: 'start', minutes: 375 });
   next = transitionDemo(next, { type: 'builder/set-active-window-time', edge: 'end', minutes: 1305 });
+  next = transitionDemo(next, { type: 'builder/continue' });
+  next = transitionDemo(next, { type: 'builder/continue' });
+  next = transitionDemo(next, { type: 'builder/continue' });
+  next = transitionDemo(next, { type: 'builder/continue' });
   next = transitionDemo(next, { type: 'builder/continue' });
   next = transitionDemo(next, { type: 'builder/set-banner', bannerId: 'general-sunrise' });
   next = transitionDemo(next, { type: 'builder/continue' });
@@ -36,6 +41,10 @@ describe('builder and paywall release semantics', () => {
     expect(state.builder.path).toEqual([
       'configure-event',
       'reward',
+      'daily-cap',
+      'cooldown',
+      'repeatable',
+      'active-window',
       'banner',
       'preview',
     ]);
@@ -81,6 +90,7 @@ describe('builder and paywall release semantics', () => {
 
     state = transitionDemo(state, { type: 'builder/start-edit', conditionId: rate.id });
     state = transitionDemo(state, { type: 'builder/set-enabled', enabled: true });
+    state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/continue' });
     expect(state.builder.step).toBe('preview');

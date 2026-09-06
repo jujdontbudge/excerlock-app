@@ -1,5 +1,6 @@
 import {
   BUILDER_PATHS,
+  CATALOG_GROUP,
   CATALOG_KIND,
   EMPTY_BUILDER,
   ONBOARDING_STEPS,
@@ -393,7 +394,7 @@ function showcaseAnalysisState(newBadgeId?: string): DemoState['analysis'] {
 function builderPathFor(catalogId: string, kind: DemoCondition['kind']) {
   if (!catalogId.startsWith('gym-')) return BUILDER_PATHS[kind].filter((step) => step !== 'place');
   if (kind === 'event') return BUILDER_PATHS.event;
-  return ['catalog', 'place', ...BUILDER_PATHS[kind].slice(1)] as const;
+  return ['catalog', 'method', 'place', ...BUILDER_PATHS[kind].slice(2)] as const;
 }
 
 function canEventComplete(state: DemoState, condition: DemoCondition) {
@@ -644,7 +645,7 @@ export function transitionDemo(state: DemoState, action: DemoAction): DemoState 
       const condition = state.conditions.find((item) => item.id === action.conditionId);
       if (!condition) return state;
       const path = builderPathFor(condition.catalogId, condition.kind).filter(
-        (step) => step !== 'catalog',
+        (step) => step !== 'catalog' && step !== 'method',
       );
       return {
         ...state,
@@ -655,6 +656,7 @@ export function transitionDemo(state: DemoState, action: DemoAction): DemoState 
           editingConditionId: condition.id,
           step: path.includes(`configure-${condition.kind}`) ? `configure-${condition.kind}` : path[0],
           path,
+          catalogGroup: CATALOG_GROUP[condition.catalogId] ?? null,
           catalogId: condition.catalogId,
           kind: condition.kind,
           name: condition.name,
@@ -677,6 +679,14 @@ export function transitionDemo(state: DemoState, action: DemoAction): DemoState 
     }
     case 'builder/cancel':
       return { ...state, stage: 'home', builder: { ...EMPTY_BUILDER } };
+    case 'builder/select-category':
+      return updateBuilder(state, {
+        catalogGroup: action.category,
+        catalogId: null,
+        kind: null,
+        name: '',
+        path: ['catalog', 'method'],
+      });
     case 'builder/select-catalog': {
       if (state.builder.editingConditionId) return state;
       const kind = CATALOG_KIND[action.catalogId];
@@ -684,6 +694,7 @@ export function transitionDemo(state: DemoState, action: DemoAction): DemoState 
       const path = builderPathFor(action.catalogId, kind);
       return updateBuilder(state, {
         catalogId: action.catalogId,
+        catalogGroup: CATALOG_GROUP[action.catalogId] ?? state.builder.catalogGroup,
         kind,
         name: nameForCatalog(action.catalogId),
         enabled: true,
@@ -701,7 +712,7 @@ export function transitionDemo(state: DemoState, action: DemoAction): DemoState 
         cooldownMinutes: null,
         repeatable: null,
         path,
-        step: path[1],
+        step: 'method',
       });
     }
     case 'builder/set-name':

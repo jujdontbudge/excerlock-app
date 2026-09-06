@@ -3,12 +3,12 @@ import { ScrollView } from 'react-native-gesture-handler';
 
 import {
   AccessibleModal,
-  AccessibleModalTitle,
+  DottedSeparator,
+  FullScreenModalPage,
   PillowCard,
   PillButton,
   SettingsRow,
   colors,
-  radius,
   space,
   type,
 } from '@/design-system';
@@ -44,23 +44,20 @@ export function SimulatedShareSheet({
   return (
     <AccessibleModal
       accessibilityTitle={complete ? 'Share preview complete' : 'Share preview'}
-      animationType="slide"
+      contentContainerStyle={styles.modalPage}
       onRequestClose={onRequestClose}
+      scrollEnabled={false}
       style={styles.backdrop}
       visible={visible}
     >
-      <PillowCard style={styles.sheet} variant="light">
-        <View style={styles.grabber} />
-        <Text style={styles.eyebrow}>{complete ? 'LOCAL SHARE RESULT' : 'SIMULATED IOS SHARE SHEET'}</Text>
-        <AccessibleModalTitle style={styles.title}>
-          {complete ? 'Share preview complete' : 'Share preview'}
-        </AccessibleModalTitle>
-        {complete ? (
-          <>
-            <Text style={styles.body}>{selectedDestination} was selected locally. {disclosure}</Text>
-            <PillButton accessibilityLabel="Close share preview" fullWidth label="Done" onPress={onDone} variant="dark" />
-          </>
-        ) : (
+      <PillowCard style={[styles.sheet, styles.sheetFull]} variant="light">
+        <FullScreenModalPage
+          body={complete ? `${selectedDestination} was selected locally. ${disclosure}` : undefined}
+          footer={complete
+            ? <PillButton accessibilityLabel="Close share preview" fullWidth label="Done" onPress={onDone} variant="screen" />
+            : <PillButton fullWidth label="Cancel" onPress={onRequestClose} variant="text" />}
+        >
+          {!complete ? (
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <PillowCard style={styles.preview} variant="strong">
               <Text style={styles.previewTitle}>{previewTitle}</Text>
@@ -69,7 +66,7 @@ export function SimulatedShareSheet({
             <PillowCard padding="none" variant="light">
               {destinations.map((destination, index) => (
                 <View key={destination}>
-                  {index > 0 ? <View style={styles.divider} /> : null}
+                  {index > 0 ? <DottedSeparator /> : null}
                   <SettingsRow
                     accessibilityLabel={destination}
                     onPress={() => onSelectDestination(destination)}
@@ -82,25 +79,24 @@ export function SimulatedShareSheet({
               ))}
             </PillowCard>
             <Text style={styles.disclosure}>{disclosure}</Text>
-            <PillButton fullWidth label="Cancel" onPress={onRequestClose} variant="dark" />
           </ScrollView>
-        )}
+          ) : null}
+        </FullScreenModalPage>
       </PillowCard>
     </AccessibleModal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { backgroundColor: colors.surface.scrim, flex: 1, justifyContent: 'flex-end', padding: space[3] },
-  body: { ...type.body, color: colors.text.ink },
+  backdrop: { flex: 1 },
   content: { gap: space[3] },
-  disclosure: { ...type.caption, color: colors.text.ink, opacity: 0.62 },
+  disclosure: { ...type.caption, color: colors.text.ink },
   divider: { backgroundColor: colors.asset.clayShade, height: StyleSheet.hairlineWidth },
   eyebrow: { ...type.micro, color: colors.brand.burnt },
-  grabber: { alignSelf: 'center', backgroundColor: colors.asset.clayShade, borderRadius: radius.pill, height: 5, width: 42 },
+  modalPage: { flex: 1 },
   preview: { gap: space[1] },
   previewSubtitle: { ...type.caption, color: colors.text.secondary },
   previewTitle: { ...type.cardTitle, color: colors.text.primary },
-  sheet: { gap: space[3], maxHeight: '88%', padding: space[5] },
-  title: { ...type.screenTitle, color: colors.text.ink },
+  sheet: { gap: space[3], padding: space[5] },
+  sheetFull: { flex: 1, paddingBottom: 0, paddingTop: 0 },
 });

@@ -20,6 +20,13 @@ export type OnboardingStep =
   | 'done';
 
 export type ConditionKind = 'event' | 'state' | 'rate';
+export type BuilderCategory =
+  | 'Gym'
+  | 'Walking'
+  | 'Running'
+  | 'Cycling'
+  | 'Swimming'
+  | 'Any activity';
 export type ActiveWindowMode =
   | 'anytime'
   | 'start-only'
@@ -28,11 +35,16 @@ export type ActiveWindowMode =
   | 'guided';
 export type BuilderStep =
   | 'catalog'
+  | 'method'
   | 'place'
   | 'configure-event'
   | 'configure-state'
   | 'configure-rate'
   | 'reward'
+  | 'daily-cap'
+  | 'cooldown'
+  | 'repeatable'
+  | 'active-window'
   | 'banner'
   | 'preview';
 export type RewardKind = 'fixed' | 'rest-of-day' | 'set-period';
@@ -165,6 +177,7 @@ export type BuilderDraft = {
   editingConditionId: string | null;
   step: BuilderStep;
   path: readonly BuilderStep[];
+  catalogGroup: BuilderCategory | null;
   catalogId: string | null;
   kind: ConditionKind | null;
   name: string;
@@ -317,6 +330,7 @@ export type DemoAction =
   | { type: 'builder/start' }
   | { type: 'builder/start-edit'; conditionId: string }
   | { type: 'builder/cancel' }
+  | { type: 'builder/select-category'; category: BuilderCategory }
   | { type: 'builder/select-catalog'; catalogId: string }
   | { type: 'builder/set-name'; name: string }
   | { type: 'builder/set-enabled'; enabled: boolean }

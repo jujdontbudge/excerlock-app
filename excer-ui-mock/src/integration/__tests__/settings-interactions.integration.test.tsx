@@ -55,7 +55,7 @@ describe('rendered Settings interaction seams', () => {
     const result = renderAt('/settings/permission/location');
     await result;
     await fireEvent.press(screen.getByRole('button', { name: 'Open iOS Settings preview' }));
-    expect(screen.getByText('SIMULATED IOS SETTINGS · NO SYSTEM PAGE')).toBeTruthy();
+    expect(screen.getByText('ExcerLock · Location')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Allow in demo' }));
     expect(screen.getByRole('button', { name: 'Mark as not asked in demo' })).toBeTruthy();
   });
@@ -64,7 +64,7 @@ describe('rendered Settings interaction seams', () => {
     const result = renderAt('/settings/shortcuts');
     await result;
     await fireEvent.press(screen.getByRole('button', { name: 'Start walking' }));
-    expect(screen.getByText('SIMULATED ADD TO SIRI SHEET')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Start walking' })).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Add shortcut in demo' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
     expect(screen.getAllByText('Added')).toHaveLength(2);
@@ -83,7 +83,6 @@ describe('rendered Settings interaction seams', () => {
     await fireEvent.press(screen.getByRole('button', { name: '5:00 AM' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
     expect(screen.getByText('5:00 AM')).toBeTruthy();
-    expect(screen.getByText('Custom day boundary saved at 5:00 AM.')).toBeTruthy();
   });
 
   it('persists appearance, week-start, units, and day-boundary summaries after child routes close', async () => {
@@ -126,9 +125,10 @@ describe('rendered Settings interaction seams', () => {
 
     await fireEvent.press(screen.getByRole('button', { name: 'Language' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Open Settings preview' }));
-    expect(screen.getByText('SIMULATED IOS SETTINGS')).toBeTruthy();
     expect(screen.getByText('Preferred Language')).toBeTruthy();
-    expect(screen.getByText('English (US) · ✓')).toBeTruthy();
+    expect(screen.getByText('Preferred Language')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'System Default, selected' }).props.accessibilityState)
+      .toMatchObject({ selected: true });
   });
 
   it('previews exports and protects reset and deletion with local confirmations', async () => {
@@ -137,7 +137,7 @@ describe('rendered Settings interaction seams', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Export conditions' }));
     expect(screen.getByText('Export preview ready')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Preview share' }));
-    expect(screen.getByText('SIMULATED SHARE SHEET')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Share export preview' })).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
 
     await fireEvent.press(screen.getByRole('button', { name: 'Reset demo data' }));
@@ -208,7 +208,7 @@ describe('rendered Settings interaction seams', () => {
     );
 
     await fireEvent.press(screen.getByRole('button', { name: 'Reconnect Apple Health demo' }));
-    expect(screen.getByText('SIMULATED HEALTH PERMISSION SHEET')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Reconnect Apple Health?' })).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: 'Reconnect in demo' }));
     expect(screen.getByText('Connected in demo')).toBeTruthy();
   });

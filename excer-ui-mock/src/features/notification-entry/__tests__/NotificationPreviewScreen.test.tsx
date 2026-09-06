@@ -5,7 +5,7 @@ jest.mock('react-native-reanimated', () => {
   return {
     __esModule: true,
     cubicBezier: () => 'linear',
-    default: { Image: ReactNative.Image, View: ReactNative.View },
+    default: { Image: ReactNative.Image, Text: ReactNative.Text, View: ReactNative.View },
     useReducedMotion: () => false,
   };
 });

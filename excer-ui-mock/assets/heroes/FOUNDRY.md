@@ -1,8 +1,52 @@
 # ExcerLock standalone hero foundry
 
-This is the complete standalone Family A manifest for excer-ui-mock. It covers the two byte-for-byte canonical lock copies and the six new GPT Image 2 heroes generated for the standalone app.
+This is the complete standalone Family A manifest for excer-ui-mock. It covers the two retained canonical lock-part sources, the six original GPT Image 2 heroes, and the approved unified white Home lock generated in the later redesign pass.
 
 Generated assets follow design/STYLE.md Family A: soft matte ivory clay, soft light-gray shading, rounded volume, no gloss or metal, and a flat #FF00FF foundry background removed locally. Opaque sources deliberately retain the magenta background and are not validator targets.
+
+Each accepted keyed PNG also has a same-basename SVG runtime derivative made
+with VisionCortex VTracer 0.6.15. The PNG remains the immutable visual source;
+the SVG is the scalable in-app rendering asset. Install the pinned converter
+with `python3 -m pip install --user vtracer==0.6.15`, rebuild with
+`python3 scripts/vectorize_icons.py`, and verify the exact nine-file SVG
+inventory as part of the combined `npm run vectors:check`. Most heroes use color/stacked/spline tracing
+with 8-bit precision, 16-point layer difference, eight-pixel speckle and
+length thresholds, ten iterations, and two-decimal path precision so their
+clay volume remains visible without photographic path noise. The large
+`lock-unified.svg` intentionally uses the maximum-detail exception: zero
+speckle removal, full 8-bit color precision, 2-point layer difference,
+0.75-pixel segment threshold, 20 fitting iterations, and four-decimal paths.
+It contains 28,896 fitted paths and is deliberately heavier than the small
+glyph assets so the approved white-on-white clay shading, socket creases,
+rounded bends, and recessed keyhole remain visible after vectorization.
+
+## Unified white Home lock — 2026-08-13
+
+- Status: ACCEPTED and active in the app.
+- Runtime final: `assets/heroes/lock-unified.svg`.
+- Accepted keyed PNG source: `assets/heroes/lock-unified.png`.
+- Chroma edit source: `assets/heroes/lock-unified-opaque.png`.
+- Generator/model: Codex built-in image generation / GPT Image 2.
+- References: the approved cartoony three-quarter lock candidate and the
+  canonical ivory `lock-body.png` material reference.
+- User-directed edit: retain the new softly asymmetric three-quarter lock,
+  but make the complete shackle the same soft matte ivory-white material as
+  the body/current UI lock.
+- Chroma source: uniform green background removed locally with the bundled
+  image-generation skill helper using border auto-key, soft matte, and despill.
+- Keyed PNG validation: 1254 × 1254 RGBA; corner alpha `[0,0,0,0]`;
+  residual green pixels `0`; 519,722 visible pixels; coverage `0.330503`;
+  bbox `[255,150,1002,1118]`.
+- Reversion, 2026-08-14: restored the approved maximum-detail trace exactly;
+  the later flat-white and reconstructed-gradient experiments do not ship.
+- Vector validation: valid XML/tight viewBox; 3,049,470 bytes; 28,896 paths;
+  rendered in the native iOS app on the Home heat gradient.
+- SHA-256 opaque PNG: `104e950a8c86dbc397b03e37da2f7bdfba82d62568d40761b537b33ee4592c29`.
+- SHA-256 keyed PNG: `5891534489c901b0a3ea9ae9b62c2df4bca38cbaffe13bddc1f428f23e5fa00e`.
+- SHA-256 SVG: `4cb59ffe3c8753b0c96a9c2e94471d49468001bb32e0667897df29609ec02c4c`.
+- Primary consumers: Home, onboarding, lock moments, and signup.
+- The legacy `lock-body` and `lock-shackle` pairs remain solely as accepted
+  provenance/reference assets; `HeroLock` no longer composites them.
 
 ## Production and validation policy
 

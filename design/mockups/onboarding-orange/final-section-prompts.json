@@ -1,0 +1,178 @@
+[
+  {
+    "id": "walk-place",
+    "title": "Where will you walk?",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"Where will you walk?\". Rounded option rows: \"Outside\", \"Treadmill\", \"Either\". First selected orange radio.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "walk-rule",
+    "title": "How should walking unlock apps?",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"How should walking unlock apps?\". Rounded option rows: \"Reach a step goal\" with Recommended badge, \"Earn time per step\", \"Unlock while walking\". First selected orange radio. Support \"Pick how you want to earn screen time.\"",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "walk-target",
+    "title": "Set your walking goal",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"Set your walking goal\". Segmented control \"Step goal\" selected, \"Time per step\". Large editable numeric input \"2,000\" suffix \"steps\". Small \"Recommended: 2,000 steps\". Gray note \"While-walking mode skips this step.\" Bottom Continue.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "gym-rule",
+    "title": "What counts at the gym?",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"What counts at the gym?\". Rounded option rows: \"Spend time at the gym\" Recommended, \"Arrive at the gym\". First selected orange radio. Small orange gym icon.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "gym-target",
+    "title": "How long at the gym?",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"How long at the gym?\" Large editable numeric text field \"30\" with fixed unit \"minutes\", cursor visible. Support \"Choose a goal you can repeat.\" Recommended30minutes hint. No preset answer list.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "run-rule",
+    "title": "What counts as a run?",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"What counts as a run?\". Rounded option rows: \"Run for a set time\" Recommended, \"Run a set distance\". First selected orange radio.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "run-target",
+    "title": "Set your running goal",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"Set your running goal\". Segmented control \"Time\" selected / \"Distance\". Large editable numeric input \"20\", adjacent unit \"minutes\". Hint \"Recommended: 20 minutes\". Small support \"Type your goal.\" No preset answers.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "bike-rule",
+    "title": "What counts as a bike ride?",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"What counts as a bike ride?\". Rounded option rows: \"Ride for a set time\" Recommended, \"Ride a set distance\". First selected orange radio.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "bike-target",
+    "title": "Set your biking goal",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"Set your biking goal\". Segmented control \"Time\" selected / \"Distance\". Large editable numeric input \"30\", adjacent unit \"minutes\". Hint \"Recommended: 30 minutes\". No preset answers.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "distance",
+    "title": "Choose your distance",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"Choose your distance\". Support \"Type a distance that feels doable.\" Segmented Time / Distance selected. Large numeric editable field \"2\" beside rounded unit dropdown \"km ⌄\". Dropdown shown OPEN with options \"Kilometers (km)\" selected and \"Miles (mi)\". Bottom Continue. This shared component works for running and cycling.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "schedule",
+    "title": "When should blocking be active?",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"When should blocking be active?\" Two clean rounded cards on white. Times card header \"Times\", \"All day\" switch OFF. One editable time range \"12:00 PM — 8:00 PM\" with small remove minus, secondary orange \"+ Add time\". Days card has seven circular buttons M T W T F S S, weekdays selected orange white letters, weekend palegray. Summary \"Monday–Friday · 12 PM–8 PM\". No trial badge no upsell. Bottom Continue.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "reward-time",
+    "title": "How much screen time?",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"How much screen time should this unlock?\" Support \"Choose your reward.\" Numeric editable field \"30\" suffix minutes. Hint \"Recommended: 30 minutes\". Two slim selectable rows \"Set amount\" selected and \"Rest of the day\". Footnote \"Available during your chosen hours.\" Bottom Continue.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "principles",
+    "title": "Built around small, repeatable habits",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"Built around small, repeatable habits\". Three spacious vertically stacked icon/text sections: repeat arrows \"A clear cue\", walking icon \"A small action\", unlocked phone icon \"A reward you choose\". Support \"No shame. Just a simple routine.\" Small secondary link \"How it works\". NO university logos, no research endorsement or clinical claims. Bottom Continue.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "loading",
+    "title": "Setting up your plan…",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Large orange semicircular progress arc around orange running/activity symbol, no brain mascot. Title \"Setting up your plan…\" Three orange check rows \"Checking your answers\", \"Saving your schedule\", \"Preparing your unlock rule\". Subtle \"Almost ready\". No Continue button during loading. White airy composition.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "summary",
+    "title": "Your plan is ready",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"Your plan is ready\". Small walking illustration. One clean rounded summary card: \"Walk 2,000 steps\"; \"Outside or on a treadmill\"; calendar row \"Monday–Friday\"; clock row \"12 PM–8 PM\"; phone row \"Unlock 30 minutes\". Below \"Your apps stay blocked until you reach your goal.\" Small Edit plan link. Bottom \"Looks good\".",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "review",
+    "title": "Help us make ExcerLock better",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"Help us make ExcerLock better\". Orange celebratory star illustration. Five large outlined rating stars as controls, not fake rating. Rounded testimonial carousel placeholder card visibly labelled \"Review preview\" with text \"Real user reviews will appear here.\" Adjacent cards partially visible. No invented names ratings user counts or endorsements. Bottom orange \"Rate ExcerLock\", secondary \"Not now\".",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "trial-offer",
+    "title": "Try ExcerLock free",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Small top label \"Offer preview\". Title \"Try ExcerLock free for 7 days\". Orange/peach giftbox illustration center, tasteful sparse confetti. Support \"Make room for more movement.\" Bottom Continue. Small footer \"Trial availability and pricing shown before purchase.\"",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "trial-reminder",
+    "title": "We’ll remind you before it ends",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Small label \"Offer preview\". Title \"We’ll remind you 2 days before your trial ends\". Large clean orange bell above dimensional phone with remindercard. Bottom Continue. Small note \"Turn on notifications to receive a reminder.\"",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "notification",
+    "title": "Want a trial reminder?",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Title \"Want a trial reminder?\" Orange bell illustration and white reminder card \"Trial ends in 2 days\". Support \"Allow notifications so we can remind you.\" Bottom orange \"Enable reminders\", secondary \"Maybe later\". No fake system permission dialog.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "timeline",
+    "title": "How your free trial works",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Small label \"Offer preview · pricing not set\". Close X top right. Title \"How your free trial works\". White rounded card with orange vertical timeline three points: \"Today — Get access\", \"Day 5 — Get a reminder\", \"Day 7 — Trial ends\". Support \"Your subscription starts after the trial unless you cancel.\" Bottom orange \"See plans\", secondary \"Restore purchases\". No invented price.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "paywall-top",
+    "title": "ExcerLock Premium",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Small label \"Pricing preview\". Header \"ExcerLock Premium\", close X and Restore. Orange running illustration. Title \"Less scrolling. More moving.\" Three price cards \"Monthly — Price TBD\", \"Annual — Price TBD\", \"Lifetime — Price TBD\". Annual selected. Feature list heading \"Everything you need\" with \"Exercise-to-unlock rules\", \"Flexible schedules\", \"Progress tracking\". Bottom sticky Continue. No fake reviews award badges or discounts. This is top viewport of vertically scrollable page.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  },
+  {
+    "id": "paywall-bottom",
+    "title": "Premium — scrolled view",
+    "prompt": "Generate one ExcerLock iPhone17Pro onboarding UI screenshot target1206x2622. White background, subtle pale peach at top only, black native SF Pro-like title26pt, gray support16pt,24pt margins, orange #C94710 bottom pill Continue white text, peach selection, rounded16pt inputs. Match reference1 style precisely. Native9:41 black Dynamic Island x415y42w376h110, curved display corners black outside, home indicator. No exterior phone body, watermark, blue app controls. Same paywall scrolled lower. Small top label \"Pricing preview\". Feature rows \"Exercise-to-unlock rules\", \"Flexible schedules\", \"Progress tracking\". Heading \"From our community\". Rounded testimonial card visibly marked \"Review placeholder\" and \"Verified reviews will appear here.\" Repeated three price cards Monthly Price TBD, Annual Price TBD selected, Lifetime Price TBD. Fineprint \"Subscription details and renewal terms shown before purchase.\" Links Terms Privacy Restore. Sticky bottom Continue. No countdown offer or fake proof.",
+    "referenced_image_paths": [
+      "/Users/johansardar/ExcerLock/design/mockups/onboarding-orange/step-9-occupation.png"
+    ]
+  }
+]

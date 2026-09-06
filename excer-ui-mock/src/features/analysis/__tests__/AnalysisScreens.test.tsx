@@ -256,7 +256,7 @@ describe('Analysis rendered compliance seams', () => {
     const view = await renderScreen(<EarningHarness />);
 
     expect(view.getByText('3h 46m banked this week')).toBeTruthy();
-    expect(view.getByText(/Selected from day detail/)).toBeTruthy();
+    expect(view.queryByText(/Selected from day detail/)).toBeNull();
     await fireEvent.press(view.getByRole('radio', { name: 'Month' }));
     expect(view.getByText('9h 50m banked this month')).toBeTruthy();
 

@@ -1,22 +1,19 @@
 # ExcerLock App Branding Foundry Record
 
 Standalone adoption note (2026-08-07): `icon.png` and `splash-logo.png` were
-copied byte-for-byte into this app and revalidated successfully. Family E is
-the STYLE-sanctioned deterministic composition exception: its subject is the
-validated GPT Image 2 Family-B padlock glyph, while the square/transparent
-canvas is composed by the required script rather than redrawn by another
-model.
+originally copied byte-for-byte into this app and revalidated successfully.
+On 2026-08-14 the standalone icon was recolored for the approved blue theme;
+the transparent splash mark remains the original accepted lock.
 
-## Standalone byte-for-byte reuse ledger
+## Standalone branding ledger
 
 The original compositions remain under `app/assets/`; the standalone app owns
-the byte-identical destinations below. Each SHA-256 is identical for the named
-source and destination.
+the destinations below.
 
-| Asset | Original source | Standalone final | Matching source/destination SHA-256 |
-|---|---|---|---|
-| App icon | `app/assets/icon.png` | `excer-ui-mock/assets/icon.png` | `2d166444851f2a819bdab26b8b7751289cb67c26beccb7a8b31cb11965e9a177` |
-| Splash logo | `app/assets/splash-logo.png` | `excer-ui-mock/assets/splash-logo.png` | `a17eaed209adb6812b7983c91ddeb8ec8dc15a20dd0d82eebd9c5c520ff4247e` |
+| Asset | Original source | Standalone final | Source SHA-256 | Final SHA-256 |
+|---|---|---|---|---|
+| App icon | `app/assets/icon.png` | `excer-ui-mock/assets/icon.png` | `2d166444851f2a819bdab26b8b7751289cb67c26beccb7a8b31cb11965e9a177` | `3f6abf335b1faab4a525af7f14721d5e3e51442cffdd0ead5803e2259aa6f35d` |
+| Splash logo | `app/assets/splash-logo.png` | `excer-ui-mock/assets/splash-logo.png` | `a17eaed209adb6812b7983c91ddeb8ec8dc15a20dd0d82eebd9c5c520ff4247e` | `a17eaed209adb6812b7983c91ddeb8ec8dc15a20dd0d82eebd9c5c520ff4247e` |
 
 Family **E — composed square** (`design/STYLE.md` §1). Added 2026-08-01 resolving
 map ticket #64. **No image model was used**: both assets are deterministic
@@ -31,9 +28,15 @@ clay lock's shading detail turns to mush at 60×60pt.
 
 ## icon.png — accepted
 
-Original source: `app/assets/icon.png`. Standalone final:
-`excer-ui-mock/assets/icon.png`. Subject:
-`prototype/assets/icons/icon-padlock-chip.png`.
+Blue-theme update (2026-08-14): GPT Image 2 edited the accepted orange icon,
+preserving its white lock subject while replacing the warm background with a
+blue field. The returned image was normalized to 1024×1024 RGB for the runtime
+final. Exact prompt:
+
+> Edit this existing square app icon only. Preserve the white lock silhouette exactly: same geometry, scale, placement, edges, and subtle white texture. Replace the entire flat orange background with the exact solid blue color #3445E6. Do not add gradients, shadows, text, borders, extra objects, or any orange/yellow/warm tint. Output a clean 1024x1024 square app icon.
+
+Original source: `app/assets/icon.png`. Blue-theme standalone final:
+`excer-ui-mock/assets/icon.png`. Subject remains the white padlock mark.
 
 The command below is the original deterministic composition command; the
 standalone final is its byte-for-byte reuse recorded above.
@@ -96,6 +99,5 @@ Johan chose "lock on gradient". SDK 57's `expo-splash-screen` plugin centers a
 logo on a solid `backgroundColor`; a full-bleed gradient requires
 `enableFullScreenImage_legacy`, which the Expo docs describe as a transition
 helper that will be removed. Building launch branding on a deprecated flag was
-not worth the gradient, so the splash uses the icon's flat #F25A16 and stays
-visually continuous with the icon the user just tapped. Revisit if Expo ships a
-supported full-bleed option.
+not worth the gradient, so the splash uses the approved terminal blue
+`#3445E6`. Revisit if Expo ships a supported full-bleed option.

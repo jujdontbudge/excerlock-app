@@ -5,11 +5,11 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { ScrollView } from 'react-native-gesture-handler';
 
 import {
+  DottedSeparator,
   GradientScreen,
   PillowCard,
   SettingsRow,
   SwitchRow,
-  colors,
   motion,
 } from '@/design-system';
 
@@ -60,44 +60,62 @@ export function SettingsDetailScreen({ body, footer, lightMode = false, onBack, 
 
   return (
     <Animated.View style={[styles.screen, { opacity: appearanceOpacity }]}>
-      <GradientScreen variant={lightMode ? 'ivory' : 'detail'}>
-        <StatusBar style={lightMode ? 'dark' : 'light'} />
+      <GradientScreen variant="detail">
+        <StatusBar style="light" />
         <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <SettingsHeader light={lightMode} onBack={onBack} title={title} />
-        {body ? <Text style={[s.body, lightMode && styles.inkSecondary]}>{body}</Text> : null}
+        <SettingsHeader onBack={onBack} title={title} />
+        {body ? <Text style={s.body}>{body}</Text> : null}
         {preview}
-        {prototypeDisclosure ? <PrototypeLabel light={lightMode}>{prototypeDisclosure}</PrototypeLabel> : null}
+        {prototypeDisclosure ? <PrototypeLabel>{prototypeDisclosure}</PrototypeLabel> : null}
         {sections.map((section) => (
           <View key={section.id} style={s.cardGap}>
-            {section.title ? <SectionLabel light={lightMode}>{section.title}</SectionLabel> : null}
-            <PillowCard padding="none" variant={lightMode ? 'light' : 'grouped'}>
-              {section.rows.map((row, index) => (
-                <View key={row.id}>
-                  {index > 0 ? <View style={s.divider} /> : null}
-                  {row.kind === 'toggle' ? (
-                    <SwitchRow
-                      disabled={row.disabled}
-                      onValueChange={(value) => onToggle(row.id, value)}
-                      subtitle={row.subtitle}
-                      title={row.title}
-                      value={Boolean(row.value)}
-                    />
-                  ) : (
-                    <SettingsRow
-                      accessibilityLabel={`${row.title}${row.selected ? ', selected' : ''}`}
-                      destructive={row.destructive}
-                      disabled={row.disabled}
-                      onPress={() => onRowPress(row.id)}
-                      showChevron={row.kind !== 'choice'}
-                      subtitle={row.subtitle}
-                      title={row.title}
-                      tone={lightMode ? 'light' : 'dark'}
-                      value={typeof row.value === 'string' ? row.value : row.selected ? '✓' : undefined}
-                    />
-                  )}
-                </View>
-              ))}
-            </PillowCard>
+            {section.title ? <SectionLabel>{section.title}</SectionLabel> : null}
+            {section.rows.every((row) => row.kind === 'choice') ? (
+              <View style={s.cardGap}>
+                {section.rows.map((row) => (
+                  <SettingsRow
+                    accessibilityLabel={`${row.title}${row.selected ? ', selected' : ''}`}
+                    disabled={row.disabled}
+                    key={row.id}
+                    onPress={() => onRowPress(row.id)}
+                    selected={Boolean(row.selected)}
+                    showChevron={false}
+                    subtitle={row.subtitle}
+                    title={row.title}
+                    value={typeof row.value === 'string' ? row.value : undefined}
+                  />
+                ))}
+              </View>
+            ) : (
+              <PillowCard padding="none" variant={lightMode ? 'light' : 'grouped'}>
+                {section.rows.map((row, index) => (
+                  <View key={row.id}>
+                    {index > 0 ? <DottedSeparator /> : null}
+                    {row.kind === 'toggle' ? (
+                      <SwitchRow
+                        disabled={row.disabled}
+                        onValueChange={(value) => onToggle(row.id, value)}
+                        subtitle={row.subtitle}
+                        title={row.title}
+                        value={Boolean(row.value)}
+                      />
+                    ) : (
+                      <SettingsRow
+                        accessibilityLabel={row.title}
+                        destructive={row.destructive}
+                        disabled={row.disabled}
+                        onPress={() => onRowPress(row.id)}
+                        showChevron
+                        subtitle={row.subtitle}
+                        title={row.title}
+                        tone={lightMode ? 'light' : 'dark'}
+                        value={typeof row.value === 'string' ? row.value : undefined}
+                      />
+                    )}
+                  </View>
+                ))}
+              </PillowCard>
+            )}
           </View>
         ))}
         {footer}
@@ -108,6 +126,5 @@ export function SettingsDetailScreen({ body, footer, lightMode = false, onBack, 
 }
 
 const styles = {
-  inkSecondary: { color: colors.text.ink, opacity: 0.72 },
   screen: { flex: 1 },
 };

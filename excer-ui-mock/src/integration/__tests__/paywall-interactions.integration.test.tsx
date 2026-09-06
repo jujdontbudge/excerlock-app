@@ -67,7 +67,6 @@ describe('rendered paywall interaction seams', () => {
     await act(() => jest.advanceTimersByTime(550));
     await fireEvent.press(screen.getByRole('button', { name: 'Start with Home' }));
     await fireEvent.press(screen.getByRole('tab', { name: 'Settings' }));
-    expect(screen.getByText('Active · Renews Sep 7, 2026')).toBeTruthy();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Manage Subscription' }));
     expect(screen.getByText(/Active · ExcerLock Premium · Monthly/)).toBeTruthy();

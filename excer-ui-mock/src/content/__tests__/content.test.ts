@@ -47,7 +47,7 @@ describe("content contract", () => {
 
   it("exports every approved runtime asset family", () => {
     expect(Object.keys(assetRegistry.branding)).toHaveLength(2);
-    expect(Object.keys(assetRegistry.heroes)).toHaveLength(8);
+    expect(Object.keys(assetRegistry.heroes)).toHaveLength(9);
     expect(Object.keys(assetRegistry.glyphs)).toHaveLength(26);
     expect(Object.keys(assetRegistry.banners)).toHaveLength(21);
     expect(Object.keys(assetRegistry.badges)).toHaveLength(22);

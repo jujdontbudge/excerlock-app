@@ -8,10 +8,12 @@ function saveRateCondition(
 ) {
   let next = transitionDemo(state, { type: 'builder/start' });
   next = transitionDemo(next, { type: 'builder/select-catalog', catalogId });
+  next = transitionDemo(next, { type: 'builder/continue' });
   next = transitionDemo(next, { type: 'builder/set-rate-minutes', minutes: rateMinutes });
   next = transitionDemo(next, { type: 'builder/set-active-window', value: 'guided' });
   next = transitionDemo(next, { type: 'builder/set-active-window-time', edge: 'start', minutes: 420 });
   next = transitionDemo(next, { type: 'builder/set-active-window-time', edge: 'end', minutes: 1320 });
+  next = transitionDemo(next, { type: 'builder/continue' });
   next = transitionDemo(next, { type: 'builder/continue' });
   next = transitionDemo(next, { type: 'builder/set-banner', bannerId });
   next = transitionDemo(next, { type: 'builder/continue' });
@@ -91,6 +93,7 @@ describe('presentation integrity', () => {
       type: 'builder/select-catalog',
       catalogId: 'active-minutes-event',
     });
+    state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/set-event-threshold', value: 35 });
     state = transitionDemo(state, { type: 'builder/set-active-window', value: 'guided' });
     state = transitionDemo(state, { type: 'builder/set-active-window-time', edge: 'start', minutes: 420 });
@@ -104,6 +107,10 @@ describe('presentation integrity', () => {
     state = transitionDemo(state, { type: 'builder/set-daily-cap', value: 'unlimited' });
     state = transitionDemo(state, { type: 'builder/set-cooldown', minutes: 60 });
     state = transitionDemo(state, { type: 'builder/set-repeatable', value: true });
+    state = transitionDemo(state, { type: 'builder/continue' });
+    state = transitionDemo(state, { type: 'builder/continue' });
+    state = transitionDemo(state, { type: 'builder/continue' });
+    state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, {
       type: 'builder/set-banner',
@@ -144,10 +151,12 @@ describe('presentation integrity', () => {
     let state = createDemoState({ stage: 'home' });
     state = transitionDemo(state, { type: 'builder/start' });
     state = transitionDemo(state, { type: 'builder/select-catalog', catalogId: 'walk-state' });
+    state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/set-state-grace', seconds: 180 });
     state = transitionDemo(state, { type: 'builder/set-active-window', value: 'guided' });
     state = transitionDemo(state, { type: 'builder/set-active-window-time', edge: 'start', minutes: 420 });
     state = transitionDemo(state, { type: 'builder/set-active-window-time', edge: 'end', minutes: 1320 });
+    state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/continue' });
     state = transitionDemo(state, { type: 'builder/set-banner', bannerId: 'walk-night-walk' });
     state = transitionDemo(state, { type: 'builder/continue' });

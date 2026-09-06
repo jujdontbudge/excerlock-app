@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 
-import { colors, space, type } from './tokens';
+import { colors, layout, space, type } from './tokens';
 
 export interface SwitchRowProps {
   disabled?: boolean;
@@ -15,23 +15,22 @@ export interface SwitchRowProps {
   value: boolean;
 }
 
-export function SwitchRow({ disabled = false, leading, onValueChange, style, subtitle, testID, title, value }: SwitchRowProps) {
+export function SwitchRow({ disabled = false, leading, onValueChange, style, testID, title, value }: SwitchRowProps) {
   return (
     <View style={[styles.row, disabled && styles.disabled, style]}>
       {leading}
       <View style={styles.copy}>
         <Text style={styles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
       <Switch
         accessibilityLabel={title}
         accessibilityRole="switch"
         disabled={disabled}
-        ios_backgroundColor="rgba(255,255,255,0.18)"
+        ios_backgroundColor={colors.surface.bubbleBorder}
         onValueChange={onValueChange}
         testID={testID}
         thumbColor={colors.surface.light}
-        trackColor={{ false: 'rgba(255,255,255,0.18)', true: colors.semantic.success }}
+        trackColor={{ false: colors.surface.bubbleBorder, true: colors.semantic.success }}
         value={value}
       />
     </View>
@@ -45,10 +44,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: space[3],
-    minHeight: 64,
-    paddingHorizontal: space[4],
+    minHeight: layout.rowHeight,
+    paddingHorizontal: 0,
     paddingVertical: space[2],
   },
-  subtitle: { ...type.caption, color: colors.text.secondary, marginTop: space[1] },
   title: { ...type.cardTitle, color: colors.text.primary },
 });

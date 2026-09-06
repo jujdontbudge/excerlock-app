@@ -202,7 +202,7 @@ npx expo-doctor
 npx expo install --check
 ```
 
-The frozen 2026-08-07 acceptance run passed 32 Jest suites / 261 tests,
+The latest verified acceptance run passed 33 Jest suites / 267 tests,
 TypeScript, Expo Doctor 20/20, and the dependency check. The final
 `expo export --platform ios` produced one 4.3 MB Hermes bundle from 1,759
 modules and 102 assets (104 files / 71 MB total).

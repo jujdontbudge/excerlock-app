@@ -4,12 +4,15 @@ import { ScrollView } from 'react-native-gesture-handler';
 
 import { lockedAppsCopy, sampleAppGroups } from '@/content';
 import {
+  DottedSeparator,
   GradientScreen,
   PillButton,
   PillowCard,
   PressableScale,
+  SelectableBubble,
   SwitchRow,
   colors,
+  layout,
   radius,
   space,
   type,
@@ -68,17 +71,17 @@ export function LockedAppsScreen({ onBack, onDone, onOpenExplainer, onToggleApp,
           {[{ id: 'all', label: 'All' }, ...sampleAppGroups].map((group) => {
             const selected = category === group.id;
             return (
-              <PressableScale
+              <SelectableBubble
                 accessibilityLabel={group.label}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: selected }}
+                compact
+                contentStyle={styles.categorySurface}
                 key={group.id}
+                label={group.label}
                 onPress={() => setCategory(group.id)}
-              >
-                <View style={[styles.categoryPill, selected && styles.categoryPillSelected]}>
-                  <Text style={[styles.categoryLabel, selected && styles.categoryLabelSelected]}>{group.label}</Text>
-                </View>
-              </PressableScale>
+                role="radio"
+                selected={selected}
+                style={styles.categoryItem}
+              />
             );
           })}
         </View>
@@ -89,7 +92,7 @@ export function LockedAppsScreen({ onBack, onDone, onOpenExplainer, onToggleApp,
             <PillowCard padding="none" variant="grouped">
               {group.apps.map((app, index) => (
                 <View key={app.id}>
-                  {index > 0 ? <View style={s.divider} /> : null}
+                  {index > 0 ? <DottedSeparator /> : null}
                   <SwitchRow onValueChange={(selected) => onToggleApp(app.id, selected)} subtitle={app.subtitle} title={app.name} value={selectedIds.includes(app.id)} />
                 </View>
               ))}
@@ -113,28 +116,30 @@ export function LockedAppsScreen({ onBack, onDone, onOpenExplainer, onToggleApp,
 
 const styles = StyleSheet.create({
   categories: { flexDirection: 'row', flexWrap: 'wrap', gap: space[2] },
+  categoryItem: { flexBasis: '48%', flexGrow: 1 },
+  categorySurface: { width: '100%' },
   categoryLabel: { ...type.label, color: colors.text.secondary },
-  categoryLabelSelected: { color: colors.text.ink },
+  categoryLabelSelected: { color: colors.text.onLight },
   categoryPill: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: radius.pill,
-    minHeight: 40,
+    backgroundColor: colors.surface.field,
+    borderRadius: radius.control,
+    minHeight: layout.controlHeight,
     justifyContent: 'center',
     paddingHorizontal: space[4],
   },
   categoryPillSelected: { backgroundColor: colors.surface.light },
   clearButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 44 },
-  clearLabel: { color: colors.text.secondary, fontSize: 26, lineHeight: 28 },
+  clearLabel: { ...type.navigationTitle, color: colors.text.primary },
   searchFrame: {
     alignItems: 'center',
     backgroundColor: colors.surface.card,
     borderColor: colors.surface.divider,
-    borderRadius: radius.pill,
+    borderRadius: radius.control,
     borderWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
-    minHeight: 50,
+    minHeight: layout.controlHeight,
     paddingLeft: space[4],
   },
-  searchGlyph: { color: colors.text.secondary, fontSize: 22 },
-  searchInput: { ...type.body, color: colors.text.primary, flex: 1, minHeight: 48, paddingHorizontal: space[3] },
+  searchGlyph: { ...type.navigationTitle, color: colors.text.primary },
+  searchInput: { ...type.body, color: colors.text.primary, flex: 1, minHeight: layout.controlHeight, paddingHorizontal: space[3] },
 });

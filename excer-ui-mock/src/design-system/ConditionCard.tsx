@@ -110,7 +110,7 @@ export function ConditionCard(props: ConditionCardProps) {
               pressedScale={0.97}
             >
               <View style={styles.actionPill}>
-                {loading ? <ActivityIndicator color={colors.text.ink} size="small" /> : <Text style={styles.actionText}>{actionLabel}</Text>}
+                {loading ? <ActivityIndicator color={colors.text.onLight} size="small" /> : <Text style={styles.actionText}>{actionLabel}</Text>}
               </View>
             </PressableScale>
           )}
@@ -249,11 +249,10 @@ function StateConditionCard({
   );
 }
 
-function CardCopy({ onOpen, subtitle, title }: { onOpen?: () => void; subtitle?: string; title: string }) {
+function CardCopy({ onOpen, title }: { onOpen?: () => void; subtitle?: string; title: string }) {
   const copy = (
     <View style={styles.copyInner}>
       <Text numberOfLines={1} style={styles.title}>{title}</Text>
-      {subtitle ? <Text numberOfLines={2} style={styles.subtitle}>{subtitle}</Text> : null}
     </View>
   );
   if (!onOpen) return <View style={styles.copy}>{copy}</View>;
@@ -330,7 +329,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     ...type.label,
-    color: colors.text.ink,
+    color: colors.text.onLight,
   },
   banner: {
     flex: 1,

@@ -79,7 +79,7 @@ describe('rendered Analysis route compliance', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Open Go to gym earning detail' }));
 
     await expectLocation(result, '/analysis/earning', { condition: 'demo-gym' });
-    expect(screen.getByText(/Selected from day detail/)).toBeTruthy();
+    expect(screen.queryByText(/Selected from day detail/)).toBeNull();
   });
 
   it('starts the cheapest real local condition from an unmet current day', async () => {
