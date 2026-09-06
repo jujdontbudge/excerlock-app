@@ -1,4 +1,4 @@
-import { PropsWithChildren, useEffect, useMemo } from 'react';
+import { PropsWithChildren, ReactNode, useEffect, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -19,19 +19,22 @@ import { PressableScale } from './PressableScale';
 import { controls } from '../content/controls';
 import { useMotion } from '../motion/useMotion';
 import { feedback } from '../motion/haptics';
+import { useSheetKeyboard } from '../motion/useSheetKeyboard';
 type Props = PropsWithChildren<{
   open: boolean;
+  footer?: ReactNode;
   title: string;
   onDismiss: () => void;
 }>;
 export function BottomSheet(props: Props) {
   return props.open ? <SheetPanel {...props} /> : null;
 }
-function SheetPanel({ title, onDismiss, children }: Props) {
+function SheetPanel({ title, onDismiss, children, footer }: Props) {
   const { height } = useWindowDimensions(),
     insets = useSafeAreaInsets(),
     m = useMotion(),
     y = useSharedValue(m.reduced ? 0 : height);
+  const keyboard = useSheetKeyboard(height);
   useEffect(() => {
     y.set(m.reduced ? 0 : withSpring(0, t.motion.spring.sheet));
   }, [y, m.reduced]);
@@ -85,6 +88,7 @@ function SheetPanel({ title, onDismiss, children }: Props) {
             paddingBottom: Math.max(insets.bottom, t.space.lg),
           },
           position,
+          keyboard,
         ]}>
         <GestureDetector gesture={gesture}>
           <Animated.View accessible={false} style={{ paddingHorizontal: t.space.xl, paddingTop: t.space.md }}>
@@ -126,6 +130,7 @@ function SheetPanel({ title, onDismiss, children }: Props) {
           }}>
           {children}
         </ScrollView>
+        {footer ? <View style={{ paddingHorizontal: t.space.xl, paddingTop: t.space.md }}>{footer}</View> : null}
       </Animated.View>
     </Animated.View>
   );

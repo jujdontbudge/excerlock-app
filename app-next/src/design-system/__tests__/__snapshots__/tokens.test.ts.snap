@@ -41,6 +41,7 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
     "heroIcon": 112,
     "icon": 48,
     "logo": 140,
+    "mapAspect": 2,
     "maxWidth": 600,
     "page": 24,
     "progress": 6,

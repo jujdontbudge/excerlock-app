@@ -1,3 +1,7 @@
+export const alwaysLocationCopy = {
+  title: 'Allow location access all the time?',
+  body: 'Automatically recognize gym arrivals even when ExcerLock is closed.',
+};
 export const permissionCopy = {
   screenTime: {
     title: 'Let ExcerLock manage Screen Time?',

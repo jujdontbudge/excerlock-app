@@ -1,1 +1,1 @@
-export { StagePreview as default } from '../../src/features/dev/StagePreview';
+export { SetupRoute as default } from '../../src/features/setup/SetupRoute';

@@ -1,5 +1,7 @@
+import { Permissions } from '../domain/types';
 import { Unsubscribe, SavedPlace } from './models';
 export interface GymPort {
+  requestLocation(): Promise<Permissions['location']>;
   searchPlaces(query: string): Promise<SavedPlace[]>;
   savePlace(place: SavedPlace): Promise<void>;
   listPlaces(): SavedPlace[];

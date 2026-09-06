@@ -1,6 +1,7 @@
 import { Entitlement, LockedApps, Permissions, Session } from '../domain/types';
 import { HistoryDay, Unsubscribe } from './models';
-export type FakePrompt = { kind: 'permission'; name: keyof Permissions } | { kind: 'picker'; initial: LockedApps };
+export type FakePrompt =
+  { kind: 'permission'; name: keyof Permissions; scope?: 'always' } | { kind: 'picker'; initial: LockedApps };
 export type RuntimeEvent = { at: string; event: string; props: Record<string, unknown> };
 export type DevSnapshot = {
   scenarioId: string;

@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { tokens as t } from './tokens';
@@ -12,6 +13,7 @@ export function ChoiceRow({
   selected = false,
   onPress,
   icon,
+  leading,
   recommended = false,
   multiple = false,
 }: {
@@ -20,6 +22,7 @@ export function ChoiceRow({
   selected?: boolean;
   onPress: () => void;
   icon?: IconName;
+  leading?: ReactNode;
   recommended?: boolean;
   multiple?: boolean;
 }) {
@@ -43,7 +46,7 @@ export function ChoiceRow({
           transitionProperty: ['borderColor', 'backgroundColor'],
           transitionDuration: t.motion.duration.standard,
         }}>
-        {icon ? <Icon name={icon} /> : null}
+        {leading ?? (icon ? <Icon name={icon} /> : null)}
         <View style={{ flex: 1, gap: t.space.xs }}>
           <Label variant="label">{title}</Label>
           {recommended ? (

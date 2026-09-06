@@ -86,6 +86,7 @@ export const tokens = {
     ring: 96,
     dot: 8,
     maxWidth: 600,
+    mapAspect: 2,
     prompt: 300,
   },
   shadow: { cta: '0px 4px 12px rgba(0,0,0,0.08)' },

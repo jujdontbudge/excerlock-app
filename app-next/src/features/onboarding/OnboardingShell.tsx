@@ -23,6 +23,7 @@ export function OnboardingShell({
   overlay,
   continueLabel,
   hideContinue = false,
+  hideBack = false,
 }: PropsWithChildren<{
   step: string;
   progress: number;
@@ -33,6 +34,7 @@ export function OnboardingShell({
   overlay?: ReactNode;
   continueLabel?: string;
   hideContinue?: boolean;
+  hideBack?: boolean;
 }>) {
   const m = useMotion(),
     family = ['O12', 'O13', 'O14'].includes(step) ? 'dots' : ['O16', 'O17', 'O18'].includes(step) ? 'loop' : step;
@@ -45,7 +47,7 @@ export function OnboardingShell({
   return (
     <ScreenShell
       overlay={overlay}
-      header={<OnboardingHeader progress={progress} onBack={step === 'O01' ? undefined : onBack} />}
+      header={<OnboardingHeader progress={progress} onBack={step === 'O01' || hideBack ? undefined : onBack} />}
       footer={
         hideContinue ? undefined : (
           <PrimaryButton

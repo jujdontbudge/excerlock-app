@@ -4,7 +4,15 @@ import { Label } from './Label';
 import { Icon } from '../icons/Icon';
 import { Reveal } from '../motion/Reveal';
 import { tokens as t } from './tokens';
-export function Checklist({ items, completed }: { items: readonly string[]; completed: number }) {
+export function Checklist({
+  items,
+  completed = 0,
+  checked,
+}: {
+  items: readonly string[];
+  completed?: number;
+  checked?: readonly boolean[];
+}) {
   return (
     <View style={{ gap: t.space.lg }}>
       {items.map((item, i) => (
@@ -13,7 +21,7 @@ export function Checklist({ items, completed }: { items: readonly string[]; comp
             accessible
             accessibilityRole="checkbox"
             accessibilityLabel={item}
-            accessibilityState={{ checked: i < completed, disabled: true }}
+            accessibilityState={{ checked: checked?.[i] ?? i < completed, disabled: true }}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -26,11 +34,11 @@ export function Checklist({ items, completed }: { items: readonly string[]; comp
                 borderRadius: t.radius.pill,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: i < completed ? t.icon.mint : t.surface.subtle,
+                backgroundColor: (checked?.[i] ?? i < completed) ? t.icon.mint : t.surface.subtle,
                 transitionProperty: 'backgroundColor',
                 transitionDuration: t.motion.duration.standard,
               }}>
-              {i < completed ? (
+              {(checked?.[i] ?? i < completed) ? (
                 <Reveal>
                   <Icon name="check" variant="utility" tint={t.state.success} size={t.layout.glyph} />
                 </Reveal>
