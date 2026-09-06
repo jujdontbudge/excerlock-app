@@ -2,8 +2,10 @@
 
 exports[`biker-time progress variant 1`] = `
 {
+  "action": undefined,
   "detail": "18 / 30 minutes",
   "icon": "biking",
+  "label": undefined,
   "title": "Bike 30 minutes",
   "value": 0.6,
 }
@@ -22,8 +24,10 @@ exports[`gym-arrival-user progress variant 1`] = `
 
 exports[`gym-time-user progress variant 1`] = `
 {
+  "action": "checkin",
   "detail": "12 / 30 minutes",
   "icon": "gym",
+  "label": "Check in",
   "title": "Spend 30 minutes at the gym",
   "value": 0.4,
 }
@@ -31,8 +35,10 @@ exports[`gym-time-user progress variant 1`] = `
 
 exports[`home-locked-walking progress variant 1`] = `
 {
+  "action": undefined,
   "detail": "3,200 / 5,000 steps",
   "icon": "walking",
+  "label": undefined,
   "title": "Walk 5,000 steps",
   "value": 0.64,
 }
@@ -40,10 +46,10 @@ exports[`home-locked-walking progress variant 1`] = `
 
 exports[`home-walking-session progress variant 1`] = `
 {
-  "action": "stop",
+  "action": "walk",
   "detail": "15:00 left",
   "icon": "walking",
-  "label": "Stop walk",
+  "label": "View walk",
   "title": "Unlock while walking",
   "value": 1,
 }
@@ -51,8 +57,10 @@ exports[`home-walking-session progress variant 1`] = `
 
 exports[`runner-distance progress variant 1`] = `
 {
+  "action": undefined,
   "detail": "1.2 / 2 mi",
   "icon": "running",
+  "label": undefined,
   "title": "Run 2 mi",
   "value": 0.6,
 }

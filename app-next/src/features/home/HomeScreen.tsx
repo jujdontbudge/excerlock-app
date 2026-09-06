@@ -1,3 +1,4 @@
+import { HomeSheets } from '../sessions/HomeSheets';
 import { useDemoProgress } from './useDemoProgress';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
@@ -13,7 +14,6 @@ import {
   StreakBadge,
   SecondaryButton,
   Label,
-  BottomSheet,
 } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
@@ -52,7 +52,7 @@ export function HomeScreen() {
       timezone: runtime.clock.timezone(),
     }),
     glyph = useUnlockMoment(status.state);
-  const [sheet, setSheet] = useState<'walk' | 'checkin' | null>(null);
+  const [sheet, setSheet] = useState<{ type: 'walk' | 'checkin'; ruleId: string } | null>(null);
   const chooseApps = () => void runtime.screenTime.presentAppPicker();
   const add = () => router.push('/builder');
   const action = () => {
@@ -72,13 +72,15 @@ export function HomeScreen() {
     <ScreenShell
       safeBottom={false}
       overlay={
-        <BottomSheet
-          open={sheet !== null}
-          title={sheet === 'walk' ? c.startWalk : c.checkIn}
-          onDismiss={() => setSheet(null)}>
-          <LivingIcon name={sheet === 'walk' ? 'walking' : 'gym'} />
-          <Label>{c.placeholder}</Label>
-        </BottomSheet>
+        <HomeSheets
+          sheet={sheet}
+          rules={rules}
+          onDismiss={() => setSheet(null)}
+          onChooseGym={() => {
+            setSheet(null);
+            router.push('/settings/gyms');
+          }}
+        />
       }>
       <Heading
         title={c.greeting(name)}
@@ -123,8 +125,7 @@ export function HomeScreen() {
               action={'label' in model ? model.label : undefined}
               onAction={() => {
                 if ('action' in model) {
-                  if (model.action === 'stop') runtime.walking.stop();
-                  else if (model.action) setSheet(model.action);
+                  if (model.action) setSheet({ type: model.action, ruleId: rule.id });
                 }
               }}
             />

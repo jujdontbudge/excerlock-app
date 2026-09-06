@@ -1,3 +1,4 @@
+import { stores } from '../state/stores';
 import { SupportFake } from './fakes/SupportFake';
 import { Runtime } from '../runtime/Runtime';
 import { dayKey } from '../domain/schedule';
@@ -21,14 +22,31 @@ import { SyncFake } from './fakes/SyncFake';
 export function FakeRuntime(): Runtime {
   const ctx = new FakeContext(scenarios[0]),
     walking = WalkingFake(ctx),
-    persistence = contextPersistence(ctx);
+    persistence = contextPersistence(ctx),
+    gym = GymFake(ctx),
+    ready = persistence.ready.then(async () => {
+      await Promise.all(
+        stores
+          .filter((store) => !store.persist.hasHydrated())
+          .map(
+            (store) =>
+              new Promise<void>((resolve) => {
+                const stop = store.persist.onFinishHydration(() => {
+                  stop();
+                  resolve();
+                });
+              }),
+          ),
+      );
+      walking.resume();
+    });
   return {
     kind: 'fake',
     clock: ctx.clock,
     screenTime: ScreenTimeFake(ctx),
     steps: StepsFake(ctx),
     walking,
-    gym: GymFake(ctx),
+    gym,
     health: HealthFake(ctx),
     auth: AuthFake(ctx),
     subscription: SubscriptionFake(ctx),
@@ -37,11 +55,11 @@ export function FakeRuntime(): Runtime {
     sync: SyncFake(),
     support: SupportFake(ctx),
     dev: {
-      ready: () => persistence.ready,
+      ready: () => ready,
       flush: persistence.flush,
       scenarios: scenarios.map(({ id, title }) => ({ id, title })),
       load: async (id, keepEdits = false) => {
-        await persistence.ready;
+        await ready;
         const scenario = scenarios.find((s) => s.id === id);
         if (!scenario) throw new Error('Unknown scenario');
         ctx.update({ loading: true });
@@ -52,6 +70,7 @@ export function FakeRuntime(): Runtime {
         ctx.clock.set(scenario.clock.now, scenario.clock.timezone);
         ctx.update({
           stepsOverride: undefined,
+          placement: 'propped',
           loading: false,
           scenarioId: id,
           outcome: 'success',
@@ -62,8 +81,11 @@ export function FakeRuntime(): Runtime {
           accessibility: scenario.accessibility,
           presence: scenario.gym?.presence ?? 'outside',
         });
+        walking.resume();
       },
       advance: ctx.clock.advance,
+      setPresence: (presence) => ctx.update({ presence }),
+      setPlacement: (placement) => ctx.update({ placement }),
       setSteps: (value) => {
         if (!Number.isFinite(value) || value < 0) throw new Error('Invalid step count');
         ctx.update({
@@ -90,7 +112,8 @@ export function FakeRuntime(): Runtime {
     },
     dispose: () => {
       persistence.dispose();
-      walking.stop();
+      walking.disconnect();
+      gym.dispose();
       ctx.dispose();
     },
   };

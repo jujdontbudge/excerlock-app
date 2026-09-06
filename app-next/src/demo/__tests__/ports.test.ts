@@ -33,6 +33,7 @@ test('scripted walking phases and gym arrivals update observable local facts', a
   stop();
   await runtime.dev.load('gym-arrival-user');
   const gym = runtime.gym.listPlaces()[0];
+  runtime.dev.setPresence('inside');
   await runtime.gym.checkIn(gym.id);
   expect(ruleDaysStore.getState().data.days[0].met).toBe(true);
   runtime.dev.setPromptMode('grant');

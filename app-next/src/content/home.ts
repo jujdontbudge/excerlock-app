@@ -29,6 +29,7 @@ export const homeCopy = {
   noNext: 'Your apps stay open until your next scheduled condition.',
   lockedApps: 'Locked apps',
   startWalk: 'Start a walk',
+  viewWalk: 'View walk',
   stopWalk: 'Stop walk',
   checkIn: 'Check in',
   checkedIn: 'You checked in',

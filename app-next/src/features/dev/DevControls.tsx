@@ -1,3 +1,4 @@
+import { sessionCopy } from '../../content/sessions';
 import { rulesStore } from '../../state/rulesStore';
 import { subscriptionCopy } from '../../content/subscription';
 import { useState } from 'react';
@@ -18,6 +19,20 @@ export function DevControls() {
     [error, setError] = useState('');
   return (
     <>
+      <SettingsGroup title={sessionCopy.presence}>
+        <SegmentedControl
+          options={sessionCopy.presences}
+          value={view.presence}
+          onChange={(v) => runtime.dev.setPresence(v as 'inside' | 'outside')}
+        />
+      </SettingsGroup>
+      <SettingsGroup title={sessionCopy.placement}>
+        <SegmentedControl
+          options={sessionCopy.placements}
+          value={view.placement ?? 'propped'}
+          onChange={(v) => runtime.dev.setPlacement(v as 'propped' | 'handheld')}
+        />
+      </SettingsGroup>
       <SettingsGroup title={c.clock}>
         <SettingsRow
           title={c.addSteps}

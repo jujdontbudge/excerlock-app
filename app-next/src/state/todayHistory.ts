@@ -24,7 +24,12 @@ export function todayHistory(
     met: isMetDay(
       scheduled,
       days.filter((d) => d.day === today),
-      0,
+      Math.max(
+        0,
+        ...days
+          .filter((d) => d.day === today && scheduled.some((r) => r.id === d.ruleId && r.mode.kind === 'state'))
+          .map((d) => d.progress),
+      ),
     ),
   };
   return [...history.filter((d) => d.day !== today), current].sort((a, b) => a.day.localeCompare(b.day));

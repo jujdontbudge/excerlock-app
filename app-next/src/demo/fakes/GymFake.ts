@@ -1,3 +1,4 @@
+import { gymProgress } from '../gymProgress';
 import { GymPort } from '../../ports/GymPort';
 import { permissionsStore } from '../../state/permissionsStore';
 import { settingsStore } from '../../state/settingsStore';
@@ -7,9 +8,11 @@ import { dayKey } from '../../domain/schedule';
 import { applyProgress } from '../../domain/progress';
 import { places } from '../places';
 import { FakeContext } from '../FakeContext';
-export function GymFake(ctx: FakeContext): GymPort {
+export function GymFake(ctx: FakeContext): GymPort & { dispose: () => void } {
   const list = () => settingsStore.getState().data.gymPlaces;
+  const progress = gymProgress(ctx);
   return {
+    dispose: progress.dispose,
     requestLocation: async () => {
       await ctx.request('location');
       return permissionsStore.getState().data.location;
@@ -27,8 +30,9 @@ export function GymFake(ctx: FakeContext): GymPort {
     listPlaces: list,
     checkIn: async (id) => {
       ctx.result();
+      if (ctx.snapshot().presence !== 'inside') throw new Error('Outside saved gym');
       if (!list().some((p) => p.id === id)) throw new Error('Gym not found');
-      ctx.update({ presence: 'inside' });
+      progress.arrive();
       const day = dayKey(ctx.clock.now(), ctx.clock.timezone()),
         current = ruleDaysStore.getState().data.days;
       const updates = rulesStore
@@ -44,7 +48,9 @@ export function GymFake(ctx: FakeContext): GymPort {
               met: false,
               metAt: null,
             },
-            rule.mode.kind === 'event' ? 1 : 0,
+            rule.mode.kind === 'event'
+              ? 1
+              : (current.find((d) => d.ruleId === rule.id && d.day === day)?.progress ?? 0),
             ctx.clock.now(),
           ),
         );

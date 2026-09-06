@@ -16,6 +16,7 @@ export type DevSnapshot = {
   restoreOutcome: 'restored' | 'notFound';
   outcome: 'success' | 'cancel' | 'error';
   presence: 'inside' | 'outside';
+  placement?: 'propped' | 'handheld';
 };
 export interface RuntimeControls {
   ready(): Promise<void>;
@@ -24,6 +25,8 @@ export interface RuntimeControls {
   load(id: string, keepEdits?: boolean): Promise<void>;
   advance(ms: number): void;
   setSteps(value: number): void;
+  setPresence(value: 'inside' | 'outside'): void;
+  setPlacement(value: 'propped' | 'handheld'): void;
   setTime(now: string, timezone?: string): void;
   setPromptMode(mode: DevSnapshot['promptMode']): void;
   setPermission(name: keyof Permissions, status: Permissions[keyof Permissions]): void;

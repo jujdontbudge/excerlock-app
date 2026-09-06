@@ -9,20 +9,24 @@ export function ScreenShell({
   header,
   overlay,
   safeBottom = true,
+  tinted = true,
 }: PropsWithChildren<{
   footer?: ReactNode;
   header?: ReactNode;
   overlay?: ReactNode;
   safeBottom?: boolean;
+  tinted?: boolean;
 }>) {
   return (
     <View style={s.root}>
-      <LinearGradient
-        pointerEvents="none"
-        colors={[t.surface.topTint, t.surface.topTintMid, t.surface.canvas]}
-        locations={[0, t.layout.washMid / t.layout.wash, 1]}
-        style={s.wash}
-      />
+      {tinted ? (
+        <LinearGradient
+          pointerEvents="none"
+          colors={[t.surface.topTint, t.surface.topTintMid, t.surface.canvas]}
+          locations={[0, t.layout.washMid / t.layout.wash, 1]}
+          style={s.wash}
+        />
+      ) : null}
       <SafeAreaView style={s.rootClear} edges={safeBottom ? ['top', 'bottom'] : ['top']}>
         <KeyboardAvoidingView behavior="padding" style={s.rootClear}>
           {header}

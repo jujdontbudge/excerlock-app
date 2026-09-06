@@ -24,8 +24,8 @@ export function progressContent(
       icon: rule.activity,
       value: live ? 1 : 0,
       detail: live ? c.left(leaseClock(session.leaseUntil, now)) : c.walkReady,
-      action: live ? 'stop' : 'walk',
-      label: live ? c.stopWalk : c.startWalk,
+      action: 'walk',
+      label: live ? c.viewWalk : c.startWalk,
     } as const;
   }
   if (m.kind === 'event')
@@ -51,5 +51,7 @@ export function progressContent(
     icon: rule.activity,
     value: row.progress / m.goal,
     detail: permission ? c.progress(format(row.progress), format(m.goal), unit) : needed,
+    action: rule.activity === 'gym' && !row.met ? 'checkin' : undefined,
+    label: rule.activity === 'gym' && !row.met ? c.checkIn : undefined,
   } as const;
 }

@@ -20,6 +20,7 @@ export function contextPersistence(ctx: FakeContext) {
       outcome: s.outcome,
       restoreOutcome: s.restoreOutcome,
       presence: s.presence,
+      placement: s.placement,
     });
     writing = writing.then(() => AsyncStorage.setItem(key, value)).catch(() => undefined);
   };
@@ -41,6 +42,7 @@ export function contextPersistence(ctx: FakeContext) {
         if (['success', 'cancel', 'error'].includes(data.outcome)) patch.outcome = data.outcome;
         if (['restored', 'notFound'].includes(data.restoreOutcome)) patch.restoreOutcome = data.restoreOutcome;
         if (['inside', 'outside'].includes(data.presence)) patch.presence = data.presence;
+        if (['propped', 'handheld'].includes(data.placement)) patch.placement = data.placement;
         const steps = data.stepsOverride;
         if (
           steps &&

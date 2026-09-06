@@ -4,5 +4,6 @@ export interface WalkingPort {
   start(rule: Rule): Promise<WalkingSession>;
   stop(): void;
   observe(callback: (session: WalkingSession | null) => void): Unsubscribe;
-  treadmillFraming(): { ready: boolean; message: string };
+  details(): { steps: number; walkingSeconds: number; graceUntil: string | null };
+  treadmillFraming(): { ready: boolean; message: string; placement: 'propped' | 'handheld' };
 }

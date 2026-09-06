@@ -14,7 +14,8 @@ def find(label, timeout=8):
   time.sleep(.15)
  raise AssertionError(f'Missing accessible element: {label}')
 def tap(label):
- frame=find(label)['frame']; run('idb','ui','tap','--udid',SIM,round(frame['x']+frame['width']/2),round(frame['y']+frame['height']/2))
+ candidates=[n for n in tree() if n.get('AXLabel')==label and n.get('type')=='Button']
+ frame=(candidates[0] if candidates else find(label))['frame']; run('idb','ui','tap','--udid',SIM,round(frame['x']+frame['width']/2),round(frame['y']+frame['height']/2))
 def swipe(x,y,end_x,end_y,duration=.8): run('idb','ui','swipe','--udid',SIM,x,y,end_x,end_y,'--duration',duration)
 def open_url(url): run('xcrun','simctl','openurl',SIM,url)
 def screenshot(path): run('xcrun','simctl','io',SIM,'screenshot',str(Path(path).resolve()))
