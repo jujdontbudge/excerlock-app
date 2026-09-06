@@ -1,0 +1,650 @@
+[
+  {
+    "kind": "screens",
+    "id": "OT00-S001",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 1.0,
+    "global_seconds": 1.0,
+    "file": "strips/otter-OT00-S001.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S002",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 3.6,
+    "global_seconds": 3.6,
+    "file": "strips/otter-OT00-S002.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S003",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 11.0,
+    "global_seconds": 11.0,
+    "file": "strips/otter-OT00-S003.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S004",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 13.0,
+    "global_seconds": 13.0,
+    "file": "strips/otter-OT00-S004.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S005",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 16.5,
+    "global_seconds": 16.5,
+    "file": "strips/otter-OT00-S005.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S006",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 20.0,
+    "global_seconds": 20.0,
+    "file": "strips/otter-OT00-S006.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S007",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 24.0,
+    "global_seconds": 24.0,
+    "file": "strips/otter-OT00-S007.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S008",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 26.5,
+    "global_seconds": 26.5,
+    "file": "strips/otter-OT00-S008.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S009",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 30.5,
+    "global_seconds": 30.5,
+    "file": "strips/otter-OT00-S009.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S010",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 34.0,
+    "global_seconds": 34.0,
+    "file": "strips/otter-OT00-S010.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S011",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 37.0,
+    "global_seconds": 37.0,
+    "file": "strips/otter-OT00-S011.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S012",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 41.0,
+    "global_seconds": 41.0,
+    "file": "strips/otter-OT00-S012.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S013",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 45.0,
+    "global_seconds": 45.0,
+    "file": "strips/otter-OT00-S013.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S014",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 52.0,
+    "global_seconds": 52.0,
+    "file": "strips/otter-OT00-S014.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S015",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 60.0,
+    "global_seconds": 60.0,
+    "file": "strips/otter-OT00-S015.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S016",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 66.0,
+    "global_seconds": 66.0,
+    "file": "strips/otter-OT00-S016.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S017",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 70.0,
+    "global_seconds": 70.0,
+    "file": "strips/otter-OT00-S017.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S018",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 75.0,
+    "global_seconds": 75.0,
+    "file": "strips/otter-OT00-S018.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S019",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 78.5,
+    "global_seconds": 78.5,
+    "file": "strips/otter-OT00-S019.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S020",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 81.5,
+    "global_seconds": 81.5,
+    "file": "strips/otter-OT00-S020.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S021",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 87.0,
+    "global_seconds": 87.0,
+    "file": "strips/otter-OT00-S021.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S022",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 93.0,
+    "global_seconds": 93.0,
+    "file": "strips/otter-OT00-S022.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S023",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 98.5,
+    "global_seconds": 98.5,
+    "file": "strips/otter-OT00-S023.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S024",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 103.0,
+    "global_seconds": 103.0,
+    "file": "strips/otter-OT00-S024.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S025",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 107.5,
+    "global_seconds": 107.5,
+    "file": "strips/otter-OT00-S025.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S026",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 114.5,
+    "global_seconds": 114.5,
+    "file": "strips/otter-OT00-S026.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S027",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 119.8,
+    "global_seconds": 119.8,
+    "file": "strips/otter-OT00-S027.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S028",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 121.5,
+    "global_seconds": 121.5,
+    "file": "strips/otter-OT00-S028.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S029",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 123.5,
+    "global_seconds": 123.5,
+    "file": "strips/otter-OT00-S029.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S030",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 125.5,
+    "global_seconds": 125.5,
+    "file": "strips/otter-OT00-S030.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S031",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 133.5,
+    "global_seconds": 133.5,
+    "file": "strips/otter-OT00-S031.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S032",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 143.0,
+    "global_seconds": 143.0,
+    "file": "strips/otter-OT00-S032.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S033",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 149.0,
+    "global_seconds": 149.0,
+    "file": "strips/otter-OT00-S033.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S034",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 153.0,
+    "global_seconds": 153.0,
+    "file": "strips/otter-OT00-S034.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S035",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 154.8,
+    "global_seconds": 154.8,
+    "file": "strips/otter-OT00-S035.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S036",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 157.0,
+    "global_seconds": 157.0,
+    "file": "strips/otter-OT00-S036.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S037",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 165.0,
+    "global_seconds": 165.0,
+    "file": "strips/otter-OT00-S037.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S038",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 172.5,
+    "global_seconds": 172.5,
+    "file": "strips/otter-OT00-S038.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S039",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 174.8,
+    "global_seconds": 174.8,
+    "file": "strips/otter-OT00-S039.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S040",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 178.0,
+    "global_seconds": 178.0,
+    "file": "strips/otter-OT00-S040.png"
+  },
+  {
+    "kind": "screens",
+    "id": "OT00-S041",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 179.8,
+    "global_seconds": 179.8,
+    "file": "strips/otter-OT00-S041.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M001",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 2.03,
+    "global_seconds": 2.03,
+    "file": "strips/otter-OT00-M001.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M002",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 5.07,
+    "global_seconds": 5.07,
+    "file": "strips/otter-OT00-M002.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M003",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 10.27,
+    "global_seconds": 10.27,
+    "file": "strips/otter-OT00-M003.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M004",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 14.03,
+    "global_seconds": 14.03,
+    "file": "strips/otter-OT00-M004.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M005",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 18.67,
+    "global_seconds": 18.67,
+    "file": "strips/otter-OT00-M005.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M006",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 22.57,
+    "global_seconds": 22.57,
+    "file": "strips/otter-OT00-M006.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M007",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 25.27,
+    "global_seconds": 25.27,
+    "file": "strips/otter-OT00-M007.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M008",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 28.0,
+    "global_seconds": 28.0,
+    "file": "strips/otter-OT00-M008.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M009",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 33.13,
+    "global_seconds": 33.13,
+    "file": "strips/otter-OT00-M009.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M010",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 34.87,
+    "global_seconds": 34.87,
+    "file": "strips/otter-OT00-M010.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M011",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 39.0,
+    "global_seconds": 39.0,
+    "file": "strips/otter-OT00-M011.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M012",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 42.1,
+    "global_seconds": 42.1,
+    "file": "strips/otter-OT00-M012.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M013",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 46.87,
+    "global_seconds": 46.87,
+    "file": "strips/otter-OT00-M013.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M014",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 56.93,
+    "global_seconds": 56.93,
+    "file": "strips/otter-OT00-M014.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M015",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 62.0,
+    "global_seconds": 62.0,
+    "file": "strips/otter-OT00-M015.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M016",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 68.07,
+    "global_seconds": 68.07,
+    "file": "strips/otter-OT00-M016.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M017",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 71.97,
+    "global_seconds": 71.97,
+    "file": "strips/otter-OT00-M017.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M018",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 77.0,
+    "global_seconds": 77.0,
+    "file": "strips/otter-OT00-M018.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M019",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 79.7,
+    "global_seconds": 79.7,
+    "file": "strips/otter-OT00-M019.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M020",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 82.5,
+    "global_seconds": 82.5,
+    "file": "strips/otter-OT00-M020.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M021",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 89.77,
+    "global_seconds": 89.77,
+    "file": "strips/otter-OT00-M021.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M022",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 95.2,
+    "global_seconds": 95.2,
+    "file": "strips/otter-OT00-M022.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M023",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 101.13,
+    "global_seconds": 101.13,
+    "file": "strips/otter-OT00-M023.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M024",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 104.77,
+    "global_seconds": 104.77,
+    "file": "strips/otter-OT00-M024.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M025",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 109.93,
+    "global_seconds": 109.93,
+    "file": "strips/otter-OT00-M025.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M026",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 118.63,
+    "global_seconds": 118.63,
+    "file": "strips/otter-OT00-M026.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M027",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 120.4,
+    "global_seconds": 120.4,
+    "file": "strips/otter-OT00-M027.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M028",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 122.37,
+    "global_seconds": 122.37,
+    "file": "strips/otter-OT00-M028.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M029",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 124.3,
+    "global_seconds": 124.3,
+    "file": "strips/otter-OT00-M029.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M030",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 126.47,
+    "global_seconds": 126.47,
+    "file": "strips/otter-OT00-M030.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M031",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 139.33,
+    "global_seconds": 139.33,
+    "file": "strips/otter-OT00-M031.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M032",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 146.5,
+    "global_seconds": 146.5,
+    "file": "strips/otter-OT00-M032.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M033",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 151.73,
+    "global_seconds": 151.73,
+    "file": "strips/otter-OT00-M033.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M034",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 153.9,
+    "global_seconds": 153.9,
+    "file": "strips/otter-OT00-M034.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M035",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 155.27,
+    "global_seconds": 155.27,
+    "file": "strips/otter-OT00-M035.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M036",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 158.27,
+    "global_seconds": 158.27,
+    "file": "strips/otter-OT00-M036.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M037",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 170.73,
+    "global_seconds": 170.73,
+    "file": "strips/otter-OT00-M037.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M038",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 173.23,
+    "global_seconds": 173.23,
+    "file": "strips/otter-OT00-M038.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M039",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 175.73,
+    "global_seconds": 175.73,
+    "file": "strips/otter-OT00-M039.png"
+  },
+  {
+    "kind": "motions",
+    "id": "OT00-M040",
+    "clip": "design/research/otter-replay/segments/seg-00.mp4",
+    "local_seconds": 179.1,
+    "global_seconds": 179.1,
+    "file": "strips/otter-OT00-M040.png"
+  }
+]

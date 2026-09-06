@@ -1,0 +1,9 @@
+# Reference prompts
+
+Model: `gemini-3.7-flash-high` via `agy` 1.1.27. Date: 2026-09-06.
+
+## OtterLife segment 00
+
+```text
+Watch the whole app screen recording at /Users/johansardar/ExcerLock/design/research/otter-replay/segments/seg-00.mp4, every frame. You are observing OtterLife only. Do not design ExcerLock or recommend layouts. Source recording is 30 fps; this segment starts at global 00:00 and lasts 180 seconds. Return raw observations in two sections. INVENTORY: every screen/state in order, unique IDs OT00-S001 etc, segment-local and global timestamps in seconds, exact visible title/copy, top-to-bottom layout regions, component types, fixed versus scrolling content, tab names/presence, every Settings row and group if visible. MOTION: every transition and micro-interaction, unique IDs OT00-M001 etc, segment-local timestamp in decimal seconds, elements/properties, direction, measured start/end frames and duration milliseconds, easing character, visible overshoot, sibling stagger, tap versus gesture, and per-frame displacement samples where discernible. Separate observations from uncertain estimates; never invent haptics from video. Include a final JSON fenced block with screens: [{id, time_seconds, title}] and motions: [{id, time_seconds, duration_ms, description}] so frame strips can be extracted. Times must be within this clip. Explicitly state any unreadable or missing coverage. Output only observations, not a plan. Do not modify any files.
+```
