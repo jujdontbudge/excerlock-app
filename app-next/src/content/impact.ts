@@ -1,4 +1,5 @@
 export const impactCopy = {
+  percentageLabel: 'of your free time spent on your phone',
   spent: '…spent scrolling',
   conclusion: 'That’s time you could put toward what matters to you.',
   assumption: 'Illustration assumes 8 free hours a day after sleep, work, and life admin.',

@@ -8,6 +8,8 @@ test('year grid retains its accessible identity as free and scrolling time are r
   await view.rerender(<DotGridReveal {...props} step="O13" />);
   expect(screen.getByLabelText('122 days of free-time equivalent remain')).toBeTruthy();
   await view.rerender(<DotGridReveal {...props} step="O14" />);
+  expect(screen.getByText('38%')).toBeTruthy();
+  expect(screen.getByText('of your free time spent on your phone')).toBeTruthy();
   expect(screen.getByLabelText('46 of 122 free-time equivalent days spent scrolling')).toBeTruthy();
 });
 test('loop story changes the cue-to-reward path without losing its diagram', async () => {

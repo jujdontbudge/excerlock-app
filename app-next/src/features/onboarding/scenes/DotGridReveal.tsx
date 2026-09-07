@@ -7,6 +7,7 @@ import { opacityIn, opacityOut } from '../../../motion/presets';
 import { onboardingCopy } from '../../../content/onboarding';
 import { impactCopy as c } from '../../../content/impact';
 import { ImpactDots } from '../impact/ImpactDots';
+import { FreeTimePercentage } from '../impact/FreeTimePercentage';
 import { impactSummary } from '../impact/model';
 import { impactTiming as timing } from '../impact/timing';
 import { AnswerProps } from '../types';
@@ -24,7 +25,10 @@ export function DotGridReveal({ step, answers }: AnswerProps & { step: 'O12' | '
         <Heading title={onboardingCopy[step].title} centered />
       </Animated.View>
       <View style={{ paddingTop: t.space.xxl, gap: t.space.xl }}>
-        <ImpactDots step={step} minutes={minutes} />
+        <View>
+          <ImpactDots step={step} minutes={minutes} />
+          {step === 'O14' ? <FreeTimePercentage hours={summary.hours} /> : null}
+        </View>
         <Animated.View
           key={step + '-caption'}
           style={{
