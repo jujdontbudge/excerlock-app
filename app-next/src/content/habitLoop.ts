@@ -1,11 +1,11 @@
 export const habitLoopCopy = [
   {
-    center: 'The scrolling loop',
+    center: 'Scrolling is\nthe habit',
     stages: [
       { title: 'The urge', detail: '“I might check socials”' },
       { title: 'The reward', detail: '“That feels good”' },
       { title: 'Reinforcement', detail: '“I want more”' },
-      { title: 'Becomes a habit', detail: '“Let’s keep scrolling”' },
+      { title: 'Becomes a habit', detail: '“Keep scrolling”' },
     ],
   },
   {

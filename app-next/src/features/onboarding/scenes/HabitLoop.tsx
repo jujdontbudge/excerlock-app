@@ -17,13 +17,13 @@ export function HabitLoop({ phase }: { phase: number }) {
   const copy = habitLoopCopy[phase],
     m = useMotion();
   const positions = [
-    { left: '25%', top: '-4%', width: '50%' },
-    { left: '68%', top: '31%', width: '32%' },
+    { left: '23%', top: '0%', width: '54%' },
+    { left: '68%', top: '38%', width: '32%' },
     { left: '23%', top: '77%', width: '54%' },
-    { left: '0%', top: '31%', width: '32%' },
+    { left: '0%', top: '38%', width: '32%' },
   ] as const;
   return (
-    <View style={{ width: '100%', aspectRatio: 0.9 }}>
+    <View style={{ width: '100%', aspectRatio: 360 / 440 }}>
       {[0, 1, 2, 3].map((index) => (
         <Animated.View
           key={index}
@@ -31,30 +31,30 @@ export function HabitLoop({ phase }: { phase: number }) {
           style={{
             position: 'absolute',
             width: '100%',
-            height: '90%',
-            top: '5%',
+            height: '100%',
+            top: 0,
             animationName: m.reduced
               ? undefined
-              : { from: { opacity: 0.35 }, '35%': { opacity: 1 }, to: { opacity: 0.35 } },
+              : { from: { opacity: 0.65 }, '35%': { opacity: 1 }, to: { opacity: 0.65 } },
             animationDuration: m.duration.breathe,
             animationDelay: index * m.duration.tick,
             animationIterationCount: 'infinite',
             animationTimingFunction: 'ease-in-out',
           }}>
-          <Svg width="100%" height="100%" viewBox="0 0 360 360" accessible={false}>
-            <G rotation={index * 90} origin="180,180">
+          <Svg width="100%" height="100%" viewBox="0 0 360 440" accessible={false}>
+            <G rotation={index * 90} origin="180,220">
               <Path
-                d="M242 60 Q267 70 282 90"
+                d="M240 110 Q274 126 288 156"
                 fill="none"
                 stroke={t.brand.primary}
-                strokeWidth={t.stroke.chart * 2}
+                strokeWidth={t.stroke.chart * 1.5}
                 strokeLinecap="round"
               />
               <Path
-                d="M268 86 L286 98 L291 77"
+                d="M277 148 L291 162 L296 141"
                 fill="none"
                 stroke={t.brand.primary}
-                strokeWidth={t.stroke.chart * 2}
+                strokeWidth={t.stroke.chart * 1.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
@@ -78,8 +78,8 @@ export function HabitLoop({ phase }: { phase: number }) {
         </View>
       ))}
       <View
-        style={{ position: 'absolute', left: '34%', top: '43%', width: '32%', alignItems: 'center' }}>
-        <Label variant="support" style={{ textAlign: 'center', color: t.brand.primary }}>
+        style={{ position: 'absolute', left: '33%', top: '45%', width: '34%', alignItems: 'center' }}>
+        <Label variant="label" style={{ textAlign: 'center', color: t.brand.primary }}>
           {copy.center}
         </Label>
       </View>
