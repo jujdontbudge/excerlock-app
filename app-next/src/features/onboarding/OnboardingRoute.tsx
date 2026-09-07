@@ -38,7 +38,8 @@ export function OnboardingRoute() {
   let body = <PreBranchScreen {...flow} />;
   if (flow.step === 'T1' || flow.step === 'T2' || flow.step === 'T3' || flow.step === 'T4')
     body = <TrialScreen step={flow.step} onContinue={flow.advance} />;
-  if (flow.step === 'S1') body = <ScheduleScreen draft={schedule} onAction={onSchedule} onChoose={setWheel} />;
+  if (flow.step === 'S1')
+    body = <ScheduleScreen ruleDraft={draft} draft={schedule} onAction={onSchedule} onChoose={setWheel} />;
   if (flow.step === 'S2') body = <PlanBuild rule={toRule(draft, toSchedule(schedule))} onComplete={flow.advance} />;
   if (flow.step === 'S3') body = <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} />;
   if (flow.step === 'S4') body = <ReviewWarmup onSkip={flow.advance} />;

@@ -1,6 +1,16 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
 import { ScheduleScreen } from '../ScheduleScreen';
 import { scheduleDraft } from '../scheduleDraft';
+import { createDraft } from '../draft';
+test('schedule lock follows edited times and all-day while preserving the exercise goal', async () => {
+  const props = { ruleDraft: createDraft('running'), onAction: jest.fn(), onChoose: jest.fn() };
+  const view = await render(<ScheduleScreen {...props} draft={scheduleDraft({})} />);
+  expect(screen.getByRole('header', { name: 'Block from 9 AM to 9 PM until you run for 20 minutes' })).toBeTruthy();
+  await view.rerender(<ScheduleScreen {...props} draft={scheduleDraft({ startMinute: 600, endMinute: 1200 })} />);
+  expect(screen.getByRole('header', { name: 'Block from 10 AM to 8 PM until you run for 20 minutes' })).toBeTruthy();
+  await view.rerender(<ScheduleScreen {...props} draft={scheduleDraft({ allDay: true })} />);
+  expect(screen.getByRole('header', { name: 'Block all day until you run for 20 minutes' })).toBeTruthy();
+});
 test('schedule errors and live cross-midnight label are rendered', async () => {
   const onAction = jest.fn(),
     onChoose = jest.fn();

@@ -10,4 +10,6 @@
 
 Branch setup uses compact controls above a live `RulePreviewLock`. The pure `rulePreviewModel` derives the lock sentence, activity glyph, unit, goal, and progress from `RuleDraft` for every walking, gym, running, and biking path.
 
+The onboarding schedule step also receives the exercise draft. Its persistent lock uses the edited schedule for both the blocking sentence and 24-hour timeline; All day fills the timeline, while the selected-day summary remains above the lock.
+
 Summary edits save a local answer snapshot and restore it on Back. Invalid partial numeric input remains editable and cannot crash the summary when canceled.

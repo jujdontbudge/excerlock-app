@@ -1,7 +1,11 @@
 export const rulePreviewCopy = {
   start: '9 AM',
   end: '9 PM',
-  block: (condition: string) => `Block from 9 AM to 9 PM\n${condition}`,
+  dayStart: '12 AM',
+  dayEnd: '11:59 PM',
+  block: (condition: string, window = 'Block from 9 AM to 9 PM') => `${window}\n${condition}`,
+  range: (start: string, end: string) => `Block from ${start} to ${end}`,
+  allDay: 'Block all day',
   walkingTarget: (goal: string) => `until you walk ${goal} steps`,
   walkingState: 'unless you are walking',
   gymArrival: 'until you arrive at the gym',
