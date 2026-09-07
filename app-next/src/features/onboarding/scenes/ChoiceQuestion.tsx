@@ -6,6 +6,7 @@ import { onboardingCopy } from '../../../content/onboarding';
 import { choiceQuestions } from '../../../content/onboardingChoices';
 import { AnswerProps } from '../types';
 import { ProfileQuestion } from '../profile/ProfileQuestion';
+import { GoalIcon } from './GoalIcon';
 export function ChoiceQuestion({ step, answers, setAnswer }: AnswerProps & { step: string }) {
   if (step === 'O05' || step === 'O06' || step === 'O07')
     return <ProfileQuestion step={step} answers={answers} setAnswer={setAnswer} />;
@@ -22,6 +23,11 @@ export function ChoiceQuestion({ step, answers, setAnswer }: AnswerProps & { ste
             <ChoiceRow
               title={option.title}
               icon={option.icon}
+              leading={
+                step === 'O08' ? (
+                  <GoalIcon goal={option.id} selected={answers[question.key] === option.id} />
+                ) : undefined
+              }
               selected={answers[question.key] === option.id}
               onPress={() => setAnswer(question.key, option.id)}
             />

@@ -6,7 +6,7 @@ export const onboardingCopy = {
   O05: { title: 'How did you hear about us?', body: '' },
   O06: { title: 'How old are you?', body: 'This helps us tailor your plan.' },
   O07: { title: 'What do you do?', body: 'We’ll fit your plan around your day.' },
-  O08: { title: 'What do you want to improve first?', body: 'Pick one. You can change it later.' },
+  O08: { title: 'What is your goal?', body: 'Pick one. You can change it later.' },
   O09: { title: 'What’s the main reason you want to make a change?', body: 'Start with what matters to you.' },
   O10: {
     title: 'How many hours do you currently spend scrolling each day?',

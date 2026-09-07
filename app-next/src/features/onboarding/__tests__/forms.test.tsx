@@ -46,3 +46,12 @@ test('selected onboarding answers use white text on their orange selection', asy
   expect(screen.getByRole('radio', { name: 'YouTube' })).toBeChecked();
   expect(screen.getByText('YouTube')).toHaveStyle({ color: '#FFFFFF' });
 });
+test('goal question keeps its three existing answer choices', async () => {
+  await render(<ChoiceQuestion step="O08" answers={{}} setAnswer={jest.fn()} />);
+  expect(screen.getByRole('header', { name: 'What is your goal?' })).toBeTruthy();
+  expect(screen.getAllByRole('radio').map((row) => row.props.accessibilityLabel)).toEqual([
+    'More exercise',
+    'Less screen time',
+    'Overall wellness',
+  ]);
+});
