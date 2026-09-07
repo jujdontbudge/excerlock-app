@@ -12,7 +12,7 @@ import { LoopBrandMark } from './LoopBrandMark';
 const icons = [
   ['bell', 'star', 'flame', 'phone'],
   ['bell', 'star', 'flame', 'running'],
-  ['bell', 'gym', 'lock-open', 'check'],
+  ['running', 'lock-open', 'flame', 'check'],
 ] as const;
 const original = [
   { x: 180, y: 72, width: 160 },

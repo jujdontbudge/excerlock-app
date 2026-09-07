@@ -37,5 +37,10 @@ test('loop story changes the cue-to-reward path without losing its diagram', asy
   expect(screen.getByText('Reinforcement')).toBeTruthy();
   expect(screen.getByText('Exercise becomes\nthe habit')).toBeTruthy();
   await view.rerender(<LoopStory step="O18" />);
-  expect(screen.getByText('Unlock & enjoy')).toBeTruthy();
+  expect(screen.getByText('Exercise first')).toBeTruthy();
+  expect(screen.getByText('Unlock screentime')).toBeTruthy();
+  expect(screen.getByRole('header', { name: 'You become ADDICTED to exercise' })).toBeTruthy();
+  expect(screen.getByText('ADDICTED')).toHaveStyle({ color: '#C94710' });
+  expect(screen.getByText('Exercise is\nthe habit now')).toBeTruthy();
+  expect(screen.queryByText('The movement loop')).toBeNull();
 });

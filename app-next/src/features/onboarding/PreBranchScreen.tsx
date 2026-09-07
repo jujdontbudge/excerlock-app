@@ -14,11 +14,10 @@ import { O09 } from './screens/O09';
 import { O10 } from './screens/O10';
 import { O11 } from './screens/O11';
 import { O15 } from './screens/O15';
-import { O19 } from './screens/O19';
 import { O20 } from './screens/O20';
 import { DotGridReveal } from './scenes/DotGridReveal';
 import { LoopStory } from './scenes/LoopStory';
-const screens = { O01, O02, O03, O04, O05, O06, O07, O08, O09, O10, O11, O15, O19, O20 };
+const screens = { O01, O02, O03, O04, O05, O06, O07, O08, O09, O10, O11, O15, O20 };
 export function PreBranchScreen({ step, back, ...props }: AnswerProps & { step: string; back?: () => void }) {
   if (step === 'O02') return <O02 onBack={back} />;
   if (step === 'O03') return <O03 onBack={back} />;

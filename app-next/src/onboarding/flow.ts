@@ -18,7 +18,6 @@ export const preBranch = [
   'O16',
   'O17',
   'O18',
-  'O19',
   'O20',
 ] as const;
 export const tail = ['S1', 'S2', 'S3', 'S4', 'T1', 'T2', 'T3', 'T4', 'P'] as const;

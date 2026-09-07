@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
-import { Heading } from '../../../design-system';
+import { Heading, Label } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
+import { Reveal } from '../../../motion/Reveal';
 import { useMotion } from '../../../motion/useMotion';
-import { onboardingCopy } from '../../../content/onboarding';
+import { finalLoopTitle, onboardingCopy } from '../../../content/onboarding';
 import { HabitLoop } from './HabitLoop';
 
 const steps = ['O16', 'O17', 'O18'] as const;
@@ -30,7 +31,7 @@ export function LoopStory({ step }: { step: (typeof steps)[number] }) {
               transitionDuration: m.reduced ? 0 : m.duration.slow,
               transitionTimingFunction: 'ease-in-out',
             }}>
-            <Heading title={onboardingCopy[candidate].title} support={onboardingCopy[candidate].body} centered />
+            {candidate === 'O18' ? <FinalLoopHeading /> : <Heading title={onboardingCopy[candidate].title} support={onboardingCopy[candidate].body} centered />}
           </Animated.View>
         ))}
       </View>
@@ -38,6 +39,29 @@ export function LoopStory({ step }: { step: (typeof steps)[number] }) {
         <HabitLoop phase={phase} contentPhase={contentPhase} />
       </View>
     </>
+  );
+}
+
+function FinalLoopHeading() {
+  return (
+    <Reveal>
+      <View style={{ gap: t.space.md }}>
+        <Label
+          accessibilityLabel={onboardingCopy.O18.title}
+          accessibilityRole="header"
+          variant="question"
+          style={{ textAlign: 'center' }}>
+          {finalLoopTitle.before}
+          <Label variant="question" style={{ color: t.brand.primary }}>
+            {finalLoopTitle.emphasis}
+          </Label>
+          {finalLoopTitle.after}
+        </Label>
+        <Label tone="secondary" style={{ textAlign: 'center' }}>
+          {onboardingCopy.O18.body}
+        </Label>
+      </View>
+    </Reveal>
   );
 }
 

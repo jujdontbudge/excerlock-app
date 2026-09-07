@@ -22,10 +22,10 @@ export const onboardingCopy = {
   O15: { title: 'This is good.', body: 'We’ll use your screen time habits to help you exercise more.' },
   O16: { title: 'You’re stuck in a loop', body: 'An urge. A quick scroll. A little reward. Then, again.' },
   O17: { title: 'We’ll change the loop', body: 'Put a little movement between the urge and the app.' },
-  O18: { title: 'Make moving the habit.', body: 'Want to scroll? Move first. Unlock your apps and enjoy.' },
-  O19: { title: 'Built around small, repeatable habits', body: 'A plan you can come back to, day after day.' },
+  O18: { title: 'You become ADDICTED to exercise', body: 'Want to scroll? Move first. Unlock your apps and enjoy.' },
   O20: { title: 'What exercise should unlock your apps?', body: 'Pick the one you will really do.' },
 } as const;
+export const finalLoopTitle = { before: 'You become ', emphasis: 'ADDICTED', after: ' to exercise' } as const;
 export const onboardingLabels = {
   start: 'Get started',
   continue: 'Continue',
