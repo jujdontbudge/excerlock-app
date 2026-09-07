@@ -45,7 +45,7 @@ function useDelayedPhase(phase: number, reduced: boolean) {
   const [visible, setVisible] = useState(phase);
   useEffect(() => {
     if (reduced) return;
-    const timeout = setTimeout(() => setVisible(phase), t.motion.duration.tick);
+    const timeout = setTimeout(() => setVisible(phase), t.motion.duration.press);
     return () => clearTimeout(timeout);
   }, [phase, reduced]);
   return reduced ? phase : visible;
