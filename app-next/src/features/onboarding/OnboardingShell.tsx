@@ -7,7 +7,7 @@ import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
 import { onboardingLabels as c } from '../../content/onboarding';
 import { WelcomeFooter } from './welcome/WelcomeFooter';
-import { ProfileHeader } from './profile/ProfileHeader';
+import { SolidChoices } from '../../design-system/ChoiceAppearance';
 export function OnboardingShell({
   children,
   step,
@@ -47,33 +47,33 @@ export function OnboardingShell({
     ? opacityOut(m.duration.standard)
     : (direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.slow);
   return (
-    <ScreenShell
-      scrollResetKey={step}
-      overlay={overlay}
-      header={
-        ['O01', 'O02', 'O03'].includes(step) ? undefined : ['O04', 'O05', 'O06', 'O07'].includes(step) ? (
-          <ProfileHeader step={step} progress={progress} onBack={onBack} />
-        ) : (
-          <OnboardingHeader progress={progress} onBack={hideBack ? undefined : onBack} />
-        )
-      }
-      footer={
-        hideContinue ? undefined : ['O01', 'O02', 'O03'].includes(step) ? (
-          <WelcomeFooter onContinue={onContinue} />
-        ) : (
-          <PrimaryButton
-            shape={['O04', 'O05', 'O06', 'O07'].includes(step) ? 'rounded' : 'pill'}
-            label={continueLabel ?? (step === 'O01' ? c.start : c.continue)}
-            onPress={onContinue}
-            disabled={!valid}
-          />
-        )
-      }>
-      <View style={{ flexGrow: 1 }}>
-        <Animated.View key={family} entering={enter} exiting={exit} style={{ flexGrow: 1, gap: t.space.xl }}>
-          {children}
-        </Animated.View>
-      </View>
-    </ScreenShell>
+    <SolidChoices>
+      <ScreenShell
+        scrollResetKey={step}
+        overlay={overlay}
+        header={
+          ['O01', 'O02', 'O03'].includes(step) ? undefined : (
+            <OnboardingHeader progress={progress} onBack={hideBack ? undefined : onBack} />
+          )
+        }
+        footer={
+          hideContinue ? undefined : ['O01', 'O02', 'O03'].includes(step) ? (
+            <WelcomeFooter onContinue={onContinue} />
+          ) : (
+            <PrimaryButton
+              shape={['O04', 'O05', 'O06', 'O07'].includes(step) ? 'rounded' : 'pill'}
+              label={continueLabel ?? (step === 'O01' ? c.start : c.continue)}
+              onPress={onContinue}
+              disabled={!valid}
+            />
+          )
+        }>
+        <View style={{ flexGrow: 1 }}>
+          <Animated.View key={family} entering={enter} exiting={exit} style={{ flexGrow: 1, gap: t.space.xl }}>
+            {children}
+          </Animated.View>
+        </View>
+      </ScreenShell>
+    </SolidChoices>
   );
 }

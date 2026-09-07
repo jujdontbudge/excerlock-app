@@ -5,6 +5,9 @@ import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { tokens as t } from './tokens';
 import { useMotion } from '../motion/useMotion';
+import { View } from 'react-native';
+import { useSolidChoices } from './ChoiceAppearance';
+import { SelectionCheck } from './SelectionCheck';
 export function ActivityCard({
   activity,
   title,
@@ -17,6 +20,7 @@ export function ActivityCard({
   onPress: () => void;
 }) {
   const m = useMotion();
+  const solid = useSolidChoices() && selected;
   return (
     <PressableScale
       label={title}
@@ -32,14 +36,21 @@ export function ActivityCard({
           gap: t.space.lg,
           borderRadius: t.radius.card,
           borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
-          borderColor: selected ? t.border.selected : t.border.default,
-          backgroundColor: selected ? t.surface.selected : t.surface.card,
+          borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.default,
+          backgroundColor: solid ? t.brand.primary : selected ? t.surface.selected : t.surface.card,
           transform: [{ translateY: selected ? -m.distance.float : 0 }],
           transitionProperty: ['transform', 'backgroundColor', 'borderColor'],
           transitionDuration: m.duration.standard,
         }}>
         <Icon name={activity} size={t.space.hero} />
-        <Label variant="label">{title}</Label>
+        <Label variant="label" style={{ color: solid ? t.text.onAccent : t.text.primary }}>
+          {title}
+        </Label>
+        {solid ? (
+          <View style={{ position: 'absolute', top: t.space.sm, right: t.space.sm }}>
+            <SelectionCheck />
+          </View>
+        ) : null}
       </Animated.View>
     </PressableScale>
   );

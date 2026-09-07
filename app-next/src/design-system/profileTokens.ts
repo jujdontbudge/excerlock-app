@@ -8,7 +8,7 @@ export const profileTokens = {
   radio: { size: 20, dot: 12 },
   icon: { size: 34, radius: 8 },
   field: { height: 64, radius: 16 },
-  header: { inlineHeight: 44, stackHeight: 64, nameHeight: 82, bar: 4 },
+  header: { height: 60, bar: 8, arrow: 28, arrowStroke: 3 },
   buttonRadius: 18,
   colors: {
     line: '#E7E7EB',

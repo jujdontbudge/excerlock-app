@@ -19,7 +19,11 @@ export function ProfileQuestion({ step, answers, setAnswer }: AnswerProps & { st
               selected={answers[question.key] === option.id}
               onPress={() => setAnswer(question.key, option.id)}
               radioFirst={step === 'O06'}
-              leading={step === 'O05' ? <ReferralIcon name={option.id} /> : undefined}
+              leading={
+                step === 'O05' ? (
+                  <ReferralIcon name={option.id} selected={answers[question.key] === option.id} />
+                ) : undefined
+              }
             />
           </Reveal>
         ))}

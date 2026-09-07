@@ -1,9 +1,13 @@
+import { useEffect } from 'react';
 import { View } from 'react-native';
-import { Icon } from '../icons/Icon';
-import { ProgressBar } from './ProgressBar';
+import Svg, { Path } from 'react-native-svg';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { PressableScale } from './PressableScale';
 import { tokens as t } from './tokens';
-import { controls } from '../content/controls';
+import { profileTokens as p } from './profileTokens';
+import { paths } from '../icons/paths';
+import { controls as c } from '../content/controls';
+import { useMotion } from '../motion/useMotion';
 export function OnboardingHeader({
   progress,
   onBack,
@@ -13,40 +17,76 @@ export function OnboardingHeader({
   onBack?: () => void;
   onClose?: () => void;
 }) {
+  const m = useMotion(),
+    amount = Math.max(0, Math.min(1, progress)),
+    value = useSharedValue(amount);
+  useEffect(() => {
+    value.set(m.reduced ? amount : withTiming(amount, { duration: m.duration.standard }));
+  }, [amount, value, m.reduced, m.duration.standard]);
+  const fill = useAnimatedStyle(() => ({ width: `${value.get() * 100}%` }));
+  const arrow = (name: 'back' | 'close') => (
+    <Svg accessible={false} width={p.header.arrow} height={p.header.arrow} viewBox="0 0 24 24">
+      <Path
+        d={paths[name]}
+        fill="none"
+        stroke={t.brand.primary}
+        strokeWidth={p.header.arrowStroke}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
   return (
     <View
       style={{
+        paddingHorizontal: t.layout.page,
+        height: p.header.height,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: t.space.md,
-        paddingHorizontal: t.space.xl,
-        paddingVertical: t.space.sm,
+        gap: t.space.sm,
       }}>
       <PressableScale
-        label={controls.back}
+        label={c.back}
         disabled={!onBack}
         accessibilityState={{ disabled: !onBack }}
         onPress={onBack}
-        style={{
-          width: t.layout.touch,
-          alignItems: 'center',
-          opacity: onBack ? 1 : 0,
-        }}>
-        <Icon name="back" variant="utility" size={t.layout.glyph} />
+        style={{ width: t.layout.touch, alignItems: 'center', opacity: onBack ? 1 : 0 }}>
+        {arrow('back')}
       </PressableScale>
-      <View style={{ flex: 1 }}>
-        <ProgressBar value={progress} label={controls.progress} />
+      <View
+        accessible
+        accessibilityRole="progressbar"
+        accessibilityLabel={c.progress}
+        accessibilityValue={{ min: 0, max: 100, now: amount * 100 }}
+        style={{
+          flex: 1,
+          height: p.header.bar,
+          backgroundColor: p.colors.track,
+          borderRadius: t.radius.pill,
+          overflow: 'hidden',
+        }}>
+        <Animated.View
+          style={[
+            {
+              height: '100%',
+              backgroundColor: t.brand.primary,
+              borderRadius: t.radius.pill,
+              animationName: m.reduced
+                ? undefined
+                : { from: { opacity: 1 }, '50%': { opacity: 0.7 }, to: { opacity: 1 } },
+              animationDuration: m.duration.breathe,
+              animationIterationCount: 'infinite',
+              animationTimingFunction: 'ease-in-out',
+            },
+            fill,
+          ]}
+        />
       </View>
       {onClose ? (
-        <PressableScale
-          label={controls.close}
-          onPress={onClose}
-          style={{ width: t.layout.touch, alignItems: 'center' }}>
-          <Icon name="close" variant="utility" size={t.layout.glyph} />
+        <PressableScale label={c.close} onPress={onClose} style={{ width: t.layout.touch, alignItems: 'center' }}>
+          {arrow('close')}
         </PressableScale>
-      ) : (
-        <View style={{ width: t.layout.touch }} />
-      )}
+      ) : null}
     </View>
   );
 }

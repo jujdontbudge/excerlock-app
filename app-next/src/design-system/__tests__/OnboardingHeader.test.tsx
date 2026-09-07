@@ -7,3 +7,10 @@ test('onboarding navigation combines accessible back and persistent progress', a
   await userEvent.press(screen.getByRole('button', { name: 'Back' }));
   expect(back).toHaveBeenCalledTimes(1);
 });
+test('shared header retains accessible close alongside the thicker progress bar', async () => {
+  const close = jest.fn();
+  await render(<OnboardingHeader progress={0.25} onBack={jest.fn()} onClose={close} />);
+  expect(screen.getByRole('progressbar')).toHaveStyle({ height: 8 });
+  await userEvent.press(screen.getByRole('button', { name: 'Close' }));
+  expect(close).toHaveBeenCalledTimes(1);
+});

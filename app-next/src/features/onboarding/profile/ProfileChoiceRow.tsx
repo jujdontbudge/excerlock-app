@@ -4,7 +4,7 @@ import Animated from 'react-native-reanimated';
 import { Label, PressableScale } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
 import { profileTokens as p } from '../../../design-system/profileTokens';
-import { Reveal } from '../../../motion/Reveal';
+import { SelectionCheck } from '../../../design-system/SelectionCheck';
 export function ProfileChoiceRow({
   title,
   selected,
@@ -18,7 +18,9 @@ export function ProfileChoiceRow({
   leading?: ReactNode;
   radioFirst?: boolean;
 }) {
-  const radio = (
+  const radio = selected ? (
+    <SelectionCheck size={p.radio.size} />
+  ) : (
     <View
       style={{
         width: p.radio.size,
@@ -28,20 +30,7 @@ export function ProfileChoiceRow({
         borderColor: selected ? t.brand.primary : t.text.muted,
         alignItems: 'center',
         justifyContent: 'center',
-      }}>
-      {selected ? (
-        <Reveal>
-          <View
-            style={{
-              width: p.radio.dot,
-              height: p.radio.dot,
-              borderRadius: t.radius.pill,
-              backgroundColor: t.brand.primary,
-            }}
-          />
-        </Reveal>
-      ) : null}
-    </View>
+      }}></View>
   );
   return (
     <PressableScale
@@ -59,14 +48,14 @@ export function ProfileChoiceRow({
           paddingVertical: p.row.vertical,
           borderRadius: p.row.radius,
           borderWidth: t.stroke.hairline,
-          borderColor: selected ? p.colors.selectedLine : p.colors.line,
-          backgroundColor: selected ? p.colors.selected : leading ? p.colors.referral : p.colors.row,
+          borderColor: selected ? t.brand.primary : p.colors.line,
+          backgroundColor: selected ? t.brand.primary : leading ? p.colors.referral : p.colors.row,
           transitionProperty: ['backgroundColor', 'borderColor'],
           transitionDuration: t.motion.duration.standard,
         }}>
         {radioFirst ? radio : null}
         {leading}
-        <Label style={{ ...p.rowType, flex: 1 }}>{title}</Label>
+        <Label style={{ ...p.rowType, flex: 1, color: selected ? t.text.onAccent : t.text.primary }}>{title}</Label>
         {radioFirst ? null : radio}
       </Animated.View>
     </PressableScale>

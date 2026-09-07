@@ -7,6 +7,8 @@ import { Icon, IconName } from '../icons/Icon';
 import { PressableScale } from './PressableScale';
 import { Reveal } from '../motion/Reveal';
 import { controls } from '../content/controls';
+import { useSolidChoices } from './ChoiceAppearance';
+import { SelectionCheck } from './SelectionCheck';
 export function ChoiceRow({
   title,
   support,
@@ -26,6 +28,7 @@ export function ChoiceRow({
   recommended?: boolean;
   multiple?: boolean;
 }) {
+  const solid = useSolidChoices() && selected;
   return (
     <PressableScale
       label={title}
@@ -41,41 +44,47 @@ export function ChoiceRow({
           padding: t.space.lg,
           borderRadius: t.radius.choice,
           borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
-          borderColor: selected ? t.border.selected : t.border.default,
-          backgroundColor: selected ? t.surface.selected : t.surface.card,
+          borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.default,
+          backgroundColor: solid ? t.brand.primary : selected ? t.surface.selected : t.surface.card,
           transitionProperty: ['borderColor', 'backgroundColor'],
           transitionDuration: t.motion.duration.standard,
         }}>
         {leading ?? (icon ? <Icon name={icon} /> : null)}
         <View style={{ flex: 1, gap: t.space.xs }}>
-          <Label variant="label">{title}</Label>
+          <Label variant="label" style={{ color: solid ? t.text.onAccent : t.text.primary }}>
+            {title}
+          </Label>
           {recommended ? (
-            <Label variant="badge" style={{ color: t.brand.primary }}>
+            <Label variant="badge" style={{ color: solid ? t.text.onAccent : t.brand.primary }}>
               {controls.recommended}
             </Label>
           ) : null}
           {support ? (
-            <Label variant="support" tone="secondary">
+            <Label variant="support" tone="secondary" style={solid ? { color: t.text.onAccent } : undefined}>
               {support}
             </Label>
           ) : null}
         </View>
-        <View
-          style={{
-            width: t.layout.glyph,
-            height: t.layout.glyph,
-            borderRadius: t.radius.pill,
-            borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
-            borderColor: selected ? t.brand.primary : t.border.default,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-          {selected ? (
-            <Reveal>
-              <Icon name="check" size={t.space.lg} variant="utility" tint={t.brand.primary} />
-            </Reveal>
-          ) : null}
-        </View>
+        {solid ? (
+          <SelectionCheck />
+        ) : (
+          <View
+            style={{
+              width: t.layout.glyph,
+              height: t.layout.glyph,
+              borderRadius: t.radius.pill,
+              borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
+              borderColor: selected ? t.brand.primary : t.border.default,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            {selected ? (
+              <Reveal>
+                <Icon name="check" size={t.space.lg} variant="utility" tint={t.brand.primary} />
+              </Reveal>
+            ) : null}
+          </View>
+        )}
       </Animated.View>
     </PressableScale>
   );

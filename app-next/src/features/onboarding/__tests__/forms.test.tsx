@@ -41,3 +41,8 @@ test('referral sources follow the reference order', async () => {
     'Other',
   ]);
 });
+test('selected onboarding answers use white text on their orange selection', async () => {
+  await render(<ChoiceQuestion step="O05" answers={{ referralSource: 'youtube' }} setAnswer={jest.fn()} />);
+  expect(screen.getByRole('radio', { name: 'YouTube' })).toBeChecked();
+  expect(screen.getByText('YouTube')).toHaveStyle({ color: '#FFFFFF' });
+});
