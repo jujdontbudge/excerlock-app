@@ -19,7 +19,7 @@ export function LoopArrows({ expanded }: { expanded: boolean }) {
             transitionProperty: 'opacity',
             transitionDuration: m.reduced ? 0 : m.duration.reveal,
           }}>
-          <Svg width="100%" height="100%" viewBox="0 0 360 440" accessible={false}>
+          <Svg width="100%" height="100%" viewBox="0 0 360 500" accessible={false}>
             {Array.from({ length: count }, (_, index) => {
               const start =
                   count === 6 && index === 2
@@ -33,17 +33,18 @@ export function LoopArrows({ expanded }: { expanded: boolean }) {
                     : count === 6 && index === 3
                       ? 115
                       : -90 + ((index + 0.68) * 360) / count;
-              const r = count === 4 ? 128 : 132;
+              const rx = count === 4 ? 139 : 146;
+              const ry = count === 4 ? 185 : 198;
               const point = (a: number) => [
-                180 + r * Math.cos((a * Math.PI) / 180),
-                220 + r * Math.sin((a * Math.PI) / 180),
+                180 + rx * Math.cos((a * Math.PI) / 180),
+                250 + ry * Math.sin((a * Math.PI) / 180),
               ];
               const [x, y] = point(start),
                 [ex, ey] = point(end);
               return (
                 <G key={index}>
                   <Path
-                    d={`M${x} ${y} A${r} ${r} 0 0 1 ${ex} ${ey}`}
+                    d={`M${x} ${y} A${rx} ${ry} 0 0 1 ${ex} ${ey}`}
                     fill="none"
                     stroke={t.brand.primary}
                     strokeWidth={t.stroke.chart}

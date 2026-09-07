@@ -32,7 +32,7 @@ export function HabitLoop({ phase }: { phase: number }) {
     copy = habitLoopCopy[phase];
   const positions = changed ? expanded : original;
   return (
-    <View style={{ width: '100%', aspectRatio: 360 / 440 }}>
+    <View testID="habit-loop-canvas" style={{ width: '100%', aspectRatio: 360 / 500 }}>
       <LoopArrows expanded={changed} />
       {copy.stages.map((stage, index) => (
         <Animated.View

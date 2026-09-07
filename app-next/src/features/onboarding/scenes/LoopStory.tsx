@@ -12,7 +12,7 @@ export function LoopStory({ step }: { step: 'O16' | 'O17' | 'O18' }) {
       <Animated.View entering={fadeIn} exiting={fadeOut}>
         <Heading title={onboardingCopy[step].title} support={onboardingCopy[step].body} centered />
       </Animated.View>
-      <View style={{ flex: 1, justifyContent: 'center', gap: t.space.xxxl }}>
+      <View style={{ flex: 1, justifyContent: 'center', gap: t.space.huge }}>
         <HabitLoop phase={phase} />
       </View>
     </>

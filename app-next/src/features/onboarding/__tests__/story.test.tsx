@@ -15,6 +15,7 @@ test('year grid retains its accessible identity as free and scrolling time are r
 test('loop story changes the cue-to-reward path without losing its diagram', async () => {
   const view = await render(<LoopStory step="O16" />);
   expect(screen.getByText('The urge')).toBeTruthy();
+  expect(screen.getByTestId('habit-loop-canvas').props.style.aspectRatio).toBeCloseTo(360 / 500);
   expect(screen.getByText('The reward')).toBeTruthy();
   expect(screen.getByText('Reinforcement')).toBeTruthy();
   expect(screen.getByText('Becomes a habit')).toBeTruthy();
