@@ -57,7 +57,7 @@ export function ScheduleScreen({
           </Label>
         </Reveal>
       </View>
-      {ruleDraft ? <RulePreviewLock compact draft={ruleDraft} schedule={toSchedule(d)} /> : null}
+      {ruleDraft ? <RulePreviewLock draft={ruleDraft} schedule={toSchedule(d)} /> : null}
     </View>
   );
 }

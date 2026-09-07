@@ -1,7 +1,16 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
 import { ScheduleScreen } from '../ScheduleScreen';
-import { scheduleDraft } from '../scheduleDraft';
+import { scheduleDraft, toSchedule } from '../scheduleDraft';
 import { createDraft } from '../draft';
+import { RulePreviewLock } from '../RulePreviewLock';
+
+test('rule preview keeps one canonical size with or without a schedule', async () => {
+  const draft = createDraft('walking');
+  const view = await render(<RulePreviewLock draft={draft} />);
+  const branchStyle = screen.getByTestId('rule-preview-lock').props.style;
+  await view.rerender(<RulePreviewLock draft={draft} schedule={toSchedule(scheduleDraft({}))} />);
+  expect(screen.getByTestId('rule-preview-lock').props.style).toEqual(branchStyle);
+});
 test('schedule lock follows edited times and all-day while preserving the exercise goal', async () => {
   const props = { ruleDraft: createDraft('running'), onAction: jest.fn(), onChoose: jest.fn() };
   const view = await render(<ScheduleScreen {...props} draft={scheduleDraft({})} />);
