@@ -5,7 +5,10 @@ import { Reveal } from '../../../motion/Reveal';
 import { onboardingCopy } from '../../../content/onboarding';
 import { choiceQuestions } from '../../../content/onboardingChoices';
 import { AnswerProps } from '../types';
+import { ProfileQuestion } from '../profile/ProfileQuestion';
 export function ChoiceQuestion({ step, answers, setAnswer }: AnswerProps & { step: string }) {
+  if (step === 'O05' || step === 'O06' || step === 'O07')
+    return <ProfileQuestion step={step} answers={answers} setAnswer={setAnswer} />;
   const copy = onboardingCopy[step as keyof typeof onboardingCopy],
     question = choiceQuestions[step];
   return (

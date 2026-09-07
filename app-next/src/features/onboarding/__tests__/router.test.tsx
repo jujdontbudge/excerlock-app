@@ -13,7 +13,7 @@ const answers = {
   name: 'Alex',
   referralSource: 'friend',
   ageBand: '25–34',
-  occupation: 'Employed',
+  occupation: 'Remote worker',
   improveFirst: 'exercise',
   mainReason: 'focus',
   estimatedDailyMinutes: 180,
@@ -61,5 +61,5 @@ test('rehydration and remount resume the persisted step and answer', async () =>
   const routed = renderRouter(routes, { initialUrl: '/' });
   await routed;
   expect(routed.getPathname()).toBe('/onboarding/O07');
-  expect(screen.getByRole('radio', { name: 'Employed' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: 'Remote worker' })).toBeChecked();
 });

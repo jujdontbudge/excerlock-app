@@ -4,23 +4,29 @@ export const choiceQuestions: { [step: string]: { key: string; options: Onboardi
   O05: {
     key: 'referralSource',
     options: [
-      { id: 'tiktok', title: 'TikTok' },
-      { id: 'instagram', title: 'Instagram' },
       { id: 'youtube', title: 'YouTube' },
+      { id: 'instagram', title: 'Instagram' },
+      { id: 'tiktok', title: 'TikTok' },
       { id: 'appStore', title: 'App Store' },
-      { id: 'friend', title: 'Friend' },
+      { id: 'friend', title: 'Friends' },
       { id: 'other', title: 'Other' },
     ],
   },
   O06: {
     key: 'ageBand',
-    options: ['Under 18', '18–24', '25–34', '35–44', '45–54', '55+'].map((title) => ({ id: title, title })),
+    options: ['Under 18', '18–24', '25–34', '35–44', '45–54', '55–64', '65+'].map((title) => ({ id: title, title })),
   },
   O07: {
     key: 'occupation',
-    options: ['Student', 'Employed', 'Self-employed', 'Parent at home', 'Between jobs', 'Retired', 'Other'].map(
-      (title) => ({ id: title, title }),
-    ),
+    options: [
+      'Software developer',
+      'Founder',
+      'Remote worker',
+      'Finance or accounting',
+      'Architecture',
+      'Education',
+      'Other',
+    ].map((title) => ({ id: title, title })),
   },
   O08: {
     key: 'improveFirst',

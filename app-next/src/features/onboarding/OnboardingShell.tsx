@@ -7,6 +7,7 @@ import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
 import { onboardingLabels as c } from '../../content/onboarding';
 import { WelcomeFooter } from './welcome/WelcomeFooter';
+import { ProfileHeader } from './profile/ProfileHeader';
 export function OnboardingShell({
   children,
   step,
@@ -50,7 +51,9 @@ export function OnboardingShell({
       scrollResetKey={step}
       overlay={overlay}
       header={
-        ['O01', 'O02', 'O03'].includes(step) ? undefined : (
+        ['O01', 'O02', 'O03'].includes(step) ? undefined : ['O04', 'O05', 'O06', 'O07'].includes(step) ? (
+          <ProfileHeader step={step} progress={progress} onBack={onBack} />
+        ) : (
           <OnboardingHeader progress={progress} onBack={hideBack ? undefined : onBack} />
         )
       }
@@ -59,6 +62,7 @@ export function OnboardingShell({
           <WelcomeFooter onContinue={onContinue} />
         ) : (
           <PrimaryButton
+            shape={['O04', 'O05', 'O06', 'O07'].includes(step) ? 'rounded' : 'pill'}
             label={continueLabel ?? (step === 'O01' ? c.start : c.continue)}
             onPress={onContinue}
             disabled={!valid}

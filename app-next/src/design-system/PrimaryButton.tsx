@@ -12,8 +12,16 @@ export type ButtonProps = {
   disabled?: boolean;
   loading?: boolean;
   testID?: string;
+  shape?: 'pill' | 'rounded';
 };
-export function PrimaryButton({ label, onPress, disabled = false, loading = false, testID }: ButtonProps) {
+export function PrimaryButton({
+  label,
+  onPress,
+  disabled = false,
+  loading = false,
+  testID,
+  shape = 'pill',
+}: ButtonProps) {
   const [pressed, setPressed] = useState(false);
   const m = useMotion();
   const unavailable = disabled || loading;
@@ -34,6 +42,7 @@ export function PrimaryButton({ label, onPress, disabled = false, loading = fals
         style={[
           s.button,
           {
+            borderRadius: shape === 'rounded' ? t.radius.card : t.radius.cta,
             backgroundColor: unavailable ? t.state.disabledFill : pressed ? t.brand.pressed : t.brand.primary,
             transform: [{ scale: pressed ? m.scale.pressed : 1 }],
             transitionProperty: ['transform', 'backgroundColor'],
