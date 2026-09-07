@@ -1,13 +1,13 @@
-/** Milliseconds measured from the reference's successive storytelling beats. */
+/** Reference sequence, accelerated after native review: no long idle holds. */
 export const impactTiming = {
-  metric: 1200,
-  conclusion: 4200,
-  mathReady: 5400,
-  year: 4400,
-  free: 3500,
-  scrollingReady: 6500,
-  dotColor: 28,
-  fade: 600,
-  collapse: 900,
-  title: 500,
+  metric: 700,
+  conclusion: 2200,
+  mathReady: 3000,
+  year: 1800,
+  free: 1600,
+  scrollingReady: 3000,
+  dotColor: 12,
+  fade: 350,
+  collapse: 500,
+  title: 300,
 };

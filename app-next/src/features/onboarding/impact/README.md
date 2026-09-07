@@ -1,5 +1,7 @@
 # Scrolling impact sequence
 
+Native review correction: shortened year/free/scrolled beats to 1.8/1.6/3 seconds (6.4 seconds total, previously 14.4). Math Continue appears after 3 seconds. Neutral dots now use the darker comparison token throughout, including the unfilled portion of the final band; orange still means scrolling. These revisions supersede the original pacing/color description below.
+
 Reference: [Unrot on ScreensDesign](https://screensdesign.com/apps/unrot-earn-your-screentime/?id=2334), current recording, 2:40–3:10. Observed the 31-second excerpt and half-second frame strips in `app-next/evidence/unrot-impact/`. The current video is 5:19 long; the page's current embedded recording is ID 3251 even though the provided URL query is 2334.
 
 Observed sequence:

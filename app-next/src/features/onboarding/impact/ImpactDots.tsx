@@ -28,7 +28,7 @@ export function ImpactDots({ step, minutes }: { step: string; minutes: number })
               width: '2.4%',
               aspectRatio: 1,
               borderRadius: t.radius.pill,
-              backgroundColor: state.scrolling ? t.brand.primary : step === 'O14' ? t.brand.light : t.chart.grid,
+              backgroundColor: state.scrolling ? t.brand.primary : t.chart.comparison,
               opacity: state.visible ? 1 : 0,
               transform: [{ translateY: step === 'O12' ? 0 : -t.space.huge }, { scale: state.visible ? 1 : 0.4 }],
               transitionProperty: ['opacity', 'transform', 'backgroundColor'],
