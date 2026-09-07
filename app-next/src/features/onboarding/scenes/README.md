@@ -2,7 +2,7 @@
 
 Shared onboarding compositions. No state ownership or navigation; answers and actions come from the route.
 
-HabitLoop follows the user's four-stage circular references: four clockwise curved arrows pulse sequentially around native stage labels and a canonical center icon. O16 shows urge/reward/reinforcement/habit with a phone; O17/O18 use the same structure to introduce movement and unlocking. All text lives in `src/content/habitLoop.ts`. Reduced motion stops the circulating pulse. The illustration remains separate SVG arrows, text, and icon components.
+HabitLoop follows the user's four-stage circular references: four clockwise curved arrows pulse sequentially between native stage labels. Each stage has its own canonical icon; the center contains only the loop title. O16 uses bell/star/flame/phone for urge/reward/reinforcement/habit; O17/O18 use the same structure to introduce movement and unlocking. All text lives in `src/content/habitLoop.ts`. Reduced motion stops the circulating pulse. The illustration remains separate SVG arrows, text, and icon components.
 
 TrendHero uses TrendCurves for the O15 reference composition: one smooth rising exercise curve, one dashed falling screen-time curve, endpoint labels with canonical icons, and a shared left-to-right animated reveal. Curves are illustrative SVG geometry rather than measured data; reduced motion reveals them immediately.
 

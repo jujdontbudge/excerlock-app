@@ -7,15 +7,20 @@ import { LivingIcon } from '../../../motion/LivingIcon';
 import { useMotion } from '../../../motion/useMotion';
 import { Reveal } from '../../../motion/Reveal';
 import { habitLoopCopy } from '../../../content/habitLoop';
-/** Four clockwise arcs, independent labels, and one shared phone/fitness icon. */
+const stageIcons = [
+  ['bell', 'star', 'flame', 'phone'],
+  ['bell', 'gym', 'star', 'walking'],
+  ['bell', 'gym', 'lock-open', 'check'],
+] as const;
+/** Four clockwise arcs and one canonical icon per stage. */
 export function HabitLoop({ phase }: { phase: number }) {
   const copy = habitLoopCopy[phase],
     m = useMotion();
   const positions = [
-    { left: '25%', top: '0%', width: '50%' },
-    { left: '68%', top: '39%', width: '32%' },
-    { left: '23%', top: '88%', width: '54%' },
-    { left: '0%', top: '39%', width: '32%' },
+    { left: '25%', top: '-4%', width: '50%' },
+    { left: '68%', top: '31%', width: '32%' },
+    { left: '23%', top: '77%', width: '54%' },
+    { left: '0%', top: '31%', width: '32%' },
   ] as const;
   return (
     <View style={{ width: '100%', aspectRatio: 0.9 }}>
@@ -39,14 +44,14 @@ export function HabitLoop({ phase }: { phase: number }) {
           <Svg width="100%" height="100%" viewBox="0 0 360 360" accessible={false}>
             <G rotation={index * 90} origin="180,180">
               <Path
-                d="M224 44 C266 54 298 88 308 130"
+                d="M242 60 Q267 70 282 90"
                 fill="none"
                 stroke={t.brand.primary}
                 strokeWidth={t.stroke.chart * 2}
                 strokeLinecap="round"
               />
               <Path
-                d="M291 120 L309 136 L319 113"
+                d="M268 86 L286 98 L291 77"
                 fill="none"
                 stroke={t.brand.primary}
                 strokeWidth={t.stroke.chart * 2}
@@ -61,6 +66,7 @@ export function HabitLoop({ phase }: { phase: number }) {
         <View key={index} style={{ position: 'absolute', ...positions[index] }}>
           <Reveal key={stage.title} index={index}>
             <View style={{ gap: t.space.xs }}>
+              <LivingIcon name={stageIcons[phase][index]} size={t.space.xxl} tint={t.brand.primary} />
               <Label variant="label" style={{ textAlign: 'center' }}>
                 {stage.title}
               </Label>
@@ -72,12 +78,7 @@ export function HabitLoop({ phase }: { phase: number }) {
         </View>
       ))}
       <View
-        style={{ position: 'absolute', left: '34%', top: '34%', width: '32%', alignItems: 'center', gap: t.space.sm }}>
-        <LivingIcon
-          name={phase === 0 ? 'phone' : phase === 1 ? 'gym' : 'lock-open'}
-          size={t.space.hero}
-          tint={t.brand.primary}
-        />
+        style={{ position: 'absolute', left: '34%', top: '43%', width: '32%', alignItems: 'center' }}>
         <Label variant="support" style={{ textAlign: 'center', color: t.brand.primary }}>
           {copy.center}
         </Label>
