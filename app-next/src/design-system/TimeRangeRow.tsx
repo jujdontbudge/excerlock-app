@@ -13,15 +13,17 @@ export function TimeRangeRow({
   allDay,
   onAllDay,
   onChoose,
+  compact = false,
 }: {
   start: string;
   end: string;
   allDay: boolean;
   onAllDay: (value: boolean) => void;
   onChoose: (which: 'start' | 'end') => void;
+  compact?: boolean;
 }) {
   return (
-    <Animated.View layout={layoutTransition} style={{ gap: t.space.lg }}>
+    <Animated.View layout={layoutTransition} style={{ gap: compact ? t.space.sm : t.space.lg }}>
       <View
         style={{
           flexDirection: 'row',
@@ -48,7 +50,7 @@ export function TimeRangeRow({
                 label={`${controls[key]}: ${key === 'start' ? start : end}`}
                 onPress={() => onChoose(key)}
                 style={{
-                  padding: t.space.lg,
+                  padding: compact ? t.space.sm : t.space.lg,
                   gap: t.space.xs,
                   backgroundColor: t.surface.subtle,
                   borderRadius: t.radius.field,

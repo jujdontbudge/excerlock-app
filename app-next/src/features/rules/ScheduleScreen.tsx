@@ -21,9 +21,12 @@ export function ScheduleScreen({
 }) {
   const issues = scheduleIssues(d);
   return (
-    <>
+    <View style={{ gap: t.space.sm }}>
       <View style={{ gap: t.space.sm }}>
-        <Heading title={c.S1} support={c.scheduleBody} />
+        <Heading title={c.S1} />
+        <Label variant="support" tone="secondary">
+          {c.scheduleBody}
+        </Label>
 
         <Reveal index={1}>
           <DayPicker days={d.days} onChange={(days) => onAction({ type: 'days', value: days as Weekday[] })} />
@@ -35,6 +38,7 @@ export function ScheduleScreen({
         ) : null}
         <Reveal index={2}>
           <TimeRangeRow
+            compact
             start={minuteLabel(d.start)}
             end={minuteLabel(d.end)}
             allDay={d.allDay}
@@ -48,10 +52,12 @@ export function ScheduleScreen({
           </Reveal>
         ) : null}
         <Reveal key={scheduleLabel(toSchedule(d))}>
-          <Label tone="secondary">{scheduleLabel(toSchedule(d))}</Label>
+          <Label variant="support" tone="secondary">
+            {scheduleLabel(toSchedule(d))}
+          </Label>
         </Reveal>
       </View>
-      {ruleDraft ? <RulePreviewLock draft={ruleDraft} schedule={toSchedule(d)} /> : null}
-    </>
+      {ruleDraft ? <RulePreviewLock compact draft={ruleDraft} schedule={toSchedule(d)} /> : null}
+    </View>
   );
 }
