@@ -16,7 +16,7 @@ export function TrendHero() {
           style={{
             borderRadius: t.radius.sheet,
             backgroundColor: t.surface.card,
-            padding: t.space.xl,
+            padding: t.space.lg,
             boxShadow: t.shadow.cta,
           }}>
           <View style={{ width: '100%', aspectRatio: 320 / 240 }}>
@@ -25,13 +25,13 @@ export function TrendHero() {
               style={{
                 position: 'absolute',
                 right: 0,
-                top: '3%',
+                top: '0%',
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: t.space.xs,
               }}>
-              <Icon name="running" size={t.layout.glyph} tint={t.brand.primary} />
-              <Label variant="support" style={{ color: t.brand.primary }}>
+              <Icon name="running" size={t.space.xxl} tint={t.brand.primary} />
+              <Label variant="label" style={{ color: t.brand.primary }}>
                 {c.exercise}
               </Label>
             </View>
@@ -39,22 +39,22 @@ export function TrendHero() {
               style={{
                 position: 'absolute',
                 right: 0,
-                top: '70%',
+                top: '58%',
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: t.space.xs,
               }}>
-              <Icon name="phone" size={t.space.lg} tint={t.chart.comparison} />
-              <Label variant="support" tone="secondary">
+              <Icon name="phone" size={t.layout.glyph} tint={t.text.secondary} />
+              <Label variant="label" tone="secondary">
                 {c.screenTime}
               </Label>
             </View>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: t.space.xl }}>
-            <Label variant="support" tone="secondary">
+            <Label variant="label" tone="secondary">
               {trendCopy.now}
             </Label>
-            <Label variant="support" tone="secondary">
+            <Label variant="label" tone="secondary">
               {trendCopy.future}
             </Label>
           </View>

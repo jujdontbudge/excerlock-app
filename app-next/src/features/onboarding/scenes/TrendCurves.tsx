@@ -27,15 +27,15 @@ export function TrendCurves() {
           d="M12 28 C130 30 148 204 308 208"
           fill="none"
           stroke={t.chart.comparison}
-          strokeWidth={t.stroke.chart}
-          strokeDasharray="5 6"
+          strokeWidth={t.stroke.chart * 1.5}
+          strokeDasharray="7 8"
           strokeLinecap="round"
         />
         <Path
           d="M12 202 C128 206 156 53 308 50"
           fill="none"
           stroke={t.brand.primary}
-          strokeWidth={t.stroke.chart}
+          strokeWidth={t.stroke.chart * 1.5}
           strokeLinecap="round"
         />
       </G>
