@@ -3,7 +3,6 @@ import Animated from 'react-native-reanimated';
 import { Label } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
 import { LivingIcon } from '../../../motion/LivingIcon';
-import { opacityIn, opacityOut } from '../../../motion/presets';
 import { useMotion } from '../../../motion/useMotion';
 import { habitLoopCopy } from '../../../content/habitLoop';
 import { loopIntervention } from '../../../content/loopIntervention';
@@ -36,12 +35,11 @@ const inserted = [
 export function HabitLoop({ phase, contentPhase = phase }: { phase: number; contentPhase?: number }) {
   const m = useMotion(),
     changed = phase === 1,
-    copy = habitLoopCopy[contentPhase],
     positions = changed ? expanded : original;
   return (
     <View testID="habit-loop-canvas" style={{ width: '100%', aspectRatio: 360 / 500 }}>
       <LoopArrows expanded={changed} />
-      {copy.stages.map((stage, index) => {
+      {habitLoopCopy[0].stages.map((_, index) => {
         const anchor = positions[index];
         return (
           <Animated.View
@@ -62,19 +60,33 @@ export function HabitLoop({ phase, contentPhase = phase }: { phase: number; cont
               transitionDuration: m.reduced ? 0 : m.duration.planCheck,
               transitionTimingFunction: 'ease-in-out',
             }}>
-            <Animated.View
-              key={`${contentPhase}-${stage.title}`}
-              entering={opacityIn(m.duration.standard)}
-              exiting={opacityOut(m.duration.fast)}
-              style={{ alignItems: 'center', gap: t.space.xs }}>
-              <LivingIcon name={icons[contentPhase][index]} size={t.space.xxl} tint={t.brand.primary} />
-              <Label variant="label" style={{ textAlign: 'center' }}>
-                {stage.title}
-              </Label>
-              <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
-                {stage.detail}
-              </Label>
-            </Animated.View>
+            {habitLoopCopy.map((layerCopy, layerPhase) => {
+              const stage = layerCopy.stages[index];
+              return (
+                <Animated.View
+                  key={layerPhase}
+                  pointerEvents="none"
+                  accessibilityElementsHidden={contentPhase !== layerPhase}
+                  importantForAccessibility={contentPhase === layerPhase ? 'auto' : 'no-hide-descendants'}
+                  style={{
+                    position: 'absolute',
+                    alignItems: 'center',
+                    gap: t.space.xs,
+                    opacity: contentPhase === layerPhase ? 1 : 0,
+                    transitionProperty: 'opacity',
+                    transitionDuration: m.reduced ? 0 : m.duration.slow,
+                    transitionTimingFunction: 'ease-in-out',
+                  }}>
+                  <LivingIcon name={icons[layerPhase][index]} size={t.space.xxl} tint={t.brand.primary} />
+                  <Label variant="label" style={{ textAlign: 'center' }}>
+                    {stage.title}
+                  </Label>
+                  <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
+                    {stage.detail}
+                  </Label>
+                </Animated.View>
+              );
+            })}
           </Animated.View>
         );
       })}
@@ -82,7 +94,6 @@ export function HabitLoop({ phase, contentPhase = phase }: { phase: number; cont
         inserted.map((stage, index) => (
           <Animated.View
             key={stage.title}
-            exiting={opacityOut(m.duration.fast)}
             style={{
               position: 'absolute',
               left: `${(stage.x / 360) * 100}%`,
@@ -108,7 +119,7 @@ export function HabitLoop({ phase, contentPhase = phase }: { phase: number; cont
                       to: { opacity: 1, transform: [{ translateY: 0 }] },
                     },
               animationDuration: m.duration.slow,
-              animationDelay: index === 0 ? m.duration.standard : m.duration.standard * 2,
+              animationDelay: index === 0 ? m.duration.planCheck : m.duration.reveal,
               animationFillMode: 'backwards',
               animationTimingFunction: 'ease-out',
             }}>
@@ -130,14 +141,25 @@ export function HabitLoop({ phase, contentPhase = phase }: { phase: number; cont
           height: 80,
           justifyContent: 'center',
         }}>
-        <Animated.View
-          key={copy.center}
-          entering={opacityIn(m.duration.standard)}
-          exiting={opacityOut(m.duration.fast)}>
-          <Label variant="label" style={{ textAlign: 'center', color: t.brand.primary }}>
-            {copy.center}
-          </Label>
-        </Animated.View>
+        {habitLoopCopy.map((layerCopy, layerPhase) => (
+          <Animated.View
+            key={layerPhase}
+            pointerEvents="none"
+            accessibilityElementsHidden={contentPhase !== layerPhase}
+            importantForAccessibility={contentPhase === layerPhase ? 'auto' : 'no-hide-descendants'}
+            style={{
+              position: 'absolute',
+              width: '100%',
+              opacity: contentPhase === layerPhase ? 1 : 0,
+              transitionProperty: 'opacity',
+              transitionDuration: m.reduced ? 0 : m.duration.slow,
+              transitionTimingFunction: 'ease-in-out',
+            }}>
+            <Label variant="label" style={{ textAlign: 'center', color: t.brand.primary }}>
+              {layerCopy.center}
+            </Label>
+          </Animated.View>
+        ))}
       </View>
     </View>
   );
