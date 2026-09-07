@@ -37,3 +37,17 @@ test('welcome offers local sign-in and legal reading without advancing the onboa
   expect(screen.getByRole('header', { name: 'Privacy Policy' })).toBeTruthy();
   expect(onboardingStore.getState().data.step).toBe('O01');
 });
+test('progress introduction retains the welcome footer and advances to the third page', async () => {
+  mockParams.step = 'O02';
+  onboardingStore.getState().reset();
+  await render(
+    <AppRuntimeProvider>
+      <OnboardingRoute />
+    </AppRuntimeProvider>,
+  );
+  expect(screen.queryByLabelText('Setup progress')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
+  await userEvent.press(screen.getByRole('button', { name: 'Get started' }));
+  expect(mockSetParams).toHaveBeenCalledWith({ step: 'O03' });
+  mockParams.step = 'O01';
+});

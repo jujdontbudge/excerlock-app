@@ -1,6 +1,6 @@
 export const onboardingCopy = {
   O01: { title: 'Block apps. Exercise more.', body: 'Less scrolling. More time to move.' },
-  O02: { title: 'See your progress', body: 'Watch small wins add up. Less time scrolling, more time for you.' },
+  O02: { title: 'Block apps. Exercise more.', body: 'Reduce your screen time and track your progress.' },
   O03: { title: 'Stay in control', body: 'Your activities. Your schedule. One clear way to unlock.' },
   O04: { title: 'What should we call you?', body: 'Let’s make this your plan.' },
   O05: { title: 'How did you hear about us?', body: 'We’re glad you found your way here.' },

@@ -50,10 +50,12 @@ export function OnboardingShell({
       scrollResetKey={step}
       overlay={overlay}
       header={
-        step === 'O01' ? undefined : <OnboardingHeader progress={progress} onBack={hideBack ? undefined : onBack} />
+        step === 'O01' || step === 'O02' ? undefined : (
+          <OnboardingHeader progress={progress} onBack={hideBack ? undefined : onBack} />
+        )
       }
       footer={
-        hideContinue ? undefined : step === 'O01' ? (
+        hideContinue ? undefined : step === 'O01' || step === 'O02' ? (
           <WelcomeFooter onContinue={onContinue} />
         ) : (
           <PrimaryButton

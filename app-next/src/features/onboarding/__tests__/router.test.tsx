@@ -37,7 +37,9 @@ test.each(preBranch)('%s renders, advances, and returns through the actual route
   const routed = renderRouter(routes, { initialUrl: `/onboarding/${step}` });
   await routed;
   expect(screen.getByRole('header', { name: onboardingCopy[step].title })).toBeTruthy();
-  await userEvent.press(screen.getByRole('button', { name: step === 'O01' ? 'Get started' : 'Continue' }));
+  await userEvent.press(
+    screen.getByRole('button', { name: step === 'O01' || step === 'O02' ? 'Get started' : 'Continue' }),
+  );
   expect(routed.getPathname()).toBe('/onboarding/' + nextStep({ step, answers }));
   await userEvent.press(screen.getByRole('button', { name: 'Back' }));
   expect(routed.getPathname()).toBe('/onboarding/' + step);
