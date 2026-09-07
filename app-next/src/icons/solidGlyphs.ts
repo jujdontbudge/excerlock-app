@@ -1,5 +1,6 @@
 import { IconName } from './paths';
 import { activityPaths } from './activityLibrary';
+import { flameGlyph } from './flameLibrary';
 const activity = (name: keyof typeof activityPaths) => {
   const icon = activityPaths[name];
   return `<svg x="2" y="2" width="20" height="20" viewBox="${icon.viewBox}"><path d="${icon.path}" fill="currentColor"/></svg>`;
@@ -27,9 +28,7 @@ export const solidGlyphs: Partial<Record<IconName, string>> = {
   star: fill(
     'M10.7 3a1.5 1.5 0 0 1 2.6 0l2.4 4.8 5.3.8c1.3.2 1.8 1.7.9 2.6l-3.8 3.7.9 5.3c.2 1.3-1.1 2.2-2.2 1.6L12 19.3l-4.8 2.5c-1.1.6-2.4-.3-2.2-1.6l.9-5.3-3.8-3.7c-.9-.9-.4-2.4.9-2.6l5.3-.8Z',
   ),
-  flame: fill(
-    'M13 2c1 4-2 6-2 8 2-.5 3-2 3.4-3.5C18 9.8 21 13 20 17a8.2 8.2 0 0 1-16 0c-.8-3.2.8-6.3 3-8.7-.3 3 1 4 2 4C7.3 7.2 12 6 13 2Z',
-  ),
+  flame: flameGlyph,
   list: [5, 11, 17].map((y) => rect(2, y, 4, 3.5, 1.75) + rect(8, y, 14, 3.5, 1.75)).join(''),
   phone: fill('M7 1h10a3 3 0 0 1 3 3v16a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V4a3 3 0 0 1 3-3Zm0 3v14h10V4Zm3 16v1h4v-1Z'),
   lock: fill(
