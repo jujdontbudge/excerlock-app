@@ -8,4 +8,6 @@
 
 `RuleScreen` is the reusable branch boundary. Its activity hero stays mounted while questions and forms crossfade; the outer onboarding/builder shell preserves that boundary. `WorkoutModeScreen` and `WorkoutGoalScreen` own mode choices, presets and distance units. `answersDraft` is a pure parser with separate run/bike values; unit changes preserve the number. `goalRange` supplies the field’s range/helper validation, with final rules still checked by domain validation.
 
+Branch setup uses compact controls above a live `RulePreviewLock`. The pure `rulePreviewModel` derives the lock sentence, activity glyph, unit, goal, and progress from `RuleDraft` for every walking, gym, running, and biking path.
+
 Summary edits save a local answer snapshot and restore it on Back. Invalid partial numeric input remains editable and cannot crash the summary when canceled.

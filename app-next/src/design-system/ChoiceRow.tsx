@@ -18,6 +18,7 @@ export function ChoiceRow({
   leading,
   recommended = false,
   multiple = false,
+  compact = false,
 }: {
   title: string;
   support?: string;
@@ -27,6 +28,7 @@ export function ChoiceRow({
   leading?: ReactNode;
   recommended?: boolean;
   multiple?: boolean;
+  compact?: boolean;
 }) {
   const solid = useSolidChoices() && selected;
   return (
@@ -37,11 +39,12 @@ export function ChoiceRow({
       onPress={onPress}>
       <Animated.View
         style={{
-          minHeight: t.layout.row,
+          minHeight: compact ? t.layout.touch : t.layout.row,
           flexDirection: 'row',
           alignItems: 'center',
           gap: t.space.md,
-          padding: t.space.lg,
+          paddingHorizontal: compact ? t.space.md : t.space.lg,
+          paddingVertical: compact ? t.space.sm : t.space.lg,
           borderRadius: t.radius.choice,
           borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
           borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.default,
@@ -60,7 +63,10 @@ export function ChoiceRow({
             </Label>
           ) : null}
           {support ? (
-            <Label variant="support" tone="secondary" style={solid ? { color: t.text.onAccent } : undefined}>
+            <Label
+              variant={compact ? 'badge' : 'support'}
+              tone="secondary"
+              style={solid ? { color: t.text.onAccent } : undefined}>
               {support}
             </Label>
           ) : null}

@@ -1,0 +1,16 @@
+export const rulePreviewCopy = {
+  start: '9 AM',
+  end: '9 PM',
+  block: (condition: string) => `Block from 9 AM to 9 PM\n${condition}`,
+  walkingTarget: (goal: string) => `until you walk ${goal} steps`,
+  walkingState: 'unless you are walking',
+  gymArrival: 'until you arrive at the gym',
+  gymTime: (goal: string) => `until you exercise for ${goal} minutes`,
+  runningTime: (goal: string) => `until you run for ${goal} minutes`,
+  bikingTime: (goal: string) => `until you bike for ${goal} minutes`,
+  runningDistance: (goal: string, unit: string) => `until you run ${goal} ${unit}`,
+  bikingDistance: (goal: string, unit: string) => `until you bike ${goal} ${unit}`,
+  progress: (goal: string, unit: string) => `0 / ${goal} ${unit}`,
+  walkingWaiting: 'Waiting for your walk',
+  gymWaiting: 'Waiting for gym arrival',
+} as const;

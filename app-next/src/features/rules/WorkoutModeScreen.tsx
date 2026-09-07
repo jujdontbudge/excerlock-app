@@ -20,6 +20,7 @@ export function WorkoutModeScreen({
             title={mode.title}
             recommended={index === 0}
             selected={selected === mode.id}
+            compact
             onPress={() =>
               onAction(
                 activity === 'gym'

@@ -36,6 +36,7 @@ export function WalkingScreen({
                 support={p.support}
                 recommended={p.id === 'outside'}
                 selected={d.place === p.id}
+                compact
                 onPress={() => onAction({ type: 'setPlace', value: p.id })}
               />
             </Reveal>
@@ -49,6 +50,7 @@ export function WalkingScreen({
                 support={m.support}
                 recommended={m.id === 'target'}
                 selected={d.walkingMode === m.id}
+                compact
                 onPress={() => onAction({ type: 'setWalkingMode', value: m.id })}
               />
             </Reveal>
