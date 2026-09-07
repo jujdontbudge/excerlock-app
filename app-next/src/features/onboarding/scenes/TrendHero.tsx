@@ -60,9 +60,6 @@ export function TrendHero() {
           </View>
         </View>
       </Reveal>
-      <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
-        {c.illustrative}
-      </Label>
     </View>
   );
 }
