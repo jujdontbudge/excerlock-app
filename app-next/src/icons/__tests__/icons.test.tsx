@@ -27,9 +27,12 @@ test('every semantic icon renders with its accessible identity', async () => {
     expect(screen.getByLabelText(name)).toBeTruthy();
   }
 });
-test('utilities accept render-time tint while activity art preserves its palette', () => {
+test('every use resolves to the same tintable canonical geometry', () => {
   expect(iconXml('chevron')).toContain('currentColor');
-  expect(iconXml('walking')).not.toContain('currentColor');
+  for (const name of iconNames) {
+    expect(iconXml(name)).toContain('currentColor');
+    expect(iconXml(name)).toEqual(iconXml(name, true, true));
+  }
 });
 test('onboarding can tint every icon while preserving its original geometry', () => {
   for (const name of iconNames) {

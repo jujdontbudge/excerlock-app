@@ -1,19 +1,21 @@
-import { useId } from 'react';
 import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Defs, LinearGradient as SvgGradient, Stop, Path } from 'react-native-svg';
+import { Icon, IconName } from '../../../icons/Icon';
 import Animated from 'react-native-reanimated';
 import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
 import { welcomeCopy as c } from '../../../content/welcome';
 import { useMotion } from '../../../motion/useMotion';
 import { Reveal } from '../../../motion/Reveal';
-import { activityPaths } from './activityPaths';
+const activityNames: Record<string, IconName> = {
+  'person-walking': 'walking',
+  'person-running': 'running',
+  'person-biking': 'biking',
+  dumbbell: 'gym',
+};
 export function ActivityTile({ index }: { index: number }) {
   const p = w.control,
     tile = p.tiles[index],
-    icon = activityPaths[tile.icon],
-    m = useMotion(),
-    id = useId().replace(/:/g, '');
+    m = useMotion();
   return (
     <View style={{ position: 'absolute', left: tile.x, top: tile.y }}>
       <Reveal index={index + 1}>
@@ -38,21 +40,7 @@ export function ActivityTile({ index }: { index: number }) {
           <LinearGradient
             colors={tile.peach ? [p.peach, p.peachEnd] : [w.brands.white, w.brands.white]}
             style={{ flex: 1, borderRadius: p.radius, justifyContent: 'center', alignItems: 'center' }}>
-            <Svg
-              width={p.iconSize}
-              height={p.iconSize}
-              viewBox={icon.viewBox}
-              accessible
-              accessibilityRole="image"
-              accessibilityLabel={c.activities[index]}>
-              <Defs>
-                <SvgGradient id={id} x1="0%" y1="0%" x2="100%" y2="100%">
-                  <Stop offset="0" stopColor={p.orange} />
-                  <Stop offset="1" stopColor={p.deep} />
-                </SvgGradient>
-              </Defs>
-              <Path d={icon.path} fill={`url(#${id})`} />
-            </Svg>
+            <Icon name={activityNames[tile.icon]} size={p.iconSize} tint={p.orange} label={c.activities[index]} />
           </LinearGradient>
         </Animated.View>
       </Reveal>

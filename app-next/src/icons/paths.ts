@@ -1,5 +1,6 @@
 /** Authored 24-point utility paths. Every glyph has a distinct semantic silhouette. */
 export const paths = {
+  phone: 'M6 2h12v20H6z',
   chevron: 'M9 5l7 7-7 7',
   back: 'M15 5l-7 7 7 7',
   close: 'M6 6l12 12M18 6L6 18',

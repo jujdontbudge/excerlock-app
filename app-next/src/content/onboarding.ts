@@ -10,7 +10,7 @@ export const onboardingCopy = {
   O09: { title: 'What’s the main reason you want to make a change?', body: 'Start with what matters to you.' },
   O10: {
     title: 'How many hours do you currently spend scrolling each day?',
-    body: 'An estimate is enough. Think about the apps you get lost in.',
+    body: 'Don’t worry about the exact number. Just give your best guess.',
   },
   O11: { title: 'Here’s some quick math', body: 'Small daily choices add up over time.' },
   O12: { title: 'This is a year in your life', body: '365 days. Each dot is one of them.' },
