@@ -42,7 +42,7 @@ export function ActivityCard({
           transitionProperty: ['transform', 'backgroundColor', 'borderColor'],
           transitionDuration: m.duration.standard,
         }}>
-        <Icon name={activity} size={t.space.hero} />
+        <Icon name={activity} size={t.space.hero} tint={solid ? t.text.onAccent : undefined} />
         <Label variant="label" style={{ color: solid ? t.text.onAccent : t.text.primary }}>
           {title}
         </Label>

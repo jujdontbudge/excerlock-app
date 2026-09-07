@@ -31,3 +31,10 @@ test('utilities accept render-time tint while activity art preserves its palette
   expect(iconXml('chevron')).toContain('currentColor');
   expect(iconXml('walking')).not.toContain('currentColor');
 });
+test('onboarding can tint every icon while preserving its original geometry', () => {
+  for (const name of iconNames) {
+    const xml = iconXml(name, false, true);
+    expect(xml).not.toMatch(/(?:fill|stroke)="#[0-9a-f]+"/i);
+    expect(xml).toContain('currentColor');
+  }
+});

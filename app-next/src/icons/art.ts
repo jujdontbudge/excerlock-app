@@ -22,10 +22,11 @@ const colors: Partial<Record<IconName, string>> = {
   gear: c.lilac,
   star: c.yellow,
 };
-export function iconXml(name: IconName, utility = false) {
+export function iconXml(name: IconName, utility = false, monochrome = false) {
   const body =
     !utility && drawings[name]
       ? drawings[name]
       : `<path d="${paths[name]}" fill="none" stroke="${utility ? 'currentColor' : (colors[name] ?? 'currentColor')}" stroke-width="${t.stroke.glyph}" stroke-linecap="round" stroke-linejoin="round"/>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${body}</svg>`;
+  const themed = monochrome ? body.replace(/(fill|stroke)="#[0-9a-f]+"/gi, '$1="currentColor"') : body;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${themed}</svg>`;
 }
