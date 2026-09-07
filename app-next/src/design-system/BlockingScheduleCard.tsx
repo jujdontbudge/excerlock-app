@@ -17,6 +17,7 @@ export function BlockingScheduleCard({
   lock = false,
   children,
   window,
+  action,
 }: {
   message: string;
   start: string;
@@ -25,6 +26,7 @@ export function BlockingScheduleCard({
   lock?: boolean;
   children?: ReactNode;
   window?: Schedule['window'];
+  action?: ReactNode;
 }) {
   const [bodyWidth, setBodyWidth] = useState(0);
   const bodyRadius = lock ? bodyWidth * 0.13 : w.card.radius;
@@ -72,7 +74,7 @@ export function BlockingScheduleCard({
               <BlockingTimeline start={start} end={end} window={window} />
             </View>
           ) : null}
-          {children}
+          {action ?? children}
         </LinearGradient>
       </View>
     </View>

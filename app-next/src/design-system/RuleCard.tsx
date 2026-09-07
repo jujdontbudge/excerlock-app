@@ -63,8 +63,7 @@ export function RuleCard({
               borderWidth: t.stroke.hairline,
               borderRadius: t.radius.card,
               padding: t.space.lg,
-              flexDirection: 'row',
-              alignItems: 'center',
+              flexDirection: 'column',
               gap: t.space.md,
             },
           ]}>
@@ -81,7 +80,7 @@ export function RuleCard({
                 gap: t.space.md,
                 alignItems: 'center',
               }}>
-              <Icon name={icon} />
+              <Icon name={icon} variant="utility" tint={t.brand.primary} size={t.space.xxl} />
               <View style={{ flex: 1, gap: t.space.xs }}>
                 <Label variant="label">{title}</Label>
                 <Label variant="support" tone="secondary">
@@ -90,7 +89,10 @@ export function RuleCard({
               </View>
             </PressableScale>
           </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ width: t.layout.touch + t.space.sm, height: t.layout.touch, alignItems: 'center', justifyContent: 'center' }}>
           <Switch
+            style={{ transform: [{ scale: 0.8 }] }}
             accessibilityRole="switch"
             accessibilityLabel={title}
             value={enabled}
@@ -100,7 +102,16 @@ export function RuleCard({
             }}
             trackColor={{ true: t.brand.primary, false: t.border.default }}
           />
-          <Icon name="chevron" variant="utility" size={t.space.lg} />
+          </View>
+          <View style={{ flexDirection: 'row', gap: t.space.sm }}>
+            <PressableScale label={`Edit ${title}`} onPress={onOpen} style={{ width: t.layout.touch, alignItems: 'center' }}>
+              <Label style={{ fontSize: 28, color: t.brand.primary }}>✎</Label>
+            </PressableScale>
+            <PressableScale label={controls.remove} onPress={onDelete} style={{ width: t.layout.touch, alignItems: 'center' }}>
+              <Icon name="trash" variant="utility" tint={t.brand.primary} size={t.layout.glyph} />
+            </PressableScale>
+          </View>
+          </View>
         </Animated.View>
       </Swipeable>
     </View>

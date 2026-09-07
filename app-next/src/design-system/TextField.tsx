@@ -4,13 +4,20 @@ import Animated from 'react-native-reanimated';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
 import { Reveal } from '../motion/Reveal';
-export function TextField({ label, error, ...props }: TextInputProps & { label: string; error?: string }) {
+export function TextField({
+  label,
+  error,
+  hideLabel = false,
+  ...props
+}: TextInputProps & { label: string; error?: string; hideLabel?: boolean }) {
   const [focused, setFocused] = useState(false);
   return (
     <View style={{ gap: t.space.sm }}>
-      <Label variant="support" tone="secondary">
-        {label}
-      </Label>
+      {!hideLabel ? (
+        <Label variant="support" tone="secondary">
+          {label}
+        </Label>
+      ) : null}
       <Animated.View
         style={{
           backgroundColor: t.surface.subtle,

@@ -1,5 +1,6 @@
 import { Entitlement, LockedApps, Permissions, Session } from '../domain/types';
 import { HistoryDay, Unsubscribe } from './models';
+import { GaitPort } from './GaitPort';
 export type FakePrompt =
   { kind: 'permission'; name: keyof Permissions; scope?: 'always' } | { kind: 'picker'; initial: LockedApps };
 export type RuntimeEvent = { at: string; event: string; props: Record<string, unknown> };
@@ -26,6 +27,8 @@ export interface RuntimeControls {
   advance(ms: number): void;
   setSteps(value: number): void;
   setPresence(value: 'inside' | 'outside'): void;
+  setGait(value: 'none' | 'walking' | 'still'): void;
+  createGaitPreview(): GaitPort;
   setPlacement(value: 'propped' | 'handheld'): void;
   setTime(now: string, timezone?: string): void;
   setPromptMode(mode: DevSnapshot['promptMode']): void;

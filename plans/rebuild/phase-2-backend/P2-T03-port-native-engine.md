@@ -48,3 +48,15 @@ Decision B12: everything built and tested moves, unchanged inside, re-wired outs
       measured 2026-08-04); harness root boots with the env flag.
 - [ ] `~/ios-app-pitfalls/PITFALLS.md` consulted for Screen Time / HealthKit / Expo prebuild entries before
       debugging; any new cross-app pitfall logged with the `log-pitfall` skill.
+
+## Audit amendments (2026-09-07; see `fix-plan.md`)
+
+- Also move `GeofenceEventProcessor`, `GymVisitLog`, `AsyncStorageGymVisitLog`, `LocationTaskRuntime` and
+  `registerLocationTasks` into `src/engine/signals/location/`; `GymVisitLog` gains `open(regionId, atMs)` /
+  `close(regionId, atMs)` so a confirmed exit closes the interval (P2-T15 §3).
+- Copy the three lease functions of `packages/ledger/src/walk.ts` into `src/domain/sessions/lease.ts` with
+  attribution (P2-T15 §2); do not import the package.
+- `NativeShieldScheduler` is adapted to take a `MonitorPlan` (P2-T14 §2) instead of `DesiredOsState`; keep
+  its fail-closed ordering and the `configureLockWindowStart` action-reconfiguration pattern verbatim.
+- Camera usage string and the gait-vision module are required for the propped scan; the app records the camera
+  permission status (P2-T21 §4).

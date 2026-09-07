@@ -1,8 +1,7 @@
 import { opacityIn, opacityOut } from '../../motion/presets';
 import { useState } from 'react';
-import { View } from 'react-native';
 import Animated, { SlideInRight, SlideInLeft, SlideOutLeft, SlideOutRight } from 'react-native-reanimated';
-import { ScreenShell, PrimaryButton, PressableScale, Label } from '../../design-system';
+import { ScreenShell, PrimaryButton, OnboardingHeader } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
 import { conditionsCopy as c } from '../../content/conditions';
@@ -13,39 +12,28 @@ import { TimeSheet } from '../rules/TimeSheet';
 import { PlanSummary } from '../rules/PlanSummary';
 import { toSchedule } from '../rules/scheduleDraft';
 import { Activity } from '../../domain/types';
+import { SolidChoices } from '../../design-system/ChoiceAppearance';
 import { ConfirmSheet } from './ConfirmSheet';
 import { useBuilder } from './useBuilder';
+import { BuilderGymStep } from '../gym-picker/BuilderGymStep';
 export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => void }) {
   const f = useBuilder(id, onClose),
     m = useMotion(),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null);
-  const branch = !['O20', 'S1', 'S3'].includes(f.step);
+  const branch = !['O20', 'S1', 'S3', 'GPlace'].includes(f.step);
   const enter = m.reduced
     ? opacityIn(m.duration.sheet)
     : (f.direction === 'forward' ? SlideInRight : SlideInLeft).duration(m.duration.sheet);
   const exit = m.reduced
     ? opacityOut(m.duration.slow)
     : (f.direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.slow);
+  if (f.step === 'GPlace') return <BuilderGymStep onSaved={f.next} />;
   return (
+    <SolidChoices>
     <ScreenShell
       scrollResetKey={f.step}
       header={
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            paddingHorizontal: t.layout.page,
-            paddingVertical: t.space.sm,
-          }}>
-          <PressableScale label={c.cancel} onPress={f.cancel}>
-            <Label>{c.cancel}</Label>
-          </PressableScale>
-          {f.step !== 'O20' && f.step !== 'S3' ? (
-            <PressableScale label={c.back} onPress={f.back}>
-              <Label>{c.back}</Label>
-            </PressableScale>
-          ) : null}
-        </View>
+        <OnboardingHeader progress={0} showProgress={false} onBack={f.step === 'O20' || f.step === 'S3' ? f.cancel : f.back} />
       }
       footer={<PrimaryButton label={f.step === 'S3' ? c.save : c.continue} disabled={!f.valid} onPress={f.next} />}
       overlay={
@@ -69,7 +57,7 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
           />
         </>
       }>
-      <Animated.View key={branch ? 'branch' : f.step} entering={enter} exiting={exit} style={{ gap: t.space.xl }}>
+      <Animated.View key={branch ? 'branch' : f.step} entering={enter} exiting={exit} style={{ gap: t.space.xl, marginTop: -t.space.md }}>
         {f.step === 'O20' ? (
           <O20
             answers={f.chosen ? { activity: f.draft.activity } : {}}
@@ -81,5 +69,6 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
         {f.step === 'S3' ? <PlanSummary draft={f.draft} schedule={toSchedule(f.schedule)} onEdit={f.edit} /> : null}
       </Animated.View>
     </ScreenShell>
+    </SolidChoices>
   );
 }

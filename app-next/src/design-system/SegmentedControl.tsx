@@ -10,10 +10,12 @@ export function SegmentedControl({
   options,
   value,
   onChange,
+  prominent = false,
 }: {
   options: readonly string[];
   value: string;
   onChange: (value: string) => void;
+  prominent?: boolean;
 }) {
   const [width, setWidth] = useState(0),
     x = useSharedValue(0);
@@ -31,8 +33,8 @@ export function SegmentedControl({
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       style={{
         flexDirection: 'row',
-        borderRadius: t.radius.field,
-        backgroundColor: t.surface.subtle,
+        borderRadius: prominent ? t.radius.pill : t.radius.field,
+        backgroundColor: prominent ? t.surface.card : t.surface.subtle,
       }}>
       <Animated.View
         key={m.reduced ? value : 'indicator'}
@@ -44,8 +46,8 @@ export function SegmentedControl({
             top: t.space.xs,
             bottom: t.space.xs,
             width: width / options.length,
-            borderRadius: t.radius.field,
-            backgroundColor: t.surface.selected,
+            borderRadius: prominent ? t.radius.pill : t.radius.field,
+            backgroundColor: prominent ? t.brand.primary : t.surface.selected,
             borderWidth: t.stroke.hairline,
             borderColor: t.brand.light,
           },
@@ -67,7 +69,7 @@ export function SegmentedControl({
             <Label
               variant="support"
               style={{
-                color: option === value ? t.brand.primary : t.text.secondary,
+                color: option === value ? (prominent ? t.text.onAccent : t.brand.primary) : t.text.secondary,
                 textAlign: 'center',
               }}>
               {option}

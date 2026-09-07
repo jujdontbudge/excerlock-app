@@ -9,6 +9,7 @@ test('gym save requires a name and enforces five places, while edits remain allo
   await expect(r.gym.savePlace({ ...base, id: '6' })).rejects.toThrow();
   await r.gym.savePlace({ ...base, id: '0', name: 'Updated gym' });
   expect(r.gym.listPlaces()).toHaveLength(5);
+  expect(r.gym.listPlaces().find((p) => p.id === '0')?.radiusMeters).toBe(150);
   r.dispose();
 });
 test('location asks when-in-use before a distinct Always upgrade, denial preserves existing grant', async () => {

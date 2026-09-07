@@ -25,3 +25,9 @@ Only after P2-T11 passes and Johan says so.
 - [ ] `main` builds, tests and guardrails green with `app/` = the new app.
 - [ ] TestFlight build installed on Johan's phone from the store path, not the dev client.
 - [ ] Archive tag verified restorable (`git worktree add /tmp/old old-app-final` builds the old app).
+
+## Audit amendments (2026-09-07; see `fix-plan.md`)
+
+- Guardrail: a release build has no dev route, no deep-link runtime mutation and no test buttons (P2-T13).
+- The hardening milestone's task files (P2-T13–T25) move with the rest of `plans/rebuild/`; the audit under
+  `docs/audit/` stays as the record.

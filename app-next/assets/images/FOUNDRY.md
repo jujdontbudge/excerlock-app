@@ -2,7 +2,7 @@
 
 Family D, current September 6 white/orange functional UI revision. A cropped-purpose map viewport composition, not a new illustration family. Read `design/STYLE.md` before generation. Built-in image-generation tool; no references passed.
 
-Final: `map-placeholder.png`. Original remains `/Users/johansardar/.codex/generated_images/01a077e1-7378-7b91-93ed-f14d82f3b2d1/exec-555b06ea-b2ff-472a-abb2-6d6fcc234688.png`.
+Retired September 7, 2026: the gym picker now uses live Apple Maps. The unused placeholder was moved to the user's Trash; this document retains its historical provenance. Original remains `/Users/johansardar/.codex/generated_images/01a077e1-7378-7b91-93ed-f14d82f3b2d1/exec-555b06ea-b2ff-472a-abb2-6d6fcc234688.png`.
 
 Verbatim prompt:
 
@@ -10,4 +10,3 @@ Verbatim prompt:
 
 | Asset | Dimensions | Validation | Decision |
 |---|---|---|---|
-| map-placeholder.png | 1774×887 | Inspected: quiet near-white map, mint park, blue river, coral pin; no labels, real geography, brand or photo detail. Opaque UI viewport; A/B cutout chroma gates do not apply. | Accepted; native-size check in T08 evidence. |

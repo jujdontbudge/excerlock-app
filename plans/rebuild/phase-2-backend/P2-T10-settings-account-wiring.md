@@ -22,3 +22,14 @@
 - [ ] Every Settings row does the real thing on the simulator; deletion verified against the dev Supabase
       project and the VPS (row tombstoned, Adapty logout called, PostHog reset).
 - [ ] Release guardrail for legal placeholders green only when real text is present.
+
+## Audit amendments (2026-09-07; see `fix-plan.md`)
+
+- Settings is the one screen P2-T22 rebuilt; this task wires its rows. The paywall modal is presented over
+  Settings, support and deletion while lapsed (B21).
+- Permission fix path: `Linking.openSettings()` when denied (already the fake's behaviour after P2-T22).
+- Step 5 sends P2-T22's widened support payload (reply address, privacy-floored diagnostics).
+- Step 6 handles deletion of an anonymous session's data.
+- "Export my data" (PRD) and the analytics opt-out are pending Johan's answer in `fix-plan.md`; if kept, an
+  Account row produces a JSON of rules, rule days, history and earned unlocks and emits
+  `data_export_requested` (P2-T02 defines it).

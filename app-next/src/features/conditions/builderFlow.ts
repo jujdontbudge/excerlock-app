@@ -6,7 +6,7 @@ export function builderPath(d: RuleDraft): string[] {
     d.activity === 'walking'
       ? ['W1', 'W2', ...(d.walkingMode === 'target' ? ['W3'] : [])]
       : d.activity === 'gym'
-        ? ['G1', ...(d.gymMode === 'time' ? ['G2'] : [])]
+        ? ['G1', 'GPlace', ...(d.gymMode === 'time' ? ['G2'] : [])]
         : [
             d.activity === 'running' ? 'R1' : 'B1',
             d.runMode === 'distance' ? 'D' : d.activity === 'running' ? 'R2' : 'B2',

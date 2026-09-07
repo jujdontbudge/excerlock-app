@@ -29,3 +29,19 @@ on Johan's iPhone (dev-client build via `npx expo run:ios --device <device-udid>
 Every item gets pass/fail, date, iOS version, device, and a note. Failures become GitHub issues on
 `JohanSardar/excerlock-app` the same session (repo rule), and cross-app pitfalls go to the ledger via
 `log-pitfall`.
+
+## Audit amendments (2026-09-07; see `fix-plan.md`) — rows added to the checklist
+
+11. Two overlapping windows with the app killed stay shielded past the first window's end.
+12. Five daily rules register within the monitor budget; diagnostics log shows the plan and coverage.
+13. Sandbox cancel/expiry clears shields within one app run; Settings and both ceremonies stay reachable behind
+    the paywall modal.
+14. Clock set back an hour keeps the apps locked (watermark).
+15. `lockWindow` shield shows its own subtitle; the third notification tap-throughs to Home.
+16. A 30-minute merged interval registers and its end clears the shield.
+17. Propped treadmill scan books minutes; a duration rule reaches met on the belt; the lease warning fires and a
+    re-scan renews.
+18. Gym: arrive with the app killed, stay an hour, open the app → the full interval is credited; the arrival
+    ceremony unlocks at the 30-second confirmation.
+19. A walking-lease renewal across an hour on hardware.
+20. Measured: how often the Shield extension refreshes published content (open question from P2-T04).

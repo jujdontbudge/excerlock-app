@@ -14,6 +14,8 @@ export function SettingsRow({
   toggle,
   onToggle,
   destructive = false,
+  flat = false,
+  iconTint,
 }: {
   title: string;
   value?: string;
@@ -23,6 +25,8 @@ export function SettingsRow({
   toggle?: boolean;
   onToggle?: (value: boolean) => void;
   destructive?: boolean;
+  flat?: boolean;
+  iconTint?: string;
 }) {
   const fontScale = useWindowDimensions().fontScale;
   const stacked = !!subtitle || fontScale > 1;
@@ -34,9 +38,10 @@ export function SettingsRow({
         flexDirection: 'row',
         alignItems: 'center',
         padding: t.space.lg,
+        paddingHorizontal: flat ? 0 : t.space.lg,
         gap: t.space.md,
       }}>
-      {icon ? <Icon name={icon} size={t.space.xxl} /> : null}
+      {icon ? <Icon name={icon} size={t.space.xxl} tint={iconTint} /> : null}
       <View
         style={{
           flex: 1,
@@ -67,7 +72,7 @@ export function SettingsRow({
           trackColor={{ true: t.brand.primary, false: t.border.default }}
         />
       ) : onPress ? (
-        <Icon name="chevron" variant="utility" size={t.space.lg} tint={t.text.muted} />
+        <Icon name="chevron" variant="utility" size={t.space.lg} tint={iconTint ?? t.text.muted} />
       ) : null}
     </View>
   );

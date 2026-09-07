@@ -1,6 +1,7 @@
 /** Normative design values. Geometry for illustrations is in SVG viewBox coordinates. */
 export const tokens = {
   surface: {
+    orangeGradient: ['#F6B583', '#FBE2CF', '#FFF7F1'],
     canvas: '#FFFFFF',
     topTint: '#FFF0E5',
     topTintMid: '#FFF8F3',
@@ -17,6 +18,9 @@ export const tokens = {
     onAccent: '#FFFFFF',
   },
   brand: {
+    lockHighlight: '#FF6414',
+    lockShade: '#E84000',
+    lockShadow: '#743510',
     primary: '#C94710',
     pressed: '#AE380A',
     decorative: '#F47735',

@@ -11,7 +11,7 @@ export function StreakBadge({ count }: { count: number }) {
         accessible
         accessibilityLabel={format.streak(count)}
         style={{ flexDirection: 'row', gap: t.space.xs, alignItems: 'center' }}>
-        <Icon name="flame" size={t.layout.glyph} />
+        <Icon name="flame" size={t.layout.glyph} tint={t.brand.primary} />
         <Label variant="label">{count}</Label>
       </View>
     </Reveal>

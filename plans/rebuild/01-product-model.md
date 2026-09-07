@@ -13,7 +13,8 @@ below are normative: field names, unions and invariants are what Codex implement
 | **Blocking window** | The days and time range during which a rule locks the apps unless it is met. |
 | **Met** | A rule's requirement was satisfied today. Recorded per rule per local day. |
 | **Unlocked for the rest of today** | The consequence of any rule being met: the apps are open until the next day's blocking window starts. |
-| **Walking session** | A verified live walking session (state mode). Opens the apps while it is active. |
+| **Walking session** | A verified live walking session. In `state` mode it opens the apps while it is active; in `target/minutes` mode it books walked minutes toward the goal. |
+| **Earned unlock** | The record written the moment a rule is met. It, not the rule, keeps the apps open for the rest of the day (B23). |
 | **Day** | A local calendar day, midnight to midnight, in the device's current timezone. |
 
 ## 2. Types
@@ -27,12 +28,14 @@ type Rule = {
   mode: RuleMode;
   schedule: Schedule;
   enabled: boolean;                // false = paused; a paused rule never locks and never counts
+  pausedReason?: 'noGym';          // B25: set when the last saved gym was deleted; cleared when a gym is saved
   createdAt: string;               // ISO
   updatedAt: string;
 };
 
 type RuleMode =
-  | { kind: 'target'; activity: 'walking'; metric: 'steps';   goal: number; place: WalkPlace }
+  | { kind: 'target'; activity: 'walking'; metric: 'steps';   goal: number; place: WalkPlace }   // invalid with place 'treadmill' (B28)
+  | { kind: 'target'; activity: 'walking'; metric: 'minutes'; goal: number; place: WalkPlace }   // B28: minutes from the verified session
   | { kind: 'state';  activity: 'walking';                                   place: WalkPlace }
   | { kind: 'event';  activity: 'gym';     trigger: 'arrival' }
   | { kind: 'target'; activity: 'gym';     metric: 'minutes'; goal: number }
@@ -69,63 +72,91 @@ type RuleDay = {
   metAt: string | null;            // ISO, local instant when it became met
 };
 
+type EarnedUnlock = { day: DayKey; ruleId: string; ruleName: string; metAt: string; windowEnd: string }; // B23
+
+type GymVisit = { id: string; placeId: string; enteredAt: string; exitedAt: string | null; source: 'geofence' | 'manual' }; // B31
+
 type WalkingSession = {
-  ruleId: string;                  // the state-mode rule it belongs to
+  id: string;
+  ruleId: string;                  // a state-mode or walking-minutes rule
+  placement: 'handheld' | 'propped';
+  instanceDay: DayKey;
   startedAt: string;
-  leaseUntil: string;              // Apple's 15-minute renewable lease; a lapsed lease ends the session
+  verifiedAt: string | null;
+  leaseUntil: string;              // 15 minutes from the last verified event; renews indefinitely (B29); a lapsed lease is never revived
+  creditedThrough: string;         // high-water mark; credit is a recomputation from timestamps, never an increment
   phase: 'verifying' | 'walking' | 'grace' | 'ended';
+  endedAt: string | null;
+  endReason: 'stopped' | 'leaseLapsed' | 'windowEnded' | 'dayRollover' | 'ruleChanged' | 'scanFailed' | null;
 };
 ```
 
 Validation (enforced by the builder and by `validateRule`):
 
-- `goal` ranges and steps: steps 500–30,000 in steps of 500 (default 5,000); gym minutes 10–180 (default 30);
+- `goal` ranges and steps: steps 500–30,000 in steps of 500 (default 5,000); walking minutes 10–120 in steps
+  of 5 (default 20; the minimum equals the 10-minute streak floor); gym minutes 10–180 (default 30);
   run/bike minutes 5–300 (default 20 run, 30 bike); run distance 0.5–50 km or 0.25–30 mi (default 2 mi / 3 km);
   bike distance 1–200 km or 1–120 mi (default 5 mi / 8 km). Defaults are what onboarding recommends;
   the field is still editable.
-- `days` non-empty. `range` window at least 15 minutes long.
+- `days` non-empty. `range` window at least 30 minutes long (B32; `MIN_WINDOW_MINUTES`). A persisted shorter
+  window is widened to 30 at hydration, never dropped.
+- Walking place `treadmill` allows only the minutes target and state mode (B28); `outside` and `either` allow
+  all three.
 - The onboarding recommendation is Mon–Fri, 9:00 AM–9:00 PM, and it is **pre-selected but editable**
   (the handoff's "recommended defaults near the end of setup").
 
 ## 3. Lock resolution
 
 One pure function decides what the OS should do. Phase 1 drives it from the fake store; Phase 2 hands its
-output to the Screen Time adapter.
+output to the Screen Time adapter. Above it sits the enforcement gate: `enforcementPlan({ entitlement,
+decision })` clears every shield and unregisters every monitor while the entitlement is `expired`,
+`billingIssue` or `none` (B21); `unknown` keeps the last applied state. The gate never changes the decision.
 
 ```ts
 type LockDecision =
-  | { state: 'noRulesToday' }                                     // apps open, nothing scheduled today
-  | { state: 'beforeWindow';  nextLockAt: string; ruleId: string } // apps open, blocking starts later today
+  | { state: 'noRulesToday';  nextLockAt: string | null }                        // apps open, nothing scheduled today
+  | { state: 'beforeWindow';  nextLockAt: string; ruleId: string; getAheadRuleId: string | null } // blocking starts later today
   | { state: 'locked';        activeRuleIds: string[]; nextUnlockHint: UnlockHint }
-  | { state: 'unlockedMet';   byRuleId: string; relockAt: string | null } // met today, open until next day's window
+  | { state: 'unlockedMet';   byRuleId: string; byName: string; metAt: string; relockAt: string | null }
+  | { state: 'unlockedProvisional'; byRuleId: string; placeId: string; holdsUntil: string } // B22: confirmed gym presence
   | { state: 'unlockedWalking'; sessionRuleId: string; leaseUntil: string }
-  | { state: 'afterWindow';   nextLockAt: string | null };        // today's windows are over, apps open
+  | { state: 'afterWindow';   nextLockAt: string | null };                        // today's windows are over, apps open
 
 function resolveLock(input: {
-  now: string;                    // ISO
+  now: string;                    // ISO, already clamped by effectiveNow (watermark) on the enforcement path
   timezone: string;               // IANA
   rules: Rule[];
   ruleDays: RuleDay[];            // today's and yesterday's rows are enough
+  earnedUnlocks: EarnedUnlock[];  // today's and yesterday's
   walkingSession: WalkingSession | null;
+  gymPresence: { placeId: string; confirmedAt: string; holdsUntil: string } | null; // live, derived from visits, never persisted
 }): LockDecision;
 ```
 
-Rules of resolution, in priority order:
+Rules of resolution, in priority order (this is the only statement of precedence; task files cite it):
 
-1. **Walking session wins.** If a state-mode rule is enabled, scheduled now (its window contains `now`), and
+1. **Walking session wins.** If a `state` walking rule is enabled, has a window instance containing `now`, and
    a `WalkingSession` for it is in phase `walking` or `grace` with `leaseUntil > now`, the result is
-   `unlockedWalking`. This beats everything, including an unmet target rule in the same window.
-2. **Met wins.** If any enabled non-state rule has `RuleDay.met === true` for the day of the current window
-   instance (see §4), the result is `unlockedMet`. `relockAt` is the start of the next window instance of any
-   enabled rule that begins on a later day than the day of the met window instance. If a window crosses
-   midnight, its instance belongs to the day it started on, and the unlock lasts through its end.
-3. **Locked.** If at least one enabled non-state rule is active now and nothing above applies, the result is
-   `locked`, listing every active rule. A state-mode rule active now without a live session also contributes
-   to `locked`. `nextUnlockHint` is the cheapest thing the user can do (see §6).
-4. **Before window.** If no rule is active now but some enabled rule has a window instance starting later
-   today, `beforeWindow` with the earliest start.
-5. **After window / no rules.** Otherwise `afterWindow` (a window instance ended earlier today) or
-   `noRulesToday`.
+   `unlockedWalking`. A `target/minutes` walking session never reaches this branch: walking toward a goal does
+   not open the apps, reaching it does.
+2. **Earned unlock wins.** If an `EarnedUnlock` exists with `day === today` or `windowEnd > now`, the result is
+   `unlockedMet`, attributed to the earliest `metAt`. The record reads no rule, so pausing, deleting or
+   re-scheduling the condition that earned it cannot revoke today's unlock (B23), and a Friday earn never
+   unlocks Saturday. `relockAt` is recomputed live: the start of the next window instance of any enabled rule
+   on a later day than the earning instance; `null` when no enabled rule has one.
+3. **Confirmed presence wins.** If an enabled gym rule has a window instance containing `now` and
+   `gymPresence` is set (a visit confirmed for 30 seconds), the result is `unlockedProvisional` while
+   `holdsUntil > now` (B22). An `event` rule books `met` at the confirmation with `metAt = enteredAt`; a
+   `minutes` rule holds the unlock while presence lasts and books `met` at the goal. Losing presence lets the
+   state lapse to `locked`, with no punishment.
+4. **Locked.** If at least one enabled rule is active now and nothing above applies, `locked`, listing every
+   active rule sorted by window start then `createdAt`. `nextUnlockHint` is the cheapest thing the user can
+   do (see §6).
+5. **Before window.** If no rule is active now but some enabled rule has a window instance starting later
+   today, `beforeWindow` with the earliest start; `getAheadRuleId` names an enabled **target** rule that can be
+   progressed before its window, or is `null`.
+6. **After window / no rules.** Otherwise `afterWindow` (a window instance ended earlier today) or
+   `noRulesToday`; both carry the next start, or `null` when nothing is scheduled ahead.
 
 Consequences Codex must test explicitly:
 
@@ -136,7 +167,13 @@ Consequences Codex must test explicitly:
   goal, apps open only during a walking session; after the goal, open for the rest of the day.
 - A window 20:00–02:00 met at 23:30 → open through 02:00 and until the next window start (tomorrow 20:00).
 - A window 20:00–02:00 not met, at 01:00 the next day → `locked`; the active instance is yesterday's.
-- Pausing a rule (`enabled: false`) removes it from every branch above immediately.
+- Pausing, deleting or editing a rule that already earned today's unlock keeps the unlock (B23); pausing an
+  unmet rule removes it from the locked and before-window branches immediately.
+- A rule met on Friday does not unlock Saturday; a met row from a deleted rule still yields `relockAt: null`
+  when no enabled rule has a later window.
+- Two rules met the same day credit the earlier `metAt`, whatever the store order.
+- A walking session running past its window does not unlock; the session ends at window end.
+- Rewinding the device clock does not revive an expired lease or an ended unlock (watermark).
 - Timezone change: `resolveLock` is re-run with the new `timezone`; `DayKey` values are computed in the new
   zone. Met flags recorded under yesterday's key in the old zone are not re-mapped (accept the edge).
 
@@ -154,13 +191,18 @@ Progress is measured **from local midnight of the instance day**, not from the w
 | Mode | Progress source (Phase 2) | Met when |
 | --- | --- | --- |
 | walking · steps | Core Motion pedometer steps since local midnight (`CMPedometer.queryPedometerData` from day start, plus live updates) | `progress >= goal` |
+| walking · minutes | Minutes credited by the verified walking session (handheld cadence, or the propped treadmill scan with its 15-minute lease renewed by a re-scan or a handheld verification); the pedometer never feeds it | `progress >= goal` |
 | walking · state | Walking session verification (cadence + activity classification; treadmill propped path when `place` is `treadmill`/`either` and the phone is propped) | never "met"; opens apps only while live |
-| gym · arrival | Geofence entry for a saved gym, or manual check-in inside its radius | first arrival today |
-| gym · minutes | Geofence dwell time today (auto-detect) or checked-in time today (manual) | `progress >= goal` |
+| gym · arrival | A confirmed `GymVisit` (geofence entry or manual check-in, 30-second confirmation) at **any** saved gym (B24) | first confirmed visit today; `metAt = enteredAt` |
+| gym · minutes | Dwell summed from `GymVisit` enter/exit timestamps at any saved gym, clipped to the day and merged across overlaps; a visit with the app closed credits in full (B31); a per-day accumulator independent of the window (B8) | `progress >= goal`; the apps are open while presence holds (B22) |
 | running · minutes / distance | HealthKit workouts of type running started today, summed duration / distance | `progress >= goal` |
 | biking · minutes / distance | HealthKit workouts of type cycling started today | `progress >= goal` |
 
-Once `met` is true for a day it stays true (no un-meeting when a HealthKit sample is deleted).
+Once `met` is true for a day it stays true (no un-meeting when a HealthKit sample is deleted). The moment a row
+flips to met an `EarnedUnlock` is written (§3). Which day a progress row belongs to is decided by one helper,
+`progressDay(rule, at, tz)`: the containing instance's day, else today's instance day if the rule is scheduled
+today, else no row at all. Deleting the last saved gym pauses every gym rule with `pausedReason: 'noGym'`
+(B25); saving a gym re-enables them.
 
 ## 6. Unlock hint (what the locked state tells the user)
 
@@ -209,9 +251,12 @@ type PermissionStatus = 'notDetermined' | 'granted' | 'denied' | 'restricted';
 type Permissions = { screenTime: PermissionStatus; motion: PermissionStatus; location: 'notDetermined' | 'whenInUse' | 'always' | 'denied'; health: PermissionStatus; camera: PermissionStatus; notifications: PermissionStatus };
 ```
 
-Hard paywall: the main tabs are reachable only when `Entitlement.status` is `trial` or `active`. `expired` and
-`billingIssue` route to the paywall with the matching message. `unknown` shows the splash until resolved (Phase
-2 gives it a 3-second budget, then treats it as `none` with a retry on the paywall).
+Access by status (B21; `domain/entitlementAccess.ts`): `none` → the hard paywall (never subscribed); `trial`
+and `active` → the app; `expired` and `billingIssue` → the app stays mounted (Home, Settings, support,
+deletion and both ceremonies reachable) with the paywall presented as a dismissible modal, every shield cleared
+and every monitor unregistered, Home saying "Blocking is paused"; `unknown` shows the splash inside a 3-second
+budget, then falls back to the last persisted known-good status (never to a clear). Adapty's billing grace
+period maps to `active` in v1. `Session` carries a `userId` on both variants from first launch.
 
 ## 10. What the old packages contribute
 

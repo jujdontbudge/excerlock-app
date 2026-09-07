@@ -1,5 +1,5 @@
 import { PropsWithChildren, ReactNode, useEffect, useLayoutEffect, useRef } from 'react';
-import { Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { tokens as t } from './tokens';
@@ -10,20 +10,27 @@ export function ScreenShell({
   overlay,
   safeBottom = true,
   tinted = true,
+  orangeBackground = true,
   scrollToEndOnKeyboard = false,
   scrollResetKey,
+  contentStyle,
 }: PropsWithChildren<{
   footer?: ReactNode;
   header?: ReactNode;
   overlay?: ReactNode;
   safeBottom?: boolean;
   tinted?: boolean;
+  orangeBackground?: boolean;
   scrollToEndOnKeyboard?: boolean;
   scrollResetKey?: string;
+  contentStyle?: StyleProp<ViewStyle>;
 }>) {
   const scroll = useRef<ScrollView>(null);
   useLayoutEffect(() => {
-    if (scrollResetKey !== undefined) scroll.current?.scrollTo({ y: 0, animated: false });
+    if (scrollResetKey === undefined) return;
+    scroll.current?.scrollTo({ y: 0, animated: false });
+    const frame = requestAnimationFrame(() => scroll.current?.scrollTo({ y: 0, animated: false }));
+    return () => cancelAnimationFrame(frame);
   }, [scrollResetKey]);
   useEffect(() => {
     if (!scrollToEndOnKeyboard) return;
@@ -35,9 +42,11 @@ export function ScreenShell({
       {tinted ? (
         <LinearGradient
           pointerEvents="none"
-          colors={[t.surface.topTint, t.surface.topTintMid, t.surface.canvas]}
-          locations={[0, t.layout.washMid / t.layout.wash, 1]}
-          style={s.wash}
+          colors={
+            orangeBackground ? t.surface.orangeGradient : [t.surface.topTint, t.surface.topTintMid, t.surface.canvas]
+          }
+          locations={orangeBackground ? [0, 0.35, 1] : [0, t.layout.washMid / t.layout.wash, 1]}
+          style={orangeBackground ? [s.wash, { height: '100%' }] : s.wash}
         />
       ) : null}
       <SafeAreaView style={s.rootClear} edges={safeBottom ? ['top', 'bottom'] : ['top']}>
@@ -46,7 +55,7 @@ export function ScreenShell({
           <ScrollView
             ref={scroll}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={s.content}
+            contentContainerStyle={[s.content, contentStyle]}
             showsVerticalScrollIndicator={false}>
             {children}
           </ScrollView>
@@ -79,6 +88,6 @@ const s = StyleSheet.create({
     paddingHorizontal: t.layout.page,
     paddingVertical: t.space.md,
     gap: t.space.sm,
-    backgroundColor: t.surface.canvas,
+    backgroundColor: t.surface.transparent,
   },
 });

@@ -32,12 +32,30 @@ anything that depends on it. "Prerequisite" means Johan or Fable must do it befo
 | B11 | Walking step goals read the **phone pedometer (Core Motion)**, not HealthKit. Running and biking read **HealthKit workouts** only (no in-app GPS tracker). Gym uses **geofence auto-detect promoted, manual check-in kept** as built, plus **map search and pin** for saving a gym. | Locked |
 | B12 | **Treadmill and camera (gait vision) verification stays**, together with placement classification, walking session/lease logic, and the on-device test harness. All of it is **ported from the old app, not rewritten** (Phase 2). | Locked |
 | B13 | **Hard paywall.** No way into the main app without starting the trial (or restoring). Restore purchases works on the paywall. | Locked |
-| B14 | **Notifications: only two**, both local: the trial-ending reminder (part of the approved trial sequence) and the walk-lease warning that state mode needs. No engagement notifications (no nudge, recap, streak call). No push infrastructure. Codex decides the implementation in Phase 2. | Locked |
+| B14 | **Notifications: two user-facing**, both local: the trial-ending reminder (part of the approved trial sequence) and the walk-lease warning that state mode needs, plus the shield tap-through id that B30 adds (enqueued only by the ShieldAction extension, never user-facing). No engagement notifications (no nudge, recap, streak call). No push infrastructure. Codex decides the implementation in Phase 2. | Amended 2026-09-07 (B30) |
 | B15 | Analytics tab keeps a **usage monitor on the locked apps** so it can chart locked-app minutes per day and compute "time reclaimed" against the onboarding scrolling estimate. This is the one native risk in Analytics (Phase 2). | Locked |
 | B16 | **Badges and share cards are cut** for v1. Streaks and the weekly recap card stay. | Locked |
 | B17 | **Support form only.** Feature-request voting is cut. | Locked |
 | B18 | **Sign-in methods: Apple, Google, email.** Anonymous session from the first onboarding screen; sign-in is offered after purchase and later in Settings, never required to use the app (local-first law stays). | Locked |
-| B19 | The **unlock moment is a simple placeholder** in v1 (lock icon state change + one success haptic). Johan designs the real one later. | Locked |
+| B19 | The **unlock moment is a simple placeholder** in v1 (lock icon state change + one success haptic) for background/auto-detect unlocks. The entry-driven unlocks (treadmill scan, gym arrival) get the full ceremony in `docs/specs/aha-unlock-screens.md`. | Revised 2026-09-07 |
+| B20 | **Aha unlock screens.** Two full-screen unlocks entered from white pills inside the Home lock ("I'm using a treadmill", "I'm at the gym"): lock-shaped frame with camera or map as the body, progress ring on the border, shackle lift, **confetti**, detected message. This deliberately reverses the PRD's "no takeover, no confetti" earn-moment rule for these two screens only. Treadmill applies solely to `state` walking rules with a treadmill place; scan auto-starts on first stride. Spec: `docs/specs/aha-unlock-screens.md`. | Locked 2026-09-07 |
+| B21 | **Subscription lapse unshields.** On the transition into `expired` or `billingIssue` every shield is cleared and every DeviceActivity monitor unregistered. Settings, support, account deletion and the two ceremonies stay reachable behind an in-app paywall modal; a paywall never holds someone's apps hostage. | Locked 2026-09-07 |
+| B22 | **Gym minutes rule gives instant relief.** A confirmed arrival inside the window unlocks while presence holds; the day's credit books when N minutes accrue. The ceremony says "Unlocked while you're here, N minutes counts the day". | Locked 2026-09-07 |
+| B23 | **An earned unlock survives edits.** Pausing, deleting or editing a condition that already unlocked today keeps today's unlock (B2 "no matter what"). The earned unlock is snapshotted on the met row so schedule edits cannot revoke it. | Locked 2026-09-07 |
+| B24 | **Gym conditions bind to any saved gym**, not one; stated in the product model, gym list reachable from the condition summary. | Locked 2026-09-07 |
+| B25 | **Deleting a gym a condition depends on auto-pauses that condition** with a note on its row. | Locked 2026-09-07 |
+| B26 | **Arrival radius stays a 50–200 m slider** (PRD and shipped). Screen inventory corrected; trade-off copy on the picker. | Locked 2026-09-07 |
+| B27 | **Walking place `either` gets a choice on Home**: two pills, "I'm using a treadmill" and "I'm walking with my phone". No camera surprise outdoors. | Locked 2026-09-07 |
+| B28 | **Walking builder keeps place first and filters modes by place.** Treadmill → only "Walk for N minutes" (new duration target; minutes come from the verified walking session, camera when propped, cadence in hand) and "Unlock while walking". Outside or Either → step goal, walk-for-minutes and unlock-while-walking. Johan 2026-09-07; replaces the audit's flip-the-order recommendation. | Locked 2026-09-07 |
+| B29 | **The walking lease renews indefinitely** while cadence stays verified. No session cap. | Locked 2026-09-07 |
+| B30 | **A third notification id exists for the shield's "Open ExcerLock" button** (deep link to Home / the relevant ceremony). | Locked 2026-09-07 |
+| B31 | **Gym dwell with the app closed credits the full geofence enter-to-exit interval** from the region timestamps; the 30-second confirmation still filters blips. | Locked 2026-09-07 |
+| B32 | **Minimum lock window is 30 minutes** (was 15, Apple's DeviceActivity floor). | Locked 2026-09-07 |
+| B33 | **Onboarding copy: the screen inventory wins** for the missing O19 screen, the illustrative label and the duplicate O01 heading. O10 reverts to the inventory version; the "never editable" rule stands, so the five shipped bands go. | Locked 2026-09-07 |
+| B34 | **Settings is one screen** as the inventory specifies; the compact two-tier "More settings" shape is removed. | Locked 2026-09-07 |
+| B35 | **No Lifetime plan** in v1; removed from the paywall stand-in. | Locked 2026-09-07 |
+| B36 | **The `lockWindow` shield cause gets its own subtitle** naming the cheapest unlock, published per rule to the app group whenever the app runs. | Locked 2026-09-07 |
+| B37 | **Notifications are OS-level only in v1**; no per-notification toggles; the preference row is renamed accordingly. | Locked 2026-09-07 |
 
 ## C. Visual and motion
 

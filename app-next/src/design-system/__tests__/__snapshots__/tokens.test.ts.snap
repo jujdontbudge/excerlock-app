@@ -13,6 +13,9 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
   "brand": {
     "decorative": "#F47735",
     "light": "#FFD6BD",
+    "lockHighlight": "#FF6414",
+    "lockShade": "#E84000",
+    "lockShadow": "#743510",
     "pressed": "#AE380A",
     "primary": "#C94710",
   },
@@ -170,6 +173,11 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
   "surface": {
     "canvas": "#FFFFFF",
     "card": "#FFFFFF",
+    "orangeGradient": [
+      "#F6B583",
+      "#FBE2CF",
+      "#FFF7F1",
+    ],
     "scrim": "rgba(29,29,34,0.32)",
     "selected": "#FFF1E8",
     "subtle": "#F7F7F8",

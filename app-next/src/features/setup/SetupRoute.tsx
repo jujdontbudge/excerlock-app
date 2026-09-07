@@ -9,10 +9,9 @@ import { branchPermission, nextSetup, setupSteps, resumeSetup } from '../../onbo
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { PermissionPrimer } from './PermissionPrimer';
 import { AppsSetup } from './AppsSetup';
-import { GymSetup } from './GymSetup';
+import { GymPickerScreen } from '../gym-picker/GymPickerScreen';
 import { SignInScreen } from './SignInScreen';
 import { SetupComplete } from './SetupComplete';
-import { GymPicker } from '../sheets/GymPicker';
 import { setupCopy as c } from '../../content/setup';
 export function SetupRoute() {
   const params = useLocalSearchParams<{ step?: string }>(),
@@ -20,7 +19,6 @@ export function SetupRoute() {
     runtime = useRuntime(),
     state = useOnboardingStore((s) => s.data),
     rules = useRulesStore((s) => s.data.rules),
-    [gymOpen, setGymOpen] = useState(false),
     [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const step = resumeSetup({ setupStep: params.step ?? state.setupStep, setupComplete: false }),
     activity = (state.answers.activity ?? rules[0]?.activity ?? 'walking') as Activity;
@@ -43,13 +41,8 @@ export function SetupRoute() {
   };
   let body = <PermissionPrimer name="screenTime" onContinue={advance} />;
   if (step === 'X2') body = <AppsSetup onContinue={advance} />;
-  if (step === 'X3')
-    body =
-      activity === 'gym' ? (
-        <GymSetup onContinue={advance} onChoose={() => setGymOpen(true)} />
-      ) : (
-        <PermissionPrimer name={branchPermission(activity)} onContinue={advance} />
-      );
+  if (step === 'X3' && activity === 'gym') return <GymPickerScreen onSaved={advance} />;
+  if (step === 'X3') body = <PermissionPrimer name={branchPermission(activity)} onContinue={advance} />;
   if (step === 'X4') body = <SignInScreen onContinue={advance} />;
   if (step === 'X5') body = <SetupComplete activity={activity} />;
   return (
@@ -61,8 +54,7 @@ export function SetupRoute() {
       hideBack={step === 'X1'}
       onContinue={advance}
       hideContinue={step !== 'X5'}
-      continueLabel={c.home}
-      overlay={<GymPicker open={gymOpen} onDismiss={() => setGymOpen(false)} />}>
+      continueLabel={c.home}>
       {body}
     </OnboardingShell>
   );

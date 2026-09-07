@@ -1,0 +1,66 @@
+import { ReactNode } from 'react';
+import { Pressable, View } from 'react-native';
+import { ScreenShell, Label } from '../../design-system';
+import { tokens as t } from '../../design-system/tokens';
+import { feedback } from '../../motion/haptics';
+import { unlockCopy as c } from '../../content/unlock';
+import { Icon } from '../../icons/Icon';
+import Animated from 'react-native-reanimated';
+import { popIn } from '../../motion/presets';
+import { useUnlockMotion } from './useUnlockMotion';
+export function UnlockLayout({
+  children,
+  footer,
+  close,
+  preview,
+}: {
+  children: ReactNode;
+  footer?: ReactNode;
+  close: () => void;
+  preview: boolean;
+}) {
+  return (
+    <ScreenShell
+      header={
+        <View style={{ paddingHorizontal: t.layout.page, flexDirection: 'row', alignItems: 'center' }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={c.close}
+            onPress={() => {
+              feedback('press');
+              close();
+            }}
+            style={{ width: t.layout.touch, height: t.layout.touch, justifyContent: 'center' }}>
+            <Label style={{ fontSize: 32, color: t.brand.primary }}>×</Label>
+          </Pressable>
+          {preview ? <Label tone="secondary">{c.preview}</Label> : null}
+        </View>
+      }
+      footer={footer}>
+      <View style={{ paddingTop: 28, gap: t.space.md }}>{children}</View>
+    </ScreenShell>
+  );
+}
+export function Detected({ title, body }: { title: string; body: string }) {
+  const { reduced } = useUnlockMotion();
+  return (
+    <Animated.View entering={popIn(reduced)}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        backgroundColor: 'rgba(239,76,0,0.88)',
+        justifyContent: 'center',
+        padding: t.space.xl,
+      }}>
+      <View style={{ alignItems: 'center', marginBottom: t.space.lg }}>
+        <Icon name="check" variant="utility" size={56} tint={t.text.onAccent} />
+      </View>
+      <Label accessibilityRole="header" variant="question" tone="onAccent" style={{ textAlign: 'center' }}>
+        {title}
+      </Label>
+      <Label tone="onAccent" style={{ textAlign: 'center', marginTop: t.space.md }}>
+        {body}
+      </Label>
+    </Animated.View>
+  );
+}

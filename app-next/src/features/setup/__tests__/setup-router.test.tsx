@@ -11,7 +11,7 @@ import { onboardingStore } from '../../../state/onboardingStore';
 import { permissionsStore } from '../../../state/permissionsStore';
 test.each([
   ['home-locked-walking', 'Let ExcerLock count your steps'],
-  ['gym-arrival-user', 'Find your gym'],
+  ['gym-arrival-user', 'Pick your gym'],
   ['runner-distance', 'Read your workouts from Apple Health'],
 ] as const)('%s resumes the correct X3', async (scenario, title) => {
   const runtime = createRuntime();
@@ -54,8 +54,8 @@ test('skips preserve missing grants and X5 reports them before completing', asyn
       'onboarding/[step]': () => <Text>Onboarding</Text>,
       paywall: () => <Text>Paywall</Text>,
       '(tabs)/_layout': () => <Slot />,
-    builder: () => <Text>Builder</Text>,
-    '(tabs)/home': () => <Text>Home</Text>,
+      builder: () => <Text>Builder</Text>,
+      '(tabs)/home': () => <Text>Home</Text>,
       dev: () => <Text>Dev</Text>,
     },
     { initialUrl: '/setup/X5' },

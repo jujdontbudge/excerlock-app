@@ -12,10 +12,12 @@ export function OnboardingHeader({
   progress,
   onBack,
   onClose,
+  showProgress = true,
 }: {
   progress: number;
   onBack?: () => void;
   onClose?: () => void;
+  showProgress?: boolean;
 }) {
   const m = useMotion(),
     amount = Math.max(0, Math.min(1, progress)),
@@ -53,7 +55,7 @@ export function OnboardingHeader({
         style={{ width: t.layout.touch, alignItems: 'center', opacity: onBack ? 1 : 0 }}>
         {arrow('back')}
       </PressableScale>
-      <View
+      {showProgress ? <View
         accessible
         accessibilityRole="progressbar"
         accessibilityLabel={c.progress}
@@ -81,7 +83,7 @@ export function OnboardingHeader({
             fill,
           ]}
         />
-      </View>
+      </View> : null}
       {onClose ? (
         <PressableScale label={c.close} onPress={onClose} style={{ width: t.layout.touch, alignItems: 'center' }}>
           {arrow('close')}

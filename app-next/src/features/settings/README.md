@@ -1,6 +1,6 @@
 # Settings
 
-Ordering maps the actual OtterLife segment 08: General (About You, Data Source, notifications, units), Community (sharing), Other (help/feedback, privacy, agreement). ExcerLock places profile/subscription first, required data permissions and preferences next, then community/support/legal/account. Saved gyms and the one locked-app set stay close to their preferences.
+Main-screen layout follows `design/mockups/onboarding-orange/main-settings-v3.png`: profile, Permissions, Preferences, Account & support. It uses the current orange gradient, orange utility glyphs, white grouped cards and compact 44-point rows. Camera permission and the existing full preference/subscription/legal controls remain under More settings, owned by `DetailedSettingsScreen`; no settings functionality was deleted. Appearance is not invented as a nonfunctional control.
 
 `SettingsScreen` composes the groups and fake external actions. `SettingsPage` provides sub-screen navigation. `PermissionDetail`, `GymsScreen`, `SupportScreen`, `AccountScreen` and `LegalScreen` own their individual interactions. Legal content is explicitly marked as a Phase 1 placeholder in `src/content/legal.ts`.
 

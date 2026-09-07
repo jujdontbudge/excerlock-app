@@ -1,21 +1,39 @@
 import { useState } from 'react';
-import { Heading, SettingsGroup, SettingsRow, PrimaryButton, EmptyState, Label } from '../../design-system';
+import {
+  Heading,
+  SettingsGroup,
+  SettingsRow,
+  PrimaryButton,
+  SecondaryButton,
+  EmptyState,
+  Label,
+} from '../../design-system';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { settingsCopy as c } from '../../content/settings';
 import { GymPicker } from '../sheets/GymPicker';
 import { ConfirmSheet } from '../conditions/ConfirmSheet';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { SettingsPage } from './SettingsPage';
+import { View } from 'react-native';
+import { tokens as t } from '../../design-system/tokens';
 export function GymsScreen({ onBack }: { onBack: () => void }) {
   const gyms = useSettingsStore((s) => s.data.gymPlaces),
     [adding, setAdding] = useState(false),
+    [editing, setEditing] = useState<string | undefined>(),
     [deleting, setDeleting] = useState<string | null>(null);
   return (
     <SettingsPage
       onBack={onBack}
       overlay={
         <>
-          <GymPicker open={adding} onDismiss={() => setAdding(false)} />
+          <GymPicker
+            open={adding}
+            placeId={editing}
+            onDismiss={() => {
+              setAdding(false);
+              setEditing(undefined);
+            }}
+          />
           <ConfirmSheet
             open={!!deleting}
             title={c.removeGym}
@@ -35,7 +53,18 @@ export function GymsScreen({ onBack }: { onBack: () => void }) {
       {gyms.length ? (
         <SettingsGroup>
           {gyms.map((g) => (
-            <SettingsRow key={g.id} title={g.name} subtitle={g.address} icon="gym" onPress={() => setDeleting(g.id)} />
+            <View key={g.id} style={{ gap: t.space.sm }}>
+              <SettingsRow
+                title={g.name}
+                subtitle={`${g.address} · ${g.radiusMeters} m`}
+                icon="gym"
+                onPress={() => {
+                  setEditing(g.id);
+                  setAdding(true);
+                }}
+              />
+              <SecondaryButton label={`${c.removeGym}: ${g.name}`} onPress={() => setDeleting(g.id)} />
+            </View>
           ))}
         </SettingsGroup>
       ) : (

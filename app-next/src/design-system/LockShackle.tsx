@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { welcomeTokens as w } from './welcomeTokens';
+import { tokens as t } from './tokens';
 
 /** Fixed outer silhouette; thickness grows inward without changing the lock's proportions. */
 export function LockShackle({ bodyWidth }: { bodyWidth: number }) {
@@ -15,7 +16,7 @@ export function LockShackle({ bodyWidth }: { bodyWidth: number }) {
   return (
     <View accessible={false} style={{
       alignSelf: 'center', width, height, marginBottom: -1,
-      shadowColor: '#743510',
+      shadowColor: t.brand.lockShadow,
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.16,
       shadowRadius: 12,
@@ -23,9 +24,9 @@ export function LockShackle({ bodyWidth }: { bodyWidth: number }) {
       <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} accessible={false}>
         <Defs>
           <LinearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor="#FF6414" />
+            <Stop offset="0%" stopColor={t.brand.lockHighlight} />
             <Stop offset="48%" stopColor={w.card.start} />
-            <Stop offset="100%" stopColor="#E84000" />
+            <Stop offset="100%" stopColor={t.brand.lockShade} />
           </LinearGradient>
         </Defs>
         <Path

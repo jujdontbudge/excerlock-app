@@ -1,4 +1,5 @@
 import { scenario0 } from './fresh-install';
+import { unlockScenarios } from './unlock';
 import { scenario1 } from './onboarding-walking-resume';
 import { scenario2 } from './home-locked-walking';
 import { scenario3 } from './home-unlocked-met';
@@ -47,4 +48,5 @@ export const scenarios = [
   scenario21,
   scenario22,
   scenario23,
+  ...unlockScenarios,
 ];

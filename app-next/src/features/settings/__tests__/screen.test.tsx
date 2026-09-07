@@ -14,6 +14,11 @@ test('required rows, persistent preferences and seven-tap developer entry', asyn
       <SettingsScreen navigate={navigate} onDev={dev} />
     </AppRuntimeProvider>,
   );
+  expect(screen.getByRole('header', { name: 'Permissions' })).toBeTruthy();
+  expect(screen.getByRole('header', { name: 'Account & support' })).toBeTruthy();
+  await userEvent.press(screen.getByRole('button', { name: 'Apple Health, Connected' }));
+  expect(navigate).toHaveBeenCalledWith('permission/health');
+  await userEvent.press(screen.getByRole('button', { name: 'More settings' }));
   for (const name of [
     'Manage subscription',
     'Restore purchases',
@@ -65,6 +70,7 @@ test('restore exposes pending feedback on its own row', async () => {
       <SettingsScreen navigate={() => {}} onDev={() => {}} />
     </AppRuntimeProvider>,
   );
+  await userEvent.press(screen.getByRole('button', { name: 'More settings' }));
   await userEvent.press(screen.getByRole('button', { name: 'Restore purchases' }));
   expect(screen.getByRole('button', { name: 'Restore purchases, Restoring purchases…' })).toBeTruthy();
   await act(async () => {

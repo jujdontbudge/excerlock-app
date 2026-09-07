@@ -1,9 +1,11 @@
 import { common } from '../../content/common';
 import { Image, StyleSheet, View } from 'react-native';
 import { tokens } from '../../design-system/tokens';
+import { LinearGradient } from 'expo-linear-gradient';
 export function BootScreen() {
   return (
     <View testID="boot" style={styles.page}>
+      <LinearGradient colors={tokens.surface.orangeGradient} locations={[0, 0.35, 1]} style={[StyleSheet.absoluteFill, { height: '100%' }]} />
       <Image
         accessible
         accessibilityRole="image"

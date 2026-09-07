@@ -49,3 +49,36 @@ scheduling go away; window instances and met/walking states take their place.
 - [ ] Usage counter increments in the simulator with a simulated threshold event (fixture path from the old
       e2e composition root).
 - [ ] Real enforcement, deny path and shield rendering are **not** claimed here; they belong to P2-T11.
+
+## Audit amendments (2026-09-07; see `fix-plan.md`) — these override the Design and Steps above where they differ
+
+- **No per-rule schedules.** Step 1 registers the monitors of `compileMonitorPlan(mergedLockIntervals(...))`
+  (P2-T14 §2): merged, non-repeating, absolute, at most `LOCK_WINDOW_BUDGET = 16`, re-registered on every
+  enforcer run. Overlapping and adjacent windows are one monitor, so an interval end can only mean "no rule is
+  active"; monitor count no longer depends on rule count.
+- **The extension decides nothing.** "The extension reads the met-today fact to decide" is not implementable
+  (no OS-side arithmetic). Met-today, the earned unlock, the walking lease and a lapse are expressed by
+  **reconfiguring the monitors' action lists** whenever the app runs (the old `NativeShieldScheduler`
+  `blockSelection`/`unblockSelection` swap). Safe because every one of those facts can only be recorded while
+  the app runs.
+- **Call site.** Step 3 names P2-T17's `EnforcementHost` (`startEnforcement(runtime)` above every route
+  guard), not `useLockDecision()`. It applies only on a change of `{ shields, selectionToken, planHash }`.
+- **One re-arm routine.** Rule edit, midnight, timezone change, entitlement transition and lease renewal all
+  call the same `rearm()`; list it once.
+- **Lapse (B21).** On the transition into `expired`/`billingIssue`, clear every shield and unregister every
+  monitor before anything else; re-register on the transition back. `unknown` never clears.
+- **App-group facts** are `{ schemaVersion, shieldsDesired, unlockUntil, leaseUntil, watermark, entitled,
+  planHash, shieldContentByMonitor }`. The walking lease is an output of P2-T15's session machine: on every
+  renewal the adapter re-registers the renewable interval and rewrites `{ sessionId, leaseUntil }`; the
+  extension re-shields on lapse. Enforcement time is `effectiveNow` (P2-T14 §5).
+- **Shield content per monitor (B36).** Publish `Record<monitorName, ShieldContent>` on every apply; the
+  `lockWindow` cause has its own subtitle. Open question carried from the audit: how often the extension may
+  refresh it; measure in P2-T11.
+- **Port signature.** `applyLock(decision, plan): Promise<ApplyResult>` fails closed (shield first, then
+  report `applied:false` with a reason); `describeSelection()` re-verifies the handle on foreground and zeroes
+  the counts when it no longer resolves; the adapter passes `describeScreenTimePort` (P2-T14 §9).
+- **Minimum window** is 30 minutes (B32), so no merged interval needs the backdated-`intervalStart` hack; that
+  stays scoped to the walking lease.
+- Acceptance rows added: overlapping windows stay shielded past the first end with the app killed; five daily
+  rules register within budget; sandbox lapse clears within one app run; clock set back an hour keeps the
+  apps locked; the `lockWindow` subtitle renders; the third notification id tap-throughs.

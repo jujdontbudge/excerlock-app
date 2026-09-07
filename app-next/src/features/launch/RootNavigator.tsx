@@ -21,6 +21,7 @@ export function RootNavigator() {
         }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="dev" />
+        <Stack.Screen name="gym-picker" options={{ presentation: 'fullScreenModal' }} />
         <Stack.Protected guard={loading || (!onboarding.complete && onboarding.step !== 'P' && !entitled)}>
           <Stack.Screen name="onboarding/[step]" />
         </Stack.Protected>
@@ -35,6 +36,8 @@ export function RootNavigator() {
           <Stack.Screen name="settings" />
           <Stack.Screen name="sign-in" options={{ presentation: 'fullScreenModal' }} />
           <Stack.Screen name="builder" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="unlock/gym" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="unlock/treadmill" options={{ presentation: 'fullScreenModal' }} />
         </Stack.Protected>
       </Stack>
       <FakePromptHost />

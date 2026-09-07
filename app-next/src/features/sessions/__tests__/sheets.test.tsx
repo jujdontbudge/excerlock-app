@@ -2,7 +2,6 @@ import { render, screen, userEvent, act } from '@testing-library/react-native';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { WalkingSheet } from '../WalkingSheet';
-import { CheckInSheet } from '../CheckInSheet';
 import { rulesStore } from '../../../state/rulesStore';
 import { ruleDaysStore } from '../../../state/ruleDaysStore';
 test('walking sheet follows the script, can minimize, stop, and finish', async () => {
@@ -26,20 +25,6 @@ test('walking sheet follows the script, can minimize, stop, and finish', async (
   expect(screen.getByText('Walk complete')).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: 'Done' }));
   expect(ruleDaysStore.getState().data.walkingSession).toBeNull();
-});
-test('outside check-in is disabled; inside arrival succeeds', async () => {
-  const runtime = createRuntime();
-  await runtime.dev.load('gym-arrival-user');
-  await render(
-    <AppRuntimeProvider runtime={runtime}>
-      <CheckInSheet arrival onDismiss={jest.fn()} onChooseGym={jest.fn()} />
-    </AppRuntimeProvider>,
-  );
-  expect(screen.getByRole('button', { name: 'Check in' })).toBeDisabled();
-  await act(() => runtime.dev.setPresence('inside'));
-  await userEvent.press(screen.getByRole('button', { name: 'Check in' }));
-  expect(screen.getByText('Your visit counts. Your apps are open for today.')).toBeTruthy();
-  expect(ruleDaysStore.getState().data.days[0].met).toBe(true);
 });
 test('treadmill requires the fake propped framing state before starting', async () => {
   const runtime = createRuntime();

@@ -30,5 +30,8 @@ test('weekly recap uses readable whole-minute activity totals as the fake gym cl
     </AppRuntimeProvider>,
   );
   expect(screen.getByText('30 minutes')).toBeTruthy();
+  expect(screen.getByRole('header', { name: 'How you earned time' })).toBeTruthy();
+  expect(screen.getAllByText('Time reclaimed').length).toBeGreaterThan(0);
+  expect(screen.getByLabelText('Screen time and time reclaimed chart')).toBeTruthy();
   runtime.dispose();
 });

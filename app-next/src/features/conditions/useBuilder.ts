@@ -3,7 +3,7 @@ import { useStore } from 'zustand';
 import { Keyboard } from 'react-native';
 import { Activity } from '../../domain/types';
 import { rulesStore } from '../../state/rulesStore';
-import { settingsStore } from '../../state/settingsStore';
+import { settingsStore, settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { createDraft, fromRule, toRule } from '../rules/draft';
 import { createRuleDraftStore } from '../rules/RuleDraftStore';
 import { scheduleDraft, reduceSchedule, toSchedule, ScheduleAction } from '../rules/scheduleDraft';
@@ -12,6 +12,7 @@ import { saveRule } from './mutations';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 export function useBuilder(id: string | undefined, onClose: () => void) {
   const runtime = useRuntime();
+  const gymCount = useSettingsStore((s) => s.data.gymPlaces.length);
   const [initial] = useState(() => {
     const rule = rulesStore.getState().data.rules.find((r) => r.id === id);
     const draft = rule
@@ -51,7 +52,7 @@ export function useBuilder(id: string | undefined, onClose: () => void) {
     confirm,
     direction,
     dispatch,
-    valid: builderValid(step, draft, schedule, chosen),
+    valid: step === 'GPlace' ? gymCount > 0 : builderValid(step, draft, schedule, chosen),
     choose: (activity: Activity) => {
       store.getState().replace(createDraft(activity, settingsStore.getState().data.units, runtime.clock.now()));
       setChosen(true);

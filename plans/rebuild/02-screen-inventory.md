@@ -55,14 +55,15 @@ Each branch is a sequence inside the same flow machine; Back walks the actual pa
 | Id | Screen | Content | States | Next |
 | --- | --- | --- | --- | --- |
 | W1 | "Where will you walk?" | Outside (Recommended) · Treadmill · Either | | W2 |
-| W2 | "How should walking unlock apps?" | Reach a step goal (Recommended) · Unlock while walking. Each row has one support line. ("Earn time per step" removed.) | | step goal → W3 · while walking → S1 |
+| W2 | "How should walking unlock apps?" | Outside/Either: Reach a step goal (Recommended) · Walk for a set time · Unlock while walking. Treadmill (B28): Walk for a set time (Recommended) · Unlock while walking. Each row has one support line. | | step goal → W3 · set time → W4 · while walking → S1 |
 | W3 | "Set your walking goal" | `NumberField` steps, default 5,000, ±500 steppers, helper "About N minutes of walking". | invalid range error | S1 |
+| W4 | "How long will you walk?" | `NumberField` minutes, default 20, presets 15/20/30, range 10–120. Treadmill note: "You'll be asked to scan again every 15 minutes." | invalid range error | S1 |
 
 **Gym**
 
 | Id | Screen | Content | States | Next |
 | --- | --- | --- | --- | --- |
-| G1 | "What counts at the gym?" | Spend time at the gym (Recommended) · Arrive at the gym. Support: "You'll pick your gym after setup." | | time → G2 · arrival → S1 |
+| G1 | "What counts at the gym?" | Spend time at the gym (Recommended) · Arrive at the gym. Support: "Any gym you save counts. You'll pick your gyms after setup." (B24; no gym step inside the builder) | | time → G2 · arrival → S1 |
 | G2 | "How long at the gym?" | `NumberField` minutes, default 30, presets 30/45/60. | | S1 |
 
 **Running**
@@ -128,8 +129,13 @@ Component order is decided by Codex's OtterLife mapping (from the reference stud
 3. Locked apps row: "N apps · M categories" → opens picker (X2 as a sheet).
 4. Streak chip (flame + days) and "Add condition" shortcut.
 
-States to build and test: locked · unlockedMet · unlockedWalking · beforeWindow · afterWindow · noRules ·
-permissionNeeded · noAppsSelected · paused-only (all rules paused).
+States to build and test (order of the `statusContent` chain, see P2-T19): lapsed · enforcementFailed ·
+permissionNeeded · noAppsSelected · noRules · allPaused · locked (any number of rules, each with its own row;
+claim-pending line until the first refresh of the launch) · unlockedMet ("Unlocked by X"; later unmet windows
+"Satisfied by X today") · unlockedProvisional ("Unlocked while you're here") · unlockedWalking · beforeWindow
+("Get ahead" only for a target rule) · afterWindow · noRulesToday (both "Blocking resumes …").
+`permissionNeeded` and `noAppsSelected` use a closed lock and a "Nothing is being blocked" headline, never the
+rest-day copy.
 
 ### C — Conditions
 
@@ -177,9 +183,9 @@ Sub-screens: `settings/support`, `settings/legal/[doc]`, `settings/permission/[n
 | Id | Sheet | Opened from | Content |
 | --- | --- | --- | --- |
 | SH-apps | App picker | X2, Home, Conditions, Settings | Phase 1 fake list; Phase 2 system picker (unstyleable) |
-| SH-gym | `GymPicker` | X3, Settings › Gyms, gym rule progress card | Map search field, results list, map with pin, radius fixed 100 m, name field, Save. Phase 1: fake results + static map image; Phase 2: MapKit search |
-| SH-checkin | Manual gym check-in | Home progress card | "You're at Gold's Gym?" confirm, distance hint, result |
-| SH-walk | Walking session | Home progress card (state rule) | Start → verifying (cadence) → walking (lease countdown) → grace → ended. Treadmill: propped-phone framing view placeholder (Phase 2 mounts the camera preview). |
+| SH-gym | `GymPicker` | X3, Settings › Gyms, builder summary "Add a gym", condition summary Gyms row | Map search field, results list, map with pin, radius slider 50–200 m (default 100 m) with the line "A wider radius detects arrivals sooner but can trigger next door" (B26), name field, Save. Own header and Cancel. Phase 1: fake results + static map; Phase 2: MapKit search |
+| SH-checkin | *(removed 2026-09-07)* | — | Replaced by the gym ceremony (`unlock/gym`, B20/B22) |
+| SH-walk | Walking session | Home "I'm walking with my phone" pill (state or minutes rule, place outside/either; B27) | Start → verifying (cadence) → walking (lease countdown) → grace → ended; refuses with "Blocking hasn't started yet" before the window. Treadmill goes to the `unlock/treadmill` ceremony instead. |
 | SH-time | Time wheel | S1, builder | Native `DateTimePicker` in a `BottomSheet` |
 | SH-delete | Confirm delete | Conditions | |
 | SH-permission-fake | Fake system permission sheet | X1, X3, T3 (Phase 1 only) | Looks like an iOS alert; result chosen by the dev-menu scenario |

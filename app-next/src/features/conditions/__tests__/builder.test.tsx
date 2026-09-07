@@ -8,6 +8,20 @@ import { createDraft, toRule } from '../../rules/draft';
 import { scheduleDraft, toSchedule } from '../../rules/scheduleDraft';
 import { validateRule } from '../../../domain/validateRule';
 const leave = jest.fn();
+jest.mock('../../sheets/GymPicker', () => ({
+  GymPicker: ({ open, onSaved, onDismiss }: { open: boolean; onSaved?: () => void; onDismiss: () => void }) => {
+    const { GymPickerScreen } = require('../../gym-picker/GymPickerScreen');
+    return open ? (
+      <GymPickerScreen
+        onSaved={() => {
+          onSaved?.();
+          onDismiss();
+        }}
+        onClose={onDismiss}
+      />
+    ) : null;
+  },
+}));
 async function mount(id?: string) {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
@@ -33,6 +47,9 @@ test.each([
   if (activity === 'Walking') await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   await userEvent.press(screen.getByRole('radio', { name: mode }));
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  if (activity === 'Gym') {
+    await userEvent.press(screen.getByRole('button', { name: 'Save gym' }));
+  }
   if (extra) await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   await userEvent.press(screen.getByRole('button', { name: 'Save condition' }));
@@ -45,7 +62,7 @@ test('editing preserves identity and schedule; dirty cancel requires discard', a
   await userEvent.press(screen.getByRole('button', { name: 'Edit goal' }));
   await fireEvent.changeText(screen.getByLabelText('Goal'), '35');
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
-  await userEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+  await userEvent.press(screen.getByRole('button', { name: 'Back' }));
   expect(screen.getByText('Discard changes?')).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: 'Keep editing' }));
   await userEvent.press(screen.getByRole('button', { name: 'Save condition' }));

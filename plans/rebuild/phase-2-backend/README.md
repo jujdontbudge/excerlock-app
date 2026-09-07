@@ -1,7 +1,7 @@
 # Phase 2 — Engine, auth, backend, services
 
-**Starts only when Johan says "go" after reviewing Phase 1.** Everything here is specified now so Phase 1's
-ports are shaped for it; nothing in this folder is built before that.
+**Johan said go on 2026-09-07.** The MVP gap audit (`docs/audit/`) added milestone N0.5 and rewrote parts of
+P2-T03–T05 and T09; read `fix-plan.md` first.
 
 Goal: the Phase 1 app becomes the real ExcerLock. Every fake port is replaced by a real adapter: the verified
 native engine ported from `app/` (Screen Time, Core Motion, gait vision, placement, walking sessions, gym
@@ -29,11 +29,15 @@ physical iPhone, not just the simulator.
 | Milestone | Tasks | Gate |
 | --- | --- | --- |
 | **N0 Identity and server** | P2-T01 Supabase auth · P2-T02 server on Supabase JWTs, schema, sync endpoints | Server tests green; app signs in with Apple/Google/email against the dev Supabase project; `PUT /v1/user` provisions |
-| **N1 Native engine port** | P2-T03 port modules/plugins/targets/signals/harness · P2-T04 lock policy on Screen Time · P2-T05 signals behind ports | Simulator: FamilyControls authorizes, picker returns a handle, `resolveLock` drives ManagedSettings; harness app root boots |
+| **N0.5 MVP hardening** (parallel with N0; see `fix-plan.md`) | Domain lane P2-T13 → T14 → T15 → T16 → T17 → T18 · screens P2-T19–T24 · P2-T25 last | Port contract suites pass against the fakes; domain coverage enforced in CI; the audit's blockers closed on the simulator |
+| **N1 Native engine port** (after the domain lane) | P2-T03 port modules/plugins/targets/signals/harness · P2-T04 lock policy on Screen Time · P2-T05 signals behind ports | Simulator: FamilyControls authorizes, picker returns a handle, `resolveLock` drives ManagedSettings; harness app root boots |
 | **N2 Services** | P2-T06 Adapty + Paywall Builder · P2-T07 PostHog + Sentry · P2-T08 sync · P2-T09 notifications · P2-T10 settings/account wiring | Sandbox purchase round-trips through Adapty to the webhook; events land in PostHog with the right distinct id |
 | **N3 Device and cutover** | P2-T11 physical-device verification · P2-T12 cutover (rename, archive old app, TOOLING regen, TestFlight) | Johan's phone: full flow, shields on a real app, unlock by walking, gym arrival, run from Health, trial via sandbox |
 
 ## Prerequisites Johan owns
+
+- The Adapty dashboard paywall must carry tappable Terms of Use and Privacy Policy links, the price and the
+  renewal disclosure (App Review 3.1.2; P2-T06 acceptance tests it).
 
 - Create the Supabase project (decision D1/Q5) and give Codex the project ref, anon key, and a **dev** service
   role / access token in `~/.excerlock/env` (never in the repo). Enable Apple, Google and Email (OTP) providers

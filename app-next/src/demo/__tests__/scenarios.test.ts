@@ -1,6 +1,6 @@
 import { scenarios } from '../scenarios';
 import { validateScenario } from '../validateScenario';
-test('all 24 required scenarios are valid and the analytics fixture has six weeks of measurements', () => {
+test('all required scenarios are valid and the analytics fixture has six weeks of measurements', () => {
   expect(scenarios.map((s) => s.id)).toEqual([
     'fresh-install',
     'onboarding-walking-resume',
@@ -26,6 +26,14 @@ test('all 24 required scenarios are valid and the analytics fixture has six week
     'analytics-no-measurement',
     'dynamic-type-xl',
     'reduce-motion',
+    'unlock-treadmill-scan',
+    'unlock-treadmill-framing',
+    'unlock-treadmill-denied',
+    'unlock-gym-inside',
+    'unlock-gym-outside',
+    'unlock-gym-lost',
+    'unlock-treadmill-reduced',
+    'unlock-gym-reduced',
   ]);
   for (const s of scenarios) expect(validateScenario(s)).toEqual([]);
   expect(scenarios.find((s) => s.id === 'analytics-6-weeks')!.history).toHaveLength(42);

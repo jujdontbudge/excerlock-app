@@ -11,11 +11,13 @@ import { NotificationsPort } from '../ports/NotificationsPort';
 import { SyncPort } from '../ports/SyncPort';
 import { ClockPort } from '../ports/ClockPort';
 import { RuntimeControls } from '../ports/RuntimeControls';
+import { GaitPort } from '../ports/GaitPort';
 export type Runtime = {
   readonly kind: 'fake';
   screenTime: ScreenTimePort;
   steps: StepsPort;
   walking: WalkingPort;
+  gait: GaitPort;
   gym: GymPort;
   health: HealthPort;
   auth: AuthPort;

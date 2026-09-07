@@ -27,3 +27,11 @@
 - [ ] Events from a simulator session appear in the PostHog project with `app: excerlock` and the expected
       distinct id (check with the PostHog MCP).
 - [ ] A forced test crash appears in Sentry `excerlock-mobile` with scrubbed payload.
+
+## Audit amendments (2026-09-07; see `fix-plan.md`)
+
+- Sentry is initialised inside P2-T17's root `ErrorBoundary`.
+- `PrivacyInfo.xcprivacy` declares the data types the SDKs actually collect; the App Privacy label is filled
+  from it. A Settings "Share usage analytics" switch calls PostHog opt-out and is honoured before the first
+  event (pending Johan's answer in `fix-plan.md`; default on if he keeps it).
+- The O06/O07 person-property line depends on Johan's answer on the option lists (P2-T23).

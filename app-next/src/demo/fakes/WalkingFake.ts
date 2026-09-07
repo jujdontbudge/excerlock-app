@@ -42,7 +42,7 @@ export function WalkingFake(ctx: FakeContext): WalkingPort & { resume: () => voi
     });
   };
   return {
-    start: async (rule) => {
+    start: async (rule, options) => {
       if (rule.mode.kind !== 'state' || !rule.enabled)
         throw new Error('An enabled walking state condition is required');
       stop();
@@ -57,7 +57,7 @@ export function WalkingFake(ctx: FakeContext): WalkingPort & { resume: () => voi
         };
       detail = { steps: 0, walkingSeconds: 0, graceUntil: null };
       ruleDaysStore.getState().patch({ walkingSession: session });
-      play(rule, session, base);
+      if (options?.placement !== 'propped') play(rule, session, base);
       return session;
     },
     resume: () => {
@@ -77,6 +77,15 @@ export function WalkingFake(ctx: FakeContext): WalkingPort & { resume: () => voi
       cancel = undefined;
     },
     stop,
+    completeProppedScan: () => {
+      const session = ruleDaysStore.getState().data.walkingSession;
+      if (!session || session.phase === 'ended') return false;
+      cancel?.();
+      const leaseUntil = new Date(Date.parse(ctx.clock.now()) + 900000).toISOString();
+      ruleDaysStore.getState().patch({ walkingSession: { ...session, phase: 'walking', leaseUntil } });
+      cancel = ctx.clock.subscribe(() => { if (ctx.clock.now() >= leaseUntil) stop(); });
+      return true;
+    },
     details: () => detail,
     observe: (callback) => {
       callback(ruleDaysStore.getState().data.walkingSession);

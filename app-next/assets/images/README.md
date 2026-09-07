@@ -1,3 +1,3 @@
 # Bundled imagery
 
-`map-placeholder.png` is a fictional, static gym map viewport. It is always local, never a map-service response. Generation provenance and validation are in FOUNDRY.md. Selected gym names and accessible descriptions are rendered by native UI, not baked into this image.
+The fictional map placeholder was retired on September 7, 2026. The gym picker now renders live Apple Maps; its former asset provenance is retained in FOUNDRY.md.

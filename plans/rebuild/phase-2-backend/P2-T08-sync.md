@@ -28,3 +28,11 @@ Decision D5. Sync is a backup and restore channel, not a source of truth for enf
       restored on B; edit on B, relaunch A → A shows B's edit.
 - [ ] Airplane mode: changes queue and flush on reconnect.
 - [ ] Type-level privacy test green.
+
+## Audit amendments (2026-09-07; see `fix-plan.md`)
+
+- Payload adds `earned_unlocks` (P2-T14 §3) and sealed `history` rows (P2-T15 §4; immutable, so `updated_at`
+  merge is safe). Today's rule-day row stays device-authoritative.
+- The type-level privacy test also forbids `GymVisit` rows (they never leave the device).
+- Acceptance adds the promise P2-T22's copy makes: conditions, progress and history return on a new phone; the
+  app selection does not.

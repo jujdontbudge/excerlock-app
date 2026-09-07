@@ -11,7 +11,6 @@ export function ShieldPreview({ onOpen, onClose }: { onOpen: () => void; onClose
     content = shieldContent(cause, decision.state === 'locked' ? decision.nextUnlockHint : undefined);
   return (
     <ScreenShell
-      tinted={false}
       footer={
         <>
           <PrimaryButton label={content.primary} onPress={onOpen} />

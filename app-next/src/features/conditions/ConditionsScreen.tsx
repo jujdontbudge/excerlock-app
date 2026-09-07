@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { View } from 'react-native';
+import { tokens as t } from '../../design-system/tokens';
 import {
   ScreenShell,
   Heading,
@@ -41,23 +43,9 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
           }}
         />
       }>
-      <Heading title={c.title} support={c.body} />
-      <LivingIcon name="shield" />
-      <Reveal>
-        <SettingsGroup>
-          <SettingsRow
-            title={c.lockedApps}
-            value={pickerCopy.counts(lockedApps.appCount, lockedApps.categoryCount)}
-            icon="lock"
-            onPress={() => void runtime.screenTime.presentAppPicker()}
-          />
-        </SettingsGroup>
-      </Reveal>
+      <Heading title={c.title} />
       {ordered.length ? (
         <>
-          <Label variant="section" accessibilityRole="header">
-            {c.list}
-          </Label>
           {ordered.map((rule, index) => (
             <Reveal key={rule.id} index={index}>
               <RuleCard
@@ -71,11 +59,14 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
               />
             </Reveal>
           ))}
-          <PrimaryButton label={c.add} onPress={onAdd} />
         </>
       ) : (
         <EmptyState icon="walking" title={c.empty} body={c.emptyBody} action={c.add} onAction={onAdd} />
       )}
+      {ordered.length ? <PrimaryButton label={c.add} onPress={onAdd} /> : null}
+      <View style={{ backgroundColor: t.surface.card, borderRadius: t.radius.pill, boxShadow: '0px 6px 20px rgba(100,55,25,0.10)' }}>
+        <SettingsRow title="Lock list" icon="lock" iconTint={t.brand.primary} onPress={() => void runtime.screenTime.presentAppPicker()} />
+      </View>
     </ScreenShell>
   );
 }

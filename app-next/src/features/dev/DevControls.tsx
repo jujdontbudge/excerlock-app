@@ -19,6 +19,11 @@ export function DevControls() {
     [error, setError] = useState('');
   return (
     <>
+      <SettingsGroup title="Treadmill gait">
+        <SettingsRow title="Replay walking gait" onPress={() => runtime.dev.setGait('walking')} />
+        <SettingsRow title="Still / needs framing" onPress={() => runtime.dev.setGait('still')} />
+        <SettingsRow title="No gait" onPress={() => runtime.dev.setGait('none')} />
+      </SettingsGroup>
       <SettingsGroup title={sessionCopy.presence}>
         <SegmentedControl
           options={sessionCopy.presences}

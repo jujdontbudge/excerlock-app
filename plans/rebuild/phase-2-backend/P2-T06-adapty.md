@@ -33,3 +33,16 @@
 - [ ] Onboarding P shows the Builder paywall; purchase → `trial` → X1. Restore path works.
 - [ ] Sandbox purchase round-trips to the VPS (webhook row present).
 - [ ] No lifecycle analytics emitted by the app (single-emitter guardrail green).
+
+## Audit amendments (2026-09-07; see `fix-plan.md`)
+
+- **Lapse presentation (B21).** `expired` / `billingIssue` present the Builder paywall as a dismissible modal
+  over the mounted app (placement `in_app`); only `none` is the hard paywall. Routing is P2-T18's
+  `entitlementAccess`.
+- **Grace period** maps to `active` (no `grace` status in v1; recorded decision in P2-T18 §1).
+- **Restore that finds nothing never downgrades** a live entitlement (finding 12).
+- **The dashboard paywall must carry** tappable Terms of Use and Privacy Policy links, the price and the
+  renewal disclosure (App Review 3.1.2); acceptance test: the fetched paywall renders them and a fallback JSON
+  without them fails. Added to the README's "Prerequisites Johan owns".
+- **Offline branch**: the paywall shows P2-T18's offline copy when `ReachabilityPort` says offline.
+- **Selected plan** flows through `presentPaywall(placement, plan)`; no Lifetime SKU (B35).

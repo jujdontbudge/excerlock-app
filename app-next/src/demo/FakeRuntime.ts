@@ -13,6 +13,7 @@ import { sessionStore } from '../state/sessionStore';
 import { ScreenTimeFake } from './fakes/ScreenTimeFake';
 import { StepsFake } from './fakes/StepsFake';
 import { WalkingFake } from './fakes/WalkingFake';
+import { GaitFake } from './fakes/GaitFake';
 import { GymFake } from './fakes/GymFake';
 import { HealthFake } from './fakes/HealthFake';
 import { AuthFake } from './fakes/AuthFake';
@@ -23,6 +24,7 @@ import { SyncFake } from './fakes/SyncFake';
 export function FakeRuntime(): Runtime {
   const ctx = new FakeContext(scenarios[0]),
     walking = WalkingFake(ctx),
+    gait = GaitFake(),
     persistence = contextPersistence(ctx),
     gym = GymFake(ctx),
     activity = activityHistory(ctx),
@@ -41,6 +43,7 @@ export function FakeRuntime(): Runtime {
           ),
       );
       walking.resume();
+      gait.set(ctx.scenario.gait ?? 'none');
       activity.refresh();
     });
   return {
@@ -49,6 +52,7 @@ export function FakeRuntime(): Runtime {
     screenTime: ScreenTimeFake(ctx),
     steps: StepsFake(ctx),
     walking,
+    gait,
     gym,
     health: HealthFake(ctx),
     auth: AuthFake(ctx),
@@ -70,6 +74,7 @@ export function FakeRuntime(): Runtime {
         ctx.resolve(false);
         await loadScenario(scenario, keepEdits);
         ctx.scenario = scenario;
+        gait.set(scenario.gait ?? 'none');
         ctx.clock.set(scenario.clock.now, scenario.clock.timezone);
         ctx.update({
           stepsOverride: undefined,
@@ -88,6 +93,8 @@ export function FakeRuntime(): Runtime {
       },
       advance: ctx.clock.advance,
       setPresence: (presence) => ctx.update({ presence }),
+      setGait: gait.set,
+      createGaitPreview: () => { const preview = GaitFake(true); preview.set('walking'); return preview; },
       setPlacement: (placement) => ctx.update({ placement }),
       setSteps: (value) => {
         if (!Number.isFinite(value) || value < 0) throw new Error('Invalid step count');
@@ -117,6 +124,7 @@ export function FakeRuntime(): Runtime {
       activity.dispose();
       persistence.dispose();
       walking.disconnect();
+      void gait.stop();
       gym.dispose();
       ctx.dispose();
     },

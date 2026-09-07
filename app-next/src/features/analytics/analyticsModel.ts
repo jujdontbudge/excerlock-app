@@ -30,6 +30,7 @@ export function analyticsModel(history: HistoryDay[], today: string, period: Per
     return {
       label: c.point(days[0], period),
       value: values.length ? values.reduce((a, b) => a + b, 0) / values.length : null,
+      reclaimed: values.length ? reclaimedPeriod(baseline, values).minutes / values.length : null,
       activity: {
         walking: bucket.reduce((s, r) => s + r.activity.walking, 0),
         gym: bucket.reduce((s, r) => s + r.activity.gym, 0),
