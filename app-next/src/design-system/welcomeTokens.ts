@@ -1,0 +1,47 @@
+/** Geometry and illustration colors sampled from the approved O01 composition. */
+export const welcomeTokens = {
+  canvasWidth: 354,
+  heroHeight: 244,
+  headingTop: 72,
+  headingGap: 64,
+  captionGap: 32,
+  dotsGap: 32,
+  tile: {
+    size: 80,
+    radius: 23,
+    badge: 30,
+    badgeOffset: -8,
+    shadow: '0px 5px 10px rgba(45,25,10,0.12)',
+    blockedVeil: 'rgba(190,195,206,0.48)',
+  },
+  tiles: [
+    { name: 'instagram', x: 10, y: 14, tilt: '-15deg' },
+    { name: 'youtube', x: 94, y: 24, tilt: '13deg' },
+    { name: 'whatsapp', x: 178, y: 12, tilt: '-14deg' },
+    { name: 'tiktok', x: 264, y: 23, tilt: '13deg' },
+  ] as const,
+  card: {
+    x: 20,
+    y: 82,
+    width: 314,
+    minHeight: 154,
+    radius: 25,
+    padding: 20,
+    start: '#F24A00',
+    end: '#DC3700',
+    shadow: '0px 14px 22px rgba(132,64,18,0.20)',
+  },
+  brands: {
+    instagram: ['#7935BD', '#D63589', '#FFAC55'],
+    youtube: '#FF1509',
+    whatsapp: '#63D769',
+    tiktok: '#111114',
+    cyan: '#25F4EE',
+    pink: '#FE2C55',
+    white: '#FFFFFF',
+  },
+  type: {
+    card: { fontSize: 16, lineHeight: 21, fontWeight: '600' },
+    legal: { fontSize: 10, lineHeight: 14, fontWeight: '400' },
+  },
+} as const;

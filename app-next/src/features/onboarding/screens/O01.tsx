@@ -1,20 +1,37 @@
 import { View } from 'react-native';
-import { Heading, ScheduleWidget } from '../../../design-system';
+import { Heading, Label } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
-import { LivingIcon } from '../../../motion/LivingIcon';
 import { Reveal } from '../../../motion/Reveal';
-import { onboardingCopy, onboardingLabels as c } from '../../../content/onboarding';
+import { onboardingCopy } from '../../../content/onboarding';
+import { welcomeCopy } from '../../../content/welcome';
+import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { WelcomeArtwork } from '../welcome/WelcomeArtwork';
 export function O01() {
   return (
-    <View style={{ flex: 1, justifyContent: 'center', gap: t.space.xxl }}>
-      <LivingIcon name="gym" />
-      <ScheduleWidget start={c.introStart} end={c.introEnd} status={c.introStatus} />
-      <Reveal index={2}>
-        <Heading
-          {...{ title: onboardingCopy.O01.title.replace('. ', '.\n'), support: onboardingCopy.O01.body }}
-          centered
-          variant="hero"
-        />
+    <View style={{ flexGrow: 1, paddingTop: w.headingTop }}>
+      <Heading title={onboardingCopy.O01.title.replace('. ', '.\n')} centered variant="hero" />
+      <View style={{ marginTop: w.headingGap }}>
+        <WelcomeArtwork />
+      </View>
+      <Reveal index={3} style={{ marginTop: w.captionGap }}>
+        <Label variant="support" style={{ textAlign: 'center' }}>
+          {onboardingCopy.O01.body}
+        </Label>
+      </Reveal>
+      <Reveal index={4} style={{ marginTop: w.dotsGap, alignItems: 'center' }}>
+        <View accessible accessibilityLabel={welcomeCopy.pagination} style={{ flexDirection: 'row', gap: t.space.sm }}>
+          {[0, 1, 2].map((i) => (
+            <View
+              key={i}
+              style={{
+                width: t.layout.dot,
+                height: t.layout.dot,
+                borderRadius: t.radius.pill,
+                backgroundColor: i === 0 ? t.brand.primary : t.border.default,
+              }}
+            />
+          ))}
+        </View>
       </Reveal>
     </View>
   );

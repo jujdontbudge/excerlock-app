@@ -1,0 +1,31 @@
+import { View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { tokens as t } from '../../../design-system/tokens';
+import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+export function BlockedBadge() {
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        right: w.tile.badgeOffset,
+        top: w.tile.badgeOffset,
+        width: w.tile.badge,
+        height: w.tile.badge,
+        borderRadius: t.radius.pill,
+        backgroundColor: t.surface.canvas,
+        boxShadow: w.tile.shadow,
+        padding: t.space.xs,
+      }}>
+      <Svg viewBox="0 0 24 24" width="100%" height="100%" accessible={false}>
+        <Path
+          d="M7 3h10M7 21h10M8 3c0 5 1 6 4 9-3 3-4 4-4 9M16 3c0 5-1 6-4 9 3 3 4 4 4 9"
+          fill="none"
+          stroke={t.text.primary}
+          strokeWidth="2.6"
+          strokeLinecap="round"
+        />
+        <Path d="m9 5 3 4 3-4ZM9 19l3-4 3 4Z" fill={t.text.primary} />
+      </Svg>
+    </View>
+  );
+}

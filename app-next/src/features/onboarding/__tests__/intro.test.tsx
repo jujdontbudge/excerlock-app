@@ -21,3 +21,19 @@ test('intro shows its exercise-first promise and advances on the pinned CTA', as
   expect(mockSetParams).toHaveBeenCalledWith({ step: 'O02' });
   expect(onboardingStore.getState().data.step).toBe('O02');
 });
+test('welcome offers local sign-in and legal reading without advancing the onboarding draft', async () => {
+  onboardingStore.getState().reset();
+  await render(
+    <AppRuntimeProvider>
+      <OnboardingRoute />
+    </AppRuntimeProvider>,
+  );
+  expect(screen.queryByLabelText('Setup progress')).toBeNull();
+  expect(screen.getByLabelText('Introduction, page 1 of 3')).toBeTruthy();
+  await userEvent.press(screen.getByRole('button', { name: 'Sign in' }));
+  expect(screen.getByRole('button', { name: 'Continue with email' })).toBeTruthy();
+  await userEvent.press(screen.getByRole('button', { name: 'Close' }));
+  await userEvent.press(screen.getByRole('button', { name: 'Privacy Policy' }));
+  expect(screen.getByRole('header', { name: 'Privacy Policy' })).toBeTruthy();
+  expect(onboardingStore.getState().data.step).toBe('O01');
+});

@@ -6,6 +6,7 @@ import { ScreenShell, OnboardingHeader, PrimaryButton } from '../../design-syste
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
 import { onboardingLabels as c } from '../../content/onboarding';
+import { WelcomeFooter } from './welcome/WelcomeFooter';
 export function OnboardingShell({
   children,
   step,
@@ -48,9 +49,13 @@ export function OnboardingShell({
     <ScreenShell
       scrollResetKey={step}
       overlay={overlay}
-      header={<OnboardingHeader progress={progress} onBack={step === 'O01' || hideBack ? undefined : onBack} />}
+      header={
+        step === 'O01' ? undefined : <OnboardingHeader progress={progress} onBack={hideBack ? undefined : onBack} />
+      }
       footer={
-        hideContinue ? undefined : (
+        hideContinue ? undefined : step === 'O01' ? (
+          <WelcomeFooter onContinue={onContinue} />
+        ) : (
           <PrimaryButton
             label={continueLabel ?? (step === 'O01' ? c.start : c.continue)}
             onPress={onContinue}
