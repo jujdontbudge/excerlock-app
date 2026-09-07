@@ -19,7 +19,7 @@ export const onboardingCopy = {
     title: 'This is how much time you spend scrolling',
     body: 'A little less scrolling can make room for something you care about.',
   },
-  O15: { title: 'Less scrolling. More moving.', body: 'Make exercise the first step, and let the rest follow.' },
+  O15: { title: 'This is good.', body: 'We’ll use your screen time habits to help you exercise more.' },
   O16: { title: 'Stuck in the scroll loop?', body: 'An urge. A quick scroll. A little reward. Then, again.' },
   O17: { title: 'Let’s break the loop.', body: 'Put a little movement between the urge and the app.' },
   O18: { title: 'Make moving the habit.', body: 'Want to scroll? Move first. Unlock your apps and enjoy.' },
