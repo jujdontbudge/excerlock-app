@@ -21,6 +21,7 @@ import { LoopStory } from './scenes/LoopStory';
 const screens = { O01, O02, O03, O04, O05, O06, O07, O08, O09, O10, O11, O15, O19, O20 };
 export function PreBranchScreen({ step, back, ...props }: AnswerProps & { step: string; back?: () => void }) {
   if (step === 'O02') return <O02 onBack={back} />;
+  if (step === 'O03') return <O03 onBack={back} />;
   if (step === 'O12' || step === 'O13' || step === 'O14') return <DotGridReveal step={step} {...props} />;
   if (step === 'O16' || step === 'O17' || step === 'O18') return <LoopStory step={step} />;
   if (['W1', 'W2', 'W3', 'G1', 'G2', 'R1', 'R2', 'B1', 'B2', 'D'].includes(step))

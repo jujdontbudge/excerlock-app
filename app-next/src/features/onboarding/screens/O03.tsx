@@ -1,37 +1,50 @@
-import { View } from 'react-native';
-import { Heading, Label } from '../../../design-system';
+import { View, useWindowDimensions } from 'react-native';
+import { Heading, Label, PressableScale } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
-import { Icon, IconName } from '../../../icons/Icon';
-import { LivingIcon } from '../../../motion/LivingIcon';
 import { Reveal } from '../../../motion/Reveal';
-import { onboardingCopy, onboardingLabels as c } from '../../../content/onboarding';
-export function O03() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', gap: t.space.xxl }}>
-      <LivingIcon name="lock-open" size={t.layout.logo} />
-      {[
-        { icon: 'clock', label: c.yourSchedule },
-        { icon: 'walking', label: c.yourExercise },
-        { icon: 'shield', label: c.yourApps },
-      ].map((row, i) => (
-        <Reveal key={row.label} index={i + 1}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: t.space.lg,
-              padding: t.space.lg,
-              borderRadius: t.radius.card,
-              borderWidth: t.stroke.hairline,
-              borderColor: t.border.default,
-            }}>
-            <Icon name={row.icon as IconName} />
-            <Label variant="label">{row.label}</Label>
-          </View>
-        </Reveal>
+import { ControlArtwork } from '../control/ControlArtwork';
+import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { welcomeCopy } from '../../../content/welcome';
+import { onboardingCopy as c } from '../../../content/onboarding';
+export function O03({ onBack }: { onBack?: () => void }) {
+  const { fontScale } = useWindowDimensions();
+  const dots = (
+    <View accessibilityLabel={welcomeCopy.controlPagination} style={{ flexDirection: 'row', gap: t.space.sm }}>
+      {[0, 1, 2].map((i) => (
+        <View
+          key={i}
+          style={{
+            width: t.layout.dot,
+            height: t.layout.dot,
+            borderRadius: t.radius.pill,
+            backgroundColor: i === 2 ? t.brand.primary : t.border.default,
+          }}
+        />
       ))}
-      <Reveal index={4}>
-        <Heading title={onboardingCopy.O03.title} support={onboardingCopy.O03.body} centered variant="hero" />
+    </View>
+  );
+  return (
+    <View style={{ flexGrow: 1, paddingTop: w.headingTop / Math.max(1, fontScale) }}>
+      <Heading title={c.O03.title.replace('. ', '.\n')} centered variant="hero" />
+      <View style={{ marginTop: w.control.gap }}>
+        <ControlArtwork />
+      </View>
+      <Reveal index={3} style={{ marginTop: w.control.captionGap, paddingHorizontal: t.space.xxl }}>
+        <Label variant="support" style={{ textAlign: 'center', maxWidth: w.control.captionWidth, alignSelf: 'center' }}>
+          {c.O03.body}
+        </Label>
+      </Reveal>
+      <Reveal index={4} style={{ marginTop: w.dotsGap - t.space.lg, alignItems: 'center' }}>
+        {onBack ? (
+          <PressableScale
+            label={welcomeCopy.back}
+            onPress={onBack}
+            style={{ minWidth: t.layout.touch, alignItems: 'center' }}>
+            {dots}
+          </PressableScale>
+        ) : (
+          dots
+        )}
       </Reveal>
     </View>
   );

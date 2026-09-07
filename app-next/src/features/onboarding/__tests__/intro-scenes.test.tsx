@@ -9,9 +9,11 @@ test('progress intro explains the illustrative screen-time reduction', async () 
   expect(screen.getByLabelText('Introduction, page 2 of 3')).toBeTruthy();
   expect(screen.getByText('Reduce your screen time and track your progress.')).toBeTruthy();
 });
-test('control intro explains the user-owned schedule and exercise', async () => {
+test('third introduction shows four ways to exercise and the final page marker', async () => {
   await render(<O03 />);
-  expect(screen.getByRole('header', { name: 'Stay in control' })).toBeTruthy();
-  expect(screen.getByText('Your schedule')).toBeTruthy();
-  expect(screen.getByText('Your exercise')).toBeTruthy();
+  expect(screen.getByRole('header', { name: 'Block apps. Exercise more.' })).toBeTruthy();
+  for (const name of ['Walking', 'Running', 'Cycling', 'Strength training'])
+    expect(screen.getByRole('image', { name })).toBeTruthy();
+  expect(screen.getByLabelText('Introduction, page 3 of 3')).toBeTruthy();
+  expect(screen.getByText('Exercise more each week and stay consistent.')).toBeTruthy();
 });

@@ -3,6 +3,8 @@ export const welcomeCopy = {
   progressValue: '-3h 12m',
   progressDescription: 'Illustrative screen-time reduction of 3 hours and 12 minutes',
   back: 'Back',
+  controlPagination: 'Introduction, page 3 of 3',
+  activities: ['Walking', 'Running', 'Cycling', 'Strength training'],
   schedule: 'Block from 12 PM to 8 PM\nuntil you arrive\nat the gym',
   scheduleLabel: 'Block from 12 PM to 8 PM until you arrive at the gym',
   existing: 'Already have an account? ',
