@@ -5,6 +5,7 @@ import { tokens as t } from '../../../design-system/tokens';
 import { fadeIn, fadeOut } from '../../../motion/presets';
 import { onboardingCopy } from '../../../content/onboarding';
 import { HabitLoop } from './HabitLoop';
+import { ChangedHabitLoop } from './ChangedHabitLoop';
 export function LoopStory({ step }: { step: 'O16' | 'O17' | 'O18' }) {
   const phase = step === 'O16' ? 0 : step === 'O17' ? 1 : 2;
   return (
@@ -13,7 +14,7 @@ export function LoopStory({ step }: { step: 'O16' | 'O17' | 'O18' }) {
         <Heading title={onboardingCopy[step].title} support={onboardingCopy[step].body} centered />
       </Animated.View>
       <View style={{ flex: 1, justifyContent: 'center', gap: t.space.xxxl }}>
-        <HabitLoop phase={phase} />
+        {phase === 1 ? <ChangedHabitLoop /> : <HabitLoop phase={phase} />}
       </View>
     </>
   );

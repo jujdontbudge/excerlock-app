@@ -2,6 +2,8 @@
 
 Shared onboarding compositions. No state ownership or navigation; answers and actions come from the route.
 
+O17 uses ChangedHabitLoop: the four original stages remain, the existing ExcerLock brand mark enters after the urge (240 ms), then the runner enters before Reinforcement (560 ms). Center copy fades to “Exercise becomes the habit.” Six equal-angle elliptical connectors align their arrowheads with the tangent; stage surfaces keep arrows clear of labels. Reduced motion shows the final state immediately.
+
 HabitLoop follows the user's four-stage circular references: four clockwise curved arrows pulse sequentially between native stage labels. Each stage has its own canonical icon; the center contains only the loop title. O16 uses bell/star/flame/phone for urge/reward/reinforcement/habit; O17/O18 use the same structure to introduce movement and unlocking. All text lives in `src/content/habitLoop.ts`. Reduced motion stops the circulating pulse. The illustration remains separate SVG arrows, text, and icon components.
 
 TrendHero uses TrendCurves for the O15 reference composition: one smooth rising exercise curve, one dashed falling screen-time curve, endpoint labels with canonical icons, and a shared left-to-right animated reveal. Curves are illustrative SVG geometry rather than measured data; reduced motion reveals them immediately.

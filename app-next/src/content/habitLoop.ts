@@ -9,12 +9,12 @@ export const habitLoopCopy = [
     ],
   },
   {
-    center: 'Break the loop',
+    center: 'Exercise becomes\nthe habit',
     stages: [
       { title: 'The urge', detail: '“I want to scroll”' },
-      { title: 'Move first', detail: '“A little exercise”' },
-      { title: 'The reward', detail: '“I’ve earned a break”' },
-      { title: 'A new habit', detail: '“Movement comes first”' },
+      { title: 'The reward', detail: '“That feels good”' },
+      { title: 'Reinforcement', detail: '“I want more”' },
+      { title: 'A new habit', detail: '“Movement first”' },
     ],
   },
   {
