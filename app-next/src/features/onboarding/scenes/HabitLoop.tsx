@@ -22,13 +22,13 @@ const original = [
 ];
 const expanded = [
   { x: 180, y: 52, width: 160 },
-  { x: 304, y: 342, width: 112 },
+  { x: 180, y: 448, width: 160 },
   { x: 56, y: 342, width: 112 },
   { x: 56, y: 158, width: 112 },
 ];
 const inserted = [
   { ...loopIntervention.lock, x: 304, y: 158, width: 112 },
-  { ...loopIntervention.runner, x: 180, y: 448, width: 160 },
+  { ...loopIntervention.runner, x: 304, y: 342, width: 112 },
 ];
 
 /** Keep semantic nodes mounted while geometry moves, then crossfade their meaning. */
@@ -94,6 +94,7 @@ export function HabitLoop({ phase, contentPhase = phase }: { phase: number; cont
         inserted.map((stage, index) => (
           <Animated.View
             key={stage.title}
+            testID={index === 0 ? 'loop-insert-lock' : 'loop-insert-runner'}
             style={{
               position: 'absolute',
               left: `${(stage.x / 360) * 100}%`,

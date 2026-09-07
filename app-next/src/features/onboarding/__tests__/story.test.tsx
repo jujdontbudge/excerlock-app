@@ -27,6 +27,8 @@ test('loop story changes the cue-to-reward path without losing its diagram', asy
   const urge = screen.getByTestId('loop-stage-0');
   await view.rerender(<LoopStory step="O17" />);
   expect(screen.getByTestId('loop-stage-0')).toBe(urge);
+  expect(screen.getByTestId('loop-stage-1').props.style.left).toBe('50%');
+  expect(screen.getByTestId('loop-insert-runner').props.style.left).toBe(`${(304 / 360) * 100}%`);
   expect(screen.getByText('ExcerLock')).toBeTruthy();
   expect(screen.getByText('Exercise first')).toBeTruthy();
   expect(screen.getByText('“Exercise first”')).toBeTruthy();
