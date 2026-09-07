@@ -8,6 +8,7 @@ import { useMotion } from '../../motion/useMotion';
 import { onboardingLabels as c } from '../../content/onboarding';
 import { WelcomeFooter } from './welcome/WelcomeFooter';
 import { SolidChoices } from '../../design-system/ChoiceAppearance';
+import { Reveal } from '../../motion/Reveal';
 export function OnboardingShell({
   children,
   step,
@@ -57,15 +58,21 @@ export function OnboardingShell({
           )
         }
         footer={
-          hideContinue ? undefined : ['O01', 'O02', 'O03'].includes(step) ? (
+          hideContinue ? (
+            ['O11', 'O12', 'O13', 'O14'].includes(step) ? (
+              <View style={{ height: t.layout.button }} />
+            ) : undefined
+          ) : ['O01', 'O02', 'O03'].includes(step) ? (
             <WelcomeFooter onContinue={onContinue} />
           ) : (
-            <PrimaryButton
-              shape={['O04', 'O05', 'O06', 'O07'].includes(step) ? 'rounded' : 'pill'}
-              label={continueLabel ?? (step === 'O01' ? c.start : c.continue)}
-              onPress={onContinue}
-              disabled={!valid}
-            />
+            <Reveal key={['O11', 'O12', 'O13', 'O14'].includes(step) ? step : 'continue'}>
+              <PrimaryButton
+                shape={['O04', 'O05', 'O06', 'O07'].includes(step) ? 'rounded' : 'pill'}
+                label={continueLabel ?? (step === 'O01' ? c.start : c.continue)}
+                onPress={onContinue}
+                disabled={!valid}
+              />
+            </Reveal>
           )
         }>
         <View style={{ flexGrow: 1 }}>

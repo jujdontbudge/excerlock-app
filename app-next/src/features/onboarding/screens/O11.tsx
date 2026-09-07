@@ -1,19 +1,74 @@
 import { View } from 'react-native';
-import { Heading } from '../../../design-system';
+import Animated from 'react-native-reanimated';
+import { Heading, Label } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
 import { TickingNumber } from '../../../motion/TickingNumber';
+import { useMotion } from '../../../motion/useMotion';
+import { Icon } from '../../../icons/Icon';
 import { onboardingCopy, onboardingLabels as c } from '../../../content/onboarding';
+import { impactCopy } from '../../../content/impact';
+import { impactTiming as timing } from '../impact/timing';
+import { impactSummary } from '../impact/model';
 import { AnswerProps } from '../types';
 export function O11({ answers }: AnswerProps) {
-  const hours = Number(answers.estimatedDailyMinutes ?? 180) / 60;
+  const summary = impactSummary(Number(answers.estimatedDailyMinutes ?? 180)),
+    m = useMotion();
   return (
     <>
-      <Heading title={onboardingCopy.O11.title} support={onboardingCopy.O11.body} centered />
-      <View style={{ flex: 1, justifyContent: 'center', gap: t.space.xxl }}>
-        <TickingNumber precision={1} value={hours} label={c.daily} />
-        <TickingNumber value={hours * 30} label={c.month} delay={t.motion.duration.standard} />
-        <TickingNumber value={(hours * 365) / 24} label={c.year} delay={t.motion.duration.standard * 2} />
+      <Heading title={onboardingCopy.O11.title} centered />
+      <View
+        style={{
+          borderRadius: t.radius.card,
+          borderWidth: t.stroke.selected,
+          borderColor: t.brand.primary,
+          padding: t.space.xl,
+          gap: t.space.lg,
+        }}>
+        {[
+          { value: summary.hours, label: c.daily },
+          { value: summary.month, label: c.month },
+          { value: summary.days, label: c.year },
+        ].map((item, index) => (
+          <Animated.View
+            key={item.label}
+            style={{
+              animationName: m.reduced
+                ? undefined
+                : {
+                    from: { opacity: 0, transform: [{ translateY: t.space.md }] },
+                    to: { opacity: 1, transform: [{ translateY: 0 }] },
+                  },
+              animationDuration: timing.fade,
+              animationDelay: index * timing.metric,
+              animationFillMode: 'backwards',
+              gap: t.space.md,
+              alignItems: 'center',
+            }}>
+            {index > 0 ? (
+              <View style={{ transform: [{ rotate: '90deg' }] }}>
+                <Icon name="arrow" size={t.layout.glyph} tint={t.brand.primary} />
+              </View>
+            ) : null}
+            <TickingNumber
+              precision={index === 0 ? 1 : 0}
+              value={item.value}
+              label={item.label}
+              delay={index * timing.metric}
+            />
+          </Animated.View>
+        ))}
       </View>
+      <Animated.View
+        style={{
+          animationName: m.reduced ? undefined : { from: { opacity: 0 }, to: { opacity: 1 } },
+          animationDuration: timing.fade,
+          animationDelay: timing.conclusion,
+          animationFillMode: 'backwards',
+        }}>
+        <Label variant="section" style={{ textAlign: 'center' }}>
+          {impactCopy.spent}
+        </Label>
+      </Animated.View>
     </>
   );
 }

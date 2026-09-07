@@ -15,11 +15,13 @@ import { PlanSummary } from '../rules/PlanSummary';
 import { ReviewWarmup } from '../rules/ReviewWarmup';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { planCopy as c } from '../../content/plan';
+import { useImpactPlayback } from './impact/useImpactPlayback';
 export function OnboardingRoute() {
   const focused = useIsFocused();
   const flow = useOnboarding(),
     unit = useSettingsStore((s) => s.data.units),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null);
+  const playback = useImpactPlayback(flow.step, flow.advance, focused);
   const base = useMemo(() => createDraft('walking', unit), [unit]);
   const draft = draftFromAnswers(flow.answers, unit, base),
     schedule = scheduleDraft(flow.answers);
@@ -49,7 +51,7 @@ export function OnboardingRoute() {
       onContinue={advance}
       valid={canContinue(flow.step, flow.answers)}
       continueLabel={flow.step === 'S3' ? c.use : undefined}
-      hideContinue={flow.step === 'S2' || flow.step === 'T3'}
+      hideContinue={flow.step === 'S2' || flow.step === 'T3' || playback.hideContinue}
       overlay={
         <TimeSheet
           which={wheel}
