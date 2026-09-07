@@ -44,20 +44,15 @@ export function HabitLoop({ phase }: { phase: number }) {
           <Svg width="100%" height="100%" viewBox="0 0 360 440" accessible={false}>
             <G rotation={index * 90} origin="180,220">
               <Path
-                d="M240 110 Q274 126 288 156"
+                d="M240.092 106.982 A128 128 0 0 1 288.55 152.17"
                 fill="none"
                 stroke={t.brand.primary}
-                strokeWidth={t.stroke.chart * 1.5}
+                strokeWidth={t.stroke.chart}
                 strokeLinecap="round"
               />
-              <Path
-                d="M277 148 L291 162 L296 141"
-                fill="none"
-                stroke={t.brand.primary}
-                strokeWidth={t.stroke.chart * 1.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+              <G transform="translate(293.018 159.908) rotate(62)">
+                <Path d="M0 0 L-12 -6 L-12 6 Z" fill={t.brand.primary} />
+              </G>
             </G>
           </Svg>
         </Animated.View>
