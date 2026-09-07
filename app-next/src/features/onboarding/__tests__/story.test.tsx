@@ -22,7 +22,10 @@ test('loop story changes the cue-to-reward path without losing its diagram', asy
   await view.rerender(<LoopStory step="O17" />);
   expect(screen.getByTestId('loop-stage-0')).toBe(urge);
   expect(screen.getByText('ExcerLock')).toBeTruthy();
-  expect(screen.getByText('Move first')).toBeTruthy();
+  expect(screen.getByText('Exercise first')).toBeTruthy();
+  expect(screen.getByText('“Exercise first”')).toBeTruthy();
+  expect(screen.queryByText('Move first')).toBeNull();
+  expect(screen.queryByText('“Movement first”')).toBeNull();
   expect(screen.getByText('Reinforcement')).toBeTruthy();
   expect(screen.getByText('Exercise becomes\nthe habit')).toBeTruthy();
   await view.rerender(<LoopStory step="O18" />);

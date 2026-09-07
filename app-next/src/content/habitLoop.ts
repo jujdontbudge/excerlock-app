@@ -14,7 +14,7 @@ export const habitLoopCopy = [
       { title: 'The urge', detail: '“I want to scroll”' },
       { title: 'The reward', detail: '“That feels good”' },
       { title: 'Reinforcement', detail: '“I want more”' },
-      { title: 'A new habit', detail: '“Movement first”' },
+      { title: 'A new habit', detail: '“Exercise first”' },
     ],
   },
   {

@@ -10,7 +10,7 @@ import { LoopArrows } from './LoopArrows';
 import { LoopBrandMark } from './LoopBrandMark';
 const icons = [
   ['bell', 'star', 'flame', 'phone'],
-  ['bell', 'star', 'flame', 'phone'],
+  ['bell', 'star', 'flame', 'running'],
   ['bell', 'gym', 'lock-open', 'check'],
 ] as const;
 const original = [
@@ -79,11 +79,7 @@ export function HabitLoop({ phase }: { phase: number }) {
               animationFillMode: 'backwards',
               animationTimingFunction: 'ease-out',
             }}>
-            {index === 0 ? (
-              <LoopBrandMark />
-            ) : (
-              <LivingIcon name="running" size={t.space.xxl} tint={t.brand.primary} />
-            )}
+            {index === 0 ? <LoopBrandMark /> : <LivingIcon name="running" size={t.space.xxl} tint={t.brand.primary} />}
             <Label variant="label" style={{ textAlign: 'center' }}>
               {stage.title}
             </Label>
