@@ -13,7 +13,11 @@ export function GaitFake(preview = false): GaitPort & { set(value: 'none' | 'wal
     set: (next) => {
       value = next;
     },
-    permission: async () => (!preview && permissionsStore.getState().data.camera === 'denied' ? 'denied' : 'granted'),
+    permission: async () => {
+      if (preview) return 'granted';
+      const status = permissionsStore.getState().data.camera;
+      return status === 'notDetermined' ? 'granted' : status;
+    },
     start: async () => {
       if (!preview && permissionsStore.getState().data.camera === 'denied')
         throw Object.assign(new Error('Camera denied'), { code: 'ERR_GAIT_VISION_DENIED' });

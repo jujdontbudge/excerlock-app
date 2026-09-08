@@ -9,6 +9,7 @@ import { applyProgress } from '../../domain/progress';
 import { places } from '../places';
 import { FakeContext } from '../FakeContext';
 import { distanceMetres } from '../../features/gym-picker/geometry';
+import { ceremonyAt } from '../../features/unlock/ceremonyClock';
 export function GymFake(ctx: FakeContext): GymPort & { dispose: () => void } {
   const list = () => settingsStore.getState().data.gymPlaces;
   const progress = gymProgress(ctx);
@@ -56,11 +57,24 @@ export function GymFake(ctx: FakeContext): GymPort & { dispose: () => void } {
       ctx.result();
       if (ctx.snapshot().presence !== 'inside') throw new Error('Outside saved gym');
       if (!list().some((p) => p.id === id)) throw new Error('Gym not found');
+      const enteredAt = ctx.clock.now();
       if (confirmation) await new Promise<void>((resolve, reject) => {
-        const finish = (error?: Error) => { clearTimeout(timer); stop(); confirmation.signal.removeEventListener('abort', abort); if (error) reject(error); else resolve(); };
+        let settled = false;
+        const deadline = new Date(Date.parse(enteredAt) + confirmation.milliseconds).toISOString();
+        const finish = (error?: Error) => {
+          if (settled) return;
+          settled = true;
+          stopDeadline();
+          stopPresence();
+          confirmation.signal.removeEventListener('abort', abort);
+          if (error) reject(error); else resolve();
+        };
         const abort = () => finish(new Error('Check-in cancelled'));
-        const timer = setTimeout(() => finish(), confirmation.milliseconds);
-        const stop = ctx.subscribe(() => { if (ctx.snapshot().presence !== 'inside') finish(new Error('Left gym')); });
+        // merge: P2-T15's GymFake uses ClockPort.at directly as part of its visit implementation.
+        const stopDeadline = ceremonyAt(ctx.clock, deadline, () => finish());
+        const stopPresence = ctx.subscribe(() => {
+          if (ctx.snapshot().presence !== 'inside') finish(new Error('Left gym'));
+        });
         confirmation.signal.addEventListener('abort', abort);
         if (confirmation.signal.aborted) abort();
       });
@@ -85,7 +99,7 @@ export function GymFake(ctx: FakeContext): GymPort & { dispose: () => void } {
             rule.mode.kind === 'event'
               ? 1
               : (current.find((d) => d.ruleId === rule.id && d.day === day)?.progress ?? 0),
-            ctx.clock.now(),
+            enteredAt,
           );
         });
       ruleDaysStore.getState().patch({
