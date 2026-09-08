@@ -31,3 +31,25 @@ Only after P2-T11 passes and Johan says so.
 - Guardrail: a release build has no dev route, no deep-link runtime mutation and no test buttons (P2-T13).
 - The hardening milestone's task files (P2-T13–T25) move with the rest of `plans/rebuild/`; the audit under
   `docs/audit/` stays as the record.
+
+## Delete with `app/`: the legacy analytics rail (2026-09-07, from P2-T07)
+
+P2-T07 rebuilt `packages/analytics-events` around the new onboarding rail, which broke `app/`: the
+legacy app is typed against the retired seven-screen one, and one `FlowScreen` union cannot describe
+both honestly. Rather than leave the root `npm test` red until this task lands, P2-T07 added
+**`packages/analytics-events/src/legacy.ts`** — `LEGACY_FLOW_SCREENS`, `LegacyFlowScreen`,
+`isLegacyFlowScreen`, `LegacyPropsOf` and the two legacy helper signatures — and pointed `app/`'s
+analytics and onboarding modules at it. The shipping `FLOW_SCREENS` union was not widened.
+
+Nothing outside `app/` imports it. This task deletes it:
+
+- [ ] Delete `packages/analytics-events/src/legacy.ts` and its ten-line block in the package
+      `index.ts` (the one under the "Legacy surface for the `app/` workspace only" comment).
+- [ ] Delete the "The retired rail (`src/legacy.ts`)" section from
+      `packages/analytics-events/README.md`.
+- [ ] Delete `guardrails/legacy-analytics.test.ts`, the containment test that keeps the rail inside
+      `app/`, and its row in `guardrails/README.md`.
+- [ ] Confirm `grep -rn "Legacy\(Flow\|Props\|Track\)\|LEGACY_FLOW_SCREENS" --include='*.ts' --include='*.tsx' .`
+      returns nothing once `app/` is gone.
+
+Dropping `app/` from the root `workspaces` array and from `test:unit` is still part of this task.

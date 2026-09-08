@@ -18,6 +18,9 @@ const CLIENT_ENV_NAMES = [
   'EXPO_PUBLIC_API_URL',
   'GOOGLE_OAUTH_WEB_CLIENT_ID',
   'GOOGLE_OAUTH_IOS_CLIENT_ID',
+  'EXPO_PUBLIC_POSTHOG_KEY',
+  'POSTHOG_HOST',
+  'SENTRY_DSN_MOBILE',
 ] as const;
 
 type ClientEnvironment = Partial<Record<(typeof CLIENT_ENV_NAMES)[number], string>>;
@@ -74,6 +77,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         apiBaseUrl: environment.EXPO_PUBLIC_API_URL,
         googleWebClientId: environment.GOOGLE_OAUTH_WEB_CLIENT_ID,
         googleIosClientId: environment.GOOGLE_OAUTH_IOS_CLIENT_ID,
+      },
+      clientObservability: {
+        posthogApiKey: environment.EXPO_PUBLIC_POSTHOG_KEY,
+        posthogHost: environment.POSTHOG_HOST,
+        sentryDsn: environment.SENTRY_DSN_MOBILE,
       },
     },
   };

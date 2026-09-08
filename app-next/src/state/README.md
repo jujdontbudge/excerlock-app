@@ -9,6 +9,10 @@ action bumps. Nothing here survives a launch; the host republishes on its first 
 
 `reviewStore` is the rating policy's memory (install date, prompts shown, manual Rate tap); `adapters/review` is its only writer.
 
+`settingsStore.shareAnalytics` is the "Share usage analytics" answer (D9b). It defaults to on, which is
+why the analytics adapter reads it only once the store has hydrated: answering the default before
+rehydration would send the first events of a session belonging to someone who had already opted out.
+
 `todayHistory` replaces today’s fixture completion with actual enabled schedules and RuleDays before streak/analytics selectors read it. Historical usage remains measurement data; missing usage is not fabricated.
 
 ## Persisted-store contract

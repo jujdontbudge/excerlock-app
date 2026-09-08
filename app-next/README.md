@@ -2,6 +2,12 @@
 
 A separate Expo SDK 57 app using local fake data. The original app and server are read-only references. Product copy belongs in src/content; presentation tokens in src/design-system; IO contracts in src/ports. Real services are unavailable in Phase 1.
 
+Analytics and crash reporting are real (P2-T07). `app.config.ts` copies `EXPO_PUBLIC_POSTHOG_KEY`,
+`POSTHOG_HOST` and `SENTRY_DSN_MOBILE` out of `~/.excerlock/env` (or the EAS environment) into
+`expo.extra.clientObservability`; nothing is committed, and a build without them keeps the recording
+analytics fake and does not initialise Sentry. See `src/adapters/analytics` and `src/observability`.
+The app entry is `index.ts`, which initialises Sentry and then requires `expo-router/entry`.
+
 From the repo root run `npm install`. From this folder run `npm test`, `npm run typecheck`, `npm run lint`. `npm start` uses IPv4 localhost port 8091. Build with `sh scripts/simulator.sh build`, then `boot`, `install`, and `launch`. This uses Expo build-only mode plus simctl so Simulator.app stays closed. Finish with `sh scripts/simulator.sh shutdown`.
 
 Task evidence lives in evidence/T00 through evidence/T16; indexes are committed, generated media and logs stay local. Open `excerlock://dev` for 24 scenarios, clock controls, permission/session/entitlement toggles, prompt behavior, event log and component previews. `excerlock://dev?scenario=home-locked-walking` loads a scenario and follows the boot gate. “Load and keep edits” preserves validated store data. Gemini gates were deferred by Johan; final acceptance records that limitation.

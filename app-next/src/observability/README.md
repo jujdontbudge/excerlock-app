@@ -1,19 +1,42 @@
-# Client observability
+# observability
 
-Contract: this module owns mobile Sentry configuration and the privacy boundary applied to every
-crash event. It hides the vendor option shape and runtime config lookup. `app/index.ts` is the only
-caller of `Sentry.init`, and its Sentry package import must remain the first import.
+Crash reporting. Sentry only, project `excerlock-mobile` in org `edge-ix`.
 
-`scrubSentryEvent` removes user, request, message, custom context, tags, transaction/fingerprint,
-breadcrumb content, exception messages, mechanism data, and stack-frame variables/source context.
-Replay, screenshots, view hierarchy, failed-request capture, sessions, interactions, and performance
-tracing remain off; native crash handling stays on. Source-map integration is configured by the
-Sentry Expo plugin and Metro wrapper, with the auth token stored as a sensitive EAS environment value.
+## Where it starts
 
-Fixtures: `__tests__/sentry.test.ts` covers options plus top-level, breadcrumb, exception, and frame
-scrubbing. `__tests__/runtimeConfig.test.ts` covers public runtime configuration.
+`app-next/index.ts` is the app entry (`package.json` `main`), and it initialises Sentry *before* it
+requires `expo-router/entry`. That order is the point: a throw while a module evaluates happens
+before any React boundary exists, and those are the failures worth reporting most. The guardrail
+`guardrails/client-observability.test.ts` holds the order, the plugin position and the metro config.
 
-Public surface: `buildSentryOptions`, `scrubSentryEvent`, `readClientObservabilityConfig`, and its
-config type through `index.ts`.
+## What it collects
 
-Test command: `cd app && npx jest src/observability --runInBand`.
+`buildSentryOptions` turns everything off except native and JavaScript crash handling: no
+performance tracing, no session replay, no screenshots, no view hierarchy, no failed-request
+capture, no default PII. A stack trace is what a crash report is for.
+
+`scrubSentryEvent` then runs on every event on its way out. ExcerLock writes its own error messages,
+but not the values interpolated into them: a gym name, a saved address, a file path or an app
+selection can all end up inside an exception message, a breadcrumb or a captured local. So the shape
+is kept and the content is dropped — user, request, message, extra, tags, transaction, fingerprint,
+breadcrumb data, exception values, and every frame's source context and variables.
+
+The one thing kept is the React component stack, which names components and nothing else. Without it
+a scrubbed render error says only that something threw.
+
+## Where errors come in
+
+- `AppErrorBoundary` (`features/launch`) catches a render error below the runtime provider and calls
+  `reportError` from `componentDidCatch`.
+- `RouteErrorBoundary`, which `app/_layout.tsx` exports as Expo Router's `ErrorBoundary`, reports too
+  — router-level errors never reach the root boundary.
+
+`reportError` marks the report handled, so a caught render error is not counted as a crash, and it
+swallows its own failures: a reporting problem must never turn a recoverable error into a loop.
+
+## Keys
+
+`SENTRY_DSN_MOBILE` lives in `~/.excerlock/env` (or the EAS environment) and reaches the app through
+`app.config.ts` → `expo.extra.clientObservability`. Without it `buildSentryOptions` returns `null`
+and Sentry is simply not initialised. Uploading source maps additionally needs `SENTRY_AUTH_TOKEN` in
+the build environment; without it the build still succeeds and stack traces stay minified.

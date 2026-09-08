@@ -42,3 +42,24 @@ import { setLocaleForTests } from './src/content/locale';
 // Copy expectations assume one device: en-US numbers, a 12-hour clock and a Monday-start week.
 // Locale tests override per case and restore this fixture afterwards.
 setLocaleForTests({ tag: 'en-US', hour12: true, weekStart: 1 });
+
+// The two vendor SDKs never run under test: the adapters are exercised through their own ports,
+// and a real PostHog or Sentry client would open native modules and a network queue.
+jest.mock('posthog-react-native', () => ({
+  PostHog: jest.fn().mockImplementation(() => ({
+    register: jest.fn(),
+    capture: jest.fn(),
+    screen: jest.fn(),
+    identify: jest.fn(),
+    setPersonProperties: jest.fn(),
+    optIn: jest.fn(),
+    optOut: jest.fn(),
+    reset: jest.fn(),
+    flush: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+jest.mock('@sentry/react-native', () => ({
+  init: jest.fn(),
+  captureException: jest.fn(),
+  wrap: (component: unknown) => component,
+}));

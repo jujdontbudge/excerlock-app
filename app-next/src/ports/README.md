@@ -27,7 +27,11 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
   first because earning and locking never wait on a network. `__tests__/authContract.ts` is the
   suite the fake and the adapter both pass.
 - SubscriptionPort: Phase 2 implements Adapty entitlement, paywall and restore.
-- AnalyticsPort: Phase 2 emits sanitized PostHog events.
+- AnalyticsPort: `adapters/analytics` implements it against PostHog. `track` and `screen` accept any string
+  and any bag; the adapter drops what `@excerlock/analytics-events` does not register, so a caller never
+  branches on whether an event is legal. `setPersonProperties` is `$set` on the current person — the four
+  onboarding answers, never an event payload. `identify` is called for every session, the anonymous one
+  included; the adapter is what decides that an anonymous placeholder is not an identity.
 - NotificationsPort: Phase 2 schedules local trial and lease reminders through `adapters/notifications` over
   expo-notifications. Two laws: `status()` is synchronous and agrees with the last `request()` result, and
   `cancel(id)` never throws for an id it does not know. `scheduleTrialReminder(at, daysBefore?)` and

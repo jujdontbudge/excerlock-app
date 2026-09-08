@@ -1,4 +1,4 @@
-import type { FlowScreen } from "@excerlock/analytics-events";
+import type { LegacyFlowScreen } from "@excerlock/analytics-events";
 import { useEffect, useRef, type ComponentType } from "react";
 import type { AccountModule } from "@/account";
 
@@ -25,7 +25,7 @@ const SCREEN_BY_STEP = {
   "pick-apps": PickAppsScreen,
   paywall: PaywallScreen,
   "sign-up": SignUpScreen,
-} satisfies Record<FlowScreen, ComponentType<OnboardingScreenProps>>;
+} satisfies Record<LegacyFlowScreen, ComponentType<OnboardingScreenProps>>;
 
 type OnboardingFlowProps = {
   account?: AccountModule;
@@ -39,7 +39,7 @@ export function OnboardingFlow({ account, onComplete }: OnboardingFlowProps) {
   const back = useOnboardingStore((state) => state.back);
   const ScreenComponent = SCREEN_BY_STEP[currentStep];
   const isFinalStep = currentStep === FLOW.at(-1)?.screen;
-  const viewedSteps = useRef(new Set<FlowScreen>());
+  const viewedSteps = useRef(new Set<LegacyFlowScreen>());
 
   useEffect(() => {
     if (viewedSteps.current.has(currentStep)) {

@@ -1,4 +1,5 @@
 import type { EventOwner, EventProps } from './types'
+import { ceremonyEvents, type CeremonyEventProps } from './events/ceremony'
 import { conditionEvents, type ConditionEventProps } from './events/conditions'
 import { engagementEvents, type EngagementEventProps } from './events/engagement'
 import { onboardingEvents, type OnboardingEventProps } from './events/onboarding'
@@ -6,7 +7,6 @@ import { paywallEvents, type PaywallEventProps } from './events/paywall'
 import { shieldEvents, type ShieldEventProps } from './events/shield'
 import { subscriptionEvents, type SubscriptionEventProps } from './events/subscription'
 import { supportEvents, type SupportEventProps } from './events/support'
-import { vendorEvents, type VendorEventProps } from './events/vendors'
 
 /**
  * The complete v1 event registry: every allowed PostHog event name with its
@@ -17,10 +17,10 @@ export const EVENTS = {
   ...onboardingEvents,
   ...conditionEvents,
   ...shieldEvents,
+  ...ceremonyEvents,
   ...paywallEvents,
   ...engagementEvents,
   ...supportEvents,
-  ...vendorEvents,
   ...subscriptionEvents,
 } as const
 
@@ -32,10 +32,10 @@ export type EventName = keyof EventRegistry
 type EventPropsMap = OnboardingEventProps &
   ConditionEventProps &
   ShieldEventProps &
+  CeremonyEventProps &
   PaywallEventProps &
   EngagementEventProps &
   SupportEventProps &
-  VendorEventProps &
   SubscriptionEventProps
 
 /** Properties type of one event. */

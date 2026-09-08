@@ -18,6 +18,13 @@ type CaptureCall = {
   side: "client" | "server";
 };
 
+/**
+ * The client emits through `AnalyticsPort.track()`; only the adapter behind it reaches the SDK's
+ * `capture()`. Both shapes are walked, so an event named at a screen is checked the same way an
+ * event named at a transport is.
+ */
+const EMIT_METHODS = new Set(["capture", "track"]);
+
 const codeExtensions = new Set([".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx"]);
 const eventOwners = new Set<EventOwner>(["adapty", "client", "server"]);
 
@@ -151,7 +158,7 @@ function isTestFile(path: string): boolean {
 
 function isTypedAnalyticsWrapper(file: string): boolean {
   return (
-    file.startsWith("app-next/src/features/analytics/") ||
+    file.startsWith("app-next/src/adapters/analytics/") ||
     file === "server/src/analytics.ts" ||
     file === "server/src/services/analytics.ts"
   );
@@ -163,8 +170,9 @@ function readCaptureCalls(path: string, side: CaptureCall["side"]): CaptureCall[
   function visit(node: ts.Node): void {
     if (ts.isCallExpression(node)) {
       const isCapture =
-        (ts.isIdentifier(node.expression) && node.expression.text === "capture") ||
-        (ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === "capture");
+        (ts.isIdentifier(node.expression) && EMIT_METHODS.has(node.expression.text)) ||
+        (ts.isPropertyAccessExpression(node.expression) &&
+          EMIT_METHODS.has(node.expression.name.text));
 
       if (isCapture) {
         const eventArgument = node.arguments[0];

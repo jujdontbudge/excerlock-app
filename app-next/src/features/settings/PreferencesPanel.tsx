@@ -129,6 +129,19 @@ export function Preferences({ navigate }: { navigate: (path: string) => void }) 
               }}
             />
           </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
+            <Label style={{ flex: 1 }}>{c.shareAnalytics}</Label>
+            <Switch
+              accessibilityRole="switch"
+              accessibilityLabel={c.shareAnalytics}
+              value={settings.shareAnalytics}
+              trackColor={{ true: t.brand.primary }}
+              onValueChange={(enabled) => useSettingsStore.getState().patch({ shareAnalytics: enabled })}
+            />
+          </View>
+          <Label variant="support" tone="secondary">
+            {c.shareAnalyticsBody}
+          </Label>
         </View>
       </SettingsGroup>
     </>

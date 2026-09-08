@@ -1,6 +1,6 @@
 import type {
-  TrackOnboardingAnswer,
-  TrackOnboardingScreen,
+  LegacyTrackOnboardingAnswer,
+  LegacyTrackOnboardingScreen,
 } from "@excerlock/analytics-events";
 
 import type { AnalyticsKit } from "./AnalyticsKit";
@@ -13,8 +13,8 @@ import type { AnalyticsKit } from "./AnalyticsKit";
  * `screen` value.
  */
 export interface FlowTracker {
-  trackOnboardingScreen: TrackOnboardingScreen;
-  trackOnboardingAnswer: TrackOnboardingAnswer;
+  trackOnboardingScreen: LegacyTrackOnboardingScreen;
+  trackOnboardingAnswer: LegacyTrackOnboardingAnswer;
 }
 
 export function createFlowTracker(kit: AnalyticsKit): FlowTracker {

@@ -5,6 +5,7 @@ export function AnalyticsFake(ctx: FakeContext): AnalyticsPort {
     track: ctx.log,
     screen: (name) => ctx.log('screen', { name }),
     identify: (id) => ctx.log('identify', { id }),
+    setPersonProperties: (props) => ctx.log('person', props),
     reset: () => ctx.update({ events: [] }),
   };
 }

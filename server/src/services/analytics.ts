@@ -24,6 +24,8 @@ export interface SupportAnalytics {
   ): void;
 }
 
+// v1 ships no direct vendor connections, so the three `vendor_*` events left the registry (P2-T07),
+// and P2-T02 removed the OAuth exchange and the webhook receivers that used to report them (D1).
 export interface ServerAnalytics extends SupportAnalytics {
   capture<Event extends ServerEventName>(
     distinctId: string,

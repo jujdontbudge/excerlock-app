@@ -4,6 +4,11 @@ Composition boundary that supplies ports to features, and the one place that enf
 lives above every route guard, so it keeps running while the user is still in onboarding, on the paywall,
 or in the post-purchase setup sequence, and it survives every tab unmount.
 
+`createRuntime` builds the demo runtime and then swaps in the real adapters it can: the foreground gym
+and native gait on an iOS device, and `adapters/analytics` whenever a PostHog key is configured. A build
+without the key keeps the recording fake, so a missing key is never a crash and never a branch at a call
+site. Nothing is swapped under test.
+
 `devFlag.ts` is the single release-hygiene gate for developer-only routes and runtime controls. It is enabled
 only by `__DEV__` or an explicit `EXPO_PUBLIC_DEV_MENU=1` build environment value.
 
@@ -15,24 +20,28 @@ the ordinary error when reachability itself cannot be determined.
 `AppRuntimeProvider` creates the runtime and mounts, in this order:
 
 1. **`AppErrorBoundary`** (`features/launch`) — a root render boundary. A throw anywhere below it renders
-   the recovery screen instead of a blank window, and `onError` is where P2-T07 wires Sentry. `tryRule`
-   keeps an unexpected rule draft from throwing during render in the first place.
+   the recovery screen instead of a blank window, and `onError` is `observability/reportError`, which sends
+   the scrubbed error to Sentry. `tryRule` keeps an unexpected rule draft from throwing during render in
+   the first place.
 2. **`startIdentityBridge`** — follows the session and binds its user id to the subscription and analytics
    ports. `domain/identity` owns the order: identify runs subscription-first so an entitlement fetch is
    already scoped before the first attributed event, and every session carries a user id, so the anonymous
    one at first launch identifies both SDKs too. The matching teardown, `teardownIdentity`, resets
    subscription then analytics and releases the auth provider last; Account calls it on sign-out and deletion.
-3. **`bindHaptics`** — applies the Touch feedback preference to the haptics module, so a rehydrated
+3. **`startPersonProperties`** — follows the profile and sets the four onboarding answers (O06–O09) as
+   PostHog person properties. It deliberately does not push on mount: the profile's defaults are not
+   answers, and sending them would record an age band nobody chose.
+4. **`bindHaptics`** — applies the Touch feedback preference to the haptics module, so a rehydrated
    `haptics: false` is in force before the first screen renders.
-4. **`startEnforcement`** — the enforcement host below.
-5. **`startNotifications`** (`adapters/notifications`) — schedules the trial reminder off the entitlement
+5. **`startEnforcement`** — the enforcement host below.
+6. **`startNotifications`** (`adapters/notifications`) — schedules the trial reminder off the entitlement
    store and the walk-lease warning off the walking session, against whichever notifications port is bound,
    and routes notification taps through the landing table when the bound port delivers responses.
-6. **`startReviewPrompts`** (`adapters/review`) — re-runs the App Store rating policy on every rule-day
+7. **`startReviewPrompts`** (`adapters/review`) — re-runs the App Store rating policy on every rule-day
    change, so a day becoming met can prompt while the app is in the foreground. It subscribes to the
    store, never to `AppState`.
 
-The five bindings are started in that order inside one effect and stopped in reverse.
+The six bindings below the error boundary are started in that order inside one effect and stopped in reverse.
 `app/locked-apps.tsx` is registered outside every `Stack.Protected` so the shield notification's deep
 link always resolves; `lockedAppsDestination` then sends the user to Home or the paywall.
 

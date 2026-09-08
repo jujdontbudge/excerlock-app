@@ -6,6 +6,8 @@ import { bindHaptics } from '../motion/bindHaptics';
 import { startEnforcement } from './EnforcementHost';
 import { startNotifications } from '../adapters/notifications/startNotifications';
 import { startReviewPrompts } from '../adapters/review/reviewPrompts';
+import { startPersonProperties } from '../adapters/analytics/personProperties';
+import { reportError } from '../observability/reportError';
 const Context = createContext<Runtime | null>(null);
 
 /** The app's long-lived bindings, started in mount order and torn down in reverse. */
@@ -13,6 +15,8 @@ function RuntimeBindings({ runtime }: { runtime: Runtime }) {
   useEffect(() => {
     const stops = [
       startIdentityBridge(runtime),
+      // Person properties bind before anything that emits, so every later event carries them.
+      startPersonProperties(runtime.analytics),
       bindHaptics(),
       startEnforcement(runtime),
       startNotifications(runtime),
@@ -28,7 +32,7 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
   useEffect(() => () => runtime.dispose(), [runtime]);
   return (
     <Context.Provider value={runtime}>
-      <AppErrorBoundary>
+      <AppErrorBoundary onError={reportError}>
         <RuntimeBindings runtime={runtime} />
         {children}
       </AppErrorBoundary>

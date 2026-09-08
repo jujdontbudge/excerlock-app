@@ -4,7 +4,7 @@ jest.mock(
 );
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { FLOW_SCREENS } from "@excerlock/analytics-events";
+import { LEGACY_FLOW_SCREENS } from "@excerlock/analytics-events";
 
 import {
   DEFAULT_ONBOARDING_PROGRESS,
@@ -19,26 +19,26 @@ describe("onboarding flow state machine", () => {
     useOnboardingStore.setState(DEFAULT_ONBOARDING_PROGRESS);
   });
 
-  it("walks forward and back through the imported FLOW_SCREENS order", () => {
-    expect(FLOW.map(({ screen }) => screen)).toEqual(FLOW_SCREENS);
-    expect(useOnboardingStore.getState().currentStep).toBe(FLOW_SCREENS[0]);
+  it("walks forward and back through the imported LEGACY_FLOW_SCREENS order", () => {
+    expect(FLOW.map(({ screen }) => screen)).toEqual(LEGACY_FLOW_SCREENS);
+    expect(useOnboardingStore.getState().currentStep).toBe(LEGACY_FLOW_SCREENS[0]);
 
-    for (const expectedStep of FLOW_SCREENS.slice(1)) {
+    for (const expectedStep of LEGACY_FLOW_SCREENS.slice(1)) {
       useOnboardingStore.getState().advance();
       expect(useOnboardingStore.getState().currentStep).toBe(expectedStep);
     }
 
-    for (const expectedStep of [...FLOW_SCREENS].reverse().slice(1)) {
+    for (const expectedStep of [...LEGACY_FLOW_SCREENS].reverse().slice(1)) {
       useOnboardingStore.getState().back();
       expect(useOnboardingStore.getState().currentStep).toBe(expectedStep);
     }
 
     useOnboardingStore.getState().back();
-    expect(useOnboardingStore.getState().currentStep).toBe(FLOW_SCREENS[0]);
+    expect(useOnboardingStore.getState().currentStep).toBe(LEGACY_FLOW_SCREENS[0]);
   });
 
   it("persists completion when the user advances from the final screen", async () => {
-    for (let step = 0; step < FLOW_SCREENS.length; step += 1) {
+    for (let step = 0; step < LEGACY_FLOW_SCREENS.length; step += 1) {
       useOnboardingStore.getState().advance();
     }
 
@@ -53,6 +53,6 @@ describe("onboarding flow state machine", () => {
     await useOnboardingStore.persist.rehydrate();
 
     expect(useOnboardingStore.getState().isComplete).toBe(true);
-    expect(useOnboardingStore.getState().currentStep).toBe(FLOW_SCREENS.at(-1));
+    expect(useOnboardingStore.getState().currentStep).toBe(LEGACY_FLOW_SCREENS.at(-1));
   });
 });

@@ -17,11 +17,6 @@ type ServerEventFixture = {
   };
 }[ServerEventName];
 
-/**
- * The events this server actually emits. The shared registry still declares
- * the retired vendor events (D6 removed the integrations, not the registry
- * entries); nothing here may emit one.
- */
 const SERVER_EVENT_FIXTURES = [
   { event: "account_deleted", properties: {} },
   {
@@ -43,6 +38,8 @@ function assertServerCaptureTypeBoundary(analytics: ServerAnalytics): void {
   });
   // @ts-expect-error Adapty-owned events cannot be captured by the server.
   analytics.capture("user_123", "trial_started", {});
+  // @ts-expect-error v1 ships no vendor connections, so the vendor events left the registry.
+  analytics.capture("user_123", "vendor_connected", { vendor: "strava" });
   // @ts-expect-error Support categories are the registry's closed enum.
   analytics.capture("user_123", "support_request_submitted", { category: "question" });
 }
@@ -89,7 +86,7 @@ describe("server analytics", () => {
     });
 
     expect(eventsOwnedBy("server")).toEqual(
-      expect.arrayContaining(SERVER_EVENT_FIXTURES.map(({ event }) => event)),
+      SERVER_EVENT_FIXTURES.map(({ event }) => event),
     );
     for (const { event } of SERVER_EVENT_FIXTURES) {
       expect(ownerOf(event)).toBe("server");
@@ -118,6 +115,7 @@ describe("server analytics", () => {
     analytics.capture("user_123", "support_request_submitted", {
       category: "bug",
     });
+    analytics.capture("user_123", "account_deleted", {});
 
     expect(postHog.register).toHaveBeenCalledWith({ app: "excerlock" });
     expect(postHog.capture.mock.calls).toEqual([
@@ -131,18 +129,14 @@ describe("server analytics", () => {
           },
         },
       ],
+      [
+        {
+          distinctId: "user_123",
+          event: "account_deleted",
+          properties: { app: "excerlock" },
+        },
+      ],
     ]);
-  });
-
-  it("exposes no vendor forwarder to call (D6)", () => {
-    const analytics = createAnalytics({
-      apiKey: "phc_test",
-      host: "https://us.i.posthog.com",
-    });
-
-    expect(
-      Object.keys(analytics).filter((key) => /vendor/i.test(key)),
-    ).toEqual([]);
   });
 
   it("forwards one authoritative support submission event", () => {

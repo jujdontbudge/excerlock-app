@@ -749,6 +749,10 @@ First failing tests:
 
 Decisions: B5 · Order: The non-throwing `tryRule` half unblocks NEW:builder-fixes (the builder's summary step calls the same function), so land it before the builder validation work. The boundary half is independent of everything. Phase 2 should wire Sentry into `componentDidCatch` — amends plans/rebuild/phase-2-backend/P2-T07-posthog-sentry.md.
 
+**P2-T07 status (2026-09-07):** the Sentry half is wired. `AppErrorBoundary`'s `onError` is
+`observability/reportError`, and `RouteErrorBoundary` reports too, because a router-level error never
+reaches the root boundary.
+
 ### #66 [medium, M] Give applyLock a result and a fail-closed, idempotent contract
 
 **Planner resolution:** Port signature (`ApplyResult`, fail-closed law, contract suite) is defined in P2-T14; this entry wires the call site and the `enforcementFailed` Home state.
@@ -2090,6 +2094,12 @@ First failing tests:
 - commitPlan still persists ageBand, occupation, improveFirst and mainReason to the profile
 
 Decisions: B33 · Order: independent; the P2-T07 person-property line is a plan edit, not code, and can land with the same commit
+
+**P2-T07 status (2026-09-07):** the person-property half is built, not just planned.
+`app-next/src/adapters/analytics/personProperties.ts` follows the profile and sets `ageBand`,
+`occupation`, `improveFirst` and `mainReason` on the PostHog person; `runtime/AppRuntimeProvider` mounts
+it. The collection now has a stated purpose regardless of how half (a) is answered — the property names
+do not depend on which option lists ship. Half (b), the O06/O07 copy, is still P2-T23's.
 
 ### #104 [low, S] Name the four activities the same way on O03 as everywhere else
 

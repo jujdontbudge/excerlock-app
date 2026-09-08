@@ -1,10 +1,10 @@
 import type {
   ClientEventName,
   EmptyProps,
-  FlowScreen,
-  PropsOf,
+  LegacyFlowScreen,
+  LegacyPropsOf,
 } from "@excerlock/analytics-events";
-import { isFlowScreen } from "@excerlock/analytics-events";
+import { isLegacyFlowScreen } from "@excerlock/analytics-events";
 
 import { noopSink } from "./noopSink";
 import { sanitizeAnalyticsProperties } from "./privacyPolicy";
@@ -16,12 +16,15 @@ const NO_PROPS: AnalyticsPayload = {};
 /**
  * The payload argument of `track()`, derived from the registry: required and
  * exact for every event that declares properties, omittable only for the
- * events whose declared props are empty (`sick_day_override_used`,
+ * events whose declared props are empty (`shields_applied`,
  * `diagnostics_shared`, `data_export_requested`, …).
+ *
+ * `LegacyPropsOf` rather than `PropsOf`: this app renders the retired FLOW rail, so its two
+ * funnel events carry a `LegacyFlowScreen`. Every other event keeps the shipping shape.
  */
-export type TrackArgs<E extends ClientEventName> = PropsOf<E> extends EmptyProps
+export type TrackArgs<E extends ClientEventName> = LegacyPropsOf<E> extends EmptyProps
   ? [props?: EmptyProps]
-  : [props: PropsOf<E>];
+  : [props: LegacyPropsOf<E>];
 
 /**
  * The typed client emitter. `track()` accepts only client-owned events (D4/D5)
@@ -33,7 +36,7 @@ export interface AnalyticsKit {
   installSink(sink: AnalyticsSink): void;
   track<E extends ClientEventName>(event: E, ...props: TrackArgs<E>): void;
   /** Manual `$screen` on real navigation only (D11). */
-  trackScreen(screen: FlowScreen): void;
+  trackScreen(screen: LegacyFlowScreen): void;
   /** Clerk user id, at post-purchase sign-up only (D6). */
   identify(distinctId: string): void;
   /** Drain identified events before authoritative account erasure. */
@@ -65,7 +68,7 @@ export function createAnalyticsKit(initialSink: AnalyticsSink = noopSink): Analy
       );
     },
     trackScreen(screen) {
-      if (!isFlowScreen(screen)) {
+      if (!isLegacyFlowScreen(screen)) {
         return;
       }
       sink.screen(screen, NO_PROPS);

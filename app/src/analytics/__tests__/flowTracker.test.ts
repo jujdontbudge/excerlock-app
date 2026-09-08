@@ -1,4 +1,4 @@
-import { FLOW_SCREENS } from "@excerlock/analytics-events";
+import { LEGACY_FLOW_SCREENS } from "@excerlock/analytics-events";
 
 import { createAnalyticsKit, createFlowTracker, createRecordingSink } from "..";
 
@@ -21,20 +21,20 @@ describe("FLOW funnel helpers (PRD §10.5)", () => {
     ]);
   });
 
-  it("emits one funnel step per screen, in the imported FLOW_SCREENS order", () => {
+  it("emits one funnel step per screen, in the imported LEGACY_FLOW_SCREENS order", () => {
     const { sink, tracker } = trackerOnRecordingSink();
 
-    for (const screen of FLOW_SCREENS) {
+    for (const screen of LEGACY_FLOW_SCREENS) {
       tracker.trackOnboardingScreen(screen);
     }
 
     expect(sink.captured()).toEqual(
-      FLOW_SCREENS.map((screen) => ({
+      LEGACY_FLOW_SCREENS.map((screen) => ({
         event: "onboarding_screen_viewed",
         props: { screen },
       })),
     );
-    expect(sink.signals).toHaveLength(FLOW_SCREENS.length * 2);
+    expect(sink.signals).toHaveLength(LEGACY_FLOW_SCREENS.length * 2);
   });
 
   it("records answers against the screen that asked, without touching $screen", () => {
@@ -69,7 +69,7 @@ describe("FLOW funnel helpers (PRD §10.5)", () => {
     const tracker = createFlowTracker(createAnalyticsKit());
 
     expect(() => {
-      for (const screen of FLOW_SCREENS) {
+      for (const screen of LEGACY_FLOW_SCREENS) {
         tracker.trackOnboardingScreen(screen);
       }
       tracker.trackOnboardingAnswer("confession", 360);

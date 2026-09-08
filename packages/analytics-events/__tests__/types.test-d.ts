@@ -27,7 +27,7 @@ describe('PropsOf', () => {
     expectTypeOf<PropsOf<'onboarding_screen_viewed'>>().toEqualTypeOf<{
       screen: FlowScreen
     }>()
-    expectTypeOf<PropsOf<'milestone_unlocked'>>().toEqualTypeOf<
+    expectTypeOf<PropsOf<'gym_unlock_lost'>>().toEqualTypeOf<
       Record<string, never>
     >()
   })
@@ -41,7 +41,7 @@ describe('PropsOf', () => {
 
 describe('OwnerOf', () => {
   it('resolves literal owners', () => {
-    expectTypeOf<OwnerOf<'earn_claimed'>>().toEqualTypeOf<'client'>()
+    expectTypeOf<OwnerOf<'rule_met'>>().toEqualTypeOf<'client'>()
     expectTypeOf<OwnerOf<'support_request_submitted'>>().toEqualTypeOf<'server'>()
     expectTypeOf<OwnerOf<'trial_started'>>().toEqualTypeOf<'adapty'>()
   })
@@ -63,7 +63,7 @@ describe('owner-filtered name unions', () => {
 
   it('place anchor events on the right side', () => {
     expectTypeOf<'paywall_viewed'>().toExtend<ClientEventName>()
-    expectTypeOf<'vendor_connected'>().toExtend<ServerEventName>()
+    expectTypeOf<'support_request_submitted'>().toExtend<ServerEventName>()
     expectTypeOf<'subscription_renewed'>().toExtend<AdaptyEventName>()
   })
 })
