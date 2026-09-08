@@ -1,8 +1,10 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
+import { Linking } from 'react-native';
 import { PermissionPrimer } from '../PermissionPrimer';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { permissionsStore } from '../../../state/permissionsStore';
+import { settingsCopy } from '../../../content/settings';
 test.each(['screenTime', 'motion', 'health', 'location'] as const)(
   '%s denied primer explains the missing ability and allows continuation',
   async (name) => {
@@ -16,10 +18,11 @@ test.each(['screenTime', 'motion', 'health', 'location'] as const)(
       </AppRuntimeProvider>,
     );
     expect(screen.getByRole('button', { name: 'Continue anyway' })).toBeTruthy();
+    expect(screen.getByText(settingsCopy.permissionPaths[name])).toBeTruthy();
+    const openSettings = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
     await userEvent.press(screen.getByRole('button', { name: 'Open Settings' }));
-    expect(
-      screen.getByText('You can change this permission in Settings. Your current choice stays as it is for now.'),
-    ).toBeTruthy();
+    expect(openSettings).toHaveBeenCalledTimes(1);
+    openSettings.mockRestore();
     await userEvent.press(screen.getByRole('button', { name: 'Continue anyway' }));
     expect(onContinue).toHaveBeenCalledTimes(1);
   },

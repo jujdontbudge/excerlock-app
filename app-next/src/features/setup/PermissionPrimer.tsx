@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 import { Heading, Label, PrimaryButton, SecondaryButton } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { setupCopy as c } from '../../content/setup';
+import { settingsCopy } from '../../content/settings';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
 const content = {
@@ -29,7 +30,6 @@ export function PermissionPrimer({ name, onContinue }: { name: keyof typeof cont
   const runtime = useRuntime(),
     status = usePermissionsStore((s) => s.data[name]),
     [busy, setBusy] = useState(false),
-    [note, setNote] = useState(false),
     copy = content[name];
   const granted = ['granted', 'whenInUse', 'always'].includes(status),
     denied = ['denied', 'restricted'].includes(status);
@@ -64,11 +64,7 @@ export function PermissionPrimer({ name, onContinue }: { name: keyof typeof cont
       {denied ? (
         <Reveal>
           <Label tone="secondary">{copy.denied}</Label>
-        </Reveal>
-      ) : null}
-      {note ? (
-        <Reveal>
-          <Label tone="secondary">{c.settingsNote}</Label>
+          <Label tone="secondary">{settingsCopy.permissionPaths[name]}</Label>
         </Reveal>
       ) : null}
       <View style={{ flexGrow: 1 }} />
@@ -77,7 +73,7 @@ export function PermissionPrimer({ name, onContinue }: { name: keyof typeof cont
       ) : (
         <>
           {denied ? (
-            <PrimaryButton label={c.settings} onPress={() => setNote(true)} />
+            <PrimaryButton label={c.settings} onPress={() => void Linking.openSettings()} />
           ) : (
             <PrimaryButton label={copy.allow} onPress={request} loading={busy} />
           )}
