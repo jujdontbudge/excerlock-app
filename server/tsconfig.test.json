@@ -6,9 +6,7 @@
   },
   "include": [
     "src/**/*.ts",
-    "test/analytics.test.ts",
-    "test/support*.test.ts",
-    "test/vendor*.test.ts"
+    "test/**/*.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

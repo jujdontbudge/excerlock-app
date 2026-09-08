@@ -5,9 +5,9 @@ import type { Environment } from "../env.js";
 import {
   createAdaptyWebhookService,
   createDrizzleAdaptyWebhookRepository,
+  verifyWebhookAuthorization,
   type AdaptyWebhookService,
 } from "../subscriptions/index.js";
-import { verifyWebhookAuthorization } from "../webhooks/index.js";
 
 interface AdaptyWebhookRouteDependencies {
   environment?: Environment;

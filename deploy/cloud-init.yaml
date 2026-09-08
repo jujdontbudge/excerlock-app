@@ -40,7 +40,10 @@ write_files:
       # Local socket + peer auth: unix user `excerlock` maps to the same-name PG role.
       DATABASE_URL=postgres://excerlock@/excerlock?host=/var/run/postgresql
       # Filled in by the provisioning runbook (PRD Sec. 10.10) -- values never committed:
-      # CLERK_SECRET_KEY=
+      # SUPABASE_URL=          # https://<ref>.supabase.co; issuer, JWKS and Admin API all derive from it
+      # SUPABASE_SERVICE_ROLE_KEY=  # Admin API; account deletion is its only use
+      # SUPABASE_JWT_JWKS_URL= # optional, only to override the derived JWKS url
+      # SUPABASE_JWT_SECRET=   # optional legacy HS256 fallback; ignored while a JWKS url exists
       # ADAPTY_SECRET_KEY=
       # ADAPTY_WEBHOOK_SECRET=
       # POSTHOG_API_KEY=
@@ -49,7 +52,6 @@ write_files:
       # POSTHOG_API_HOST=https://us.posthog.com
       # RESEND_API_KEY=
       # SENTRY_DSN=
-      # STRAVA_CLIENT_ID= / STRAVA_CLIENT_SECRET=  (and Oura/Whoop/Polar, Sec. 3.5c)
 
   - path: /etc/systemd/system/excerlock-api.service
     owner: root:root

@@ -1,11 +1,5 @@
 import type { SupportCategory } from "@excerlock/analytics-events";
-
-export interface NewFeatureRequestRecord {
-  id: string;
-  title: string;
-  message: string;
-  createdAt: Date;
-}
+import type { SupportDiagnostics } from "./payload.js";
 
 export interface NewSupportSubmissionRecord {
   id: string;
@@ -13,8 +7,11 @@ export interface NewSupportSubmissionRecord {
   category: SupportCategory;
   title: string | null;
   message: string;
+  /** Where a human answers. Null when the user gave no address. */
+  replyTo: string | null;
+  /** Privacy-floored device context, or null from a client that sends none. */
+  diagnostics: SupportDiagnostics | null;
   createdAt: Date;
-  featureRequest: NewFeatureRequestRecord | null;
 }
 
 export interface SupportSubmissionRepository {
@@ -22,40 +19,4 @@ export interface SupportSubmissionRepository {
   insertSupportSubmission(
     submission: NewSupportSubmissionRecord,
   ): Promise<void>;
-}
-
-export interface FeatureRequestRecord {
-  id: string;
-  submissionId: string;
-  title: string;
-  message: string;
-  voteCount: number;
-  hasVoted: boolean;
-  createdAt: Date;
-}
-
-export interface FeatureRequestRepository {
-  userExists(userId: string): Promise<boolean>;
-  listFeatureRequests(
-    userId: string,
-  ): Promise<readonly FeatureRequestRecord[]>;
-}
-
-export interface NewFeatureRequestVoteRecord {
-  id: string;
-  featureRequestId: string;
-  userId: string;
-  createdAt: Date;
-}
-
-export interface PersistedFeatureRequestVote {
-  status: "voted" | "alreadyVoted";
-  voteCount: number;
-}
-
-export interface FeatureRequestVoteRepository {
-  userExists(userId: string): Promise<boolean>;
-  recordFeatureRequestVote(
-    vote: NewFeatureRequestVoteRecord,
-  ): Promise<PersistedFeatureRequestVote | null>;
 }

@@ -14,5 +14,15 @@ all repository tables between tests. Run all consumers with
 Lifecycle: each repository test file owns one isolated PGlite instance, runs
 the full migration chain once, truncates between tests, and closes after the
 file. Vitest can initialize the files in parallel without cross-file state.
-On the implementation machine, `npm run test:server` measured 3.47 seconds
-before PGlite and 4.76 seconds after it (19 files, 76 tests).
+That parallel boot is why `vitest.config.ts` sets a 30-second timeout: on a
+loaded machine a PGlite instance can take many seconds to come up, and a
+5-second default turns that into a failure that reads like a broken
+assertion.
+
+`migration-supabase-sync.test.ts` is the exception to "migrate the whole
+chain": it copies `server/drizzle` to a scratch directory and trims the
+journal so the database stops at a chosen migration, which is how a migration
+can be tested against the schema it will actually meet on the box.
+
+Every test file is typechecked by `tsconfig.test.json` before vitest runs. A
+test that does not compile is a test that is not being read.

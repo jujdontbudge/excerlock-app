@@ -1,17 +1,8 @@
-import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 import { getDb } from "../db/client.js";
-import {
-  featureRequestVotes,
-  featureRequests,
-  supportRequests,
-  users,
-} from "../db/schema.js";
-import type {
-  FeatureRequestRepository,
-  FeatureRequestVoteRepository,
-  SupportSubmissionRepository,
-} from "./repository.js";
+import { supportRequests, users } from "../db/schema.js";
+import type { SupportSubmissionRepository } from "./repository.js";
 
 type SupportDatabase = PgDatabase<
   any,
@@ -77,113 +68,11 @@ export function createDrizzleSupportSubmissionRepository(
           category: submission.category,
           title: submission.title,
           message: submission.message,
+          replyTo: submission.replyTo,
+          diagnostics: submission.diagnostics,
           createdAt: submission.createdAt,
         });
-
-        if (submission.featureRequest) {
-          await transaction.insert(featureRequests).values({
-            id: submission.featureRequest.id,
-            supportRequestId: submission.id,
-            title: submission.featureRequest.title,
-            message: submission.featureRequest.message,
-            createdAt: submission.featureRequest.createdAt,
-          });
-        }
       });
-    },
-  };
-}
-
-export function createDrizzleFeatureRequestVoteRepository(
-  configuredDatabase: SupportDatabase | null = getDb(),
-): FeatureRequestVoteRepository {
-  const database = requireDatabase(configuredDatabase);
-
-  return {
-    userExists: (userId) => userExists(database, userId),
-
-    async recordFeatureRequestVote(vote) {
-      return database.transaction(async (transaction) => {
-        await lockActiveUser(transaction, vote.userId);
-        const [featureRequest] = await transaction
-          .select({ id: featureRequests.id })
-          .from(featureRequests)
-          .where(eq(featureRequests.id, vote.featureRequestId))
-          .limit(1);
-        if (!featureRequest) {
-          return null;
-        }
-
-        const [inserted] = await transaction
-          .insert(featureRequestVotes)
-          .values(vote)
-          .onConflictDoNothing({
-            target: [
-              featureRequestVotes.featureRequestId,
-              featureRequestVotes.userId,
-            ],
-          })
-          .returning({ id: featureRequestVotes.id });
-        const [tally] = await transaction
-          .select({ voteCount: count(featureRequestVotes.id) })
-          .from(featureRequestVotes)
-          .where(
-            eq(
-              featureRequestVotes.featureRequestId,
-              vote.featureRequestId,
-            ),
-          );
-        if (!tally) {
-          throw new Error("Feature vote count query returned no row");
-        }
-
-        return {
-          status: inserted ? "voted" : "alreadyVoted",
-          voteCount: tally.voteCount,
-        };
-      });
-    },
-  };
-}
-
-export function createDrizzleFeatureRequestRepository(
-  configuredDatabase: SupportDatabase | null = getDb(),
-): FeatureRequestRepository {
-  const database = requireDatabase(configuredDatabase);
-
-  return {
-    userExists: (userId) => userExists(database, userId),
-
-    async listFeatureRequests(userId) {
-      return database
-        .select({
-          id: featureRequests.id,
-          submissionId: featureRequests.supportRequestId,
-          title: featureRequests.title,
-          message: featureRequests.message,
-          voteCount: count(featureRequestVotes.id),
-          hasVoted: sql<boolean>`coalesce(bool_or(${featureRequestVotes.userId} = ${userId}), false)`,
-          createdAt: featureRequests.createdAt,
-        })
-        .from(featureRequests)
-        .leftJoin(
-          featureRequestVotes,
-          eq(
-            featureRequestVotes.featureRequestId,
-            featureRequests.id,
-          ),
-        )
-        .groupBy(
-          featureRequests.id,
-          featureRequests.supportRequestId,
-          featureRequests.title,
-          featureRequests.message,
-          featureRequests.createdAt,
-        )
-        .orderBy(
-          desc(featureRequests.createdAt),
-          desc(featureRequests.id),
-        );
     },
   };
 }

@@ -12,7 +12,7 @@ describe("user deletion workflow", () => {
       deletedAt,
       adaptyErasedAt: null,
       posthogErasedAt: null,
-      clerkDeletedAt: null,
+      authDeletedAt: null,
     };
     const repository = statefulRepository(state);
     const eraseAdaptyProfile = vi.fn(async () => undefined);
@@ -20,13 +20,13 @@ describe("user deletion workflow", () => {
       .fn<(userId: string) => Promise<void>>()
       .mockRejectedValueOnce(new Error("temporary PostHog failure"))
       .mockResolvedValue(undefined);
-    const deleteClerkUser = vi.fn(async () => undefined);
+    const deleteAuthUser = vi.fn(async () => undefined);
     const service = createUserDeletionService({
       repository,
       downstream: {
         eraseAdaptyProfile,
         erasePosthogPerson,
-        deleteClerkUser,
+        deleteAuthUser,
       },
       now: () => deletedAt,
     });
@@ -40,17 +40,17 @@ describe("user deletion workflow", () => {
     expect({
       adapty: eraseAdaptyProfile.mock.calls,
       posthog: erasePosthogPerson.mock.calls,
-      clerk: deleteClerkUser.mock.calls,
+      auth: deleteAuthUser.mock.calls,
       state,
     }).toEqual({
       adapty: [["user_123"]],
       posthog: [["user_123"], ["user_123"]],
-      clerk: [["user_123"]],
+      auth: [["user_123"]],
       state: {
         deletedAt,
         adaptyErasedAt: deletedAt,
         posthogErasedAt: deletedAt,
-        clerkDeletedAt: deletedAt,
+        authDeletedAt: deletedAt,
       },
     });
   });
@@ -67,8 +67,8 @@ function statefulRepository(
     markPosthogErased: vi.fn(async (_userId, erasedAt) => {
       state.posthogErasedAt = erasedAt;
     }),
-    markClerkDeleted: vi.fn(async (_userId, erasedAt) => {
-      state.clerkDeletedAt = erasedAt;
+    markAuthDeleted: vi.fn(async (_userId, erasedAt) => {
+      state.authDeletedAt = erasedAt;
     }),
   };
 }

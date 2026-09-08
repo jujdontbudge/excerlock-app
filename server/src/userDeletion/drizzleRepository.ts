@@ -1,15 +1,17 @@
-import { eq, isNull, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 import {
   adaptySubscriptionStates,
   adaptyWebhookEvents,
-  featureRequestVotes,
+  earnedUnlocks,
+  historyDays,
   getDb,
+  profiles,
+  ruleDays,
+  rules,
   supportRequests,
+  usageDays,
   users,
-  vendorConnections,
-  vendorOAuthStates,
-  vendorWebhookEvents,
 } from "../db/index.js";
 import type { DatabaseSchema } from "../db/index.js";
 import type {
@@ -37,7 +39,7 @@ const stateSelection = {
   deletedAt: users.deletedAt,
   adaptyErasedAt: users.adaptyErasedAt,
   posthogErasedAt: users.posthogErasedAt,
-  clerkDeletedAt: users.clerkDeletedAt,
+  authDeletedAt: users.authDeletedAt,
 };
 
 export function createDrizzleUserDeletionRepository(
@@ -66,9 +68,6 @@ export function createDrizzleUserDeletionRepository(
           });
 
         await transaction
-          .delete(featureRequestVotes)
-          .where(eq(featureRequestVotes.userId, userId));
-        await transaction
           .delete(adaptySubscriptionStates)
           .where(eq(adaptySubscriptionStates.userId, userId));
         await transaction
@@ -78,16 +77,12 @@ export function createDrizzleUserDeletionRepository(
         await transaction
           .delete(supportRequests)
           .where(eq(supportRequests.userId, userId));
-        await transaction
-          .delete(vendorOAuthStates)
-          .where(eq(vendorOAuthStates.userId, userId));
-        await transaction
-          .delete(vendorConnections)
-          .where(eq(vendorConnections.userId, userId));
-        await transaction
-          .update(vendorWebhookEvents)
-          .set({ externalUserId: "deleted", rawPayload: "{}" })
-          .where(eq(vendorWebhookEvents.userId, userId));
+        await transaction.delete(earnedUnlocks).where(eq(earnedUnlocks.userId, userId));
+        await transaction.delete(historyDays).where(eq(historyDays.userId, userId));
+        await transaction.delete(ruleDays).where(eq(ruleDays.userId, userId));
+        await transaction.delete(usageDays).where(eq(usageDays.userId, userId));
+        await transaction.delete(rules).where(eq(rules.userId, userId));
+        await transaction.delete(profiles).where(eq(profiles.userId, userId));
 
         const [state] = await transaction
           .select(stateSelection)
@@ -115,10 +110,10 @@ export function createDrizzleUserDeletionRepository(
         .where(eq(users.id, userId));
     },
 
-    async markClerkDeleted(userId, deletedAt) {
+    async markAuthDeleted(userId, deletedAt) {
       await database
         .update(users)
-        .set({ clerkDeletedAt: deletedAt })
+        .set({ authDeletedAt: deletedAt })
         .where(eq(users.id, userId));
     },
   };

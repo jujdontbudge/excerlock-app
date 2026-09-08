@@ -3,7 +3,10 @@ import type { IdentityErasureGateway } from "./service.js";
 type Fetch = typeof globalThis.fetch;
 
 export interface IdentityErasureConfiguration {
-  clerkSecretKey: string;
+  /** Project origin, e.g. `https://<ref>.supabase.co`. */
+  supabaseUrl: string;
+  /** Admin API credential. This is its only use anywhere in the server. */
+  supabaseServiceRoleKey: string;
   adaptySecretKey: string;
   posthogPersonalApiKey: string;
   posthogProjectId: string;
@@ -12,7 +15,7 @@ export interface IdentityErasureConfiguration {
 }
 
 export class IdentityErasureRequestError extends Error {
-  constructor(readonly processor: "Adapty" | "PostHog" | "Clerk") {
+  constructor(readonly processor: "Adapty" | "PostHog" | "Supabase") {
     super(`${processor} identity erasure did not succeed`);
     this.name = "IdentityErasureRequestError";
   }
@@ -79,17 +82,24 @@ export function createIdentityErasureGateway(
       }
     },
 
-    async deleteClerkUser(userId) {
+    /**
+     * GoTrue Admin API: `DELETE /auth/v1/admin/users/{id}` with the service
+     * role key. A hard delete, so no `should_soft_delete` body — the account
+     * must be gone, not merely marked.
+     */
+    async deleteAuthUser(userId) {
+      const origin = configuration.supabaseUrl.replace(/\/+$/, "");
       const response = await fetch(
-        `https://api.clerk.com/v1/users/${encodeURIComponent(userId)}`,
+        `${origin}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
         {
           method: "DELETE",
           headers: {
-            authorization: `Bearer ${configuration.clerkSecretKey}`,
+            apikey: configuration.supabaseServiceRoleKey,
+            authorization: `Bearer ${configuration.supabaseServiceRoleKey}`,
           },
         },
       );
-      requireSuccess(response, "Clerk", true);
+      requireSuccess(response, "Supabase", true);
     },
   };
 }

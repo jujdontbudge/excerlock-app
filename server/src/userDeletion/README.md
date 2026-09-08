@@ -1,19 +1,19 @@
 # User deletion
 
 This module owns authenticated account erasure across the identity spine.
-Routes depend on `UserDeletionService`; database and vendor details stay here.
+Routes depend on `UserDeletionService`; database and processor details stay here.
 
 ## Deletion contract
 
-1. A database transaction nulls profile data, deletes support content, feature
-   votes, OAuth state, and encrypted vendor credentials, and anonymizes retained
-   webhook bodies.
-2. The Clerk id remains only on a deletion tombstone. That pseudonymous key
-   preserves webhook foreign keys and delivery idempotency for late renewal,
-   refund, and vendor notifications.
+1. A database transaction nulls profile data and deletes every row the user
+   owns: support content, synced rules, rule days, usage days, earned unlocks
+   and the onboarding profile.
+2. The Supabase user id remains only on a deletion tombstone. That pseudonymous
+   key preserves webhook foreign keys and delivery idempotency for late renewal
+   and refund notifications.
 3. Adapty profile erasure and PostHog person/event/recording erasure are
    checkpointed independently.
-4. Clerk is deleted last, after every processor confirms success. A failed
+4. The Supabase user is deleted last, after every processor confirms success. A failed
    attempt therefore remains authenticated and safe to retry.
 
 Support submissions are deliberately deleted even though they are the sole
@@ -33,7 +33,8 @@ covers events captured before the request. The deletion API is the audit trail.
 Deletion fails closed until all of these are configured:
 
 - `DATABASE_URL`
-- `CLERK_SECRET_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY` (Admin API; deletion is its only use)
 - `ADAPTY_SECRET_KEY`
 - `POSTHOG_PERSONAL_API_KEY` with `person:write`
 - `POSTHOG_PROJECT_ID`
@@ -45,7 +46,7 @@ No secret or identity is included in route error responses.
 
 Automated coverage executes the deletion and late Adapty renewal/refund paths
 against migrated PGlite and uses mocked processor HTTP responses. This lane did
-not call the live Clerk, Adapty, or PostHog erasure endpoints, did not configure
+not call the live Supabase, Adapty, or PostHog erasure endpoints, did not configure
 or send a sandbox event from Adapty's dashboard, and did not exercise the full
 flow on a physical device. `ADAPTY_WEBHOOK_SECRET`, the PostHog personal key,
 and the PostHog project id are not currently present in `~/.excerlock/env`; they
