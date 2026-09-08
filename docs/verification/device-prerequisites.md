@@ -140,3 +140,8 @@ These are owned by the Phase 2 tasks, not by Johan; the runbook cannot run until
 - P2-T05: steps, walking, gym, health adapters and the gait permission read.
 - P2-T06: Adapty Builder adapter. P2-T09: the three notifications. P2-T01: Supabase auth. P2-T08: sync.
 - `createRuntime('real')` assembles the adapters (today it throws "Real runtime is unavailable in Phase 1").
+- Dev menu controls the runbook presses (P2-T17/P2-T13 dev menu, gated by `devFlag`): **Reset today's
+  progress** (clears today's rule days, earned unlocks, the walking session and today's gym visits),
+  **Notifications › Pending** (lists the scheduled local notifications by catalog id), **Observability ›
+  Send test crash**, and the Diagnostics screen's **Clear log**. Under the real runtime the fake-only
+  controls (clock advance, scenario load, fake presence) are hidden.
