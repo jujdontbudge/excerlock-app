@@ -74,8 +74,9 @@ test('Settings required rows work on one screen and the seventh version tap open
   expect(navigate).toHaveBeenCalledWith('legal/terms');
   await userEvent.press(screen.getByRole('button', { name: 'Privacy Policy' }));
   expect(navigate).toHaveBeenCalledWith('legal/privacy');
+  const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
   await userEvent.press(screen.getByRole('button', { name: 'Manage subscription' }));
-  expect(screen.getByRole('alert')).toHaveTextContent(/This preview keeps you in ExcerLock\./);
+  expect(openURL).toHaveBeenCalledWith('https://apps.apple.com/account/subscriptions');
 
   const footer = screen.getByRole('button', { name: /ExcerLock 1\.0\.0/ });
   for (let i = 0; i < 7; i++) await userEvent.press(footer);

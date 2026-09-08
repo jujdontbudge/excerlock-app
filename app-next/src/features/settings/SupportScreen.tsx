@@ -12,7 +12,7 @@ import { tokens as t } from '../../design-system/tokens';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
-import { requestFailureMessage } from '../../runtime/requestFailureMessage';
+import { apiFailureMessage } from '../../adapters/api/failureMessage';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
@@ -80,8 +80,15 @@ export function SupportScreen({ onBack = () => {} }: { onBack?: () => void }) {
         diagnostics,
       });
       setState('sent');
-    } catch {
-      setError(await requestFailureMessage(runtime.reachability, { offline: common.offline, fallback: c.error }));
+    } catch (error) {
+      setError(
+        await apiFailureMessage(error, runtime.reachability, {
+          offline: common.offline,
+          timeout: c.timeoutError,
+          rejected: c.rejectedError,
+          fallback: c.error,
+        }),
+      );
       setState('error');
     }
   };

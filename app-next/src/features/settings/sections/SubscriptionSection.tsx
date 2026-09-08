@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Linking } from 'react-native';
 import { Label, SettingsGroup, SettingsRow } from '../../../design-system';
 import { settingsCopy as c } from '../../../content/settings';
 import { subscriptionCopy } from '../../../content/subscription';
+import { MANAGE_SUBSCRIPTIONS_URL } from '../../../adapters/appStore/links';
 import { Reveal } from '../../../motion/Reveal';
 import { useRuntime } from '../../../runtime/AppRuntimeProvider';
 import { entitlementStore as useEntitlementStore } from '../../../state/entitlementStore';
@@ -23,6 +25,14 @@ export function SubscriptionSection() {
       setBusy(false);
     }
   };
+  // Subscriptions are managed in the App Store only; the app never cancels or changes one itself.
+  const manage = async () => {
+    try {
+      await Linking.openURL(MANAGE_SUBSCRIPTIONS_URL);
+    } catch {
+      setNote(c.error);
+    }
+  };
   return (
     <>
       <SettingsGroup title={c.subscription}>
@@ -31,7 +41,7 @@ export function SubscriptionSection() {
           value={entitlement.renewsAt ? c.renewal(entitlement.renewsAt) : undefined}
           icon="star"
         />
-        <SettingsRow title={c.manage} icon="star" onPress={() => setNote(c.external)} />
+        <SettingsRow title={c.manage} icon="star" onPress={() => void manage()} />
         <SettingsRow
           title={c.restore}
           value={busy ? subscriptionCopy.restoring : undefined}
