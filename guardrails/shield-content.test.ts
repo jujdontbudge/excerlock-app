@@ -4,6 +4,30 @@ import { describe, expect, it } from "vitest";
 
 import { fromRoot, readUtf8, walkFiles } from "./repo-files";
 
+import { shieldContent } from "../app-next/src/domain/shieldContent";
+
+/**
+ * The plist is the extension's cold-start fallback: what a shield shows before the app has ever
+ * published a snapshot into the app group. It must therefore be the same words the domain would
+ * publish, which is what this derives. `balanceEmpty` belonged to the retired balance economy and
+ * is never published any more, so it falls back to the plain locked copy; `lockWindow` ships no
+ * secondary label because ShieldConfigurationExtension drops it for that cause.
+ */
+const variant = (
+  cause: Parameters<typeof shieldContent>[0]["cause"],
+  deepLink: string,
+  secondaryActionLabel?: string,
+) => {
+  const content = shieldContent({ cause, goal: "pending", canNotify: true });
+  return {
+    deepLink,
+    primaryActionLabel: content.primary,
+    secondaryActionLabel: secondaryActionLabel ?? content.secondary ?? "",
+    subtitle: content.subtitle,
+    title: content.title,
+  };
+};
+
 describe("Screen Time shield content", () => {
   it("ships the four cause-keyed variants with their matching app surfaces", () => {
     const contentPath = fromRoot(
@@ -18,34 +42,10 @@ describe("Screen Time shield content", () => {
 
     const content = plist.parse(readUtf8(contentPath));
     expect(content).toEqual({
-      balanceEmpty: {
-        deepLink: "excerlock://",
-        primaryActionLabel: "Open ExcerLock",
-        secondaryActionLabel: "Close",
-        subtitle: "A 20-min walk gets you 30 more minutes.",
-        title: "Time’s up — for now.",
-      },
-      fullLock: {
-        deepLink: "excerlock://locked-apps",
-        primaryActionLabel: "Open ExcerLock",
-        secondaryActionLabel: "Close",
-        subtitle: "A 20-min walk gets you 30 more minutes.",
-        title: "Move first, scroll after.",
-      },
-      lockWindow: {
-        deepLink: "excerlock://locked-apps",
-        primaryActionLabel: "OK",
-        secondaryActionLabel: "",
-        subtitle: "Back at 7:00 AM.",
-        title: "Apps are asleep.",
-      },
-      walkAndScrollEnded: {
-        deepLink: "excerlock://",
-        primaryActionLabel: "Keep walking",
-        secondaryActionLabel: "Close",
-        subtitle: "Start walking again to pick up where you left off.",
-        title: "You stopped walking.",
-      },
+      balanceEmpty: variant("locked", "excerlock://"),
+      fullLock: variant("locked", "excerlock://locked-apps"),
+      lockWindow: variant("lockWindow", "excerlock://locked-apps", ""),
+      walkAndScrollEnded: variant("walkingEnded", "excerlock://"),
     });
   });
 
@@ -143,6 +143,11 @@ describe("Screen Time shield content", () => {
       "publishLockWindowShieldContext(activityName: activity.rawValue)",
     );
 
+    // One shield per monitor (B36) is the adapter's to publish, from the domain's copy: the
+    // scheduler registers windows and writes no content of its own.
+    const perMonitor = readUtf8(
+      fromRoot("app-next", "src", "adapters", "screentime", "appGroup.ts"),
+    );
     const scheduler = readUtf8(
       fromRoot(
         "app-next",
@@ -153,9 +158,8 @@ describe("Screen Time shield content", () => {
         "NativeShieldScheduler.ts",
       ),
     );
-    expect(scheduler).toContain(
-      "excerlock.shield.lock-window-contexts.v1",
-    );
+    expect(perMonitor).toContain("excerlock.shield.lock-window-contexts.v1");
+    expect(scheduler).not.toContain("excerlock.shield.");
 
     const monitor = readUtf8(
       fromRoot(
