@@ -36,3 +36,6 @@ design/research/competitor-onboarding/fitness/**/*.png
 design/research/competitor-onboarding/fitness-lock/**/*.png
 design/research/competitor-onboarding/screen-time/**/*.png
 design/research/competitor-onboarding/horizontal-review/
+
+# build worktrees symlink node_modules; never track it
+node_modules
