@@ -44,3 +44,22 @@ test.each(['apple', 'google'] as const)(
     expect(screen.getByText('Sign-in was canceled. You can try again or skip for now.')).toBeTruthy();
   },
 );
+
+test('a failed email send while offline keeps the address and shows offline copy', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('fresh-install');
+  runtime.dev.setOnline(false);
+  runtime.dev.setOutcome('error');
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <SignInScreen onContinue={() => {}} />
+    </AppRuntimeProvider>,
+  );
+  await userEvent.press(screen.getByRole('button', { name: 'Continue with email' }));
+  const address = screen.getByLabelText('Email address');
+  await fireEvent.changeText(address, 'alex@example.test');
+  await userEvent.press(screen.getByRole('button', { name: 'Send code' }));
+  expect(screen.getByText("You're offline. Connect and try again — this will not retry on its own.")).toBeTruthy();
+  expect(address.props.value).toBe('alex@example.test');
+  runtime.dispose();
+});

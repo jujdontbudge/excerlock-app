@@ -21,6 +21,7 @@ export function contextPersistence(ctx: FakeContext) {
       restoreOutcome: s.restoreOutcome,
       presence: s.presence,
       placement: s.placement,
+      online: s.online,
     });
     writing = writing.then(() => AsyncStorage.setItem(key, value)).catch(() => undefined);
   };
@@ -43,6 +44,7 @@ export function contextPersistence(ctx: FakeContext) {
         if (['restored', 'notFound'].includes(data.restoreOutcome)) patch.restoreOutcome = data.restoreOutcome;
         if (['inside', 'outside'].includes(data.presence)) patch.presence = data.presence;
         if (['propped', 'handheld'].includes(data.placement)) patch.placement = data.placement;
+        if (typeof data.online === 'boolean') patch.online = data.online;
         const steps = data.stepsOverride;
         if (
           steps &&

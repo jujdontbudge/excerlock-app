@@ -91,6 +91,7 @@ export const settingsCopy = {
   message: 'Your message',
   send: 'Send message',
   sending: 'Sending…',
+  retrySend: 'Not sent — tap to retry',
   sent: 'Message sent',
   sentBody: 'Thanks for helping us make ExcerLock better.',
   delete: 'Delete account',

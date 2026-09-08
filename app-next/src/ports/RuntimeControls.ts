@@ -18,6 +18,7 @@ export type DevSnapshot = {
   outcome: 'success' | 'cancel' | 'error';
   presence: 'inside' | 'outside';
   placement?: 'propped' | 'handheld';
+  online: boolean;
 };
 export interface RuntimeControls {
   ready(): Promise<void>;
@@ -37,6 +38,7 @@ export interface RuntimeControls {
   setSession(session: Session): void;
   setRestoreOutcome(outcome: DevSnapshot['restoreOutcome']): void;
   setOutcome(outcome: DevSnapshot['outcome']): void;
+  setOnline(online: boolean): void;
   resolvePrompt(result: boolean | LockedApps): void;
   snapshot(): DevSnapshot;
   subscribe(callback: () => void): Unsubscribe;

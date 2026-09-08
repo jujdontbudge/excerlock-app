@@ -3,11 +3,16 @@ import { Session } from '../../domain/types';
 import { sessionStore } from '../../state/sessionStore';
 import { FakeContext } from '../FakeContext';
 export function AuthFake(ctx: FakeContext): AuthPort {
-  let email = 'alex@example.test';
+  let email = 'alex@example.test',
+    anonymousSequence = 0;
   const session = () => sessionStore.getState().data.session;
+  const nextAnonymous = (): Session => ({
+    kind: 'anonymous',
+    userId: `fake-anonymous-${Date.parse(ctx.clock.now())}-${++anonymousSequence}`,
+  });
   const signIn = async (provider: 'apple' | 'google' | 'email'): Promise<Session> => {
     if (ctx.result() === 'cancel') return session();
-    const next: Session = { kind: 'signedIn', provider, email };
+    const next: Session = { kind: 'signedIn', userId: session().userId, provider, email };
     sessionStore.getState().patch({ session: next });
     ctx.log('signed_in', { provider });
     return next;
@@ -28,11 +33,11 @@ export function AuthFake(ctx: FakeContext): AuthPort {
     },
     signOut: async () => {
       ctx.result();
-      sessionStore.getState().patch({ session: { kind: 'anonymous' } });
+      sessionStore.getState().patch({ session: nextAnonymous() });
     },
     deleteAccount: async () => {
       ctx.result();
-      sessionStore.getState().patch({ session: { kind: 'anonymous' } });
+      sessionStore.getState().patch({ session: nextAnonymous() });
       ctx.log('account_deleted');
     },
     subscribe: (callback) => sessionStore.subscribe((s) => callback(s.data.session)),

@@ -10,7 +10,7 @@ test('deleting an account leaves rules, progress, locked apps and settings on de
     days = ruleDaysStore.getState().data,
     settings = settingsStore.getState().data;
   await runtime.auth.deleteAccount();
-  expect(runtime.auth.session()).toEqual({ kind: 'anonymous' });
+  expect(runtime.auth.session()).toMatchObject({ kind: 'anonymous', userId: expect.any(String) });
   expect(rulesStore.getState().data).toEqual(rules);
   expect(ruleDaysStore.getState().data).toEqual(days);
   expect(settingsStore.getState().data).toEqual(settings);

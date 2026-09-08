@@ -13,9 +13,10 @@ export const array = (check: (v: unknown) => boolean) => (v: unknown) => Array.i
 export const shape = (fields: Record<string, (v: unknown) => boolean>) => (v: unknown) =>
   object(v) && Object.entries(fields).every(([key, check]) => check(v[key]));
 export const permission = oneOf(['notDetermined', 'granted', 'denied', 'restricted']);
-export const session = shape({ kind: oneOf(['anonymous']) });
+export const session = shape({ kind: oneOf(['anonymous']), userId: text });
 export const signedIn = shape({
   kind: oneOf(['signedIn']),
+  userId: text,
   provider: oneOf(['apple', 'google', 'email']),
   email: nullable(text),
 });

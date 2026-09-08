@@ -27,6 +27,11 @@ async function mount(scenario = 'fresh-install', initialUrl = '/paywall') {
     '(tabs)/_layout': () => <Slot />,
     builder: () => <Text>Builder</Text>,
     '(tabs)/home': () => <Text>Home</Text>,
+    'settings/_layout': () => <Slot />,
+    'settings/account': () => <Text>Account</Text>,
+    'settings/support': () => <Text>Support</Text>,
+    'unlock/gym': () => <Text>Gym unlock</Text>,
+    'unlock/treadmill': () => <Text>Treadmill unlock</Text>,
     dev: () => <Text>Dev</Text>,
   };
   const result = renderRouter(routes, { initialUrl });
@@ -49,6 +54,20 @@ test('hard paywall removes onboarding history and refuses back navigation', asyn
     expect(String(error)).toContain('GO_BACK');
   }
   expect(result.getPathname()).toBe('/paywall');
+});
+test('a lapsed paywall closes to Home and protected destinations remain reachable', async () => {
+  const { result } = await mount('trial-expired');
+  await fireEvent.press(screen.getByRole('button', { name: 'Close' }));
+  expect(result.getPathname()).toBe('/home');
+  for (const [path, label] of [
+    ['/settings/account', 'Account'],
+    ['/settings/support', 'Support'],
+    ['/unlock/gym', 'Gym unlock'],
+    ['/unlock/treadmill', 'Treadmill unlock'],
+  ] as const) {
+    await act(async () => router.push(path));
+    expect(screen.getByText(label)).toBeTruthy();
+  }
 });
 test('purchase stays busy for 800 ms, grants trial and resumes setup', async () => {
   const { result } = await mount();

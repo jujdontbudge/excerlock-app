@@ -3,6 +3,8 @@ import { tokens as t } from '../../design-system/tokens';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { subscriptionCopy as c } from '../../content/subscription';
+import { SubscriptionPlan } from '../../ports/SubscriptionPort';
+import { LegalLinks } from '../settings/LegalLinks';
 export function PaywallStandIn({
   selected,
   onSelect,
@@ -10,13 +12,15 @@ export function PaywallStandIn({
   message,
   onStart,
   onRestore,
+  onClose,
 }: {
-  selected: string;
-  onSelect: (id: string) => void;
+  selected: SubscriptionPlan;
+  onSelect: (id: SubscriptionPlan) => void;
   busy: 'purchase' | 'restore' | null;
   message: string;
   onStart: () => void;
   onRestore: () => void;
+  onClose?: () => void;
 }) {
   return (
     <ScreenShell
@@ -29,6 +33,7 @@ export function PaywallStandIn({
             onPress={onStart}
           />
           <SecondaryButton label={c.restore} disabled={busy !== null} variant="tertiary" onPress={onRestore} />
+          {onClose ? <SecondaryButton label={c.close} disabled={busy !== null} variant="tertiary" onPress={onClose} /> : null}
         </>
       }>
       <Reveal>
@@ -63,8 +68,9 @@ export function PaywallStandIn({
         </Reveal>
       ) : null}
       <Reveal index={4}>
+        <LegalLinks lead={c.legalLead} />
         <Label variant="support" tone="secondary">
-          {c.terms}
+          {c.renewalDisclosure}
         </Label>
       </Reveal>
     </ScreenShell>

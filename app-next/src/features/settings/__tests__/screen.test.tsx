@@ -57,6 +57,25 @@ test('support blocks empty submissions, shows busy and then success through its 
   expect(screen.getByRole('header', { name: 'Message sent' })).toBeTruthy();
 });
 
+test('a failed support send while offline keeps the message and offers an explicit retry', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('fresh-install');
+  runtime.dev.setOnline(false);
+  runtime.dev.setOutcome('error');
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <SupportScreen />
+    </AppRuntimeProvider>,
+  );
+  const message = screen.getByLabelText('Your message');
+  await fireEvent.changeText(message, 'Please help');
+  await userEvent.press(screen.getByRole('button', { name: 'Send message' }));
+  expect(screen.getByText("You're offline. Connect and try again — this will not retry on its own.")).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Not sent — tap to retry' })).toBeTruthy();
+  expect(message.props.value).toBe('Please help');
+  runtime.dispose();
+});
+
 test('restore exposes pending feedback on its own row', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('multi-rule-overlap');

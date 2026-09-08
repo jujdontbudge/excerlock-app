@@ -5,11 +5,17 @@ import { onboardingStore as useOnboardingStore } from '../../state/onboardingSto
 import { tokens as t } from '../../design-system/tokens';
 import { subscriptionCopy as c } from '../../content/subscription';
 import { PaywallStandIn } from './PaywallStandIn';
+import { entitlementAccess } from '../../domain/entitlementAccess';
+import { useRouter } from 'expo-router';
+import { SubscriptionPlan } from '../../ports/SubscriptionPort';
+import { requestFailureMessage } from '../../runtime/requestFailureMessage';
+import { common } from '../../content/common';
 export function PaywallSlot() {
   const runtime = useRuntime(),
+    router = useRouter(),
     status = useEntitlementStore((s) => s.data.entitlement.status),
     setupComplete = useOnboardingStore((s) => s.data.setupComplete),
-    [selected, setSelected] = useState('annual'),
+    [selected, setSelected] = useState<SubscriptionPlan>('annual'),
     [busy, setBusy] = useState<'purchase' | 'restore' | null>(null),
     [error, setError] = useState(''),
     running = useRef(false),
@@ -32,11 +38,12 @@ export function PaywallSlot() {
       if (!mounted.current) return;
       const next =
         kind === 'purchase'
-          ? await runtime.subscription.presentPaywall(setupComplete ? 'in_app' : 'onboarding')
+          ? await runtime.subscription.presentPaywall(setupComplete ? 'in_app' : 'onboarding', selected)
           : await runtime.subscription.restore();
       if (!['trial', 'active'].includes(next.status)) setError(kind === 'restore' ? c.notFound : c.cancelled);
     } catch {
-      if (mounted.current) setError(c.error);
+      const message = await requestFailureMessage(runtime.reachability, { offline: common.offline, fallback: c.error });
+      if (mounted.current) setError(message);
     } finally {
       running.current = false;
       if (mounted.current) setBusy(null);
@@ -51,6 +58,9 @@ export function PaywallSlot() {
       message={error || banner}
       onStart={() => run('purchase')}
       onRestore={() => run('restore')}
+      onClose={
+        entitlementAccess(status).paywall === 'modal' ? () => router.replace('/(tabs)/home') : undefined
+      }
     />
   );
 }

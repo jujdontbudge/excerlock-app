@@ -45,7 +45,7 @@ test('cancelled or failed identity requests do not grant a session', async () =>
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
   runtime.dev.setOutcome('cancel');
-  expect(await runtime.auth.signInWithApple()).toEqual({ kind: 'anonymous' });
+  expect(await runtime.auth.signInWithApple()).toEqual({ kind: 'anonymous', userId: 'fake-anonymous-user' });
   runtime.dev.setOutcome('error');
   await expect(runtime.auth.signInWithGoogle()).rejects.toThrow();
   runtime.dev.setOutcome('success');

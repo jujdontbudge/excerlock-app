@@ -14,6 +14,9 @@ export const welcomeCopy = {
   privacy: 'Privacy Policy',
   and: ' and ',
   terms: 'Terms of Use',
+  welcomeBack: 'Welcome back — restoring your plan…',
+  noSubscription: 'That account has no active subscription. Choose a plan to continue.',
+  signInError: "We couldn't check that account. Try again.",
   pagination: 'Introduction, page 1 of 3',
   apps: { instagram: 'Instagram', youtube: 'YouTube', whatsapp: 'WhatsApp', tiktok: 'TikTok' },
 } as const;

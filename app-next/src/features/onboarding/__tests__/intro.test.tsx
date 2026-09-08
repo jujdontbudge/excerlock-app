@@ -35,6 +35,9 @@ test('welcome offers local sign-in and legal reading without advancing the onboa
   await userEvent.press(screen.getByRole('button', { name: 'Close' }));
   await userEvent.press(screen.getByRole('button', { name: 'Privacy Policy' }));
   expect(screen.getByRole('header', { name: 'Privacy Policy' })).toBeTruthy();
+  await userEvent.press(screen.getByRole('button', { name: 'Close' }));
+  await userEvent.press(screen.getByRole('button', { name: 'Terms of Use' }));
+  expect(screen.getByRole('header', { name: 'Terms of Use' })).toBeTruthy();
   expect(onboardingStore.getState().data.step).toBe('O01');
 });
 test.each([

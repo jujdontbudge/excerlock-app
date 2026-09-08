@@ -1,5 +1,9 @@
+import { TrialOffer } from '../ports/SubscriptionPort';
+
 // Phase 1 offer fixture only. Phase 2 must read Adapty's real offer and prices.
 export const fakeOffer = { trialDays: 7, reminderDaysBefore: 2, label: '7-day free trial' };
+const reminderDaysBefore = (offer: TrialOffer) =>
+  Math.min(offer.reminderDaysBefore, Math.max(1, offer.trialDays - 1));
 export const subscriptionCopy = {
   T1: 'Try ExcerLock free',
   offerBody: 'Make space for movement and the things that matter.',
@@ -9,29 +13,39 @@ export const subscriptionCopy = {
     { icon: 'chart', text: 'See your progress build' },
   ],
   T2: "We'll remind you before it ends",
-  reminder: '2 days before your trial ends',
+  reminder: (offer: TrialOffer) => {
+    const days = reminderDaysBefore(offer);
+    return `${days} day${days === 1 ? '' : 's'} before your trial ends`;
+  },
   reminderBody: 'A heads-up, so you can decide what comes next.',
   T3: 'Want a trial reminder?',
   notificationBody: 'Get a reminder before your free trial ends.',
   enable: 'Enable reminders',
   later: 'Maybe later',
   T4: 'How your free trial works',
-  timeline: [
+  timeline: (offer: TrialOffer) => [
     { title: 'Today', body: 'Start your free trial and make your plan.' },
-    { title: 'Day 5 · Reminder', body: "We'll remind you if you've enabled notifications." },
-    { title: 'Day 7 · Billing begins', body: 'Your subscription starts unless you cancel before the trial ends.' },
+    {
+      title: `Day ${Math.max(1, offer.trialDays - reminderDaysBefore(offer))} · Reminder`,
+      body: "We'll remind you if you've enabled notifications.",
+    },
+    {
+      title: `Day ${offer.trialDays} · Billing begins`,
+      body: 'Your subscription starts unless you cancel before the trial ends.',
+    },
   ],
   title: 'Choose your plan',
   body: 'Build a healthier relationship with your phone.',
   plans: [
     { id: 'annual', title: 'Annual', price: '$–.–– / year · 7-day free trial' },
     { id: 'monthly', title: 'Monthly', price: '$–.–– / month' },
-    { id: 'lifetime', title: 'Lifetime', price: '$–.–– once' },
   ],
   start: 'Start free trial',
   continue: 'Continue',
   restore: 'Restore purchases',
-  terms:
+  close: 'Close',
+  legalLead: 'By subscribing you agree to our ',
+  renewalDisclosure:
     'Subscriptions renew automatically unless canceled. Manage or cancel your subscription in your App Store account.',
   expired: 'Your trial has ended. Choose a plan to keep going.',
   billingIssue: 'There is a billing issue with your subscription. Restore access or choose a plan.',

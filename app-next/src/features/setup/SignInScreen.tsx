@@ -8,7 +8,10 @@ import { Reveal } from '../../motion/Reveal';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { sessionStore as useSessionStore } from '../../state/sessionStore';
 import { EmailCodeScreen } from './EmailCodeScreen';
-export function SignInScreen({ onContinue }: { onContinue: () => void }) {
+import { Session } from '../../domain/types';
+import { requestFailureMessage } from '../../runtime/requestFailureMessage';
+import { common } from '../../content/common';
+export function SignInScreen({ onContinue }: { onContinue: (session: Session) => void }) {
   const runtime = useRuntime(),
     session = useSessionStore((s) => s.data.session),
     [phase, setPhase] = useState<'options' | 'email' | 'code'>('options'),
@@ -29,10 +32,15 @@ export function SignInScreen({ onContinue }: { onContinue: () => void }) {
           : provider === 'google'
             ? await runtime.auth.signInWithGoogle()
             : await runtime.auth.verifyEmailCode(code);
-      if (result.kind === 'signedIn') onContinue();
+      if (result.kind === 'signedIn') onContinue(result);
       else setError(c.cancelled);
     } catch {
-      setError(provider === 'email' ? c.codeError : c.authError);
+      setError(
+        await requestFailureMessage(runtime.reachability, {
+          offline: common.offline,
+          fallback: provider === 'email' ? c.codeError : c.authError,
+        }),
+      );
     } finally {
       setBusy(false);
     }
@@ -46,7 +54,7 @@ export function SignInScreen({ onContinue }: { onContinue: () => void }) {
       if (phase === 'code') setNote(c.resent);
       setPhase('code');
     } catch {
-      setError(c.authError);
+      setError(await requestFailureMessage(runtime.reachability, { offline: common.offline, fallback: c.authError }));
     } finally {
       setBusy(false);
     }
@@ -57,7 +65,7 @@ export function SignInScreen({ onContinue }: { onContinue: () => void }) {
         <Heading title={c.X4} support={c.authBody} />
         <LivingIcon name="check" />
         <Label>{session.email}</Label>
-        <PrimaryButton label={c.continue} onPress={onContinue} />
+        <PrimaryButton label={c.continue} onPress={() => onContinue(session)} />
       </>
     );
   return (
@@ -123,7 +131,7 @@ export function SignInScreen({ onContinue }: { onContinue: () => void }) {
           }}
         />
       ) : null}
-      <SecondaryButton label={c.skip} disabled={busy} variant="tertiary" onPress={onContinue} />
+      <SecondaryButton label={c.skip} disabled={busy} variant="tertiary" onPress={() => onContinue(session)} />
     </Reveal>
   );
 }

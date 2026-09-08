@@ -25,10 +25,11 @@ test('scenario loading resets persisted facts, keep-edits preserves them, and po
   expect(await runtime.steps.request()).toBe('granted');
   expect(await runtime.auth.signInWithApple()).toEqual({
     kind: 'signedIn',
+    userId: 'fake-anonymous-user',
     provider: 'apple',
     email: 'alex@example.test',
   });
-  expect((await runtime.subscription.presentPaywall('onboarding')).status).toBe('trial');
+  expect((await runtime.subscription.presentPaywall('onboarding', 'annual')).status).toBe('trial');
   runtime.analytics.track('condition_created', { activity: 'walking' });
   expect(runtime.dev.snapshot().events.at(-1)?.event).toBe('condition_created');
   runtime.dispose();

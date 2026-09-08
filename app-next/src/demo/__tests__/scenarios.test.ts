@@ -21,6 +21,7 @@ test('all required scenarios are valid and the analytics fixture has six weeks o
     'trial-expired',
     'billing-issue',
     'signed-in-apple',
+    'returning-subscriber',
     'analytics-6-weeks',
     'analytics-day-zero',
     'analytics-no-measurement',
