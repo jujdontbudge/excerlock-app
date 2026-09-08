@@ -27,21 +27,22 @@ const emptyHistoryDay = (day: DayKey): HistoryDay => ({
 
 export function sealDays(input: SealDaysInput): HistoryDay[] {
   const earliest = addDays(input.today, -MAX_SEALED_DAYS);
-  const knownDays = [
-    ...input.history.map((row) => row.day),
-    ...input.ruleDays.map((row) => row.day),
-    ...input.rules.map((rule) => dayKey(rule.createdAt, input.timezone)),
-  ].sort();
+  // A day the app already recorded is the record; sealing only stamps it. Sealing reaches back to the
+  // oldest day the app knows about, and only as far as rule creation when it knows of no day at all.
+  const recordedDays = [...input.history.map((row) => row.day), ...input.ruleDays.map((row) => row.day)].sort();
+  const createdDays = input.rules.map((rule) => dayKey(rule.createdAt, input.timezone)).sort();
   let day = input.lastSealedDay
     ? addDays(input.lastSealedDay, 1)
-    : (knownDays[0] ?? addDays(input.today, -1));
+    : (recordedDays[0] ?? createdDays[0] ?? addDays(input.today, -1));
   if (day < earliest) day = earliest;
   const yesterday = addDays(input.today, -1);
   const rows = new Map(input.history.map((row) => [row.day, row]));
 
   while (day <= yesterday) {
     const existing = rows.get(day);
-    if (!existing?.sealedAt) {
+    if (existing) {
+      if (!existing.sealedAt) rows.set(day, { ...existing, sealedAt: input.sealedAt });
+    } else {
       const scheduledRules = input.rules.filter((rule) => windowInstances(rule, day, input.timezone).length > 0);
       const ruleDays = input.ruleDays.filter((row) => row.day === day);
       const walkingMinutes = Math.max(
@@ -51,7 +52,7 @@ export function sealDays(input: SealDaysInput): HistoryDay[] {
           .map((row) => row.progress),
       );
       rows.set(day, {
-        ...(existing ?? emptyHistoryDay(day)),
+        ...emptyHistoryDay(day),
         scheduled: scheduledRules.length > 0,
         met: isMetDay(scheduledRules, ruleDays, walkingMinutes),
         sealedAt: input.sealedAt,
