@@ -10,7 +10,7 @@ type AppConfig = {
 
 describe("Expo plugin-order guardrail", () => {
   it("keeps withNoPush first in the app config", () => {
-    const config = readJson<AppConfig>(fromRoot("app", "app.json"));
+    const config = readJson<AppConfig>(fromRoot("app-next", "app.json"));
     const firstPlugin = config.expo?.plugins?.[0];
     const firstPluginName = Array.isArray(firstPlugin) ? firstPlugin[0] : firstPlugin;
 
@@ -22,7 +22,7 @@ describe("Expo plugin-order guardrail", () => {
 
   it("keeps the clean-prebuild host app free of remote-push entitlement", () => {
     const entitlements = readUtf8(
-      fromRoot("app", "ios", "ExcerLock", "ExcerLock.entitlements"),
+      fromRoot("app-next", "ios", "ExcerLock", "ExcerLock.entitlements"),
     );
 
     expect(entitlements).not.toContain("aps-environment");

@@ -7,26 +7,46 @@ import { fromRoot, readUtf8, repoRelative, walkFiles } from "./repo-files";
 
 const codeExtensions = new Set([".ts", ".tsx"]);
 
-const PHASE_3_ACCESSORS = [
-  "getScreenTimeModule",
-  "getLocationProvider",
-  "createExcerlockMotionModuleClient",
-  "getMilestoneHaptics",
-] as const;
+/**
+ * A tested native adapter is dead code until production calls its accessor.
+ *
+ * `required` accessors must have a caller reachable from a route. `pending`
+ * ones must NOT yet — so the run that wires one up fails here until its author
+ * moves it, which is the same permanent-promotion pattern
+ * `native-targets.json` uses for the extension targets. Nothing is allowed to
+ * sit in neither list.
+ */
+const REQUIRED_ACCESSORS = {
+  nativeGait: ["../runtime/NativeGait", "./NativeGait"],
+} as const;
 
-const ACCESSOR_MODULES: Readonly<Record<(typeof PHASE_3_ACCESSORS)[number], readonly string[]>> = {
-  getScreenTimeModule: ["@/screentime"],
-  getLocationProvider: ["@/signals"],
-  createExcerlockMotionModuleClient: ["@/signals"],
-  getMilestoneHaptics: ["@/analysis"],
+const PENDING_ACCESSORS = {
+  // P2-T04 — ScreenTimeAdapter
+  createNativeScreenTimeModule: [
+    "../engine/screentime/native/createNativeScreenTimeModule",
+  ],
+  // P2-T05 — StepsAdapter, WalkingAdapter, GymAdapter
+  createExcerlockMotionModuleClient: ["../engine/signals", "../../engine/signals"],
+  createPhonePlacementModuleClient: ["../engine/signals", "../../engine/signals"],
+  getLocationProvider: ["../engine/signals", "../../engine/signals"],
+} as const;
+
+type AccessorName =
+  | keyof typeof REQUIRED_ACCESSORS
+  | keyof typeof PENDING_ACCESSORS;
+
+const ACCESSOR_MODULES: Readonly<Record<string, readonly string[]>> = {
+  ...REQUIRED_ACCESSORS,
+  ...PENDING_ACCESSORS,
 };
+const ACCESSORS = Object.keys(ACCESSOR_MODULES) as AccessorName[];
 
 function isProductionFile(path: string): boolean {
   const file = repoRelative(path);
   return (
     !file.includes("/__tests__/") &&
     !file.includes("/testing/") &&
-    !file.startsWith("app/src/e2e/") &&
+    !file.includes("/src/demo/") &&
     !/\.(?:spec|test)\.[jt]sx?$/.test(file)
   );
 }
@@ -41,10 +61,7 @@ function calledImportedAccessors(
     ts.ScriptTarget.Latest,
     true,
   );
-  const importedAccessors = new Map<
-    string,
-    (typeof PHASE_3_ACCESSORS)[number]
-  >();
+  const importedAccessors = new Map<string, AccessorName>();
   const calls: string[] = [];
 
   source.statements.forEach((statement) => {
@@ -62,17 +79,10 @@ function calledImportedAccessors(
       const importedName = element.propertyName?.text ?? element.name.text;
       if (
         !element.isTypeOnly &&
-        PHASE_3_ACCESSORS.includes(
-          importedName as (typeof PHASE_3_ACCESSORS)[number],
-        ) &&
-        ACCESSOR_MODULES[
-          importedName as (typeof PHASE_3_ACCESSORS)[number]
-        ].includes(moduleName)
+        ACCESSORS.includes(importedName as AccessorName) &&
+        ACCESSOR_MODULES[importedName]?.includes(moduleName)
       ) {
-        importedAccessors.set(
-          element.name.text,
-          importedName as (typeof PHASE_3_ACCESSORS)[number],
-        );
+        importedAccessors.set(element.name.text, importedName as AccessorName);
       }
     });
   });
@@ -115,19 +125,15 @@ function importedModules(path: string): readonly string[] {
   return modules;
 }
 
+/** app-next has no path alias; every internal import is relative. */
 function resolveProductionModule(
   from: string,
   specifier: string,
 ): string | undefined {
-  const base = specifier.startsWith("@/")
-    ? fromRoot("app", "src", specifier.slice(2))
-    : specifier.startsWith(".")
-      ? resolve(dirname(from), specifier)
-      : undefined;
-  if (base === undefined) {
+  if (!specifier.startsWith(".")) {
     return undefined;
   }
-
+  const base = resolve(dirname(from), specifier);
   return [
     `${base}.ts`,
     `${base}.tsx`,
@@ -137,7 +143,7 @@ function resolveProductionModule(
 }
 
 function productionFilesReachableFromRoutes(): readonly string[] {
-  const routes = walkFiles(fromRoot("app", "app"), codeExtensions).filter(
+  const routes = walkFiles(fromRoot("app-next", "app"), codeExtensions).filter(
     isProductionFile,
   );
   const reachable = new Set(routes);
@@ -157,7 +163,7 @@ function productionFilesReachableFromRoutes(): readonly string[] {
   return [...reachable];
 }
 
-describe("Phase 3 production composition", () => {
+describe("native production composition", () => {
   it("ignores same-named calls that are not imported accessors", () => {
     expect(
       calledImportedAccessors(
@@ -169,31 +175,43 @@ describe("Phase 3 production composition", () => {
     expect(
       calledImportedAccessors(
         "caller.ts",
-        `import { getLocationProvider as location } from "@/signals";
+        `import { getLocationProvider as location } from "../engine/signals";
          location();`,
       ),
     ).toEqual(["getLocationProvider"]);
   });
 
-  it("gives every native accessor a production caller", () => {
-    const productionCalls = new Map<string, string[]>();
-    const files = productionFilesReachableFromRoutes();
-
-    for (const path of files) {
-      for (const accessor of calledImportedAccessors(path)) {
-        const sites = productionCalls.get(accessor) ?? [];
-        sites.push(repoRelative(path));
-        productionCalls.set(accessor, sites);
-      }
-    }
-
-    const unreachable = PHASE_3_ACCESSORS.filter(
-      (accessor) => (productionCalls.get(accessor) ?? []).length === 0,
-    );
+  it("gives every required native accessor a production caller", () => {
+    const productionCalls = calledAccessorsByName();
 
     expect(
-      unreachable,
+      Object.keys(REQUIRED_ACCESSORS).filter(
+        (accessor) => (productionCalls.get(accessor) ?? []).length === 0,
+      ),
       "A tested native adapter is still dead code until production calls its accessor",
     ).toEqual([]);
   });
+
+  it("makes wiring a pending accessor promote it out of the pending list", () => {
+    const productionCalls = calledAccessorsByName();
+
+    expect(
+      Object.keys(PENDING_ACCESSORS).filter(
+        (accessor) => (productionCalls.get(accessor) ?? []).length > 0,
+      ),
+      "This accessor now has a production caller; move it into REQUIRED_ACCESSORS",
+    ).toEqual([]);
+  });
 });
+
+function calledAccessorsByName(): Map<string, string[]> {
+  const productionCalls = new Map<string, string[]>();
+  for (const path of productionFilesReachableFromRoutes()) {
+    for (const accessor of calledImportedAccessors(path)) {
+      const sites = productionCalls.get(accessor) ?? [];
+      sites.push(repoRelative(path));
+      productionCalls.set(accessor, sites);
+    }
+  }
+  return productionCalls;
+}

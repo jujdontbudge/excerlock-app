@@ -52,3 +52,4 @@ __pycache__/
 
 # Materialised by ./plugins/withScreenTimeExtensionValidation during prebuild.
 targets/**/*.generated.swift
+targets/**/generated.entitlements
