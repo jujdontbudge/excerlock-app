@@ -6,6 +6,7 @@ import { sessionStore as useSessionStore } from '../../state/sessionStore';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
+import { teardownIdentity } from '../../domain/identity';
 export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBack: () => void }) {
   const session = useSessionStore((s) => s.data.session),
     runtime = useRuntime(),
@@ -15,10 +16,8 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
   const action = async (deleting: boolean) => {
     setBusy(true);
     try {
-      if (deleting) {
-        await runtime.auth.deleteAccount();
-        setNote(c.deleted);
-      } else await runtime.auth.signOut();
+      await teardownIdentity(runtime, deleting ? runtime.auth.deleteAccount : runtime.auth.signOut);
+      if (deleting) setNote(c.deleted);
       setConfirm(false);
     } catch {
       setNote(c.error);
