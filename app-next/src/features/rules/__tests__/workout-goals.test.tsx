@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { render, screen, userEvent, fireEvent } from '@testing-library/react-native';
-import { createDraft, reduceDraft } from '../draft';
+import { createDraft, reduceDraft, type RuleDraft } from '../draft';
 import { WorkoutGoalScreen } from '../WorkoutGoalScreen';
 function Harness({ distance = false }: { distance?: boolean }) {
   const [draft, setDraft] = useState(() => createDraft('running', 'mi'));
@@ -13,7 +13,7 @@ function Harness({ distance = false }: { distance?: boolean }) {
   );
 }
 function WalkingHarness() {
-  const [draft, setDraft] = useState(() => ({ ...createDraft('walking'), place: 'treadmill' as const, walkingMode: 'minutes' as const }));
+  const [draft, setDraft] = useState<RuleDraft>(() => ({ ...createDraft('walking'), place: 'treadmill', walkingMode: 'minutes' }));
   return (
     <WorkoutGoalScreen step="W4" draft={draft} onAction={(action) => setDraft(reduceDraft(draft, action))} />
   );
