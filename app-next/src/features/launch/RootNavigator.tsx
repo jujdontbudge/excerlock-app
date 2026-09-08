@@ -22,6 +22,8 @@ export function RootNavigator() {
         <Stack.Screen name="index" />
         <Stack.Screen name="dev" />
         <Stack.Screen name="gym-picker" options={{ presentation: 'fullScreenModal' }} />
+        {/* Outside every guard: the shield notification's landing must resolve before it can redirect. */}
+        <Stack.Screen name="locked-apps" />
         <Stack.Protected guard={loading || (!onboarding.complete && onboarding.step !== 'P' && !entitled)}>
           <Stack.Screen name="onboarding/[step]" />
         </Stack.Protected>
