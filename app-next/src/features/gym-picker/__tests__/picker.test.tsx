@@ -104,3 +104,10 @@ test('existing gym can be edited at the cap', async () => {
   expect(r.gym.listPlaces().find((p) => p.id === firstGymId)?.radiusMeters).toBe(90);
   r.dispose();
 });
+
+test('the picker renders the radius trade-off line under the slider', async () => {
+  const r = await mount();
+  expect(screen.getByText(c.helper)).toBeTruthy();
+  expect(screen.getByRole('adjustable').props.accessibilityValue).toMatchObject({ min: 50, max: 200, now: 100 });
+  r.dispose();
+});
