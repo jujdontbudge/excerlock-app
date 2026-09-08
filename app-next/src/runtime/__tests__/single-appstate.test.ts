@@ -4,10 +4,16 @@ import { join } from 'path';
 /**
  * The foreground handler is a single-owner resource: enforcement, the permission re-read, the
  * selection re-verification and the claim-on-open refresh all hang off one subscription in the
- * runtime host. The treadmill scan is the one allowed exception — it pauses a camera controller,
- * not enforcement, and it lives for the length of one modal.
+ * runtime host. Two exceptions. The treadmill scan pauses a camera controller, not enforcement, and
+ * lives for the length of one modal. The test harness is a separate build root behind
+ * EXPO_PUBLIC_TEST_HARNESS that records app-state transitions as run evidence; it never mounts the
+ * product runtime alongside itself, so it cannot race the enforcement subscription.
  */
-const allowed = new Set(['src/runtime/EnforcementHost.ts', 'src/features/unlock/TreadmillUnlockScreen.tsx']);
+const allowed = new Set([
+  'src/runtime/EnforcementHost.ts',
+  'src/features/unlock/TreadmillUnlockScreen.tsx',
+  'src/harness/HarnessApp.tsx',
+]);
 
 function sources(dir: string, found: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {

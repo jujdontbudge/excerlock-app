@@ -64,3 +64,36 @@ Decision B12: everything built and tested moves, unchanged inside, re-wired outs
   `AVCaptureDevice.authorizationStatus(for: .video)` instead: the ceremony now calls it before every scan, so
   the probe flashes the preview, and it can only return `granted` or `denied` when the port's contract is the
   full `PermissionStatus` (`notDetermined` has to prompt, `restricted` has to be honoured as denied).
+
+## Dependency findings (P2-T03, 2026-09-07)
+
+**`react-native-device-activity` stays at `^0.6.1`.** Step 2 asks to check for a
+newer major. There is none: `0.6.1` is the `latest` dist-tag on npm and the
+highest version published, and its peer range (`expo >=52`,
+`react-native >=0.76`) covers SDK 57. The old app's pin is current.
+
+**`expo-camera` is not added.** The gait module's podspec links `AVFoundation`
+and `Vision` directly, so step 2's conditional does not fire.
+
+**Four Expo module pins are behind the installed SDK, and were deliberately not
+bumped.** `npx expo install --check` in `app-next/` reports:
+
+| Package | Pinned and installed | Expected by installed `expo` 57.0.20 |
+| --- | --- | --- |
+| `expo-location` | 57.0.7 | ~57.0.16 |
+| `expo-task-manager` | 57.0.7 | ~57.0.16 |
+| `expo-notifications` | 57.0.8 | ~57.0.17 |
+| `expo-secure-store` | 57.0.1 | ~57.0.3 |
+
+This drift is pre-existing and shared, not introduced here. `app/` declares the
+same four versions and the workspace hoists one copy of each, while `expo`
+itself hoists to app-next's newer `~57.0.20`. Fixing it means one install that
+also moves the old app onto versions its own `expo ~57.0.8` was never tested
+against, into a `node_modules` tree several build worktrees share — so it is a
+single coordinated bump, not a side effect of this task.
+
+Nothing is currently broken by it: clean prebuild succeeds, all 225 app-next
+suites pass, and the guardrails are green. Whoever does the bump must also
+update the two literal version assertions in `guardrails/location-config.test.ts`,
+which pin `~57.0.7` for both location packages. **Owner: P2-T12 (cutover), once
+`app/` is retired and the hoisted tree has one consumer.**

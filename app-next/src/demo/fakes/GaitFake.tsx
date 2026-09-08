@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import { GaitPort } from '../../ports/GaitPort';
-import { FixtureGaitVisionProvider } from '../../features/unlock/gait/FixtureGaitVisionProvider';
-import fixture from '../../features/unlock/gait/real-walk-single.json';
+import { FixtureGaitVisionProvider } from '../../engine/signals/gait/FixtureGaitVisionProvider';
+import fixture from '../../engine/signals/gait/fixtures/real-walk-single.json';
 import { Icon } from '../../icons/Icon';
 import { tokens as t } from '../../design-system/tokens';
 import { permissionsStore } from '../../state/permissionsStore';

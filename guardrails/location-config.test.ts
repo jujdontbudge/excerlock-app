@@ -15,14 +15,14 @@ type PackageJson = {
 describe("location native-configuration guardrail", () => {
   it("enables background location with explicit foreground and Always permission copy", () => {
     const packageJson = readJson<PackageJson>(
-      fromRoot("app", "package.json"),
+      fromRoot("app-next", "package.json"),
     );
     expect(packageJson.dependencies).toMatchObject({
       "expo-location": "~57.0.7",
       "expo-task-manager": "~57.0.7",
     });
 
-    const config = readJson<AppConfig>(fromRoot("app", "app.json"));
+    const config = readJson<AppConfig>(fromRoot("app-next", "app.json"));
     // Found by name, not by position. #80, #82 and #83 each landed a guardrail
     // asserting its own plugin was `.at(-1)`, and only one entry can be last —
     // `withScreenTimeExtensionValidation` holds that slot because a validator
@@ -46,10 +46,10 @@ describe("location native-configuration guardrail", () => {
   });
 
   it("loads background task definitions from the application entry bundle", () => {
-    const rootLayout = readUtf8(fromRoot("app", "app", "_layout.tsx"));
+    const rootLayout = readUtf8(fromRoot("app-next", "app", "_layout.tsx"));
 
     expect(rootLayout).toMatch(
-      /import ["']@\/signals\/location\/registerLocationTasks["'];/,
+      /import ["']\.\.\/src\/engine\/signals\/location\/registerLocationTasks["'];/,
     );
   });
 });

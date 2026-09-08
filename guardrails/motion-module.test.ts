@@ -20,7 +20,7 @@ describe("excerlock-motion CNG wiring", () => {
     const result = spawnSync(
       fromRoot("node_modules", ".bin", "expo-modules-autolinking"),
       ["resolve", "--platform", "apple", "--json"],
-      { cwd: fromRoot("app"), encoding: "utf8" },
+      { cwd: fromRoot("app-next"), encoding: "utf8" },
     );
 
     expect(result.status, result.stderr).toBe(0);
@@ -42,7 +42,7 @@ describe("excerlock-motion CNG wiring", () => {
     // validator, so it has to run after everything it validates. This plugin
     // only configures the Motion permission, where position is irrelevant, so
     // membership plus ordering is the honest assertion.
-    const appConfig = readJson<AppConfig>(fromRoot("app", "app.json"));
+    const appConfig = readJson<AppConfig>(fromRoot("app-next", "app.json"));
     const plugins = appConfig.expo?.plugins ?? [];
     const motionIndex = plugins.indexOf("./modules/excerlock-motion/app.plugin.js");
     const validatorIndex = plugins.indexOf(

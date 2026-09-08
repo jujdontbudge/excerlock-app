@@ -1,0 +1,32 @@
+{
+  "name": "drive-off",
+  "version": 1,
+  "description": "A verified walk changes to automotive activity and is disqualified immediately.",
+  "timeline": [
+    {
+      "atMs": 1000,
+      "event": "motion.activityChange",
+      "payload": { "activity": "walking", "confidence": "high" }
+    },
+    {
+      "atMs": 2000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 3, "cadence": 1.7 }
+    },
+    {
+      "atMs": 4000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 7, "cadence": 1.7 }
+    },
+    {
+      "atMs": 10000,
+      "event": "motion.activityChange",
+      "payload": { "activity": "walking", "confidence": "high" }
+    },
+    {
+      "atMs": 10000,
+      "event": "motion.activityChange",
+      "payload": { "activity": "automotive", "confidence": "high" }
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 const { withInfoPlist } = require("expo/config-plugins");
 
 const CAMERA_USAGE_DESCRIPTION =
-  "Allow ExcerLock to use the front camera to verify treadmill walking while the app is open.";
+  "Check that you are walking when your phone is propped on the treadmill. " +
+  "Frames are processed on this iPhone, never recorded or sent.";
 
 /** @type {import("expo/config-plugins").ConfigPlugin} */
 function withExcerlockGaitVision(config) {

@@ -151,7 +151,7 @@ function isTestFile(path: string): boolean {
 
 function isTypedAnalyticsWrapper(file: string): boolean {
   return (
-    file.startsWith("app/src/analytics/") ||
+    file.startsWith("app-next/src/features/analytics/") ||
     file === "server/src/analytics.ts" ||
     file === "server/src/services/analytics.ts"
   );
@@ -194,7 +194,7 @@ describe("analytics single-emitter guardrail", () => {
     const declarations = registryFiles.flatMap(readOwnerDeclarations);
     const declarationsByEvent = Map.groupBy(declarations, ({ event }) => event);
     const captureCalls = [
-      ...walkFiles(fromRoot("app"), codeExtensions)
+      ...walkFiles(fromRoot("app-next"), codeExtensions)
         .filter((path) => !isTestFile(path))
         .flatMap((path) => readCaptureCalls(path, "client")),
       ...walkFiles(fromRoot("server"), codeExtensions)

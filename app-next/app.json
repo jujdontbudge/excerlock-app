@@ -13,7 +13,6 @@
       "appleTeamId": "AX3C2B78YD",
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Use your location to find nearby gyms and choose your gym's arrival area.",
         "NSCameraUsageDescription": "Check that you are walking when your phone is propped on the treadmill. Frames are processed on this iPhone, never recorded or sent."
       }
     },
@@ -22,9 +21,9 @@
       "reactCompiler": true
     },
     "plugins": [
-      "./modules/excerlock-gait-vision/app.plugin.js",
-      "react-native-maps",
+      "./plugins/withNoPush",
       "expo-router",
+      "expo-dev-client",
       [
         "expo-splash-screen",
         {
@@ -41,7 +40,44 @@
             "deploymentTarget": "17.4"
           }
         }
-      ]
+      ],
+      [
+        "react-native-device-activity",
+        {
+          "appGroup": "group.com.johansardar.excerlock",
+          "copyToTargetFolder": false
+        }
+      ],
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "background": false,
+          "NSHealthShareUsageDescription": "ExcerLock reads your activity to detect completed fitness conditions on this device.",
+          "NSHealthUpdateUsageDescription": false
+        }
+      ],
+      "./plugins/withHealthKitBackgroundBootstrap",
+      [
+        "expo-location",
+        {
+          "isIosBackgroundLocationEnabled": true,
+          "locationWhenInUsePermission": "Allow ExcerLock to check whether you are at a saved gym and keep a Walk Session active.",
+          "locationAlwaysAndWhenInUsePermission": "Allow ExcerLock to detect arrivals at saved gyms when you opt into auto-detect."
+        }
+      ],
+      "react-native-maps",
+      "./modules/excerlock-motion/app.plugin.js",
+      "./modules/excerlock-gait-vision/app.plugin.js",
+      "expo-secure-store",
+      [
+        "@sentry/react-native",
+        {
+          "organization": "edge-ix",
+          "project": "excerlock-mobile"
+        }
+      ],
+      "react-native-adapty",
+      "./plugins/withScreenTimeExtensionValidation"
     ],
     "extra": {
       "eas": {

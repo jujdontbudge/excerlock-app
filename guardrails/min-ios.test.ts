@@ -16,7 +16,7 @@ type PodfileProperties = {
 
 describe("minimum-iOS guardrail", () => {
   it("keeps deployment target 17.4 in Expo and every target config", () => {
-    const config = readJson<AppConfig>(fromRoot("app", "app.json"));
+    const config = readJson<AppConfig>(fromRoot("app-next", "app.json"));
     const buildProperties = config.expo?.plugins?.find(
       (plugin): plugin is [string, Record<string, unknown>] =>
         Array.isArray(plugin) && plugin[0] === "expo-build-properties",
@@ -26,10 +26,10 @@ describe("minimum-iOS guardrail", () => {
     expect(deploymentTarget).toMatchObject({ deploymentTarget: "17.4" });
 
     const targetConfigs = [
-      ...walkFiles(fromRoot("app", "targets"), new Set([".json", ".ts", ".js"])),
+      ...walkFiles(fromRoot("app-next", "targets"), new Set([".json", ".ts", ".js"])),
       // expo-module.config.json registers/autolinks classes; Expo exposes no
       // deployment-target field there. Local module targets pin iOS in CocoaPods.
-      ...walkFiles(fromRoot("app", "modules"), new Set([".podspec", ".xcconfig"])),
+      ...walkFiles(fromRoot("app-next", "modules"), new Set([".podspec", ".xcconfig"])),
     ].filter((path) => !path.endsWith("README.md"));
     const offenders = targetConfigs
       .filter((path) => !readUtf8(path).includes("17.4"))
@@ -37,14 +37,14 @@ describe("minimum-iOS guardrail", () => {
 
     expect(offenders, "Every native target config must explicitly retain iOS 17.4").toEqual([]);
 
-    const podfilePropertiesPath = fromRoot("app", "ios", "Podfile.properties.json");
+    const podfilePropertiesPath = fromRoot("app-next", "ios", "Podfile.properties.json");
     expect(
       existsSync(podfilePropertiesPath),
       "The min-iOS guardrail requires a clean Expo iOS prebuild",
     ).toBe(true);
     expect(readJson<PodfileProperties>(podfilePropertiesPath)["ios.deploymentTarget"]).toBe("17.4");
 
-    const projectFiles = walkFiles(fromRoot("app", "ios"), new Set(["project.pbxproj"]));
+    const projectFiles = walkFiles(fromRoot("app-next", "ios"), new Set(["project.pbxproj"]));
     const appBuildSettings = projectFiles
       .flatMap((path) => [...readUtf8(path).matchAll(/buildSettings = \{([\s\S]*?)\n\s*\};/g)])
       .map((match) => match[1])
