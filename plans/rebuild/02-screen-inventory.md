@@ -188,7 +188,7 @@ Grouping and order follow OtterLife's settings screen as inventoried in the refe
 - Your plan: Locked apps ("N apps · M categories"), Conditions and Saved gyms shortcuts.
 - Support: Contact support (composer: category, message, required reply email, privacy-floored diagnostics preview, send state), Rate ExcerLock, Share ExcerLock.
 - Legal: Terms of Use, Privacy Policy (in-app document screens).
-- Account: exactly one Account row plus Delete my data / Delete account; the Account screen owns sign in, confirmed sign out and the shared deletion confirmation sheet.
+- Account: exactly one Account row, Export my data (a JSON of conditions, rule days, earned unlocks and daily history handed to the share sheet; emits `data_export_requested`), and Delete my data / Delete account; the Account screen owns sign in, confirmed sign out and the shared deletion confirmation sheet. Deletion calls `DELETE /v1/user` before the local session teardown and keeps the on-device plan.
 - Footer: version + build; 7 taps opens `DevMenu` only when `devMenuEnabled` is true (`__DEV__` or
   `EXPO_PUBLIC_DEV_MENU=1`). The same gate removes `/dev` and makes Home capture parameters inert in release builds.
 

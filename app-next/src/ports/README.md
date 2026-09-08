@@ -19,14 +19,28 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
   opening apps until the goal is met.
 - GymPort: Phase 2 implements place search, saved locations, geofence presence and check-in.
 - HealthPort: Phase 2 reads authorized running/cycling workouts.
-- AuthPort: Phase 2 implements Supabase identity, OTP and deletion.
+- AuthPort: `src/auth` implements it on Supabase (identity only, D1). One user id runs from the
+  anonymous session at first launch through every sign-in: Apple and Google link a native id token
+  onto that user, email links an address to it, and only a provider account that already belongs to
+  somebody else switches the id. A sign-in is reported after the VPS `PUT /v1/user` succeeds, so the
+  screens never show an account the server has not seen, while the anonymous bootstrap publishes
+  first because earning and locking never wait on a network. `__tests__/authContract.ts` is the
+  suite the fake and the adapter both pass.
 - SubscriptionPort: Phase 2 implements Adapty entitlement, paywall and restore.
 - AnalyticsPort: Phase 2 emits sanitized PostHog events.
-- NotificationsPort: Phase 2 schedules local trial and lease reminders.
-- SyncPort: Phase 2 synchronizes rules and day facts with the VPS.
+- NotificationsPort: Phase 2 schedules local trial and lease reminders through `adapters/notifications` over
+  expo-notifications. Two laws: `status()` is synchronous and agrees with the last `request()` result, and
+  `cancel(id)` never throws for an id it does not know. `scheduleTrialReminder(at, daysBefore?)` and
+  `scheduleWalkLeaseWarning(at, variant?)` are the only schedulable kinds; the third catalog id
+  (`SHIELD_OPEN_NOTIFICATION_ID`) is enqueued by the ShieldAction extension alone. `__tests__/notificationsContract.ts`
+  runs against the fake and the adapter.
+- SyncPort: backup and restore of rules (with explicit deletion tombstones), rule days, usage days, earned
+  unlocks, sealed history and the profile, every row stamped with `updatedAt` (D5). Never a source of truth
+  for enforcement; the app selection never travels. Real adapter in `src/adapters/sync`; the fake is an
+  in-memory server so the sign-in restore can be exercised locally.
 - ClockPort: Phase 2 observes system time and timezone changes.
 - ReachabilityPort: network-backed screens distinguish offline failures; local-first flows never consult it.
 
 models.ts defines shared facts. RuntimeControls is a local-only developer interface and is never a product service adapter.
 
-`SupportPort` accepts one `SupportRequest`: category, message, reply address and the privacy-floored diagnostics assembled by the domain. Its Phase 1 fake simulates latency/outcomes and sends no message over a network.
+`SupportPort` accepts one `SupportRequest`: category, message, reply address and the privacy-floored diagnostics assembled by the domain. Its Phase 1 fake simulates latency/outcomes and sends no message over a network; the real port is `adapters/api`'s `POST /v1/support` client.

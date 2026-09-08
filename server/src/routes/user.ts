@@ -11,24 +11,70 @@ import {
   UserDeletionConfigurationError,
 } from "../userDeletion/index.js";
 import {
-  sendNotImplemented,
-  type NotImplementedResponse,
-} from "./notImplemented.js";
-import { requireRouteUserId } from "./vendorRouteSupport.js";
+  requireRouteIdentity,
+  requireRouteUserId,
+} from "./authenticatedUser.js";
 
 interface UserRouteDependencies {
   deletion: UserDeletionService;
   identity: IdentityRepository;
 }
 
+export interface UserResponse {
+  id: string;
+  isAnonymous: boolean;
+  createdAt: string;
+}
+
+const accountDeleted = {
+  error: {
+    code: "ACCOUNT_DELETED",
+    message: "This account has been deleted",
+  },
+} as const;
+
 export function createUserRoutes(
   dependencies: UserRouteDependencies,
 ): FastifyPluginAsync {
   return async (app) => {
-    app.get<{ Reply: NotImplementedResponse }>(
-      "/user",
-      async (_request, reply) => sendNotImplemented(reply, "User"),
-    );
+    app.get("/user", async (request, reply) => {
+      const identity = await requireRouteIdentity(request, reply);
+      if (!identity) {
+        return;
+      }
+
+      let user;
+      try {
+        user = await dependencies.identity.findUser(identity.userId);
+      } catch {
+        return reply.code(503).send({
+          error: {
+            code: "IDENTITY_UNAVAILABLE",
+            message: "Account lookup is temporarily unavailable",
+          },
+        });
+      }
+
+      if (!user) {
+        return reply.code(404).send({
+          error: {
+            code: "USER_NOT_FOUND",
+            message: "This account has not been provisioned; call PUT /v1/user",
+          },
+        });
+      }
+      if (user.deletedAt) {
+        return reply.code(410).send(accountDeleted);
+      }
+
+      return {
+        id: identity.userId,
+        // The token is the authority on anonymity, not a stored copy: linking
+        // a provider changes the claim without changing the user id.
+        isAnonymous: identity.isAnonymous,
+        createdAt: user.createdAt.toISOString(),
+      } satisfies UserResponse;
+    });
 
     app.put("/user", async (request, reply) => {
       const userId = await requireRouteUserId(request, reply);
@@ -40,12 +86,7 @@ export function createUserRoutes(
         return reply.code(204).send();
       } catch (error) {
         if (error instanceof DeletedIdentityError) {
-          return reply.code(410).send({
-            error: {
-              code: "ACCOUNT_DELETED",
-              message: "This account has been deleted",
-            },
-          });
+          return reply.code(410).send(accountDeleted);
         }
         return reply.code(503).send({
           error: {
@@ -97,6 +138,9 @@ export const userRoutes = createUserRoutes({
   identity: {
     async ensureActiveUser(userId) {
       await createDrizzleIdentityRepository().ensureActiveUser(userId);
+    },
+    findUser(userId) {
+      return createDrizzleIdentityRepository().findUser(userId);
     },
   },
   deletion: {

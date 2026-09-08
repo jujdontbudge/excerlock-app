@@ -4,12 +4,20 @@ import { AppErrorBoundary } from '../features/launch/AppErrorBoundary';
 import { startIdentityBridge } from './IdentityBridge';
 import { bindHaptics } from '../motion/bindHaptics';
 import { startEnforcement } from './EnforcementHost';
+import { startNotifications } from '../adapters/notifications/startNotifications';
+import { startReviewPrompts } from '../adapters/review/reviewPrompts';
 const Context = createContext<Runtime | null>(null);
 
 /** The app's long-lived bindings, started in mount order and torn down in reverse. */
 function RuntimeBindings({ runtime }: { runtime: Runtime }) {
   useEffect(() => {
-    const stops = [startIdentityBridge(runtime), bindHaptics(), startEnforcement(runtime)];
+    const stops = [
+      startIdentityBridge(runtime),
+      bindHaptics(),
+      startEnforcement(runtime),
+      startNotifications(runtime),
+      startReviewPrompts(runtime),
+    ];
     return () => stops.reverse().forEach((stop) => stop());
   }, [runtime]);
   return null;

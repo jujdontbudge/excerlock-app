@@ -10,11 +10,12 @@ const REQUIRED_TABLES = [
   "adapty_subscription_states",
   "adapty_webhook_events",
   "support_requests",
-  "feature_requests",
-  "feature_request_votes",
-  "vendor_connections",
-  "vendor_oauth_states",
-  "vendor_webhook_events",
+  "rules",
+  "rule_days",
+  "usage_days",
+  "earned_unlocks",
+  "history_days",
+  "profiles",
 ] as const;
 
 export type ReadinessResult =

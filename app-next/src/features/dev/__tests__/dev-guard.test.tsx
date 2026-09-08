@@ -10,6 +10,8 @@ import { SettingsScreen } from '../../settings/SettingsScreen';
 import { render, userEvent } from '@testing-library/react-native';
 
 jest.mock('../../../runtime/devFlag', () => ({ devMenuEnabled: false }));
+// A development run has no native bundle values; the About row falls back to app.json.
+jest.mock('expo-application', () => ({ nativeApplicationVersion: null, nativeBuildVersion: null }));
 
 const routes = (runtime: ReturnType<typeof createRuntime>) => ({
   _layout: () => (

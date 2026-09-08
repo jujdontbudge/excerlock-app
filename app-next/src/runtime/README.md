@@ -25,8 +25,14 @@ the ordinary error when reachability itself cannot be determined.
 3. **`bindHaptics`** — applies the Touch feedback preference to the haptics module, so a rehydrated
    `haptics: false` is in force before the first screen renders.
 4. **`startEnforcement`** — the enforcement host below.
+5. **`startNotifications`** (`adapters/notifications`) — schedules the trial reminder off the entitlement
+   store and the walk-lease warning off the walking session, against whichever notifications port is bound,
+   and routes notification taps through the landing table when the bound port delivers responses.
+6. **`startReviewPrompts`** (`adapters/review`) — re-runs the App Store rating policy on every rule-day
+   change, so a day becoming met can prompt while the app is in the foreground. It subscribes to the
+   store, never to `AppState`.
 
-The three bindings are started in that order inside one effect and stopped in reverse.
+The five bindings are started in that order inside one effect and stopped in reverse.
 `app/locked-apps.tsx` is registered outside every `Stack.Protected` so the shield notification's deep
 link always resolves; `lockedAppsDestination` then sends the user to Home or the paywall.
 
@@ -37,7 +43,9 @@ A grep test (`__tests__/single-appstate.test.ts`) holds that line; the treadmill
 one allowed exception, because it pauses a camera controller rather than enforcement, and it lives for
 the length of one modal. On every foreground transition the handler, in order:
 
-1. re-reads Screen Time, Motion, Health, notification and camera permission statuses;
+1. re-reads Screen Time, Motion, Health, notification and camera permission statuses (the expo notifications
+   adapter answers from its last known value and refreshes in the background, recording a change on the
+   permissions store);
 2. re-verifies the app selection through `describeSelection()`;
 3. runs the claim-on-open progress refresh and records `lastClaimAt`, so a run or ride finished while the
    app was closed lands on the progress row instead of freezing the bar;

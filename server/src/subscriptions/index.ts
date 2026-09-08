@@ -7,3 +7,4 @@ export type {
   AdaptySubscriptionEvent,
   AdaptyWebhookRepository,
 } from "./repository.js";
+export { verifyWebhookAuthorization } from "./webhookAuthorization.js";

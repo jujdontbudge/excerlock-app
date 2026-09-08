@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { SubscriptionPlan } from '../../ports/SubscriptionPort';
 import { requestFailureMessage } from '../../runtime/requestFailureMessage';
 import { common } from '../../content/common';
+import { paywallPresence } from '../../adapters/notifications/presentation';
 export function PaywallSlot() {
   const runtime = useRuntime(),
     router = useRouter(),
@@ -24,8 +25,11 @@ export function PaywallSlot() {
     mounted.current = true;
     useOnboardingStore.getState().patch({ step: 'P', complete: true });
     runtime.analytics.screen('P');
+    // The foreground notification handler suppresses the trial reminder while this screen is up.
+    paywallPresence.open();
     return () => {
       mounted.current = false;
+      paywallPresence.close();
     };
   }, [runtime]);
   const run = async (kind: 'purchase' | 'restore') => {

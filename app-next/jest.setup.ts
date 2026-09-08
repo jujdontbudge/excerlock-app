@@ -27,3 +27,14 @@ jest.mock('react-native-maps', () => {
     return React.createElement(View, props);
   }) };
 });
+// Sign in with Apple has no simulator or test-renderer implementation. `isAvailableAsync` resolving
+// false is what a simulator reports, so screens fall back to the app's own button in every test that
+// does not deliberately turn it on.
+jest.mock('expo-apple-authentication', () => ({
+  isAvailableAsync: jest.fn(async () => false),
+  signInAsync: jest.fn(),
+  AppleAuthenticationButton: 'AppleAuthenticationButton',
+  AppleAuthenticationButtonType: { SIGN_IN: 0 },
+  AppleAuthenticationButtonStyle: { BLACK: 2 },
+  AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
+}));

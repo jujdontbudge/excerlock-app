@@ -1,128 +1,117 @@
 # Routes
 
-This module owns the `/v1/*` Fastify transport for health, support, user, and
-vendor endpoints. Handlers validate transport data and delegate; they contain
-no earning, ledger, shield, or lock decisions.
+This module owns the `/v1/*` Fastify transport for health, user, support and
+sync. Handlers validate transport data and delegate; they contain no earning,
+ledger, shield, or lock decisions.
 
-`PUT /v1/user` idempotently provisions the authenticated Clerk subject as the
-minimal Postgres identity-spine row. It never accepts an id from the request
-body and never reactivates a deletion tombstone. `DELETE /v1/user` may revisit
-a tombstone only to resume downstream erasure checkpoints.
+Everything under `/v1` except `/health`, `/ready` and the Adapty webhook sits
+behind the Supabase auth boundary, and every handler reads its subject through
+`authenticatedUser.ts` rather than off the request directly.
 
-## Support and feature requests
+## Endpoints
 
-All support and feature-request routes are Clerk protected.
+| Route | Auth | Purpose |
+| --- | --- | --- |
+| `GET /v1/health` | none | Liveness. Never touches the database. |
+| `GET /v1/ready` | none | Readiness: every table this build needs is present. |
+| `POST /v1/webhooks/adapty` | shared secret | Subscription access mirror. |
+| `GET /v1/user` | Supabase | `{ id, isAnonymous, createdAt }`. |
+| `PUT /v1/user` | Supabase | Idempotent provisioning of the identity row. |
+| `DELETE /v1/user` | Supabase | Account erasure across every processor. |
+| `POST /v1/support` | Supabase | One support submission. |
+| `GET /v1/sync` | Supabase | Everything this account has, for restore. |
+| `PUT /v1/sync/rules` | Supabase | Upsert batch under `rules`, max 400. |
+| `PUT /v1/sync/rule-days` | Supabase | Upsert batch under `rows`, max 400. |
+| `PUT /v1/sync/usage-days` | Supabase | Upsert batch under `rows`, max 400. |
+| `PUT /v1/sync/earned-unlocks` | Supabase | Upsert batch under `rows`, max 400. |
+| `PUT /v1/sync/history` | Supabase | Sealed days under `rows`, max 400. |
+| `PUT /v1/sync/profile` | Supabase | The onboarding answers. |
 
-### `POST /v1/support`
+## User
 
-The request body is one of these strict JSON shapes; unknown keys are rejected:
+`PUT /v1/user` idempotently provisions the authenticated Supabase subject as
+the minimal Postgres identity-spine row. It never accepts an id from the
+request body and never reactivates a deletion tombstone; a tombstoned account
+gets `410 ACCOUNT_DELETED`. `DELETE /v1/user` may revisit a tombstone only to
+resume downstream erasure checkpoints.
 
-```json
-{
-  "category": "support",
-  "message": "My workout did not unlock my apps."
-}
-```
+`GET /v1/user` reads `isAnonymous` from the verified token rather than from a
+stored copy: linking a provider to an anonymous session changes the claim
+without changing the user id. It answers `404 USER_NOT_FOUND` before the
+account has been provisioned, so a client can tell "new" from "erased".
 
-```json
-{
-  "category": "bug",
-  "message": "Permission status is wrong."
-}
-```
+## Support
 
-```json
-{
-  "category": "feature",
-  "title": "Home Screen widget",
-  "message": "Show my balance without opening the app."
-}
-```
-
-`message` is trimmed and must contain 1–4,000 characters. A feature `title` is
-trimmed and must contain 1–120 characters. Support and bug requests do not
-accept `title`.
-
-A persisted support or bug request returns `201`:
-
-```json
-{ "submissionId": "…" }
-```
-
-A feature-category submission persists the support request and its list entry
-in one transaction, then returns `201`:
-
-```json
-{ "submissionId": "…", "featureRequestId": "…" }
-```
-
-Only after that transaction succeeds, the server emits one
-`support_request_submitted` event with the category. The message and title are
-never analytics properties.
-
-### `GET /v1/feature-requests`
-
-Returns `200` with newest requests first. `voteCount` is authoritative and
-`hasVoted` is scoped to the authenticated user:
+`POST /v1/support` takes one strict JSON shape; unknown keys are rejected.
+`category` is `problem`, `question` or `idea` (the registry spellings `bug`,
+`support` and `feature` are still accepted for the build on TestFlight).
+`replyTo`, `title` and `diagnostics` are all optional:
 
 ```json
 {
-  "featureRequests": [
-    {
-      "id": "…",
-      "submissionId": "…",
-      "title": "Home Screen widget",
-      "message": "Show my balance without opening the app.",
-      "voteCount": 3,
-      "hasVoted": true,
-      "createdAt": "2026-07-29T21:00:00.000Z"
-    }
-  ]
+  "category": "problem",
+  "message": "My workout did not unlock my apps.",
+  "replyTo": "someone@example.com",
+  "diagnostics": {
+    "appVersion": "1.4.0",
+    "appBuild": "412",
+    "iosVersion": "18.2",
+    "deviceModel": "iPhone15,3",
+    "entitlementStatus": "active",
+    "permissions": {
+      "screenTime": "granted",
+      "motion": "granted",
+      "location": "whenInUse",
+      "health": "notDetermined",
+      "camera": "denied",
+      "notifications": "granted"
+    },
+    "ruleCount": 3,
+    "lastEnforcementResult": "shielded"
+  }
 }
 ```
 
-### `POST /v1/feature-requests/:featureRequestId/votes`
+The diagnostics object is strict, which is the privacy floor: a gym name, a
+coordinate or an app name has no field to arrive in and the request is
+rejected. It answers `201` with `{ "submissionId": "..." }`. There is no
+feature-request listing and no vote route: feature voting is cut (B17).
 
-The first vote returns `201` with:
+## Sync
 
-```json
-{ "status": "voted", "featureRequestId": "…", "voteCount": 1 }
-```
+`PUT /v1/sync/*` bodies are strict and batches are capped at 400 rows. The
+batch field is `rules` on `/sync/rules`, `rows` on the four row endpoints and
+`profile` on `/sync/profile`. Each answers `200` with `{ applied, skipped }`
+so the device's sync log can show what actually landed. `GET /v1/sync` answers
+`{ rules, ruleDays, usageDays, earnedUnlocks, historyDays, profile }`.
 
-A retry or double-tap by the same user is a database-enforced no-op and returns
-`200` with:
+Every endpoint upserts what it is given and leaves everything else alone. A
+deletion is an explicit tombstone (`deletedAt` on the rule with a newer
+`updatedAt`), never an absence, so a device pushing only what it knows can
+never wipe another device's rows. The rest of the rules and the privacy law
+are in `src/sync/README.md`.
 
-```json
-{ "status": "alreadyVoted", "featureRequestId": "…", "voteCount": 1 }
-```
+## Errors
 
-The unique `(feature_request_id, user_id)` database index is the source of this
-decision; handler memory is not.
+Every failure is `{ "error": { "code": "...", "message": "..." } }`.
 
-### Defined support errors
+- `400 INVALID_SUPPORT_REQUEST` / `400 INVALID_SYNC_PAYLOAD` — the body did
+  not validate. Both messages name the offending path and never echo the
+  value.
+- `400 SYNC_BATCH_TOO_LARGE` — more than 400 rows in one batch.
+- `401 UNAUTHORIZED` — missing bearer token, or no verified Supabase identity.
+- `404 USER_NOT_FOUND` — the authenticated account has no row here.
+- `410 ACCOUNT_DELETED` — a deletion tombstone; the client signs out and starts
+  a fresh anonymous session.
+- `502 IDENTITY_ERASURE_FAILED` — a processor refused; the caller is still
+  authenticated and the deletion is safe to retry.
+- `503 AUTH_UNAVAILABLE` / `IDENTITY_UNAVAILABLE` / `SYNC_UNAVAILABLE` /
+  `ACCOUNT_DELETION_UNAVAILABLE` / `ADAPTY_WEBHOOK_NOT_CONFIGURED` — the
+  server is missing configuration or its database. Fails closed, never
+  half-open.
 
-- `400 INVALID_SUPPORT_REQUEST` — malformed or out-of-bounds support body.
-- `401 UNAUTHORIZED` — no verified Clerk identity.
-- `404 USER_NOT_FOUND` — verified identity has no `users` row.
-- `404 FEATURE_REQUEST_NOT_FOUND` — vote target does not exist.
-
-Vendor route boundaries:
-
-- Public: OAuth callbacks and verified webhook challenge/delivery endpoints.
-- Clerk protected: connect, disconnect, and device event-feed endpoints.
-- The webhook plugin alone replaces Fastify's JSON parser so signature checks
-  receive the exact request bytes. That parser is encapsulated and cannot
-  alter unrelated API routes.
-- Provider/configuration errors are mapped to explicit 4xx/5xx response codes;
-  no missing credential is silently ignored.
-
-`POST /v1/webhooks/adapty` is the other intentional public exception. Adapty's
-configured Authorization value is compared through fixed-width SHA-256 digests
-before an empty verification request or subscription event is accepted. The
-route never logs the header, customer id, or payload.
-
-Route fixtures use `fastify.inject()`:
+## Tests
 
 ```sh
-npm run test:server
+npm run test:server -- routes
 ```

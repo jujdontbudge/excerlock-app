@@ -13,6 +13,8 @@ import { SettingsScreen } from '../SettingsScreen';
 import { SupportScreen, SupportSent } from '../SupportScreen';
 
 jest.mock('../../../motion/haptics', () => ({ feedback: jest.fn(), setHapticsEnabled: jest.fn() }));
+// A development run has no native bundle values; the About row falls back to app.json.
+jest.mock('expo-application', () => ({ nativeApplicationVersion: null, nativeBuildVersion: null }));
 
 function withRuntime(runtime: ReturnType<typeof createRuntime>, child: React.ReactElement) {
   return <AppRuntimeProvider runtime={runtime}>{child}</AppRuntimeProvider>;
@@ -74,8 +76,9 @@ test('Settings required rows work on one screen and the seventh version tap open
   expect(navigate).toHaveBeenCalledWith('legal/terms');
   await userEvent.press(screen.getByRole('button', { name: 'Privacy Policy' }));
   expect(navigate).toHaveBeenCalledWith('legal/privacy');
+  const openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
   await userEvent.press(screen.getByRole('button', { name: 'Manage subscription' }));
-  expect(screen.getByRole('alert')).toHaveTextContent(/This preview keeps you in ExcerLock\./);
+  expect(openURL).toHaveBeenCalledWith('https://apps.apple.com/account/subscriptions');
 
   const footer = screen.getByRole('button', { name: /ExcerLock 1\.0\.0/ });
   for (let i = 0; i < 7; i++) await userEvent.press(footer);

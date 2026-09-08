@@ -8,6 +8,7 @@ import { settingsStore } from './settingsStore';
 import { onboardingStore } from './onboardingStore';
 import { gymVisitsStore } from './gymVisitsStore';
 import { historyStore } from './historyStore';
+import { reviewStore } from './reviewStore';
 export const stores = [
   profileStore,
   rulesStore,
@@ -19,6 +20,7 @@ export const stores = [
   onboardingStore,
   historyStore,
   gymVisitsStore,
+  reviewStore,
 ];
 export async function hydrateStores() {
   await Promise.all(stores.map((store) => store.persist.rehydrate()));

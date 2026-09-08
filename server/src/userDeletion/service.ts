@@ -3,7 +3,7 @@ import type { UserDeletionRepository } from "./repository.js";
 export interface IdentityErasureGateway {
   eraseAdaptyProfile(userId: string): Promise<void>;
   erasePosthogPerson(userId: string): Promise<void>;
-  deleteClerkUser(userId: string): Promise<void>;
+  deleteAuthUser(userId: string): Promise<void>;
 }
 
 export interface UserDeletionService {
@@ -31,12 +31,12 @@ export function createUserDeletionService(options: {
         await options.repository.markPosthogErased(userId, now());
       }
 
-      // Clerk is deliberately last. Until every data processor confirms
-      // erasure, the authenticated caller must retain a credential with which
-      // to retry this durable workflow.
-      if (!state.clerkDeletedAt) {
-        await options.downstream.deleteClerkUser(userId);
-        await options.repository.markClerkDeleted(userId, now());
+      // The auth provider is deliberately last. Until every data processor
+      // confirms erasure, the authenticated caller must retain a credential
+      // with which to retry this durable workflow.
+      if (!state.authDeletedAt) {
+        await options.downstream.deleteAuthUser(userId);
+        await options.repository.markAuthDeleted(userId, now());
       }
     },
   };

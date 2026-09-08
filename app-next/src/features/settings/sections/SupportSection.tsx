@@ -1,36 +1,40 @@
 import { useState } from 'react';
-import { BottomSheet, Label, PrimaryButton, SettingsGroup, SettingsRow } from '../../../design-system';
+import { Share } from 'react-native';
+import { Label, SettingsGroup, SettingsRow } from '../../../design-system';
 import { settingsCopy as c } from '../../../content/settings';
-import { LivingIcon } from '../../../motion/LivingIcon';
+import { APP_STORE_URL } from '../../../adapters/appStore/links';
+import { rateManually } from '../../../adapters/review/reviewPrompts';
 import { Reveal } from '../../../motion/Reveal';
+import { useRuntime } from '../../../runtime/AppRuntimeProvider';
 
 export function SupportSection({ navigate }: { navigate: (path: string) => void }) {
-  const [sharing, setSharing] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [rateNote, setRateNote] = useState(false);
+  const runtime = useRuntime();
+  const [note, setNote] = useState('');
+  const rate = async () => {
+    try {
+      await rateManually(runtime);
+      setNote(c.rated);
+    } catch {
+      setNote(c.error);
+    }
+  };
+  const share = async () => {
+    try {
+      await Share.share({ message: c.shareMessage, url: APP_STORE_URL });
+    } catch {
+      setNote(c.error);
+    }
+  };
   return (
     <>
-      <BottomSheet open={sharing} title={c.share} onDismiss={() => setSharing(false)}>
-        <LivingIcon name="arrow" />
-        <Label>{c.shareBody}</Label>
-        <PrimaryButton label={c.shareCopy} onPress={() => setCopied(true)} />
-        {copied ? <Label>{c.copied}</Label> : null}
-      </BottomSheet>
       <SettingsGroup title={c.supportSection}>
         <SettingsRow title={c.support} icon="mail" onPress={() => navigate('support')} />
-        <SettingsRow title={c.rate} icon="star" onPress={() => setRateNote(true)} />
-        <SettingsRow
-          title={c.share}
-          icon="arrow"
-          onPress={() => {
-            setCopied(false);
-            setSharing(true);
-          }}
-        />
+        <SettingsRow title={c.rate} icon="star" onPress={() => void rate()} />
+        <SettingsRow title={c.share} icon="arrow" onPress={() => void share()} />
       </SettingsGroup>
-      {rateNote ? (
-        <Reveal>
-          <Label accessibilityRole="alert">{c.rated}</Label>
+      {note ? (
+        <Reveal key={note}>
+          <Label accessibilityRole="alert">{note}</Label>
         </Reveal>
       ) : null}
     </>

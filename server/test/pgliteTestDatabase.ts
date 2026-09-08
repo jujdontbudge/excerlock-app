@@ -22,12 +22,13 @@ export async function createPgliteTestDatabase() {
         truncate table
           adapty_webhook_events,
           adapty_subscription_states,
-          feature_request_votes,
-          feature_requests,
           support_requests,
-          vendor_webhook_events,
-          vendor_oauth_states,
-          vendor_connections,
+          earned_unlocks,
+          history_days,
+          rule_days,
+          usage_days,
+          rules,
+          profiles,
           users
         restart identity cascade
       `);
