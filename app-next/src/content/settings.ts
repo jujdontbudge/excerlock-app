@@ -50,6 +50,9 @@ export const settingsCopy = {
     'Gym auto-detect needs Always location. Turn it on in Settings so a saved gym can recognize a visit while ExcerLock is closed.',
   autoDeniedAction: 'Open location settings',
   haptics: 'Touch feedback',
+  shareAnalytics: 'Share usage analytics',
+  shareAnalyticsBody:
+    'Anonymous counts of which screens you reach and which conditions you meet, so we can see where ExcerLock is confusing. Never your gyms, your location, your app choices or your health data.',
   apps: 'Locked apps',
   gyms: 'Saved gyms',
   addGym: 'Add gym',

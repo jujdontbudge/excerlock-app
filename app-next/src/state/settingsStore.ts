@@ -8,10 +8,19 @@ export type Settings = {
   stopGrace: number;
   gymAutoDetect: boolean;
   haptics: boolean;
+  /** D9b: the Settings "Share usage analytics" switch. On by default, off suppresses every event. */
+  shareAnalytics: boolean;
 };
 export const settingsStore = defineStore<Settings>({
   name: 'settings',
-  initial: { gymPlaces: [], units: defaultUnits, stopGrace: 30, gymAutoDetect: false, haptics: true },
+  initial: {
+    gymPlaces: [],
+    units: defaultUnits,
+    stopGrace: 30,
+    gymAutoDetect: false,
+    haptics: true,
+    shareAnalytics: true,
+  },
   schemaVersion: 1,
   migrations: { 0: (raw) => raw },
   validators: {
@@ -29,5 +38,6 @@ export const settingsStore = defineStore<Settings>({
     stopGrace: v.number(30, 300),
     gymAutoDetect: v.bool,
     haptics: v.bool,
+    shareAnalytics: v.bool,
   },
 });

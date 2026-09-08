@@ -1,9 +1,10 @@
-import { Component, ErrorInfo, PropsWithChildren, ReactNode } from 'react';
+import { Component, ErrorInfo, PropsWithChildren, ReactNode, useEffect } from 'react';
 import { View } from 'react-native';
 import { router } from 'expo-router';
 import { Heading, PrimaryButton, ScreenShell } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { common as c } from '../../content/common';
+import { reportError } from '../../observability/reportError';
 
 /** The recovery screen a caught render error falls back to. */
 export function AppErrorScreen({ onRestart }: { onRestart: () => void }) {
@@ -42,7 +43,9 @@ export class AppErrorBoundary extends Component<Props, State> {
 }
 
 /** Expo Router's per-route boundary shape; exported as `ErrorBoundary` from `app/_layout.tsx`. */
-export function RouteErrorBoundary({ retry }: { error: Error; retry: () => Promise<void> }) {
+export function RouteErrorBoundary({ error, retry }: { error: Error; retry: () => Promise<void> }) {
+  // Router-level errors never reach `AppErrorBoundary`, so this is their only report.
+  useEffect(() => reportError(error), [error]);
   return (
     <AppErrorScreen
       onRestart={() => {

@@ -157,12 +157,11 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
           runtime.analytics.track('treadmill_scan_started', { preview });
           await scanController.start();
         }
-      } catch (cause) {
-        // The reason is for the log, not the user: a raw exception message under
-        // the idle "prop your phone" heading is the silent shield in disguise.
-        runtime.analytics.track('treadmill_scan_failed', {
-          reason: cause instanceof Error ? cause.message : 'unknown',
-        });
+      } catch {
+        // The failure is for the log, not the user: a raw exception message under the idle
+        // "prop your phone" heading is the silent shield in disguise. D12 keeps the message out
+        // of analytics too — it can carry a gym name, a file path or a bundle id.
+        runtime.analytics.track('treadmill_scan_failed', { reason: 'exception' });
         if (!active.current) return;
         terminalRef.current = 'scanFailed';
         setTerminal('scanFailed');
