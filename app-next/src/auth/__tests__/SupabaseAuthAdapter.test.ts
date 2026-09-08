@@ -180,37 +180,29 @@ describe('SupabaseAuthAdapter', () => {
     auth.dispose();
   });
 
-  test('deleting the account asks the server first and keeps the failure local', async () => {
-    let status = 200;
-    const { auth, client, server } = await harness(() => status);
+  test('deleting the account clears this device and never calls the server itself', async () => {
+    // The server owns the deletion: it destroys its own row and the Supabase user through the Admin
+    // API, then this runs. Calling DELETE from here too would race it.
+    const { auth, server } = await harness();
     await auth.port.signInWithApple();
     const signedInId = auth.port.session().userId;
-    const token = client.accessToken();
-
-    status = 500;
-    await expect(auth.port.deleteAccount()).rejects.toThrow();
-    expect(auth.port.session()).toMatchObject({ kind: 'signedIn', userId: signedInId });
-
-    status = 200;
     await auth.port.deleteAccount();
-    expect(server.calls.filter((call) => call.method === 'DELETE')).toEqual([
-      { method: 'DELETE', url: `${API}/v1/user`, authorization: `Bearer ${token}` },
-      { method: 'DELETE', url: `${API}/v1/user`, authorization: `Bearer ${token}` },
-    ]);
+    expect(server.calls.filter((call) => call.method === 'DELETE')).toEqual([]);
     expect(auth.port.session()).toMatchObject({ kind: 'anonymous' });
     expect(auth.port.session().userId).not.toBe(signedInId);
     auth.dispose();
   });
 
-  test('a deletion the server already applied still lands on a fresh anonymous session', async () => {
-    let status = 200;
-    const { auth } = await harness(() => status);
+  test('a sign-out refused because the user is already gone still lands on a fresh session', async () => {
+    const { auth, client } = await harness();
     await auth.port.signInWithApple();
     const signedInId = auth.port.session().userId;
-    status = 410;
+    // What the token looks like to GoTrue after the server deleted the user.
+    client.failNext('signOut', { message: 'User from sub claim in JWT does not exist', status: 403 });
     await auth.port.deleteAccount();
     expect(auth.port.session()).toMatchObject({ kind: 'anonymous' });
     expect(auth.port.session().userId).not.toBe(signedInId);
+    expect(client.currentUser()!.is_anonymous).toBe(true);
     auth.dispose();
   });
 

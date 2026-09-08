@@ -11,7 +11,7 @@ import { SupabaseAuthApi, SupabaseFailure, SupabaseSession, SupabaseUser } from 
 export type SupabaseDouble = SupabaseAuthApi & {
   /** Fails the next call to the named method once. */
   failNext(
-    method: 'signInWithIdToken' | 'linkIdentity' | 'signInWithOtp' | 'updateUser',
+    method: 'signInWithIdToken' | 'linkIdentity' | 'signInWithOtp' | 'updateUser' | 'signOut',
     failure: SupabaseFailure,
   ): void;
   /** Every user the double has minted, newest last. */
@@ -159,9 +159,12 @@ export function supabaseDouble(): SupabaseDouble {
     },
 
     signOut: async () => {
+      // GoTrue clears the local session even when the call is refused, which is what happens once
+      // the server has already deleted the user out from under this token.
+      const denied = take('signOut');
       session = null;
       emit('SIGNED_OUT');
-      return { error: null };
+      return { error: denied };
     },
 
     onAuthStateChange: (callback) => {

@@ -39,6 +39,11 @@ six-digit code, never a link, which is why both email templates must carry `{{ .
 - **Signing out is not deleting.** Every account exit ends on a fresh anonymous session and touches
   no rule, no day and no setting. The SDK teardown order (subscription, analytics, auth last) lives
   in `domain/identity`, above this module.
+- **Deleting an account is the server's job.** `deleteAccount()` here clears this device only. The
+  account itself — the VPS row and the Supabase user — is destroyed by `DELETE /v1/user`, because
+  deleting a Supabase user needs the Admin API and no client key can reach it. The runtime composes
+  that call in front of this one, so the port the screens hold does delete the account. Calling
+  `deleteAccount()` on the bare adapter does not, and would leave a live account behind.
 - **A keyless build still runs.** No Supabase keys means `supabaseAuth()` returns `null` and the app
   keeps its local session.
 - **One foreground handler.** `runtime/EnforcementHost` owns the app's only `AppState` subscription,
@@ -79,21 +84,25 @@ already-linked refusal, so every branch runs without a project or a network.
 Nothing constructs this module yet: `runtime/createRuntime` still returns the fake, and the switch is
 the cutover's (P2-T12). Four calls do it:
 
-| Call | Where |
-| --- | --- |
+| Call             | Where                                                        |
+| ---------------- | ------------------------------------------------------------ |
 | `supabaseAuth()` | the runtime composition; `null` means keep the local session |
-| `await start()` | before the first screen reads the port |
-| `refresh()` | the foreground handler in `startEnforcement` |
-| `accessToken` | passed to the VPS API client as its `getAccessToken` |
+| `await start()`  | before the first screen reads the port                       |
+| `refresh()`      | the foreground handler in `startEnforcement`                 |
+| `accessToken`    | passed to the VPS API client as its `getAccessToken`         |
 
 `accessToken()` is on the adapter object, not on `AuthPort`. An authenticated server call is a
 composition concern, and the port stays vendor-free so the fake keeps implementing all of it.
 `getSession()` refreshes a token inside its expiry margin, so the value is always sendable.
 
-Deletion stays here rather than in a caller: `AuthPort.deleteAccount()` means the account is gone, and
-a port whose real adapter only cleaned up locally would not match the fake it shares a contract suite
-with. The HTTP call is injected — `AccountProvisioning` is an interface, so the runtime can implement
-it over the shared VPS client instead of this module keeping a second one.
+Deletion is split. `DELETE /v1/user` belongs to the runtime's VPS client and runs first; this
+adapter's `deleteAccount()` then clears the device. The composed port is what the screens hold, so
+`AuthPort.deleteAccount()` still means the account is gone and the contract suite still describes
+both the fake and the real thing. The order the composition owes the domain is unchanged: subscription
+reset, analytics reset, then auth last.
+
+`AccountProvisioning` stays an injected interface with one method, `provision`, so the runtime can
+implement it over that same VPS client rather than let this module keep a second one.
 
 ## Open
 
