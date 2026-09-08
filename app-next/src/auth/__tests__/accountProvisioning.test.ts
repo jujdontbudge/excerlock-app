@@ -41,3 +41,24 @@ test('410 on provisioning means the id is gone for good', async () => {
   const { account } = server(() => ({ status: 410 }));
   await expect(account.provision('token-1')).resolves.toBe('deleted');
 });
+
+test.each([204, 200])('a %i on deletion is a deletion', async (status) => {
+  const { account, calls } = server(() => ({ status }));
+  await expect(account.remove('token-1')).resolves.toBe('ok');
+  expect(calls).toEqual([{ method: 'DELETE', url: `${API}/v1/user`, authorization: 'Bearer token-1' }]);
+});
+
+test.each([404, 410])('a %i on deletion means the server already did it', async (status) => {
+  const { account } = server(() => ({ status }));
+  await expect(account.remove('token-1')).resolves.toBe('deleted');
+});
+
+test('a deletion the server refused throws, so nothing local changes', async () => {
+  const { account } = server(() => ({ status: 500 }));
+  await expect(account.remove('token-1')).rejects.toThrow(/deletion/i);
+});
+
+test('a deletion that never reached the server throws, so the account is not assumed gone', async () => {
+  const { account } = server(() => new Error('Network request failed'));
+  await expect(account.remove('token-1')).rejects.toThrow(/network/i);
+});

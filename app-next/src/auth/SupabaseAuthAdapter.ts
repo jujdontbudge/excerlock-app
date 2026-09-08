@@ -192,18 +192,24 @@ export function createSupabaseAuth({ client, apple, google, account }: SupabaseA
       }),
 
     /**
-     * Clears this device only. The account itself is destroyed by the server, which owns both its
-     * own row and the Supabase user (through the Admin API, which no client key can reach), and the
-     * runtime composes that call in front of this one. So the sign-out here is expected to be
-     * refused — the token names a user that no longer exists — and GoTrue clears the local session
-     * regardless, which is the outcome that matters.
+     * The server goes first, and its refusal is the whole point: `remove` throws unless the account
+     * is gone, so a deletion that did not happen leaves the session exactly where it was rather than
+     * signing the user out of an account that still exists. Once it returns, the Supabase user has
+     * been destroyed through the Admin API that no client key can reach, so the sign-out below is
+     * expected to be refused — the token names a user that is no longer there — and GoTrue clears
+     * the local session regardless, which is the outcome that matters. The fresh anonymous id is a
+     * new user and gets its row like any fresh install.
      */
-    deleteAccount: () =>
-      exclusively(async () => {
+    deleteAccount: async () => {
+      const token = await accessToken();
+      if (!token) throw new Error('There is no account to delete');
+      await account.remove(token);
+      await exclusively(async () => {
         await client.signOut();
         pending = null;
         await bootstrapAnonymous({ provision: true });
-      }),
+      });
+    },
 
     subscribe: (callback): Unsubscribe => sessionStore.subscribe((state) => callback(state.data.session)),
   };
