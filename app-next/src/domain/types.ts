@@ -9,6 +9,7 @@ export type Rule = {
   enabled: boolean; // false = paused; a paused rule never locks and never counts
   createdAt: string; // ISO
   updatedAt: string;
+  pausedReason?: 'noGym'; // B25: set when the last saved gym was deleted; cleared when a gym is saved
 };
 
 export type RuleMode =

@@ -20,4 +20,10 @@ export const conditionsCopy = {
     'This condition and its progress will be removed. Your other conditions and locked apps stay as they are.',
   delete: 'Delete condition',
   keepRule: 'Keep condition',
+  statusPaused: 'Paused',
+  statusNoGym: 'Paused — save a gym',
+  statusMet: 'Met today',
+  statusActive: 'Blocking now',
+  statusIdle: 'Not scheduled today',
+  statusLater: (time: string) => `Blocking starts at ${time}`,
 };
