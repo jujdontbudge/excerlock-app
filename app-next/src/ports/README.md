@@ -22,7 +22,12 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
 - AuthPort: Phase 2 implements Supabase identity, OTP and deletion.
 - SubscriptionPort: Phase 2 implements Adapty entitlement, paywall and restore.
 - AnalyticsPort: Phase 2 emits sanitized PostHog events.
-- NotificationsPort: Phase 2 schedules local trial and lease reminders.
+- NotificationsPort: Phase 2 schedules local trial and lease reminders through `adapters/notifications` over
+  expo-notifications. Two laws: `status()` is synchronous and agrees with the last `request()` result, and
+  `cancel(id)` never throws for an id it does not know. `scheduleTrialReminder(at, daysBefore?)` and
+  `scheduleWalkLeaseWarning(at, variant?)` are the only schedulable kinds; the third catalog id
+  (`SHIELD_OPEN_NOTIFICATION_ID`) is enqueued by the ShieldAction extension alone. `__tests__/notificationsContract.ts`
+  runs against the fake and the adapter.
 - SyncPort: Phase 2 synchronizes rules and day facts with the VPS.
 - ClockPort: Phase 2 observes system time and timezone changes.
 - ReachabilityPort: network-backed screens distinguish offline failures; local-first flows never consult it.

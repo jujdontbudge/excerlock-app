@@ -5,10 +5,14 @@ import { PermissionStatus } from '../domain/types';
 // this port schedules it, and the app only ever reads or cancels it.
 export const SHIELD_OPEN_NOTIFICATION_ID = 'excerlock.shield.open';
 
+/** What renews the walking lease: keep walking with the phone in hand, or scan again when propped. */
+export type LeaseWarningVariant = 'handheld' | 'propped';
+
 export interface NotificationsPort {
   status(): PermissionStatus;
   request(): Promise<PermissionStatus>;
-  scheduleTrialReminder(at: string): Promise<string>;
-  scheduleWalkLeaseWarning(at: string): Promise<string>;
+  /** `daysBefore` is how far ahead of the trial end `at` lands; the adapter says so in the copy. */
+  scheduleTrialReminder(at: string, daysBefore?: number): Promise<string>;
+  scheduleWalkLeaseWarning(at: string, variant?: LeaseWarningVariant): Promise<string>;
   cancel(id: string): Promise<void>;
 }
