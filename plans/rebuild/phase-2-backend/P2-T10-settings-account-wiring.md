@@ -3,14 +3,16 @@
 ## Steps
 
 1. Permissions health rows read live statuses from the adapters (P2-T04/T05/T09) on foreground; Fix →
-   request when `notDetermined`, `Linking.openSettings()` when denied.
+   request when `notDetermined`, `Linking.openSettings()` when denied. Home and the setup ceremonies use
+   the same denied recovery instead of attempting a request the OS will not show again.
 2. Subscription: plan and renewal from the Adapty profile; Manage subscription →
    `https://apps.apple.com/account/subscriptions`; Restore → adapter.
 3. Rate ExcerLock: `expo-store-review` policy ported (thresholds re-based: 5th met day with install age ≥ 3
    days → first 7-day streak → 30-day streak; stop after 3 shows or manual rate); the store URL configured
    (App Store id from `asc` CLI).
 4. Share ExcerLock: native share sheet with the App Store URL.
-5. Support: real `POST /v1/support` with retry semantics ported from `app/src/support`.
+5. Support: real `POST /v1/support` with retry semantics ported from `app/src/support`; send P2-T22's
+   `SupportRequest` including the reply address and privacy-floored diagnostics.
 6. Account: sign in/out via P2-T01; Delete account → server `DELETE /v1/user` → ordered erasure; local rules
    kept (local-first); new anonymous session.
 7. Legal documents: real Terms and Privacy text supplied by Johan (placeholder stays flagged in the content
@@ -22,6 +24,8 @@
 - [ ] Every Settings row does the real thing on the simulator; deletion verified against the dev Supabase
       project and the VPS (row tombstoned, Adapty logout called, PostHog reset).
 - [ ] Release guardrail for legal placeholders green only when real text is present.
+- [ ] Home, setup ceremonies and Settings open iOS Settings for a denied permission and request only when
+      the permission is `notDetermined`.
 
 ## Audit amendments (2026-09-07; see `fix-plan.md`)
 

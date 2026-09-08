@@ -248,7 +248,7 @@ type Profile = {
 type Entitlement = { status: 'unknown' | 'none' | 'trial' | 'active' | 'expired' | 'billingIssue'; renewsAt: string | null };
 type Session     = { kind: 'anonymous' } | { kind: 'signedIn'; provider: 'apple' | 'google' | 'email'; email: string | null };
 type PermissionStatus = 'notDetermined' | 'granted' | 'denied' | 'restricted';
-type Permissions = { screenTime: PermissionStatus; motion: PermissionStatus; location: 'notDetermined' | 'whenInUse' | 'always' | 'denied'; health: PermissionStatus; camera: PermissionStatus; notifications: PermissionStatus };
+type Permissions = { screenTime: PermissionStatus; motion: PermissionStatus; location: 'notDetermined' | 'whenInUse' | 'always' | 'denied' | 'restricted'; health: PermissionStatus; camera: PermissionStatus; notifications: PermissionStatus };
 ```
 
 Access by status (B21; `domain/entitlementAccess.ts`): `none` → the hard paywall (never subscribed); `trial`

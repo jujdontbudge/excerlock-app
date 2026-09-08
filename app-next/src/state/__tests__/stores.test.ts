@@ -23,6 +23,8 @@ test('all eight stores reject malformed persisted fields and accept valid produc
   expect(entitlementStore.getState().data.entitlement.status).toBe('trial');
   permissionsStore.getState().patch({ motion: 'granted' });
   expect(permissionsStore.getState().data.motion).toBe('granted');
+  permissionsStore.getState().patch({ location: 'restricted' });
+  expect(permissionsStore.getState().data.location).toBe('restricted');
   onboardingStore.getState().patch({ step: 'W3', answers: { activity: 'walking', name: 'Alex' } });
   expect(onboardingStore.getState().data.step).toBe('W3');
 });

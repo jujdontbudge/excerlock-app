@@ -166,15 +166,15 @@ menu scenarios.
 
 Grouping and order follow OtterLife's settings screen as inventoried in the reference study; Codex places our rows where OtterLife would. Required rows:
 
-- Profile header: name, sign-in state (Signed in with Apple · Not signed in → Sign in).
+- Profile header: name and sign-in state (Signed in with Apple · Not signed in); tapping it opens Account.
 - Subscription: plan and renewal (from Entitlement), Manage subscription (App Store), Restore purchases.
-- Permissions: `PermissionRow` × Screen Time, Motion, Location, Health, Camera, Notifications, each with Fix / Open Settings.
-- Preferences: Units (km/mi), Walk & Scroll stop grace (30 s–5 min), Gym auto-detect (Always location) with explanation, Haptics on/off.
-- Locked apps (shortcut).
-- Support: Contact support (composer: category, message, send state), Rate ExcerLock, Share ExcerLock.
+- Permissions: `PermissionRow` × Screen Time, Motion, Location, Health, Camera, Reminders, each with live status and a detail screen for request / Open Settings recovery.
+- Preferences: Units (km/mi), Walk & Scroll stop grace (30 s–5 min), Gym auto-detect (Always location) with denial explanation, Touch feedback on/off. There is no separate notification preference.
+- Your plan: Locked apps ("N apps · M categories"), Conditions and Saved gyms shortcuts.
+- Support: Contact support (composer: category, message, required reply email, privacy-floored diagnostics preview, send state), Rate ExcerLock, Share ExcerLock.
 - Legal: Terms of Use, Privacy Policy (in-app document screens).
-- Account: Sign in / Sign out, Delete account (confirmation with the five-point explanation carried over from the old `AccountSettingsCard`).
-- Footer: version + build; 7 taps opens `DevMenu` (Phase 1 always; Phase 2 only in dev builds).
+- Account: exactly one Account row plus Delete my data / Delete account; the Account screen owns sign in, confirmed sign out and the shared deletion confirmation sheet.
+- About: version + build footer; 7 taps opens `DevMenu` (Phase 1 always; Phase 2 only in dev builds).
 
 Sub-screens: `settings/support`, `settings/legal/[doc]`, `settings/permission/[name]` (detail with status and instructions), `settings/account`, `settings/gyms` (saved gyms list, max 5, add via `GymPicker`).
 

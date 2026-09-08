@@ -13,7 +13,7 @@ export const legalCopy = {
       },
       {
         title: 'Your device',
-        body: 'Your conditions and progress remain on this device when you sign out or delete your account.',
+        body: 'Signing in backs up your conditions and progress so they can be restored on a new phone. Your blocked-app selection remains only on this device. Signing out keeps your plan here.',
       },
     ],
   },

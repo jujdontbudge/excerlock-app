@@ -28,6 +28,8 @@ Decision D5. Sync is a backup and restore channel, not a source of truth for enf
       restored on B; edit on B, relaunch A → A shows B's edit.
 - [ ] Airplane mode: changes queue and flush on reconnect.
 - [ ] Type-level privacy test green.
+- [ ] After sign-in on a new phone, conditions, progress and history return; the device-bound blocked-app
+      selection does not and must be chosen again.
 
 ## Audit amendments (2026-09-07; see `fix-plan.md`)
 

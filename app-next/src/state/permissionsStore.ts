@@ -15,5 +15,5 @@ export const permissionsStore = createPersistedStore<Permissions>('permissions',
   health: v.permission,
   camera: v.permission,
   notifications: v.permission,
-  location: v.oneOf(['notDetermined', 'whenInUse', 'always', 'denied']),
+  location: v.oneOf(['notDetermined', 'whenInUse', 'always', 'denied', 'restricted']),
 });

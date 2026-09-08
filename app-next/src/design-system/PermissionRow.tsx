@@ -11,7 +11,7 @@ export function PermissionRow({
 }: {
   title: string;
   icon: IconName;
-  status: 'Granted' | 'Off' | 'Needed';
+  status: 'Granted' | 'Off' | 'Needed' | 'Restricted';
   onPress: () => void;
 }) {
   const stacked = useWindowDimensions().fontScale > 1;

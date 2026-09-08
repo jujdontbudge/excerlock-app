@@ -78,7 +78,7 @@ export type PermissionStatus = 'notDetermined' | 'granted' | 'denied' | 'restric
 export type Permissions = {
   screenTime: PermissionStatus;
   motion: PermissionStatus;
-  location: 'notDetermined' | 'whenInUse' | 'always' | 'denied';
+  location: 'notDetermined' | 'whenInUse' | 'always' | 'denied' | 'restricted';
   health: PermissionStatus;
   camera: PermissionStatus;
   notifications: PermissionStatus;

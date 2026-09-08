@@ -1,48 +1,71 @@
-import { SettingsPage } from './SettingsPage';
 import { useState } from 'react';
-import { Heading, Label, PrimaryButton, SecondaryButton, BottomSheet } from '../../design-system';
+import { BottomSheet, Heading, Label, PrimaryButton, SecondaryButton } from '../../design-system';
 import { settingsCopy as c } from '../../content/settings';
-import { sessionStore as useSessionStore } from '../../state/sessionStore';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
+import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { sessionStore as useSessionStore } from '../../state/sessionStore';
+import { SettingsPage } from './SettingsPage';
+
+type ConfirmationMode = 'signOut' | 'delete' | 'deleteData';
+
+function confirmationCopy(mode: ConfirmationMode) {
+  if (mode === 'signOut')
+    return { title: c.signOutTitle, facts: c.signOutFacts, confirm: c.signOutConfirm, cancel: c.staySignedIn };
+  if (mode === 'deleteData')
+    return {
+      title: c.deleteDataTitle,
+      facts: c.deleteDataFacts,
+      confirm: c.deleteDataConfirm,
+      cancel: c.keepAccount,
+    };
+  return { title: c.deleteTitle, facts: c.deleteFacts, confirm: c.deleteConfirm, cancel: c.keepAccount };
+}
+
 export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBack: () => void }) {
-  const session = useSessionStore((s) => s.data.session),
-    runtime = useRuntime(),
-    [confirm, setConfirm] = useState(false),
-    [busy, setBusy] = useState(false),
-    [note, setNote] = useState('');
-  const action = async (deleting: boolean) => {
+  const session = useSessionStore((s) => s.data.session);
+  const runtime = useRuntime();
+  const [mode, setMode] = useState<ConfirmationMode | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  const sheet = confirmationCopy(mode ?? 'delete');
+
+  const confirm = async () => {
+    if (!mode || busy) return;
     setBusy(true);
     try {
-      if (deleting) {
+      if (mode === 'signOut') {
+        await runtime.auth.signOut();
+        setNote(c.signedOutNote);
+      } else {
         await runtime.auth.deleteAccount();
-        setNote(c.deleted);
-      } else await runtime.auth.signOut();
-      setConfirm(false);
+        setNote(mode === 'deleteData' ? c.dataDeleted : c.deleted);
+      }
+      setMode(null);
     } catch {
       setNote(c.error);
     } finally {
       setBusy(false);
     }
   };
+
   return (
     <SettingsPage
       onBack={onBack}
       overlay={
         <BottomSheet
-          open={confirm}
-          title={c.deleteTitle}
+          open={mode !== null}
+          title={sheet.title}
           onDismiss={() => {
-            if (!busy) setConfirm(false);
+            if (!busy) setMode(null);
           }}>
-          {c.deleteFacts.map((fact, i) => (
-            <Reveal key={fact} index={i}>
+          {sheet.facts.map((fact, index) => (
+            <Reveal key={fact} index={index}>
               <Label>{fact}</Label>
             </Reveal>
           ))}
-          <PrimaryButton label={c.deleteConfirm} loading={busy} onPress={() => void action(true)} />
-          <SecondaryButton label={c.keepAccount} disabled={busy} onPress={() => setConfirm(false)} />
+          <PrimaryButton label={sheet.confirm} loading={busy} onPress={() => void confirm()} />
+          <SecondaryButton label={sheet.cancel} disabled={busy} onPress={() => setMode(null)} />
         </BottomSheet>
       }>
       <Heading title={c.account} support={session.kind === 'anonymous' ? c.anonymous : c.signedIn(session.provider)} />
@@ -52,13 +75,17 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
           <Label>{note}</Label>
         </Reveal>
       ) : null}
-      <Reveal key={session.kind === 'anonymous' ? 'anonymous' : 'signedIn'}>
+      <Reveal key={session.kind}>
         {session.kind === 'anonymous' ? (
-          <PrimaryButton label={c.signIn} onPress={onSignIn} />
+          <>
+            <Label tone="secondary">{c.accountBenefit}</Label>
+            <PrimaryButton label={c.signIn} onPress={onSignIn} />
+            <SecondaryButton label={c.deleteData} onPress={() => setMode('deleteData')} />
+          </>
         ) : (
           <>
-            <SecondaryButton label={c.signOut} disabled={busy} onPress={() => void action(false)} />
-            <SecondaryButton label={c.delete} onPress={() => setConfirm(true)} />
+            <SecondaryButton label={c.signOut} disabled={busy} onPress={() => setMode('signOut')} />
+            <SecondaryButton label={c.delete} disabled={busy} onPress={() => setMode('delete')} />
           </>
         )}
       </Reveal>
