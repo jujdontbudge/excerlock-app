@@ -12,6 +12,7 @@ import { adaptyWebhookRoutes } from "./routes/adaptyWebhook.js";
 import { config } from "./config.js";
 import { healthRoutes } from "./routes/health.js";
 import { supportRoutes } from "./routes/support.js";
+import { syncRoutes } from "./routes/sync.js";
 import { userRoutes } from "./routes/user.js";
 
 export function buildServer(options: FastifyServerOptions = {}): FastifyInstance {
@@ -34,6 +35,7 @@ export function buildServer(options: FastifyServerOptions = {}): FastifyInstance
     async (protectedScope) => {
       protectedScope.addHook("onRequest", requireAuth);
       await protectedScope.register(supportRoutes);
+      await protectedScope.register(syncRoutes);
       await protectedScope.register(userRoutes);
     },
     { prefix: "/v1" },

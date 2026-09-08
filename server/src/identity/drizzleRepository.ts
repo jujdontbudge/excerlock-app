@@ -7,6 +7,7 @@ import {
 } from "../db/index.js";
 import {
   DeletedIdentityError,
+  type IdentityRecord,
   type IdentityRepository,
 } from "./repository.js";
 
@@ -44,6 +45,15 @@ export function createDrizzleIdentityRepository(
           throw new DeletedIdentityError();
         }
       });
+    },
+
+    async findUser(userId): Promise<IdentityRecord | null> {
+      const [user] = await database
+        .select({ createdAt: users.createdAt, deletedAt: users.deletedAt })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      return user ?? null;
     },
   };
 }
