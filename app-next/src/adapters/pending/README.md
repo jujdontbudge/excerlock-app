@@ -6,7 +6,10 @@ them owned by T15, T16, T19 and T24). Rather than resolve someone else's integra
 branch, the adapters are written against copies of the T15 surface kept here.
 
 Everything in this directory is either a copy of a P2-T15 file or a declaration of a shape P2-T15
-owns. Nothing outside `src/adapters/` is touched, so this directory cannot conflict with T15 or T03.
+owns. Nothing outside `src/adapters/` is touched, so this directory cannot conflict with T15.
+
+This is the only stand-in left. P2-T03 has been merged, so `engine/contracts.ts` names the real
+engine types and `nativeEngine.ts` binds the real providers.
 
 | File | P2-T15 home |
 | --- | --- |
@@ -26,4 +29,5 @@ cannot be forgotten. The cleanup:
    `domain/gymDwell`, `ports/*Port` and `ports/__tests__/*Contract`.
 3. Bind `gym/GymAdapter`'s `VisitLog` to `state/gymVisitsStore` with `visitLogFromStore`; delete the
    in-memory default.
-4. Run `npm run typecheck` and `npm test`. No adapter logic changes.
+4. Run `npm run typecheck` and `npm test`. No adapter logic changes, and none of the fixture
+   replay tests move: they already run against the real engine.
