@@ -38,6 +38,7 @@ export interface RuntimeControls {
   setRestoreOutcome(outcome: DevSnapshot['restoreOutcome']): void;
   setOutcome(outcome: DevSnapshot['outcome']): void;
   resolvePrompt(result: boolean | LockedApps): void;
+  invalidateSelection(): void;
   snapshot(): DevSnapshot;
   subscribe(callback: () => void): Unsubscribe;
 }

@@ -2,7 +2,7 @@
 
 Vendor-free boundaries. Every interface has a local fake in demo/fakes; features obtain them through runtime.
 
-- ScreenTimePort: Phase 2 implements FamilyControls authorization, opaque selection, shielding and measured usage.
+- ScreenTimePort: Phase 2 implements FamilyControls authorization, opaque selection, shielding, absolute monitor plans and measured usage. `applyLock` is idempotent. It raises the shield before reporting an apply failure, so budget or adapter errors fail closed. `describeSelection` re-verifies the opaque selection; a null handle is always an empty selection regardless of stale counts. `observeEnforcement` reports applied shield state without exposing app identities.
 - StepsPort: Phase 2 implements Core Motion authorization and midnight-based pedometer totals.
 - WalkingPort: Phase 2 implements cadence/gait verification, renewable leases and treadmill framing.
 - GymPort: Phase 2 implements place search, saved locations, geofence presence and check-in.

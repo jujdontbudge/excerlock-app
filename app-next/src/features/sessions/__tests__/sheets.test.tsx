@@ -2,6 +2,7 @@ import { render, screen, userEvent, act } from '@testing-library/react-native';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { WalkingSheet } from '../WalkingSheet';
+import { ShieldPreview } from '../ShieldPreview';
 import { rulesStore } from '../../../state/rulesStore';
 import { ruleDaysStore } from '../../../state/ruleDaysStore';
 test('walking sheet follows the script, can minimize, stop, and finish', async () => {
@@ -43,4 +44,19 @@ test('treadmill requires the fake propped framing state before starting', async 
   expect(screen.getByRole('button', { name: 'Start walking' })).toBeDisabled();
   await act(() => runtime.dev.setPlacement('propped'));
   expect(screen.getByRole('button', { name: 'Start walking' })).toBeEnabled();
+});
+
+test('shield preview renders distinct non-fallback copy for all three causes before a window', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('home-before-window');
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <ShieldPreview onOpen={jest.fn()} onClose={jest.fn()} />
+    </AppRuntimeProvider>,
+  );
+  expect(screen.getByText('Walk 5,000 steps to open your apps.')).toBeTruthy();
+  await userEvent.press(screen.getByRole('tab', { name: 'lockWindow' }));
+  expect(screen.getByText('Blocking has started. Walk 5,000 steps to open your apps.')).toBeTruthy();
+  await userEvent.press(screen.getByRole('tab', { name: 'walkingEnded' }));
+  expect(screen.getByText('Your walk has ended. Start walking again to open your apps.')).toBeTruthy();
 });

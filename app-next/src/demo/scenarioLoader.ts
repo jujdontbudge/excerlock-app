@@ -15,7 +15,11 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
   settingsStore.getState().patch({ gymPlaces: scenario.gym?.places ?? [] });
   profileStore.getState().patch(scenario.profile ?? {});
   rulesStore.getState().patch({ rules: scenario.rules, lockedApps: scenario.lockedApps });
-  ruleDaysStore.getState().patch({ days: scenario.ruleDays, walkingSession: scenario.walkingSession ?? null });
+  ruleDaysStore.getState().patch({
+    days: scenario.ruleDays,
+    earnedUnlocks: scenario.earnedUnlocks ?? [],
+    walkingSession: scenario.walkingSession ?? null,
+  });
   permissionsStore.getState().patch(scenario.permissions);
   sessionStore.getState().patch({ session: scenario.session });
   entitlementStore.getState().patch({ entitlement: scenario.entitlement });

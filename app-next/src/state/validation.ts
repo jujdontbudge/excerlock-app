@@ -32,6 +32,13 @@ export const ruleDay = shape({
   met: bool,
   metAt: nullable(iso),
 });
+export const earnedUnlock = shape({
+  day: (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v),
+  ruleId: text,
+  ruleName: text,
+  metAt: iso,
+  windowEnd: iso,
+});
 export const walkingSession = nullable(
   shape({ ruleId: text, startedAt: iso, leaseUntil: iso, phase: oneOf(['verifying', 'walking', 'grace', 'ended']) }),
 );

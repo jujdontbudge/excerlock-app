@@ -1,4 +1,8 @@
+import { Rule } from './types';
+
 export type RuleIssue = 'identity' | 'mode' | 'goal' | 'days' | 'window';
+// B32 keeps DeviceActivity lock windows at twice Apple's documented 15-minute floor.
+export const MIN_WINDOW_MINUTES = 30;
 const record = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const iso = (v: unknown) => typeof v === 'string' && Number.isFinite(Date.parse(v));
@@ -70,9 +74,26 @@ export function validateRule(value: unknown): RuleIssue[] {
       start > 1439 ||
       end < 0 ||
       end > 1439 ||
-      (end - start + 1440) % 1440 < 15
+      (end - start + 1440) % 1440 < MIN_WINDOW_MINUTES
     )
       issues.push('window');
   } else if (w.kind !== 'allDay') issues.push('window');
   return [...new Set(issues)];
+}
+
+export function migrateRule(rule: Rule): Rule {
+  const window = rule.schedule.window;
+  if (window.kind === 'allDay') return rule;
+  const duration = (window.endMinute - window.startMinute + 1440) % 1440;
+  if (duration < 15 || duration >= MIN_WINDOW_MINUTES) return rule;
+  return {
+    ...rule,
+    schedule: {
+      ...rule.schedule,
+      window: {
+        ...window,
+        endMinute: (window.startMinute + MIN_WINDOW_MINUTES) % 1440,
+      },
+    },
+  };
 }

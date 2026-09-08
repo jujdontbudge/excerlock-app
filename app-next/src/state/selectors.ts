@@ -22,10 +22,10 @@ export function useLockDecision() {
     now = useClock(),
     timezone = runtime.clock.timezone(),
     rules = useRulesStore((s) => s.data.rules),
-    { days, walkingSession } = useRuleDaysStore((s) => s.data);
+    { days, earnedUnlocks, walkingSession } = useRuleDaysStore((s) => s.data);
   return useMemo(
-    () => resolveLock({ now, timezone, rules, ruleDays: days, walkingSession }),
-    [now, timezone, rules, days, walkingSession],
+    () => resolveLock({ now, timezone, rules, ruleDays: days, earnedUnlocks, walkingSession, gymPresence: null }),
+    [now, timezone, rules, days, earnedUnlocks, walkingSession],
   );
 }
 export function useTodayProgress() {

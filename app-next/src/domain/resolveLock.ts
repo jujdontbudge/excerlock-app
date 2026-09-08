@@ -1,50 +1,115 @@
-import { unlockHint } from './unlockHint';
-import { Rule, RuleDay, WalkingSession, LockDecision } from './types';
-import { dayKey, windowInstances, currentInstances, nextInstanceStart, isActiveAt } from './schedule';
 import { addDays, localInstant } from './calendar';
+import { currentInstances, dayKey, isActiveAt, nextInstanceStart, windowInstances } from './schedule';
+import { EarnedUnlock, GymPresence, LockDecision, Rule, RuleDay, WalkingSession } from './types';
+import { unlockHint } from './unlockHint';
+
 export type LockInput = {
   now: string;
   timezone: string;
   rules: Rule[];
   ruleDays: RuleDay[];
+  earnedUnlocks: EarnedUnlock[];
   walkingSession: WalkingSession | null;
+  gymPresence: GymPresence | null;
 };
-export function resolveLock({ now, timezone: tz, rules, ruleDays, walkingSession: session }: LockInput): LockDecision {
-  const enabled = rules.filter((r) => r.enabled),
-    today = dayKey(now, tz);
-  const active = enabled.filter((r) => isActiveAt(r, now, tz));
+
+const byActiveOrder = (now: string, timezone: string) => (left: Rule, right: Rule) => {
+  const leftStart = currentInstances(left, now, timezone)[0].start;
+  const rightStart = currentInstances(right, now, timezone)[0].start;
+  return leftStart.localeCompare(rightStart) || left.createdAt.localeCompare(right.createdAt);
+};
+
+export function resolveLock({
+  now,
+  timezone,
+  rules,
+  ruleDays,
+  earnedUnlocks,
+  walkingSession,
+  gymPresence,
+}: LockInput): LockDecision {
+  const nowMs = Date.parse(now);
+  const enabled = rules.filter((rule) => rule.enabled);
+  const today = dayKey(now, timezone);
+  const active = enabled.filter((rule) => isActiveAt(rule, now, timezone)).sort(byActiveOrder(now, timezone));
+
   if (
-    session &&
-    ['walking', 'grace'].includes(session.phase) &&
-    Date.parse(session.leaseUntil) > Date.parse(now) &&
-    active.some((r) => r.id === session.ruleId && r.mode.kind === 'state')
-  )
-    return { state: 'unlockedWalking', sessionRuleId: session.ruleId, leaseUntil: session.leaseUntil };
-  for (const row of ruleDays.filter((d) => d.met).sort((a, b) => b.day.localeCompare(a.day))) {
-    const rule = enabled.find((r) => r.id === row.ruleId && r.mode.kind !== 'state');
-    if (!rule || row.day > today) continue;
-    const instance = windowInstances(rule, row.day, tz)[0];
-    if (!instance) continue;
-    const cutoff = localInstant(addDays(row.day, 1), 0, tz);
-    const relockAt = nextInstanceStart(enabled, new Date(Date.parse(cutoff) - 1).toISOString(), tz);
-    if (relockAt && Date.parse(relockAt) <= Date.parse(now)) continue;
-    return { state: 'unlockedMet', byRuleId: rule.id, relockAt };
+    walkingSession &&
+    (walkingSession.phase === 'walking' || walkingSession.phase === 'grace') &&
+    Date.parse(walkingSession.leaseUntil) > nowMs &&
+    active.some((rule) => rule.id === walkingSession.ruleId && rule.mode.kind === 'state')
+  ) {
+    return {
+      state: 'unlockedWalking',
+      sessionRuleId: walkingSession.ruleId,
+      leaseUntil: walkingSession.leaseUntil,
+    };
   }
+
+  const earned = earnedUnlocks
+    .filter((unlock) => unlock.day <= today && (unlock.day === today || Date.parse(unlock.windowEnd) > nowMs))
+    .sort((left, right) => left.metAt.localeCompare(right.metAt) || left.ruleId.localeCompare(right.ruleId))[0];
+  if (earned) {
+    const nextDay = localInstant(addDays(earned.day, 1), 0, timezone);
+    return {
+      state: 'unlockedMet',
+      byRuleId: earned.ruleId,
+      byName: earned.ruleName,
+      metAt: earned.metAt,
+      relockAt: nextInstanceStart(enabled, new Date(Date.parse(nextDay) - 1).toISOString(), timezone),
+    };
+  }
+
+  const gymRule =
+    gymPresence && Date.parse(gymPresence.confirmedAt) <= nowMs && Date.parse(gymPresence.holdsUntil) > nowMs
+      ? active.find((rule) => rule.activity === 'gym')
+      : undefined;
+  if (gymRule && gymPresence) {
+    return {
+      state: 'unlockedProvisional',
+      byRuleId: gymRule.id,
+      placeId: gymPresence.placeId,
+      holdsUntil: gymPresence.holdsUntil,
+    };
+  }
+
   if (active.length) {
     const rows = active.flatMap((rule) =>
-      currentInstances(rule, now, tz).flatMap((instance) =>
-        ruleDays.filter((d) => d.ruleId === rule.id && d.day === instance.day),
+      currentInstances(rule, now, timezone).flatMap((instance) =>
+        ruleDays.filter((row) => row.ruleId === rule.id && row.day === instance.day),
       ),
     );
-    return { state: 'locked', activeRuleIds: active.map((r) => r.id), nextUnlockHint: unlockHint(active, rows) };
+    return {
+      state: 'locked',
+      activeRuleIds: active.map((rule) => rule.id),
+      nextUnlockHint: unlockHint(active, rows),
+    };
   }
+
   const starts = enabled
-    .flatMap((r) => windowInstances(r, today, tz))
-    .filter((w) => Date.parse(w.start) > Date.parse(now))
-    .sort((a, b) => a.start.localeCompare(b.start));
-  if (starts.length) return { state: 'beforeWindow', nextLockAt: starts[0].start, ruleId: starts[0].ruleId };
+    .flatMap((rule) => windowInstances(rule, today, timezone).map((instance) => ({ instance, rule })))
+    .filter(({ instance }) => Date.parse(instance.start) > nowMs)
+    .sort(
+      (left, right) =>
+        left.instance.start.localeCompare(right.instance.start) ||
+        left.rule.createdAt.localeCompare(right.rule.createdAt),
+    );
+  if (starts.length) {
+    const first = starts[0];
+    const getAhead = starts.find(
+      ({ instance, rule }) => instance.start === first.instance.start && rule.mode.kind === 'target',
+    );
+    return {
+      state: 'beforeWindow',
+      nextLockAt: first.instance.start,
+      ruleId: first.rule.id,
+      getAheadRuleId: getAhead?.rule.id ?? null,
+    };
+  }
+
   const ended = [addDays(today, -1), today]
-    .flatMap((d) => enabled.flatMap((r) => windowInstances(r, d, tz)))
-    .some((w) => dayKey(w.end, tz) === today && Date.parse(w.end) <= Date.parse(now));
-  return ended ? { state: 'afterWindow', nextLockAt: nextInstanceStart(enabled, now, tz) } : { state: 'noRulesToday' };
+    .flatMap((day) => enabled.flatMap((rule) => windowInstances(rule, day, timezone)))
+    .some((instance) => dayKey(instance.end, timezone) === today && Date.parse(instance.end) <= nowMs);
+  const nextLockAt = nextInstanceStart(enabled, now, timezone);
+  return ended ? { state: 'afterWindow', nextLockAt } : { state: 'noRulesToday', nextLockAt };
 }

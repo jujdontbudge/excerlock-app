@@ -4,6 +4,7 @@ import { ruleDaysStore } from '../../state/ruleDaysStore';
 import { permissionsStore } from '../../state/permissionsStore';
 import { dayKey, windowInstances, currentInstances } from '../../domain/schedule';
 import { applyProgress } from '../../domain/progress';
+import { collectEarnedUnlocks, pruneEarnedUnlocks } from '../../domain/earnedUnlock';
 import { Workout } from '../../ports/models';
 /** Synchronizes port observations into persisted per-rule facts; no UI owns counters. */
 export function startProgressSync(runtime: Runtime) {
@@ -12,14 +13,16 @@ export function startProgressSync(runtime: Runtime) {
     workouts: Workout[] = [],
     generation = 0,
     workoutsKey = '';
-  const signalKey = () => `${runtime.dev.snapshot().scenarioId}:${dayKey(runtime.clock.now(), runtime.clock.timezone())}`;
+  const signalKey = () =>
+    `${runtime.dev.snapshot().scenarioId}:${dayKey(runtime.clock.now(), runtime.clock.timezone())}`;
   const update = () => {
     if (!active || runtime.dev.snapshot().loading) return;
     const now = runtime.clock.now(),
       tz = runtime.clock.timezone(),
       today = dayKey(now, tz),
       permissions = permissionsStore.getState().data;
-    const old = ruleDaysStore.getState().data.days;
+    const stored = ruleDaysStore.getState().data,
+      old = stored.days;
     const changes = rulesStore.getState().data.rules.flatMap((rule) => {
       const m = rule.mode;
       if (!rule.enabled || m.kind !== 'target' || rule.activity === 'gym') return [];
@@ -47,17 +50,29 @@ export function startProgressSync(runtime: Runtime) {
                 0,
               );
       const next = applyProgress(rule, row, value, now);
-      return next.progress === row.progress && next.met === row.met && old.includes(row) ? [] : [next];
+      return next.progress === row.progress && next.met === row.met && old.includes(row)
+        ? []
+        : [{ before: row, next, rule, instance }];
     });
-    if (changes.length)
-      ruleDaysStore
-        .getState()
-        .patch({
-          days: [...old.filter((d) => !changes.some((n) => n.ruleId === d.ruleId && n.day === d.day)), ...changes],
-        });
+    const retainedUnlocks = pruneEarnedUnlocks(stored.earnedUnlocks, today);
+    const earnedUnlocks = collectEarnedUnlocks(
+      retainedUnlocks,
+      changes.map((change) => ({ ...change, after: change.next })),
+    );
+    if (changes.length || retainedUnlocks.length !== stored.earnedUnlocks.length)
+      ruleDaysStore.getState().patch({
+        days: [
+          ...old.filter(
+            (day) => !changes.some((change) => change.next.ruleId === day.ruleId && change.next.day === day.day),
+          ),
+          ...changes.map((change) => change.next),
+        ],
+        earnedUnlocks,
+      });
   };
   const refresh = () => {
-    const id = ++generation, key = signalKey();
+    const id = ++generation,
+      key = signalKey();
     void Promise.all([runtime.health.workoutsToday('running'), runtime.health.workoutsToday('biking')]).then((rows) => {
       if (active && id === generation && key === signalKey()) {
         workoutsKey = key;
@@ -80,7 +95,9 @@ export function startProgressSync(runtime: Runtime) {
       refresh();
     }),
     runtime.dev.subscribe(refresh),
-    runtime.clock.subscribe(() => { if (workoutsKey !== signalKey()) refresh(); }),
+    runtime.clock.subscribe(() => {
+      if (workoutsKey !== signalKey()) refresh();
+    }),
   ];
   refresh();
   return () => {

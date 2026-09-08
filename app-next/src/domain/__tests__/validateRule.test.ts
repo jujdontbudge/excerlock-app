@@ -1,5 +1,6 @@
-import { validateRule } from '../validateRule';
+import { migrateRule, MIN_WINDOW_MINUTES, validateRule } from '../validateRule';
 import { rule } from './fixtures';
+import { scenarios } from '../../demo/scenarios';
 test('invalid data cannot create a condition; every activity keeps its prescribed bounds', () => {
   expect(validateRule(rule)).toEqual([]);
   for (const invalid of [
@@ -46,4 +47,46 @@ test('malformed modes and missing schedule fields are rejected at hydration', ()
     { ...rule, schedule: { days: [1], window: { kind: 'unknown' } } },
   ])
     expect(validateRule(invalid).length).toBeGreaterThan(0);
+});
+
+test('blocking windows enforce the thirty-minute minimum across midnight', () => {
+  const withWindow = (startMinute: number, endMinute: number) => ({
+    ...rule,
+    schedule: { days: [1], window: { kind: 'range', startMinute, endMinute } },
+  });
+  expect(validateRule(withWindow(60, 80))).toContain('window');
+  expect(validateRule(withWindow(60, 90))).not.toContain('window');
+  expect(validateRule(withWindow(1430, 20))).not.toContain('window');
+});
+
+test('persisted 15–29 minute windows hydrate as thirty minutes without dropping the rule', () => {
+  const sameDay = migrateRule({
+    ...rule,
+    schedule: { days: [1], window: { kind: 'range', startMinute: 540, endMinute: 560 } },
+  });
+  const overnight = migrateRule({
+    ...rule,
+    schedule: { days: [1], window: { kind: 'range', startMinute: 1430, endMinute: 10 } },
+  });
+  expect(sameDay.schedule.window).toEqual({ kind: 'range', startMinute: 540, endMinute: 570 });
+  expect(overnight.schedule.window).toEqual({ kind: 'range', startMinute: 1430, endMinute: 20 });
+  expect(validateRule(sameDay)).toEqual([]);
+  expect(validateRule(overnight)).toEqual([]);
+  expect(migrateRule({ ...rule, schedule: { days: [1], window: { kind: 'allDay' } } })).toEqual({
+    ...rule,
+    schedule: { days: [1], window: { kind: 'allDay' } },
+  });
+  expect(
+    migrateRule({ ...rule, schedule: { days: [1], window: { kind: 'range', startMinute: 60, endMinute: 70 } } }),
+  ).toEqual({ ...rule, schedule: { days: [1], window: { kind: 'range', startMinute: 60, endMinute: 70 } } });
+  expect(migrateRule(rule)).toBe(rule);
+});
+
+test('no shipped fixture or scenario violates MIN_WINDOW_MINUTES', () => {
+  const shipped = [rule, ...scenarios.flatMap((scenario) => scenario.rules)];
+  for (const item of shipped) {
+    if (item.schedule.window.kind === 'allDay') continue;
+    const { startMinute, endMinute } = item.schedule.window;
+    expect((endMinute - startMinute + 1440) % 1440).toBeGreaterThanOrEqual(MIN_WINDOW_MINUTES);
+  }
 });
