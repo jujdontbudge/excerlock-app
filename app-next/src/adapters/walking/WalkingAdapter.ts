@@ -60,8 +60,6 @@ export type WalkingAdapter = WalkingPort & {
   dispose(): void;
 };
 
-const STEPS_PER_WALKING_SECOND = 1.6;
-
 /**
  * The walking session over Core Motion.
  *
@@ -384,5 +382,3 @@ export function createWalkingAdapter({
     },
   };
 }
-
-export const walkingStepsFromSeconds = (seconds: number) => Math.floor(seconds * STEPS_PER_WALKING_SECOND);
