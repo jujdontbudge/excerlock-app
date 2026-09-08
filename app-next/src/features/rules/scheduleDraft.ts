@@ -1,5 +1,6 @@
 import { Answers } from '../../onboarding/types';
 import { Schedule, Weekday } from '../../domain/types';
+import { MIN_WINDOW_MINUTES } from '../../domain/ruleWindow';
 export type ScheduleDraft = { days: Weekday[]; allDay: boolean; start: number; end: number };
 export type ScheduleAction =
   { type: 'days'; value: Weekday[] } | { type: 'allDay'; value: boolean } | { type: 'start' | 'end'; value: number };
@@ -30,7 +31,7 @@ export function scheduleIssues(d: ScheduleDraft): ('days' | 'window')[] {
     issues.push('days');
   if (
     !d.allDay &&
-    (![d.start, d.end].every((n) => Number.isInteger(n) && n >= 0 && n < 1440) || (d.end - d.start + 1440) % 1440 < 15)
+    (![d.start, d.end].every((n) => Number.isInteger(n) && n >= 0 && n < 1440) || (d.end - d.start + 1440) % 1440 < MIN_WINDOW_MINUTES)
   )
     issues.push('window');
   return issues;

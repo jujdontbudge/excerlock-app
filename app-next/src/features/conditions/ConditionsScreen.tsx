@@ -21,9 +21,14 @@ import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { ConfirmSheet } from './ConfirmSheet';
 import { toggleRule, deleteRule } from './mutations';
+import { conditionStatus } from './conditionStatus';
+import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
 export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit: (id: string) => void }) {
   const { rules, lockedApps } = useRulesStore((s) => s.data),
+    days = useRuleDaysStore((s) => s.data.days),
     runtime = useRuntime(),
+    now = runtime.clock.now(),
+    timezone = runtime.clock.timezone(),
     [deleting, setDeleting] = useState<string | null>(null);
   const ordered = [...rules].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
@@ -38,7 +43,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
           cancel={c.keepRule}
           onCancel={() => setDeleting(null)}
           onConfirm={() => {
-            if (deleting) deleteRule(deleting);
+            if (deleting) deleteRule(deleting, now, timezone);
             setDeleting(null);
           }}
         />
@@ -53,6 +58,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
                 schedule={scheduleLabel(rule.schedule)}
                 icon={rule.activity}
                 enabled={rule.enabled}
+                status={conditionStatus(rule, days, now, timezone)}
                 onOpen={() => onEdit(rule.id)}
                 onToggle={(value) => toggleRule(rule.id, value)}
                 onDelete={() => setDeleting(rule.id)}

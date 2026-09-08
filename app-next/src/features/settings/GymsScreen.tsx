@@ -9,6 +9,9 @@ import {
   Label,
 } from '../../design-system';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
+import { rulesStore as useRulesStore } from '../../state/rulesStore';
+import { gymRulesToPause } from '../../domain/gymDependency';
+import { syncGymDependency } from '../conditions/mutations';
 import { settingsCopy as c } from '../../content/settings';
 import { GymPicker } from '../sheets/GymPicker';
 import { ConfirmSheet } from '../conditions/ConfirmSheet';
@@ -18,9 +21,12 @@ import { View } from 'react-native';
 import { tokens as t } from '../../design-system/tokens';
 export function GymsScreen({ onBack }: { onBack: () => void }) {
   const gyms = useSettingsStore((s) => s.data.gymPlaces),
+    rules = useRulesStore((s) => s.data.rules),
     [adding, setAdding] = useState(false),
     [editing, setEditing] = useState<string | undefined>(),
     [deleting, setDeleting] = useState<string | null>(null);
+  // What this removal would orphan: only losing the last gym leaves a gym condition without a signal (B24).
+  const orphaned = deleting ? gymRulesToPause(rules, gyms.filter((g) => g.id !== deleting)) : [];
   return (
     <SettingsPage
       onBack={onBack}
@@ -36,13 +42,14 @@ export function GymsScreen({ onBack }: { onBack: () => void }) {
           />
           <ConfirmSheet
             open={!!deleting}
-            title={c.removeGym}
-            body={gyms.find((g) => g.id === deleting)?.name ?? ''}
+            title={c.removeGymTitle(gyms.find((g) => g.id === deleting)?.name ?? '')}
+            body={orphaned.length ? c.removeGymBody(orphaned.length) : c.removeGymSafeBody}
             confirm={c.removeGym}
             cancel={c.close}
             onCancel={() => setDeleting(null)}
             onConfirm={() => {
               useSettingsStore.getState().patch({ gymPlaces: gyms.filter((g) => g.id !== deleting) });
+              syncGymDependency();
               setDeleting(null);
             }}
           />

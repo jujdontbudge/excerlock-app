@@ -69,6 +69,7 @@ test('editing preserves identity and schedule; dirty cancel requires discard', a
   await mount('edit-me');
   const before = rulesStore.getState().data.rules[0];
   await userEvent.press(screen.getByRole('button', { name: 'Edit goal' }));
+  await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   await fireEvent.changeText(screen.getByLabelText('Goal'), '35');
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   await userEvent.press(screen.getByRole('button', { name: 'Back' }));
@@ -83,6 +84,7 @@ test('editing preserves identity and schedule; dirty cancel requires discard', a
 test('canceling an invalid goal edit restores the summary', async () => {
   await mount('edit-me');
   await userEvent.press(screen.getByRole('button', { name: 'Edit goal' }));
+  await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   await fireEvent.changeText(screen.getByLabelText('Goal'), '');
   await userEvent.press(screen.getByRole('button', { name: 'Back' }));
   expect(screen.getByText('Run 20 minutes')).toBeTruthy();
@@ -158,7 +160,7 @@ test('a gym rule saved with no gym is paused with a note', async () => {
   await userEvent.press(screen.getByRole('radio', { name: 'Arrive at the gym' }));
   await userEvent.press(screen.getByRole('button', { name: conditionsCopy.continue }));
   await userEvent.press(screen.getByRole('button', { name: conditionsCopy.continue }));
-  expect(screen.getByText(planCopy.noGym)).toBeTruthy();
+  expect(screen.getByText(`${planCopy.noGym} · ${planCopy.addGym}`)).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: conditionsCopy.save }));
   const saved = rulesStore.getState().data.rules[0];
   expect(saved.enabled).toBe(false);
@@ -236,6 +238,8 @@ test('changing the activity keeps the rule id', async () => {
   const before = rulesStore.getState().data.rules[0];
   await userEvent.press(screen.getByRole('button', { name: planCopy.editActivity }));
   await userEvent.press(screen.getByRole('radio', { name: 'Biking' }));
+  await userEvent.press(screen.getByRole('button', { name: conditionsCopy.continue }));
+  expect(screen.getByText('What counts as a bike ride?')).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: conditionsCopy.continue }));
   await userEvent.press(screen.getByRole('button', { name: conditionsCopy.continue }));
   expect(screen.getByText(planCopy.S3)).toBeTruthy();

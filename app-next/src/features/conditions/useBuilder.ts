@@ -7,8 +7,8 @@ import { settingsStore, settingsStore as useSettingsStore } from '../../state/se
 import { createDraft, fromRule, toRule } from '../rules/draft';
 import { createRuleDraftStore } from '../rules/RuleDraftStore';
 import { scheduleDraft, reduceSchedule, toSchedule, ScheduleAction } from '../rules/scheduleDraft';
-import { builderPath, builderValid } from './builderFlow';
-import { saveRule } from './mutations';
+import { builderPath, builderValid, editPath } from './builderFlow';
+import { saveRule, syncGymDependency } from './mutations';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 export function useBuilder(id: string | undefined, onClose: () => void) {
   const runtime = useRuntime();
@@ -52,9 +52,16 @@ export function useBuilder(id: string | undefined, onClose: () => void) {
     confirm,
     direction,
     dispatch,
-    valid: step === 'GPlace' ? gymCount > 0 : builderValid(step, draft, schedule, chosen),
+    editing: initial.editing,
+    gymCount,
+    valid: builderValid(step, draft, schedule, chosen),
+    // A change of activity keeps the rule's identity; a fresh uuid would orphan the rule being edited.
     choose: (activity: Activity) => {
-      store.getState().replace(createDraft(activity, settingsStore.getState().data.units, runtime.clock.now()));
+      const current = store.getState().draft;
+      const fresh = createDraft(activity, settingsStore.getState().data.units, runtime.clock.now());
+      store
+        .getState()
+        .replace({ ...fresh, id: current.id, createdAt: current.createdAt, enabled: current.enabled });
       setChosen(true);
     },
     onSchedule: (a: ScheduleAction) => setSchedule((s) => reduceSchedule(s, a)),
@@ -76,10 +83,16 @@ export function useBuilder(id: string | undefined, onClose: () => void) {
     next: () => {
       if (step === 'S3') {
         saveRule(toRule({ ...draft, updatedAt: runtime.clock.now() }, toSchedule(schedule)));
+        syncGymDependency();
         onClose();
       } else if (backup) {
-        setBackup(null);
-        move('S3');
+        const segment = editPath(step, draft),
+          following = segment[segment.indexOf(step) + 1];
+        if (following) move(following);
+        else {
+          setBackup(null);
+          move('S3');
+        }
       } else {
         const path = builderPath(draft);
         move(path[path.indexOf(step) + 1]);

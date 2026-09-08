@@ -12,11 +12,13 @@ export function OnboardingHeader({
   progress,
   onBack,
   onClose,
+  closeLabel,
   showProgress = true,
 }: {
   progress: number;
   onBack?: () => void;
   onClose?: () => void;
+  closeLabel?: string;
   showProgress?: boolean;
 }) {
   const m = useMotion(),
@@ -85,7 +87,7 @@ export function OnboardingHeader({
         />
       </View> : null}
       {onClose ? (
-        <PressableScale label={c.close} onPress={onClose} style={{ width: t.layout.touch, alignItems: 'center' }}>
+        <PressableScale label={closeLabel ?? c.close} onPress={onClose} style={{ width: t.layout.touch, alignItems: 'center' }}>
           {arrow('close')}
         </PressableScale>
       ) : null}
