@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { BottomSheet, Heading, Label, PrimaryButton, SecondaryButton } from '../../design-system';
+import { common } from '../../content/common';
 import { settingsCopy as c } from '../../content/settings';
+import { apiFailureMessage } from '../../adapters/api/failureMessage';
 import { teardownIdentity } from '../../domain/identity';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
@@ -45,8 +47,16 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
         setNote(mode === 'deleteData' ? c.dataDeleted : c.deleted);
       }
       setMode(null);
-    } catch {
-      setNote(c.error);
+    } catch (error) {
+      // A refused deletion changes nothing: the session and the local plan are exactly as before.
+      setNote(
+        await apiFailureMessage(error, runtime.reachability, {
+          offline: common.offline,
+          timeout: c.timeoutError,
+          rejected: c.deleteFailed,
+          fallback: c.deleteFailed,
+        }),
+      );
     } finally {
       setBusy(false);
     }

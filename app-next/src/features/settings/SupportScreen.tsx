@@ -1,5 +1,3 @@
-import * as Application from 'expo-application';
-import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import { useState } from 'react';
 import { Keyboard } from 'react-native';
@@ -12,12 +10,13 @@ import { tokens as t } from '../../design-system/tokens';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
-import { requestFailureMessage } from '../../runtime/requestFailureMessage';
+import { apiFailureMessage } from '../../adapters/api/failureMessage';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
 import { sessionStore as useSessionStore } from '../../state/sessionStore';
 import { SettingsPage } from './SettingsPage';
+import { appBuildInfo } from './appBuildInfo';
 
 const validEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
@@ -37,9 +36,10 @@ export function SupportScreen({ onBack = () => {} }: { onBack?: () => void }) {
   const lastEnforcement = [...runtime.dev.snapshot().events]
     .reverse()
     .find((event) => event.event === 'lock_applied')?.props.state;
+  const build = appBuildInfo({ version: c.unavailable, build: c.unavailable });
   const diagnostics = supportDiagnostics({
-    appVersion: Application.nativeApplicationVersion ?? Constants.expoConfig?.version ?? c.unavailable,
-    appBuild: Application.nativeBuildVersion ?? Constants.expoConfig?.ios?.buildNumber ?? c.unavailable,
+    appVersion: build.version,
+    appBuild: build.build,
     iosVersion: Device.osVersion ?? c.unavailable,
     deviceModel: Device.modelName ?? c.unavailable,
     entitlementStatus: entitlement.status,
@@ -80,8 +80,15 @@ export function SupportScreen({ onBack = () => {} }: { onBack?: () => void }) {
         diagnostics,
       });
       setState('sent');
-    } catch {
-      setError(await requestFailureMessage(runtime.reachability, { offline: common.offline, fallback: c.error }));
+    } catch (error) {
+      setError(
+        await apiFailureMessage(error, runtime.reachability, {
+          offline: common.offline,
+          timeout: c.timeoutError,
+          rejected: c.rejectedError,
+          fallback: c.error,
+        }),
+      );
       setState('error');
     }
   };
@@ -110,6 +117,7 @@ export function SupportScreen({ onBack = () => {} }: { onBack?: () => void }) {
         value={replyTo}
         onChangeText={setReplyTo}
         onBlur={() => setReplyTouched(true)}
+        maxLength={254}
         autoCapitalize="none"
         keyboardType="email-address"
         autoComplete="email"

@@ -28,8 +28,11 @@ the ordinary error when reachability itself cannot be determined.
 5. **`startNotifications`** (`adapters/notifications`) — schedules the trial reminder off the entitlement
    store and the walk-lease warning off the walking session, against whichever notifications port is bound,
    and routes notification taps through the landing table when the bound port delivers responses.
+6. **`startReviewPrompts`** (`adapters/review`) — re-runs the App Store rating policy on every rule-day
+   change, so a day becoming met can prompt while the app is in the foreground. It subscribes to the
+   store, never to `AppState`.
 
-The four bindings are started in that order inside one effect and stopped in reverse.
+The five bindings are started in that order inside one effect and stopped in reverse.
 `app/locked-apps.tsx` is registered outside every `Stack.Protected` so the shield notification's deep
 link always resolves; `lockedAppsDestination` then sends the user to Home or the paywall.
 

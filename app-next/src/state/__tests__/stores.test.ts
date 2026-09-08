@@ -4,9 +4,10 @@ import { rulesStore } from '../rulesStore';
 import { entitlementStore } from '../entitlementStore';
 import { permissionsStore } from '../permissionsStore';
 import { onboardingStore } from '../onboardingStore';
+import { reviewStore } from '../reviewStore';
 import { rule } from '../../domain/__tests__/fixtures';
-test('all eight stores reject malformed persisted fields and accept valid product facts', async () => {
-  expect(stores).toHaveLength(8);
+test('all nine stores reject malformed persisted fields and accept valid product facts', async () => {
+  expect(stores).toHaveLength(9);
   for (const store of stores) {
     await store.persist.rehydrate();
     const initial = store.getState().data;
@@ -27,4 +28,9 @@ test('all eight stores reject malformed persisted fields and accept valid produc
   expect(permissionsStore.getState().data.location).toBe('restricted');
   onboardingStore.getState().patch({ step: 'W3', answers: { activity: 'walking', name: 'Alex' } });
   expect(onboardingStore.getState().data.step).toBe('W3');
+  reviewStore.getState().patch({ installedAt: '2026-09-01T00:00:00.000Z', promptCount: 2, manualRateTapped: true });
+  expect(reviewStore.getState().data).toEqual({ installedAt: '2026-09-01T00:00:00.000Z', promptCount: 2, manualRateTapped: true });
+  reviewStore.getState().patch({ promptCount: 7, installedAt: 'not a date' });
+  expect(reviewStore.getState().data.promptCount).toBe(2);
+  expect(reviewStore.getState().data.installedAt).toBe('2026-09-01T00:00:00.000Z');
 });

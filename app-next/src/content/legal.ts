@@ -1,5 +1,8 @@
-// Phase 1 placeholder legal text. Replace with counsel-approved documents before release.
+// Phase 1 placeholder legal text. Replace with counsel-approved documents before release, then flip
+// `placeholder` to false: the release guardrail test fails a production build while it is true.
+export const LEGAL_PLACEHOLDER = true;
 export const legalCopy = {
+  placeholder: LEGAL_PLACEHOLDER,
   privacy: {
     title: 'Privacy Policy',
     sections: [
