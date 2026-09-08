@@ -36,3 +36,6 @@ design/research/competitor-onboarding/fitness/**/*.png
 design/research/competitor-onboarding/fitness-lock/**/*.png
 design/research/competitor-onboarding/screen-time/**/*.png
 design/research/competitor-onboarding/horizontal-review/
+
+# Agent worktrees symlink the shared install; keep the link untracked.
+node_modules
