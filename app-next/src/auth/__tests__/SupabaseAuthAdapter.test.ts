@@ -1,5 +1,8 @@
 import { describeAuthPort } from '../../ports/__tests__/authContract';
+import { ruleDaysStore } from '../../state/ruleDaysStore';
+import { rulesStore } from '../../state/rulesStore';
 import { sessionStore } from '../../state/sessionStore';
+import { settingsStore } from '../../state/settingsStore';
 import { accountProvisioning } from '../accountProvisioning';
 import type { NativeIdentityProvider } from '../identityProviders';
 import { createSupabaseAuth, SupabaseAuth } from '../SupabaseAuthAdapter';
@@ -208,6 +211,29 @@ describe('SupabaseAuthAdapter', () => {
     await auth.port.deleteAccount();
     expect(auth.port.session()).toMatchObject({ kind: 'anonymous' });
     expect(auth.port.session().userId).not.toBe(signedInId);
+    auth.dispose();
+  });
+
+  test('signing out and deleting the account leave every rule, day and setting on the device', async () => {
+    // The local-first law: whatever an account exit does to the session, nothing that decides
+    // earning or locking moves with it.
+    const { auth } = await harness();
+    settingsStore.getState().patch({ units: 'mi' });
+    rulesStore.getState().patch({ lockedApps: { handle: { token: 'chosen-apps' }, appCount: 3, categoryCount: 1 } });
+    const local = JSON.stringify([rulesStore, ruleDaysStore, settingsStore].map((store) => store.getState().data));
+
+    await auth.port.signInWithApple();
+    await auth.port.signOut();
+    expect(JSON.stringify([rulesStore, ruleDaysStore, settingsStore].map((store) => store.getState().data))).toBe(
+      local,
+    );
+
+    await auth.port.signInWithApple();
+    await auth.port.deleteAccount();
+    expect(JSON.stringify([rulesStore, ruleDaysStore, settingsStore].map((store) => store.getState().data))).toBe(
+      local,
+    );
+    expect(auth.port.session()).toMatchObject({ kind: 'anonymous' });
     auth.dispose();
   });
 

@@ -1,4 +1,3 @@
-import { AppState } from 'react-native';
 import { Session } from '../domain/types';
 import { AuthPort } from '../ports/AuthPort';
 import { Unsubscribe } from '../ports/models';
@@ -19,23 +18,22 @@ export class AccountDeletedError extends Error {
   }
 }
 
-type AppStateLike = {
-  addEventListener(type: 'change', listener: (state: string) => void): { remove(): void };
-};
-
 export type SupabaseAuthDeps = {
   client: SupabaseAuthApi;
   apple: NativeIdentityProvider;
   google: NativeIdentityProvider;
   account: AccountProvisioning;
-  appState?: AppStateLike;
 };
 
 export type SupabaseAuth = {
   port: AuthPort;
   /** Restores or mints the session the app runs on. Await it before the first screen reads the port. */
   start(): Promise<void>;
-  /** Re-reads the session and retries provisioning. Runs on every foreground. */
+  /**
+   * Re-reads the session, retries a provisioning call that could not be made, and restarts the token
+   * refresh timer. `runtime/EnforcementHost` owns the app's one `AppState` subscription, so the
+   * foreground transition calls this rather than the adapter listening for itself.
+   */
   refresh(): Promise<void>;
   dispose(): void;
 };
@@ -80,18 +78,11 @@ const refuse = (failure: SupabaseFailure | null, fallback: string) => new Error(
  * - **Signing out is not deleting.** Every exit ends on a fresh anonymous session and touches no
  *   rule, day or setting. The SDK teardown order lives in `domain/identity`, above this adapter.
  */
-export function createSupabaseAuth({
-  client,
-  apple,
-  google,
-  account,
-  appState = AppState,
-}: SupabaseAuthDeps): SupabaseAuth {
+export function createSupabaseAuth({ client, apple, google, account }: SupabaseAuthDeps): SupabaseAuth {
   let disposed = false;
   let listening = true;
   let pending: { email: string; type: 'email' | 'email_change' } | null = null;
   let authSubscription: { unsubscribe(): void } | null = null;
-  let appStateSubscription: { remove(): void } | null = null;
 
   const session = (): Session => sessionStore.getState().data.session;
   const publish = (user: SupabaseUser | null | undefined) => {
@@ -210,6 +201,7 @@ export function createSupabaseAuth({
 
   const refresh = async () => {
     if (disposed) return;
+    void client.startAutoRefresh();
     const user = (await client.getSession()).data.session?.user;
     if (!user) return bootstrapAnonymous({ provision: true });
     publish(user);
@@ -230,22 +222,12 @@ export function createSupabaseAuth({
         await bootstrapAnonymous({ provision: true });
       }
       void client.startAutoRefresh();
-      appStateSubscription = appState.addEventListener('change', (state) => {
-        if (state === 'active') {
-          void client.startAutoRefresh();
-          void refresh();
-        } else {
-          void client.stopAutoRefresh();
-        }
-      });
     },
     refresh,
     dispose: () => {
       disposed = true;
       authSubscription?.unsubscribe();
       authSubscription = null;
-      appStateSubscription?.remove();
-      appStateSubscription = null;
       void client.stopAutoRefresh();
     },
   };

@@ -41,6 +41,10 @@ six-digit code, never a link, which is why both email templates must carry `{{ .
   in `domain/identity`, above this module.
 - **A keyless build still runs.** No Supabase keys means `supabaseAuth()` returns `null` and the app
   keeps its local session.
+- **One foreground handler.** `runtime/EnforcementHost` owns the app's only `AppState` subscription,
+  so this module never listens for itself. The host calls `refresh()` on every foreground, which
+  re-reads the session, retries a provisioning call that could not be made and restarts the token
+  refresh timer.
 
 ## Files
 
@@ -69,6 +73,12 @@ npm test -- src/auth
 `ports/__tests__/authContract.ts` is the suite the fake and this adapter both pass. The adapter's own
 tests drive `__tests__/supabaseDouble.ts`, an in-memory GoTrue that models users, identities and the
 already-linked refusal, so every branch runs without a project or a network.
+
+## Wiring
+
+Nothing constructs this module yet: `runtime/createRuntime` still returns the fake, and the switch is
+the cutover's (P2-T12). Three calls do it — `supabaseAuth()` for the port, `await start()` before the
+first screen reads it, and `refresh()` from the foreground handler in `startEnforcement`.
 
 ## Open
 
