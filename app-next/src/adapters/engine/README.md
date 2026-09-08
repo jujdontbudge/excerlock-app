@@ -1,18 +1,23 @@
-# Engine boundary (temporary)
+# Engine boundary
 
-`contracts.ts` declares the slice of the Phase 1 native engine the adapters consume. The
-declarations are copied verbatim from `app/src/signals/{motion,placement,location,health}` so the
-shapes cannot drift.
+`contracts.ts` is the slice of the native engine the adapters consume. Since P2-T03 landed, every
+provider type is re-exported from `src/engine/signals/**` rather than redeclared, so the shapes
+cannot drift: change one in the engine and the adapters stop compiling.
 
-**Delete this directory when P2-T03 lands.** It moves those files to `src/engine/signals/**`; the
-migration is then a find-and-replace of `../engine/contracts` for the engine's own modules, plus:
+Three things are declared here rather than re-exported, because the engine has no equivalent:
 
-- `MotionProvider`, `ActivitySample`, `CadenceSample`, `WalkVerdict` → `engine/signals/motion`
-- `PhonePlacementProvider`, `PhonePlacementResult` → `engine/signals/placement`
-- `LocationProvider`, `GeofenceRegion`, `RegionTransition`, `ManualGymCheckIn` → `engine/signals/location`
-- `HealthAuthorizationStatus` → `engine/signals/health`
+- `WalkVerifierLike` and `PhonePlacementClassifierLike` narrow the engine's two classes to the
+  methods the adapters call. `WalkingAdapter` takes them as factories, which is what lets a test
+  state a verdict instead of constructing a cadence window. The real classes satisfy both, and
+  `walking/__tests__/fixture-replay.test.ts` and `treadmill-recordings.test.ts` prove it by driving
+  the adapters with the real `WalkVerifier` and `PhonePlacementClassifier`.
+- `GymLocationEngine` is `LocationProvider & ManualGymCheckIn`, the two halves `GymAdapter` uses.
+  The engine's own `AppLocationProvider` adds `GymSetupLocator`, which nothing here calls.
+- `WorkoutRecord` and `HealthWorkoutEngine` are new. `engine/signals/health`'s `HealthKitClient`
+  collapses a workout to its duration and drops the activity type, the distance and
+  `HKWasUserEntered`, all three of which the rules need. `health/kingstinctWorkouts.ts` implements
+  them over the same Kingstinct module.
 
-`WorkoutRecord` and `HealthWorkoutEngine` are the exception: they are new here because the Phase 1
-`HealthKitClient.queryWorkouts` collapses every workout to a duration and drops the activity type,
-the distance and `wasUserEntered`. `health/createKingstinctWorkoutEngine.ts` implements them over
-the same Kingstinct module the Phase 1 client uses, and it stays after P2-T03 lands.
+Every re-export is `export type`. Importing an adapter therefore loads no native module, and the
+whole layer runs under plain jest. `../nativeEngine.ts` holds the concrete bindings behind lazy
+`require`s, and `__tests__/nativeEngine.test.ts` fails if one of them moves to module scope.
