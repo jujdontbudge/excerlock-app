@@ -145,7 +145,7 @@ export function HomeScreen() {
     if (kind) return openEntry(rule, kind);
     if (model.action) setSheet({ type: model.action, ruleId: rule.id });
   };
-  // merge: P2-T20 persists pausedReason, so this list becomes a selector over paused rules.
+  // A gym rule auto-paused for a missing gym is not scheduled today, so it needs its own row (B25).
   const orphaned = scheduleCard ? rules.filter((rule) => !rule.enabled && rule.pausedReason === 'noGym') : [];
   const pausedCards = orphaned.map((rule) => (
     <ConditionRow

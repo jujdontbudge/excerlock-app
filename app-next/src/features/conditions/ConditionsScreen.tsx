@@ -21,11 +21,37 @@ import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { ConfirmSheet } from './ConfirmSheet';
 import { toggleRule, deleteRule } from './mutations';
+import { conditionState, conditionStatus } from '../../domain/conditionState';
+import { dayKey } from '../../domain/calendar';
+import { useLockDecision } from '../../state/selectors';
+import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
 export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit: (id: string) => void }) {
   const { rules, lockedApps } = useRulesStore((s) => s.data),
+    days = useRuleDaysStore((s) => s.data.days),
     runtime = useRuntime(),
+    decision = useLockDecision(),
+    now = runtime.clock.now(),
+    timezone = runtime.clock.timezone(),
     [deleting, setDeleting] = useState<string | null>(null);
   const ordered = [...rules].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const today = dayKey(now, timezone);
+  // The same computation Home's rows read, so one condition never reads two ways (B23).
+  const statusOf = (rule: (typeof ordered)[number]) =>
+    conditionStatus(
+      conditionState(
+        rule,
+        days.find((day) => day.ruleId === rule.id && day.day === today) ?? {
+          ruleId: rule.id,
+          day: today,
+          progress: 0,
+          met: false,
+          metAt: null,
+        },
+        decision,
+        now,
+        timezone,
+      ),
+    );
   return (
     <ScreenShell
       safeBottom={false}
@@ -38,7 +64,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
           cancel={c.keepRule}
           onCancel={() => setDeleting(null)}
           onConfirm={() => {
-            if (deleting) deleteRule(deleting);
+            if (deleting) deleteRule(deleting, now, timezone);
             setDeleting(null);
           }}
         />
@@ -53,6 +79,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
                 schedule={scheduleLabel(rule.schedule)}
                 icon={rule.activity}
                 enabled={rule.enabled}
+                status={statusOf(rule)}
                 onOpen={() => onEdit(rule.id)}
                 onToggle={(value) => toggleRule(rule.id, value)}
                 onDelete={() => setDeleting(rule.id)}

@@ -18,7 +18,7 @@ export default function GymPickerRoute() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <Suspense fallback={null}>
-          <GymPickerScreen placeId={placeId} onSaved={() => close(true)} />
+          <GymPickerScreen placeId={placeId} onSaved={() => close(true)} onClose={() => close(false)} />
         </Suspense>
       </SafeAreaProvider>
     </GestureHandlerRootView>

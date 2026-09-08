@@ -9,8 +9,7 @@ export type Rule = {
   enabled: boolean; // false = paused; a paused rule never locks and never counts
   createdAt: string; // ISO
   updatedAt: string;
-  // merge: replace with P2-T20's persisted paused-reason field.
-  pausedReason?: 'noGym';
+  pausedReason?: 'noGym'; // B25: set when the last saved gym was deleted; cleared when a gym is saved
   // merge: replace with P2-T17's permission/enforcement projection.
   permissionNeeded?: boolean;
 };

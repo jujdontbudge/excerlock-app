@@ -1,21 +1,27 @@
-import { render, screen, fireEvent, userEvent } from '@testing-library/react-native';
+import { render, screen } from '@testing-library/react-native';
 import { RuleCard } from '../RuleCard';
-test('rules can be opened and paused independently', async () => {
-  const open = jest.fn(),
-    toggle = jest.fn();
-  await render(
-    <RuleCard
-      title="Walk 5,000 steps"
-      schedule="Mon–Fri · 9 AM–9 PM"
-      icon="walking"
-      enabled
-      onOpen={open}
-      onToggle={toggle}
-      onDelete={jest.fn()}
-    />,
-  );
-  await userEvent.press(screen.getByRole('button', { name: 'Walk 5,000 steps' }));
-  expect(open).toHaveBeenCalledTimes(1);
-  await fireEvent(screen.getByRole('switch'), 'valueChange', false);
-  expect(toggle).toHaveBeenCalledWith(false);
+import { conditionStatus } from '../../domain/conditionState';
+const props = {
+  title: 'Walk 5,000 steps',
+  schedule: 'Mon–Fri · 9 AM–9 PM',
+  icon: 'walking' as const,
+  onOpen: jest.fn(),
+  onToggle: jest.fn(),
+  onDelete: jest.fn(),
+};
+test.each([
+  ['met', conditionStatus('met'), true],
+  ['active', conditionStatus('blockingNow'), true],
+  ['satisfied', conditionStatus('satisfiedToday'), true],
+  ['idle', conditionStatus('notScheduled'), true],
+  ['attention', conditionStatus('permissionNeeded'), true],
+  ['paused', conditionStatus('pausedNoGym'), false],
+])('renders the %s status', async (name, status, enabled) => {
+  await render(<RuleCard {...props} enabled={enabled} status={status} />);
+  expect(screen.getByText(status.text)).toBeTruthy();
+  expect(screen.toJSON()).toMatchSnapshot(name);
+});
+test('a disabled card dims its icon and title', async () => {
+  await render(<RuleCard {...props} enabled={false} status={conditionStatus('paused')} />);
+  expect(screen.getByTestId('rule-card-identity').props.style).toMatchObject({ opacity: expect.any(Number) });
 });

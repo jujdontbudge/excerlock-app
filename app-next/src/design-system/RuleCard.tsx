@@ -8,11 +8,13 @@ import { Icon, IconName } from '../icons/Icon';
 import { PressableScale } from './PressableScale';
 import { controls } from '../content/controls';
 import { feedback } from '../motion/haptics';
+import { ConditionStatus } from '../domain/conditionState';
 export function RuleCard({
   title,
   schedule,
   icon,
   enabled,
+  status,
   onOpen,
   onToggle,
   onDelete,
@@ -21,12 +23,19 @@ export function RuleCard({
   schedule: string;
   icon: IconName;
   enabled: boolean;
+  status?: ConditionStatus;
   onOpen: () => void;
   onToggle: (enabled: boolean) => void;
   onDelete: () => void;
 }) {
   const [opened, setOpened] = useState(false);
   const reveal = t.space.hero + t.space.lg;
+  const statusColor = {
+    active: t.brand.primary,
+    done: t.state.success,
+    attention: t.state.error,
+    muted: t.text.secondary,
+  } as const;
   return (
     <View
       style={{
@@ -80,12 +89,21 @@ export function RuleCard({
                 gap: t.space.md,
                 alignItems: 'center',
               }}>
-              <Icon name={icon} variant="utility" tint={t.brand.primary} size={t.space.xxl} />
-              <View style={{ flex: 1, gap: t.space.xs }}>
-                <Label variant="label">{title}</Label>
-                <Label variant="support" tone="secondary">
-                  {schedule}
-                </Label>
+              <View
+                testID="rule-card-identity"
+                style={{ flexDirection: 'row', gap: t.space.md, alignItems: 'center', flex: 1, opacity: enabled ? 1 : 0.5 }}>
+                <Icon name={icon} variant="utility" tint={t.brand.primary} size={t.space.xxl} />
+                <View style={{ flex: 1, gap: t.space.xs }}>
+                  <Label variant="label">{title}</Label>
+                  <Label variant="support" tone="secondary">
+                    {schedule}
+                  </Label>
+                  {status ? (
+                    <Label variant="support" style={{ color: statusColor[status.tone] }}>
+                      {status.text}
+                    </Label>
+                  ) : null}
+                </View>
               </View>
             </PressableScale>
           </View>

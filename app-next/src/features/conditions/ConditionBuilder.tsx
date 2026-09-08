@@ -15,25 +15,34 @@ import { Activity } from '../../domain/types';
 import { SolidChoices } from '../../design-system/ChoiceAppearance';
 import { ConfirmSheet } from './ConfirmSheet';
 import { useBuilder } from './useBuilder';
-import { BuilderGymStep } from '../gym-picker/BuilderGymStep';
+import { GymPicker } from '../sheets/GymPicker';
+import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { router } from 'expo-router';
 export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => void }) {
   const f = useBuilder(id, onClose),
     m = useMotion(),
-    [wheel, setWheel] = useState<'start' | 'end' | null>(null);
-  const branch = !['O20', 'S1', 'S3', 'GPlace'].includes(f.step);
+    runtime = useRuntime(),
+    [wheel, setWheel] = useState<'start' | 'end' | null>(null),
+    [addingGym, setAddingGym] = useState(false);
+  const branch = !['O20', 'S1', 'S3'].includes(f.step);
   const enter = m.reduced
     ? opacityIn(m.duration.sheet)
     : (f.direction === 'forward' ? SlideInRight : SlideInLeft).duration(m.duration.sheet);
   const exit = m.reduced
     ? opacityOut(m.duration.slow)
     : (f.direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.slow);
-  if (f.step === 'GPlace') return <BuilderGymStep onSaved={f.next} />;
   return (
     <SolidChoices>
     <ScreenShell
       scrollResetKey={f.step}
       header={
-        <OnboardingHeader progress={0} showProgress={false} onBack={f.step === 'O20' || f.step === 'S3' ? f.cancel : f.back} />
+        <OnboardingHeader
+          progress={0}
+          showProgress={false}
+          onBack={f.step === 'O20' || (f.editing && f.step === 'S3') ? f.cancel : f.back}
+          onClose={f.cancel}
+          closeLabel={c.cancel}
+        />
       }
       footer={<PrimaryButton label={f.step === 'S3' ? c.save : c.continue} disabled={!f.valid} onPress={f.next} />}
       overlay={
@@ -46,6 +55,7 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
             }}
             onDismiss={() => setWheel(null)}
           />
+          <GymPicker open={addingGym} onDismiss={() => setAddingGym(false)} />
           <ConfirmSheet
             open={f.confirm}
             title={c.discardTitle}
@@ -66,7 +76,17 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
         ) : null}
         {branch ? <RuleScreen step={f.step as BranchStep} draft={f.draft} onAction={f.dispatch} /> : null}
         {f.step === 'S1' ? <ScheduleScreen draft={f.schedule} onAction={f.onSchedule} onChoose={setWheel} /> : null}
-        {f.step === 'S3' ? <PlanSummary draft={f.draft} schedule={toSchedule(f.schedule)} onEdit={f.edit} /> : null}
+        {f.step === 'S3' ? (
+          <PlanSummary
+            draft={f.draft}
+            schedule={toSchedule(f.schedule)}
+            onEdit={f.edit}
+            gymCount={f.gymCount}
+            onEditGyms={() => (f.gymCount ? router.push('/settings/gyms') : setAddingGym(true))}
+            now={runtime.clock.now()}
+            timezone={runtime.clock.timezone()}
+          />
+        ) : null}
       </Animated.View>
     </ScreenShell>
     </SolidChoices>

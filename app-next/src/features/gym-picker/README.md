@@ -1,6 +1,6 @@
 # Gym location picker
 
-`GymPickerScreen` is the full-screen `/gym-picker` route. The shared sheets export is only a route opener; setup, Settings → Gyms, and the condition builder share the same picker. Gym conditions insert `GPlace` immediately after `G1` (what counts at the gym).
+`GymPickerScreen` is the full-screen `/gym-picker` route, with its own header and Cancel. The shared sheets export is only a route opener; setup, Settings → Gyms, and the condition summary share the same picker. The builder has no gym step: a gym condition matches any saved gym (B24), so the binding lives on the plan summary's Gyms row. A `placeId` reaches the picker only from a saved-gym row in Settings; every other entry adds a gym. Saving one reconciles the gym conditions paused for a missing gym (B25).
 
 `usePicker` owns the map-first place screen, the search overlay, saving, debounced search, stale-response protection, a rounded-coordinate reverse-geocode cache, radius and validation. UI components depend only on `GymPort`. `geometry` converts real metres into overlay points and fits the map camera.
 

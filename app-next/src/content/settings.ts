@@ -54,6 +54,10 @@ export const settingsCopy = {
   gyms: 'Saved gyms',
   addGym: 'Add gym',
   removeGym: 'Remove gym',
+  removeGymTitle: (name: string) => `Remove ${name}?`,
+  removeGymSafeBody: 'Your other saved gyms keep every gym condition working.',
+  removeGymBody: (n: number) =>
+    `This is your only saved gym. ${n} gym ${n === 1 ? 'condition' : 'conditions'} will be paused until you save another gym.`,
   gymLimit: 'You can save up to 5 gyms.',
   noGyms: 'Save your go-to gym',
   noGymsBody: 'Find your gym on the map to make every visit count.',

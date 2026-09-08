@@ -59,6 +59,9 @@ export function PlaceStep({ picker: p }: { picker: PickerState }) {
           </Label>
         </View>
         <Slider label={c.radius} value={p.radius} min={50} max={200} step={10} onChange={p.setRadius} />
+        <Label variant="support" tone="secondary">
+          {c.helper}
+        </Label>
         {p.limit || p.error ? (
           <Label accessibilityRole="alert" variant="support" style={{ color: t.state.error }}>
             {p.limit ? c.limit : p.error}

@@ -12,10 +12,13 @@ import { fadeIn } from '../../motion/presets';
 export function GymPickerScreen({
   placeId,
   onSaved,
+  onClose,
   embedded = false,
 }: {
   placeId?: string;
   onSaved: () => void;
+  /** The route's own Cancel; setup embeds the picker in its flow and supplies none. */
+  onClose?: () => void;
   embedded?: boolean;
 }) {
   const { gym } = useRuntime();
@@ -24,32 +27,45 @@ export function GymPickerScreen({
     onSaved,
     gym.listPlaces().find((x) => x.id === placeId),
   );
-  const searchBack = p.stage === 'find' ? (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: embedded ? 0 : t.layout.page,
-      }}>
+  const searchBack =
+    p.stage === 'find' ? (
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: embedded ? 0 : t.layout.page,
+        }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={c.back}
+          onPress={p.back}
+          style={{ minHeight: t.layout.touch, flexDirection: 'row', alignItems: 'center', gap: t.space.sm }}>
+          <Icon name="back" variant="utility" size={t.layout.glyph} tint={t.brand.primary} />
+          <Label style={{ color: t.brand.primary }}>{c.searchTitle}</Label>
+        </Pressable>
+      </View>
+    ) : undefined;
+  const cancel = onClose ? (
+    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: t.layout.page }}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={c.back}
-        onPress={p.back}
-        style={{ minHeight: t.layout.touch, flexDirection: 'row', alignItems: 'center', gap: t.space.sm }}>
-        <Icon name="back" variant="utility" size={t.layout.glyph} tint={t.brand.primary} />
-        <Label style={{ color: t.brand.primary }}>{c.searchTitle}</Label>
+        accessibilityLabel={c.cancel}
+        onPress={onClose}
+        style={{ minHeight: t.layout.touch, justifyContent: 'center' }}>
+        <Label style={{ color: t.brand.primary }}>{c.cancel}</Label>
       </Pressable>
     </View>
   ) : undefined;
-  const save = p.stage === 'place' ? (
-    <PrimaryButton
-      label={c.save}
-      disabled={!p.name.trim() || p.limit}
-      loading={p.busy}
-      onPress={() => void p.save()}
-    />
-  ) : undefined;
+  const save =
+    p.stage === 'place' ? (
+      <PrimaryButton
+        label={c.save}
+        disabled={!p.name.trim() || p.limit}
+        loading={p.busy}
+        onPress={() => void p.save()}
+      />
+    ) : undefined;
   const content = (
     <>
       {embedded ? searchBack : null}
@@ -61,7 +77,7 @@ export function GymPickerScreen({
   );
   if (embedded) return content;
   return (
-    <ScreenShell scrollResetKey={p.stage} header={searchBack} footer={save}>
+    <ScreenShell scrollResetKey={p.stage} header={searchBack ?? cancel} footer={save}>
       {content}
     </ScreenShell>
   );

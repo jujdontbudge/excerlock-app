@@ -139,7 +139,7 @@ test.each(['walking-either-two-pills', 'walking-state-outdoor'])(
 test('a gym condition paused for no saved gym says so and opens the gym list', async () => {
   const { router, rendered } = await openHome('home-two-conditions-locked', () => {
     const { rules } = rulesStore.getState().data;
-    // merge: P2-T20 persists pausedReason when a gym is deleted; the field is additive today.
+    // Deleting the last saved gym leaves this behind; here it is written straight into the store.
     rulesStore.getState().patch({
       rules: rules.map((rule) => (rule.activity === 'gym' ? { ...rule, enabled: false, pausedReason: 'noGym' } : rule)),
     });
