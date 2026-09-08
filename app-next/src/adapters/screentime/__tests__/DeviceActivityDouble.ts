@@ -30,6 +30,7 @@ export function deviceActivityDouble(
   const recorded: DeviceActivityEventRecord[] = [];
   const listeners = new Set<(event: { callbackName: string }) => void>();
   const cleaned: string[] = [];
+  const starts: string[] = [];
   let blocked = false;
   let authorization: DeviceActivityAuthorizationStatus = options.authorization ?? 2;
   let selection: SelectionMetadata | null =
@@ -55,6 +56,7 @@ export function deviceActivityDouble(
         failNextStart = false;
         throw new Error('startMonitoring failed');
       }
+      starts.push(activityName);
       monitors.set(activityName, { schedule, events });
     },
     stopMonitoring: (activityNames) => {
@@ -93,6 +95,10 @@ export function deviceActivityDouble(
     },
     get cleaned() {
       return cleaned;
+    },
+    /** Every startMonitoring call, in order, including re-registrations. */
+    get starts() {
+      return starts;
     },
     get authorizationRequests() {
       return requests;
