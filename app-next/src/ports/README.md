@@ -13,12 +13,15 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
   - **Idempotent once applied.** A repeat call with an unchanged decision, policy and plan is a no-op that
     returns the previous result, so a frequent caller costs nothing. A failed apply is not a settled state:
     the next call re-runs it, which is what the Home retry action relies on.
-- StepsPort: Phase 2 implements Core Motion authorization and midnight-based pedometer totals.
-- WalkingPort: Phase 2 implements cadence/gait verification, renewable leases and treadmill framing. `start`
-  accepts an enabled walking state rule or walking-minutes target; duration sessions book minutes without
-  opening apps until the goal is met.
-- GymPort: Phase 2 implements place search, saved locations, geofence presence and check-in.
-- HealthPort: Phase 2 reads authorized running/cycling workouts.
+- StepsPort: `adapters/steps/StepsAdapter` over Core Motion. The day total is a historical pedometer query anchored at local midnight plus the live delta since updates began; steps never come from HealthKit (B11), so a goal reached with the app closed is noticed on the next launch.
+- WalkingPort: `adapters/walking/WalkingAdapter` over `WalkVerifier`, the phone-placement classifier and the
+  foreground location keep-alive. It emits `verified` / `unverified` into the domain's session machine and
+  owns neither time nor credit; `adapters/walking/placementHandoff` is the treadmill machine
+  (scanning → propped → handheld → handoff) and decides only whether a motion verdict is the user or the
+  console shaking. `start` accepts an enabled walking state rule or walking-minutes target; duration sessions
+  book minutes without opening apps until the goal is met.
+- GymPort: `adapters/gym/GymAdapter` over geofence transitions and Apple Maps search. A visit is an enter and an exit, so dwell is the domain's arithmetic and never an adapter accumulator. `enableAutoDetect` and the reconcile that restores it are the only paths allowed to request Always location.
+- HealthPort: `adapters/health/HealthAdapter` over `adapters/health/kingstinctWorkouts`, which keeps the activity type, the distance and `HKWasUserEntered` that the Phase 1 HealthKit client dropped. Manual entries are reported with `source: 'manual'`; the domain decides they never count.
 - AuthPort: Phase 2 implements Supabase identity, OTP and deletion.
 - SubscriptionPort: Phase 2 implements Adapty entitlement, paywall and restore.
 - AnalyticsPort: Phase 2 emits sanitized PostHog events.

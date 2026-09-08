@@ -23,6 +23,45 @@ real engine.
 - **Every permission answer is recorded.** Adapters route status through `recordPermission` so
   `permissionsStore` is the single place Settings and Home read from.
 
+## Wiring (for P2-T17)
+
+Every adapter is a factory over injected collaborators, so the composition root builds them once and
+holds them. The engine modules below are P2-T03's; nothing here loads a native module by itself.
+
+```ts
+const motion = new NativeMotionProvider(createExcerlockMotionModuleClient());
+const location = getLocationProvider();
+
+const steps = createStepsAdapter({ motion, clock });
+const walking = createWalkingAdapter({
+  clock, motion, location,
+  createVerifier: (options) => new WalkVerifier(options),
+  createPlacement: () => createWalkingPlacementRuntime(),
+  createClassifier: () => new PhonePlacementClassifier(),
+});
+const gym = createGymAdapter({
+  clock, engine: location, search: nativePlaceSearch,
+  visitLog: visitLogFromStore(),                       // after P2-T15; see pending/README.md
+  backgroundVisits: () => createAsyncStorageGymVisitLog().readAll(),
+});
+const health = createHealthAdapter({ clock, engine: requireKingstinctWorkoutEngine() });
+```
+
+On `AppState → active`, the root calls `steps.refresh()`, `walking.tick()`, `gym.reconcile()`,
+`health.workoutsToday(...)` and `readPermissionHealth({ motion, health: healthEngine, location, camera: gait })`.
+On hydration it calls `walking.resume()` for a session that outlived the process.
+
+## Depends on
+
+- **P2-T03** for the engine modules above, and for the `app.json` entries these adapters need:
+  `NSMotionUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription`, the HealthKit share and
+  background-delivery entitlements, and `UIBackgroundModes: fetch, location`. Without them every
+  authorization here returns `denied` on device.
+- **P2-T15** for the session machine, the visit type and the contract suites. See `pending/README.md`.
+- **P2-T11** for what only hardware can answer: cadence on a real treadmill, a geofence exit that
+  fires with the app killed, an hour-long lease renewal, and whether a workout's duration arrives in
+  seconds or minutes.
+
 ## Merge notes
 
 `engine/` and `pending/` are temporary. See each directory's README.
