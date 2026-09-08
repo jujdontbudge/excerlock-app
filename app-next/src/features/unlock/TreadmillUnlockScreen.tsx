@@ -67,7 +67,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
       ? c.treadmill.unlockedToday
       : c.treadmill.detectedBody;
   const successTitle = duration ? c.treadmill.goalReached : c.treadmill.detected;
-  const ceremony = useCeremony(ringValue, lifted, successTitle);
+  const ceremony = useCeremony(ringValue, lifted, successTitle, successBody);
 
   const stopUnbookedSession = () => {
     if (!preview && sessionStarted.current && !verified.current) runtime.walking.stop();
@@ -284,9 +284,15 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
   return (
     <UnlockLayout close={close} preview={preview} footer={footer}>
       <View
+        accessible
         accessibilityRole="progressbar"
         accessibilityLabel={c.treadmill.progressLabel}
-        accessibilityValue={{ min: 0, max: 100, now: Math.round(ringValue * 100) }}>
+        accessibilityValue={{
+          min: 0,
+          max: 100,
+          now: Math.round(ringValue * 100),
+          ...(overlay ? { text: `${detected ? c.treadmill.detected : successTitle}. ${detected ? c.treadmill.durationDetectedBody(duration!.mode.goal) : successBody}` } : {}),
+        }}>
         <UnlockLockFrame
           celebrate={!lapsed}
           progress={ceremony.progress}

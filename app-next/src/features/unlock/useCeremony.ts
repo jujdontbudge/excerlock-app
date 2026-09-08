@@ -3,7 +3,11 @@ import { AccessibilityInfo } from 'react-native';
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { feedback } from '../../motion/haptics';
 import { useUnlockMotion } from './useUnlockMotion';
-export function useCeremony(value: number, lifted: boolean, message: string) {
+/**
+ * Drives the lift: the ring follows `value`, and once `lifted` the detected `message` is shown and
+ * announced to VoiceOver, then `doneMessage` (what the unlock means) is announced when the ceremony settles.
+ */
+export function useCeremony(value: number, lifted: boolean, message: string, doneMessage?: string) {
   const progress = useSharedValue(0),
     { reduced } = useUnlockMotion();
   const [showMessage, setMessage] = useState(false),
@@ -23,11 +27,14 @@ export function useCeremony(value: number, lifted: boolean, message: string) {
       setMessage(true);
       AccessibilityInfo.announceForAccessibility(message);
     }, 520);
-    const b = setTimeout(() => setDone(true), 1500);
+    const b = setTimeout(() => {
+      setDone(true);
+      if (doneMessage) AccessibilityInfo.announceForAccessibility(doneMessage);
+    }, 1500);
     return () => {
       clearTimeout(a);
       clearTimeout(b);
     };
-  }, [lifted, message]);
+  }, [lifted, message, doneMessage]);
   return { progress, showMessage: lifted && showMessage, done: lifted && done };
 }

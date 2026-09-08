@@ -36,7 +36,7 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
     : rule?.mode.kind === 'target'
       ? c.gym.detectedTime(rule.mode.goal)
       : c.gym.detectedUntil(preview && !rule ? '9 PM' : end);
-  const ceremony = useCeremony(state.value, state.lifted, c.gym.detected);
+  const ceremony = useCeremony(state.value, state.lifted, c.gym.detected, subline);
   const close = () => {
     runtime.analytics.track('unlock_ceremony_done', { kind: 'gym', preview });
     router.back();
@@ -92,9 +92,15 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
         ) : undefined
       }>
       <View
+        accessible
         accessibilityRole="progressbar"
         accessibilityLabel={c.gym.progressLabel}
-        accessibilityValue={{ min: 0, max: 100, now: Math.round(state.value * 100) }}>
+        accessibilityValue={{
+          min: 0,
+          max: 100,
+          now: Math.round(state.value * 100),
+          ...(ceremony.showMessage ? { text: `${c.gym.detected}. ${subline}` } : {}),
+        }}>
         <UnlockLockFrame
           celebrate={!alreadyCredited && !lapsed}
           progress={ceremony.progress}
