@@ -2,6 +2,7 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 import { AnalyticsScreen } from '../AnalyticsScreen';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
+import { startProgressSync } from '../../home/progressSync';
 test.each([
   ['analytics-day-zero', 'Your first week starts today'],
   ['analytics-no-measurement', 'No measurement yet'],
@@ -22,6 +23,8 @@ test.each([
 test('weekly recap uses readable whole-minute activity totals as the fake gym clock ticks', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('gym-time-user');
+  // Gym dwell reaches Analytics through progressSync, the single applier, as in app/(tabs)/_layout.
+  const stopSync = startProgressSync(runtime);
   await runtime.gym.checkIn(runtime.gym.listPlaces()[0].id);
   runtime.dev.advance(18 * 60000 + 9000);
   await render(
@@ -33,5 +36,6 @@ test('weekly recap uses readable whole-minute activity totals as the fake gym cl
   expect(screen.getByRole('header', { name: 'How you earned time' })).toBeTruthy();
   expect(screen.getAllByText('Time reclaimed').length).toBeGreaterThan(0);
   expect(screen.getByLabelText('Screen time and time reclaimed chart')).toBeTruthy();
+  stopSync();
   runtime.dispose();
 });
