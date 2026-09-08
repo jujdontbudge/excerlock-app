@@ -1,3 +1,4 @@
+import { distanceMetres } from '../../features/gym-picker/geometry';
 import {
   ActivitySample,
   CadenceSample,
@@ -211,8 +212,16 @@ export function locationStub(): LocationStub {
       stopWalkKeepAlive: async () => undefined,
       isWalkKeepAliveActive: () => false,
       checkIn: async (region) => {
+        // `NativeLocationProvider.checkIn` takes one foreground fix and answers with whether it
+        // lands inside the region, then pushes the matching transition through the processor.
         stub.requests.push('whenInUse');
-        return stub.insideOnCheckIn && presence.get(region.id) !== false;
+        const fix = last;
+        const inside =
+          stub.insideOnCheckIn &&
+          fix !== null &&
+          distanceMetres({ latitude: fix.lat, longitude: fix.lon }, region) <= region.radiusMeters;
+        stub.transition({ type: inside ? 'enter' : 'exit', regionId: region.id, atMs: fix?.atMs ?? 0 });
+        return inside;
       },
       on: ((event: 'region' | 'location' | 'authorization', callback: (value: never) => void): Unsubscribe => {
         const set = event === 'region' ? regions : event === 'location' ? locations : authorizations;
