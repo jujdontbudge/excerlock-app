@@ -36,3 +36,17 @@ test('remove is DELETE /v1/user, already-deleted is not a failure, and a refusal
     code: 'ACCOUNT_DELETION_UNAVAILABLE',
   });
 });
+
+test('a network rejection during remove throws offline, so the adapter leaves the account intact', async () => {
+  const provisioning = createVpsProvisioning(
+    createApiClient({
+      baseUrl: 'https://a',
+      getAccessToken: async () => 't',
+      fetch: async () => {
+        throw new TypeError('Network request failed');
+      },
+    }),
+  );
+  await expect(provisioning.remove('jwt')).rejects.toMatchObject({ kind: 'offline' });
+  expect(await provisioning.provision('jwt')).toBe('failed');
+});
