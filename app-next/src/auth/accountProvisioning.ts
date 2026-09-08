@@ -18,34 +18,3 @@ export interface AccountProvisioning {
    */
   remove(accessToken: string): Promise<'ok' | 'deleted'>;
 }
-
-export type AccountProvisioningConfig = {
-  baseUrl: string;
-  fetcher?: typeof fetch;
-};
-
-export function accountProvisioning({ baseUrl, fetcher = fetch }: AccountProvisioningConfig): AccountProvisioning {
-  const endpoint = `${baseUrl.replace(/\/$/, '')}/v1/user`;
-  const call = (method: 'PUT' | 'DELETE', accessToken: string) =>
-    fetcher(endpoint, { method, headers: { authorization: `Bearer ${accessToken}` } });
-
-  return {
-    provision: async (accessToken) => {
-      try {
-        const response = await call('PUT', accessToken);
-        if (response.ok) return 'ok';
-        return response.status === 410 ? 'deleted' : 'failed';
-      } catch {
-        return 'failed';
-      }
-    },
-    remove: async (accessToken) => {
-      const response = await call('DELETE', accessToken);
-      // 410 is the tombstone, 404 is a row that is simply not there any more. Both mean the account
-      // is gone, which is what the caller asked for.
-      if (response.status === 410 || response.status === 404) return 'deleted';
-      if (!response.ok) throw new Error('Account deletion failed');
-      return 'ok';
-    },
-  };
-}

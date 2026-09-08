@@ -18,10 +18,16 @@ import { dayKey, windowInstances } from '../domain/schedule';
 import { nextEnforcementAt } from './nextEnforcementAt';
 import { AppStateSource, appStateOwner } from './appState';
 
+/**
+ * What the host tells the diagnostics log. The decision, the plan hash and the rewind are computed
+ * here and reach no store, so the recorder cannot observe them: it hands the host this instead.
+ * Absent in a shipped build, where nothing records.
+ */
+export type EnforcementRecorder = (event: string, data?: Record<string, unknown>) => void;
 
 export function startEnforcement(
   runtime: Runtime,
-  options: { appState?: AppStateSource } = {},
+  options: { appState?: AppStateSource; record?: EnforcementRecorder } = {},
 ): Unsubscribe {
   let active = true,
     lastAppliedKey: string | null = null,
@@ -31,12 +37,16 @@ export function startEnforcement(
     unknownSince: string | undefined,
     lastApplied: EnforcementPlan | undefined,
     lastKnownGood: Exclude<Entitlement['status'], 'unknown'> | undefined;
+  const record: EnforcementRecorder = options.record ?? (() => {});
   const progress = createProgressSync(runtime);
   const stopSessionGuard = startSessionGuard(runtime);
   const apply = async (force = false) => {
     if (!active) return;
     const observed = runtime.clock.now();
     const now = effectiveNow(observed, watermark);
+    // A restored backup or a hand-set clock can move the device backwards; enforcement holds the
+    // watermark instead of following it, and the runbook checks that it did.
+    if (now !== observed) record('watermark.rewind', { observed, watermark, effective: now });
     watermark = nextWatermark(observed, watermark);
     const { rules, lockedApps } = rulesStore.getState().data;
     const { days, earnedUnlocks, walkingSession } = ruleDaysStore.getState().data;
@@ -77,6 +87,14 @@ export function startEnforcement(
       holdsUntil: futureDecision.holdsUntil,
     });
     deadlineStop = deadline ? runtime.clock.at(deadline, () => void requestApply()) : undefined;
+    record('enforcement.plan', {
+      shields: plan.shields,
+      monitors: monitors.monitors.map(({ name, start, end }) => ({ name, start, end })),
+      ruleCount: rules.length,
+      planHash: monitors.planHash,
+      truncatedAt: monitors.truncatedAt,
+      horizonEnd: monitors.horizonEnd,
+    });
     const key = JSON.stringify({
       shields: plan.shields,
       selectionToken: lockedApps.handle?.token ?? null,
@@ -85,6 +103,7 @@ export function startEnforcement(
     if (!force && key === lastAppliedKey) return;
     lastAppliedKey = key;
     const result = await runtime.screenTime.applyLock(decision, plan, monitors);
+    record('enforcement.apply', { decision: decision.state, planHash: monitors.planHash, ...result });
     if (active) enforcementStore.getState().publish(result);
   };
   const requestApply = (force = false) => {
@@ -122,6 +141,11 @@ export function startEnforcement(
         health: runtime.health.authorizationStatus(),
         notifications: runtime.notifications.status(),
         camera,
+      });
+      record('screentime.selection', {
+        appCount: selection.appCount,
+        categoryCount: selection.categoryCount,
+        hasHandle: selection.handle !== null,
       });
       rulesStore.getState().patch({ lockedApps: selection });
       await progress.refresh();

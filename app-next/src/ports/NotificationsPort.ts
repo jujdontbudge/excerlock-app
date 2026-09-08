@@ -8,6 +8,9 @@ export const SHIELD_OPEN_NOTIFICATION_ID = 'excerlock.shield.open';
 /** What renews the walking lease: keep walking with the phone in hand, or scan again when propped. */
 export type LeaseWarningVariant = 'handheld' | 'propped';
 
+/** One request iOS still holds. `at` is null for a trigger that is not a fixed instant. */
+export type PendingNotification = { id: string; at: string | null };
+
 export interface NotificationsPort {
   status(): PermissionStatus;
   request(): Promise<PermissionStatus>;
@@ -15,4 +18,10 @@ export interface NotificationsPort {
   scheduleTrialReminder(at: string, daysBefore?: number): Promise<string>;
   scheduleWalkLeaseWarning(at: string, variant?: LeaseWarningVariant): Promise<string>;
   cancel(id: string): Promise<void>;
+  /**
+   * What is still scheduled. Read by the developer menu only: a lease warning that never arrives is
+   * either never scheduled or scheduled for the wrong instant, and on a device with no debugger
+   * attached those two look identical.
+   */
+  pending(): Promise<PendingNotification[]>;
 }
