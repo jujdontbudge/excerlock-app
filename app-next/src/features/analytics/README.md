@@ -6,4 +6,6 @@
 
 Until P2-T15 is merged, `history.ts` is the only compatibility seam: it selects persisted rule-day rows and adapts any sealed fields they carry. P2-T15 replaces that hook with its persisted `historyStore`; the screen never reads the dev runtime snapshot.
 
+Two consequences of that cutover are P2-T15's to finish. A day the app never opened has no rule-day row, so the bridge cannot see it and the streak steps over it; `sealDay.ts` is what writes the missed row that breaks the streak honestly. And the three analytics dev scenarios (`analytics-6-weeks`, `analytics-day-zero`, `analytics-no-measurement`) still stock `scenario.history`, which nothing reads any more, so the dev menu shows an empty Analytics screen until those scenarios seed the persisted history instead.
+
 Tests cover period boundaries, leap days, missing data, partial weeks, transparent unscheduled days, and empty states. Native evidence lives in `evidence/T11`.
