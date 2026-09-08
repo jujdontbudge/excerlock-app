@@ -34,6 +34,8 @@ export const setupCopy = {
   autoDetectBody: 'Allow location access all the time to recognize arrivals when ExcerLock is closed.',
   X4: 'Save your progress',
   authBody: 'Keep your plan connected to you.',
+  restoreNote:
+    'Signing in restores your conditions and progress on a new phone. Your blocked-app selection stays on this device.',
   apple: 'Continue with Apple',
   google: 'Continue with Google',
   email: 'Continue with email',

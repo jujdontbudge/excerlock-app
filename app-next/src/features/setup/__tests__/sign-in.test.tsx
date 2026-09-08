@@ -3,6 +3,7 @@ import { SignInScreen } from '../SignInScreen';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { sessionStore } from '../../../state/sessionStore';
+import { setupCopy } from '../../../content/setup';
 test('email validates, shows wrong code, resends, and signs in with 123456', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
@@ -44,3 +45,16 @@ test.each(['apple', 'google'] as const)(
     expect(screen.getByText('Sign-in was canceled. You can try again or skip for now.')).toBeTruthy();
   },
 );
+test('the sign-in screen says what signing in restores and what stays on the device', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('fresh-install');
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <SignInScreen onContinue={jest.fn()} />
+    </AppRuntimeProvider>,
+  );
+  const promise = screen.getByText(setupCopy.restoreNote);
+  expect(promise).toBeTruthy();
+  expect(setupCopy.restoreNote).toMatch(/new phone/);
+  expect(setupCopy.restoreNote).toMatch(/stays on this device/);
+});

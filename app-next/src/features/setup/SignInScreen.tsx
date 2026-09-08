@@ -76,6 +76,9 @@ export function SignInScreen({ onContinue }: { onContinue: () => void }) {
         <>
           <Heading title={phase === 'email' ? c.emailTitle : c.X4} support={c.authBody} />
           <LivingIcon name="person" />
+          <Label variant="support" tone="secondary">
+            {c.restoreNote}
+          </Label>
           {phase === 'email' ? (
             <>
               <TextField
