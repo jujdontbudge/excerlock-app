@@ -237,6 +237,18 @@ describe('SupabaseAuthAdapter', () => {
     auth.dispose();
   });
 
+  test('the access token follows the live session, for the callers that talk to the VPS', async () => {
+    // Every authenticated server call reads the token through here rather than through the port, so
+    // it has to track the session the adapter is actually on, anonymous session included.
+    const { auth, client } = await harness();
+    await expect(auth.accessToken()).resolves.toBe(client.accessToken());
+    await auth.port.signInWithApple();
+    await expect(auth.accessToken()).resolves.toBe(client.accessToken());
+    await auth.port.signOut();
+    await expect(auth.accessToken()).resolves.toBe(client.accessToken());
+    auth.dispose();
+  });
+
   test('disposing stops the adapter from publishing further sessions', async () => {
     const { auth, client } = await harness();
     const published: string[] = [];

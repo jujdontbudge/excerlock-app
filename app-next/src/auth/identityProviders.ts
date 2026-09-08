@@ -59,11 +59,13 @@ export function appleIdentity(): NativeIdentityProvider {
 }
 
 /**
- * Sign in with Google through `@react-native-google-signin/google-signin`. The web client id comes
- * from configuration; a build without one cannot open the sheet at all and says so.
+ * Sign in with Google through `@react-native-google-signin/google-signin`. iOS needs both client
+ * ids — the web one is the token audience Supabase checks, the iOS one is what opens the sheet, and
+ * there is no `GoogleService-Info.plist` here to supply it. A build missing either says so rather
+ * than failing at the sheet.
  */
 export function googleIdentity(config: { webClientId?: string; iosClientId?: string }): NativeIdentityProvider {
-  if (!config.webClientId) return unconfigured('Google');
+  if (!config.webClientId || !config.iosClientId) return unconfigured('Google');
   let configured = false;
   const configure = () => {
     if (configured) return;

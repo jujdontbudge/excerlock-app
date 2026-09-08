@@ -11,7 +11,11 @@ export type ProvisionOutcome = 'ok' | 'deleted' | 'failed';
 export interface AccountProvisioning {
   /** Attaches the token's user to the server. Never throws: callers decide what a failure means. */
   provision(accessToken: string): Promise<ProvisionOutcome>;
-  /** Destroys the token's user. Throws when the server could not be reached or refused. */
+  /**
+   * Destroys the token's user. `deleted` means the server had already done it, which is a success
+   * for the caller. Throws when the server could not be reached or refused, so nothing local moves
+   * on a deletion that did not happen.
+   */
   remove(accessToken: string): Promise<'ok' | 'deleted'>;
 }
 
@@ -37,7 +41,9 @@ export function accountProvisioning({ baseUrl, fetcher = fetch }: AccountProvisi
     },
     remove: async (accessToken) => {
       const response = await call('DELETE', accessToken);
-      if (response.status === 410) return 'deleted';
+      // 410 is the tombstone, 404 is a row that is simply not there any more. Both mean the account
+      // is gone, which is what the caller asked for.
+      if (response.status === 410 || response.status === 404) return 'deleted';
       if (!response.ok) throw new Error('Account deletion failed');
       return 'ok';
     },

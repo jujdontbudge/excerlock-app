@@ -77,8 +77,23 @@ already-linked refusal, so every branch runs without a project or a network.
 ## Wiring
 
 Nothing constructs this module yet: `runtime/createRuntime` still returns the fake, and the switch is
-the cutover's (P2-T12). Three calls do it — `supabaseAuth()` for the port, `await start()` before the
-first screen reads it, and `refresh()` from the foreground handler in `startEnforcement`.
+the cutover's (P2-T12). Four calls do it:
+
+| Call | Where |
+| --- | --- |
+| `supabaseAuth()` | the runtime composition; `null` means keep the local session |
+| `await start()` | before the first screen reads the port |
+| `refresh()` | the foreground handler in `startEnforcement` |
+| `accessToken` | passed to the VPS API client as its `getAccessToken` |
+
+`accessToken()` is on the adapter object, not on `AuthPort`. An authenticated server call is a
+composition concern, and the port stays vendor-free so the fake keeps implementing all of it.
+`getSession()` refreshes a token inside its expiry margin, so the value is always sendable.
+
+Deletion stays here rather than in a caller: `AuthPort.deleteAccount()` means the account is gone, and
+a port whose real adapter only cleaned up locally would not match the fake it shares a contract suite
+with. The HTTP call is injected — `AccountProvisioning` is an interface, so the runtime can implement
+it over the shared VPS client instead of this module keeping a second one.
 
 ## Open
 

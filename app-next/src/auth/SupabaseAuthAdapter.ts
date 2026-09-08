@@ -35,6 +35,12 @@ export type SupabaseAuth = {
    * foreground transition calls this rather than the adapter listening for itself.
    */
   refresh(): Promise<void>;
+  /**
+   * The live Supabase access token, or `null` when there is no session. `getSession()` refreshes a
+   * token inside its expiry margin first, so a caller always gets one it can send. This is not on
+   * `AuthPort`: authenticated VPS calls are a composition concern, and the port stays vendor-free.
+   */
+  accessToken(): Promise<string | null>;
   dispose(): void;
 };
 
@@ -210,6 +216,7 @@ export function createSupabaseAuth({ client, apple, google, account }: SupabaseA
 
   return {
     port,
+    accessToken,
     start: async () => {
       authSubscription = client.onAuthStateChange((_event, next) => {
         if (listening) publish(next?.user);

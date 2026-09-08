@@ -11,6 +11,10 @@ import * as SecureStore from 'expo-secure-store';
  *
  * A torn write reads back as `null`, which supabase-js treats as "no session". The cost of that is
  * one anonymous sign-in, never a wrong session, so the simple write order is the right one.
+ *
+ * Chunks are keyed `<key>.<index>`. SecureStore accepts alphanumerics, `.`, `-` and `_`, and
+ * supabase-js deliberately keeps dots out of every key it writes (its SSR cookie adapter chunks the
+ * same way), so a chunk key can never collide with a session, a PKCE verifier or a flow index.
  */
 export type KeyValueStore = {
   getItem(key: string): Promise<string | null>;

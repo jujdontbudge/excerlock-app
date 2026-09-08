@@ -26,6 +26,8 @@ export function supabaseAuth(): SupabaseAuth | null {
       webClientId: config.googleWebClientId,
       iosClientId: config.googleIosClientId,
     }),
+    // `AccountProvisioning` is an injected interface so the runtime can hand over one HTTP client
+    // for the VPS instead of this module keeping a second one.
     account: accountProvisioning({ baseUrl: config.apiBaseUrl }),
   });
 }
