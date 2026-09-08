@@ -168,7 +168,7 @@ Grouping and order follow OtterLife's settings screen as inventoried in the refe
 
 - Profile header: name and sign-in state (Signed in with Apple · Not signed in); tapping it opens Account.
 - Subscription: plan and renewal (from Entitlement), Manage subscription (App Store), Restore purchases.
-- Permissions: `PermissionRow` × Screen Time, Motion, Location, Health, Camera, Reminders, each with live status and a detail screen for request / Open Settings recovery.
+- Data & permissions: `PermissionRow` × Screen Time, Motion & Fitness, Location, Health, Camera, Reminders, each with live status and a detail screen for request / Open Settings recovery. Home and the setup ceremonies use the same recovery.
 - Preferences: Units (km/mi), Walk & Scroll stop grace (30 s–5 min), Gym auto-detect (Always location) with denial explanation, Touch feedback on/off. There is no separate notification preference.
 - Your plan: Locked apps ("N apps · M categories"), Conditions and Saved gyms shortcuts.
 - Support: Contact support (composer: category, message, required reply email, privacy-floored diagnostics preview, send state), Rate ExcerLock, Share ExcerLock.
