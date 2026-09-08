@@ -5,7 +5,7 @@ import { ruleName } from '../../domain/ruleName';
 import { Icon } from '../../icons/Icon';
 import { useDemoProgress } from './useDemoProgress';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import {
@@ -30,6 +30,7 @@ import { statusContent } from './statusContent';
 import { progressContent } from './progressContent';
 import { useUnlockMoment } from './useUnlockMoment';
 import { homeCopy as c } from '../../content/home';
+import { settingsCopy } from '../../content/settings';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { unlockKind } from '../unlock/entry';
@@ -59,15 +60,21 @@ export function HomeScreen() {
   const [sheet, setSheet] = useState<{ type: 'walk' | 'checkin'; ruleId: string } | null>(null);
   const chooseApps = () => void runtime.screenTime.presentAppPicker();
   const add = () => router.push('/builder');
+  // iOS never re-presents the Screen Time prompt after a denial, and a restricted
+  // device can never grant it, so those two statuses recover through iOS Settings.
+  const screenTimeUnaskable = permissions.screenTime === 'denied' || permissions.screenTime === 'restricted';
   const action = () => {
-    if (status.action === 'permission') void runtime.screenTime.requestAuthorization();
+    if (status.action === 'permission')
+      screenTimeUnaskable ? void Linking.openSettings() : void runtime.screenTime.requestAuthorization();
     if (status.action === 'apps') chooseApps();
     if (status.action === 'add') add();
     if (status.action === 'conditions') router.navigate('/conditions');
     if (status.action === 'stop') runtime.walking.stop();
   };
   const actionLabel = status.action
-    ? { permission: c.fix, apps: c.chooseApps, add: c.add, conditions: c.conditions, stop: c.stopWalk }[status.action]
+    ? status.action === 'permission' && screenTimeUnaskable
+      ? settingsCopy.openSettings
+      : { permission: c.fix, apps: c.chooseApps, add: c.add, conditions: c.conditions, stop: c.stopWalk }[status.action]
     : undefined;
   useEffect(() => {
     runtime.analytics.screen('Home');
