@@ -22,6 +22,7 @@
       "reactCompiler": true
     },
     "plugins": [
+      "./plugins/withNoPush",
       "./modules/excerlock-gait-vision/app.plugin.js",
       "react-native-maps",
       "expo-router",
