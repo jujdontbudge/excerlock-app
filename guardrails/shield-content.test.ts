@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { fromRoot, readUtf8, walkFiles } from "./repo-files";
 
 import { shieldContent } from "../app-next/src/domain/shieldContent";
+import type { UnlockHint } from "../app-next/src/domain/types";
 
 /**
  * The plist is the extension's cold-start fallback: what a shield shows before the app has ever
@@ -108,10 +109,9 @@ describe("Screen Time shield content", () => {
   });
 
   it("keeps the app-group writer and the monitor hook wired to the extensions", () => {
-    // The old lock controller and shieldContentRuntime were the writer before
-    // the rebuild; P2-T04 replaces them with ScreenTimeAdapter over
-    // engine/shield. Until then this asserts the transport and the plugin hook,
-    // which are what the extensions actually read.
+    // ScreenTimeAdapter is the writer, over engine/shield's transport. This
+    // asserts the transport, the plugin hook and the per-monitor key, which are
+    // what the extensions actually read.
     const publisher = readUtf8(
       fromRoot(
         "app-next",
@@ -184,5 +184,45 @@ describe("Screen Time shield content", () => {
     expect(lockWindowContext).toContain(
       '"excerlock.shield.runtime-context.v1"',
     );
+  });
+  it("keeps every publishable subtitle past the extension's numeric-copy filter", () => {
+    // ShieldContent.swift drops a subtitle containing any of these and falls back to the plist,
+    // silently. The list is read from the Swift so a word added there fails here instead.
+    const swift = readUtf8(
+      fromRoot("app-next", "targets", "ShieldConfiguration", "ShieldContent.swift"),
+    );
+    const declaration = /let forbidden = \[([^\]]*)\]/.exec(swift);
+    expect(declaration, "ShieldContent.swift must still declare the forbidden list").not.toBeNull();
+    const forbidden = [...declaration![1].matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+    expect(forbidden.length).toBeGreaterThan(0);
+
+    const units = ["steps", "minutes", "km", "mi"];
+    const hints: (UnlockHint | undefined)[] = [
+      undefined,
+      { ruleId: "r", action: "walk", remaining: 1, goal: null, unit: null },
+      { ruleId: "r", action: "arrive", remaining: null, goal: null, unit: null },
+      ...units.map((unit): UnlockHint => ({
+        ruleId: "r",
+        action: "progress",
+        remaining: 2500,
+        goal: 10000,
+        unit,
+      })),
+    ];
+    const causes = ["locked", "lockWindow", "walkingEnded"] as const;
+
+    const rejected = causes.flatMap((cause) =>
+      hints.flatMap((hint) =>
+        (["pending", "met"] as const).flatMap((goal) =>
+          [true, false]
+            .map((canNotify) => shieldContent({ cause, hint, goal, canNotify }).subtitle)
+            .filter((subtitle) =>
+              forbidden.some((word) => subtitle.toLowerCase().includes(word)),
+            ),
+        ),
+      ),
+    );
+
+    expect(rejected, "a subtitle the extension would silently discard").toEqual([]);
   });
 });
