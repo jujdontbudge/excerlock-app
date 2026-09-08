@@ -153,7 +153,7 @@ export function createWalkingAdapter({
       if (Date.parse(deadline) <= Date.parse(clock.now())) return;
       deadlines.push(clock.at(deadline, callback));
     };
-    const tick = () => apply({ type: 'tick', at: clock.now() });
+    const tick = () => tickNow();
     at(config.windowEnd, () => stopWith('windowEnded'));
     at(config.dayEnd, () => stopWith('dayRollover'));
     at(session.leaseUntil, tick);
@@ -163,6 +163,19 @@ export function createWalkingAdapter({
     if (placementState.deadline) {
       at(placementState.deadline, () => onPlacement({ type: 'deadline', at: clock.now() }));
     }
+  };
+
+  /**
+   * One tick resolves every deadline. `stepWalkingSession` re-evaluates the lease, the grace, the
+   * window and the day itself on any event, and the placement deadline is checked here, so a
+   * suspended app that misses its timers settles everything on the next notification.
+   */
+  const tickNow = () => {
+    const at = clock.now();
+    if (placementState.deadline && Date.parse(at) >= Date.parse(placementState.deadline)) {
+      onPlacement({ type: 'deadline', at });
+    }
+    apply({ type: 'tick', at: clock.now() });
   };
 
   const apply = (event: WalkingSessionEvent) => {
@@ -231,7 +244,7 @@ export function createWalkingAdapter({
   const connect = async (mode: 'propped' | 'handheld') => {
     // The clock is the only ticker. Every notification recomputes credit from `creditedThrough`,
     // so a missed tick costs nothing and a repeated one changes nothing.
-    stopClock = clock.subscribe(() => apply({ type: 'tick', at: clock.now() }));
+    stopClock = clock.subscribe(tickNow);
     verifier = createVerifier({ gracePeriodMs: stopGraceSeconds() * 1000 });
     sensors = [
       motion.on('activity', (sample) => verifier && onVerdict(verifier.processActivity(sample))),
@@ -331,7 +344,7 @@ export function createWalkingAdapter({
       return session;
     },
     stop: () => stopWith('stopped'),
-    tick: () => apply({ type: 'tick', at: clock.now() }),
+    tick: tickNow,
     completeProppedScan: () => {
       if (!current || current.phase === 'ended') return false;
       onPlacement({ type: 'scanCompleted', at: clock.now() });
@@ -363,7 +376,7 @@ export function createWalkingAdapter({
         session.placement === 'propped' ? startPlacement(clock.now()) : startHandheld(clock.now());
       void connect(session.placement).then(arm).catch(onError);
       // A tick recomputes credit from `creditedThrough`, so a relaunch books the same minutes.
-      apply({ type: 'tick', at: clock.now() });
+      tickNow();
     },
     dispose: () => {
       listeners.clear();
