@@ -36,8 +36,7 @@ function loadClientEnvironment(): ClientEnvironment {
       if (!line || line.startsWith('#') || separator <= 0) return [];
       const name = line.slice(0, separator).trim();
       const raw = line.slice(separator + 1).trim();
-      const quoted =
-        (raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"));
+      const quoted = (raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"));
       return [[name, quoted ? raw.slice(1, -1) : raw]];
     }),
   );
@@ -64,9 +63,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ...(config.plugins ?? []),
       // The Google plugin writes the reversed-client-id URL scheme into the iOS project, so it can
       // only be added once that client exists.
-      ...(iosUrlScheme
-        ? [['@react-native-google-signin/google-signin', { iosUrlScheme }] as [string, unknown]]
-        : []),
+      ...(iosUrlScheme ? [['@react-native-google-signin/google-signin', { iosUrlScheme }] as [string, unknown]] : []),
     ],
     extra: {
       ...config.extra,
