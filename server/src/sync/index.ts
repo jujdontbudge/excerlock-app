@@ -1,5 +1,6 @@
 export {
   earnedUnlocksRequest,
+  historyDaysRequest,
   MAX_SYNC_BATCH,
   profileRequest,
   ruleDaysRequest,
@@ -7,10 +8,10 @@ export {
   SYNC_HISTORY_LIMIT,
   usageDaysRequest,
   type EarnedUnlockPayload,
+  type HistoryDayPayload,
   type ProfilePayload,
   type RuleDayPayload,
   type RulePayload,
-  type RuleSyncWriteResult,
   type SyncSnapshot,
   type SyncWriteResult,
   type UsageDayPayload,

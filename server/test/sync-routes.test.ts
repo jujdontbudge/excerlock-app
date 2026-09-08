@@ -17,6 +17,7 @@ const emptySnapshot: SyncSnapshot = {
   ruleDays: [],
   usageDays: [],
   earnedUnlocks: [],
+  historyDays: [],
   profile: null,
 };
 
@@ -27,14 +28,11 @@ afterEach(async () => {
 
 function stubSync(overrides: Partial<SyncRepository> = {}): SyncRepository {
   return {
-    replaceRules: vi.fn(async () => ({
-      applied: 0,
-      skipped: 0,
-      tombstoned: 0,
-    })),
+    upsertRules: vi.fn(async () => ({ applied: 0, skipped: 0 })),
     upsertRuleDays: vi.fn(async () => ({ applied: 0, skipped: 0 })),
     upsertUsageDays: vi.fn(async () => ({ applied: 0, skipped: 0 })),
     upsertEarnedUnlocks: vi.fn(async () => ({ applied: 0, skipped: 0 })),
+    upsertHistoryDays: vi.fn(async () => ({ applied: 0, skipped: 0 })),
     upsertProfile: vi.fn(async () => ({ applied: 0, skipped: 0 })),
     read: vi.fn(async () => emptySnapshot),
     ...overrides,
@@ -49,10 +47,12 @@ function callArguments<Arguments extends unknown[]>(
   return calls[0] ?? ([] as unknown as Partial<Arguments>);
 }
 
-function pushedRules(
-  stub: SyncRepository["replaceRules"],
-): readonly unknown[] {
+function pushedRules(stub: SyncRepository["upsertRules"]): readonly unknown[] {
   return (callArguments(stub)[1] ?? []) as readonly unknown[];
+}
+
+function writeCalls(stub: unknown): unknown[] {
+  return (stub as ReturnType<typeof vi.fn>).mock.calls;
 }
 
 async function buildApp(
@@ -88,15 +88,20 @@ const validRule = {
   updatedAt: "2026-09-01T12:00:00.000Z",
 };
 
+const validHistoryDay = {
+  day: "2026-09-01",
+  usageMinutes: 92,
+  activity: { walking: 5_200, gym: 0, running: 0, biking: 0 },
+  met: true,
+  scheduled: true,
+  sealedAt: "2026-09-02T04:00:00.000Z",
+  updatedAt: "2026-09-02T04:00:00.000Z",
+};
+
 describe("PUT /v1/sync/rules", () => {
-  it("hands the validated rule set to the repository and reports the outcome", async () => {
-    const replaceRules = vi.fn(async () => ({
-      applied: 1,
-      skipped: 0,
-      tombstoned: 2,
-    }));
-    const sync = stubSync({ replaceRules });
-    app = await buildApp(sync);
+  it("hands the validated rules to the repository and reports the outcome", async () => {
+    const upsertRules = vi.fn(async () => ({ applied: 1, skipped: 0 }));
+    app = await buildApp(stubSync({ upsertRules }));
 
     const response = await app.inject({
       method: "PUT",
@@ -107,21 +112,41 @@ describe("PUT /v1/sync/rules", () => {
     expect({
       status: response.statusCode,
       body: response.json(),
-      calls: replaceRules.mock.calls,
+      calls: upsertRules.mock.calls,
     }).toEqual({
       status: 200,
-      body: { applied: 1, skipped: 0, tombstoned: 2 },
+      body: { applied: 1, skipped: 0 },
       calls: [["user_123", [validRule]]],
     });
   });
 
-  it("accepts an empty rule set as a deletion of everything", async () => {
-    const replaceRules = vi.fn(async () => ({
-      applied: 0,
-      skipped: 0,
-      tombstoned: 3,
-    }));
-    app = await buildApp(stubSync({ replaceRules }));
+  it("carries a deletion as an explicit tombstone, never as absence", async () => {
+    const upsertRules = vi.fn(async () => ({ applied: 1, skipped: 0 }));
+    app = await buildApp(stubSync({ upsertRules }));
+
+    const response = await app.inject({
+      method: "PUT",
+      url: "/v1/sync/rules",
+      payload: {
+        rules: [
+          {
+            ...validRule,
+            updatedAt: "2026-09-04T12:00:00.000Z",
+            deletedAt: "2026-09-04T12:00:00.000Z",
+          },
+        ],
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(pushedRules(upsertRules)[0]).toMatchObject({
+      deletedAt: "2026-09-04T12:00:00.000Z",
+    });
+  });
+
+  it("accepts an empty batch as nothing to say", async () => {
+    const upsertRules = vi.fn(async () => ({ applied: 0, skipped: 0 }));
+    app = await buildApp(stubSync({ upsertRules }));
 
     const response = await app.inject({
       method: "PUT",
@@ -129,19 +154,18 @@ describe("PUT /v1/sync/rules", () => {
       payload: { rules: [] },
     });
 
-    expect({ status: response.statusCode, calls: replaceRules.mock.calls }).toEqual({
-      status: 200,
-      calls: [["user_123", []]],
-    });
+    expect({
+      status: response.statusCode,
+      calls: upsertRules.mock.calls,
+    }).toEqual({ status: 200, calls: [["user_123", []]] });
   });
 
   it("accepts pausedReason without storing it", async () => {
-    const replaceRules: SyncRepository["replaceRules"] = vi.fn(async () => ({
+    const upsertRules: SyncRepository["upsertRules"] = vi.fn(async () => ({
       applied: 1,
       skipped: 0,
-      tombstoned: 0,
     }));
-    app = await buildApp(stubSync({ replaceRules }));
+    app = await buildApp(stubSync({ upsertRules }));
 
     const response = await app.inject({
       method: "PUT",
@@ -160,9 +184,68 @@ describe("PUT /v1/sync/rules", () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(pushedRules(replaceRules)[0]).toMatchObject({
+    expect(pushedRules(upsertRules)[0]).toMatchObject({
       pausedReason: "noGym",
     });
+  });
+});
+
+describe("PUT /v1/sync/history", () => {
+  it("stores sealed days under the `rows` batch field", async () => {
+    const upsertHistoryDays = vi.fn(async () => ({ applied: 1, skipped: 0 }));
+    app = await buildApp(stubSync({ upsertHistoryDays }));
+
+    const response = await app.inject({
+      method: "PUT",
+      url: "/v1/sync/history",
+      payload: { rows: [validHistoryDay] },
+    });
+
+    expect({
+      status: response.statusCode,
+      body: response.json(),
+      calls: upsertHistoryDays.mock.calls,
+    }).toEqual({
+      status: 200,
+      body: { applied: 1, skipped: 0 },
+      calls: [["user_123", [validHistoryDay]]],
+    });
+  });
+
+  it("accepts a day with no usage measurement rather than zeroing it", async () => {
+    const upsertHistoryDays = vi.fn(async () => ({ applied: 1, skipped: 0 }));
+    app = await buildApp(stubSync({ upsertHistoryDays }));
+
+    const response = await app.inject({
+      method: "PUT",
+      url: "/v1/sync/history",
+      payload: { rows: [{ ...validHistoryDay, usageMinutes: null }] },
+    });
+
+    expect(response.statusCode).toBe(200);
+  });
+
+  it("rejects an activity total the product model does not have", async () => {
+    const sync = stubSync();
+    app = await buildApp(sync);
+
+    const response = await app.inject({
+      method: "PUT",
+      url: "/v1/sync/history",
+      payload: {
+        rows: [
+          {
+            ...validHistoryDay,
+            activity: { ...validHistoryDay.activity, swimming: 30 },
+          },
+        ],
+      },
+    });
+
+    expect({
+      status: response.statusCode,
+      writes: writeCalls(sync.upsertHistoryDays),
+    }).toEqual({ status: 400, writes: [] });
   });
 });
 
@@ -183,7 +266,7 @@ describe("sync payload privacy law", () => {
     expect({
       status: response.statusCode,
       code: response.json<{ error: { code: string } }>().error.code,
-      writes: (sync.replaceRules as ReturnType<typeof vi.fn>).mock.calls,
+      writes: writeCalls(sync.upsertRules),
     }).toEqual({
       status: 400,
       code: "INVALID_SYNC_PAYLOAD",
@@ -218,7 +301,7 @@ describe("sync payload privacy law", () => {
 
     expect({
       status: response.statusCode,
-      writes: (sync.replaceRules as ReturnType<typeof vi.fn>).mock.calls,
+      writes: writeCalls(sync.upsertRules),
     }).toEqual({ status: 400, writes: [] });
   });
 
@@ -260,7 +343,7 @@ describe("sync payload privacy law", () => {
 
     expect({
       status: response.statusCode,
-      writes: (sync.replaceRules as ReturnType<typeof vi.fn>).mock.calls,
+      writes: writeCalls(sync.upsertRules),
     }).toEqual({ status: 400, writes: [] });
   });
 
@@ -272,13 +355,14 @@ describe("sync payload privacy law", () => {
       method: "PUT",
       url: "/v1/sync/rule-days",
       payload: {
-        ruleDays: [
+        rows: [
           {
             ruleId: RULE_ID,
             day: "2026-09-01",
             progress: 5_200,
             met: true,
             metAt: "2026-09-01T15:00:00.000Z",
+            unit: "steps",
             updatedAt: "2026-09-01T15:00:00.000Z",
             samples: [{ at: "2026-09-01T14:00:00.000Z", steps: 12 }],
           },
@@ -288,7 +372,7 @@ describe("sync payload privacy law", () => {
 
     expect({
       status: response.statusCode,
-      writes: (sync.upsertRuleDays as ReturnType<typeof vi.fn>).mock.calls,
+      writes: writeCalls(sync.upsertRuleDays),
     }).toEqual({ status: 400, writes: [] });
   });
 });
@@ -302,7 +386,7 @@ describe("sync batch limits", () => {
       method: "PUT",
       url: "/v1/sync/usage-days",
       payload: {
-        usageDays: Array.from({ length: MAX_SYNC_BATCH + 1 }, (_, index) => ({
+        rows: Array.from({ length: MAX_SYNC_BATCH + 1 }, (_, index) => ({
           day: new Date(Date.UTC(2025, 0, 1 + index)).toISOString().slice(0, 10),
           lockedAppMinutes: 1,
           updatedAt: "2026-09-01T12:00:00.000Z",
@@ -313,7 +397,7 @@ describe("sync batch limits", () => {
     expect({
       status: response.statusCode,
       body: response.json(),
-      writes: (sync.upsertUsageDays as ReturnType<typeof vi.fn>).mock.calls,
+      writes: writeCalls(sync.upsertUsageDays),
     }).toEqual({
       status: 400,
       body: {
@@ -336,7 +420,7 @@ describe("sync batch limits", () => {
       method: "PUT",
       url: "/v1/sync/usage-days",
       payload: {
-        usageDays: Array.from({ length: MAX_SYNC_BATCH }, (_, index) => ({
+        rows: Array.from({ length: MAX_SYNC_BATCH }, (_, index) => ({
           day: new Date(Date.UTC(2025, 0, 1 + index)).toISOString().slice(0, 10),
           lockedAppMinutes: 1,
           updatedAt: "2026-09-01T12:00:00.000Z",
@@ -362,6 +446,7 @@ describe("GET /v1/sync", () => {
           progress: 5_200,
           met: true,
           metAt: "2026-09-01T15:00:00.000Z",
+          unit: "steps",
           updatedAt: "2026-09-01T15:00:00.000Z",
         },
       ],
@@ -382,6 +467,7 @@ describe("GET /v1/sync", () => {
           updatedAt: "2026-09-01T15:00:00.000Z",
         },
       ],
+      historyDays: [validHistoryDay],
       profile: {
         name: "Person",
         referralSource: null,
@@ -416,6 +502,7 @@ describe("GET /v1/sync", () => {
       "ruleDays",
       "usageDays",
       "earnedUnlocks",
+      "historyDays",
       "profile",
     ]);
   });
@@ -425,7 +512,7 @@ describe("sync failure responses", () => {
   it("answers 410 once the account is erased", async () => {
     app = await buildApp(
       stubSync({
-        replaceRules: vi.fn(async () => {
+        upsertRules: vi.fn(async () => {
           throw new DeletedIdentityError();
         }),
       }),
@@ -434,7 +521,7 @@ describe("sync failure responses", () => {
     const response = await app.inject({
       method: "PUT",
       url: "/v1/sync/rules",
-      payload: { rules: [] },
+      payload: { rules: [validRule] },
     });
 
     expect({ status: response.statusCode, body: response.json() }).toEqual({
@@ -475,17 +562,22 @@ describe("sync failure responses", () => {
       app.inject({
         method: "PUT",
         url: "/v1/sync/rule-days",
-        payload: { ruleDays: [] },
+        payload: { rows: [] },
       }),
       app.inject({
         method: "PUT",
         url: "/v1/sync/usage-days",
-        payload: { usageDays: [] },
+        payload: { rows: [] },
       }),
       app.inject({
         method: "PUT",
         url: "/v1/sync/earned-unlocks",
-        payload: { earnedUnlocks: [] },
+        payload: { rows: [] },
+      }),
+      app.inject({
+        method: "PUT",
+        url: "/v1/sync/history",
+        payload: { rows: [] },
       }),
       app.inject({
         method: "PUT",
@@ -496,10 +588,10 @@ describe("sync failure responses", () => {
 
     expect({
       statuses: responses.map((response) => response.statusCode),
-      reads: (sync.read as ReturnType<typeof vi.fn>).mock.calls,
-      writes: (sync.replaceRules as ReturnType<typeof vi.fn>).mock.calls,
+      reads: writeCalls(sync.read),
+      writes: writeCalls(sync.upsertRules),
     }).toEqual({
-      statuses: [401, 401, 401, 401, 401, 401],
+      statuses: [401, 401, 401, 401, 401, 401, 401],
       reads: [],
       writes: [],
     });

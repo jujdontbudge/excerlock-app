@@ -4,6 +4,7 @@ import { DeletedIdentityError } from "../identity/index.js";
 import {
   createDrizzleSyncRepository,
   earnedUnlocksRequest,
+  historyDaysRequest,
   MAX_SYNC_BATCH,
   profileRequest,
   ruleDaysRequest,
@@ -149,31 +150,39 @@ export function createSyncRoutes(
       schema: rulesRequest,
       field: "rules",
       apply: (userId, parsed) =>
-        dependencies.sync.replaceRules(userId, parsed.rules),
+        dependencies.sync.upsertRules(userId, parsed.rules),
     });
 
     writeRoute({
       url: "/sync/rule-days",
       schema: ruleDaysRequest,
-      field: "ruleDays",
+      field: "rows",
       apply: (userId, parsed) =>
-        dependencies.sync.upsertRuleDays(userId, parsed.ruleDays),
+        dependencies.sync.upsertRuleDays(userId, parsed.rows),
     });
 
     writeRoute({
       url: "/sync/usage-days",
       schema: usageDaysRequest,
-      field: "usageDays",
+      field: "rows",
       apply: (userId, parsed) =>
-        dependencies.sync.upsertUsageDays(userId, parsed.usageDays),
+        dependencies.sync.upsertUsageDays(userId, parsed.rows),
     });
 
     writeRoute({
       url: "/sync/earned-unlocks",
       schema: earnedUnlocksRequest,
-      field: "earnedUnlocks",
+      field: "rows",
       apply: (userId, parsed) =>
-        dependencies.sync.upsertEarnedUnlocks(userId, parsed.earnedUnlocks),
+        dependencies.sync.upsertEarnedUnlocks(userId, parsed.rows),
+    });
+
+    writeRoute({
+      url: "/sync/history",
+      schema: historyDaysRequest,
+      field: "rows",
+      apply: (userId, parsed) =>
+        dependencies.sync.upsertHistoryDays(userId, parsed.rows),
     });
 
     writeRoute({
@@ -188,14 +197,16 @@ export function createSyncRoutes(
 
 export const syncRoutes = createSyncRoutes({
   sync: {
-    replaceRules: (userId, rules) =>
-      createDrizzleSyncRepository().replaceRules(userId, rules),
+    upsertRules: (userId, rules) =>
+      createDrizzleSyncRepository().upsertRules(userId, rules),
     upsertRuleDays: (userId, ruleDays) =>
       createDrizzleSyncRepository().upsertRuleDays(userId, ruleDays),
     upsertUsageDays: (userId, usageDays) =>
       createDrizzleSyncRepository().upsertUsageDays(userId, usageDays),
     upsertEarnedUnlocks: (userId, earnedUnlocks) =>
       createDrizzleSyncRepository().upsertEarnedUnlocks(userId, earnedUnlocks),
+    upsertHistoryDays: (userId, historyDays) =>
+      createDrizzleSyncRepository().upsertHistoryDays(userId, historyDays),
     upsertProfile: (userId, profile) =>
       createDrizzleSyncRepository().upsertProfile(userId, profile),
     read: (userId) => createDrizzleSyncRepository().read(userId),

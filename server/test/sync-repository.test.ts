@@ -11,6 +11,7 @@ import { rules, users } from "../src/db/schema.js";
 import { DeletedIdentityError } from "../src/identity/index.js";
 import {
   createDrizzleSyncRepository,
+  type HistoryDayPayload,
   type RulePayload,
 } from "../src/sync/index.js";
 import { createPgliteTestDatabase } from "./pgliteTestDatabase.js";
@@ -55,28 +56,50 @@ function walkingRule(overrides: Partial<RulePayload> = {}): RulePayload {
   } as RulePayload;
 }
 
+function gymRule(overrides: Partial<RulePayload> = {}): RulePayload {
+  return walkingRule({
+    id: RULE_B,
+    activity: "gym",
+    mode: { kind: "event", activity: "gym", trigger: "arrival" },
+    ...overrides,
+  });
+}
+
+function sealedDay(
+  overrides: Partial<HistoryDayPayload> = {},
+): HistoryDayPayload {
+  return {
+    day: "2026-09-01",
+    usageMinutes: 92,
+    activity: { walking: 5_200, gym: 0, running: 0, biking: 0 },
+    met: true,
+    scheduled: true,
+    sealedAt: "2026-09-02T04:00:00.000Z",
+    updatedAt: "2026-09-02T04:00:00.000Z",
+    ...overrides,
+  };
+}
+
 describe("rule sync", () => {
   it("provisions the identity row on the first push", async () => {
-    const result = await repository().replaceRules("user_123", [
-      walkingRule(),
-    ]);
+    const result = await repository().upsertRules("user_123", [walkingRule()]);
 
     expect({
       result,
       users: await postgres.db.select({ id: users.id }).from(users),
     }).toEqual({
-      result: { applied: 1, skipped: 0, tombstoned: 0 },
+      result: { applied: 1, skipped: 0 },
       users: [{ id: "user_123" }],
     });
   });
 
   it("keeps the newer row when an older push replays", async () => {
     const sync = repository();
-    await sync.replaceRules("user_123", [
+    await sync.upsertRules("user_123", [
       walkingRule({ updatedAt: "2026-09-02T12:00:00.000Z", enabled: false }),
     ]);
 
-    const replay = await sync.replaceRules("user_123", [
+    const replay = await sync.upsertRules("user_123", [
       walkingRule({ updatedAt: "2026-09-01T12:00:00.000Z", enabled: true }),
     ]);
 
@@ -86,7 +109,7 @@ describe("rule sync", () => {
       enabled: snapshot.rules[0]?.enabled,
       updatedAt: snapshot.rules[0]?.updatedAt,
     }).toEqual({
-      replay: { applied: 0, skipped: 1, tombstoned: 0 },
+      replay: { applied: 0, skipped: 1 },
       enabled: false,
       updatedAt: "2026-09-02T12:00:00.000Z",
     });
@@ -94,9 +117,9 @@ describe("rule sync", () => {
 
   it("applies a newer edit from a second device", async () => {
     const sync = repository();
-    await sync.replaceRules("user_123", [walkingRule()]);
+    await sync.upsertRules("user_123", [walkingRule()]);
 
-    const edit = await sync.replaceRules("user_123", [
+    const edit = await sync.upsertRules("user_123", [
       walkingRule({
         updatedAt: "2026-09-03T12:00:00.000Z",
         mode: {
@@ -111,7 +134,7 @@ describe("rule sync", () => {
 
     const snapshot = await sync.read("user_123");
     expect({ edit, mode: snapshot.rules[0]?.mode }).toEqual({
-      edit: { applied: 1, skipped: 0, tombstoned: 0 },
+      edit: { applied: 1, skipped: 0 },
       mode: {
         kind: "target",
         activity: "walking",
@@ -122,18 +145,20 @@ describe("rule sync", () => {
     });
   });
 
-  it("tombstones a rule the device no longer has, and says so", async () => {
+  it("deletes a rule only when the device sends a tombstone", async () => {
     const sync = repository();
-    await sync.replaceRules("user_123", [
-      walkingRule(),
-      walkingRule({ id: RULE_B, activity: "gym", mode: { kind: "event", activity: "gym", trigger: "arrival" } }),
-    ]);
+    await sync.upsertRules("user_123", [walkingRule(), gymRule()]);
 
-    const afterDelete = await sync.replaceRules("user_123", [walkingRule()]);
+    const deletion = await sync.upsertRules("user_123", [
+      gymRule({
+        updatedAt: "2026-09-04T12:00:00.000Z",
+        deletedAt: "2026-09-04T12:00:00.000Z",
+      }),
+    ]);
 
     const snapshot = await sync.read("user_123");
     expect({
-      afterDelete,
+      deletion,
       live: snapshot.rules
         .filter((rule) => rule.deletedAt === null)
         .map((rule) => rule.id),
@@ -141,48 +166,77 @@ describe("rule sync", () => {
         .filter((rule) => rule.deletedAt !== null)
         .map((rule) => rule.id),
     }).toEqual({
-      afterDelete: { applied: 0, skipped: 1, tombstoned: 1 },
+      deletion: { applied: 1, skipped: 0 },
       live: [RULE_A],
       tombstoned: [RULE_B],
     });
   });
 
-  it("tombstones every rule when the device pushes an empty set", async () => {
+  it("leaves a rule the batch never mentions alone", async () => {
     const sync = repository();
-    await sync.replaceRules("user_123", [walkingRule()]);
+    await sync.upsertRules("phone", [walkingRule(), gymRule()]);
 
-    const cleared = await sync.replaceRules("user_123", []);
+    // The watch has never heard of the gym rule, so it pushes only the one it
+    // knows. Absence is not a deletion; the gym rule survives untouched.
+    const partial = await sync.upsertRules("phone", [
+      walkingRule({ updatedAt: "2026-09-05T12:00:00.000Z", enabled: false }),
+    ]);
 
+    const snapshot = await sync.read("phone");
     expect({
-      cleared,
-      deleted: (await sync.read("user_123")).rules.map(
-        (rule) => rule.deletedAt !== null,
-      ),
+      partial,
+      rules: snapshot.rules
+        .map((rule) => ({ id: rule.id, deletedAt: rule.deletedAt }))
+        .sort((left, right) => left.id.localeCompare(right.id)),
     }).toEqual({
-      cleared: { applied: 0, skipped: 0, tombstoned: 1 },
-      deleted: [true],
+      partial: { applied: 1, skipped: 0 },
+      rules: [
+        { id: RULE_A, deletedAt: null },
+        { id: RULE_B, deletedAt: null },
+      ],
     });
   });
 
-  it("does not tombstone a rule twice on a repeated empty push", async () => {
+  it("treats an empty batch as nothing to say, not as a deletion", async () => {
     const sync = repository();
-    await sync.replaceRules("user_123", [walkingRule()]);
-    await sync.replaceRules("user_123", []);
+    await sync.upsertRules("user_123", [walkingRule()]);
 
-    await expect(sync.replaceRules("user_123", [])).resolves.toEqual({
-      applied: 0,
-      skipped: 0,
-      tombstoned: 0,
-    });
+    const empty = await sync.upsertRules("user_123", []);
+
+    expect({
+      empty,
+      deleted: (await sync.read("user_123")).rules.map(
+        (rule) => rule.deletedAt !== null,
+      ),
+    }).toEqual({ empty: { applied: 0, skipped: 0 }, deleted: [false] });
+  });
+
+  it("ignores a stale tombstone for a rule the user has since re-edited", async () => {
+    const sync = repository();
+    await sync.upsertRules("user_123", [
+      walkingRule({ updatedAt: "2026-09-06T12:00:00.000Z" }),
+    ]);
+
+    const staleTombstone = await sync.upsertRules("user_123", [
+      walkingRule({
+        updatedAt: "2026-09-05T12:00:00.000Z",
+        deletedAt: "2026-09-05T12:00:00.000Z",
+      }),
+    ]);
+
+    expect({
+      staleTombstone,
+      deletedAt: (await sync.read("user_123")).rules[0]?.deletedAt,
+    }).toEqual({ staleTombstone: { applied: 0, skipped: 1 }, deletedAt: null });
   });
 });
 
 describe("ownership", () => {
   it("never lets one account overwrite another account's rule", async () => {
     const sync = repository();
-    await sync.replaceRules("owner", [walkingRule()]);
+    await sync.upsertRules("owner", [walkingRule()]);
 
-    const attacker = await sync.replaceRules("attacker", [
+    const attacker = await sync.upsertRules("attacker", [
       walkingRule({
         updatedAt: "2027-01-01T00:00:00.000Z",
         enabled: false,
@@ -200,22 +254,27 @@ describe("ownership", () => {
       .select({ userId: rules.userId, enabled: rules.enabled })
       .from(rules)
       .where(eq(rules.id, RULE_A));
-    expect({ attacker, stored, attackerSees: await sync.read("attacker") }).toEqual({
-      attacker: { applied: 0, skipped: 1, tombstoned: 0 },
+    expect({
+      attacker,
+      stored,
+      attackerSees: await sync.read("attacker"),
+    }).toEqual({
+      attacker: { applied: 0, skipped: 1 },
       stored: { userId: "owner", enabled: true },
       attackerSees: {
         rules: [],
         ruleDays: [],
         usageDays: [],
         earnedUnlocks: [],
+        historyDays: [],
         profile: null,
       },
     });
   });
 
-  it("never lets one account read or tombstone another account's rows", async () => {
+  it("never lets one account tombstone another account's rule", async () => {
     const sync = repository();
-    await sync.replaceRules("owner", [walkingRule()]);
+    await sync.upsertRules("owner", [walkingRule()]);
     await sync.upsertRuleDays("owner", [
       {
         ruleId: RULE_A,
@@ -223,11 +282,17 @@ describe("ownership", () => {
         progress: 5_200,
         met: true,
         metAt: "2026-09-01T15:00:00.000Z",
+        unit: "steps",
         updatedAt: "2026-09-01T15:00:00.000Z",
       },
     ]);
 
-    await sync.replaceRules("attacker", []);
+    await sync.upsertRules("attacker", [
+      walkingRule({
+        updatedAt: "2027-01-01T00:00:00.000Z",
+        deletedAt: "2027-01-01T00:00:00.000Z",
+      }),
+    ]);
 
     const owner = await sync.read("owner");
     expect({
@@ -254,6 +319,7 @@ describe("rule day, usage day and earned unlock sync", () => {
         progress: 12.345,
         met: false,
         metAt: null,
+        unit: "km",
         updatedAt: "2026-09-01T15:00:00.000Z",
       },
     ]);
@@ -265,6 +331,7 @@ describe("rule day, usage day and earned unlock sync", () => {
         progress: 12.345,
         met: false,
         metAt: null,
+        unit: "km",
         updatedAt: "2026-09-01T15:00:00.000Z",
       },
     ]);
@@ -278,6 +345,7 @@ describe("rule day, usage day and earned unlock sync", () => {
       progress: 5_200,
       met: true,
       metAt: "2026-09-01T15:00:00.000Z",
+      unit: "steps" as const,
       updatedAt: "2026-09-01T15:00:00.000Z",
     };
     await sync.upsertRuleDays("user_123", [met]);
@@ -342,7 +410,7 @@ describe("rule day, usage day and earned unlock sync", () => {
 
   it("keeps an earned unlock after its rule is deleted (B23)", async () => {
     const sync = repository();
-    await sync.replaceRules("user_123", [walkingRule()]);
+    await sync.upsertRules("user_123", [walkingRule()]);
     await sync.upsertEarnedUnlocks("user_123", [
       {
         day: "2026-09-01",
@@ -354,7 +422,12 @@ describe("rule day, usage day and earned unlock sync", () => {
       },
     ]);
 
-    await sync.replaceRules("user_123", []);
+    await sync.upsertRules("user_123", [
+      walkingRule({
+        updatedAt: "2026-09-02T12:00:00.000Z",
+        deletedAt: "2026-09-02T12:00:00.000Z",
+      }),
+    ]);
 
     expect((await sync.read("user_123")).earnedUnlocks).toHaveLength(1);
   });
@@ -377,6 +450,69 @@ describe("rule day, usage day and earned unlock sync", () => {
       count: snapshot.usageDays.length,
       newest: snapshot.usageDays[0]?.day,
     }).toEqual({ count: 400, newest: "2026-02-09" });
+  });
+});
+
+describe("sealed history sync", () => {
+  it("round-trips a sealed day, including a day with no usage measurement", async () => {
+    const sync = repository();
+
+    const written = await sync.upsertHistoryDays("user_123", [
+      sealedDay(),
+      sealedDay({
+        day: "2026-08-31",
+        usageMinutes: null,
+        activity: { walking: 0, gym: 0, running: 0, biking: 0 },
+        met: false,
+        scheduled: false,
+        sealedAt: "2026-09-01T04:00:00.000Z",
+        updatedAt: "2026-09-01T04:00:00.000Z",
+      }),
+    ]);
+
+    expect({
+      written,
+      history: (await sync.read("user_123")).historyDays,
+    }).toEqual({
+      written: { applied: 2, skipped: 0 },
+      history: [
+        sealedDay(),
+        {
+          day: "2026-08-31",
+          usageMinutes: null,
+          activity: { walking: 0, gym: 0, running: 0, biking: 0 },
+          met: false,
+          scheduled: false,
+          sealedAt: "2026-09-01T04:00:00.000Z",
+          updatedAt: "2026-09-01T04:00:00.000Z",
+        },
+      ],
+    });
+  });
+
+  it("refuses to unseal a day from a stale replay", async () => {
+    const sync = repository();
+    await sync.upsertHistoryDays("user_123", [sealedDay()]);
+
+    const stale = await sync.upsertHistoryDays("user_123", [
+      sealedDay({
+        met: false,
+        usageMinutes: 0,
+        updatedAt: "2026-09-01T23:00:00.000Z",
+      }),
+    ]);
+
+    expect({
+      stale,
+      met: (await sync.read("user_123")).historyDays[0]?.met,
+    }).toEqual({ stale: { applied: 0, skipped: 1 }, met: true });
+  });
+
+  it("never hands one account another account's sealed days", async () => {
+    const sync = repository();
+    await sync.upsertHistoryDays("owner", [sealedDay()]);
+
+    expect((await sync.read("attacker")).historyDays).toEqual([]);
   });
 });
 
@@ -429,12 +565,15 @@ describe("deleted accounts", () => {
     const sync = repository();
 
     await expect(
-      sync.replaceRules("deleted_user", [walkingRule()]),
+      sync.upsertRules("deleted_user", [walkingRule()]),
     ).rejects.toBeInstanceOf(DeletedIdentityError);
     await expect(
       sync.upsertUsageDays("deleted_user", [
         { day: "2026-09-01", lockedAppMinutes: 5, updatedAt: "2026-09-01T09:00:00.000Z" },
       ]),
+    ).rejects.toBeInstanceOf(DeletedIdentityError);
+    await expect(
+      sync.upsertHistoryDays("deleted_user", [sealedDay()]),
     ).rejects.toBeInstanceOf(DeletedIdentityError);
   });
 });

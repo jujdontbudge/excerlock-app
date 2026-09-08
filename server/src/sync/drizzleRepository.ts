@@ -1,8 +1,9 @@
-import { and, desc, eq, isNull, notInArray, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 import {
   earnedUnlocks,
   getDb,
+  historyDays,
   profiles,
   ruleDays,
   rules,
@@ -14,10 +15,10 @@ import { DeletedIdentityError } from "../identity/index.js";
 import {
   SYNC_HISTORY_LIMIT,
   type EarnedUnlockPayload,
+  type HistoryDayPayload,
   type ProfilePayload,
   type RuleDayPayload,
   type RulePayload,
-  type RuleSyncWriteResult,
   type SyncSnapshot,
   type SyncWriteResult,
   type UsageDayPayload,
@@ -90,65 +91,48 @@ export function createDrizzleSyncRepository(
   const database = requireDatabase(configuredDatabase);
 
   return {
-    async replaceRules(userId, incoming) {
+    async upsertRules(userId, incoming) {
+      if (incoming.length === 0) {
+        return tally(0, 0);
+      }
+
       return database.transaction(async (transaction) => {
         await lockActiveUser(transaction, userId);
 
-        let applied: { id: string }[] = [];
-        if (incoming.length > 0) {
-          applied = await transaction
-            .insert(rules)
-            .values(
-              incoming.map((rule) => ({
-                id: rule.id,
-                userId,
-                activity: rule.activity,
-                mode: rule.mode,
-                schedule: rule.schedule,
-                enabled: rule.enabled,
-                createdAt: instant(rule.createdAt),
-                updatedAt: instant(rule.updatedAt),
-                deletedAt: optionalInstant(rule.deletedAt),
-              })),
-            )
-            .onConflictDoUpdate({
-              target: rules.id,
-              set: {
-                activity: sql`excluded.activity`,
-                mode: sql`excluded.mode`,
-                schedule: sql`excluded.schedule`,
-                enabled: sql`excluded.enabled`,
-                createdAt: sql`excluded.created_at`,
-                updatedAt: sql`excluded.updated_at`,
-                deletedAt: sql`excluded.deleted_at`,
-              },
-              // Ownership and last-write-wins in one predicate: a rule id that
-              // belongs to another account can never be updated here, and a
-              // stale replay can never overwrite a newer row.
-              setWhere: sql`${rules.userId} = ${userId} and ${rules.updatedAt} < excluded.updated_at`,
-            })
-            .returning({ id: rules.id });
-        }
-
-        const survivingIds = incoming.map((rule) => rule.id);
-        const tombstoned = await transaction
-          .update(rules)
-          .set({ deletedAt: sql`now()`, updatedAt: sql`now()` })
-          .where(
-            and(
-              eq(rules.userId, userId),
-              isNull(rules.deletedAt),
-              survivingIds.length > 0
-                ? notInArray(rules.id, survivingIds)
-                : sql`true`,
-            ),
+        const applied = await transaction
+          .insert(rules)
+          .values(
+            incoming.map((rule) => ({
+              id: rule.id,
+              userId,
+              activity: rule.activity,
+              mode: rule.mode,
+              schedule: rule.schedule,
+              enabled: rule.enabled,
+              createdAt: instant(rule.createdAt),
+              updatedAt: instant(rule.updatedAt),
+              deletedAt: optionalInstant(rule.deletedAt),
+            })),
           )
+          .onConflictDoUpdate({
+            target: rules.id,
+            set: {
+              activity: sql`excluded.activity`,
+              mode: sql`excluded.mode`,
+              schedule: sql`excluded.schedule`,
+              enabled: sql`excluded.enabled`,
+              createdAt: sql`excluded.created_at`,
+              updatedAt: sql`excluded.updated_at`,
+              deletedAt: sql`excluded.deleted_at`,
+            },
+            // Ownership and last-write-wins in one predicate: a rule id that
+            // belongs to another account can never be updated here, and a
+            // stale replay can never overwrite a newer row.
+            setWhere: sql`${rules.userId} = ${userId} and ${rules.updatedAt} < excluded.updated_at`,
+          })
           .returning({ id: rules.id });
 
-        return {
-          ...tally(incoming.length, applied.length),
-          tombstoned: tombstoned.length,
-        } satisfies RuleSyncWriteResult;
+        return tally(incoming.length, applied.length);
       });
     },
 
@@ -170,6 +154,7 @@ export function createDrizzleSyncRepository(
               progress: String(day.progress),
               met: day.met,
               metAt: optionalInstant(day.metAt),
+              unit: day.unit ?? null,
               updatedAt: instant(day.updatedAt),
             })),
           )
@@ -179,6 +164,7 @@ export function createDrizzleSyncRepository(
               progress: sql`excluded.progress`,
               met: sql`excluded.met`,
               metAt: sql`excluded.met_at`,
+              unit: sql`excluded.unit`,
               updatedAt: sql`excluded.updated_at`,
             },
             setWhere: sql`${ruleDays.updatedAt} < excluded.updated_at`,
@@ -262,6 +248,46 @@ export function createDrizzleSyncRepository(
       });
     },
 
+    async upsertHistoryDays(userId, incoming) {
+      if (incoming.length === 0) {
+        return tally(0, 0);
+      }
+
+      return database.transaction(async (transaction) => {
+        await lockActiveUser(transaction, userId);
+
+        const applied = await transaction
+          .insert(historyDays)
+          .values(
+            incoming.map((day) => ({
+              userId,
+              day: day.day,
+              usageMinutes: day.usageMinutes ?? null,
+              activity: day.activity,
+              met: day.met,
+              scheduled: day.scheduled,
+              sealedAt: instant(day.sealedAt),
+              updatedAt: instant(day.updatedAt),
+            })),
+          )
+          .onConflictDoUpdate({
+            target: [historyDays.userId, historyDays.day],
+            set: {
+              usageMinutes: sql`excluded.usage_minutes`,
+              activity: sql`excluded.activity`,
+              met: sql`excluded.met`,
+              scheduled: sql`excluded.scheduled`,
+              sealedAt: sql`excluded.sealed_at`,
+              updatedAt: sql`excluded.updated_at`,
+            },
+            setWhere: sql`${historyDays.updatedAt} < excluded.updated_at`,
+          })
+          .returning({ day: historyDays.day });
+
+        return tally(incoming.length, applied.length);
+      });
+    },
+
     async upsertProfile(userId, profile) {
       return database.transaction(async (transaction) => {
         await lockActiveUser(transaction, userId);
@@ -302,8 +328,14 @@ export function createDrizzleSyncRepository(
     },
 
     async read(userId) {
-      const [ruleRows, ruleDayRows, usageDayRows, earnedUnlockRows, profileRows] =
-        await Promise.all([
+      const [
+        ruleRows,
+        ruleDayRows,
+        usageDayRows,
+        earnedUnlockRows,
+        historyDayRows,
+        profileRows,
+      ] = await Promise.all([
           database
             .select()
             .from(rules)
@@ -326,6 +358,12 @@ export function createDrizzleSyncRepository(
             .from(earnedUnlocks)
             .where(eq(earnedUnlocks.userId, userId))
             .orderBy(desc(earnedUnlocks.day), earnedUnlocks.ruleId)
+            .limit(SYNC_HISTORY_LIMIT),
+          database
+            .select()
+            .from(historyDays)
+            .where(eq(historyDays.userId, userId))
+            .orderBy(desc(historyDays.day))
             .limit(SYNC_HISTORY_LIMIT),
           database
             .select()
@@ -353,6 +391,7 @@ export function createDrizzleSyncRepository(
           progress: progressOut(day.progress),
           met: day.met,
           metAt: optionalIso(day.metAt),
+          unit: day.unit as RuleDayPayload["unit"],
           updatedAt: iso(day.updatedAt),
         })),
         usageDays: usageDayRows.map((day) => ({
@@ -367,6 +406,15 @@ export function createDrizzleSyncRepository(
           metAt: iso(unlock.metAt),
           windowEnd: iso(unlock.windowEnd),
           updatedAt: iso(unlock.updatedAt),
+        })),
+        historyDays: historyDayRows.map((day) => ({
+          day: day.day,
+          usageMinutes: day.usageMinutes,
+          activity: day.activity as HistoryDayPayload["activity"],
+          met: day.met,
+          scheduled: day.scheduled,
+          sealedAt: iso(day.sealedAt),
+          updatedAt: iso(day.updatedAt),
         })),
         profile: profile
           ? {

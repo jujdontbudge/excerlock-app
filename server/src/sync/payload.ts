@@ -24,6 +24,7 @@ const weekday = z.union([
 const walkPlace = z.enum(["outside", "treadmill", "either"]);
 const distanceUnit = z.enum(["km", "mi"]);
 const goal = z.number().finite().positive();
+const progressUnit = z.enum(["steps", "minutes", "km", "mi"]);
 
 /**
  * `mode` and `schedule` are validated structurally rather than waved through
@@ -111,6 +112,11 @@ export const rulePayload = z
     enabled: z.boolean(),
     createdAt: isoInstant,
     updatedAt: isoInstant,
+    /**
+     * A deletion is this field, never absence from the batch. A device that
+     * has not heard about another device's new rule simply does not mention
+     * it, and nothing happens to it.
+     */
     deletedAt: isoInstant.nullish(),
     /**
      * Accepted so a paused-for-no-gym rule is not rejected, and deliberately
@@ -129,6 +135,8 @@ export const ruleDayPayload = z
     progress: z.number().finite().min(0),
     met: z.boolean(),
     metAt: isoInstant.nullish(),
+    /** What `progress` counts, so the row stays readable without its rule. */
+    unit: progressUnit.nullish(),
     updatedAt: isoInstant,
   })
   .strict();
@@ -149,6 +157,30 @@ export const earnedUnlockPayload = z
     ruleName: z.string().min(1).max(120),
     metAt: isoInstant,
     windowEnd: isoInstant,
+    updatedAt: isoInstant,
+  })
+  .strict();
+
+/**
+ * A sealed day (P2-T15 §4). Immutable once written, which is what makes an
+ * `updatedAt` merge safe for it.
+ */
+export const historyDayPayload = z
+  .object({
+    day: dayKey,
+    /** Null on a day with no measurement. Such days are excluded, never zeroed. */
+    usageMinutes: z.number().int().min(0).nullish(),
+    activity: z
+      .object({
+        walking: z.number().finite().min(0),
+        gym: z.number().finite().min(0),
+        running: z.number().finite().min(0),
+        biking: z.number().finite().min(0),
+      })
+      .strict(),
+    met: z.boolean(),
+    scheduled: z.boolean(),
+    sealedAt: isoInstant,
     updatedAt: isoInstant,
   })
   .strict();
@@ -175,13 +207,16 @@ export const rulesRequest = z
   .object({ rules: batch(rulePayload) })
   .strict();
 export const ruleDaysRequest = z
-  .object({ ruleDays: batch(ruleDayPayload) })
+  .object({ rows: batch(ruleDayPayload) })
   .strict();
 export const usageDaysRequest = z
-  .object({ usageDays: batch(usageDayPayload) })
+  .object({ rows: batch(usageDayPayload) })
   .strict();
 export const earnedUnlocksRequest = z
-  .object({ earnedUnlocks: batch(earnedUnlockPayload) })
+  .object({ rows: batch(earnedUnlockPayload) })
+  .strict();
+export const historyDaysRequest = z
+  .object({ rows: batch(historyDayPayload) })
   .strict();
 export const profileRequest = z
   .object({ profile: profilePayload })
@@ -191,6 +226,7 @@ export type RulePayload = z.infer<typeof rulePayload>;
 export type RuleDayPayload = z.infer<typeof ruleDayPayload>;
 export type UsageDayPayload = z.infer<typeof usageDayPayload>;
 export type EarnedUnlockPayload = z.infer<typeof earnedUnlockPayload>;
+export type HistoryDayPayload = z.infer<typeof historyDayPayload>;
 export type ProfilePayload = z.infer<typeof profilePayload>;
 
 export interface SyncSnapshot {
@@ -198,6 +234,7 @@ export interface SyncSnapshot {
   ruleDays: RuleDayPayload[];
   usageDays: UsageDayPayload[];
   earnedUnlocks: EarnedUnlockPayload[];
+  historyDays: HistoryDayPayload[];
   profile: ProfilePayload | null;
 }
 
@@ -207,9 +244,4 @@ export interface SyncWriteResult {
   applied: number;
   /** Rows the server already held a newer copy of, or does not own. */
   skipped: number;
-}
-
-export interface RuleSyncWriteResult extends SyncWriteResult {
-  /** Rules the device no longer has, tombstoned by this full replacement. */
-  tombstoned: number;
 }

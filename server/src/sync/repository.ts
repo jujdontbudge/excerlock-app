@@ -1,9 +1,9 @@
 import type {
   EarnedUnlockPayload,
+  HistoryDayPayload,
   ProfilePayload,
   RuleDayPayload,
   RulePayload,
-  RuleSyncWriteResult,
   SyncSnapshot,
   SyncWriteResult,
   UsageDayPayload,
@@ -14,17 +14,17 @@ import type {
  * enforcement. Every write is last-write-wins on the row's own `updatedAt`,
  * decided by the database so two devices racing cannot interleave into a
  * stale result, and every write is scoped to the authenticated user.
+ *
+ * Every method is an upsert of the rows it is given. Rows the caller does not
+ * mention are left alone — a device that has not yet heard about another
+ * device's row must never be able to remove it. A deletion is therefore an
+ * explicit tombstone (`deletedAt` on the rule), not an absence.
  */
 export interface SyncRepository {
-  /**
-   * Full replacement of the user's rule set: rules in the batch are upserted
-   * when newer, and any of the user's rules missing from the batch are
-   * tombstoned. Never touches a rule owned by someone else.
-   */
-  replaceRules(
+  upsertRules(
     userId: string,
     rules: readonly RulePayload[],
-  ): Promise<RuleSyncWriteResult>;
+  ): Promise<SyncWriteResult>;
   upsertRuleDays(
     userId: string,
     ruleDays: readonly RuleDayPayload[],
@@ -36,6 +36,10 @@ export interface SyncRepository {
   upsertEarnedUnlocks(
     userId: string,
     earnedUnlocks: readonly EarnedUnlockPayload[],
+  ): Promise<SyncWriteResult>;
+  upsertHistoryDays(
+    userId: string,
+    historyDays: readonly HistoryDayPayload[],
   ): Promise<SyncWriteResult>;
   upsertProfile(
     userId: string,

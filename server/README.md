@@ -78,17 +78,19 @@ release:
 
 1. Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to
    `/etc/excerlock/excerlock-api.env`, and delete the Clerk and vendor lines.
-2. Deploy. `deploy.sh` runs `node dist/migrate.js`, which applies migration
-   `0006_supabase_sync`: it drops the three vendor tables and the two
+2. Deploy. `deploy.sh` runs `node dist/migrate.js`, which applies two
+   migrations. `0006_supabase_sync` drops the three vendor tables and the two
    feature-request tables, renames `users.clerk_deleted_at` to
    `auth_deleted_at`, and creates `rules`, `rule_days`, `usage_days`,
-   `earned_unlocks` and `profiles`.
+   `earned_unlocks` and `profiles`. `0007_support_details_and_history` then
+   adds `history_days`, `rule_days.unit`, and `support_requests.reply_to` and
+   `.diagnostics`; it is additive and touches no existing row.
 
 Then confirm, in this order:
 
 ```sh
 curl -s https://api.excerlock.com/v1/health          # 200, always
-curl -s -i https://api.excerlock.com/v1/ready        # 200 once 0006 has applied
+curl -s -i https://api.excerlock.com/v1/ready        # 200 once 0006 and 0007 apply
 curl -s -i https://api.excerlock.com/v1/user         # 401, no token
 curl -s -i -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
   https://api.excerlock.com/v1/user                  # 200
@@ -102,7 +104,8 @@ reach the process; restart after editing the environment file.
 
 Rollback is the previous release plus, if the schema must go back, a restore
 from the pre-deploy dump: 0006 drops tables, so it is not reversible by
-re-running an older build.
+re-running an older build. 0007 is additive, so a build that predates it runs
+against a 0007 database unharmed.
 
 ## Analytics
 

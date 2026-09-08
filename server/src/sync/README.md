@@ -24,11 +24,13 @@ depend on `SyncRepository` and the exported request schemas.
   is impossible by construction. `rules.id` is a global primary key, so its
   upsert additionally requires `rules.user_id = <caller>`; an attempt on
   someone else's rule is counted as skipped and changes nothing.
-- **`PUT /sync/rules` is a full replacement.** Rules in the batch are upserted
-  when newer; the caller's rules absent from the batch are tombstoned
-  (`deleted_at` stamped, row kept) so a second device learns about a deletion
-  instead of resurrecting it. An empty batch therefore deletes everything, and
-  repeating it tombstones nothing further.
+- **A deletion is an explicit tombstone, never an absence.** Every endpoint
+  upserts exactly the rows it is handed and leaves the rest alone. To delete a
+  rule the device sends it back with `deletedAt` set and a newer `updatedAt`;
+  the row is kept so a second device learns about the deletion instead of
+  resurrecting it. An empty batch means "nothing to report" and changes
+  nothing. This is what stops a device that has never heard of another
+  device's new rule from wiping it just by pushing what it knows.
 - **An earned unlock outlives its rule** (B23). `rule_days.rule_id` and
   `earned_unlocks.rule_id` carry no foreign key, so a deleted or paused
   condition cannot revoke a day that was already earned, and batches may
@@ -39,14 +41,20 @@ depend on `SyncRepository` and the exported request schemas.
 - **Batches are capped at `MAX_SYNC_BATCH` (400) rows** per request, rejected
   with `SYNC_BATCH_TOO_LARGE` before parsing so the device learns to page.
   `GET /sync` returns every rule plus the most recent 400 rule days, usage
-  days and earned unlocks.
+  days, earned unlocks and sealed history days.
+- **A sealed history day is immutable** (P2-T15 §4), which is what makes the
+  `updated_at` merge safe for it: a stale replay can never unseal a day.
+  `usage_minutes` is null on a day with no measurement, and such a day is
+  excluded from averages rather than counted as zero.
 
 ## Privacy law
 
 Every payload object is `.strict()`. That is the enforcement, not a comment:
 an app name, a bundle identifier, a gym label, a latitude or a health sample
 has no field to arrive in, so the request is rejected rather than quietly
-stored. `rule_days.progress` is one aggregate number in the rule's own unit.
+stored. `rule_days.progress` is one aggregate number, and `rule_days.unit`
+says what it counts so the row stays readable without its rule. A history
+day's `activity` holds four totals and nothing else.
 
 The Screen Time selection is deliberately absent from the snapshot: Apple ties
 those tokens to the device, so a restored account shows no selected apps until
@@ -59,7 +67,8 @@ could not restore the reason's meaning. The device re-derives it.
 ## Fixtures
 
 `test/sync-repository.test.ts` runs the real SQL against migrated PGlite
-(last-write-wins, tombstoning, ownership, numeric precision, history limit).
+(last-write-wins, tombstones, absence leaving rows alone, ownership, numeric
+precision, sealed history, the history limit).
 `test/sync-routes.test.ts` covers the HTTP boundary, the privacy law and the
 batch cap against a stub repository.
 
