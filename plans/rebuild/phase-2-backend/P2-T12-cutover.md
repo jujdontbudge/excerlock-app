@@ -31,3 +31,12 @@ Only after P2-T11 passes and Johan says so.
 - Guardrail: a release build has no dev route, no deep-link runtime mutation and no test buttons (P2-T13).
 - The hardening milestone's task files (P2-T13–T25) move with the rest of `plans/rebuild/`; the audit under
   `docs/audit/` stays as the record.
+
+## Prepared 2026-09-07 (build/P2-T12)
+
+The executable version of this task is `docs/release/` — `cutover-checklist.md` (ordered steps with the
+exact commands and the test that proves each), `identity-and-versions.md`, `app-privacy.md`,
+`release-guardrails.md`, `rollback.md`. `app-next/eas.json` carries the profiles; `npm run
+test:release-guardrails` (`guardrails/release/`) verifies the release configuration on both sides of the
+rename. Step 4 (vendor docs marked historical) and the PRD banner from step 5 are done; steps 1–3, the
+rest of 5, 6, 7 and 8 wait for P2-T11 and Johan.
