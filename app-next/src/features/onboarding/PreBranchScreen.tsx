@@ -1,5 +1,5 @@
 import { OnboardingRuleScreen } from '../rules/OnboardingRuleScreen';
-import { BranchStep } from '../rules/RuleScreen';
+import { isBranchStep } from '../rules/RuleScreen';
 import { Label } from '../../design-system';
 import { AnswerProps } from './types';
 import { O01 } from './screens/O01';
@@ -23,8 +23,7 @@ export function PreBranchScreen({ step, back, ...props }: AnswerProps & { step: 
   if (step === 'O03') return <O03 onBack={back} />;
   if (step === 'O12' || step === 'O13' || step === 'O14') return <DotGridReveal step={step} {...props} />;
   if (step === 'O16' || step === 'O17' || step === 'O18') return <LoopStory step={step} />;
-  if (['W1', 'W2', 'W3', 'G1', 'G2', 'R1', 'R2', 'B1', 'B2', 'D'].includes(step))
-    return <OnboardingRuleScreen step={step as BranchStep} {...props} />;
+  if (isBranchStep(step)) return <OnboardingRuleScreen step={step} {...props} />;
   const Screen = screens[step as keyof typeof screens];
   return Screen ? <Screen {...props} /> : <Label>{step}</Label>;
 }

@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import Animated, { SlideInRight, SlideInLeft, SlideOutLeft, SlideOutRight } from 'react-native-reanimated';
 import { ScreenShell, OnboardingHeader, PrimaryButton } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
+import { isBranchStep } from '../rules/RuleScreen';
 import { useMotion } from '../../motion/useMotion';
 import { onboardingLabels as c } from '../../content/onboarding';
 import { WelcomeFooter } from './welcome/WelcomeFooter';
@@ -34,7 +35,7 @@ export function OnboardingShell({
   hideBack?: boolean;
 }>) {
   const m = useMotion(),
-    family = ['W1', 'W2', 'W3', 'G1', 'G2', 'R1', 'R2', 'B1', 'B2', 'D'].includes(step)
+    family = isBranchStep(step)
       ? 'branch'
       : ['O12', 'O13', 'O14'].includes(step)
         ? 'dots'

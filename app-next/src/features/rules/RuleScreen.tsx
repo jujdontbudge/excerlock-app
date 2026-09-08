@@ -9,7 +9,11 @@ import { walkingCopy } from '../../content/rules';
 import { workoutCopy } from '../../content/workoutRules';
 import { View } from 'react-native';
 import { RulePreviewLock } from './RulePreviewLock';
-export type BranchStep = 'W1' | 'W2' | 'W3' | 'W4' | 'G1' | 'G2' | 'R1' | 'R2' | 'B1' | 'B2' | 'D';
+/** Every step that builds a rule, in one list so routing and screen animation cannot disagree. */
+export const branchSteps = ['W1', 'W2', 'W3', 'W4', 'G1', 'G2', 'R1', 'R2', 'B1', 'B2', 'D'] as const;
+export type BranchStep = (typeof branchSteps)[number];
+export const isBranchStep = (step: string): step is BranchStep =>
+  (branchSteps as readonly string[]).includes(step);
 export function RuleScreen({
   step,
   ...props
