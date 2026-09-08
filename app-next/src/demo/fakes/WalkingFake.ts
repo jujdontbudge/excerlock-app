@@ -1,6 +1,5 @@
 import { applyProgress } from '../../domain/progress';
 import { addDays, dayKey, localInstant } from '../../domain/calendar';
-import { splitAtMidnight } from '../../domain/progressDay';
 import { WALK_LEASE_MS, planWalkLease } from '../../domain/sessions/lease';
 import {
   SessionEffect,
@@ -10,7 +9,6 @@ import {
 import { Rule, WalkingSession, WalkingSessionEndReason } from '../../domain/types';
 import { windowInstances, currentInstances } from '../../domain/schedule';
 import { WalkingPort, WalkingStartError } from '../../ports/WalkingPort';
-import { historyStore } from '../../state/historyStore';
 import { ruleDaysStore } from '../../state/ruleDaysStore';
 import { rulesStore } from '../../state/rulesStore';
 import { settingsStore } from '../../state/settingsStore';
@@ -74,23 +72,8 @@ export function WalkingFake(ctx: FakeContext): WalkingFakePort {
       days: [...days.filter((day) => day.ruleId !== row.ruleId || day.day !== row.day), next],
     });
 
-    const history = historyStore.getState().data.days;
-    const changed = new Map(history.map((day) => [day.day, day]));
-    for (const interval of splitAtMidnight(effect.from, effect.to, ctx.clock.timezone())) {
-      const minutes = (Date.parse(interval.to) - Date.parse(interval.from)) / 60_000;
-      const existing = changed.get(interval.day) ?? {
-        day: interval.day,
-        usageMinutes: null,
-        activity: { walking: 0, gym: 0, running: 0, biking: 0 },
-        met: false,
-        scheduled: false,
-      };
-      changed.set(interval.day, {
-        ...existing,
-        activity: { ...existing.activity, walking: existing.activity.walking + minutes },
-      });
-    }
-    historyStore.getState().patch({ days: [...changed.values()].sort((a, b) => a.day.localeCompare(b.day)) });
+    // `HistoryDay.activity.walking` is a step count owned by the pedometer, so session minutes stay out
+    // of it; the day's walking minutes live on the rule day, keyed by the instance day.
     detail = {
       ...detail,
       steps: detail.steps + Math.floor(minuteValue(effect) * 60 * 1.6),
