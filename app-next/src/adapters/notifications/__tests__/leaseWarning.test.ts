@@ -14,6 +14,7 @@ function recordingPort() {
     status: () => 'granted',
     request: async () => 'granted',
     scheduleTrialReminder: async () => `trial-${++count}`,
+    pending: async () => [],
     scheduleWalkLeaseWarning: async (at, variant) => {
       calls.push(`schedule ${at} ${variant}`);
       return `lease-${++count}`;

@@ -59,10 +59,12 @@ six-digit code, never a link, which is why both email templates must carry `{{ .
 
 ## Configuration
 
-`app.config.ts` reads `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (or the legacy `SUPABASE_ANON_KEY`),
+`app.config.ts` reads `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
 `EXPO_PUBLIC_API_URL` and the two Google client ids from the environment, falling back to
-`~/.excerlock/env`, and publishes them as `extra.clientAuth`. `SUPABASE_SERVICE_ROLE_KEY` is
-server-only and never reaches the bundle.
+`~/.excerlock/env`, and publishes them as `extra.clientAuth`. The unprefixed `SUPABASE_URL`,
+`SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_ANON_KEY` still resolve from an older dotfile, but EAS is
+configured with the prefixed names (`guardrails/client-config.test.ts` holds the list).
+`SUPABASE_SERVICE_ROLE_KEY` is server-only and never reaches the bundle.
 
 ## Test
 
@@ -76,12 +78,11 @@ already-linked refusal, so every branch runs without a project or a network.
 
 ## Wiring
 
-Nothing constructs this module yet: `runtime/createRuntime` still returns the fake, and the switch is
-the cutover's (P2-T12). Four calls do it:
+`runtime/realRuntime.ts` constructs it. Four calls do it:
 
 | Call             | Where                                                        |
 | ---------------- | ------------------------------------------------------------ |
-| `supabaseAuth()` | the runtime composition; `null` means keep the local session |
+| `supabaseAuth({ account })` | the runtime composition; `null` means keep the local session |
 | `await start()`  | before the first screen reads the port                       |
 | `refresh()`      | the foreground handler in `startEnforcement`                 |
 | `accessToken`    | passed to the VPS API client as its `getAccessToken`         |
@@ -95,12 +96,11 @@ a port whose real adapter only cleaned up locally would not match the fake it sh
 with. The server goes first and its refusal aborts the deletion, so a `DELETE` that did not happen
 never signs anyone out of an account they still have.
 
-The HTTP call is injected — `AccountProvisioning` is an interface, so the runtime can implement it
-over the shared VPS client instead of this module keeping a second one. P2-T10's
-`createVpsProvisioning(client)` is that implementation, and `supabaseAuth({ account })` takes it, so
-the cutover wires it in one argument and the fetch implementation here is never constructed. Their
-module lives on their branch, so `accountProvisioning({ baseUrl })` stays as the fallback until the
-two meet.
+The HTTP call is injected. `AccountProvisioning` is an interface and
+`adapters/api`'s `createVpsProvisioning(client)` is its one implementation, built on the same client
+every other VPS call goes through, so `supabaseAuth({ account })` requires it rather than defaulting
+to a second client of this module's own. This file used to carry that second client; deleting it is
+what makes "one HTTP client for one server" true rather than intended.
 
 ## Open
 

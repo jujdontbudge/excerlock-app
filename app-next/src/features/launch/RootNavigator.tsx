@@ -8,6 +8,7 @@ import { useDevSnapshot } from '../../state/selectors';
 import { devMenuEnabled } from '../../runtime/devFlag';
 import { entitlementAccess } from '../../domain/entitlementAccess';
 import { PaywallGate } from './PaywallGate';
+import { WelcomeBackGate } from '../sync/WelcomeBackGate';
 export function RootNavigator() {
   const motion = useMotion();
   const loading = Boolean(useDevSnapshot().loading);
@@ -55,6 +56,7 @@ export function RootNavigator() {
         </Stack.Protected>
       </Stack>
       <PaywallGate />
+      <WelcomeBackGate />
       <FakePromptHost />
     </>
   );

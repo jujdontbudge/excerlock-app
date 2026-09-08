@@ -161,3 +161,17 @@ test('the next interval boundary re-evaluates enforcement without a polling tick
   expect(applyLock.mock.calls[1][0].state).toBe('locked');
   stop();
 });
+
+test('the composition does its own foreground work through the one handler that exists', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('home-locked-walking');
+  const onForeground = jest.fn(async () => undefined);
+  runtime.onForeground = onForeground;
+  const appState = appStateSource();
+  const stop = startEnforcement(runtime, { appState: appState.source });
+
+  appState.active();
+
+  await waitFor(() => expect(onForeground).toHaveBeenCalledTimes(1));
+  stop();
+});

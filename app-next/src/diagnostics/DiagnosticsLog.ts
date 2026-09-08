@@ -35,6 +35,7 @@ export class DiagnosticsLog {
   private readonly maxEntries: number;
   private buffer: DiagnosticsEntry[] = [];
   private readonly listeners = new Set<() => void>();
+  private readonly persistListeners = new Set<(text: string) => void>();
   private dirty = false;
 
   public constructor(options: DiagnosticsLogOptions) {
@@ -61,6 +62,20 @@ export class DiagnosticsLog {
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);
+    };
+  }
+
+  /**
+   * Called with the log's whole text every time it is persisted or cleared.
+   *
+   * `subscribe` fires on every `append`, which is far too often to write a file: the recorder runs
+   * inside sensor callbacks. This fires only at the points the buffer is already being written down,
+   * which is where a second copy of it belongs.
+   */
+  public onPersist(listener: (text: string) => void): () => void {
+    this.persistListeners.add(listener);
+    return () => {
+      this.persistListeners.delete(listener);
     };
   }
 
@@ -95,6 +110,7 @@ export class DiagnosticsLog {
     } catch {
       // Same reasoning as hydrate: never surface storage failure to the app.
     }
+    await this.persisted();
   }
 
   public async clear(): Promise<void> {
@@ -105,6 +121,18 @@ export class DiagnosticsLog {
       await this.storage.removeItem(DIAGNOSTICS_STORAGE_KEY);
     } catch {
       // Ignored for the same reason.
+    }
+    await this.persisted();
+  }
+
+  private async persisted(): Promise<void> {
+    const text = this.toText();
+    for (const listener of this.persistListeners) {
+      try {
+        await listener(text);
+      } catch {
+        // A mirror that cannot be written is not a reason to stop recording.
+      }
     }
   }
 

@@ -7,9 +7,21 @@ import { nativeGait } from './NativeGait';
 import { expoNotifications } from '../adapters/notifications/expoNotifications';
 import { createAnalyticsAdapter } from '../adapters/analytics';
 import { nativeScreenTime } from './NativeScreenTime';
+import { createRealRuntime, RealRuntimeScope } from './realRuntime';
+import { reportError } from '../observability/reportError';
 export type { Runtime } from './Runtime';
+
+/**
+ * The composition root's one decision: the demo runtime, or the one that talks to the real world.
+ *
+ * The demo runtime is the default everywhere — every test, every Expo Go session and every dev build
+ * that has not asked otherwise. `EXPO_PUBLIC_RUNTIME=real` is what selects the real one, and Expo
+ * inlines it at build time, so a shipped binary is decided when it is built and never at runtime.
+ * Inside the real runtime each binding is still capability-checked the way P2-T04 checks for the
+ * DeviceActivity module: what cannot be built keeps its fake.
+ */
 export function createRuntime(mode = process.env.EXPO_PUBLIC_RUNTIME): Runtime {
-  if (mode === 'real') throw new Error('Real runtime is unavailable in Phase 1');
+  if (mode === 'real') return createRealRuntime({ report: reportRuntimeIssue });
   const runtime = FakeRuntime();
   if (Platform.OS === 'ios' && process.env.NODE_ENV !== 'test') {
     runtime.gym = foregroundGym(runtime.gym, runtime.dev.setPresence);
@@ -33,6 +45,14 @@ export function createRuntime(mode = process.env.EXPO_PUBLIC_RUNTIME): Runtime {
   }
   if (process.env.NODE_ENV !== 'test') attachAnalytics(runtime);
   return runtime;
+}
+
+/**
+ * A binding the real runtime could not construct. It is never user-facing: the app kept the fake and
+ * carried on, and this is how we find out on a build where that was not what we wanted.
+ */
+function reportRuntimeIssue(scope: RealRuntimeScope, detail: unknown): void {
+  reportError(detail instanceof Error ? detail : new Error(`runtime.${scope}`), undefined);
 }
 
 /**

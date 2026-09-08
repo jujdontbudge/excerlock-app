@@ -3,7 +3,6 @@ import { ruleDaysStore } from '../../state/ruleDaysStore';
 import { rulesStore } from '../../state/rulesStore';
 import { sessionStore } from '../../state/sessionStore';
 import { settingsStore } from '../../state/settingsStore';
-import { accountProvisioning } from '../accountProvisioning';
 import type { NativeIdentityProvider } from '../identityProviders';
 import { createSupabaseAuth, SupabaseAuth } from '../SupabaseAuthAdapter';
 import { accountServerDouble, OTP_CODE, supabaseDouble, SupabaseDouble } from './supabaseDouble';
@@ -41,12 +40,12 @@ async function harness(status: () => number = () => 200): Promise<Harness> {
   const client = supabaseDouble();
   const apple = identityDouble('apple:alex@example.test');
   const google = identityDouble('google:alex@example.test');
-  const server = accountServerDouble(status);
+  const server = accountServerDouble(status, API);
   const auth = createSupabaseAuth({
     client,
     apple,
     google,
-    account: accountProvisioning({ baseUrl: API, fetcher: server.fetcher }),
+    account: server.account,
   });
   await auth.start();
   return { auth, client, apple, google, server };

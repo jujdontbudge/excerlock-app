@@ -32,13 +32,15 @@ export function PaywallSlot() {
       paywallPresence.close();
     };
   }, [runtime]);
-  const run = async (kind: 'purchase' | 'restore') => {
+  const run = async (kind: 'purchase' | 'restore', immediate = false) => {
     if (running.current) return;
     running.current = true;
     setBusy(kind);
     setError('');
     try {
-      await new Promise((resolve) => setTimeout(resolve, t.motion.duration.purchase));
+      // The stand-in's own busy state stands in for a purchase sheet. A Builder build has a real one
+      // to open, so waiting first would only delay it.
+      if (!immediate) await new Promise((resolve) => setTimeout(resolve, t.motion.duration.purchase));
       if (!mounted.current) return;
       const next =
         kind === 'purchase'
@@ -53,6 +55,19 @@ export function PaywallSlot() {
       if (mounted.current) setBusy(null);
     }
   };
+  const opened = useRef(false);
+  useEffect(() => {
+    // A Builder build has a paywall designed in the dashboard, so the screen opens it rather than
+    // waiting for a tap on a stand-in. Once per screen, never once per render: a dismissal that
+    // bought nothing falls back to the stand-in below, whose action re-presents. Re-presenting on
+    // dismissal here instead would loop forever the moment a fetch failed.
+    if (runtime.paywall !== 'builder' || opened.current) return;
+    opened.current = true;
+    void run('purchase', true);
+    // `run` closes over the selected plan and the setup flag, both of which are correct on mount:
+    // this effect is the screen's own opening, not a reaction to either changing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runtime]);
   const banner = status === 'expired' ? c.expired : status === 'billingIssue' ? c.billingIssue : '';
   return (
     <PaywallStandIn

@@ -36,6 +36,13 @@ export function describeNotificationsPort(make: () => Promise<Subject>) {
       await expect(subject.port.cancel('never-scheduled')).resolves.toBeUndefined();
     });
 
+    it('reports what it is holding, with the instant it will fire', async () => {
+      const id = await subject.port.scheduleTrialReminder('2026-09-12T22:00:00.000Z', 2);
+      expect(await subject.port.pending()).toContainEqual({ id, at: '2026-09-12T22:00:00.000Z' });
+      await subject.port.cancel(id);
+      expect((await subject.port.pending()).map((request) => request.id)).not.toContain(id);
+    });
+
     it('exposes exactly the two schedulable kinds', () => {
       const schedulable = Object.keys(subject.port)
         .filter((method) => method.startsWith('schedule'))

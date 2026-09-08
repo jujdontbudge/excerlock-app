@@ -37,6 +37,12 @@ export function fakeExpoNotifications(initial: Permissions = iosPermissions(0)) 
     cancelScheduledNotificationAsync: async (identifier) => {
       pending.delete(identifier);
     },
+    getAllScheduledNotificationsAsync: async () =>
+      [...pending.entries()].map(([identifier, request]) => ({
+        identifier,
+        content: request.content,
+        trigger: request.trigger,
+      })) as never,
     setNotificationHandler: (next) => {
       handler = next;
     },

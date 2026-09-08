@@ -1,3 +1,4 @@
+import type { AccountProvisioning } from '../accountProvisioning';
 import { SupabaseAuthApi, SupabaseFailure, SupabaseSession, SupabaseUser } from '../supabaseAuthApi';
 
 /**
@@ -187,20 +188,34 @@ export function supabaseDouble(): SupabaseDouble {
 }
 
 /** A `fetch` stand-in for the VPS account endpoints. */
-export function accountServerDouble(status: () => number = () => 200) {
+/**
+ * The VPS half of the identity spine, as the adapter sees it.
+ *
+ * `AccountProvisioning` is an interface the runtime composition satisfies with
+ * `adapters/api`'s `createVpsProvisioning`, so this double answers the two calls with that
+ * implementation's outcomes rather than modelling HTTP twice. It still records the method, url and
+ * bearer, because what the adapter must not do — call `DELETE` before the server agreed, send a
+ * request without a token — is visible only there.
+ */
+export function accountServerDouble(status: () => number = () => 200, baseUrl = 'https://api.excerlock.test') {
   const calls: { method: string; url: string; authorization: string }[] = [];
-  const fetcher = async (url: string, init?: { method?: string; headers?: Record<string, string> }) => {
-    calls.push({
-      method: init?.method ?? 'GET',
-      url,
-      authorization: init?.headers?.authorization ?? '',
-    });
-    const code = status();
-    return {
-      ok: code >= 200 && code < 300,
-      status: code,
-      json: async () => (code === 410 ? { code: 'ACCOUNT_DELETED' } : {}),
-    } as Response;
+  const record = (method: 'PUT' | 'DELETE', accessToken: string) => {
+    calls.push({ method, url: `${baseUrl}/v1/user`, authorization: `Bearer ${accessToken}` });
+    return status();
   };
-  return { fetcher: fetcher as unknown as typeof fetch, calls };
+  const alreadyDeleted = new Set([404, 410]);
+  const account: AccountProvisioning = {
+    provision: async (accessToken) => {
+      const code = record('PUT', accessToken);
+      if (code >= 200 && code < 300) return 'ok';
+      return alreadyDeleted.has(code) ? 'deleted' : 'failed';
+    },
+    remove: async (accessToken) => {
+      const code = record('DELETE', accessToken);
+      if (code >= 200 && code < 300) return 'ok';
+      if (alreadyDeleted.has(code)) return 'deleted';
+      throw new Error(`Account deletion failed (${code})`);
+    },
+  };
+  return { account, calls };
 }

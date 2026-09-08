@@ -4,6 +4,7 @@ import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { useDevSnapshot } from '../../state/selectors';
 import { ScreenShell, Heading, SettingsGroup, SettingsRow, SecondaryButton, Label } from '../../design-system';
 import { DevControls } from './DevControls';
+import { DevDiagnostics } from './DevDiagnostics';
 import { devCopy as c } from '../../content/dev';
 import { LivingIcon } from '../../motion/LivingIcon';
 export function DevMenu() {
@@ -59,6 +60,7 @@ export function DevMenu() {
           <Label>{c.emptyEvents}</Label>
         )}
       </SettingsGroup>
+      <DevDiagnostics />
       <SettingsGroup title={c.record}>
         <Label>{c.recordCommand}</Label>
       </SettingsGroup>

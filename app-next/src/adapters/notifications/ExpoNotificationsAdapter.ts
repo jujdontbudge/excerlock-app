@@ -16,6 +16,7 @@ export type ExpoNotificationsModule = Pick<
   | 'requestPermissionsAsync'
   | 'scheduleNotificationAsync'
   | 'cancelScheduledNotificationAsync'
+  | 'getAllScheduledNotificationsAsync'
   | 'setNotificationHandler'
   | 'addNotificationResponseReceivedListener'
   | 'getLastNotificationResponse'
@@ -102,6 +103,11 @@ export function expoNotificationsAdapter(
     scheduleWalkLeaseWarning: (at, variant = 'handheld') =>
       schedule(WALK_LEASE_WARNING_ID, notificationCopy.lease[variant].title, notificationCopy.lease[variant].body, at),
     cancel: (id) => module.cancelScheduledNotificationAsync(id),
+    pending: async () =>
+      (await module.getAllScheduledNotificationsAsync()).map((request) => ({
+        id: request.identifier,
+        at: triggerInstant(request.trigger),
+      })),
     responses: {
       last: () => {
         const response = module.getLastNotificationResponse();
@@ -116,4 +122,20 @@ export function expoNotificationsAdapter(
       },
     },
   };
+}
+
+/**
+ * The instant a scheduled request will fire, as an ISO string.
+ *
+ * `NotificationTrigger` is a union of everything the platform can schedule, and only some members
+ * carry an instant at all. iOS reports the app's own `date` back for a date trigger; the epoch-second
+ * form some platforms use is widened here so the developer menu never shows a 1970 timestamp.
+ */
+function triggerInstant(trigger: unknown): string | null {
+  const source = trigger as { date?: Date | number; value?: number } | null;
+  const raw = source?.date ?? source?.value;
+  if (raw === undefined || raw === null) return null;
+  const ms = raw instanceof Date ? raw.getTime() : Number(raw);
+  if (!Number.isFinite(ms)) return null;
+  return new Date(ms < 1e11 ? ms * 1_000 : ms).toISOString();
 }

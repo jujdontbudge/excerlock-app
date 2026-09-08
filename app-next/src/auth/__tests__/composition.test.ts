@@ -22,18 +22,20 @@ beforeEach(() => {
   mockConfigured = true;
 });
 
-test('a build with no Supabase keys composes nothing and the app stays local-only', () => {
-  mockConfigured = false;
-  expect(supabaseAuth()).toBeNull();
+const accountDouble = (): jest.Mocked<AccountProvisioning> => ({
+  provision: jest.fn(async (accessToken: string) => (accessToken ? 'ok' : 'failed')),
+  remove: jest.fn(async (accessToken: string) => (accessToken ? 'ok' : 'deleted')),
 });
 
-test('the runtime can hand over its own VPS client instead of the fallback in this module', async () => {
-  // P2-T10's `createVpsProvisioning(client)` is structurally this interface, so the app ships one
-  // HTTP client rather than the fetch implementation here plus the runtime's.
-  const account: jest.Mocked<AccountProvisioning> = {
-    provision: jest.fn(async (accessToken: string) => (accessToken ? 'ok' : 'failed')),
-    remove: jest.fn(async (accessToken: string) => (accessToken ? 'ok' : 'deleted')),
-  };
+test('a build with no Supabase keys composes nothing and the app stays local-only', () => {
+  mockConfigured = false;
+  expect(supabaseAuth({ account: accountDouble() })).toBeNull();
+});
+
+test('the VPS half of the spine comes from the composition, never from a client of its own', async () => {
+  // `adapters/api`'s `createVpsProvisioning(client)` is this interface, and it is the only
+  // implementation: the app ships one HTTP client for one server.
+  const account = accountDouble();
   const auth = supabaseAuth({ account })!;
   await auth.start();
   expect(account.provision).toHaveBeenCalledWith(mockClient.accessToken());
