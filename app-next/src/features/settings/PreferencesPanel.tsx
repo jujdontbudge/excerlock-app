@@ -66,8 +66,8 @@ export function Preferences({ onGrace }: { onGrace: () => void }) {
             value={s.haptics}
             trackColor={{ true: t.brand.primary }}
             onValueChange={(haptics) => {
-              feedback();
               useSettingsStore.getState().patch({ haptics });
+              if (haptics) feedback();
             }}
           />
         </View>
