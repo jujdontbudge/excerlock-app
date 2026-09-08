@@ -8,7 +8,10 @@ import { ruleDaysStore } from '../../../state/ruleDaysStore';
 import { rulesStore } from '../../../state/rulesStore';
 import { sessionStore } from '../../../state/sessionStore';
 import { SyncError } from '../SyncClient';
-import { AppStateSource, startSync, SyncHandle, SyncHostOptions } from '../SyncHost';
+import { create } from 'zustand';
+import { HistoryDay } from '../../../ports/models';
+import { bridgeHistoryStore } from '../restore';
+import { AppStateSource, DAY_FACTS_INTERVAL_MS, startSync, SyncHandle, SyncHostOptions } from '../SyncHost';
 import { syncLog } from '../syncLog';
 import { syncStore } from '../syncStore';
 
@@ -259,6 +262,24 @@ test('a restored gym rule with no saved gym on this device is paused, not enforc
   signIn('user-2');
   await settle();
   expect(rulesStore.getState().data.rules[0]).toMatchObject({ id: 'gym', enabled: false, pausedReason: 'noGym' });
+});
+
+test('sealed history flows through the history-store bridge in both directions', async () => {
+  type HistoryState = { data: { days: HistoryDay[] }; patch: (value: { days: HistoryDay[] }) => void };
+  const store = create<HistoryState>()((set) => ({ data: { days: [] }, patch: (value) => set({ data: value }) }));
+  const activity = { walking: 0, gym: 0, running: 0, biking: 0 };
+  const theirs = { day: '2026-09-01', usageMinutes: 30, activity, met: true, scheduled: true, sealedAt: '2026-09-02T00:00:00Z', updatedAt: '2026-09-02T00:00:00Z' };
+  const sync = await boot({ ...emptySnapshot(), history: [theirs] }, { history: bridgeHistoryStore(store) });
+  signIn('user-2');
+  await settle();
+  const { updatedAt: _stamp, ...restored } = theirs;
+  expect(store.getState().data.days).toEqual([restored]);
+  expect(syncLog.getState().lastRestore?.summary.history).toBe(1);
+  sync.pushHistory.mockClear();
+  const mine = { day: '2026-09-05', usageMinutes: null, activity, met: false, scheduled: true, sealedAt: '2026-09-06T00:00:00Z' };
+  store.getState().patch({ days: [restored, mine] });
+  await advance(DAY_FACTS_INTERVAL_MS + 100);
+  expect(sync.pushHistory).toHaveBeenCalledWith([{ ...mine, updatedAt: expect.any(String) }]);
 });
 
 test('stop releases every subscription and timer', async () => {

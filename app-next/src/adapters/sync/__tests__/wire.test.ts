@@ -1,5 +1,5 @@
 import { rule } from '../../../domain/__tests__/fixtures';
-import { fromWire, MAX_BATCH, paths, readPull, toWire, WirePull } from '../wire';
+import { fromWire, MAX_BATCH, MAX_TEXT, paths, readPull, toWire, WirePull } from '../wire';
 
 /**
  * Contract suite against `server/src/sync/payload.ts` (P2-T02): these are the exact bodies the client
@@ -114,6 +114,29 @@ test('the profile travels as the server profilePayload and null columns read bac
     units: 'mi',
     updatedAt: stamp,
   });
+});
+
+test('free text is capped at the server limit and minute columns are sent as integers', () => {
+  expect(MAX_TEXT).toBe(120);
+  const long = 'x'.repeat(200);
+  const profile = toWire.profile({
+    name: long,
+    referralSource: long,
+    ageBand: long,
+    occupation: long,
+    improveFirst: 'exercise',
+    mainReason: long,
+    estimatedDailyMinutes: 180.4,
+    units: 'km',
+    updatedAt: stamp,
+  });
+  for (const key of ['name', 'referralSource', 'ageBand', 'occupation', 'mainReason'] as const) expect(profile[key]).toHaveLength(120);
+  expect(profile.estimatedDailyMinutes).toBe(180);
+  expect(toWire.earnedUnlock({ day: '2026-09-06', ruleId: 'walk', ruleName: long, metAt: stamp, windowEnd: stamp, updatedAt: stamp }).ruleName).toHaveLength(120);
+  expect(toWire.usageDay({ day: '2026-09-06', lockedAppMinutes: 41.6, updatedAt: stamp }).lockedAppMinutes).toBe(42);
+  const activity = { walking: 0, gym: 0, running: 0, biking: 0 };
+  expect(toWire.historyDay({ day: '2026-09-06', usageMinutes: 12.2, activity, met: false, scheduled: true, sealedAt: stamp, updatedAt: stamp }).usageMinutes).toBe(12);
+  expect(toWire.historyDay({ day: '2026-09-06', usageMinutes: null, activity, met: false, scheduled: true, sealedAt: stamp, updatedAt: stamp }).usageMinutes).toBeNull();
 });
 
 test('a pull separates live rules from tombstones and tolerates absent collections', () => {

@@ -12,7 +12,9 @@ no-apps state until the picker is used again. Local rules survive sign-out.
   `toWire`/`fromWire`, `MAX_BATCH = 400`, and `batchField` (row batches travel under `rows`, rules under
   `rules`, the profile under `profile`; `GET /v1/sync` returns `historyDays`). A disagreement with the
   server is a one-file fix here. Rule ids are UUIDs; `pausedReason` and the warm-up rating never travel;
-  null profile columns read back as blanks.
+  null profile columns read back as blanks. Free text (profile fields, rule names) is cut at the server's
+  120-character cap and minute columns are rounded to integers, so a long name or a fractional measurement
+  never rejects a batch.
 - `SyncClient.ts` — one bearer-authenticated JSON call at a time (Supabase access token). Maps HTTP to
   `SyncError` kinds: `auth` (401, 410 `ACCOUNT_DELETED`, or no token; paused until the session changes),
   `server` (5xx, 408, 429; retried), `network` (fetch threw; retried), `client` (other 4xx such as
@@ -61,13 +63,14 @@ Locked-app minutes fill only a history day the device recorded without a measure
 
 ```ts
 const sync = createSyncAdapter(createSyncClient({ accessToken: auth.accessToken }));
-const host = startSync(runtime, { appState: AppState, history: historyBridge, onAuthRequired });
+const host = startSync(runtime, { appState: AppState, history: bridgeHistoryStore(historyStore), onAuthRequired });
 // stop() on teardown
 ```
 
 `startSync` never subscribes to `AppState` itself; the runtime host passes its source in so the single
-foreground-owner law in `runtime/README.md` holds. `history` is a bridge to P2-T15's `historyStore`
-(`get`/`set`/`subscribe`); without it history and usage are neither restored nor pushed. The "Welcome back" summary
+foreground-owner law in `runtime/README.md` holds. `history` is a bridge to P2-T15's `historyStore`;
+`bridgeHistoryStore` adapts its `data.days`/`patch`/`subscribe` shape. Without it history and usage are
+neither restored nor pushed. The "Welcome back" summary
 after a sign-in restore is `syncLog.lastRestore` (`localWasEmpty` says whether the device had no rules
 before the pull).
 

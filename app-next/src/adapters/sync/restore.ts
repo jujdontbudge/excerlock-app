@@ -21,6 +21,18 @@ export type HistoryBridge = {
 
 export type RestoreOutcome = { summary: RestoreSummary; localWasEmpty: boolean };
 
+type HistoryStoreLike = {
+  getState(): { data: { days: HistoryDay[] }; patch(value: { days: HistoryDay[] }): void };
+  subscribe(callback: () => void): Unsubscribe;
+};
+
+/** Adapts P2-T15's `historyStore` (`data.days`, `patch`, `subscribe`) to the bridge the host takes. */
+export const bridgeHistoryStore = (store: HistoryStoreLike): HistoryBridge => ({
+  get: () => store.getState().data.days,
+  set: (days) => store.getState().patch({ days }),
+  subscribe: (callback) => store.subscribe(callback),
+});
+
 /**
  * Restore on a new device or after sign-in: pull the server snapshot, merge it under the conflict rule in
  * `domain/syncMerge`, and write the result back to the stores. The app selection is untouched, so Home

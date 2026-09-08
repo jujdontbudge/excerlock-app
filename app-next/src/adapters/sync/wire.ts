@@ -15,6 +15,8 @@ import { HistoryDay } from '../../ports/models';
 import { RuleTombstone, SealedHistoryDay, Stamped, SyncSnapshot, UsageDay } from '../../ports/SyncPort';
 
 export const MAX_BATCH = 400;
+/** The server's cap on every free-text column (profile fields, rule names); longer values are cut, not rejected. */
+export const MAX_TEXT = 120;
 
 export const paths = {
   rules: '/v1/sync/rules',
@@ -113,20 +115,20 @@ export const toWire = {
   }),
   usageDay: (row: Stamped<UsageDay>): WireUsageDay => ({
     day: row.day,
-    lockedAppMinutes: row.lockedAppMinutes,
+    lockedAppMinutes: minutes(row.lockedAppMinutes),
     updatedAt: row.updatedAt,
   }),
   earnedUnlock: (row: Stamped<EarnedUnlock>): WireEarnedUnlock => ({
     day: row.day,
     ruleId: row.ruleId,
-    ruleName: row.ruleName,
+    ruleName: capped(row.ruleName),
     metAt: row.metAt,
     windowEnd: row.windowEnd,
     updatedAt: row.updatedAt,
   }),
   historyDay: (row: Stamped<SealedHistoryDay>): WireHistoryDay => ({
     day: row.day,
-    usageMinutes: row.usageMinutes,
+    usageMinutes: row.usageMinutes === null ? null : minutes(row.usageMinutes),
     activity: row.activity,
     met: row.met,
     scheduled: row.scheduled,
@@ -134,19 +136,22 @@ export const toWire = {
     updatedAt: row.updatedAt,
   }),
   profile: (profile: Stamped<Profile>): WireProfile => ({
-    name: profile.name,
-    referralSource: profile.referralSource,
-    ageBand: profile.ageBand,
-    occupation: profile.occupation,
+    name: capped(profile.name),
+    referralSource: capped(profile.referralSource),
+    ageBand: capped(profile.ageBand),
+    occupation: capped(profile.occupation),
     improveFirst: profile.improveFirst,
-    mainReason: profile.mainReason,
-    estimatedDailyMinutes: profile.estimatedDailyMinutes,
+    mainReason: capped(profile.mainReason),
+    estimatedDailyMinutes: minutes(profile.estimatedDailyMinutes),
     units: profile.units,
     updatedAt: profile.updatedAt,
   }),
 };
 
 const text = (value: string | null | undefined) => value ?? '';
+const capped = (value: string) => value.slice(0, MAX_TEXT);
+/** Minute columns are integers server-side; a fractional measurement rounds rather than rejects the batch. */
+const minutes = (value: number) => Math.max(0, Math.round(value));
 
 export const fromWire = {
   rule: (wire: WireRule): Rule => ({
