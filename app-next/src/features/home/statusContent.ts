@@ -71,6 +71,7 @@ export function statusContent({ decision: d, rules, permissions, apps, now, time
     return { ...model, title: c.locked, icon: 'lock', unlocked: false, subtitle: c.until(action) };
   }
   if (d.state === 'unlockedMet') return { ...model, title: c.met, subtitle: resume(d.relockAt) };
+  if (d.state === 'unlockedProvisional') return { ...model, title: c.atGym, subtitle: c.gymHold };
   if (d.state === 'unlockedWalking')
     return { ...model, title: c.walking, subtitle: c.left(leaseClock(d.leaseUntil, now)), action: 'stop' };
   if (d.state === 'beforeWindow')

@@ -6,6 +6,8 @@ export const homeCopy = {
   locked: 'Apps are blocked',
   met: 'Unlocked for the rest of today',
   walking: 'Unlocked while you walk',
+  atGym: "Unlocked while you're at the gym",
+  gymHold: 'Your apps stay open while you are here.',
   open: 'No blocking right now',
   permission: 'Screen Time access needed',
   fix: 'Allow Screen Time',
