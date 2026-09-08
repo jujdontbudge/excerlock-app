@@ -18,6 +18,10 @@ export function nativeGait(): GaitPort | null {
       const subscription = module.addListener('onGaitSample', cb);
       return () => subscription.remove();
     },
+    // merge: P2-T03 replaces this probe with a real AVCaptureDevice
+    // authorization read. Starting and stopping the camera to learn the answer
+    // flashes the preview before the ceremony asks for it, and it can only ever
+    // say granted or denied — never notDetermined or restricted.
     permission: async () => {
       try {
         await module.start();

@@ -5,10 +5,9 @@ export function HomeSheets({
   rules,
   onDismiss,
 }: {
-  sheet: { type: 'walk' | 'checkin'; ruleId: string } | null;
+  sheet: { type: 'walk'; ruleId: string } | null;
   rules: Rule[];
   onDismiss: () => void;
-  onChooseGym: () => void;
 }) {
   const rule = rules.find((r) => r.enabled && r.id === sheet?.ruleId);
   if (sheet?.type === 'walk' && rule) return <WalkingSheet rule={rule} onDismiss={onDismiss} />;

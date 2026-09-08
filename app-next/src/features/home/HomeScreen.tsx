@@ -35,6 +35,7 @@ import { settingsCopy } from '../../content/settings';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { unlockKind } from '../unlock/entry';
+import { clearHomeWalkingSheetRequest, useHomeWalkingSheetRequest } from '../unlock/walkingSheetRequest';
 import { UnlockEntry } from '../unlock/UnlockEntry';
 import { hydrationReport as useHydrationReport } from '../../state/hydrationReport';
 import { common } from '../../content/common';
@@ -64,9 +65,16 @@ export function HomeScreen() {
       now,
       timezone: runtime.clock.timezone(),
       enforcement,
+      walkingSession: session,
     }),
     glyph = useUnlockMoment(status.state);
-  const [sheet, setSheet] = useState<{ type: 'walk' | 'checkin'; ruleId: string } | null>(null);
+  const [sheet, setSheet] = useState<{ type: 'walk'; ruleId: string } | null>(null);
+  const handedOff = useHomeWalkingSheetRequest();
+  useEffect(() => {
+    if (!handedOff) return;
+    setSheet({ type: 'walk', ruleId: handedOff });
+    clearHomeWalkingSheetRequest();
+  }, [handedOff]);
   const chooseApps = () => void runtime.screenTime.presentAppPicker();
   const add = () => router.push('/builder');
   // iOS never re-presents the Screen Time prompt after a denial, and a restricted
@@ -147,10 +155,6 @@ export function HomeScreen() {
           sheet={sheet}
           rules={rules}
           onDismiss={() => setSheet(null)}
-          onChooseGym={() => {
-            setSheet(null);
-            router.push('/settings/gyms');
-          }}
         />
       }>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: t.space.md }}>

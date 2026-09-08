@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Linking, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Heading, Label, PrimaryButton } from '../../design-system';
+import { Heading, Label, PrimaryButton, SecondaryButton } from '../../design-system';
 import { UnlockLockFrame } from '../../design-system/UnlockLockFrame';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
@@ -13,6 +13,7 @@ import { GymUnlockMap } from './GymUnlockMap';
 import { distanceLabel } from './geometry';
 import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
 import { dayKey } from '../../domain/calendar';
+import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; preview?: boolean }) {
   const router = useRouter(),
     runtime = useRuntime();
@@ -23,12 +24,17 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
     ),
   );
   const [alreadyCredited] = useState(!preview && met);
+  const entitlement = useEntitlementStore((store) => store.data.entitlement.status);
+  const lapsed = entitlement === 'expired' || entitlement === 'billingIssue';
   const state = useGymUnlock(preview, alreadyCredited);
   const window = rule?.schedule.window;
   const minute = window?.kind === 'range' ? window.endMinute : 1439;
   const end = `${Math.floor(minute / 60) % 12 || 12}${minute % 60 ? ':' + String(minute % 60).padStart(2, '0') : ''} ${minute < 720 ? 'AM' : 'PM'}`;
-  const subline =
-    rule?.mode.kind === 'target' ? c.gym.detectedTime : c.gym.detectedUntil(preview && !rule ? '9 PM' : end);
+  const subline = lapsed
+    ? c.lapsed.body
+    : rule?.mode.kind === 'target'
+      ? c.gym.detectedTime(rule.mode.goal)
+      : c.gym.detectedUntil(preview && !rule ? '9 PM' : end);
   const ceremony = useCeremony(state.value, state.lifted, c.gym.detected);
   const close = () => {
     runtime.analytics.track('unlock_ceremony_done', { kind: 'gym', preview });
@@ -37,11 +43,12 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
   useEffect(() => {
     runtime.analytics.track('unlock_screen_opened', { kind: 'gym', preview });
   }, [runtime, preview]);
-  const noGym = !state.nearest && !preview;
   const title = state.denied
     ? c.gym.denied
-    : noGym
+    : state.noGym
       ? c.gym.noGym
+      : state.locating
+        ? c.gym.locating
       : state.working
         ? c.gym.confirming
         : state.inside
@@ -49,6 +56,8 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
           : c.gym.outside;
   const body = state.denied
     ? c.gym.deniedBody
+    : state.locating
+      ? c.gym.locatingBody
     : state.working
       ? c.gym.confirmingBody
       : state.inside
@@ -61,11 +70,16 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
       close={close}
       preview={preview}
       footer={
-        ceremony.done ? (
-          <PrimaryButton label={c.done} onPress={close} />
+        ceremony.showMessage || ceremony.done ? (
+          ceremony.done || lapsed ? (
+            <>
+              {ceremony.done ? <PrimaryButton label={c.done} onPress={close} /> : null}
+              {lapsed ? <SecondaryButton label={c.seePlans} onPress={() => router.push('/paywall')} /> : null}
+            </>
+          ) : undefined
         ) : state.lifted ? undefined : state.denied ? (
           <PrimaryButton label={c.gym.openSettings} onPress={() => void Linking.openSettings()} />
-        ) : noGym ? (
+        ) : state.noGym ? (
           <PrimaryButton label={c.gym.chooseGym} onPress={() => router.push('/settings/gyms')} />
         ) : state.inside ? (
           <PrimaryButton
@@ -78,10 +92,10 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
       }>
       <View
         accessibilityRole="progressbar"
-        accessibilityLabel="Presence check"
+        accessibilityLabel={c.gym.progressLabel}
         accessibilityValue={{ min: 0, max: 100, now: Math.round(state.value * 100) }}>
         <UnlockLockFrame
-          celebrate={!alreadyCredited}
+          celebrate={!alreadyCredited && !lapsed}
           progress={ceremony.progress}
           phase={state.lifted ? 'lifted' : state.working ? 'working' : 'idle'}
           surface={<GymUnlockMap location={state.location} gym={state.nearest} inside={state.inside} />}

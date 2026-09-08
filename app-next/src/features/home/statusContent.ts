@@ -1,4 +1,4 @@
-import { LockDecision, LockedApps, Permissions, Rule } from '../../domain/types';
+import { LockDecision, LockedApps, Permissions, Rule, WalkingSession } from '../../domain/types';
 import { IconName } from '../../icons/Icon';
 import { dayKey } from '../../domain/schedule';
 import { addDays } from '../../domain/calendar';
@@ -23,12 +23,22 @@ type Input = {
   timezone: string;
   /** The last apply result the runtime host published; a failure fails closed and is reported here. */
   enforcement?: { applied: boolean } | null;
+  walkingSession?: WalkingSession | null;
 };
 export function leaseClock(until: string, now: string) {
   const seconds = Math.max(0, Math.ceil((Date.parse(until) - Date.parse(now)) / 1000));
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
-export function statusContent({ decision: d, rules, permissions, apps, now, timezone, enforcement }: Input): StatusModel {
+export function statusContent({
+  decision: d,
+  rules,
+  permissions,
+  apps,
+  now,
+  timezone,
+  enforcement,
+  walkingSession = null,
+}: Input): StatusModel {
   const time = (at: string) =>
     new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: timezone })
       .format(new Date(at))
@@ -78,7 +88,10 @@ export function statusContent({ decision: d, rules, permissions, apps, now, time
         : hint.action === 'arrive'
           ? c.arrive
           : `${domainCopy.verbs[rule?.activity ?? 'walking'].toLowerCase()} ${hint.remaining?.toLocaleString('en-US')} ${hint.unit}`;
-    return { ...model, title: c.locked, icon: 'lock', unlocked: false, subtitle: c.until(action) };
+    // A session that is still verifying has not unlocked anything, so the card
+    // stays locked; only its subtitle explains what the app is doing.
+    const subtitle = walkingSession?.phase === 'verifying' ? c.verifying : c.until(action);
+    return { ...model, title: c.locked, icon: 'lock', unlocked: false, subtitle };
   }
   if (d.state === 'unlockedMet') return { ...model, title: c.met, subtitle: resume(d.relockAt) };
   if (d.state === 'unlockedProvisional') return { ...model, title: c.atGym, subtitle: c.gymHold };

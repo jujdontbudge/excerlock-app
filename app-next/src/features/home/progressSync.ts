@@ -39,7 +39,10 @@ export function createProgressSync(runtime: Runtime) {
       };
       const value =
         m.activity === 'walking'
-          ? steps
+          ? // The pedometer answers a steps goal only; a duration goal is filled by its walking session.
+            m.metric === 'steps'
+            ? steps
+            : row.progress
           : (workoutsKey === signalKey() ? workouts : [])
               .filter((w) => w.kind === rule.activity)
               .reduce(

@@ -26,7 +26,7 @@ import { ReachabilityFake } from './fakes/ReachabilityFake';
 export function FakeRuntime(): Runtime {
   const ctx = new FakeContext(scenarios[0]),
     walking = WalkingFake(ctx),
-    gait = GaitFake(),
+    gait = GaitFake(ctx),
     persistence = contextPersistence(ctx),
     gym = GymFake(ctx),
     activity = activityHistory(ctx),
@@ -99,7 +99,7 @@ export function FakeRuntime(): Runtime {
       setPresence: (presence) => ctx.update({ presence }),
       setGait: gait.set,
       createGaitPreview: () => {
-        const preview = GaitFake(true);
+        const preview = GaitFake(null, true);
         preview.set('walking');
         return preview;
       },
