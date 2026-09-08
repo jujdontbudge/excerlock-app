@@ -1,5 +1,11 @@
 # ExcerLock — Product Requirements (PRD)
 
+> **Superseded where it conflicts (2026-09-07).** The September 2026 rebuild changed the product model: the
+> time bank, rates, allowances, global schedules, vendors and Clerk are gone; rules, one locked-app set,
+> Supabase auth and the Screen Time engine are in. Wherever this document contradicts
+> `plans/rebuild/00-decisions.md` (and the model in `plans/rebuild/01-product-model.md`), the decision
+> register wins. This file stays as the long-form rationale and the parts the register does not touch.
+
 > Formerly "GymLock." Renamed because earning is no longer gym-only — any exercise (running, walking, cycling, swimming, gym workouts) tracked by a connected fitness app or wearable can earn screen time.
 > Feature list. **No numbers by design** — every default, range, threshold, and price is a build-time tuning decision; see "Decisions owed."
 > **Fitness-earning model resolved 2026-06-18; unified into the Condition system 2026-07-27** (grill session). The entire earn side is one primitive — **Conditions** (§3.3): states / events / rates with strict kind→reward mapping, overlap rules, a catalog-first builder, and continuous rate crediting. Apple Health is the **default** data source with direct app connections (§3.5c) as per-condition alternatives; device-recorded data only; detection is best-effort (no instant-unlock promise); ExcerLock absorbs the former WalkLock concept.

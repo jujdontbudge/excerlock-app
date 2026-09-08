@@ -1,5 +1,9 @@
 # Strava API — integration sheet
 
+> **Historical (P2-T12 cutover, 2026-09-07).** Vendor integrations are out of the product (decision D6 in
+> `plans/rebuild/00-decisions.md`); the server's vendor routes and tables were removed in P2-T02. This file is
+> kept as a record of the research only. Do not act on it.
+
 Researched 2026-07-28 against live official docs (developers.strava.com, strava.com/legal, press.strava.com). All numbers verified against the pages cited; anything unverifiable is flagged.
 
 ---

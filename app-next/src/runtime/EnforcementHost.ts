@@ -150,7 +150,6 @@ export function startEnforcement(
       rulesStore.getState().patch({ lockedApps: selection });
       await progress.refresh();
       if (!active) return;
-      enforcementStore.getState().claimed(runtime.clock.now());
       await requestApply(true);
     })();
   });

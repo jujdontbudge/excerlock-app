@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support — ExcerLock</title>
+<meta name="description" content="How to get help with ExcerLock: what to include in a support request, and answers to the questions that come up most.">
+<meta name="theme-color" content="#fffaf6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131214" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://excerlock.com/support.html">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<a class="skip wrap" href="#main">Skip to content</a>
+
+<header class="wrap masthead">
+  <a class="mark" href="/">
+    <svg width="17" height="21" viewBox="0 0 17 21" aria-hidden="true" focusable="false">
+      <path d="M4.2 9V5.9a4.3 4.3 0 0 1 8.6 0V9" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"></path>
+      <rect x="0.9" y="8.6" width="15.2" height="11.6" rx="3.4" fill="currentColor"></rect>
+    </svg>
+    ExcerLock
+  </a>
+  <nav>
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
+  </nav>
+</header>
+
+<main id="main" class="wrap legal">
+
+  <h1>Support</h1>
+  <p class="lede">One person builds and answers ExcerLock. Write to <a href="mailto:support@excerlock.com">support@excerlock.com</a> and you will get a real reply, usually within two business days.</p>
+
+  <h2>The fastest route is inside the app</h2>
+  <p>Open <strong>Settings</strong>, then <strong>Contact support</strong>. Sending from there attaches a small diagnostics summary automatically, so the first reply can be an answer instead of a list of questions. The summary is versions, iOS version, device model, permission statuses, subscription status, how many conditions you have, and the result of the last enforcement run. It never includes your app selection, your gyms or your location. The <a href="/privacy.html">privacy policy</a> spells that out.</p>
+
+  <h2>If you write by email instead</h2>
+  <p>Include as much of this as you can:</p>
+  <ul>
+    <li>What you expected to happen, and what happened instead.</li>
+    <li>When it happened, roughly, and whether it has happened more than once.</li>
+    <li>Which condition was involved: the activity, the goal, and the days and hours it covers.</li>
+    <li>Your iPhone model and iOS version, from Settings, then General, then About.</li>
+    <li>The ExcerLock version, from Settings at the bottom of the screen.</li>
+    <li>A screenshot or a screen recording if the problem is visible.</li>
+    <li>The email address you signed in with, if you have one, so the account can be found.</li>
+  </ul>
+  <p>For a billing question, say which plan you bought and roughly when. Refunds are handled by Apple, not by us.</p>
+
+  <h2>Questions that come up most</h2>
+
+  <h3>Why does ExcerLock need the Screen Time permission?</h3>
+  <p>Blocking apps on iOS is only possible through Apple's Screen Time framework, and it will not do anything until you grant that permission. It is what puts the shield over the apps you chose. Apple hands the app an opaque token for your selection, so ExcerLock can shield your apps without ever learning which ones they are.</p>
+  <p>If you declined the prompt, open iOS <strong>Settings</strong>, then <strong>Screen Time</strong>, then <strong>Apps with Screen Time Access</strong>, and turn ExcerLock on. If the prompt never appeared and Screen Time is managed for your device by someone else, such as a family organiser or an employer's device management, ExcerLock cannot be granted access until that is lifted.</p>
+
+  <h3>My shields are still on after I exercised. Why?</h3>
+  <p>Usually one of these, in order of how often it turns out to be the cause:</p>
+  <ul>
+    <li><strong>The workout has not reached the app yet.</strong> Apple Health delivers workouts to apps in the background on its own schedule, which can lag from fifteen minutes to over an hour, and stops entirely if the app was force-quit. Open ExcerLock and it checks immediately.</li>
+    <li><strong>The goal is not met yet.</strong> Open the condition and compare the progress figure to the goal. A run recorded as a walk, or a workout your watch saved to a different activity type, will not count toward it.</li>
+    <li><strong>The condition is outside its window.</strong> A condition only locks and only counts during the days and hours you set for it. Meeting it outside that window does nothing.</li>
+    <li><strong>Another condition is still unmet.</strong> Every condition that is inside its window locks the same set of apps. Only when one is met do the apps open for the rest of the day.</li>
+    <li><strong>A live walking session ended early.</strong> State conditions hold the apps open while the session runs. If the session lapsed, the shields come back.</li>
+    <li><strong>ExcerLock was force-quit.</strong> Swiping the app away stops background delivery from Health. Reopen it and leave it in the background.</li>
+  </ul>
+  <p>If none of those explains it, send a support request from Settings while the problem is happening. The attached diagnostics include the last enforcement result, which usually shows the cause straight away.</p>
+
+  <h3>How do I delete my account?</h3>
+  <p>Open <strong>Settings</strong> in the app, then <strong>Delete account</strong>. That deletes your profile, your synced conditions, your daily progress, your usage history, your earned unlocks and your support requests, erases your subscription profile at Adapty and your analytics record at PostHog, and finally deletes your sign-in account. If you would rather we did it, write to <a href="mailto:privacy@excerlock.com">privacy@excerlock.com</a> from the address you signed in with.</p>
+  <p><strong>Cancel your subscription first.</strong> Deleting your account does not cancel it, because Apple owns billing. Open iOS <strong>Settings</strong>, tap your name, then <strong>Subscriptions</strong>, then ExcerLock, then <strong>Cancel Subscription</strong>.</p>
+
+  <h3>How do I cancel or change my subscription?</h3>
+  <p>In iOS <strong>Settings</strong>, tap your name, then <strong>Subscriptions</strong>, then ExcerLock. From there you can switch between the annual and monthly plans or cancel. Cancelling stops the next renewal and you keep access until the end of the period you paid for. A free trial converts to a paid subscription unless you cancel at least 24 hours before it ends.</p>
+
+  <h3>Can I turn off analytics?</h3>
+  <p>Yes. Open <strong>Settings</strong> in the app and turn off <strong>Share usage analytics</strong>. Nothing about the app stops working.</p>
+
+  <h3>What happens if my subscription lapses?</h3>
+  <p>Every shield is lifted. A lapsed subscription never leaves your apps locked, and Settings, support and account deletion stay reachable.</p>
+
+  <h3>Can I use ExcerLock to limit someone else's phone?</h3>
+  <p>No. ExcerLock is for managing your own screen time on your own device. It is not a parental-control app, and the <a href="/terms.html">terms of use</a> do not permit installing it to restrict another person.</p>
+
+  <h2>Still stuck</h2>
+  <p>Write to <a href="mailto:support@excerlock.com">support@excerlock.com</a>. For anything about your data, write to <a href="mailto:privacy@excerlock.com">privacy@excerlock.com</a>.</p>
+
+</main>
+
+<footer class="wrap">
+  <nav>
+    <a href="/">Home</a>
+    <a href="/privacy.html">Privacy policy</a>
+    <a href="/terms.html">Terms of use</a>
+    <a href="mailto:support@excerlock.com">support@excerlock.com</a>
+  </nav>
+  <p>ExcerLock is made by Johan Sardar. Copyright 2026.</p>
+</footer>
+
+</body>
+</html>

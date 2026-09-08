@@ -1,6 +1,6 @@
 import { WalkingSession } from '../../domain/types';
 import { LeaseWarningVariant, NotificationsPort } from '../../ports/NotificationsPort';
-import { leaseWarningAt, leaseWarningMoved, leaseWarningVariant, sessionIsLive } from './leaseWarning';
+import { leaseWarningAt, leaseWarningMoved, sessionIsLive } from './leaseWarning';
 
 export type LeaseWarningSync = { session: WalkingSession | null; now: string; canNotify: boolean };
 
@@ -31,7 +31,8 @@ export function createLeaseWarningScheduler(port: NotificationsPort) {
       if (!canNotify || !sessionIsLive(session)) return cancel();
       const at = leaseWarningAt(session.leaseUntil);
       if (Date.parse(at) <= Date.parse(now)) return cancel();
-      const variant = leaseWarningVariant(session);
+      // A propped session renews by scanning again, a handheld one by walking on.
+      const variant = session.placement;
       if (pending && pending.variant === variant && !leaseWarningMoved(pending.at, at)) return queue;
       pending = { at, variant };
       return enqueue(async () => {

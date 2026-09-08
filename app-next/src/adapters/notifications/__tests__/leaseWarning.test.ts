@@ -1,7 +1,7 @@
 import { WalkingSession } from '../../../domain/types';
 import { NotificationsPort } from '../../../ports/NotificationsPort';
 import { walkingSession } from '../../../domain/__tests__/fixtures';
-import { leaseWarningAt, leaseWarningMoved, leaseWarningVariant } from '../leaseWarning';
+import { leaseWarningAt, leaseWarningMoved } from '../leaseWarning';
 import { createLeaseWarningScheduler } from '../leaseWarningScheduler';
 
 const session = (leaseUntil: string, extra: Partial<WalkingSession> = {}): WalkingSession =>
@@ -92,7 +92,6 @@ test('a propped session gets the scan-again variant, its only warning', async ()
   const now = '2026-09-07T15:00:00.000Z';
   await scheduler.sync({ session: session('2026-09-07T15:15:00.000Z', { placement: 'propped' }), now, canNotify: true });
   expect(calls).toEqual(['schedule 2026-09-07T15:14:30.000Z propped']);
-  expect(leaseWarningVariant(session('2026-09-07T15:15:00.000Z'))).toBe('handheld');
   // A handheld verification during a propped session keeps the lease but changes what renews it.
   await scheduler.sync({ session: session('2026-09-07T15:15:00.000Z', { placement: 'handheld' }), now, canNotify: true });
   expect(calls.slice(1)).toEqual(['cancel lease-1', 'schedule 2026-09-07T15:14:30.000Z handheld']);

@@ -1,5 +1,4 @@
 import { WalkingSession } from '../../domain/types';
-import { LeaseWarningVariant } from '../../ports/NotificationsPort';
 
 /** The warning fires this long before the lease lapses. */
 export const LEASE_WARNING_LEAD_MS = 30_000;
@@ -15,13 +14,6 @@ export function leaseWarningMoved(pending: string | null, next: string): boolean
   return pending === null || Math.abs(Date.parse(next) - Date.parse(pending)) >= LEASE_WARNING_MOVE_MIN_MS;
 }
 
-/**
- * A propped session renews by scanning again, a handheld one by walking on. The session machine
- * (P2-T15) records `placement`; until it lands every session reads as handheld.
- */
-export function leaseWarningVariant(session: WalkingSession & { placement?: LeaseWarningVariant }): LeaseWarningVariant {
-  return session.placement === 'propped' ? 'propped' : 'handheld';
-}
 
 export function sessionIsLive(session: WalkingSession | null): session is WalkingSession {
   return session !== null && session.phase !== 'ended';
