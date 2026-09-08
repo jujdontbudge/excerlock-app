@@ -216,11 +216,11 @@ export function createScreenTimeAdapter({
     if (plan.shields === 'clear') native.unblockSelection(SELECTION);
 
     const today = dayKey(now(), clock.timezone());
-    // Measurement, never enforcement: a usage monitor that will not arm is not a failed lock.
     try {
       await armUsageMonitor(native, { day: today, timezone: clock.timezone(), familyActivitySelection: token });
     } catch {
-      refreshUsage(native, today);
+      // Measurement, never enforcement: a usage monitor that will not arm is not a failed lock, and
+      // the day it would have covered stays unmeasured rather than becoming a measured zero.
     }
 
     const shields = plan.shields === 'apply' ? 'up' : 'down';

@@ -12,8 +12,6 @@ export const USAGE_STEP_MINUTES = 5;
 /** Usage above the cap reads as the cap: 96 threshold events is the whole day's budget. */
 export const USAGE_CAP_MINUTES = 480;
 
-const FIELDS = ['year', 'month', 'day', 'hour', 'minute', 'second'] as const;
-
 /**
  * An instant as the wall clock of a named zone. DeviceActivity schedules are calendar
  * components, not instants, so a rule written in Berlin must not become an hour earlier
@@ -30,7 +28,8 @@ export function dateComponents(instant: string, timezone: string): DeviceActivit
     second: '2-digit',
     hourCycle: 'h23',
   }).formatToParts(new Date(instant));
-  const read = (type: (typeof FIELDS)[number]) => Number(parts.find((part) => part.type === type)!.value);
+  const read = (type: 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second') =>
+    Number(parts.find((part) => part.type === type)!.value);
   return {
     year: read('year'),
     month: read('month'),

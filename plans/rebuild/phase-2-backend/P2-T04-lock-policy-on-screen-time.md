@@ -59,7 +59,7 @@ scheduling go away; window instances and met/walking states take their place.
 ### Built 2026-09-07 (`app-next/src/adapters/screentime/`)
 
 `ScreenTimeAdapter` passes `describeScreenTimePort` (`__tests__/contract.test.ts`) with the native layer
-doubled. 49 tests across the module; `README.md` states the two measurement limits and the device questions.
+doubled. 54 tests across the module; `README.md` states the two measurement limits and the device questions.
 
 | Acceptance row added by the audit | Status |
 | --- | --- |

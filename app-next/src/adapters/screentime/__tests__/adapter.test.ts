@@ -40,10 +40,12 @@ const metToday = (relockAt: string | null): LockDecision => ({
 const planFor = (rules: Rule[], now = NOW): MonitorPlan =>
   compileMonitorPlan(mergedLockIntervals(rules, '2026-09-07', 8, timezone), now);
 
-function subject(options: { now?: string; selection?: { applicationCount: number; categoryCount: number } | null } = {}) {
+type Counts = { applicationCount: number; categoryCount: number };
+
+function subject(options: { now?: string; selection?: Counts | null; pick?: Counts | null } = {}) {
   const native = deviceActivityDouble(options.selection === undefined ? {} : { selection: options.selection });
   const selections: LockedApps[] = [];
-  const picked: { applicationCount: number; categoryCount: number } | null = { applicationCount: 7, categoryCount: 1 };
+  const picked = options.pick === undefined ? { applicationCount: 7, categoryCount: 1 } : options.pick;
   const adapter: ScreenTimeAdapter = createScreenTimeAdapter({
     native: native.api,
     clock: { now: () => options.now ?? NOW, timezone: () => timezone },
@@ -272,4 +274,61 @@ test('a window that shields while the app is closed is reported when the app hea
 
   expect(seen).toEqual([{ applied: true, shields: 'up', monitors: expect.any(Number) }]);
   stop();
+});
+
+test('a confirmed gym arrival opens the windows it holds and shields the ones after it', async () => {
+  const { native, adapter } = subject();
+  const plan = planFor([evening]);
+  const holdsUntil = '2026-09-08T02:00:00.000Z'; // 22:00 local, mid-window
+
+  await adapter.applyLock(
+    { state: 'unlockedProvisional', byRuleId: 'walk', placeId: 'gym-1', holdsUntil },
+    clearing,
+    plan,
+  );
+
+  expect(native.actionsFor(plan.monitors[0].name, 'intervalDidStart')!.actions[0].type).toBe('unblockSelection');
+  expect(native.actionsFor(plan.monitors[1].name, 'intervalDidStart')!.actions[0].type).toBe('blockSelection');
+  expect(facts(native).unlockUntil).toBe(holdsUntil);
+});
+
+test('a usage monitor that will not arm is not a failed lock, and its day stays unmeasured', async () => {
+  const { native, adapter } = subject();
+  native.failStartMonitoringFor(usageMonitorName('2026-09-07'));
+
+  await expect(adapter.applyLock(locked, shielding, planFor([evening]))).resolves.toMatchObject({
+    applied: true,
+    shields: 'up',
+  });
+  expect(adapter.measuredUsage('2026-09-07')).toBeNull();
+});
+
+test('a picker host that was never configured is an error, not a silent empty selection', async () => {
+  const native = deviceActivityDouble();
+  const adapter = createScreenTimeAdapter({
+    native: native.api,
+    clock: { now: () => NOW, timezone: () => timezone },
+    copy: () => ({ rules: [], ruleDays: [], canNotify: true }),
+  });
+
+  await expect(adapter.presentAppPicker()).rejects.toThrow('picker host is not configured');
+  adapter.dispose();
+});
+
+test('a cancelled picker leaves the selection exactly as it was', async () => {
+  const { adapter, selections } = subject({ pick: null });
+
+  await expect(adapter.presentAppPicker()).resolves.toEqual({
+    handle: { token: LOCKED_SELECTION_ID },
+    appCount: 4,
+    categoryCount: 2,
+  });
+  expect(selections[0]).toEqual({ handle: { token: LOCKED_SELECTION_ID }, appCount: 4, categoryCount: 2 });
+});
+
+test('a selection the user emptied is no selection at all', async () => {
+  const { adapter } = subject({ selection: { applicationCount: 0, categoryCount: 0 }, pick: { applicationCount: 0, categoryCount: 0 } });
+
+  await expect(adapter.describeSelection()).resolves.toEqual({ handle: null, appCount: 0, categoryCount: 0 });
+  await expect(adapter.presentAppPicker()).resolves.toEqual({ handle: null, appCount: 0, categoryCount: 0 });
 });

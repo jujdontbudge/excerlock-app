@@ -36,6 +36,7 @@ export function deviceActivityDouble(
   let selection: SelectionMetadata | null =
     options.selection === undefined ? { applicationCount: 4, categoryCount: 2 } : options.selection;
   let failNextStart = false;
+  let failStartFor: string | null = null;
   let requests = 0;
 
   const api: DeviceActivityApi = {
@@ -52,7 +53,7 @@ export function deviceActivityDouble(
     unblockSelection: () => void (blocked = false),
     configureActions: (input) => void configured.push({ ...input, actions: [...input.actions] }),
     startMonitoring: async (activityName, schedule, events) => {
-      if (failNextStart) {
+      if (failNextStart || failStartFor === activityName) {
         failNextStart = false;
         throw new Error('startMonitoring failed');
       }
@@ -114,6 +115,9 @@ export function deviceActivityDouble(
     },
     failNextStartMonitoring() {
       failNextStart = true;
+    },
+    failStartMonitoringFor(activityName: string) {
+      failStartFor = activityName;
     },
     /** The monitor extension reached a usage threshold and recorded it in the app group. */
     fireThreshold(activityName: string, eventName: string, at: string) {
