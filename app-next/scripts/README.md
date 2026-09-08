@@ -13,3 +13,8 @@ T16: `accept-cold-launch.py` handles observed dev-client host chrome; `accept-br
 `accept-preferences.py` verifies actual native Switch value changes and auto-detect grant/deny/disable outcomes after scroll settling.
 
 `accept-picker-stability.py` measures the native picker heading before and after a query, verifying that filtering preserves control positions.
+
+`verify-device-run.js` checks a pulled diagnostics log from Johan's iPhone against the physical-device
+acceptance scenarios (`docs/verification/device-runbook.md`); `device-run-scenarios.js` holds one check per
+row and `device-run-log.js` the parser. `node scripts/verify-device-run.js --list` prints the scenario ids;
+`node --test scripts/*.test.cjs` runs its tests.

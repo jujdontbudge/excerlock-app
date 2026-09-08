@@ -1,0 +1,7 @@
+*
+!.gitignore
+!README.md
+!RESULTS.md
+!verify.txt
+!harness/
+!harness/analysis.txt
