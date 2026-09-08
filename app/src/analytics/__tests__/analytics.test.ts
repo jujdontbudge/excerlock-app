@@ -1,4 +1,4 @@
-import { FLOW_SCREENS } from "@excerlock/analytics-events";
+import { LEGACY_FLOW_SCREENS } from "@excerlock/analytics-events";
 
 import { analytics, createRecordingSink, flowTracker } from "..";
 
@@ -8,17 +8,17 @@ describe("the app-wide kit", () => {
 
     const sink = createRecordingSink();
     analytics.installSink(sink);
-    analytics.track("walk_session_started");
-    flowTracker.trackOnboardingScreen(FLOW_SCREENS[0]);
+    analytics.track("walking_session_started");
+    flowTracker.trackOnboardingScreen(LEGACY_FLOW_SCREENS[0]);
 
     expect(sink.signals).toEqual([
       { kind: "register", props: { app: "excerlock" } },
-      { kind: "capture", event: "walk_session_started", props: {} },
-      { kind: "screen", screen: FLOW_SCREENS[0], props: {} },
+      { kind: "capture", event: "walking_session_started", props: {} },
+      { kind: "screen", screen: LEGACY_FLOW_SCREENS[0], props: {} },
       {
         kind: "capture",
         event: "onboarding_screen_viewed",
-        props: { screen: FLOW_SCREENS[0] },
+        props: { screen: LEGACY_FLOW_SCREENS[0] },
       },
     ]);
   });

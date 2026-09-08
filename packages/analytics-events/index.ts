@@ -47,3 +47,15 @@ export type { PaywallPlacement } from './src/events/paywall'
 export type { NotificationType } from './src/events/engagement'
 export type { SupportCategory } from './src/events/support'
 export type { AdaptyForwardedProps } from './src/events/subscription'
+
+/**
+ * Legacy surface for the `app/` workspace only — the retired seven-screen FLOW rail. Deleted with
+ * `app/` by P2-T12's cutover; no other workspace may import it.
+ */
+export { isLegacyFlowScreen, LEGACY_FLOW_SCREENS } from './src/legacy'
+export type {
+  LegacyFlowScreen,
+  LegacyPropsOf,
+  LegacyTrackOnboardingAnswer,
+  LegacyTrackOnboardingScreen,
+} from './src/legacy'

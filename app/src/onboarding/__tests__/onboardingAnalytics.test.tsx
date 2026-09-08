@@ -4,8 +4,8 @@ jest.mock(
 );
 
 import {
-  FLOW_SCREENS,
-  type FlowScreen,
+  LEGACY_FLOW_SCREENS,
+  type LegacyFlowScreen,
 } from "@excerlock/analytics-events";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { MockAccountModule } from "../../account/MockAccountModule";
@@ -26,7 +26,7 @@ import {
 } from "..";
 
 function expectedStepViewSignals(
-  flowScreen: FlowScreen,
+  flowScreen: LegacyFlowScreen,
 ): AnalyticsSignal[] {
   return [
     { kind: "screen", screen: flowScreen, props: {} },
@@ -62,7 +62,7 @@ describe("onboarding analytics", () => {
       />,
     );
 
-    for (const flowScreen of FLOW_SCREENS) {
+    for (const flowScreen of LEGACY_FLOW_SCREENS) {
       if (flowScreen === "confession") {
         await fireEvent(
           screen.getByRole("adjustable", { name: "Daily phone time" }),
@@ -76,7 +76,7 @@ describe("onboarding analytics", () => {
 
     expect(onComplete).toHaveBeenCalledTimes(1);
     expect(recordingSink.signals).toEqual(
-      FLOW_SCREENS.flatMap((flowScreen) => [
+      LEGACY_FLOW_SCREENS.flatMap((flowScreen) => [
         ...expectedStepViewSignals(flowScreen),
         ...(flowScreen === "confession"
           ? [
@@ -94,7 +94,7 @@ describe("onboarding analytics", () => {
   });
 
   it("does not emit a duplicate step view when the flow re-renders", async () => {
-    const firstScreen = FLOW_SCREENS[0];
+    const firstScreen = LEGACY_FLOW_SCREENS[0];
     const renderedFlow = await render(
       <OnboardingFlow onComplete={jest.fn()} />,
     );
@@ -120,7 +120,7 @@ describe("onboarding analytics", () => {
     );
 
     expect(recordingSink.signals).toEqual(
-      FLOW_SCREENS.slice(0, 2).flatMap(expectedStepViewSignals),
+      LEGACY_FLOW_SCREENS.slice(0, 2).flatMap(expectedStepViewSignals),
     );
   });
 });

@@ -111,6 +111,16 @@ registry is the single place to correct them.
   zero new code).
 - `OnboardingFunnelStep` — the discriminated union of emitted funnel steps.
 
+### The retired rail (`src/legacy.ts`)
+
+`app/` still renders the seven-screen onboarding that shipped before the rebuild: `value-prop`,
+`confession`, `mirror`, `permissions-primer`, `pick-apps`, `paywall`, `sign-up`. One union cannot
+describe both rails honestly, so those ids live in `src/legacy.ts` as `LEGACY_FLOW_SCREENS` /
+`LegacyFlowScreen` rather than widening `FLOW_SCREENS`. `LegacyPropsOf` puts the two funnel events
+back on that rail and leaves every other event's shape alone, so the legacy kit still refuses a cut
+event or a wrong payload. Only `app/` may import any of it; P2-T12's cutover deletes the file with
+the workspace.
+
 ## Identity (D6/D8)
 
 `identify(userId)` runs on every session change, anonymous sessions included — the ordering law is

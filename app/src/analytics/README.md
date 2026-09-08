@@ -12,8 +12,10 @@ the SDK queues without sending them before reset, preventing stale events from r
 PostHog is initialized once from `app/index.ts`. `postHogSink.ts` fixes the SDK policy: app lifecycle
 capture, UI autocapture, exception autocapture, surveys, GeoIP, heatmaps/session replay, and retries
 are off. Product analytics use explicit `analytics.track(...)` calls only. Screen tracking accepts
-only the fixed `FlowScreen` registry, preventing UI labels such as condition or gym names from
-becoming `$screen_name` values.
+only the fixed `LegacyFlowScreen` registry, preventing UI labels such as condition or gym names
+from becoming `$screen_name` values. That union is the retired seven-screen rail this app renders;
+`@excerlock/analytics-events` keeps it in `src/legacy.ts` for this workspace alone, and the shipping
+`FlowScreen` union belongs to `app-next`. Both go when P2-T12 deletes `app/`.
 
 The canonical event entry declares `owner` and `transmittedProperties`. TypeScript rejects wrong
 names and payloads, while `privacyPolicy.ts` drops undeclared keys from JavaScript or adapter calls.

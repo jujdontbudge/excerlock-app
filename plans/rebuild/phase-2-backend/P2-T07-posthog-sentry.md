@@ -89,18 +89,28 @@ registry can be added back without touching the adapter.
 - `PrivacyInfo.xcprivacy`. Both SDKs are installed and their collection is known, but the manifest lands
   with the native build work, not here (no prebuild in this task).
 
-### One thing this breaks: the legacy `app/`
+### What this broke in the legacy `app/`, and how it was repaired
 
-`npm run typecheck --workspace app` was green before this task and now reports 30 errors, all in
-`app/src/analytics/**` and `app/src/onboarding/**`. There is no honest repair. The registry's
-`FlowScreen` union is the rail the product actually ships, and the legacy app's rail is the retired
-seven-screen one (`value-prop`, `confession`, `mirror`, `permissions-primer`, `pick-apps`, `paywall`,
-`sign-up`). One union cannot describe both. The rest of the errors are the cut events and the events
-whose props stopped being empty.
+Rebuilding the registry broke `app/`: 30 typecheck errors across `app/src/analytics/**` and
+`app/src/onboarding/**`. Two causes. The registry's `FlowScreen` union is the rail the product ships,
+while the legacy app renders the retired seven-screen one (`value-prop`, `confession`, `mirror`,
+`permissions-primer`, `pick-apps`, `paywall`, `sign-up`), and one union cannot describe both. The
+rest were the cut events and the events whose props stopped being empty.
 
-The resolution is P2-T12's, not a fix here: the cutover deletes `app/` and drops it from the root
-workspace list and from `npm run test:unit`. Until then the root `npm test` fails at `test:app`;
-`app-next`, `server`, `packages` and the guardrails are all green.
+The repair keeps the shipping union untouched. `packages/analytics-events/src/legacy.ts` holds the
+retired rail — `LEGACY_FLOW_SCREENS`, `LegacyFlowScreen`, `isLegacyFlowScreen` — plus `LegacyPropsOf`,
+which puts the two funnel events back on that rail and leaves every other event's shape alone. So
+`app/`'s kit still refuses a cut event, a wrong payload or an excess property; only its screen ids
+differ. `app/`'s analytics and onboarding modules import the legacy names; nothing else may.
+
+The cut events were repaired in `app/` itself, not by restoring them. `trackTypeLaw.ts` now asserts
+the same laws over events that exist, and moves `milestone_unlocked` and `notification_toggled` from
+its legal section to its illegal one, so the compiler proves B16 and B30 actually removed them. The
+privacy test that used `earn_claimed` to prove workout metrics are dropped now uses `rule_met`, which
+proves more: the four declared properties survive and the signal, source and minutes do not.
+
+`legacy.ts` is deleted with `app/` — the checklist is in `P2-T12-cutover.md`. Root `npm test` is green
+in the meantime.
 
 ### Handed to P2-T12: the App Privacy manifest
 

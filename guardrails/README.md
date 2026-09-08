@@ -19,5 +19,11 @@ matches `track(` as well as `capture(`, because in `app-next` a screen names an 
 shapes are checked against `@excerlock/analytics-events`, so an event emitted from the wrong side, or
 under a name nobody registered, fails CI.
 
+`legacy-analytics.test.ts` is temporary. `packages/analytics-events/src/legacy.ts` holds the retired
+seven-screen FLOW rail so the legacy `app/` workspace keeps compiling against the registry P2-T07
+rebuilt around the new one; this test proves nothing outside `app/` imports it and that the shipping
+`FLOW_SCREENS` union never absorbed the retired ids. P2-T12's cutover deletes the module, this test
+and `app/` together.
+
 The E2E bundle gate performs two clean iOS exports and has a 180-second budget; its production-marker
 elimination assertions are unchanged.

@@ -1,7 +1,7 @@
 # FLOW onboarding
 
 **Contract.** `onboarding` owns the resumable first-run rail. `flow.ts` derives its order from
-`@excerlock/analytics-events`' locked `FLOW_SCREENS`; the central renderer is the only place that
+`@excerlock/analytics-events`' locked `LEGACY_FLOW_SCREENS`; the central renderer is the only place that
 chooses a screen. Individual screens render one question or promise and never navigate, request a
 native permission, open a purchase flow, create an account, or emit onboarding analytics.
 
@@ -23,7 +23,7 @@ Phases 3 and 5.
 
 **Invariants.**
 
-- The app never redeclares the `FlowScreen` union or the screen order.
+- The app never redeclares the `LegacyFlowScreen` union or the screen order.
 - Advancing from the final `sign-up` step marks onboarding complete; back never leaves the first step.
 - Incomplete persisted progress resumes, while completed users enter the tab shell on cold start.
 - No screen calls `capture()` or owns navigation.

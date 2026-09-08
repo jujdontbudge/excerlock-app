@@ -44,18 +44,32 @@ describe("AnalyticsKit.track", () => {
     const kit = createAnalyticsKit(sink);
 
     const untypedTrack = kit.track as (
-      event: "earn_claimed",
+      event: "rule_met",
       props: Record<string, string | number>,
     ) => void;
-    untypedTrack("earn_claimed", {
-      kind: "rate",
+    untypedTrack("rule_met", {
+      activity: "walking",
+      mode: "target",
+      day: 3,
+      window_bucket: "first_hour",
       signal: "steps",
       source: "healthkit",
-      payout: "rate_credit",
       minutes_earned: 12,
     });
 
-    expect(sink.captured()).toEqual([{ event: "earn_claimed", props: {} }]);
+    // The four the registry declares survive; the signal, the source and the
+    // minutes are workout detail and never cross the boundary.
+    expect(sink.captured()).toEqual([
+      {
+        event: "rule_met",
+        props: {
+          activity: "walking",
+          mode: "target",
+          day: 3,
+          window_bucket: "first_hour",
+        },
+      },
+    ]);
   });
 
   it("drops undeclared health, motion, and location values at the transport boundary", () => {
@@ -126,9 +140,9 @@ describe("AnalyticsKit.track", () => {
     const sink = createRecordingSink();
     const kit = createAnalyticsKit(sink);
 
-    kit.track("sick_day_override_used");
+    kit.track("data_export_requested");
 
-    expect(sink.captured()).toEqual([{ event: "sick_day_override_used", props: {} }]);
+    expect(sink.captured()).toEqual([{ event: "data_export_requested", props: {} }]);
   });
 
   it("can emit every client-owned event in the registry and nothing else", () => {
