@@ -147,10 +147,16 @@ export class NativeScreenTimeModule implements ScreenTimeModule {
     selection: ScreenTimeSelectionHandle,
     shields: ShieldIntent,
     plan: MonitorPlan,
+    startIntents: Readonly<Record<string, ShieldIntent>> = {},
   ): Promise<void> {
     await this.ready;
     this.assertIssuedSelection(selection);
-    const shield = await this.scheduler.reconcile(selection, shields, plan);
+    const shield = await this.scheduler.reconcile(
+      selection,
+      shields,
+      plan,
+      startIntents,
+    );
     this.updateShieldState({ selection, desiredShields: shields, ...shield });
     await this.persistState(selection, shields);
   }

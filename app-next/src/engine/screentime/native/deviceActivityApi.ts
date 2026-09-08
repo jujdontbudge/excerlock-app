@@ -8,12 +8,16 @@ export const deviceActivityApi: DeviceActivityApi = {
   requestAuthorization: DeviceActivity.requestAuthorization,
   getFamilyActivitySelectionId: DeviceActivity.getFamilyActivitySelectionId,
   setSharedValue: DeviceActivity.userDefaultsSet,
+  getSharedValue: DeviceActivity.userDefaultsGet,
   blockSelection: DeviceActivity.blockSelection,
   unblockSelection: DeviceActivity.unblockSelection,
   configureActions: DeviceActivity.configureActions,
   startMonitoring: (activityName, schedule, events) =>
     DeviceActivity.startMonitoring(activityName, schedule, [...events]),
   stopMonitoring: DeviceActivity.stopMonitoring,
+  getActivities: DeviceActivity.getActivities,
+  cleanUpAfterActivity: DeviceActivity.cleanUpAfterActivity,
+  getEvents: DeviceActivity.getEvents,
   isShieldActive: DeviceActivity.isShieldActive,
   onDeviceActivityMonitorEvent: DeviceActivity.onDeviceActivityMonitorEvent,
 };

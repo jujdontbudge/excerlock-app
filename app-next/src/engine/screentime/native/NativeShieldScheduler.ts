@@ -7,6 +7,7 @@ import type {
 import type { DeviceActivityApi } from "./deviceActivityTypes";
 import {
   localDateComponents,
+  UNLOCK_INCREMENT_MS,
   UNLOCK_LEASE_MONITOR,
 } from "./deviceActivitySchedule";
 import type { NativeScheduledMonitor } from "./nativeStore";
@@ -15,9 +16,6 @@ export type NativeShieldResult = Readonly<{
   effectiveShields: ShieldIntent;
   activeMonitorName: string | null;
 }>;
-
-const LOCK_WINDOW_SHIELD_CONTEXTS_KEY =
-  "excerlock.shield.lock-window-contexts.v1";
 
 /**
  * Owns every DeviceActivity schedule and ManagedSettings shield transition.
@@ -41,7 +39,6 @@ export class NativeShieldScheduler {
 
   public restore(monitors: readonly NativeScheduledMonitor[]): void {
     this.monitors = [...monitors];
-    this.writeLockWindowContexts();
   }
 
   /**
@@ -56,6 +53,7 @@ export class NativeShieldScheduler {
     selection: ScreenTimeSelectionHandle,
     shields: ShieldIntent,
     plan: MonitorPlan,
+    startIntents: Readonly<Record<string, ShieldIntent>> = {},
   ): Promise<NativeShieldResult> {
     const target = plan.monitors.map(
       (monitor): NativeScheduledMonitor => ({
@@ -79,7 +77,9 @@ export class NativeShieldScheduler {
     // Reconfigure first, so a monitor that fires between here and the last
     // startMonitoring call already carries this run's intent.
     target.forEach((monitor) => {
-      this.configureLockWindowStart(monitor, shields);
+      // A window the caller says is already earned open starts open; every other
+      // window starts on the run's intent. This is the whole met-today mechanism.
+      this.configureLockWindowStart(monitor, startIntents[monitor.name] ?? shields);
       this.deviceActivity.configureActions({
         activityName: monitor.name,
         callbackName: "intervalDidEnd",
@@ -95,7 +95,6 @@ export class NativeShieldScheduler {
     this.monitors = [...target].sort(
       (left, right) => left.startsAtMs - right.startsAtMs,
     );
-    this.writeLockWindowContexts();
 
     for (const monitor of this.monitors) {
       try {
@@ -142,7 +141,13 @@ export class NativeShieldScheduler {
       await this.deviceActivity.startMonitoring(
         UNLOCK_LEASE_MONITOR,
         {
-          intervalStart: localDateComponents(this.nowMs()),
+          // DeviceActivity refuses an interval shorter than one increment, and a
+          // renewal arrives mid-flight, so the start is backdated to keep the
+          // interval whole. This is the only place a backdated start survives:
+          // B32's 30-minute minimum window removed the need for it elsewhere.
+          intervalStart: localDateComponents(
+            Math.min(this.nowMs(), untilMs - UNLOCK_INCREMENT_MS),
+          ),
           intervalEnd: localDateComponents(untilMs),
           repeats: false,
         },
@@ -215,34 +220,10 @@ export class NativeShieldScheduler {
     });
   }
 
-  private writeLockWindowContexts(): void {
-    this.deviceActivity.setSharedValue(
-      LOCK_WINDOW_SHIELD_CONTEXTS_KEY,
-      Object.fromEntries(
-        this.monitors.map((monitor) => [
-          monitor.name,
-          {
-            cause: "lockWindow",
-            offerSubtitle: `Back at ${formatWallClockTime(monitor.endsAtMs)}.`,
-            routeHomeAvailable: false,
-          },
-        ]),
-      ),
-    );
-  }
-
   private activeMonitor(): NativeScheduledMonitor | undefined {
     const nowMs = this.nowMs();
     return this.monitors.find(
       ({ startsAtMs, endsAtMs }) => nowMs >= startsAtMs && nowMs < endsAtMs,
     );
   }
-}
-
-function formatWallClockTime(atMs: number): string {
-  const date = new Date(atMs);
-  const hour24 = date.getHours();
-  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${hour12}:${minutes} ${hour24 < 12 ? "AM" : "PM"}`;
 }

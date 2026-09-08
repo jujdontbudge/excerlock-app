@@ -42,6 +42,10 @@ function createDeviceActivityApi(
     }),
     configureActions: jest.fn(),
     setSharedValue: jest.fn(),
+    getSharedValue: jest.fn(() => undefined),
+    getActivities: jest.fn(() => []),
+    cleanUpAfterActivity: jest.fn(),
+    getEvents: jest.fn(() => []),
     startMonitoring: jest.fn(async () => undefined),
     stopMonitoring: jest.fn(),
     isShieldActive: jest.fn(() => shieldActive),
@@ -277,6 +281,41 @@ describe("NativeScreenTimeModule", () => {
     });
   });
 
+  it("starts a window on the caller's per-monitor intent, not the run's", async () => {
+    const deviceActivity = createDeviceActivityApi(2);
+    const nowMs = new Date(2026, 6, 31, 12, 0, 0).getTime();
+    const screenTime: ScreenTimeModule = new NativeScreenTimeModule({
+      deviceActivity,
+      picker: createPicker({ applicationCount: 1, categoryCount: 0 }),
+      nowMs: () => nowMs,
+    });
+    const selection = (await screenTime.pickSelection())!;
+    const plan = planOf(
+      nowMs,
+      [nowMs + 3_600_000, nowMs + 7_200_000],
+      [nowMs + 90_000_000, nowMs + 93_600_000],
+    );
+    const [earned, later] = plan.monitors;
+
+    // A goal already met holds tonight open; tomorrow's window still shields.
+    await screenTime.reconcile(selection, "up", plan, { [earned.name]: "down" });
+
+    expect(deviceActivity.configureActions).toHaveBeenCalledWith({
+      activityName: earned.name,
+      callbackName: "intervalDidStart",
+      actions: [
+        { type: "unblockSelection", familyActivitySelectionId: selection },
+      ],
+    });
+    expect(deviceActivity.configureActions).toHaveBeenCalledWith({
+      activityName: later.name,
+      callbackName: "intervalDidStart",
+      actions: [
+        { type: "blockSelection", familyActivitySelectionId: selection },
+      ],
+    });
+  });
+
   it("keeps shields down outside every monitored window whatever the intent", async () => {
     const deviceActivity = createDeviceActivityApi(2);
     const nowMs = new Date(2026, 6, 31, 12, 0, 0).getTime();
@@ -335,16 +374,6 @@ describe("NativeScreenTimeModule", () => {
         { type: "unblockSelection", familyActivitySelectionId: selection },
       ],
     });
-    expect(deviceActivity.setSharedValue).toHaveBeenCalledWith(
-      "excerlock.shield.lock-window-contexts.v1",
-      {
-        [monitorName]: {
-          cause: "lockWindow",
-          offerSubtitle: "Back at 2:00 PM.",
-          routeHomeAvailable: false,
-        },
-      },
-    );
     expect(deviceActivity.startMonitoring).toHaveBeenLastCalledWith(
       monitorName,
       {
