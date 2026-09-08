@@ -27,7 +27,7 @@ test('walking sheet follows the script, can minimize, stop, and finish', async (
   await userEvent.press(screen.getByRole('button', { name: 'Done' }));
   expect(ruleDaysStore.getState().data.walkingSession).toBeNull();
 });
-test('treadmill requires the fake propped framing state before starting', async () => {
+test('the handheld sheet does not gate Start on treadmill framing', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('home-walking-session');
   ruleDaysStore.getState().patch({ walkingSession: null });
@@ -41,9 +41,8 @@ test('treadmill requires the fake propped framing state before starting', async 
       <WalkingSheet rule={rule} onDismiss={jest.fn()} />
     </AppRuntimeProvider>,
   );
-  expect(screen.getByRole('button', { name: 'Start walking' })).toBeDisabled();
-  await act(() => runtime.dev.setPlacement('propped'));
   expect(screen.getByRole('button', { name: 'Start walking' })).toBeEnabled();
+  expect(screen.queryByText('Prop your phone on the console')).toBeNull();
 });
 
 test('shield preview renders distinct non-fallback copy for all three causes before a window', async () => {

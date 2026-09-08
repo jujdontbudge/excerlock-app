@@ -15,7 +15,7 @@ import { TreadmillScanController, TreadmillScanSnapshot } from './gait/Treadmill
 import { useCeremony } from './useCeremony';
 import { UnlockLayout, Detected } from './UnlockLayout';
 import { isTreadmillCeremonyRule, walkingDurationRule } from './walkingDurationRule';
-import { requestHomeWalkingSheet } from './walkingSheetRequest';
+import { requestHomeWalkingSheet } from '../home/homeSheetRequest';
 import { leaseClock } from '../home/statusContent';
 
 type TerminalFailure = 'expired' | 'bookingFailed' | 'invalidRule' | 'scanFailed' | null;

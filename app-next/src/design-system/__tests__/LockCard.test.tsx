@@ -16,9 +16,15 @@ test('lock body contains live progress and keeps condition actions usable', asyn
       />
     </BlockingScheduleCard>,
   );
-  expect(screen.getByTestId('lock-body')).toHaveStyle({ aspectRatio: 1 / 0.67 });
+  // Stacked condition rows grow the lock instead of being clipped by the fixed silhouette.
+  expect(screen.getByTestId('lock-body')).not.toHaveStyle({ aspectRatio: 1 / 0.67 });
+  expect(screen.getByText('Walk')).toHaveStyle({ color: '#FFFFFF' });
   expect(screen.getByText('3,200 / 5,000 steps')).toHaveStyle({ color: '#FFFFFF' });
   expect(screen.getByRole('progressbar')).toHaveAccessibilityValue({ min: 0, max: 100, now: 64 });
   await userEvent.press(screen.getByRole('button', { name: 'Start walking' }));
   expect(action).toHaveBeenCalledTimes(1);
+});
+test('an empty lock keeps the designed silhouette', async () => {
+  await render(<BlockingScheduleCard message="Block from 9 AM to 9 PM" start="9 AM" end="9 PM" icon="walking" lock />);
+  expect(screen.getByTestId('lock-body')).toHaveStyle({ aspectRatio: 1 / 0.67 });
 });

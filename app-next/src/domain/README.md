@@ -24,3 +24,7 @@ validated, in the same pass that widens a too-short window.
 
 Visible domain labels are composed from `src/content/`.
 
+`conditionState` is the single pure projection of a rule, its day row and the lock decision into the state
+rendered by condition lists. Sensor and paused-reason inputs are temporary additive fields until the Phase 2
+enforcement and rule-lifecycle tasks land.
+

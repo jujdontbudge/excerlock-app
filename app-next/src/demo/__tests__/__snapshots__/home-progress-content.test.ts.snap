@@ -2,7 +2,6 @@
 
 exports[`biker-time progress variant 1`] = `
 {
-  "action": undefined,
   "detail": "18 / 30 minutes · Open ExcerLock after your workout to unlock",
   "icon": "biking",
   "label": undefined,
@@ -13,7 +12,6 @@ exports[`biker-time progress variant 1`] = `
 
 exports[`gym-arrival-user progress variant 1`] = `
 {
-  "action": undefined,
   "detail": "Your next visit counts · Auto-detect off",
   "icon": "gym",
   "label": "I'm at the gym",
@@ -24,7 +22,6 @@ exports[`gym-arrival-user progress variant 1`] = `
 
 exports[`gym-time-user progress variant 1`] = `
 {
-  "action": undefined,
   "detail": "12 / 30 minutes",
   "icon": "gym",
   "label": "I'm at the gym",
@@ -35,7 +32,6 @@ exports[`gym-time-user progress variant 1`] = `
 
 exports[`home-locked-walking progress variant 1`] = `
 {
-  "action": undefined,
   "detail": "3,200 / 5,000 steps",
   "icon": "walking",
   "label": undefined,
@@ -57,7 +53,6 @@ exports[`home-walking-session progress variant 1`] = `
 
 exports[`runner-claim-on-open progress variant 1`] = `
 {
-  "action": undefined,
   "detail": "0 / 3 mi · Open ExcerLock after your workout to unlock",
   "icon": "running",
   "label": undefined,
@@ -68,7 +63,6 @@ exports[`runner-claim-on-open progress variant 1`] = `
 
 exports[`runner-distance progress variant 1`] = `
 {
-  "action": undefined,
   "detail": "1.2 / 2 mi · Open ExcerLock after your workout to unlock",
   "icon": "running",
   "label": undefined,

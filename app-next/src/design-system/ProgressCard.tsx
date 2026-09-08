@@ -39,15 +39,19 @@ export function ProgressCard({
           gap: t.space.lg,
         }}>
         {inLock ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: t.space.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
             <Icon name={icon} tint={t.text.onAccent} variant="utility" size={t.space.xxl} />
+            <Label variant="label" tone="onAccent" style={{ flex: 1 }}>
+              {title}
+            </Label>
             <View style={{ flexShrink: 1 }}>
               <ValueReveal value={detail}>
-                <Label variant="label" tone="onAccent">
+                <Label variant="support" tone="onAccent" style={{ textAlign: 'right' }}>
                   {detail}
                 </Label>
               </ValueReveal>
             </View>
+            {value >= 1 ? <Icon name="check" tint={t.text.onAccent} variant="utility" size={t.space.lg} /> : null}
           </View>
         ) : (
           <View

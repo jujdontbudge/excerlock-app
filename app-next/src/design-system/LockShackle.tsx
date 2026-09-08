@@ -4,8 +4,11 @@ import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { welcomeTokens as w } from './welcomeTokens';
 import { tokens as t } from './tokens';
 
-/** Fixed outer silhouette; thickness grows inward without changing the lock's proportions. */
-export function LockShackle({ bodyWidth }: { bodyWidth: number }) {
+/**
+ * Fixed outer silhouette; thickness grows inward without changing the lock's proportions.
+ * `open` lifts the right leg clear of the body, the shape an unlocked day draws.
+ */
+export function LockShackle({ bodyWidth, open = false }: { bodyWidth: number; open?: boolean }) {
   const gradientId = useId().replace(/:/g, '');
   const width = bodyWidth * 0.60;
   const height = bodyWidth * 0.40;
@@ -30,7 +33,7 @@ export function LockShackle({ bodyWidth }: { bodyWidth: number }) {
           </LinearGradient>
         </Defs>
         <Path
-          d={`M ${inset} ${height} V ${width / 2} A ${radius} ${radius} 0 0 1 ${width - inset} ${width / 2} V ${height}`}
+          d={`M ${inset} ${height} V ${width / 2} A ${radius} ${radius} 0 0 1 ${width - inset} ${width / 2} V ${open ? height * 0.55 : height}`}
           fill="none"
           stroke={`url(#${gradientId})`}
           strokeWidth={thickness}

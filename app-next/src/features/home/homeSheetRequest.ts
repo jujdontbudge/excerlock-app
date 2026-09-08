@@ -3,7 +3,10 @@ import { useSyncExternalStore } from 'react';
 let pendingRuleId: string | null = null;
 const listeners = new Set<() => void>();
 
-// merge: replace this bridge with P2-T19's Home sheet-opening state when that task lands.
+/**
+ * Home's sheet-opening state, hoisted out of the screen so a modal can hand a walk back to Home:
+ * the treadmill ceremony's handheld fallback starts the session and asks Home to open its walk sheet.
+ */
 export function requestHomeWalkingSheet(ruleId: string): void {
   pendingRuleId = ruleId;
   listeners.forEach((listener) => listener());

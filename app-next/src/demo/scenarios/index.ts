@@ -26,6 +26,10 @@ import { scenario22 } from './dynamic-type-xl';
 import { scenario23 } from './reduce-motion';
 import { scenario24 } from './runner-claim-on-open';
 import { treadmillDurationRule } from './treadmill-duration-rule';
+import { homeTwoConditionsLocked } from './home-two-conditions-locked';
+import { homeMetSecondWindow } from './home-met-second-window';
+import { walkingEitherTwoPills } from './walking-either-two-pills';
+import { walkingStateOutdoor } from './walking-state-outdoor';
 export const scenarios = [
   scenario0,
   scenario1,
@@ -54,5 +58,9 @@ export const scenarios = [
   scenario23,
   scenario24,
   treadmillDurationRule,
+  homeTwoConditionsLocked,
+  homeMetSecondWindow,
+  walkingEitherTwoPills,
+  walkingStateOutdoor,
   ...unlockScenarios,
 ];

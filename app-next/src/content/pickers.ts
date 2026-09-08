@@ -18,6 +18,7 @@ export const pickerCopy = {
   ],
   counts: (apps: number, categories: number) =>
     `${apps} ${apps === 1 ? 'app' : 'apps'} · ${categories} ${categories === 1 ? 'category' : 'categories'}`,
+  none: 'No apps chosen yet',
   noResults: 'No matches. Try a different search.',
   gymTitle: 'Choose your gym',
   gymSearch: 'Search for a gym',
@@ -29,3 +30,13 @@ export const pickerCopy = {
   map: 'Map preview of your selected gym',
   saved: 'Saved gyms',
 } as const;
+
+/**
+ * The one lock-list summary Home, Conditions and Settings all show. The counts themselves come
+ * from the Screen Time port's `describeSelection`; this only speaks them.
+ */
+export function lockedAppsSummary(apps: { appCount: number; categoryCount: number }): string {
+  return apps.appCount + apps.categoryCount === 0
+    ? pickerCopy.none
+    : pickerCopy.counts(apps.appCount, apps.categoryCount);
+}
