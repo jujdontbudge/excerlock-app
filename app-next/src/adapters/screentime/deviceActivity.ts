@@ -8,6 +8,7 @@
  * each is already exported by react-native-device-activity 0.6.1, the version `app/package.json`
  * pins, so the change there is one line per member (re-verify if P2-T03 upgrades the package):
  *   getSharedValue       -> DeviceActivity.userDefaultsGet
+ *   getActivities        -> DeviceActivity.getActivities
  *   getEvents            -> DeviceActivity.getEvents
  *   cleanUpAfterActivity -> DeviceActivity.cleanUpAfterActivity
  *   selectionMetadata    -> DeviceActivity.activitySelectionMetadata
@@ -83,6 +84,8 @@ export type DeviceActivityApi = Readonly<{
     events: readonly DeviceActivityEvent[],
   ): Promise<void>;
   stopMonitoring(activityNames?: string[]): void;
+  /** The activity names the OS is monitoring right now. */
+  getActivities(): readonly string[];
   /** Drops an activity's recorded events so a finished day stops being counted. */
   cleanUpAfterActivity(activityName: string): void;
   getEvents(onlyEventsForActivityWithName?: string): readonly DeviceActivityEventRecord[];
