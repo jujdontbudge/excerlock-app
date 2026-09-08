@@ -2,7 +2,8 @@ import { addDays, dayKey, localInstant } from '../../domain/calendar';
 import { ClockPort } from '../../ports/ClockPort';
 import { HealthWorkoutEngine, WorkoutRecord } from '../engine/contracts';
 import { recordHealth } from '../permissions';
-import { HealthPort, Workout } from '../pending/types';
+import { HealthPort } from '../../ports/HealthPort';
+import { Workout } from '../../ports/models';
 
 export type HealthAdapterDependencies = {
   clock: ClockPort;

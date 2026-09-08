@@ -1,6 +1,6 @@
 import { PlaceSearch } from '../ports/PlaceSearch';
 import { ClockPort } from '../ports/ClockPort';
-import { GymVisit } from './pending/types';
+import { GymVisit } from '../domain/types';
 import { GymAdapter, createGymAdapter } from './gym/GymAdapter';
 import { HealthAdapter, createHealthAdapter } from './health/HealthAdapter';
 import { requireKingstinctWorkoutEngine } from './health/kingstinctWorkouts';

@@ -1,11 +1,10 @@
 import { FakeClock } from '../../../demo/clock';
 import { NOW, makeRule } from '../../../demo/scenarios/base';
-import { Rule } from '../../../domain/types';
+import { Rule, WalkingSession } from '../../../domain/types';
 import { ruleDaysStore } from '../../../state/ruleDaysStore';
 import { rulesStore } from '../../../state/rulesStore';
 import { resetStores } from '../../../state/stores';
 import { keepAliveStub, motionStub, placementStub, verifierStub } from '../../__tests__/stubs';
-import { WalkingSession } from '../../pending/types';
 import { createWalkingAdapter } from '../WalkingAdapter';
 
 const stateRule: Rule = {
@@ -66,6 +65,22 @@ function harness(rule: Rule = stateRule) {
 }
 
 describe('WalkingAdapter', () => {
+  test('the caller\'s stop reason is the one recorded', async () => {
+    const h = harness();
+    await h.adapter.start(h.rule);
+    // The root guard stops a session for reasons the adapter cannot see. Recording every one of
+    // them as a plain user stop would lose why the walk ended.
+    h.adapter.stop('ruleChanged');
+    expect(h.session()?.endReason).toBe('ruleChanged');
+  });
+
+  test('a stop with no reason is a user stop', async () => {
+    const h = harness();
+    await h.adapter.start(h.rule);
+    h.adapter.stop();
+    expect(h.session()?.endReason).toBe('stopped');
+  });
+
   test('a rule that is not an enabled walking state rule is refused', async () => {
     const h = harness(makeRule('steps-rule'));
     await expect(h.adapter.start(h.rule)).rejects.toMatchObject({ code: 'invalidRule' });

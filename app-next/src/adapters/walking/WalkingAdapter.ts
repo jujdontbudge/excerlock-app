@@ -2,7 +2,7 @@ import { sessionCopy } from '../../content/sessions';
 import { addDays, dayKey, localInstant } from '../../domain/calendar';
 import { applyProgress } from '../../domain/progress';
 import { currentInstances, windowInstances } from '../../domain/schedule';
-import { Rule } from '../../domain/types';
+import { Rule, WalkingSession, WalkingSessionEndReason } from '../../domain/types';
 import { ClockPort } from '../../ports/ClockPort';
 import { Unsubscribe } from '../../ports/models';
 import { ruleDaysStore } from '../../state/ruleDaysStore';
@@ -17,14 +17,9 @@ import {
   WalkVerdict,
   WalkVerifierLike,
 } from '../engine/contracts';
-import { WALK_LEASE_MS, planWalkLease } from '../pending/lease';
-import { SessionEffect, WalkingSessionEvent, stepWalkingSession } from '../pending/walkingSession';
-import {
-  WalkingPort,
-  WalkingSession,
-  WalkingSessionEndReason,
-  WalkingStartError,
-} from '../pending/types';
+import { WALK_LEASE_MS, planWalkLease } from '../../domain/sessions/lease';
+import { SessionEffect, WalkingSessionEvent, stepWalkingSession } from '../../domain/sessions/walkingSession';
+import { WalkingPort, WalkingStartError } from '../../ports/WalkingPort';
 import {
   PlacementEffect,
   PlacementState,
@@ -355,7 +350,9 @@ export function createWalkingAdapter({
       publish();
       return session;
     },
-    stop: () => stopWith('stopped'),
+    // The caller's reason wins: the root guard tears a session down for reasons the adapter cannot
+    // see, and recording it as a plain user stop would lose why the walk actually ended.
+    stop: (reason) => stopWith(reason ?? 'stopped'),
     tick: tickNow,
     completeProppedScan: () => {
       if (!current || current.phase === 'ended') return false;

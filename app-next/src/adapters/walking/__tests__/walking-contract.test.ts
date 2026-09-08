@@ -1,11 +1,10 @@
 import { FakeClock } from '../../../demo/clock';
 import { NOW, makeRule } from '../../../demo/scenarios/base';
-import { Rule } from '../../../domain/types';
+import { Rule, WalkingSession } from '../../../domain/types';
 import { ruleDaysStore } from '../../../state/ruleDaysStore';
 import { rulesStore } from '../../../state/rulesStore';
 import { resetStores } from '../../../state/stores';
-import { walkingContract } from '../../pending/contracts/walkingContract';
-import { WalkingSession } from '../../pending/types';
+import { walkingContract } from '../../../ports/__tests__/walkingContract';
 import { keepAliveStub, motionStub, placementStub, verifierStub } from '../../__tests__/stubs';
 import { createWalkingAdapter } from '../WalkingAdapter';
 

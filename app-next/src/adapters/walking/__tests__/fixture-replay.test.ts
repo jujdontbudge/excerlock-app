@@ -1,14 +1,13 @@
 import { FakeClock } from '../../../demo/clock';
 import { NOW, makeRule } from '../../../demo/scenarios/base';
 import { WalkVerifier } from '../../../engine/signals/motion/WalkVerifier';
-import { Rule } from '../../../domain/types';
+import { Rule, WalkingSession } from '../../../domain/types';
 import { ruleDaysStore } from '../../../state/ruleDaysStore';
 import { rulesStore } from '../../../state/rulesStore';
 import { resetStores } from '../../../state/stores';
 import { keepAliveStub } from '../../__tests__/stubs';
 import { replayMotion } from '../../__tests__/fixturePlayback';
 import type { MotionFixtureName } from '../../../engine/signals/motion/fixtures';
-import { WalkingSession } from '../../pending/types';
 import { createWalkingAdapter } from '../WalkingAdapter';
 
 /**

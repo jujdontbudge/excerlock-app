@@ -6,7 +6,7 @@ import { settingsStore } from '../../../state/settingsStore';
 import { resetStores } from '../../../state/stores';
 import { replayLocation } from '../../__tests__/fixturePlayback';
 import type { LocationFixtureName } from '../../../engine/signals/location/fixtures';
-import { gymDwellMinutes } from '../../pending/gymDwell';
+import { gymDwellMinutes } from '../../../domain/gymDwell';
 import { createGymAdapter } from '../GymAdapter';
 import { memoryVisitLog } from '../visitLog';
 import { searchStub } from './searchStub';

@@ -1,5 +1,5 @@
 import { localInstant } from '../../domain/calendar';
-import { DayKey } from '../../domain/types';
+import { DayKey, GymVisit } from '../../domain/types';
 import { distanceMetres } from '../../features/gym-picker/geometry';
 import { ClockPort } from '../../ports/ClockPort';
 import { Coordinates, PlaceSearch } from '../../ports/PlaceSearch';
@@ -7,9 +7,9 @@ import { SavedPlace, Unsubscribe } from '../../ports/models';
 import { settingsStore } from '../../state/settingsStore';
 import { GeofenceRegion, GymLocationEngine, RegionTransition } from '../engine/contracts';
 import { recordLocation } from '../permissions';
-import { VISIT_CONFIRM_MS } from '../pending/gymDwell';
-import { GymPort, GymVisit } from '../pending/types';
-import { VisitLog, memoryVisitLog } from './visitLog';
+import { VISIT_CONFIRM_MS } from '../../domain/gymDwell';
+import { GymPort } from '../../ports/GymPort';
+import { VisitLog, visitLogFromStore } from './visitLog';
 
 /** iOS monitors 20 regions per app; the product caps saved gyms far below that. */
 export const MAX_SAVED_GYMS = 5;
@@ -57,7 +57,7 @@ export function createGymAdapter({
   clock,
   engine,
   search,
-  visitLog = memoryVisitLog(),
+  visitLog = visitLogFromStore(),
   backgroundVisits,
   onError = () => undefined,
 }: GymAdapterDependencies): GymAdapter {

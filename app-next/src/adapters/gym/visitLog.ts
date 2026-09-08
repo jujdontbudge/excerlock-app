@@ -1,5 +1,6 @@
 import { Unsubscribe } from '../../ports/models';
-import { GymVisit } from '../pending/types';
+import { GymVisit } from '../../domain/types';
+import { gymVisitsStore } from '../../state/gymVisitsStore';
 
 /**
  * Where visits live. The adapter never accumulates dwell: it records the instants a region was
@@ -12,17 +13,16 @@ export interface VisitLog {
 }
 
 /**
- * merge: P2-T15 persists visits in `state/gymVisitsStore` (`excerlock-next.gymVisits.v1`). When it
- * lands, replace this with:
- *
- *   export const visitLogFromStore = (): VisitLog => ({
- *     read: () => gymVisitsStore.getState().data.visits,
- *     write: (visits) => gymVisitsStore.getState().patch({ visits }),
- *     subscribe: (cb) => gymVisitsStore.subscribe((state) => cb(state.data.visits)),
- *   });
- *
- * The in-memory log below keeps the adapter testable and is the default until then.
+ * The persisted log, and the one production uses. Visits survive a relaunch because the locker-room
+ * hour is credited from instants recorded before the app was killed (decision B31).
  */
+export const visitLogFromStore = (): VisitLog => ({
+  read: () => gymVisitsStore.getState().data.visits,
+  write: (visits) => gymVisitsStore.getState().patch({ visits }),
+  subscribe: (callback) => gymVisitsStore.subscribe((state) => callback(state.data.visits)),
+});
+
+/** The in-memory log a test drives directly; it persists nothing. */
 export function memoryVisitLog(initial: GymVisit[] = []): VisitLog {
   let visits = initial;
   const listeners = new Set<(visits: GymVisit[]) => void>();

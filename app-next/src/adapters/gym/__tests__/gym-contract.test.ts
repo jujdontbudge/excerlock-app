@@ -4,7 +4,7 @@ import { NOW } from '../../../demo/scenarios/base';
 import { settingsStore } from '../../../state/settingsStore';
 import { resetStores } from '../../../state/stores';
 import { locationStub } from '../../__tests__/stubs';
-import { gymContract } from '../../pending/contracts/gymContract';
+import { gymContract } from '../../../ports/__tests__/gymContract';
 import { createGymAdapter } from '../GymAdapter';
 import { memoryVisitLog } from '../visitLog';
 import { searchStub } from './searchStub';

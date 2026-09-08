@@ -2,7 +2,7 @@ import { FakeClock } from '../../../demo/clock';
 import { NOW } from '../../../demo/scenarios/base';
 import { resetStores } from '../../../state/stores';
 import { healthStub } from '../../__tests__/stubs';
-import { healthContract } from '../../pending/contracts/healthContract';
+import { healthContract } from '../../../ports/__tests__/healthContract';
 import { createHealthAdapter } from '../HealthAdapter';
 
 healthContract('native', async () => {

@@ -33,8 +33,8 @@ engine, so the composition root builds them once and holds them:
 const { steps, walking, gym, health } = createNativeAdapters({ clock, search: nativePlaceSearch });
 ```
 
-The individual factories stay exported for a root that wants to substitute one. `gym` still needs
-`visitLog: visitLogFromStore()` once P2-T15 lands; see `pending/README.md`.
+The individual factories stay exported for a root that wants to substitute one. The gym adapter
+defaults to the persisted visit log, so only a test passes `memoryVisitLog()`.
 
 Calling `createNativeAdapters` from a route promotes `createExcerlockMotionModuleClient`,
 `createPhonePlacementModuleClient` and `getLocationProvider` out of the pending list in
@@ -63,7 +63,6 @@ Two rules came out of writing them, and neither was visible against a stubbed ve
 
 ## Depends on
 
-- **P2-T15** for the session machine, the visit type and the contract suites. See `pending/README.md`.
 - **P2-T03's `app.json`** for `NSMotionUsageDescription`,
   `NSLocationAlwaysAndWhenInUseUsageDescription`, the HealthKit share and background-delivery
   entitlements, and `UIBackgroundModes: fetch, location`. Without them every authorization here
@@ -74,5 +73,5 @@ Two rules came out of writing them, and neither was visible against a stubbed ve
 
 ## Merge notes
 
-`pending/` is temporary and `pending/__tests__/landed.test.ts` fails the moment P2-T15's real files
-appear. See its README.
+None left. P2-T03 and P2-T15 are both merged: the engine types come from `src/engine/signals`, and
+the session machine, visit type and contract suites come from `domain/` and `ports/`.

@@ -3,11 +3,10 @@ import { NOW, makeRule } from '../../../demo/scenarios/base';
 import { PhonePlacementClassifier } from '../../../engine/signals/placement/PhonePlacementClassifier';
 import { FixturePhonePlacementProvider } from '../../../engine/signals/placement/FixturePhonePlacementProvider';
 import recordings from '../../../engine/signals/placement/__tests__/fixtures/treadmillRecordings.json';
-import { Rule } from '../../../domain/types';
+import { Rule, WalkingSession } from '../../../domain/types';
 import { rulesStore } from '../../../state/rulesStore';
 import { resetStores } from '../../../state/stores';
 import { keepAliveStub, motionStub, verifierStub } from '../../__tests__/stubs';
-import { WalkingSession } from '../../pending/types';
 import { createWalkingAdapter } from '../WalkingAdapter';
 
 /**
