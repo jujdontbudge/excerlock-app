@@ -172,13 +172,11 @@ function durationRule(): Rule {
     enabled: true,
     createdAt: '2026-08-01T12:00:00.000Z',
     updatedAt: '2026-09-07T15:00:00.000Z',
-  } as unknown as Rule;
+  };
 }
 
-// merge: once P2-T16 adds the walking/minutes RuleMode, validateRule accepts this rule and
-// this becomes rulesStore.getState().patch({ rules: [rule] }).
 function installDurationRule(rule: Rule) {
-  rulesStore.setState((state) => ({ data: { ...state.data, rules: [rule] } }));
+  rulesStore.getState().patch({ rules: [rule] });
 }
 
 function installDurationSession(runtime: Runtime) {

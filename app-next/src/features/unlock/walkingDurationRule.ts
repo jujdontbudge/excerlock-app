@@ -1,24 +1,19 @@
-import type { Rule } from '../../domain/types';
+import type { Rule, RuleMode } from '../../domain/types';
 
-export type WalkingDurationRule = Omit<Rule, 'mode'> & {
-  mode: {
-    kind: 'target';
-    activity: 'walking';
-    metric: 'minutes';
-    goal: number;
-    place: 'outside' | 'treadmill' | 'either';
-  };
-};
+export type WalkingDurationMode = Extract<RuleMode, { activity: 'walking'; metric: 'minutes' }>;
+export type WalkingDurationRule = Omit<Rule, 'mode'> & { mode: WalkingDurationMode };
 
-// merge: replace this local shape with P2-T16's walking/minutes RuleMode variant.
+function isWalkingDurationRule(rule: Rule): rule is WalkingDurationRule {
+  const mode = rule.mode;
+  return mode.kind === 'target' && mode.activity === 'walking' && mode.metric === 'minutes';
+}
+
+/**
+ * The treadmill ceremony books minutes, so it only accepts a walking rule with a minutes goal.
+ * The rule itself is returned, never a copy: the screen keeps it in render dependencies.
+ */
 export function walkingDurationRule(rule: Rule | undefined): WalkingDurationRule | null {
-  if (!rule) return null;
-  const candidate = rule as unknown as WalkingDurationRule;
-  return candidate.mode.kind === 'target' &&
-    candidate.mode.activity === 'walking' &&
-    candidate.mode.metric === 'minutes'
-    ? candidate
-    : null;
+  return rule && isWalkingDurationRule(rule) ? rule : null;
 }
 
 export function isTreadmillCeremonyRule(rule: Rule | undefined): rule is Rule {
