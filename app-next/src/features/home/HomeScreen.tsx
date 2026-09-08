@@ -1,8 +1,9 @@
 import { HomeSheets } from '../sessions/HomeSheets';
 import { BlockingScheduleCard } from '../../design-system/BlockingScheduleCard';
 import { blockingSchedule } from './blockingSchedule';
+import { dayKey, dayMinute } from '../../domain/calendar';
 import { ruleName } from '../../domain/ruleName';
-import { Icon } from '../../icons/Icon';
+import { conditionState, conditionStatus } from '../../domain/conditionState';
 import { useDemoProgress } from './useDemoProgress';
 import { useEffect, useState } from 'react';
 import { Linking, View } from 'react-native';
@@ -28,14 +29,20 @@ import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
 import { enforcementStore as useEnforcementStore } from '../../state/enforcementStore';
 import { statusContent } from './statusContent';
-import { progressContent } from './progressContent';
+import { progressContent, sensorFor } from './progressContent';
+import { useLastClaimAt } from './claimState';
 import { useUnlockMoment } from './useUnlockMoment';
 import { homeCopy as c } from '../../content/home';
 import { settingsCopy } from '../../content/settings';
+import { lockedAppsSummary } from '../../content/pickers';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
-import { unlockKind } from '../unlock/entry';
-import { UnlockEntry } from '../unlock/UnlockEntry';
+import { Rule } from '../../domain/types';
+import { unlockEntries, UnlockEntryKind } from '../unlock/entry';
+import { ConditionRow } from './ConditionRow';
+import { ProgressModel } from './progressContent';
+import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
+import { entitlementAccess } from '../../domain/entitlementAccess';
 import { hydrationReport as useHydrationReport } from '../../state/hydrationReport';
 import { common } from '../../content/common';
 export function HomeScreen() {
@@ -55,15 +62,20 @@ export function HomeScreen() {
     permissions = usePermissionsStore((s) => s.data),
     auto = useSettingsStore((s) => s.data.gymAutoDetect),
     session = useRuleDaysStore((s) => s.data.walkingSession),
-    enforcement = useEnforcementStore((s) => s.enforcementStatus);
+    enforcement = useEnforcementStore((s) => s.enforcementStatus),
+    // A lapse keeps the app mounted and owes a modal paywall, which is Home's own status (B21).
+    lapsed = entitlementAccess(useEntitlementStore((s) => s.data.entitlement.status)).paywall === 'modal';
+  const timezone = runtime.clock.timezone();
   const status = statusContent({
       decision,
       rules,
       apps: lockedApps,
       permissions,
       now,
-      timezone: runtime.clock.timezone(),
+      timezone,
       enforcement,
+      lapsed,
+      lastClaimAt: useLastClaimAt(),
     }),
     glyph = useUnlockMoment(status.state);
   const [sheet, setSheet] = useState<{ type: 'walk' | 'checkin'; ruleId: string } | null>(null);
@@ -79,6 +91,7 @@ export function HomeScreen() {
     if (status.action === 'add') add();
     if (status.action === 'conditions') router.navigate('/conditions');
     if (status.action === 'stop') runtime.walking.stop();
+    if (status.action === 'plans') router.push('/paywall');
     if (status.action === 'retry') useEnforcementStore.getState().retry();
   };
   const actionLabel = status.action
@@ -90,6 +103,7 @@ export function HomeScreen() {
           add: c.add,
           conditions: c.conditions,
           stop: c.stopWalk,
+          plans: c.seePlans,
           retry: c.tryAgain,
         }[status.action]
     : undefined;
@@ -107,37 +121,66 @@ export function HomeScreen() {
             ? decision.sessionRuleId
             : undefined;
   const scheduledRule = rules.find((rule) => rule.enabled && rule.id === scheduledRuleId);
+  const today = [...progress].sort((a, b) => a.instance.start.localeCompare(b.instance.start));
   const scheduleCard =
-    scheduledRule && !['permissionNeeded', 'noAppsSelected', 'enforcementFailed'].includes(status.state)
-      ? blockingSchedule(scheduledRule)
+    scheduledRule && !['permissionNeeded', 'noAppsSelected', 'enforcementFailed', 'lapsed'].includes(status.state)
+      ? blockingSchedule(
+          today.length ? today.map(({ rule }) => rule) : [scheduledRule],
+          scheduledRule,
+          dayKey(now, timezone),
+          timezone,
+        )
       : undefined;
-  const conditionCards = progress.map(({ rule, row }) => {
-    const model = progressContent(rule, row, permissions, session, now, auto);
-    return (
+  const metBy =
+    decision.state === 'unlockedMet'
+      ? { byRuleId: decision.byRuleId, byRuleName: ruleName(rules.find((r) => r.id === decision.byRuleId)!) }
+      : undefined;
+  const openEntry = (rule: Rule, kind: UnlockEntryKind) =>
+    kind === 'handheld'
+      ? setSheet({ type: 'walk', ruleId: rule.id })
+      : router.push({ pathname: `/unlock/${kind}`, params: { ruleId: rule.id } });
+  const takeAction = (rule: Rule, model: ProgressModel) => {
+    if (model.action === 'fix') return router.push(`/settings/permission/${sensorFor(rule)}`);
+    const kind = unlockEntries(rule)[0];
+    if (kind) return openEntry(rule, kind);
+    if (model.action) setSheet({ type: model.action, ruleId: rule.id });
+  };
+  // merge: P2-T20 persists pausedReason, so this list becomes a selector over paused rules.
+  const orphaned = scheduleCard ? rules.filter((rule) => !rule.enabled && rule.pausedReason === 'noGym') : [];
+  const pausedCards = orphaned.map((rule) => (
+    <ConditionRow
+      key={rule.id}
+      model={{ title: ruleName(rule), icon: rule.activity, value: 0, detail: '' }}
+      status={conditionStatus('pausedNoGym')}
+      onAction={() => router.push('/settings/gyms')}
+    />
+  ));
+  const conditionCards = today.map(({ rule, row }) => {
+    const model = progressContent(rule, row, permissions, session, now, auto, metBy);
+    const entries =
+      decision.state === 'locked' && decision.activeRuleIds.includes(rule.id) ? unlockEntries(rule) : [];
+    return scheduleCard ? (
+      <ConditionRow
+        key={rule.id}
+        model={model}
+        status={conditionStatus(conditionState(rule, row, decision, now, timezone))}
+        entries={entries}
+        onEntry={(kind) => openEntry(rule, kind)}
+        onAction={() => takeAction(rule, model)}
+      />
+    ) : (
       <ProgressCard
         key={rule.id}
-        appearance={scheduleCard ? 'lock' : 'card'}
+        appearance="card"
         title={model.title}
         icon={model.icon}
         value={model.value}
         detail={model.detail}
-        action={'label' in model ? model.label : undefined}
-        onAction={() => {
-          const kind = unlockKind(rule);
-          if (kind) router.push({ pathname: `/unlock/${kind}`, params: { ruleId: rule.id } });
-          else if ('action' in model && model.action) setSheet({ type: model.action, ruleId: rule.id });
-        }}
+        action={model.label}
+        onAction={() => takeAction(rule, model)}
       />
     );
   });
-  const entryRules =
-    decision.state === 'locked'
-      ? (['gym', 'treadmill'] as const)
-          .map((kind) =>
-            progress.find(({ rule }) => decision.activeRuleIds.includes(rule.id) && unlockKind(rule) === kind),
-          )
-          .filter((entry) => entry !== undefined)
-      : [];
   return (
     <ScreenShell
       orangeBackground
@@ -161,7 +204,7 @@ export function HomeScreen() {
               weekday: 'long',
               month: 'long',
               day: 'numeric',
-              timeZone: runtime.clock.timezone(),
+              timeZone: timezone,
             }).format(new Date(now))}
           />
         </View>
@@ -190,28 +233,14 @@ export function HomeScreen() {
           <BlockingScheduleCard
             {...scheduleCard}
             lock
-            action={
-              entryRules.length ? (
-                <View style={{ paddingHorizontal: t.space.xl, paddingBottom: t.space.sm, gap: t.space.xs }}>
-                  {entryRules.map(({ rule, row }) => (
-                    <UnlockEntry
-                      key={rule.id}
-                      kind={unlockKind(rule)!}
-                      label={unlockKind(rule) === 'gym' ? c.gymEntry : c.treadmillEntry}
-                      detail={
-                        entryRules.length === 1
-                          ? progressContent(rule, row, permissions, session, now, auto).detail
-                          : undefined
-                      }
-                      onPress={() =>
-                        router.push({ pathname: `/unlock/${unlockKind(rule)!}`, params: { ruleId: rule.id } })
-                      }
-                    />
-                  ))}
-                </View>
-              ) : undefined
-            }>
+            nowMinute={dayMinute(now, timezone)}
+            glyph={status.icon}
+            open={status.unlocked}
+            statusTitle={status.title}
+            statusSubtitle={status.subtitle}
+            caption={status.nextChange}>
             {conditionCards}
+            {pausedCards}
           </BlockingScheduleCard>
         </Reveal>
       ) : (
@@ -227,58 +256,9 @@ export function HomeScreen() {
           }
         />
       )}
-      {scheduleCard && progress.length ? (
-        <View style={{ gap: t.space.md }}>
-          <View
-            style={{
-              backgroundColor: t.surface.card,
-              borderRadius: t.radius.sheet,
-              marginHorizontal: -t.space.sm,
-              paddingHorizontal: t.space.xl,
-              paddingTop: t.space.lg,
-              paddingBottom: 0,
-              boxShadow: '0px 6px 20px rgba(100, 55, 25, 0.10)',
-            }}>
-            <Label variant="section" accessibilityRole="header" style={{ marginBottom: t.space.sm }}>
-              {c.today}
-            </Label>
-            {progress.map(({ rule }) => (
-              <View
-                key={rule.id}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: t.space.lg,
-                  minHeight: t.layout.button,
-                  paddingVertical: t.space.sm,
-                  borderBottomWidth: t.stroke.hairline,
-                  borderBottomColor: t.border.default,
-                }}>
-                <Icon name={rule.activity} variant="utility" size={t.space.xxl} tint={t.brand.primary} />
-                <Label variant="label" style={{ flex: 1 }}>
-                  {ruleName(rule)}
-                </Label>
-              </View>
-            ))}
-            <SecondaryButton variant="tertiary" label={c.editAdd} onPress={() => router.navigate('/conditions')} />
-          </View>
-        </View>
-      ) : null}
-      {scheduleCard && status.unlocked ? (
-        <Label tone="secondary">
-          {status.title}. {status.subtitle}
-        </Label>
-      ) : null}
       {actionLabel ? (
         <Reveal key={status.action}>
           <SecondaryButton label={actionLabel} onPress={action} />
-        </Reveal>
-      ) : null}
-      {!scheduleCard && progress.length ? (
-        <Reveal>
-          <Label variant="section" accessibilityRole="header">
-            {c.today}
-          </Label>
         </Reveal>
       ) : null}
       {!scheduleCard ? conditionCards : null}
@@ -289,32 +269,18 @@ export function HomeScreen() {
             borderRadius: t.radius.pill,
             boxShadow: '0px 6px 20px rgba(100, 55, 25, 0.10)',
           }}>
-          <SettingsRow title={c.lockedApps} icon="lock" iconTint={t.brand.primary} onPress={chooseApps} />
+          <SettingsRow
+            title={c.lockedApps}
+            value={lockedAppsSummary(lockedApps)}
+            icon="lock"
+            iconTint={t.brand.primary}
+            onPress={chooseApps}
+          />
         </View>
       </Reveal>
       <View style={{ gap: t.space.lg }}>
-        <View
-          style={{
-            backgroundColor: t.surface.card,
-            borderRadius: t.radius.pill,
-            boxShadow: '0px 6px 20px rgba(100, 55, 25, 0.10)',
-          }}>
-          <SettingsRow
-            title={c.analytics}
-            icon="chart"
-            iconTint={t.brand.primary}
-            onPress={() => router.navigate('/analytics')}
-          />
-        </View>
-        <View
-          style={{
-            backgroundColor: t.surface.card,
-            borderRadius: t.radius.pill,
-            boxShadow: '0px 6px 20px rgba(100, 55, 25, 0.10)',
-          }}>
-          <SettingsRow title={c.history} icon="clock" iconTint={t.brand.primary} />
-        </View>
-        {!scheduleCard ? <SecondaryButton label={c.add} onPress={add} /> : null}
+        <SecondaryButton variant="tertiary" label={c.editAdd} onPress={() => router.navigate('/conditions')} />
+        <SecondaryButton label={c.add} onPress={add} />
       </View>
     </ScreenShell>
   );

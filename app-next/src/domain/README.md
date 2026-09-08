@@ -18,4 +18,6 @@ Calendar math uses the supplied IANA timezone. DST gaps shift forward by the gap
 
 For `unlockedMet`, `relockAt: null` means clear shields until a rule is enabled again, not forever. `afterWindow` means an instance belonging to today, or yesterday's overnight instance, ended today; `noRulesToday` means nothing was scheduled today. Both carry `nextLockAt`, and `null` means there is no enabled start in the search horizon.
 
+`conditionState` is the single pure projection of a rule, its day row and the lock decision into the state rendered by condition lists.
+
 Visible domain labels are composed from `src/content/`.

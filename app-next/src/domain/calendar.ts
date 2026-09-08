@@ -34,3 +34,14 @@ export function localInstant(day: DayKey, minute: number, timezone: string): str
   }
   return new Date(instant).toISOString();
 }
+/** Minutes after local midnight, the inverse of `localInstant` for a single instant. */
+export function dayMinute(instant: string, timezone: string): number {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(instant));
+  const value = (type: string) => Number(parts.find((part) => part.type === type)!.value);
+  return value('hour') * 60 + value('minute');
+}

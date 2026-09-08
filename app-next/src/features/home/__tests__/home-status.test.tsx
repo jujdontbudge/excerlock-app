@@ -32,7 +32,7 @@ async function home(scenario: string, prepare: (runtime: Runtime) => void = () =
   return { runtime, rendered };
 }
 
-test("Home says 'Blocking is not on' with a Try again action after a failed apply", async () => {
+test("Home says blocking couldn't be applied with a Try again action after a failed apply", async () => {
   const { runtime, rendered } = await home('home-locked-walking', (r) => r.dev.setOutcome('error'));
 
   await waitFor(() => expect(enforcementStore.getState().enforcementStatus?.applied).toBe(false));

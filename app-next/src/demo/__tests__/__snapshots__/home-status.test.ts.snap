@@ -23,11 +23,11 @@ exports[`home-locked-walking status content 1`] = `
 exports[`home-no-apps status content 1`] = `
 {
   "action": "apps",
-  "icon": "lock-open",
+  "icon": "shield",
   "state": "noAppsSelected",
-  "subtitle": "Choose the apps you want to block",
-  "title": "No blocking right now",
-  "unlocked": true,
+  "subtitle": "No apps are chosen, so there is nothing to block.",
+  "title": "Nothing is being blocked",
+  "unlocked": false,
 }
 `;
 
@@ -45,19 +45,20 @@ exports[`home-no-rules status content 1`] = `
 exports[`home-permission-needed status content 1`] = `
 {
   "action": "permission",
-  "icon": "lock-open",
+  "icon": "shield",
   "state": "permissionNeeded",
-  "subtitle": "Screen Time access needed",
-  "title": "No blocking right now",
-  "unlocked": true,
+  "subtitle": "Screen Time access is off, so ExcerLock cannot block anything.",
+  "title": "Nothing is being blocked",
+  "unlocked": false,
 }
 `;
 
 exports[`home-unlocked-met status content 1`] = `
 {
   "icon": "lock-open",
+  "nextChange": "Blocking resumes tomorrow at 9:00 AM",
   "state": "unlockedMet",
-  "subtitle": "Blocking resumes tomorrow at 9:00 AM",
+  "subtitle": "Unlocked by Walk 5,000 steps",
   "title": "Unlocked for the rest of today",
   "unlocked": true,
 }

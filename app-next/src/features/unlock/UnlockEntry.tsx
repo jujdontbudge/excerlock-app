@@ -3,13 +3,14 @@ import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { Icon } from '../../icons/Icon';
 import { feedback } from '../../motion/haptics';
+import { UnlockEntryKind } from './entry';
 export function UnlockEntry({
   kind,
   label,
   onPress,
   detail,
 }: {
-  kind: 'gym' | 'treadmill';
+  kind: UnlockEntryKind;
   label: string;
   onPress: () => void;
   detail?: string;
