@@ -19,7 +19,13 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
   opening apps until the goal is met.
 - GymPort: Phase 2 implements place search, saved locations, geofence presence and check-in.
 - HealthPort: Phase 2 reads authorized running/cycling workouts.
-- AuthPort: Phase 2 implements Supabase identity, OTP and deletion.
+- AuthPort: `src/auth` implements it on Supabase (identity only, D1). One user id runs from the
+  anonymous session at first launch through every sign-in: Apple and Google link a native id token
+  onto that user, email links an address to it, and only a provider account that already belongs to
+  somebody else switches the id. A sign-in is reported after the VPS `PUT /v1/user` succeeds, so the
+  screens never show an account the server has not seen, while the anonymous bootstrap publishes
+  first because earning and locking never wait on a network. `__tests__/authContract.ts` is the
+  suite the fake and the adapter both pass.
 - SubscriptionPort: Phase 2 implements Adapty entitlement, paywall and restore.
 - AnalyticsPort: Phase 2 emits sanitized PostHog events.
 - NotificationsPort: Phase 2 schedules local trial and lease reminders through `adapters/notifications` over

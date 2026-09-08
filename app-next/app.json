@@ -15,7 +15,8 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Use your location to find nearby gyms and choose your gym's arrival area.",
         "NSCameraUsageDescription": "Check that you are walking when your phone is propped on the treadmill. Frames are processed on this iPhone, never recorded or sent."
-      }
+      },
+      "usesAppleSignIn": true
     },
     "experiments": {
       "typedRoutes": true,
@@ -42,7 +43,9 @@
             "deploymentTarget": "17.4"
           }
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-apple-authentication"
     ],
     "extra": {
       "eas": {
