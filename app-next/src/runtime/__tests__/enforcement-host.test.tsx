@@ -73,6 +73,7 @@ test('returning to the foreground re-reads permissions, re-verifies the selectio
   expect(describeSelection).toHaveBeenCalled();
   expect(stepsSince).toHaveBeenCalled();
   stop();
+  runtime.dispose();
 });
 
 test('the host applies the lock exactly once per distinct decision, not once per tick', async () => {
@@ -93,6 +94,7 @@ test('the host applies the lock exactly once per distinct decision, not once per
   await Promise.resolve();
   expect(applyLock).toHaveBeenCalledTimes(2);
   stop();
+  runtime.dispose();
 });
 
 test('a registration failure leaves shields up and reports applied:false', async () => {
@@ -108,6 +110,7 @@ test('a registration failure leaves shields up and reports applied:false', async
     expect.arrayContaining(['shield_applied', 'monitor_registration_failed']),
   );
   stop();
+  runtime.dispose();
 });
 
 test('a lapse clears shields before anything else', async () => {
@@ -123,6 +126,7 @@ test('a lapse clears shields before anything else', async () => {
   expect(applyLock.mock.calls[1][1]).toMatchObject({ shields: 'clear', monitors: 'unregister' });
   expect(runtime.dev.snapshot().events.at(-2)?.event).toBe('shields_cleared');
   stop();
+  runtime.dispose();
 });
 
 test('a window end fires the session teardown at the root', async () => {
@@ -157,6 +161,7 @@ test('a window end fires the session teardown at the root', async () => {
   expect(walkingStop).toHaveBeenCalledTimes(1);
   expect(walkingStop).toHaveBeenCalledWith('windowEnded');
   stop();
+  runtime.dispose();
 });
 
 test('the next interval boundary re-evaluates enforcement without a polling tick', async () => {
@@ -171,4 +176,5 @@ test('the next interval boundary re-evaluates enforcement without a polling tick
   await waitFor(() => expect(applyLock).toHaveBeenCalledTimes(2));
   expect(applyLock.mock.calls[1][0].state).toBe('locked');
   stop();
+  runtime.dispose();
 });
