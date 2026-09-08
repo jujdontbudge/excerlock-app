@@ -11,9 +11,3 @@ export function unlockEntries(rule: Rule): UnlockEntryKind[] {
   if (mode.place === 'either') return ['treadmill', 'handheld'];
   return ['handheld'];
 }
-
-/** @deprecated Remove with Home's P2-T19 multi-entry migration. */
-export function unlockKind(rule: Rule): 'gym' | 'treadmill' | null {
-  const kind = unlockEntries(rule)[0];
-  return kind === 'handheld' || kind === undefined ? null : kind;
-}

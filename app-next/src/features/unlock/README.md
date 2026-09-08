@@ -1,6 +1,6 @@
 # Unlock ceremonies
 
-Home routes active gym and treadmill walking-state rules to the shared square lock ceremony. Step targets and outdoor walking keep their existing progress flow.
+`unlockEntries(rule)` is the one table Home reads for entry pills: a gym rule offers "I'm at the gym", a treadmill-place walking rule "I'm using a treadmill", a place-either rule both the treadmill pill and "I'm walking with my phone", and an outdoor rule only the handheld pill. Step targets, running and biking offer none. The gym and treadmill pills open the shared square lock ceremony; the handheld pill opens the walking sheet and starts a handheld session, so an outdoor walk never meets a camera.
 
 Home's **Test gym unlock** and **Test treadmill unlock** open `?preview=1`. Preview providers are isolated: gym previews finish in three seconds; treadmill previews replay recorded gait landmarks through the original detector. They never start a walking session, check in, or change exercise credit.
 
