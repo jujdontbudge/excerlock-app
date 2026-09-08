@@ -1,8 +1,8 @@
-import { progressContent } from '../progressContent';
-import { unlockCopy } from '../../../content/unlock';
-import { homeCopy } from '../../../content/home';
-import { scenarios } from '../../../demo/scenarios';
-import { Rule, WalkingSession } from '../../../domain/types';
+import { progressContent } from '../../features/home/progressContent';
+import { unlockCopy } from '../../content/unlock';
+import { homeCopy } from '../../content/home';
+import { scenarios } from '../scenarios';
+import { Rule, WalkingSession } from '../../domain/types';
 
 const scenario = (id: string) => scenarios.find((s) => s.id === id)!;
 const render = (rule: Rule, session: WalkingSession | null, now: string) =>

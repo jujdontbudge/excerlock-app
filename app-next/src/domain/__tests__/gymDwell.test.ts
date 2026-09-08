@@ -1,11 +1,10 @@
-import { GymVisit } from '../types';
+import { GymVisit, Rule } from '../types';
 import {
   arrivalFor,
   gymDwellMinutes,
   mergedGymVisitIntervals,
   shouldReplayArrival,
 } from '../gymDwell';
-import { Rule } from '../types';
 
 const visit = (overrides: Partial<GymVisit> = {}): GymVisit => ({
   id: 'visit-1',
