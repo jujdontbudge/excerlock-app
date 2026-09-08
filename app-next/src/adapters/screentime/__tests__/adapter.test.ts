@@ -370,3 +370,42 @@ test('a window that shields while the app is closed is reported when the app hea
   expect(seen).toEqual([{ applied: true, shields: 'up', monitors: expect.any(Number) }]);
   stop();
 });
+
+test('a selection this app never issued is empty even while the OS still holds it', async () => {
+  // The module rehydrates its selections from storage, so this is app storage lost with the OS
+  // selection surviving. `selectionMetadata` would still report the counts, but the module will
+  // not act on a handle it never issued, and showing apps as locked while every apply fails is
+  // worse than asking for them again.
+  const { native, adapter } = await screenTimeSubject({
+    withoutSelection: true,
+    osSelection: { applicationCount: 4, categoryCount: 2 },
+  });
+  expect(native.api.selectionMetadata({ activitySelectionId: NATIVE_LOCKED_SELECTION })).toMatchObject({
+    applicationCount: 4,
+  });
+
+  await expect(adapter.describeSelection()).resolves.toEqual({
+    handle: null,
+    appCount: 0,
+    categoryCount: 0,
+  });
+  await expect(adapter.applyLock(locked, shielding, planFor([evening]))).resolves.toMatchObject({
+    applied: false,
+    reason: 'noSelection',
+  });
+});
+
+test('a selection the OS has forgotten is empty, whatever this process remembers', async () => {
+  const { native, adapter } = await screenTimeSubject();
+  native.setSelection(null);
+
+  await expect(adapter.describeSelection()).resolves.toEqual({
+    handle: null,
+    appCount: 0,
+    categoryCount: 0,
+  });
+  await expect(adapter.applyLock(locked, shielding, planFor([evening]))).resolves.toMatchObject({
+    applied: false,
+    reason: 'noSelection',
+  });
+});

@@ -2,12 +2,30 @@ import type { DeviceActivityDateComponents } from "./deviceActivitySchedule";
 
 export type DeviceActivityAuthorizationStatus = 0 | 1 | 2;
 
-/** One callback the monitor extension recorded in the app group. */
-export type DeviceActivityEventRecord = Readonly<{
+/** Every callback the package can report, wider than the three we schedule. */
+export type DeviceActivityCallbackName =
+  | "intervalDidStart"
+  | "intervalDidEnd"
+  | "eventDidReachThreshold"
+  | "intervalWillStartWarning"
+  | "intervalWillEndWarning"
+  | "eventWillReachThresholdWarning";
+
+/** One callback the system has already delivered, as `getEvents` reports it. */
+export type DeviceActivityFiredEvent = Readonly<{
   activityName: string;
-  callbackName: string;
+  callbackName: DeviceActivityCallbackName;
   eventName?: string;
   lastCalledAt: Date;
+}>;
+
+/** Counts behind an opaque selection id, so a selection can be described
+ *  without ever naming an app. */
+export type DeviceActivitySelectionMetadata = Readonly<{
+  applicationCount: number;
+  categoryCount: number;
+  webDomainCount: number;
+  includeEntireCategory: boolean;
 }>;
 
 export type DeviceActivityEvent = Readonly<{
@@ -21,8 +39,17 @@ export type DeviceActivityApi = Readonly<{
   authorizationStatus(): DeviceActivityAuthorizationStatus;
   requestAuthorization(forMember: "individual" | "child"): Promise<void>;
   getFamilyActivitySelectionId(id: string): string | undefined;
+  /**
+   * The package declares `userDefaultsSet(key, value: any)`, and the shield transport writes
+   * strings and booleans through it as well as records: the extensions read the current cause
+   * with `string(forKey:)`. Narrowing this to a record would push those writes around this file,
+   * which is the one place allowed to call the package.
+   */
   setSharedValue(key: string, value: unknown): void;
   getSharedValue<T>(key: string): T | undefined;
+  selectionMetadata(selection: {
+    activitySelectionId: string;
+  }): DeviceActivitySelectionMetadata | undefined;
   blockSelection(selection: { activitySelectionId: string }): void;
   unblockSelection(selection: { activitySelectionId: string }): void;
   configureActions(input: {
@@ -47,11 +74,13 @@ export type DeviceActivityApi = Readonly<{
     events: readonly DeviceActivityEvent[],
   ): Promise<void>;
   stopMonitoring(activityNames?: string[]): void;
-  /** The activity names the OS is monitoring right now. */
+  /** Names of the monitors iOS currently holds, which is the only truth about
+   *  what survived a reboot or a crash. */
   getActivities(): readonly string[];
-  /** Drops an activity's recorded events, so a sealed day stops being counted twice. */
+  getEvents(
+    onlyForActivityNamed?: string,
+  ): readonly DeviceActivityFiredEvent[];
   cleanUpAfterActivity(activityName: string): void;
-  getEvents(onlyEventsForActivityWithName?: string): readonly DeviceActivityEventRecord[];
   isShieldActive(): boolean;
   onDeviceActivityMonitorEvent(
     listener: (event: { callbackName: string }) => void,

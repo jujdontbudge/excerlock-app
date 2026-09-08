@@ -18,19 +18,38 @@ export async function screenTimeSubject(
     authorization?: 0 | 1 | 2;
     /** Counts the system picker returns; `null` is a cancelled sheet. */
     pick?: Counts | null;
-    /** Skip seeding a chosen selection, as on a first launch. */
+    /** Skip seeding a chosen selection into the module, as on a first launch. */
     withoutSelection?: boolean;
+    /**
+     * What the OS itself still holds, independent of what this process picked. Defaults to a
+     * selection, and to none when nothing was ever picked. Set both to model a cold start: the
+     * user's selection survives in the OS, the module's memory of it does not.
+     */
+    osSelection?: Counts | null;
     copy?: ShieldCopySource;
   } = {},
 ) {
   const now = options.now ?? '2026-09-08T01:30:00.000Z';
   const timezone = options.timezone ?? 'America/New_York';
-  const native = deviceActivityDouble({ authorization: options.authorization ?? 2 });
+  const osSelection =
+    options.osSelection !== undefined ? options.osSelection : options.withoutSelection ? null : undefined;
+  const native = deviceActivityDouble({
+    authorization: options.authorization ?? 2,
+    ...(osSelection !== undefined ? { selection: osSelection } : {}),
+  });
   let picked: Counts | null = { applicationCount: 4, categoryCount: 2 };
   const selections: LockedApps[] = [];
   const module = new NativeScreenTimeModule({
     deviceActivity: native.api,
-    picker: { pick: async () => picked },
+    picker: {
+      // Completing the sheet is what puts the selection in the OS, so the double learns it too:
+      // otherwise a freshly picked selection would read back as none on the next launch.
+      pick: async () => {
+        // Cancelling leaves the stored selection alone; only a completed sheet replaces it.
+        if (picked !== null) native.setSelection(picked);
+        return picked;
+      },
+    },
     nowMs: () => Date.parse(now),
     storage: memoryStorage(),
   });

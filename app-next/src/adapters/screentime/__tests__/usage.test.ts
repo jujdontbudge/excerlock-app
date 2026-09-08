@@ -71,3 +71,24 @@ test('the sealed record survives as history for the days the app was closed', as
 
   expect(readUsage(native.api).days).toEqual({ '2026-09-07': 20, '2026-09-09': 0 });
 });
+
+test('a warning callback is not a threshold the user reached', () => {
+  // getEvents reports the will-reach warnings too, under the same event name as the threshold they
+  // precede. Counting one would credit minutes that have not been spent.
+  expect(
+    measuredMinutes([
+      {
+        activityName: usageMonitorName('2026-09-07'),
+        callbackName: 'eventDidReachThreshold',
+        eventName: usageEventName(15),
+        lastCalledAt: new Date('2026-09-07T14:00:00.000Z'),
+      },
+      {
+        activityName: usageMonitorName('2026-09-07'),
+        callbackName: 'eventWillReachThresholdWarning',
+        eventName: usageEventName(20),
+        lastCalledAt: new Date('2026-09-07T14:04:00.000Z'),
+      },
+    ]),
+  ).toBe(15);
+});

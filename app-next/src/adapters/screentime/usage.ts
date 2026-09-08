@@ -2,7 +2,7 @@ import { DayKey } from '../../domain/types';
 import { readUsage, writeUsageDay } from './appGroup';
 import {
   DeviceActivityApi,
-  DeviceActivityEventRecord,
+  DeviceActivityFiredEvent,
 } from '../../engine/screentime/native/deviceActivityTypes';
 import {
   USAGE_MONITOR_PREFIX,
@@ -17,9 +17,14 @@ import {
  * The highest cumulative threshold the day's monitor reached. The extension records each firing
  * in the app group; the app turns that record into minutes, because no action type can add up a
  * counter on the OS side.
+ *
+ * Only a threshold that was actually reached counts. `getEvents` reports warning callbacks too,
+ * and a will-reach warning carries the same event name as the threshold it precedes, so counting
+ * one would credit minutes the user has not spent.
  */
-export function measuredMinutes(events: readonly DeviceActivityEventRecord[]): number {
+export function measuredMinutes(events: readonly DeviceActivityFiredEvent[]): number {
   return events.reduce((highest, event) => {
+    if (event.callbackName !== 'eventDidReachThreshold') return highest;
     const minutes = event.eventName ? usageEventMinutes(event.eventName) : null;
     return minutes === null ? highest : Math.max(highest, minutes);
   }, 0);

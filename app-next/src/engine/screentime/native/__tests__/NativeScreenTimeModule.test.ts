@@ -28,6 +28,7 @@ function createDeviceActivityApi(
       DeviceActivityApi["authorizationStatus"]
     >;
   let shieldActive = false;
+  const sharedValues = new Map<string, unknown>();
 
   return {
     authorizationStatus: () => authorizationStatus,
@@ -41,13 +42,21 @@ function createDeviceActivityApi(
       shieldActive = false;
     }),
     configureActions: jest.fn(),
-    setSharedValue: jest.fn(),
-    getSharedValue: jest.fn(() => undefined),
-    getActivities: jest.fn(() => []),
-    cleanUpAfterActivity: jest.fn(),
-    getEvents: jest.fn(() => []),
+    setSharedValue: jest.fn((key: string, value: unknown) => {
+      sharedValues.set(key, value);
+    }),
+    getSharedValue: <T>(key: string) => sharedValues.get(key) as T | undefined,
+    selectionMetadata: jest.fn(() => ({
+      applicationCount: 3,
+      categoryCount: 1,
+      webDomainCount: 0,
+      includeEntireCategory: false,
+    })),
     startMonitoring: jest.fn(async () => undefined),
     stopMonitoring: jest.fn(),
+    getActivities: jest.fn(() => []),
+    getEvents: jest.fn(() => []),
+    cleanUpAfterActivity: jest.fn(),
     isShieldActive: jest.fn(() => shieldActive),
     onDeviceActivityMonitorEvent: jest.fn(() => ({ remove: jest.fn() })),
     getFamilyActivitySelectionId: jest.fn(

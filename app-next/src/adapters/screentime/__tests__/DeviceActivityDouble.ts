@@ -3,7 +3,7 @@ import {
   DeviceActivityApi,
   DeviceActivityAuthorizationStatus,
   DeviceActivityEvent,
-  DeviceActivityEventRecord,
+  DeviceActivityFiredEvent,
 } from '../../../engine/screentime/native/deviceActivityTypes';
 
 type DeviceActivitySchedule = {
@@ -33,7 +33,7 @@ export function deviceActivityDouble(
   const shared = new Map<string, unknown>();
   const monitors = new Map<string, RegisteredMonitor>();
   const configured: ConfiguredActions[] = [];
-  const recorded: DeviceActivityEventRecord[] = [];
+  const recorded: DeviceActivityFiredEvent[] = [];
   const listeners = new Set<(event: { callbackName: string }) => void>();
   const cleaned: string[] = [];
   const starts: string[] = [];
@@ -52,6 +52,11 @@ export function deviceActivityDouble(
       authorization = authorization === 0 ? 2 : authorization;
     },
     getFamilyActivitySelectionId: (id) => (selection ? `token:${id}` : undefined),
+    // What a cold start reads back: counts survive in the OS, the module's memory of them does not.
+    selectionMetadata: () =>
+      selection
+        ? { ...selection, webDomainCount: 0, includeEntireCategory: false }
+        : undefined,
     setSharedValue: (key, value) => void shared.set(key, value),
     getSharedValue: <T,>(key: string) => shared.get(key) as T | undefined,
     blockSelection: () => void (blocked = true),

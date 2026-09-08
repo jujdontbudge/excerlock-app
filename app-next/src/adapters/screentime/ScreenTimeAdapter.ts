@@ -107,10 +107,15 @@ export function createScreenTimeAdapter({
   const usageSubscription = deviceActivity.onDeviceActivityMonitorEvent(() => publishUsage());
 
   const describeSelection = async (): Promise<LockedApps> => {
-    // Two ways a selection stops existing: this app forgot the handle, or the OS no longer
-    // resolves it. Either one is an empty selection, whatever counts were last stored.
+    // Two ways a selection stops existing: the OS no longer resolves the id, or this app has no
+    // record of ever issuing it. Either one is an empty selection, whatever counts were stored.
     if (deviceActivity.getFamilyActivitySelectionId(NATIVE_LOCKED_SELECTION) === undefined) return EMPTY;
     const summary = await module.describeSelection(NATIVE_LOCKED_SELECTION);
+    // The module rehydrates its selections from storage, so a normal relaunch still knows this one.
+    // If it does not, the OS may still hold the selection — `selectionMetadata` would report its
+    // counts — but the module will not act on a handle it never issued, and a selection that
+    // cannot be shielded must not be shown as one. Empty is the honest answer, and re-picking is
+    // the recovery.
     if (!summary || summary.applicationCount + summary.categoryCount === 0) return EMPTY;
     return {
       handle: { token: summary.handle },

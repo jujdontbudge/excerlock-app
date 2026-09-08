@@ -12,11 +12,9 @@ export type DeviceActivityDateComponents = Readonly<{
   hour: number;
   minute: number;
   second: number;
-  /**
-   * Resolves the components in a named zone instead of the device's current one.
-   * The usage monitor stamps it so a flight mid-day cannot move the day boundary
-   * the Analytics counter is measured against.
-   */
+  /** IANA zone the components are read in. Absent means the device's current
+   *  zone, which is what a same-day window wants; a rule that must not drift
+   *  when the phone travels stamps its own zone here. */
   timeZoneIdentifier?: string;
 }>;
 
