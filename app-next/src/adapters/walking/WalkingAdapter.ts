@@ -167,9 +167,15 @@ export function createWalkingAdapter({
    * One tick resolves every deadline. `stepWalkingSession` re-evaluates the lease, the grace, the
    * window and the day itself on any event, and the placement deadline is checked here, so a
    * suspended app that misses its timers settles everything on the next notification.
+   *
+   * The verifier is polled rather than waited on. `WalkVerifier` holds its own hysteresis and only
+   * re-evaluates when a sample is pushed into it, so a walk that ends by the pedometer going quiet
+   * — a phone set down, an app suspended — would otherwise keep its last verified verdict and hold
+   * the lease open. Asking it for the verdict at `now` is what makes that expiry observable.
    */
   const tickNow = () => {
     const at = clock.now();
+    if (verifier) onVerdict(verifier.getVerdict(Date.parse(at)));
     if (placementState.deadline && Date.parse(at) >= Date.parse(placementState.deadline)) {
       onPlacement({ type: 'deadline', at });
     }
@@ -225,12 +231,20 @@ export function createWalkingAdapter({
     apply({ type: 'unverified', at: effect.at });
   };
 
+  /**
+   * `grace` counts as unverified, not as still walking.
+   *
+   * `WalkVerifier` holds its own hysteresis before it will say `notWalking`, and the session
+   * machine then starts the user's stop grace on that edge. Waiting for `notWalking` would run the
+   * two back to back and pay for a walk that ended a minute earlier. `grace` is the instant the
+   * evidence stopped qualifying, which is the instant the stop grace is meant to start, so the
+   * domain's grace is the only one that governs. `unverified` is edge-guarded downstream, so the
+   * `notWalking` that follows changes nothing.
+   */
   const onVerdict = (verdict: WalkVerdict) => {
     const at = new Date(verdict.evaluatedAt).toISOString();
     if (verdict.phase === 'verified') onPlacement({ type: 'verified', at });
-    else if (verdict.phase === 'notWalking') onPlacement({ type: 'unverified', at });
-    // `grace` is the verifier's own hysteresis. The domain's stop grace already started on the
-    // first unverified edge and is the authoritative one, so a grace verdict changes nothing.
+    else onPlacement({ type: 'unverified', at });
   };
 
   const onCadence = (sample: CadenceSample) => {
