@@ -246,7 +246,7 @@ type Profile = {
 
 ```ts
 type Entitlement = { status: 'unknown' | 'none' | 'trial' | 'active' | 'expired' | 'billingIssue'; renewsAt: string | null };
-type Session     = { kind: 'anonymous' } | { kind: 'signedIn'; provider: 'apple' | 'google' | 'email'; email: string | null };
+type Session     = { kind: 'anonymous'; userId: string } | { kind: 'signedIn'; userId: string; provider: 'apple' | 'google' | 'email'; email: string | null };
 type PermissionStatus = 'notDetermined' | 'granted' | 'denied' | 'restricted';
 type Permissions = { screenTime: PermissionStatus; motion: PermissionStatus; location: 'notDetermined' | 'whenInUse' | 'always' | 'denied'; health: PermissionStatus; camera: PermissionStatus; notifications: PermissionStatus };
 ```

@@ -51,4 +51,9 @@ export const homeCopy = {
   placeholder: 'Your plan is ready to grow here.',
   continue: 'Continue',
   close: 'Close',
+  // A lapsed subscription is its own Home status, never the rest-day branch: the apps are open because
+  // billing stopped, not because the day was free. Rendered by the Home status table (P2-T19).
+  lapsed: 'Blocking is paused',
+  lapsedBody: 'Your subscription ended, so your apps are open. Start a plan to switch blocking back on.',
+  seePlans: 'See plans',
 } as const;
