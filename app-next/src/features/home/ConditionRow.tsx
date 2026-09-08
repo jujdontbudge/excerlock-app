@@ -52,7 +52,7 @@ export function ConditionRow({
         onAction={onAction}
       />
       <View style={{ paddingHorizontal: w.card.padding, paddingBottom: t.space.md, gap: t.space.sm }}>
-        {status.tone === 'attention' && onAction && !model.label ? (
+        {onAction && !model.label ? (
           <Pressable accessibilityRole="button" accessibilityLabel={status.text} onPress={onAction}>
             {chip}
           </Pressable>

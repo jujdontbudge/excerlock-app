@@ -28,8 +28,6 @@ export const homeCopy = {
   noRules: 'No conditions yet',
   add: 'Add condition',
   editAdd: 'Edit / Add',
-  analytics: 'Analytics',
-  history: 'History',
   nothingToday: 'Nothing scheduled today. Enjoy your day.',
   starts: (time: string) => `Blocking starts at ${time}`,
   openUntil: 'Your apps are open until then.',

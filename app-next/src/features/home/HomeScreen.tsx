@@ -71,6 +71,8 @@ export function HomeScreen() {
     if (status.action === 'add') add();
     if (status.action === 'conditions') router.navigate('/conditions');
     if (status.action === 'stop') runtime.walking.stop();
+    if (status.action === 'plans') router.push('/paywall');
+    if (status.action === 'retry') runtime.screenTime.applyLock(decision);
   };
   const actionLabel = status.action
     ? {
@@ -116,6 +118,16 @@ export function HomeScreen() {
     if (kind) return openEntry(rule, kind);
     if (model.action) setSheet({ type: model.action, ruleId: rule.id });
   };
+  // merge: P2-T20 persists pausedReason, so this list becomes a selector over paused rules.
+  const orphaned = scheduleCard ? rules.filter((rule) => !rule.enabled && rule.pausedReason === 'noGym') : [];
+  const pausedCards = orphaned.map((rule) => (
+    <ConditionRow
+      key={rule.id}
+      model={{ title: ruleName(rule), icon: rule.activity, value: 0, detail: '' }}
+      status={conditionStatus('pausedNoGym')}
+      onAction={() => router.push('/settings/gyms')}
+    />
+  ));
   const conditionCards = today.map(({ rule, row }) => {
     const model = progressContent(rule, row, permissions, session, now, auto, metBy);
     const entries =
@@ -183,6 +195,7 @@ export function HomeScreen() {
             statusSubtitle={status.subtitle}
             caption={status.nextChange}>
             {conditionCards}
+            {pausedCards}
           </BlockingScheduleCard>
         </Reveal>
       ) : (

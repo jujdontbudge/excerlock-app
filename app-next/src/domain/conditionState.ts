@@ -43,7 +43,7 @@ const tones: Record<ConditionState, ConditionStatus['tone']> = {
   satisfiedToday: 'done',
   inProgress: 'active',
   paused: 'muted',
-  pausedNoGym: 'attention',
+  pausedNoGym: 'muted',
   notScheduled: 'muted',
   permissionNeeded: 'attention',
 };

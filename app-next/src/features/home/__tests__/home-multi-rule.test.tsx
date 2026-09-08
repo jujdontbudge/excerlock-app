@@ -1,6 +1,8 @@
 import { Text } from 'react-native';
 import { Slot } from 'expo-router';
 import { renderRouter, screen } from 'expo-router/testing-library';
+import { userEvent } from '@testing-library/react-native';
+import { rulesStore } from '../../../state/rulesStore';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { HomeScreen } from '../HomeScreen';
@@ -113,5 +115,26 @@ test('a goal reached while the app was closed unlocks on the next foreground and
 test('a rest day says when blocking resumes', async () => {
   const { rendered } = await openHome('home-locked-walking', (runtime) => runtime.dev.advance(11 * 3600000));
   expect(screen.getByText('Blocking resumes tomorrow at 9:00 AM')).toBeTruthy();
+  await rendered.unmount();
+});
+
+test('the handheld pill opens the walking sheet instead of the treadmill ceremony', async () => {
+  const { router, rendered } = await openHome('walking-either-two-pills');
+  await userEvent.press(screen.getByRole('button', { name: "I'm walking with my phone" }));
+  expect(screen.getByRole('button', { name: 'Start walking' })).toBeTruthy();
+  expect(router.getPathname()).toBe('/home');
+  await rendered.unmount();
+});
+
+test('a gym condition paused for no saved gym says so and opens the gym list', async () => {
+  const { router, rendered } = await openHome('home-two-conditions-locked', () => {
+    const { rules } = rulesStore.getState().data;
+    // merge: P2-T20 persists pausedReason when a gym is deleted; the field is additive today.
+    rulesStore.getState().patch({
+      rules: rules.map((rule) => (rule.activity === 'gym' ? { ...rule, enabled: false, pausedReason: 'noGym' } : rule)),
+    });
+  });
+  await userEvent.press(screen.getByRole('button', { name: 'Paused — save a gym' }));
+  expect(router.getPathname()).toBe('/settings/gyms');
   await rendered.unmount();
 });
