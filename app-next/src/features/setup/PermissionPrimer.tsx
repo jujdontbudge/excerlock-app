@@ -8,6 +8,7 @@ import { setupCopy as c } from '../../content/setup';
 import { settingsCopy } from '../../content/settings';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
+import { AutoDetectToggle } from './AutoDetectToggle';
 const content = {
   screenTime: {
     title: c.X1,
@@ -61,6 +62,7 @@ export function PermissionPrimer({ name, onContinue }: { name: keyof typeof cont
           <Label style={{ color: t.state.success }}>{c.granted}</Label>
         </Reveal>
       ) : null}
+      {name === 'location' && granted ? <AutoDetectToggle /> : null}
       {denied ? (
         <Reveal>
           <Label tone="secondary">{copy.denied}</Label>

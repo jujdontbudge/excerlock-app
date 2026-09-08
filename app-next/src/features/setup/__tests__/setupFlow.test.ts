@@ -1,9 +1,15 @@
-import { nextSetup, resumeSetup, branchPermission } from '../../../onboarding/setupFlow';
+import { nextSetup, resumeSetup, branchPermission, setupPath } from '../../../onboarding/setupFlow';
 test('setup advances through every step, including optional skips', () => {
-  expect(['X1', 'X2', 'X3', 'X4', 'X5'].map(nextSetup)).toEqual(['X2', 'X3', 'X4', 'X5', 'done']);
-  expect(resumeSetup({ setupStep: 'X3', setupComplete: false })).toBe('X3');
-  expect(resumeSetup({ setupStep: 'bad', setupComplete: false })).toBe('X1');
-  expect(resumeSetup({ setupStep: 'X2', setupComplete: true })).toBe('done');
+  expect(setupPath('walking')).toEqual(['X1', 'X2', 'X3b', 'X4', 'X5']);
+  expect(setupPath('gym')).toEqual(['X1', 'X2', 'X3a', 'X3b', 'X4', 'X5']);
+  expect(nextSetup('X2', 'walking')).toBe('X3b');
+  expect(nextSetup('X2', 'gym')).toBe('X3a');
+  expect(nextSetup('X3a', 'gym')).toBe('X3b');
+  expect(nextSetup('X3b', 'gym')).toBe('X4');
+  expect(resumeSetup({ setupStep: 'X3', setupComplete: false }, 'gym')).toBe('X3a');
+  expect(resumeSetup({ setupStep: 'X3', setupComplete: false }, 'walking')).toBe('X3b');
+  expect(resumeSetup({ setupStep: 'bad', setupComplete: false }, 'walking')).toBe('X1');
+  expect(resumeSetup({ setupStep: 'X2', setupComplete: true }, 'walking')).toBe('done');
 });
 test.each([
   ['walking', 'motion'],

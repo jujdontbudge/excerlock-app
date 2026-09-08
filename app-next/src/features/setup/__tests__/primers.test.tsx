@@ -1,4 +1,4 @@
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { act, render, screen, userEvent } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import { PermissionPrimer } from '../PermissionPrimer';
 import { createRuntime } from '../../../runtime/createRuntime';
@@ -27,3 +27,25 @@ test.each(['screenTime', 'motion', 'health', 'location'] as const)(
     expect(onContinue).toHaveBeenCalledTimes(1);
   },
 );
+
+test('the Location primer offers the explained Always toggle only after location is granted', async () => {
+  const r = createRuntime();
+  await r.dev.load('fresh-install');
+  permissionsStore.getState().patch({ location: 'notDetermined' });
+  const view = await render(
+    <AppRuntimeProvider runtime={r}>
+      <PermissionPrimer name="location" onContinue={jest.fn()} />
+    </AppRuntimeProvider>,
+  );
+  expect(screen.queryByRole('switch', { name: 'Auto-detect arrivals' })).toBeNull();
+  await act(() => permissionsStore.getState().patch({ location: 'whenInUse' }));
+  await view.rerender(
+    <AppRuntimeProvider runtime={r}>
+      <PermissionPrimer name="location" onContinue={jest.fn()} />
+    </AppRuntimeProvider>,
+  );
+  expect(screen.getByRole('switch', { name: 'Auto-detect arrivals' })).toBeTruthy();
+  expect(
+    screen.getByText('Allow location access all the time to recognize arrivals when ExcerLock is closed.'),
+  ).toBeTruthy();
+});

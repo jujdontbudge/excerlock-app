@@ -55,3 +55,9 @@ test('goal question keeps its three existing answer choices', async () => {
     'Overall wellness',
   ]);
 });
+
+test.each(['O06', 'O07'] as const)('%s does not promise plan tailoring', async (step) => {
+  await render(<ChoiceQuestion step={step} answers={{}} setAnswer={jest.fn()} />);
+  expect(screen.getByText('This helps us understand who ExcerLock is for.')).toBeTruthy();
+  expect(screen.queryByText(/tailor|fit your plan/i)).toBeNull();
+});

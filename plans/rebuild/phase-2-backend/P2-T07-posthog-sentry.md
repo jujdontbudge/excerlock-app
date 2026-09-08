@@ -34,4 +34,6 @@
 - `PrivacyInfo.xcprivacy` declares the data types the SDKs actually collect; the App Privacy label is filled
   from it. A Settings "Share usage analytics" switch calls PostHog opt-out and is honoured before the first
   event (pending Johan's answer in `fix-plan.md`; default on if he keeps it).
-- The O06/O07 person-property line depends on Johan's answer on the option lists (P2-T23).
+- Attach the persisted O06–O09 answers (`ageBand`, `occupation`, `improveFirst`, `mainReason`) as PostHog
+  person properties. P2-T23 keeps the currently shipped O06/O07 option lists pending Johan's answer; the
+  property names and purpose do not depend on that choice.

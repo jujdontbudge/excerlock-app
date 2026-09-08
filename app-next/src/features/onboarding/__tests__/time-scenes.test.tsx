@@ -1,12 +1,13 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { O10 } from '../screens/O10';
 import { O11 } from '../screens/O11';
-test('scrolling ranges retain the default and save an estimate for downstream math', async () => {
+test('the scrolling slider persists exact 30-minute values and reads them back', async () => {
   const setAnswer = jest.fn();
-  await render(<O10 answers={{}} setAnswer={setAnswer} />);
-  expect(screen.getAllByRole('radio')).toHaveLength(5);
-  expect(screen.getByRole('radio', { name: '2 to 4 hours' }).props.accessibilityState.selected).toBe(true);
-  await fireEvent.press(screen.getByRole('radio', { name: '4 to 6 hours' }));
+  await render(<O10 answers={{ estimatedDailyMinutes: 270 }} setAnswer={setAnswer} />);
+  expect(screen.getByText('4h 30m')).toBeTruthy();
+  const slider = screen.getByRole('adjustable', { name: 'Hours scrolling per day' });
+  expect(slider).toHaveAccessibilityValue({ min: 60, max: 720, now: 270 });
+  fireEvent(slider, 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
   expect(setAnswer).toHaveBeenCalledWith('estimatedDailyMinutes', 300);
 });
 test('time math uses the user’s estimate for daily, monthly and yearly totals', async () => {

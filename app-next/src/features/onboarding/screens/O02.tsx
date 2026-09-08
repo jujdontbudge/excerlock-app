@@ -25,7 +25,7 @@ export function O02({ onBack }: { onBack?: () => void }) {
   );
   return (
     <View style={{ flexGrow: 1, paddingTop: w.headingTop / Math.max(1, fontScale) }}>
-      <Heading title={c.O02.title.replace('. ', '.\n')} centered variant="hero" />
+      <Heading title={c.O02.title} centered variant="hero" />
       <View style={{ marginTop: w.progress.gap }}>
         <ProgressArtwork />
       </View>

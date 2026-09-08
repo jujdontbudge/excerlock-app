@@ -11,7 +11,9 @@ const p = w.progress;
 export function ProgressBadge() {
   const m = useMotion();
   return (
-    <Reveal index={4} style={{ position: 'absolute', top: p.badge.top, alignSelf: 'center' }}>
+    <Reveal
+      index={4}
+      style={{ position: 'absolute', top: p.badge.top, alignSelf: 'center', alignItems: 'center', gap: t.space.xs }}>
       <Animated.View
         style={{
           flexDirection: 'row',
@@ -58,6 +60,9 @@ export function ProgressBadge() {
           {c.progressValue}
         </Label>
       </Animated.View>
+      <Label variant="support" tone="secondary">
+        {c.illustrative}
+      </Label>
     </Reveal>
   );
 }
