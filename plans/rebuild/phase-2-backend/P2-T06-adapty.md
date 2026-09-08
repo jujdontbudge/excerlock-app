@@ -46,3 +46,9 @@
   without them fails. Added to the README's "Prerequisites Johan owns".
 - **Offline branch**: the paywall shows P2-T18's offline copy when `ReachabilityPort` says offline.
 - **Selected plan** flows through `presentPaywall(placement, plan)`; no Lifetime SKU (B35).
+- **`unknown` is bounded.** The adapter owns the 3-second fetch budget and the last-known-good cache:
+  it must publish a resolved status within 3 seconds of launch, falling back to the last persisted
+  known-good status rather than leaving `unknown` in place. P2-T18's `entitlementAccess` maps `unknown`
+  to the splash and has no timer of its own, so an adapter that never resolves strands the user there.
+  Acceptance test: with the network cut, launch reaches Home (or the paywall) within 3 seconds on the
+  persisted status, and never clears a live entitlement.

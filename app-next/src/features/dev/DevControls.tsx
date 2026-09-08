@@ -119,10 +119,20 @@ export function DevControls() {
             onPress={() => runtime.dev.setEntitlement(status)}
           />
         ))}
-        <SettingsRow title={c.anonymous} onPress={() => runtime.dev.setSession({ kind: 'anonymous' })} />
+        <SettingsRow
+          title={c.anonymous}
+          onPress={() => runtime.dev.setSession({ kind: 'anonymous', userId: 'fake-anonymous-user' })}
+        />
         <SettingsRow
           title={c.apple}
-          onPress={() => runtime.dev.setSession({ kind: 'signedIn', provider: 'apple', email: 'alex@example.test' })}
+          onPress={() =>
+            runtime.dev.setSession({
+              kind: 'signedIn',
+              userId: 'fake-signed-in-user',
+              provider: 'apple',
+              email: 'alex@example.test',
+            })
+          }
         />
       </SettingsGroup>
     </>

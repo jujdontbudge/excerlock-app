@@ -87,7 +87,8 @@ export type Entitlement = {
   renewsAt: string | null;
 };
 export type Session =
-  { kind: 'anonymous' } | { kind: 'signedIn'; provider: 'apple' | 'google' | 'email'; email: string | null };
+  | { kind: 'anonymous'; userId: string }
+  | { kind: 'signedIn'; userId: string; provider: 'apple' | 'google' | 'email'; email: string | null };
 export type PermissionStatus = 'notDetermined' | 'granted' | 'denied' | 'restricted';
 export type Permissions = {
   screenTime: PermissionStatus;

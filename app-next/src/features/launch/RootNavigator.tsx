@@ -6,12 +6,15 @@ import { tokens as t } from '../../design-system/tokens';
 import { FakePromptHost } from '../permissions/FakePromptHost';
 import { useDevSnapshot } from '../../state/selectors';
 import { devMenuEnabled } from '../../runtime/devFlag';
+import { entitlementAccess } from '../../domain/entitlementAccess';
+import { PaywallGate } from './PaywallGate';
 export function RootNavigator() {
   const motion = useMotion();
   const loading = Boolean(useDevSnapshot().loading);
   const status = useEntitlementStore((s) => s.data.entitlement.status),
     onboarding = useOnboardingStore((s) => s.data),
-    entitled = status === 'trial' || status === 'active';
+    access = entitlementAccess(status),
+    appGuard = loading || (onboarding.setupComplete && access.appAccess);
   return (
     <>
       <Stack
@@ -25,16 +28,22 @@ export function RootNavigator() {
           <Stack.Screen name="dev" />
         </Stack.Protected>
         <Stack.Screen name="gym-picker" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Protected guard={loading || (!onboarding.complete && onboarding.step !== 'P' && !entitled)}>
+        <Stack.Protected guard={loading || (!onboarding.complete && onboarding.step !== 'P' && !access.appAccess)}>
           <Stack.Screen name="onboarding/[step]" />
         </Stack.Protected>
-        <Stack.Protected guard={loading || !entitled}>
-          <Stack.Screen name="paywall" options={{ gestureEnabled: false }} />
+        <Stack.Protected guard={loading || access.paywall !== null}>
+          <Stack.Screen
+            name="paywall"
+            options={{
+              presentation: access.paywall === 'modal' ? 'modal' : 'fullScreenModal',
+              gestureEnabled: access.paywall === 'modal',
+            }}
+          />
         </Stack.Protected>
-        <Stack.Protected guard={loading || (entitled && !onboarding.setupComplete)}>
+        <Stack.Protected guard={loading || (access.appAccess && !onboarding.setupComplete)}>
           <Stack.Screen name="setup/[step]" />
         </Stack.Protected>
-        <Stack.Protected guard={loading || (entitled && onboarding.setupComplete)}>
+        <Stack.Protected guard={appGuard}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="settings" />
           <Stack.Screen name="sign-in" options={{ presentation: 'fullScreenModal' }} />
@@ -43,6 +52,7 @@ export function RootNavigator() {
           <Stack.Screen name="unlock/treadmill" options={{ presentation: 'fullScreenModal' }} />
         </Stack.Protected>
       </Stack>
+      <PaywallGate />
       <FakePromptHost />
     </>
   );

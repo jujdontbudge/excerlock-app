@@ -4,6 +4,7 @@ import * as Device from 'expo-device';
 import { useState } from 'react';
 import { Keyboard } from 'react-native';
 import { Heading, Label, PressableScale, PrimaryButton, SegmentedControl, TextField } from '../../design-system';
+import { common } from '../../content/common';
 import { settingsCopy as c } from '../../content/settings';
 import { supportDiagnostics } from '../../domain/supportDiagnostics';
 import { Permissions } from '../../domain/types';
@@ -11,6 +12,7 @@ import { tokens as t } from '../../design-system/tokens';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { requestFailureMessage } from '../../runtime/requestFailureMessage';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
@@ -31,6 +33,7 @@ export function SupportScreen({ onBack = () => {} }: { onBack?: () => void }) {
   const [replyTouched, setReplyTouched] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(true);
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [error, setError] = useState('');
   const lastEnforcement = [...runtime.dev.snapshot().events]
     .reverse()
     .find((event) => event.event === 'lock_applied')?.props.state;
@@ -60,6 +63,8 @@ export function SupportScreen({ onBack = () => {} }: { onBack?: () => void }) {
       .join(', ')}`,
   ].join('\n');
 
+  // A failed send keeps the typed message and offers an explicit retry: offline copy wins over the
+  // generic error, because a request that never left the device cannot be judged any other way.
   const send = async () => {
     if (!canSend) {
       setReplyTouched(true);
@@ -76,6 +81,7 @@ export function SupportScreen({ onBack = () => {} }: { onBack?: () => void }) {
       });
       setState('sent');
     } catch {
+      setError(await requestFailureMessage(runtime.reachability, { offline: common.offline, fallback: c.error }));
       setState('error');
     }
   };
@@ -89,7 +95,7 @@ export function SupportScreen({ onBack = () => {} }: { onBack?: () => void }) {
       onBack={onBack}
       footer={
         <PrimaryButton
-          label={state === 'sending' ? c.sending : c.send}
+          label={state === 'sending' ? c.sending : state === 'error' ? c.retrySend : c.send}
           loading={state === 'sending'}
           disabled={!canSend}
           onPress={() => void send()}
@@ -125,7 +131,7 @@ export function SupportScreen({ onBack = () => {} }: { onBack?: () => void }) {
       ) : null}
       {state === 'error' ? (
         <Reveal>
-          <Label accessibilityRole="alert">{c.error}</Label>
+          <Label accessibilityRole="alert">{error}</Label>
         </Reveal>
       ) : null}
     </SettingsPage>

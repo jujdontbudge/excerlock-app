@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BottomSheet, Heading, Label, PrimaryButton, SecondaryButton } from '../../design-system';
 import { settingsCopy as c } from '../../content/settings';
+import { teardownIdentity } from '../../domain/identity';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
@@ -30,15 +31,17 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
   const [note, setNote] = useState('');
   const sheet = confirmationCopy(mode ?? 'delete');
 
+  // Every account exit runs through `teardownIdentity` so the SDK release order is the one the
+  // domain owns: subscription first, then analytics, and the auth provider last.
   const confirm = async () => {
     if (!mode || busy) return;
     setBusy(true);
     try {
       if (mode === 'signOut') {
-        await runtime.auth.signOut();
+        await teardownIdentity(runtime, runtime.auth.signOut);
         setNote(c.signedOutNote);
       } else {
-        await runtime.auth.deleteAccount();
+        await teardownIdentity(runtime, runtime.auth.deleteAccount);
         setNote(mode === 'deleteData' ? c.dataDeleted : c.deleted);
       }
       setMode(null);

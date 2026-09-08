@@ -48,7 +48,7 @@ export function TrialScreen({ step, onContinue }: { step: 'T1' | 'T2' | 'T3' | '
       {step === 'T2' ? (
         <Reveal index={1}>
           <Label variant="metricSmall" style={{ textAlign: 'center', color: t.brand.primary }}>
-            {c.reminder}
+            {c.reminder(offer)}
           </Label>
         </Reveal>
       ) : null}
@@ -63,14 +63,14 @@ export function TrialScreen({ step, onContinue }: { step: 'T1' | 'T2' | 'T3' | '
               gap: t.space.sm,
             }}>
             <Label variant="label">{c.T3}</Label>
-            <Label tone="secondary">{c.reminder}</Label>
+            <Label tone="secondary">{c.reminder(offer)}</Label>
           </Reveal>
           <View style={{ flexGrow: 1 }} />
           <PrimaryButton label={c.enable} loading={busy} onPress={request} />
           <SecondaryButton label={c.later} variant="tertiary" disabled={busy} onPress={onContinue} />
         </>
       ) : null}
-      {step === 'T4' ? <TrialTimeline milestones={c.timeline} /> : null}
+      {step === 'T4' ? <TrialTimeline milestones={c.timeline(offer)} /> : null}
     </>
   );
 }

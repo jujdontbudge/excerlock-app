@@ -291,3 +291,22 @@ test('denying Always location leaves auto-detect off, explains why and links to 
   await userEvent.press(screen.getByRole('button', { name: 'Open location settings' }));
   expect(navigate).toHaveBeenCalledWith('permission/location');
 });
+
+test('a failed support send while offline keeps the message and offers an explicit retry', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('fresh-install');
+  runtime.dev.setOnline(false);
+  runtime.dev.setOutcome('error');
+  await render(withRuntime(runtime, <SupportScreen />));
+
+  await userEvent.type(screen.getByLabelText('Your message'), 'Please help');
+  await userEvent.type(screen.getByLabelText('Your email'), 'alex@example.test');
+  await userEvent.press(screen.getByRole('button', { name: 'Send message' }));
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 650));
+  });
+  expect(screen.getByText("You're offline. Connect and try again — this will not retry on its own.")).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Not sent — tap to retry' })).toBeTruthy();
+  expect(screen.getByLabelText('Your message').props.value).toBe('Please help');
+  runtime.dispose();
+});

@@ -60,7 +60,7 @@ export function base(id: string, title: string, overrides: Partial<Scenario> = {
       camera: 'granted',
       notifications: 'granted',
     },
-    session: { kind: 'anonymous' },
+    session: { kind: 'anonymous', userId: 'fake-anonymous-user' },
     entitlement: { status: 'active', renewsAt: '2026-10-07T15:00:00.000Z' },
     usageMinutesToday: 42,
     history: history().slice(-14),

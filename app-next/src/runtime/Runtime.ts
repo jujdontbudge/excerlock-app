@@ -12,6 +12,7 @@ import { SyncPort } from '../ports/SyncPort';
 import { ClockPort } from '../ports/ClockPort';
 import { RuntimeControls } from '../ports/RuntimeControls';
 import { GaitPort } from '../ports/GaitPort';
+import { ReachabilityPort } from '../ports/ReachabilityPort';
 export type Runtime = {
   readonly kind: 'fake';
   screenTime: ScreenTimePort;
@@ -28,5 +29,6 @@ export type Runtime = {
   support: SupportPort;
   clock: ClockPort;
   dev: RuntimeControls;
+  reachability: ReachabilityPort;
   dispose: () => void;
 };

@@ -22,6 +22,7 @@ export class FakeContext {
       outcome: 'success',
       restoreOutcome: ['trial', 'active'].includes(scenario.entitlement.status) ? 'restored' : 'notFound',
       presence: scenario.gym?.presence ?? 'outside',
+      online: true,
     };
   }
   snapshot = () => this.view;

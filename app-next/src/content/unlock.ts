@@ -35,4 +35,10 @@ export const unlockCopy = {
     deniedBody: 'Allow location while using ExcerLock to check in.',
     openSettings: 'Open Settings',
   },
+  // A ceremony still books progress while the subscription is lapsed, so it reports the exercise and
+  // drops the unlock claim rather than promising something blocking cannot deliver (rendered by P2-T21).
+  lapsed: {
+    title: 'Exercise detected',
+    body: "Your apps aren't blocked right now",
+  },
 } as const;

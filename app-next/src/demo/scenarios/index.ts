@@ -18,6 +18,7 @@ import { scenario15 } from './trial-active';
 import { scenario16 } from './trial-expired';
 import { scenario17 } from './billing-issue';
 import { scenario18 } from './signed-in-apple';
+import { returningSubscriber } from './returning-subscriber';
 import { scenario19 } from './analytics-6-weeks';
 import { scenario20 } from './analytics-day-zero';
 import { scenario21 } from './analytics-no-measurement';
@@ -43,6 +44,7 @@ export const scenarios = [
   scenario16,
   scenario17,
   scenario18,
+  returningSubscriber,
   scenario19,
   scenario20,
   scenario21,

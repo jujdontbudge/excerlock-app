@@ -6,4 +6,10 @@
 
 Gym auto-detect disables its switch while an Always-location request is open and exposes denied recovery inline. Touch feedback writes the persisted preference; P2-T17 binds that store value at the application root.
 
+`LegalLinks` is the shared tappable Terms of Use and Privacy Policy interface used by welcome and paywall
+surfaces. It owns the local document sheet so neither caller can regress to inert legal text.
+
+`AccountScreen` runs sign-out and deletion through `domain/identity`'s `teardownIdentity`, so the
+subscription SDK is reset before analytics and the auth provider is always released last.
+
 `preferences` relabels saved distance rules when units change; values are not converted. Account deletion returns to an anonymous session and preserves local data. Support uses a local fake port and records only category/length in its debug event. No message is sent externally.

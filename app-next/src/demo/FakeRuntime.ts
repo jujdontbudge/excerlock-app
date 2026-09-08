@@ -22,6 +22,7 @@ import { SubscriptionFake } from './fakes/SubscriptionFake';
 import { AnalyticsFake } from './fakes/AnalyticsFake';
 import { NotificationsFake } from './fakes/NotificationsFake';
 import { SyncFake } from './fakes/SyncFake';
+import { ReachabilityFake } from './fakes/ReachabilityFake';
 export function FakeRuntime(): Runtime {
   const ctx = new FakeContext(scenarios[0]),
     walking = WalkingFake(ctx),
@@ -62,6 +63,7 @@ export function FakeRuntime(): Runtime {
     notifications: NotificationsFake(ctx),
     sync: SyncFake(),
     support: SupportFake(ctx),
+    reachability: ReachabilityFake(ctx),
     dev: {
       ready: () => ready,
       flush: persistence.flush,
@@ -89,6 +91,7 @@ export function FakeRuntime(): Runtime {
           events: [],
           accessibility: scenario.accessibility,
           presence: scenario.gym?.presence ?? 'outside',
+          online: true,
         });
         walking.resume();
       },
@@ -121,6 +124,7 @@ export function FakeRuntime(): Runtime {
       setSession: (session) => sessionStore.getState().patch({ session }),
       setRestoreOutcome: (restoreOutcome) => ctx.update({ restoreOutcome }),
       setOutcome: (outcome) => ctx.update({ outcome }),
+      setOnline: (online) => ctx.update({ online }),
       resolvePrompt: ctx.resolve,
       invalidateSelection: () =>
         rulesStore.getState().patch({ lockedApps: { handle: null, appCount: 0, categoryCount: 0 } }),

@@ -124,7 +124,7 @@ test("SetupComplete says You're all set only when every row is checked", async (
   await runtime.dev.load('home-locked-walking');
   onboardingStore.getState().patch({ setupComplete: false, setupStep: 'X5' });
   permissionsStore.getState().patch({ screenTime: 'granted', motion: 'granted', notifications: 'granted' });
-  sessionStore.getState().patch({ session: { kind: 'signedIn', provider: 'apple', email: 'alex@example.test' } });
+  sessionStore.getState().patch({ session: { kind: 'signedIn', userId: 'user-apple', provider: 'apple', email: 'alex@example.test' } });
   const result = renderRouter(
     {
       _layout: () => <AppRuntimeProvider runtime={runtime}><RootNavigator /></AppRuntimeProvider>,

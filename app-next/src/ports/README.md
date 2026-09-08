@@ -13,6 +13,7 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
 - NotificationsPort: Phase 2 schedules local trial and lease reminders.
 - SyncPort: Phase 2 synchronizes rules and day facts with the VPS.
 - ClockPort: Phase 2 observes system time and timezone changes.
+- ReachabilityPort: network-backed screens distinguish offline failures; local-first flows never consult it.
 
 models.ts defines shared facts. RuntimeControls is a local-only developer interface and is never a product service adapter.
 

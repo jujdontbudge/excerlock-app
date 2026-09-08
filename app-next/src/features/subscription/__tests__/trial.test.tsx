@@ -4,6 +4,16 @@ import { FakePromptHost } from '../../permissions/FakePromptHost';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { permissionsStore } from '../../../state/permissionsStore';
+import { subscriptionCopy } from '../../../content/subscription';
+
+test.each([
+  [{ trialDays: 7, reminderDaysBefore: 2, label: 'offer' }, '2 days before your trial ends', 'Day 5 · Reminder', 'Day 7 · Billing begins'],
+  [{ trialDays: 3, reminderDaysBefore: 2, label: 'offer' }, '2 days before your trial ends', 'Day 1 · Reminder', 'Day 3 · Billing begins'],
+  [{ trialDays: 2, reminderDaysBefore: 2, label: 'offer' }, '1 day before your trial ends', 'Day 1 · Reminder', 'Day 2 · Billing begins'],
+] as const)('trial copy is derived from the live offer %#', (offer, reminder, reminderDay, billingDay) => {
+  expect(subscriptionCopy.reminder(offer)).toBe(reminder);
+  expect(subscriptionCopy.timeline(offer).map((item) => item.title)).toEqual(['Today', reminderDay, billingDay]);
+});
 test.each(['grant', 'deny', 'ask'] as const)(
   'reminder request in %s mode continues with stored result',
   async (mode) => {

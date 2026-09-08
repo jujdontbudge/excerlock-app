@@ -134,6 +134,7 @@ export const settingsCopy = {
   message: 'Your message',
   send: 'Send message',
   sending: 'Sending…',
+  retrySend: 'Not sent — tap to retry',
   sent: 'Message sent',
   sentBody: 'Your message went to support@excerlock.com. We reply within two business days.',
   deleteData: 'Delete my data',
