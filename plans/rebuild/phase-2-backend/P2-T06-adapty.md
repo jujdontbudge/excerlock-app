@@ -77,3 +77,12 @@
   to the splash and has no timer of its own, so an adapter that never resolves strands the user there.
   Acceptance test: with the network cut, launch reaches Home (or the paywall) within 3 seconds on the
   persisted status, and never clears a live entitlement.
+
+## Adapty dashboard state (set up via `adapty` CLI, 2026-09-07)
+
+App `ExcerLock` 9b8a6cf2-22c5-46f9-b938-35c27da2c66f (SDK key = `EXPO_PUBLIC_ADAPTY_KEY`), access level `premium`
+b95ba4b6-812e-4ce4-b2ac-8416006bc40a. Six products bound to the App Store subscription ids (both variants);
+paywalls `Premium A` f3933bd1, `Premium B` 28df5bcc, `Win-back A` 14ae444b, `Win-back B` 6e176aef; placements
+`onboarding` and `in_app` both serve `Premium A`, `winback` serves `Win-back A`. Variant B is not yet in an
+A/B test (dashboard-only). Paywall Builder designs are still empty. App Store products are in
+`MISSING_METADATA` (pricing and localisation still needed in App Store Connect).
