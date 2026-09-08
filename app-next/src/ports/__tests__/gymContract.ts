@@ -40,27 +40,53 @@ export function gymContract(name: string, create: () => GymContractHarness) {
       expect(gymDwellMinutes(visits, '2026-09-07', 'America/New_York', harness.now())).toBe(60);
     });
 
-    test('overlapping visits count once and a two-minute re-entry stays one visit', async () => {
+    const visit = (id: string, enteredAt: string, exitedAt: string): GymVisit => ({
+      id,
+      placeId: harness.placeId,
+      enteredAt,
+      exitedAt,
+      source: 'geofence',
+    });
+    const dwell = async () => {
+      const visits = await harness.port.visits('2026-09-07');
+      return {
+        minutes: gymDwellMinutes(visits, '2026-09-07', 'America/New_York', harness.now()),
+        intervals: mergedGymVisitIntervals(visits, '2026-09-07', 'America/New_York', harness.now()),
+      };
+    };
+
+    test('overlapping visits are counted once', async () => {
+      // Two saved gyms with overlapping radii report the same hour; it is one hour, not two.
       harness.replaceVisits([
-        {
-          id: 'a',
-          placeId: harness.placeId,
-          enteredAt: '2026-09-07T14:00:00.000Z',
-          exitedAt: '2026-09-07T15:00:00.000Z',
-          source: 'geofence',
-        },
-        {
-          id: 'b',
-          placeId: harness.placeId,
-          enteredAt: '2026-09-07T14:30:00.000Z',
-          exitedAt: '2026-09-07T15:01:00.000Z',
-          source: 'geofence',
-        },
+        visit('a', '2026-09-07T14:00:00.000Z', '2026-09-07T15:00:00.000Z'),
+        visit('b', '2026-09-07T14:30:00.000Z', '2026-09-07T15:01:00.000Z'),
       ]);
       harness.advance(2 * 60_000);
-      const visits = await harness.port.visits('2026-09-07');
-      expect(gymDwellMinutes(visits, '2026-09-07', 'America/New_York', harness.now())).toBe(61);
-      expect(mergedGymVisitIntervals(visits, '2026-09-07', 'America/New_York', harness.now())).toHaveLength(1);
+      const { minutes, intervals } = await dwell();
+      expect(minutes).toBe(61);
+      expect(intervals).toHaveLength(1);
+    });
+
+    test('an exit and re-enter within two minutes is one visit', async () => {
+      harness.replaceVisits([
+        visit('a', '2026-09-07T14:00:00.000Z', '2026-09-07T14:30:00.000Z'),
+        visit('b', '2026-09-07T14:31:30.000Z', '2026-09-07T15:00:00.000Z'),
+      ]);
+      harness.advance(2 * 60_000);
+      const { minutes, intervals } = await dwell();
+      expect(intervals).toHaveLength(1);
+      expect(minutes).toBe(60);
+    });
+
+    test('a re-entry after more than two minutes is a second visit', async () => {
+      harness.replaceVisits([
+        visit('a', '2026-09-07T14:00:00.000Z', '2026-09-07T14:30:00.000Z'),
+        visit('b', '2026-09-07T14:33:00.000Z', '2026-09-07T15:00:00.000Z'),
+      ]);
+      harness.advance(2 * 60_000);
+      const { minutes, intervals } = await dwell();
+      expect(intervals).toHaveLength(2);
+      expect(minutes).toBe(57);
     });
   });
 }
