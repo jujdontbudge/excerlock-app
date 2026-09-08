@@ -1,5 +1,5 @@
 import { SavedPlace } from '../ports/models';
-import { createPersistedStore } from './createPersistedStore';
+import { defineStore } from './createPersistedStore';
 import { defaultUnits } from './profileStore';
 import * as v from './validation';
 export type Settings = {
@@ -9,11 +9,13 @@ export type Settings = {
   gymAutoDetect: boolean;
   haptics: boolean;
 };
-export const settingsStore = createPersistedStore<Settings>(
-  'settings',
-  { gymPlaces: [], units: defaultUnits, stopGrace: 30, gymAutoDetect: false, haptics: true },
-  {
-    gymPlaces: v.array(
+export const settingsStore = defineStore<Settings>({
+  name: 'settings',
+  initial: { gymPlaces: [], units: defaultUnits, stopGrace: 30, gymAutoDetect: false, haptics: true },
+  schemaVersion: 1,
+  migrations: { 0: (raw) => raw },
+  validators: {
+    gymPlaces: v.arrayOf(
       v.shape({
         id: v.text,
         name: v.text,
@@ -28,4 +30,4 @@ export const settingsStore = createPersistedStore<Settings>(
     gymAutoDetect: v.bool,
     haptics: v.bool,
   },
-);
+});

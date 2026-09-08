@@ -4,10 +4,10 @@ import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { createRuntime } from '../../../runtime/createRuntime';
 const mockRouter = { back: jest.fn() };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
-test('treadmill preview detects the recorded gait without starting a real walking session', async () => {
+test('the dev menu treadmill scenario reaches preview mode without starting a real walking session', async () => {
   jest.useFakeTimers();
   const runtime = createRuntime();
-  await runtime.dev.load('home-walking-session');
+  await runtime.dev.load('unlock-treadmill-scan');
   const start = jest.spyOn(runtime.walking, 'start');
   await render(
     <AppRuntimeProvider runtime={runtime}>

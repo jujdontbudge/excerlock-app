@@ -2,7 +2,7 @@
 
 Home routes active gym and treadmill walking-state rules to the shared square lock ceremony. Step targets and outdoor walking keep their existing progress flow.
 
-Home's **Test gym unlock** and **Test treadmill unlock** open `?preview=1`. Preview providers are isolated: gym previews finish in three seconds; treadmill previews replay recorded gait landmarks through the original detector. They never start a walking session, check in, or change exercise credit.
+Developer-menu unlock scenarios pair with each ceremony route using the `preview` query parameter set to `1`. Preview providers are isolated: gym previews finish in three seconds; treadmill previews replay recorded gait landmarks through the original detector. They never start a walking session, check in, or change exercise credit.
 
 `UnlockLockFrame` owns the square surface, border ring and shackle. `Confetti` uses one UI frame clock for forty particles. Reduced motion omits particles and spatial movement. `useCeremony` times the success announcement and Done button.
 

@@ -5,6 +5,7 @@ import { onboardingStore as useOnboardingStore } from '../../state/onboardingSto
 import { tokens as t } from '../../design-system/tokens';
 import { FakePromptHost } from '../permissions/FakePromptHost';
 import { useDevSnapshot } from '../../state/selectors';
+import { devMenuEnabled } from '../../runtime/devFlag';
 export function RootNavigator() {
   const motion = useMotion();
   const loading = Boolean(useDevSnapshot().loading);
@@ -20,7 +21,9 @@ export function RootNavigator() {
           animationDuration: t.motion.duration.navigation,
         }}>
         <Stack.Screen name="index" />
-        <Stack.Screen name="dev" />
+        <Stack.Protected guard={devMenuEnabled}>
+          <Stack.Screen name="dev" />
+        </Stack.Protected>
         <Stack.Screen name="gym-picker" options={{ presentation: 'fullScreenModal' }} />
         <Stack.Protected guard={loading || (!onboarding.complete && onboarding.step !== 'P' && !entitled)}>
           <Stack.Screen name="onboarding/[step]" />

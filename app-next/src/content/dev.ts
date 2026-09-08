@@ -39,5 +39,5 @@ export const devCopy = {
     camera: 'Camera',
     notifications: 'Notifications',
   },
-  recordCommand: 'xcrun simctl io B68873CD-B6ED-4961-85AF-0C807E657999 recordVideo --codec=h264 flow.mp4',
+  recordCommand: 'xcrun simctl io <device-udid> recordVideo --codec=h264 flow.mp4',
 } as const;

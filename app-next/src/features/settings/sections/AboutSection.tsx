@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import { useState } from 'react';
 import { Label, PressableScale, SettingsGroup } from '../../../design-system';
 import { settingsCopy as c } from '../../../content/settings';
+import { devMenuEnabled } from '../../../runtime/devFlag';
 
 export function AboutSection({ onDev }: { onDev: () => void }) {
   const [taps, setTaps] = useState(0);
@@ -14,6 +15,7 @@ export function AboutSection({ onDev }: { onDev: () => void }) {
       <PressableScale
         label={version}
         onPress={() => {
+          if (!devMenuEnabled) return;
           if (taps === 6) {
             setTaps(0);
             onDev();

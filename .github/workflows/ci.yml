@@ -30,7 +30,7 @@ jobs:
       - name: Run workspace type checks
         run: npm run typecheck
 
-      - name: Run unit suites
+      - name: Run unit suites (app-next first with coverage)
         run: npm run test:unit
 
       - name: Run architecture guardrails

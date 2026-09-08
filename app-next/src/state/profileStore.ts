@@ -1,10 +1,10 @@
 import { Profile } from '../domain/types';
-import { createPersistedStore } from './createPersistedStore';
+import { defineStore } from './createPersistedStore';
 import * as v from './validation';
 export const defaultUnits = Intl.DateTimeFormat().resolvedOptions().locale.endsWith('-US') ? 'mi' : 'km';
-export const profileStore = createPersistedStore<Profile>(
-  'profile',
-  {
+export const profileStore = defineStore<Profile>({
+  name: 'profile',
+  initial: {
     warmupRating: null,
     name: '',
     referralSource: '',
@@ -15,7 +15,9 @@ export const profileStore = createPersistedStore<Profile>(
     estimatedDailyMinutes: 180,
     units: defaultUnits,
   },
-  {
+  schemaVersion: 1,
+  migrations: { 0: (raw) => raw },
+  validators: {
     warmupRating: (value) =>
       value === null || (typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 5),
     name: v.text,
@@ -27,4 +29,4 @@ export const profileStore = createPersistedStore<Profile>(
     estimatedDailyMinutes: v.number(0, 1440),
     units: v.units,
   },
-);
+});
