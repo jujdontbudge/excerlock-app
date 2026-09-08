@@ -2,6 +2,7 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 import { ScheduleScreen } from '../ScheduleScreen';
 import { scheduleDraft, toSchedule } from '../scheduleDraft';
 import { createDraft } from '../draft';
+import { planCopy } from '../../../content/plan';
 import { RulePreviewLock } from '../RulePreviewLock';
 
 test('rule preview keeps one canonical size with or without a schedule', async () => {
@@ -27,7 +28,7 @@ test('schedule errors and live cross-midnight label are rendered', async () => {
     <ScheduleScreen draft={{ ...scheduleDraft({}), days: [], end: 550 }} onAction={onAction} onChoose={onChoose} />,
   );
   expect(screen.getByText('Choose at least one day.')).toBeTruthy();
-  expect(screen.getByText('Choose a window of at least 15 minutes.')).toBeTruthy();
+  expect(screen.getByText(planCopy.windowError)).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: 'Every day' }));
   expect(onAction).toHaveBeenCalledWith({ type: 'days', value: [1, 2, 3, 4, 5, 6, 0] });
   await r.rerender(

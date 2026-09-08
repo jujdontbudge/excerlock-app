@@ -1,5 +1,6 @@
 import { scheduleDraft, reduceSchedule, toSchedule, scheduleIssues } from '../scheduleDraft';
 import { scheduleLabel } from '../../../domain/scheduleLabel';
+import { MIN_WINDOW_MINUTES } from '../../../domain/ruleWindow';
 test('weekday and time defaults, all-day toggling preserves the selected range', () => {
   let d = scheduleDraft({});
   expect(toSchedule(d)).toEqual({
@@ -15,8 +16,10 @@ test('weekday and time defaults, all-day toggling preserves the selected range',
   d = reduceSchedule(d, { type: 'allDay', value: false });
   expect(toSchedule(d).window).toMatchObject({ startMinute: 1200, endMinute: 120 });
 });
-test('empty days and windows under fifteen minutes cannot continue', () => {
+test('empty days and windows under the domain minimum cannot continue', () => {
   expect(scheduleIssues({ ...scheduleDraft({}), days: [] })).toContain('days');
-  expect(scheduleIssues({ ...scheduleDraft({}), start: 540, end: 550 })).toContain('window');
-  expect(scheduleIssues({ ...scheduleDraft({}), start: 540, end: 555 })).toEqual([]);
+  expect(
+    scheduleIssues({ ...scheduleDraft({}), start: 540, end: 540 + MIN_WINDOW_MINUTES - 1 }),
+  ).toContain('window');
+  expect(scheduleIssues({ ...scheduleDraft({}), start: 540, end: 540 + MIN_WINDOW_MINUTES })).toEqual([]);
 });

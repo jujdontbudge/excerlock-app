@@ -71,6 +71,8 @@ test('canceling an invalid distance edit restores the valid summary', async () =
   );
   await r;
   await userEvent.press(screen.getByRole('button', { name: 'Edit goal' }));
+  expect(screen.getByRole('header', { name: 'What counts as a run?' })).toBeTruthy();
+  await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   await fireEvent.changeText(screen.getByLabelText('Distance'), '');
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
   await userEvent.press(screen.getByRole('button', { name: 'Back' }));

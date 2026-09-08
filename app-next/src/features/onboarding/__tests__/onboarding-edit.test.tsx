@@ -75,6 +75,7 @@ test('advancing from an edit clears returnTo and the stored snapshot', async () 
   await openSummary();
   await userEvent.press(screen.getByRole('button', { name: planCopy.editGoal }));
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   expect(String(onboardingStore.getState().data.answers.returnTo || '')).toBe('');
   expect(onboardingStore.getState().data.answers.editBackup).toBeUndefined();
 });

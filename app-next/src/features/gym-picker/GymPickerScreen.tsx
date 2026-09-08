@@ -9,7 +9,15 @@ import { FindStep } from './FindStep';
 import { PlaceStep } from './PlaceStep';
 import Animated from 'react-native-reanimated';
 import { fadeIn } from '../../motion/presets';
-export function GymPickerScreen({ placeId, onSaved }: { placeId?: string; onSaved: () => void }) {
+export function GymPickerScreen({
+  placeId,
+  onSaved,
+  onClose,
+}: {
+  placeId?: string;
+  onSaved: () => void;
+  onClose?: () => void;
+}) {
   const { gym } = useRuntime();
   const p = usePicker(
     gym,
@@ -40,6 +48,16 @@ export function GymPickerScreen({ placeId, onSaved }: { placeId?: string; onSave
               }}>
               <Icon name="back" variant="utility" size={t.layout.glyph} tint={t.brand.primary} />
               <Label style={{ color: t.brand.primary }}>{c.searchTitle}</Label>
+            </Pressable>
+          </View>
+        ) : onClose ? (
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: t.layout.page }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={c.cancel}
+              onPress={onClose}
+              style={{ minHeight: t.layout.touch, justifyContent: 'center' }}>
+              <Label style={{ color: t.brand.primary }}>{c.cancel}</Label>
             </Pressable>
           </View>
         ) : undefined

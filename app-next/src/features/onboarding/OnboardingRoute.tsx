@@ -15,6 +15,8 @@ import { PlanSummary } from '../rules/PlanSummary';
 import { ReviewWarmup } from '../rules/ReviewWarmup';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { planCopy as c } from '../../content/plan';
+import { Label } from '../../design-system';
+import { tokens as t } from '../../design-system/tokens';
 import { useImpactPlayback } from './impact/useImpactPlayback';
 export function OnboardingRoute() {
   const focused = useIsFocused();
@@ -63,6 +65,11 @@ export function OnboardingRoute() {
           onDismiss={() => setWheel(null)}
         />
       }>
+      {flow.error ? (
+        <Label accessibilityRole="alert" style={{ color: t.state.error }}>
+          {flow.error}
+        </Label>
+      ) : null}
       {body}
     </OnboardingShell>
   );
