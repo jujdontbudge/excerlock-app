@@ -125,8 +125,11 @@ describe('day facts', () => {
     expect(result.summary).toMatchObject({ earnedUnlocks: 1 });
   });
 
-  test('sealed history never comes from the server; local rows pass through untouched', () => {
+  test('sealed history merges by the same rule', () => {
     const sealed = { ...historyDay({ met: true }), sealedAt: '2026-09-06T00:00:00Z' };
+    const result = mergeSnapshot(local(), remote({ history: [{ ...sealed, updatedAt: '2026-09-06T00:00:00Z' }] }), today);
+    expect(result.history).toEqual([sealed]);
+    expect(result.summary.history).toBe(1);
     expect(mergeSnapshot(local({ history: [sealed] }), remote(), today).history).toEqual([sealed]);
   });
 });
@@ -186,8 +189,9 @@ describe('profile', () => {
 });
 
 test('restoredAnything reports whether the summary changed anything on the device', () => {
-  const nothing = { rules: 0, removedRules: 0, ruleDays: 0, earnedUnlocks: 0, usageDays: 0, profile: false };
+  const nothing = { rules: 0, removedRules: 0, ruleDays: 0, earnedUnlocks: 0, history: 0, usageDays: 0, profile: false };
   expect(restoredAnything(nothing)).toBe(false);
   expect(restoredAnything({ ...nothing, profile: true })).toBe(true);
   expect(restoredAnything({ ...nothing, usageDays: 2 })).toBe(true);
+  expect(restoredAnything({ ...nothing, history: 1 })).toBe(true);
 });

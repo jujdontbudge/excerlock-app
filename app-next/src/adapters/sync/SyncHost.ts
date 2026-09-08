@@ -156,7 +156,7 @@ export function startSync(runtime: SyncRuntime, options: SyncHostOptions = {}): 
     const outcome = await pullAndMerge();
     syncLog.getState().restored({ at: now(), ...outcome });
     const { summary } = outcome;
-    log('info', `restored ${summary.rules} rules, ${summary.ruleDays} rule days, ${summary.usageDays} usage days`);
+    log('info', `restored ${summary.rules} rules, ${summary.ruleDays} rule days, ${summary.history} history days`);
     patch(markAllDirty(data(), previous!, now()));
   };
 
@@ -170,8 +170,8 @@ export function startSync(runtime: SyncRuntime, options: SyncHostOptions = {}): 
     }
     const rulesStamp = state.rulesChangedAt;
     if (state.rulesDirty) {
-      // PUT /sync/rules is a full replacement: merge the server's set in first so this device can never
-      // tombstone a rule another device created since the last pull.
+      // Merge the server's set in first, so the push carries every rule the account has and a device that
+      // edits also learns what another device changed since its last pull.
       if (!pulledThisFlush) await pullAndMerge();
       const deleted = data().deleted;
       await step(
@@ -197,7 +197,7 @@ export function startSync(runtime: SyncRuntime, options: SyncHostOptions = {}): 
         () => patch({ profileDirty: false }),
       );
     if (!dayFactsDue(state, force)) return;
-    const kinds = ['ruleDays', 'usageDays', 'earnedUnlocks'] as const;
+    const kinds = ['ruleDays', 'usageDays', 'earnedUnlocks', 'history'] as const;
     for (const kind of kinds) {
       const rows = Object.values(state[kind]);
       if (!rows.length) continue;
@@ -214,6 +214,8 @@ export function startSync(runtime: SyncRuntime, options: SyncHostOptions = {}): 
               return runtime.sync.pushUsageDays(Object.values(state.usageDays));
             case 'earnedUnlocks':
               return runtime.sync.pushEarnedUnlocks(Object.values(state.earnedUnlocks));
+            case 'history':
+              return runtime.sync.pushHistory(Object.values(state.history));
           }
         },
         () => patch({ [kind]: remaining() } as Partial<SyncState>),

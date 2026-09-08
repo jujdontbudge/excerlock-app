@@ -35,6 +35,10 @@ export function SyncFake(ctx?: Pick<FakeContext, 'log'>): SyncPort {
       server.earnedUnlocks = upsert(server.earnedUnlocks, rows, (row) => `${row.ruleId}:${row.day}`);
       ctx?.log('sync_push', { kind: 'earnedUnlocks', count: rows.length });
     },
+    pushHistory: async (rows) => {
+      server.history = upsert(server.history, rows, (row) => row.day);
+      ctx?.log('sync_push', { kind: 'history', count: rows.length });
+    },
     pushProfile: async (profile) => {
       server.profile = profile;
       ctx?.log('sync_push', { kind: 'profile', count: 1 });

@@ -1,17 +1,18 @@
 /**
  * The `/v1/sync` wire contract, matched to the server's `server/src/sync/payload.ts` (P2-T02). Every wire
- * shape and every field mapping lives here, so a disagreement with the server is a one-file fix.
+ * shape, field name and mapping lives here, so a disagreement with the server is a one-file fix.
  *
  * The server validates every object `.strict()`: an unexpected key rejects the whole batch. Keys are
- * camelCase, `mode` and `schedule` travel as the domain objects verbatim, rule ids are UUIDs. The Screen
- * Time selection, the warm-up rating, the rule day's display unit and the paused-for-no-gym marker are
- * device-only and never sent. Sealed history days have no server table; only usage minutes travel.
+ * camelCase, `mode` and `schedule` travel as the domain objects verbatim, rule ids are UUIDs. Row batches
+ * travel under `rows`; rules under `rules`; the profile under `profile`. The Screen Time selection, the
+ * warm-up rating and the paused-for-no-gym marker are device-only and never sent.
  *
  * Privacy law: nothing here may carry an app name, a bundle id, a coordinate, a gym place, a gym visit or
  * a health sample. `__tests__/privacy.test.ts` holds that line at the type level and over this source.
  */
 import { EarnedUnlock, Profile, Rule, RuleDay } from '../../domain/types';
-import { RuleTombstone, Stamped, SyncSnapshot, UsageDay } from '../../ports/SyncPort';
+import { HistoryDay } from '../../ports/models';
+import { RuleTombstone, SealedHistoryDay, Stamped, SyncSnapshot, UsageDay } from '../../ports/SyncPort';
 
 export const MAX_BATCH = 400;
 
@@ -20,9 +21,13 @@ export const paths = {
   ruleDays: '/v1/sync/rule-days',
   usageDays: '/v1/sync/usage-days',
   earnedUnlocks: '/v1/sync/earned-unlocks',
+  history: '/v1/sync/history',
   profile: '/v1/sync/profile',
   pull: '/v1/sync',
 } as const;
+
+/** The body field each endpoint reads its batch from. */
+export const batchField = { rules: 'rules', rows: 'rows', profile: 'profile' } as const;
 
 export type WireRule = {
   id: string;
@@ -40,6 +45,7 @@ export type WireRuleDay = {
   progress: number;
   met: boolean;
   metAt?: string | null;
+  unit?: NonNullable<RuleDay['unit']> | null;
   updatedAt: string;
 };
 export type WireUsageDay = { day: string; lockedAppMinutes: number; updatedAt: string };
@@ -49,6 +55,15 @@ export type WireEarnedUnlock = {
   ruleName: string;
   metAt: string;
   windowEnd: string;
+  updatedAt: string;
+};
+export type WireHistoryDay = {
+  day: string;
+  usageMinutes: number | null;
+  activity: HistoryDay['activity'];
+  met: boolean;
+  scheduled: boolean;
+  sealedAt: string;
   updatedAt: string;
 };
 export type WireProfile = {
@@ -64,15 +79,14 @@ export type WireProfile = {
 };
 
 export type WireRulesBody = { rules: WireRule[] };
-export type WireRuleDaysBody = { ruleDays: WireRuleDay[] };
-export type WireUsageDaysBody = { usageDays: WireUsageDay[] };
-export type WireEarnedUnlocksBody = { earnedUnlocks: WireEarnedUnlock[] };
+export type WireRowsBody<T> = { rows: T[] };
 export type WireProfileBody = { profile: WireProfile };
 export type WirePull = {
   rules: WireRule[];
   ruleDays: WireRuleDay[];
   usageDays: WireUsageDay[];
   earnedUnlocks: WireEarnedUnlock[];
+  historyDays: WireHistoryDay[];
   profile: WireProfile | null;
 };
 
@@ -94,6 +108,7 @@ export const toWire = {
     progress: row.progress,
     met: row.met,
     metAt: row.metAt,
+    unit: row.unit ?? null,
     updatedAt: row.updatedAt,
   }),
   usageDay: (row: Stamped<UsageDay>): WireUsageDay => ({
@@ -107,6 +122,15 @@ export const toWire = {
     ruleName: row.ruleName,
     metAt: row.metAt,
     windowEnd: row.windowEnd,
+    updatedAt: row.updatedAt,
+  }),
+  historyDay: (row: Stamped<SealedHistoryDay>): WireHistoryDay => ({
+    day: row.day,
+    usageMinutes: row.usageMinutes,
+    activity: row.activity,
+    met: row.met,
+    scheduled: row.scheduled,
+    sealedAt: row.sealedAt,
     updatedAt: row.updatedAt,
   }),
   profile: (profile: Stamped<Profile>): WireProfile => ({
@@ -140,6 +164,7 @@ export const fromWire = {
     progress: wire.progress,
     met: wire.met,
     metAt: wire.metAt ?? null,
+    ...(wire.unit ? { unit: wire.unit } : {}),
     updatedAt: wire.updatedAt,
   }),
   usageDay: (wire: WireUsageDay): Stamped<UsageDay> => ({
@@ -153,6 +178,15 @@ export const fromWire = {
     ruleName: wire.ruleName,
     metAt: wire.metAt,
     windowEnd: wire.windowEnd,
+    updatedAt: wire.updatedAt,
+  }),
+  historyDay: (wire: WireHistoryDay): Stamped<SealedHistoryDay> => ({
+    day: wire.day,
+    usageMinutes: wire.usageMinutes,
+    activity: wire.activity,
+    met: wire.met,
+    scheduled: wire.scheduled,
+    sealedAt: wire.sealedAt,
     updatedAt: wire.updatedAt,
   }),
   /** Server columns are nullable; a null reads as the profile's blank value so the store validators accept it. */
@@ -173,6 +207,7 @@ export const fromWire = {
     ruleDays: wire.ruleDays.map(fromWire.ruleDay),
     usageDays: wire.usageDays.map(fromWire.usageDay),
     earnedUnlocks: wire.earnedUnlocks.map(fromWire.earnedUnlock),
+    history: wire.historyDays.map(fromWire.historyDay),
     profile: wire.profile ? fromWire.profile(wire.profile, defaults) : null,
   }),
 };
@@ -186,6 +221,7 @@ export function readPull(body: unknown): WirePull {
     ruleDays: list(value.ruleDays),
     usageDays: list(value.usageDays),
     earnedUnlocks: list(value.earnedUnlocks),
+    historyDays: list(value.historyDays),
     profile: value.profile ?? null,
   };
 }

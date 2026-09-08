@@ -2,7 +2,7 @@ import { addDays } from '../../domain/calendar';
 import { rowKey } from '../../domain/syncMerge';
 import { DayKey, EarnedUnlock, Profile, Rule, RuleDay } from '../../domain/types';
 import { HistoryDay } from '../../ports/models';
-import { UsageDay } from '../../ports/SyncPort';
+import { SealedHistoryDay, UsageDay } from '../../ports/SyncPort';
 import { SyncState } from './syncStore';
 
 /**
@@ -18,6 +18,9 @@ export type DeviceFacts = {
 };
 
 export const TOMBSTONE_RETENTION_DAYS = 90;
+
+export const sealedOf = (history: HistoryDay[]): SealedHistoryDay[] =>
+  history.filter((row): row is SealedHistoryDay => typeof (row as SealedHistoryDay).sealedAt === 'string');
 
 export const usageDaysOf = (history: HistoryDay[]): UsageDay[] =>
   history.flatMap((row) => (row.usageMinutes === null ? [] : [{ day: row.day, lockedAppMinutes: row.usageMinutes }]));
@@ -79,6 +82,14 @@ export function trackChanges(state: SyncState, previous: DeviceFacts, next: Devi
     now,
   );
   clocks = earned.clocks;
+  const history = enqueue(
+    result.history,
+    clocks,
+    changedRows(sealedOf(previous.history), sealedOf(next.history), rowKey.history),
+    rowKey.history,
+    now,
+  );
+  clocks = history.clocks;
   const usageKey = (row: UsageDay) => rowKey.usageDay(row.day);
   const usage = enqueue(
     result.usageDays,
@@ -92,6 +103,7 @@ export function trackChanges(state: SyncState, previous: DeviceFacts, next: Devi
     ...result,
     ruleDays: ruleDays.outbox,
     earnedUnlocks: earned.outbox,
+    history: history.outbox,
     usageDays: usage.outbox,
     clocks: usage.clocks,
   };
@@ -110,12 +122,17 @@ export function markAllDirty(state: SyncState, facts: DeviceFacts, now: string):
     profileUpdatedAt: state.profileUpdatedAt ?? now,
     ruleDays: stamp(facts.ruleDays, rowKey.ruleDay),
     earnedUnlocks: stamp(facts.earnedUnlocks, rowKey.earnedUnlock),
+    history: stamp(sealedOf(facts.history), rowKey.history),
     usageDays: stamp(usageDaysOf(facts.history), usageKey),
   };
 }
 
 export const hasDayFacts = (state: SyncState) =>
-  Object.keys(state.ruleDays).length + Object.keys(state.earnedUnlocks).length + Object.keys(state.usageDays).length > 0;
+  Object.keys(state.ruleDays).length +
+    Object.keys(state.earnedUnlocks).length +
+    Object.keys(state.history).length +
+    Object.keys(state.usageDays).length >
+  0;
 
 export function pruneTombstones(state: SyncState, today: DayKey): SyncState {
   const cutoff = Date.parse(`${addDays(today, -TOMBSTONE_RETENTION_DAYS)}T00:00:00Z`);

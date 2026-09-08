@@ -78,12 +78,20 @@ test('a thousand rule days become three sequential PUTs of at most 400 rows', as
     updatedAt: stamp,
   }));
   await createSyncAdapter(client(fetch)).pushRuleDays(rows);
-  const sizes = fetch.mock.calls.map(([url, init]) => [url, JSON.parse(init.body as string).ruleDays.length]);
+  const sizes = fetch.mock.calls.map(([url, init]) => [url, JSON.parse(init.body as string).rows.length]);
   expect(sizes).toEqual([
     [`https://api.test${paths.ruleDays}`, 400],
     [`https://api.test${paths.ruleDays}`, 400],
     [`https://api.test${paths.ruleDays}`, 200],
   ]);
+});
+
+test('sealed history goes to its own endpoint under rows', async () => {
+  const fetch = fetchMock(async () => respond(200));
+  const row = { day: '2026-09-06', usageMinutes: 30, activity: { walking: 1, gym: 0, running: 0, biking: 0 }, met: true, scheduled: true, sealedAt: stamp, updatedAt: stamp };
+  await createSyncAdapter(client(fetch)).pushHistory([row]);
+  expect(fetch.mock.calls[0][0]).toBe(`https://api.test${paths.history}`);
+  expect(JSON.parse(fetch.mock.calls[0][1].body as string)).toEqual({ rows: [row] });
 });
 
 test('a failing batch stops the sequence so the remainder is retried later', async () => {
@@ -131,6 +139,7 @@ test('pull decodes the server snapshot', async () => {
       ruleDays: [{ ruleId: 'walk', day: '2026-09-06', progress: 5000, met: true, metAt: stamp, updatedAt: stamp }],
       usageDays: [{ day: '2026-09-06', lockedAppMinutes: 30, updatedAt: stamp }],
       earnedUnlocks: [],
+      historyDays: [{ day: '2026-09-05', usageMinutes: null, activity: { walking: 0, gym: 0, running: 0, biking: 0 }, met: false, scheduled: true, sealedAt: stamp, updatedAt: stamp }],
       profile: null,
     }),
   );
@@ -140,4 +149,5 @@ test('pull decodes the server snapshot', async () => {
   expect(snapshot.rules).toEqual([rule]);
   expect(snapshot.ruleDays).toEqual([{ ruleId: 'walk', day: '2026-09-06', progress: 5000, met: true, metAt: stamp, updatedAt: stamp }]);
   expect(snapshot.usageDays).toEqual([{ day: '2026-09-06', lockedAppMinutes: 30, updatedAt: stamp }]);
+  expect(snapshot.history).toEqual([expect.objectContaining({ day: '2026-09-05', sealedAt: stamp, scheduled: true })]);
 });

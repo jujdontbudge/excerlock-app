@@ -15,6 +15,7 @@ export type RowClocks = Record<string, string>;
 export const rowKey = {
   ruleDay: (row: Pick<RuleDay, 'ruleId' | 'day'>) => `ruleDay:${row.ruleId}:${row.day}`,
   earnedUnlock: (row: Pick<EarnedUnlock, 'ruleId' | 'day'>) => `earnedUnlock:${row.ruleId}:${row.day}`,
+  history: (row: Pick<HistoryDay, 'day'>) => `history:${row.day}`,
   usageDay: (day: DayKey) => `usageDay:${day}`,
 };
 
@@ -34,6 +35,7 @@ export type RestoreSummary = {
   removedRules: number;
   ruleDays: number;
   earnedUnlocks: number;
+  history: number;
   usageDays: number;
   profile: boolean;
 };
@@ -98,10 +100,7 @@ function mergeRows<T extends { day: DayKey }>(
   return { rows: [...rows.values()], taken };
 }
 
-/**
- * Sealed history stays on the device (no server table). Locked-app minutes are the one part that travels,
- * and they fill only a history day the device recorded without a measurement.
- */
+/** Locked-app minutes fill only a history day the device recorded without a measurement. */
 function mergeUsage(history: HistoryDay[], remote: SyncSnapshot['usageDays'], clocks: RowClocks) {
   const minutes = new Map(remote.map((row) => [row.day, row]));
   let taken = 0;
@@ -131,13 +130,14 @@ export function mergeSnapshot(local: LocalSyncState, remote: SyncSnapshot, today
   const rules = mergeRules(local.rules, local.tombstones, remote);
   const ruleDays = mergeRows(local.ruleDays, remote.ruleDays, rowKey.ruleDay, clocks, today);
   const earnedUnlocks = mergeRows(local.earnedUnlocks, remote.earnedUnlocks, rowKey.earnedUnlock, clocks, today);
-  const history = mergeUsage(local.history, remote.usageDays, clocks);
+  const history = mergeRows(local.history, remote.history, rowKey.history, clocks, today);
+  const usage = mergeUsage(history.rows, remote.usageDays, clocks);
   const profile = mergeProfile(local, remote.profile);
   return {
     rules: rules.rules,
     ruleDays: ruleDays.rows,
     earnedUnlocks: earnedUnlocks.rows,
-    history: history.rows,
+    history: usage.rows,
     profile: profile.profile,
     profileUpdatedAt: profile.profileUpdatedAt,
     clocks,
@@ -145,12 +145,13 @@ export function mergeSnapshot(local: LocalSyncState, remote: SyncSnapshot, today
       ...rules.summary,
       ruleDays: ruleDays.taken,
       earnedUnlocks: earnedUnlocks.taken,
-      usageDays: history.taken,
+      history: history.taken,
+      usageDays: usage.taken,
       profile: profile.taken,
     },
   };
 }
 
 export const restoredAnything = (summary: RestoreSummary) =>
-  summary.rules + summary.removedRules + summary.ruleDays + summary.earnedUnlocks + summary.usageDays > 0 ||
+  summary.rules + summary.removedRules + summary.ruleDays + summary.earnedUnlocks + summary.history + summary.usageDays > 0 ||
   summary.profile;

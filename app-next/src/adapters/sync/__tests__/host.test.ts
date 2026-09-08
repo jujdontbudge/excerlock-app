@@ -16,15 +16,16 @@ const settle = async () => {
   for (let round = 0; round < 6; round += 1) await new Promise((resolve) => setTimeout(resolve, 0));
 };
 
-/** The first pull (the anonymous identity at boot) finds nothing; later pulls return the given snapshot. */
-function mockSync(snapshot: SyncSnapshot = emptySnapshot()): jest.Mocked<SyncPort> {
+/** By default the first pull (the anonymous identity at boot) finds nothing; later pulls return the snapshot. */
+function mockSync(snapshot: SyncSnapshot = emptySnapshot(), firstPull: SyncSnapshot = emptySnapshot()): jest.Mocked<SyncPort> {
   return {
     pushRules: jest.fn().mockResolvedValue(undefined),
     pushRuleDays: jest.fn().mockResolvedValue(undefined),
     pushUsageDays: jest.fn().mockResolvedValue(undefined),
     pushEarnedUnlocks: jest.fn().mockResolvedValue(undefined),
+    pushHistory: jest.fn().mockResolvedValue(undefined),
     pushProfile: jest.fn().mockResolvedValue(undefined),
-    pull: jest.fn().mockResolvedValueOnce(emptySnapshot()).mockResolvedValue(snapshot),
+    pull: jest.fn().mockResolvedValueOnce(firstPull).mockResolvedValue(snapshot),
   };
 }
 
@@ -41,10 +42,10 @@ function appStateStub(): AppStateSource & { emit(state: string): void } {
 
 let runtime: Runtime, host: SyncHandle;
 
-async function boot(snapshot?: SyncSnapshot, options: SyncHostOptions = {}) {
+async function boot(snapshot?: SyncSnapshot, options: SyncHostOptions = {}, firstPull?: SyncSnapshot) {
   runtime = createRuntime();
   await runtime.dev.load('fresh-install');
-  const sync = mockSync(snapshot);
+  const sync = mockSync(snapshot, firstPull);
   runtime.sync = sync;
   host = startSync(runtime, options);
   await host.ready;
@@ -76,6 +77,18 @@ test('first launch restores once for the anonymous identity, then pushes the ful
   expect(sync.pushProfile).toHaveBeenCalledTimes(1);
   expect(syncStore.getState().data).toMatchObject({ identity: 'anonymous:fake-anonymous-user', restored: true, rulesDirty: false });
   expect(syncLog.getState().lastPushAt).not.toBeNull();
+});
+
+test('a fresh install pulls and merges the server rules before its first rules push', async () => {
+  const theirs: Rule = { ...rule, id: 'their-walk' };
+  const server = { ...emptySnapshot(), rules: [theirs] };
+  const sync = await boot(server, {}, server);
+  expect(sync.pull).toHaveBeenCalledTimes(1);
+  expect(sync.pushRules).toHaveBeenCalledTimes(1);
+  expect(sync.pull.mock.invocationCallOrder[0]).toBeLessThan(sync.pushRules.mock.invocationCallOrder[0]);
+  expect(sync.pushRules).toHaveBeenCalledWith([theirs], []);
+  expect(rulesStore.getState().data.rules).toEqual([theirs]);
+  expect(syncStore.getState().data.tombstones).toEqual([]);
 });
 
 test('rule edits pull the server set first, then push once, five seconds after the last edit', async () => {

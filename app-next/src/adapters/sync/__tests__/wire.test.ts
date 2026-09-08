@@ -15,6 +15,7 @@ test('the endpoint table matches the server routes', () => {
     ruleDays: '/v1/sync/rule-days',
     usageDays: '/v1/sync/usage-days',
     earnedUnlocks: '/v1/sync/earned-unlocks',
+    history: '/v1/sync/history',
     profile: '/v1/sync/profile',
     pull: '/v1/sync',
   });
@@ -39,13 +40,11 @@ test('a deletion is a whole row with deletedAt set and updatedAt moved to the de
   expect(toWire.tombstone(rule, stamp)).toMatchObject({ id: 'walk', mode: rule.mode, updatedAt: stamp, deletedAt: stamp });
 });
 
-test('device-only fields never travel: pausedReason, the rule-day unit, the warm-up rating', () => {
+test('device-only fields never travel: pausedReason and the warm-up rating', () => {
   const paused = { ...rule, enabled: false, pausedReason: 'noGym' as const };
   expect(Object.keys(toWire.rule(paused)).sort()).toEqual(
     ['activity', 'createdAt', 'deletedAt', 'enabled', 'id', 'mode', 'schedule', 'updatedAt'].sort(),
   );
-  const day = { ruleId: 'walk', day: '2026-09-06', progress: 5200, met: true, metAt: stamp, unit: 'steps' as const, updatedAt: stamp };
-  expect(Object.keys(toWire.ruleDay(day)).sort()).toEqual(['day', 'met', 'metAt', 'progress', 'ruleId', 'updatedAt']);
   const profile = {
     warmupRating: 5,
     name: 'Alex',
@@ -61,11 +60,26 @@ test('device-only fields never travel: pausedReason, the rule-day unit, the warm
   expect(toWire.profile(profile)).not.toHaveProperty('warmupRating');
 });
 
-test('day facts round-trip', () => {
+test('day facts round-trip, with an absent rule-day unit sent as null', () => {
   const day = { ruleId: 'walk', day: '2026-09-06', progress: 5200, met: true, metAt: stamp, updatedAt: stamp };
-  expect(toWire.ruleDay(day)).toEqual(day);
+  expect(toWire.ruleDay(day)).toEqual({ ...day, unit: null });
   expect(fromWire.ruleDay(toWire.ruleDay(day))).toEqual(day);
+  const withUnit = { ...day, unit: 'steps' as const };
+  expect(toWire.ruleDay(withUnit)).toEqual(withUnit);
+  expect(fromWire.ruleDay(toWire.ruleDay(withUnit))).toEqual(withUnit);
   expect(fromWire.ruleDay({ ruleId: 'walk', day: '2026-09-06', progress: 0, met: false, updatedAt: stamp })).toMatchObject({ metAt: null });
+
+  const history = {
+    day: '2026-09-06',
+    usageMinutes: null,
+    activity: { walking: 5200, gym: 0, running: 0, biking: 0 },
+    met: true,
+    scheduled: true,
+    sealedAt: stamp,
+    updatedAt: stamp,
+  };
+  expect(toWire.historyDay(history)).toEqual(history);
+  expect(fromWire.historyDay(toWire.historyDay(history))).toEqual(history);
 
   const usage = { day: '2026-09-06', lockedAppMinutes: 42, updatedAt: stamp };
   expect(fromWire.usageDay(toWire.usageDay(usage))).toEqual(usage);
@@ -108,6 +122,7 @@ test('a pull separates live rules from tombstones and tolerates absent collectio
     ruleDays: [],
     usageDays: [],
     earnedUnlocks: [],
+    historyDays: [],
     profile: null,
   };
   const snapshot = fromWire.snapshot(readPull(body), defaults);
@@ -121,6 +136,7 @@ test('a pull separates live rules from tombstones and tolerates absent collectio
     ruleDays: [],
     usageDays: [],
     earnedUnlocks: [],
+    history: [],
     profile: null,
   });
 });
