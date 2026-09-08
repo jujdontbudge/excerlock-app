@@ -34,7 +34,10 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
   `scheduleWalkLeaseWarning(at, variant?)` are the only schedulable kinds; the third catalog id
   (`SHIELD_OPEN_NOTIFICATION_ID`) is enqueued by the ShieldAction extension alone. `__tests__/notificationsContract.ts`
   runs against the fake and the adapter.
-- SyncPort: Phase 2 synchronizes rules and day facts with the VPS.
+- SyncPort: backup and restore of rules (with explicit deletion tombstones), rule days, usage days, earned
+  unlocks, sealed history and the profile, every row stamped with `updatedAt` (D5). Never a source of truth
+  for enforcement; the app selection never travels. Real adapter in `src/adapters/sync`; the fake is an
+  in-memory server so the sign-in restore can be exercised locally.
 - ClockPort: Phase 2 observes system time and timezone changes.
 - ReachabilityPort: network-backed screens distinguish offline failures; local-first flows never consult it.
 
