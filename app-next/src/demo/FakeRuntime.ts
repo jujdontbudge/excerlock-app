@@ -50,6 +50,7 @@ export function FakeRuntime(): Runtime {
     });
   return {
     kind: 'fake',
+    paywall: 'standIn',
     clock: ctx.clock,
     screenTime: ScreenTimeFake(ctx),
     steps: StepsFake(ctx),

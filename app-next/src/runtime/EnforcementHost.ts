@@ -1,4 +1,3 @@
-import { AppState } from 'react-native';
 import { resolveLock } from '../domain/resolveLock';
 import { entitlementStore } from '../state/entitlementStore';
 import { enforcementStore } from '../state/enforcementStore';
@@ -17,10 +16,8 @@ import { startSessionGuard } from './sessionGuard';
 import { addDays } from '../domain/calendar';
 import { dayKey, windowInstances } from '../domain/schedule';
 import { nextEnforcementAt } from './nextEnforcementAt';
+import { AppStateSource, appStateOwner } from './appState';
 
-type AppStateSource = {
-  addEventListener(event: 'change', callback: (state: string) => void): { remove(): void };
-};
 
 export function startEnforcement(
   runtime: Runtime,
@@ -107,13 +104,17 @@ export function startEnforcement(
       void requestApply(true);
     }),
   ];
-  const appState = (options.appState ?? AppState).addEventListener('change', (state) => {
+  const appState = (options.appState ?? appStateOwner()).addEventListener('change', (state) => {
     if (state !== 'active') return;
     void (async () => {
+      // The composition's own foreground work — the session refresh, the pedometer re-read, the
+      // background gym visits — is awaited alongside these, so the progress refresh below reads
+      // what it produced. This is the app's one `AppState` handler; nothing else may subscribe.
       const [camera, selection] = await Promise.all([
+        runtime.onForeground?.(),
         runtime.gait.permission(),
         runtime.screenTime.describeSelection(),
-      ]);
+      ]).then(([, cameraStatus, described]) => [cameraStatus, described] as const);
       if (!active) return;
       permissionsStore.getState().patch({
         screenTime: runtime.screenTime.authorizationStatus(),

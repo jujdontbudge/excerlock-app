@@ -22,14 +22,20 @@ const REQUIRED_ACCESSORS = {
   createNativeScreenTimeModule: [
     "../engine/screentime/native/createNativeScreenTimeModule",
   ],
-} as const;
-
-const PENDING_ACCESSORS = {
-  // P2-T05 — StepsAdapter, WalkingAdapter, GymAdapter
+  // P2-T05 — StepsAdapter, WalkingAdapter, GymAdapter, all four built by
+  // `createNativeAdapters` in `adapters/nativeEngine.ts`, which the real runtime
+  // composition calls (`runtime/realRuntime.ts`).
   createExcerlockMotionModuleClient: ["../engine/signals", "../../engine/signals"],
   createPhonePlacementModuleClient: ["../engine/signals", "../../engine/signals"],
   getLocationProvider: ["../engine/signals", "../../engine/signals"],
 } as const;
+
+/**
+ * Nothing is pending. An accessor lands here when its adapter is tested but not
+ * yet composed, and moves up the moment a route can reach its caller — that
+ * handshake is what stops a tested adapter from staying dead code.
+ */
+const PENDING_ACCESSORS = {} as const;
 
 type AccessorName =
   | keyof typeof REQUIRED_ACCESSORS
@@ -62,7 +68,37 @@ function calledImportedAccessors(
     true,
   );
   const importedAccessors = new Map<string, AccessorName>();
+  // Namespaces bound by a lazy `require`, which is how every native accessor in `src/adapters` and
+  // `src/runtime` is reached: importing one of those files must not be enough to load JSI, so the
+  // module is required inside the function that uses it. A same-name property call on such a
+  // namespace is a production caller exactly as a named import would be.
+  const requiredNamespaces = new Map<string, string>();
   const calls: string[] = [];
+
+  const moduleOfRequire = (node: ts.Node): string | undefined => {
+    const call = ts.isAsExpression(node) ? node.expression : node;
+    if (
+      !ts.isCallExpression(call) ||
+      !ts.isIdentifier(call.expression) ||
+      call.expression.text !== "require" ||
+      call.arguments.length !== 1
+    ) {
+      return undefined;
+    }
+    const specifier = call.arguments[0];
+    return specifier !== undefined && ts.isStringLiteral(specifier)
+      ? specifier.text
+      : undefined;
+  };
+
+  const noteAccessor = (localName: string, importedName: string, moduleName: string): void => {
+    if (
+      ACCESSORS.includes(importedName as AccessorName) &&
+      ACCESSOR_MODULES[importedName]?.includes(moduleName)
+    ) {
+      importedAccessors.set(localName, importedName as AccessorName);
+    }
+  };
 
   source.statements.forEach((statement) => {
     if (
@@ -77,26 +113,58 @@ function calledImportedAccessors(
     const moduleName = statement.moduleSpecifier.text;
     statement.importClause.namedBindings.elements.forEach((element) => {
       const importedName = element.propertyName?.text ?? element.name.text;
-      if (
-        !element.isTypeOnly &&
-        ACCESSORS.includes(importedName as AccessorName) &&
-        ACCESSOR_MODULES[importedName]?.includes(moduleName)
-      ) {
-        importedAccessors.set(element.name.text, importedName as AccessorName);
+      if (!element.isTypeOnly) {
+        noteAccessor(element.name.text, importedName, moduleName);
       }
     });
   });
 
+  function collectRequires(node: ts.Node): void {
+    if (ts.isVariableDeclaration(node) && node.initializer) {
+      const moduleName = moduleOfRequire(node.initializer);
+      if (moduleName !== undefined) {
+        if (ts.isIdentifier(node.name)) {
+          requiredNamespaces.set(node.name.text, moduleName);
+        } else if (ts.isObjectBindingPattern(node.name)) {
+          node.name.elements.forEach((element) => {
+            if (!ts.isIdentifier(element.name)) return;
+            const importedName = element.propertyName && ts.isIdentifier(element.propertyName)
+              ? element.propertyName.text
+              : element.name.text;
+            noteAccessor(element.name.text, importedName, moduleName);
+          });
+        }
+      }
+    }
+    ts.forEachChild(node, collectRequires);
+  }
+
   function visit(node: ts.Node): void {
-    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
-      const accessor = importedAccessors.get(node.expression.text);
-      if (accessor !== undefined) {
-        calls.push(accessor);
+    if (ts.isCallExpression(node)) {
+      if (ts.isIdentifier(node.expression)) {
+        const accessor = importedAccessors.get(node.expression.text);
+        if (accessor !== undefined) {
+          calls.push(accessor);
+        }
+      } else if (
+        ts.isPropertyAccessExpression(node.expression) &&
+        ts.isIdentifier(node.expression.expression)
+      ) {
+        const moduleName = requiredNamespaces.get(node.expression.expression.text);
+        const accessor = node.expression.name.text;
+        if (
+          moduleName !== undefined &&
+          ACCESSORS.includes(accessor as AccessorName) &&
+          ACCESSOR_MODULES[accessor]?.includes(moduleName)
+        ) {
+          calls.push(accessor);
+        }
       }
     }
     ts.forEachChild(node, visit);
   }
 
+  collectRequires(source);
   visit(source);
   return calls;
 }
@@ -174,9 +242,37 @@ describe("native production composition", () => {
     ).toEqual([]);
     expect(
       calledImportedAccessors(
+        "wrong-module.ts",
+        `const signals = require("./elsewhere");
+         signals.getLocationProvider();`,
+      ),
+    ).toEqual([]);
+    expect(
+      calledImportedAccessors(
         "caller.ts",
         `import { getLocationProvider as location } from "../engine/signals";
          location();`,
+      ),
+    ).toEqual(["getLocationProvider"]);
+  });
+
+  it("counts an accessor reached through the lazy require these modules must use", () => {
+    expect(
+      calledImportedAccessors(
+        "lazy.ts",
+        `function provider() {
+           const signals = require("../engine/signals") as typeof import("../engine/signals");
+           return signals.getLocationProvider();
+         }`,
+      ),
+    ).toEqual(["getLocationProvider"]);
+    expect(
+      calledImportedAccessors(
+        "destructured.ts",
+        `function provider() {
+           const { getLocationProvider } = require("../engine/signals");
+           return getLocationProvider();
+         }`,
       ),
     ).toEqual(["getLocationProvider"]);
   });

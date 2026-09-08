@@ -13,8 +13,19 @@ import { ClockPort } from '../ports/ClockPort';
 import { RuntimeControls } from '../ports/RuntimeControls';
 import { GaitPort } from '../ports/GaitPort';
 import { ReachabilityPort } from '../ports/ReachabilityPort';
+
+/**
+ * How the paywall screen presents itself. `builder` means Adapty's Paywall Builder view is bound and
+ * the screen has a real paywall to open; `standIn` is the Phase 1 local screen, which is what a
+ * keyless build and every test see. The screen asks the composition rather than the vendor, so
+ * nothing above a port learns that Adapty exists.
+ */
+export type PaywallPresentation = 'standIn' | 'builder';
+
 export type Runtime = {
-  readonly kind: 'fake';
+  /** `real` means the composition bound the real adapters it could; `fake` is the demo runtime. */
+  readonly kind: 'fake' | 'real';
+  readonly paywall: PaywallPresentation;
   screenTime: ScreenTimePort;
   steps: StepsPort;
   walking: WalkingPort;
@@ -30,5 +41,11 @@ export type Runtime = {
   clock: ClockPort;
   dev: RuntimeControls;
   reachability: ReachabilityPort;
+  /**
+   * Composition work for a foreground transition — refreshing the session, re-reading the pedometer,
+   * reconciling background gym visits. `runtime/EnforcementHost` owns the app's one `AppState`
+   * subscription and calls this, so no adapter listens for itself.
+   */
+  onForeground?: () => Promise<void>;
   dispose: () => void;
 };

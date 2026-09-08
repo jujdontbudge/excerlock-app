@@ -7,6 +7,7 @@ import { startEnforcement } from './EnforcementHost';
 import { startNotifications } from '../adapters/notifications/startNotifications';
 import { startReviewPrompts } from '../adapters/review/reviewPrompts';
 import { startPersonProperties } from '../adapters/analytics/personProperties';
+import { startRuntimeSync } from './startRuntimeSync';
 import { reportError } from '../observability/reportError';
 const Context = createContext<Runtime | null>(null);
 
@@ -21,6 +22,9 @@ function RuntimeBindings({ runtime }: { runtime: Runtime }) {
       startEnforcement(runtime),
       startNotifications(runtime),
       startReviewPrompts(runtime),
+      // Backup is last: it observes the stores the bindings above write, and it is the only one the
+      // demo runtime skips entirely.
+      startRuntimeSync(runtime),
     ];
     return () => stops.reverse().forEach((stop) => stop());
   }, [runtime]);
