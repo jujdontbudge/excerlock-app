@@ -1,5 +1,6 @@
 export const unlockCopy = {
   close: 'Close unlock screen',
+  scanAgain: 'Scan again to keep your apps open',
   done: 'Done',
   preview: 'Unlock preview',
   treadmill: {
