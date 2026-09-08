@@ -25,8 +25,11 @@ the ordinary error when reachability itself cannot be determined.
 3. **`bindHaptics`** — applies the Touch feedback preference to the haptics module, so a rehydrated
    `haptics: false` is in force before the first screen renders.
 4. **`startEnforcement`** — the enforcement host below.
+5. **`startReviewPrompts`** (`adapters/review`) — re-runs the App Store rating policy on every rule-day
+   change, so a day becoming met can prompt while the app is in the foreground. It subscribes to the
+   store, never to `AppState`.
 
-The three bindings are started in that order inside one effect and stopped in reverse.
+The four bindings are started in that order inside one effect and stopped in reverse.
 `app/locked-apps.tsx` is registered outside every `Stack.Protected` so the shield notification's deep
 link always resolves; `lockedAppsDestination` then sends the user to Home or the paywall.
 

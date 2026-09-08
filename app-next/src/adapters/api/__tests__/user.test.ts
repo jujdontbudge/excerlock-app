@@ -42,7 +42,10 @@ test('DELETE /v1/user resolves on 204 and on an already-deleted account', async 
 });
 
 test('a failed server deletion surfaces as a retryable error', async () => {
-  await expect(apiWith(500).deleteUser()).rejects.toMatchObject({ kind: 'unavailable', code: 'ACCOUNT_DELETION_FAILED' });
+  await expect(apiWith(500).deleteUser()).rejects.toMatchObject({
+    kind: 'unavailable',
+    code: 'ACCOUNT_DELETION_FAILED',
+  });
   await expect(apiWith(502).deleteUser()).rejects.toMatchObject({ kind: 'unavailable' });
 });
 

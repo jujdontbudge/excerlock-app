@@ -32,7 +32,10 @@ function portWith(status: number, text = '') {
     bodies.push(init.body ?? '');
     return { status, text: async () => text };
   };
-  return { port: createHttpSupportPort(createApiClient({ baseUrl: 'https://a', getAccessToken: async () => 't', fetch })), bodies };
+  return {
+    port: createHttpSupportPort(createApiClient({ baseUrl: 'https://a', getAccessToken: async () => 't', fetch })),
+    bodies,
+  };
 }
 
 test('the support payload is exactly the documented fields, trimmed, with the wire category', () => {
@@ -79,9 +82,16 @@ test('the wire body never contains a gym name, coordinate or app name even when 
   expect(bodies).toHaveLength(1);
   expect(bodies[0]).not.toMatch(/Demo Gym|latitude|longitude|Instagram|apps/);
   const sent = JSON.parse(bodies[0]);
-  expect(Object.keys(sent.diagnostics).sort()).toEqual(
-    ['appBuild', 'appVersion', 'deviceModel', 'entitlementStatus', 'iosVersion', 'lastEnforcementResult', 'permissions', 'ruleCount'],
-  );
+  expect(Object.keys(sent.diagnostics).sort()).toEqual([
+    'appBuild',
+    'appVersion',
+    'deviceModel',
+    'entitlementStatus',
+    'iosVersion',
+    'lastEnforcementResult',
+    'permissions',
+    'ruleCount',
+  ]);
   expect(sent.diagnostics.lastEnforcementResult).toHaveLength(200);
 });
 

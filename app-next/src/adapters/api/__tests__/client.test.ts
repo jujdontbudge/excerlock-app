@@ -28,17 +28,29 @@ test('every request carries the bearer token, the JSON body and a strict base UR
 
 test('a body-less request sends no content type and tolerates an empty or invalid response body', async () => {
   const calls: Call[] = [];
-  const client = createApiClient({ baseUrl: 'https://a', getAccessToken: async () => 't', fetch: fetchStub(204, '', calls) });
+  const client = createApiClient({
+    baseUrl: 'https://a',
+    getAccessToken: async () => 't',
+    fetch: fetchStub(204, '', calls),
+  });
   expect(await client.request('/v1/user', { method: 'DELETE' })).toEqual({ status: 204, body: null });
   expect(calls[0][1].headers['Content-Type']).toBeUndefined();
   expect('body' in calls[0][1]).toBe(false);
-  const broken = createApiClient({ baseUrl: 'https://a', getAccessToken: async () => 't', fetch: fetchStub(500, 'not json') });
+  const broken = createApiClient({
+    baseUrl: 'https://a',
+    getAccessToken: async () => 't',
+    fetch: fetchStub(500, 'not json'),
+  });
   expect(await broken.request('/v1/user', { method: 'DELETE' })).toEqual({ status: 500, body: null });
 });
 
 test('no access token fails as unauthenticated before anything is sent', async () => {
   const calls: Call[] = [];
-  const client = createApiClient({ baseUrl: 'https://a', getAccessToken: async () => null, fetch: fetchStub(200, '', calls) });
+  const client = createApiClient({
+    baseUrl: 'https://a',
+    getAccessToken: async () => null,
+    fetch: fetchStub(200, '', calls),
+  });
   await expect(client.request('/v1/user', { method: 'GET' })).rejects.toMatchObject({ kind: 'unauthenticated' });
   expect(calls).toHaveLength(0);
 });
@@ -59,7 +71,9 @@ test('a network failure is offline and a slow server is a timeout that aborts th
     getAccessToken: async () => 't',
     timeoutMs: 5,
     fetch: (_url, init) =>
-      new Promise((_, reject) => init.signal.addEventListener('abort', () => (aborted = true) && reject(new Error('aborted')))),
+      new Promise((_, reject) =>
+        init.signal.addEventListener('abort', () => (aborted = true) && reject(new Error('aborted'))),
+      ),
   });
   await expect(slow.request('/v1/user', { method: 'GET' })).rejects.toMatchObject({ kind: 'timeout' });
   expect(aborted).toBe(true);

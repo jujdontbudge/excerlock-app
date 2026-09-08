@@ -7,6 +7,8 @@ facts the runtime host publishes — `enforcementStatus` (the last `ApplyResult`
 "Blocking is not on"), `lastClaimAt` (the claim-on-open timestamp) and the retry token Home's Try again
 action bumps. Nothing here survives a launch; the host republishes on its first apply.
 
+`reviewStore` is the rating policy's memory (install date, prompts shown, manual Rate tap); `adapters/review` is its only writer.
+
 `todayHistory` replaces today’s fixture completion with actual enabled schedules and RuleDays before streak/analytics selectors read it. Historical usage remains measurement data; missing usage is not fabricated.
 
 ## Persisted-store contract
