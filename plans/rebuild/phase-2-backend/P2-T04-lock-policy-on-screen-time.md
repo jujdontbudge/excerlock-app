@@ -46,12 +46,29 @@ scheduling go away; window instances and met/walking states take their place.
 ## Acceptance
 
 - [ ] Simulator: picker returns a handle; `locked` applies; `unlockedMet` clears; schedules registered
-      (inspect via the diagnostics log).
-- [ ] Extension decision table tested for: interval start with met=today → no shield; met=yesterday → shield;
+      (inspect via the diagnostics log). — needs the device build; **P2-T11**.
+- [x] Extension decision table tested for: interval start with met=today → no shield; met=yesterday → shield;
       walk lease live → no shield; lease expired → shield.
-- [ ] Usage counter increments in the simulator with a simulated threshold event (fixture path from the old
-      e2e composition root).
+      `adapters/screentime/__tests__/actions.test.ts` drives each row through `resolveLock` and asserts the
+      action list the monitor is configured with; `adapter.test.ts` asserts the same through `applyLock`.
+- [x] Usage counter increments from a simulated threshold event — `__tests__/usage.test.ts` and the
+      `observeUsage` row of `adapter.test.ts`, against the DeviceActivity double. The simulator run itself is
+      **P2-T11**.
 - [ ] Real enforcement, deny path and shield rendering are **not** claimed here; they belong to P2-T11.
+
+### Built 2026-09-07 (`app-next/src/adapters/screentime/`)
+
+`ScreenTimeAdapter` passes `describeScreenTimePort` (`__tests__/contract.test.ts`) with the native layer
+doubled. 49 tests across the module; `README.md` states the two measurement limits and the device questions.
+
+| Acceptance row added by the audit | Status |
+| --- | --- |
+| Overlapping windows stay shielded past the first end with the app killed | Merged monitors and the `intervalDidEnd`-clears rule are unit-tested; the app-killed half is **P2-T11**. |
+| Five daily rules register within budget | `compileMonitorPlan` truncation is honoured by failing closed (`monitorBudget`); the count is domain-tested. |
+| Sandbox lapse clears within one app run | Tested: the lapse branch runs before everything else and stops every monitor, usage included. |
+| Clock set back an hour keeps the apps locked | `effectiveNow`/`nextWatermark` clamp the adapter's own clock reads; the device check is **P2-T11**. |
+| The `lockWindow` subtitle renders | Published per monitor (B36) and asserted; rendering is **P2-T11**. |
+| The third notification id taps through | **P2-T09** owns the id; the adapter publishes the cause and route the ShieldAction extension reads. |
 
 ## Audit amendments (2026-09-07; see `fix-plan.md`) — these override the Design and Steps above where they differ
 

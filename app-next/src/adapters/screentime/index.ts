@@ -5,3 +5,4 @@ export type { DeviceActivityApi, SelectionPicker } from './deviceActivity';
 export { APP_GROUP_KEYS, readFacts, readUsage } from './appGroup';
 export type { EnforcementFacts, UsageRecord } from './appGroup';
 export { LEASE_MINUTES, USAGE_CAP_MINUTES, USAGE_STEP_MINUTES } from './schedules';
+export { screenTimeStoreBindings } from './storeBindings';
