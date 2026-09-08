@@ -33,7 +33,7 @@ export function WalkingFake(ctx: FakeContext): WalkingPort & { resume: () => voi
         graceUntil:
           phase === 'grace' ? new Date(Date.parse(startedAt) + (index + 1) * script.stepMs).toISOString() : null,
       };
-      writeWalkingProgress(rule, startedAt, ctx.clock.timezone(), base + seconds / 60);
+      writeWalkingProgress(rule, startedAt, ctx.clock.timezone(), base + seconds / 60, ctx.clock.now());
       ruleDaysStore.getState().patch({ walkingSession: { ...session, phase } });
       if (phase === 'ended') {
         cancel?.();
@@ -86,9 +86,20 @@ export function WalkingFake(ctx: FakeContext): WalkingPort & { resume: () => voi
       const session = ruleDaysStore.getState().data.walkingSession;
       if (!session || session.phase === 'ended') return false;
       cancel?.();
-      const leaseUntil = new Date(Date.parse(ctx.clock.now()) + 900000).toISOString();
+      const rule = rulesStore.getState().data.rules.find((r) => r.id === session.ruleId),
+        scannedAt = ctx.clock.now(),
+        leaseUntil = new Date(Date.parse(scannedAt) + 900000).toISOString(),
+        day = dayKey(session.startedAt, ctx.clock.timezone()),
+        base = ruleDaysStore.getState().data.days.find((d) => d.ruleId === session.ruleId && d.day === day)?.progress ?? 0;
       ruleDaysStore.getState().patch({ walkingSession: { ...session, phase: 'walking', leaseUntil } });
-      cancel = ctx.clock.subscribe(() => { if (ctx.clock.now() >= leaseUntil) stop(); });
+      // A propped treadmill walk earns minutes from the scan until the lease lapses, exactly like the
+      // handheld cadence path; the lease clips the credit so a lapsed session cannot keep counting.
+      cancel = ctx.clock.subscribe(() => {
+        const now = ctx.clock.now(),
+          held = Math.min(Date.parse(now), Date.parse(leaseUntil)) - Date.parse(scannedAt);
+        if (rule) writeWalkingProgress(rule, session.startedAt, ctx.clock.timezone(), base + Math.max(0, held) / 60000, now);
+        if (now >= leaseUntil) stop();
+      });
       return true;
     },
     details: () => detail,
