@@ -328,6 +328,47 @@ test('the monitor budget, the rewind and the 30-minute interval fail on the obvi
   assert.ok(run('merged-30-minute-interval', neverEnded).lines.some((l) => /no intervalDidEnd/.test(l)));
 });
 
+test('a later provider sign-in may return to the existing user instead of keeping the anonymous id', () => {
+  const returning = [
+    [0, 'auth.session', { kind: 'signedIn', provider: 'apple', userId: 'u9' }],
+    [1 * M, 'auth.session', { kind: 'anonymous', userId: 'anon-2' }],
+    [2 * M, 'auth.link', { provider: 'google', result: 'linked', userId: 'u9' }],
+    [2 * M + 1 * S, 'auth.session', { kind: 'signedIn', provider: 'google', userId: 'u9' }],
+  ];
+  assert.equal(run('sign-in-google', returning).status, 'pass');
+  const stranger = returning.map(([offset, event, data]) => (event === 'auth.link' ? [offset, event, { ...data, userId: 'u10' }] : [offset, event, data]));
+  assert.ok(run('sign-in-google', stranger).lines.some((l) => /no earlier session had that id/.test(l)));
+});
+
+test('five daily rules may truncate at the budget but must cover past tomorrow', () => {
+  const truncated = PASSING['five-daily-rules-budget'].map(([offset, event, data]) => (event === 'enforcement.plan' ? [offset, event, { ...data, truncatedAt: iso(4 * 24 * H) }] : [offset, event, data]));
+  const outcome = run('five-daily-rules-budget', truncated);
+  assert.equal(outcome.status, 'pass');
+  assert.ok(outcome.lines.some((l) => /truncated at/.test(l)));
+  const tooShort = PASSING['five-daily-rules-budget'].map(([offset, event, data]) => (event === 'enforcement.plan' ? [offset, event, { ...data, truncatedAt: iso(6 * H) }] : [offset, event, data]));
+  assert.ok(run('five-daily-rules-budget', tooShort).lines.some((l) => /must reach past tomorrow/.test(l)));
+});
+
+test('a minutes-long sandbox trial without a scheduled reminder is a note, not a failure', () => {
+  const sandbox = [[0, 'entitlement.status', { status: 'trial', renewsAt: iso(3 * M), source: 'adapty' }]];
+  const outcome = run('trial-reminder', sandbox);
+  assert.equal(outcome.status, 'pass');
+  assert.ok(outcome.lines.some((l) => /shorter than the reminder lead/.test(l)));
+  const real = [[0, 'entitlement.status', { status: 'trial', renewsAt: iso(7 * 24 * H), source: 'adapty' }]];
+  assert.equal(run('trial-reminder', real).status, 'fail');
+});
+
+test('a propped scan inside an unlock already in force still passes', () => {
+  const inside = [[-1 * M, 'enforcement.apply', { decision: 'unlockedProvisional', shields: 'down', applied: true, monitors: 1 }]].concat(
+    PASSING['treadmill-propped-scan'].filter(([, event]) => event !== 'enforcement.apply'),
+  );
+  const outcome = run('treadmill-propped-scan', inside);
+  assert.equal(outcome.status, 'pass');
+  assert.ok(outcome.lines.some((l) => /already down/.test(l)));
+  const never = PASSING['treadmill-propped-scan'].filter(([, event]) => event !== 'enforcement.apply');
+  assert.equal(run('treadmill-propped-scan', never).status, 'fail');
+});
+
 test('a file named for a scenario turns missing evidence into a failure; an unnamed file reports only what has evidence', () => {
   const dir = tmpDir();
   fs.writeFileSync(path.join(dir, 'deny-motion.log'), log(PASSING['deny-screen-time']));
