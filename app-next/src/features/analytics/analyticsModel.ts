@@ -50,7 +50,7 @@ export function analyticsModel(history: HistoryDay[], today: string, period: Per
     delta: reclaimed.minutes - previous.minutes,
     scheduled: rows.filter((r) => r.scheduled).length,
     met: rows.filter((r) => r.scheduled && r.met).length,
-    streak: streak(history, today),
+    streak: streak(history, end < today ? end : today),
     activities: {
       walking: rows.reduce((s, r) => s + r.activity.walking, 0),
       gym: rows.reduce((s, r) => s + r.activity.gym, 0),
