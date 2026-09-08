@@ -46,3 +46,19 @@ test('handheld walking never renders treadmill framing and remains startable', a
   expect(screen.queryByText('Place your phone securely before starting')).toBeNull();
   expect(screen.getByRole('button', { name: 'Start walking' })).toBeEnabled();
 });
+
+test('a refusal before the window says blocking has not started yet', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('home-walking-session');
+  ruleDaysStore.getState().patch({ walkingSession: null });
+  // merge: P2-T15 throws its own WalkingStartError with this code.
+  runtime.walking.start = jest.fn().mockRejectedValue(Object.assign(new Error('not scheduled'), { code: 'notScheduled' }));
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <WalkingSheet rule={rulesStore.getState().data.rules[0]} onDismiss={jest.fn()} />
+    </AppRuntimeProvider>,
+  );
+
+  await act(async () => userEvent.press(screen.getByRole('button', { name: 'Start walking' })));
+  expect(screen.getByRole('alert')).toHaveTextContent("Blocking hasn't started yet.");
+});

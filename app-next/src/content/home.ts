@@ -62,7 +62,6 @@ export const homeCopy = {
   satisfied: (name: string) => `Satisfied by ${name} today`,
   progress: (value: string, goal: string, unit: string) => `${value} / ${goal} ${unit}`,
   walkedProgress: (value: string, goal: string) => `${value} / ${goal} min walked`,
-  pausedNoGym: 'Paused — save a gym',
   states: {
     met: 'Met today',
     live: 'Walking now',
