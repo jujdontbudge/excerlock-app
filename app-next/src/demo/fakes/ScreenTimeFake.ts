@@ -2,9 +2,10 @@ import { dayKey } from '../../domain/calendar';
 import { ScreenTimePort } from '../../ports/ScreenTimePort';
 import { permissionsStore } from '../../state/permissionsStore';
 import { rulesStore } from '../../state/rulesStore';
+import { ApplyResult } from '../../runtime/upstreamCompatibility';
 import { FakeContext } from '../FakeContext';
 export function ScreenTimeFake(ctx: FakeContext): ScreenTimePort {
-  let previous: { key: string; result: Awaited<ReturnType<ScreenTimePort['applyLock']>> } | undefined;
+  let previous: { key: string; result: ApplyResult } | undefined;
   return {
     authorizationStatus: () => permissionsStore.getState().data.screenTime,
     requestAuthorization: () => ctx.request('screenTime'),
@@ -23,7 +24,7 @@ export function ScreenTimeFake(ctx: FakeContext): ScreenTimePort {
       const failed = plan.shields === 'apply' && ctx.snapshot().outcome === 'error';
       if (failed) ctx.log('monitor_registration_failed');
       else ctx.log('lock_applied', { state: decision.state, shields: plan.shields });
-      const result = {
+      const result: ApplyResult = {
         applied: !failed,
         shields: plan.shields === 'apply' ? 'up' : 'down',
         monitors: plan.monitors === 'keep' ? 1 : 0,
