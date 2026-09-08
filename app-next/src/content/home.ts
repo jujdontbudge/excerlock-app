@@ -45,6 +45,7 @@ export const homeCopy = {
   healthNeeded: 'Health access needed to update workouts',
   locationNeeded: 'Location access needed to recognize your gym',
   completed: 'Goal reached',
+  claimOnOpen: 'Open ExcerLock after your workout to unlock',
   progress: (value: string, goal: string, unit: string) => `${value} / ${goal} ${unit}`,
   walkReady: 'Your apps stay open while you keep walking.',
   emptyBody: 'Choose a movement that makes room for the rest of your day.',

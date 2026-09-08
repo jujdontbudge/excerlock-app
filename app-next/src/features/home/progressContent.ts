@@ -46,12 +46,17 @@ export function progressContent(
         : permissions.health === 'granted';
   const needed =
     rule.activity === 'walking' ? c.motionNeeded : rule.activity === 'gym' ? c.locationNeeded : c.healthNeeded;
+  const action = rule.activity === 'gym' && !row.met ? ('checkin' as const) : undefined;
+  // Neither Health nor the DeviceActivity extension can post a finished run in the background, so a
+  // card with no action tells the user that opening the app is what claims the goal (B8, B11).
+  const claimOnOpen = !action && !row.met && (rule.activity === 'running' || rule.activity === 'biking');
+  const measured = c.progress(format(row.progress), format(m.goal), unit);
   return {
     title,
     icon: rule.activity,
     value: row.progress / m.goal,
-    detail: permission ? c.progress(format(row.progress), format(m.goal), unit) : needed,
-    action: rule.activity === 'gym' && !row.met ? 'checkin' : undefined,
-    label: rule.activity === 'gym' && !row.met ? c.checkIn : undefined,
+    detail: permission ? (claimOnOpen ? `${measured} · ${c.claimOnOpen}` : measured) : needed,
+    action,
+    label: action ? c.checkIn : undefined,
   } as const;
 }

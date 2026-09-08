@@ -1,15 +1,10 @@
-import { useEffect } from 'react';
-import { useRuntime } from '../../src/runtime/AppRuntimeProvider';
-import { startProgressSync } from '../../src/features/home/progressSync';
 import { Tabs } from 'expo-router';
 import { TabBar } from '../../src/design-system';
 import { TabId, tabItems } from '../../src/content/tabs';
 import { tokens as t } from '../../src/design-system/tokens';
 import { useMotion } from '../../src/motion/useMotion';
 export default function TabLayout() {
-  const motion = useMotion(),
-    runtime = useRuntime();
-  useEffect(() => startProgressSync(runtime), [runtime]);
+  const motion = useMotion();
   return (
     <Tabs
       initialRouteName="home"
