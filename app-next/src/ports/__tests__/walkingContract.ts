@@ -4,6 +4,8 @@ import { WalkingPort } from '../WalkingPort';
 export type WalkingContractHarness = {
   port: WalkingPort;
   rule: Rule;
+  /** End of the rule instance the harness starts inside; the suite asserts teardown against it. */
+  windowEnd: string;
   now(): string;
   advance(milliseconds: number): void;
   signal(type: 'verified' | 'unverified' | 'tick'): void;
@@ -64,11 +66,13 @@ export function walkingContract(name: string, create: () => WalkingContractHarne
       harness.signal('verified');
       harness.advance(14 * 60_000);
       harness.signal('verified');
+      harness.advance(14 * 60_000);
+      harness.signal('verified'); // lease now outlives the window
       harness.advance(16 * 60_000);
       expect(harness.session()).toMatchObject({
         phase: 'ended',
         endReason: 'windowEnded',
-        endedAt: '2026-09-07T15:30:00.000Z',
+        endedAt: harness.windowEnd,
       });
     });
 
