@@ -2,8 +2,7 @@
  * merge: P2-T15 provides this as `ports/__tests__/healthContract.ts`. Verbatim apart from the imports.
  * Delete on merge and import the real suite; see ../README.md.
  */
-import { Workout } from '../types';
-import { HealthPort } from '../types';
+import { HealthPort, Workout } from '../types';
 
 export type HealthContractHarness = {
   port: HealthPort;

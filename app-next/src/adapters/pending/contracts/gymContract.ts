@@ -3,8 +3,7 @@
  * Delete on merge and import the real suite; see ../README.md.
  */
 import { gymDwellMinutes, mergedGymVisitIntervals } from '../gymDwell';
-import { GymVisit } from '../types';
-import { GymPort } from '../types';
+import { GymPort, GymVisit } from '../types';
 
 export type GymContractHarness = {
   port: GymPort;

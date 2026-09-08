@@ -3,8 +3,7 @@
  * Delete on merge and import the real suite; see ../README.md.
  */
 import { Rule } from '../../../domain/types';
-import { WalkingSession } from '../types';
-import { WalkingPort } from '../types';
+import { WalkingPort, WalkingSession } from '../types';
 
 export type WalkingContractHarness = {
   port: WalkingPort;
