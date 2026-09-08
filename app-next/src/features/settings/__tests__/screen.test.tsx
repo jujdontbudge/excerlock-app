@@ -12,7 +12,7 @@ import { PermissionDetail } from '../PermissionDetail';
 import { SettingsScreen } from '../SettingsScreen';
 import { SupportScreen, SupportSent } from '../SupportScreen';
 
-jest.mock('../../../motion/haptics', () => ({ feedback: jest.fn() }));
+jest.mock('../../../motion/haptics', () => ({ feedback: jest.fn(), setHapticsEnabled: jest.fn() }));
 
 function withRuntime(runtime: ReturnType<typeof createRuntime>, child: React.ReactElement) {
   return <AppRuntimeProvider runtime={runtime}>{child}</AppRuntimeProvider>;

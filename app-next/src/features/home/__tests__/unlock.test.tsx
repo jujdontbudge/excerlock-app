@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react-native';
 import { useUnlockMoment } from '../useUnlockMoment';
 import { feedback } from '../../../motion/haptics';
-jest.mock('../../../motion/haptics', () => ({ feedback: jest.fn() }));
+jest.mock('../../../motion/haptics', () => ({ feedback: jest.fn(), setHapticsEnabled: jest.fn() }));
 test('one success response on entering met, none on initial met or repeated ticks', async () => {
   const r = await renderHook((props: unknown) => useUnlockMoment((props as { state: string }).state), {
     initialProps: { state: 'locked' },

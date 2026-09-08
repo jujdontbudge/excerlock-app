@@ -26,6 +26,7 @@ import { rulesStore as useRulesStore } from '../../state/rulesStore';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
+import { enforcementStore as useEnforcementStore } from '../../state/enforcementStore';
 import { statusContent } from './statusContent';
 import { progressContent } from './progressContent';
 import { useUnlockMoment } from './useUnlockMoment';
@@ -53,7 +54,8 @@ export function HomeScreen() {
   const { rules, lockedApps } = useRulesStore((s) => s.data),
     permissions = usePermissionsStore((s) => s.data),
     auto = useSettingsStore((s) => s.data.gymAutoDetect),
-    session = useRuleDaysStore((s) => s.data.walkingSession);
+    session = useRuleDaysStore((s) => s.data.walkingSession),
+    enforcement = useEnforcementStore((s) => s.enforcementStatus);
   const status = statusContent({
       decision,
       rules,
@@ -61,6 +63,7 @@ export function HomeScreen() {
       permissions,
       now,
       timezone: runtime.clock.timezone(),
+      enforcement,
     }),
     glyph = useUnlockMoment(status.state);
   const [sheet, setSheet] = useState<{ type: 'walk' | 'checkin'; ruleId: string } | null>(null);
@@ -76,11 +79,19 @@ export function HomeScreen() {
     if (status.action === 'add') add();
     if (status.action === 'conditions') router.navigate('/conditions');
     if (status.action === 'stop') runtime.walking.stop();
+    if (status.action === 'retry') useEnforcementStore.getState().retry();
   };
   const actionLabel = status.action
     ? status.action === 'permission' && screenTimeUnaskable
       ? settingsCopy.openSettings
-      : { permission: c.fix, apps: c.chooseApps, add: c.add, conditions: c.conditions, stop: c.stopWalk }[status.action]
+      : {
+          permission: c.fix,
+          apps: c.chooseApps,
+          add: c.add,
+          conditions: c.conditions,
+          stop: c.stopWalk,
+          retry: c.tryAgain,
+        }[status.action]
     : undefined;
   useEffect(() => {
     runtime.analytics.screen('Home');
@@ -97,7 +108,7 @@ export function HomeScreen() {
             : undefined;
   const scheduledRule = rules.find((rule) => rule.enabled && rule.id === scheduledRuleId);
   const scheduleCard =
-    scheduledRule && !['permissionNeeded', 'noAppsSelected'].includes(status.state)
+    scheduledRule && !['permissionNeeded', 'noAppsSelected', 'enforcementFailed'].includes(status.state)
       ? blockingSchedule(scheduledRule)
       : undefined;
   const conditionCards = progress.map(({ rule, row }) => {

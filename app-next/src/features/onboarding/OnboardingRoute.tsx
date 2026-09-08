@@ -9,7 +9,7 @@ import { ScheduleScreen } from '../rules/ScheduleScreen';
 import { TimeSheet } from '../rules/TimeSheet';
 import { scheduleDraft, reduceSchedule, scheduleAnswers, toSchedule, ScheduleAction } from '../rules/scheduleDraft';
 import { draftFromAnswers, commitPlan } from '../rules/plan';
-import { createDraft, toRule } from '../rules/draft';
+import { createDraft, tryRule } from '../rules/draft';
 import { PlanBuild } from '../rules/PlanBuild';
 import { PlanSummary } from '../rules/PlanSummary';
 import { ReviewWarmup } from '../rules/ReviewWarmup';
@@ -40,7 +40,14 @@ export function OnboardingRoute() {
     body = <TrialScreen step={flow.step} onContinue={flow.advance} />;
   if (flow.step === 'S1')
     body = <ScheduleScreen ruleDraft={draft} draft={schedule} onAction={onSchedule} onChoose={setWheel} />;
-  if (flow.step === 'S2') body = <PlanBuild rule={toRule(draft, toSchedule(schedule))} onComplete={flow.advance} />;
+  if (flow.step === 'S2') {
+    const attempt = tryRule(draft, toSchedule(schedule));
+    body = attempt.rule ? (
+      <PlanBuild rule={attempt.rule} onComplete={flow.advance} />
+    ) : (
+      <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} />
+    );
+  }
   if (flow.step === 'S3') body = <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} />;
   if (flow.step === 'S4') body = <ReviewWarmup onSkip={flow.advance} />;
   return (

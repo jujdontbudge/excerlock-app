@@ -24,5 +24,6 @@ export const planCopy = {
   ratingBody: 'How does your plan feel so far?',
   ratingHelper: 'Your feedback helps us improve the experience.',
   notNow: 'Not now',
+  needsChange: 'Something in this plan needs a change',
   star: (n: number) => `${n} ${n === 1 ? 'star' : 'stars'}`,
 } as const;

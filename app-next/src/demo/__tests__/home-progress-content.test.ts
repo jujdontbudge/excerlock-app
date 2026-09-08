@@ -7,6 +7,7 @@ test.each([
   'gym-time-user',
   'runner-distance',
   'biker-time',
+  'runner-claim-on-open',
 ])('%s progress variant', (id) => {
   const s = scenarios.find((s) => s.id === id)!;
   expect(

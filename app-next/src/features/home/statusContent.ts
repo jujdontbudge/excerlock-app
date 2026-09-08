@@ -12,7 +12,7 @@ export type StatusModel = {
   title: string;
   subtitle: string;
   unlocked: boolean;
-  action?: 'permission' | 'apps' | 'add' | 'conditions' | 'stop';
+  action?: 'permission' | 'apps' | 'add' | 'conditions' | 'stop' | 'retry';
 };
 type Input = {
   decision: LockDecision;
@@ -21,12 +21,14 @@ type Input = {
   apps: LockedApps;
   now: string;
   timezone: string;
+  /** The last apply result the runtime host published; a failure fails closed and is reported here. */
+  enforcement?: { applied: boolean } | null;
 };
 export function leaseClock(until: string, now: string) {
   const seconds = Math.max(0, Math.ceil((Date.parse(until) - Date.parse(now)) / 1000));
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
-export function statusContent({ decision: d, rules, permissions, apps, now, timezone }: Input): StatusModel {
+export function statusContent({ decision: d, rules, permissions, apps, now, timezone, enforcement }: Input): StatusModel {
   const time = (at: string) =>
     new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: timezone })
       .format(new Date(at))
@@ -55,10 +57,18 @@ export function statusContent({ decision: d, rules, permissions, apps, now, time
   if (!rules.length) return { ...model, state: 'noRules', title: c.noRules, subtitle: c.emptyBody, action: 'add' };
   if (rules.every((r) => !r.enabled))
     return { ...model, state: 'allPaused', title: c.paused, subtitle: c.resume, action: 'conditions' };
-  const enforcement = canEnforce({ screenTime: permissions.screenTime, selection: apps });
-  if (!enforcement.ok && enforcement.reason === 'screenTimeDenied')
+  const capability = canEnforce({ screenTime: permissions.screenTime, selection: apps });
+  if (!capability.ok && capability.reason === 'screenTimeDenied')
     return { ...model, state: 'permissionNeeded', subtitle: c.permission, action: 'permission' };
-  if (!enforcement.ok) return { ...model, state: 'noAppsSelected', subtitle: c.noApps, action: 'apps' };
+  if (!capability.ok) return { ...model, state: 'noAppsSelected', subtitle: c.noApps, action: 'apps' };
+  if (enforcement && !enforcement.applied)
+    return {
+      ...model,
+      state: 'enforcementFailed',
+      title: c.enforcementFailed,
+      subtitle: c.enforcementFailedBody,
+      action: 'retry',
+    };
   if (d.state === 'locked') {
     const hint = d.nextUnlockHint,
       rule = rules.find((r) => r.id === hint.ruleId);

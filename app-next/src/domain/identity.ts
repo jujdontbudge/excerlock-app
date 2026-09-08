@@ -6,9 +6,13 @@ export type IdentityPorts = {
   analytics: Pick<AnalyticsPort, 'identify' | 'reset'>;
 };
 
-// merge: P2-T17's IdentityBridge (mounted in app/_layout.tsx) must call bindIdentity from an
-// auth.subscribe handler so the anonymous id at first launch identifies both SDKs too. This task
-// owns the ordering law and the sign-in call site (onboarding/resumeAfterSignIn.ts); the mount is T17's.
+/**
+ * The SDK ordering law. `runtime/IdentityBridge` mounts it from a session subscription, so every
+ * session change — including the anonymous id at first launch — identifies both SDKs in this order.
+ *
+ * Identify runs subscription-first so an entitlement fetch is already scoped to the user before the
+ * first event is attributed.
+ */
 export function bindIdentity(ports: IdentityPorts, userId: string): void {
   ports.subscription.identify(userId);
   ports.analytics.identify(userId);

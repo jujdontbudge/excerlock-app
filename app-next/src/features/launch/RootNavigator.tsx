@@ -24,6 +24,8 @@ export function RootNavigator() {
           animationDuration: t.motion.duration.navigation,
         }}>
         <Stack.Screen name="index" />
+        {/* Outside every guard: the shield notification's landing must resolve before it can redirect. */}
+        <Stack.Screen name="locked-apps" />
         <Stack.Protected guard={devMenuEnabled}>
           <Stack.Screen name="dev" />
         </Stack.Protected>

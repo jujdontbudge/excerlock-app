@@ -30,7 +30,9 @@
 
 ## Audit amendments (2026-09-07; see `fix-plan.md`)
 
-- Sentry is initialised inside P2-T17's root `ErrorBoundary`.
+- Sentry is initialised inside P2-T17's root boundary: `src/features/launch/AppErrorBoundary.tsx` catches
+  the render error and calls its `onError(error, info)` prop, which is where `captureException` goes. The
+  same file's `RouteErrorBoundary` is what `app/_layout.tsx` exports as Expo Router's `ErrorBoundary`.
 - `PrivacyInfo.xcprivacy` declares the data types the SDKs actually collect; the App Privacy label is filled
   from it. A Settings "Share usage analytics" switch calls PostHog opt-out and is honoured before the first
   event (pending Johan's answer in `fix-plan.md`; default on if he keeps it).

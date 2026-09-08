@@ -1,5 +1,6 @@
 import { ApplyResult, ScreenTimePort } from '../ScreenTimePort';
 import { LockDecision } from '../../domain/types';
+import { EnforcementPlan } from '../../domain/enforcement';
 import { MonitorPlan } from '../../domain/monitorPlan';
 
 type Subject = { port: ScreenTimePort; dispose: () => void };
@@ -10,6 +11,9 @@ const locked: LockDecision = {
   nextUnlockHint: { ruleId: 'walk', action: 'progress', remaining: 5000, goal: 5000, unit: 'steps' },
 };
 const open: LockDecision = { state: 'noRulesToday', nextLockAt: null };
+const shielding: EnforcementPlan = { shields: 'apply', monitors: 'keep', reason: 'decisionLocked' };
+const clearing: EnforcementPlan = { shields: 'clear', monitors: 'keep', reason: 'decisionOpen' };
+const lapsed: EnforcementPlan = { shields: 'clear', monitors: 'unregister', reason: 'entitlementLapsed' };
 const plan = (truncatedAt: string | null = null): MonitorPlan => ({
   monitors: [
     {
@@ -37,12 +41,12 @@ export function describeScreenTimePort(make: () => Promise<Subject>) {
     test('applyLock reports shields, monitor count, and observable enforcement', async () => {
       const observed: string[] = [];
       const stop = subject.port.observeEnforcement((result) => observed.push(result.shields));
-      await expect(subject.port.applyLock(locked, plan())).resolves.toEqual({
+      await expect(subject.port.applyLock(locked, shielding, plan())).resolves.toEqual({
         applied: true,
         shields: 'up',
         monitors: 1,
       });
-      await expect(subject.port.applyLock(open, plan())).resolves.toEqual({
+      await expect(subject.port.applyLock(open, clearing, plan())).resolves.toEqual({
         applied: true,
         shields: 'down',
         monitors: 1,
@@ -52,7 +56,7 @@ export function describeScreenTimePort(make: () => Promise<Subject>) {
     });
 
     test('an over-budget plan fails closed with shields up', async () => {
-      await expect(subject.port.applyLock(open, plan('2026-09-08T09:00:00.000Z'))).resolves.toEqual({
+      await expect(subject.port.applyLock(open, clearing, plan('2026-09-08T09:00:00.000Z'))).resolves.toEqual({
         applied: false,
         shields: 'up',
         monitors: 1,
@@ -63,10 +67,18 @@ export function describeScreenTimePort(make: () => Promise<Subject>) {
     test('reapplying the same decision and plan is idempotent', async () => {
       const observed: ApplyResult[] = [];
       const stop = subject.port.observeEnforcement((result) => observed.push(result));
-      await subject.port.applyLock(locked, plan());
-      await subject.port.applyLock(locked, plan());
+      await subject.port.applyLock(locked, shielding, plan());
+      await subject.port.applyLock(locked, shielding, plan());
       expect(observed).toHaveLength(1);
       stop();
+    });
+
+    test('a lapsed policy clears the shields even while the decision is locked', async () => {
+      await expect(subject.port.applyLock(locked, lapsed, plan())).resolves.toEqual({
+        applied: true,
+        shields: 'down',
+        monitors: 0,
+      });
     });
 
     test('describeSelection returns an opaque selection and a null handle is always empty', async () => {

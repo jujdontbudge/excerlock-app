@@ -3,7 +3,7 @@
 exports[`biker-time progress variant 1`] = `
 {
   "action": undefined,
-  "detail": "18 / 30 minutes",
+  "detail": "18 / 30 minutes · Open ExcerLock after your workout to unlock",
   "icon": "biking",
   "label": undefined,
   "title": "Bike 30 minutes",
@@ -55,10 +55,21 @@ exports[`home-walking-session progress variant 1`] = `
 }
 `;
 
+exports[`runner-claim-on-open progress variant 1`] = `
+{
+  "action": undefined,
+  "detail": "0 / 3 mi · Open ExcerLock after your workout to unlock",
+  "icon": "running",
+  "label": undefined,
+  "title": "Run 3 mi",
+  "value": 0,
+}
+`;
+
 exports[`runner-distance progress variant 1`] = `
 {
   "action": undefined,
-  "detail": "1.2 / 2 mi",
+  "detail": "1.2 / 2 mi · Open ExcerLock after your workout to unlock",
   "icon": "running",
   "label": undefined,
   "title": "Run 2 mi",
