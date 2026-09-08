@@ -1,6 +1,6 @@
 # Aha unlock screens — treadmill scan and gym arrival
 
-Status: **Ceremony screens and isolated Home test buttons built, 2026-09-07.** Native camera module builds locally; physical-device validation and Phase 2 enforcement remain pending. Implementation details and limits: `app-next/src/features/unlock/README.md`. Supersedes decision B19 ("unlock moment is a simple placeholder") and
+Status: **Ceremony screens built and hardened, 2026-09-07 (P2-T21).** Every exit now lands on a screen that says what happened, the shackle waits for the booking rather than the animation, camera permission is requested and recorded, and gym timing runs on `ClockPort`. Native camera module builds locally; physical-device validation and Phase 2 enforcement remain pending. Implementation details and limits: `app-next/src/features/unlock/README.md`. Supersedes decision B19 ("unlock moment is a simple placeholder") and
 the PRD's "no takeover, no confetti" earn moment for the two entry-driven unlocks below. Recorded in
 `plans/rebuild/00-decisions.md` (B19 revised, B20 new).
 
@@ -127,12 +127,35 @@ rewritten** (decision B12). This spec changes only the presentation and the auto
   the user; the `GAIT_SCAN_TIMEOUT_MS = 5_000` attempt window and the 30-second framing grace
   (`GAIT_FAILURE_GRACE_MS`) stay as built.
 - **Verified** (`classification === 'walking' && complete`): camera torn down immediately, session
-  advanced via `completeProppedScan()`, frame goes to `'lifted'`, ceremony plays with **Exercise
-  detected** / **Unlocked while you walk**. The preview freezes on its last frame under a
-  `surface.scrim`-free orange tint at 20 % so the lifted lock still reads as the app, not a camera.
+  advanced via `completeProppedScan()`. **The booking is the gate, not the animation** (finding 30):
+  the frame lifts, confetti fires and **Exercise detected** appears only once the session machine has
+  accepted the `verified` event and the lease exists (`WalkingSession.phase === 'walking'`). A
+  `completeProppedScan()` that returns `false` — a missing or already-ended session — shows the
+  terminal failure state below instead, and `AppState` `'active'` will not restart a scan that never
+  had a session. On success for a **state** rule the ceremony plays with **Exercise detected** /
+  **Unlocked while you walk**. The preview freezes on its last frame under a `surface.scrim`-free
+  orange tint at 20 % so the lifted lock still reads as the app, not a camera.
+- **A duration rule runs in two stages** (P2-T16). *Stage 1, scan:* ring is gait confidence; on
+  verify a body settle, one success haptic, **Exercise detected** / **{goal} minutes counts the
+  day** — **no shackle lift, no confetti**, because the day is not earned yet. *Stage 2, counting:*
+  ring is `row.progress / goal`, heading **Counting your walk** / **{n} minutes to unlock**, the
+  propped lease remaining is shown, and near expiry the lease warning and **Scan again to keep
+  counting** appear here and on Home. At `met`: full lift, confetti, **Goal reached** / **Unlocked
+  for the rest of today**, Done. State rules keep today's single stage.
 - **needsFraming:** ring drains to 0 over `duration.standard`, heading swaps, preview stays live.
-  On the 30-second grace expiring the session stops and the screen pops back to Home with the
-  existing "Walk complete" state; never a silent shield.
+  **Amended 2026-09-07 (finding 2):** on the 30-second grace expiring the screen no longer pops back
+  to Home. It stays mounted and renders a terminal failure state — **We couldn't see you walking** /
+  "The camera never got a clear view. Try again, or keep your phone with you and we'll verify your
+  steps instead." — with two exits, **Try again** (a fresh scan and a fresh propped session for the
+  same rule) and **Continue with phone in hand** (handheld start). The walking session is still
+  stopped so nothing false is unlocked, and minutes already credited are kept. The old line said the
+  screen popped back to Home with `WalkingSheet`'s "Walk complete" state; that sheet is never opened
+  on this path, so popping was exactly the silent shield `docs/specs/treadmill-mode.md` forbids.
+- **Camera permission** (finding 24): the screen renders its idle heading and the privacy line
+  first, then calls `GaitPort.permission()`, writes the answer into `permissionsStore.camera`, and
+  starts the scan only on `granted`. `notDetermined` asks; `denied` and `restricted` go straight to
+  the handheld fallback without touching the camera. The recorded status is what
+  Settings › Permissions › Camera shows.
 - **Permission denied:** frame surface becomes `surface.subtle` with a `LivingIcon name="person"`;
   heading **Camera access is off** / "Keep your phone with you. Walk & Scroll will verify your
   steps instead."; button **Continue with phone in hand** starts the handheld session and dismisses.
@@ -140,7 +163,10 @@ rewritten** (decision B12). This spec changes only the presentation and the auto
 - **Backgrounding** during the scan stops the camera (iOS rule) and returns to `'idle'` on
   foreground; the propped session is not stopped.
 - **Done:** `router.back()` to Home, which now shows `unlockedWalking` with the lease clock
-  ("12:40 until renewal"). The 15-minute lease, pre-expiry notification, handheld hand-off and
+  ("12:40 until renewal"). **Amended 2026-09-07 (finding 98):** dismissal after **Continue with
+  phone in hand** is unchanged, but Home now opens the walking sheet for that rule, and both the
+  condition card and the locked status card read **Checking your pace…** while the session is
+  `verifying`, so the hand-off is never a blank wait. The 15-minute lease, pre-expiry notification, handheld hand-off and
   60-second put-down window are unchanged from `docs/specs/treadmill-mode.md`.
 
 ### Ports
@@ -187,13 +213,29 @@ Replaces `CheckInSheet`. Same `UnlockLockFrame`, surface is a `MapView`.
 - **Presence** from `runtime.gym.observePresence` plus a foreground location sample on mount
   (`currentLocation(true)`) so the first render is correct without waiting for a geofence event.
   With more than one gym inside range (overlapping radii), the nearest wins.
+- **Three states before presence** (finding 22): **No gym saved yet** (→ `/settings/gyms`),
+  **Finding your location…**, and **Location is off** (→ Settings) are distinct, ordered
+  denied → noGym → locating → inside/outside. `denied` comes from `permissionsStore.location`, never
+  from a null coordinate sample, so a user with location granted and no saved gym is not sent to
+  Settings.
 - **Unlock tap:** `runtime.gym.checkIn(gymId)`, ring animates 0 → 1 over **30 000 ms** linear
   (the app-fixed presence cooldown). Shields are already lifted by instant-relief; this ring is the
-  reward booking. If presence flips to `outside` during the 30 s the ring drains, heading returns to
-  outside copy, button hidden; no partial credit.
+  reward booking, never the gate. If presence flips to `outside` during the 30 s the ring drains,
+  heading returns to outside copy, button hidden; no partial credit — and the in-flight check-in is
+  **aborted by the app** (`AbortController` in the `presence === 'outside'` branch, finding 61) so a
+  Phase 2 geofence adapter that resolves optimistically cannot credit an arrival the user walked
+  away from.
+- **Timing runs on `ClockPort`** (finding 93): the confirmation window and the ring read `clock.at`
+  and `monotonicMs`, never `Date.now`, so advancing the dev clock advances the ceremony. In
+  production the two are the same clock.
 - **Lifted:** **Location detected at the gym** / **Unlocked until {window end}** for event rules,
-  or **Your gym time is counting** for time-target rules (arrival credit only starts the clock).
+  or **Unlocked while you're here. {goal} minutes counts the day.** for time-target rules (B22,
+  finding 11) — the relief is real and provisional, and it names what still has to happen. An event
+  rule books `met` with `metAt = enteredAt`, not the confirmation deadline.
 - **Done:** back to Home showing `unlockedMet` for event rules.
+- **Lapsed subscription** (B21): both ceremonies keep working and keep booking progress. The success
+  heading stays, the subtitle becomes "Your apps aren't blocked right now", and a **See plans** link
+  sits beside it. No confetti claims an unlock that did not happen.
 - **Auto-detect on and arrival already credited in the background:** opening this screen shows the
   lifted state directly with the message, no ring, no confetti (*assumed*; the Home in-place moment
   already played). Johan can flip this to a full replay later.

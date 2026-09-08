@@ -132,9 +132,18 @@ Never shield silently on a failed scan.
 
 - Cannot see a person, too dark, phone aimed at the ceiling → show **"Can't see you — step into
   frame"** with a live preview, and allow 30 seconds before shielding.
+- **Built 2026-09-07 (P2-T21, finding 2):** when those 30 seconds run out the ceremony **stays on
+  screen**. It shows **We couldn't see you walking** with **Try again** and **Continue with phone in
+  hand**; the walking session is stopped, minutes already credited are kept, and the user is never
+  returned to a Home that silently re-shields.
 - Camera permission denied → propped mode is unavailable; fall back to ordinary hand-held step
-  verification, which needs no camera.
-- Camera permission is requested the first time propped mode is started, never at onboarding.
+  verification, which needs no camera. The hand-off is explained: Home says **Checking your pace…**
+  while the handheld session verifies (finding 98).
+- Camera permission is requested the first time propped mode is started, never at onboarding. The
+  answer is written to `permissionsStore.camera` and is what Settings shows; `restricted` is treated
+  as denied (finding 24).
+- A scan that verifies but whose session fails to book shows **We couldn't start your walk** rather
+  than lifting the lock over nothing (finding 30).
 
 ## Privacy
 
