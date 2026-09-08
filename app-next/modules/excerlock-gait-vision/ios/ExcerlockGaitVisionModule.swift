@@ -1,3 +1,4 @@
+import AVFoundation
 import ExpoModulesCore
 
 private let gaitSampleEvent = "onGaitSample"
@@ -12,6 +13,30 @@ public final class ExcerlockGaitVisionModule: Module {
     View(GaitVisionPreviewView.self) {
       Prop("active") { (view: GaitVisionPreviewView, active: Bool) in
         self.vision.setPreview(view, active: active)
+      }
+    }
+
+    // The ceremony asks before every scan, so this must never touch the capture
+    // session: starting and stopping it to learn the answer flashes the preview
+    // and collapses four states into granted/denied.
+    Function("cameraAuthorization") { () -> String in
+      switch AVCaptureDevice.authorizationStatus(for: .video) {
+      case .authorized:
+        return "granted"
+      case .denied:
+        return "denied"
+      case .restricted:
+        return "restricted"
+      case .notDetermined:
+        return "notDetermined"
+      @unknown default:
+        return "denied"
+      }
+    }
+
+    AsyncFunction("requestCameraAccess") { (promise: Promise) in
+      AVCaptureDevice.requestAccess(for: .video) { granted in
+        promise.resolve(granted)
       }
     }
 
