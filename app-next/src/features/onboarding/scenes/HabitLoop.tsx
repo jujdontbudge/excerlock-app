@@ -139,7 +139,7 @@ export function HabitLoop({ phase, contentPhase = phase }: { phase: number; cont
           left: '29%',
           top: '42%',
           width: '42%',
-          height: 80,
+          minHeight: 80,
           justifyContent: 'center',
         }}>
         {habitLoopCopy.map((layerCopy, layerPhase) => (

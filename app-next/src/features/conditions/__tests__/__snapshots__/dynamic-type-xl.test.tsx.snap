@@ -1,0 +1,96 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`the builder summary survives XL text: nothing fixed-height holds text and every label scales 1`] = `
+[
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Your plan is ready",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "A little movement. More room for your life.",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Activity",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Walking",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Edit",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Goal",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Walk 5,000 steps",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Edit",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Walking place",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Outside",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Edit",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Days & times",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Mon–Fri · 9 AM–9 PM",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Edit",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Blocking starts as soon as you save.",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "To unlock today: Walk 5,000 steps.",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Unlocks your apps for the rest of the day",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Save condition",
+  },
+]
+`;

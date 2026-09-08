@@ -3,6 +3,7 @@ import { ScrollView, View, useWindowDimensions } from 'react-native';
 import Svg, { Line, Rect } from 'react-native-svg';
 import Animated, { useSharedValue, useAnimatedProps, withDelay, withTiming } from 'react-native-reanimated';
 import { Label } from '../../design-system';
+import { formatNumber } from '../../content/locale';
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
 import { analyticsCopy as c } from '../../content/analytics';
@@ -73,7 +74,7 @@ export function UsageChart({
                 style={{ flex: 1, gap: t.space.xs, alignItems: 'center' }}>
                 <Label variant="badge">{d.label}</Label>
                 <Label variant="badge" tone="secondary">
-                  {d.value === null ? '—' : Math.round(d.value).toLocaleString('en-US')}
+                  {d.value === null ? '—' : formatNumber(Math.round(d.value))}
                 </Label>
               </View>
             ))}

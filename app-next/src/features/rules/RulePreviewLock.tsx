@@ -15,7 +15,7 @@ export function RulePreviewLock({ draft, schedule }: { draft: RuleDraft; schedul
   return (
     <View
       testID="rule-preview-lock"
-      style={{ width: t.layout.ring * 3, height: t.layout.ring * 2.5, alignSelf: 'center' }}>
+      style={{ width: t.layout.ring * 3, minHeight: t.layout.ring * 2.5, alignSelf: 'center' }}>
       <Reveal style={{ width: '100%' }}>
         <View style={{ transform: [{ scale: 0.78 }], transformOrigin: 'top center' }}>
           <BlockingScheduleCard

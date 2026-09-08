@@ -38,3 +38,7 @@ jest.mock('expo-apple-authentication', () => ({
   AppleAuthenticationButtonStyle: { BLACK: 2 },
   AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
 }));
+import { setLocaleForTests } from './src/content/locale';
+// Copy expectations assume one device: en-US numbers, a 12-hour clock and a Monday-start week.
+// Locale tests override per case and restore this fixture afterwards.
+setLocaleForTests({ tag: 'en-US', hour12: true, weekStart: 1 });

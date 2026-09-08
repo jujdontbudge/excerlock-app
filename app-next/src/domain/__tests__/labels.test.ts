@@ -1,6 +1,8 @@
 import { ruleName } from '../ruleName';
 import { minuteLabel, scheduleLabel } from '../scheduleLabel';
 import { rule } from './fixtures';
+import { setLocaleForTests } from '../../content/locale';
+afterEach(() => setLocaleForTests({ tag: 'en-US', hour12: true, weekStart: 1 }));
 test('condition names and schedules use the product vocabulary', () => {
   expect(ruleName(rule)).toBe('Walk 5,000 steps');
   expect(
@@ -44,4 +46,22 @@ test('condition names and schedules use the product vocabulary', () => {
 
 test('time suffix stays with its number when a schedule wraps', () => {
   expect(minuteLabel(540)).toBe('9\u00a0AM');
+});
+
+test('schedule labels honour 24-hour locales', () => {
+  setLocaleForTests({ tag: 'de-DE', hour12: false, weekStart: 1 });
+  expect(minuteLabel(540)).toBe('09:00');
+  expect(minuteLabel(750)).toBe('12:30');
+  expect(minuteLabel(0)).toBe('00:00');
+  expect(scheduleLabel(rule.schedule)).toBe('Mon–Fri · 09:00–21:00');
+  expect(scheduleLabel({ days: [6, 0], window: { kind: 'range', startMinute: 1200, endMinute: 120 } })).toBe(
+    'Sat, Sun · 20:00–02:00, ends next day',
+  );
+});
+
+test('schedule labels list days in the device week order', () => {
+  setLocaleForTests({ tag: 'en-US', hour12: true, weekStart: 0 });
+  expect(scheduleLabel({ days: [6, 0], window: { kind: 'allDay' } })).toBe('Sun, Sat · All day');
+  expect(scheduleLabel({ days: [5, 1, 3, 2, 4], window: { kind: 'allDay' } })).toBe('Mon–Fri · All day');
+  expect(scheduleLabel({ days: [1, 0, 3], window: { kind: 'allDay' } })).toBe('Sun, Mon, Wed · All day');
 });

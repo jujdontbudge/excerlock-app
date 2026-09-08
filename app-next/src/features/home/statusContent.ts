@@ -1,3 +1,4 @@
+import { formatDate, formatNumber } from '../../content/locale';
 import { LockDecision, LockedApps, Permissions, Rule, WalkingSession } from '../../domain/types';
 import { IconName } from '../../icons/Icon';
 import { dayKey } from '../../domain/schedule';
@@ -51,9 +52,7 @@ export function statusContent({
   lapsed,
 }: Input): StatusModel {
   const time = (at: string) =>
-    new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: timezone })
-      .format(new Date(at))
-      .replace(/\s(?=[AP]M$)/, ' ');
+    formatDate(at, { hour: 'numeric', minute: '2-digit', timeZone: timezone }).replace(/\s(?=[AP]M$)/, ' ');
   const resume = (at: string | null) => {
     if (!at) return c.noNext;
     const day = dayKey(at, timezone),
@@ -63,9 +62,7 @@ export function statusContent({
         ? c.todayWord
         : day === addDays(today, 1)
           ? c.tomorrow
-          : new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: timezone })
-              .format(new Date(at))
-              .replace(/\s/g, ' ');
+          : formatDate(at, { weekday: 'long', timeZone: timezone }).replace(/\s/g, ' ');
     return c.resumes(when, time(at));
   };
   const model: StatusModel = {
@@ -129,7 +126,7 @@ export function statusContent({
         ? c.walk
         : hint.action === 'arrive'
           ? c.arrive
-          : `${domainCopy.verbs[rule?.activity ?? 'walking'].toLowerCase()} ${hint.remaining?.toLocaleString('en-US')} ${hint.unit}`;
+          : `${domainCopy.verbs[rule?.activity ?? 'walking'].toLowerCase()} ${formatNumber(hint.remaining ?? 0)} ${hint.unit}`;
     // A session that is still verifying has not unlocked anything, and a pending first claim has not
     // been counted yet: the card stays locked, and only its subtitle says what the app is doing.
     const subtitle =

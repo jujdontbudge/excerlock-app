@@ -2,10 +2,12 @@ import { HistoryDay } from '../../ports/models';
 import { reclaimedPeriod } from '../../domain/reclaimed';
 import { streak } from '../../domain/streak';
 import { periodBounds, dates, Period } from './period';
+import { deviceLocale } from '../../content/locale';
 import { analyticsCopy as c } from '../../content/analytics';
 export function analyticsModel(history: HistoryDay[], today: string, period: Period, offset: number, baseline: number) {
-  const { start, end } = periodBounds(today, period, offset),
-    prev = periodBounds(today, period, offset - 1),
+  const weekStart = deviceLocale().weekStart;
+  const { start, end } = periodBounds(today, period, offset, weekStart),
+    prev = periodBounds(today, period, offset - 1, weekStart),
     rows = history.filter((d) => d.day >= start && d.day <= end && d.day <= today),
     previousRows = history.filter((d) => d.day >= prev.start && d.day <= prev.end && d.day <= today),
     reclaimed = reclaimedPeriod(

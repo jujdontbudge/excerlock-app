@@ -1,3 +1,4 @@
+import { formatDate } from './locale';
 export const settingsCopy = {
   title: 'Settings',
   general: 'General',
@@ -28,7 +29,7 @@ export const settingsCopy = {
       unknown: 'Checking membership',
     })[status] ?? status,
   renewal: (date: string) =>
-    `Renews ${new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
+    `Renews ${formatDate(date, { month: 'short', day: 'numeric', year: 'numeric' })}`,
   manage: 'Manage subscription',
   restore: 'Restore purchases',
   restored: 'Purchases restored',

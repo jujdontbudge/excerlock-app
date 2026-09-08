@@ -1,4 +1,5 @@
 import { Activity } from '../domain/types';
+import { formatDate, formatNumber } from './locale';
 export const analyticsCopy = {
   title: 'Analytics',
   periods: ['Week', 'Month', 'Year'],
@@ -18,7 +19,7 @@ export const analyticsCopy = {
   activities: { walking: 'Walking', gym: 'Gym', running: 'Running', biking: 'Biking' },
   activityUnit: (a: Activity) => (a === 'walking' ? 'steps' : 'minutes'),
   activityTotal: (activity: Activity, value: number) =>
-    `${Math.round(value).toLocaleString('en-US')} ${activity === 'walking' ? 'steps' : 'minutes'}`,
+    `${formatNumber(Math.round(value))} ${activity === 'walking' ? 'steps' : 'minutes'}`,
   daysMet: 'Days met',
   scheduled: (n: number) => `${n} scheduled`,
   metOfScheduled: (met: number, scheduled: number) => `${met} of ${scheduled}`,
@@ -37,9 +38,9 @@ export const analyticsCopy = {
   noRulesBody: 'Add a condition to start tracking your progress.',
   thisPeriod: (p: string) => `This ${p.toLowerCase()}`,
   range: (start: string, end: string) =>
-    `${new Date(start + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} – ${new Date(end + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}`,
+    `${formatDate(start + 'T12:00:00Z', { month: 'short', day: 'numeric', timeZone: 'UTC' })} – ${formatDate(end + 'T12:00:00Z', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}`,
   point: (day: string, period: string) =>
-    new Date(day + 'T12:00:00Z').toLocaleDateString('en-US', {
+    formatDate(day + 'T12:00:00Z', {
       timeZone: 'UTC',
       ...(period === 'Week'
         ? { weekday: 'short' }

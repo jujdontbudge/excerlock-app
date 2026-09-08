@@ -36,6 +36,7 @@ import { useLastClaimAt } from './claimState';
 import { clearHomeWalkingSheetRequest, useHomeWalkingSheetRequest } from './homeSheetRequest';
 import { useUnlockMoment } from './useUnlockMoment';
 import { homeCopy as c } from '../../content/home';
+import { formatDate } from '../../content/locale';
 import { settingsCopy } from '../../content/settings';
 import { lockedAppsSummary } from '../../content/pickers';
 import { common } from '../../content/common';
@@ -199,12 +200,7 @@ export function HomeScreen() {
         <View style={{ flex: 1 }}>
           <Heading
             title={c.greeting(name)}
-            support={new Intl.DateTimeFormat('en-US', {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-              timeZone: timezone,
-            }).format(new Date(now))}
+            support={formatDate(now, { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone })}
           />
         </View>
         <StreakBadge count={streak.current} />

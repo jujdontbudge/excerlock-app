@@ -13,6 +13,7 @@ import { GymUnlockMap } from './GymUnlockMap';
 import { distanceLabel } from './geometry';
 import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
 import { dayKey } from '../../domain/calendar';
+import { minuteLabel } from '../../domain/scheduleLabel';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; preview?: boolean }) {
   const router = useRouter(),
@@ -29,13 +30,13 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
   const state = useGymUnlock(preview, alreadyCredited);
   const window = rule?.schedule.window;
   const minute = window?.kind === 'range' ? window.endMinute : 1439;
-  const end = `${Math.floor(minute / 60) % 12 || 12}${minute % 60 ? ':' + String(minute % 60).padStart(2, '0') : ''} ${minute < 720 ? 'AM' : 'PM'}`;
+  const end = minuteLabel(minute);
   const subline = lapsed
     ? c.lapsed.body
     : rule?.mode.kind === 'target'
       ? c.gym.detectedTime(rule.mode.goal)
       : c.gym.detectedUntil(preview && !rule ? '9 PM' : end);
-  const ceremony = useCeremony(state.value, state.lifted, c.gym.detected);
+  const ceremony = useCeremony(state.value, state.lifted, c.gym.detected, subline);
   const close = () => {
     runtime.analytics.track('unlock_ceremony_done', { kind: 'gym', preview });
     router.back();
@@ -91,9 +92,15 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
         ) : undefined
       }>
       <View
+        accessible
         accessibilityRole="progressbar"
         accessibilityLabel={c.gym.progressLabel}
-        accessibilityValue={{ min: 0, max: 100, now: Math.round(state.value * 100) }}>
+        accessibilityValue={{
+          min: 0,
+          max: 100,
+          now: Math.round(state.value * 100),
+          ...(ceremony.showMessage ? { text: `${c.gym.detected}. ${subline}` } : {}),
+        }}>
         <UnlockLockFrame
           celebrate={!alreadyCredited && !lapsed}
           progress={ceremony.progress}
