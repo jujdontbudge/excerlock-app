@@ -1,5 +1,9 @@
 # Tier-1 vendor APIs — cross-vendor summary
 
+> **Historical (P2-T12 cutover, 2026-09-07).** Vendor integrations are out of the product (decision D6 in
+> `plans/rebuild/00-decisions.md`); the server's vendor routes and tables were removed in P2-T02. This file is
+> kept as a record of the research only. Do not act on it.
+
 Researched 2026-07-28 from official developer docs. Per-vendor detail sheets: [strava.md](strava.md) · [oura.md](oura.md) · [whoop.md](whoop.md) · [polar.md](polar.md). Context: PRD §3.5c (direct connections, dedup) and §3.3 (condition catalog). All four vendors ship in v1 (map decision 2026-07-28).
 
 ---

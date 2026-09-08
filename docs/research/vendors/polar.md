@@ -1,5 +1,9 @@
 # Polar AccessLink API — integration sheet
 
+> **Historical (P2-T12 cutover, 2026-09-07).** Vendor integrations are out of the product (decision D6 in
+> `plans/rebuild/00-decisions.md`); the server's vendor routes and tables were removed in P2-T02. This file is
+> kept as a record of the research only. Do not act on it.
+
 Researched 2026-07-28 against the live official docs at https://www.polar.com/accesslink-api/ (AccessLink 3.0, "v3"). All quotes below are verbatim from that page unless another URL is cited. A newer "Polar AccessLink Dynamic API v4" exists at https://www.polar.com/polar-api-v4/ but was not evaluated here; v3 is the fully documented, generally available API.
 
 ---

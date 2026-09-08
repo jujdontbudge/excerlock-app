@@ -1,5 +1,9 @@
 # Whoop API — integration sheet
 
+> **Historical (P2-T12 cutover, 2026-09-07).** Vendor integrations are out of the product (decision D6 in
+> `plans/rebuild/00-decisions.md`); the server's vendor routes and tables were removed in P2-T02. This file is
+> kept as a record of the research only. Do not act on it.
+
 Researched 2026-07-28 against live official docs (developer.whoop.com). API version: **v2** (v1 is no longer supported; v2 migration completed in 2025 — all new integrations must use v2 paths and UUID identifiers).
 
 ---
