@@ -70,6 +70,9 @@ test('a failed support send while offline keeps the message and offers an explic
   const message = screen.getByLabelText('Your message');
   await fireEvent.changeText(message, 'Please help');
   await userEvent.press(screen.getByRole('button', { name: 'Send message' }));
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 650));
+  });
   expect(screen.getByText("You're offline. Connect and try again — this will not retry on its own.")).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Not sent — tap to retry' })).toBeTruthy();
   expect(message.props.value).toBe('Please help');

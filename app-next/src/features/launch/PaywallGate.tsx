@@ -18,7 +18,13 @@ export function PaywallGate() {
       presented.current = null;
       return;
     }
-    if (!setupComplete || pathname === '/' || pathname === '/paywall' || presented.current === status) return;
+    if (!setupComplete || pathname === '/') return;
+    // Already showing — record it so closing the modal is not undone by a second push.
+    if (pathname === '/paywall') {
+      presented.current = status;
+      return;
+    }
+    if (presented.current === status) return;
     presented.current = status;
     router.push('/paywall');
   }, [access.paywall, pathname, router, setupComplete, status]);

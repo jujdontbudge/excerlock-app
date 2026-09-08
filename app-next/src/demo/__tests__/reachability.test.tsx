@@ -5,6 +5,7 @@ import { BootGate } from '../../features/launch/BootGate';
 import { scenarios } from '../scenarios';
 import { createRuntime } from '../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../runtime/AppRuntimeProvider';
+import { entitlementAccess } from '../../domain/entitlementAccess';
 test.each(scenarios.map((s) => [s.id, s] as const))('%s reaches its expected boot route', async (_, scenario) => {
   const runtime = createRuntime();
   await runtime.dev.load(scenario.id);
@@ -13,7 +14,7 @@ test.each(scenarios.map((s) => [s.id, s] as const))('%s reaches its expected boo
       ? '/onboarding/O01'
       : scenario.onboarding.startsWith('resumeAt:')
         ? `/onboarding/${scenario.onboarding.slice(9)}`
-        : ['trial', 'active'].includes(scenario.entitlement.status)
+        : entitlementAccess(scenario.entitlement.status).appAccess
           ? '/home'
           : '/paywall';
   const router = renderRouter(
