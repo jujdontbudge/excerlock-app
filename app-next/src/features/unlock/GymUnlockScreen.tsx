@@ -13,6 +13,7 @@ import { GymUnlockMap } from './GymUnlockMap';
 import { distanceLabel } from './geometry';
 import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
 import { dayKey } from '../../domain/calendar';
+import { minuteLabel } from '../../domain/scheduleLabel';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; preview?: boolean }) {
   const router = useRouter(),
@@ -29,7 +30,7 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
   const state = useGymUnlock(preview, alreadyCredited);
   const window = rule?.schedule.window;
   const minute = window?.kind === 'range' ? window.endMinute : 1439;
-  const end = `${Math.floor(minute / 60) % 12 || 12}${minute % 60 ? ':' + String(minute % 60).padStart(2, '0') : ''} ${minute < 720 ? 'AM' : 'PM'}`;
+  const end = minuteLabel(minute);
   const subline = lapsed
     ? c.lapsed.body
     : rule?.mode.kind === 'target'

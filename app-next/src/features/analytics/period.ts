@@ -1,9 +1,10 @@
 import { addDays } from '../../domain/calendar';
+import { WeekStart } from '../../content/locale';
 export type Period = 'Week' | 'Month' | 'Year';
-export function periodBounds(today: string, period: Period, offset: number) {
+export function periodBounds(today: string, period: Period, offset: number, weekStart: WeekStart = 1) {
   const d = new Date(today + 'T12:00:00Z');
   if (period === 'Week') {
-    const start = addDays(today, -((d.getUTCDay() + 6) % 7) + offset * 7);
+    const start = addDays(today, -((d.getUTCDay() - weekStart + 7) % 7) + offset * 7);
     return { start, end: addDays(start, 6) };
   }
   if (period === 'Month') {

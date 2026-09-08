@@ -1,3 +1,4 @@
+import { formatNumber } from '../../content/locale';
 import { IconName } from '../../icons/Icon';
 import { rulePreviewCopy as c } from '../../content/rulePreview';
 import { Schedule } from '../../domain/types';
@@ -5,7 +6,7 @@ import { minuteLabel } from '../../domain/scheduleLabel';
 import { RuleDraft } from './draft';
 
 export type RulePreviewModel = { message: string; progress: string; icon: IconName };
-const number = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 1 });
+const number = (value: number) => formatNumber(value, { maximumFractionDigits: 1 });
 
 export function rulePreviewModel(draft: RuleDraft, schedule?: Schedule): RulePreviewModel {
   const window = schedule?.window;

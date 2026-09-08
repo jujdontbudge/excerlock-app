@@ -1,3 +1,4 @@
+import { formatNumber } from '../content/locale';
 import { sessionCopy as c } from '../content/sessions';
 import { LockWindowMonitor } from './monitorPlan';
 import { Rule, RuleDay, UnlockHint } from './types';
@@ -23,7 +24,7 @@ const actionFor = (hint?: UnlockHint) => {
   if (hint?.action === 'arrive') return c.shieldArrive;
   if (hint?.action === 'progress' && hint.goal !== null && hint.unit !== null) {
     const verb = hint.unit === 'steps' ? c.shieldWalkVerb : c.shieldCompleteVerb;
-    return c.shieldGoal(verb, hint.goal.toLocaleString('en-US'), hint.unit);
+    return c.shieldGoal(verb, formatNumber(hint.goal), hint.unit);
   }
   return c.shieldFallback;
 };

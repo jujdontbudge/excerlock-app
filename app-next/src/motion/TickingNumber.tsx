@@ -1,3 +1,4 @@
+import { formatNumber } from '../content/locale';
 import { TextInput, View } from 'react-native';
 import Animated, { useAnimatedProps } from 'react-native-reanimated';
 import { tokens as t } from '../design-system/tokens';
@@ -27,7 +28,7 @@ export function TickingNumber({
     <Reveal>
       <View
         accessible
-        accessibilityLabel={`${Number(value.toFixed(precision)).toLocaleString('en-US')} ${label}`}
+        accessibilityLabel={`${formatNumber(Number(value.toFixed(precision)))} ${label}`}
         style={{ alignItems: 'center', gap: t.space.sm }}>
         <NumberInput
           editable={false}

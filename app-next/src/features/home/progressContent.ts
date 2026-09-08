@@ -1,4 +1,5 @@
 import { Rule, RuleDay, Permissions, WalkingSession } from '../../domain/types';
+import { formatNumber } from '../../content/locale';
 import { homeCopy as c } from '../../content/home';
 import { ruleName } from '../../domain/ruleName';
 import { leaseClock } from './statusContent';
@@ -26,7 +27,7 @@ export function progressContent(
   const m = rule.mode,
     title = ruleName(rule),
     format = (value: number) =>
-      value.toLocaleString('en-US', { maximumFractionDigits: m.kind === 'target' && m.metric === 'distance' ? 1 : 0 });
+      formatNumber(value, { maximumFractionDigits: m.kind === 'target' && m.metric === 'distance' ? 1 : 0 });
   if (satisfiedBy && satisfiedBy.byRuleId !== rule.id)
     return { title, icon: rule.activity, value: row.met ? 1 : 0, detail: c.satisfied(satisfiedBy.byRuleName) };
   const sensor = sensorFor(rule);
