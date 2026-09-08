@@ -91,7 +91,8 @@ PORT=3000
 DATABASE_URL=postgres:///excerlock
 PGHOST=/var/run/postgresql
 SENTRY_DSN=
-CLERK_SECRET_KEY=
+SUPABASE_URL=https://hqgqhefftjxwdhqeushr.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=
 ADAPTY_SECRET_KEY=
 ADAPTY_WEBHOOK_SECRET=
 POSTHOG_API_KEY=
@@ -100,6 +101,20 @@ POSTHOG_PERSONAL_API_KEY=
 POSTHOG_PROJECT_ID=
 POSTHOG_API_HOST=https://us.posthog.com
 ```
+
+`SUPABASE_URL` is the only auth variable the server needs: the issuer
+(`<url>/auth/v1`), the JWKS url and the Admin API base are all derived from
+it. Set `SUPABASE_JWT_JWKS_URL` only to override that derivation, and
+`SUPABASE_JWT_SECRET` only if the project is ever moved back to the legacy
+HS256 shared secret — while a JWKS url exists the secret is never consulted.
+`SUPABASE_SERVICE_ROLE_KEY` authorizes exactly one call, the Admin API user
+deletion in `DELETE /v1/user`; without it that route fails closed with
+`503 ACCOUNT_DELETION_UNAVAILABLE`.
+
+`CLERK_SECRET_KEY` and the vendor variables (`STRAVA_*`, `OURA_*`, `WHOOP_*`,
+`POLAR_*`, `VENDOR_*`) are gone. Delete them from the box's environment file:
+the server no longer reads them, so a stale value is a live credential with no
+owner.
 
 ## 2. Point DNS at the VM
 
