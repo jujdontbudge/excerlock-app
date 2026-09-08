@@ -7,6 +7,10 @@ facts the runtime host publishes — `enforcementStatus` (the last `ApplyResult`
 "Blocking is not on"), `lastClaimAt` (the claim-on-open timestamp) and the retry token Home's Try again
 action bumps. Nothing here survives a launch; the host republishes on its first apply.
 
+`settingsStore.shareAnalytics` is the "Share usage analytics" answer (D9b). It defaults to on, which is
+why the analytics adapter reads it only once the store has hydrated: answering the default before
+rehydration would send the first events of a session belonging to someone who had already opted out.
+
 `todayHistory` replaces today’s fixture completion with actual enabled schedules and RuleDays before streak/analytics selectors read it. Historical usage remains measurement data; missing usage is not fabricated.
 
 ## Persisted-store contract

@@ -5,40 +5,46 @@ import { fromRoot, readJson, readUtf8 } from "./repo-files";
 describe("client observability boot", () => {
   it("initializes Sentry first and preserves native plugin ordering", () => {
     const packageJson = readJson<{ main: string }>(
-      fromRoot("app", "package.json"),
+      fromRoot("app-next", "package.json"),
     );
+    // The router entry is required *by* index.ts, so Sentry is installed before any app module
+    // evaluates — the errors no boundary can catch are the ones worth reporting most.
     expect(packageJson.main).toBe("index.ts");
 
-    const entry = readUtf8(fromRoot("app", "index.ts"));
-    expect(entry.startsWith('import * as Sentry from "@sentry/react-native";')).toBe(
+    const entry = readUtf8(fromRoot("app-next", "index.ts"));
+    expect(entry.startsWith("import * as Sentry from '@sentry/react-native';")).toBe(
       true,
     );
     expect(entry.indexOf("Sentry.init(")).toBeGreaterThan(0);
-    expect(entry.indexOf('require("expo-router/entry")')).toBeGreaterThan(
+    expect(entry.indexOf("require('expo-router/entry')")).toBeGreaterThan(
       entry.indexOf("Sentry.init("),
     );
 
     const appJson = readJson<{
       expo: { plugins: Array<string | [string, Record<string, unknown>]> };
-    }>(fromRoot("app", "app.json"));
-    const pluginNames = appJson.expo.plugins.map((plugin) =>
-      Array.isArray(plugin) ? plugin[0] : plugin,
-    );
-    const sentryIndex = pluginNames.indexOf("@sentry/react-native");
-    const validationIndex = pluginNames.indexOf(
-      "./plugins/withScreenTimeExtensionValidation",
-    );
+    }>(fromRoot("app-next", "app.json"));
 
-    expect(sentryIndex).toBeGreaterThanOrEqual(0);
-    expect(sentryIndex).toBeLessThan(validationIndex);
-
-    expect(appJson.expo.plugins[sentryIndex]).toEqual([
+    // The Sentry plugin runs first so its build phases wrap every later native modification.
+    expect(appJson.expo.plugins[0]).toEqual([
       "@sentry/react-native",
       { organization: "edge-ix", project: "excerlock-mobile" },
     ]);
 
-    const metroConfig = readUtf8(fromRoot("app", "metro.config.js"));
+    const metroConfig = readUtf8(fromRoot("app-next", "metro.config.js"));
     expect(metroConfig).toContain("getSentryExpoConfig");
     expect(metroConfig).toContain("includeWebReplay: false");
+  });
+
+  it("keeps the vendor keys out of the repository", () => {
+    // app.config.ts reads them from ~/.excerlock/env or the EAS environment at build time.
+    const appConfig = readUtf8(fromRoot("app-next", "app.config.ts"));
+    expect(appConfig).toContain("EXPO_PUBLIC_POSTHOG_KEY");
+    expect(appConfig).toContain("SENTRY_DSN_MOBILE");
+    expect(appConfig).not.toMatch(/phc_[A-Za-z0-9]{16}/);
+    expect(appConfig).not.toMatch(/https:\/\/[0-9a-f]{16,}@/);
+
+    const appJson = readUtf8(fromRoot("app-next", "app.json"));
+    expect(appJson).not.toMatch(/phc_[A-Za-z0-9]{16}/);
+    expect(appJson).not.toMatch(/https:\/\/[0-9a-f]{16,}@/);
   });
 });

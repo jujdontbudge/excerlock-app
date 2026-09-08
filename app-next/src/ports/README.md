@@ -21,7 +21,11 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
 - HealthPort: Phase 2 reads authorized running/cycling workouts.
 - AuthPort: Phase 2 implements Supabase identity, OTP and deletion.
 - SubscriptionPort: Phase 2 implements Adapty entitlement, paywall and restore.
-- AnalyticsPort: Phase 2 emits sanitized PostHog events.
+- AnalyticsPort: `adapters/analytics` implements it against PostHog. `track` and `screen` accept any string
+  and any bag; the adapter drops what `@excerlock/analytics-events` does not register, so a caller never
+  branches on whether an event is legal. `setPersonProperties` is `$set` on the current person — the four
+  onboarding answers, never an event payload. `identify` is called for every session, the anonymous one
+  included; the adapter is what decides that an anonymous placeholder is not an identity.
 - NotificationsPort: Phase 2 schedules local trial and lease reminders.
 - SyncPort: Phase 2 synchronizes rules and day facts with the VPS.
 - ClockPort: Phase 2 observes system time and timezone changes.

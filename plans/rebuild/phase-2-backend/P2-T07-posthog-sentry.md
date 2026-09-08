@@ -39,3 +39,52 @@
 - Attach the persisted O06–O09 answers (`ageBand`, `occupation`, `improveFirst`, `mainReason`) as PostHog
   person properties. P2-T23 keeps the currently shipped O06/O07 option lists pending Johan's answer; the
   property names and purpose do not depend on that choice.
+
+## What was built (2026-09-07)
+
+Registry (`packages/analytics-events`):
+
+- `FLOW_SCREENS` is the rail in path order: `O01`–`O20`, the branch (`G1`, `G2`, `R1`, `R2`, `B1`, `B2`,
+  `D`, `W1`–`W4`), `S1`–`S4`, `T1`–`T4`, `P`, then `X1`, `X2`, `X3a`, `X3b`, `X4`, `X5`. The setup rail's
+  ids are `X3a`/`X3b`, not a single `X3`, because that is what `setupFlow.ts` renders.
+  `APP_SCREENS` / `TRACKED_SCREENS` hold the steady-state screens that also report a `$screen` (`Home`
+  today), so the funnel insight can step `FLOW_SCREENS` alone while the transport still accepts a real
+  screen name instead of silently dropping it.
+- Cut as planned: `earn_claimed`, `sick_day_override_used`, `milestone_unlocked`, `share_card_shared`,
+  `notification_toggled`, the three `vendor_*` events. `walk_session_*` renamed `walking_session_*`.
+- Added as planned: `rule_met`, `apps_unlocked_rest_of_day`, `setup_permission_result`,
+  `sign_in_completed`. Also added `src/events/ceremony.ts` for the aha-unlock events `app-next` already
+  emits (`unlock_screen_opened`, `unlock_ceremony_done`, `treadmill_scan_*`, `gym_unlock_*`), which the
+  registry did not know about and the re-pointed guardrail now checks.
+- New: `enumProperties`, a value floor under the existing `transmittedProperties` name allowlist.
+  `AnalyticsPort.track()` takes an untyped bag, and the treadmill scan filled `reason` from a caught
+  exception's message — a path, a gym name or a bundle id. The floor drops an undeclared value; the call
+  site no longer sends one either.
+
+Adapter (`app-next/src/adapters/analytics`): consent read fresh on every emit, the registry check, the
+two privacy layers, the screen union, and the identity rule. Step 2's open question is answered in the
+adapter README: **identify only a real user id.** Identifying the shared anonymous placeholder would give
+every anonymous install one distinct id and would stop PostHog merging that install's history into the
+Supabase id at sign-in — which `identify()` does for free while the SDK is still on its own anonymous id.
+No manual `alias()` is needed. `personProfiles: 'identified_only'` keeps the anonymous half of the funnel
+from creating person records at all.
+
+Sentry (`app-next/src/observability`): `index.ts` is the app entry and initialises before
+`expo-router/entry`; the scrub keeps shape plus the React component stack and drops content;
+`reportError` is wired into `AppErrorBoundary`'s `onError` and into `RouteErrorBoundary`.
+
+Opt-out: `settings.shareAnalytics` (default on) with a Settings row, read only after the settings store
+has hydrated so an opted-out session never sends its first event.
+
+`src/experiments/**` was **not** ported: no experiment reads a flag in `app-next`, and the shield copy
+override does not exist in the rebuild. `preloadFeatureFlags` and `sendFeatureFlagEvent` stay on, so the
+registry can be added back without touching the adapter.
+
+### Not in this task
+
+- Call sites for `rule_met`, `apps_unlocked_rest_of_day`, `walking_session_started/ended`,
+  `setup_permission_result` and `sign_in_completed`. The events are registered and typed; the engine
+  (P2-T14/T15/T16), the setup rail (P2-T23) and sign-in (P2-T01) own their emission.
+- The "Export my data" row from `fix-plan.md` open question 3 — Settings and account wiring (P2-T10).
+- `PrivacyInfo.xcprivacy`. Both SDKs are installed and their collection is known, but the manifest lands
+  with the native build work, not here (no prebuild in this task).

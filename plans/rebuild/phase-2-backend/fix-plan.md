@@ -75,7 +75,9 @@ findings are closed on the simulator.
    conflicts with the "sells, never scolds" voice rule.
 2. O06 age bands and O07 occupation lists differ from the inventory. Default: shipped lists stay.
 3. Analytics opt-out switch and "Export my data" row (PRD promises export; App Privacy label needs the
-   opt-out story). Default: build both in P2-T07/T10 (small).
+   opt-out story). Default: build both in P2-T07/T10 (small). **Half done (2026-09-07):** P2-T07 shipped
+   the switch — `settings.shareAnalytics`, default on, a Preferences row, and an adapter that re-reads it
+   on every emit and only after the settings store has hydrated. "Export my data" is still P2-T10's.
 4. P2-T25 accessibility and locale in the MVP. Default: yes; cut it and it goes to `00-decisions.md` §F.
 
 ## How to work a task
