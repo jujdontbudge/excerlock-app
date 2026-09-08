@@ -110,6 +110,12 @@ sudo install -d -m 0755 -o root -g root /var/www
 sudo install -d -m 0755 -o \"\$(id -un)\" -g \"\$(id -gn)\" ${REMOTE_ROOT}
 mkdir -p \"\$HOME/.excerlock-site\""
 
+# Caddy reads the web root as an unprivileged user, so every file it serves has
+# to be world-readable no matter what mode the local checkout carried.
+REMOTE_PUBLISH="set -eu
+find ${REMOTE_ROOT} -type d -exec chmod 0755 {} +
+find ${REMOTE_ROOT} -type f -exec chmod 0644 {} +"
+
 REMOTE_ACTIVATE="set -eu
 # Validate before installing: an invalid file must never reach /etc/caddy,
 # because the next reload of a working API would then fail too.
@@ -128,16 +134,20 @@ if ! run_command ssh "${SSH_OPTIONS[@]}" "$DEPLOY_HOST" "$REMOTE_PREPARE"; then
 fi
 
 log "Sync site/ to ${REMOTE_ROOT}"
+# No --chmod: macOS ships openrsync, which rejects it. Modes are set on the
+# box instead, in REMOTE_PUBLISH below.
 run_command rsync -rlptz --itemize-changes --delete \
-  --chmod=D755,F644 \
   --exclude 'README.md' \
   -e "$RSYNC_SSH" \
   "${SITE_DIR}/" "${DEPLOY_HOST}:${REMOTE_ROOT}/"
 
 # Staged in the deploy user's home, never under the web root: anything inside
 # ${REMOTE_ROOT} is publicly served, and the Caddyfile is configuration.
+log "Make the web root world-readable"
+run_command ssh "${SSH_OPTIONS[@]}" "$DEPLOY_HOST" "$REMOTE_PUBLISH"
+
 log "Stage the Caddyfile"
-run_command rsync -ptz --itemize-changes --chmod=F644 \
+run_command rsync -ptz --itemize-changes \
   -e "$RSYNC_SSH" \
   "${SCRIPT_DIR}/Caddyfile" "${DEPLOY_HOST}:.excerlock-site/Caddyfile"
 
@@ -147,14 +157,16 @@ run_command ssh "${SSH_OPTIONS[@]}" "$DEPLOY_HOST" "$REMOTE_ACTIVATE"
 if ! "$DRY_RUN"; then
   log "Verify the live pages"
   for path in / /privacy.html /terms.html /support.html /privacy /terms; do
-    status="$(curl --silent --show-error --location --max-time 20 \
-      --output /dev/null --write-out '%{http_code}' "https://excerlock.com${path}" || echo 000)"
+    # A connection failure makes curl print nothing, so the substitution has to
+    # supply the placeholder rather than append one to a partial code.
+    status="$(curl --silent --location --max-time 20 \
+      --output /dev/null --write-out '%{http_code}' "https://excerlock.com${path}")" || status=000
     printf '  %-16s %s\n' "$path" "$status"
     [[ "$status" == "200" ]] ||
       die "https://excerlock.com${path} returned ${status}; Caddy may still be issuing the certificate — retry in a minute"
   done
-  api_status="$(curl --silent --show-error --max-time 20 \
-    --output /dev/null --write-out '%{http_code}' https://api.excerlock.com/v1/health || echo 000)"
+  api_status="$(curl --silent --max-time 20 \
+    --output /dev/null --write-out '%{http_code}' https://api.excerlock.com/v1/health)" || api_status=000
   printf '  %-16s %s\n' "api /v1/health" "$api_status"
   [[ "$api_status" == "200" ]] || die "the API health check returned ${api_status}; the Caddy reload may have broken it"
 fi
