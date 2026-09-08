@@ -1,4 +1,5 @@
 import { syncLog } from '../adapters/sync/syncLog';
+import { tapAnalytics } from '../adapters/analytics/tapAnalytics';
 import { AnalyticsPort } from '../ports/AnalyticsPort';
 import { Permissions } from '../domain/types';
 import { AppStateSource, appStateOwner } from '../runtime/appState';
@@ -110,17 +111,8 @@ export function startDiagnostics(runtime: Runtime, options: DiagnosticsOptions):
  * for this log forbids both — knowing that an event fired is what the runbook needs.
  */
 function recordNames(analytics: AnalyticsPort, record: DiagnosticsRecorder): AnalyticsPort {
-  return {
-    track: (event, props) => {
-      record('analytics.event', { name: event });
-      analytics.track(event, props);
-    },
-    screen: (name) => {
-      record('analytics.event', { name: `screen:${name}` });
-      analytics.screen(name);
-    },
-    identify: (id) => analytics.identify(id),
-    setPersonProperties: (props) => analytics.setPersonProperties(props),
-    reset: () => analytics.reset(),
-  };
+  return tapAnalytics(analytics, (kind, name) => {
+    if (kind === 'track') record('analytics.event', { name });
+    if (kind === 'screen') record('analytics.event', { name: `screen:${name}` });
+  });
 }

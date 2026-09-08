@@ -1,4 +1,4 @@
-import { createAnalyticsAdapter } from '../adapters/analytics';
+import { createAnalyticsAdapter, tapAnalytics } from '../adapters/analytics';
 import type { AnalyticsAdapter } from '../adapters/analytics';
 import { ApiClient, ApiClientOptions, apiBaseUrl, createApiClient, createHttpSupportPort, createVpsProvisioning } from '../adapters/api';
 import { createHttpReachability } from '../adapters/api/reachability';
@@ -247,20 +247,9 @@ function fallbackAnalytics(): AnalyticsPort {
  * `lock_applied` from it, and on a device it is the only view of what the session emitted.
  */
 function recordInto(analytics: AnalyticsPort, controls: RealControls): AnalyticsPort {
-  return {
-    track: (event, props) => {
-      controls.record(event, props);
-      analytics.track(event, props);
-    },
-    screen: (name) => {
-      controls.record('screen', { name });
-      analytics.screen(name);
-    },
-    identify: (id) => {
-      controls.record('identify', { id });
-      analytics.identify(id);
-    },
-    setPersonProperties: (props) => analytics.setPersonProperties(props),
-    reset: () => analytics.reset(),
-  };
+  return tapAnalytics(analytics, (kind, name, props) => {
+    if (kind === 'track') controls.record(name, props);
+    else if (kind === 'screen') controls.record('screen', { name });
+    else controls.record('identify', { id: name });
+  });
 }
