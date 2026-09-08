@@ -21,4 +21,6 @@ subscription SDK is reset before analytics and the auth provider is always relea
 
 `preferences` relabels saved distance rules when units change; values are not converted. Account deletion returns to an anonymous session and preserves local data. Under the fake runtime, support and deletion stay on the device: the fake support port records only category and length in its debug event, and no message is sent externally.
 
+`appBuildInfo` is the one reader of the running version and build: the native bundle values from `expo-application` win, because EAS remote versioning can leave `expoConfig.ios.buildNumber` undefined in a store build; app.json is the development fallback. The About row and the support diagnostics both use it.
+
 Legal text is still the Phase 1 placeholder: `content/legal.ts` carries `placeholder: true`, and `content/__tests__/legal-release.test.ts` fails a production build (`EAS_BUILD_PROFILE=production` or `EXPO_PUBLIC_RELEASE_BUILD=1`) until the real Terms and Privacy documents replace it.

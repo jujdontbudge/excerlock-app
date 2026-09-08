@@ -13,6 +13,8 @@ import { SettingsScreen } from '../SettingsScreen';
 import { SupportScreen, SupportSent } from '../SupportScreen';
 
 jest.mock('../../../motion/haptics', () => ({ feedback: jest.fn(), setHapticsEnabled: jest.fn() }));
+// A development run has no native bundle values; the About row falls back to app.json.
+jest.mock('expo-application', () => ({ nativeApplicationVersion: null, nativeBuildVersion: null }));
 
 function withRuntime(runtime: ReturnType<typeof createRuntime>, child: React.ReactElement) {
   return <AppRuntimeProvider runtime={runtime}>{child}</AppRuntimeProvider>;

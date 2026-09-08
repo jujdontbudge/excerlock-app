@@ -1,15 +1,13 @@
-import Constants from 'expo-constants';
 import { useState } from 'react';
 import { Label, PressableScale, SettingsGroup } from '../../../design-system';
 import { settingsCopy as c } from '../../../content/settings';
 import { devMenuEnabled } from '../../../runtime/devFlag';
+import { appBuildInfo } from '../appBuildInfo';
 
 export function AboutSection({ onDev }: { onDev: () => void }) {
   const [taps, setTaps] = useState(0);
-  const version = c.version(
-    Constants.expoConfig?.version ?? c.defaultVersion,
-    Constants.expoConfig?.ios?.buildNumber ?? c.defaultBuild,
-  );
+  const info = appBuildInfo();
+  const version = c.version(info.version, info.build);
   return (
     <SettingsGroup title={c.about}>
       <PressableScale
