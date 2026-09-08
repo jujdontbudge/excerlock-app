@@ -34,13 +34,13 @@ test('entitled boot opens Home, tabs navigate and selected apps open the shared 
   );
   const rendered = await r;
   expect(r.getPathname()).toBe('/home');
-  expect(screen.getByRole('header', { name: 'Conditions' })).toBeTruthy();
+  expect(screen.getByRole('header', { name: 'Apps are blocked' })).toBeTruthy();
   expect(screen.getByText('Walk 5,000 steps')).toBeTruthy();
   expect(screen.getByRole('header', { name: /Block from 9.AM to 9.PM until you walk 5,000 steps/ })).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: 'Edit / Add' }));
   expect(r.getPathname()).toBe('/conditions');
   await userEvent.press(screen.getByRole('tab', { name: 'Home' }));
-  await userEvent.press(screen.getByRole('button', { name: 'Lock list' }));
+  await userEvent.press(screen.getByRole('button', { name: /Lock list/ }));
   expect(screen.getByRole('header', { name: 'Choose apps to block' })).toBeTruthy();
   await act(() => runtime.dev.resolvePrompt(false));
   await rendered.unmount();

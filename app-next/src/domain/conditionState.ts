@@ -1,5 +1,6 @@
 import { LockDecision, Rule, RuleDay } from './types';
 import { dayKey, windowInstances } from './schedule';
+import { homeCopy } from '../content/home';
 
 export type ConditionState =
   | 'met'
@@ -27,4 +28,27 @@ export function conditionState(
   if (!windowInstances(rule, dayKey(now, timezone), timezone).length) return 'notScheduled';
   if (decision.state === 'locked' && decision.activeRuleIds.includes(rule.id)) return 'blockingNow';
   return 'inProgress';
+}
+
+export type ConditionStatus = {
+  text: string;
+  /** active = still working, done = the day is covered, attention = the user must act, muted = inert today. */
+  tone: 'active' | 'done' | 'attention' | 'muted';
+};
+
+const tones: Record<ConditionState, ConditionStatus['tone']> = {
+  met: 'done',
+  live: 'active',
+  blockingNow: 'active',
+  satisfiedToday: 'done',
+  inProgress: 'active',
+  paused: 'muted',
+  pausedNoGym: 'attention',
+  notScheduled: 'muted',
+  permissionNeeded: 'attention',
+};
+
+/** The one status chip every condition list renders: Home's ConditionRow and P2-T20's RuleCard. */
+export function conditionStatus(state: ConditionState): ConditionStatus {
+  return { text: homeCopy.states[state], tone: tones[state] };
 }

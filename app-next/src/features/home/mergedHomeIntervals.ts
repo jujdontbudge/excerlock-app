@@ -20,3 +20,15 @@ export function mergedHomeIntervals(rules: Rule[]): HomeInterval[] {
     return merged;
   }, []);
 }
+
+/** Minutes after local midnight, so the timeline can highlight the window containing now. */
+export function dayMinute(now: string, timezone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: timezone,
+  }).formatToParts(new Date(now));
+  const value = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? 0);
+  return (value('hour') % 24) * 60 + value('minute');
+}
