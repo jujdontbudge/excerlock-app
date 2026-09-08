@@ -1,8 +1,7 @@
-import { render, screen, userEvent } from '@testing-library/react-native';
-import { PaywallStandIn } from '../PaywallStandIn';
+import { act, fireEvent, render, screen, userEvent } from '@testing-library/react-native';
 import { Slot } from 'expo-router';
-import { act, fireEvent } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
+import { PaywallStandIn } from '../PaywallStandIn';
 import { PaywallSlot } from '../PaywallSlot';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
