@@ -1,17 +1,27 @@
-import { createContext, PropsWithChildren, useContext, useState, useEffect } from 'react';
+import { createContext, PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { createRuntime, Runtime } from './createRuntime';
 import { AppErrorBoundary } from '../features/launch/AppErrorBoundary';
+import { bindIdentity } from './IdentityBridge';
 import { bindHaptics } from '../motion/bindHaptics';
-import { EnforcementHost } from './EnforcementHost';
+import { startEnforcement } from './EnforcementHost';
 const Context = createContext<Runtime | null>(null);
+
+/** The app's long-lived bindings, started in mount order and torn down in reverse. */
+function RuntimeBindings({ runtime }: { runtime: Runtime }) {
+  useEffect(() => {
+    const stops = [bindIdentity(runtime), bindHaptics(), startEnforcement(runtime)];
+    return () => stops.reverse().forEach((stop) => stop());
+  }, [runtime]);
+  return null;
+}
+
 export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChildren<{ runtime?: Runtime }>) {
   const [runtime] = useState(() => provided ?? createRuntime());
   useEffect(() => () => runtime.dispose(), [runtime]);
-  useEffect(() => bindHaptics(), []);
   return (
     <Context.Provider value={runtime}>
       <AppErrorBoundary>
-        <EnforcementHost runtime={runtime} />
+        <RuntimeBindings runtime={runtime} />
         {children}
       </AppErrorBoundary>
     </Context.Provider>

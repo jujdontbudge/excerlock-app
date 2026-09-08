@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { AppState } from 'react-native';
 import { resolveLock } from '../domain/resolveLock';
 import { entitlementStore } from '../state/entitlementStore';
@@ -114,9 +113,4 @@ export function startEnforcement(
     stopSessionGuard();
     progress.stop();
   };
-}
-
-export function EnforcementHost({ runtime }: { runtime: Runtime }) {
-  useEffect(() => startEnforcement(runtime), [runtime]);
-  return null;
 }
