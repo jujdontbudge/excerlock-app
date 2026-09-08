@@ -31,3 +31,11 @@ Only after P2-T11 passes and Johan says so.
 - Guardrail: a release build has no dev route, no deep-link runtime mutation and no test buttons (P2-T13).
 - The hardening milestone's task files (P2-T13–T25) move with the rest of `plans/rebuild/`; the audit under
   `docs/audit/` stays as the record.
+
+## Blocked-until-cutover debt (2026-09-07, from P2-T07)
+
+`app/` no longer typechecks. P2-T07 rebuilt `packages/analytics-events` around the new onboarding
+rail, and the legacy app is typed against the retired seven-screen one — one `FlowScreen` union
+cannot describe both. 30 errors, all in `app/src/analytics/**` and `app/src/onboarding/**`. Deleting
+`app/` and dropping it from the root `workspaces` array and from `test:unit` clears them; nothing
+else in the repo depends on it.

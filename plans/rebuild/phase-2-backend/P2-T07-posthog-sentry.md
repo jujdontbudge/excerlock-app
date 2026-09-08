@@ -88,3 +88,16 @@ registry can be added back without touching the adapter.
 - The "Export my data" row from `fix-plan.md` open question 3 — Settings and account wiring (P2-T10).
 - `PrivacyInfo.xcprivacy`. Both SDKs are installed and their collection is known, but the manifest lands
   with the native build work, not here (no prebuild in this task).
+
+### One thing this breaks: the legacy `app/`
+
+`npm run typecheck --workspace app` was green before this task and now reports 30 errors, all in
+`app/src/analytics/**` and `app/src/onboarding/**`. There is no honest repair. The registry's
+`FlowScreen` union is the rail the product actually ships, and the legacy app's rail is the retired
+seven-screen one (`value-prop`, `confession`, `mirror`, `permissions-primer`, `pick-apps`, `paywall`,
+`sign-up`). One union cannot describe both. The rest of the errors are the cut events and the events
+whose props stopped being empty.
+
+The resolution is P2-T12's, not a fix here: the cutover deletes `app/` and drops it from the root
+workspace list and from `npm run test:unit`. Until then the root `npm test` fails at `test:app`;
+`app-next`, `server`, `packages` and the guardrails are all green.
