@@ -244,6 +244,24 @@ test('the shackle lifts when a duration goal is reached', async () => {
   runtime.dispose();
 });
 
+test('a scan that cannot start explains itself instead of showing the exception', async () => {
+  const runtime = await mount('unlock-treadmill-scan', (value) => {
+    jest.spyOn(value.walking, 'start').mockRejectedValue(new Error('ERR_SESSION_BUSY'));
+  });
+  expect(screen.getByRole('header', { name: "We couldn't start the scan" })).toBeTruthy();
+  expect(screen.queryByText('ERR_SESSION_BUSY')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+  runtime.dispose();
+});
+
+test('a rule that cannot be scanned says so instead of asking for a prop', async () => {
+  const runtime = await mount('unlock-treadmill-scan', undefined, { ruleId: 'gone' });
+  expect(screen.getByRole('header', { name: 'This condition is not set up for a treadmill scan.' })).toBeTruthy();
+  expect(screen.queryByRole('header', { name: 'Prop your phone and walk' })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
+  runtime.dispose();
+});
+
 test('the counting stage only says to scan again as the lease runs out', async () => {
   const runtime = await mount('unlock-treadmill-scan', installDurationSession, { ruleId: 'walk-minutes' });
   await finishScan();

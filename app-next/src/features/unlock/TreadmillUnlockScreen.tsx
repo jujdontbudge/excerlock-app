@@ -18,7 +18,7 @@ import { isTreadmillCeremonyRule, walkingDurationRule } from './walkingDurationR
 import { requestHomeWalkingSheet } from './walkingSheetRequest';
 import { leaseClock } from '../home/statusContent';
 
-type TerminalFailure = 'expired' | 'bookingFailed' | null;
+type TerminalFailure = 'expired' | 'bookingFailed' | 'invalidRule' | 'scanFailed' | null;
 
 // merge: replace with P2-T09's lease-warning threshold once notifications land.
 // P2-T09 schedules the warning at leaseUntil − 30 s; the screen says the same
@@ -138,7 +138,8 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
       try {
         if (!preview) {
           if (!isTreadmillCeremonyRule(rule)) {
-            setError(c.treadmill.invalidRule);
+            terminalRef.current = 'invalidRule';
+            setTerminal('invalidRule');
             return;
           }
           const permission = await provider.permission();
@@ -157,7 +158,14 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
           await scanController.start();
         }
       } catch (cause) {
-        if (active.current) setError(cause instanceof Error ? cause.message : c.treadmill.scanFailed);
+        // The reason is for the log, not the user: a raw exception message under
+        // the idle "prop your phone" heading is the silent shield in disguise.
+        runtime.analytics.track('treadmill_scan_failed', {
+          reason: cause instanceof Error ? cause.message : 'unknown',
+        });
+        if (!active.current) return;
+        terminalRef.current = 'scanFailed';
+        setTerminal('scanFailed');
       }
     };
     retry.current = async () => {
@@ -210,7 +218,11 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
   const title = failed
     ? terminal === 'expired'
       ? c.treadmill.expired
-      : c.treadmill.bookingFailed
+      : terminal === 'invalidRule'
+        ? c.treadmill.invalidRule
+        : terminal === 'scanFailed'
+          ? c.treadmill.scanFailed
+          : c.treadmill.bookingFailed
     : denied
       ? c.treadmill.denied
       : counting
@@ -223,7 +235,11 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
   const body = failed
     ? terminal === 'expired'
       ? c.treadmill.expiredBody
-      : undefined
+      : terminal === 'invalidRule'
+        ? c.treadmill.invalidRuleBody
+        : terminal === 'scanFailed'
+          ? c.treadmill.scanFailedBody
+          : undefined
     : denied
       ? c.treadmill.deniedBody
       : counting
@@ -245,6 +261,8 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
         {lapsed ? <SecondaryButton label={c.seePlans} onPress={() => router.push('/paywall')} /> : null}
       </>
     ) : undefined
+  ) : terminal === 'invalidRule' ? (
+    <PrimaryButton label={c.done} onPress={close} />
   ) : failed ? (
     <>
       <PrimaryButton label={c.treadmill.retry} onPress={() => void retry.current()} />
