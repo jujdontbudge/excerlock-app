@@ -1,8 +1,11 @@
 import { requireOptionalNativeModule } from 'expo';
 import { GaitPort } from '../ports/GaitPort';
+import { PermissionStatus } from '../domain/types';
 import { getExcerlockGaitVisionPreview } from '../../modules/excerlock-gait-vision';
-import { GaitKeypointSample } from '../features/unlock/gait/GaitVisionProvider';
+import { GaitKeypointSample } from '../engine/signals/gait/GaitVisionProvider';
 type NativeGaitModule = {
+  cameraAuthorization(): PermissionStatus;
+  requestCameraAccess(): Promise<boolean>;
   start(): Promise<void>;
   stop(): Promise<void>;
   addListener(name: string, cb: (sample: GaitKeypointSample) => void): { remove(): void };
@@ -18,18 +21,14 @@ export function nativeGait(): GaitPort | null {
       const subscription = module.addListener('onGaitSample', cb);
       return () => subscription.remove();
     },
-    // merge: P2-T03 replaces this probe with a real AVCaptureDevice
-    // authorization read. Starting and stopping the camera to learn the answer
-    // flashes the preview before the ceremony asks for it, and it can only ever
-    // say granted or denied — never notDetermined or restricted.
+    // The ceremony asks before every scan, so this reads
+    // AVCaptureDevice.authorizationStatus rather than probing the session:
+    // start/stop flashed the preview and could only ever answer granted or
+    // denied. notDetermined prompts once; restricted is honoured, not softened.
     permission: async () => {
-      try {
-        await module.start();
-        await module.stop();
-        return 'granted';
-      } catch {
-        return 'denied';
-      }
+      const status = module.cameraAuthorization();
+      if (status !== 'notDetermined') return status;
+      return (await module.requestCameraAccess()) ? 'granted' : 'denied';
     },
     Preview: () => <Preview active style={{ flex: 1 }} />,
   };

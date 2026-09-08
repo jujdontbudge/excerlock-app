@@ -106,7 +106,7 @@ function readProjectTargets(project: string): ProjectTarget[] {
 
 describe("prebuild-survival guardrail", () => {
   it("keeps HealthKit background startup compatible with the Expo Swift app target", () => {
-    const appConfig = readJson<AppConfig>(fromRoot("app", "app.json"));
+    const appConfig = readJson<AppConfig>(fromRoot("app-next", "app.json"));
     const plugins = appConfig.expo?.plugins ?? [];
     const healthKitPluginIndex = plugins.findIndex(
       (plugin) =>
@@ -126,7 +126,7 @@ describe("prebuild-survival guardrail", () => {
     expect(bootstrapPluginIndex).toBeLessThan(plugins.length - 1);
 
     const appDelegateFiles = walkFiles(
-      fromRoot("app", "ios"),
+      fromRoot("app-next", "ios"),
       new Set(["AppDelegate.swift"]),
     );
     expect(appDelegateFiles).toHaveLength(1);
@@ -138,13 +138,13 @@ describe("prebuild-survival guardrail", () => {
     expect(appDelegate).toContain("setupHealthKitBackgroundDelivery()");
 
     const templatePath = fromRoot(
-      "app",
+      "app-next",
       "plugins",
       "healthkit",
       "HealthKitBackgroundBootstrap.mm",
     );
     const generatedBridgePath = fromRoot(
-      "app",
+      "app-next",
       "ios",
       "ExcerLock",
       "HealthKitBackgroundBootstrap.mm",
@@ -154,7 +154,7 @@ describe("prebuild-survival guardrail", () => {
     expect(readUtf8(generatedBridgePath)).toBe(readUtf8(templatePath));
 
     const projectFiles = walkFiles(
-      fromRoot("app", "ios", "ExcerLock.xcodeproj"),
+      fromRoot("app-next", "ios", "ExcerLock.xcodeproj"),
       new Set(["project.pbxproj"]),
     );
     expect(projectFiles).toHaveLength(1);
@@ -168,7 +168,7 @@ describe("prebuild-survival guardrail", () => {
 
   it("materializes the package-owned monitor runtime during clean prebuild", () => {
     const targetRoot = fromRoot(
-      "app",
+      "app-next",
       "targets",
       "DeviceActivityMonitorExtension",
     );
@@ -214,7 +214,7 @@ describe("prebuild-survival guardrail", () => {
   });
 
   it("keeps every declared native target and entitlement in the generated Xcode project", () => {
-    const appConfig = readJson<AppConfig>(fromRoot("app", "app.json"));
+    const appConfig = readJson<AppConfig>(fromRoot("app-next", "app.json"));
     expect(appConfig.expo?.ios?.bundleIdentifier).toBe("com.johansardar.excerlock");
 
     const targetManifest = readJson<NativeTargetsManifest>(
@@ -228,7 +228,7 @@ describe("prebuild-survival guardrail", () => {
       "shield-configuration",
     ]);
 
-    const packageJson = readJson<PackageJson>(fromRoot("app", "package.json"));
+    const packageJson = readJson<PackageJson>(fromRoot("app-next", "package.json"));
     const dependencies = packageJson.dependencies ?? {};
     const targetById = new Map(targetManifest.targets.map((target) => [target.id, target]));
     const rndaPlugin = appConfig.expo?.plugins?.find(
@@ -239,7 +239,7 @@ describe("prebuild-survival guardrail", () => {
     expect(appConfig.expo?.plugins?.at(-1)).toBe(
       "./plugins/withScreenTimeExtensionValidation",
     );
-    const appIntentsHasSource = walkFiles(fromRoot("app", "targets", "app-intents")).some(
+    const appIntentsHasSource = walkFiles(fromRoot("app-next", "targets", "app-intents")).some(
       (path) => !path.endsWith("README.md") && !path.endsWith(".gitkeep"),
     );
 
@@ -256,7 +256,7 @@ describe("prebuild-survival guardrail", () => {
       ).toBe("required");
     }
 
-    const projectFiles = walkFiles(fromRoot("app", "ios"), new Set(["project.pbxproj"]));
+    const projectFiles = walkFiles(fromRoot("app-next", "ios"), new Set(["project.pbxproj"]));
     expect(
       projectFiles.length,
       "The guardrail suite requires a clean Expo iOS prebuild before its filesystem assertions",
@@ -293,7 +293,7 @@ describe("prebuild-survival guardrail", () => {
           .filter(({ entitlements }) =>
             !entitlements.some(
               (path) =>
-                entitlementPath.test(path) && existsSync(fromRoot("app", "ios", path)),
+                entitlementPath.test(path) && existsSync(fromRoot("app-next", "ios", path)),
             ),
           )
           .map(({ id: configuration }) => ({ configuration, target: id }));

@@ -10,7 +10,7 @@ type PackageJson = {
 
 describe("HealthKit AppDelegate guardrail", () => {
   it("requires setupBackgroundObservers after HealthKit is installed", () => {
-    const packageJsonPath = fromRoot("app", "package.json");
+    const packageJsonPath = fromRoot("app-next", "package.json");
     const packageJson = existsSync(packageJsonPath)
       ? readJson<PackageJson>(packageJsonPath)
       : {};
@@ -20,7 +20,7 @@ describe("HealthKit AppDelegate guardrail", () => {
     };
     const healthKitInstalled = "@kingstinct/react-native-healthkit" in declaredDependencies;
     const appDelegates = walkFiles(
-      fromRoot("app", "ios"),
+      fromRoot("app-next", "ios"),
       new Set(["AppDelegate.swift", "AppDelegate.mm", "AppDelegate.m"]),
     );
     const configuredDelegates = appDelegates.filter((path) => {
@@ -35,7 +35,7 @@ describe("HealthKit AppDelegate guardrail", () => {
       return usesDirectSwiftImport || usesNativeBridge;
     });
     const bridgeSources = walkFiles(
-      fromRoot("app", "ios"),
+      fromRoot("app-next", "ios"),
       new Set(["HealthKitBackgroundBootstrap.mm"]),
     ).filter((path) =>
       readUtf8(path).includes(

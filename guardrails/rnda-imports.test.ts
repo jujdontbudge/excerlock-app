@@ -5,15 +5,14 @@ import { fromRoot, readUtf8, repoRelative, walkFiles } from "./repo-files";
 describe("react-native-device-activity import guardrail", () => {
   it("allows RNDA imports only in ScreenTime native edges", () => {
     const offenders = walkFiles(
-      fromRoot("app"),
+      fromRoot("app-next"),
       new Set([".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx"]),
     )
       .filter((path) => readUtf8(path).includes("react-native-device-activity"))
       .filter(
         (path) =>
-          !path.includes("/src/shield/") &&
-          !path.includes("/src/screentime/native/") &&
-          !path.includes("/src/signals/screentime/") &&
+          !path.includes("/src/engine/shield/") &&
+          !path.includes("/src/engine/screentime/native/") &&
           !path.endsWith("/plugins/withScreenTimeExtensionValidation.js") &&
           !/\/targets\/[^/]+\/expo-target\.config\.js$/.test(path),
       )
