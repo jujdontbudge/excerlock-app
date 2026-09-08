@@ -70,7 +70,12 @@ could not restore the reason's meaning. The device re-derives it.
 (last-write-wins, tombstones, absence leaving rows alone, ownership, numeric
 precision, sealed history, the history limit).
 `test/sync-routes.test.ts` covers the HTTP boundary, the privacy law and the
-batch cap against a stub repository.
+batch cap against a stub repository. `test/sync-wire-contract.test.ts` pins
+the shapes the client's `app-next/src/adapters/sync/wire.ts` encodes — every
+`RuleMode` variant, the batch field names, the 120-character text cap and the
+device-only fields that must never be accepted. The two files are edited by
+different lanes and a disagreement is a 400 at runtime, which is a silent
+backup failure rather than a visible crash, so it is worth catching here.
 
 ## Test
 

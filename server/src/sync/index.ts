@@ -4,6 +4,7 @@ export {
   MAX_SYNC_BATCH,
   profileRequest,
   ruleDaysRequest,
+  rulePayload,
   rulesRequest,
   SYNC_HISTORY_LIMIT,
   usageDaysRequest,
