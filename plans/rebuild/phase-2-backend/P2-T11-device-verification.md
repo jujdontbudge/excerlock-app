@@ -45,3 +45,9 @@ Every item gets pass/fail, date, iOS version, device, and a note. Failures becom
     ceremony unlocks at the 30-second confirmation.
 19. A walking-lease renewal across an hour on hardware.
 20. Measured: how often the Shield extension refreshes published content (open question from P2-T04).
+
+## Runbook
+
+The sitting itself is `docs/verification/device-runbook.md` (with `device-prerequisites.md` for what Johan
+sets up first and `diagnostics-events.md` for the log events the adapters must emit). The pulled logs are
+checked by `app-next/scripts/verify-device-run.js`, one scenario per row above.
