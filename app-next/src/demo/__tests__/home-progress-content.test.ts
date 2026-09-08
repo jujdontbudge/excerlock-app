@@ -1,5 +1,6 @@
 import { progressContent } from '../../features/home/progressContent';
 import { scenarios } from '../scenarios';
+import { makeRule } from '../scenarios/base';
 test.each([
   'home-locked-walking',
   'home-walking-session',
@@ -19,4 +20,59 @@ test.each([
       false,
     ),
   ).toMatchSnapshot();
+});
+
+test('denied and restricted sensors explain frozen state and event cards with a Fix action', () => {
+  const state = makeRule('state', { kind: 'state', activity: 'walking', place: 'outside' });
+  const gym = makeRule('gym', { kind: 'event', activity: 'gym', trigger: 'arrival' });
+  const empty = (ruleId: string) => ({ ruleId, day: '2026-09-07', progress: 0, met: false, metAt: null });
+  const permissions = { ...scenarios[0].permissions, motion: 'denied' as const, location: 'denied' as const };
+
+  expect(progressContent(state, empty(state.id), permissions, null, state.updatedAt, false)).toMatchObject({
+    detail: 'Motion & Fitness access needed to update steps',
+    action: 'fix',
+    label: 'Fix',
+  });
+  expect(
+    progressContent(state, empty(state.id), { ...permissions, motion: 'restricted' }, null, state.updatedAt, false),
+  ).toMatchObject({ detail: 'Motion & Fitness access needed to update steps', action: 'fix' });
+  expect(progressContent(gym, empty(gym.id), permissions, null, gym.updatedAt, false)).toMatchObject({
+    detail: 'Location access needed to recognize your gym',
+    action: 'fix',
+    label: 'Fix',
+  });
+});
+
+test('granted permissions preserve walk and check-in actions', () => {
+  const state = makeRule('state', { kind: 'state', activity: 'walking', place: 'outside' });
+  const gym = makeRule('gym', { kind: 'event', activity: 'gym', trigger: 'arrival' });
+  const empty = (ruleId: string) => ({ ruleId, day: '2026-09-07', progress: 0, met: false, metAt: null });
+  const permissions = scenarios.find((scenario) => scenario.id === 'home-locked-walking')!.permissions;
+
+  expect(progressContent(state, empty(state.id), permissions, null, state.updatedAt, false)).toMatchObject({
+    action: 'walk',
+    label: 'Start a walk',
+  });
+  expect(progressContent(gym, empty(gym.id), permissions, null, gym.updatedAt, false)).toMatchObject({
+    detail: 'Your next visit counts · Auto-detect off',
+    action: 'checkin',
+    label: 'Check in',
+  });
+});
+
+test('a condition satisfied by another condition has attribution and no action', () => {
+  const gym = makeRule('gym', { kind: 'event', activity: 'gym', trigger: 'arrival' });
+  const model = progressContent(
+    gym,
+    { ruleId: gym.id, day: '2026-09-07', progress: 0, met: false, metAt: null },
+    scenarios.find((scenario) => scenario.id === 'home-locked-walking')!.permissions,
+    null,
+    gym.updatedAt,
+    false,
+    { byRuleId: 'walk', byRuleName: 'Walk 5,000 steps' },
+  );
+
+  expect(model).toMatchObject({ detail: 'Satisfied by Walk 5,000 steps today' });
+  expect(model.action).toBeUndefined();
+  expect(model.label).toBeUndefined();
 });

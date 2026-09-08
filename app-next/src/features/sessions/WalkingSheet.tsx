@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ValueReveal } from '../../motion/ValueReveal';
-import { View } from 'react-native';
 import { BottomSheet, Label, PrimaryButton, SecondaryButton, Heading } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { LivingIcon } from '../../motion/LivingIcon';
@@ -16,17 +15,20 @@ export function WalkingSheet({ rule, onDismiss }: { rule: Rule; onDismiss: () =>
   const runtime = useRuntime(),
     now = useClock(),
     session = useRuleDaysStore((s) => s.data.walkingSession),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState<string | null>(null);
   useDevSnapshot();
   const active = session?.ruleId === rule.id ? session : null,
     phase = active?.phase,
-    detail = runtime.walking.details(),
-    frame = runtime.walking.treadmillFraming(),
-    treadmill = rule.mode.kind === 'state' && rule.mode.place === 'treadmill';
+    detail = runtime.walking.details();
   const start = async () => {
+    setError(null);
     setBusy(true);
     try {
-      await runtime.walking.start(rule);
+      await runtime.walking.start(rule, { placement: 'handheld' });
+    } catch (reason) {
+      // merge: replace the structural check with P2-T15's WalkingStartError type.
+      setError((reason as { code?: string }).code === 'notScheduled' ? c.notScheduled : c.startError);
     } finally {
       setBusy(false);
     }
@@ -54,7 +56,6 @@ export function WalkingSheet({ rule, onDismiss }: { rule: Rule; onDismiss: () =>
           <PrimaryButton
             label={c.start}
             loading={busy}
-            disabled={treadmill && !frame.ready}
             onPress={() => void start()}
           />
         )
@@ -106,25 +107,7 @@ export function WalkingSheet({ rule, onDismiss }: { rule: Rule; onDismiss: () =>
           label={phase === 'ended' ? c.minutes : c.steps}
         />
       ) : null}
-      {treadmill && !active ? (
-        <Reveal style={{ gap: t.space.lg }}>
-          <Heading title={c.framing} support={c.framingBody} />
-          <View
-            accessibilityLabel={frame.placement === 'propped' ? c.propped : c.handheld}
-            accessible
-            style={{
-              aspectRatio: 1,
-              borderRadius: t.radius.card,
-              borderWidth: t.stroke.chart,
-              borderColor: t.icon.mint,
-              backgroundColor: t.surface.subtle,
-              justifyContent: 'center',
-            }}>
-            <LivingIcon name="person" size={t.layout.ring} />
-          </View>
-          <Label>{frame.ready ? c.frameReady : c.frameWaiting}</Label>
-        </Reveal>
-      ) : null}
+      {error ? <Label accessibilityRole="alert" tone="danger">{error}</Label> : null}
     </BottomSheet>
   );
 }

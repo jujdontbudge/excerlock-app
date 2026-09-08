@@ -74,7 +74,8 @@ export function BlockingScheduleCard({
               <BlockingTimeline start={start} end={end} window={window} />
             </View>
           ) : null}
-          {action ?? children}
+          {action}
+          {children}
         </LinearGradient>
       </View>
     </View>
