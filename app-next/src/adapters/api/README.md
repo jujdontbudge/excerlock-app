@@ -21,7 +21,9 @@ the sentence a screen shows, letting the reachability check decide for untyped e
   `message` 1..4000 trimmed, `replyTo` a valid email of at most 254 characters (the composer caps the
   field), `lastEnforcementResult` at most 200. The server canonicalises the three categories to its
   own enum; the app never sees that mapping. 2xx is sent; anything else throws and the composer keeps
-  the draft.
+  the draft. The server side of the same contract is `server/src/support/payload.ts` (documented in
+  `server/src/routes/README.md`): every object there is strict, and a 400 names the failing path
+  without echoing the value.
 - `PUT /v1/user` and `DELETE /v1/user` (`user.ts`, a `UserApi`; `provisioning.ts` wraps them as
   `createVpsProvisioning(client)`, structurally P2-T01's `AccountProvisioning` with `provision` and
   `remove`), which the runtime composition passes to the Supabase auth adapter, the owner of both calls. `putUser` is idempotent
