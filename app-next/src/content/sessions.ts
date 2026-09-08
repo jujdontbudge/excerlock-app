@@ -38,6 +38,8 @@ export const sessionCopy = {
   shieldTitle: 'Blocked by ExcerLock',
   shieldOpen: 'Open ExcerLock',
   shieldClose: 'Close',
+  shieldTapTitle: 'Open ExcerLock',
+  shieldTapBody: 'Tap to open ExcerLock and unlock your apps.',
   shieldKeep: 'Keep walking',
   shieldOkay: 'OK',
   shieldFallback: 'Complete an exercise condition to open your apps.',
