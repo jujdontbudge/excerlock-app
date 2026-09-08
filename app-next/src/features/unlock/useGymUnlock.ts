@@ -6,7 +6,6 @@ import { permissionsStore as usePermissionsStore } from '../../state/permissions
 import { distanceMetres } from '../gym-picker/geometry';
 import { defaultCentre } from '../gym-picker/usePicker';
 import { unlockCopy as c } from '../../content/unlock';
-import { ceremonyMonotonicMs } from './ceremonyClock';
 
 export const PRESENCE_CONFIRM_MS = 30_000;
 
@@ -72,10 +71,10 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
 
   useEffect(() => {
     if (!working || !inside) return;
-    const startedAt = ceremonyMonotonicMs(runtime.clock);
+    const startedAt = runtime.clock.monotonicMs();
     const duration = preview ? 3_000 : PRESENCE_CONFIRM_MS;
     const update = () => {
-      const amount = Math.min(1, Math.max(0, ceremonyMonotonicMs(runtime.clock) - startedAt) / duration);
+      const amount = Math.min(1, Math.max(0, runtime.clock.monotonicMs() - startedAt) / duration);
       setValue(amount);
       if (amount === 1 && preview && !previewCompleted.current) {
         previewCompleted.current = true;

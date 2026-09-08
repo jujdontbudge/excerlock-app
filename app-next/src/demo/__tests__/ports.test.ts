@@ -2,6 +2,7 @@ import { createRuntime } from '../../runtime/createRuntime';
 import { permissionsStore } from '../../state/permissionsStore';
 import { rulesStore } from '../../state/rulesStore';
 import { ruleDaysStore } from '../../state/ruleDaysStore';
+import { startProgressSync } from '../../features/home/progressSync';
 test('fake permission and app-picker prompts resolve through local controls', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
@@ -32,13 +33,16 @@ test('scripted walking phases and gym arrivals update observable local facts', a
   expect(phases).toEqual(expect.arrayContaining(['verifying', 'walking', 'grace', 'ended']));
   stop();
   await runtime.dev.load('gym-arrival-user');
+  const stopProgress = startProgressSync(runtime);
   const gym = runtime.gym.listPlaces()[0];
   runtime.dev.setPresence('inside');
   await runtime.gym.checkIn(gym.id);
+  runtime.dev.advance(30_000);
   expect(ruleDaysStore.getState().data.days[0].met).toBe(true);
   runtime.dev.setPromptMode('grant');
   expect(await runtime.gym.enableAutoDetect()).toBe(true);
   expect(permissionsStore.getState().data.location).toBe('always');
+  stopProgress();
   runtime.dispose();
 });
 test('WalkingFake starts a walking-minutes duration rule', async () => {

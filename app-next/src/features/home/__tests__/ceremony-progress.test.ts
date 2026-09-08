@@ -1,4 +1,5 @@
 import { progressContent } from '../progressContent';
+import { walkingSession } from '../../../domain/__tests__/fixtures';
 import { statusContent } from '../statusContent';
 import { makeRule } from '../../../demo/scenarios/base';
 import type { WalkingSession } from '../../../domain/types';
@@ -16,12 +17,14 @@ const apps = { handle: { token: 'selection' }, appCount: 1, categoryCount: 0 };
 
 test('progressContent details a verifying walking session as Checking your pace', () => {
   const rule = makeRule('walk', { kind: 'state', activity: 'walking', place: 'outside' });
-  const session: WalkingSession = {
+  const session = walkingSession({
     ruleId: rule.id,
     startedAt: now,
+    verifiedAt: null,
+    creditedThrough: now,
     leaseUntil: '2026-09-07T15:15:00.000Z',
     phase: 'verifying',
-  };
+  });
   expect(
     progressContent(rule, { ruleId: rule.id, day: '2026-09-07', progress: 0, met: false, metAt: null }, permissions, session, now, false).detail,
   ).toBe('Checking your pace…');
@@ -29,12 +32,14 @@ test('progressContent details a verifying walking session as Checking your pace'
 
 test('statusContent keeps the locked card and explains a verifying session', () => {
   const rule = makeRule('walk', { kind: 'state', activity: 'walking', place: 'outside' });
-  const session: WalkingSession = {
+  const session = walkingSession({
     ruleId: rule.id,
     startedAt: now,
+    verifiedAt: null,
+    creditedThrough: now,
     leaseUntil: '2026-09-07T15:15:00.000Z',
     phase: 'verifying',
-  };
+  });
   const model = statusContent({
     decision: { state: 'locked', activeRuleIds: [rule.id], nextUnlockHint: { ruleId: rule.id, action: 'walk', remaining: null, goal: null, unit: null } },
     rules: [rule],

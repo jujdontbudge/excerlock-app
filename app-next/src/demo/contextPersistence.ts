@@ -36,7 +36,6 @@ export function contextPersistence(ctx: FakeContext) {
         ctx.clock.set(data.now, data.timezone);
         const patch: Partial<DevSnapshot> = {
           scenarioId: scenario.id,
-          history: scenario.history,
           accessibility: scenario.accessibility,
         };
         if (['ask', 'grant', 'deny'].includes(data.promptMode)) patch.promptMode = data.promptMode;

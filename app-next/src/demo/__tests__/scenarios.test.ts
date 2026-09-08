@@ -33,6 +33,19 @@ test('all required scenarios are valid and the analytics fixture has six weeks o
     'home-met-second-window',
     'walking-either-two-pills',
     'walking-state-outdoor',
+    'manual-entry-day',
+    'walking-lease-renewal',
+    'walking-lease-lapse',
+    'treadmill-propped-credit',
+    'treadmill-framing-expired',
+    'gym-dwell-background',
+    'gym-visit-blip',
+    'window-ends-mid-walk',
+    'day-rollover-mid-walk',
+    'dst-spring-forward',
+    'dst-fall-back',
+    'saturday-rest-day',
+    'clock-rewind',
     'unlock-treadmill-scan',
     'unlock-treadmill-framing',
     'unlock-treadmill-denied',
@@ -61,4 +74,30 @@ test('rule-day validation accepts a minutes unit and rejects unknown units', () 
       ruleDays: duration.ruleDays.map((row) => ({ ...row, unit: 'hours' })),
     }),
   ).toContain('ruleDays');
+});
+
+test('the session-credit scenarios all use thirty-minute windows', () => {
+  const ids = [
+    'walking-lease-renewal',
+    'walking-lease-lapse',
+    'treadmill-propped-credit',
+    'treadmill-framing-expired',
+    'gym-dwell-background',
+    'gym-visit-blip',
+    'window-ends-mid-walk',
+    'day-rollover-mid-walk',
+    'dst-spring-forward',
+    'dst-fall-back',
+    'saturday-rest-day',
+    'clock-rewind',
+  ];
+  const fixtures = ids.map((id) => scenarios.find((scenario) => scenario.id === id));
+  expect(fixtures.every(Boolean)).toBe(true);
+  for (const fixture of fixtures) {
+    const window = fixture!.rules[0].schedule.window;
+    expect(window.kind).toBe('range');
+    if (window.kind === 'range') {
+      expect((window.endMinute - window.startMinute + 1440) % 1440).toBe(30);
+    }
+  }
 });

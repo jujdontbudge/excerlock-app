@@ -1,5 +1,6 @@
 import { Rule, RuleDay, Permissions, WalkingSession } from '../../domain/types';
 import { homeCopy as c } from '../../content/home';
+import { unlockCopy } from '../../content/unlock';
 import { ruleName } from '../../domain/ruleName';
 import { leaseClock } from './statusContent';
 export type ProgressModel = {
@@ -48,11 +49,20 @@ export function progressContent(
     // A handheld hand-off leaves the session verifying: say so rather than
     // inviting a walk that is already under way.
     const verifying = mine && session.phase === 'verifying';
+    // A propped lease has no continuous signal to renew it, so its lapse is a prompt, not a silent relock.
+    const rescan =
+      !live && !verifying && m.place !== 'outside' && mine && session.placement === 'propped' && session.endReason === 'leaseLapsed';
     return {
       title,
       icon: rule.activity,
       value: live ? 1 : 0,
-      detail: live ? c.left(leaseClock(session.leaseUntil, now)) : verifying ? c.verifying : c.walkReady,
+      detail: live
+        ? c.left(leaseClock(session.leaseUntil, now))
+        : verifying
+          ? c.verifying
+          : rescan
+            ? unlockCopy.scanAgain
+            : c.walkReady,
       action: 'walk',
       label: live || verifying ? c.viewWalk : c.startWalk,
     };

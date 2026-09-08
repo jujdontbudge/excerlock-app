@@ -10,6 +10,7 @@ import {
   Entitlement,
   WalkingSession,
   EarnedUnlock,
+  GymVisit,
 } from '../domain/types';
 export type SavedPlace = {
   id: string;
@@ -25,8 +26,9 @@ export type HistoryDay = {
   activity: Record<Activity, number>;
   met: boolean;
   scheduled: boolean;
+  sealedAt?: string;
 };
-export type Workout = { kind: 'running' | 'biking'; minutes: number; km: number };
+export type Workout = { kind: 'running' | 'biking'; minutes: number; km: number; source: 'device' | 'manual' };
 export type Scenario = {
   gait?: 'none' | 'walking' | 'still';
   id: string;
@@ -47,6 +49,7 @@ export type Scenario = {
   walking?: { script: WalkingSession['phase'][]; stepMs: number };
   walkingSession?: WalkingSession;
   gym?: { places: SavedPlace[]; presence: 'inside' | 'outside' };
+  gymVisits?: GymVisit[];
   health?: { workoutsToday: Workout[] };
   fakeSystemPrompts: 'grant' | 'deny' | 'ask';
   accessibility?: 'xl' | 'reduceMotion';

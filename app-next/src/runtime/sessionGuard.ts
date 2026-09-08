@@ -1,21 +1,20 @@
 import { addDays, localInstant } from '../domain/calendar';
 import { currentInstances, dayKey, windowInstances } from '../domain/schedule';
+import { WalkingSessionEndReason } from '../domain/types';
 import { rulesStore } from '../state/rulesStore';
 import { ruleDaysStore } from '../state/ruleDaysStore';
 import { Unsubscribe } from '../ports/models';
 import { Runtime } from './Runtime';
 
-type StopReason = 'windowEnded' | 'dayRollover' | 'ruleChanged';
-
-// merge: replace this adapter with P2-T15's walking session stop event.
-function stopSession(runtime: Runtime, _reason: StopReason) {
-  runtime.walking.stop();
-}
+/** The three reasons the root — not a screen — ends a walking session. */
+type StopReason = Extract<WalkingSessionEndReason, 'windowEnded' | 'dayRollover' | 'ruleChanged'>;
 
 export function startSessionGuard(runtime: Runtime): Unsubscribe {
   let deadlineStops: Unsubscribe[] = [];
   let guardedRule = '';
-  let stopped = false;
+  // The session this guard has already torn down. Every rule-day write re-runs the guard and the port
+  // may take a moment to end the session, so identity is what keeps one teardown from firing twice.
+  let stoppedSession = '';
   const clearDeadlines = () => {
     deadlineStops.forEach((stop) => stop());
     deadlineStops = [];
@@ -27,34 +26,31 @@ export function startSessionGuard(runtime: Runtime): Unsubscribe {
       guardedRule = '';
       return;
     }
+    if (session.id === stoppedSession) return;
+    const stopOnce = (reason: StopReason) => {
+      if (session.id === stoppedSession) return;
+      stoppedSession = session.id;
+      runtime.walking.stop(reason);
+    };
     const rule = rulesStore.getState().data.rules.find((candidate) => candidate.id === session.ruleId);
     if (!rule || !rule.enabled) {
-      if (!stopped) stopSession(runtime, 'ruleChanged');
-      stopped = true;
+      stopOnce('ruleChanged');
       return;
     }
     const signature = JSON.stringify({ id: rule.id, updatedAt: rule.updatedAt, schedule: rule.schedule, mode: rule.mode });
     if (guardedRule && guardedRule !== signature) {
-      if (!stopped) stopSession(runtime, 'ruleChanged');
-      stopped = true;
+      stopOnce('ruleChanged');
       return;
     }
     guardedRule = signature;
-    stopped = false;
     const timezone = runtime.clock.timezone();
     const instance =
       currentInstances(rule, runtime.clock.now(), timezone)[0] ??
       windowInstances(rule, dayKey(session.startedAt, timezone), timezone)[0];
     if (!instance) {
-      stopSession(runtime, 'ruleChanged');
-      stopped = true;
+      stopOnce('ruleChanged');
       return;
     }
-    const stopOnce = (reason: StopReason) => {
-      if (stopped) return;
-      stopped = true;
-      stopSession(runtime, reason);
-    };
     deadlineStops = [
       runtime.clock.at(instance.end, () => stopOnce('windowEnded')),
       runtime.clock.at(localInstant(addDays(instance.day, 1), 0, timezone), () => stopOnce('dayRollover')),

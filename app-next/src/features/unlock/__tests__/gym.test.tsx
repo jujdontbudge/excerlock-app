@@ -1,10 +1,12 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { GymVisit } from '../../../domain/types';
 import { GymUnlockScreen } from '../GymUnlockScreen';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { createRuntime, Runtime } from '../../../runtime/createRuntime';
 import { ruleDaysStore } from '../../../state/ruleDaysStore';
 import { settingsStore } from '../../../state/settingsStore';
 import { gymPlace } from '../../../demo/places';
+import { startProgressSync } from '../../home/progressSync';
 
 const mockRouter = { back: jest.fn(), push: jest.fn() };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
@@ -16,6 +18,12 @@ beforeEach(() => {
 
 afterEach(() => jest.useRealTimers());
 
+// The screen books no credit of its own: progressSync is the single applier, as in app/(tabs)/_layout.
+const syncs: (() => void)[] = [];
+afterEach(() => {
+  syncs.splice(0).forEach((stop) => stop());
+});
+
 async function mount(
   scenario = 'gym-arrival-user',
   configure?: (runtime: Runtime) => void,
@@ -26,6 +34,7 @@ async function mount(
   runtime.dev.setPromptMode('grant');
   runtime.dev.setPresence('inside');
   configure?.(runtime);
+  syncs.push(startProgressSync(runtime));
   await render(
     <AppRuntimeProvider runtime={runtime}>
       <GymUnlockScreen preview={preview} ruleId="gym" />
@@ -39,7 +48,7 @@ test('leaving the radius aborts the in-flight check-in and resets the ring', asy
   const runtime = await mount('gym-arrival-user', (value) => {
     jest.spyOn(value.gym, 'checkIn').mockImplementation(async (_, confirmation) => {
       signal = confirmation?.signal;
-      await new Promise<void>(() => undefined);
+      return new Promise<GymVisit>(() => undefined);
     });
   });
   await fireEvent.press(screen.getByRole('button', { name: 'Unlock' }));
@@ -54,7 +63,7 @@ test('leaving the radius aborts the in-flight check-in and resets the ring', asy
 
 test('re-entering the radius after an abort allows a fresh check-in', async () => {
   const runtime = await mount('gym-arrival-user', (value) => {
-    jest.spyOn(value.gym, 'checkIn').mockImplementation(async () => new Promise<void>(() => undefined));
+    jest.spyOn(value.gym, 'checkIn').mockImplementation(() => new Promise<GymVisit>(() => undefined));
   });
   await fireEvent.press(screen.getByRole('button', { name: 'Unlock' }));
   await act(() => runtime.dev.setPresence('outside'));

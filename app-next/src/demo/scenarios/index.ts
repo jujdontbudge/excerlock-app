@@ -30,6 +30,8 @@ import { homeTwoConditionsLocked } from './home-two-conditions-locked';
 import { homeMetSecondWindow } from './home-met-second-window';
 import { walkingEitherTwoPills } from './walking-either-two-pills';
 import { walkingStateOutdoor } from './walking-state-outdoor';
+import { manualEntryDay } from './manual-entry-day';
+import { sessionCreditScenarios } from './session-credit';
 export const scenarios = [
   scenario0,
   scenario1,
@@ -62,5 +64,7 @@ export const scenarios = [
   homeMetSecondWindow,
   walkingEitherTwoPills,
   walkingStateOutdoor,
+  manualEntryDay,
+  ...sessionCreditScenarios,
   ...unlockScenarios,
 ];

@@ -5,6 +5,7 @@ export class FakeClock implements ClockPort {
   private zone: string;
   private listeners = new Set<() => void>();
   private observers = new Set<() => void>();
+  private deadlines = new Map<() => void, number>();
   private timer: ReturnType<typeof setInterval> | undefined;
   constructor(now: string, timezone: string) {
     this.instant = Date.parse(now);
@@ -28,28 +29,28 @@ export class FakeClock implements ClockPort {
     this.emit();
   };
   private emit = () => {
+    for (const [callback, deadline] of this.deadlines) {
+      if (deadline <= this.instant) {
+        this.deadlines.delete(callback);
+        callback();
+      }
+    }
     this.listeners.forEach((callback) => callback());
     this.observers.forEach((callback) => callback());
+  };
+  at = (deadline: string, callback: () => void) => {
+    const instant = Date.parse(deadline);
+    if (!Number.isFinite(instant)) throw new Error('INVALID_CLOCK_DEADLINE');
+    if (instant <= this.instant) callback();
+    else this.deadlines.set(callback, instant);
+    return () => {
+      this.deadlines.delete(callback);
+    };
   };
   observe = (callback: () => void) => {
     this.observers.add(callback);
     return () => {
       this.observers.delete(callback);
-    };
-  };
-  at = (deadline: string, callback: () => void) => {
-    let armed = true;
-    const check = () => {
-      if (!armed || Date.parse(this.now()) < Date.parse(deadline)) return;
-      armed = false;
-      this.observers.delete(check);
-      callback();
-    };
-    this.observers.add(check);
-    check();
-    return () => {
-      armed = false;
-      this.observers.delete(check);
     };
   };
   subscribe = (callback: () => void) => {
@@ -68,5 +69,6 @@ export class FakeClock implements ClockPort {
     this.timer = undefined;
     this.listeners.clear();
     this.observers.clear();
+    this.deadlines.clear();
   };
 }

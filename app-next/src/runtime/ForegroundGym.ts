@@ -79,7 +79,7 @@ export function foregroundGym(base: GymPort, presenceChanged: (value: 'inside' |
       await sample();
       if (presence !== 'inside') throw new Error('Outside saved gym');
       presenceChanged('inside');
-      await base.checkIn(id, confirmation);
+      return base.checkIn(id, confirmation);
     },
   };
 }

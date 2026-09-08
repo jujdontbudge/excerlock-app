@@ -1,6 +1,6 @@
 import { analyticsModel } from '../analyticsModel';
 import { HistoryDay } from '../../../ports/models';
-import { historyFromRuleDays } from '../history';
+import { todayHistory } from '../../../state/todayHistory';
 import { Rule } from '../../../domain/types';
 const row = (day: string, usageMinutes: number | null, scheduled = true, met = true): HistoryDay => ({
   day,
@@ -104,7 +104,13 @@ test('a state-only day reaches the sealed-history streak floor at ten walking mi
     updatedAt: '2026-09-01T12:00:00.000Z',
   };
 
-  expect(
-    historyFromRuleDays([{ ruleId: rule.id, day: '2026-09-01', progress: 10, met: false, metAt: null }], [rule])[0].met,
-  ).toBe(true);
+  const history = todayHistory(
+    [],
+    [rule],
+    [{ ruleId: rule.id, day: '2026-09-01', progress: 10, met: false, metAt: null }],
+    '2026-09-01T12:00:00.000Z',
+    'America/New_York',
+  );
+
+  expect(history[0].met).toBe(true);
 });

@@ -1,7 +1,7 @@
 import { resolveLock } from '../resolveLock';
 import { EarnedUnlock, Rule } from '../types';
 import { effectiveNow } from '../watermark';
-import { rule } from './fixtures';
+import { rule, walkingSession } from './fixtures';
 
 const now = '2026-09-07T19:00:00.000Z';
 const earned = (overrides: Partial<EarnedUnlock> = {}): EarnedUnlock => ({
@@ -147,12 +147,7 @@ test('confirmed gym presence unlocks provisionally while an unconfirmed arrival 
 
 test('walking unlock requires a live state session inside its current window', () => {
   const state: Rule = { ...rule, id: 'state', mode: { kind: 'state', activity: 'walking', place: 'either' } };
-  const session = {
-    ruleId: 'state',
-    phase: 'walking' as const,
-    startedAt: now,
-    leaseUntil: '2026-09-07T19:15:00.000Z',
-  };
+  const session = walkingSession({ ruleId: 'state', startedAt: now, leaseUntil: '2026-09-07T19:15:00.000Z' });
   expect(resolveLock({ ...base, rules: [state], walkingSession: session })).toEqual({
     state: 'unlockedWalking',
     sessionRuleId: 'state',
@@ -190,12 +185,11 @@ test('rewinding the observed clock does not revive an expired walking lease', ()
     ...base,
     now: effectiveNow('2026-09-07T19:00:00.000Z', watermark),
     rules: [state],
-    walkingSession: {
+    walkingSession: walkingSession({
       ruleId: state.id,
-      phase: 'walking',
       startedAt: '2026-09-07T18:45:00.000Z',
       leaseUntil: '2026-09-07T19:15:00.000Z',
-    },
+    }),
   });
   expect(decision.state).toBe('locked');
 });
@@ -267,11 +261,6 @@ test('a walking session for a duration rule does not unlock the apps', () => {
     ...rule,
     mode: { kind: 'target', activity: 'walking', metric: 'minutes', goal: 20, place: 'treadmill' },
   };
-  const walkingSession = {
-    ruleId: duration.id,
-    phase: 'walking' as const,
-    startedAt: now,
-    leaseUntil: '2026-09-07T19:15:00.000Z',
-  };
-  expect(resolveLock({ ...base, rules: [duration], walkingSession }).state).toBe('locked');
+  const session = walkingSession({ ruleId: duration.id, startedAt: now, leaseUntil: '2026-09-07T19:15:00.000Z' });
+  expect(resolveLock({ ...base, rules: [duration], walkingSession: session }).state).toBe('locked');
 });
