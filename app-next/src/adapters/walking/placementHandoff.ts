@@ -118,7 +118,12 @@ export function stepPlacement(
       };
 
     case 'unverified':
-      return state.motionCounts ? { state, effects: [{ type: 'unverified', at: event.at }] } : unchanged;
+      if (!state.motionCounts) return unchanged;
+      // Probation is the answer to a pickup, and nothing else is. Cadence takes a few seconds to
+      // qualify after the phone leaves the console, so "not walking yet" is not "stopped walking"
+      // until the deadline says so — which is the whole reason the grace exists.
+      if (state.phase === 'handheld' && state.deadline !== null) return unchanged;
+      return { state, effects: [{ type: 'unverified', at: event.at }] };
 
     case 'deadline':
       if (state.deadline === null || Date.parse(event.at) < Date.parse(state.deadline)) return unchanged;

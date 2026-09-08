@@ -95,4 +95,20 @@ describe('treadmill placement handoff', () => {
     ).state;
     expect(stepPlacement(handheld, { type: 'deadline', at: at(1_000) }).effects).toEqual([]);
   });
+
+  test('probation, not the pedometer, answers a pickup', () => {
+    const handheld = stepPlacement(
+      stepPlacement(startPlacement(T0), { type: 'scanCompleted', at: T0 }).state,
+      { type: 'pickedUp', at: T0 },
+    ).state;
+    // Cadence needs a few seconds to qualify once the phone leaves the console. Letting an early
+    // "not walking" through would start the stop grace on every handoff.
+    expect(stepPlacement(handheld, { type: 'unverified', at: at(2_000) }).effects).toEqual([]);
+    // Once probation is spent, the same verdict is the answer.
+    const spent = stepPlacement(handheld, { type: 'deadline', at: at(20_000) });
+    expect(spent.effects).toEqual([{ type: 'unverified', at: at(20_000) }]);
+    expect(stepPlacement(spent.state, { type: 'unverified', at: at(21_000) }).effects).toEqual([
+      { type: 'unverified', at: at(21_000) },
+    ]);
+  });
 });
