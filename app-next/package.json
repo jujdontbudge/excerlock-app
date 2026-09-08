@@ -45,7 +45,8 @@
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand --coverage",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "prebuild:guardrails": "EXPO_NO_GIT_STATUS=1 expo prebuild --platform ios --clean --no-install"
   },
   "private": true
 }
