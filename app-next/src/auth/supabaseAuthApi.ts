@@ -24,9 +24,9 @@ export interface SupabaseAuthApi {
   updateUser(attributes: { email: string }): Promise<{ error: SupabaseFailure | null }>;
   verifyOtp(params: { email: string; token: string; type: 'email' | 'email_change' }): SessionResult;
   signOut(): Promise<{ error: SupabaseFailure | null }>;
-  onAuthStateChange(
-    callback: (event: string, session: SupabaseSession | null) => void,
-  ): { data: { subscription: { unsubscribe(): void } } };
+  onAuthStateChange(callback: (event: string, session: SupabaseSession | null) => void): {
+    data: { subscription: { unsubscribe(): void } };
+  };
   startAutoRefresh(): Promise<void>;
   stopAutoRefresh(): Promise<void>;
 }

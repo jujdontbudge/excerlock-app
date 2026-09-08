@@ -7,6 +7,7 @@ import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { sessionStore as useSessionStore } from '../../state/sessionStore';
+import { AppleSignInButton } from './AppleSignInButton';
 import { EmailCodeScreen } from './EmailCodeScreen';
 import { Session } from '../../domain/types';
 import { requestFailureMessage } from '../../runtime/requestFailureMessage';
@@ -103,7 +104,7 @@ export function SignInScreen({ onContinue }: { onContinue: (session: Session) =>
             </>
           ) : (
             <>
-              <PrimaryButton label={c.apple} loading={busy} onPress={() => signIn('apple')} />
+              <AppleSignInButton label={c.apple} loading={busy} onPress={() => signIn('apple')} />
               <SecondaryButton label={c.google} disabled={busy} onPress={() => signIn('google')} />
               <SecondaryButton
                 label={c.email}

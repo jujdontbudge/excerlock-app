@@ -1,3 +1,5 @@
+import * as SecureStore from 'expo-secure-store';
+
 /**
  * Where the refresh token lives.
  *
@@ -68,13 +70,12 @@ export function chunkedStore(vault: SecureVault, limit = CHUNK_LIMIT): KeyValueS
 }
 
 export function secureSessionStorage(): KeyValueStore {
-  const store = require('expo-secure-store') as typeof import('expo-secure-store');
   // WHEN_UNLOCKED is the default and the right one here: the app refreshes on foreground, so no
   // background task ever needs the token while the phone is locked.
-  const options = { keychainAccessible: store.WHEN_UNLOCKED };
+  const options = { keychainAccessible: SecureStore.WHEN_UNLOCKED };
   return chunkedStore({
-    getItemAsync: (key) => store.getItemAsync(key, options),
-    setItemAsync: (key, value) => store.setItemAsync(key, value, options),
-    deleteItemAsync: (key) => store.deleteItemAsync(key, options),
+    getItemAsync: (key) => SecureStore.getItemAsync(key, options),
+    setItemAsync: (key, value) => SecureStore.setItemAsync(key, value, options),
+    deleteItemAsync: (key) => SecureStore.deleteItemAsync(key, options),
   });
 }

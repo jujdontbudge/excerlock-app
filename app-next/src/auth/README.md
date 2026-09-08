@@ -8,13 +8,13 @@ folder knows that Supabase exists.
 
 One id, from first launch to sign-in and past it:
 
-| Step | What happens | User id |
-| --- | --- | --- |
-| First launch | `signInAnonymously()`, then `PUT /v1/user` | minted |
-| Sign in with Apple / Google | `linkIdentity({ provider, token })` onto the anonymous user | unchanged |
-| Sign in with an email code | `updateUser({ email })`, then `verifyOtp(type: 'email_change')` | unchanged |
-| That provider account already exists | `signInWithIdToken` into the account that owns it | switches |
-| Sign out, delete account | a brand-new anonymous session | new |
+| Step                                 | What happens                                                    | User id   |
+| ------------------------------------ | --------------------------------------------------------------- | --------- |
+| First launch                         | `signInAnonymously()`, then `PUT /v1/user`                      | minted    |
+| Sign in with Apple / Google          | `linkIdentity({ provider, token })` onto the anonymous user     | unchanged |
+| Sign in with an email code           | `updateUser({ email })`, then `verifyOtp(type: 'email_change')` | unchanged |
+| That provider account already exists | `signInWithIdToken` into the account that owns it               | switches  |
+| Sign out, delete account             | a brand-new anonymous session                                   | new       |
 
 The one id switch is deliberate. Linking is refused when the Apple or Google account already belongs
 to a user, and the alternative — refusing the sign-in — would strand a real account behind a throwaway
@@ -44,14 +44,14 @@ six-digit code, never a link, which is why both email templates must carry `{{ .
 
 ## Files
 
-| File | Responsibility |
-| --- | --- |
-| `SupabaseAuthAdapter.ts` | the port: bootstrap, link-or-sign-in, OTP, sign-out, deletion, publication |
-| `supabaseAuthApi.ts` | the narrow slice of supabase-js this module depends on |
-| `supabaseClient.ts` | the one `createClient` call, and the build's configuration |
-| `secureSessionStorage.ts` | chunked keychain storage for the session |
-| `accountProvisioning.ts` | `PUT` / `DELETE /v1/user` and the `410` outcome |
-| `identityProviders.ts` | the Apple and Google sheets reduced to "id token, or cancelled" |
+| File                      | Responsibility                                                             |
+| ------------------------- | -------------------------------------------------------------------------- |
+| `SupabaseAuthAdapter.ts`  | the port: bootstrap, link-or-sign-in, OTP, sign-out, deletion, publication |
+| `supabaseAuthApi.ts`      | the narrow slice of supabase-js this module depends on                     |
+| `supabaseClient.ts`       | the one `createClient` call, and the build's configuration                 |
+| `secureSessionStorage.ts` | chunked keychain storage for the session                                   |
+| `accountProvisioning.ts`  | `PUT` / `DELETE /v1/user` and the `410` outcome                            |
+| `identityProviders.ts`    | the Apple and Google sheets reduced to "id token, or cancelled"            |
 
 ## Configuration
 
@@ -72,7 +72,8 @@ already-linked refusal, so every branch runs without a project or a network.
 
 ## Open
 
-- Google sign-in is dark until Johan creates the Web and iOS OAuth clients: the button hides itself,
-  `[auth.external.google]` stays disabled, and the config plugin that writes the iOS URL scheme is
-  only added once `GOOGLE_OAUTH_IOS_CLIENT_ID` exists.
+- Google sign-in is dark until Johan creates the Web and iOS OAuth clients. Without
+  `GOOGLE_OAUTH_WEB_CLIENT_ID` the sheet refuses to open and the screen shows its sign-in error,
+  `[auth.external.google]` stays disabled on the project, and the config plugin that writes the iOS
+  URL scheme is only added once `GOOGLE_OAUTH_IOS_CLIENT_ID` exists.
 - Email OTP needs custom SMTP on the Supabase project before the code email can be sent at all.

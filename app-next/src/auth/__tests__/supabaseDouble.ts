@@ -10,7 +10,10 @@ import { SupabaseAuthApi, SupabaseFailure, SupabaseSession, SupabaseUser } from 
  */
 export type SupabaseDouble = SupabaseAuthApi & {
   /** Fails the next call to the named method once. */
-  failNext(method: 'signInWithIdToken' | 'linkIdentity' | 'signInWithOtp' | 'updateUser', failure: SupabaseFailure): void;
+  failNext(
+    method: 'signInWithIdToken' | 'linkIdentity' | 'signInWithOtp' | 'updateUser',
+    failure: SupabaseFailure,
+  ): void;
   /** Every user the double has minted, newest last. */
   users(): SupabaseUser[];
   currentUser(): SupabaseUser | null;

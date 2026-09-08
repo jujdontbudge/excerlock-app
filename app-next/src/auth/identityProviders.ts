@@ -1,3 +1,5 @@
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { GoogleSignin, isSuccessResponse, statusCodes } from '@react-native-google-signin/google-signin';
 import { Platform } from 'react-native';
 
 /**
@@ -12,10 +14,16 @@ export interface NativeIdentityProvider {
   requestToken(): Promise<NativeCredential | 'cancelled'>;
 }
 
-const unavailable: NativeIdentityProvider = {
+/**
+ * A provider this build cannot run. It refuses rather than reporting a cancellation, because a
+ * cancellation means the person backed out and this is the app being misconfigured.
+ */
+const unconfigured = (name: string): NativeIdentityProvider => ({
   isAvailable: async () => false,
-  requestToken: async () => 'cancelled',
-};
+  requestToken: async () => {
+    throw new Error(`Sign in with ${name} is not available in this build`);
+  },
+});
 
 /**
  * Sign in with Apple through `expo-apple-authentication`. Apple returns the full name only on the
@@ -23,23 +31,21 @@ const unavailable: NativeIdentityProvider = {
  * is not part of ExcerLock's model. Cancelling raises `ERR_REQUEST_CANCELED`.
  */
 export function appleIdentity(): NativeIdentityProvider {
-  if (Platform.OS !== 'ios') return unavailable;
-  const load = () => require('expo-apple-authentication') as typeof import('expo-apple-authentication');
+  if (Platform.OS !== 'ios') return unconfigured('Apple');
   return {
     isAvailable: async () => {
       try {
-        return await load().isAvailableAsync();
+        return await AppleAuthentication.isAvailableAsync();
       } catch {
         return false;
       }
     },
     requestToken: async () => {
-      const apple = load();
       try {
-        const credential = await apple.signInAsync({
+        const credential = await AppleAuthentication.signInAsync({
           requestedScopes: [
-            apple.AppleAuthenticationScope.FULL_NAME,
-            apple.AppleAuthenticationScope.EMAIL,
+            AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+            AppleAuthentication.AppleAuthenticationScope.EMAIL,
           ],
         });
         if (!credential.identityToken) throw new Error('Apple returned no identity token');
@@ -54,34 +60,29 @@ export function appleIdentity(): NativeIdentityProvider {
 
 /**
  * Sign in with Google through `@react-native-google-signin/google-signin`. The web client id comes
- * from configuration, so a build without one hides the button instead of failing at the sheet.
+ * from configuration; a build without one cannot open the sheet at all and says so.
  */
 export function googleIdentity(config: { webClientId?: string; iosClientId?: string }): NativeIdentityProvider {
-  if (!config.webClientId) return unavailable;
-  const load = () =>
-    require('@react-native-google-signin/google-signin') as typeof import('@react-native-google-signin/google-signin');
+  if (!config.webClientId) return unconfigured('Google');
   let configured = false;
   const configure = () => {
-    const google = load();
-    if (!configured) {
-      google.GoogleSignin.configure({ webClientId: config.webClientId, iosClientId: config.iosClientId });
-      configured = true;
-    }
-    return google;
+    if (configured) return;
+    GoogleSignin.configure({ webClientId: config.webClientId, iosClientId: config.iosClientId });
+    configured = true;
   };
   return {
     isAvailable: async () => true,
     requestToken: async () => {
-      const google = configure();
+      configure();
       try {
-        const response = await google.GoogleSignin.signIn();
-        if (!google.isSuccessResponse(response)) return 'cancelled';
+        const response = await GoogleSignin.signIn();
+        if (!isSuccessResponse(response)) return 'cancelled';
         const { idToken, user } = response.data;
         if (!idToken) throw new Error('Google returned no identity token');
         return { token: idToken, email: user.email ?? null };
       } catch (cause) {
         const code = (cause as { code?: string }).code;
-        if (code === google.statusCodes.SIGN_IN_CANCELLED) return 'cancelled';
+        if (code === statusCodes.SIGN_IN_CANCELLED) return 'cancelled';
         throw cause;
       }
     },
