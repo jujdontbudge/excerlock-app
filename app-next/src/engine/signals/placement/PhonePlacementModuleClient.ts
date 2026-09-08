@@ -15,7 +15,7 @@ export interface PhonePlacementModuleClient {
 
 /** Loads JSI only when the iOS composition root asks for placement sensing. */
 export function createPhonePlacementModuleClient(): PhonePlacementModuleClient {
-  const moduleSurface = require("../../../modules/excerlock-motion") as {
+  const moduleSurface = require("../../../../modules/excerlock-motion") as {
     getExcerlockMotionModule(): PhonePlacementModuleClient;
   };
   return moduleSurface.getExcerlockMotionModule();

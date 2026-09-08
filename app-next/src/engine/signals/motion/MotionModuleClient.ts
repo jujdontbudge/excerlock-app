@@ -35,7 +35,7 @@ export interface ExcerlockMotionModuleClient {
 
 /** Loads JSI only when the iOS dev-client composition root explicitly asks. */
 export function createExcerlockMotionModuleClient(): ExcerlockMotionModuleClient {
-  const moduleSurface = require("../../../modules/excerlock-motion") as {
+  const moduleSurface = require("../../../../modules/excerlock-motion") as {
     getExcerlockMotionModule(): ExcerlockMotionModuleClient;
   };
   return moduleSurface.getExcerlockMotionModule();

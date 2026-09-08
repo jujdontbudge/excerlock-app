@@ -15,7 +15,7 @@ export interface GaitVisionModuleClient {
 
 /** Loads the local Expo Module only from the native runtime composition root. */
 export function createExcerlockGaitVisionModuleClient(): GaitVisionModuleClient {
-  const moduleSurface = require("../../../modules/excerlock-gait-vision") as {
+  const moduleSurface = require("../../../../modules/excerlock-gait-vision") as {
     getExcerlockGaitVisionModule(): GaitVisionModuleClient;
   };
   return moduleSurface.getExcerlockGaitVisionModule();
