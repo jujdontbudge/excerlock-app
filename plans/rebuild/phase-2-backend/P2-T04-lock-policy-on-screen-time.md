@@ -58,8 +58,24 @@ scheduling go away; window instances and met/walking states take their place.
 
 ### Built 2026-09-07 (`app-next/src/adapters/screentime/`)
 
-`ScreenTimeAdapter` passes `describeScreenTimePort` (`__tests__/contract.test.ts`) with the native layer
-doubled. 54 tests across the module; `README.md` states the two measurement limits and the device questions.
+`ScreenTimeAdapter` sits on the ported `engine/screentime` module and passes `describeScreenTimePort`
+(`__tests__/contract.test.ts`) with only the DeviceActivity package doubled, so the contract exercises the
+adapter, `NativeScreenTimeModule` and `NativeShieldScheduler` together. 54 tests across the module;
+`README.md` states the two measurement limits and the device questions.
+
+Four changes were made in the engine to complete the seam P2-T03 left open:
+
+- `deviceActivityApi` gained `getSharedValue`, `getActivities`, `cleanUpAfterActivity` and `getEvents`, and
+  its date components gained the optional `timeZoneIdentifier` the usage monitor stamps.
+- `reconcile` gained per-monitor `startIntents`. Its single `shields` argument could not express the
+  met-today mechanism its own comment describes: tonight's window opens while tomorrow's still shields.
+- `armUnlockLease` backdates `intervalStart` to one increment before the deadline, so a lease renewed
+  mid-flight still asks for an interval DeviceActivity accepts.
+- The scheduler no longer writes `lock-window-contexts`; that key carries the domain's copy now (B36), so
+  the shield publisher owns it and the guardrail follows it there.
+
+`ShieldContent.plist` now carries the Phase 1 copy, and `guardrails/shield-content.test.ts` derives its
+expectation from `domain/shieldContent` rather than repeating the strings.
 
 | Acceptance row added by the audit | Status |
 | --- | --- |
