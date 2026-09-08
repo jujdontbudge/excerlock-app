@@ -9,8 +9,7 @@ import { ScreenTimeAdapterDeps } from './ScreenTimeAdapter';
  * picker's result and the authorization the OS returned have to land there — never the intent,
  * only what came back.
  *
- * merge: P2-T03 supplies `native` (its `deviceActivityApi`) and `picker` (its picker host);
- * P2-T17's runtime root supplies `clock`.
+ * `runtime/NativeScreenTime.ts` composes this with the native half and the runtime clock.
  */
 export const screenTimeStoreBindings: Pick<ScreenTimeAdapterDeps, 'copy' | 'onSelection' | 'onAuthorization'> = {
   copy: () => ({
