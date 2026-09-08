@@ -1,0 +1,235 @@
+{
+  "$comment": "App Privacy label source for App Store Connect record 6787265352 (ExcerLock, sku excerlock-ios-001). Every entry names the code that proves it. guardrails/release/privacy-manifest.test.ts checks the evidence paths exist and that every analytics.track() event in the app is listed. docs/release/app-privacy.md is the human-readable derivation and the exact answers to enter.",
+  "ascAppId": "6787265352",
+  "tracking": false,
+  "dataTypes": [
+    {
+      "category": "Contact Info",
+      "type": "Email Address",
+      "collected": true,
+      "linkedToUser": true,
+      "usedForTracking": false,
+      "purposes": ["App Functionality"],
+      "evidence": [
+        "app-next/src/ports/AuthPort.ts#sendEmailCode",
+        "app-next/src/domain/types.ts#Session",
+        "app-next/src/ports/SupportPort.ts#replyTo"
+      ],
+      "note": "Email sign-in code (Supabase) and the support reply address sent to the VPS /v1/support route. Sign in with Apple may hand over a relay address."
+    },
+    {
+      "category": "Contact Info",
+      "type": "Name",
+      "collected": false,
+      "linkedToUser": false,
+      "usedForTracking": false,
+      "purposes": [],
+      "evidence": ["app-next/src/domain/types.ts#Profile", "app-next/src/ports/SyncPort.ts"],
+      "note": "The onboarding name stays in the on-device profile store; SyncPort pushes rules, rule days, earned unlocks and history only."
+    },
+    {
+      "category": "Health & Fitness",
+      "type": "Health",
+      "collected": true,
+      "linkedToUser": true,
+      "usedForTracking": false,
+      "purposes": ["App Functionality"],
+      "evidence": [
+        "app-next/src/ports/HealthPort.ts#workoutsToday",
+        "app-next/src/domain/types.ts#RuleDay",
+        "app-next/src/ports/SyncPort.ts#pushRuleDays"
+      ],
+      "note": "Running and cycling minutes or distance read from HealthKit become RuleDay.progress, which syncs to the VPS as backup (P2-T08). HealthKit-derived values are never sent to PostHog, Sentry or Adapty (Apple HealthKit rules; the analytics privacy policy drops undeclared keys)."
+    },
+    {
+      "category": "Health & Fitness",
+      "type": "Fitness",
+      "collected": true,
+      "linkedToUser": true,
+      "usedForTracking": false,
+      "purposes": ["App Functionality"],
+      "evidence": [
+        "app-next/src/ports/StepsPort.ts#stepsSince",
+        "app-next/src/ports/WalkingPort.ts#details",
+        "app-next/src/domain/types.ts#RuleDay",
+        "app-next/src/ports/SyncPort.ts#pushRuleDays"
+      ],
+      "note": "Core Motion step totals and walking minutes become RuleDay.progress and sync to the VPS. Cadence and gait verification stay on the device."
+    },
+    {
+      "category": "Location",
+      "type": "Precise Location",
+      "collected": false,
+      "linkedToUser": false,
+      "usedForTracking": false,
+      "purposes": [],
+      "evidence": ["app-next/src/ports/GymPort.ts#observePresence", "app-next/src/ports/models.ts#SavedPlace"],
+      "note": "Gym coordinates, geofence presence and GymVisit rows never leave the device; P2-T08's type-level test forbids gym names and coordinates in sync payloads. The gym_unlock_tapped event carries a distance in metres, not a coordinate."
+    },
+    {
+      "category": "Location",
+      "type": "Coarse Location",
+      "collected": false,
+      "linkedToUser": false,
+      "usedForTracking": false,
+      "purposes": [],
+      "evidence": ["app-next/src/ports/GymPort.ts#requestLocation"],
+      "note": "PostHog GeoIP is off (ported policy from app/src/analytics); Sentry runs with sendDefaultPii false."
+    },
+    {
+      "category": "Search History",
+      "type": "Search History",
+      "collected": false,
+      "linkedToUser": false,
+      "usedForTracking": false,
+      "purposes": [],
+      "evidence": ["app-next/src/ports/PlaceSearch.ts#suggest", "app-next/modules/expo-local-search/README.md"],
+      "note": "Gym search queries go from the device to Apple MapKit Local Search; ExcerLock's servers never receive them and nothing is stored."
+    },
+    {
+      "category": "Photos or Videos",
+      "type": "Photos or Videos",
+      "collected": false,
+      "linkedToUser": false,
+      "usedForTracking": false,
+      "purposes": [],
+      "evidence": ["app-next/src/ports/GaitPort.ts", "app-next/app.json#NSCameraUsageDescription"],
+      "note": "Treadmill framing frames are processed on the iPhone and never recorded or sent."
+    },
+    {
+      "category": "Identifiers",
+      "type": "User ID",
+      "collected": true,
+      "linkedToUser": true,
+      "usedForTracking": false,
+      "purposes": ["App Functionality", "Analytics"],
+      "evidence": [
+        "app-next/src/domain/identity.ts",
+        "app-next/src/ports/AuthPort.ts#session",
+        "app-next/src/ports/SubscriptionPort.ts#identify",
+        "app-next/src/ports/AnalyticsPort.ts#identify",
+        "app-next/src/runtime/README.md"
+      ],
+      "note": "One identity spine: Supabase user id = VPS users.id = Adapty customer_user_id = PostHog distinct_id, from the anonymous session onward."
+    },
+    {
+      "category": "Identifiers",
+      "type": "Device ID",
+      "collected": true,
+      "linkedToUser": true,
+      "usedForTracking": false,
+      "purposes": ["Analytics", "App Functionality"],
+      "evidence": ["packages/analytics-events/README.md", "plans/rebuild/phase-2-backend/P2-T07-posthog-sentry.md"],
+      "note": "PostHog's $device_id buckets feature flags (decision D8); Sentry records an installation id with each crash. Neither is the IDFA; no AppTrackingTransparency prompt exists."
+    },
+    {
+      "category": "Purchases",
+      "type": "Purchase History",
+      "collected": true,
+      "linkedToUser": true,
+      "usedForTracking": false,
+      "purposes": ["App Functionality", "Analytics"],
+      "evidence": [
+        "app-next/src/ports/SubscriptionPort.ts#entitlement",
+        "server/src/routes/adaptyWebhook.ts",
+        "plans/rebuild/phase-2-backend/P2-T06-adapty.md"
+      ],
+      "note": "Adapty holds the subscription state and transaction history keyed by the Supabase uid; its webhook mirrors the state to the VPS; Adapty's PostHog integration owns the lifecycle events (decision D9)."
+    },
+    {
+      "category": "Usage Data",
+      "type": "Product Interaction",
+      "collected": true,
+      "linkedToUser": true,
+      "usedForTracking": false,
+      "purposes": ["Analytics"],
+      "evidence": [
+        "app-next/src/features/onboarding/useOnboarding.ts",
+        "app-next/src/features/home/HomeScreen.tsx",
+        "app-next/src/features/setup/SetupRoute.tsx",
+        "app-next/src/features/subscription/PaywallSlot.tsx",
+        "app-next/src/features/unlock/useGymUnlock.ts",
+        "app-next/src/features/unlock/GymUnlockScreen.tsx",
+        "app-next/src/features/unlock/TreadmillUnlockScreen.tsx",
+        "packages/analytics-events/src/registry.ts"
+      ],
+      "note": "PostHog screen views (fixed FlowScreen registry only) and the events listed under analyticsEvents. Autocapture, session replay, surveys, heatmaps and exception autocapture are off."
+    },
+    {
+      "category": "Usage Data",
+      "type": "Other Usage Data",
+      "collected": true,
+      "linkedToUser": true,
+      "usedForTracking": false,
+      "purposes": ["App Functionality"],
+      "evidence": [
+        "app-next/src/ports/ScreenTimePort.ts#observeUsage",
+        "app-next/src/ports/models.ts#HistoryDay",
+        "plans/rebuild/phase-2-backend/P2-T08-sync.md"
+      ],
+      "note": "Minutes of shielded-app use per day (5-minute resolution) sync to the VPS as usage_days. App identities never leave the device: the Screen Time selection is an opaque token and is not synced (decision D5)."
+    },
+    {
+      "category": "Diagnostics",
+      "type": "Crash Data",
+      "collected": true,
+      "linkedToUser": false,
+      "usedForTracking": false,
+      "purposes": ["App Functionality"],
+      "evidence": [
+        "app-next/src/features/launch/AppErrorBoundary.tsx",
+        "plans/rebuild/phase-2-backend/P2-T07-posthog-sentry.md"
+      ],
+      "note": "Sentry (org edge-ix, project excerlock-mobile) with the ported scrub and sendDefaultPii false. Flip linkedToUser to true if P2-T07 calls Sentry.setUser with the uid."
+    },
+    {
+      "category": "Diagnostics",
+      "type": "Performance Data",
+      "collected": false,
+      "linkedToUser": false,
+      "usedForTracking": false,
+      "purposes": [],
+      "evidence": ["plans/rebuild/phase-2-backend/P2-T07-posthog-sentry.md"],
+      "note": "Sentry tracing and profiling are not enabled. Flip to collected if P2-T07 turns them on."
+    },
+    {
+      "category": "Diagnostics",
+      "type": "Other Diagnostic Data",
+      "collected": true,
+      "linkedToUser": true,
+      "usedForTracking": false,
+      "purposes": ["App Functionality"],
+      "evidence": [
+        "app-next/src/domain/supportDiagnostics.ts",
+        "app-next/src/ports/SupportPort.ts",
+        "server/src/routes/support.ts"
+      ],
+      "note": "A support request carries app version and build, iOS version, device model, permission statuses, rule count and the last enforcement result, next to the reply email."
+    },
+    {
+      "category": "Other Data",
+      "type": "Other Data Types",
+      "collected": true,
+      "linkedToUser": true,
+      "usedForTracking": false,
+      "purposes": ["App Functionality", "Analytics"],
+      "evidence": [
+        "app-next/src/domain/types.ts#Rule",
+        "app-next/src/ports/SyncPort.ts#pushRules",
+        "app-next/src/domain/types.ts#Profile",
+        "plans/rebuild/phase-2-backend/P2-T07-posthog-sentry.md"
+      ],
+      "note": "Rules (activity, goal, schedule) sync to the VPS as backup. The onboarding answers ageBand, occupation, improveFirst and mainReason become PostHog person properties (P2-T07 amendment)."
+    }
+  ],
+  "analyticsEvents": [
+    "gym_unlock_confirmed",
+    "gym_unlock_lost",
+    "gym_unlock_tapped",
+    "treadmill_scan_failed",
+    "treadmill_scan_started",
+    "treadmill_scan_verified",
+    "unlock_ceremony_done",
+    "unlock_screen_opened"
+  ]
+}
