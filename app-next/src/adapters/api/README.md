@@ -1,8 +1,9 @@
 # adapters/api
 
-The one HTTP boundary to the VPS (`https://api.excerlock.com`, `app.json` `extra.apiBaseUrl` or
-`EXPO_PUBLIC_API_BASE_URL` for a dev server). Every call carries the Supabase access token as a
-bearer; the real runtime composition supplies `getAccessToken` from P2-T01's auth adapter.
+The one HTTP boundary to the VPS (`https://api.excerlock.com`, or `EXPO_PUBLIC_API_URL` for a dev
+server, published by `app.config.ts` as `extra.clientAuth.apiBaseUrl`). Every call carries the
+Supabase access token as a bearer; the real runtime composition supplies `getAccessToken` from
+P2-T01's auth adapter.
 
 `createApiClient` ports the old `SupportHttpClient` semantics: one timeout (10 s) covers the token
 lookup, the request and the body read, the request is aborted when it fires, and nothing retries on

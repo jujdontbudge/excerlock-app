@@ -59,10 +59,12 @@ six-digit code, never a link, which is why both email templates must carry `{{ .
 
 ## Configuration
 
-`app.config.ts` reads `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (or the legacy `SUPABASE_ANON_KEY`),
+`app.config.ts` reads `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
 `EXPO_PUBLIC_API_URL` and the two Google client ids from the environment, falling back to
-`~/.excerlock/env`, and publishes them as `extra.clientAuth`. `SUPABASE_SERVICE_ROLE_KEY` is
-server-only and never reaches the bundle.
+`~/.excerlock/env`, and publishes them as `extra.clientAuth`. The unprefixed `SUPABASE_URL`,
+`SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_ANON_KEY` still resolve from an older dotfile, but EAS is
+configured with the prefixed names (`guardrails/client-config.test.ts` holds the list).
+`SUPABASE_SERVICE_ROLE_KEY` is server-only and never reaches the bundle.
 
 ## Test
 
