@@ -5,7 +5,11 @@ import fixture from '../../features/unlock/gait/real-walk-single.json';
 import { Icon } from '../../icons/Icon';
 import { tokens as t } from '../../design-system/tokens';
 import { permissionsStore } from '../../state/permissionsStore';
-export function GaitFake(preview = false): GaitPort & { set(value: 'none' | 'walking' | 'still'): void } {
+import { FakeContext } from '../FakeContext';
+export function GaitFake(
+  ctx: FakeContext | null,
+  preview = false,
+): GaitPort & { set(value: 'none' | 'walking' | 'still'): void } {
   let value: 'none' | 'walking' | 'still' = 'none',
     timer: ReturnType<typeof setInterval> | undefined;
   const listeners = new Set<Parameters<GaitPort['onSample']>[0]>();
@@ -16,7 +20,9 @@ export function GaitFake(preview = false): GaitPort & { set(value: 'none' | 'wal
     permission: async () => {
       if (preview) return 'granted';
       const status = permissionsStore.getState().data.camera;
-      return status === 'notDetermined' ? 'granted' : status;
+      // notDetermined is a real iOS prompt, so route it through the harness's
+      // prompt mode like every other permission rather than assuming a yes.
+      return status === 'notDetermined' && ctx ? ctx.request('camera') : status;
     },
     start: async () => {
       if (!preview && permissionsStore.getState().data.camera === 'denied')

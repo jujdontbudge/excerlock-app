@@ -24,7 +24,7 @@ import { SyncFake } from './fakes/SyncFake';
 export function FakeRuntime(): Runtime {
   const ctx = new FakeContext(scenarios[0]),
     walking = WalkingFake(ctx),
-    gait = GaitFake(),
+    gait = GaitFake(ctx),
     persistence = contextPersistence(ctx),
     gym = GymFake(ctx),
     activity = activityHistory(ctx),
@@ -94,7 +94,7 @@ export function FakeRuntime(): Runtime {
       advance: ctx.clock.advance,
       setPresence: (presence) => ctx.update({ presence }),
       setGait: gait.set,
-      createGaitPreview: () => { const preview = GaitFake(true); preview.set('walking'); return preview; },
+      createGaitPreview: () => { const preview = GaitFake(null, true); preview.set('walking'); return preview; },
       setPlacement: (placement) => ctx.update({ placement }),
       setSteps: (value) => {
         if (!Number.isFinite(value) || value < 0) throw new Error('Invalid step count');

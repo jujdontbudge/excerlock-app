@@ -10,7 +10,7 @@ Home's **Test gym unlock** and **Test treadmill unlock** open `?preview=1`. Prev
 
 **The booking is the gate.** The shackle, confetti and success haptic wait for `completeProppedScan()` to return true *and* the lease to exist. A duration rule takes this in two stages: the scan verifying earns a body settle and "{goal} minutes counts the day" with the lock still shut, and only reaching the goal lifts it.
 
-**Camera permission** is requested by the screen, not the provider: the idle heading and privacy line render first, `GaitPort.permission()` answers, the answer is written to `permissionsStore.camera` for Settings to show, and the scan starts only on `granted`. `restricted` is treated as denied. `NativeGait.permission()` still probes by starting and stopping the camera; P2-T03 replaces that with an `AVCaptureDevice` read.
+**Camera permission** is requested by the screen, not the provider: the idle heading and privacy line render first, `GaitPort.permission()` answers, the answer is written to `permissionsStore.camera` for Settings to show, and the scan starts only on `granted`. `restricted` is treated as denied. In the demo runtime a `notDetermined` camera goes through the harness's prompt mode, so the fake asks the same way every other permission does. `NativeGait.permission()` still probes by starting and stopping the camera; P2-T03 replaces that with an `AVCaptureDevice` read.
 
 `gait/` ports the original app's periodicity detector, fixture provider and scan controller. Native Swift camera/Vision sources are copied from the original local Expo module. Physical iPhones use that provider; the simulator uses fixture surfaces. No camera is available in iOS Simulator.
 
