@@ -1,5 +1,5 @@
 import { Activity, Rule, RuleMode, Schedule, WalkPlace } from '../../domain/types';
-import { validateRule } from '../../domain/validateRule';
+import { RuleIssue, validateRule } from '../../domain/validateRule';
 export type RuleDraft = {
   id: string;
   activity: Activity;
@@ -78,7 +78,9 @@ function mode(d: RuleDraft): RuleMode {
     ? { kind: 'target', activity, metric: 'distance', goal: d.distance, unit: d.unit }
     : { kind: 'target', activity, metric: 'minutes', goal: d.minutes };
 }
-export function toRule(d: RuleDraft, schedule: Schedule): Rule {
+export type RuleAttempt = { rule: Rule; issues?: undefined } | { rule?: undefined; issues: RuleIssue[] };
+/** Builds a rule without throwing, so an unexpected draft renders a recoverable row instead of a blank screen. */
+export function tryRule(d: RuleDraft, schedule: Schedule): RuleAttempt {
   const rule: Rule = {
     id: d.id,
     activity: d.activity,
@@ -89,9 +91,15 @@ export function toRule(d: RuleDraft, schedule: Schedule): Rule {
     updatedAt: d.updatedAt,
   };
   const issues = validateRule(rule);
-  if (issues.length) throw new Error(issues.join(', '));
-  return rule;
+  return issues.length ? { issues } : { rule };
 }
+export function toRuleOrThrow(d: RuleDraft, schedule: Schedule): Rule {
+  const attempt = tryRule(d, schedule);
+  if (attempt.issues) throw new Error(attempt.issues.join(', '));
+  return attempt.rule;
+}
+/** @deprecated Call `toRuleOrThrow` when a throw is intended, `tryRule` when rendering. */
+export const toRule = toRuleOrThrow;
 export function fromRule(rule: Rule): RuleDraft {
   const m = rule.mode,
     d = createDraft(rule.activity, 'unit' in m ? m.unit : 'mi', rule.createdAt);

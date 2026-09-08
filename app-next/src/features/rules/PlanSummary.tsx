@@ -7,8 +7,9 @@ import { scheduleLabel } from '../../domain/scheduleLabel';
 import { Schedule } from '../../domain/types';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
-import { RuleDraft, toRule } from './draft';
+import { RuleDraft, tryRule } from './draft';
 import { goalStep } from './plan';
+import { issueStep } from './planIssue';
 export function PlanSummary({
   draft,
   schedule,
@@ -18,7 +19,42 @@ export function PlanSummary({
   schedule: Schedule;
   onEdit: (step: string) => void;
 }) {
-  const rule = toRule(draft, schedule);
+  const attempt = tryRule(draft, schedule);
+  if (attempt.issues) {
+    const step = issueStep(draft, attempt.issues);
+    return (
+      <>
+        <Heading title={c.S3} support={c.summaryBody} />
+        <Reveal>
+          <View
+            accessibilityRole="alert"
+            style={{
+              padding: t.space.lg,
+              borderRadius: t.radius.card,
+              backgroundColor: t.surface.card,
+              borderWidth: t.stroke.hairline,
+              borderColor: t.border.default,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: t.space.md,
+            }}>
+            <Label variant="section" style={{ flex: 1 }}>
+              {c.needsChange}
+            </Label>
+            <PressableScale
+              label={step === 'S1' ? c.editSchedule : c.editGoal}
+              onPress={() => onEdit(step)}
+              style={{ minWidth: t.layout.touch, alignItems: 'center' }}>
+              <Label variant="support" style={{ color: t.brand.primary }}>
+                {c.edit}
+              </Label>
+            </PressableScale>
+          </View>
+        </Reveal>
+      </>
+    );
+  }
+  const rule = attempt.rule;
   const rows = [
     { label: c.activity, value: ruleName(rule), edit: c.editGoal, step: goalStep(draft) },
     ...(draft.activity === 'walking'

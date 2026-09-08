@@ -1,5 +1,6 @@
 import { createContext, PropsWithChildren, useContext, useState, useEffect } from 'react';
 import { createRuntime, Runtime } from './createRuntime';
+import { AppErrorBoundary } from '../features/launch/AppErrorBoundary';
 import { EnforcementHost } from './EnforcementHost';
 const Context = createContext<Runtime | null>(null);
 export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChildren<{ runtime?: Runtime }>) {
@@ -7,8 +8,10 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
   useEffect(() => () => runtime.dispose(), [runtime]);
   return (
     <Context.Provider value={runtime}>
-      <EnforcementHost runtime={runtime} />
-      {children}
+      <AppErrorBoundary>
+        <EnforcementHost runtime={runtime} />
+        {children}
+      </AppErrorBoundary>
     </Context.Provider>
   );
 }
