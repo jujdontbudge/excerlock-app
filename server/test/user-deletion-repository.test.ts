@@ -11,6 +11,7 @@ import {
   adaptySubscriptionStates,
   adaptyWebhookEvents,
   earnedUnlocks,
+  historyDays,
   profiles,
   ruleDays,
   rules,
@@ -70,6 +71,9 @@ describe("account deletion persistence", () => {
       remainingEarnedUnlocks: await postgres.db
         .select({ userId: earnedUnlocks.userId })
         .from(earnedUnlocks),
+      remainingHistoryDays: await postgres.db
+        .select({ userId: historyDays.userId })
+        .from(historyDays),
       remainingProfiles: await postgres.db
         .select({ userId: profiles.userId })
         .from(profiles),
@@ -103,6 +107,7 @@ describe("account deletion persistence", () => {
       remainingRuleDays: [{ userId: "other_user" }],
       remainingUsageDays: [{ userId: "other_user" }],
       remainingEarnedUnlocks: [{ userId: "other_user" }],
+      remainingHistoryDays: [{ userId: "other_user" }],
       remainingProfiles: [{ userId: "other_user" }],
       adaptyState: [],
       adaptyWebhook: [
@@ -231,6 +236,28 @@ async function seedIdentitySpine(): Promise<void> {
       ruleName: "Arrive at the gym",
       metAt: createdAt,
       windowEnd: createdAt,
+      updatedAt: createdAt,
+    },
+  ]);
+  await postgres.db.insert(historyDays).values([
+    {
+      userId: "user_123",
+      day: "2026-07-30",
+      usageMinutes: 42,
+      activity: { walking: 5200, gym: 0, running: 0, biking: 0 },
+      met: true,
+      scheduled: true,
+      sealedAt: createdAt,
+      updatedAt: createdAt,
+    },
+    {
+      userId: "other_user",
+      day: "2026-07-30",
+      usageMinutes: 10,
+      activity: { walking: 0, gym: 30, running: 0, biking: 0 },
+      met: true,
+      scheduled: true,
+      sealedAt: createdAt,
       updatedAt: createdAt,
     },
   ]);

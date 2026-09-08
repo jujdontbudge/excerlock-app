@@ -14,6 +14,7 @@ const REQUIRED_TABLES = [
   "rule_days",
   "usage_days",
   "earned_unlocks",
+  "history_days",
   "profiles",
 ] as const;
 

@@ -24,6 +24,7 @@ export async function createPgliteTestDatabase() {
           adapty_subscription_states,
           support_requests,
           earned_unlocks,
+          history_days,
           rule_days,
           usage_days,
           rules,

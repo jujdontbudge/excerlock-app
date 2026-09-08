@@ -15,6 +15,8 @@ describe("support database schema", () => {
       "title",
       "message",
       "created_at",
+      "reply_to",
+      "diagnostics",
     ]);
 
     // One assertion per forbidden name, deliberately. `arrayContaining` matches

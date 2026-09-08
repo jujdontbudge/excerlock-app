@@ -4,6 +4,7 @@ import {
   adaptySubscriptionStates,
   adaptyWebhookEvents,
   earnedUnlocks,
+  historyDays,
   getDb,
   profiles,
   ruleDays,
@@ -77,6 +78,7 @@ export function createDrizzleUserDeletionRepository(
           .delete(supportRequests)
           .where(eq(supportRequests.userId, userId));
         await transaction.delete(earnedUnlocks).where(eq(earnedUnlocks.userId, userId));
+        await transaction.delete(historyDays).where(eq(historyDays.userId, userId));
         await transaction.delete(ruleDays).where(eq(ruleDays.userId, userId));
         await transaction.delete(usageDays).where(eq(usageDays.userId, userId));
         await transaction.delete(rules).where(eq(rules.userId, userId));

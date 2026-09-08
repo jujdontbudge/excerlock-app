@@ -10,9 +10,10 @@ import { checkSchemaReady } from "../src/db/readiness.js";
 
 /**
  * 0006 is the first migration that has to survive real production data: it
- * renames the deletion checkpoint column and drops five tables. These tests
- * build a database that stops at 0005, put rows in it, and then run 0006 —
- * the sequence the VPS will actually perform.
+ * renames the deletion checkpoint column and drops five tables. 0007 then
+ * widens the support form and adds sealed history. These tests build a
+ * database that stops at the previous migration, put rows in it, and then
+ * migrate forward — the sequence the VPS will actually perform.
  */
 const scratchDirectories: string[] = [];
 const clients: PGlite[] = [];
@@ -63,7 +64,7 @@ async function tableNames(client: PGlite): Promise<string[]> {
   return result.rows.map((row) => row.tablename);
 }
 
-describe("migration 0006 on a 0005 database", () => {
+describe("forward migration on a populated database", () => {
   it("renames the deletion checkpoint without losing its values", async () => {
     const { client, db } = await databaseAt("0005_calm_tomorrow_man");
     await client.exec(`
@@ -131,6 +132,7 @@ describe("migration 0006 on a 0005 database", () => {
       "adapty_subscription_states",
       "adapty_webhook_events",
       "earned_unlocks",
+      "history_days",
       "profiles",
       "rule_days",
       "rules",
@@ -139,6 +141,29 @@ describe("migration 0006 on a 0005 database", () => {
       "users",
     ]);
     await expect(checkSchemaReady(db)).resolves.toEqual({ ready: true });
+  });
+
+  it("widens the support form and adds history without losing a submission", async () => {
+    const { client, db } = await databaseAt("0006_supabase_sync");
+    await client.exec(`
+      insert into users (id) values ('user_123');
+      insert into support_requests (id, user_id, category, message)
+        values ('support-1', 'user_123', 'bug', 'Nothing unlocked.');
+    `);
+
+    await migrate(db, { migrationsFolder });
+
+    const { rows } = await client.query<{
+      id: string;
+      replyTo: string | null;
+      diagnostics: unknown;
+    }>(
+      `select id, reply_to as "replyTo", diagnostics from support_requests`,
+    );
+    expect(rows).toEqual([
+      { id: "support-1", replyTo: null, diagnostics: null },
+    ]);
+    expect(await tableNames(client)).toContain("history_days");
   });
 
   it("is idempotent, because the deploy runs it on every release", async () => {

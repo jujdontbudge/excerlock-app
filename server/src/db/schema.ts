@@ -43,6 +43,19 @@ export const supportRequests = pgTable("support_requests", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  /**
+   * Where a human answers. Optional: an anonymous user with no email must
+   * still be able to report a problem, and an unanswerable report beats a
+   * rejected one.
+   */
+  replyTo: text("reply_to"),
+  /**
+   * The privacy-floored diagnostics bundle (P2-T22 §5): versions, device
+   * model, permission statuses, entitlement status, rule count, last
+   * enforcement result. Never app names, gym names or coordinates — the
+   * payload schema is strict, so those have no field to arrive in.
+   */
+  diagnostics: jsonb("diagnostics"),
 });
 
 export type SupportRequest = typeof supportRequests.$inferSelect;
@@ -98,6 +111,12 @@ export const ruleDays = pgTable(
     met: boolean("met").notNull(),
     metAt: timestamp("met_at", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+    /**
+     * What `progress` counts. Carried so a restored row stays readable after
+     * the rule that produced it is gone; nullable for rows written before it
+     * existed.
+     */
+    unit: text("unit"),
   },
   (table) => [
     primaryKey({ columns: [table.userId, table.ruleId, table.day] }),
@@ -145,6 +164,34 @@ export const earnedUnlocks = pgTable(
   ],
 );
 
+/**
+ * Sealed, immutable day records (P2-T15 §4). One row per calendar day, written
+ * once the day is over, so the streak and the recap survive a new phone.
+ *
+ * `activity` is stored verbatim as `{ walking, gym, running, biking }`. The
+ * server does not interpret those numbers and deliberately does not name them
+ * as columns: nothing in the product model states their unit, and inventing
+ * one here would make the server look authoritative about a fact it does not
+ * own.
+ */
+export const historyDays = pgTable(
+  "history_days",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    day: date("day", { mode: "string" }).notNull(),
+    /** Null on a day with no usage measurement; such days are excluded, not zeroed. */
+    usageMinutes: integer("usage_minutes"),
+    activity: jsonb("activity").notNull(),
+    met: boolean("met").notNull(),
+    scheduled: boolean("scheduled").notNull(),
+    sealedAt: timestamp("sealed_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.day] })],
+);
+
 /** The onboarding answers that are not rules (product model §8). */
 export const profiles = pgTable("profiles", {
   userId: text("user_id")
@@ -169,6 +216,8 @@ export type UsageDay = typeof usageDays.$inferSelect;
 export type NewUsageDay = typeof usageDays.$inferInsert;
 export type EarnedUnlock = typeof earnedUnlocks.$inferSelect;
 export type NewEarnedUnlock = typeof earnedUnlocks.$inferInsert;
+export type HistoryDay = typeof historyDays.$inferSelect;
+export type NewHistoryDay = typeof historyDays.$inferInsert;
 export type Profile = typeof profiles.$inferSelect;
 export type NewProfile = typeof profiles.$inferInsert;
 

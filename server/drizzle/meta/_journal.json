@@ -50,6 +50,13 @@
       "when": 1788833924176,
       "tag": "0006_supabase_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788835345312,
+      "tag": "0007_support_details_and_history",
+      "breakpoints": true
     }
   ]
 }
