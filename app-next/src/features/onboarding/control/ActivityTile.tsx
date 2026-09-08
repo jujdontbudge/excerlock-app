@@ -1,12 +1,12 @@
 import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Icon, IconName } from '../../../icons/Icon';
+import { Icon } from '../../../icons/Icon';
 import Animated from 'react-native-reanimated';
 import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
-import { welcomeCopy as c } from '../../../content/welcome';
+import { activities, ActivityId } from '../../../content/activities';
 import { useMotion } from '../../../motion/useMotion';
 import { Reveal } from '../../../motion/Reveal';
-const activityNames: Record<string, IconName> = {
+const activityIds: Record<string, ActivityId> = {
   'person-walking': 'walking',
   'person-running': 'running',
   'person-biking': 'biking',
@@ -15,6 +15,7 @@ const activityNames: Record<string, IconName> = {
 export function ActivityTile({ index }: { index: number }) {
   const p = w.control,
     tile = p.tiles[index],
+    activity = activities.find(({ id }) => id === activityIds[tile.icon])!,
     m = useMotion();
   return (
     <View style={{ position: 'absolute', left: tile.x, top: tile.y }}>
@@ -40,7 +41,7 @@ export function ActivityTile({ index }: { index: number }) {
           <LinearGradient
             colors={tile.peach ? [p.peach, p.peachEnd] : [w.brands.white, w.brands.white]}
             style={{ flex: 1, borderRadius: p.radius, justifyContent: 'center', alignItems: 'center' }}>
-            <Icon name={activityNames[tile.icon]} size={p.iconSize} tint={p.orange} label={c.activities[index]} />
+            <Icon name={activity.id} size={p.iconSize} tint={p.orange} label={activity.title} />
           </LinearGradient>
         </Animated.View>
       </Reveal>

@@ -25,7 +25,7 @@ export function O03({ onBack }: { onBack?: () => void }) {
   );
   return (
     <View style={{ flexGrow: 1, paddingTop: w.headingTop / Math.max(1, fontScale) }}>
-      <Heading title={c.O03.title.replace('. ', '.\n')} centered variant="hero" />
+      <Heading title={c.O03.title} centered variant="hero" />
       <View style={{ marginTop: w.control.gap }}>
         <ControlArtwork />
       </View>

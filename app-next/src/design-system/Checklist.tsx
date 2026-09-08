@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Label } from './Label';
 import { Icon } from '../icons/Icon';
@@ -8,20 +8,30 @@ export function Checklist({
   items,
   completed = 0,
   checked,
+  support,
+  onPress,
 }: {
   items: readonly string[];
   completed?: number;
   checked?: readonly boolean[];
+  support?: readonly (string | undefined)[];
+  onPress?: readonly (((index: number) => void) | undefined)[];
 }) {
   return (
     <View style={{ gap: t.space.lg }}>
       {items.map((item, i) => (
         <Reveal key={item} index={i}>
-          <View
+          <Pressable
             accessible
             accessibilityRole="checkbox"
             accessibilityLabel={item}
-            accessibilityState={{ checked: checked?.[i] ?? i < completed, disabled: true }}
+            accessibilityHint={support?.[i]}
+            accessibilityState={{
+              checked: checked?.[i] ?? i < completed,
+              disabled: !onPress?.[i],
+            }}
+            disabled={!onPress?.[i]}
+            onPress={() => onPress?.[i]?.(i)}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -48,8 +58,15 @@ export function Checklist({
                 </Label>
               )}
             </Animated.View>
-            <Label style={{ flex: 1 }}>{item}</Label>
-          </View>
+            <View style={{ flex: 1, gap: t.space.xs }}>
+              <Label>{item}</Label>
+              {support?.[i] ? (
+                <Label variant="support" tone="secondary">
+                  {support[i]}
+                </Label>
+              ) : null}
+            </View>
+          </Pressable>
         </Reveal>
       ))}
     </View>

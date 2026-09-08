@@ -23,23 +23,23 @@ CTA. Answers persist immediately so killing the app resumes at the same step.
 | Id | Screen | Content | Interaction / states | OtterLife map |
 | --- | --- | --- | --- | --- |
 | O01 | "Block apps. Exercise more." | `ScheduleWidget` hero: blocked 12 PM–8 PM until arrival at the gym, gym icon, blocked-time line. One-line body. | Animated widget entrance modeled on OtterLife's intro cards. | OtterLife intro card 1 |
-| O02 | "See your progress" | Trend hero: screen time down, exercise up. | | intro 2 |
-| O03 | "Stay in control" | Lock + rule tiles hero; short copy. | | intro 3 |
+| O02 | "See your progress" | Trend hero: screen time down, exercise up; the `-3h 12m` badge is visibly labeled "Illustrative, not a forecast". | | intro 2 |
+| O03 | "Stay in control" | Lock + rule tiles hero for Walking, Gym, Running and Biking; short copy. | | intro 3 |
 | O04 | "What should we call you?" | `TextField`, keyboard up on enter, CTA rides keyboard. | empty (CTA disabled) · valid · >30 chars error | name screen |
 | O05 | "How did you hear about us?" | `ChoiceRow` list: TikTok, Instagram, YouTube, App Store, Friend, Other. | none selected (CTA disabled) · selected | referral |
-| O06 | "How old are you?" | Age bands: Under 18, 18–24, 25–34, 35–44, 45–54, 55+. | | age |
-| O07 | "What do you do?" | Student, Employed, Self-employed, Parent at home, Between jobs, Retired, Other. | | occupation |
-| O08 | "What do you want to improve first?" | More exercise · Less screen time · Overall wellness. "Pick one. You can change it later." | | goal-style single choice |
+| O06 | "How old are you?" | Age bands: Under 18, 18–24, 25–34, 35–44, 45–54, 55–64, 65+ **(option list pending Johan)**. Body: "This helps us understand who ExcerLock is for." | | age |
+| O07 | "What do you do?" | Software developer, Founder, Remote worker, Finance or accounting, Architecture, Education, Other **(option list pending Johan)**. Body: "This helps us understand who ExcerLock is for." | | occupation |
+| O08 | "What is your goal?" **(pending Johan)** | More exercise · Less screen time · Overall wellness. "Pick one. You can change it later." | | goal-style single choice |
 | O09 | "What's the main reason you want to make a change?" | Options adapted from DAWG 017 (`fitness/01-dawg/017-*.png`): reword into ExcerLock voice, 5–6 options. | | motivation |
 | O10 | "How many hours do you currently spend scrolling each day?" | `Slider` 1–12 h in 30-min steps, big live number. Persists `estimatedDailyMinutes`. | value changes with haptic ticks | Unrot 023 structure, OtterLife visual |
 | O11 | "Here's some quick math" | hours/day → hours/month → days/year, numbers tick up in sequence (timing modeled on Unrot's math screen). | | reveal |
 | O12 | "This is a year in your life" | `DotGrid` 365 dots, all neutral. | | reveal |
 | O13 | "This is the free time left" | Same grid; the free-time subset fills (timing modeled on Unrot's dot reveals). Unit labeled ("after sleep and work, roughly N hours a day"). | | reveal |
 | O14 | "This is how much time you spend scrolling" | Same grid; scrolling subset in orange, with the number from O10. | | reveal |
-| O15 | "Less scrolling. More moving." | `LineChart` trend: screen time down, exercise up, labeled "illustrative". | | outcome chart |
-| O16 | "Stuck in the scroll loop?" | `LoopDiagram` state 1: urge → scroll → reward → repeat. | Continue → O17 animates in place | explainer |
-| O17 | "Let's break the loop." | State 2: ExcerLock logo enters the gap, reward nodes fade. | | explainer |
-| O18 | "Make moving the habit." | State 3: want to scroll → move → unlock → enjoy. | | explainer |
+| O15 | "This is good." **(pending Johan)** | `LineChart` trend: screen time down, exercise up, visibly labeled "Illustrative, not a forecast". | | outcome chart |
+| O16 | "You’re stuck in a loop" **(pending Johan)** | `LoopDiagram` state 1: urge → scroll → reward → repeat. | Continue → O17 animates in place | explainer |
+| O17 | "We’ll change the loop" **(pending Johan)** | State 2: ExcerLock logo enters the gap, reward nodes fade. | | explainer |
+| O18 | "You become ADDICTED to exercise" **(pending Johan)** | State 3: want to scroll → move → unlock → enjoy. | | explainer |
 | O19 | "Built around small, repeatable habits" | Three principle rows with icons. No institution logos. | | principles |
 | O20 | "What exercise should unlock your apps?" | `ChoiceGrid` 2×2: Walking, Gym, Running, Biking (multicolor icons). "Pick the one you will really do." | none · selected (card lifts) | activity picker |
 
@@ -103,10 +103,10 @@ and the relevant message, above the tabs.
 | Id | Screen | Content | States | Next |
 | --- | --- | --- | --- | --- |
 | X1 | "Let ExcerLock block your apps" | Screen Time permission primer: shield icon, three bullets (what it does, what we can't see, how to change later). CTA "Allow Screen Time" → Phase 1 fake sheet · Phase 2 FamilyControls request. | notDetermined · granted · denied (denied shows "Open Settings" + "Continue anyway", the app then shows a permission-needed status on Home) | X2 |
-| X2 | "Pick the apps to block" | Button opens the app picker. Phase 1: `FakeAppPicker` sheet with a fake list of app/category rows and multi-select. Phase 2: system `FamilyActivityPicker`. Shows "N apps · M categories" after selection. Cannot continue with zero selected (hard requirement) but can "Skip for now" (Home then nags). | empty · selected | X3 |
+| X2 | "Which apps should wait?" **(pending Johan)** | Button opens the app picker. Phase 1: `FakeAppPicker` sheet with a fake list of app/category rows and multi-select. Phase 2: system `FamilyActivityPicker`. Shows "N apps · M categories" after selection. Cannot continue with zero selected (hard requirement) but can "Skip for now" (Home then nags). | empty · selected | X3 |
 | X3 | Branch permission | Walking: "Let ExcerLock count your steps" (Motion). Gym: "Find your gym" — map search + pin (`GymPicker`), then Location permission (When in use first; Always offered as the auto-detect upgrade toggle with explanation). Running/Biking: "Read your workouts from Apple Health" (Health). | per permission: notDetermined · granted · denied | X4 |
 | X4 | "Save your progress" | Sign in with Apple · Continue with Google · Continue with email (email → OTP code screen). Secondary "Skip for now". | idle · submitting · error · code entry | X5 |
-| X5 | "You're all set" | Checklist of what is on: Blocking ✓ · Apps ✓ · Steps ✓ (branch) · Reminder (if granted). CTA "Go to Home". | | Home |
+| X5 | "You're all set" / "Almost set" | Checklist of Screen Time, apps, the branch permission, reminders and account state. Unchecked rows explain what is missing and route to the corresponding fix; checked rows do nothing. CTA "Go to Home". | complete · unfinished | Home |
 
 ## 6. Main app — tabs
 

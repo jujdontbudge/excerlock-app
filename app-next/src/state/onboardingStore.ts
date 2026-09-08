@@ -20,7 +20,7 @@ export const onboardingStore = createPersistedStore<OnboardingState>(
     step,
     answers,
     complete: v.bool,
-    setupStep: (value) => typeof value === 'string' && /^(X[1-6]|done)$/.test(value),
+    setupStep: (value) => typeof value === 'string' && /^(X(?:[1-6]|3[ab])|done)$/.test(value),
     setupComplete: v.bool,
   },
 );

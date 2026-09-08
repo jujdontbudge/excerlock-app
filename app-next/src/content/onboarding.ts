@@ -1,11 +1,11 @@
 export const onboardingCopy = {
   O01: { title: 'Block apps. Exercise more.', body: 'Less scrolling. More time to move.' },
-  O02: { title: 'Block apps. Exercise more.', body: 'Reduce your screen time and track your progress.' },
-  O03: { title: 'Block apps. Exercise more.', body: 'Exercise more each week and stay consistent.' },
+  O02: { title: 'See your progress', body: 'Reduce your screen time and track your progress.' },
+  O03: { title: 'Stay in control', body: 'Exercise more each week and stay consistent.' },
   O04: { title: 'What should we call you?', body: 'Let’s make this personal.' },
   O05: { title: 'How did you hear about us?', body: '' },
-  O06: { title: 'How old are you?', body: 'This helps us tailor your plan.' },
-  O07: { title: 'What do you do?', body: 'We’ll fit your plan around your day.' },
+  O06: { title: 'How old are you?', body: 'This helps us understand who ExcerLock is for.' },
+  O07: { title: 'What do you do?', body: 'This helps us understand who ExcerLock is for.' },
   O08: { title: 'What is your goal?', body: 'Pick one. You can change it later.' },
   O09: { title: 'What’s the main reason you want to make a change?', body: 'Start with what matters to you.' },
   O10: {
@@ -23,9 +23,11 @@ export const onboardingCopy = {
   O16: { title: 'You’re stuck in a loop', body: 'An urge. A quick scroll. A little reward. Then, again.' },
   O17: { title: 'We’ll change the loop', body: 'Put a little movement between the urge and the app.' },
   O18: { title: 'You become ADDICTED to exercise', body: 'Want to scroll? Move first. Unlock your apps and enjoy.' },
+  O19: { title: 'Built around small, repeatable habits', body: '' },
   O20: { title: 'What exercise should unlock your apps?', body: 'Pick the one you will really do.' },
 } as const;
 export const finalLoopTitle = { before: 'You become ', emphasis: 'ADDICTED', after: ' to exercise' } as const;
+export const screenTimeSlider = { minMinutes: 60, maxMinutes: 720, stepMinutes: 30 } as const;
 export const onboardingLabels = {
   start: 'Get started',
   continue: 'Continue',
@@ -34,6 +36,8 @@ export const onboardingLabels = {
   hours: 'Hours scrolling per day',
   hoursUnit: 'hours a day',
   hourUnit: 'hour a day',
+  hoursShort: 'h',
+  minutesShort: 'm',
   month: 'hours a month',
   year: 'days a year',
   daily: 'hours every day',
