@@ -117,6 +117,7 @@ export function SupportScreen({ onBack = () => {} }: { onBack?: () => void }) {
         value={replyTo}
         onChangeText={setReplyTo}
         onBlur={() => setReplyTouched(true)}
+        maxLength={254}
         autoCapitalize="none"
         keyboardType="email-address"
         autoComplete="email"

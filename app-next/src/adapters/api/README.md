@@ -17,8 +17,16 @@ the sentence a screen shows, letting the reachability check decide for untyped e
   message, replyTo, diagnostics }`, where `diagnostics` is rebuilt field by field from
   `domain/supportDiagnostics` (app version and build, iOS version, device model, entitlement status,
   the six permission statuses, rule count, last enforcement result truncated to 200 characters), so
-  nothing else can travel. 2xx is sent; anything else throws and the composer keeps the draft.
-- `DELETE /v1/user` (`user.ts`): 204 is deleted, 404 and 410 mean already deleted, anything else throws.
+  nothing else can travel; the server's schema is strict on the same fields. Limits agreed with P2-T02:
+  `message` 1..4000 trimmed, `replyTo` a valid email of at most 254 characters (the composer caps the
+  field), `lastEnforcementResult` at most 200. The server canonicalises the three categories to its
+  own enum; the app never sees that mapping. 2xx is sent; anything else throws and the composer keeps
+  the draft.
+- `DELETE /v1/user` (`user.ts`): 204 is deleted, 404 and 410 mean already deleted, anything else throws
+  (502 `IDENTITY_ERASURE_FAILED` and 503 `ACCOUNT_DELETION_UNAVAILABLE` are safe to retry; the server
+  checkpoints each processor). Deletion writes a permanent tombstone, so every later call on that uid,
+  `PUT /v1/user` included, answers 410: the local teardown must start a fresh anonymous session, never
+  reuse the erased one. The server needs `SUPABASE_SERVICE_ROLE_KEY` on the box or it answers 503.
   `withServerDeletion(auth, userApi)` wraps an `AuthPort` so `deleteAccount()` runs the server's
   ordered erasure (Adapty, PostHog, then the Supabase user) before the local session teardown. The
   server goes first because it needs the live token; if it refuses, nothing local changes and the user
