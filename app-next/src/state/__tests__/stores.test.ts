@@ -5,8 +5,8 @@ import { entitlementStore } from '../entitlementStore';
 import { permissionsStore } from '../permissionsStore';
 import { onboardingStore } from '../onboardingStore';
 import { rule } from '../../domain/__tests__/fixtures';
-test('all eight stores reject malformed persisted fields and accept valid product facts', async () => {
-  expect(stores).toHaveLength(8);
+test('all product stores reject malformed persisted fields and accept valid product facts', async () => {
+  expect(stores).toHaveLength(10);
   for (const store of stores) {
     await store.persist.rehydrate();
     const initial = store.getState().data;

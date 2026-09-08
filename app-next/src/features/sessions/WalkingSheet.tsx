@@ -6,11 +6,18 @@ import { LivingIcon } from '../../motion/LivingIcon';
 import { TickingNumber } from '../../motion/TickingNumber';
 import { Reveal } from '../../motion/Reveal';
 import { Rule } from '../../domain/types';
+import { WalkingStartError, WalkingStartErrorCode } from '../../ports/WalkingPort';
 import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
 import { useClock, useDevSnapshot } from '../../state/selectors';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { leaseClock } from '../home/statusContent';
 import { sessionCopy as c } from '../../content/sessions';
+/** The session engine refuses a start for exactly these reasons; anything else is a failure, not a refusal. */
+const refusalCopy: Record<WalkingStartErrorCode, string> = {
+  notScheduled: c.notScheduled,
+  invalidRule: c.walkingRuleRequired,
+};
+
 export function WalkingSheet({ rule, onDismiss }: { rule: Rule; onDismiss: () => void }) {
   const runtime = useRuntime(),
     now = useClock(),
@@ -27,8 +34,7 @@ export function WalkingSheet({ rule, onDismiss }: { rule: Rule; onDismiss: () =>
     try {
       await runtime.walking.start(rule, { placement: 'handheld' });
     } catch (reason) {
-      // merge: replace the structural check with P2-T15's WalkingStartError type.
-      setError((reason as { code?: string }).code === 'notScheduled' ? c.notScheduled : c.startError);
+      setError(reason instanceof WalkingStartError ? refusalCopy[reason.code] : c.startError);
     } finally {
       setBusy(false);
     }

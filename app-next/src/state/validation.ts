@@ -53,5 +53,17 @@ export const earnedUnlock = shape({
   windowEnd: iso,
 });
 export const walkingSession = nullable(
-  shape({ ruleId: text, startedAt: iso, leaseUntil: iso, phase: oneOf(['verifying', 'walking', 'grace', 'ended']) }),
+  shape({
+    id: text,
+    ruleId: text,
+    placement: oneOf(['propped', 'handheld']),
+    instanceDay: (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v),
+    startedAt: iso,
+    verifiedAt: nullable(iso),
+    leaseUntil: iso,
+    creditedThrough: iso,
+    endedAt: nullable(iso),
+    endReason: nullable(oneOf(['leaseLapsed', 'graceExpired', 'windowEnded', 'dayRollover', 'ruleChanged', 'stopped'])),
+    phase: oneOf(['verifying', 'walking', 'grace', 'ended']),
+  }),
 );

@@ -1,4 +1,5 @@
 import { render, waitFor } from '@testing-library/react-native';
+import { walkingSession } from '../../domain/__tests__/fixtures';
 import { Text } from 'react-native';
 import { AppRuntimeProvider } from '../AppRuntimeProvider';
 import { createRuntime } from '../createRuntime';
@@ -132,12 +133,11 @@ test('a window end fires the session teardown at the root', async () => {
     rules: [{ ...rule, schedule: { days: rule.schedule.days, window: { kind: 'range', startMinute: 540, endMinute: 661 } } }],
   });
   ruleDaysStore.getState().patch({
-    walkingSession: {
+    walkingSession: walkingSession({
       ruleId: rule.id,
       startedAt: runtime.clock.now(),
       leaseUntil: '2026-09-07T15:15:00.000Z',
-      phase: 'walking',
-    },
+    }),
   });
   const walkingStop = jest.spyOn(runtime.walking, 'stop').mockImplementation(() => undefined);
   const stop = startEnforcement(runtime, { appState: appStateSource().source });

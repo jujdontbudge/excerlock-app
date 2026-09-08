@@ -12,7 +12,7 @@ import {
 import { CompactGroup, CompactRow } from '../../design-system/CompactGroup';
 import { tokens as t } from '../../design-system/tokens';
 import { Icon } from '../../icons/Icon';
-import { useClock } from '../../state/selectors';
+import { useClock, useHistory } from '../../state/selectors';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { profileStore as useProfileStore } from '../../state/profileStore';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
@@ -23,7 +23,6 @@ import { analyticsModel } from './analyticsModel';
 import { Period } from './period';
 import { UsageChart } from './UsageChart';
 import { ComparisonChart } from './ComparisonChart';
-import { useAnalyticsHistory } from './history';
 import { WeeklyRecap } from './WeeklyRecap';
 export function AnalyticsScreen() {
   const [period, setPeriod] = useState<Period>('Week'),
@@ -31,7 +30,7 @@ export function AnalyticsScreen() {
     [activity, setActivity] = useState<Activity | null>(null),
     runtime = useRuntime(),
     now = useClock(),
-    history = useAnalyticsHistory(),
+    history = useHistory(),
     rules = useRulesStore((state) => state.data.rules),
     baseline = useProfileStore((s) => s.data.estimatedDailyMinutes),
     model = analyticsModel(history, dayKey(now, runtime.clock.timezone()), period, offset, baseline);

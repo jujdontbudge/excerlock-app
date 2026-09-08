@@ -4,6 +4,7 @@ import { createRuntime } from '../../../runtime/createRuntime';
 import { rulesStore } from '../../../state/rulesStore';
 import { ruleDaysStore } from '../../../state/ruleDaysStore';
 import { WalkingSheet } from '../WalkingSheet';
+import { WalkingStartError } from '../../../ports/WalkingPort';
 
 test('a failed start renders an alert and a successful retry clears it', async () => {
   const runtime = createRuntime();
@@ -51,8 +52,7 @@ test('a refusal before the window says blocking has not started yet', async () =
   const runtime = createRuntime();
   await runtime.dev.load('home-walking-session');
   ruleDaysStore.getState().patch({ walkingSession: null });
-  // merge: P2-T15 throws its own WalkingStartError with this code.
-  runtime.walking.start = jest.fn().mockRejectedValue(Object.assign(new Error('not scheduled'), { code: 'notScheduled' }));
+  runtime.walking.start = jest.fn().mockRejectedValue(new WalkingStartError('notScheduled'));
   await render(
     <AppRuntimeProvider runtime={runtime}>
       <WalkingSheet rule={rulesStore.getState().data.rules[0]} onDismiss={jest.fn()} />

@@ -1,6 +1,7 @@
-import { WALK_INCREMENT_MS } from "../../../domain/sessions/lease";
+import { WALK_LEASE_MS } from "../../../domain/sessions/lease";
 
-export const UNLOCK_INCREMENT_MS = WALK_INCREMENT_MS;
+/** P2-T15 owns the lease law; the Screen Time schedule follows it rather than restating it. */
+export const UNLOCK_INCREMENT_MS = WALK_LEASE_MS;
 export const UNLOCK_LEASE_MONITOR = "excerlock.unlock-lease.v1";
 /** Reserved for the Analytics usage monitor (B15), armed by P2-T04. */
 export const USAGE_MONITOR = "excerlock.usage.v1";

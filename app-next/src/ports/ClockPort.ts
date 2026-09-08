@@ -1,9 +1,10 @@
 import { Unsubscribe } from './models';
 export interface ClockPort {
   now(): string;
-  // merge: P2-T15 owns these two methods and their final adapter contracts.
+  /** Elapsed milliseconds that no clock change can rewind, for measuring a ceremony's own duration. */
   monotonicMs(): number;
-  at(deadline: string, callback: () => void): Unsubscribe;
   timezone(): string;
+  /** Runs the callback when the instant arrives, immediately if it already has. */
+  at(deadline: string, callback: () => void): Unsubscribe;
   subscribe(callback: () => void): Unsubscribe;
 }

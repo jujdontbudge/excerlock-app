@@ -29,7 +29,7 @@ test('a run added to the Health fake while the app is backgrounded reaches the p
 
   jest
     .spyOn(runtime.health, 'workoutsToday')
-    .mockImplementation(async (kind) => (kind === 'running' ? [{ kind: 'running', minutes: 32, km: 6.4 }] : []));
+    .mockImplementation(async (kind) => (kind === 'running' ? [{ kind: 'running', minutes: 32, km: 6.4, source: 'device' }] : []));
   appState.active();
 
   await waitFor(() => expect(ruleDaysStore.getState().data.days[0].met).toBe(true));

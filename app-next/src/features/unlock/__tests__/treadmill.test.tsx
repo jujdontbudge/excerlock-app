@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { walkingSession } from '../../../domain/__tests__/fixtures';
 import { AppState } from 'react-native';
 import { TreadmillUnlockScreen } from '../TreadmillUnlockScreen';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
@@ -186,12 +187,15 @@ function installDurationSession(runtime: Runtime) {
     days: [{ ruleId: rule.id, day: '2026-09-07', progress: 0, met: false, metAt: null }],
     walkingSession: null,
   });
-  const session: WalkingSession = {
+  const session = walkingSession({
     ruleId: rule.id,
+    placement: 'propped',
     startedAt: runtime.clock.now(),
+    verifiedAt: null,
+    creditedThrough: runtime.clock.now(),
     leaseUntil: new Date(Date.parse(runtime.clock.now()) + 900_000).toISOString(),
     phase: 'verifying',
-  };
+  });
   jest.spyOn(runtime.walking, 'start').mockImplementation(async () => {
     ruleDaysStore.getState().patch({ walkingSession: session });
     return session;
