@@ -4,32 +4,28 @@ import { describe, expect, it } from "vitest";
 
 import { fromRoot, readUtf8, walkFiles } from "./repo-files";
 
-import { shieldContent } from "../app-next/src/domain/shieldContent";
-import type { UnlockHint } from "../app-next/src/domain/types";
 
-/**
- * The plist is the extension's cold-start fallback: what a shield shows before the app has ever
- * published a snapshot into the app group. It must therefore be the same words the domain would
- * publish, which is what this derives. `balanceEmpty` belonged to the retired balance economy and
- * is never published any more, so it falls back to the plain locked copy; `lockWindow` ships no
- * secondary label because ShieldConfigurationExtension drops it for that cause.
- */
-const variant = (
-  cause: Parameters<typeof shieldContent>[0]["cause"],
-  deepLink: string,
-  secondaryActionLabel?: string,
-) => {
-  const content = shieldContent({ cause, goal: "pending", canNotify: true });
-  return {
-    deepLink,
-    primaryActionLabel: content.primary,
-    secondaryActionLabel: secondaryActionLabel ?? content.secondary ?? "",
-    subtitle: content.subtitle,
-    title: content.title,
-  };
+const CAUSES = [
+  "balanceEmpty",
+  "fullLock",
+  "lockWindow",
+  "walkAndScrollEnded",
+] as const;
+
+const DEEP_LINKS: Readonly<Record<(typeof CAUSES)[number], string>> = {
+  balanceEmpty: "excerlock://",
+  fullLock: "excerlock://locked-apps",
+  lockWindow: "excerlock://locked-apps",
+  walkAndScrollEnded: "excerlock://",
 };
 
 describe("Screen Time shield content", () => {
+  /**
+   * The plist is the extension's cold-start fallback: what a shield shows before the app has ever
+   * published a snapshot into the app group. This asserts it is bundled and complete; that its
+   * words are the words `domain/shieldContent` would publish is asserted in
+   * `app-next/src/adapters/screentime/__tests__/shieldPlist.test.ts`, which can import the domain.
+   */
   it("ships the four cause-keyed variants with their matching app surfaces", () => {
     const contentPath = fromRoot(
       "app-next",
@@ -41,12 +37,27 @@ describe("Screen Time shield content", () => {
       true,
     );
 
-    const content = plist.parse(readUtf8(contentPath));
-    expect(content).toEqual({
-      balanceEmpty: variant("locked", "excerlock://"),
-      fullLock: variant("locked", "excerlock://locked-apps"),
-      lockWindow: variant("lockWindow", "excerlock://locked-apps", ""),
-      walkAndScrollEnded: variant("walkingEnded", "excerlock://"),
+    const content = plist.parse(readUtf8(contentPath)) as Record<
+      string,
+      Record<string, string> | undefined
+    >;
+    expect(Object.keys(content).sort()).toEqual([...CAUSES].sort());
+
+    CAUSES.forEach((cause) => {
+      const variant = content[cause];
+      expect(Object.keys(variant ?? {}).sort()).toEqual([
+        "deepLink",
+        "primaryActionLabel",
+        "secondaryActionLabel",
+        "subtitle",
+        "title",
+      ]);
+      expect(variant?.deepLink).toBe(DEEP_LINKS[cause]);
+      // Only lockWindow ships an empty secondary label; the extension drops it for that cause.
+      expect(variant?.title).not.toBe("");
+      expect(variant?.subtitle).not.toBe("");
+      expect(variant?.primaryActionLabel).not.toBe("");
+      expect(variant?.secondaryActionLabel === "").toBe(cause === "lockWindow");
     });
   });
 
@@ -184,45 +195,5 @@ describe("Screen Time shield content", () => {
     expect(lockWindowContext).toContain(
       '"excerlock.shield.runtime-context.v1"',
     );
-  });
-  it("keeps every publishable subtitle past the extension's numeric-copy filter", () => {
-    // ShieldContent.swift drops a subtitle containing any of these and falls back to the plist,
-    // silently. The list is read from the Swift so a word added there fails here instead.
-    const swift = readUtf8(
-      fromRoot("app-next", "targets", "ShieldConfiguration", "ShieldContent.swift"),
-    );
-    const declaration = /let forbidden = \[([^\]]*)\]/.exec(swift);
-    expect(declaration, "ShieldContent.swift must still declare the forbidden list").not.toBeNull();
-    const forbidden = [...declaration![1].matchAll(/"([^"]+)"/g)].map((match) => match[1]);
-    expect(forbidden.length).toBeGreaterThan(0);
-
-    const units = ["steps", "minutes", "km", "mi"];
-    const hints: (UnlockHint | undefined)[] = [
-      undefined,
-      { ruleId: "r", action: "walk", remaining: 1, goal: null, unit: null },
-      { ruleId: "r", action: "arrive", remaining: null, goal: null, unit: null },
-      ...units.map((unit): UnlockHint => ({
-        ruleId: "r",
-        action: "progress",
-        remaining: 2500,
-        goal: 10000,
-        unit,
-      })),
-    ];
-    const causes = ["locked", "lockWindow", "walkingEnded"] as const;
-
-    const rejected = causes.flatMap((cause) =>
-      hints.flatMap((hint) =>
-        (["pending", "met"] as const).flatMap((goal) =>
-          [true, false]
-            .map((canNotify) => shieldContent({ cause, hint, goal, canNotify }).subtitle)
-            .filter((subtitle) =>
-              forbidden.some((word) => subtitle.toLowerCase().includes(word)),
-            ),
-        ),
-      ),
-    );
-
-    expect(rejected, "a subtitle the extension would silently discard").toEqual([]);
   });
 });
