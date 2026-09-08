@@ -2,7 +2,11 @@ import { Text } from 'react-native';
 import { render, screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { AppErrorBoundary } from '../AppErrorBoundary';
+import { PlanSummary } from '../../rules/PlanSummary';
+import { createDraft } from '../../rules/draft';
 import { common as c } from '../../../content/common';
+import { planCopy as plan } from '../../../content/plan';
+import { Schedule } from '../../../domain/types';
 
 function Boom(): never {
   throw new Error('render exploded');
@@ -64,4 +68,30 @@ test('the boundary reports the caught error so Sentry can hook in', async () => 
     </AppErrorBoundary>,
   );
   expect(onError).toHaveBeenCalledWith(expect.any(Error), expect.anything());
+});
+
+const schedule: Schedule = { days: [1, 2, 3, 4, 5], window: { kind: 'range', startMinute: 540, endMinute: 1260 } };
+
+test('a rule that cannot be built renders a recoverable row, not a blank screen', async () => {
+  await render(
+    <AppErrorBoundary>
+      <PlanSummary draft={{ ...createDraft('walking'), stepGoal: 123 }} schedule={schedule} onEdit={jest.fn()} />
+    </AppErrorBoundary>,
+  );
+
+  expect(screen.getByText(plan.needsChange)).toBeTruthy();
+  expect(screen.queryByText(c.errorTitle)).toBeNull();
+});
+
+test('a rule that throws while drawing reaches the boundary, not a blank screen', async () => {
+  const Throwing = () => {
+    throw new Error('rule blew up while rendering');
+  };
+  await render(
+    <AppErrorBoundary>
+      <Throwing />
+    </AppErrorBoundary>,
+  );
+
+  expect(screen.getByRole('header', { name: c.errorTitle })).toBeTruthy();
 });
