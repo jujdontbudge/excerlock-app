@@ -4,11 +4,14 @@ import { Unsubscribe } from './models';
 
 export { monitorNameForLockWindow };
 
+// Why an apply could not be trusted. Every value fails closed: shields stay up.
+export type ApplyFailureReason = 'monitorBudget' | 'screenTimeDenied' | 'noSelection' | 'adapter';
+
 export type ApplyResult = {
   applied: boolean;
   shields: 'up' | 'down';
   monitors: number;
-  reason?: 'monitorBudget' | string;
+  reason?: ApplyFailureReason;
 };
 
 export interface ScreenTimePort {

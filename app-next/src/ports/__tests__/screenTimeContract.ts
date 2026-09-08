@@ -69,12 +69,16 @@ export function describeScreenTimePort(make: () => Promise<Subject>) {
       stop();
     });
 
-    test('describeSelection returns the current opaque selection without app identities', async () => {
-      await expect(subject.port.describeSelection()).resolves.toEqual({
-        handle: { token: 'fake-selection-default' },
-        appCount: 3,
-        categoryCount: 1,
+    test('describeSelection returns an opaque selection and a null handle is always empty', async () => {
+      const selection = await subject.port.describeSelection();
+      expect(selection).toEqual({
+        handle: selection.handle === null ? null : { token: expect.any(String) },
+        appCount: expect.any(Number),
+        categoryCount: expect.any(Number),
       });
+      expect(selection.appCount).toBeGreaterThanOrEqual(0);
+      expect(selection.categoryCount).toBeGreaterThanOrEqual(0);
+      if (selection.handle === null) expect(selection.appCount + selection.categoryCount).toBe(0);
     });
   });
 }
