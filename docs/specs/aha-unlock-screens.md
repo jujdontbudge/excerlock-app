@@ -16,14 +16,14 @@ and a detected message.
 | | Treadmill | Gym |
 | --- | --- | --- |
 | Entry button (Home lock) | **I'm using a treadmill** | **I'm at the gym** |
-| Applies to | `{ kind: 'state', activity: 'walking', place: 'treadmill' \| 'either' }` only | `{ kind: 'event', activity: 'gym' }` and `{ kind: 'target', activity: 'gym' }` |
+| Applies to | Walking `state` and `target/minutes` rules whose place includes `treadmill`; duration rules continue counting after the scan | `{ kind: 'event', activity: 'gym' }` and `{ kind: 'target', activity: 'gym' }` |
 | Lock body | Front camera preview | Live Apple map, centred on the user |
 | Ring means | Gait-scan confidence, auto-starts once gait is seen, ≤5 s | 30 s presence confirmation after tapping **Unlock** |
 | Success message | **Exercise detected** | **Location detected at the gym** |
 | Subline | Unlocked while you walk | Unlocked until 9 PM (rule window end) |
 | Grant | Existing 15-minute propped lease, renewable | Existing arrival credit: rest of window and day (B2) |
 
-Explicitly **not** covered: step-target walking rules, running/biking, outdoor walks. Those keep the
+Explicitly **not** covered: step-target walking rules, running/biking, outside-only walks. Those keep the
 existing Home progress cards and handheld pedometer verification with no ceremony screen.
 
 ## 1. Entry from the Home lock
@@ -130,6 +130,10 @@ rewritten** (decision B12). This spec changes only the presentation and the auto
   advanced via `completeProppedScan()`, frame goes to `'lifted'`, ceremony plays with **Exercise
   detected** / **Unlocked while you walk**. The preview freezes on its last frame under a
   `surface.scrim`-free orange tint at 20 % so the lifted lock still reads as the app, not a camera.
+- **Duration target:** verification is stage one, followed by a counting stage with the ring bound to the
+  current rule-day minutes divided by the goal. The scan does not lift the shackle or play confetti. Those
+  happen only when the duration row becomes `met`; a lease lapse returns to scanning without discarding
+  credited minutes.
 - **needsFraming:** ring drains to 0 over `duration.standard`, heading swaps, preview stays live.
   On the 30-second grace expiring the session stops and the screen pops back to Home with the
   existing "Walk complete" state; never a silent shield.

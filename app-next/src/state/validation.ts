@@ -31,6 +31,7 @@ export const ruleDay = shape({
   progress: number(),
   met: bool,
   metAt: nullable(iso),
+  unit: (value) => value === undefined || oneOf(['steps', 'minutes', 'km', 'mi'])(value),
 });
 export const walkingSession = nullable(
   shape({ ruleId: text, startedAt: iso, leaseUntil: iso, phase: oneOf(['verifying', 'walking', 'grace', 'ended']) }),

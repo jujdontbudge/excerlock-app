@@ -70,6 +70,7 @@ type RuleDay = {
   progress: number;                // steps, minutes, km/mi — in the rule's own metric unit
   met: boolean;
   metAt: string | null;            // ISO, local instant when it became met
+  unit?: 'steps' | 'minutes' | 'km' | 'mi'; // optional while rows from the previous schema remain valid
 };
 
 type EarnedUnlock = { day: DayKey; ruleId: string; ruleName: string; metAt: string; windowEnd: string }; // B23

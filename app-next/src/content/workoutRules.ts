@@ -20,7 +20,7 @@ export const workoutCopy = {
       { id: 'distance', title: 'Bike a set distance' },
     ],
   },
-  presets: { gym: [30, 45, 60], running: [15, 20, 30], biking: [20, 30, 45] },
+  presets: { walking: [15, 20, 30], gym: [30, 45, 60], running: [15, 20, 30], biking: [20, 30, 45] },
   minutes: 'minutes',
   goal: 'Goal',
   distance: 'Distance',

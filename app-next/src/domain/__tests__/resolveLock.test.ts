@@ -42,6 +42,20 @@ test('a live walking lease wins over a met target; grace remains live; expired a
   expect(resolveLock({ ...input, walkingSession: { ...walkingSession, leaseUntil: now } }).state).toBe('unlockedMet');
   expect(resolveLock({ ...input, rules: [rule, { ...walking, enabled: false }] }).state).toBe('unlockedMet');
 });
+
+test('a walking session for a duration rule does not unlock the apps', () => {
+  const duration: Rule = {
+    ...rule,
+    mode: { kind: 'target', activity: 'walking', metric: 'minutes', goal: 20, place: 'treadmill' },
+  };
+  const walkingSession = {
+    ruleId: duration.id,
+    phase: 'walking' as const,
+    startedAt: now,
+    leaseUntil: '2026-09-07T19:15:00Z',
+  };
+  expect(resolveLock({ ...base, rules: [duration], walkingSession }).state).toBe('locked');
+});
 test('unmet active conditions lock, before and after windows remain open', () => {
   expect(resolveLock(base)).toEqual({
     state: 'locked',

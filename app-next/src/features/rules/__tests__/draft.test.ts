@@ -1,16 +1,28 @@
 import { createDraft, reduceDraft, toRule, fromRule } from '../draft';
 import { validateRule } from '../../../domain/validateRule';
 import { Schedule } from '../../../domain/types';
+import { builderPath } from '../../conditions/builderFlow';
 const schedule: Schedule = { days: [1, 2, 3, 4, 5], window: { kind: 'allDay' } };
 test('walking defaults, edits, serialization and identity survive a round trip', () => {
   let d = createDraft('walking', 'mi');
-  d = reduceDraft(d, { type: 'setPlace', value: 'treadmill' });
   d = reduceDraft(d, { type: 'setStepGoal', value: 6500 });
   const r = toRule(d, schedule);
-  expect(r.mode).toEqual({ kind: 'target', activity: 'walking', metric: 'steps', goal: 6500, place: 'treadmill' });
+  expect(r.mode).toEqual({ kind: 'target', activity: 'walking', metric: 'steps', goal: 6500, place: 'outside' });
   expect(validateRule(r)).toEqual([]);
   expect(toRule(fromRule(r), schedule)).toEqual(r);
   expect(toRule(reduceDraft(d, { type: 'setWalkingMode', value: 'state' }), schedule).mode.kind).toBe('state');
+});
+test('switching place to treadmill turns a step goal into a minutes goal', () => {
+  const draft = reduceDraft(createDraft('walking'), { type: 'setPlace', value: 'treadmill' });
+  expect(draft).toMatchObject({ place: 'treadmill', walkingMode: 'minutes', walkMinutes: 20 });
+  expect(builderPath(draft)).toEqual(['O20', 'W1', 'W2', 'W4', 'S1', 'S3']);
+  expect(toRule(draft, schedule).mode).toEqual({
+    kind: 'target',
+    activity: 'walking',
+    metric: 'minutes',
+    goal: 20,
+    place: 'treadmill',
+  });
 });
 test.each(['gym', 'running', 'biking'] as const)('%s defaults produce a valid rule', (activity) => {
   expect(validateRule(toRule(createDraft(activity, 'km'), schedule))).toEqual([]);

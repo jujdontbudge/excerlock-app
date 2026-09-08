@@ -40,4 +40,5 @@ export const devCopy = {
     notifications: 'Notifications',
   },
   recordCommand: 'xcrun simctl io B68873CD-B6ED-4961-85AF-0C807E657999 recordVideo --codec=h264 flow.mp4',
+  treadmillDurationScenario: 'Treadmill · 20-minute goal',
 } as const;

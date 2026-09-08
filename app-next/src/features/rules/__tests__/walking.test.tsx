@@ -12,6 +12,14 @@ test('place and walking mode choices report draft actions', async () => {
   expect(onAction).toHaveBeenCalledWith({ type: 'setWalkingMode', value: 'state' });
   expect(screen.getByText('Apps open while you walk, close when you stop')).toBeTruthy();
 });
+test.each(['outside', 'either'] as const)('%s offers steps, minutes and while-walking modes', async (place) => {
+  await render(<WalkingScreen step="W2" draft={{ ...createDraft('walking'), place }} onAction={jest.fn()} />);
+  expect(screen.getAllByRole('radio').map((row) => row.props.accessibilityLabel)).toEqual([
+    'Reach a step goal',
+    'Walk for a set time',
+    'Unlock while walking',
+  ]);
+});
 test('step field has bounded steppers and a rounded duration helper', async () => {
   const onAction = jest.fn(),
     draft = createDraft('walking');

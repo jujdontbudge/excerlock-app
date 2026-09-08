@@ -43,8 +43,13 @@ export function WalkingFake(ctx: FakeContext): WalkingPort & { resume: () => voi
   };
   return {
     start: async (rule, options) => {
-      if (rule.mode.kind !== 'state' || !rule.enabled)
-        throw new Error('An enabled walking state condition is required');
+      const mode = rule.mode;
+      if (
+        !rule.enabled ||
+        mode.activity !== 'walking' ||
+        (mode.kind !== 'state' && !(mode.kind === 'target' && mode.metric === 'minutes'))
+      )
+        throw new Error(c.walkingRuleRequired);
       stop();
       const startedAt = ctx.clock.now(),
         day = dayKey(startedAt, ctx.clock.timezone()),

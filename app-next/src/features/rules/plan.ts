@@ -31,7 +31,7 @@ export function commitPlan(a: Answers, unit: 'km' | 'mi', base?: RuleDraft) {
   return rule;
 }
 export function goalStep(d: RuleDraft) {
-  if (d.activity === 'walking') return d.walkingMode === 'state' ? 'W2' : 'W3';
+  if (d.activity === 'walking') return d.walkingMode === 'state' ? 'W2' : d.walkingMode === 'minutes' ? 'W4' : 'W3';
   if (d.activity === 'gym') return d.gymMode === 'arrival' ? 'G1' : 'G2';
   return d.runMode === 'distance' ? 'D' : d.activity === 'running' ? 'R2' : 'B2';
 }

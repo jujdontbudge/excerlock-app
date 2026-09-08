@@ -46,6 +46,7 @@ export const homeCopy = {
   locationNeeded: 'Location access needed to recognize your gym',
   completed: 'Goal reached',
   progress: (value: string, goal: string, unit: string) => `${value} / ${goal} ${unit}`,
+  walkedProgress: (value: string, goal: string) => `${value} / ${goal} min walked`,
   walkReady: 'Your apps stay open while you keep walking.',
   emptyBody: 'Choose a movement that makes room for the rest of your day.',
   placeholder: 'Your plan is ready to grow here.',

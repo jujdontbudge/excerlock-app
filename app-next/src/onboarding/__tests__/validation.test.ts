@@ -20,3 +20,9 @@ test('pre-branch forms require their answer while numeric scrolling starts with 
   expect(canContinue('O10', { estimatedDailyMinutes: 720 })).toBe(true);
   expect(canContinue('O01', {})).toBe(true);
 });
+test('walking duration only continues for 10–120 minutes in steps of 5', () => {
+  expect(canContinue('W4', { walkingMode: 'minutes', walkMinutes: 10 })).toBe(true);
+  expect(canContinue('W4', { walkingMode: 'minutes', walkMinutes: 120 })).toBe(true);
+  expect(canContinue('W4', { walkingMode: 'minutes', walkMinutes: 11 })).toBe(false);
+  expect(canContinue('W4', { walkingMode: 'minutes', walkMinutes: 125 })).toBe(false);
+});

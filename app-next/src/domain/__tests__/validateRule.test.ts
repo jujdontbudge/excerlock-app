@@ -1,4 +1,6 @@
 import { validateRule } from '../validateRule';
+import { WALKING_MINUTES_MIN } from '../walkingDuration';
+import { WALKING_STREAK_MINUTES } from '../streak';
 import { rule } from './fixtures';
 test('invalid data cannot create a condition; every activity keeps its prescribed bounds', () => {
   expect(validateRule(rule)).toEqual([]);
@@ -46,4 +48,27 @@ test('malformed modes and missing schedule fields are rejected at hydration', ()
     { ...rule, schedule: { days: [1], window: { kind: 'unknown' } } },
   ])
     expect(validateRule(invalid).length).toBeGreaterThan(0);
+});
+
+test('a treadmill step-goal rule is rejected', () => {
+  expect(
+    validateRule({
+      ...rule,
+      mode: { kind: 'target', activity: 'walking', metric: 'steps', goal: 5000, place: 'treadmill' },
+    }),
+  ).toContain('mode');
+});
+
+test('walk-for-minutes accepts 10–120 in steps of 5', () => {
+  const withGoal = (goal: number) => ({
+    ...rule,
+    mode: { kind: 'target', activity: 'walking', metric: 'minutes', goal, place: 'treadmill' },
+  });
+  expect(validateRule(withGoal(10))).toEqual([]);
+  expect(validateRule(withGoal(120))).toEqual([]);
+  for (const goal of [5, 11, 125]) expect(validateRule(withGoal(goal)).length).toBeGreaterThan(0);
+});
+
+test('the minimum walk-for-minutes goal equals the streak floor', () => {
+  expect(WALKING_MINUTES_MIN).toBe(WALKING_STREAK_MINUTES);
 });

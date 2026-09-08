@@ -1,5 +1,6 @@
 import { Activity, Rule, RuleMode, Schedule, WalkPlace } from '../../domain/types';
 import { validateRule } from '../../domain/validateRule';
+import { WALKING_MINUTES_DEFAULT } from '../../domain/walkingDuration';
 export type RuleDraft = {
   id: string;
   activity: Activity;
@@ -7,8 +8,9 @@ export type RuleDraft = {
   updatedAt: string;
   enabled: boolean;
   place: WalkPlace;
-  walkingMode: 'target' | 'state';
+  walkingMode: 'steps' | 'minutes' | 'state';
   stepGoal: number;
+  walkMinutes: number;
   gymMode: 'time' | 'arrival';
   gymMinutes: number;
   runMode: 'minutes' | 'distance';
@@ -18,8 +20,8 @@ export type RuleDraft = {
 };
 export type DraftAction =
   | { type: 'setPlace'; value: WalkPlace }
-  | { type: 'setWalkingMode'; value: 'target' | 'state' }
-  | { type: 'setStepGoal' | 'setGymMinutes' | 'setMinutes'; value: number }
+  | { type: 'setWalkingMode'; value: 'steps' | 'minutes' | 'state' }
+  | { type: 'setStepGoal' | 'setWalkMinutes' | 'setGymMinutes' | 'setMinutes'; value: number }
   | { type: 'setGymMode'; value: 'time' | 'arrival' }
   | { type: 'setRunMode'; value: 'minutes' | 'distance' }
   | { type: 'setDistance'; value: number; unit: 'km' | 'mi' };
@@ -34,8 +36,9 @@ export function createDraft(activity: Activity, unit: 'km' | 'mi' = 'mi', now = 
     updatedAt: now,
     enabled: true,
     place: 'outside',
-    walkingMode: 'target',
+    walkingMode: 'steps',
     stepGoal: 5000,
+    walkMinutes: WALKING_MINUTES_DEFAULT,
     gymMode: 'time',
     gymMinutes: 30,
     runMode: 'minutes',
@@ -47,11 +50,13 @@ export function createDraft(activity: Activity, unit: 'km' | 'mi' = 'mi', now = 
 export function reduceDraft(d: RuleDraft, a: DraftAction): RuleDraft {
   switch (a.type) {
     case 'setPlace':
-      return { ...d, place: a.value };
+      return { ...d, place: a.value, walkingMode: a.value === 'treadmill' && d.walkingMode === 'steps' ? 'minutes' : d.walkingMode };
     case 'setWalkingMode':
-      return { ...d, walkingMode: a.value };
+      return { ...d, walkingMode: d.place === 'treadmill' && a.value === 'steps' ? 'minutes' : a.value };
     case 'setStepGoal':
       return { ...d, stepGoal: a.value };
+    case 'setWalkMinutes':
+      return { ...d, walkMinutes: a.value };
     case 'setGymMode':
       return { ...d, gymMode: a.value };
     case 'setGymMinutes':
@@ -69,7 +74,9 @@ function mode(d: RuleDraft): RuleMode {
   if (activity === 'walking')
     return d.walkingMode === 'state'
       ? { kind: 'state', activity, place: d.place }
-      : { kind: 'target', activity, place: d.place, metric: 'steps', goal: d.stepGoal };
+      : d.walkingMode === 'minutes'
+        ? { kind: 'target', activity, place: d.place, metric: 'minutes', goal: d.walkMinutes }
+        : { kind: 'target', activity, place: d.place, metric: 'steps', goal: d.stepGoal };
   if (activity === 'gym')
     return d.gymMode === 'arrival'
       ? { kind: 'event', activity, trigger: 'arrival' }
@@ -97,7 +104,12 @@ export function fromRule(rule: Rule): RuleDraft {
     d = createDraft(rule.activity, 'unit' in m ? m.unit : 'mi', rule.createdAt);
   Object.assign(d, { id: rule.id, updatedAt: rule.updatedAt, enabled: rule.enabled });
   if (m.activity === 'walking')
-    Object.assign(d, { place: m.place, walkingMode: m.kind, ...(m.kind === 'target' ? { stepGoal: m.goal } : {}) });
+    Object.assign(d, {
+      place: m.place,
+      walkingMode: m.kind === 'state' ? 'state' : m.metric,
+      ...(m.kind === 'target' && m.metric === 'steps' ? { stepGoal: m.goal } : {}),
+      ...(m.kind === 'target' && m.metric === 'minutes' ? { walkMinutes: m.goal } : {}),
+    });
   else if (m.activity === 'gym')
     Object.assign(d, {
       gymMode: m.kind === 'event' ? 'arrival' : 'time',

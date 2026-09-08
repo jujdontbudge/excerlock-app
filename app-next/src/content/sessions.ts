@@ -44,5 +44,7 @@ export const sessionCopy = {
   shieldWalk: 'Start a walk to open your apps.',
   shieldArrive: 'Arrive at your saved gym to open your apps.',
   shieldProgress: (n: number, unit: string) => `${n.toLocaleString('en-US')} ${unit} to go to open your apps.`,
+  shieldWalkMinutes: (minutes: number) => `Walk ${minutes.toLocaleString('en-US')} minutes to open your apps`,
   causes: ['locked', 'lockWindow', 'walkingEnded'],
+  walkingRuleRequired: 'An enabled walking session condition is required',
 } as const;

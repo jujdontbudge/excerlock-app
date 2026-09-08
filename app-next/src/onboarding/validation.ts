@@ -3,6 +3,7 @@ import { Answers } from './types';
 import { choiceQuestions } from '../content/onboardingChoices';
 import { draftFromAnswers } from '../features/rules/answersDraft';
 import { goalRange, validGoal } from '../features/rules/goalRange';
+import { validWalkingMinutes } from '../domain/walkingDuration';
 export function canContinue(step: string, answers: Answers): boolean {
   if (step === 'O04')
     return typeof answers.name === 'string' && answers.name.trim().length > 0 && answers.name.trim().length <= 30;
@@ -20,6 +21,7 @@ export function canContinue(step: string, answers: Answers): boolean {
     const n = Number(answers.stepGoal ?? 5000);
     return n >= 500 && n <= 30000 && n % 500 === 0;
   }
+  if (step === 'W4') return validWalkingMinutes(Number(answers.walkMinutes ?? 20));
   if (['G2', 'R2', 'B2', 'D'].includes(step)) {
     const draft = draftFromAnswers(answers, 'mi');
     return validGoal(

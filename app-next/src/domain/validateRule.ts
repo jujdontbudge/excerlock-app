@@ -1,3 +1,5 @@
+import { WALKING_MINUTES_MAX, WALKING_MINUTES_MIN, validWalkingMinutes } from './walkingDuration';
+
 export type RuleIssue = 'identity' | 'mode' | 'goal' | 'days' | 'window';
 const record = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -32,7 +34,12 @@ export function validateRule(value: unknown): RuleIssue[] {
       if (m.activity === 'walking' && m.metric === 'steps') {
         min = 500;
         max = 30000;
+        if (m.place === 'treadmill') issues.push('mode');
         if (finite(m.goal) && m.goal % 500 !== 0) issues.push('goal');
+      } else if (m.activity === 'walking' && m.metric === 'minutes') {
+        min = WALKING_MINUTES_MIN;
+        max = WALKING_MINUTES_MAX;
+        if (!validWalkingMinutes(m.goal)) issues.push('goal');
       } else if (m.metric === 'minutes' && m.activity !== 'walking') {
         min = m.activity === 'gym' ? 10 : 5;
         max = m.activity === 'gym' ? 180 : 300;

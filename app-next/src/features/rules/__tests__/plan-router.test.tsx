@@ -20,7 +20,7 @@ beforeEach(() => {
   profileStore.getState().reset();
   onboardingStore
     .getState()
-    .patch({ answers: { activity: 'walking', walkingMode: 'target', name: 'Alex', stepGoal: 5000 } });
+    .patch({ answers: { activity: 'walking', walkingMode: 'steps', name: 'Alex', stepGoal: 5000 } });
 });
 test.each([
   ['Edit goal', 'W3'],

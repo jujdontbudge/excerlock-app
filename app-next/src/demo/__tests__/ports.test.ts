@@ -41,6 +41,20 @@ test('scripted walking phases and gym arrivals update observable local facts', a
   expect(permissionsStore.getState().data.location).toBe('always');
   runtime.dispose();
 });
+test('WalkingFake starts a walking-minutes duration rule', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('home-locked-walking');
+  const source = rulesStore.getState().data.rules[0];
+  const duration = {
+    ...source,
+    mode: { kind: 'target' as const, activity: 'walking' as const, metric: 'minutes' as const, goal: 20, place: 'treadmill' as const },
+  };
+  await expect(runtime.walking.start(duration, { placement: 'propped' })).resolves.toMatchObject({
+    ruleId: duration.id,
+    phase: 'verifying',
+  });
+  runtime.dispose();
+});
 test('cancelled or failed identity requests do not grant a session', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');

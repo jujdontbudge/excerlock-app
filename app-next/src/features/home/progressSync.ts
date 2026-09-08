@@ -23,6 +23,7 @@ export function startProgressSync(runtime: Runtime) {
     const changes = rulesStore.getState().data.rules.flatMap((rule) => {
       const m = rule.mode;
       if (!rule.enabled || m.kind !== 'target' || rule.activity === 'gym') return [];
+      if (m.activity === 'walking' && m.metric === 'minutes') return [];
       if ((rule.activity === 'walking' ? permissions.motion : permissions.health) !== 'granted') return [];
       const instance = currentInstances(rule, now, tz)[0] ?? windowInstances(rule, today, tz)[0];
       if (!instance) return [];
