@@ -15,17 +15,18 @@ export function progressContent(
     format = (value: number) =>
       value.toLocaleString('en-US', { maximumFractionDigits: m.kind === 'target' && m.metric === 'distance' ? 1 : 0 });
   if (m.kind === 'state') {
-    const live =
-      session?.ruleId === rule.id &&
-      ['walking', 'grace'].includes(session.phase) &&
-      Date.parse(session.leaseUntil) > Date.parse(now);
+    const mine = session?.ruleId === rule.id;
+    const live = mine && ['walking', 'grace'].includes(session.phase) && Date.parse(session.leaseUntil) > Date.parse(now);
+    // A handheld hand-off leaves the session verifying: say so rather than
+    // inviting a walk that is already under way.
+    const verifying = mine && session.phase === 'verifying';
     return {
       title,
       icon: rule.activity,
       value: live ? 1 : 0,
-      detail: live ? c.left(leaseClock(session.leaseUntil, now)) : c.walkReady,
+      detail: live ? c.left(leaseClock(session.leaseUntil, now)) : verifying ? c.verifying : c.walkReady,
       action: 'walk',
-      label: live ? c.viewWalk : c.startWalk,
+      label: live || verifying ? c.viewWalk : c.startWalk,
     } as const;
   }
   if (m.kind === 'event')
@@ -34,8 +35,8 @@ export function progressContent(
       icon: rule.activity,
       value: row.met ? 1 : 0,
       detail: `${row.met ? c.checkedIn : c.awaitingGym} · ${auto ? c.autoOn : c.autoOff}`,
-      action: row.met ? undefined : 'checkin',
-      label: row.met ? undefined : c.checkIn,
+      action: undefined,
+      label: row.met ? undefined : c.gymEntry,
     } as const;
   const unit = m.metric === 'distance' ? m.unit : m.metric;
   const permission =
@@ -51,7 +52,7 @@ export function progressContent(
     icon: rule.activity,
     value: row.progress / m.goal,
     detail: permission ? c.progress(format(row.progress), format(m.goal), unit) : needed,
-    action: rule.activity === 'gym' && !row.met ? 'checkin' : undefined,
-    label: rule.activity === 'gym' && !row.met ? c.checkIn : undefined,
+    action: undefined,
+    label: rule.activity === 'gym' && !row.met ? c.gymEntry : undefined,
   } as const;
 }

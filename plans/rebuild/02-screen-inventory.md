@@ -184,7 +184,6 @@ Sub-screens: `settings/support`, `settings/legal/[doc]`, `settings/permission/[n
 | --- | --- | --- | --- |
 | SH-apps | App picker | X2, Home, Conditions, Settings | Phase 1 fake list; Phase 2 system picker (unstyleable) |
 | SH-gym | `GymPicker` | X3, Settings › Gyms, builder summary "Add a gym", condition summary Gyms row | Map search field, results list, map with pin, radius slider 50–200 m (default 100 m) with the line "A wider radius detects arrivals sooner but can trigger next door" (B26), name field, Save. Own header and Cancel. Phase 1: fake results + static map; Phase 2: MapKit search |
-| SH-checkin | *(removed 2026-09-07)* | — | Replaced by the gym ceremony (`unlock/gym`, B20/B22) |
 | SH-walk | Walking session | Home "I'm walking with my phone" pill (state or minutes rule, place outside/either; B27) | Start → verifying (cadence) → walking (lease countdown) → grace → ended; refuses with "Blocking hasn't started yet" before the window. Treadmill goes to the `unlock/treadmill` ceremony instead. |
 | SH-time | Time wheel | S1, builder | Native `DateTimePicker` in a `BottomSheet` |
 | SH-delete | Confirm delete | Conditions | |

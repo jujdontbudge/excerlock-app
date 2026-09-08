@@ -33,6 +33,7 @@ import { homeCopy as c } from '../../content/home';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { unlockKind } from '../unlock/entry';
+import { clearHomeWalkingSheetRequest, useHomeWalkingSheetRequest } from '../unlock/walkingSheetRequest';
 import { UnlockEntry } from '../unlock/UnlockEntry';
 export function HomeScreen() {
   useDemoProgress();
@@ -54,9 +55,16 @@ export function HomeScreen() {
       permissions,
       now,
       timezone: runtime.clock.timezone(),
+      walkingSession: session,
     }),
     glyph = useUnlockMoment(status.state);
-  const [sheet, setSheet] = useState<{ type: 'walk' | 'checkin'; ruleId: string } | null>(null);
+  const [sheet, setSheet] = useState<{ type: 'walk'; ruleId: string } | null>(null);
+  const handedOff = useHomeWalkingSheetRequest();
+  useEffect(() => {
+    if (!handedOff) return;
+    setSheet({ type: 'walk', ruleId: handedOff });
+    clearHomeWalkingSheetRequest();
+  }, [handedOff]);
   const chooseApps = () => void runtime.screenTime.presentAppPicker();
   const add = () => router.push('/builder');
   const action = () => {
@@ -123,10 +131,6 @@ export function HomeScreen() {
           sheet={sheet}
           rules={rules}
           onDismiss={() => setSheet(null)}
-          onChooseGym={() => {
-            setSheet(null);
-            router.push('/settings/gyms');
-          }}
         />
       }>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: t.space.md }}>

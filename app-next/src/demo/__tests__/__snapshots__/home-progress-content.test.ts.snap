@@ -13,10 +13,10 @@ exports[`biker-time progress variant 1`] = `
 
 exports[`gym-arrival-user progress variant 1`] = `
 {
-  "action": "checkin",
+  "action": undefined,
   "detail": "Your next visit counts · Auto-detect off",
   "icon": "gym",
-  "label": "Check in",
+  "label": "I'm at the gym",
   "title": "Arrive at the gym",
   "value": 0,
 }
@@ -24,10 +24,10 @@ exports[`gym-arrival-user progress variant 1`] = `
 
 exports[`gym-time-user progress variant 1`] = `
 {
-  "action": "checkin",
+  "action": undefined,
   "detail": "12 / 30 minutes",
   "icon": "gym",
-  "label": "Check in",
+  "label": "I'm at the gym",
   "title": "Spend 30 minutes at the gym",
   "value": 0.4,
 }
