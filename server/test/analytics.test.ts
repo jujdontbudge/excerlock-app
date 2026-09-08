@@ -17,15 +17,17 @@ type ServerEventFixture = {
   };
 }[ServerEventName];
 
+/**
+ * The events this server actually emits. The shared registry still declares
+ * the retired vendor events (D6 removed the integrations, not the registry
+ * entries); nothing here may emit one.
+ */
 const SERVER_EVENT_FIXTURES = [
   { event: "account_deleted", properties: {} },
   {
     event: "support_request_submitted",
     properties: { category: "feature" },
   },
-  { event: "vendor_connected", properties: { vendor: "strava" } },
-  { event: "vendor_disconnected", properties: { vendor: "oura" } },
-  { event: "vendor_earn_recorded", properties: { vendor: "whoop" } },
 ] as const satisfies readonly ServerEventFixture[];
 
 function assertServerCaptureTypeBoundary(analytics: ServerAnalytics): void {
@@ -33,9 +35,6 @@ function assertServerCaptureTypeBoundary(analytics: ServerAnalytics): void {
     category: "bug",
   });
   analytics.capture("user_123", "account_deleted", {});
-  analytics.capture("user_123", "vendor_connected", { vendor: "polar" });
-  analytics.capture("user_123", "vendor_disconnected", { vendor: "oura" });
-  analytics.capture("user_123", "vendor_earn_recorded", { vendor: "whoop" });
 
   // @ts-expect-error Client-owned events cannot be captured by the server.
   analytics.capture("user_123", "paywall_viewed", {
@@ -44,8 +43,6 @@ function assertServerCaptureTypeBoundary(analytics: ServerAnalytics): void {
   });
   // @ts-expect-error Adapty-owned events cannot be captured by the server.
   analytics.capture("user_123", "trial_started", {});
-  // @ts-expect-error Payloads come from the registry's PropsOf<Event>.
-  analytics.capture("user_123", "vendor_connected", { vendor: "garmin" });
   // @ts-expect-error Support categories are the registry's closed enum.
   analytics.capture("user_123", "support_request_submitted", { category: "question" });
 }
@@ -92,7 +89,7 @@ describe("server analytics", () => {
     });
 
     expect(eventsOwnedBy("server")).toEqual(
-      SERVER_EVENT_FIXTURES.map(({ event }) => event),
+      expect.arrayContaining(SERVER_EVENT_FIXTURES.map(({ event }) => event)),
     );
     for (const { event } of SERVER_EVENT_FIXTURES) {
       expect(ownerOf(event)).toBe("server");
@@ -104,23 +101,10 @@ describe("server analytics", () => {
     expectTypeOf<PropsOf<"support_request_submitted">>().toEqualTypeOf<{
       category: "support" | "bug" | "feature";
     }>();
-    expectTypeOf<PropsOf<"vendor_connected">>().toEqualTypeOf<{
-      vendor: "strava" | "oura" | "whoop" | "polar";
-    }>();
-
     expect(() => {
       analytics.capture("user_123", "account_deleted", {});
       analytics.capture("user_123", "support_request_submitted", {
         category: "feature",
-      });
-      analytics.capture("user_123", "vendor_connected", {
-        vendor: "strava",
-      });
-      analytics.capture("user_123", "vendor_disconnected", {
-        vendor: "oura",
-      });
-      analytics.capture("user_123", "vendor_earn_recorded", {
-        vendor: "whoop",
       });
     }).not.toThrow();
   });
@@ -134,7 +118,6 @@ describe("server analytics", () => {
     analytics.capture("user_123", "support_request_submitted", {
       category: "bug",
     });
-    analytics.vendorConnected("user_123", "strava");
 
     expect(postHog.register).toHaveBeenCalledWith({ app: "excerlock" });
     expect(postHog.capture.mock.calls).toEqual([
@@ -148,17 +131,18 @@ describe("server analytics", () => {
           },
         },
       ],
-      [
-        {
-          distinctId: "user_123",
-          event: "vendor_connected",
-          properties: {
-            app: "excerlock",
-            vendor: "strava",
-          },
-        },
-      ],
     ]);
+  });
+
+  it("exposes no vendor forwarder to call (D6)", () => {
+    const analytics = createAnalytics({
+      apiKey: "phc_test",
+      host: "https://us.i.posthog.com",
+    });
+
+    expect(
+      Object.keys(analytics).filter((key) => /vendor/i.test(key)),
+    ).toEqual([]);
   });
 
   it("forwards one authoritative support submission event", () => {

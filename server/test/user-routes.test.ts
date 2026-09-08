@@ -16,7 +16,7 @@ describe("DELETE /v1/user", () => {
     const deleteAccount = vi.fn(async () => undefined);
     app = Fastify({ logger: false });
     app.addHook("onRequest", async (request) => {
-      request.clerkIdentity = { userId: "user_123", roles: [] };
+      request.authIdentity = { userId: "user_123", isAnonymous: false };
     });
     await app.register(
       createUserRoutes({ deletion: { deleteAccount }, identity }),
@@ -35,7 +35,7 @@ describe("DELETE /v1/user", () => {
   it("returns a retryable response without exposing processor details", async () => {
     app = Fastify({ logger: false });
     app.addHook("onRequest", async (request) => {
-      request.clerkIdentity = { userId: "user_123", roles: [] };
+      request.authIdentity = { userId: "user_123", isAnonymous: false };
     });
     await app.register(
       createUserRoutes({
@@ -71,7 +71,7 @@ describe("PUT /v1/user", () => {
     const ensureActiveUser = vi.fn(async () => undefined);
     app = Fastify({ logger: false });
     app.addHook("onRequest", async (request) => {
-      request.clerkIdentity = { userId: "user_123", roles: [] };
+      request.authIdentity = { userId: "user_123", isAnonymous: false };
     });
     await app.register(
       createUserRoutes({

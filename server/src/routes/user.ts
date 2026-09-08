@@ -14,7 +14,7 @@ import {
   sendNotImplemented,
   type NotImplementedResponse,
 } from "./notImplemented.js";
-import { requireRouteUserId } from "./vendorRouteSupport.js";
+import { requireRouteUserId } from "./authenticatedUser.js";
 
 interface UserRouteDependencies {
   deletion: UserDeletionService;

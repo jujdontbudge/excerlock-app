@@ -11,19 +11,15 @@ import {
 import {
   adaptySubscriptionStates,
   adaptyWebhookEvents,
-  featureRequestVotes,
-  featureRequests,
+  earnedUnlocks,
+  profiles,
+  ruleDays,
+  rules,
   supportRequests,
+  usageDays,
   users,
-  vendorConnections,
-  vendorOAuthStates,
-  vendorWebhookEvents,
 } from "../src/db/schema.js";
-import {
-  createDrizzleFeatureRequestRepository,
-  createDrizzleFeatureRequestVoteRepository,
-  createDrizzleSupportSubmissionRepository,
-} from "../src/support/index.js";
+import { createDrizzleSupportSubmissionRepository } from "../src/support/index.js";
 import { createPostgresJsTestDatabase } from "./postgresJsTestDatabase.js";
 import { createPgliteTestDatabase } from "./pgliteTestDatabase.js";
 
@@ -41,6 +37,11 @@ afterAll(async () => {
   await postgres.client.close();
 });
 
+/** Postgres writes `numeric(12,3)`, drizzle writes `numeric(12, 3)`. */
+function normalizeSqlType(sqlType: string): string {
+  return sqlType.replace(/\s*,\s*/g, ",");
+}
+
 describe("repository database execution boundary", () => {
   it("rejects SQL that names a column absent from the migrations", async () => {
     await expect(
@@ -54,13 +55,13 @@ describe("repository database execution boundary", () => {
     const tables = [
       adaptySubscriptionStates,
       adaptyWebhookEvents,
-      users,
+      earnedUnlocks,
+      profiles,
+      ruleDays,
+      rules,
       supportRequests,
-      featureRequests,
-      featureRequestVotes,
-      vendorConnections,
-      vendorOAuthStates,
-      vendorWebhookEvents,
+      usageDays,
+      users,
     ];
     const expectedColumns = tables.flatMap((table) => {
       const config = getTableConfig(table);
@@ -68,12 +69,15 @@ describe("repository database execution boundary", () => {
         tableName: config.name,
         columnName: column.name,
         ordinal: ordinal + 1,
-        sqlType: column.getSQLType(),
+        sqlType: normalizeSqlType(column.getSQLType()),
         notNull: column.notNull,
         hasDefault: column.hasDefault,
       }));
     });
 
+    // `format_type` rather than `information_schema.data_type`, which erases a
+    // numeric's precision and would let `numeric(12, 3)` drift to plain
+    // `numeric` without the guardrail noticing.
     const { rows: migratedColumns } = await postgres.client.query<{
       tableName: string;
       columnName: string;
@@ -83,18 +87,28 @@ describe("repository database execution boundary", () => {
       hasDefault: boolean;
     }>(`
       select
-        table_name as "tableName",
-        column_name as "columnName",
-        ordinal_position as ordinal,
-        data_type as "sqlType",
-        is_nullable = 'NO' as "notNull",
-        column_default is not null as "hasDefault"
-      from information_schema.columns
-      where table_schema = 'public'
-      order by table_name, ordinal_position
+        class.relname as "tableName",
+        attribute.attname as "columnName",
+        attribute.attnum as ordinal,
+        format_type(attribute.atttypid, attribute.atttypmod) as "sqlType",
+        attribute.attnotnull as "notNull",
+        attribute.atthasdef as "hasDefault"
+      from pg_attribute attribute
+      join pg_class class on class.oid = attribute.attrelid
+      join pg_namespace namespace on namespace.oid = class.relnamespace
+      where namespace.nspname = 'public'
+        and class.relkind = 'r'
+        and attribute.attnum > 0
+        and not attribute.attisdropped
+      order by class.relname, attribute.attnum
     `);
 
-    expect(migratedColumns).toEqual(
+    expect(
+      migratedColumns.map((column) => ({
+        ...column,
+        sqlType: normalizeSqlType(column.sqlType),
+      })),
+    ).toEqual(
       expectedColumns.sort((left, right) =>
         left.tableName.localeCompare(right.tableName) ||
         left.ordinal - right.ordinal,
@@ -120,41 +134,29 @@ describe("support submission repository", () => {
         title: null,
         message: "This must not be attached to a tombstone.",
         createdAt: new Date("2026-07-31T20:01:00.000Z"),
-        featureRequest: null,
       }),
     ).rejects.toThrow("User is deleted");
   });
 
-  it("opens one transaction for a feature submission", async () => {
+  it("opens one transaction for a submission", async () => {
     const database = createPostgresJsTestDatabase(() => [["user_123"]]);
-    const repository = createDrizzleSupportSubmissionRepository(
-      database.db,
-    );
-    const createdAt = new Date("2026-07-29T21:00:00.000Z");
+    const repository = createDrizzleSupportSubmissionRepository(database.db);
 
     await repository.insertSupportSubmission({
       id: "support-request-id",
       userId: "user_123",
       category: "feature",
       title: "Home Screen widget",
-      message: "Show my balance without opening the app.",
-      createdAt,
-      featureRequest: {
-        id: "feature-request-id",
-        title: "Home Screen widget",
-        message: "Show my balance without opening the app.",
-        createdAt,
-      },
+      message: "Show my streak without opening the app.",
+      createdAt: new Date("2026-07-29T21:00:00.000Z"),
     });
 
     expect(database.transactionCount).toBe(1);
   });
 
-  it("persists a support request and its feature-request list entry", async () => {
+  it("persists an idea submission as one support request and nothing else", async () => {
     await postgres.db.insert(users).values({ id: "user_123" });
-    const repository = createDrizzleSupportSubmissionRepository(
-      postgres.db,
-    );
+    const repository = createDrizzleSupportSubmissionRepository(postgres.db);
     const createdAt = new Date("2026-07-29T21:00:00.000Z");
 
     await repository.insertSupportSubmission({
@@ -162,45 +164,26 @@ describe("support submission repository", () => {
       userId: "user_123",
       category: "feature",
       title: "Home Screen widget",
-      message: "Show my balance without opening the app.",
+      message: "Show my streak without opening the app.",
       createdAt,
-      featureRequest: {
-        id: "feature-request-id",
-        title: "Home Screen widget",
-        message: "Show my balance without opening the app.",
-        createdAt,
-      },
     });
 
     const [supportRow] = await postgres.db
       .select()
       .from(supportRequests)
       .where(eq(supportRequests.id, "support-request-id"));
-    const [featureRow] = await postgres.db
-      .select()
-      .from(featureRequests)
-      .where(eq(featureRequests.id, "feature-request-id"));
 
-    expect({ supportRow, featureRow }).toEqual({
-      supportRow: {
-        id: "support-request-id",
-        userId: "user_123",
-        category: "feature",
-        title: "Home Screen widget",
-        message: "Show my balance without opening the app.",
-        createdAt,
-      },
-      featureRow: {
-        id: "feature-request-id",
-        supportRequestId: "support-request-id",
-        title: "Home Screen widget",
-        message: "Show my balance without opening the app.",
-        createdAt,
-      },
+    expect(supportRow).toEqual({
+      id: "support-request-id",
+      userId: "user_123",
+      category: "feature",
+      title: "Home Screen widget",
+      message: "Show my streak without opening the app.",
+      createdAt,
     });
   });
 
-  it("rolls back the support request when its feature insert fails", async () => {
+  it("rolls back rather than persisting a duplicate submission id", async () => {
     await postgres.db.insert(users).values({ id: "user_123" });
     await postgres.db.insert(supportRequests).values({
       id: "existing-support-id",
@@ -209,170 +192,24 @@ describe("support submission repository", () => {
       title: "Existing request",
       message: "Already persisted.",
     });
-    await postgres.db.insert(featureRequests).values({
-      id: "duplicate-feature-id",
-      supportRequestId: "existing-support-id",
-      title: "Existing request",
-      message: "Already persisted.",
-    });
-    const repository = createDrizzleSupportSubmissionRepository(
-      postgres.db,
-    );
+    const repository = createDrizzleSupportSubmissionRepository(postgres.db);
 
     await expect(
       repository.insertSupportSubmission({
-        id: "rolled-back-support-id",
+        id: "existing-support-id",
         userId: "user_123",
         category: "feature",
         title: "New request",
         message: "This transaction must roll back.",
         createdAt: new Date("2026-07-29T21:00:00.000Z"),
-        featureRequest: {
-          id: "duplicate-feature-id",
-          title: "New request",
-          message: "This transaction must roll back.",
-          createdAt: new Date("2026-07-29T21:00:00.000Z"),
-        },
       }),
     ).rejects.toThrow();
 
     await expect(
       postgres.db
-        .select({ id: supportRequests.id })
+        .select({ message: supportRequests.message })
         .from(supportRequests)
-        .where(eq(supportRequests.id, "rolled-back-support-id")),
-    ).resolves.toEqual([]);
-  });
-});
-
-describe("feature request vote repository", () => {
-  it("does not attach a late vote to a deletion tombstone", async () => {
-    await postgres.db.insert(users).values([
-      {
-        id: "deleted_user",
-        deletedAt: new Date("2026-07-31T20:00:00.000Z"),
-      },
-      { id: "active_user" },
-    ]);
-    await postgres.db.insert(supportRequests).values({
-      id: "active-support",
-      userId: "active_user",
-      category: "feature",
-      title: "Active feature",
-      message: "Keep this request.",
-    });
-    await postgres.db.insert(featureRequests).values({
-      id: "active-feature",
-      supportRequestId: "active-support",
-      title: "Active feature",
-      message: "Keep this request.",
-    });
-    const repository = createDrizzleFeatureRequestVoteRepository(postgres.db);
-
-    await expect(
-      repository.recordFeatureRequestVote({
-        id: "late-vote",
-        featureRequestId: "active-feature",
-        userId: "deleted_user",
-        createdAt: new Date("2026-07-31T20:01:00.000Z"),
-      }),
-    ).rejects.toThrow("User is deleted");
-    await expect(
-      postgres.db.select().from(featureRequestVotes),
-    ).resolves.toEqual([]);
-  });
-});
-
-describe("feature request vote repository", () => {
-  it("uses the database conflict result to make a duplicate vote a no-op", async () => {
-    await postgres.db.insert(users).values({ id: "user_123" });
-    await postgres.db.insert(supportRequests).values({
-      id: "support-request-id",
-      userId: "user_123",
-      category: "feature",
-      title: "Home Screen widget",
-      message: "Show my balance without opening the app.",
-    });
-    await postgres.db.insert(featureRequests).values({
-      id: "feature-request-id",
-      supportRequestId: "support-request-id",
-      title: "Home Screen widget",
-      message: "Show my balance without opening the app.",
-    });
-    const repository = createDrizzleFeatureRequestVoteRepository(
-      postgres.db,
-    );
-    const createdAt = new Date("2026-07-29T21:05:00.000Z");
-
-    const first = await repository.recordFeatureRequestVote({
-      id: "vote-1",
-      featureRequestId: "feature-request-id",
-      userId: "user_123",
-      createdAt,
-    });
-    const duplicate = await repository.recordFeatureRequestVote({
-      id: "vote-retry",
-      featureRequestId: "feature-request-id",
-      userId: "user_123",
-      createdAt,
-    });
-
-    expect({ first, duplicate }).toEqual({
-      first: { status: "voted", voteCount: 1 },
-      duplicate: { status: "alreadyVoted", voteCount: 1 },
-    });
-  });
-});
-
-describe("feature request list repository", () => {
-  it("returns counts and user vote state from one aggregate query", async () => {
-    await postgres.db.insert(users).values([
-      { id: "user_123" },
-      { id: "user_456" },
-      { id: "user_789" },
-    ]);
-    await postgres.db.insert(supportRequests).values({
-      id: "support-request-id",
-      userId: "user_123",
-      category: "feature",
-      title: "Home Screen widget",
-      message: "Show my balance without opening the app.",
-      createdAt: new Date("2026-07-29T21:00:00.000Z"),
-    });
-    await postgres.db.insert(featureRequests).values({
-      id: "feature-request-id",
-      supportRequestId: "support-request-id",
-      title: "Home Screen widget",
-      message: "Show my balance without opening the app.",
-      createdAt: new Date("2026-07-29T21:00:00.000Z"),
-    });
-    const voteRepository = createDrizzleFeatureRequestVoteRepository(
-      postgres.db,
-    );
-    await Promise.all(
-      ["user_123", "user_456", "user_789"].map((userId, index) =>
-        voteRepository.recordFeatureRequestVote({
-          id: `vote-${index + 1}`,
-          featureRequestId: "feature-request-id",
-          userId,
-          createdAt: new Date("2026-07-29T21:05:00.000Z"),
-        }),
-      ),
-    );
-    const repository = createDrizzleFeatureRequestRepository(postgres.db);
-
-    await expect(
-      repository.listFeatureRequests("user_123"),
-    ).resolves.toEqual([
-      {
-        id: "feature-request-id",
-        submissionId: "support-request-id",
-        title: "Home Screen widget",
-        message: "Show my balance without opening the app.",
-        voteCount: 3,
-        hasVoted: true,
-        createdAt: new Date("2026-07-29T21:00:00.000Z"),
-      },
-    ]);
+        .where(eq(supportRequests.id, "existing-support-id")),
+    ).resolves.toEqual([{ message: "Already persisted." }]);
   });
 });

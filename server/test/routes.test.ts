@@ -30,7 +30,7 @@ describe("GET /v1/health", () => {
 });
 
 describe("planned v1 routes", () => {
-  it("fails closed when Clerk is not configured", async () => {
+  it("fails closed when Supabase auth is not configured", async () => {
     app = buildServer({ logger: false });
 
     const response = await app.inject({ method: "GET", url: "/v1/user" });

@@ -6,6 +6,11 @@ import type {
 } from "./repository.js";
 import { SupportUserNotFoundError } from "./errors.js";
 
+/**
+ * The form is the whole feature (B17). An "idea" submission is stored and
+ * answered like any other; nothing is published back for other users to vote
+ * on, so no second record is written.
+ */
 export type SupportSubmissionInput =
   | Readonly<{
       category: "support" | "bug";
@@ -17,9 +22,7 @@ export type SupportSubmissionInput =
       message: string;
     }>;
 
-export type SupportSubmissionResult =
-  | Readonly<{ submissionId: string }>
-  | Readonly<{ submissionId: string; featureRequestId: string }>;
+export type SupportSubmissionResult = Readonly<{ submissionId: string }>;
 
 export interface SupportSubmissionAnalytics {
   supportRequestSubmitted(
@@ -54,33 +57,19 @@ export function createSupportSubmissionService(
         throw new SupportUserNotFoundError(userId);
       }
 
-      const submissionId = randomId();
-      const createdAt = now();
-      const featureRequest =
-        input.category === "feature"
-          ? {
-              id: randomId(),
-              title: input.title,
-              message: input.message,
-              createdAt,
-            }
-          : null;
       const submission: NewSupportSubmissionRecord = {
-        id: submissionId,
+        id: randomId(),
         userId,
         category: input.category,
         title: input.category === "feature" ? input.title : null,
         message: input.message,
-        createdAt,
-        featureRequest,
+        createdAt: now(),
       };
 
       await options.repository.insertSupportSubmission(submission);
       options.analytics.supportRequestSubmitted(userId, input.category);
 
-      return featureRequest
-        ? { submissionId, featureRequestId: featureRequest.id }
-        : { submissionId };
+      return { submissionId: submission.id };
     },
   };
 }

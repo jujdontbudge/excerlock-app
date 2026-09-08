@@ -24,26 +24,15 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000).catch(3000),
   DATABASE_URL: optionalString,
   SENTRY_DSN: optionalString,
-  CLERK_SECRET_KEY: optionalString,
+  SUPABASE_URL: optionalString,
+  SUPABASE_JWT_JWKS_URL: optionalString,
+  SUPABASE_JWT_SECRET: optionalString,
+  SUPABASE_SERVICE_ROLE_KEY: optionalString,
   ADAPTY_SECRET_KEY: optionalString,
   ADAPTY_WEBHOOK_SECRET: optionalString,
   POSTHOG_API_KEY: optionalString,
   POSTHOG_PERSONAL_API_KEY: optionalString,
   POSTHOG_PROJECT_ID: optionalString,
-  VENDOR_OAUTH_CALLBACK_BASE_URL: optionalString,
-  VENDOR_TOKEN_ENCRYPTION_KEY: optionalString,
-  STRAVA_CLIENT_ID: optionalString,
-  STRAVA_CLIENT_SECRET: optionalString,
-  STRAVA_WEBHOOK_VERIFY_TOKEN: optionalString,
-  STRAVA_WEBHOOK_SUBSCRIPTION_ID: optionalString,
-  OURA_CLIENT_ID: optionalString,
-  OURA_CLIENT_SECRET: optionalString,
-  OURA_WEBHOOK_VERIFY_TOKEN: optionalString,
-  WHOOP_CLIENT_ID: optionalString,
-  WHOOP_CLIENT_SECRET: optionalString,
-  POLAR_CLIENT_ID: optionalString,
-  POLAR_CLIENT_SECRET: optionalString,
-  POLAR_WEBHOOK_SIGNATURE_SECRET: optionalString,
   POSTHOG_HOST: z.preprocess(
     blankToUndefined,
     z.string().url().default(DEFAULT_POSTHOG_HOST).catch(DEFAULT_POSTHOG_HOST),
@@ -64,7 +53,14 @@ export interface Environment {
   port: number;
   databaseUrl: string | undefined;
   sentryDsn: string | undefined;
-  clerkSecretKey: string | undefined;
+  /** Project origin, e.g. `https://<ref>.supabase.co`. The issuer and the JWKS url derive from it. */
+  supabaseUrl: string | undefined;
+  /** Overrides the derived JWKS url; asymmetric (ES256/RS256) verification. */
+  supabaseJwtJwksUrl: string | undefined;
+  /** Legacy HS256 shared secret. Only consulted when no JWKS url is available. */
+  supabaseJwtSecret: string | undefined;
+  /** Admin API credential. Account deletion is its only use. */
+  supabaseServiceRoleKey: string | undefined;
   adaptySecretKey: string | undefined;
   adaptyWebhookAuth: string | undefined;
   posthogApiKey: string | undefined;
@@ -72,20 +68,6 @@ export interface Environment {
   posthogPersonalApiKey: string | undefined;
   posthogProjectId: string | undefined;
   posthogApiHost: string;
-  vendorOAuthCallbackBaseUrl: string | undefined;
-  vendorTokenEncryptionKey: string | undefined;
-  stravaClientId: string | undefined;
-  stravaClientSecret: string | undefined;
-  stravaWebhookVerifyToken: string | undefined;
-  stravaWebhookSubscriptionId: string | undefined;
-  ouraClientId: string | undefined;
-  ouraClientSecret: string | undefined;
-  ouraWebhookVerifyToken: string | undefined;
-  whoopClientId: string | undefined;
-  whoopClientSecret: string | undefined;
-  polarClientId: string | undefined;
-  polarClientSecret: string | undefined;
-  polarWebhookSignatureSecret: string | undefined;
 }
 
 export function parseEnv(
@@ -99,7 +81,10 @@ export function parseEnv(
     port: parsed.PORT,
     databaseUrl: parsed.DATABASE_URL,
     sentryDsn: parsed.SENTRY_DSN,
-    clerkSecretKey: parsed.CLERK_SECRET_KEY,
+    supabaseUrl: parsed.SUPABASE_URL,
+    supabaseJwtJwksUrl: parsed.SUPABASE_JWT_JWKS_URL,
+    supabaseJwtSecret: parsed.SUPABASE_JWT_SECRET,
+    supabaseServiceRoleKey: parsed.SUPABASE_SERVICE_ROLE_KEY,
     adaptySecretKey: parsed.ADAPTY_SECRET_KEY,
     adaptyWebhookAuth: parsed.ADAPTY_WEBHOOK_SECRET,
     posthogApiKey: parsed.POSTHOG_API_KEY,
@@ -107,19 +92,5 @@ export function parseEnv(
     posthogPersonalApiKey: parsed.POSTHOG_PERSONAL_API_KEY,
     posthogProjectId: parsed.POSTHOG_PROJECT_ID,
     posthogApiHost: parsed.POSTHOG_API_HOST,
-    vendorOAuthCallbackBaseUrl: parsed.VENDOR_OAUTH_CALLBACK_BASE_URL,
-    vendorTokenEncryptionKey: parsed.VENDOR_TOKEN_ENCRYPTION_KEY,
-    stravaClientId: parsed.STRAVA_CLIENT_ID,
-    stravaClientSecret: parsed.STRAVA_CLIENT_SECRET,
-    stravaWebhookVerifyToken: parsed.STRAVA_WEBHOOK_VERIFY_TOKEN,
-    stravaWebhookSubscriptionId: parsed.STRAVA_WEBHOOK_SUBSCRIPTION_ID,
-    ouraClientId: parsed.OURA_CLIENT_ID,
-    ouraClientSecret: parsed.OURA_CLIENT_SECRET,
-    ouraWebhookVerifyToken: parsed.OURA_WEBHOOK_VERIFY_TOKEN,
-    whoopClientId: parsed.WHOOP_CLIENT_ID,
-    whoopClientSecret: parsed.WHOOP_CLIENT_SECRET,
-    polarClientId: parsed.POLAR_CLIENT_ID,
-    polarClientSecret: parsed.POLAR_CLIENT_SECRET,
-    polarWebhookSignatureSecret: parsed.POLAR_WEBHOOK_SIGNATURE_SECRET,
   };
 }

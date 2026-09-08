@@ -10,20 +10,21 @@ import {
 import {
   adaptySubscriptionStates,
   adaptyWebhookEvents,
-  featureRequestVotes,
-  featureRequests,
+  earnedUnlocks,
+  profiles,
+  ruleDays,
+  rules,
   supportRequests,
+  usageDays,
   users,
-  vendorConnections,
-  vendorOAuthStates,
-  vendorWebhookEvents,
 } from "../src/db/schema.js";
 import { createDrizzleUserDeletionRepository } from "../src/userDeletion/index.js";
-import { createDrizzleVendorRepository } from "../src/vendors/index.js";
-import { createVendorWebhookService } from "../src/webhooks/index.js";
 import { createPgliteTestDatabase } from "./pgliteTestDatabase.js";
 
 let postgres: Awaited<ReturnType<typeof createPgliteTestDatabase>>;
+
+const OTHER_RULE_ID = "22222222-2222-4222-8222-222222222222";
+const USER_RULE_ID = "11111111-1111-4111-8111-111111111111";
 
 beforeAll(async () => {
   postgres = await createPgliteTestDatabase();
@@ -38,7 +39,7 @@ afterAll(async () => {
 });
 
 describe("account deletion persistence", () => {
-  it("atomically erases user content and credentials while retaining an anonymized tombstone", async () => {
+  it("erases the user's synced content while retaining an anonymized tombstone", async () => {
     await seedIdentitySpine();
     const repository = createDrizzleUserDeletionRepository(postgres.db);
     const deletedAt = new Date("2026-07-31T20:00:00.000Z");
@@ -53,34 +54,25 @@ describe("account deletion persistence", () => {
       .select()
       .from(users)
       .where(eq(users.id, "user_123"));
-    const retainedUserContent = await postgres.db
-      .select()
-      .from(supportRequests)
-      .where(eq(supportRequests.userId, "other_user"));
-    const retainedWebhook = await postgres.db
-      .select()
-      .from(vendorWebhookEvents)
-      .where(eq(vendorWebhookEvents.userId, "user_123"));
 
     expect({
       first,
       retry,
       deletedUser,
-      deletedSupport: await countRows(supportRequests, supportRequests.userId),
-      deletedVotes: await countRows(
-        featureRequestVotes,
-        featureRequestVotes.userId,
-      ),
-      deletedConnections: await countRows(
-        vendorConnections,
-        vendorConnections.userId,
-      ),
-      deletedOAuthStates: await countRows(
-        vendorOAuthStates,
-        vendorOAuthStates.userId,
-      ),
-      retainedUserContent,
-      retainedWebhook,
+      remainingSupport: await postgres.db.select().from(supportRequests),
+      remainingRules: await postgres.db.select({ id: rules.id }).from(rules),
+      remainingRuleDays: await postgres.db
+        .select({ userId: ruleDays.userId })
+        .from(ruleDays),
+      remainingUsageDays: await postgres.db
+        .select({ userId: usageDays.userId })
+        .from(usageDays),
+      remainingEarnedUnlocks: await postgres.db
+        .select({ userId: earnedUnlocks.userId })
+        .from(earnedUnlocks),
+      remainingProfiles: await postgres.db
+        .select({ userId: profiles.userId })
+        .from(profiles),
       adaptyState: await postgres.db.select().from(adaptySubscriptionStates),
       adaptyWebhook: await postgres.db.select().from(adaptyWebhookEvents),
     }).toEqual({
@@ -88,13 +80,13 @@ describe("account deletion persistence", () => {
         deletedAt,
         adaptyErasedAt: null,
         posthogErasedAt: null,
-        clerkDeletedAt: null,
+        authDeletedAt: null,
       },
       retry: {
         deletedAt,
         adaptyErasedAt: null,
         posthogErasedAt: null,
-        clerkDeletedAt: null,
+        authDeletedAt: null,
       },
       deletedUser: {
         id: "user_123",
@@ -104,23 +96,14 @@ describe("account deletion persistence", () => {
         deletedAt,
         adaptyErasedAt: null,
         posthogErasedAt: null,
-        clerkDeletedAt: null,
+        authDeletedAt: null,
       },
-      deletedSupport: 0,
-      deletedVotes: 0,
-      deletedConnections: 0,
-      deletedOAuthStates: 0,
-      retainedUserContent: [
-        expect.objectContaining({ id: "other-support" }),
-      ],
-      retainedWebhook: [
-        expect.objectContaining({
-          id: "webhook-event",
-          externalUserId: "deleted",
-          rawPayload: "{}",
-          deliveryKey: "delivery-key",
-        }),
-      ],
+      remainingSupport: [expect.objectContaining({ id: "other-support" })],
+      remainingRules: [{ id: OTHER_RULE_ID }],
+      remainingRuleDays: [{ userId: "other_user" }],
+      remainingUsageDays: [{ userId: "other_user" }],
+      remainingEarnedUnlocks: [{ userId: "other_user" }],
+      remainingProfiles: [{ userId: "other_user" }],
       adaptyState: [],
       adaptyWebhook: [
         expect.objectContaining({
@@ -132,68 +115,36 @@ describe("account deletion persistence", () => {
     });
   });
 
-  it("acknowledges a late webhook without recreating deleted identity data", async () => {
+  it("checkpoints each processor independently so a retry never repeats one", async () => {
     await seedIdentitySpine();
-    await createDrizzleUserDeletionRepository(postgres.db).prepareDeletion(
-      "user_123",
-      new Date("2026-07-31T20:00:00.000Z"),
-    );
-    const service = createVendorWebhookService({
-      repository: createDrizzleVendorRepository(postgres.db),
-      analytics: {
-        vendorDisconnected() {},
-        vendorEarnRecorded() {},
+    const repository = createDrizzleUserDeletionRepository(postgres.db);
+    const deletedAt = new Date("2026-07-31T20:00:00.000Z");
+    const erasedAt = new Date("2026-07-31T20:00:05.000Z");
+
+    await repository.prepareDeletion("user_123", deletedAt);
+    await repository.markAdaptyErased("user_123", erasedAt);
+    await repository.markPosthogErased("user_123", erasedAt);
+
+    const beforeAuth = await repository.prepareDeletion("user_123", deletedAt);
+    await repository.markAuthDeleted("user_123", erasedAt);
+    const afterAuth = await repository.prepareDeletion("user_123", deletedAt);
+
+    expect({ beforeAuth, afterAuth }).toEqual({
+      beforeAuth: {
+        deletedAt,
+        adaptyErasedAt: erasedAt,
+        posthogErasedAt: erasedAt,
+        authDeletedAt: null,
       },
-    });
-
-    const result = await service.recordVerified(
-      "whoop",
-      '{"user_id":67890,"id":"550e8400-e29b-41d4-a716-446655440000","type":"workout.updated","trace_id":"late-after-delete"}',
-    );
-
-    expect({
-      result,
-      users: await postgres.db.select().from(users),
-      connections: await postgres.db.select().from(vendorConnections),
-      events: await postgres.db.select().from(vendorWebhookEvents),
-    }).toEqual({
-      result: { recorded: false, eventId: null },
-      users: expect.arrayContaining([
-        expect.objectContaining({ id: "user_123", email: null }),
-        expect.objectContaining({ id: "other_user" }),
-      ]),
-      connections: [],
-      events: [
-        expect.objectContaining({
-          id: "webhook-event",
-          externalUserId: "deleted",
-          rawPayload: "{}",
-          deliveryKey: "delivery-key",
-        }),
-      ],
+      afterAuth: {
+        deletedAt,
+        adaptyErasedAt: erasedAt,
+        posthogErasedAt: erasedAt,
+        authDeletedAt: erasedAt,
+      },
     });
   });
 });
-
-async function countRows(
-  table:
-    | typeof supportRequests
-    | typeof featureRequestVotes
-    | typeof vendorConnections
-    | typeof vendorOAuthStates,
-  userIdColumn:
-    | typeof supportRequests.userId
-    | typeof featureRequestVotes.userId
-    | typeof vendorConnections.userId
-    | typeof vendorOAuthStates.userId,
-): Promise<number> {
-  return (
-    await postgres.db
-      .select()
-      .from(table as typeof supportRequests)
-      .where(eq(userIdColumn, "user_123"))
-  ).length;
-}
 
 async function seedIdentitySpine(): Promise<void> {
   const createdAt = new Date("2026-07-30T20:00:00.000Z");
@@ -217,52 +168,81 @@ async function seedIdentitySpine(): Promise<void> {
       message: "Keep another user's content.",
     },
   ]);
-  await postgres.db.insert(featureRequests).values([
+  await postgres.db.insert(rules).values([
     {
-      id: "user-feature",
-      supportRequestId: "user-support",
-      title: "Private request",
-      message: "Delete this only copy.",
+      id: USER_RULE_ID,
+      userId: "user_123",
+      activity: "walking",
+      mode: { kind: "target", activity: "walking", metric: "steps", goal: 5_000, place: "outside" },
+      schedule: { days: [1, 2, 3, 4, 5], window: { kind: "allDay" } },
+      enabled: true,
+      createdAt,
+      updatedAt: createdAt,
     },
     {
-      id: "other-feature",
-      supportRequestId: "other-support",
-      title: "Retained request",
-      message: "Keep another user's content.",
+      id: OTHER_RULE_ID,
+      userId: "other_user",
+      activity: "gym",
+      mode: { kind: "event", activity: "gym", trigger: "arrival" },
+      schedule: { days: [0, 6], window: { kind: "allDay" } },
+      enabled: true,
+      createdAt,
+      updatedAt: createdAt,
     },
   ]);
-  await postgres.db.insert(featureRequestVotes).values({
-    id: "user-vote",
-    featureRequestId: "other-feature",
-    userId: "user_123",
-  });
-  await postgres.db.insert(vendorConnections).values({
-    id: "connection",
-    userId: "user_123",
-    vendor: "whoop",
-    externalUserId: "external-user",
-    accessTokenCiphertext: "encrypted-secret",
-  });
-  await postgres.db.insert(vendorOAuthStates).values({
-    stateHash: "state-hash",
-    userId: "user_123",
-    vendor: "whoop",
-    expiresAt: new Date("2026-08-01T20:00:00.000Z"),
-  });
-  await postgres.db.insert(vendorWebhookEvents).values({
-    id: "webhook-event",
-    userId: "user_123",
-    vendor: "whoop",
-    externalUserId: "external-user",
-    deliveryKey: "delivery-key",
-    eventType: "workout.updated",
-    rawPayload: "{\"user_id\":\"external-user\"}",
-  });
+  await postgres.db.insert(ruleDays).values([
+    {
+      userId: "user_123",
+      ruleId: USER_RULE_ID,
+      day: "2026-07-30",
+      progress: "5200",
+      met: true,
+      metAt: createdAt,
+      updatedAt: createdAt,
+    },
+    {
+      userId: "other_user",
+      ruleId: OTHER_RULE_ID,
+      day: "2026-07-30",
+      progress: "1",
+      met: true,
+      metAt: createdAt,
+      updatedAt: createdAt,
+    },
+  ]);
+  await postgres.db.insert(usageDays).values([
+    { userId: "user_123", day: "2026-07-30", lockedAppMinutes: 42, updatedAt: createdAt },
+    { userId: "other_user", day: "2026-07-30", lockedAppMinutes: 10, updatedAt: createdAt },
+  ]);
+  await postgres.db.insert(earnedUnlocks).values([
+    {
+      userId: "user_123",
+      day: "2026-07-30",
+      ruleId: USER_RULE_ID,
+      ruleName: "5,000 steps",
+      metAt: createdAt,
+      windowEnd: createdAt,
+      updatedAt: createdAt,
+    },
+    {
+      userId: "other_user",
+      day: "2026-07-30",
+      ruleId: OTHER_RULE_ID,
+      ruleName: "Arrive at the gym",
+      metAt: createdAt,
+      windowEnd: createdAt,
+      updatedAt: createdAt,
+    },
+  ]);
+  await postgres.db.insert(profiles).values([
+    { userId: "user_123", name: "Person", estimatedDailyMinutes: 180, units: "mi", updatedAt: createdAt },
+    { userId: "other_user", name: "Other", estimatedDailyMinutes: 90, units: "km", updatedAt: createdAt },
+  ]);
   await postgres.db.insert(adaptySubscriptionStates).values({
     userId: "user_123",
     hasAccess: true,
     eventType: "subscription_started",
-    eventOccurredAt: new Date("2026-07-30T20:00:00.000Z"),
+    eventOccurredAt: createdAt,
   });
   await postgres.db.insert(adaptyWebhookEvents).values({
     deliveryKey: "adapty-delivery-key",

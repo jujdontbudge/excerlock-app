@@ -9,7 +9,10 @@ describe("parseEnv", () => {
       port: 3000,
       databaseUrl: undefined,
       sentryDsn: undefined,
-      clerkSecretKey: undefined,
+      supabaseUrl: undefined,
+      supabaseJwtJwksUrl: undefined,
+      supabaseJwtSecret: undefined,
+      supabaseServiceRoleKey: undefined,
       adaptySecretKey: undefined,
       adaptyWebhookAuth: undefined,
       posthogApiKey: undefined,
@@ -17,20 +20,6 @@ describe("parseEnv", () => {
       posthogPersonalApiKey: undefined,
       posthogProjectId: undefined,
       posthogApiHost: "https://us.posthog.com",
-      vendorOAuthCallbackBaseUrl: undefined,
-      vendorTokenEncryptionKey: undefined,
-      stravaClientId: undefined,
-      stravaClientSecret: undefined,
-      stravaWebhookVerifyToken: undefined,
-      stravaWebhookSubscriptionId: undefined,
-      ouraClientId: undefined,
-      ouraClientSecret: undefined,
-      ouraWebhookVerifyToken: undefined,
-      whoopClientId: undefined,
-      whoopClientSecret: undefined,
-      polarClientId: undefined,
-      polarClientSecret: undefined,
-      polarWebhookSignatureSecret: undefined,
     });
   });
 
@@ -42,7 +31,9 @@ describe("parseEnv", () => {
         PORT: "4312",
         DATABASE_URL: " postgres://db.example/excerlock ",
         SENTRY_DSN: "   ",
-        CLERK_SECRET_KEY: " sk_test_example ",
+        SUPABASE_URL: " https://project.supabase.co ",
+        SUPABASE_JWT_JWKS_URL: "   ",
+        SUPABASE_SERVICE_ROLE_KEY: " service-role ",
         ADAPTY_SECRET_KEY: " adapty-secret ",
         ADAPTY_WEBHOOK_SECRET: " webhook-auth ",
         POSTHOG_API_KEY: "",
@@ -57,7 +48,10 @@ describe("parseEnv", () => {
       port: 4312,
       databaseUrl: "postgres://db.example/excerlock",
       sentryDsn: undefined,
-      clerkSecretKey: "sk_test_example",
+      supabaseUrl: "https://project.supabase.co",
+      supabaseJwtJwksUrl: undefined,
+      supabaseJwtSecret: undefined,
+      supabaseServiceRoleKey: "service-role",
       adaptySecretKey: "adapty-secret",
       adaptyWebhookAuth: "webhook-auth",
       posthogApiKey: undefined,
@@ -65,21 +59,21 @@ describe("parseEnv", () => {
       posthogPersonalApiKey: "posthog-personal-key",
       posthogProjectId: "12345",
       posthogApiHost: "https://eu.posthog.com",
-      vendorOAuthCallbackBaseUrl: undefined,
-      vendorTokenEncryptionKey: undefined,
-      stravaClientId: undefined,
-      stravaClientSecret: undefined,
-      stravaWebhookVerifyToken: undefined,
-      stravaWebhookSubscriptionId: undefined,
-      ouraClientId: undefined,
-      ouraClientSecret: undefined,
-      ouraWebhookVerifyToken: undefined,
-      whoopClientId: undefined,
-      whoopClientSecret: undefined,
-      polarClientId: undefined,
-      polarClientSecret: undefined,
-      polarWebhookSignatureSecret: undefined,
     });
+  });
+
+  it("has no Clerk or vendor keys left to parse", () => {
+    const parsed = parseEnv({
+      CLERK_SECRET_KEY: "sk_test_example",
+      STRAVA_CLIENT_ID: "1234",
+      VENDOR_TOKEN_ENCRYPTION_KEY: "key",
+    }) as Record<string, unknown>;
+
+    expect(
+      Object.keys(parsed).filter((key) =>
+        /clerk|strava|oura|whoop|polar|vendor/i.test(key),
+      ),
+    ).toEqual([]);
   });
 
   it.each(["0", "65536", "not-a-number"])(

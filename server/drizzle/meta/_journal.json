@@ -43,6 +43,13 @@
       "when": 1785858116916,
       "tag": "0005_calm_tomorrow_man",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788833924176,
+      "tag": "0006_supabase_sync",
+      "breakpoints": true
     }
   ]
 }

@@ -19,7 +19,8 @@ export function createConfiguredUserDeletionService(
 ): UserDeletionService {
   if (
     !environment.databaseUrl ||
-    !environment.clerkSecretKey ||
+    !environment.supabaseUrl ||
+    !environment.supabaseServiceRoleKey ||
     !environment.adaptySecretKey ||
     !environment.posthogPersonalApiKey ||
     !environment.posthogProjectId
@@ -30,7 +31,8 @@ export function createConfiguredUserDeletionService(
   return createUserDeletionService({
     repository: createDrizzleUserDeletionRepository(),
     downstream: createIdentityErasureGateway({
-      clerkSecretKey: environment.clerkSecretKey,
+      supabaseUrl: environment.supabaseUrl,
+      supabaseServiceRoleKey: environment.supabaseServiceRoleKey,
       adaptySecretKey: environment.adaptySecretKey,
       posthogPersonalApiKey: environment.posthogPersonalApiKey,
       posthogProjectId: environment.posthogProjectId,

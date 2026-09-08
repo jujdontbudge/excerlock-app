@@ -5,7 +5,8 @@ describe("identity erasure HTTP gateway", () => {
   it("deletes the Adapty profile by the shared customer user id", async () => {
     const fetch = vi.fn(async () => new Response(null, { status: 204 }));
     const gateway = createIdentityErasureGateway({
-      clerkSecretKey: "clerk-secret",
+      supabaseUrl: "https://hqgqhefftjxwdhqeushr.supabase.co",
+      supabaseServiceRoleKey: "service-role-key",
       adaptySecretKey: "adapty-secret",
       posthogPersonalApiKey: "posthog-secret",
       posthogProjectId: "project-id",
@@ -41,7 +42,8 @@ describe("identity erasure HTTP gateway", () => {
       ),
     );
     const gateway = createIdentityErasureGateway({
-      clerkSecretKey: "clerk-secret",
+      supabaseUrl: "https://hqgqhefftjxwdhqeushr.supabase.co",
+      supabaseServiceRoleKey: "service-role-key",
       adaptySecretKey: "adapty-secret",
       posthogPersonalApiKey: "posthog-secret",
       posthogProjectId: "project-id",
@@ -83,7 +85,8 @@ describe("identity erasure HTTP gateway", () => {
       ),
     );
     const gateway = createIdentityErasureGateway({
-      clerkSecretKey: "clerk-secret",
+      supabaseUrl: "https://hqgqhefftjxwdhqeushr.supabase.co",
+      supabaseServiceRoleKey: "service-role-key",
       adaptySecretKey: "adapty-secret",
       posthogPersonalApiKey: "posthog-secret",
       posthogProjectId: "project-id",
@@ -106,10 +109,11 @@ describe("identity erasure HTTP gateway", () => {
     );
   });
 
-  it("treats an already absent Clerk user as a successful retry", async () => {
+  it("treats an already absent Supabase user as a successful retry", async () => {
     const fetch = vi.fn(async () => new Response(null, { status: 404 }));
     const gateway = createIdentityErasureGateway({
-      clerkSecretKey: "clerk-secret",
+      supabaseUrl: "https://hqgqhefftjxwdhqeushr.supabase.co",
+      supabaseServiceRoleKey: "service-role-key",
       adaptySecretKey: "adapty-secret",
       posthogPersonalApiKey: "posthog-secret",
       posthogProjectId: "project-id",
@@ -117,14 +121,37 @@ describe("identity erasure HTTP gateway", () => {
       fetch,
     });
 
-    await gateway.deleteClerkUser("user_123");
+    await gateway.deleteAuthUser("user_123");
 
     expect(fetch).toHaveBeenCalledWith(
-      "https://api.clerk.com/v1/users/user_123",
+      "https://hqgqhefftjxwdhqeushr.supabase.co/auth/v1/admin/users/user_123",
       {
         method: "DELETE",
-        headers: { authorization: "Bearer clerk-secret" },
+        headers: {
+          apikey: "service-role-key",
+          authorization: "Bearer service-role-key",
+        },
       },
+    );
+  });
+
+  it("reports a refused Supabase deletion rather than checkpointing it", async () => {
+    const fetch = vi.fn(async () => new Response(null, { status: 500 }));
+    const gateway = createIdentityErasureGateway({
+      supabaseUrl: "https://hqgqhefftjxwdhqeushr.supabase.co/",
+      supabaseServiceRoleKey: "service-role-key",
+      adaptySecretKey: "adapty-secret",
+      posthogPersonalApiKey: "posthog-secret",
+      posthogProjectId: "project-id",
+      posthogApiHost: "https://us.posthog.com",
+      fetch,
+    });
+
+    await expect(gateway.deleteAuthUser("user_123")).rejects.toThrow(
+      "Supabase identity erasure did not succeed",
+    );
+    expect(fetch.mock.calls[0]?.[0]).toBe(
+      "https://hqgqhefftjxwdhqeushr.supabase.co/auth/v1/admin/users/user_123",
     );
   });
 });
