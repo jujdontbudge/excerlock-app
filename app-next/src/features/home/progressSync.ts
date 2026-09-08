@@ -3,10 +3,11 @@ import { rulesStore } from '../../state/rulesStore';
 import { ruleDaysStore } from '../../state/ruleDaysStore';
 import { permissionsStore } from '../../state/permissionsStore';
 import { dayKey, windowInstances, currentInstances } from '../../domain/schedule';
+import { localInstant } from '../../domain/calendar';
 import { applyProgress } from '../../domain/progress';
 import { Workout } from '../../ports/models';
 /** Synchronizes port observations into persisted per-rule facts; no UI owns counters. */
-export function startProgressSync(runtime: Runtime) {
+export function createProgressSync(runtime: Runtime) {
   let active = true,
     steps = 0,
     workouts: Workout[] = [],
@@ -56,15 +57,20 @@ export function startProgressSync(runtime: Runtime) {
           days: [...old.filter((d) => !changes.some((n) => n.ruleId === d.ruleId && n.day === d.day)), ...changes],
         });
   };
-  const refresh = () => {
+  const refresh = async () => {
     const id = ++generation, key = signalKey();
-    void Promise.all([runtime.health.workoutsToday('running'), runtime.health.workoutsToday('biking')]).then((rows) => {
-      if (active && id === generation && key === signalKey()) {
+    const start = localInstant(dayKey(runtime.clock.now(), runtime.clock.timezone()), 0, runtime.clock.timezone());
+    await Promise.all([
+      runtime.steps.stepsSince(start).then((value) => {
+        if (active && id === generation && key === signalKey()) steps = value;
+      }),
+      Promise.all([runtime.health.workoutsToday('running'), runtime.health.workoutsToday('biking')]).then((rows) => {
+        if (!active || id !== generation || key !== signalKey()) return;
         workoutsKey = key;
         workouts = rows.flat();
-        update();
-      }
-    });
+      }),
+    ]);
+    if (active && id === generation && key === signalKey()) update();
   };
   const stops = [
     runtime.steps.subscribe((value) => {
@@ -79,12 +85,17 @@ export function startProgressSync(runtime: Runtime) {
       update();
       refresh();
     }),
-    runtime.dev.subscribe(refresh),
-    runtime.clock.subscribe(() => { if (workoutsKey !== signalKey()) refresh(); }),
+    runtime.dev.subscribe(() => void refresh()),
+    runtime.clock.subscribe(() => { if (workoutsKey !== signalKey()) void refresh(); }),
   ];
-  refresh();
-  return () => {
+  void refresh();
+  const stop = () => {
     active = false;
     stops.forEach((stop) => stop());
   };
+  return { refresh, stop };
+}
+
+export function startProgressSync(runtime: Runtime) {
+  return createProgressSync(runtime).stop;
 }
