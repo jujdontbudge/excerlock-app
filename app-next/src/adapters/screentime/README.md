@@ -73,11 +73,23 @@ drift. It also checks every subtitle the domain can publish against the filter
 `ShieldConfiguration` applies: a subtitle naming a balance, a countdown or a streak is discarded
 there and replaced by the plist, silently.
 
+## Two answers that could have gone the other way
+
+**A selection this app never issued is empty.** The OS can still hold one after app storage is
+lost, and `selectionMetadata` would report its counts, but the module refuses to act on a handle it
+did not issue. Showing apps as locked while every apply fails is worse than asking for them again,
+so `describeSelection` returns nothing and the user re-picks.
+
+**A warning callback is not a threshold.** `getEvents` reports the will-reach warnings alongside
+the thresholds, under the same event name, so measured usage counts only `eventDidReachThreshold`.
+Counting a warning would credit minutes nobody spent.
+
 ## Boundaries
 
 Nothing here imports a vendor package. `presentAppPicker` and `requestAuthorization` report their
 results through `onSelection` and `onAuthorization` because screens read the selection and the
-permission from their stores; `storeBindings.ts` is that half of the composition.
+permission from their stores; `storeBindings.ts` is that half of the composition, and
+`runtime/NativeScreenTime.ts` joins it to the native half on a real device.
 
 ## What only a device can answer (P2-T11)
 

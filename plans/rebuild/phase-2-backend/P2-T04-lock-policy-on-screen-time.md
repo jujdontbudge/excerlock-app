@@ -74,6 +74,11 @@ Four changes were made in the engine to complete the seam P2-T03 left open:
 - The scheduler no longer writes `lock-window-contexts`; that key carries the domain's copy now (B36), so
   the shield publisher owns it and the guardrail follows it there.
 
+`createRuntime` composes the adapter on a real device, the same way and in the same place it
+composes native gait, so `createNativeScreenTimeModule` moves from the pending list in
+`guardrails/phase3-production-callers.test.ts` to the required one. The runtime stays the fake one
+everywhere else, so this does not anticipate the composition root P2-T17 owns.
+
 `ShieldContent.plist` now carries the Phase 1 copy. `__tests__/shieldPlist.test.ts` derives its
 expectation from `domain/shieldContent` rather than repeating the strings, and checks every subtitle
 the domain can publish against the filter `ShieldConfiguration` applies. The guardrail keeps the
