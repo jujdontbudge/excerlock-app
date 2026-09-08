@@ -118,17 +118,16 @@ describe('day facts', () => {
     expect(result.clocks[rowKey.ruleDay(mine)]).toBe('2026-09-05T13:00:00Z');
   });
 
-  test('earned unlocks and sealed history merge by the same rule', () => {
+  test('earned unlocks merge by the same rule', () => {
     const unlock = { day: '2026-09-05', ruleId: rule.id, ruleName: 'Walk', metAt: '2026-09-05T10:00:00Z', windowEnd: '2026-09-05T21:00:00Z' };
-    const sealed = { ...historyDay({ met: true }), sealedAt: '2026-09-06T00:00:00Z' };
-    const result = mergeSnapshot(
-      local(),
-      remote({ earnedUnlocks: [{ ...unlock, updatedAt: '2026-09-05T10:00:00Z' }], history: [{ ...sealed, updatedAt: '2026-09-06T00:00:00Z' }] }),
-      today,
-    );
+    const result = mergeSnapshot(local(), remote({ earnedUnlocks: [{ ...unlock, updatedAt: '2026-09-05T10:00:00Z' }] }), today);
     expect(result.earnedUnlocks).toEqual([unlock]);
-    expect(result.history).toEqual([sealed]);
-    expect(result.summary).toMatchObject({ earnedUnlocks: 1, history: 1 });
+    expect(result.summary).toMatchObject({ earnedUnlocks: 1 });
+  });
+
+  test('sealed history never comes from the server; local rows pass through untouched', () => {
+    const sealed = { ...historyDay({ met: true }), sealedAt: '2026-09-06T00:00:00Z' };
+    expect(mergeSnapshot(local({ history: [sealed] }), remote(), today).history).toEqual([sealed]);
   });
 });
 
@@ -139,6 +138,7 @@ describe('usage days', () => {
     const result = mergeSnapshot(local({ history: [historyDay()] }), remote({ usageDays: usage }), today);
     expect(result.history[0].usageMinutes).toBe(42);
     expect(result.clocks[rowKey.usageDay('2026-09-05')]).toBe('2026-09-06T00:00:00Z');
+    expect(result.summary.usageDays).toBe(1);
   });
 
   test('never overwrite a measured day and never invent a day the device does not have', () => {
@@ -186,8 +186,8 @@ describe('profile', () => {
 });
 
 test('restoredAnything reports whether the summary changed anything on the device', () => {
-  const nothing = { rules: 0, removedRules: 0, ruleDays: 0, earnedUnlocks: 0, history: 0, profile: false };
+  const nothing = { rules: 0, removedRules: 0, ruleDays: 0, earnedUnlocks: 0, usageDays: 0, profile: false };
   expect(restoredAnything(nothing)).toBe(false);
   expect(restoredAnything({ ...nothing, profile: true })).toBe(true);
-  expect(restoredAnything({ ...nothing, history: 2 })).toBe(true);
+  expect(restoredAnything({ ...nothing, usageDays: 2 })).toBe(true);
 });

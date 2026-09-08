@@ -64,13 +64,13 @@ test('a changed day fact is queued once per key with the observation instant as 
   expect(hasDayFacts(initialSyncState())).toBe(false);
 });
 
-test('only sealed history rows and measured usage days are queued', () => {
-  const unsealed = historyDay();
-  const sealed = historyDay({ day: '2026-09-05', sealedAt: t1, usageMinutes: 40 });
-  const state = trackChanges(initialSyncState(), facts(), facts({ history: [unsealed, sealed] }), t1);
-  expect(Object.keys(state.history)).toEqual([rowKey.history(sealed)]);
+test('history rows stay local; only their measured usage minutes are queued as usage days', () => {
+  const unmeasured = historyDay();
+  const measured = historyDay({ day: '2026-09-05', sealedAt: t1, usageMinutes: 40 });
+  const state = trackChanges(initialSyncState(), facts(), facts({ history: [unmeasured, measured] }), t1);
   expect(Object.values(state.usageDays)).toEqual([{ day: '2026-09-05', lockedAppMinutes: 40, updatedAt: t1 }]);
-  expect(usageDaysOf([historyDay({ usageMinutes: 12 }), unsealed])).toEqual([{ day: '2026-09-06', lockedAppMinutes: 12 }]);
+  expect(state.clocks).toEqual({ [rowKey.usageDay('2026-09-05')]: t1 });
+  expect(usageDaysOf([historyDay({ usageMinutes: 12 }), unmeasured])).toEqual([{ day: '2026-09-06', lockedAppMinutes: 12 }]);
 });
 
 test('a profile edit marks the profile dirty with its change instant', () => {

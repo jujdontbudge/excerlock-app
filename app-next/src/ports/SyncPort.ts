@@ -1,5 +1,4 @@
 import { DayKey, EarnedUnlock, Profile, Rule, RuleDay } from '../domain/types';
-import { HistoryDay } from './models';
 
 /** A row plus the instant it last changed; the server keeps the newest `updatedAt` per row (D5). */
 export type Stamped<T> = T & { updatedAt: string };
@@ -7,19 +6,19 @@ export type Stamped<T> = T & { updatedAt: string };
 export type RuleTombstone = { id: string; deletedAt: string };
 /** A deletion this device still has to report; the rule travels whole because the server may never have seen it. */
 export type DeletedRule = { rule: Rule; deletedAt: string };
-/** A history row P2-T15 has sealed: immutable once written, so an `updatedAt` merge is safe. */
-export type SealedHistoryDay = HistoryDay & { sealedAt: string };
 /** Minutes spent in the locked apps on one local day (B15). One total; never an app identity. */
 export type UsageDay = { day: DayKey; lockedAppMinutes: number };
 
-/** Everything the server holds for the user, as `GET /v1/sync` returns it. */
+/**
+ * Everything the server holds for the user, as `GET /v1/sync` returns it. Sealed history days have no
+ * server table and stay on the device; only their locked-app minutes travel, as usage days.
+ */
 export type SyncSnapshot = {
   rules: Rule[];
   tombstones: RuleTombstone[];
   ruleDays: Stamped<RuleDay>[];
   usageDays: Stamped<UsageDay>[];
   earnedUnlocks: Stamped<EarnedUnlock>[];
-  history: Stamped<SealedHistoryDay>[];
   profile: Stamped<Profile> | null;
 };
 
@@ -29,7 +28,6 @@ export const emptySnapshot = (): SyncSnapshot => ({
   ruleDays: [],
   usageDays: [],
   earnedUnlocks: [],
-  history: [],
   profile: null,
 });
 
@@ -42,7 +40,6 @@ export interface SyncPort {
   pushRuleDays(rows: Stamped<RuleDay>[]): Promise<void>;
   pushUsageDays(rows: Stamped<UsageDay>[]): Promise<void>;
   pushEarnedUnlocks(rows: Stamped<EarnedUnlock>[]): Promise<void>;
-  pushHistory(rows: Stamped<SealedHistoryDay>[]): Promise<void>;
   pushProfile(profile: Stamped<Profile>): Promise<void>;
   pull(): Promise<SyncSnapshot>;
 }

@@ -136,11 +136,11 @@ export function startSync(runtime: SyncRuntime, options: SyncHostOptions = {}): 
     }
   };
 
-  const restore = async () => {
+  /** Pull and merge without tracking the merged rows as local edits. */
+  const pullAndMerge = async () => {
     applying = true;
-    let outcome;
     try {
-      outcome = await restoreFromServer({
+      return await restoreFromServer({
         sync: runtime.sync,
         today: dayKey(now(), runtime.clock.timezone()),
         gymPlaces: runtime.gym.listPlaces(),
@@ -150,21 +150,30 @@ export function startSync(runtime: SyncRuntime, options: SyncHostOptions = {}): 
       applying = false;
       previous = facts();
     }
+  };
+
+  const restore = async () => {
+    const outcome = await pullAndMerge();
     syncLog.getState().restored({ at: now(), ...outcome });
     const { summary } = outcome;
-    log('info', `restored ${summary.rules} rules, ${summary.ruleDays} rule days, ${summary.history} history days`);
-    patch(markAllDirty(data(), previous, now()));
+    log('info', `restored ${summary.rules} rules, ${summary.ruleDays} rule days, ${summary.usageDays} usage days`);
+    patch(markAllDirty(data(), previous!, now()));
   };
 
   const pushAll = async (force: boolean) => {
     let state = data();
+    let pulledThisFlush = false;
     if (!state.restored) {
       await restore();
+      pulledThisFlush = true;
       state = data();
     }
     const rulesStamp = state.rulesChangedAt;
     if (state.rulesDirty) {
-      const deleted = state.deleted;
+      // PUT /sync/rules is a full replacement: merge the server's set in first so this device can never
+      // tombstone a rule another device created since the last pull.
+      if (!pulledThisFlush) await pullAndMerge();
+      const deleted = data().deleted;
       await step(
         'rules',
         () => runtime.sync.pushRules(rulesStore.getState().data.rules, deleted),
@@ -188,7 +197,7 @@ export function startSync(runtime: SyncRuntime, options: SyncHostOptions = {}): 
         () => patch({ profileDirty: false }),
       );
     if (!dayFactsDue(state, force)) return;
-    const kinds = ['ruleDays', 'usageDays', 'earnedUnlocks', 'history'] as const;
+    const kinds = ['ruleDays', 'usageDays', 'earnedUnlocks'] as const;
     for (const kind of kinds) {
       const rows = Object.values(state[kind]);
       if (!rows.length) continue;
@@ -205,8 +214,6 @@ export function startSync(runtime: SyncRuntime, options: SyncHostOptions = {}): 
               return runtime.sync.pushUsageDays(Object.values(state.usageDays));
             case 'earnedUnlocks':
               return runtime.sync.pushEarnedUnlocks(Object.values(state.earnedUnlocks));
-            case 'history':
-              return runtime.sync.pushHistory(Object.values(state.history));
           }
         },
         () => patch({ [kind]: remaining() } as Partial<SyncState>),

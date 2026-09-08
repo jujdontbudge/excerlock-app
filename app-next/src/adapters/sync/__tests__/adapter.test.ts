@@ -39,18 +39,32 @@ test('every call carries the bearer token and JSON headers against the base URL'
     headers: { authorization: 'Bearer jwt', 'content-type': 'application/json', accept: 'application/json' },
     body: expect.any(String),
   });
-  expect(JSON.parse(fetch.mock.calls[0][1].body as string)).toEqual({ profile: expect.objectContaining({ name: 'Alex', updated_at: stamp }) });
+  expect(JSON.parse(fetch.mock.calls[0][1].body as string)).toEqual({ profile: expect.objectContaining({ name: 'Alex', updatedAt: stamp }) });
 });
 
-test('rules go as one full replacement with tombstones appended', async () => {
-  const fetch = fetchMock(async () => respond(200));
-  await createSyncAdapter(client(fetch)).pushRules([rule], [{ rule: { ...rule, id: 'gone' }, deletedAt: stamp }]);
-  const body = JSON.parse(fetch.mock.calls[0][1].body as string);
-  expect(fetch.mock.calls[0][0]).toBe(`https://api.test${paths.rules}`);
-  expect(body.rules.map((row: { id: string; deleted_at: string | null }) => [row.id, row.deleted_at])).toEqual([
+test('rules go as one full replacement with tombstones appended, and only after a pull', async () => {
+  const fetch = fetchMock(async (_input, init) => (init.method === 'GET' ? respond(200, {}) : respond(200)));
+  const adapter = createSyncAdapter(client(fetch));
+  const early = await adapter.pushRules([], []).catch((cause: unknown) => cause);
+  expect(early).toMatchObject({ kind: 'ordering', retryable: true });
+  expect(fetch).not.toHaveBeenCalled();
+  await adapter.pull();
+  await adapter.pushRules([rule], [{ rule: { ...rule, id: 'gone' }, deletedAt: stamp }]);
+  const [url, init] = fetch.mock.calls[1];
+  expect(url).toBe(`https://api.test${paths.rules}`);
+  const body = JSON.parse(init.body as string);
+  expect(Object.keys(body)).toEqual(['rules']);
+  expect(body.rules.map((row: { id: string; deletedAt: string | null }) => [row.id, row.deletedAt])).toEqual([
     ['walk', null],
     ['gone', stamp],
   ]);
+});
+
+test('a failed pull does not unlock the rules push', async () => {
+  const fetch = fetchMock(async () => respond(503));
+  const adapter = createSyncAdapter(client(fetch));
+  await expect(adapter.pull()).rejects.toMatchObject({ kind: 'server' });
+  await expect(adapter.pushRules([], [])).rejects.toMatchObject({ kind: 'ordering' });
 });
 
 test('a thousand rule days become three sequential PUTs of at most 400 rows', async () => {
@@ -64,7 +78,7 @@ test('a thousand rule days become three sequential PUTs of at most 400 rows', as
     updatedAt: stamp,
   }));
   await createSyncAdapter(client(fetch)).pushRuleDays(rows);
-  const sizes = fetch.mock.calls.map(([url, init]) => [url, JSON.parse(init.body as string).rows.length]);
+  const sizes = fetch.mock.calls.map(([url, init]) => [url, JSON.parse(init.body as string).ruleDays.length]);
   expect(sizes).toEqual([
     [`https://api.test${paths.ruleDays}`, 400],
     [`https://api.test${paths.ruleDays}`, 400],
@@ -82,6 +96,7 @@ test('a failing batch stops the sequence so the remainder is retried later', asy
 test('status codes map to the retry classes the host acts on', async () => {
   for (const [status, kind] of [
     [401, 'auth'],
+    [410, 'auth'],
     [500, 'server'],
     [429, 'server'],
     [408, 'server'],
@@ -112,11 +127,10 @@ test('a missing session and a thrown fetch are auth and network failures', async
 test('pull decodes the server snapshot', async () => {
   const fetch = fetchMock(async () =>
     respond(200, {
-      rules: [{ id: 'walk', activity: 'walking', mode: rule.mode, schedule: rule.schedule, enabled: true, created_at: rule.createdAt, updated_at: rule.updatedAt, deleted_at: null }],
-      rule_days: [{ rule_id: 'walk', day: '2026-09-06', progress: 5000, met: true, met_at: stamp, unit: 'steps', updated_at: stamp }],
-      usage_days: [{ day: '2026-09-06', locked_app_minutes: 30, updated_at: stamp }],
-      earned_unlocks: [],
-      history: [],
+      rules: [{ id: 'walk', activity: 'walking', mode: rule.mode, schedule: rule.schedule, enabled: true, createdAt: rule.createdAt, updatedAt: rule.updatedAt, deletedAt: null }],
+      ruleDays: [{ ruleId: 'walk', day: '2026-09-06', progress: 5000, met: true, metAt: stamp, updatedAt: stamp }],
+      usageDays: [{ day: '2026-09-06', lockedAppMinutes: 30, updatedAt: stamp }],
+      earnedUnlocks: [],
       profile: null,
     }),
   );
@@ -124,6 +138,6 @@ test('pull decodes the server snapshot', async () => {
   expect(fetch.mock.calls[0][0]).toBe('https://api.test/v1/sync');
   expect(fetch.mock.calls[0][1]).toMatchObject({ method: 'GET' });
   expect(snapshot.rules).toEqual([rule]);
-  expect(snapshot.ruleDays).toEqual([{ ruleId: 'walk', day: '2026-09-06', progress: 5000, met: true, metAt: stamp, unit: 'steps', updatedAt: stamp }]);
+  expect(snapshot.ruleDays).toEqual([{ ruleId: 'walk', day: '2026-09-06', progress: 5000, met: true, metAt: stamp, updatedAt: stamp }]);
   expect(snapshot.usageDays).toEqual([{ day: '2026-09-06', lockedAppMinutes: 30, updatedAt: stamp }]);
 });

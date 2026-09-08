@@ -1,13 +1,14 @@
 import { EarnedUnlock, RuleDay } from '../../domain/types';
 import { RowClocks } from '../../domain/syncMerge';
 import { validateRule } from '../../domain/validateRule';
-import { DeletedRule, RuleTombstone, SealedHistoryDay, Stamped, UsageDay } from '../../ports/SyncPort';
+import { DeletedRule, RuleTombstone, Stamped, UsageDay } from '../../ports/SyncPort';
 import { defineStore } from '../../state/createPersistedStore';
 import * as v from '../../state/validation';
 
 /**
  * The persisted outbox (`excerlock-next.sync.outbox.v1`): what this device still owes the server, keyed per
  * row so repeated edits coalesce, plus the per-row change clocks the restore merge compares against.
+ * Sealed history days stay on the device; only their usage minutes are queued.
  * Rows here duplicate store data on purpose; the outbox is dropped, never migrated, when it cannot be read.
  */
 export type SyncState = {
@@ -25,7 +26,6 @@ export type SyncState = {
   ruleDays: Record<string, Stamped<RuleDay>>;
   usageDays: Record<string, Stamped<UsageDay>>;
   earnedUnlocks: Record<string, Stamped<EarnedUnlock>>;
-  history: Record<string, Stamped<SealedHistoryDay>>;
   clocks: RowClocks;
   lastDayFactsPushAt: string | null;
 };
@@ -42,7 +42,6 @@ export const initialSyncState = (): SyncState => ({
   ruleDays: {},
   usageDays: {},
   earnedUnlocks: {},
-  history: {},
   clocks: {},
   lastDayFactsPushAt: null,
 });
@@ -62,14 +61,6 @@ const recordOf =
 const stamped = (check: (value: unknown) => boolean) => (value: unknown) =>
   check(value) && v.object(value) && v.iso(value.updatedAt);
 const day = (value: unknown) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
-const historyDay = v.shape({
-  day,
-  usageMinutes: v.nullable(v.number()),
-  activity: v.shape({ walking: v.number(), gym: v.number(), running: v.number(), biking: v.number() }),
-  met: v.bool,
-  scheduled: v.bool,
-  sealedAt: v.iso,
-});
 const rule = (value: unknown) => v.object(value) && validateRule(value).length === 0;
 
 export const syncStore = defineStore<SyncState>({
@@ -89,7 +80,6 @@ export const syncStore = defineStore<SyncState>({
     ruleDays: recordOf(stamped(v.ruleDay)),
     usageDays: recordOf(stamped(v.shape({ day, lockedAppMinutes: v.number() }))),
     earnedUnlocks: recordOf(stamped(v.earnedUnlock)),
-    history: recordOf(stamped(historyDay)),
     clocks: recordOf(v.iso),
     lastDayFactsPushAt: v.nullable(v.iso),
   },

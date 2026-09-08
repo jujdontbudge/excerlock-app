@@ -23,7 +23,6 @@ function mockSync(snapshot: SyncSnapshot = emptySnapshot()): jest.Mocked<SyncPor
     pushRuleDays: jest.fn().mockResolvedValue(undefined),
     pushUsageDays: jest.fn().mockResolvedValue(undefined),
     pushEarnedUnlocks: jest.fn().mockResolvedValue(undefined),
-    pushHistory: jest.fn().mockResolvedValue(undefined),
     pushProfile: jest.fn().mockResolvedValue(undefined),
     pull: jest.fn().mockResolvedValueOnce(emptySnapshot()).mockResolvedValue(snapshot),
   };
@@ -79,9 +78,10 @@ test('first launch restores once for the anonymous identity, then pushes the ful
   expect(syncLog.getState().lastPushAt).not.toBeNull();
 });
 
-test('rule edits push once, five seconds after the last edit', async () => {
+test('rule edits pull the server set first, then push once, five seconds after the last edit', async () => {
   const sync = await boot();
   sync.pushRules.mockClear();
+  sync.pull.mockClear();
   rulesStore.getState().patch({ rules: [rule] });
   await advance(2_000);
   const edited: Rule = { ...rule, enabled: false, updatedAt: runtime.clock.now() };
@@ -89,9 +89,21 @@ test('rule edits push once, five seconds after the last edit', async () => {
   await advance(2_000);
   expect(sync.pushRules).not.toHaveBeenCalled();
   await advance(3_100);
+  expect(sync.pull).toHaveBeenCalledTimes(1);
+  expect(sync.pull.mock.invocationCallOrder[0]).toBeLessThan(sync.pushRules.mock.invocationCallOrder[0]);
   expect(sync.pushRules).toHaveBeenCalledTimes(1);
   expect(sync.pushRules).toHaveBeenCalledWith([edited], []);
   expect(syncStore.getState().data.rulesDirty).toBe(false);
+});
+
+test('a rules push merges what another device wrote since the last pull instead of tombstoning it', async () => {
+  const theirs: Rule = { ...rule, id: 'their-walk' };
+  const sync = await boot({ ...emptySnapshot(), rules: [theirs] });
+  sync.pushRules.mockClear();
+  rulesStore.getState().patch({ rules: [rule] });
+  await advance(5_100);
+  expect(sync.pushRules).toHaveBeenCalledWith(expect.arrayContaining([rule, theirs]), []);
+  expect(rulesStore.getState().data.rules).toHaveLength(2);
 });
 
 test('a deleted rule travels as a tombstone and is remembered', async () => {
@@ -160,7 +172,7 @@ test('a rejected session pauses sync, asks for re-auth once, and resumes when th
   signIn('user-2');
   await settle();
   expect(syncLog.getState().authRequired).toBe(false);
-  expect(sync.pull).toHaveBeenCalledTimes(2);
+  expect(sync.pull).toHaveBeenCalledTimes(3);
   expect(sync.pushRules).toHaveBeenCalledTimes(2);
 });
 
@@ -225,7 +237,7 @@ test('restore never overwrites a newer local rule or the device-authoritative da
   await settle();
   expect(rulesStore.getState().data.rules).toEqual([rule]);
   expect(ruleDaysStore.getState().data.days).toEqual([mine]);
-  expect(sync.pull).toHaveBeenCalledTimes(2);
+  expect(sync.pull).toHaveBeenCalledTimes(3);
 });
 
 test('a restored gym rule with no saved gym on this device is paused, not enforced blind', async () => {

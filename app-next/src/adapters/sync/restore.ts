@@ -10,7 +10,8 @@ import { syncStore } from './syncStore';
 
 /**
  * The persisted history rows (P2-T15's `historyStore`), reached through a bridge so this module does not
- * bind to a store that another task owns. Without one, history is neither restored nor pushed.
+ * bind to a store that another task owns. Sealed days never leave the device; the bridge exists so their
+ * locked-app minutes can be pushed as usage days and filled in on restore. Without one, usage is neither.
  */
 export type HistoryBridge = {
   get(): HistoryDay[];

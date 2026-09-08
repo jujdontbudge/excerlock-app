@@ -1,14 +1,17 @@
 /**
- * The `/v1/sync` wire contract (P2-T02 §3–4). Every wire shape and every field mapping lives here, so a
- * disagreement with the server is a one-file fix. Keys are snake_case; `mode` and `schedule` travel as
- * the domain objects verbatim.
+ * The `/v1/sync` wire contract, matched to the server's `server/src/sync/payload.ts` (P2-T02). Every wire
+ * shape and every field mapping lives here, so a disagreement with the server is a one-file fix.
+ *
+ * The server validates every object `.strict()`: an unexpected key rejects the whole batch. Keys are
+ * camelCase, `mode` and `schedule` travel as the domain objects verbatim, rule ids are UUIDs. The Screen
+ * Time selection, the warm-up rating, the rule day's display unit and the paused-for-no-gym marker are
+ * device-only and never sent. Sealed history days have no server table; only usage minutes travel.
  *
  * Privacy law: nothing here may carry an app name, a bundle id, a coordinate, a gym place, a gym visit or
  * a health sample. `__tests__/privacy.test.ts` holds that line at the type level and over this source.
  */
 import { EarnedUnlock, Profile, Rule, RuleDay } from '../../domain/types';
-import { HistoryDay } from '../../ports/models';
-import { RuleTombstone, SealedHistoryDay, Stamped, SyncSnapshot, UsageDay } from '../../ports/SyncPort';
+import { RuleTombstone, Stamped, SyncSnapshot, UsageDay } from '../../ports/SyncPort';
 
 export const MAX_BATCH = 400;
 
@@ -17,7 +20,6 @@ export const paths = {
   ruleDays: '/v1/sync/rule-days',
   usageDays: '/v1/sync/usage-days',
   earnedUnlocks: '/v1/sync/earned-unlocks',
-  history: '/v1/sync/history',
   profile: '/v1/sync/profile',
   pull: '/v1/sync',
 } as const;
@@ -28,58 +30,49 @@ export type WireRule = {
   mode: Rule['mode'];
   schedule: Rule['schedule'];
   enabled: boolean;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
 };
 export type WireRuleDay = {
-  rule_id: string;
+  ruleId: string;
   day: string;
   progress: number;
   met: boolean;
-  met_at: string | null;
-  unit: NonNullable<RuleDay['unit']> | null;
-  updated_at: string;
+  metAt?: string | null;
+  updatedAt: string;
 };
-export type WireUsageDay = { day: string; locked_app_minutes: number; updated_at: string };
+export type WireUsageDay = { day: string; lockedAppMinutes: number; updatedAt: string };
 export type WireEarnedUnlock = {
-  rule_id: string;
   day: string;
-  rule_name: string;
-  met_at: string;
-  window_end: string;
-  updated_at: string;
-};
-export type WireHistoryDay = {
-  day: string;
-  usage_minutes: number | null;
-  activity: HistoryDay['activity'];
-  met: boolean;
-  scheduled: boolean;
-  sealed_at: string;
-  updated_at: string;
+  ruleId: string;
+  ruleName: string;
+  metAt: string;
+  windowEnd: string;
+  updatedAt: string;
 };
 export type WireProfile = {
-  name: string;
-  referral_source: string;
-  age_band: string;
-  occupation: string;
-  improve_first: Profile['improveFirst'];
-  main_reason: string;
-  estimated_daily_minutes: number;
-  units: Profile['units'];
-  updated_at: string;
+  name?: string | null;
+  referralSource?: string | null;
+  ageBand?: string | null;
+  occupation?: string | null;
+  improveFirst?: Profile['improveFirst'] | null;
+  mainReason?: string | null;
+  estimatedDailyMinutes?: number | null;
+  units?: Profile['units'] | null;
+  updatedAt: string;
 };
 
 export type WireRulesBody = { rules: WireRule[] };
-export type WireRowsBody<T> = { rows: T[] };
+export type WireRuleDaysBody = { ruleDays: WireRuleDay[] };
+export type WireUsageDaysBody = { usageDays: WireUsageDay[] };
+export type WireEarnedUnlocksBody = { earnedUnlocks: WireEarnedUnlock[] };
 export type WireProfileBody = { profile: WireProfile };
 export type WirePull = {
   rules: WireRule[];
-  rule_days: WireRuleDay[];
-  usage_days: WireUsageDay[];
-  earned_unlocks: WireEarnedUnlock[];
-  history: WireHistoryDay[];
+  ruleDays: WireRuleDay[];
+  usageDays: WireUsageDay[];
+  earnedUnlocks: WireEarnedUnlock[];
   profile: WireProfile | null;
 };
 
@@ -90,54 +83,46 @@ export const toWire = {
     mode: rule.mode,
     schedule: rule.schedule,
     enabled: rule.enabled,
-    created_at: rule.createdAt,
-    updated_at: rule.updatedAt,
-    deleted_at: null,
+    createdAt: rule.createdAt,
+    updatedAt: rule.updatedAt,
+    deletedAt: null,
   }),
-  tombstone: (rule: Rule, deletedAt: string): WireRule => ({ ...toWire.rule(rule), updated_at: deletedAt, deleted_at: deletedAt }),
+  tombstone: (rule: Rule, deletedAt: string): WireRule => ({ ...toWire.rule(rule), updatedAt: deletedAt, deletedAt }),
   ruleDay: (row: Stamped<RuleDay>): WireRuleDay => ({
-    rule_id: row.ruleId,
+    ruleId: row.ruleId,
     day: row.day,
     progress: row.progress,
     met: row.met,
-    met_at: row.metAt,
-    unit: row.unit ?? null,
-    updated_at: row.updatedAt,
+    metAt: row.metAt,
+    updatedAt: row.updatedAt,
   }),
   usageDay: (row: Stamped<UsageDay>): WireUsageDay => ({
     day: row.day,
-    locked_app_minutes: row.lockedAppMinutes,
-    updated_at: row.updatedAt,
+    lockedAppMinutes: row.lockedAppMinutes,
+    updatedAt: row.updatedAt,
   }),
   earnedUnlock: (row: Stamped<EarnedUnlock>): WireEarnedUnlock => ({
-    rule_id: row.ruleId,
     day: row.day,
-    rule_name: row.ruleName,
-    met_at: row.metAt,
-    window_end: row.windowEnd,
-    updated_at: row.updatedAt,
-  }),
-  historyDay: (row: Stamped<SealedHistoryDay>): WireHistoryDay => ({
-    day: row.day,
-    usage_minutes: row.usageMinutes,
-    activity: row.activity,
-    met: row.met,
-    scheduled: row.scheduled,
-    sealed_at: row.sealedAt,
-    updated_at: row.updatedAt,
+    ruleId: row.ruleId,
+    ruleName: row.ruleName,
+    metAt: row.metAt,
+    windowEnd: row.windowEnd,
+    updatedAt: row.updatedAt,
   }),
   profile: (profile: Stamped<Profile>): WireProfile => ({
     name: profile.name,
-    referral_source: profile.referralSource,
-    age_band: profile.ageBand,
+    referralSource: profile.referralSource,
+    ageBand: profile.ageBand,
     occupation: profile.occupation,
-    improve_first: profile.improveFirst,
-    main_reason: profile.mainReason,
-    estimated_daily_minutes: profile.estimatedDailyMinutes,
+    improveFirst: profile.improveFirst,
+    mainReason: profile.mainReason,
+    estimatedDailyMinutes: profile.estimatedDailyMinutes,
     units: profile.units,
-    updated_at: profile.updatedAt,
+    updatedAt: profile.updatedAt,
   }),
 };
+
+const text = (value: string | null | undefined) => value ?? '';
 
 export const fromWire = {
   rule: (wire: WireRule): Rule => ({
@@ -146,61 +131,49 @@ export const fromWire = {
     mode: wire.mode,
     schedule: wire.schedule,
     enabled: wire.enabled,
-    createdAt: wire.created_at,
-    updatedAt: wire.updated_at,
+    createdAt: wire.createdAt,
+    updatedAt: wire.updatedAt,
   }),
   ruleDay: (wire: WireRuleDay): Stamped<RuleDay> => ({
-    ruleId: wire.rule_id,
+    ruleId: wire.ruleId,
     day: wire.day,
     progress: wire.progress,
     met: wire.met,
-    metAt: wire.met_at,
-    ...(wire.unit ? { unit: wire.unit } : {}),
-    updatedAt: wire.updated_at,
+    metAt: wire.metAt ?? null,
+    updatedAt: wire.updatedAt,
   }),
   usageDay: (wire: WireUsageDay): Stamped<UsageDay> => ({
     day: wire.day,
-    lockedAppMinutes: wire.locked_app_minutes,
-    updatedAt: wire.updated_at,
+    lockedAppMinutes: wire.lockedAppMinutes,
+    updatedAt: wire.updatedAt,
   }),
   earnedUnlock: (wire: WireEarnedUnlock): Stamped<EarnedUnlock> => ({
-    ruleId: wire.rule_id,
     day: wire.day,
-    ruleName: wire.rule_name,
-    metAt: wire.met_at,
-    windowEnd: wire.window_end,
-    updatedAt: wire.updated_at,
+    ruleId: wire.ruleId,
+    ruleName: wire.ruleName,
+    metAt: wire.metAt,
+    windowEnd: wire.windowEnd,
+    updatedAt: wire.updatedAt,
   }),
-  historyDay: (wire: WireHistoryDay): Stamped<SealedHistoryDay> => ({
-    day: wire.day,
-    usageMinutes: wire.usage_minutes,
-    activity: wire.activity,
-    met: wire.met,
-    scheduled: wire.scheduled,
-    sealedAt: wire.sealed_at,
-    updatedAt: wire.updated_at,
+  /** Server columns are nullable; a null reads as the profile's blank value so the store validators accept it. */
+  profile: (wire: WireProfile, defaults: Pick<Profile, 'estimatedDailyMinutes' | 'units'>): Stamped<Profile> => ({
+    name: text(wire.name),
+    referralSource: text(wire.referralSource),
+    ageBand: text(wire.ageBand),
+    occupation: text(wire.occupation),
+    improveFirst: wire.improveFirst ?? 'exercise',
+    mainReason: text(wire.mainReason),
+    estimatedDailyMinutes: wire.estimatedDailyMinutes ?? defaults.estimatedDailyMinutes,
+    units: wire.units ?? defaults.units,
+    updatedAt: wire.updatedAt,
   }),
-  profile: (wire: WireProfile): Stamped<Profile> => ({
-    name: wire.name,
-    referralSource: wire.referral_source,
-    ageBand: wire.age_band,
-    occupation: wire.occupation,
-    improveFirst: wire.improve_first,
-    mainReason: wire.main_reason,
-    estimatedDailyMinutes: wire.estimated_daily_minutes,
-    units: wire.units,
-    updatedAt: wire.updated_at,
-  }),
-  snapshot: (wire: WirePull): SyncSnapshot => ({
-    rules: wire.rules.filter((rule) => rule.deleted_at === null).map(fromWire.rule),
-    tombstones: wire.rules
-      .filter((rule): rule is WireRule & { deleted_at: string } => rule.deleted_at !== null)
-      .map((rule): RuleTombstone => ({ id: rule.id, deletedAt: rule.deleted_at })),
-    ruleDays: wire.rule_days.map(fromWire.ruleDay),
-    usageDays: wire.usage_days.map(fromWire.usageDay),
-    earnedUnlocks: wire.earned_unlocks.map(fromWire.earnedUnlock),
-    history: wire.history.map(fromWire.historyDay),
-    profile: wire.profile ? fromWire.profile(wire.profile) : null,
+  snapshot: (wire: WirePull, defaults: Pick<Profile, 'estimatedDailyMinutes' | 'units'>): SyncSnapshot => ({
+    rules: wire.rules.filter((rule) => !rule.deletedAt).map(fromWire.rule),
+    tombstones: wire.rules.flatMap((rule): RuleTombstone[] => (rule.deletedAt ? [{ id: rule.id, deletedAt: rule.deletedAt }] : [])),
+    ruleDays: wire.ruleDays.map(fromWire.ruleDay),
+    usageDays: wire.usageDays.map(fromWire.usageDay),
+    earnedUnlocks: wire.earnedUnlocks.map(fromWire.earnedUnlock),
+    profile: wire.profile ? fromWire.profile(wire.profile, defaults) : null,
   }),
 };
 
@@ -210,10 +183,9 @@ export function readPull(body: unknown): WirePull {
   const list = <T>(rows: T[] | undefined): T[] => (Array.isArray(rows) ? rows : []);
   return {
     rules: list(value.rules),
-    rule_days: list(value.rule_days),
-    usage_days: list(value.usage_days),
-    earned_unlocks: list(value.earned_unlocks),
-    history: list(value.history),
+    ruleDays: list(value.ruleDays),
+    usageDays: list(value.usageDays),
+    earnedUnlocks: list(value.earnedUnlocks),
     profile: value.profile ?? null,
   };
 }

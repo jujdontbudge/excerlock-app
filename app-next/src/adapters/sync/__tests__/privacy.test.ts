@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { LockedApps } from '../../../domain/types';
 import { SavedPlace, Workout } from '../../../ports/models';
-import { WireEarnedUnlock, WireHistoryDay, WireProfile, WirePull, WireRule, WireRuleDay, WireUsageDay } from '../wire';
+import { WireEarnedUnlock, WireProfile, WirePull, WireRule, WireRuleDay, WireUsageDay } from '../wire';
 
 /**
  * The privacy law of P2-T02 §3, held at the type level: no app names, bundle ids, coordinates, gym places,
@@ -55,8 +55,6 @@ const workout = {} as Workout;
 const visitAsRuleDay: WireRuleDay = gymVisit;
 // @ts-expect-error a gym visit is not an earned unlock
 const visitAsUnlock: WireEarnedUnlock = gymVisit;
-// @ts-expect-error a gym visit is not a history day
-const visitAsHistory: WireHistoryDay = gymVisit;
 // @ts-expect-error a saved place is not a rule
 const placeAsRule: WireRule = savedPlace;
 // @ts-expect-error a saved place is not a profile
@@ -80,7 +78,7 @@ test('the sync adapter never names an app, a place, a visit or a health sample',
       .join('\n');
     expect({ name, match: code.match(forbiddenWords)?.[0] ?? null }).toEqual({ name, match: null });
   }
-  void [visitAsRuleDay, visitAsUnlock, visitAsHistory, placeAsRule, placeAsProfile, selectionAsUsage, workoutAsRuleDay];
+  void [visitAsRuleDay, visitAsUnlock, placeAsRule, placeAsProfile, selectionAsUsage, workoutAsRuleDay];
 });
 
 test('the wire never imports the gym, health or screen-time ports', () => {

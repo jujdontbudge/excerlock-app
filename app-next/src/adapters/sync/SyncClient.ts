@@ -2,7 +2,8 @@
  * The HTTP edge of sync: one bearer-authenticated JSON call at a time against the VPS API. It knows nothing
  * about rows; `SyncAdapter` shapes the bodies and `SyncHost` decides what to retry.
  */
-export type SyncErrorKind = 'auth' | 'network' | 'server' | 'client';
+/** `ordering` is the adapter refusing a rules push before its first pull; the next flush pulls first. */
+export type SyncErrorKind = 'auth' | 'network' | 'server' | 'client' | 'ordering';
 
 export class SyncError extends Error {
   readonly kind: SyncErrorKind;
@@ -15,7 +16,7 @@ export class SyncError extends Error {
   }
   /** Network and server failures are retried with backoff; auth waits for a session; client errors are dropped. */
   get retryable() {
-    return this.kind === 'network' || this.kind === 'server';
+    return this.kind === 'network' || this.kind === 'server' || this.kind === 'ordering';
   }
 }
 
@@ -56,6 +57,8 @@ export function createSyncClient(options: {
       throw new SyncError('network', cause instanceof Error ? cause.message : 'Request failed', null);
     }
     if (response.status === 401) throw new SyncError('auth', 'Session rejected', 401);
+    // ACCOUNT_DELETED: the auth adapter (P2-T01) starts a fresh session; sync waits for it.
+    if (response.status === 410) throw new SyncError('auth', 'Account deleted', 410);
     if (response.status >= 500 || response.status === 408 || response.status === 429)
       throw new SyncError('server', `Server returned ${response.status}`, response.status);
     if (!response.ok) throw new SyncError('client', `Request rejected with ${response.status}`, response.status);
