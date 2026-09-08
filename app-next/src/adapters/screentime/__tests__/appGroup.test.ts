@@ -8,6 +8,7 @@ import {
   writeFacts,
   writeUsageDay,
 } from '../appGroup';
+import { APP_GROUP_SHIELD_KEYS } from '../../../engine/shield/ShieldContentPublisher';
 import { NATIVE_CAUSE, publishShieldContent } from '../shieldPublisher';
 import { deviceActivityDouble } from './DeviceActivityDouble';
 
@@ -51,21 +52,19 @@ test('an unreadable usage record reads as no measured days', () => {
   expect(readUsage(native.api).days).toEqual({});
 });
 
-test('the shield the user sees is published with its cause last', () => {
+test('the shield the user sees goes out through the ported transport', () => {
   const native = deviceActivityDouble();
   const content = shieldContent({ cause: 'locked', goal: 'pending', canNotify: true });
 
   publishShieldContent(native.api, { cause: 'locked', content }, {});
 
-  expect([...native.shared.keys()].at(-1)).toBe(APP_GROUP_KEYS.currentCause);
-  expect(native.shared.get(APP_GROUP_KEYS.currentCause)).toBe(NATIVE_CAUSE.locked);
-  expect(native.shared.get(APP_GROUP_KEYS.runtimeContext)).toMatchObject({
+  expect(native.shared.get(APP_GROUP_SHIELD_KEYS.currentCause)).toBe(NATIVE_CAUSE.locked);
+  expect(native.shared.get(APP_GROUP_SHIELD_KEYS.runtimeContext)).toEqual({
     cause: 'fullLock',
     offerSubtitle: content.subtitle,
     routeHomeAvailable: true,
-    title: content.title,
   });
-  expect(native.shared.get(APP_GROUP_KEYS.copyOverrides)).toEqual({
+  expect(native.shared.get(APP_GROUP_SHIELD_KEYS.copyOverrides)).toEqual({
     fullLock: { title: content.title, subtitle: content.subtitle },
   });
 });
@@ -76,7 +75,8 @@ test('a shield with nowhere to send the user offers no route home', () => {
 
   publishShieldContent(native.api, { cause: 'locked', content }, {});
 
-  expect(native.shared.get(APP_GROUP_KEYS.runtimeContext)).toMatchObject({ routeHomeAvailable: false, primary: 'Close' });
+  expect(native.shared.get(APP_GROUP_SHIELD_KEYS.runtimeContext)).toMatchObject({ routeHomeAvailable: false });
+  expect(content.primary).toBe('Close');
 });
 
 test('every monitor carries its own window subtitle', () => {
@@ -88,15 +88,11 @@ test('every monitor carries its own window subtitle', () => {
   });
 
   expect(native.shared.get(APP_GROUP_KEYS.lockWindowContexts)).toEqual({
-    'excerlock.lock.one': {
-      cause: 'lockWindow',
-      offerSubtitle: window.subtitle,
-      routeHomeAvailable: true,
-      title: window.title,
-      subtitle: window.subtitle,
-      primary: window.primary,
-      secondary: window.secondary,
-    },
+    'excerlock.lock.one': { cause: 'lockWindow', offerSubtitle: window.subtitle, routeHomeAvailable: true },
+  });
+  // The window title travels as a copy override, because the extension promotes only the context.
+  expect(native.shared.get(APP_GROUP_SHIELD_KEYS.copyOverrides)).toMatchObject({
+    lockWindow: { title: window.title, subtitle: window.subtitle },
   });
   expect(window.subtitle).toContain('Blocking has started.');
 });

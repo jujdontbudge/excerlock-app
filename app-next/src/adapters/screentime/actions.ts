@@ -1,7 +1,7 @@
 import { EnforcementPlan } from '../../domain/enforcement';
 import { LockWindowMonitor } from '../../domain/monitorPlan';
 import { LockDecision } from '../../domain/types';
-import { DeviceActivityAction } from './deviceActivity';
+import { ShieldIntent } from '../../engine/screentime/ScreenTimeModule';
 
 /**
  * How long the apps stay open for a reason that expires. The extension decides nothing: the app
@@ -10,12 +10,6 @@ import { DeviceActivityAction } from './deviceActivity';
  * while the app runs.
  */
 export type OpenWindow = { kind: 'none' } | { kind: 'until'; at: string } | { kind: 'openEnded' };
-
-export type MonitorActions = {
-  name: string;
-  atStart: DeviceActivityAction[];
-  atEnd: DeviceActivityAction[];
-};
 
 /** The policy wins over the decision: a plan that says shield closes every future interval too. */
 export function openWindow(decision: LockDecision, plan: EnforcementPlan): OpenWindow {
@@ -33,20 +27,21 @@ export function openWindow(decision: LockDecision, plan: EnforcementPlan): OpenW
   }
 }
 
-export function startAction(monitor: LockWindowMonitor, open: OpenWindow): DeviceActivityAction['type'] {
-  if (open.kind === 'openEnded') return 'unblockSelection';
-  if (open.kind === 'until' && Date.parse(monitor.start) < Date.parse(open.at)) return 'unblockSelection';
-  return 'blockSelection';
+/** A window that starts while the unlock still holds opens; every other window shields. */
+export function startAction(monitor: LockWindowMonitor, open: OpenWindow): ShieldIntent {
+  if (open.kind === 'openEnded') return 'down';
+  if (open.kind === 'until' && Date.parse(monitor.start) < Date.parse(open.at)) return 'down';
+  return 'up';
 }
 
-export function monitorActions(
+/**
+ * The per-monitor `intervalDidStart` intent the engine's one re-arm routine takes. Interval ends
+ * are not here: a merged window ending can only mean no rule is active, so the engine always
+ * clears at one.
+ */
+export function startIntents(
   monitors: readonly LockWindowMonitor[],
   open: OpenWindow,
-  familyActivitySelectionId: string,
-): MonitorActions[] {
-  return monitors.map((monitor) => ({
-    name: monitor.name,
-    atStart: [{ type: startAction(monitor, open), familyActivitySelectionId }],
-    atEnd: [{ type: 'unblockSelection', familyActivitySelectionId }],
-  }));
+): Record<string, ShieldIntent> {
+  return Object.fromEntries(monitors.map((monitor) => [monitor.name, startAction(monitor, open)]));
 }

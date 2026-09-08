@@ -4,27 +4,34 @@ import { assertMonitorBudget, MonitorPlan } from '../../domain/monitorPlan';
 import { ShieldCause, shieldContent, ShieldContent, shieldContentSet } from '../../domain/shieldContent';
 import { LockDecision, LockedApps, PermissionStatus, Rule, RuleDay } from '../../domain/types';
 import { effectiveNow, nextWatermark } from '../../domain/watermark';
-import { ApplyResult, ScreenTimePort } from '../../ports/ScreenTimePort';
-import { monitorActions, openWindow, OpenWindow } from './actions';
-import { EnforcementFacts, writeFacts } from './appGroup';
+import { NATIVE_LOCKED_SELECTION } from '../../engine/screentime/native/nativeSelection';
 import {
   DeviceActivityApi,
   DeviceActivityAuthorizationStatus,
-  LOCKED_SELECTION_ID,
-  MISSING_SELECTION_PICKER,
-  SelectionPicker,
-} from './deviceActivity';
-import { leaseSchedule, LEASE_MONITOR, monitorSchedule } from './schedules';
+} from '../../engine/screentime/native/deviceActivityTypes';
+import { ScreenTimeModule } from '../../engine/screentime/ScreenTimeModule';
+import { ApplyResult, ScreenTimePort } from '../../ports/ScreenTimePort';
+import { openWindow, OpenWindow, startIntents } from './actions';
+import { EnforcementFacts, writeFacts } from './appGroup';
 import { publishShieldContent } from './shieldPublisher';
-import { armUsageMonitor, measuredDay, refreshUsage } from './usage';
+import { armUsageMonitor, measuredDay, refreshUsage, stopUsageMonitor } from './usage';
 
 /** What the shield says. The domain owns the strings; the adapter only needs the inputs. */
 export type ShieldCopySource = () => { rules: Rule[]; ruleDays: RuleDay[]; canNotify: boolean };
 
 export type ScreenTimeAdapterDeps = {
-  native: DeviceActivityApi;
+  /**
+   * The ported native edge: authorization, the system picker, shields and the lock-window
+   * monitors. Compose it with the runtime clock as its `nowMs`, so the shield state it derives
+   * and the decision this adapter applies are read from the same clock.
+   */
+  module: ScreenTimeModule;
+  /**
+   * The same DeviceActivity the module holds. The adapter needs it for the two things the module
+   * deliberately does not own: the app-group facts and the Analytics usage monitor (B15).
+   */
+  deviceActivity: DeviceActivityApi;
   clock: { now(): string; timezone(): string };
-  picker?: SelectionPicker;
   copy: ShieldCopySource;
   /** Screens read the selection from the rules store, so the picker's result has to land there. */
   onSelection?: (selection: LockedApps) => void;
@@ -44,16 +51,16 @@ const PERMISSIONS: Record<DeviceActivityAuthorizationStatus, PermissionStatus> =
 };
 
 const EMPTY: LockedApps = { handle: null, appCount: 0, categoryCount: 0 };
-const SELECTION = { activitySelectionId: LOCKED_SELECTION_ID };
+const SELECTION = { activitySelectionId: NATIVE_LOCKED_SELECTION };
 
 /**
  * `resolveLock` decides; this applies. Every branch below either raises the shield or leaves it
  * raised, so no failure can be the reason a user's apps opened.
  */
 export function createScreenTimeAdapter({
-  native,
+  module,
+  deviceActivity,
   clock,
-  picker = MISSING_SELECTION_PICKER,
   copy,
   onSelection,
   onAuthorization,
@@ -62,7 +69,7 @@ export function createScreenTimeAdapter({
   const usageListeners = new Set<(minutes: number | null) => void>();
   let settled: { key: string; result: ApplyResult } | undefined;
   let watermark: string | null = null;
-  let observedShields: 'up' | 'down' | null = null;
+  let applying = false;
 
   const now = () => {
     const observed = clock.now();
@@ -70,7 +77,9 @@ export function createScreenTimeAdapter({
     return effectiveNow(observed, watermark);
   };
 
-  const authorizationStatus = () => PERMISSIONS[native.authorizationStatus()];
+  // The port reads authorization synchronously; the module's own read is the same call behind a
+  // rehydration await, which the status does not depend on.
+  const authorizationStatus = () => PERMISSIONS[deviceActivity.authorizationStatus()];
 
   /**
    * Re-reads what the extension recorded. A day with no monitor stays unmeasured: refreshing it
@@ -78,7 +87,7 @@ export function createScreenTimeAdapter({
    */
   const syncUsage = () => {
     const today = dayKey(now(), clock.timezone());
-    return measuredDay(native, today) === null ? null : refreshUsage(native, today);
+    return measuredDay(deviceActivity, today) === null ? null : refreshUsage(deviceActivity, today);
   };
 
   const publishUsage = () => {
@@ -87,62 +96,34 @@ export function createScreenTimeAdapter({
   };
 
   // A window that started or ended without the app running still changes what the user sees.
-  const subscription = native.onDeviceActivityMonitorEvent(() => {
-    const shields = native.isShieldActive() ? 'up' : 'down';
-    if (shields !== observedShields && settled) {
-      observedShields = shields;
-      const result: ApplyResult = { ...settled.result, shields };
-      enforcementListeners.forEach((listener) => listener(result));
-    }
-    publishUsage();
+  const stopShieldState = module.subscribe((state) => {
+    // An apply in flight reports its own outcome; this is only for a change the app did not make.
+    if (applying || !settled || state.effectiveShields === settled.result.shields) return;
+    const result: ApplyResult = { ...settled.result, shields: state.effectiveShields };
+    settled = { ...settled, result };
+    enforcementListeners.forEach((listener) => listener(result));
   });
+  // Threshold events never move the shield, so usage needs its own ear on the extension.
+  const usageSubscription = deviceActivity.onDeviceActivityMonitorEvent(() => publishUsage());
 
   const describeSelection = async (): Promise<LockedApps> => {
-    // A handle the OS no longer resolves is an empty selection, whatever the app last stored.
-    if (native.getFamilyActivitySelectionId(LOCKED_SELECTION_ID) === undefined) return EMPTY;
-    const metadata = native.selectionMetadata(SELECTION);
-    if (!metadata || metadata.applicationCount + metadata.categoryCount === 0) return EMPTY;
+    // Two ways a selection stops existing: this app forgot the handle, or the OS no longer
+    // resolves it. Either one is an empty selection, whatever counts were last stored.
+    if (deviceActivity.getFamilyActivitySelectionId(NATIVE_LOCKED_SELECTION) === undefined) return EMPTY;
+    const summary = await module.describeSelection(NATIVE_LOCKED_SELECTION);
+    if (!summary || summary.applicationCount + summary.categoryCount === 0) return EMPTY;
     return {
-      handle: { token: LOCKED_SELECTION_ID },
-      appCount: metadata.applicationCount,
-      categoryCount: metadata.categoryCount,
+      handle: { token: summary.handle },
+      appCount: summary.applicationCount,
+      categoryCount: summary.categoryCount,
     };
   };
 
   const requestAuthorization = async (): Promise<PermissionStatus> => {
-    // FamilyControls throws both on "Don't Allow" and on a dead sheet, but it records the refusal
-    // first, so the re-read below is the truthful outcome either way.
-    if (native.authorizationStatus() === 0) await native.requestAuthorization('individual').catch(() => undefined);
+    await module.requestAuthorization();
     const status = authorizationStatus();
     onAuthorization?.(status);
     return status;
-  };
-
-  const registerMonitors = async (plan: MonitorPlan, open: OpenWindow, decision: LockDecision) => {
-    const wanted = new Set(plan.monitors.map((monitor) => monitor.name));
-    const running = native.getActivities();
-    running
-      .filter((name) => name.startsWith('excerlock.lock.') && !wanted.has(name))
-      .forEach((stale) => native.stopMonitoring([stale]));
-
-    for (const monitor of plan.monitors) {
-      const actions = monitorActions([monitor], open, LOCKED_SELECTION_ID)[0];
-      // Reconfiguring the action lists is how a met goal, a lease or a lapse reaches the OS.
-      native.configureActions({ activityName: monitor.name, callbackName: 'intervalDidStart', actions: actions.atStart });
-      native.configureActions({ activityName: monitor.name, callbackName: 'intervalDidEnd', actions: actions.atEnd });
-      // Names are derived from the window itself, so a name already running is an unchanged window.
-      if (!running.includes(monitor.name)) await native.startMonitoring(monitor.name, monitorSchedule(monitor), []);
-    }
-
-    native.stopMonitoring([LEASE_MONITOR]);
-    if (decision.state === 'unlockedWalking') {
-      native.configureActions({
-        activityName: LEASE_MONITOR,
-        callbackName: 'intervalDidEnd',
-        actions: [{ type: 'blockSelection', familyActivitySelectionId: LOCKED_SELECTION_ID }],
-      });
-      await native.startMonitoring(LEASE_MONITOR, leaseSchedule(decision.leaseUntil, clock.timezone()), []);
-    }
   };
 
   const currentShield = (decision: LockDecision, canNotify: boolean): { cause: ShieldCause; content: ShieldContent } => {
@@ -168,8 +149,8 @@ export function createScreenTimeAdapter({
   ): EnforcementFacts => {
     const { rules, ruleDays, canNotify } = copy();
     const byMonitor = shieldContentSet({ monitors: monitors.monitors, rules, ruleDays, canNotify });
-    publishShieldContent(native, currentShield(decision, canNotify), byMonitor);
-    return writeFacts(native, {
+    publishShieldContent(deviceActivity, currentShield(decision, canNotify), byMonitor);
+    return writeFacts(deviceActivity, {
       shieldsDesired,
       unlockUntil: open.kind === 'until' ? open.at : null,
       leaseUntil: decision.state === 'unlockedWalking' ? decision.leaseUntil : null,
@@ -181,68 +162,89 @@ export function createScreenTimeAdapter({
     });
   };
 
+  const observedShields = async (): Promise<'up' | 'down'> => (await module.getCurrentShieldState()).effectiveShields;
+
   const run = async (decision: LockDecision, plan: EnforcementPlan, monitors: MonitorPlan): Promise<ApplyResult> => {
     const open = openWindow(decision, plan);
+    const handle = NATIVE_LOCKED_SELECTION;
+    const empty: MonitorPlan = { ...monitors, monitors: [] };
 
     // B21: a lapsed entitlement clears and unregisters before anything else is considered.
     if (plan.monitors === 'unregister') {
-      native.unblockSelection(SELECTION);
-      native.stopMonitoring();
-      publish(decision, plan, { ...monitors, monitors: [] }, open, 'down');
+      try {
+        await module.reconcile(handle, 'down', empty);
+        await module.stopUnlockLease();
+      } catch {
+        // No selection was ever issued, so there is nothing registered to retire.
+        deviceActivity.unblockSelection(SELECTION);
+      }
+      stopUsageMonitor(deviceActivity);
+      publish(decision, plan, empty, open, 'down');
       return { applied: true, shields: 'down', monitors: 0 };
     }
 
-    if (native.authorizationStatus() !== 2) return { applied: false, shields: 'down', monitors: 0, reason: 'screenTimeDenied' };
-    const token = native.getFamilyActivitySelectionId(LOCKED_SELECTION_ID);
-    if (token === undefined) return { applied: false, shields: 'down', monitors: 0, reason: 'noSelection' };
+    if (deviceActivity.authorizationStatus() !== 2) {
+      return { applied: false, shields: 'down', monitors: 0, reason: 'screenTimeDenied' };
+    }
+    const selection = await describeSelection();
+    if (selection.handle === null) return { applied: false, shields: 'down', monitors: 0, reason: 'noSelection' };
 
     // An over-budget plan cannot be armed truthfully, so the shield goes up and stays up.
     const budget = assertMonitorBudget(monitors);
     if (!budget.applied) {
-      native.blockSelection(SELECTION);
+      deviceActivity.blockSelection(SELECTION);
       publish(decision, plan, monitors, { kind: 'none' }, 'up');
       return budget;
     }
 
-    if (plan.shields === 'apply') native.blockSelection(SELECTION);
+    const shields = plan.shields === 'apply' ? 'up' : 'down';
     try {
-      await registerMonitors(monitors, open, decision);
+      // One re-arm routine: a rule edit, midnight, a timezone change, an entitlement transition
+      // and a lease renewal all arrive here. The per-monitor intents carry the met/lease decision.
+      await module.reconcile(handle, shields, monitors, startIntents(monitors.monitors, open));
+      if (decision.state === 'unlockedWalking') {
+        await module.armUnlockLease(handle, Date.parse(decision.leaseUntil));
+      } else {
+        await module.stopUnlockLease();
+      }
     } catch {
-      native.blockSelection(SELECTION);
+      deviceActivity.blockSelection(SELECTION);
       publish(decision, plan, monitors, { kind: 'none' }, 'up');
       return { applied: false, shields: 'up', monitors: monitors.monitors.length, reason: 'monitorRegistration' };
     }
-    // Only now: the monitors that will raise the shield again are armed.
-    if (plan.shields === 'clear') native.unblockSelection(SELECTION);
 
     const today = dayKey(now(), clock.timezone());
     try {
-      await armUsageMonitor(native, { day: today, timezone: clock.timezone(), familyActivitySelection: token });
+      await armUsageMonitor(deviceActivity, {
+        day: today,
+        timezone: clock.timezone(),
+        familyActivitySelection: deviceActivity.getFamilyActivitySelectionId(handle)!,
+      });
     } catch {
       // Measurement, never enforcement: a usage monitor that will not arm is not a failed lock, and
       // the day it would have covered stays unmeasured rather than becoming a measured zero.
     }
 
-    const shields = plan.shields === 'apply' ? 'up' : 'down';
     publish(decision, plan, monitors, open, shields);
-    return { applied: true, shields, monitors: monitors.monitors.length };
+    // The engine keeps shields down outside every window, so report what the OS is doing, not what
+    // was asked for.
+    return { applied: true, shields: await observedShields(), monitors: monitors.monitors.length };
   };
 
   return {
     authorizationStatus,
     requestAuthorization,
     describeSelection,
-    measuredUsage: (day) => measuredDay(native, day),
+    measuredUsage: (day) => measuredDay(deviceActivity, day),
 
     async presentAppPicker() {
-      if (native.authorizationStatus() !== 2 && (await requestAuthorization()) !== 'granted') {
+      if (deviceActivity.authorizationStatus() !== 2 && (await requestAuthorization()) !== 'granted') {
         return describeSelection();
       }
-      const picked = await picker.pick(LOCKED_SELECTION_ID);
-      const selection: LockedApps =
-        picked && picked.applicationCount + picked.categoryCount > 0
-          ? { handle: { token: LOCKED_SELECTION_ID }, appCount: picked.applicationCount, categoryCount: picked.categoryCount }
-          : await describeSelection();
+      // The module persists what the user chose, so the summary below is the answer either way:
+      // a cancelled sheet leaves the previous selection exactly as it was.
+      await module.pickSelection();
+      const selection = await describeSelection();
       onSelection?.(selection);
       return selection;
     },
@@ -253,13 +255,15 @@ export function createScreenTimeAdapter({
         open: openWindow(decision, plan),
         plan,
         planHash: monitors.planHash,
-        selection: native.getFamilyActivitySelectionId(LOCKED_SELECTION_ID) ?? null,
+        selection: deviceActivity.getFamilyActivitySelectionId(NATIVE_LOCKED_SELECTION) ?? null,
       });
       if (settled?.key === key) return settled.result;
-      const result = await run(decision, plan, monitors);
+      applying = true;
+      const result = await run(decision, plan, monitors).finally(() => {
+        applying = false;
+      });
       // Idempotent only once it succeeded: a failed apply is never a settled state.
       settled = result.applied ? { key, result } : undefined;
-      observedShields = result.shields;
       enforcementListeners.forEach((listener) => listener(result));
       publishUsage();
       return result;
@@ -277,7 +281,8 @@ export function createScreenTimeAdapter({
     },
 
     dispose() {
-      subscription.remove();
+      stopShieldState();
+      usageSubscription.remove();
       enforcementListeners.clear();
       usageListeners.clear();
     },

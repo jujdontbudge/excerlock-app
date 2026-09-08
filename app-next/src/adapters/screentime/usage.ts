@@ -1,6 +1,9 @@
 import { DayKey } from '../../domain/types';
 import { readUsage, writeUsageDay } from './appGroup';
-import { DeviceActivityApi, DeviceActivityEventRecord } from './deviceActivity';
+import {
+  DeviceActivityApi,
+  DeviceActivityEventRecord,
+} from '../../engine/screentime/native/deviceActivityTypes';
 import {
   USAGE_MONITOR_PREFIX,
   usageDayFromMonitorName,
@@ -54,6 +57,19 @@ export function refreshUsage(api: DeviceActivityApi, day: DayKey): number {
   const minutes = measuredMinutes(api.getEvents(usageMonitorName(day)));
   writeUsageDay(api, day, minutes);
   return minutes;
+}
+
+/** Seals the day's total and retires its monitor; a lapse takes measurement down with enforcement. */
+export function stopUsageMonitor(api: DeviceActivityApi): void {
+  api
+    .getActivities()
+    .filter(isUsageMonitor)
+    .forEach((name) => {
+      const measured = usageDayFromMonitorName(name);
+      if (measured) writeUsageDay(api, measured, measuredMinutes(api.getEvents(name)));
+      api.stopMonitoring([name]);
+      api.cleanUpAfterActivity(name);
+    });
 }
 
 /** `null` for a day with no monitor: unmeasured, which Analytics renders differently from zero. */

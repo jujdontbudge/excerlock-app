@@ -1,11 +1,13 @@
 import { addDays, localInstant } from '../../domain/calendar';
-import { LockWindowMonitor } from '../../domain/monitorPlan';
 import { DayKey } from '../../domain/types';
-import { DeviceActivityDateComponents, DeviceActivityEvent, DeviceActivitySchedule } from './deviceActivity';
+import { DeviceActivityDateComponents } from '../../engine/screentime/native/deviceActivitySchedule';
+import { DeviceActivityEvent } from '../../engine/screentime/native/deviceActivityTypes';
 
-/** Apple's minimum DeviceActivity interval, and the length of one walking lease. */
-export const LEASE_MINUTES = 15;
-export const LEASE_MONITOR = 'excerlock.lease.v1';
+type DeviceActivitySchedule = Readonly<{
+  intervalStart: DeviceActivityDateComponents;
+  intervalEnd: DeviceActivityDateComponents;
+  repeats: boolean;
+}>;
 
 export const USAGE_MONITOR_PREFIX = 'excerlock.usage.v1';
 export const USAGE_STEP_MINUTES = 5;
@@ -38,29 +40,6 @@ export function dateComponents(instant: string, timezone: string): DeviceActivit
     minute: read('minute'),
     second: read('second'),
     timeZoneIdentifier: timezone,
-  };
-}
-
-/** One merged lock window as an absolute, non-repeating schedule. */
-export function monitorSchedule(monitor: LockWindowMonitor): DeviceActivitySchedule {
-  return {
-    intervalStart: dateComponents(monitor.start, monitor.timezone),
-    intervalEnd: dateComponents(monitor.end, monitor.timezone),
-    repeats: false,
-  };
-}
-
-/**
- * The one place the backdated `intervalStart` survives (B32 removed the need for it on lock
- * windows): a lease renewed mid-flight would otherwise ask for an interval shorter than the
- * 15 minutes DeviceActivity accepts, so the start is placed one lease behind its end.
- */
-export function leaseSchedule(leaseUntil: string, timezone: string): DeviceActivitySchedule {
-  const start = new Date(Date.parse(leaseUntil) - LEASE_MINUTES * 60_000).toISOString();
-  return {
-    intervalStart: dateComponents(start, timezone),
-    intervalEnd: dateComponents(leaseUntil, timezone),
-    repeats: false,
   };
 }
 

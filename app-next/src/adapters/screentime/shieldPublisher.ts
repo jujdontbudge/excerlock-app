@@ -1,52 +1,50 @@
 import { ShieldCause, ShieldContent } from '../../domain/shieldContent';
+import { DeviceActivityApi } from '../../engine/screentime/native/deviceActivityTypes';
+import {
+  NativeShieldCause,
+  NativeShieldCopyOverrides,
+  ShieldContentPublisher,
+} from '../../engine/shield/ShieldContentPublisher';
 import { APP_GROUP_KEYS } from './appGroup';
-import { DeviceActivityApi } from './deviceActivity';
 
 /**
- * The shipped extensions still spell two causes the old way (`ShieldContent.swift`,
- * `ShieldActionRoute.swift`), and the deep link each shield opens is derived from the spelling:
- * `fullLock` and `lockWindow` go to `excerlock://locked-apps`, everything else to `excerlock://`.
- *
- * merge: P2-T03 moves the targets; P2-T11 renames the Swift cases to the domain's three. Until
- * then this map is the entire contract between the new content model and the extensions.
+ * The Swift extensions key on four cause strings (`ShieldContent.swift`, `ShieldActionRoute.swift`)
+ * and derive each shield's deep link from the spelling: `fullLock` and `lockWindow` open
+ * `excerlock://locked-apps`, everything else `excerlock://`. The domain has three causes, and the
+ * fourth — `balanceEmpty` — belonged to the retired balance economy and is never published.
  */
-export const NATIVE_CAUSE: Readonly<Record<ShieldCause, string>> = Object.freeze({
+export const NATIVE_CAUSE: Readonly<Record<ShieldCause, NativeShieldCause>> = Object.freeze({
   locked: 'fullLock',
   lockWindow: 'lockWindow',
   walkingEnded: 'walkAndScrollEnded',
 });
 
-/**
- * What one shield shows. `offerSubtitle` is the field the extension reads today; the rest is the
- * new model, published alongside it so the Swift change is a read, not a protocol change.
- */
+/** What one shield shows. `offerSubtitle` is the field both extensions read. */
 export type PublishedShield = {
-  cause: string;
+  cause: NativeShieldCause;
   offerSubtitle: string;
   routeHomeAvailable: boolean;
-  title: string;
-  subtitle: string;
-  primary: string;
-  secondary?: string;
 };
 
-/** A shield offers the app only when it can say something there; otherwise it just closes. */
+/**
+ * A shield offers the app only when it can say something there: `domain/shieldContent` gives a
+ * secondary label exactly when a notification can carry the user home, and the ShieldAction
+ * extension's tap-through is what that route is made of.
+ */
 export function publishedShield(cause: ShieldCause, content: ShieldContent): PublishedShield {
   return {
     cause: NATIVE_CAUSE[cause],
     offerSubtitle: content.subtitle,
     routeHomeAvailable: content.secondary !== undefined,
-    title: content.title,
-    subtitle: content.subtitle,
-    primary: content.primary,
-    ...(content.secondary === undefined ? {} : { secondary: content.secondary }),
   };
 }
 
 /**
- * Publishes the shield the user would see right now, plus one per monitor (B36) that the monitor
- * extension promotes when its window starts. Context first, then cause, so a shield that is
- * already on screen never pairs a new cause with the previous cause's copy.
+ * Publishes the shield the user would see right now through the ported transport, plus one per
+ * monitor (B36) that the monitor extension promotes when its window starts.
+ *
+ * Titles travel as copy overrides. Every window shares one title, so a single `lockWindow` override
+ * is enough: the per-monitor context supplies the subtitle when the extension promotes it.
  */
 export function publishShieldContent(
   api: DeviceActivityApi,
@@ -56,10 +54,16 @@ export function publishShieldContent(
   const monitors = Object.fromEntries(
     Object.entries(byMonitor).map(([name, content]) => [name, publishedShield('lockWindow', content)]),
   );
-  const shield = publishedShield(current.cause, current.content);
+  const window = Object.values(byMonitor)[0];
+  const overrides: NativeShieldCopyOverrides = {
+    [NATIVE_CAUSE[current.cause]]: { title: current.content.title, subtitle: current.content.subtitle },
+    ...(window ? { lockWindow: { title: window.title, subtitle: window.subtitle } } : {}),
+  };
+
   api.setSharedValue(APP_GROUP_KEYS.lockWindowContexts, monitors);
-  api.setSharedValue(APP_GROUP_KEYS.copyOverrides, { [shield.cause]: { title: shield.title, subtitle: shield.subtitle } });
-  api.setSharedValue(APP_GROUP_KEYS.runtimeContext, shield);
-  api.setSharedValue(APP_GROUP_KEYS.currentCause, shield.cause);
+  new ShieldContentPublisher({ set: (key, value) => api.setSharedValue(key, value) }).publish({
+    ...publishedShield(current.cause, current.content),
+    copyOverrides: overrides,
+  });
   return monitors;
 }

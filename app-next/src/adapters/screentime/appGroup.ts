@@ -1,6 +1,6 @@
 import { ShieldContent } from '../../domain/shieldContent';
 import { DayKey } from '../../domain/types';
-import { DeviceActivityApi } from './deviceActivity';
+import { DeviceActivityApi } from '../../engine/screentime/native/deviceActivityTypes';
 
 export const FACTS_SCHEMA_VERSION = 1;
 export const USAGE_SCHEMA_VERSION = 1;
@@ -11,10 +11,10 @@ export const APP_GROUP_KEYS = Object.freeze({
   /** The whole enforcement snapshot, for diagnostics and for the app's own next launch. */
   facts: 'excerlock.enforcement.facts.v1',
   usage: 'excerlock.usage.days.v1',
-  /** The three keys the shipped extensions read. Renaming any of them is a Swift change too. */
-  currentCause: 'excerlock.shield.current-cause.v1',
-  runtimeContext: 'excerlock.shield.runtime-context.v1',
-  copyOverrides: 'excerlock.shield.copy-overrides.v1',
+  /**
+   * One shield per monitor (B36), promoted by the monitor extension when its window starts.
+   * The three keys for the shield showing right now belong to the engine's `ShieldContentPublisher`.
+   */
   lockWindowContexts: 'excerlock.shield.lock-window-contexts.v1',
 });
 

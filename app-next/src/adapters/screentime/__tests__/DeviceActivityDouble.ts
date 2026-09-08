@@ -1,12 +1,17 @@
+import { DeviceActivityDateComponents } from '../../../engine/screentime/native/deviceActivitySchedule';
 import {
-  DeviceActivityAction,
   DeviceActivityApi,
   DeviceActivityAuthorizationStatus,
   DeviceActivityEvent,
   DeviceActivityEventRecord,
-  DeviceActivitySchedule,
-  SelectionMetadata,
-} from '../deviceActivity';
+} from '../../../engine/screentime/native/deviceActivityTypes';
+
+type DeviceActivitySchedule = {
+  intervalStart: DeviceActivityDateComponents;
+  intervalEnd: DeviceActivityDateComponents;
+  repeats: boolean;
+};
+type DeviceActivityAction = { type: 'blockSelection' | 'unblockSelection'; familyActivitySelectionId: string };
 
 export type RegisteredMonitor = { schedule: DeviceActivitySchedule; events: readonly DeviceActivityEvent[] };
 export type ConfiguredActions = {
@@ -15,6 +20,7 @@ export type ConfiguredActions = {
   eventName?: string;
   actions: DeviceActivityAction[];
 };
+type SelectionMetadata = { applicationCount: number; categoryCount: number };
 
 /**
  * An in-memory DeviceActivity. It records what the adapter asked the OS to do; it does not
@@ -46,7 +52,6 @@ export function deviceActivityDouble(
       authorization = authorization === 0 ? 2 : authorization;
     },
     getFamilyActivitySelectionId: (id) => (selection ? `token:${id}` : undefined),
-    selectionMetadata: () => selection ?? undefined,
     setSharedValue: (key, value) => void shared.set(key, value),
     getSharedValue: <T,>(key: string) => shared.get(key) as T | undefined,
     blockSelection: () => void (blocked = true),
@@ -113,6 +118,12 @@ export function deviceActivityDouble(
     setSelection(next: SelectionMetadata | null) {
       selection = next;
     },
+    /** Forgets the calls made while seeding a subject, so a test asserts only its own. */
+    reset() {
+      configured.length = 0;
+      starts.length = 0;
+      shared.clear();
+    },
     failNextStartMonitoring() {
       failNextStart = true;
     },
@@ -129,5 +140,15 @@ export function deviceActivityDouble(
       if (shields) blocked = shields === 'up';
       listeners.forEach((listener) => listener({ callbackName }));
     },
+  };
+}
+
+/** In-memory persistence so one test's Screen Time state never leaks into the next. */
+export function memoryStorage() {
+  const values = new Map<string, string>();
+  return {
+    getItem: async (key: string) => values.get(key) ?? null,
+    setItem: async (key: string, value: string) => void values.set(key, value),
+    removeItem: async (key: string) => void values.delete(key),
   };
 }

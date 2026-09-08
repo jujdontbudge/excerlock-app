@@ -4,7 +4,7 @@ import { compileMonitorPlan, LockWindowMonitor } from '../../../domain/monitorPl
 import { resolveLock } from '../../../domain/resolveLock';
 import { EarnedUnlock, Entitlement, LockDecision, Rule, WalkingSession } from '../../../domain/types';
 import { rule } from '../../../domain/__tests__/fixtures';
-import { monitorActions, openWindow, startAction } from '../actions';
+import { openWindow, startAction, startIntents } from '../actions';
 
 const timezone = 'America/New_York';
 const active: Entitlement = { status: 'active', renewsAt: null };
@@ -48,7 +48,7 @@ test('a goal met today leaves tonight closed until the unlock relocks', () => {
   const decision = decisionAt(now, { earnedUnlocks: [met('2026-09-07', '2026-09-08T03:00:00.000Z')] });
 
   expect(decision.state).toBe('unlockedMet');
-  expect(nextStartAction(now, decision)).toBe('unblockSelection');
+  expect(nextStartAction(now, decision)).toBe('down');
 });
 
 test('a goal met yesterday shields at tonight’s interval start', () => {
@@ -56,7 +56,7 @@ test('a goal met yesterday shields at tonight’s interval start', () => {
   const decision = decisionAt(now, { earnedUnlocks: [met('2026-09-07', '2026-09-08T03:00:00.000Z')] });
 
   expect(decision.state).not.toBe('unlockedMet');
-  expect(nextStartAction(now, decision)).toBe('blockSelection');
+  expect(nextStartAction(now, decision)).toBe('up');
 });
 
 test('the first interval after the unlock relocks shields again', () => {
@@ -67,7 +67,7 @@ test('the first interval after the unlock relocks shields again', () => {
 
   expect(relockAt).toBe('2026-09-09T01:00:00.000Z'); // tomorrow 21:00 local
   expect(after.map((monitor) => startAction(monitor, openWindow(decision, enforcementPlan({ entitlement: active, decision }))))).toEqual(
-    ['blockSelection', 'blockSelection', 'blockSelection', 'blockSelection', 'blockSelection', 'blockSelection', 'blockSelection'],
+    Array(7).fill('up'),
   );
 });
 
@@ -82,9 +82,9 @@ test('a live walking lease leaves the interval it covers open, an expired one sh
   const expired = decisionAt('2026-09-08T01:25:00.000Z', { walkingSession: walking });
 
   expect(live.state).toBe('unlockedWalking');
-  expect(nextStartAction('2026-09-08T01:10:00.000Z', live)).toBe('unblockSelection');
+  expect(nextStartAction('2026-09-08T01:10:00.000Z', live)).toBe('down');
   expect(expired.state).toBe('locked');
-  expect(nextStartAction('2026-09-08T01:25:00.000Z', expired)).toBe('blockSelection');
+  expect(nextStartAction('2026-09-08T01:25:00.000Z', expired)).toBe('up');
 });
 
 test('an unlock with no scheduled relock leaves every interval open', () => {
@@ -93,7 +93,7 @@ test('an unlock with no scheduled relock leaves every interval open', () => {
 
   expect(open).toEqual({ kind: 'openEnded' });
   expect(monitorsFrom('2026-09-07T18:00:00.000Z').map((monitor) => startAction(monitor, open))).toEqual(
-    Array(8).fill('unblockSelection'),
+    Array(8).fill('down'),
   );
 });
 
@@ -103,15 +103,10 @@ test('shields the plan asked for outrank an unlocked decision', () => {
   expect(openWindow(decision, { shields: 'apply', monitors: 'keep', reason: 'unknownFailClosed' })).toEqual({ kind: 'none' });
 });
 
-test('every interval end clears, because a merged window ending means no rule is active', () => {
+test('the intents are keyed by monitor name, one per window in the plan', () => {
   const monitors: LockWindowMonitor[] = monitorsFrom('2026-09-07T18:00:00.000Z');
-  const configured = monitorActions(monitors, { kind: 'none' }, 'selection');
+  const intents = startIntents(monitors, { kind: 'none' });
 
-  expect(configured).toHaveLength(monitors.length);
-  expect(configured[0]).toEqual({
-    name: monitors[0].name,
-    atStart: [{ type: 'blockSelection', familyActivitySelectionId: 'selection' }],
-    atEnd: [{ type: 'unblockSelection', familyActivitySelectionId: 'selection' }],
-  });
-  expect(configured.every((entry) => entry.atEnd[0].type === 'unblockSelection')).toBe(true);
+  expect(Object.keys(intents)).toEqual(monitors.map((monitor) => monitor.name));
+  expect(Object.values(intents)).toEqual(monitors.map(() => 'up'));
 });
