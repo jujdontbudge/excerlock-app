@@ -18,9 +18,11 @@ import { planCopy as c } from '../../content/plan';
 import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useImpactPlayback } from './impact/useImpactPlayback';
+import { useRuntime } from '../../runtime/AppRuntimeProvider';
 export function OnboardingRoute() {
   const focused = useIsFocused();
   const flow = useOnboarding(),
+    runtime = useRuntime(),
     unit = useSettingsStore((s) => s.data.units),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null);
   const playback = useImpactPlayback(flow.step, flow.advance, focused);
@@ -43,7 +45,16 @@ export function OnboardingRoute() {
   if (flow.step === 'S1')
     body = <ScheduleScreen ruleDraft={draft} draft={schedule} onAction={onSchedule} onChoose={setWheel} />;
   if (flow.step === 'S2') body = <PlanBuild rule={toRule(draft, toSchedule(schedule))} onComplete={flow.advance} />;
-  if (flow.step === 'S3') body = <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} />;
+  if (flow.step === 'S3')
+    body = (
+      <PlanSummary
+        draft={draft}
+        schedule={toSchedule(schedule)}
+        onEdit={flow.edit}
+        now={runtime.clock.now()}
+        timezone={runtime.clock.timezone()}
+      />
+    );
   if (flow.step === 'S4') body = <ReviewWarmup onSkip={flow.advance} />;
   return (
     <OnboardingShell
