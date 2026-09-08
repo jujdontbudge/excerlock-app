@@ -117,7 +117,9 @@ Tab bar: Home · Conditions · Analytics · Settings (labels + line icons). Tab 
 
 Component order is decided by Codex's OtterLife mapping (from the reference study); required content:
 
-1. `StatusCard` — driven by `LockDecision`:
+1. The lock card (`BlockingScheduleCard`, or `StatusCard` when no rule is scheduled) — driven by
+   `LockDecision`. Its slots are fixed: header glyph (closed · open · alarm), status title, status subtitle,
+   the rule sentence, the day timeline (every window today, merged), a caption, then the condition rows:
    - `locked`: lock icon, "Apps are blocked", subtitle = `nextUnlockHint`, "until you …".
    - `unlockedMet`: open lock, "Unlocked for the rest of today", subtitle "Blocking resumes tomorrow at 9:00 AM" (from `relockAt`).
    - `unlockedWalking`: "Unlocked while you walk", lease countdown, Stop button.
@@ -125,17 +127,25 @@ Component order is decided by Codex's OtterLife mapping (from the reference stud
    - `afterWindow` / `noRulesToday`: "No blocking right now", subtitle next scheduled start or "Add a condition".
    - Permission problems override the subtitle: "Screen Time access needed" with an inline fix action.
    - The simple v1 unlock moment: when the decision transitions into `unlockedMet`, the lock glyph crossfades to the open glyph with a `pop` spring on scale, one success haptic. Nothing else.
-2. `ProgressCard` per enabled rule scheduled today: progress bar/ring, "1,240 / 5,000 steps", remaining; gym arrival shows "Check in" (manual) and "Auto-detect on"; state rule shows "Start a walk" / live session.
-3. Locked apps row: "N apps · M categories" → opens picker (X2 as a sheet).
-4. Streak chip (flame + days) and "Add condition" shortcut.
+2. One condition row per enabled rule scheduled today, ordered by window start, inside the lock card:
+   icon, rule name and its number on one row, progress bar under it, the rule's state today (Met today ·
+   Blocking now · In progress · Satisfied today · Not scheduled today · Paused · Paused — save a gym), and
+   0–2 unlock pills ("I'm at the gym" · "I'm using a treadmill" · "I'm walking with my phone"). A gym pill
+   and a step-goal row appear together; the pill never replaces the other rules' rows. Gym arrival shows
+   "Check in" (manual) and "Auto-detect on"; a state rule shows "Start a walk" / live session. A denied
+   sensor replaces the action with "Fix" and says which permission is missing.
+3. Locked apps row: "N apps · M categories", or "No apps chosen yet" → opens picker (X2 as a sheet).
+4. Streak chip (flame + days), "Edit / Add" and an "Add condition" shortcut that is present in every state.
 
 States to build and test (order of the `statusContent` chain, see P2-T19): lapsed · enforcementFailed ·
 permissionNeeded · noAppsSelected · noRules · allPaused · locked (any number of rules, each with its own row;
-claim-pending line until the first refresh of the launch) · unlockedMet ("Unlocked by X"; later unmet windows
-"Satisfied by X today") · unlockedProvisional ("Unlocked while you're here") · unlockedWalking · beforeWindow
+claim-pending line "Checking today's activity…" until the first claim of the launch) · unlockedMet
+("Unlocked by X"; "Unlocked — we caught up while the app was closed" when a foreground refresh flipped the
+row; later unmet windows "Satisfied by X today") · unlockedProvisional ("Unlocked while you're here") · unlockedWalking · beforeWindow
 ("Get ahead" only for a target rule) · afterWindow · noRulesToday (both "Blocking resumes …").
 `permissionNeeded` and `noAppsSelected` use a closed lock and a "Nothing is being blocked" headline, never the
-rest-day copy.
+rest-day copy. `unlockedWalking` puts the lease clock and Stop on the walking rule's own row while every other
+row keeps its numbers. Home shows no second condition list: the rows in the lock are the only one.
 
 ### C — Conditions
 

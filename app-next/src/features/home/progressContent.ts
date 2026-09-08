@@ -67,11 +67,15 @@ export function progressContent(
       label: row.met ? undefined : c.checkIn,
     };
   const unit = m.metric === 'distance' ? m.unit : m.metric;
+  // merge: P2-T16's walking-minutes mode turns this into a plain `m.metric === 'minutes'` branch.
+  const walkedMinutes = rule.activity === 'walking' && m.metric === 'minutes';
   return {
     title,
     icon: rule.activity,
     value: row.progress / m.goal,
-    detail: c.progress(format(row.progress), format(m.goal), unit),
+    detail: walkedMinutes
+      ? c.walkedProgress(format(row.progress), format(m.goal))
+      : c.progress(format(row.progress), format(m.goal), unit),
     action: rule.activity === 'gym' && !row.met ? 'checkin' : undefined,
     label: rule.activity === 'gym' && !row.met ? c.checkIn : undefined,
   };

@@ -1,6 +1,8 @@
 import { progressContent } from '../../features/home/progressContent';
 import { scenarios } from '../scenarios';
 import { makeRule } from '../scenarios/base';
+import { unlockEntries } from '../../features/unlock/entry';
+import { Rule } from '../../domain/types';
 test.each([
   'home-locked-walking',
   'home-walking-session',
@@ -75,4 +77,25 @@ test('a condition satisfied by another condition has attribution and no action',
   expect(model).toMatchObject({ detail: 'Satisfied by Walk 5,000 steps today' });
   expect(model.action).toBeUndefined();
   expect(model.label).toBeUndefined();
+});
+
+test('a treadmill minutes rule counts walked minutes and offers the treadmill pill', () => {
+  // merge: P2-T16 adds walking minutes to RuleMode; until then the shape is built structurally.
+  const rule = makeRule('walk-minutes', {
+    kind: 'target',
+    activity: 'walking',
+    metric: 'minutes',
+    goal: 20,
+    place: 'treadmill',
+  } as unknown as Rule['mode']);
+  const model = progressContent(
+    rule,
+    { ruleId: rule.id, day: '2026-09-07', progress: 0, met: false, metAt: null },
+    scenarios.find((scenario) => scenario.id === 'home-locked-walking')!.permissions,
+    null,
+    rule.updatedAt,
+    false,
+  );
+  expect(model.detail).toBe('0 / 20 min walked');
+  expect(unlockEntries(rule)).toEqual(['treadmill']);
 });
