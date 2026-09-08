@@ -4,3 +4,17 @@ api.excerlock.com {
 	encode zstd gzip
 	reverse_proxy 127.0.0.1:3000
 }
+
+# The public website. Static files only, rsynced to /var/www/excerlock by
+# deploy/site.sh. try_files gives /privacy and /terms clean aliases, which is
+# what the Adapty paywall and the Google OAuth consent screen link to.
+#
+# This block lives here, not only on the box: deploy/deploy.sh installs this
+# file over /etc/caddy/Caddyfile on every API deploy, so a site vhost that
+# existed only on the VM would be erased by the next one.
+excerlock.com, www.excerlock.com {
+	encode zstd gzip
+	root * /var/www/excerlock
+	try_files {path} {path}.html
+	file_server
+}
