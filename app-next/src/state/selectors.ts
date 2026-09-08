@@ -5,10 +5,7 @@ import { resolveLock } from '../domain/resolveLock';
 import { currentInstances, dayKey, windowInstances } from '../domain/schedule';
 import { rulesStore as useRulesStore } from './rulesStore';
 import { ruleDaysStore as useRuleDaysStore } from './ruleDaysStore';
-import { profileStore as useProfileStore } from './profileStore';
 import { streak } from '../domain/streak';
-import { reclaimedPeriod } from '../domain/reclaimed';
-import { addDays } from '../domain/calendar';
 export function useClock() {
   const runtime = useRuntime();
   return useSyncExternalStore(runtime.clock.subscribe, runtime.clock.now, runtime.clock.now);
@@ -69,32 +66,4 @@ export function useStreak() {
     now = useClock(),
     history = useHistory();
   return useMemo(() => streak(history, dayKey(now, runtime.clock.timezone())), [history, now, runtime]);
-}
-export function useAnalytics(period: 'Week' | 'Month' | 'Year') {
-  const runtime = useRuntime(),
-    now = useClock(),
-    history = useHistory(),
-    baseline = useProfileStore((s) => s.data.estimatedDailyMinutes),
-    today = dayKey(now, runtime.clock.timezone());
-  return useMemo(() => {
-    const length = period === 'Week' ? 7 : period === 'Month' ? 30 : 365;
-    const start = addDays(today, 1 - length),
-      previousStart = addDays(start, -length);
-    const rows = history.filter((d) => d.day >= start && d.day <= today),
-      previous = history.filter((d) => d.day >= previousStart && d.day < start);
-    return {
-      rows,
-      previous,
-      reclaimed: reclaimedPeriod(
-        baseline,
-        rows.map((d) => d.usageMinutes),
-      ),
-      previousReclaimed: reclaimedPeriod(
-        baseline,
-        previous.map((d) => d.usageMinutes),
-      ),
-      scheduled: rows.filter((d) => d.scheduled).length,
-      met: rows.filter((d) => d.scheduled && d.met).length,
-    };
-  }, [period, today, history, baseline]);
 }

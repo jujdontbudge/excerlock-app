@@ -154,8 +154,11 @@ summary with Edit links. Cancel confirms if dirty.
 1. `SegmentedControl` Week · Month · Year with date navigation (‹ ›).
 2. Time reclaimed hero (`type.metric`), "measured on N of M days" line, delta vs previous period.
 3. Locked-app minutes chart (`BarChart`, comparison color) with the estimate line.
-4. Exercise chart: per day, bars per activity in `chart.exercise`, or steps line for walking-only users.
-5. Days met "5 of 5 scheduled", current and longest streak (`StatTile` × 3).
+4. Exercise totals: one compact row per activity with its period total (walking in steps, the rest in
+   minutes); tapping a row opens that activity's per-day chart in a sheet. Resolved this way in the P2-T24
+   planner resolution for finding 47, which kept the existing rows in place of a second stacked chart.
+5. Days met "5 of 5 scheduled", current and longest streak (`StatTile` × 3). The streak tile is a running
+   streak read at `min(today, period end)`, so a paged-back period shows the streak current at its end.
 6. Weekly recap card (Week only): rows per `01-product-model.md` §7.
 7. Empty states: day zero ("Your first week starts today"), no measurement yet (usage monitor not available), no rules.
 

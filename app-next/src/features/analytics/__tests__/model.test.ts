@@ -1,5 +1,7 @@
 import { analyticsModel } from '../analyticsModel';
 import { HistoryDay } from '../../../ports/models';
+import { historyFromRuleDays } from '../history';
+import { Rule } from '../../../domain/types';
 const row = (day: string, usageMinutes: number | null, scheduled = true, met = true): HistoryDay => ({
   day,
   usageMinutes,
@@ -50,4 +52,59 @@ test('history keeps a cross-midnight result on its supplied start day', () => {
   const m = analyticsModel([row('2026-09-06', 70)], '2026-09-07', 'Week', -1, 180);
   expect(m.series[6].value).toBe(70);
   expect(m.met).toBe(1);
+});
+
+test('the delta compares to the previous period', () => {
+  const m = analyticsModel([row('2026-08-31', 120), row('2026-09-07', 60)], '2026-09-07', 'Week', 0, 180);
+
+  expect(m.reclaimed).toEqual({ minutes: 120, measuredDays: 1 });
+  expect(m.previous).toEqual({ minutes: 60, measuredDays: 1 });
+  expect(m.delta).toBe(60);
+});
+
+test("the streak tile shows the current streak at the selected period's end", () => {
+  const m = analyticsModel(
+    [
+      row('2026-08-31', 90),
+      row('2026-09-01', 90, true, false),
+      row('2026-09-02', 90),
+      row('2026-09-03', 90),
+      row('2026-09-07', 90),
+    ],
+    '2026-09-07',
+    'Week',
+    -1,
+    180,
+  );
+
+  expect(m.streak.current).toBe(2);
+});
+
+test('a missed sealed day breaks the streak shown with the chart', () => {
+  const m = analyticsModel(
+    [row('2026-09-01', 90), row('2026-09-02', 90, true, false), row('2026-09-03', 90)],
+    '2026-09-03',
+    'Week',
+    0,
+    180,
+  );
+
+  expect(m.streak.current).toBe(1);
+  expect(m.streak.longest).toBe(1);
+});
+
+test('a state-only day reaches the sealed-history streak floor at ten walking minutes', () => {
+  const rule: Rule = {
+    id: 'walk-state',
+    activity: 'walking',
+    mode: { kind: 'state', activity: 'walking', place: 'outside' },
+    schedule: { days: [1, 2, 3, 4, 5], window: { kind: 'allDay' } },
+    enabled: true,
+    createdAt: '2026-09-01T12:00:00.000Z',
+    updatedAt: '2026-09-01T12:00:00.000Z',
+  };
+
+  expect(
+    historyFromRuleDays([{ ruleId: rule.id, day: '2026-09-01', progress: 10, met: false, metAt: null }], [rule])[0].met,
+  ).toBe(true);
 });
