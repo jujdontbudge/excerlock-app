@@ -65,7 +65,8 @@ export function createSubscriptionAdapter({
   let disposed = false;
 
   const read = (): Entitlement => entitlementStore.getState().data.entitlement;
-  let lastKnownGood: Entitlement | undefined = read().status === 'unknown' ? undefined : read();
+  const persisted = read();
+  let lastKnownGood: Entitlement | undefined = persisted.status === 'unknown' ? undefined : persisted;
 
   const report = (scope: SubscriptionIssue, detail: unknown) => {
     try {
