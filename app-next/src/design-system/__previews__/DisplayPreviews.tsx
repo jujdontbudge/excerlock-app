@@ -1,6 +1,7 @@
 import * as UI from '../index';
 import { previewCopy as c } from '../../content/previews';
 import { usePreviewState } from './usePreviewState';
+import { conditionsCopy } from '../../content/conditions';
 export function DisplayPreviews({
   name,
   alternate,
@@ -77,6 +78,7 @@ export function DisplayPreviews({
           schedule={c.schedule}
           icon="walking"
           enabled={s.flag}
+          status={{ text: s.flag ? conditionsCopy.statusActive : conditionsCopy.statusPaused, tone: s.flag ? 'active' : 'paused' }}
           onOpen={s.toggle}
           onToggle={s.setFlag}
           onDelete={() => s.setOpen(true)}

@@ -5,6 +5,8 @@ import { GymsScreen } from '../../settings/GymsScreen';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { rulesStore } from '../../../state/rulesStore';
+import { ruleDaysStore } from '../../../state/ruleDaysStore';
+import { deleteRule } from '../mutations';
 import { settingsStore } from '../../../state/settingsStore';
 import { createDraft, toRule } from '../../rules/draft';
 import { scheduleDraft, toSchedule } from '../../rules/scheduleDraft';
@@ -290,4 +292,52 @@ test('the summary names the start time when the window is still ahead', async ()
     </AppRuntimeProvider>,
   );
   expect(screen.getByText(planCopy.startsAt(minuteLabel(540)))).toBeTruthy();
+});
+
+test('a walking condition shows no Gyms row', async () => {
+  await mount('edit-me', {
+    activity: 'walking',
+    mode: { kind: 'target', activity: 'walking', metric: 'steps', goal: 5000, place: 'outside' },
+  });
+  expect(screen.queryByText(planCopy.gyms)).toBeNull();
+  expect(screen.getByText(planCopy.places.outside)).toBeTruthy();
+});
+
+test('the conditions list shows the auto-pause reason on the row', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('fresh-install');
+  rulesStore.getState().patch({
+    rules: [
+      {
+        ...toRule(createDraft('gym'), toSchedule(scheduleDraft({}))),
+        id: 'paused-gym',
+        enabled: false,
+        pausedReason: 'noGym',
+      },
+    ],
+  });
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <ConditionsScreen onAdd={leave} onEdit={leave} />
+    </AppRuntimeProvider>,
+  );
+  expect(screen.getByText(conditionsCopy.statusNoGym)).toBeTruthy();
+});
+
+test('deleting a met condition keeps the unlock it earned today', () => {
+  const now = '2026-09-07T15:00:00.000Z';
+  const rule = { ...toRule(createDraft('running'), toSchedule(scheduleDraft({}))), id: 'met-rule' };
+  rulesStore.getState().patch({ rules: [rule] });
+  ruleDaysStore.getState().patch({
+    days: [
+      { ruleId: 'met-rule', day: '2026-09-07', progress: 20, met: true, metAt: now },
+      { ruleId: 'met-rule', day: '2026-09-06', progress: 20, met: true, metAt: '2026-09-06T15:00:00.000Z' },
+    ],
+    walkingSession: null,
+  });
+  deleteRule('met-rule', now, 'UTC');
+  expect(rulesStore.getState().data.rules).toHaveLength(0);
+  expect(ruleDaysStore.getState().data.days).toEqual([
+    { ruleId: 'met-rule', day: '2026-09-07', progress: 20, met: true, metAt: now },
+  ]);
 });

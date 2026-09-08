@@ -140,8 +140,10 @@ rest-day copy.
 ### C — Conditions
 
 1. Locked apps section (count + Edit).
-2. Rule list: `RuleCard` per rule (icon, "Walk 5,000 steps", "Mon–Fri · 9 AM–9 PM", switch). Tap → edit
-   (opens the builder at the summary step). Swipe → delete with confirm.
+2. Rule list: `RuleCard` per rule (icon, "Walk 5,000 steps", "Mon–Fri · 9 AM–9 PM", status line, switch).
+   The status line is "Met today" · "Blocking now" · "Blocking starts at 9 AM" · "Not scheduled today" ·
+   "Paused" · "Paused — save a gym" (B25), and a paused card dims its icon and title. Tap → edit
+   (opens the builder at the summary step). Swipe → delete with confirm; an unlock earned today survives it (B23).
 3. "Add condition" → builder.
 4. Empty state: illustration, "No conditions yet", CTA.
 
