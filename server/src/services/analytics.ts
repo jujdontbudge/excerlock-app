@@ -14,7 +14,6 @@ export interface AnalyticsOptions {
   host: string;
 }
 
-type AnalyticsVendor = PropsOf<"vendor_connected">["vendor"];
 type AnalyticsSupportCategory =
   PropsOf<"support_request_submitted">["category"];
 
@@ -25,13 +24,9 @@ export interface SupportAnalytics {
   ): void;
 }
 
-export interface VendorAnalytics {
-  vendorConnected(distinctId: string, vendor: AnalyticsVendor): void;
-  vendorDisconnected(distinctId: string, vendor: AnalyticsVendor): void;
-  vendorEarnRecorded(distinctId: string, vendor: AnalyticsVendor): void;
-}
-
-export interface ServerAnalytics extends SupportAnalytics, VendorAnalytics {
+// v1 ships no direct vendor connections, so the three `vendor_*` events left the registry
+// (P2-T07). The OAuth exchange and the webhook receivers are unchanged; they no longer report.
+export interface ServerAnalytics extends SupportAnalytics {
   capture<Event extends ServerEventName>(
     distinctId: string,
     event: Event,
@@ -71,15 +66,6 @@ export function createAnalytics(options: AnalyticsOptions): ServerAnalytics {
       forwardCapture(distinctId, "support_request_submitted", {
         category,
       });
-    },
-    vendorConnected(distinctId, vendor) {
-      forwardCapture(distinctId, "vendor_connected", { vendor });
-    },
-    vendorDisconnected(distinctId, vendor) {
-      forwardCapture(distinctId, "vendor_disconnected", { vendor });
-    },
-    vendorEarnRecorded(distinctId, vendor) {
-      forwardCapture(distinctId, "vendor_earn_recorded", { vendor });
     },
     async shutdown() {
       await client?.shutdown();

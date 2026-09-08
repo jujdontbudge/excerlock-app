@@ -31,21 +31,6 @@ afterAll(async () => {
   await postgres.client.close();
 });
 
-function createWebhookAnalyticsSpy() {
-  const capture = vi.fn();
-  return {
-    capture,
-    analytics: {
-      vendorDisconnected(userId: string, vendor: Vendor) {
-        capture(userId, "vendor_disconnected", { vendor });
-      },
-      vendorEarnRecorded(userId: string, vendor: Vendor) {
-        capture(userId, "vendor_earn_recorded", { vendor });
-      },
-    },
-  };
-}
-
 async function createConnectedRepository(
   vendor: Vendor,
   externalUserId: string,
@@ -66,14 +51,12 @@ async function createConnectedRepository(
 }
 
 describe("notify-only vendor webhook ingestion", () => {
-  it("records the same delivery once and emits analytics once", async () => {
+  it("records the same delivery once", async () => {
     const rawPayload =
       '{"user_id":67890,"id":"550e8400-e29b-41d4-a716-446655440000","type":"workout.updated","trace_id":"e369c784-5100-49e8-8098-75d35c47b31b"}';
     const repository = await createConnectedRepository("whoop", "67890");
-    const { analytics, capture } = createWebhookAnalyticsSpy();
     const service = createVendorWebhookService({
       repository,
-      analytics,
       now: () => new Date("2026-07-29T19:00:00.000Z"),
       randomId: () => "webhook-event-id",
     });
@@ -86,7 +69,6 @@ describe("notify-only vendor webhook ingestion", () => {
       first,
       replay,
       events,
-      analytics: capture.mock.calls,
     }).toEqual({
       first: { recorded: true, eventId: "webhook-event-id" },
       replay: { recorded: false, eventId: "webhook-event-id" },
@@ -103,9 +85,6 @@ describe("notify-only vendor webhook ingestion", () => {
           receivedAt: new Date("2026-07-29T19:00:00.000Z"),
         },
       ],
-      analytics: [
-        ["user_123", "vendor_earn_recorded", { vendor: "whoop" }],
-      ],
     });
   });
 
@@ -113,10 +92,8 @@ describe("notify-only vendor webhook ingestion", () => {
     const rawPayload =
       '{"aspect_type":"update","event_time":1785351600,"object_id":12345,"object_type":"athlete","owner_id":12345,"subscription_id":120475,"updates":{"authorized":"false"}}';
     const repository = await createConnectedRepository("strava", "12345");
-    const { analytics, capture } = createWebhookAnalyticsSpy();
     const service = createVendorWebhookService({
       repository,
-      analytics,
       now: () => new Date("2026-07-29T19:00:00.000Z"),
       randomId: () => "deauthorization-event-id",
     });
@@ -134,7 +111,6 @@ describe("notify-only vendor webhook ingestion", () => {
       replay,
       events,
       connection,
-      analytics: capture.mock.calls,
     }).toEqual({
       first: {
         recorded: true,
@@ -155,13 +131,6 @@ describe("notify-only vendor webhook ingestion", () => {
         },
       ],
       connection: null,
-      analytics: [
-        [
-          "user_123",
-          "vendor_disconnected",
-          { vendor: "strava" },
-        ],
-      ],
     });
   });
 });

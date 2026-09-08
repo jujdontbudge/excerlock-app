@@ -1,7 +1,5 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { Environment } from "../env.js";
-import type { VendorAnalytics } from "../services/analytics.js";
-import { analytics as defaultAnalytics } from "../services/analytics.js";
 import {
   requireVendorOAuthConfiguration,
   requireVendorTokenCipher,
@@ -54,10 +52,6 @@ export interface VendorOAuthServiceOptions {
   randomState?: () => string;
   randomId?: () => string;
   http?: VendorHttpClient;
-  analytics?: Pick<
-    VendorAnalytics,
-    "vendorConnected" | "vendorDisconnected"
-  >;
 }
 
 export interface VendorOAuthCallback {
@@ -103,7 +97,6 @@ export function createVendorOAuthService(
     options.randomState ?? (() => randomBytes(32).toString("base64url"));
   const generateId = options.randomId ?? randomUUID;
   const http = options.http ?? fetchVendorHttpClient;
-  const analytics = options.analytics ?? defaultAnalytics;
 
   return {
     async beginConnection(userId, vendor) {
@@ -195,7 +188,6 @@ export function createVendorOAuthService(
         scopes: tokens.scopes,
       };
       await options.repository.upsertConnection(connection);
-      analytics.vendorConnected(state.userId, vendor);
 
       return { vendor, connected: true };
     },
@@ -274,7 +266,6 @@ export function createVendorOAuthService(
         externalUserId: connection.externalUserId,
       });
       await options.repository.deleteConnection(connection.id);
-      analytics.vendorDisconnected(userId, vendor);
 
       return { vendor, connected: false };
     },

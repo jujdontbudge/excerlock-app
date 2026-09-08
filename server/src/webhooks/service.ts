@@ -1,6 +1,4 @@
 import { randomUUID } from "node:crypto";
-import type { VendorAnalytics } from "../services/analytics.js";
-import { analytics as defaultAnalytics } from "../services/analytics.js";
 import type { Vendor } from "../vendors/types.js";
 import { parseVendorNotification } from "./notification.js";
 import type {
@@ -10,10 +8,6 @@ import type {
 
 export interface VendorWebhookServiceOptions {
   repository: VendorWebhookRepository;
-  analytics?: Pick<
-    VendorAnalytics,
-    "vendorDisconnected" | "vendorEarnRecorded"
-  >;
   now?: () => Date;
   randomId?: () => string;
 }
@@ -28,7 +22,6 @@ export interface VendorWebhookService {
 export function createVendorWebhookService(
   options: VendorWebhookServiceOptions,
 ): VendorWebhookService {
-  const analytics = options.analytics ?? defaultAnalytics;
   const now = options.now ?? (() => new Date());
   const randomId = options.randomId ?? randomUUID;
 
@@ -60,11 +53,9 @@ export function createVendorWebhookService(
       };
       const inserted = await options.repository.insertWebhookEvent(event);
       if (inserted.inserted) {
+        // The connection row is the record; v1 emits no vendor analytics (P2-T07).
         if (notification.disconnectsConnection) {
           await options.repository.deleteConnection(connection.id);
-          analytics.vendorDisconnected(connection.userId, vendor);
-        } else {
-          analytics.vendorEarnRecorded(connection.userId, vendor);
         }
       }
 

@@ -27,21 +27,6 @@ const environment = parseEnv({
   POLAR_CLIENT_SECRET: "polar-secret",
 });
 
-function createOAuthAnalyticsSpy() {
-  const capture = vi.fn();
-  return {
-    capture,
-    analytics: {
-      vendorConnected(userId: string, vendor: Vendor) {
-        capture(userId, "vendor_connected", { vendor });
-      },
-      vendorDisconnected(userId: string, vendor: Vendor) {
-        capture(userId, "vendor_disconnected", { vendor });
-      },
-    },
-  };
-}
-
 class CapturingStateRepository implements VendorOAuthStateRepository {
   readonly states: NewVendorOAuthStateRecord[] = [];
   readonly connections: NewVendorConnectionRecord[] = [];
@@ -404,12 +389,10 @@ describe("vendor OAuth callback", () => {
     }) => {
       const repository = new CapturingStateRepository();
       const http = new StubHttpClient(responses);
-      const { analytics, capture } = createOAuthAnalyticsSpy();
       const service = createVendorOAuthService({
         environment,
         repository,
         http,
-        analytics,
         now: () => new Date("2026-07-29T19:00:00.000Z"),
         randomState: () => `${vendor}-state-12345678`,
         randomId: () => `${vendor}-connection-id`,
@@ -436,7 +419,6 @@ describe("vendor OAuth callback", () => {
           ? cipher.decrypt(connection.refreshTokenCiphertext)
           : null,
         requests: http.requests.map(observableRequest),
-        analytics: capture.mock.calls,
       }).toEqual({
         id: `${vendor}-connection-id`,
         userId: "user_123",
@@ -448,9 +430,6 @@ describe("vendor OAuth callback", () => {
         accessTokenExpiresAt: expiresAt,
         scopes,
         requests: expectedRequests,
-        analytics: [
-          ["user_123", "vendor_connected", { vendor }],
-        ],
       });
     },
   );
@@ -458,12 +437,10 @@ describe("vendor OAuth callback", () => {
   it("rejects missing, denied, and replayed callbacks before token exchange", async () => {
     const repository = new CapturingStateRepository();
     const http = new StubHttpClient([]);
-    const { analytics, capture } = createOAuthAnalyticsSpy();
     const service = createVendorOAuthService({
       environment,
       repository,
       http,
-      analytics,
       now: () => new Date("2026-07-29T19:00:00.000Z"),
       randomState: () => "strava-state-12345678",
     });
@@ -497,11 +474,9 @@ describe("vendor OAuth callback", () => {
     expect({
       requests: http.requests,
       connections: repository.connections,
-      analytics: capture.mock.calls,
     }).toEqual({
       requests: [],
       connections: [],
-      analytics: [],
     });
   });
 
@@ -513,12 +488,10 @@ describe("vendor OAuth callback", () => {
         body: { message: "invalid authorization code" },
       },
     ]);
-    const { analytics, capture } = createOAuthAnalyticsSpy();
     const service = createVendorOAuthService({
       environment,
       repository,
       http,
-      analytics,
       now: () => new Date("2026-07-29T19:00:00.000Z"),
       randomState: () => "strava-state-12345678",
     });
@@ -537,7 +510,6 @@ describe("vendor OAuth callback", () => {
     expect({
       request: observableRequest(http.requests[0] as VendorHttpRequest),
       connections: repository.connections,
-      analytics: capture.mock.calls,
     }).toEqual({
       request: {
         method: "POST",
@@ -550,7 +522,6 @@ describe("vendor OAuth callback", () => {
         },
       },
       connections: [],
-      analytics: [],
     });
   });
 });
@@ -779,12 +750,10 @@ describe("vendor disconnect", () => {
         scopes: "fixture-scope",
       });
       const http = new StubHttpClient([{ status, body: null }]);
-      const { analytics, capture } = createOAuthAnalyticsSpy();
       const service = createVendorOAuthService({
         environment,
         repository,
         http,
-        analytics,
       });
 
       await expect(
@@ -794,14 +763,10 @@ describe("vendor disconnect", () => {
         request: observableRequest(http.requests[0] as VendorHttpRequest),
         remainingConnections: repository.connections,
         deletedConnectionIds: repository.deletedConnectionIds,
-        analytics: capture.mock.calls,
       }).toEqual({
         request: expectedRequest,
         remainingConnections: [],
         deletedConnectionIds: [`${vendor}-connection-id`],
-        analytics: [
-          ["user_123", "vendor_disconnected", { vendor }],
-        ],
       });
     },
   );
