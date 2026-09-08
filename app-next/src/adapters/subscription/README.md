@@ -58,6 +58,8 @@ const subscription = key ? createSubscriptionAdapter({ apiKey: key, sdk: nativeA
 
 `nativeAdaptySdk` is imported from its own module on purpose: it is the only file that loads the native
 SDK. `identify(userId)` is queued behind activation, so the identity spine can call it from first launch.
+`resolved` settles when the launch does — the seam for anything that wants to wait for a status rather
+than react to the store.
 
 ## What lives in the dashboard, not here
 

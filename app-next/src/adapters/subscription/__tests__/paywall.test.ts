@@ -130,6 +130,33 @@ test('an error raised by the Builder rejects rather than pretending the user can
   subscription.dispose();
 });
 
+test('a Builder view whose products fail to load rejects rather than showing an empty paywall', async () => {
+  const { harness, subscription } = await started();
+  const presented = subscription.presentPaywall('onboarding', 'annual');
+  await flush();
+  const failure = new Error('products unavailable');
+  expect(harness.view().fire('onLoadingProductsFailed', failure as never)).toBe(true);
+  await expect(presented).rejects.toBe(failure);
+  subscription.dispose();
+});
+
+test('a reporter that throws never costs the user their purchase', async () => {
+  const harness = sdkHarness({ flow: async () => ({ ...compliantFlow(), payloadData: '{}' }) as never });
+  const subscription = createSubscriptionAdapter({
+    apiKey: 'public_live_key',
+    sdk: harness.sdk,
+    onIssue: () => {
+      throw new Error('reporting is broken');
+    },
+  });
+  await subscription.resolved;
+  const presented = subscription.presentPaywall('onboarding', 'annual');
+  await flush();
+  harness.view().fire('onPurchaseCompleted', purchased(), annualProduct());
+  await expect(presented).resolves.toMatchObject({ status: 'trial' });
+  subscription.dispose();
+});
+
 test('a paywall missing its legal block is reported but still shown', async () => {
   const issues: { scope: string; detail: unknown }[] = [];
   const harness = sdkHarness({ flow: async () => ({ ...compliantFlow(), payloadData: '{"blocks":[]}' }) as never });
