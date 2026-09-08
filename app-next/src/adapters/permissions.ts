@@ -47,3 +47,29 @@ export const recordHealth = (status: HealthAuthorizationStatus) =>
 
 export const recordLocation = (status: LocationAuthorizationStatus) =>
   recordPermission('location', locationPermission(status));
+
+export type PermissionSources = {
+  motion?: { getAuthorizationStatus(): MotionAuthStatus };
+  health?: { getAuthorizationStatus(): HealthAuthorizationStatus };
+  location?: { getAuthorizationStatus(): LocationAuthorizationStatus };
+  /**
+   * `GaitPort.permission()`. It must read `AVCaptureDevice.authorizationStatus(for: .video)` rather
+   * than probing with `start()`/`stop()`, or asking here flashes the camera preview (P2-T03).
+   */
+  camera?: { permission(): Promise<PermissionStatus> };
+};
+
+/**
+ * Reads every authorization the signals need, straight from the OS.
+ *
+ * A permission can change in iOS Settings while the app is backgrounded, and nothing tells the app
+ * when it does, so this runs on foreground from P2-T17's single `AppState` handler. Sources that
+ * are absent are left as they are: Screen Time and notifications belong to other adapters.
+ */
+export async function readPermissionHealth(sources: PermissionSources): Promise<Permissions> {
+  if (sources.motion) recordMotion(sources.motion.getAuthorizationStatus());
+  if (sources.health) recordHealth(sources.health.getAuthorizationStatus());
+  if (sources.location) recordLocation(sources.location.getAuthorizationStatus());
+  if (sources.camera) recordPermission('camera', await sources.camera.permission());
+  return permissionsStore.getState().data;
+}
