@@ -104,3 +104,34 @@ test('existing gym can be edited at the cap', async () => {
   expect(r.gym.listPlaces().find((p) => p.id === firstGymId)?.radiusMeters).toBe(90);
   r.dispose();
 });
+
+test('the picker renders the radius trade-off line under the slider', async () => {
+  const r = await mount();
+  expect(screen.getByText(c.helper)).toBeTruthy();
+  expect(screen.getByRole('adjustable').props.accessibilityValue).toMatchObject({ min: 50, max: 200, now: 100 });
+  r.dispose();
+});
+
+test('a placeId that matches no saved place seeds the blank add form, not the last gym', async () => {
+  const r = createRuntime();
+  await r.dev.load('fresh-install');
+  await r.gym.savePlace({
+    id: 'golds',
+    name: "Gold's Gym",
+    address: '1 Main St',
+    latitude: 40,
+    longitude: -80,
+    radiusMeters: 150,
+  });
+  await render(
+    <AppRuntimeProvider runtime={r}>
+      <GymPickerScreen placeId="not-a-saved-gym" onSaved={saved} />
+    </AppRuntimeProvider>,
+  );
+  expect(screen.getAllByText(c.newName).length).toBeGreaterThan(0);
+  expect(screen.queryByText("Gold's Gym")).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: c.save }));
+  expect(r.gym.listPlaces()).toHaveLength(2);
+  expect(r.gym.listPlaces().find((p) => p.id === 'golds')).toMatchObject({ name: "Gold's Gym", radiusMeters: 150 });
+  r.dispose();
+});

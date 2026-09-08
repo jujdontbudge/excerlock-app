@@ -23,16 +23,18 @@ beforeEach(() => {
     .patch({ answers: { activity: 'walking', walkingMode: 'steps', name: 'Alex', stepGoal: 5000 } });
 });
 test.each([
-  ['Edit goal', 'W3'],
-  ['Edit place', 'W1'],
-  ['Edit schedule', 'S1'],
-])('%s returns directly to the summary', async (label, step) => {
+  ['Edit activity', ['O20', 'W1', 'W2', 'W3']],
+  ['Edit goal', ['W2', 'W3']],
+  ['Edit place', ['W1', 'W2', 'W3']],
+  ['Edit schedule', ['S1']],
+])('%s walks its branch and returns to the summary', async (label, steps) => {
   const route = renderRouter(routes, { initialUrl: '/onboarding/S3' });
   await route;
   await userEvent.press(screen.getByRole('button', { name: label }));
-  expect(route.getPathname()).toBe('/onboarding/' + step);
-  if (step === 'W3') await userEvent.press(screen.getByRole('button', { name: 'Add 500 steps' }));
-  await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  for (const step of steps) {
+    expect(route.getPathname()).toBe('/onboarding/' + step);
+    await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  }
   expect(route.getPathname()).toBe('/onboarding/S3');
   expect(onboardingStore.getState().data.answers.name).toBe('Alex');
   await userEvent.press(screen.getByRole('button', { name: 'Use this plan' }));

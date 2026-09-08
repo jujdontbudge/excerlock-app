@@ -4,6 +4,7 @@ import { Coordinates, PlaceCandidate, PlaceSuggestion } from '../../ports/PlaceS
 import { SavedPlace } from '../../ports/models';
 import { clampRadius, distanceMetres, roundCoordinate } from './geometry';
 import { gymPickerCopy as c } from '../../content/gymPicker';
+import { syncGymDependency } from '../conditions/mutations';
 import { tokens as t } from '../../design-system/tokens';
 export const defaultCentre: Coordinates = { latitude: 41.884, longitude: -87.652 };
 export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPlace) {
@@ -170,6 +171,8 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
         ...pin,
         radiusMeters: radius,
       });
+      // A saved gym gives every gym condition its signal back (B25).
+      syncGymDependency();
       if (alive.current) onSaved();
     } catch {
       if (alive.current) setError(c.saveError);

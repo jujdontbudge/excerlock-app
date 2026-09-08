@@ -58,11 +58,12 @@ test('conditionState distinguishes paused reasons, denied sensors, and unschedul
   ).toBe('pausedNoGym');
   expect(
     conditionState(
-      { ...rule, permissionNeeded: true },
+      rule,
       row,
       { state: 'locked', activeRuleIds: [rule.id], nextUnlockHint: { ruleId: rule.id, action: 'walk', remaining: 1800, goal: 5000, unit: 'steps' } },
       now,
       'America/New_York',
+      true,
     ),
   ).toBe('permissionNeeded');
   expect(
@@ -74,4 +75,11 @@ test('conditionState distinguishes paused reasons, denied sensors, and unschedul
       'America/New_York',
     ),
   ).toBe('notScheduled');
+});
+
+test('a rule met today still reads met after its schedule moved off today', () => {
+  const edited = { ...rule, schedule: { ...rule.schedule, days: [3 as const] } };
+  expect(
+    conditionState(edited, { ...row, met: true, metAt: now }, { state: 'noRulesToday', nextLockAt: null }, now, 'UTC'),
+  ).toBe('met');
 });

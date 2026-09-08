@@ -13,15 +13,20 @@ export type ConditionState =
   | 'notScheduled'
   | 'permissionNeeded';
 
+/**
+ * The state one condition is in today. `permissionNeeded` is a live reading of the sensor the rule
+ * depends on, so the caller passes it in rather than the rule carrying a stale copy of it.
+ */
 export function conditionState(
   rule: Rule,
   row: RuleDay,
   decision: LockDecision,
   now: string,
   timezone: string,
+  permissionNeeded = false,
 ): ConditionState {
   if (!rule.enabled) return rule.pausedReason === 'noGym' ? 'pausedNoGym' : 'paused';
-  if (rule.permissionNeeded) return 'permissionNeeded';
+  if (permissionNeeded) return 'permissionNeeded';
   if (row.met) return 'met';
   if (decision.state === 'unlockedMet' && decision.byRuleId !== rule.id) return 'satisfiedToday';
   if (decision.state === 'unlockedWalking' && decision.sessionRuleId === rule.id) return 'live';

@@ -170,7 +170,7 @@ export function HomeScreen() {
       <ConditionRow
         key={rule.id}
         model={rowModel}
-        status={conditionStatus(conditionState(rule, row, decision, now, timezone))}
+        status={conditionStatus(conditionState(rule, row, decision, now, timezone, model.action === 'fix'))}
         entries={entries}
         onEntry={(kind) => openEntry(rule, kind)}
         onAction={() => takeAction(rule, model)}

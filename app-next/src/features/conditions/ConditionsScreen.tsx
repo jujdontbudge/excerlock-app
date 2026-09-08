@@ -21,11 +21,28 @@ import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { ConfirmSheet } from './ConfirmSheet';
 import { toggleRule, deleteRule } from './mutations';
+import { conditionState, conditionStatus } from '../../domain/conditionState';
+import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
+import { useLockDecision } from '../../state/selectors';
+import { dayKey } from '../../domain/calendar';
 export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit: (id: string) => void }) {
   const { rules, lockedApps } = useRulesStore((s) => s.data),
+    days = useRuleDaysStore((s) => s.data.days),
+    decision = useLockDecision(),
     runtime = useRuntime(),
+    now = runtime.clock.now(),
+    timezone = runtime.clock.timezone(),
     [deleting, setDeleting] = useState<string | null>(null);
   const ordered = [...rules].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const today = dayKey(now, timezone);
+  const rowFor = (ruleId: string) =>
+    days.find((day) => day.ruleId === ruleId && day.day === today) ?? {
+      ruleId,
+      day: today,
+      progress: 0,
+      met: false,
+      metAt: null,
+    };
   return (
     <ScreenShell
       safeBottom={false}
@@ -38,7 +55,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
           cancel={c.keepRule}
           onCancel={() => setDeleting(null)}
           onConfirm={() => {
-            if (deleting) deleteRule(deleting);
+            if (deleting) deleteRule(deleting, now, timezone);
             setDeleting(null);
           }}
         />
@@ -53,6 +70,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
                 schedule={scheduleLabel(rule.schedule)}
                 icon={rule.activity}
                 enabled={rule.enabled}
+                status={conditionStatus(conditionState(rule, rowFor(rule.id), decision, now, timezone))}
                 onOpen={() => onEdit(rule.id)}
                 onToggle={(value) => toggleRule(rule.id, value)}
                 onDelete={() => setDeleting(rule.id)}

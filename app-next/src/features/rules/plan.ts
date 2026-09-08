@@ -35,3 +35,9 @@ export function goalStep(d: RuleDraft) {
   if (d.activity === 'gym') return d.gymMode === 'arrival' ? 'G1' : 'G2';
   return d.runMode === 'distance' ? 'D' : d.activity === 'running' ? 'R2' : 'B2';
 }
+/** The chooser an edit of the goal opens: the mode question, never the goal field. */
+export function modeStep(d: RuleDraft) {
+  if (d.activity === 'walking') return 'W2';
+  if (d.activity === 'gym') return 'G1';
+  return d.activity === 'running' ? 'R1' : 'B1';
+}
