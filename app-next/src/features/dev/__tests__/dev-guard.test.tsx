@@ -82,7 +82,6 @@ test('the settings footer ignores seven taps when the dev flag is off', async ()
       <SettingsScreen navigate={() => {}} onDev={onDev} />
     </AppRuntimeProvider>,
   );
-  await userEvent.press(rendered.getByRole('button', { name: 'More settings' }));
   const footer = rendered.getByRole('button', { name: /ExcerLock 1.0.0/ });
 
   for (let tap = 0; tap < 7; tap += 1) await userEvent.press(footer);
