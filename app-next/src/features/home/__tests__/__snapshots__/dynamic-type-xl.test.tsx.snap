@@ -1,0 +1,639 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Home survives XL text in home-locked-walking: nothing fixed-height holds text and every label scales 1`] = `
+[
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Hi, Alex",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Monday, September 7",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "2",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Apps are blocked",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Until you walk 1,800 steps",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Block from 9 AM to 9 PM
+until you walk 5,000 steps",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "9 AM",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "9 AM",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "9 PM",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Walk 5,000 steps",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "3,200 / 5,000 steps",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Blocking now",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Lock list",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "3 apps · 1 category",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Analytics",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "History",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Edit / Add",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Add condition",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Conditions",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Delete",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Walk 5,000 steps",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Mon–Fri · 9 AM–9 PM",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Blocking now",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "✎",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Add condition",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Lock list",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Analytics",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Week",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Month",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Year",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "This week",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Your first week starts today",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Every bit of movement is a start. Your progress will grow here.",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Screen time",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Time reclaimed",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "180m",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "135m",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "90m",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "45m",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "0m",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Mon
+—",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Tue
+—",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Wed
+—",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Thu
+—",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Fri
+—",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Sat
+—",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Sun
+—",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Dashed line: your starting estimate, 180 min/day",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Days met",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "0 of 1",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "1 scheduled",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Current streak",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "0 days",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Best ever: 0 days",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Longest streak",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "0 days",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Your movement",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Walking",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "3,200 steps",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Gym",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "0 minutes",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Your weekly recap",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Time reclaimed",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "No previous measurement to compare",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "0h 0m",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Days met",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "0 of 1",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Walking",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "3,200 steps",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Current streak",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "0 days",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Gaps mean no measurement. They are excluded from time reclaimed.",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Settings",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Alex",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Not signed in",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Subscription",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "ExcerLock membership",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Renews Oct 7, 2026",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Manage subscription",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Restore purchases",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Data & permissions",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Screen Time",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Granted",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Motion & Fitness",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Granted",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Location",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Granted",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Health",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Granted",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Camera",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Granted",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Reminders",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Granted",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Preferences",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Distance units",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "km",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "mi",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Walk & Scroll stop grace",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "30 seconds",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "How long apps stay open after you stop walking.",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Gym auto-detect",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Always location lets your saved gym recognize a visit while ExcerLock is closed.",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Touch feedback",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Your plan",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Locked apps",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "3 apps · 1 category",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Conditions",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Saved gyms",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Support",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Contact support",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Rate ExcerLock",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Share ExcerLock",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Legal",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Terms of Use",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Privacy Policy",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Account",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Account",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Signing in restores your conditions and progress on a new phone. Your blocked-app selection stays on this device.",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "Delete my data",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "About",
+  },
+  {
+    "cap": 2,
+    "scales": true,
+    "text": "ExcerLock 1.0.0 (1)",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Home",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Conditions",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Analytics",
+  },
+  {
+    "cap": 1.6,
+    "scales": true,
+    "text": "Settings",
+  },
+]
+`;

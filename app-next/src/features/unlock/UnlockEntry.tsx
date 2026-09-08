@@ -27,7 +27,8 @@ export function UnlockEntry({
         style={({ pressed }) => ({
           backgroundColor: 'white',
           borderRadius: t.radius.pill,
-          height: t.layout.button,
+          minHeight: t.layout.button,
+          paddingVertical: t.space.sm,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',

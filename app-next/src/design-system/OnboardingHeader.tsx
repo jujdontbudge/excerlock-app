@@ -44,7 +44,7 @@ export function OnboardingHeader({
     <View
       style={{
         paddingHorizontal: t.layout.page,
-        height: p.header.height,
+        minHeight: p.header.height,
         flexDirection: 'row',
         alignItems: 'center',
         gap: t.space.sm,

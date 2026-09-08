@@ -30,7 +30,7 @@ export function UnlockLayout({
               feedback('press');
               close();
             }}
-            style={{ width: t.layout.touch, height: t.layout.touch, justifyContent: 'center' }}>
+            style={{ minWidth: t.layout.touch, minHeight: t.layout.touch, justifyContent: 'center' }}>
             <Label style={{ fontSize: 32, color: t.brand.primary }}>×</Label>
           </Pressable>
           {preview ? <Label tone="secondary">{c.preview}</Label> : null}
