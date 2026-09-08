@@ -32,7 +32,32 @@
 
 - [ ] Onboarding P shows the Builder paywall; purchase → `trial` → X1. Restore path works.
 - [ ] Sandbox purchase round-trips to the VPS (webhook row present).
-- [ ] No lifecycle analytics emitted by the app (single-emitter guardrail green).
+- [x] No lifecycle analytics emitted by the app (single-emitter guardrail green).
+- [x] The adapter passes the `SubscriptionPort` contract suite, which also runs against the Phase 1 fake.
+- [x] Every status transition is mapped: trial, active, expired, billing issue, and billing grace as `active`.
+- [x] A restore that finds nothing never downgrades a live entitlement, inside the Builder view as well as
+      through `restore()`.
+- [x] `unknown` is bounded: with the network cut, a launch settles on the persisted status within 3 seconds
+      and never clears a live entitlement; a late profile still publishes.
+- [x] A paywall payload missing Terms, Privacy, price or renewal is reported; a bundled fallback missing any
+      of them is refused outright (`paywallCompliance`).
+- [ ] The dashboard paywall itself carries tappable Terms of Use and Privacy Policy links, the price and the
+      renewal disclosure (Johan builds it; verified on device in P2-T11).
+
+## Built (2026-09-07)
+
+`app-next/src/adapters/subscription/` — see its README. Notes that change the steps above:
+
+- **There is no `@adapty/react-native-ui` in 4.x.** The Paywall Builder ships inside `react-native-adapty`
+  (`createFlowView` / `FlowViewController`), and v4 renamed paywalls to flows (`getFlow`, `logShowFlow`).
+  Pinned at `react-native-adapty` 4.0.2, already in the tree from `app/`.
+- **No config plugin entry is needed yet.** The plugin's only iOS job is bundling the dashboard's fallback
+  export as a bundle resource; add it with the `fallbackFile` prop when that export exists.
+- **No preselected product API.** The chosen plan travels as the custom tag `SELECTED_PLAN`, which the
+  dashboard paywall can bind.
+- **Not wired into the runtime yet.** `createRuntime` still refuses the real runtime, and `PaywallSlot`
+  still presents the Phase 1 stand-in and only calls `presentPaywall` on a tap. The cutover (auto-presenting
+  the Builder view in the slot, and composing the adapter in the runtime root) belongs to P2-T12/T17.
 
 ## Audit amendments (2026-09-07; see `fix-plan.md`)
 
