@@ -101,3 +101,29 @@ whose props stopped being empty.
 The resolution is P2-T12's, not a fix here: the cutover deletes `app/` and drops it from the root
 workspace list and from `npm run test:unit`. Until then the root `npm test` fails at `test:app`;
 `app-next`, `server`, `packages` and the guardrails are all green.
+
+### Handed to P2-T12: the App Privacy manifest
+
+`app-next/release/app-privacy.json` and its `README.md` are P2-T12's files, copied into this branch so
+the release guardrail (`guardrails/release/privacy-manifest.test.ts`, still only in `build/P2-T12`)
+passes the moment the two lanes meet. `README.md` is byte-identical to T12's; take T12's copy on any
+conflict. In `app-privacy.json` this task changed values only, never the shape:
+
+- `analyticsEvents` is now the 28 events `packages/analytics-events` marks `owner: 'client'`, not the
+  eight ceremony events. That is the allowlist the adapter enforces, so a lane that adds a call site
+  never has to edit the manifest again.
+- Two conditional notes are settled as facts. Crash Data stays **not** linked to the user: nothing calls
+  `Sentry.setUser`, `sendDefaultPii` is false and `beforeSend` deletes `event.user`. Performance Data
+  stays **not** collected: tracing, profiling, app-start, native frames, stalls and replay are all off.
+- Precise Location is corrected. T12 read `gym_unlock_tapped` as carrying a distance in metres; it
+  carries no location value at all, because its spec declares only `preview` and `safeProperties` drops
+  every key a spec does not name.
+- Device ID gains the `identified_only` fact, and loses the claim that Sentry records an installation id.
+- Product Interaction gains the opt-out and the two-floor privacy policy; Other Data Types points at
+  `adapters/analytics/personProperties.ts` instead of the plan.
+
+`docs/release/app-privacy.md` is the derived label and stays T12's to re-derive. Four of its claims are
+now stale: the Device ID row's "Sentry installation id on crashes", the Crash Data row's "flip to linked
+if P2-T07 adds it", the not-declared table's `gym_unlock_tapped.distance` sentence, and the events
+section, which lists `support_request_submitted` and `account_deleted` as client events — the registry
+gives both to the server, so the client cannot emit them.
