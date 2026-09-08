@@ -125,10 +125,7 @@ export function AnalyticsScreen() {
               value={c.streakDays(model.streak.current)}
               support={c.bestEver(model.streak.longest)}
             />
-            <StatTile
-              label={c.longest}
-              value={c.streakDays(model.streak.longest)}
-            />
+            <StatTile label={c.longest} value={c.streakDays(model.streak.longest)} />
           </View>
           <CompactGroup title={c.exercise}>
             {activities.map((a) => (
