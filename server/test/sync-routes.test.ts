@@ -41,6 +41,20 @@ function stubSync(overrides: Partial<SyncRepository> = {}): SyncRepository {
   };
 }
 
+/** `mock.calls` on a typed stub, without the `as` noise at every use site. */
+function callArguments<Arguments extends unknown[]>(
+  stub: (...args: Arguments) => unknown,
+): Partial<Arguments> {
+  const { calls } = (stub as unknown as { mock: { calls: Arguments[] } }).mock;
+  return calls[0] ?? ([] as unknown as Partial<Arguments>);
+}
+
+function pushedRules(
+  stub: SyncRepository["replaceRules"],
+): readonly unknown[] {
+  return (callArguments(stub)[1] ?? []) as readonly unknown[];
+}
+
 async function buildApp(
   sync: SyncRepository,
   userId: string | null = "user_123",
@@ -122,7 +136,7 @@ describe("PUT /v1/sync/rules", () => {
   });
 
   it("accepts pausedReason without storing it", async () => {
-    const replaceRules = vi.fn(async () => ({
+    const replaceRules: SyncRepository["replaceRules"] = vi.fn(async () => ({
       applied: 1,
       skipped: 0,
       tombstoned: 0,
@@ -146,7 +160,7 @@ describe("PUT /v1/sync/rules", () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(replaceRules.mock.calls[0]?.[1][0]).toMatchObject({
+    expect(pushedRules(replaceRules)[0]).toMatchObject({
       pausedReason: "noGym",
     });
   });
@@ -313,10 +327,9 @@ describe("sync batch limits", () => {
   });
 
   it("accepts a batch exactly at the maximum", async () => {
-    const upsertUsageDays = vi.fn(async () => ({
-      applied: MAX_SYNC_BATCH,
-      skipped: 0,
-    }));
+    const upsertUsageDays: SyncRepository["upsertUsageDays"] = vi.fn(
+      async () => ({ applied: MAX_SYNC_BATCH, skipped: 0 }),
+    );
     app = await buildApp(stubSync({ upsertUsageDays }));
 
     const response = await app.inject({
@@ -333,7 +346,7 @@ describe("sync batch limits", () => {
 
     expect({
       status: response.statusCode,
-      rows: upsertUsageDays.mock.calls[0]?.[1].length,
+      rows: callArguments(upsertUsageDays)[1]?.length,
     }).toEqual({ status: 200, rows: MAX_SYNC_BATCH });
   });
 });

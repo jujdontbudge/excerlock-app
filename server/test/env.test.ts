@@ -67,7 +67,7 @@ describe("parseEnv", () => {
       CLERK_SECRET_KEY: "sk_test_example",
       STRAVA_CLIENT_ID: "1234",
       VENDOR_TOKEN_ENCRYPTION_KEY: "key",
-    }) as Record<string, unknown>;
+    }) as unknown as Record<string, unknown>;
 
     expect(
       Object.keys(parsed).filter((key) =>

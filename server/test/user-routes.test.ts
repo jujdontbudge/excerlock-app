@@ -79,7 +79,7 @@ describe("PUT /v1/user", () => {
     await app.register(
       createUserRoutes({
         deletion: { deleteAccount: vi.fn() },
-        identity: { ensureActiveUser },
+        identity: { ensureActiveUser, findUser: vi.fn(async () => null) },
       }),
       { prefix: "/v1" },
     );

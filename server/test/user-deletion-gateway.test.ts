@@ -150,8 +150,9 @@ describe("identity erasure HTTP gateway", () => {
     await expect(gateway.deleteAuthUser("user_123")).rejects.toThrow(
       "Supabase identity erasure did not succeed",
     );
-    expect(fetch.mock.calls[0]?.[0]).toBe(
+    expect(fetch).toHaveBeenCalledWith(
       "https://hqgqhefftjxwdhqeushr.supabase.co/auth/v1/admin/users/user_123",
+      expect.objectContaining({ method: "DELETE" }),
     );
   });
 });

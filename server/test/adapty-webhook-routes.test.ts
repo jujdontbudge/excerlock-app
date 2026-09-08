@@ -67,7 +67,9 @@ describe("Adapty webhook route", () => {
   });
 });
 
-async function register(record: ReturnType<typeof vi.fn>): Promise<void> {
+async function register(
+  record: AdaptyWebhookService["record"],
+): Promise<void> {
   const service: AdaptyWebhookService = { record };
   app = Fastify({ logger: false });
   await app.register(

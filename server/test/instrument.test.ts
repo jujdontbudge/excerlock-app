@@ -5,6 +5,7 @@ import { scrubSentryEvent } from "../src/instrument.js";
 describe("Sentry event scrubbing", () => {
   it("removes user, request, and breadcrumb payloads before sending", () => {
     const event: ErrorEvent = {
+      type: undefined,
       event_id: "event_123",
       user: {
         id: "user_123",
