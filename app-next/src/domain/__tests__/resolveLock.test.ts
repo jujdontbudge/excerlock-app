@@ -1,5 +1,5 @@
 import { resolveLock } from '../resolveLock';
-import { rule } from './fixtures';
+import { rule, walkingSession as session } from './fixtures';
 import { Rule } from '../types';
 const now = '2026-09-07T19:00:00Z';
 const base = { now, timezone: 'UTC', rules: [rule], ruleDays: [], walkingSession: null };
@@ -24,12 +24,7 @@ test('met morning condition opens an unmet evening condition until the earliest 
 test('a live walking lease wins over a met target; grace remains live; expired and paused do not', () => {
   const walking: Rule = { ...rule, id: 'state', mode: { kind: 'state', activity: 'walking', place: 'either' } };
   const met = { ruleId: 'walk', day: '2026-09-07', progress: 5000, met: true, metAt: now };
-  const walkingSession = {
-    ruleId: 'state',
-    phase: 'walking' as const,
-    startedAt: now,
-    leaseUntil: '2026-09-07T19:15:00Z',
-  };
+  const walkingSession = session({ ruleId: 'state', startedAt: now, creditedThrough: now, verifiedAt: now });
   const input = { ...base, rules: [rule, walking], ruleDays: [met], walkingSession };
   expect(resolveLock(input)).toEqual({
     state: 'unlockedWalking',
@@ -98,7 +93,7 @@ test('seeded rule sets preserve precedence and future relock invariants', () => 
       ...base,
       rules,
       ruleDays,
-      walkingSession: { ruleId: '0', phase: 'walking' as const, startedAt: now, leaseUntil: '2026-09-07T19:15:00Z' },
+      walkingSession: session({ ruleId: '0', startedAt: now, creditedThrough: now, verifiedAt: now }),
     };
     const result = resolveLock(input);
     expect(resolveLock({ ...input, rules: rules.filter((r) => r.enabled) })).toEqual(result);

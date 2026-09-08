@@ -77,9 +77,9 @@ export function startProgressSync(runtime: Runtime) {
 
       let value = 0;
       let measuredAt = now;
-      if (rule.activity === 'walking') {
+      if (mode.activity === 'walking') {
         value = steps;
-      } else if (rule.activity === 'gym') {
+      } else if (mode.activity === 'gym') {
         const currentVisits = visitsKey === signalKey() ? visits : [];
         const calendarDay = dayKey(now, timezone);
         const accountingDays = day === calendarDay ? [day] : [day, calendarDay];

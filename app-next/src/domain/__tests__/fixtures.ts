@@ -1,4 +1,4 @@
-import { Rule } from '../types';
+import { Rule, WalkingSession } from '../types';
 export const rule: Rule = {
   id: 'walk',
   activity: 'walking',
@@ -8,3 +8,20 @@ export const rule: Rule = {
   createdAt: '2026-09-01T00:00:00Z',
   updatedAt: '2026-09-01T00:00:00Z',
 };
+
+/** A live handheld walking session; override only the fields a test is about. */
+export const walkingSession = (over: Partial<WalkingSession> = {}): WalkingSession => ({
+  id: 'session',
+  ruleId: 'walk',
+  placement: 'handheld',
+  instanceDay: '2026-09-07',
+  startedAt: '2026-09-07T19:00:00Z',
+  verifiedAt: '2026-09-07T19:00:00Z',
+  leaseUntil: '2026-09-07T19:15:00Z',
+  creditedThrough: '2026-09-07T19:00:00Z',
+  endedAt: null,
+  endReason: null,
+  graceUntil: null,
+  phase: 'walking',
+  ...over,
+});
