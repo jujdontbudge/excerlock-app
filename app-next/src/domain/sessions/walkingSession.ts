@@ -143,8 +143,9 @@ export function stepWalkingSession(
     };
   }
 
-  const leaseUntil = renewWalkLease(session.leaseUntil, event.at, config.leaseMs);
-  if (!leaseUntil) return end(session.leaseUntil, 'leaseLapsed');
+  // The deadline scan above already ended a session whose lease had lapsed, so this renewal always
+  // succeeds; `renewWalkLease` still owns the arithmetic and the lease law.
+  const leaseUntil = renewWalkLease(session.leaseUntil, event.at, config.leaseMs)!;
   const effects: SessionEffect[] = [];
   creditThrough(event.at, effects);
   if (session.phase === 'grace') effects.push({ type: 'cancelWarning' });

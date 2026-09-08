@@ -71,3 +71,27 @@ test('rollover retention keeps thirty-five rule days and two earned-unlock days'
   expect(pruneRuleDays(ruleDays, '2026-09-07')).toHaveLength(35);
   expect(pruneEarnedUnlocks(unlocks, '2026-09-07').map((row) => row.id)).toEqual(['yesterday', 'today']);
 });
+
+test('sealing reaches back four hundred days at most and never restamps a sealed day', () => {
+  const sealedLongAgo = {
+    day: '2026-09-06',
+    usageMinutes: 30,
+    activity: { walking: 5000, gym: 0, running: 0, biking: 0 },
+    met: true,
+    scheduled: true,
+    sealedAt: '2026-09-07T00:00:00.000Z',
+  };
+  const history = sealDays({
+    history: [sealedLongAgo],
+    rules: [rule],
+    ruleDays: [],
+    // Two years dark: sealing starts at the four-hundred-day boundary, not at the last sealed day.
+    lastSealedDay: '2024-09-07',
+    today: '2026-09-08',
+    timezone: 'UTC',
+    sealedAt: '2026-09-08T12:00:00.000Z',
+  });
+
+  expect(history[0].day).toBe(addDays('2026-09-08', -400));
+  expect(history.find((day) => day.day === '2026-09-06')).toEqual(sealedLongAgo);
+});

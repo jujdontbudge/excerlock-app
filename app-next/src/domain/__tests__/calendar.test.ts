@@ -24,3 +24,35 @@ test('America/New_York gaps and folds keep their established outcomes', () => {
     converged: true,
   });
 });
+
+test('a zone whose wall time oscillates by more than two hours is refused, not guessed', () => {
+  // No real IANA zone does this. The guard exists so a bad zone database cannot silently hand the
+  // app an instant hours away from the local time it asked for.
+  const RealDateTimeFormat = Intl.DateTimeFormat;
+  const partsFor = (ms: number) => {
+    const date = new Date(ms);
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return [
+      { type: 'year', value: String(date.getUTCFullYear()) },
+      { type: 'month', value: pad(date.getUTCMonth() + 1) },
+      { type: 'day', value: pad(date.getUTCDate()) },
+      { type: 'hour', value: pad(date.getUTCHours()) },
+      { type: 'minute', value: pad(date.getUTCMinutes()) },
+    ];
+  };
+  let call = 0;
+  // First reading sits three hours behind the wall time, the next three hours ahead of it.
+  Object.defineProperty(Intl, 'DateTimeFormat', {
+    configurable: true,
+    writable: true,
+    value: function () {
+      return { formatToParts: (date: Date) => partsFor(date.getTime() - (call++ === 0 ? 3 * 3_600_000 : 0)) };
+    },
+  });
+
+  try {
+    expect(() => localInstant('2026-09-07', 0, 'Fictional/Oscillating')).toThrow('LOCAL_INSTANT_DID_NOT_CONVERGE');
+  } finally {
+    Object.defineProperty(Intl, 'DateTimeFormat', { configurable: true, writable: true, value: RealDateTimeFormat });
+  }
+});

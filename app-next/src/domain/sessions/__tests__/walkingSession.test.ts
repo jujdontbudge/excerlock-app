@@ -153,3 +153,13 @@ test('grace time is not credited and verification cancels its warning', () => {
     to: '2026-09-07T15:06:00.000Z',
   });
 });
+
+test('a tick thirty seconds before the lease ends warns once, and a renewal cancels the warning', () => {
+  const warned = stepWalkingSession(session, { type: 'tick', at: '2026-09-07T15:14:35.000Z' }, config);
+
+  expect(warned.effects).toContainEqual({ type: 'leaseWarning', at: '2026-09-07T15:14:30.000Z' });
+
+  // The credit high-water mark has passed the warning instant, so a second tick does not repeat it.
+  const again = stepWalkingSession(warned.session, { type: 'tick', at: '2026-09-07T15:14:40.000Z' }, config);
+  expect(again.effects.some((effect) => effect.type === 'leaseWarning')).toBe(false);
+});

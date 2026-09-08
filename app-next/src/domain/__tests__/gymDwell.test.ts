@@ -110,3 +110,19 @@ test('arrival is derived only from an open confirmed visit and ceremony replay w
   expect(shouldReplayArrival('2026-09-07T14:00:00.000Z', '2026-09-07T14:04:59.999Z')).toBe(false);
   expect(shouldReplayArrival('2026-09-07T14:00:00.000Z', '2026-09-07T14:05:00.000Z')).toBe(true);
 });
+
+test('two visits opened in the same instant merge in exit order', () => {
+  const intervals = mergedGymVisitIntervals(
+    [
+      visit({ id: 'later-exit', exitedAt: '2026-09-07T16:00:00.000Z' }),
+      visit({ id: 'earlier-exit', exitedAt: '2026-09-07T15:00:00.000Z' }),
+    ],
+    '2026-09-07',
+    'UTC',
+    '2026-09-07T17:00:00.000Z',
+  );
+
+  expect(intervals).toHaveLength(1);
+  expect(intervals[0].visitIds).toEqual(['earlier-exit', 'later-exit']);
+  expect(intervals[0].to).toBe('2026-09-07T16:00:00.000Z');
+});
