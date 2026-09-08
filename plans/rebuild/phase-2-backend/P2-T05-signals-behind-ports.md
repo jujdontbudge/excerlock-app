@@ -4,8 +4,10 @@
 
 1. **`StepsAdapter implements StepsPort`** over `modules/excerlock-motion` + `engine/signals/motion`:
    authorization via `CMMotionActivityManager` status; `stepsSince(dayStart)` via the module's historical
-   pedometer query; `subscribe` via live pedometer updates while the app is foregrounded; on foreground and
-   at midnight, re-query from local day start (decision B8). Progress → `ruleDaysStore.applyProgress`.
+   pedometer query; `subscribe` via live pedometer updates while the app is foregrounded; at midnight,
+   re-query from local day start (decision B8). The **foreground** re-query is not the adapter's job:
+   P2-T17's single `AppState` handler calls `progressSync.refresh()`, which reads `stepsSince(localDayStart)`
+   through this port. Progress → `ruleDaysStore.applyProgress`.
    Background: HealthKit is not used for steps (B11); accept that step-goal met detection happens when the app
    is foregrounded or when a DeviceActivity interval wakes the extension (the extension cannot read
    pedometer; document this limitation in the Home copy: "Open ExcerLock after your walk to unlock" appears
@@ -45,7 +47,8 @@
    resolves; reverse geocode of a known coordinate returns a non-empty string.
 4. **`HealthAdapter implements HealthPort`** over `engine/signals/health` (`KingstinctHealthKitClient`):
    `workoutsToday('running' | 'biking')` → summed duration and distance from device-recorded workouts started
-   today (manual entries excluded as before); background delivery bootstrap kept; claim-on-open.
+   today (manual entries excluded as before); background delivery bootstrap kept. Claim-on-open is driven by
+   `progressSync.refresh()` from P2-T17's single `AppState` handler, not by an adapter-side listener.
 5. Port-level contract tests for each adapter (same suite as the fakes) plus fixture-driven tests using the
    existing recordings (`treadmillRecordings.json`, gait fixtures, geofence event fixtures).
 6. Permissions health (`permissionsStore`) reads live statuses from each adapter on foreground.

@@ -33,8 +33,11 @@ scheduling go away; window instances and met/walking states take their place.
    existing `deviceActivitySchedule.ts` helpers).
 2. Implement the app-group facts (`met`, `walkLease`, `usageDay`) with versioned keys; extension Swift reads
    them (small additions to `ShieldLockWindowContext.swift`).
-3. `useLockDecision()` → effect that calls `applyLock` on every change and re-registers schedules when rules
-   change, at midnight, and on timezone change.
+3. P2-T17's enforcement host (`startEnforcement(runtime)`, mounted above every route guard) calls
+   `applyLock(decision, plan)` and re-registers schedules when rules change, at midnight, and on timezone
+   change. It applies only on a change of `{ shields, selectionToken, planHash }`, and it awaits the
+   `ApplyResult` so a failure fails closed and reaches Home. `useLockDecision()` stays a render selector and
+   never calls a port.
 4. Usage monitor + `usage_days` store; Analytics reads it (T11's model already handles unmeasured days).
 5. Tests: adapter contract tests; schedule generation for weekday sets, cross-midnight, all-day; met-today
    honored by the extension logic (unit-test the Swift-side decision by mirroring it in TS and asserting the
