@@ -1,8 +1,10 @@
 import { Session } from '../domain/types';
-import { createPersistedStore } from './createPersistedStore';
+import { defineStore } from './createPersistedStore';
 import * as v from './validation';
-export const sessionStore = createPersistedStore<{ session: Session }>(
-  'session',
-  { session: { kind: 'anonymous' } },
-  { session: (value) => v.session(value) || v.signedIn(value) },
-);
+export const sessionStore = defineStore<{ session: Session }>({
+  name: 'session',
+  initial: { session: { kind: 'anonymous' } },
+  schemaVersion: 1,
+  migrations: { 0: (raw) => raw },
+  validators: { session: (value) => v.session(value) || v.signedIn(value) },
+});

@@ -9,7 +9,18 @@ export const number =
 export const oneOf = (values: readonly unknown[]) => (v: unknown) => values.includes(v);
 export const iso = (v: unknown) => typeof v === 'string' && Number.isFinite(Date.parse(v));
 export const nullable = (check: (v: unknown) => boolean) => (v: unknown) => v === null || check(v);
+export const optional = (check: (v: unknown) => boolean) => (v: unknown) => v === undefined || check(v);
 export const array = (check: (v: unknown) => boolean) => (v: unknown) => Array.isArray(v) && v.every(check);
+export type ValidationResult<T> = { ok: true; value: T; dropped: unknown[] } | { ok: false; dropped: unknown[] };
+export const arrayOf =
+  <T>(check: (v: unknown) => boolean) =>
+  (value: unknown): ValidationResult<T[]> => {
+    if (!Array.isArray(value)) return { ok: false, dropped: [] };
+    const accepted: T[] = [],
+      dropped: unknown[] = [];
+    for (const row of value) (check(row) ? accepted : dropped).push(row as T);
+    return accepted.length > 0 || value.length === 0 ? { ok: true, value: accepted, dropped } : { ok: false, dropped };
+  };
 export const shape = (fields: Record<string, (v: unknown) => boolean>) => (v: unknown) =>
   object(v) && Object.entries(fields).every(([key, check]) => check(v[key]));
 export const permission = oneOf(['notDetermined', 'granted', 'denied', 'restricted']);

@@ -34,6 +34,8 @@ import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { unlockKind } from '../unlock/entry';
 import { UnlockEntry } from '../unlock/UnlockEntry';
+import { hydrationReport as useHydrationReport } from '../../state/hydrationReport';
+import { common } from '../../content/common';
 export function HomeScreen() {
   useDemoProgress();
   const runtime = useRuntime(),
@@ -42,6 +44,10 @@ export function HomeScreen() {
     decision = useLockDecision(),
     progress = useTodayProgress(),
     streak = useStreak();
+  const persistenceVisible = useHydrationReport(
+      (state) => !state.dismissed && (state.droppedCount > 0 || state.writeErrors.length > 0),
+    ),
+    persistenceDropped = useHydrationReport((state) => state.droppedCount > 0);
   const name = useProfileStore((s) => s.data.name);
   const { rules, lockedApps } = useRulesStore((s) => s.data),
     permissions = usePermissionsStore((s) => s.data),
@@ -143,6 +149,24 @@ export function HomeScreen() {
         </View>
         <StreakBadge count={streak.current} />
       </View>
+      {persistenceVisible ? (
+        <View
+          style={{
+            gap: t.space.sm,
+            padding: t.space.lg,
+            borderRadius: t.radius.card,
+            backgroundColor: t.surface.card,
+          }}>
+          <Label accessibilityRole="alert">
+            {persistenceDropped ? common.persistenceNotice.unreadable : common.persistenceNotice.unsaved}
+          </Label>
+          <SecondaryButton
+            variant="tertiary"
+            label={common.persistenceNotice.dismiss}
+            onPress={useHydrationReport.getState().dismiss}
+          />
+        </View>
+      ) : null}
       {scheduleCard ? (
         <Reveal>
           <BlockingScheduleCard
@@ -251,8 +275,6 @@ export function HomeScreen() {
         </View>
       </Reveal>
       <View style={{ gap: t.space.lg }}>
-        <SecondaryButton label="Test gym unlock" onPress={() => router.push('/unlock/gym?preview=1')} />
-        <SecondaryButton label="Test treadmill unlock" onPress={() => router.push('/unlock/treadmill?preview=1')} />
         <View
           style={{
             backgroundColor: t.surface.card,

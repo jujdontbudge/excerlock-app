@@ -1,4 +1,4 @@
-import { createPersistedStore } from './createPersistedStore';
+import { defineStore } from './createPersistedStore';
 import * as v from './validation';
 export type Answers = Record<string, string | number | boolean | number[]>;
 export type OnboardingState = {
@@ -13,14 +13,16 @@ const step = (value: unknown) =>
 const answers = (value: unknown) =>
   v.object(value) &&
   Object.values(value).every((x) => v.text(x) || v.number(0, 30000)(x) || v.bool(x) || v.array(v.number(0, 6))(x));
-export const onboardingStore = createPersistedStore<OnboardingState>(
-  'onboarding',
-  { step: 'O01', answers: {}, complete: false, setupStep: 'X1', setupComplete: false },
-  {
+export const onboardingStore = defineStore<OnboardingState>({
+  name: 'onboarding',
+  initial: { step: 'O01', answers: {}, complete: false, setupStep: 'X1', setupComplete: false },
+  schemaVersion: 1,
+  migrations: { 0: (raw) => raw },
+  validators: {
     step,
     answers,
     complete: v.bool,
     setupStep: (value) => typeof value === 'string' && /^(X[1-6]|done)$/.test(value),
     setupComplete: v.bool,
   },
-);
+});

@@ -174,7 +174,8 @@ Grouping and order follow OtterLife's settings screen as inventoried in the refe
 - Support: Contact support (composer: category, message, send state), Rate ExcerLock, Share ExcerLock.
 - Legal: Terms of Use, Privacy Policy (in-app document screens).
 - Account: Sign in / Sign out, Delete account (confirmation with the five-point explanation carried over from the old `AccountSettingsCard`).
-- Footer: version + build; 7 taps opens `DevMenu` (Phase 1 always; Phase 2 only in dev builds).
+- Footer: version + build; 7 taps opens `DevMenu` only when `devMenuEnabled` is true (`__DEV__` or
+  `EXPO_PUBLIC_DEV_MENU=1`). The same gate removes `/dev` and makes Home capture parameters inert in release builds.
 
 Sub-screens: `settings/support`, `settings/legal/[doc]`, `settings/permission/[name]` (detail with status and instructions), `settings/account`, `settings/gyms` (saved gyms list, max 5, add via `GymPicker`).
 

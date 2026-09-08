@@ -27,6 +27,7 @@ import { Reveal } from '../../motion/Reveal';
 import { Preferences } from './PreferencesPanel';
 import { permissionIcons } from './PermissionDetail';
 import { Permissions } from '../../domain/types';
+import { devMenuEnabled } from '../../runtime/devFlag';
 export function DetailedSettingsScreen({
   navigate,
   onDev,
@@ -170,6 +171,7 @@ export function DetailedSettingsScreen({
       <PressableScale
         label={c.version(Constants.expoConfig?.version ?? '1.0.0', Constants.expoConfig?.ios?.buildNumber ?? '1')}
         onPress={() => {
+          if (!devMenuEnabled) return;
           if (taps === 6) {
             setTaps(0);
             onDev();
