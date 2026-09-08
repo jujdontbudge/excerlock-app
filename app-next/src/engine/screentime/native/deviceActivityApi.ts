@@ -2,7 +2,11 @@ import * as DeviceActivity from "react-native-device-activity";
 
 import type { DeviceActivityApi } from "./deviceActivityTypes";
 
-/** The one file allowed to translate ExcerLock operations into package calls. */
+/**
+ * The one file that translates ExcerLock operations into package calls, including the app-group
+ * writes the shield transport makes. The single exception is the selection sheet, which is a view
+ * component rather than an operation and cannot pass through a function-shaped interface.
+ */
 export const deviceActivityApi: DeviceActivityApi = {
   authorizationStatus: DeviceActivity.getAuthorizationStatus,
   requestAuthorization: DeviceActivity.requestAuthorization,

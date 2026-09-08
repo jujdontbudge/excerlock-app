@@ -146,7 +146,10 @@ describe("Screen Time shield content", () => {
       fromRoot("app-next", "plugins", "withScreenTimeExtensionValidation.js"),
     );
 
-    expect(publisher).toContain("react-native-device-activity");
+    // Every app-group write goes through the one file that talks to the package. Importing
+    // `userDefaultsSet` here was how the shield copy used to get around it.
+    expect(publisher).toContain("deviceActivityApi");
+    expect(publisher).not.toContain("react-native-device-activity");
     expect(keys).toContain("excerlock.shield.current-cause.v1");
     expect(keys).toContain("excerlock.shield.runtime-context.v1");
     expect(keys).toContain("excerlock.shield.copy-overrides.v1");
