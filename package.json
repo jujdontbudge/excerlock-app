@@ -21,6 +21,7 @@
     "test:server": "npm run test --workspace server --if-present",
     "test:app": "npm run test --workspace app --if-present",
     "test:guardrails": "npm run prebuild:guardrails --workspace app-next && vitest run --config guardrails/vitest.config.ts",
+    "test:release-guardrails": "vitest run --config guardrails/vitest.config.ts guardrails/release",
     "typecheck": "npm run typecheck --workspaces",
     "test:e2e-contract": "node --test e2e/tests/*.test.mjs"
   },

@@ -1,5 +1,9 @@
 # Oura API — integration sheet
 
+> **Historical (P2-T12 cutover, 2026-09-07).** Vendor integrations are out of the product (decision D6 in
+> `plans/rebuild/00-decisions.md`); the server's vendor routes and tables were removed in P2-T02. This file is
+> kept as a record of the research only. Do not act on it.
+
 Researched 2026-07-28 against live official sources: `https://cloud.ouraring.com/docs/authentication`, `https://cloud.ouraring.com/docs/`, `https://cloud.ouraring.com/docs/error-handling`, the v2 API reference at `https://api.ouraring.com/v2/docs` (backed by OpenAPI spec `https://api.ouraring.com/v2/static/json/openapi-1.37.json`, "Oura API Documentation 2.0"), the Oura API and MCP Agreement at `https://cloud.ouraring.com/legal/api-agreement`, and the Oura Member Care article `https://support.ouraring.com/hc/en-us/articles/4415266939155-The-Oura-API`.
 
 Status note: V1 API was removed January 22, 2024; V2 is "the only available integration point." **Personal access tokens were deprecated in December 2025 and are "no longer available for use"** (stated in the v2 docs overview) — OAuth2 apps are mandatory. A newer portal exists at `developer.ouraring.com` (referenced by Oura Member Care as the "newest portal"; legacy `cloud.ouraring.com` still works for existing applications), but all documented registration flows still point at `cloud.ouraring.com/oauth/applications`. No API renaming beyond the portal addition was found.

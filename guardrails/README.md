@@ -27,3 +27,12 @@ and `app/` together.
 
 The E2E bundle gate performs two clean iOS exports and has a 180-second budget; its production-marker
 elimination assertions are unchanged.
+
+## Release guardrails (`release/`)
+
+`guardrails/release/` holds the store-build gate for the rebuilt app: identity (decision A3), EAS profile
+shape, no `aps-environment`, no developer surface, the domain coverage floor, the App Privacy manifest and
+the workspace state before and after the P2-T12 rename. They need no prebuild and run first in CI via
+`npm run test:release-guardrails`. `release/release-app.ts` resolves the release app as `app-next/` until
+the rename and `app/` after it, so the same files hold on both sides of the cutover. The list with the
+rule behind each test is `docs/release/release-guardrails.md`.

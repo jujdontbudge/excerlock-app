@@ -53,3 +53,12 @@ Nothing outside `app/` imports it. This task deletes it:
       returns nothing once `app/` is gone.
 
 Dropping `app/` from the root `workspaces` array and from `test:unit` is still part of this task.
+
+## Prepared 2026-09-07 (build/P2-T12)
+
+The executable version of this task is `docs/release/` — `cutover-checklist.md` (ordered steps with the
+exact commands and the test that proves each), `identity-and-versions.md`, `app-privacy.md`,
+`release-guardrails.md`, `rollback.md`. `app-next/eas.json` carries the profiles; `npm run
+test:release-guardrails` (`guardrails/release/`) verifies the release configuration on both sides of the
+rename. Step 4 (vendor docs marked historical) and the PRD banner from step 5 are done; steps 1–3, the
+rest of 5, 6, 7 and 8 wait for P2-T11 and Johan.

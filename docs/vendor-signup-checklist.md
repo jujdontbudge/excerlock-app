@@ -1,5 +1,9 @@
 # Vendor developer-portal signups — deferred, NOT v1
 
+> **Historical (P2-T12 cutover, 2026-09-07).** Vendor integrations are out of the product (decision D6 in
+> `plans/rebuild/00-decisions.md`); the server's vendor routes and tables were removed in P2-T02. This file is
+> kept as a record of the research only. Do not act on it.
+
 > **Status 2026-08-01: all four vendors are cut from v1.** Polar was dropped by
 > Johan; Strava, Oura and Whoop were already out. **File no applications and
 > register no apps** until a later effort revives this. Apple Health is v1's
