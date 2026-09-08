@@ -15,6 +15,13 @@ export interface EventSpec {
   readonly owner: EventOwner
   /** Client properties permitted to cross the analytics transport boundary. */
   readonly transmittedProperties?: readonly string[]
+  /**
+   * D12's value floor. A transmitted property listed here may only carry one of the declared
+   * values; anything else is dropped at the boundary. Untyped call sites are the reason this
+   * exists — a caught exception's `message` reaching a `reason` property would otherwise carry a
+   * gym name, a path, or a bundle id into PostHog.
+   */
+  readonly enumProperties?: Readonly<Record<string, readonly string[]>>
 }
 
 /** Shape every domain event module must satisfy. */

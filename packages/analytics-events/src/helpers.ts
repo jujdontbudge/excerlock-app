@@ -1,5 +1,5 @@
 import { EVENTS, type ClientEventName, type EventName } from './registry'
-import type { EventOwner } from './types'
+import type { EventOwner, EventSpec } from './types'
 
 /** Every registered event name, sorted — stable input for guardrail walks. */
 export const EVENT_NAMES = Object.keys(EVENTS).sort() as readonly EventName[]
@@ -18,6 +18,18 @@ export function eventsOwnedBy(owner: EventOwner): EventName[] {
 export function transmittedPropertiesOf(name: ClientEventName): readonly string[] {
   const spec = EVENTS[name]
   return 'transmittedProperties' in spec ? spec.transmittedProperties : []
+}
+
+/**
+ * The declared value floor for one transmitted property, or `undefined` when the property is not
+ * an enum. The transport drops a declared-enum property carrying anything else (D12).
+ */
+export function enumValuesOf(
+  name: ClientEventName,
+  property: string,
+): readonly string[] | undefined {
+  const spec = EVENTS[name] as EventSpec
+  return spec.enumProperties?.[property]
 }
 
 /** Narrowing guard for raw strings found while walking the codebase. */
