@@ -11,7 +11,7 @@ import { entitlementStore as useEntitlementStore } from '../../state/entitlement
 import { dayKey } from '../../domain/calendar';
 import { unlockCopy as c } from '../../content/unlock';
 import { feedback } from '../../motion/haptics';
-import { TreadmillScanController, TreadmillScanSnapshot } from './gait/TreadmillScanController';
+import { TreadmillScanController, TreadmillScanSnapshot } from '../../engine/signals/gait/TreadmillScanController';
 import { useCeremony } from './useCeremony';
 import { UnlockLayout, Detected } from './UnlockLayout';
 import { isTreadmillCeremonyRule, walkingDurationRule } from './walkingDurationRule';
