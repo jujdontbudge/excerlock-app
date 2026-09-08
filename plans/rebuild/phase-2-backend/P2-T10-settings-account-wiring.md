@@ -43,12 +43,13 @@
 Built against the ports and fakes while P2-T01/T02/T06 were in flight; the real composition is one
 call site each:
 
-- `src/adapters/api/` — `createApiClient({ baseUrl, getAccessToken })`, `createHttpSupportPort(client)`
-  (step 5), `createUserApi(client)` and `withServerDeletion(auth, userApi)` (step 6). The endpoint
-  contract is in its README; T02 accepted `{ category: problem|question|idea, message, replyTo,
-  diagnostics }` on `POST /v1/support` (strict diagnostics schema, categories canonicalised server-side),
-  and T01 was asked to expose `accessToken()` on the Supabase adapter and keep its `deleteAccount()`
-  local-only. Deletion against the VPS answers 503 until Johan sets `SUPABASE_SERVICE_ROLE_KEY` on the box.
+- `src/adapters/api/` — `createApiClient({ baseUrl, getAccessToken: auth.accessToken })`,
+  `createHttpSupportPort(client)` (step 5) and `createUserApi(client)` (step 6), whose `putUser` /
+  `deleteUser` the composition passes to P2-T01's Supabase adapter as its `AccountProvisioning`
+  (`provision` / `remove`); the adapter owns the deletion call, server first, local teardown after. The
+  endpoint contract is in its README; T02 accepted `{ category: problem|question|idea, message, replyTo,
+  diagnostics }` on `POST /v1/support` (strict diagnostics schema, categories canonicalised server-side).
+  Deletion against the VPS answers 503 until Johan sets `SUPABASE_SERVICE_ROLE_KEY` on the box.
 - Step 1: the runtime host already re-reads Screen Time, Motion, Health, Reminders and Camera on
   foreground; Location has no status accessor on `GymPort`, so its row follows the last request result
   until P2-T05 publishes it.

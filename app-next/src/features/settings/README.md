@@ -7,7 +7,7 @@
 - **Rate ExcerLock** opens the store's write-review composer through `adapters/review` and ends the automatic rating prompts; **Share ExcerLock** opens the native share sheet with the App Store link.
 - **Contact support** sends through `SupportPort`; the real port is `adapters/api`'s `POST /v1/support` client, and a failure keeps the draft with offline, timeout or rejected copy.
 - **Export my data** (`exportData.ts`) builds `domain/dataExport`'s JSON from the local stores (conditions, rule days, earned unlocks, daily history; never the app selection or saved gyms), emits `data_export_requested`, writes the file to the cache directory and opens the share sheet. `nativeExport.ts` is the only file that touches `expo-file-system`.
-- **Delete account / Delete my data** run `domain/identity`'s teardown; in the real runtime the auth port is wrapped with `adapters/api`'s `withServerDeletion`, so `DELETE /v1/user` runs before the local session teardown and a refused deletion changes nothing.
+- **Delete account / Delete my data** run `domain/identity`'s teardown; `AuthPort.deleteAccount()` means the account is gone, and the real adapter (P2-T01) calls `DELETE /v1/user` through `adapters/api`'s `UserApi` before the local session teardown, so a refused deletion changes nothing.
 
 `SettingsPage` provides sub-screen navigation. `PermissionDetail` owns status-specific permission recovery, `SupportScreen` builds the reply-address request and privacy-floored diagnostics, and `AccountScreen` owns the shared sign-out/deletion confirmation sheet. Anonymous deletion removes server data while preserving the local-first plan. Legal content remains explicitly marked as a Phase 1 placeholder in `src/content/legal.ts`.
 

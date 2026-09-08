@@ -1,44 +1,20 @@
-import { createApiClient, createUserApi, withServerDeletion } from '..';
+import { createApiClient, createUserApi } from '..';
 import { ApiFetch } from '../client';
-import { AuthPort } from '../../../ports/AuthPort';
-import { Session } from '../../../domain/types';
 
-function apiWith(status: number, calls: string[] = []) {
+function apiWith(status: number, calls: { url: string; method: string; auth: string }[] = []) {
   const fetch: ApiFetch = async (url, init) => {
-    calls.push(`${init.method} ${url}`);
+    calls.push({ url, method: init.method, auth: init.headers.Authorization });
     return { status, text: async () => (status >= 400 ? '{"error":{"code":"ACCOUNT_DELETION_FAILED"}}' : '') };
   };
-  return createUserApi(createApiClient({ baseUrl: 'https://a', getAccessToken: async () => 't', fetch }));
+  return createUserApi(createApiClient({ baseUrl: 'https://a', getAccessToken: async () => 'session-token', fetch }));
 }
 
-function authStub(calls: string[]): AuthPort {
-  let session: Session = { kind: 'signedIn', userId: 'u1', provider: 'apple', email: null };
-  const listeners = new Set<(s: Session) => void>();
-  return {
-    session: () => session,
-    signInWithApple: async () => session,
-    signInWithGoogle: async () => session,
-    sendEmailCode: async () => {},
-    verifyEmailCode: async () => session,
-    signOut: async () => {},
-    deleteAccount: async () => {
-      calls.push('auth.deleteAccount');
-      session = { kind: 'anonymous', userId: 'anon-2' };
-      listeners.forEach((l) => l(session));
-    },
-    subscribe: (callback) => {
-      listeners.add(callback);
-      return () => listeners.delete(callback);
-    },
-  };
-}
-
-test('DELETE /v1/user resolves on 204 and on an already-deleted account', async () => {
-  const calls: string[] = [];
-  await apiWith(204, calls).deleteUser();
-  expect(calls).toEqual(['DELETE https://a/v1/user']);
-  await expect(apiWith(410).deleteUser()).resolves.toBeUndefined();
-  await expect(apiWith(404).deleteUser()).resolves.toBeUndefined();
+test('DELETE /v1/user is ok on 204 and deleted on a tombstoned or missing account', async () => {
+  const calls: { url: string; method: string; auth: string }[] = [];
+  expect(await apiWith(204, calls).deleteUser()).toBe('ok');
+  expect(calls).toEqual([{ url: 'https://a/v1/user', method: 'DELETE', auth: 'Bearer session-token' }]);
+  expect(await apiWith(410).deleteUser()).toBe('deleted');
+  expect(await apiWith(404).deleteUser()).toBe('deleted');
 });
 
 test('a failed server deletion surfaces as a retryable error', async () => {
@@ -47,23 +23,46 @@ test('a failed server deletion surfaces as a retryable error', async () => {
     code: 'ACCOUNT_DELETION_FAILED',
   });
   await expect(apiWith(502).deleteUser()).rejects.toMatchObject({ kind: 'unavailable' });
+  await expect(apiWith(503).deleteUser()).rejects.toMatchObject({ kind: 'unavailable' });
 });
 
-test('withServerDeletion deletes on the server first, then tears the local session down', async () => {
-  const calls: string[] = [];
-  const auth = withServerDeletion(authStub(calls), apiWith(204, calls));
-  const seen: Session['kind'][] = [];
-  auth.subscribe((s) => seen.push(s.kind));
-  await auth.deleteAccount();
-  expect(calls).toEqual(['DELETE https://a/v1/user', 'auth.deleteAccount']);
-  expect(auth.session().kind).toBe('anonymous');
-  expect(seen).toEqual(['anonymous']);
+test('PUT /v1/user provisions idempotently and never throws', async () => {
+  const calls: { url: string; method: string; auth: string }[] = [];
+  expect(await apiWith(204, calls).putUser()).toBe('ok');
+  expect(calls).toEqual([{ url: 'https://a/v1/user', method: 'PUT', auth: 'Bearer session-token' }]);
+  expect(await apiWith(410).putUser()).toBe('deleted');
+  expect(await apiWith(503).putUser()).toBe('failed');
+  const offline = createUserApi(
+    createApiClient({
+      baseUrl: 'https://a',
+      getAccessToken: async () => 't',
+      fetch: async () => {
+        throw new TypeError('Network request failed');
+      },
+    }),
+  );
+  expect(await offline.putUser()).toBe('failed');
 });
 
-test('when the server refuses, nothing local changes and the user can retry', async () => {
-  const calls: string[] = [];
-  const auth = withServerDeletion(authStub(calls), apiWith(503, calls));
-  await expect(auth.deleteAccount()).rejects.toMatchObject({ kind: 'unavailable' });
-  expect(calls).toEqual(['DELETE https://a/v1/user']);
-  expect(auth.session().kind).toBe('signedIn');
+test('a token the auth adapter already holds is sent as-is without a second lookup', async () => {
+  const calls: { url: string; method: string; auth: string }[] = [];
+  const lookups: number[] = [];
+  const fetch: ApiFetch = async (url, init) => {
+    calls.push({ url, method: init.method, auth: init.headers.Authorization });
+    return { status: 204, text: async () => '' };
+  };
+  const api = createUserApi(
+    createApiClient({
+      baseUrl: 'https://a',
+      getAccessToken: async () => {
+        lookups.push(1);
+        return 'session-token';
+      },
+      fetch,
+    }),
+  );
+  expect(await api.putUser('adapter-token')).toBe('ok');
+  expect(await api.deleteUser('adapter-token')).toBe('ok');
+  expect(calls.map((c) => c.auth)).toEqual(['Bearer adapter-token', 'Bearer adapter-token']);
+  expect(lookups).toEqual([]);
 });

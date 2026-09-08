@@ -13,9 +13,13 @@ export type ApiClientOptions = {
   timeoutMs?: number;
 };
 
-export type ApiClient = {
-  request(path: string, init: { method: 'GET' | 'POST' | 'PUT' | 'DELETE'; body?: unknown }): Promise<ApiResponse>;
+export type ApiRequestInit = {
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  body?: unknown;
+  /** A token the caller already holds (the auth adapter passes its own); otherwise `getAccessToken` runs. */
+  accessToken?: string;
 };
+export type ApiClient = { request(path: string, init: ApiRequestInit): Promise<ApiResponse> };
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 
@@ -42,7 +46,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         }, timeoutMs);
       });
       try {
-        const token = await Promise.race([options.getAccessToken(), timedOut]);
+        const token = init.accessToken ?? (await Promise.race([options.getAccessToken(), timedOut]));
         if (!token) throw new ApiError('unauthenticated');
         const body = init.body === undefined ? undefined : JSON.stringify(init.body);
         let response: Awaited<ReturnType<ApiFetch>>;

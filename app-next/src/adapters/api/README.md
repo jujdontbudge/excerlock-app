@@ -22,16 +22,19 @@ the sentence a screen shows, letting the reachability check decide for untyped e
   field), `lastEnforcementResult` at most 200. The server canonicalises the three categories to its
   own enum; the app never sees that mapping. 2xx is sent; anything else throws and the composer keeps
   the draft.
-- `DELETE /v1/user` (`user.ts`): 204 is deleted, 404 and 410 mean already deleted, anything else throws
-  (502 `IDENTITY_ERASURE_FAILED` and 503 `ACCOUNT_DELETION_UNAVAILABLE` are safe to retry; the server
-  checkpoints each processor). Deletion writes a permanent tombstone, so every later call on that uid,
-  `PUT /v1/user` included, answers 410: the local teardown must start a fresh anonymous session, never
-  reuse the erased one. The server needs `SUPABASE_SERVICE_ROLE_KEY` on the box or it answers 503.
-  `withServerDeletion(auth, userApi)` wraps an `AuthPort` so `deleteAccount()` runs the server's
-  ordered erasure (Adapty, PostHog, then the Supabase user) before the local session teardown. The
-  server goes first because it needs the live token; if it refuses, nothing local changes and the user
-  can retry from the same signed-in state.
+- `PUT /v1/user` and `DELETE /v1/user` (`user.ts`, a `UserApi`): shaped after P2-T01's
+  `AccountProvisioning`, so the runtime composition implements `provision` and `remove` over this
+  client and passes them to the Supabase auth adapter, which owns the calls. `putUser` is idempotent
+  provisioning and never throws (`ok`, `deleted` for a tombstoned uid, `failed` means retry later; the
+  anonymous bootstrap never waits on it). `deleteUser` returns `ok` on 2xx, `deleted` on 404/410, and
+  throws otherwise (502 `IDENTITY_ERASURE_FAILED` and 503 `ACCOUNT_DELETION_UNAVAILABLE` are safe to
+  retry; the server checkpoints each processor). Both accept the token the adapter already holds so
+  no second session lookup runs. Deletion writes a permanent tombstone, so every later call on that
+  uid answers 410: the adapter starts a fresh anonymous session, never reusing the erased one. The
+  server needs `SUPABASE_SERVICE_ROLE_KEY` on the box or it answers 503.
 
 The feature-level deletion order stays `domain/identity`'s: subscription reset, analytics reset, then
-`auth.deleteAccount()`, which is now server delete followed by the local sign-out and a fresh anonymous
-session. Local rules, progress, locked apps and settings stay on the device (D5).
+`auth.deleteAccount()`, which the real adapter implements as server delete first, then the local
+sign-out and a fresh anonymous session; a refused server call leaves the session as it was. Local rules,
+progress, locked apps and settings stay on the device (D5). `AuthPort.deleteAccount()` means the account
+is gone, for the fake and the adapter alike, so there is no decorator in between.
