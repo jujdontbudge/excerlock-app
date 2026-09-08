@@ -12,4 +12,4 @@ Capture-only deep links `/home?steps=5000` and `/home?advance=3600000` update th
 
 The state and progress snapshot tests live under `demo/__tests__` because feature modules must not import fake fixtures. Home itself depends only on ports, selectors and domain functions.
 
-The claim signal Home reads for the "Checking today's activity…" line lives in `claimState.ts`; it is a documented stub until P2-T05's progressSync exposes `lastClaimAt`.
+The claim signal Home reads for the "Checking today's activity…" line lives in `claimState.ts`, which selects `enforcementStore.lastClaimAt`. `progressSync` records it when a refresh completes, at launch and on every foreground, so the line shows only while the ports have yet to answer. `statusContent`'s `caughtUp` input has no producer: see the note in `__tests__/home-multi-rule.test.tsx`.

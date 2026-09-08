@@ -32,7 +32,12 @@ export type SubscriptionAdapterOptions = {
   budgetMs?: number;
   /** The dashboard's fallback export, bundled by the `react-native-adapty` config plugin. */
   fallback?: { location: FileLocation; payload: unknown };
-  /** Where operational problems go until P2-T07 hands them to Sentry. Never user-facing. */
+  /**
+   * Where operational problems go. Nothing in the app binds it: P2-T07's `observability/reportError`
+   * reports render errors, and the Sentry scrub deletes the exception message, so a synthesized
+   * subscription error would arrive carrying nothing. Tests and the dev menu are the readers.
+   * Never user-facing.
+   */
   onIssue?: (scope: SubscriptionIssue, detail: unknown) => void;
 };
 

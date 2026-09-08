@@ -97,7 +97,11 @@ test('a goal reached while the app was closed unlocks on the next foreground and
   const { rendered } = await openHome('home-unlocked-met');
   expect(screen.getByRole('header', { name: 'Unlocked for the rest of today' })).toBeTruthy();
   expect(screen.getByText('Met today')).toBeTruthy();
-  // merge: P2-T05's claim signal replaces claimState's stub and this line renders on Home itself.
+  // Home does not render this line yet: `statusContent` takes `caughtUp`, and nothing produces it.
+  // The claim signal alone cannot: `lastClaimAt` moves on every refresh, so comparing it with `metAt`
+  // would call every met day a catch-up. Producing it needs progressSync to say that the claim it just
+  // ran is what discovered the met rule, which is a product decision, not a merge. Asserted on the
+  // model until then.
   const met = scenarios.find((s) => s.id === 'home-unlocked-met')!;
   expect(
     statusContent({

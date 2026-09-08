@@ -17,13 +17,9 @@ import { UnlockLayout, Detected } from './UnlockLayout';
 import { isTreadmillCeremonyRule, walkingDurationRule } from './walkingDurationRule';
 import { requestHomeWalkingSheet } from '../home/homeSheetRequest';
 import { leaseClock } from '../home/statusContent';
+import { LEASE_WARNING_LEAD_MS } from '../../adapters/notifications/leaseWarning';
 
 type TerminalFailure = 'expired' | 'bookingFailed' | 'invalidRule' | 'scanFailed' | null;
-
-// merge: replace with P2-T09's lease-warning threshold once notifications land.
-// P2-T09 schedules the warning at leaseUntil − 30 s; the screen says the same
-// thing at the same moment so the notification and the screen never disagree.
-const LEASE_WARNING_MS = 30_000;
 
 export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: string; preview?: boolean }) {
   const runtime = useRuntime(),
@@ -211,7 +207,10 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
   const remaining = duration ? Math.max(0, Math.ceil(duration.mode.goal - (row?.progress ?? 0))) : 0;
   const counting = Boolean(duration && durationStage === 'counting' && !goalMet);
   const leaseNearlyOver = Boolean(
-    walkingSession && Date.parse(walkingSession.leaseUntil) - Date.parse(runtime.clock.now()) <= LEASE_WARNING_MS,
+    // One threshold: the notification is scheduled at leaseUntil - LEASE_WARNING_LEAD_MS, so the
+    // screen warns at the same moment and the two can never disagree.
+    walkingSession &&
+      Date.parse(walkingSession.leaseUntil) - Date.parse(runtime.clock.now()) <= LEASE_WARNING_LEAD_MS,
   );
   const detected = Boolean(duration && durationStage === 'detected' && !goalMet);
   const title = failed

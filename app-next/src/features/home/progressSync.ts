@@ -6,6 +6,7 @@ import { currentInstances, windowInstances } from '../../domain/schedule';
 import { GymVisit } from '../../domain/types';
 import { Workout } from '../../ports/models';
 import { Runtime } from '../../runtime/Runtime';
+import { enforcementStore } from '../../state/enforcementStore';
 import { historyStore } from '../../state/historyStore';
 import { permissionsStore } from '../../state/permissionsStore';
 import { ruleDaysStore } from '../../state/ruleDaysStore';
@@ -166,7 +167,13 @@ export function createProgressSync(runtime: Runtime) {
         visits = visitRows;
       }),
     ]);
-    if (active && id === generation && key === signalKey()) update();
+    if (active && id === generation && key === signalKey()) {
+      update();
+      // The claim is recorded here, not by the caller, so the launch refresh counts as well as the
+      // foreground one. Until the first claim answers, Home says it is checking rather than naming a
+      // goal it may already have counted.
+      enforcementStore.getState().claimed(runtime.clock.now());
+    }
   };
 
   const stops = [
