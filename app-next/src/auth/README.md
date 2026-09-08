@@ -97,8 +97,10 @@ never signs anyone out of an account they still have.
 
 The HTTP call is injected — `AccountProvisioning` is an interface, so the runtime can implement it
 over the shared VPS client instead of this module keeping a second one. P2-T10's
-`createVpsProvisioning(client)` is that implementation; `accountProvisioning({ baseUrl })` here is the
-fallback for a composition without it.
+`createVpsProvisioning(client)` is that implementation, and `supabaseAuth({ account })` takes it, so
+the cutover wires it in one argument and the fetch implementation here is never constructed. Their
+module lives on their branch, so `accountProvisioning({ baseUrl })` stays as the fallback until the
+two meet.
 
 ## Open
 

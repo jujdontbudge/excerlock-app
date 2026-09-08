@@ -1,4 +1,4 @@
-import { accountProvisioning } from './accountProvisioning';
+import { accountProvisioning, AccountProvisioning } from './accountProvisioning';
 import { appleIdentity, googleIdentity } from './identityProviders';
 import { createSupabaseAuth, SupabaseAuth } from './SupabaseAuthAdapter';
 import { authConfig, createSupabaseAuthApi } from './supabaseClient';
@@ -16,7 +16,7 @@ export type { AuthConfig } from './supabaseClient';
  * `null`, and the runtime keeps the local session it already has: an account never gates earning or
  * locking, so a missing key must not stop the app.
  */
-export function supabaseAuth(): SupabaseAuth | null {
+export function supabaseAuth(overrides: { account?: AccountProvisioning } = {}): SupabaseAuth | null {
   const config = authConfig();
   if (!config) return null;
   return createSupabaseAuth({
@@ -27,7 +27,8 @@ export function supabaseAuth(): SupabaseAuth | null {
       iosClientId: config.googleIosClientId,
     }),
     // `AccountProvisioning` is an injected interface so the runtime can hand over one HTTP client
-    // for the VPS instead of this module keeping a second one.
-    account: accountProvisioning({ baseUrl: config.apiBaseUrl }),
+    // for the VPS instead of this module keeping a second one: at the cutover it passes P2-T10's
+    // `createVpsProvisioning(client)`, and the implementation below is the fallback without it.
+    account: overrides.account ?? accountProvisioning({ baseUrl: config.apiBaseUrl }),
   });
 }
