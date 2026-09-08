@@ -15,8 +15,18 @@ export type StatusModel = {
   nextChange?: string;
 };
 type ProvisionalDecision = { state: 'unlockedProvisional'; ruleId: string; minutesToCount?: number };
+// merge: P2-T14 puts byRuleName/getAheadRuleId on LockDecision itself; drop these two aliases then.
+type MetDecision = { state: 'unlockedMet'; byRuleId: string; relockAt: string | null; byRuleName?: string };
+type BeforeWindowDecision = {
+  state: 'beforeWindow';
+  nextLockAt: string;
+  ruleId: string;
+  getAheadRuleId?: string | null;
+};
 type HomeDecision =
-  | LockDecision
+  | Exclude<LockDecision, { state: 'unlockedMet' } | { state: 'beforeWindow' }>
+  | MetDecision
+  | BeforeWindowDecision
   | ProvisionalDecision
   | { state: 'noRulesToday'; nextLockAt?: string | null };
 type Input = {
@@ -115,11 +125,12 @@ export function statusContent({
   }
   if (d.state === 'unlockedMet') {
     // merge: P2-T14 supplies byRuleName directly on this decision.
-    const byName = 'byRuleName' in d ? d.byRuleName : ruleName(rules.find((rule) => rule.id === d.byRuleId)!);
+    const by = rules.find((rule) => rule.id === d.byRuleId),
+      byName = d.byRuleName ?? (by ? ruleName(by) : null);
     return {
       ...model,
       title: c.met,
-      subtitle: caughtUp ? c.caughtUp : c.unlockedBy(byName),
+      subtitle: caughtUp ? c.caughtUp : byName ? c.unlockedBy(byName) : resume(d.relockAt),
       nextChange: resume(d.relockAt),
     };
   }
@@ -131,15 +142,14 @@ export function statusContent({
     };
   if (d.state === 'unlockedWalking')
     return { ...model, title: c.walking, subtitle: c.left(leaseClock(d.leaseUntil, now)), action: 'stop' };
-  if (d.state === 'beforeWindow')
+  if (d.state === 'beforeWindow') {
+    const ahead = d.getAheadRuleId ? rules.find((r) => r.id === d.getAheadRuleId) : undefined;
     return {
       ...model,
       title: c.starts(time(d.nextLockAt)),
-      subtitle:
-        'getAheadRuleId' in d && d.getAheadRuleId
-          ? c.getAhead(ruleName(rules.find((r) => r.id === d.getAheadRuleId)!))
-          : c.openUntil,
+      subtitle: ahead ? c.getAhead(ruleName(ahead)) : c.openUntil,
     };
+  }
   if (d.state === 'afterWindow') return { ...model, subtitle: resume(d.nextLockAt) };
   if (d.state === 'noRulesToday' && 'nextLockAt' in d) return { ...model, subtitle: resume(d.nextLockAt ?? null) };
   return model;

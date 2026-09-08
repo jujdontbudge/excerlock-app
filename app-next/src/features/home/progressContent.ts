@@ -10,6 +10,10 @@ export type ProgressModel = {
   action?: 'walk' | 'checkin' | 'fix';
   label?: string;
 };
+/** The sensor a rule's progress depends on — the permission its Fix action opens. */
+export function sensorFor(rule: Rule): 'motion' | 'location' | 'health' {
+  return rule.activity === 'walking' ? 'motion' : rule.activity === 'gym' ? 'location' : 'health';
+}
 export function progressContent(
   rule: Rule,
   row: RuleDay,
@@ -25,14 +29,11 @@ export function progressContent(
       value.toLocaleString('en-US', { maximumFractionDigits: m.kind === 'target' && m.metric === 'distance' ? 1 : 0 });
   if (satisfiedBy && satisfiedBy.byRuleId !== rule.id)
     return { title, icon: rule.activity, value: row.met ? 1 : 0, detail: c.satisfied(satisfiedBy.byRuleName) };
+  const sensor = sensorFor(rule);
   const permission =
-    rule.activity === 'walking'
-      ? permissions.motion === 'granted'
-      : rule.activity === 'gym'
-        ? ['whenInUse', 'always'].includes(permissions.location)
-        : permissions.health === 'granted';
+    sensor === 'location' ? ['whenInUse', 'always'].includes(permissions.location) : permissions[sensor] === 'granted';
   const needed =
-    rule.activity === 'walking' ? c.motionNeeded : rule.activity === 'gym' ? c.locationNeeded : c.healthNeeded;
+    sensor === 'motion' ? c.motionNeeded : sensor === 'location' ? c.locationNeeded : c.healthNeeded;
   if (!permission)
     return {
       title,

@@ -27,7 +27,7 @@ import { permissionsStore as usePermissionsStore } from '../../state/permissions
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
 import { statusContent } from './statusContent';
-import { progressContent } from './progressContent';
+import { progressContent, sensorFor } from './progressContent';
 import { useUnlockMoment } from './useUnlockMoment';
 import { homeCopy as c } from '../../content/home';
 import { LivingIcon } from '../../motion/LivingIcon';
@@ -67,7 +67,15 @@ export function HomeScreen() {
     if (status.action === 'stop') runtime.walking.stop();
   };
   const actionLabel = status.action
-    ? { permission: c.fix, apps: c.chooseApps, add: c.add, conditions: c.conditions, stop: c.stopWalk }[status.action]
+    ? {
+        permission: c.fix,
+        apps: c.chooseApps,
+        add: c.add,
+        conditions: c.conditions,
+        stop: c.stopWalk,
+        plans: c.seePlans,
+        retry: c.retry,
+      }[status.action]
     : undefined;
   useEffect(() => {
     runtime.analytics.screen('Home');
@@ -100,8 +108,9 @@ export function HomeScreen() {
         action={'label' in model ? model.label : undefined}
         onAction={() => {
           const kind = unlockKind(rule);
-          if (kind) router.push({ pathname: `/unlock/${kind}`, params: { ruleId: rule.id } });
-          else if ('action' in model && model.action) setSheet({ type: model.action, ruleId: rule.id });
+          if (model.action === 'fix') router.push(`/settings/permission/${sensorFor(rule)}`);
+          else if (kind) router.push({ pathname: `/unlock/${kind}`, params: { ruleId: rule.id } });
+          else if (model.action) setSheet({ type: model.action, ruleId: rule.id });
         }}
       />
     );

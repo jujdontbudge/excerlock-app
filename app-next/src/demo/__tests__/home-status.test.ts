@@ -46,10 +46,10 @@ test('lapse and enforcement failure precede every ordinary Home state', () => {
 
 test('locked status shows its headline and hint unless the first claim is pending', () => {
   const decision = {
-    state: 'locked',
+    state: 'locked' as const,
     activeRuleIds: ['walk'],
-    nextUnlockHint: { ruleId: 'walk', action: 'progress', remaining: 1800, unit: 'steps' },
-  } as const;
+    nextUnlockHint: { ruleId: 'walk', action: 'progress' as const, remaining: 1800, unit: 'steps' },
+  };
   expect(statusContent({ ...input, decision })).toMatchObject({
     title: 'Apps are blocked',
     subtitle: 'Until you walk 1,800 steps',

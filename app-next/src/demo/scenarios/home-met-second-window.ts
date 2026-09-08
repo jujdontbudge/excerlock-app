@@ -1,12 +1,13 @@
 import { base, makeRule } from './base';
+import { Weekday } from '../../domain/types';
 
 const morning = {
   ...makeRule(),
-  schedule: { days: [1, 2, 3, 4, 5] as const, window: { kind: 'range', startMinute: 540, endMinute: 720 } as const },
+  schedule: { days: [1, 2, 3, 4, 5] as Weekday[], window: { kind: 'range', startMinute: 540, endMinute: 720 } as const },
 };
 const evening = {
   ...makeRule('run', { kind: 'target', activity: 'running', metric: 'minutes', goal: 20 }),
-  schedule: { days: [1, 2, 3, 4, 5] as const, window: { kind: 'range', startMinute: 1080, endMinute: 1320 } as const },
+  schedule: { days: [1, 2, 3, 4, 5] as Weekday[], window: { kind: 'range', startMinute: 1080, endMinute: 1320 } as const },
 };
 
 export const homeMetSecondWindow = base('home-met-second-window', 'Home · met before second window', {

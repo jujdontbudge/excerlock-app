@@ -107,7 +107,11 @@ export function WalkingSheet({ rule, onDismiss }: { rule: Rule; onDismiss: () =>
           label={phase === 'ended' ? c.minutes : c.steps}
         />
       ) : null}
-      {error ? <Label accessibilityRole="alert" tone="danger">{error}</Label> : null}
+      {error ? (
+        <Label accessibilityRole="alert" style={{ color: t.state.error }}>
+          {error}
+        </Label>
+      ) : null}
     </BottomSheet>
   );
 }
