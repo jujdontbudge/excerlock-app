@@ -1,9 +1,12 @@
 import { dayKey } from '../../domain/calendar';
-import { ScreenTimePort } from '../../ports/ScreenTimePort';
+import { assertMonitorBudget } from '../../domain/monitorPlan';
+import { ApplyResult, ScreenTimePort } from '../../ports/ScreenTimePort';
 import { permissionsStore } from '../../state/permissionsStore';
 import { rulesStore } from '../../state/rulesStore';
 import { FakeContext } from '../FakeContext';
 export function ScreenTimeFake(ctx: FakeContext): ScreenTimePort {
+  const enforcementListeners = new Set<(result: ApplyResult) => void>();
+  let lastAppliedKey = '';
   return {
     authorizationStatus: () => permissionsStore.getState().data.screenTime,
     requestAuthorization: () => ctx.request('screenTime'),
@@ -14,7 +17,33 @@ export function ScreenTimeFake(ctx: FakeContext): ScreenTimePort {
       rulesStore.getState().patch({ lockedApps: selected });
       return selected;
     },
-    applyLock: (decision) => ctx.log('lock_applied', { state: decision.state }),
+    describeSelection: async () => {
+      const selection = rulesStore.getState().data.lockedApps;
+      return selection.handle ? selection : { handle: null, appCount: 0, categoryCount: 0 };
+    },
+    applyLock: async (decision, plan) => {
+      const budget = assertMonitorBudget(plan);
+      const result: ApplyResult = budget.applied
+        ? {
+            applied: true,
+            shields: decision.state === 'locked' ? 'up' : 'down',
+            monitors: plan.monitors.length,
+          }
+        : budget;
+      const key = JSON.stringify({ decision: decision.state, planHash: plan.planHash, result });
+      if (key !== lastAppliedKey) {
+        lastAppliedKey = key;
+        ctx.log('lock_applied', { state: decision.state, ...result });
+        enforcementListeners.forEach((callback) => callback(result));
+      }
+      return result;
+    },
+    observeEnforcement: (callback) => {
+      enforcementListeners.add(callback);
+      return () => {
+        enforcementListeners.delete(callback);
+      };
+    },
     observeUsage: (callback) => {
       const update = () =>
         callback(

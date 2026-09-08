@@ -12,20 +12,11 @@ the met-today fact and decide" (there is no OS-side arithmetic; met-today must b
 the monitors' actions, the old `NativeShieldScheduler` pattern); nothing models instant relief, a lapse, a
 clock rewind, a null selection or a per-cause shield.
 
-## 1. Precedence law (normative; copied into `01-product-model.md` §3)
+## 1. Precedence law
 
-The enforcement gate sits **above** `resolveLock`: `enforcementPlan({ entitlement, decision })` decides whether
-shields may exist at all (§7). `resolveLock` itself resolves, in this order:
-
-1. `unlockedWalking` — an enabled `state` walking rule with a **current window instance now**, and a session
-   in phase `walking` or `grace` with `leaseUntil > now`. A duration (`target/minutes`) walking session never
-   reaches this branch: walking toward a goal does not open the apps, reaching it does.
-2. `unlockedMet` — an `EarnedUnlock` record (§3) for today, or with `windowEnd > now`, ordered by earliest
-   `metAt`; `relockAt` is recomputed live from the currently enabled rules.
-3. `unlockedProvisional` — confirmed gym presence inside an enabled gym rule's window (§4).
-4. `locked` — every active unmet rule, sorted by window start then `createdAt`; `nextUnlockHint` per §6 of the
-   product model.
-5. `beforeWindow` · 6. `afterWindow` · 7. `noRulesToday` — both of the last two carry `nextLockAt`.
+The sole normative precedence statement is `01-product-model.md` §3. The enforcement gate sits above
+`resolveLock`: `enforcementPlan({ entitlement, decision })` decides whether shields may exist at all (§7)
+without changing the domain decision.
 
 ## 2. Lock intervals and the monitor plan (findings 17, 18, 97)
 

@@ -4,11 +4,18 @@ export function unlockHint(rules: Rule[], days: RuleDay[]): UnlockHint {
   const offers = rules.map((rule): UnlockHint => {
     const mode = rule.mode;
     if (mode.kind !== 'target')
-      return { ruleId: rule.id, action: mode.kind === 'state' ? 'walk' : 'arrive', remaining: null, unit: null };
+      return {
+        ruleId: rule.id,
+        action: mode.kind === 'state' ? 'walk' : 'arrive',
+        remaining: null,
+        goal: null,
+        unit: null,
+      };
     return {
       ruleId: rule.id,
       action: 'progress',
       remaining: Math.max(0, mode.goal - (days.find((d) => d.ruleId === rule.id)?.progress ?? 0)),
+      goal: mode.goal,
       unit: mode.metric === 'distance' ? mode.unit : mode.metric,
     };
   });

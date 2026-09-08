@@ -5,6 +5,7 @@ import { addDays } from '../../domain/calendar';
 import { ruleName } from '../../domain/ruleName';
 import { domainCopy } from '../../content/domain';
 import { homeCopy as c } from '../../content/home';
+import { canEnforce } from '../../domain/canEnforce';
 export type StatusModel = {
   state: string;
   icon: IconName;
@@ -27,7 +28,9 @@ export function leaseClock(until: string, now: string) {
 }
 export function statusContent({ decision: d, rules, permissions, apps, now, timezone }: Input): StatusModel {
   const time = (at: string) =>
-    new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: timezone }).format(new Date(at)).replace(/\s(?=[AP]M$)/, '\u00a0');
+    new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: timezone })
+      .format(new Date(at))
+      .replace(/\s(?=[AP]M$)/, '\u00a0');
   const resume = (at: string | null) => {
     if (!at) return c.noNext;
     const day = dayKey(at, timezone),
@@ -37,7 +40,9 @@ export function statusContent({ decision: d, rules, permissions, apps, now, time
         ? c.todayWord
         : day === addDays(today, 1)
           ? c.tomorrow
-          : new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: timezone }).format(new Date(at)).replace(/\s/g, ' ');
+          : new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: timezone })
+              .format(new Date(at))
+              .replace(/\s/g, ' ');
     return c.resumes(when, time(at));
   };
   const model: StatusModel = {
@@ -50,10 +55,10 @@ export function statusContent({ decision: d, rules, permissions, apps, now, time
   if (!rules.length) return { ...model, state: 'noRules', title: c.noRules, subtitle: c.emptyBody, action: 'add' };
   if (rules.every((r) => !r.enabled))
     return { ...model, state: 'allPaused', title: c.paused, subtitle: c.resume, action: 'conditions' };
-  if (permissions.screenTime !== 'granted')
+  const enforcement = canEnforce({ screenTime: permissions.screenTime, selection: apps });
+  if (!enforcement.ok && enforcement.reason === 'screenTimeDenied')
     return { ...model, state: 'permissionNeeded', subtitle: c.permission, action: 'permission' };
-  if (apps.appCount + apps.categoryCount === 0)
-    return { ...model, state: 'noAppsSelected', subtitle: c.noApps, action: 'apps' };
+  if (!enforcement.ok) return { ...model, state: 'noAppsSelected', subtitle: c.noApps, action: 'apps' };
   if (d.state === 'locked') {
     const hint = d.nextUnlockHint,
       rule = rules.find((r) => r.id === hint.ruleId);
@@ -66,14 +71,18 @@ export function statusContent({ decision: d, rules, permissions, apps, now, time
     return { ...model, title: c.locked, icon: 'lock', unlocked: false, subtitle: c.until(action) };
   }
   if (d.state === 'unlockedMet') return { ...model, title: c.met, subtitle: resume(d.relockAt) };
+  if (d.state === 'unlockedProvisional') return { ...model, title: c.atGym, subtitle: c.gymHold };
   if (d.state === 'unlockedWalking')
     return { ...model, title: c.walking, subtitle: c.left(leaseClock(d.leaseUntil, now)), action: 'stop' };
   if (d.state === 'beforeWindow')
     return {
       ...model,
       title: c.starts(time(d.nextLockAt)),
-      subtitle: c.getAhead(ruleName(rules.find((r) => r.id === d.ruleId)!)),
+      subtitle: d.getAheadRuleId
+        ? c.getAhead(ruleName(rules.find((rule) => rule.id === d.getAheadRuleId)!))
+        : c.walkReady,
     };
   if (d.state === 'afterWindow') return { ...model, subtitle: resume(d.nextLockAt) };
+  if (d.state === 'noRulesToday') return { ...model, subtitle: resume(d.nextLockAt) };
   return model;
 }

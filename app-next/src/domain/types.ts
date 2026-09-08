@@ -49,6 +49,20 @@ export type RuleDay = {
   metAt: string | null; // ISO, local instant when it became met
 };
 
+export type EarnedUnlock = {
+  day: DayKey;
+  ruleId: string;
+  ruleName: string;
+  metAt: string;
+  windowEnd: string;
+};
+
+export type GymPresence = {
+  placeId: string;
+  confirmedAt: string;
+  holdsUntil: string;
+};
+
 export type WalkingSession = {
   ruleId: string; // the state-mode rule it belongs to
   startedAt: string;
@@ -88,12 +102,14 @@ export type UnlockHint = {
   ruleId: string;
   action: 'walk' | 'arrive' | 'progress';
   remaining: number | null;
+  goal: number | null;
   unit: string | null;
 };
 export type LockDecision =
-  | { state: 'noRulesToday' } // apps open, nothing scheduled today
-  | { state: 'beforeWindow'; nextLockAt: string; ruleId: string } // apps open, blocking starts later today
+  | { state: 'noRulesToday'; nextLockAt: string | null } // apps open, nothing scheduled today
+  | { state: 'beforeWindow'; nextLockAt: string; ruleId: string; getAheadRuleId: string | null } // apps open, blocking starts later today
   | { state: 'locked'; activeRuleIds: string[]; nextUnlockHint: UnlockHint }
-  | { state: 'unlockedMet'; byRuleId: string; relockAt: string | null } // met today, open until next day's window
+  | { state: 'unlockedMet'; byRuleId: string; byName: string; metAt: string; relockAt: string | null } // met today, open until next day's window
+  | { state: 'unlockedProvisional'; byRuleId: string; placeId: string; holdsUntil: string }
   | { state: 'unlockedWalking'; sessionRuleId: string; leaseUntil: string }
   | { state: 'afterWindow'; nextLockAt: string | null }; // today's windows are over, apps open

@@ -12,7 +12,9 @@ test('scenario loading resets persisted facts, keep-edits preserves them, and po
       timezone: runtime.clock.timezone(),
       rules: rulesStore.getState().data.rules,
       ruleDays: ruleDaysStore.getState().data.days,
+      earnedUnlocks: ruleDaysStore.getState().data.earnedUnlocks,
       walkingSession: null,
+      gymPresence: null,
     });
   expect(decision().state).toBe('beforeWindow');
   runtime.dev.advance(3600000);

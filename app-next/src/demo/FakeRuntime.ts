@@ -8,6 +8,7 @@ import { scenarios } from './scenarios';
 import { FakeContext } from './FakeContext';
 import { loadScenario } from './scenarioLoader';
 import { permissionsStore } from '../state/permissionsStore';
+import { rulesStore } from '../state/rulesStore';
 import { entitlementStore } from '../state/entitlementStore';
 import { sessionStore } from '../state/sessionStore';
 import { ScreenTimeFake } from './fakes/ScreenTimeFake';
@@ -94,7 +95,11 @@ export function FakeRuntime(): Runtime {
       advance: ctx.clock.advance,
       setPresence: (presence) => ctx.update({ presence }),
       setGait: gait.set,
-      createGaitPreview: () => { const preview = GaitFake(true); preview.set('walking'); return preview; },
+      createGaitPreview: () => {
+        const preview = GaitFake(true);
+        preview.set('walking');
+        return preview;
+      },
       setPlacement: (placement) => ctx.update({ placement }),
       setSteps: (value) => {
         if (!Number.isFinite(value) || value < 0) throw new Error('Invalid step count');
@@ -117,6 +122,8 @@ export function FakeRuntime(): Runtime {
       setRestoreOutcome: (restoreOutcome) => ctx.update({ restoreOutcome }),
       setOutcome: (outcome) => ctx.update({ outcome }),
       resolvePrompt: ctx.resolve,
+      invalidateSelection: () =>
+        rulesStore.getState().patch({ lockedApps: { handle: null, appCount: 0, categoryCount: 0 } }),
       snapshot: ctx.snapshot,
       subscribe: ctx.subscribe,
     },

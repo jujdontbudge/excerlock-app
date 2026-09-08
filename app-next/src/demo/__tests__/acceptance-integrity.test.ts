@@ -57,19 +57,15 @@ test.each(['gym-arrival-user', 'gym-time-user'])(
   async (id) => {
     const r = createRuntime();
     await r.dev.load(id);
-    rulesStore
-      .getState()
-      .patch({
-        rules: rulesStore
-          .getState()
-          .data.rules.map((rule) => ({
-            ...rule,
-            schedule: {
-              days: [0, 1, 2, 3, 4, 5, 6],
-              window: { kind: 'range' as const, startMinute: 1200, endMinute: 120 },
-            },
-          })),
-      });
+    rulesStore.getState().patch({
+      rules: rulesStore.getState().data.rules.map((rule) => ({
+        ...rule,
+        schedule: {
+          days: [0, 1, 2, 3, 4, 5, 6],
+          window: { kind: 'range' as const, startMinute: 1200, endMinute: 120 },
+        },
+      })),
+    });
     r.dev.setTime('2026-09-08T05:00:00.000Z', 'America/New_York');
     r.dev.setPresence('inside');
     await r.gym.checkIn(r.gym.listPlaces()[0].id);
@@ -83,7 +79,9 @@ test.each(['gym-arrival-user', 'gym-time-user'])(
         timezone: r.clock.timezone(),
         rules: rulesStore.getState().data.rules,
         ruleDays: ruleDaysStore.getState().data.days,
+        earnedUnlocks: ruleDaysStore.getState().data.earnedUnlocks,
         walkingSession: null,
+        gymPresence: null,
       }).state,
     ).toBe('unlockedMet');
     if (id === 'gym-time-user')

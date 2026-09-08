@@ -9,6 +9,7 @@ import {
   Session,
   Entitlement,
   WalkingSession,
+  EarnedUnlock,
 } from '../domain/types';
 export type SavedPlace = {
   id: string;
@@ -35,6 +36,7 @@ export type Scenario = {
   rules: Rule[];
   lockedApps: LockedApps;
   ruleDays: RuleDay[];
+  earnedUnlocks?: EarnedUnlock[];
   clock: { now: string; timezone: string };
   permissions: Permissions;
   session: Session;

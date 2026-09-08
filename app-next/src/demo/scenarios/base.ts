@@ -50,6 +50,7 @@ export function base(id: string, title: string, overrides: Partial<Scenario> = {
     rules: [makeRule()],
     lockedApps: { handle: { token: 'fake-selection-default' }, appCount: 3, categoryCount: 1 },
     ruleDays: [{ ruleId: 'walk', day: '2026-09-07', progress: 3200, met: false, metAt: null }],
+    earnedUnlocks: [],
     clock: { now: NOW, timezone: 'America/New_York' },
     permissions: {
       screenTime: 'granted',

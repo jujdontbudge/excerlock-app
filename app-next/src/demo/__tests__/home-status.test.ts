@@ -11,7 +11,9 @@ function content(overrides: Partial<typeof scenario> = {}) {
       timezone: s.clock.timezone,
       rules: s.rules,
       ruleDays: s.ruleDays,
+      earnedUnlocks: s.earnedUnlocks ?? [],
       walkingSession: s.walkingSession ?? null,
+      gymPresence: null,
     }),
     rules: s.rules,
     permissions: s.permissions,
@@ -45,8 +47,16 @@ test('relock and lease clocks are formatted using the scenario timezone', () => 
     timezone: 'America/New_York',
   };
   expect(
-    statusContent({ ...common, decision: { state: 'unlockedMet', byRuleId: 'walk', relockAt: '2026-09-08T13:00:00Z' } })
-      .subtitle,
+    statusContent({
+      ...common,
+      decision: {
+        state: 'unlockedMet',
+        byRuleId: 'walk',
+        byName: 'Walk 5,000 steps',
+        metAt: '2026-09-07T15:00:00Z',
+        relockAt: '2026-09-08T13:00:00Z',
+      },
+    }).subtitle,
   ).toBe('Blocking resumes tomorrow at 9:00\u00a0AM');
   expect(
     statusContent({
@@ -54,4 +64,27 @@ test('relock and lease clocks are formatted using the scenario timezone', () => 
       decision: { state: 'unlockedWalking', sessionRuleId: 'walk', leaseUntil: '2026-09-07T15:12:40Z' },
     }).subtitle,
   ).toBe('12:40 left');
+});
+
+test('a provisional gym unlock says the apps are open while presence holds', () => {
+  const model = statusContent({
+    rules: scenario.rules,
+    permissions: scenario.permissions,
+    apps: scenario.lockedApps,
+    now: '2026-09-07T15:00:00Z',
+    timezone: 'America/New_York',
+    decision: {
+      state: 'unlockedProvisional',
+      byRuleId: 'walk',
+      placeId: 'gym-1',
+      holdsUntil: '2026-09-07T16:00:00Z',
+    },
+  });
+  expect(model.unlocked).toBe(true);
+  expect(model.title).toBe("Unlocked while you're at the gym");
+  expect(model.subtitle).toBe('Your apps stay open while you are here.');
+});
+
+test('a null selection handle shows the no-apps state even with stale non-zero counts', () => {
+  expect(content({ lockedApps: { handle: null, appCount: 3, categoryCount: 1 } }).state).toBe('noAppsSelected');
 });

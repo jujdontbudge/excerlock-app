@@ -14,13 +14,18 @@ test('clock enters window, fake steps reach goal and latch unlock; new day start
       timezone: r.clock.timezone(),
       rules: rulesStore.getState().data.rules,
       ruleDays: ruleDaysStore.getState().data.days,
+      earnedUnlocks: ruleDaysStore.getState().data.earnedUnlocks,
       walkingSession: null,
+      gymPresence: null,
     }).state;
   expect(state()).toBe('beforeWindow');
   r.dev.advance(3600000);
   expect(state()).toBe('locked');
   r.dev.setSteps(5000);
   expect(state()).toBe('unlockedMet');
+  expect(ruleDaysStore.getState().data.earnedUnlocks).toMatchObject([
+    { day: '2026-09-07', ruleId: 'walk', metAt: '2026-09-07T13:00:00.000Z' },
+  ]);
   r.dev.setSteps(1000);
   expect(state()).toBe('unlockedMet');
   r.dev.advance(86400000);
@@ -49,6 +54,18 @@ test('switching scenarios cannot latch the previous scenario’s steps into the 
   stop();
   r.dispose();
 });
-test('yesterday’s Health workouts never fulfill the next day’s condition',async()=>{
- const r=createRuntime();await r.dev.load('runner-distance');const stop=startProgressSync(r);await Promise.resolve();await Promise.resolve();r.dev.advance(86400000);await Promise.resolve();await Promise.resolve();const today=ruleDaysStore.getState().data.days.find(d=>d.day==='2026-09-08');expect(today?.progress).toBe(0);expect(today?.met).toBe(false);stop();r.dispose();
+test('yesterday’s Health workouts never fulfill the next day’s condition', async () => {
+  const r = createRuntime();
+  await r.dev.load('runner-distance');
+  const stop = startProgressSync(r);
+  await Promise.resolve();
+  await Promise.resolve();
+  r.dev.advance(86400000);
+  await Promise.resolve();
+  await Promise.resolve();
+  const today = ruleDaysStore.getState().data.days.find((d) => d.day === '2026-09-08');
+  expect(today?.progress).toBe(0);
+  expect(today?.met).toBe(false);
+  stop();
+  r.dispose();
 });
