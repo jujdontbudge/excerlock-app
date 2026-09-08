@@ -118,13 +118,16 @@ test('a rest day says when blocking resumes', async () => {
   await rendered.unmount();
 });
 
-test('the handheld pill opens the walking sheet instead of the treadmill ceremony', async () => {
-  const { router, rendered } = await openHome('walking-either-two-pills');
-  await userEvent.press(screen.getByRole('button', { name: "I'm walking with my phone" }));
-  expect(screen.getByRole('button', { name: 'Start walking' })).toBeTruthy();
-  expect(router.getPathname()).toBe('/home');
-  await rendered.unmount();
-});
+test.each(['walking-either-two-pills', 'walking-state-outdoor'])(
+  '%s opens the walking sheet from the handheld pill, never the treadmill ceremony',
+  async (id) => {
+    const { router, rendered } = await openHome(id);
+    await userEvent.press(screen.getByRole('button', { name: "I'm walking with my phone" }));
+    expect(screen.getByRole('button', { name: 'Start walking' })).toBeTruthy();
+    expect(router.getPathname()).toBe('/home');
+    await rendered.unmount();
+  },
+);
 
 test('a gym condition paused for no saved gym says so and opens the gym list', async () => {
   const { router, rendered } = await openHome('home-two-conditions-locked', () => {
