@@ -56,7 +56,9 @@ test('an inactive access level with a billing issue is a billing issue, not an e
 
 test('an inactive access level that simply lapsed is expired', () => {
   expect(
-    entitlementFromProfile(premium({ isActive: false, willRenew: false, expiresAt: new Date('2026-09-06T15:00:00.000Z') })),
+    entitlementFromProfile(
+      premium({ isActive: false, willRenew: false, expiresAt: new Date('2026-09-06T15:00:00.000Z') }),
+    ),
   ).toEqual({ status: 'expired', renewsAt: '2026-09-06T15:00:00.000Z' });
 });
 

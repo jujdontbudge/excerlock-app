@@ -14,7 +14,11 @@ const URL_PATTERN = /https?:\/\/\S+/i;
 const REQUIREMENTS: { name: PaywallRequirement; pattern: RegExp; needsLink: boolean }[] = [
   { name: 'terms', pattern: /\bterms\b/i, needsLink: true },
   { name: 'privacy', pattern: /\bprivacy\b/i, needsLink: true },
-  { name: 'price', pattern: /[$€£¥]\s?\d|\d+(?:[.,]\d{2})?\s?(?:usd|eur|gbp)\b|\$\{\s*price|<price>/i, needsLink: false },
+  {
+    name: 'price',
+    pattern: /[$€£¥]\s?\d|\d+(?:[.,]\d{2})?\s?(?:usd|eur|gbp)\b|\$\{\s*price|<price>/i,
+    needsLink: false,
+  },
   { name: 'renewal', pattern: /renew|cancel anytime|unless (?:you )?cancel/i, needsLink: false },
 ];
 

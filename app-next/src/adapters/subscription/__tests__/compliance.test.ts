@@ -15,7 +15,11 @@ test('a paywall carrying terms, privacy, price and renewal has no violations', (
 });
 
 test('a paywall built from a price tag rather than a literal price still shows a price', () => {
-  const tagged = { text: 'Then ${price} per year', renewal: 'Renews yearly unless canceled', links: compliant.screens.slice(3) };
+  const tagged = {
+    text: 'Then ${price} per year',
+    renewal: 'Renews yearly unless canceled',
+    links: compliant.screens.slice(3),
+  };
   expect(paywallComplianceViolations(tagged)).toEqual([]);
 });
 
@@ -26,7 +30,9 @@ test('a paywall with no legal links fails on both documents', () => {
 
 test('legal words with no link to tap do not count', () => {
   expect(
-    paywallComplianceViolations({ text: 'Terms of Use and Privacy Policy apply. $59.99/year, renews unless canceled.' }),
+    paywallComplianceViolations({
+      text: 'Terms of Use and Privacy Policy apply. $59.99/year, renews unless canceled.',
+    }),
   ).toEqual(['terms', 'privacy']);
 });
 
