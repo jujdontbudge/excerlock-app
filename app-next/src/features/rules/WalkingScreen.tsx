@@ -17,6 +17,7 @@ export function WalkingScreen({
   onAction: (a: DraftAction) => void;
 }) {
   const valid = Number.isFinite(d.stepGoal) && d.stepGoal >= 500 && d.stepGoal <= 30000 && d.stepGoal % 500 === 0;
+  const modes = d.place === 'treadmill' ? c.modes.filter((mode) => mode.id !== 'steps') : c.modes;
   return (
     <>
       {!contentOnly ? (
@@ -43,12 +44,12 @@ export function WalkingScreen({
           ))
         : null}
       {step === 'W2'
-        ? c.modes.map((m, index) => (
+        ? modes.map((m, index) => (
             <Reveal key={m.id} index={index + 1}>
               <ChoiceRow
                 title={m.title}
                 support={m.support}
-                recommended={m.id === 'target'}
+                recommended={m.id === (d.place === 'treadmill' ? 'minutes' : 'steps')}
                 selected={d.walkingMode === m.id}
                 compact
                 onPress={() => onAction({ type: 'setWalkingMode', value: m.id })}

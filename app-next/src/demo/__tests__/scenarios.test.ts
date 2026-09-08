@@ -28,6 +28,7 @@ test('all required scenarios are valid and the analytics fixture has six weeks o
     'dynamic-type-xl',
     'reduce-motion',
     'runner-claim-on-open',
+    'treadmill-duration-rule',
     'unlock-treadmill-scan',
     'unlock-treadmill-framing',
     'unlock-treadmill-denied',
@@ -45,4 +46,15 @@ test('all required scenarios are valid and the analytics fixture has six weeks o
     endMinute: 120,
   });
   expect(validateScenario({})).not.toEqual([]);
+});
+
+test('rule-day validation accepts a minutes unit and rejects unknown units', () => {
+  const duration = scenarios.find((scenario) => scenario.id === 'treadmill-duration-rule')!;
+  expect(validateScenario(duration)).toEqual([]);
+  expect(
+    validateScenario({
+      ...duration,
+      ruleDays: duration.ruleDays.map((row) => ({ ...row, unit: 'hours' })),
+    }),
+  ).toContain('ruleDays');
 });

@@ -13,6 +13,7 @@ export type Rule = {
 
 export type RuleMode =
   | { kind: 'target'; activity: 'walking'; metric: 'steps'; goal: number; place: WalkPlace }
+  | { kind: 'target'; activity: 'walking'; metric: 'minutes'; goal: number; place: WalkPlace }
   | { kind: 'state'; activity: 'walking'; place: WalkPlace }
   | { kind: 'event'; activity: 'gym'; trigger: 'arrival' }
   | { kind: 'target'; activity: 'gym'; metric: 'minutes'; goal: number }
@@ -47,6 +48,7 @@ export type RuleDay = {
   progress: number; // steps, minutes, km/mi — in the rule's own metric unit
   met: boolean;
   metAt: string | null; // ISO, local instant when it became met
+  unit?: 'steps' | 'minutes' | 'km' | 'mi'; // optional for rows persisted before progress units were recorded
 };
 
 export type EarnedUnlock = {

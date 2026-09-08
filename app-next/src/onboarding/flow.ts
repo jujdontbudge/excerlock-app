@@ -35,7 +35,10 @@ export function pathFor(answers: Answers): string[] {
       branch = ['B1', answers.bikeMode === 'distance' ? 'D' : 'B2'];
       break;
     default:
-      branch = answers.walkingMode === 'state' ? ['W1', 'W2'] : ['W1', 'W2', 'W3'];
+      branch =
+        answers.walkingMode === 'state'
+          ? ['W1', 'W2']
+          : ['W1', 'W2', answers.walkingMode === 'minutes' ? 'W4' : 'W3'];
   }
   return [...preBranch, ...branch, ...tail];
 }

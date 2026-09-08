@@ -6,7 +6,8 @@ import { toRule } from '../draft';
 import { validateRule } from '../../../domain/validateRule';
 const schedule = { days: [1 as const], window: { kind: 'allDay' as const } };
 test.each([
-  { activity: 'walking', walkingMode: 'target', stepGoal: 6000 },
+  { activity: 'walking', walkingMode: 'steps', stepGoal: 6000 },
+  { activity: 'walking', walkingMode: 'minutes', walkMinutes: 20 },
   { activity: 'walking', walkingMode: 'state' },
   { activity: 'gym', gymMode: 'arrival' },
   { activity: 'gym', gymMode: 'time', gymMinutes: 45 },

@@ -54,7 +54,7 @@ Each branch is a sequence inside the same flow machine; Back walks the actual pa
 
 | Id | Screen | Content | States | Next |
 | --- | --- | --- | --- | --- |
-| W1 | "Where will you walk?" | Outside (Recommended) · Treadmill · Either | | W2 |
+| W1 | "Where will you walk?" | Outside (Recommended) · Treadmill · Either. Treadmill explains that a quick camera check verifies the walk. | | W2 |
 | W2 | "How should walking unlock apps?" | Outside/Either: Reach a step goal (Recommended) · Walk for a set time · Unlock while walking. Treadmill (B28): Walk for a set time (Recommended) · Unlock while walking. Each row has one support line. | | step goal → W3 · set time → W4 · while walking → S1 |
 | W3 | "Set your walking goal" | `NumberField` steps, default 5,000, ±500 steppers, helper "About N minutes of walking". | invalid range error | S1 |
 | W4 | "How long will you walk?" | `NumberField` minutes, default 20, presets 15/20/30, range 10–120. Treadmill note: "You'll be asked to scan again every 15 minutes." | invalid range error | S1 |

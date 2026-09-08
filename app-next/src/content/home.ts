@@ -51,6 +51,7 @@ export const homeCopy = {
   enforcementFailedBody: 'ExcerLock could not block your apps. Try again, or check Screen Time access.',
   tryAgain: 'Try again',
   progress: (value: string, goal: string, unit: string) => `${value} / ${goal} ${unit}`,
+  walkedProgress: (value: string, goal: string) => `${value} / ${goal} min walked`,
   walkReady: 'Your apps stay open while you keep walking.',
   verifying: 'Checking your pace…',
   emptyBody: 'Choose a movement that makes room for the rest of your day.',

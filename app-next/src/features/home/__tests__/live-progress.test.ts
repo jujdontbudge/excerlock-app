@@ -44,6 +44,27 @@ test('denied Motion cannot manufacture progress or unlock', async () => {
   stop();
   r.dispose();
 });
+test('the pedometer never feeds a minutes rule', async () => {
+  const r = createRuntime();
+  await r.dev.load('home-locked-walking');
+  const walking = rulesStore.getState().data.rules[0];
+  rulesStore.getState().patch({
+    rules: [
+      {
+        ...walking,
+        mode: { kind: 'target', activity: 'walking', metric: 'minutes', goal: 20, place: 'outside' },
+      },
+    ],
+  });
+  ruleDaysStore.getState().patch({
+    days: [{ ruleId: walking.id, day: '2026-09-07', progress: 4, met: false, metAt: null }],
+  });
+  const stop = startProgressSync(r);
+  r.dev.setSteps(12000);
+  expect(ruleDaysStore.getState().data.days[0]).toMatchObject({ progress: 4, met: false });
+  stop();
+  r.dispose();
+});
 test('switching scenarios cannot latch the previous scenario’s steps into the next plan', async () => {
   const r = createRuntime();
   await r.dev.load('home-unlocked-met');

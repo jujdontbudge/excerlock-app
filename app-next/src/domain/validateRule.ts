@@ -1,4 +1,5 @@
-import { Rule } from './types';
+import { Rule, RuleMode } from './types';
+import { WALKING_MINUTES_MAX, WALKING_MINUTES_MIN, validWalkingMinutes } from './walkingDuration';
 
 export type RuleIssue = 'identity' | 'mode' | 'goal' | 'days' | 'window';
 // B32 keeps DeviceActivity lock windows at twice Apple's documented 15-minute floor.
@@ -36,7 +37,12 @@ export function validateRule(value: unknown): RuleIssue[] {
       if (m.activity === 'walking' && m.metric === 'steps') {
         min = 500;
         max = 30000;
+        if (m.place === 'treadmill') issues.push('mode');
         if (finite(m.goal) && m.goal % 500 !== 0) issues.push('goal');
+      } else if (m.activity === 'walking' && m.metric === 'minutes') {
+        min = WALKING_MINUTES_MIN;
+        max = WALKING_MINUTES_MAX;
+        if (!validWalkingMinutes(m.goal)) issues.push('goal');
       } else if (m.metric === 'minutes' && m.activity !== 'walking') {
         min = m.activity === 'gym' ? 10 : 5;
         max = m.activity === 'gym' ? 180 : 300;
@@ -81,7 +87,16 @@ export function validateRule(value: unknown): RuleIssue[] {
   return [...new Set(issues)];
 }
 
-export function migrateRule(rule: Rule): Rule {
+/** A treadmill-only steps goal has no measurable signal, so it widens to either (P2-T16). */
+function widenTreadmillSteps(rule: Rule): Rule {
+  const mode: RuleMode = rule.mode;
+  return mode.kind === 'target' && mode.activity === 'walking' && mode.metric === 'steps' && mode.place === 'treadmill'
+    ? { ...rule, mode: { ...mode, place: 'either' } }
+    : rule;
+}
+
+export function migrateRule(input: Rule): Rule {
+  const rule = widenTreadmillSteps(input);
   const window = rule.schedule.window;
   if (window.kind === 'allDay') return rule;
   const duration = (window.endMinute - window.startMinute + 1440) % 1440;

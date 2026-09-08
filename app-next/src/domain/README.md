@@ -18,4 +18,9 @@ Calendar math uses the supplied IANA timezone. DST gaps shift forward by the gap
 
 For `unlockedMet`, `relockAt: null` means clear shields until a rule is enabled again, not forever. `afterWindow` means an instance belonging to today, or yesterday's overnight instance, ended today; `noRulesToday` means nothing was scheduled today. Both carry `nextLockAt`, and `null` means there is no enabled start in the search horizon.
 
+`walkingDuration.ts` owns the walk-for-minutes target's bounds and defaults. `migrateRule` rewrites the
+legacy, unsatisfiable treadmill step target to an either-place step target before persisted rules are
+validated, in the same pass that widens a too-short window.
+
 Visible domain labels are composed from `src/content/`.
+

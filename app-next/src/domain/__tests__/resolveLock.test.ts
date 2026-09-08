@@ -57,6 +57,7 @@ test('a Friday earned unlock does not unlock Saturday but an overnight earn surv
   ).toBe('noRulesToday');
 
   const overnight: Rule = {
+
     ...rule,
     schedule: { days: [0, 1, 2, 3, 4, 5, 6], window: { kind: 'range', startMinute: 1200, endMinute: 120 } },
   };
@@ -259,4 +260,18 @@ test('afterWindow and noRulesToday keep distinct geometry and both carry the nex
     nextLockAt: '2026-09-13T20:00:00.000Z',
   });
   expect(resolveLock({ ...base, rules: [] })).toEqual({ state: 'noRulesToday', nextLockAt: null });
+});
+
+test('a walking session for a duration rule does not unlock the apps', () => {
+  const duration: Rule = {
+    ...rule,
+    mode: { kind: 'target', activity: 'walking', metric: 'minutes', goal: 20, place: 'treadmill' },
+  };
+  const walkingSession = {
+    ruleId: duration.id,
+    phase: 'walking' as const,
+    startedAt: now,
+    leaseUntil: '2026-09-07T19:15:00.000Z',
+  };
+  expect(resolveLock({ ...base, rules: [duration], walkingSession }).state).toBe('locked');
 });

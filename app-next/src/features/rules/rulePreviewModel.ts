@@ -21,8 +21,14 @@ export function rulePreviewModel(draft: RuleDraft, schedule?: Schedule): RulePre
   if (draft.activity === 'walking') {
     if (draft.walkingMode === 'state')
       return { message: block(c.walkingState), progress: c.walkingWaiting, icon: 'walking' };
-    const goal = number(draft.stepGoal);
-    return { message: block(c.walkingTarget(goal)), progress: c.progress(goal, 'steps'), icon: 'walking' };
+    const minutes = draft.walkingMode === 'minutes',
+      goal = number(minutes ? draft.walkMinutes : draft.stepGoal),
+      unit = minutes ? 'minutes' : 'steps';
+    return {
+      message: block(minutes ? c.walkingMinutes(goal) : c.walkingTarget(goal)),
+      progress: c.progress(goal, unit),
+      icon: 'walking',
+    };
   }
   if (draft.activity === 'gym') {
     if (draft.gymMode === 'arrival') return { message: block(c.gymArrival), progress: c.gymWaiting, icon: 'gym' };

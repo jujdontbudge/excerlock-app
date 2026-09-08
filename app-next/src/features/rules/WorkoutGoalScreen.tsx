@@ -4,30 +4,32 @@ import { NumberField, Label, PressableScale } from '../../design-system';
 import { Reveal } from '../../motion/Reveal';
 import { tokens as t } from '../../design-system/tokens';
 import { workoutCopy as c } from '../../content/workoutRules';
+import { walkingCopy } from '../../content/rules';
 import { RuleDraft, DraftAction } from './draft';
 import { goalRange, validGoal } from './goalRange';
+import { validWalkingMinutes } from '../../domain/walkingDuration';
 export function WorkoutGoalScreen({
   step,
   draft: d,
   onAction,
 }: {
-  step: 'G2' | 'R2' | 'B2' | 'D';
+  step: 'W4' | 'G2' | 'R2' | 'B2' | 'D';
   draft: RuleDraft;
   onAction: (a: DraftAction) => void;
 }) {
   const distance = step === 'D',
-    activity = d.activity === 'walking' ? 'running' : d.activity,
-    value = distance ? d.distance : activity === 'gym' ? d.gymMinutes : d.minutes,
+    activity = d.activity,
+    value = distance ? d.distance : activity === 'walking' ? d.walkMinutes : activity === 'gym' ? d.gymMinutes : d.minutes,
     range = goalRange(d, distance),
     unit = distance ? d.unit : c.minutes;
   const change = (value: number) =>
     onAction(
       distance
         ? { type: 'setDistance', value, unit: d.unit }
-        : { type: activity === 'gym' ? 'setGymMinutes' : 'setMinutes', value },
+        : { type: activity === 'walking' ? 'setWalkMinutes' : activity === 'gym' ? 'setGymMinutes' : 'setMinutes', value },
     );
   const hint = c.range(...range, unit),
-    valid = validGoal(value, range);
+    valid = activity === 'walking' ? validWalkingMinutes(value) : validGoal(value, range);
   return (
     <>
       <Reveal index={1} style={{ gap: t.space.lg }}>
@@ -68,6 +70,9 @@ export function WorkoutGoalScreen({
           <Reveal key={hint}>
             <Label tone="secondary">{hint}</Label>
           </Reveal>
+        ) : null}
+        {activity === 'walking' && d.place === 'treadmill' && value > 15 ? (
+          <Label tone="secondary">{walkingCopy.scanAgain}</Label>
         ) : null}
       </Reveal>
     </>

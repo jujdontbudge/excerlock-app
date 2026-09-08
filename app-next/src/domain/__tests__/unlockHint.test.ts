@@ -45,3 +45,13 @@ test('immediate actions rank first; numeric remainders compare only matching uni
 test('the first immediate offer stays ahead of subsequent offers', () => {
   expect(unlockHint([state, gym, rule], []).ruleId).toBe('state');
 });
+test('a walking duration rule reports its remaining minutes', () => {
+  const duration = {
+    ...rule,
+    id: 'duration',
+    mode: { kind: 'target' as const, activity: 'walking' as const, metric: 'minutes' as const, goal: 20, place: 'treadmill' as const },
+  };
+  expect(unlockHint([duration], [{ ruleId: 'duration', day: '2026-09-07', progress: 12, met: false, metAt: null }])).toEqual(
+    { ruleId: 'duration', action: 'progress', remaining: 8, goal: 20, unit: 'minutes' },
+  );
+});

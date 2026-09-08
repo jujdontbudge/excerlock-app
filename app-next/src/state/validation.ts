@@ -43,6 +43,7 @@ export const ruleDay = shape({
   progress: number(),
   met: bool,
   metAt: nullable(iso),
+  unit: (value) => value === undefined || oneOf(['steps', 'minutes', 'km', 'mi'])(value),
 });
 export const earnedUnlock = shape({
   day: (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v),

@@ -3,6 +3,12 @@ import { minuteLabel, scheduleLabel } from '../scheduleLabel';
 import { rule } from './fixtures';
 test('condition names and schedules use the product vocabulary', () => {
   expect(ruleName(rule)).toBe('Walk 5,000 steps');
+  expect(
+    ruleName({
+      ...rule,
+      mode: { kind: 'target', activity: 'walking', metric: 'minutes', goal: 20, place: 'treadmill' },
+    }),
+  ).toBe('Walk for 20 minutes');
   expect(ruleName({ ...rule, mode: { kind: 'state', activity: 'walking', place: 'either' } })).toBe(
     'Unlock while walking',
   );

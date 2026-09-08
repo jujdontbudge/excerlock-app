@@ -11,8 +11,14 @@ export function draftFromAnswers(a: Answers, unit: 'km' | 'mi', base?: RuleDraft
     id: String(a.ruleId ?? d.id),
     createdAt: String(a.ruleCreatedAt ?? d.createdAt),
     place: (a.walkPlace ?? 'outside') as RuleDraft['place'],
-    walkingMode: a.walkingMode === 'state' ? 'state' : 'target',
+    walkingMode:
+      a.walkingMode === 'state'
+        ? 'state'
+        : a.walkingMode === 'minutes' || (a.walkPlace === 'treadmill' && a.walkingMode !== 'state')
+          ? 'minutes'
+          : 'steps',
     stepGoal: number(a.stepGoal, 5000),
+    walkMinutes: number(a.walkMinutes, 20),
     gymMode: a.gymMode === 'arrival' ? 'arrival' : 'time',
     gymMinutes: number(a.gymMinutes, 30),
     runMode: a[activity === 'biking' ? 'bikeMode' : 'runMode'] === 'distance' ? 'distance' : 'minutes',

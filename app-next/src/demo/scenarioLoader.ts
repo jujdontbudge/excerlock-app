@@ -29,7 +29,7 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
     complete,
     setupComplete: complete,
     answers: scenario.onboarding.startsWith('resumeAt:')
-      ? { activity: 'walking', place: 'outside', walkingMode: 'target', goal: 5000 }
+      ? { activity: 'walking', walkPlace: 'outside', walkingMode: 'steps', stepGoal: 5000 }
       : {},
   });
 }

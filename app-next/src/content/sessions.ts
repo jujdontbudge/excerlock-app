@@ -42,4 +42,5 @@ export const sessionCopy = {
   shieldClaim: 'Goal complete. Open ExcerLock to open your apps.',
   shieldWindowPrefix: 'Blocking has started.',
   causes: ['locked', 'lockWindow', 'walkingEnded'],
+  walkingRuleRequired: 'An enabled walking session condition is required',
 } as const;

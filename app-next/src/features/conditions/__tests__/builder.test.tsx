@@ -56,6 +56,17 @@ test.each([
   expect(rulesStore.getState().data.rules).toHaveLength(1);
   expect(validateRule(rulesStore.getState().data.rules[0])).toEqual([]);
 });
+test('choosing Treadmill at W1 offers exactly two modes at W2 and no step goal', async () => {
+  await mount();
+  await userEvent.press(screen.getByRole('radio', { name: 'Walking' }));
+  await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  await userEvent.press(screen.getByRole('radio', { name: 'Treadmill' }));
+  await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  expect(screen.getAllByRole('radio')).toHaveLength(2);
+  expect(screen.queryByRole('radio', { name: 'Reach a step goal' })).toBeNull();
+  expect(screen.getByRole('radio', { name: 'Walk for a set time' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: 'Unlock while walking' })).toBeTruthy();
+});
 test('editing preserves identity and schedule; dirty cancel requires discard', async () => {
   await mount('edit-me');
   const before = rulesStore.getState().data.rules[0];

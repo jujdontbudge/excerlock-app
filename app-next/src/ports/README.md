@@ -14,7 +14,9 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
     returns the previous result, so a frequent caller costs nothing. A failed apply is not a settled state:
     the next call re-runs it, which is what the Home retry action relies on.
 - StepsPort: Phase 2 implements Core Motion authorization and midnight-based pedometer totals.
-- WalkingPort: Phase 2 implements cadence/gait verification, renewable leases and treadmill framing.
+- WalkingPort: Phase 2 implements cadence/gait verification, renewable leases and treadmill framing. `start`
+  accepts an enabled walking state rule or walking-minutes target; duration sessions book minutes without
+  opening apps until the goal is met.
 - GymPort: Phase 2 implements place search, saved locations, geofence presence and check-in.
 - HealthPort: Phase 2 reads authorized running/cycling workouts.
 - AuthPort: Phase 2 implements Supabase identity, OTP and deletion.

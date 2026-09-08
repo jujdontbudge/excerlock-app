@@ -7,6 +7,7 @@ export const rulePreviewCopy = {
   range: (start: string, end: string) => `Block from ${start} to ${end}`,
   allDay: 'Block all day',
   walkingTarget: (goal: string) => `until you walk ${goal} steps`,
+  walkingMinutes: (goal: string) => `until you walk for ${goal} minutes`,
   walkingState: 'unless you are walking',
   gymArrival: 'until you arrive at the gym',
   gymTime: (goal: string) => `until you exercise for ${goal} minutes`,

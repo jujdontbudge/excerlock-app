@@ -5,7 +5,8 @@ import { activities } from '../../content/activities';
 const pre = Array.from({ length: 20 }, (_, i) => 'O' + String(i + 1).padStart(2, '0'));
 const tail = ['S1', 'S2', 'S3', 'S4', 'T1', 'T2', 'T3', 'T4', 'P'];
 test.each([
-  [{ activity: 'walking', walkingMode: 'target' }, ['W1', 'W2', 'W3']],
+  [{ activity: 'walking', walkingMode: 'steps' }, ['W1', 'W2', 'W3']],
+  [{ activity: 'walking', walkingMode: 'minutes' }, ['W1', 'W2', 'W4']],
   [{ activity: 'walking', walkingMode: 'state' }, ['W1', 'W2']],
   [{ activity: 'gym', gymMode: 'time' }, ['G1', 'G2']],
   [{ activity: 'gym', gymMode: 'arrival' }, ['G1']],

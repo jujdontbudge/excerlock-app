@@ -21,12 +21,16 @@ export function OnboardingRuleScreen({ step, answers, setAnswer }: AnswerProps &
     switch (action.type) {
       case 'setPlace':
         setAnswer('walkPlace', action.value);
+        if (action.value === 'treadmill' && draft.walkingMode === 'steps') setAnswer('walkingMode', 'minutes');
         break;
       case 'setWalkingMode':
         setAnswer('walkingMode', action.value);
         break;
       case 'setStepGoal':
         setAnswer('stepGoal', number(action.value));
+        break;
+      case 'setWalkMinutes':
+        setAnswer('walkMinutes', number(action.value));
         break;
       case 'setGymMode':
         setAnswer('gymMode', action.value);
