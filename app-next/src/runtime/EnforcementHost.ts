@@ -78,10 +78,17 @@ export function startEnforcement(
     return queue;
   };
   void requestApply();
+  let retryToken = enforcementStore.getState().retryToken;
   const storeStops = [
     rulesStore.subscribe(() => void requestApply()),
     ruleDaysStore.subscribe(() => void requestApply()),
     entitlementStore.subscribe(() => void requestApply()),
+    // Only the retry action re-enters; the host publishes its own results into this store.
+    enforcementStore.subscribe((state) => {
+      if (state.retryToken === retryToken) return;
+      retryToken = state.retryToken;
+      void requestApply(true);
+    }),
   ];
   const appState = (options.appState ?? AppState).addEventListener('change', (state) => {
     if (state !== 'active') return;

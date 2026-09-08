@@ -30,7 +30,8 @@ export function ScreenTimeFake(ctx: FakeContext): ScreenTimePort {
         monitors: plan.monitors === 'keep' ? 1 : 0,
         ...(failed ? { reason: 'monitorRegistration' } : {}),
       };
-      previous = { key, result };
+      // Idempotent only once it succeeded: a failed apply is never a settled state, so a retry re-runs.
+      previous = result.applied ? { key, result } : undefined;
       return result;
     },
     describeSelection: async () => rulesStore.getState().data.lockedApps,

@@ -11,7 +11,7 @@ export type StatusModel = {
   title: string;
   subtitle: string;
   unlocked: boolean;
-  action?: 'permission' | 'apps' | 'add' | 'conditions' | 'stop';
+  action?: 'permission' | 'apps' | 'add' | 'conditions' | 'stop' | 'retry';
 };
 type Input = {
   decision: LockDecision;
@@ -20,12 +20,14 @@ type Input = {
   apps: LockedApps;
   now: string;
   timezone: string;
+  /** The last apply result the runtime host published; a failure fails closed and is reported here. */
+  enforcement?: { applied: boolean } | null;
 };
 export function leaseClock(until: string, now: string) {
   const seconds = Math.max(0, Math.ceil((Date.parse(until) - Date.parse(now)) / 1000));
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
-export function statusContent({ decision: d, rules, permissions, apps, now, timezone }: Input): StatusModel {
+export function statusContent({ decision: d, rules, permissions, apps, now, timezone, enforcement }: Input): StatusModel {
   const time = (at: string) =>
     new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: timezone }).format(new Date(at)).replace(/\s(?=[AP]M$)/, '\u00a0');
   const resume = (at: string | null) => {
@@ -54,6 +56,14 @@ export function statusContent({ decision: d, rules, permissions, apps, now, time
     return { ...model, state: 'permissionNeeded', subtitle: c.permission, action: 'permission' };
   if (apps.appCount + apps.categoryCount === 0)
     return { ...model, state: 'noAppsSelected', subtitle: c.noApps, action: 'apps' };
+  if (enforcement && !enforcement.applied)
+    return {
+      ...model,
+      state: 'enforcementFailed',
+      title: c.enforcementFailed,
+      subtitle: c.enforcementFailedBody,
+      action: 'retry',
+    };
   if (d.state === 'locked') {
     const hint = d.nextUnlockHint,
       rule = rules.find((r) => r.id === hint.ruleId);

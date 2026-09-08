@@ -3,6 +3,14 @@
 Vendor-free boundaries. Every interface has a local fake in demo/fakes; features obtain them through runtime.
 
 - ScreenTimePort: Phase 2 implements FamilyControls authorization, opaque selection, shielding and measured usage.
+  Two laws bind `applyLock(decision, plan): Promise<ApplyResult>`:
+  - **Fail closed.** If registering the renewal monitor fails, the adapter applies the shield before it
+    reports the failure, so a broken monitor never leaves apps open (ported from
+    `app/src/screentime/native/NativeShieldScheduler.ts:196-199,232-242`). The result carries
+    `applied: false` and a `reason`; the runtime host publishes it and Home says blocking is not on.
+  - **Idempotent once applied.** A repeat call with an unchanged decision and plan is a no-op that returns
+    the previous result, so a frequent caller costs nothing. A failed apply is not a settled state: the next
+    call re-runs it, which is what the Home retry action relies on.
 - StepsPort: Phase 2 implements Core Motion authorization and midnight-based pedometer totals.
 - WalkingPort: Phase 2 implements cadence/gait verification, renewable leases and treadmill framing.
 - GymPort: Phase 2 implements place search, saved locations, geofence presence and check-in.
