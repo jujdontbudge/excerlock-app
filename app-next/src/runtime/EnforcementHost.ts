@@ -4,6 +4,7 @@ import { entitlementStore } from '../state/entitlementStore';
 import { enforcementStore } from '../state/enforcementStore';
 import { ruleDaysStore } from '../state/ruleDaysStore';
 import { rulesStore } from '../state/rulesStore';
+import { gymVisitsStore } from '../state/gymVisitsStore';
 import { permissionsStore } from '../state/permissionsStore';
 import { Unsubscribe } from '../ports/models';
 import { Runtime } from './Runtime';
@@ -17,6 +18,7 @@ import { startSessionGuard } from './sessionGuard';
 import { addDays } from '../domain/calendar';
 import { dayKey, windowInstances } from '../domain/schedule';
 import { nextEnforcementAt } from './nextEnforcementAt';
+import { arrivalFor } from '../domain/gymDwell';
 
 type AppStateSource = {
   addEventListener(event: 'change', callback: (state: string) => void): { remove(): void };
@@ -50,7 +52,7 @@ export function startEnforcement(
       ruleDays: days,
       earnedUnlocks,
       walkingSession,
-      gymPresence: null,
+      gymPresence: arrivalFor(rules, gymVisitsStore.getState().data.visits, now),
     });
     // An unknown status holds the last applied plan for a moment, then falls back to the last status
     // that was known good, so a slow entitlement read never flips enforcement on its own.
@@ -99,6 +101,7 @@ export function startEnforcement(
   const storeStops = [
     rulesStore.subscribe(() => void requestApply()),
     ruleDaysStore.subscribe(() => void requestApply()),
+    gymVisitsStore.subscribe(() => void requestApply()),
     entitlementStore.subscribe(() => void requestApply()),
     // Only the retry action re-enters; the host publishes its own results into this store.
     enforcementStore.subscribe((state) => {

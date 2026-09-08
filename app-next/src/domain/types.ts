@@ -63,11 +63,36 @@ export type GymPresence = {
   holdsUntil: string;
 };
 
+export type WalkingPlacement = 'propped' | 'handheld';
+export type WalkingSessionEndReason =
+  | 'leaseLapsed'
+  | 'graceExpired'
+  | 'windowEnded'
+  | 'dayRollover'
+  | 'ruleChanged'
+  | 'stopped';
+
 export type WalkingSession = {
+  id: string;
   ruleId: string; // the state-mode rule it belongs to
+  placement: WalkingPlacement;
+  instanceDay: DayKey;
   startedAt: string;
+  verifiedAt: string | null;
   leaseUntil: string; // Apple's 15-minute renewable lease; a lapsed lease ends the session
+  creditedThrough: string;
+  endedAt: string | null;
+  endReason: WalkingSessionEndReason | null;
+  graceUntil?: string | null;
   phase: 'verifying' | 'walking' | 'grace' | 'ended';
+};
+
+export type GymVisit = {
+  id: string;
+  placeId: string;
+  enteredAt: string;
+  exitedAt: string | null;
+  source: 'geofence' | 'manual';
 };
 
 export type Profile = {

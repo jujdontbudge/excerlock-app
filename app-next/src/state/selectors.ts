@@ -6,6 +6,9 @@ import { currentInstances, dayKey, windowInstances } from '../domain/schedule';
 import { rulesStore as useRulesStore } from './rulesStore';
 import { ruleDaysStore as useRuleDaysStore } from './ruleDaysStore';
 import { streak } from '../domain/streak';
+import { historyStore as useHistoryStore } from './historyStore';
+import { gymVisitsStore as useGymVisitsStore } from './gymVisitsStore';
+import { arrivalFor } from '../domain/gymDwell';
 export function useClock() {
   const runtime = useRuntime();
   return useSyncExternalStore(runtime.clock.subscribe, runtime.clock.now, runtime.clock.now);
@@ -19,10 +22,20 @@ export function useLockDecision() {
     now = useClock(),
     timezone = runtime.clock.timezone(),
     rules = useRulesStore((s) => s.data.rules),
-    { days, earnedUnlocks, walkingSession } = useRuleDaysStore((s) => s.data);
+    { days, earnedUnlocks, walkingSession } = useRuleDaysStore((s) => s.data),
+    visits = useGymVisitsStore((s) => s.data.visits);
   return useMemo(
-    () => resolveLock({ now, timezone, rules, ruleDays: days, earnedUnlocks, walkingSession, gymPresence: null }),
-    [now, timezone, rules, days, earnedUnlocks, walkingSession],
+    () =>
+      resolveLock({
+        now,
+        timezone,
+        rules,
+        ruleDays: days,
+        earnedUnlocks,
+        walkingSession,
+        gymPresence: arrivalFor(rules, visits, now),
+      }),
+    [now, timezone, rules, days, earnedUnlocks, walkingSession, visits],
   );
 }
 export function useTodayProgress() {
@@ -53,7 +66,7 @@ export function useTodayProgress() {
 export function useHistory() {
   const runtime = useRuntime(),
     now = useClock(),
-    { history } = useDevSnapshot(),
+    history = useHistoryStore((s) => s.data.days),
     rules = useRulesStore((s) => s.data.rules),
     days = useRuleDaysStore((s) => s.data.days);
   return useMemo(

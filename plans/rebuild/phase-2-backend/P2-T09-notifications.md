@@ -27,7 +27,10 @@ the plugin list and the guardrail keeps `aps-environment` out.
   emittable only by the ShieldAction extension (grep test). The catalog test asserts exactly three.
 - **Lease warning** is scheduled at `leaseUntil − 30 s` and rescheduled on every renewal (cancel + schedule,
   skipped when the fire time moves under 5 s), cancelled on any end reason; propped sessions get it too (it is
-  their only warning) with the duration-rule variant "Scan again to keep counting".
+  their only warning) with the duration-rule variant "Scan again to keep counting". The lease, its renewals and
+  its end are outputs of P2-T15's session machine: schedule off the `leaseWarning` effect and the session's
+  `leaseUntil`, cancel on the `ended` effect, and never read a timer of your own. A lapsed propped lease ends
+  the session with `leaseLapsed` and Home shows `unlockCopy.scanAgain` (P2-T15 §2).
 - **Handler policy**: `setNotificationHandler` presents the lease warning as a banner even in the foreground;
   the trial reminder is suppressed while the paywall is open.
 - **Landing table**: each id lands on exactly one route and none inside a guarded stack (trial → Settings ›

@@ -3,15 +3,22 @@ import { GymUnlockScreen } from '../GymUnlockScreen';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { ruleDaysStore } from '../../../state/ruleDaysStore';
+import { startProgressSync } from '../../home/progressSync';
 const mockRouter = { back: jest.fn(), push: jest.fn() };
 jest.mock('expo-router', () => ({ useRouter: () => mockRouter }));
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
+// The screen books no credit of its own: progressSync is the single applier, as in app/(tabs)/_layout.
+const syncs: (() => void)[] = [];
+afterEach(() => {
+  syncs.splice(0).forEach((stop) => stop());
+});
 async function mount(preview = false) {
   const runtime = createRuntime();
   await runtime.dev.load('gym-arrival-user');
   runtime.dev.setPromptMode('grant');
   runtime.dev.setPresence('inside');
+  syncs.push(startProgressSync(runtime));
   await render(
     <AppRuntimeProvider runtime={runtime}>
       <GymUnlockScreen preview={preview} ruleId="gym" />

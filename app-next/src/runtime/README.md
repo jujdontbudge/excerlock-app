@@ -58,4 +58,11 @@ the retry token. A result with `applied: false` fails closed: the shields stay u
 not on, and its Try again action bumps the retry token, which the host turns into a forced re-apply.
 
 `startProgressSync` is owned here too, not by the tabs layout. `useLockDecision` stays a render selector
-and never calls a port.
+and never calls a port. Confirmed gym presence reaches the decision through `arrivalFor`, which reads the
+open visit from `gymVisitsStore`, so the host and the selector answer alike.
+
+`sessionGuard.ts` arms a live walking session's two teardown deadlines at the root, `windowEnd` and the
+day rollover, and ends the session when its rule is paused, deleted or rescheduled out of the day it runs
+in. It passes the reason to `walking.stop(reason)`, and `stepWalkingSession` credits through the instant
+that reason names rather than the moment the guard noticed. `domain/sessions/walkingSession`'s
+`sessionWindow` is the single owner of those two instants; the walking fake arms the same pair from it.

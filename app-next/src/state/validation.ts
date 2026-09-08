@@ -52,5 +52,33 @@ export const earnedUnlock = shape({
   windowEnd: iso,
 });
 export const walkingSession = nullable(
-  shape({ ruleId: text, startedAt: iso, leaseUntil: iso, phase: oneOf(['verifying', 'walking', 'grace', 'ended']) }),
+  shape({
+    id: text,
+    ruleId: text,
+    placement: oneOf(['propped', 'handheld']),
+    instanceDay: (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v),
+    startedAt: iso,
+    verifiedAt: nullable(iso),
+    leaseUntil: iso,
+    creditedThrough: iso,
+    endedAt: nullable(iso),
+    endReason: nullable(oneOf(['leaseLapsed', 'graceExpired', 'windowEnded', 'dayRollover', 'ruleChanged', 'stopped'])),
+    phase: oneOf(['verifying', 'walking', 'grace', 'ended']),
+  }),
 );
+export const gymVisit = shape({
+  id: text,
+  placeId: text,
+  enteredAt: iso,
+  exitedAt: nullable(iso),
+  source: oneOf(['geofence', 'manual']),
+});
+export const historyDay = (value: unknown) =>
+  shape({
+    day: (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v),
+    usageMinutes: nullable(number()),
+    activity: shape({ walking: number(), gym: number(), running: number(), biking: number() }),
+    met: bool,
+    scheduled: bool,
+    sealedAt: optional(iso),
+  })(value);

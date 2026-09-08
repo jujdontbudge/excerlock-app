@@ -6,6 +6,7 @@ import { ruleDaysStore } from '../../state/ruleDaysStore';
 import { startEnforcement } from '../EnforcementHost';
 import { rulesStore } from '../../state/rulesStore';
 import { enforcementStore } from '../../state/enforcementStore';
+import { dayKey } from '../../domain/calendar';
 
 function appStateSource() {
   let listener: ((state: string) => void) | undefined;
@@ -131,11 +132,20 @@ test('a window end fires the session teardown at the root', async () => {
   rulesStore.getState().patch({
     rules: [{ ...rule, schedule: { days: rule.schedule.days, window: { kind: 'range', startMinute: 540, endMinute: 661 } } }],
   });
+  const startedAt = runtime.clock.now();
   ruleDaysStore.getState().patch({
     walkingSession: {
+      id: `${rule.id}:${startedAt}`,
       ruleId: rule.id,
-      startedAt: runtime.clock.now(),
+      placement: 'handheld',
+      instanceDay: dayKey(startedAt, runtime.clock.timezone()),
+      startedAt,
+      verifiedAt: startedAt,
       leaseUntil: '2026-09-07T15:15:00.000Z',
+      creditedThrough: startedAt,
+      endedAt: null,
+      endReason: null,
+      graceUntil: null,
       phase: 'walking',
     },
   });
@@ -145,6 +155,7 @@ test('a window end fires the session teardown at the root', async () => {
   runtime.dev.advance(60_001);
 
   expect(walkingStop).toHaveBeenCalledTimes(1);
+  expect(walkingStop).toHaveBeenCalledWith('windowEnded');
   stop();
 });
 

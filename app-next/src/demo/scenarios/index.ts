@@ -25,6 +25,8 @@ import { scenario21 } from './analytics-no-measurement';
 import { scenario22 } from './dynamic-type-xl';
 import { scenario23 } from './reduce-motion';
 import { scenario24 } from './runner-claim-on-open';
+import { manualEntryDay } from './manual-entry-day';
+import { sessionCreditScenarios } from './session-credit';
 export const scenarios = [
   scenario0,
   scenario1,
@@ -52,5 +54,7 @@ export const scenarios = [
   scenario22,
   scenario23,
   scenario24,
+  manualEntryDay,
+  ...sessionCreditScenarios,
   ...unlockScenarios,
 ];

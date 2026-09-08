@@ -1,4 +1,4 @@
-import { Permissions } from '../domain/types';
+import { DayKey, GymVisit, Permissions } from '../domain/types';
 import { Unsubscribe, SavedPlace } from './models';
 import { PlaceSearch, Coordinates } from './PlaceSearch';
 export interface GymPort extends PlaceSearch {
@@ -6,7 +6,9 @@ export interface GymPort extends PlaceSearch {
   searchPlaces(query: string): Promise<SavedPlace[]>;
   savePlace(place: SavedPlace): Promise<void>;
   listPlaces(): SavedPlace[];
-  checkIn(placeId: string, confirmation?: { milliseconds: number; signal: AbortSignal }): Promise<void>;
+  visits(sinceDay: DayKey): Promise<GymVisit[]>;
+  observeVisits(callback: (visits: GymVisit[]) => void): Unsubscribe;
+  checkIn(placeId: string, confirmation?: { milliseconds: number; signal: AbortSignal }): Promise<GymVisit>;
   enableAutoDetect(): Promise<boolean>;
   disableAutoDetect(): void;
   observePresence(callback: (presence: 'inside' | 'outside') => void): Unsubscribe;

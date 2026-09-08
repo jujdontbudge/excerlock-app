@@ -1,4 +1,5 @@
-import { collectEarnedUnlocks, earnedUnlockForProgress, pruneEarnedUnlocks, upsertEarnedUnlock } from '../earnedUnlock';
+import { collectEarnedUnlocks, earnedUnlockForProgress, upsertEarnedUnlock } from '../earnedUnlock';
+import { pruneEarnedUnlocks } from '../sealDay';
 import { applyProgress } from '../progress';
 import { windowInstances } from '../schedule';
 import { EarnedUnlock, RuleDay } from '../types';

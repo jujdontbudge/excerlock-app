@@ -1,7 +1,6 @@
-import { addDays } from './calendar';
 import { ruleName } from './ruleName';
 import { WindowInstance } from './schedule';
-import { DayKey, EarnedUnlock, Rule, RuleDay } from './types';
+import { EarnedUnlock, Rule, RuleDay } from './types';
 
 export function earnedUnlockForProgress(
   rule: Rule,
@@ -23,11 +22,6 @@ export function upsertEarnedUnlock(records: EarnedUnlock[], unlock: EarnedUnlock
   return records.some((record) => record.day === unlock.day && record.ruleId === unlock.ruleId)
     ? records
     : [...records, unlock];
-}
-
-export function pruneEarnedUnlocks(records: EarnedUnlock[], today: DayKey): EarnedUnlock[] {
-  const oldest = addDays(today, -1);
-  return records.filter((record) => record.day >= oldest && record.day <= today);
 }
 
 export function collectEarnedUnlocks(

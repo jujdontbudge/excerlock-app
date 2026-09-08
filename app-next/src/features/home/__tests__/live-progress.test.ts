@@ -4,6 +4,7 @@ import { resolveLock } from '../../../domain/resolveLock';
 import { rulesStore } from '../../../state/rulesStore';
 import { ruleDaysStore } from '../../../state/ruleDaysStore';
 import { permissionsStore } from '../../../state/permissionsStore';
+import { gymVisitsStore } from '../../../state/gymVisitsStore';
 test('clock enters window, fake steps reach goal and latch unlock; new day starts fresh', async () => {
   const r = createRuntime();
   await r.dev.load('home-before-window');
@@ -66,6 +67,32 @@ test('yesterday’s Health workouts never fulfill the next day’s condition', a
   const today = ruleDaysStore.getState().data.days.find((d) => d.day === '2026-09-08');
   expect(today?.progress).toBe(0);
   expect(today?.met).toBe(false);
+  stop();
+  r.dispose();
+});
+
+test('a gym-minutes condition sees a completed visit without foreground clock ticks', async () => {
+  const r = createRuntime();
+  await r.dev.load('gym-time-user');
+  ruleDaysStore.getState().patch({ days: [] });
+  gymVisitsStore.getState().patch({
+    visits: [
+      {
+        id: 'background-visit',
+        placeId: r.gym.listPlaces()[0].id,
+        enteredAt: '2026-09-07T13:00:00.000Z',
+        exitedAt: '2026-09-07T13:35:00.000Z',
+        source: 'geofence',
+      },
+    ],
+  });
+  const stop = startProgressSync(r);
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(ruleDaysStore.getState().data.days.find((row) => row.ruleId === 'gym')).toMatchObject({
+    progress: 35,
+    met: true,
+  });
   stop();
   r.dispose();
 });

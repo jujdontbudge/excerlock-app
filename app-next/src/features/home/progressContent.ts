@@ -1,5 +1,6 @@
 import { Rule, RuleDay, Permissions, WalkingSession } from '../../domain/types';
 import { homeCopy as c } from '../../content/home';
+import { unlockCopy } from '../../content/unlock';
 import { ruleName } from '../../domain/ruleName';
 import { leaseClock } from './statusContent';
 export function progressContent(
@@ -19,11 +20,18 @@ export function progressContent(
       session?.ruleId === rule.id &&
       ['walking', 'grace'].includes(session.phase) &&
       Date.parse(session.leaseUntil) > Date.parse(now);
+    // A propped lease has no continuous signal to renew it, so its lapse is a prompt, not a silent relock.
+    const rescan =
+      !live &&
+      m.place !== 'outside' &&
+      session?.ruleId === rule.id &&
+      session.placement === 'propped' &&
+      session.endReason === 'leaseLapsed';
     return {
       title,
       icon: rule.activity,
       value: live ? 1 : 0,
-      detail: live ? c.left(leaseClock(session.leaseUntil, now)) : c.walkReady,
+      detail: live ? c.left(leaseClock(session.leaseUntil, now)) : rescan ? unlockCopy.scanAgain : c.walkReady,
       action: 'walk',
       label: live ? c.viewWalk : c.startWalk,
     } as const;

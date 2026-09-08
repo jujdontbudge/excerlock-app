@@ -3,22 +3,28 @@ import { createRuntime } from '../../runtime/createRuntime';
 import { dayKey } from '../../domain/calendar';
 import { rulesStore } from '../../state/rulesStore';
 import { ruleDaysStore } from '../../state/ruleDaysStore';
+import { startProgressSync } from '../../features/home/progressSync';
+import { historyStore } from '../../state/historyStore';
 
 test('today Analytics uses the same live steps and workout minutes as the fake ports', async () => {
   const r = createRuntime();
   await r.dev.load('runner-distance');
-  const today = () => r.dev.snapshot().history.find((d) => d.day === dayKey(r.clock.now(), r.clock.timezone()))!;
+  let stopProgress = startProgressSync(r);
+  const today = () => historyStore.getState().data.days.find((d) => d.day === dayKey(r.clock.now(), r.clock.timezone()))!;
   expect(today().activity.walking).toBe(await r.steps.stepsSince(r.clock.now()));
   expect(today().activity.running).toBe(14);
   expect(today().usageMinutes).toBe(42);
-  const past = r.dev.snapshot().history.filter((d) => d.day !== today().day);
+  const past = historyStore.getState().data.days.filter((d) => d.day !== today().day);
   r.dev.setSteps(5400);
   expect(today().activity.walking).toBe(5400);
-  expect(r.dev.snapshot().history.filter((d) => d.day !== today().day)).toEqual(past);
+  expect(historyStore.getState().data.days.filter((d) => d.day !== today().day)).toEqual(past);
+  stopProgress();
   await r.dev.load('gym-time-user');
+  stopProgress = startProgressSync(r);
   await r.gym.checkIn(r.gym.listPlaces()[0].id);
   r.dev.advance(18 * 60000);
   expect(today().activity.gym).toBe(30);
+  stopProgress();
   await r.dev.load('home-walking-session');
   const rule = rulesStore.getState().data.rules[0];
   ruleDaysStore
@@ -34,7 +40,7 @@ test('the local gym search can exercise the five-gym limit with fixed 100m place
   expect(places.length).toBeGreaterThanOrEqual(6);
   expect(places.every((p) => p.radiusMeters === 100)).toBe(true);
   for (const p of places.slice(0, 5)) await r.gym.savePlace(p);
-  await expect(r.gym.savePlace(places[5])).rejects.toThrow('Maximum five gyms');
+  await expect(r.gym.savePlace(places[5])).rejects.toThrow('GYM_LIMIT_REACHED');
   expect(r.gym.listPlaces()).toHaveLength(5);
   r.dispose();
 });
@@ -57,6 +63,7 @@ test.each(['gym-arrival-user', 'gym-time-user'])(
   async (id) => {
     const r = createRuntime();
     await r.dev.load(id);
+    const stopProgress = startProgressSync(r);
     rulesStore.getState().patch({
       rules: rulesStore.getState().data.rules.map((rule) => ({
         ...rule,
@@ -70,6 +77,7 @@ test.each(['gym-arrival-user', 'gym-time-user'])(
     r.dev.setPresence('inside');
     await r.gym.checkIn(r.gym.listPlaces()[0].id);
     if (id === 'gym-time-user') r.dev.advance(18 * 60000);
+    else r.dev.advance(30_000);
     expect(ruleDaysStore.getState().data.days.find((d) => d.ruleId === 'gym' && d.day === '2026-09-07')?.met).toBe(
       true,
     );
@@ -85,7 +93,8 @@ test.each(['gym-arrival-user', 'gym-time-user'])(
       }).state,
     ).toBe('unlockedMet');
     if (id === 'gym-time-user')
-      expect(r.dev.snapshot().history.find((d) => d.day === '2026-09-08')?.activity.gym).toBe(18);
+      expect(historyStore.getState().data.days.find((d) => d.day === '2026-09-08')?.activity.gym).toBe(18);
+    stopProgress();
     r.dispose();
   },
 );
