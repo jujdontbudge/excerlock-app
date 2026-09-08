@@ -31,11 +31,18 @@ async function mount(
       <TreadmillUnlockScreen {...props} />
     </AppRuntimeProvider>,
   );
+  await flush();
   return runtime;
+}
+
+/** Drains the permission → session-start → scan-start promise chain the screen kicks off on mount. */
+async function flush() {
+  for (let step = 0; step < 8; step += 1) await act(async () => undefined);
 }
 
 async function finishScan() {
   await act(() => jest.advanceTimersByTime(5_000));
+  await flush();
 }
 
 test('treadmill preview detects the recorded gait without starting a real walking session', async () => {
@@ -59,10 +66,13 @@ test('framing grace expiry keeps the screen mounted and offers Try again', async
 });
 
 test('Try again after an expiry restarts the scan and clears the failure heading', async () => {
-  const runtime = await mount('unlock-treadmill-framing');
-  const start = jest.spyOn(runtime.walking, 'start');
+  let start: jest.SpyInstance | undefined;
+  const runtime = await mount('unlock-treadmill-framing', (value) => {
+    start = jest.spyOn(value.walking, 'start');
+  });
   await act(() => jest.advanceTimersByTime(36_000));
   await fireEvent.press(screen.getByRole('button', { name: 'Try again' }));
+  await flush();
   expect(start).toHaveBeenCalledTimes(2);
   expect(screen.queryByRole('header', { name: "We couldn't see you walking" })).toBeNull();
   runtime.dispose();
@@ -165,9 +175,15 @@ function durationRule(): Rule {
   } as unknown as Rule;
 }
 
+// merge: once P2-T16 adds the walking/minutes RuleMode, validateRule accepts this rule and
+// this becomes rulesStore.getState().patch({ rules: [rule] }).
+function installDurationRule(rule: Rule) {
+  rulesStore.setState((state) => ({ data: { ...state.data, rules: [rule] } }));
+}
+
 function installDurationSession(runtime: Runtime) {
   const rule = durationRule();
-  rulesStore.getState().patch({ rules: [rule] });
+  installDurationRule(rule);
   ruleDaysStore.getState().patch({
     days: [{ ruleId: rule.id, day: '2026-09-07', progress: 0, met: false, metAt: null }],
     walkingSession: null,

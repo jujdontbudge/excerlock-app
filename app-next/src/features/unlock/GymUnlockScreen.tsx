@@ -70,11 +70,13 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
       close={close}
       preview={preview}
       footer={
-        ceremony.done ? (
-          <>
-            <PrimaryButton label={c.done} onPress={close} />
-            {lapsed ? <SecondaryButton label={c.seePlans} onPress={() => router.push('/paywall')} /> : null}
-          </>
+        ceremony.showMessage || ceremony.done ? (
+          ceremony.done || lapsed ? (
+            <>
+              {ceremony.done ? <PrimaryButton label={c.done} onPress={close} /> : null}
+              {lapsed ? <SecondaryButton label={c.seePlans} onPress={() => router.push('/paywall')} /> : null}
+            </>
+          ) : undefined
         ) : state.lifted ? undefined : state.denied ? (
           <PrimaryButton label={c.gym.openSettings} onPress={() => void Linking.openSettings()} />
         ) : state.noGym ? (

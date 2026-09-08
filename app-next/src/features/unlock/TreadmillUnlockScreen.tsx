@@ -34,6 +34,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
     sessionStarted = useRef(false),
     active = useRef(true),
     retry = useRef<() => Promise<void>>(async () => undefined),
+    terminalRef = useRef<TerminalFailure>(null),
     durationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rule = useRulesStore((store) => store.data.rules.find((candidate) => candidate.id === ruleId));
   const duration = walkingDurationRule(rule);
@@ -48,7 +49,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
     : undefined;
   const walkingBooked =
     preview ||
-    (booked && walkingSession?.ruleId === rule?.id && walkingSession.phase === 'walking');
+    (booked && walkingSession !== null && walkingSession.ruleId === rule?.id && walkingSession.phase === 'walking');
   const goalMet = Boolean(duration && row?.met);
   const lifted = duration ? goalMet : walkingBooked;
   const ringValue =
@@ -85,8 +86,10 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
         const accepted = preview || runtime.walking.completeProppedScan();
         const session = useRuleDaysStore.getState().data.walkingSession;
         const hasWalkingSession =
-          preview || (accepted && session?.ruleId === rule?.id && session.phase === 'walking');
+          preview ||
+          (accepted && session !== null && session.ruleId === rule?.id && session.phase === 'walking');
         if (!hasWalkingSession) {
+          terminalRef.current = 'bookingFailed';
           setTerminal('bookingFailed');
           setError(c.treadmill.bookingFailed);
           return;
@@ -110,6 +113,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
       onExpired: () => {
         if (!preview) runtime.walking.stop();
         sessionStarted.current = false;
+        terminalRef.current = 'expired';
         setTerminal('expired');
         runtime.analytics.track('treadmill_scan_failed', { reason: 'timeout' });
       },
@@ -120,17 +124,18 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
     });
 
     const begin = async () => {
+      terminalRef.current = null;
       setTerminal(null);
       setError('');
       setBooked(false);
       setDurationStage('scan');
       verified.current = false;
-      if (!preview && !isTreadmillCeremonyRule(rule)) {
-        setError(c.treadmill.invalidRule);
-        return;
-      }
       try {
         if (!preview) {
+          if (!isTreadmillCeremonyRule(rule)) {
+            setError(c.treadmill.invalidRule);
+            return;
+          }
           const permission = await provider.permission();
           permissionsStore.getState().patch({ camera: permission });
           if (permission !== 'granted') {
@@ -158,7 +163,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
     void begin();
 
     const appState = AppState.addEventListener('change', (state) => {
-      if (verified.current || terminal) return;
+      if (verified.current || terminalRef.current) return;
       if (state === 'active') {
         if (sessionStarted.current || preview) void scanController.start();
       } else {
@@ -174,7 +179,7 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
       stopUnbookedSession();
       controller.current = null;
     };
-  }, [runtime, provider, preview, rule, duration, terminal]);
+  }, [runtime, provider, preview, rule, duration]);
 
   const handheld = async () => {
     if (rule && !preview) {
@@ -224,11 +229,14 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
             : c.treadmill.propBody;
   const Preview = provider.Preview;
 
-  const footer = ceremony.done ? (
-    <>
-      <PrimaryButton label={c.done} onPress={close} />
-      {lapsed ? <SecondaryButton label={c.seePlans} onPress={() => router.push('/paywall')} /> : null}
-    </>
+  const celebrating = ceremony.showMessage || ceremony.done;
+  const footer = celebrating ? (
+    ceremony.done || lapsed ? (
+      <>
+        {ceremony.done ? <PrimaryButton label={c.done} onPress={close} /> : null}
+        {lapsed ? <SecondaryButton label={c.seePlans} onPress={() => router.push('/paywall')} /> : null}
+      </>
+    ) : undefined
   ) : failed ? (
     <>
       <PrimaryButton label={c.treadmill.retry} onPress={() => void retry.current()} />

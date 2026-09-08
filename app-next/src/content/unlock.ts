@@ -18,6 +18,8 @@ export const unlockCopy = {
     expiredBody: "The camera never got a clear view. Try again, or keep your phone with you and we'll verify your steps instead.",
     retry: 'Try again',
     bookingFailed: "We couldn't start your walk. Close this and try again.",
+    scanFailed: "The scan couldn't start. Try again.",
+    invalidRule: 'This condition is not set up for a treadmill scan.',
     detected: 'Exercise detected',
     detectedBody: 'Unlocked while you walk',
     durationDetectedBody: (goal: number) => `${goal} minutes counts the day`,
