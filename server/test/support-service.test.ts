@@ -47,6 +47,8 @@ describe("support submission service", () => {
         category: "support",
         title: null,
         message: "My workout did not unlock my apps.",
+        replyTo: null,
+        diagnostics: null,
         createdAt: new Date("2026-07-29T21:00:00.000Z"),
       },
     ]);
@@ -79,9 +81,78 @@ describe("support submission service", () => {
         category: "feature",
         title: "Home Screen widget",
         message: "Show my streak without opening the app.",
+        replyTo: null,
+        diagnostics: null,
         createdAt: new Date("2026-07-29T21:00:00.000Z"),
       },
     ]);
+  });
+
+  it("maps the product categories onto the locked analytics enum", async () => {
+    const repository = new MemorySupportSubmissionRepository();
+    const supportRequestSubmitted = vi.fn();
+    const service = createSupportSubmissionService({
+      repository,
+      analytics: { supportRequestSubmitted },
+      now: () => new Date("2026-07-29T21:00:00.000Z"),
+      randomId: () => "support-request-id",
+    });
+
+    for (const category of ["problem", "question", "idea"] as const) {
+      await service.submit("user_123", { category, message: "Something." });
+    }
+
+    expect(repository.submissions.map((entry) => entry.category)).toEqual([
+      "bug",
+      "support",
+      "feature",
+    ]);
+    expect(supportRequestSubmitted.mock.calls).toEqual([
+      ["user_123", "bug"],
+      ["user_123", "support"],
+      ["user_123", "feature"],
+    ]);
+  });
+
+  it("keeps the reply address and diagnostics the composer collected", async () => {
+    const repository = new MemorySupportSubmissionRepository();
+    const service = createSupportSubmissionService({
+      repository,
+      analytics: { supportRequestSubmitted: vi.fn() },
+      now: () => new Date("2026-07-29T21:00:00.000Z"),
+      randomId: () => "support-request-id",
+    });
+
+    const diagnostics = {
+      appVersion: "1.4.0",
+      appBuild: "412",
+      iosVersion: "18.2",
+      deviceModel: "iPhone15,3",
+      entitlementStatus: "active",
+      permissions: {
+        screenTime: "granted",
+        motion: "granted",
+        location: "whenInUse",
+        health: "notDetermined",
+        camera: "denied",
+        notifications: "granted",
+      },
+      ruleCount: 3,
+      lastEnforcementResult: "shielded",
+    } as const;
+
+    await service.submit("user_123", {
+      category: "problem",
+      message: "Nothing unlocked after my walk.",
+      replyTo: "someone@example.com",
+      diagnostics,
+    });
+
+    expect(repository.submissions[0]).toMatchObject({
+      category: "bug",
+      replyTo: "someone@example.com",
+      diagnostics,
+    });
   });
 
   it("rejects an unknown user without persisting or emitting", async () => {

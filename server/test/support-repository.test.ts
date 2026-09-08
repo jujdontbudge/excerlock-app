@@ -12,6 +12,7 @@ import {
   adaptySubscriptionStates,
   adaptyWebhookEvents,
   earnedUnlocks,
+  historyDays,
   profiles,
   ruleDays,
   rules,
@@ -56,6 +57,7 @@ describe("repository database execution boundary", () => {
       adaptySubscriptionStates,
       adaptyWebhookEvents,
       earnedUnlocks,
+      historyDays,
       profiles,
       ruleDays,
       rules,
@@ -133,6 +135,8 @@ describe("support submission repository", () => {
         category: "support",
         title: null,
         message: "This must not be attached to a tombstone.",
+        replyTo: null,
+        diagnostics: null,
         createdAt: new Date("2026-07-31T20:01:00.000Z"),
       }),
     ).rejects.toThrow("User is deleted");
@@ -148,6 +152,8 @@ describe("support submission repository", () => {
       category: "feature",
       title: "Home Screen widget",
       message: "Show my streak without opening the app.",
+      replyTo: null,
+      diagnostics: null,
       createdAt: new Date("2026-07-29T21:00:00.000Z"),
     });
 
@@ -158,6 +164,23 @@ describe("support submission repository", () => {
     await postgres.db.insert(users).values({ id: "user_123" });
     const repository = createDrizzleSupportSubmissionRepository(postgres.db);
     const createdAt = new Date("2026-07-29T21:00:00.000Z");
+    const diagnostics = {
+      appVersion: "1.4.0",
+      appBuild: "412",
+      iosVersion: "18.2",
+      deviceModel: "iPhone15,3",
+      entitlementStatus: "active",
+      permissions: {
+        screenTime: "granted",
+        motion: "granted",
+        location: "whenInUse",
+        health: "notDetermined",
+        camera: "denied",
+        notifications: "granted",
+      },
+      ruleCount: 3,
+      lastEnforcementResult: "shielded",
+    } as const;
 
     await repository.insertSupportSubmission({
       id: "support-request-id",
@@ -165,6 +188,8 @@ describe("support submission repository", () => {
       category: "feature",
       title: "Home Screen widget",
       message: "Show my streak without opening the app.",
+      replyTo: "someone@example.com",
+      diagnostics,
       createdAt,
     });
 
@@ -179,6 +204,8 @@ describe("support submission repository", () => {
       category: "feature",
       title: "Home Screen widget",
       message: "Show my streak without opening the app.",
+      replyTo: "someone@example.com",
+      diagnostics,
       createdAt,
     });
   });
@@ -201,6 +228,8 @@ describe("support submission repository", () => {
         category: "feature",
         title: "New request",
         message: "This transaction must roll back.",
+        replyTo: null,
+        diagnostics: null,
         createdAt: new Date("2026-07-29T21:00:00.000Z"),
       }),
     ).rejects.toThrow();

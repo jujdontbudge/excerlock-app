@@ -68,6 +68,8 @@ export function createDrizzleSupportSubmissionRepository(
           category: submission.category,
           title: submission.title,
           message: submission.message,
+          replyTo: submission.replyTo,
+          diagnostics: submission.diagnostics,
           createdAt: submission.createdAt,
         });
       });

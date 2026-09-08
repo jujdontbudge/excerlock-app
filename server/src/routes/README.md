@@ -20,10 +20,11 @@ behind the Supabase auth boundary, and every handler reads its subject through
 | `DELETE /v1/user` | Supabase | Account erasure across every processor. |
 | `POST /v1/support` | Supabase | One support submission. |
 | `GET /v1/sync` | Supabase | Everything this account has, for restore. |
-| `PUT /v1/sync/rules` | Supabase | Full replacement of the rule set. |
-| `PUT /v1/sync/rule-days` | Supabase | Upsert batch, max 400. |
-| `PUT /v1/sync/usage-days` | Supabase | Upsert batch, max 400. |
-| `PUT /v1/sync/earned-unlocks` | Supabase | Upsert batch, max 400. |
+| `PUT /v1/sync/rules` | Supabase | Upsert batch under `rules`, max 400. |
+| `PUT /v1/sync/rule-days` | Supabase | Upsert batch under `rows`, max 400. |
+| `PUT /v1/sync/usage-days` | Supabase | Upsert batch under `rows`, max 400. |
+| `PUT /v1/sync/earned-unlocks` | Supabase | Upsert batch under `rows`, max 400. |
+| `PUT /v1/sync/history` | Supabase | Sealed days under `rows`, max 400. |
 | `PUT /v1/sync/profile` | Supabase | The onboarding answers. |
 
 ## User
@@ -41,42 +42,61 @@ account has been provisioned, so a client can tell "new" from "erased".
 
 ## Support
 
-`POST /v1/support` takes one of these strict JSON shapes; unknown keys are
-rejected:
-
-```json
-{ "category": "support", "message": "My workout did not unlock my apps." }
-```
-
-```json
-{ "category": "bug", "message": "Permission status is wrong." }
-```
+`POST /v1/support` takes one strict JSON shape; unknown keys are rejected.
+`category` is `problem`, `question` or `idea` (the registry spellings `bug`,
+`support` and `feature` are still accepted for the build on TestFlight).
+`replyTo`, `title` and `diagnostics` are all optional:
 
 ```json
 {
-  "category": "feature",
-  "title": "Home Screen widget",
-  "message": "Show my streak without opening the app."
+  "category": "problem",
+  "message": "My workout did not unlock my apps.",
+  "replyTo": "someone@example.com",
+  "diagnostics": {
+    "appVersion": "1.4.0",
+    "appBuild": "412",
+    "iosVersion": "18.2",
+    "deviceModel": "iPhone15,3",
+    "entitlementStatus": "active",
+    "permissions": {
+      "screenTime": "granted",
+      "motion": "granted",
+      "location": "whenInUse",
+      "health": "notDetermined",
+      "camera": "denied",
+      "notifications": "granted"
+    },
+    "ruleCount": 3,
+    "lastEnforcementResult": "shielded"
+  }
 }
 ```
 
-It answers `201` with `{ "submissionId": "..." }`. There is no feature-request
-listing and no vote route: feature voting is cut (B17).
+The diagnostics object is strict, which is the privacy floor: a gym name, a
+coordinate or an app name has no field to arrive in and the request is
+rejected. It answers `201` with `{ "submissionId": "..." }`. There is no
+feature-request listing and no vote route: feature voting is cut (B17).
 
 ## Sync
 
-`PUT /v1/sync/*` bodies are strict, batches are capped at 400 rows, and each
-answers `200` with `{ applied, skipped }` (`/sync/rules` adds `tombstoned`) so
-the device's sync log can show what actually landed. `GET /v1/sync` answers
-`{ rules, ruleDays, usageDays, earnedUnlocks, profile }`. The rules and
-privacy law are in `src/sync/README.md`.
+`PUT /v1/sync/*` bodies are strict and batches are capped at 400 rows. The
+batch field is `rules` on `/sync/rules`, `rows` on the four row endpoints and
+`profile` on `/sync/profile`. Each answers `200` with `{ applied, skipped }`
+so the device's sync log can show what actually landed. `GET /v1/sync` answers
+`{ rules, ruleDays, usageDays, earnedUnlocks, historyDays, profile }`.
+
+Every endpoint upserts what it is given and leaves everything else alone. A
+deletion is an explicit tombstone (`deletedAt` on the rule with a newer
+`updatedAt`), never an absence, so a device pushing only what it knows can
+never wipe another device's rows. The rest of the rules and the privacy law
+are in `src/sync/README.md`.
 
 ## Errors
 
 Every failure is `{ "error": { "code": "...", "message": "..." } }`.
 
 - `400 INVALID_SUPPORT_REQUEST` / `400 INVALID_SYNC_PAYLOAD` — the body did
-  not validate. The sync message names the offending path and never echoes the
+  not validate. Both messages name the offending path and never echo the
   value.
 - `400 SYNC_BATCH_TOO_LARGE` — more than 400 rows in one batch.
 - `401 UNAUTHORIZED` — missing bearer token, or no verified Supabase identity.
