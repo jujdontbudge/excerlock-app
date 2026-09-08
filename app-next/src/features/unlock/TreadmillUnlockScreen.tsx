@@ -20,6 +20,11 @@ import { leaseClock } from '../home/statusContent';
 
 type TerminalFailure = 'expired' | 'bookingFailed' | null;
 
+// merge: replace with P2-T09's lease-warning threshold once notifications land.
+// P2-T09 schedules the warning at leaseUntil − 30 s; the screen says the same
+// thing at the same moment so the notification and the screen never disagree.
+const LEASE_WARNING_MS = 30_000;
+
 export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: string; preview?: boolean }) {
   const runtime = useRuntime(),
     router = useRouter();
@@ -198,6 +203,9 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
   const framing = snapshot.phase === 'needsFraming';
   const remaining = duration ? Math.max(0, Math.ceil(duration.mode.goal - (row?.progress ?? 0))) : 0;
   const counting = Boolean(duration && durationStage === 'counting' && !goalMet);
+  const leaseNearlyOver = Boolean(
+    walkingSession && Date.parse(walkingSession.leaseUntil) - Date.parse(runtime.clock.now()) <= LEASE_WARNING_MS,
+  );
   const detected = Boolean(duration && durationStage === 'detected' && !goalMet);
   const title = failed
     ? terminal === 'expired'
@@ -273,7 +281,9 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
       {counting && walkingSession ? (
         <>
           <Label>{c.treadmill.leaseRemaining(leaseClock(walkingSession.leaseUntil, runtime.clock.now()))}</Label>
-          <Label variant="support" tone="secondary">{c.treadmill.scanAgain}</Label>
+          {leaseNearlyOver ? (
+            <Label variant="support" tone="secondary">{c.treadmill.scanAgain}</Label>
+          ) : null}
         </>
       ) : null}
       <Label variant="support" tone="secondary">{c.treadmill.privacy}</Label>

@@ -244,6 +244,24 @@ test('the shackle lifts when a duration goal is reached', async () => {
   runtime.dispose();
 });
 
+test('the counting stage only says to scan again as the lease runs out', async () => {
+  const runtime = await mount('unlock-treadmill-scan', installDurationSession, { ruleId: 'walk-minutes' });
+  await finishScan();
+  await act(() => jest.advanceTimersByTime(1_600));
+  expect(screen.queryByText('Scan again to keep counting')).toBeNull();
+  await act(() => {
+    const session = ruleDaysStore.getState().data.walkingSession;
+    ruleDaysStore.getState().patch({
+      walkingSession: {
+        ...session!,
+        leaseUntil: new Date(Date.parse(runtime.clock.now()) + 20_000).toISOString(),
+      },
+    });
+  });
+  expect(screen.getByText('Scan again to keep counting')).toBeTruthy();
+  runtime.dispose();
+});
+
 test('a lapsed treadmill ceremony books progress without claiming an unlock', async () => {
   const runtime = await mount('unlock-treadmill-scan', (value) => value.dev.setEntitlement('expired'));
   await finishScan();

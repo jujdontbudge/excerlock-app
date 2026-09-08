@@ -59,4 +59,8 @@ Decision B12: everything built and tested moves, unchanged inside, re-wired outs
 - `NativeShieldScheduler` is adapted to take a `MonitorPlan` (P2-T14 §2) instead of `DesiredOsState`; keep
   its fail-closed ordering and the `configureLockWindowStart` action-reconfiguration pattern verbatim.
 - Camera usage string and the gait-vision module are required for the propped scan; the app records the camera
-  permission status (P2-T21 §4).
+  permission status (P2-T21 §4). `NSCameraUsageDescription` is already in `app.json`; keep it when the plugin
+  list is rewritten. **`NativeGait.permission()` must stop probing by `start()`/`stop()`** and read
+  `AVCaptureDevice.authorizationStatus(for: .video)` instead: the ceremony now calls it before every scan, so
+  the probe flashes the preview, and it can only return `granted` or `denied` when the port's contract is the
+  full `PermissionStatus` (`notDetermined` has to prompt, `restricted` has to be honoured as denied).
