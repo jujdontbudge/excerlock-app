@@ -18,3 +18,19 @@ accessibility value"; "schedule labels honour 24-hour locales"; snapshot at Dyna
 builder summary.
 
 Acceptance: a VoiceOver walkthrough of onboarding → setup → Home → ceremony recorded on the simulator.
+
+## Status (2026-09-07)
+
+Built on `build/P2-T25`. VoiceOver: `app-next/src/testing/screenRegistry.tsx` names every route under
+`app/` with a scenario, and `screens-a11y.test.tsx` audits each one (role, label, `accessible`); both
+ceremony rings are focusable progress bars whose value carries the detected title and unlock body, and
+the ceremony announces the detected message then the unlock. Dynamic Type: fixed heights around text are
+min-heights, `screens-dynamic-type.test.tsx` runs a clipped-text estimator over every registered screen at
+twice the default size, and Home and the builder summary snapshot how each string scales. Locale:
+`app-next/src/content/locale.ts` reads the device tag, 12/24-hour clock and first day of the week through
+Intl; schedule labels, day pickers, the analytics week, numbers and dates format through it. The
+simulator walkthrough is Johan's: script in `docs/verification/voiceover-walkthrough.md`.
+
+Open: the 12/24-hour detection reads Intl's default clock for the device locale. If the iOS 24-Hour Time
+toggle alone (region unchanged) does not flip the labels on a device, add `expo-localization` and read
+`uses24hourClock` in `locale.ts`; the rest of the module is unchanged.
