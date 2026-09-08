@@ -22,6 +22,11 @@ For `unlockedMet`, `relockAt: null` means clear shields until a rule is enabled 
 legacy, unsatisfiable treadmill step target to an either-place step target before persisted rules are
 validated, in the same pass that widens a too-short window.
 
+`syncMerge` is the restore conflict rule (D5, P2-T08): a remote row is taken only when the device has none
+or the remote `updatedAt` is strictly newer than the device's own change clock for that row; today's rows are
+device-authoritative and never replaced; rule deletions are explicit tombstones in both directions. It never
+touches the app selection.
+
 Visible domain labels are composed from `src/content/`.
 
 `conditionState` is the single pure projection of a rule, its day row and the lock decision into the state
