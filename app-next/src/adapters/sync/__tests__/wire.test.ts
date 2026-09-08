@@ -40,6 +40,13 @@ test('a deletion is a whole row with deletedAt set and updatedAt moved to the de
   expect(toWire.tombstone(rule, stamp)).toMatchObject({ id: 'walk', mode: rule.mode, updatedAt: stamp, deletedAt: stamp });
 });
 
+test('a deletion in the same millisecond as the last edit still wins under strictly-newer last-write-wins', () => {
+  const edited = { ...rule, updatedAt: stamp };
+  expect(toWire.tombstone(edited, stamp)).toMatchObject({ updatedAt: '2026-09-07T12:00:00.001Z', deletedAt: stamp });
+  const olderDeletion = toWire.tombstone(edited, '2026-09-07T11:00:00.000Z');
+  expect(olderDeletion).toMatchObject({ updatedAt: '2026-09-07T12:00:00.001Z', deletedAt: '2026-09-07T11:00:00.000Z' });
+});
+
 test('device-only fields never travel: pausedReason and the warm-up rating', () => {
   const paused = { ...rule, enabled: false, pausedReason: 'noGym' as const };
   expect(Object.keys(toWire.rule(paused)).sort()).toEqual(

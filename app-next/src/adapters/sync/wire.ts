@@ -103,7 +103,15 @@ export const toWire = {
     updatedAt: rule.updatedAt,
     deletedAt: null,
   }),
-  tombstone: (rule: Rule, deletedAt: string): WireRule => ({ ...toWire.rule(rule), updatedAt: deletedAt, deletedAt }),
+  /**
+   * A deletion must beat the rule's last edit under the server's strictly-newer rule, so its `updatedAt`
+   * is the deletion instant or one millisecond after the edit, whichever is later.
+   */
+  tombstone: (rule: Rule, deletedAt: string): WireRule => ({
+    ...toWire.rule(rule),
+    updatedAt: new Date(Math.max(Date.parse(deletedAt), Date.parse(rule.updatedAt) + 1)).toISOString(),
+    deletedAt,
+  }),
   ruleDay: (row: Stamped<RuleDay>): WireRuleDay => ({
     ruleId: row.ruleId,
     day: row.day,
