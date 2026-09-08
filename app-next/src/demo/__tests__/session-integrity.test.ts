@@ -2,6 +2,7 @@ import { createRuntime } from '../../runtime/createRuntime';
 import { rulesStore } from '../../state/rulesStore';
 import { ruleDaysStore } from '../../state/ruleDaysStore';
 import { todayHistory } from '../../state/todayHistory';
+import { startProgressSync } from '../../features/home/progressSync';
 test('verified state-walking minutes count toward streak without latching an unlock', async () => {
   const r = createRuntime();
   await r.dev.load('home-walking-session');
@@ -41,11 +42,13 @@ test('loading a live walking fixture resumes its script and eventually relocks',
 test('gym minutes accumulate only while inside and latch at the goal', async () => {
   const r = createRuntime();
   await r.dev.load('gym-time-user');
+  const stop = startProgressSync(r);
   await r.gym.checkIn(r.gym.listPlaces()[0].id);
   r.dev.advance(18 * 60000);
   expect(ruleDaysStore.getState().data.days.find((d) => d.ruleId === 'gym')?.met).toBe(true);
   r.dev.setPresence('outside');
   r.dev.advance(60000);
   expect(ruleDaysStore.getState().data.days.find((d) => d.ruleId === 'gym')?.progress).toBe(30);
+  stop();
   r.dispose();
 });

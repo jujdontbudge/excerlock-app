@@ -9,6 +9,7 @@ import { profileStore as useProfileStore } from './profileStore';
 import { streak } from '../domain/streak';
 import { reclaimedPeriod } from '../domain/reclaimed';
 import { addDays } from '../domain/calendar';
+import { historyStore as useHistoryStore } from './historyStore';
 export function useClock() {
   const runtime = useRuntime();
   return useSyncExternalStore(runtime.clock.subscribe, runtime.clock.now, runtime.clock.now);
@@ -56,7 +57,7 @@ export function useTodayProgress() {
 export function useHistory() {
   const runtime = useRuntime(),
     now = useClock(),
-    { history } = useDevSnapshot(),
+    history = useHistoryStore((s) => s.data.days),
     rules = useRulesStore((s) => s.data.rules),
     days = useRuleDaysStore((s) => s.data.days);
   return useMemo(

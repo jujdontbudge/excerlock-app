@@ -23,6 +23,8 @@ import { scenario20 } from './analytics-day-zero';
 import { scenario21 } from './analytics-no-measurement';
 import { scenario22 } from './dynamic-type-xl';
 import { scenario23 } from './reduce-motion';
+import { manualEntryDay } from './manual-entry-day';
+import { sessionCreditScenarios } from './session-credit';
 export const scenarios = [
   scenario0,
   scenario1,
@@ -48,5 +50,7 @@ export const scenarios = [
   scenario21,
   scenario22,
   scenario23,
+  manualEntryDay,
+  ...sessionCreditScenarios,
   ...unlockScenarios,
 ];

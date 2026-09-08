@@ -11,8 +11,9 @@ export function windowInstances(rule: Rule, day: DayKey, timezone: string): Wind
     {
       ruleId: rule.id,
       day,
-      start: localInstant(day, start, timezone),
-      end: localInstant(end <= start || end === 1440 ? addDays(day, 1) : day, end === 1440 ? 0 : end, timezone),
+      start: localInstant(day, start, timezone).instant,
+      end: localInstant(end <= start || end === 1440 ? addDays(day, 1) : day, end === 1440 ? 0 : end, timezone)
+        .instant,
     },
   ];
 }

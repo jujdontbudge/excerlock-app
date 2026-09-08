@@ -8,6 +8,8 @@ import { permissionsStore } from '../state/permissionsStore';
 import { sessionStore } from '../state/sessionStore';
 import { entitlementStore } from '../state/entitlementStore';
 import { onboardingStore } from '../state/onboardingStore';
+import { historyStore } from '../state/historyStore';
+import { gymVisitsStore } from '../state/gymVisitsStore';
 export async function loadScenario(scenario: Scenario, keepEdits = false) {
   await hydrateStores();
   if (keepEdits) return;
@@ -16,6 +18,8 @@ export async function loadScenario(scenario: Scenario, keepEdits = false) {
   profileStore.getState().patch(scenario.profile ?? {});
   rulesStore.getState().patch({ rules: scenario.rules, lockedApps: scenario.lockedApps });
   ruleDaysStore.getState().patch({ days: scenario.ruleDays, walkingSession: scenario.walkingSession ?? null });
+  historyStore.getState().patch({ days: scenario.history });
+  gymVisitsStore.getState().patch({ visits: scenario.gymVisits ?? [] });
   permissionsStore.getState().patch(scenario.permissions);
   sessionStore.getState().patch({ session: scenario.session });
   entitlementStore.getState().patch({ entitlement: scenario.entitlement });
