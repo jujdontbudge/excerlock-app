@@ -1,7 +1,7 @@
 import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Linking, Share } from 'react-native';
-import { createApiClient, createHttpSupportPort, createUserApi } from '../../../adapters/api';
+import { createApiClient, createHttpSupportPort, createVpsProvisioning, VpsProvisioning } from '../../../adapters/api';
 import { AuthPort } from '../../../ports/AuthPort';
 import { ApiFetch } from '../../../adapters/api/client';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
@@ -23,10 +23,10 @@ jest.mock('../nativeExport', () => ({
 const mockSink = jest.requireMock('../nativeExport').nativeExportSink as { writeFile: jest.Mock; share: jest.Mock };
 
 /**
- * Mirrors P2-T01's real adapter: `deleteAccount()` is DELETE /v1/user first, then the local teardown,
- * and a refused server call leaves the session exactly as it was.
+ * Mirrors P2-T01's real adapter: `deleteAccount()` calls the injected provisioning's `remove` with the
+ * live token first, then the local teardown, and a refused server call leaves the session as it was.
  */
-function serverBackedAuth(auth: AuthPort, api: ReturnType<typeof createUserApi>, onServer = () => {}): AuthPort {
+function serverBackedAuth(auth: AuthPort, provisioning: VpsProvisioning, onServer = () => {}): AuthPort {
   const local = auth.deleteAccount;
   return {
     ...auth,
@@ -34,7 +34,7 @@ function serverBackedAuth(auth: AuthPort, api: ReturnType<typeof createUserApi>,
     subscribe: (callback) => auth.subscribe(callback),
     deleteAccount: async () => {
       onServer();
-      await api.deleteUser();
+      await provisioning.remove('adapter-jwt');
       await local();
     },
   };
@@ -134,7 +134,7 @@ test('deleting the account resets subscription, then analytics, then the server,
     order.push('auth');
     await local();
   };
-  runtime.auth = serverBackedAuth(runtime.auth, createUserApi(client), () => order.push('server'));
+  runtime.auth = serverBackedAuth(runtime.auth, createVpsProvisioning(client), () => order.push('server'));
   const originalRules = rulesStore.getState().data.rules;
   await render(withRuntime(runtime, <AccountScreen onSignIn={() => {}} onBack={() => {}} />));
 
@@ -152,7 +152,7 @@ test('a refused server deletion keeps the session and explains the retry', async
   const runtime = createRuntime();
   await runtime.dev.load('signed-in-apple');
   const { client } = serverStub(503, [], '{"error":{"code":"ACCOUNT_DELETION_UNAVAILABLE"}}');
-  runtime.auth = serverBackedAuth(runtime.auth, createUserApi(client));
+  runtime.auth = serverBackedAuth(runtime.auth, createVpsProvisioning(client));
   await render(withRuntime(runtime, <AccountScreen onSignIn={() => {}} onBack={() => {}} />));
 
   await userEvent.press(screen.getByRole('button', { name: 'Delete account' }));
@@ -168,7 +168,7 @@ test('an anonymous session deletes its server data through the same endpoint', a
   const runtime = createRuntime();
   await runtime.dev.load('multi-rule-overlap');
   const calls: { url: string; method: string }[] = [];
-  runtime.auth = serverBackedAuth(runtime.auth, createUserApi(serverStub(204, calls).client));
+  runtime.auth = serverBackedAuth(runtime.auth, createVpsProvisioning(serverStub(204, calls).client));
   await render(withRuntime(runtime, <AccountScreen onSignIn={() => {}} onBack={() => {}} />));
   await userEvent.press(screen.getByRole('button', { name: 'Delete my data' }));
   await userEvent.press(screen.getByRole('button', { name: 'Delete my data forever' }));

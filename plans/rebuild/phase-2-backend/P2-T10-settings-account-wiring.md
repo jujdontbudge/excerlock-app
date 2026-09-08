@@ -44,9 +44,9 @@ Built against the ports and fakes while P2-T01/T02/T06 were in flight; the real 
 call site each:
 
 - `src/adapters/api/` — `createApiClient({ baseUrl, getAccessToken: auth.accessToken })`,
-  `createHttpSupportPort(client)` (step 5) and `createUserApi(client)` (step 6), whose `putUser` /
-  `deleteUser` the composition passes to P2-T01's Supabase adapter as its `AccountProvisioning`
-  (`provision` / `remove`); the adapter owns the deletion call, server first, local teardown after. The
+  `createHttpSupportPort(client)` (step 5) and `createVpsProvisioning(client)` (step 6), which the
+  composition passes to P2-T01's Supabase adapter as its `AccountProvisioning` (`provision` / `remove`);
+  the adapter owns the deletion call, server first, local teardown after. The
   endpoint contract is in its README; T02 accepted `{ category: problem|question|idea, message, replyTo,
   diagnostics }` on `POST /v1/support` (strict diagnostics schema, categories canonicalised server-side).
   Deletion against the VPS answers 503 until Johan sets `SUPABASE_SERVICE_ROLE_KEY` on the box.

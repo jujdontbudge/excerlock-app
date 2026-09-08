@@ -6,4 +6,6 @@ export { apiBaseUrl, DEFAULT_API_BASE_URL } from './config';
 export { createHttpSupportPort, supportPayload, wireCategory } from './support';
 export { createUserApi } from './user';
 export type { UserApi } from './user';
+export { createVpsProvisioning } from './provisioning';
+export type { ProvisionOutcome, VpsProvisioning } from './provisioning';
 export { apiFailureMessage } from './failureMessage';
