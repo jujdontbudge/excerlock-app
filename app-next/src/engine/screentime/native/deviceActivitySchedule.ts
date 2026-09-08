@@ -12,6 +12,10 @@ export type DeviceActivityDateComponents = Readonly<{
   hour: number;
   minute: number;
   second: number;
+  /** IANA zone the components are read in. Absent means the device's current
+   *  zone, which is what a same-day window wants; a rule that must not drift
+   *  when the phone travels stamps its own zone here. */
+  timeZoneIdentifier?: string;
 }>;
 
 /** DeviceActivity schedules use the device's local calendar components. */
