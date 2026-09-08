@@ -18,8 +18,21 @@ the plugin list and the guardrail keeps `aps-environment` out.
 ## Acceptance
 
 - [ ] Simulator: trial → reminder scheduled (inspect pending notifications via the dev menu); lease warning
-      fires during a simulated session.
-- [ ] Clean prebuild has no `aps-environment` (guardrail).
+      fires during a simulated session. (Device/simulator item; carried to P2-T11 rows 5, 8 and 17.)
+- [ ] Clean prebuild has no `aps-environment` (guardrail). (`app-next/plugins/withNoPush` is first in
+      `app-next/app.json` and `adapters/notifications/__tests__/no-push.test.ts` runs the plugin against a
+      fake entitlements file; the prebuild-output check waits for `app-next`'s first prebuild in P2-T12.)
+
+## Built (2026-09-08)
+
+`app-next/src/adapters/notifications/` (README there): `expoNotificationsAdapter` over expo-notifications
+57.0.17 with fixed identifiers, the permission boundary recorded as "Reminders", one `setNotificationHandler`,
+the tap-through landing table, and `startNotifications` bound in `AppRuntimeProvider`. The port gained two
+optional arguments, `scheduleTrialReminder(at, daysBefore?)` and `scheduleWalkLeaseWarning(at, variant?)`, so the
+adapter can word the copy; `content/notifications.ts` holds it (≤ 35/90). Tests: contract suite against the
+fake and the adapter, scheduling math, renewal/stop/permission behaviour through the fake runtime, landing
+table and tap-through, copy limits, catalog-of-three and no-push guardrails. Until P2-T15's session type
+carries `placement`, every lease warning uses the handheld wording.
 
 ## Audit amendments (2026-09-07; see `fix-plan.md`)
 
