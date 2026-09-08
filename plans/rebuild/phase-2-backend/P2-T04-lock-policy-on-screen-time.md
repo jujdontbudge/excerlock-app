@@ -74,8 +74,12 @@ Four changes were made in the engine to complete the seam P2-T03 left open:
 - The scheduler no longer writes `lock-window-contexts`; that key carries the domain's copy now (B36), so
   the shield publisher owns it and the guardrail follows it there.
 
-`ShieldContent.plist` now carries the Phase 1 copy, and `guardrails/shield-content.test.ts` derives its
-expectation from `domain/shieldContent` rather than repeating the strings.
+`ShieldContent.plist` now carries the Phase 1 copy. `__tests__/shieldPlist.test.ts` derives its
+expectation from `domain/shieldContent` rather than repeating the strings, and checks every subtitle
+the domain can publish against the filter `ShieldConfiguration` applies. The guardrail keeps the
+structural half — the four causes and their fields — because importing app-next domain source into
+that workspace typechecks it under stricter flags than app-next's own and reddens the root
+typecheck.
 
 | Acceptance row added by the audit | Status |
 | --- | --- |

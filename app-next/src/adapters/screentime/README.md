@@ -68,8 +68,10 @@ The Swift extensions still key on the four cause strings of the retired economy 
 three. `NATIVE_CAUSE` is that mapping, and it is load-bearing: each shield's deep link is derived
 from the spelling, so `fullLock` and `lockWindow` open `excerlock://locked-apps` and everything else
 `excerlock://`. `ShieldContent.plist` carries the same words as the cold-start fallback, and
-`guardrails/shield-content.test.ts` derives its expectation from `domain/shieldContent` so the two
-cannot drift.
+`__tests__/shieldPlist.test.ts` derives its expectation from `domain/shieldContent` so the two cannot
+drift. It also checks every subtitle the domain can publish against the filter
+`ShieldConfiguration` applies: a subtitle naming a balance, a countdown or a streak is discarded
+there and replaced by the plist, silently.
 
 ## Boundaries
 
