@@ -4,7 +4,28 @@ import { describe, expect, it } from "vitest";
 
 import { fromRoot, readUtf8, walkFiles } from "./repo-files";
 
+
+const CAUSES = [
+  "balanceEmpty",
+  "fullLock",
+  "lockWindow",
+  "walkAndScrollEnded",
+] as const;
+
+const DEEP_LINKS: Readonly<Record<(typeof CAUSES)[number], string>> = {
+  balanceEmpty: "excerlock://",
+  fullLock: "excerlock://locked-apps",
+  lockWindow: "excerlock://locked-apps",
+  walkAndScrollEnded: "excerlock://",
+};
+
 describe("Screen Time shield content", () => {
+  /**
+   * The plist is the extension's cold-start fallback: what a shield shows before the app has ever
+   * published a snapshot into the app group. This asserts it is bundled and complete; that its
+   * words are the words `domain/shieldContent` would publish is asserted in
+   * `app-next/src/adapters/screentime/__tests__/shieldPlist.test.ts`, which can import the domain.
+   */
   it("ships the four cause-keyed variants with their matching app surfaces", () => {
     const contentPath = fromRoot(
       "app-next",
@@ -16,36 +37,27 @@ describe("Screen Time shield content", () => {
       true,
     );
 
-    const content = plist.parse(readUtf8(contentPath));
-    expect(content).toEqual({
-      balanceEmpty: {
-        deepLink: "excerlock://",
-        primaryActionLabel: "Open ExcerLock",
-        secondaryActionLabel: "Close",
-        subtitle: "A 20-min walk gets you 30 more minutes.",
-        title: "Time’s up — for now.",
-      },
-      fullLock: {
-        deepLink: "excerlock://locked-apps",
-        primaryActionLabel: "Open ExcerLock",
-        secondaryActionLabel: "Close",
-        subtitle: "A 20-min walk gets you 30 more minutes.",
-        title: "Move first, scroll after.",
-      },
-      lockWindow: {
-        deepLink: "excerlock://locked-apps",
-        primaryActionLabel: "OK",
-        secondaryActionLabel: "",
-        subtitle: "Back at 7:00 AM.",
-        title: "Apps are asleep.",
-      },
-      walkAndScrollEnded: {
-        deepLink: "excerlock://",
-        primaryActionLabel: "Keep walking",
-        secondaryActionLabel: "Close",
-        subtitle: "Start walking again to pick up where you left off.",
-        title: "You stopped walking.",
-      },
+    const content = plist.parse(readUtf8(contentPath)) as Record<
+      string,
+      Record<string, string> | undefined
+    >;
+    expect(Object.keys(content).sort()).toEqual([...CAUSES].sort());
+
+    CAUSES.forEach((cause) => {
+      const variant = content[cause];
+      expect(Object.keys(variant ?? {}).sort()).toEqual([
+        "deepLink",
+        "primaryActionLabel",
+        "secondaryActionLabel",
+        "subtitle",
+        "title",
+      ]);
+      expect(variant?.deepLink).toBe(DEEP_LINKS[cause]);
+      // Only lockWindow ships an empty secondary label; the extension drops it for that cause.
+      expect(variant?.title).not.toBe("");
+      expect(variant?.subtitle).not.toBe("");
+      expect(variant?.primaryActionLabel).not.toBe("");
+      expect(variant?.secondaryActionLabel === "").toBe(cause === "lockWindow");
     });
   });
 
@@ -108,10 +120,9 @@ describe("Screen Time shield content", () => {
   });
 
   it("keeps the app-group writer and the monitor hook wired to the extensions", () => {
-    // The old lock controller and shieldContentRuntime were the writer before
-    // the rebuild; P2-T04 replaces them with ScreenTimeAdapter over
-    // engine/shield. Until then this asserts the transport and the plugin hook,
-    // which are what the extensions actually read.
+    // ScreenTimeAdapter is the writer, over engine/shield's transport. This
+    // asserts the transport, the plugin hook and the per-monitor key, which are
+    // what the extensions actually read.
     const publisher = readUtf8(
       fromRoot(
         "app-next",
@@ -135,7 +146,10 @@ describe("Screen Time shield content", () => {
       fromRoot("app-next", "plugins", "withScreenTimeExtensionValidation.js"),
     );
 
-    expect(publisher).toContain("react-native-device-activity");
+    // Every app-group write goes through the one file that talks to the package. Importing
+    // `userDefaultsSet` here was how the shield copy used to get around it.
+    expect(publisher).toContain("deviceActivityApi");
+    expect(publisher).not.toContain("react-native-device-activity");
     expect(keys).toContain("excerlock.shield.current-cause.v1");
     expect(keys).toContain("excerlock.shield.runtime-context.v1");
     expect(keys).toContain("excerlock.shield.copy-overrides.v1");
@@ -143,6 +157,11 @@ describe("Screen Time shield content", () => {
       "publishLockWindowShieldContext(activityName: activity.rawValue)",
     );
 
+    // One shield per monitor (B36) is the adapter's to publish, from the domain's copy: the
+    // scheduler registers windows and writes no content of its own.
+    const perMonitor = readUtf8(
+      fromRoot("app-next", "src", "adapters", "screentime", "appGroup.ts"),
+    );
     const scheduler = readUtf8(
       fromRoot(
         "app-next",
@@ -153,9 +172,8 @@ describe("Screen Time shield content", () => {
         "NativeShieldScheduler.ts",
       ),
     );
-    expect(scheduler).toContain(
-      "excerlock.shield.lock-window-contexts.v1",
-    );
+    expect(perMonitor).toContain("excerlock.shield.lock-window-contexts.v1");
+    expect(scheduler).not.toContain("excerlock.shield.");
 
     const monitor = readUtf8(
       fromRoot(

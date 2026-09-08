@@ -13,6 +13,10 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
   - **Idempotent once applied.** A repeat call with an unchanged decision, policy and plan is a no-op that
     returns the previous result, so a frequent caller costs nothing. A failed apply is not a settled state:
     the next call re-runs it, which is what the Home retry action relies on.
+  `adapters/screentime` implements it (P2-T04): merged windows become absolute DeviceActivity schedules,
+  and a met goal, a walking lease or a lapse is expressed by reconfiguring each monitor's action list while
+  the app runs, never by arithmetic in the extension. `observeUsage` reports minutes at 5-minute resolution
+  and `null` for a day no monitor covered.
 - StepsPort: Phase 2 implements Core Motion authorization and midnight-based pedometer totals.
 - WalkingPort: Phase 2 implements cadence/gait verification, renewable leases and treadmill framing. `start`
   accepts an enabled walking state rule or walking-minutes target; duration sessions book minutes without

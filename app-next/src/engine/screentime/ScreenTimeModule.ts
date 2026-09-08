@@ -76,6 +76,14 @@ export interface ScreenTimeModule {
     selection: ScreenTimeSelectionHandle,
     shields: ShieldIntent,
     plan: MonitorPlan,
+    /**
+     * Per-monitor intent for `intervalDidStart`, keyed by monitor name; anything
+     * absent starts on `shields`. This is how a met goal, a gym hold and a live
+     * walking lease reach the OS: the extension has no arithmetic, so the app
+     * says window by window whether that window opens or shields, and every one
+     * of those facts can only be recorded while the app runs.
+     */
+    startIntents?: Readonly<Record<string, ShieldIntent>>,
   ): Promise<void>;
   /**
    * Arms the renewable walking lease to end at `untilMs`. There is no renew: a

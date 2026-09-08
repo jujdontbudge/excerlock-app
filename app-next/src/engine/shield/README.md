@@ -5,9 +5,8 @@ extensions. Moved from the old app with P2-T03.
 
 **What moved:** `ShieldContentPublisher` (the three app-group keys),
 `ShieldContentCoordinator`, `shieldCopySource` (the PostHog override seam) and
-the two native edges — `nativeShieldContentPublisher` over
-react-native-device-activity and `notificationRouteHomeSource` over
-expo-notifications.
+the two native edges — `nativeShieldContentPublisher` over the ScreenTime
+`deviceActivityApi` and `notificationRouteHomeSource` over expo-notifications.
 
 **What did not:** `appShieldContent`, `unlockOffer`, `ShieldCauseResolver` and
 `shieldContentRuntime`. All four composed copy out of the old condition model,
@@ -43,7 +42,7 @@ ended variant. `ShieldContentCoordinator` combines that cause with:
 
 `nativeShieldContentPublisher` writes the three versioned keys already read by
 the generated targets: current cause, runtime context, and copy overrides. It
-uses `react-native-device-activity`'s existing shared `UserDefaults` API, so no
+uses the shared `UserDefaults` API behind `deviceActivityApi`, so no
 new native module or package is involved.
 
 Lock-window starts can happen while app JavaScript is suspended. The native

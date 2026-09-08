@@ -18,13 +18,13 @@ const codeExtensions = new Set([".ts", ".tsx"]);
  */
 const REQUIRED_ACCESSORS = {
   nativeGait: ["../runtime/NativeGait", "./NativeGait"],
-} as const;
-
-const PENDING_ACCESSORS = {
-  // P2-T04 — ScreenTimeAdapter
+  // P2-T04 — ScreenTimeAdapter, composed in createRuntime on a real device.
   createNativeScreenTimeModule: [
     "../engine/screentime/native/createNativeScreenTimeModule",
   ],
+} as const;
+
+const PENDING_ACCESSORS = {
   // P2-T05 — StepsAdapter, WalkingAdapter, GymAdapter
   createExcerlockMotionModuleClient: ["../engine/signals", "../../engine/signals"],
   createPhonePlacementModuleClient: ["../engine/signals", "../../engine/signals"],

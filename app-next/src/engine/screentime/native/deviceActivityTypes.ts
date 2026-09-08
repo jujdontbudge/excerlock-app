@@ -39,7 +39,13 @@ export type DeviceActivityApi = Readonly<{
   authorizationStatus(): DeviceActivityAuthorizationStatus;
   requestAuthorization(forMember: "individual" | "child"): Promise<void>;
   getFamilyActivitySelectionId(id: string): string | undefined;
-  setSharedValue(key: string, value: Readonly<Record<string, unknown>>): void;
+  /**
+   * The package declares `userDefaultsSet(key, value: any)`, and the shield transport writes
+   * strings and booleans through it as well as records: the extensions read the current cause
+   * with `string(forKey:)`. Narrowing this to a record would push those writes around this file,
+   * which is the one place allowed to call the package.
+   */
+  setSharedValue(key: string, value: unknown): void;
   getSharedValue<T>(key: string): T | undefined;
   selectionMetadata(selection: {
     activitySelectionId: string;

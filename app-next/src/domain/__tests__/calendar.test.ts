@@ -25,6 +25,15 @@ test('America/New_York gaps and folds keep their established outcomes', () => {
   });
 });
 
+test('a wall time after a spring-forward transition is exact, not clamped', () => {
+  // 05:00 on the morning the clocks jump exists; only 02:00-03:00 does not. The first correction
+  // borrows the pre-transition offset, so the search has to go one step further to land on it.
+  expect(localInstant('2027-03-14', 5 * 60, 'America/New_York')).toEqual({
+    instant: '2027-03-14T09:00:00.000Z',
+    converged: true,
+  });
+});
+
 test('a day the timezone skipped entirely never resolves to an instant', () => {
   // Samoa crossed the date line at the end of 2011: 2011-12-30 did not happen there at all, so the
   // search oscillates by a full day and refuses to invent a wall time.

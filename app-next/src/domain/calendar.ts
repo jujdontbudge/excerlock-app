@@ -24,7 +24,10 @@ const localInstantResult = (instant: number, converged: boolean): LocalInstant =
 export function localInstant(day: DayKey, minute: number, timezone: string): LocalInstant {
   const wall = Date.parse(`${day}T00:00:00Z`) + minute * 60000;
   let instant = wall;
-  let previousCorrection: number | null = null;
+  // A correction can overshoot when the first guess lands on the other side of a DST transition and
+  // borrows the wrong offset, so a single reversal is not proof of anything. Only a candidate we have
+  // already tried is: that is a cycle, and a wall time the zone cycles around never happens.
+  const tried = new Set<number>();
   for (let attempt = 0; attempt < 8; attempt++) {
     const parts = new Intl.DateTimeFormat('en-CA', {
       timeZone: timezone,
@@ -40,11 +43,11 @@ export function localInstant(day: DayKey, minute: number, timezone: string): Loc
     const correction = wall - actual;
     if (correction === 0) return localInstantResult(instant, true);
     const next = instant + correction;
-    if (previousCorrection !== null && Math.sign(previousCorrection) !== Math.sign(correction)) {
+    if (tried.has(next)) {
       if (Math.abs(correction) > 2 * 60 * 60_000) throw new Error('LOCAL_INSTANT_DID_NOT_CONVERGE');
       return localInstantResult(actual > wall ? instant : next, false);
     }
-    previousCorrection = correction;
+    tried.add(instant);
     instant = next;
   }
   throw new Error('LOCAL_INSTANT_DID_NOT_CONVERGE');
