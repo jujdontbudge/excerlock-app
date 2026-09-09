@@ -4,6 +4,12 @@
 
 set -euo pipefail
 
+# agent-ops release lock: retain the descriptor through the entire deploy.
+AGENT_OPS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if ! python3 "$AGENT_OPS_ROOT/scripts/agent-ops.py" held; then
+  exec python3 "$AGENT_OPS_ROOT/scripts/agent-ops.py" run -- bash "${BASH_SOURCE[0]}" "$@"
+fi
+
 DRY_RUN=false
 DEPLOY_HOST="${DEPLOY_HOST:-}"
 DEPLOY_SSH_KEY="${DEPLOY_SSH_KEY:-}"

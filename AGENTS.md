@@ -34,3 +34,18 @@ Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root (created lazily 
 Tool routing for this repo: read `TOOLING.md` before reaching for any external service — it names the CLI/MCP/skill that owns each job (App Store, builds, posting, analytics, VPS).
 If a tool errors or is missing: `python3 ~/.claude/agent-tooling/doctor.py --repo .` fixes or names the fix. The fallback for every dashboard is its CLI, per TOOLING.md.
 <!-- END AGENT-TOOLING -->
+
+## Releases and housekeeping
+
+Follow [docs/agents/operations.md](docs/agents/operations.md). Use `python3 scripts/agent-ops.py run -- <foreground release command>` for the entire merge → verify → push → CI wait → deploy/submit → health-check sequence. All release agents for this app must use the same lock; a busy lock means stop and revalidate after the current release finishes. The server deploy script also acquires it automatically. The lock does not authorize a release.
+
+Claim each agent worktree with `agent-ops.py claim PATH --owner TASK_ID`; mark it finished only after committing the completed work, using `finish PATH --owner TASK_ID --base-ref INTEGRATION_BRANCH`. Daily housekeeping only removes eligible old generated builds and explicitly completed, clean, merged worktrees. Never mark someone else's unfinished work complete or force cleanup past a retention check.
+
+<!-- agent-web:start -->
+## Web extraction
+For known web URLs, prefer `/Users/johansardar/.local/bin/agent-web` over generic WebFetch: Readability for articles/docs, Crawl4AI for JavaScript, yt-dlp for video/subtitles, gallery-dl for social images/posts, PyMuPDF for PDFs. Read `/Users/johansardar/.local/share/agent-web/GUIDE.md` on demand. Keep search for discovery/citations and APIs or direct structured fetch when better. Verify completeness; retain browser/fetch fallback and obey host tool rules.
+<!-- agent-web:end -->
+
+<!-- agent-ios:start -->
+For iOS/Xcode/TestFlight work, read /Users/johansardar/.local/share/agent-ios/GUIDE.md on demand. Prefer installed CLIs: asc xcode/build/test/archive/export and asc TestFlight workflows, native xcodebuild, xcrun simctl/devicectl/xcresulttool, and idb. Discover actual schemes/destinations; verify builds, tests and runtime behavior. Keep simulator work headless, obey repo release locks and the Maestro ban. Keep Xcode/TestFlight skills available; no extra MCP needed.
+<!-- agent-ios:end -->
