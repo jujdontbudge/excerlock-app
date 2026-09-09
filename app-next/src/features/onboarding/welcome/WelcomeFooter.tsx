@@ -23,7 +23,7 @@ export function WelcomeFooter({ onContinue }: { onContinue: () => void }) {
           <PressableScale label={c.signIn} onPress={() => setSheet('signIn')}>
             <Label variant="support" style={{ textAlign: 'center' }}>
               {c.existing}
-              <Label variant="support" style={{ color: t.brand.primary }}>
+              <Label variant="support" style={{ color: t.text.primary }}>
                 {c.signIn}
               </Label>
             </Label>

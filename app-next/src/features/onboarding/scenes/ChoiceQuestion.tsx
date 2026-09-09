@@ -15,7 +15,7 @@ export function ChoiceQuestion({ step, answers, setAnswer }: AnswerProps & { ste
   return (
     <>
       <Reveal>
-        <Heading title={copy.title} support={copy.body} />
+        <Heading title={copy.title} />
       </Reveal>
       <View style={{ gap: t.space.md }}>
         {question.options.map((option, index) => (

@@ -80,7 +80,7 @@ export function LineChart({
         <Label variant="support" tone="secondary">
           {startLabel}
         </Label>
-        <Label variant="support" style={{ color: t.brand.primary }}>
+        <Label variant="support" style={{ color: t.text.primary }}>
           {endLabel}
         </Label>
       </View>

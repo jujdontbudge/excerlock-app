@@ -8,7 +8,8 @@ export function useUnlockMoment(state: string) {
     scale = useSharedValue(1),
     m = useMotion();
   useEffect(() => {
-    if (state === 'unlockedMet' && previous.current !== 'unlockedMet') {
+    const lifted = (value: string) => value === 'unlockedMet' || value === 'unlockedAtGym';
+    if (lifted(state) && !lifted(previous.current)) {
       feedback('success');
       if (!m.reduced)
         scale.set(

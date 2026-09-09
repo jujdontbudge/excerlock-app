@@ -7,6 +7,8 @@ import { walkedSeconds } from '../walkTiming';
 import { writeWalkingProgress } from '../walkingProgress';
 import { dayKey } from '../../domain/calendar';
 import { sessionCopy as c } from '../../content/sessions';
+import { settingsStore } from '../../state/settingsStore';
+import { WALK_VERIFY_MS, WALK_LEASE_MS } from '../../domain/walking';
 export function WalkingFake(ctx: FakeContext): WalkingPort & { resume: () => void; disconnect: () => void } {
   let cancel: (() => void) | undefined,
     detail = { steps: 0, walkingSeconds: 0, graceUntil: null as string | null };
@@ -16,12 +18,64 @@ export function WalkingFake(ctx: FakeContext): WalkingPort & { resume: () => voi
     const session = ruleDaysStore.getState().data.walkingSession;
     if (session) ruleDaysStore.getState().patch({ walkingSession: { ...session, phase: 'ended' } });
   };
+  const walkingNow = () => ctx.snapshot().motion === 'walking';
+  /** Signal-driven session: cadence must hold for WALK_VERIFY_MS, then keeps the lease renewed until it stops. */
+  const verify = (rule: Rule, session: WalkingSession, base: number) => {
+    const startedAt = session.startedAt;
+    let phase = session.phase,
+      lease = session.leaseUntil,
+      graceUntil: string | null = null,
+      walkingSince: number | null = null,
+      seconds = 0,
+      lastTick = Date.parse(ctx.clock.now());
+    const step = () => {
+      const s = ctx.snapshot();
+      if (s.loading) return;
+      const now = ctx.clock.now(),
+        t = Date.parse(now),
+        walking = walkingNow(),
+        dt = Math.max(0, t - lastTick),
+        before = `${phase}:${lease}`;
+      lastTick = t;
+      if (phase === 'verifying') {
+        if (!walking) walkingSince = null;
+        else {
+          walkingSince ??= t;
+          if (t - walkingSince >= WALK_VERIFY_MS) {
+            phase = 'walking';
+            lease = new Date(t + WALK_LEASE_MS).toISOString();
+          }
+        }
+      } else if (phase === 'walking') {
+        if (walking) {
+          seconds += dt / 1000;
+          lease = new Date(t + WALK_LEASE_MS).toISOString();
+        } else {
+          phase = 'grace';
+          graceUntil = new Date(t + settingsStore.getState().data.stopGrace * 1000).toISOString();
+        }
+      } else if (phase === 'grace') {
+        if (walking) {
+          phase = 'walking';
+          graceUntil = null;
+        } else if (graceUntil && t >= Date.parse(graceUntil)) phase = 'ended';
+      }
+      detail = { steps: Math.floor(seconds * 1.6), walkingSeconds: seconds, graceUntil: phase === 'grace' ? graceUntil : null };
+      if (dt) writeWalkingProgress(rule, startedAt, ctx.clock.timezone(), base + seconds / 60);
+      if (before !== `${phase}:${lease}`) ruleDaysStore.getState().patch({ walkingSession: { ...session, phase, leaseUntil: lease } });
+      if (phase === 'ended') {
+        cancel?.();
+        cancel = undefined;
+      }
+    };
+    const stops = [ctx.clock.subscribe(step), ctx.subscribe(step)];
+    cancel = () => stops.forEach((stop) => stop());
+    step();
+  };
   const play = (rule: Rule, session: WalkingSession, base: number) => {
+    if (!ctx.scenario.walking) return verify(rule, session, base);
     const startedAt = session.startedAt,
-      script = ctx.scenario.walking ?? {
-        script: ['verifying', 'walking', 'grace', 'ended'] as WalkingSession['phase'][],
-        stepMs: 6000,
-      };
+      script = ctx.scenario.walking;
     cancel = ctx.clock.subscribe(() => {
       const elapsed = Math.max(0, Date.parse(ctx.clock.now()) - Date.parse(startedAt)),
         index = Math.min(script.script.length - 1, Math.floor(elapsed / script.stepMs)),
@@ -90,6 +144,17 @@ export function WalkingFake(ctx: FakeContext): WalkingPort & { resume: () => voi
     observe: (callback) => {
       callback(ruleDaysStore.getState().data.walkingSession);
       return ruleDaysStore.subscribe((s) => callback(s.data.walkingSession));
+    },
+    observeWalking: (callback) => {
+      let last = walkingNow();
+      callback(last);
+      return ctx.subscribe(() => {
+        const next = walkingNow();
+        if (next !== last) {
+          last = next;
+          callback(next);
+        }
+      });
     },
     treadmillFraming: () => ({
       ready: ctx.snapshot().placement !== 'handheld',

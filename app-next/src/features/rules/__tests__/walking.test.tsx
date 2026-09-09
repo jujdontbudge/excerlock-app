@@ -10,13 +10,13 @@ test('place and walking mode choices report draft actions', async () => {
   await r.rerender(<WalkingScreen step="W2" draft={createDraft('walking')} onAction={onAction} />);
   await userEvent.press(screen.getByRole('radio', { name: 'Unlock while walking' }));
   expect(onAction).toHaveBeenCalledWith({ type: 'setWalkingMode', value: 'state' });
-  expect(screen.getByText('Apps open while you walk, close when you stop')).toBeTruthy();
+  expect(screen.queryByText('Apps open while you walk, close when you stop')).toBeNull();
 });
-test('step field has bounded steppers and a rounded duration helper', async () => {
+test('step field keeps bounded steppers without duration helper copy', async () => {
   const onAction = jest.fn(),
     draft = createDraft('walking');
   const r = await render(<WalkingScreen step="W3" draft={draft} onAction={onAction} />);
-  expect(screen.getByText('About 50 minutes of walking')).toBeTruthy();
+  expect(screen.queryByText('About 50 minutes of walking')).toBeNull();
   await userEvent.press(screen.getByRole('button', { name: 'Add 500 steps' }));
   expect(onAction).toHaveBeenLastCalledWith({ type: 'setStepGoal', value: 5500 });
   await r.rerender(<WalkingScreen step="W3" draft={{ ...draft, stepGoal: 500 }} onAction={onAction} />);

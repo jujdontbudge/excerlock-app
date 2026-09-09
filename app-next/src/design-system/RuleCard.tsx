@@ -104,9 +104,6 @@ export function RuleCard({
           />
           </View>
           <View style={{ flexDirection: 'row', gap: t.space.sm }}>
-            <PressableScale label={`Edit ${title}`} onPress={onOpen} style={{ width: t.layout.touch, alignItems: 'center' }}>
-              <Label style={{ fontSize: 28, color: t.brand.primary }}>✎</Label>
-            </PressableScale>
             <PressableScale label={controls.remove} onPress={onDelete} style={{ width: t.layout.touch, alignItems: 'center' }}>
               <Icon name="trash" variant="utility" tint={t.brand.primary} size={t.layout.glyph} />
             </PressableScale>

@@ -156,7 +156,7 @@ export function HabitLoop({ phase, contentPhase = phase }: { phase: number; cont
               transitionDuration: m.reduced ? 0 : m.duration.slow,
               transitionTimingFunction: 'ease-in-out',
             }}>
-            <Label variant="label" style={{ textAlign: 'center', color: t.brand.primary }}>
+            <Label variant="label" style={{ textAlign: 'center', color: t.text.primary }}>
               {layerCopy.center}
             </Label>
           </Animated.View>

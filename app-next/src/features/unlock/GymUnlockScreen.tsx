@@ -22,7 +22,9 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
       (d) => d.ruleId === ruleId && d.day === dayKey(runtime.clock.now(), runtime.clock.timezone()) && d.met,
     ),
   );
-  const [alreadyCredited] = useState(!preview && met);
+  const [alreadyCredited] = useState(
+    !preview && (met || !!useRuleDaysStore.getState().data.gymPresence?.confirmedAt),
+  );
   const state = useGymUnlock(preview, alreadyCredited);
   const window = rule?.schedule.window;
   const minute = window?.kind === 'range' ? window.endMinute : 1439;

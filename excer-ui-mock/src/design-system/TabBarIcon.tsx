@@ -24,7 +24,7 @@ const sources = {
 } as const;
 
 export const TabBarIcon = memo(function TabBarIcon({
-  color: _color,
+  color,
   name,
   opacity = 1,
   size = iconSize.action,
@@ -32,7 +32,7 @@ export const TabBarIcon = memo(function TabBarIcon({
 }: TabBarIconProps) {
   return (
     <View style={[styles.host, { height: size, opacity, width: size }]} testID={testID}>
-      <VectorIcon source={sources[name]} />
+      <VectorIcon color={color} source={sources[name]} />
     </View>
   );
 });

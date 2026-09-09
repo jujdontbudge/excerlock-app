@@ -8,22 +8,23 @@ export function TextField({
   label,
   error,
   hideLabel = false,
+  labelTone = 'secondary',
   ...props
-}: TextInputProps & { label: string; error?: string; hideLabel?: boolean }) {
+}: TextInputProps & { label: string; error?: string; hideLabel?: boolean; labelTone?: 'primary' | 'secondary' }) {
   const [focused, setFocused] = useState(false);
   return (
-    <View style={{ gap: t.space.sm }}>
+    <View style={{ gap: t.space.md }}>
       {!hideLabel ? (
-        <Label variant="support" tone="secondary">
+        <Label variant="support" tone={labelTone}>
           {label}
         </Label>
       ) : null}
       <Animated.View
         style={{
-          backgroundColor: t.surface.subtle,
+          backgroundColor: t.surface.card,
           borderRadius: t.radius.field,
           borderWidth: t.stroke.selected,
-          borderColor: error ? t.state.error : focused ? t.brand.primary : t.surface.subtle,
+          borderColor: error ? t.state.error : focused ? t.brand.primary : t.border.default,
           transitionProperty: 'borderColor',
           transitionDuration: t.motion.duration.fast,
         }}>
@@ -49,7 +50,7 @@ export function TextField({
               minHeight: t.layout.field,
               color: t.text.primary,
               paddingHorizontal: t.space.lg,
-              paddingVertical: t.space.md,
+              paddingVertical: t.space.lg,
             },
             props.style,
           ]}

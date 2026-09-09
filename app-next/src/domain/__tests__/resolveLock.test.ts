@@ -111,3 +111,23 @@ test('seeded rule sets preserve precedence and future relock invariants', () => 
       expect(Date.parse(result.relockAt)).toBeGreaterThan(Date.parse(now));
   }
 });
+test('a confirmed gym presence unlocks only while a gym condition is active, and never before confirmation', () => {
+  const gym: Rule = { ...rule, id: 'gym', activity: 'gym', mode: { kind: 'target', activity: 'gym', metric: 'minutes', goal: 30 } };
+  const confirmed = { placeId: 'p', startedAt: '2026-09-07T18:59:00Z', confirmedAt: '2026-09-07T18:59:30Z' };
+  expect(resolveLock({ ...base, rules: [gym], gymPresence: confirmed })).toEqual({
+    state: 'unlockedAtGym',
+    ruleId: 'gym',
+    placeId: 'p',
+  });
+  expect(resolveLock({ ...base, rules: [gym], gymPresence: { ...confirmed, confirmedAt: null } }).state).toBe('locked');
+  expect(resolveLock({ ...base, rules: [gym], gymPresence: null }).state).toBe('locked');
+  expect(resolveLock({ ...base, rules: [rule], gymPresence: confirmed }).state).toBe('locked');
+  expect(
+    resolveLock({
+      ...base,
+      rules: [gym],
+      gymPresence: confirmed,
+      ruleDays: [{ ruleId: 'gym', day: '2026-09-07', progress: 30, met: true, metAt: now }],
+    }).state,
+  ).toBe('unlockedMet');
+});

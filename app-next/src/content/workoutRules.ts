@@ -1,6 +1,6 @@
 export const workoutCopy = {
   G1: { title: 'What counts at the gym?', body: "You'll pick your gym after setup." },
-  G2: { title: 'How long at the gym?', body: 'Choose a goal that fits your day.' },
+  G2: { title: 'How long at the gym unlocks your phone?', body: 'Choose a goal that fits your day.' },
   R1: { title: 'What counts as a run?', body: 'Choose the kind of goal that keeps you moving.' },
   R2: { title: 'Set your running goal', body: 'A little movement goes a long way.' },
   B1: { title: 'What counts as a bike ride?', body: 'Choose the kind of goal that keeps you moving.' },

@@ -23,7 +23,7 @@ export function TrialTimeline({ milestones }: { milestones: readonly { title: st
               ) : null}
             </View>
             <View style={{ flex: 1, gap: t.space.xs, paddingBottom: t.space.xl }}>
-              <Label variant="label" style={{ color: i === 0 ? t.brand.primary : t.text.primary }}>
+              <Label variant="label" style={{ color: i === 0 ? t.text.primary : t.text.primary }}>
                 {milestone.title}
               </Label>
               <Label tone="secondary">{milestone.body}</Label>

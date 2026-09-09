@@ -41,7 +41,7 @@ export function SecondaryButton({
           transitionProperty: ['transform', 'opacity'],
           transitionDuration: m.duration.press,
         }}>
-        <Label variant="label" style={{ color: t.brand.primary, textAlign: 'center' }}>
+        <Label variant="label" style={{ color: t.text.primary, textAlign: 'center' }}>
           {label}
         </Label>
       </Animated.View>

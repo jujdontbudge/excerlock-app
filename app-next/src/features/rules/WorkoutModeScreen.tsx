@@ -1,4 +1,6 @@
-import { ChoiceRow, Label } from '../../design-system';
+import { View } from 'react-native';
+import { ChoiceRow } from '../../design-system';
+import { tokens as t } from '../../design-system/tokens';
 import { Reveal } from '../../motion/Reveal';
 import { workoutCopy as c } from '../../content/workoutRules';
 import { RuleDraft, DraftAction } from './draft';
@@ -13,12 +15,12 @@ export function WorkoutModeScreen({
   const activity = d.activity === 'walking' ? 'running' : d.activity,
     selected = activity === 'gym' ? d.gymMode : d.runMode;
   return (
-    <>
+    <View style={{ gap: t.space.md }}>
       {c.modes[activity].map((mode, index) => (
         <Reveal key={mode.id} index={index + 1}>
           <ChoiceRow
             title={mode.title}
-            recommended={index === 0}
+
             selected={selected === mode.id}
             compact
             onPress={() =>
@@ -31,9 +33,6 @@ export function WorkoutModeScreen({
           />
         </Reveal>
       ))}
-      <Reveal>
-        <Label tone="secondary">{c.support}</Label>
-      </Reveal>
-    </>
+    </View>
   );
 }

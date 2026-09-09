@@ -4,7 +4,10 @@ import { Coordinates } from '../../ports/PlaceSearch';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { distanceMetres } from '../gym-picker/geometry';
 import { defaultCentre } from '../gym-picker/usePicker';
-export const PRESENCE_CONFIRM_MS = 30000;
+import { PRESENCE_CONFIRM_MS } from '../../domain/presence';
+import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
+import { useClock } from '../../state/selectors';
+export { PRESENCE_CONFIRM_MS };
 export function useGymUnlock(preview: boolean, alreadyCredited = false) {
   const runtime = useRuntime(),
     places = useSettingsStore((s) => s.data.gymPlaces);
@@ -15,6 +18,8 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
     [lifted, setLifted] = useState(alreadyCredited),
     [value, setValue] = useState(alreadyCredited ? 1 : 0),
     [error, setError] = useState('');
+  const session = useRuleDaysStore((s) => s.data.gymPresence),
+    now = useClock();
   const generation = useRef(0);
   const request = useRef<AbortController | null>(null);
   useEffect(() => () => request.current?.abort(), []);
@@ -104,5 +109,20 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
       }
     }
   };
-  return { location, nearest, distance, inside, denied, working, lifted, value, error, unlock };
+  // The app-level presence engine may confirm on its own; mirror its session so both routes share one ceremony.
+  const autoConfirming = !preview && !!session && !session.confirmedAt && !working;
+  const autoLifted = !preview && !!session?.confirmedAt;
+  const shown = {
+    working: working || autoConfirming,
+    lifted: lifted || autoLifted,
+    value:
+      lifted || autoLifted
+        ? 1
+        : working
+          ? value
+          : autoConfirming
+            ? Math.min(1, Math.max(0, (Date.parse(now) - Date.parse(session.startedAt)) / PRESENCE_CONFIRM_MS))
+            : value,
+  };
+  return { location, nearest, distance, inside, denied, error, unlock, ...shown };
 }

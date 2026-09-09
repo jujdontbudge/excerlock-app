@@ -8,11 +8,13 @@ export function UnlockEntry({
   label,
   onPress,
   detail,
+  inverted = false,
 }: {
-  kind: 'gym' | 'treadmill';
+  kind: 'gym' | 'treadmill' | 'walking';
   label: string;
   onPress: () => void;
   detail?: string;
+  inverted?: boolean;
 }) {
   return (
     <View style={{ gap: t.space.xs }}>
@@ -24,7 +26,7 @@ export function UnlockEntry({
           onPress();
         }}
         style={({ pressed }) => ({
-          backgroundColor: 'white',
+          backgroundColor: inverted ? t.brand.primary : t.brand.light,
           borderRadius: t.radius.pill,
           height: t.layout.button,
           flexDirection: 'row',
@@ -33,8 +35,8 @@ export function UnlockEntry({
           gap: t.space.md,
           transform: [{ scale: pressed ? t.motion.scale.pressed : 1 }],
         })}>
-        <Icon name={kind === 'gym' ? 'gym' : 'walking'} variant="utility" size={24} tint={t.brand.primary} />
-        <Label variant="label" style={{ color: t.brand.primary }}>
+        <Icon name={kind === 'gym' ? 'gym' : 'walking'} variant="utility" size={24} tint={inverted ? t.text.onAccent : t.brand.primary} />
+        <Label variant="label" style={{ color: inverted ? t.text.onAccent : t.text.primary }}>
           {label}
         </Label>
       </Pressable>

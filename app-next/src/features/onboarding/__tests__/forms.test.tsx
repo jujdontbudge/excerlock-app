@@ -4,7 +4,7 @@ import { ChoiceQuestion } from '../scenes/ChoiceQuestion';
 test('name edits are persisted and oversized names show an inline error', async () => {
   const setAnswer = jest.fn();
   const view = await render(<O04 answers={{}} setAnswer={setAnswer} />);
-  expect(screen.getByText('Let’s make this personal.')).toBeTruthy();
+  expect(screen.queryByText('Let’s make this personal.')).toBeNull();
   expect(screen.getByLabelText('First name')).toHaveProp('autoFocus', false);
   await fireEvent.changeText(screen.getByLabelText('First name'), 'Alex');
   expect(setAnswer).toHaveBeenCalledWith('name', 'Alex');

@@ -17,6 +17,7 @@ export type DevSnapshot = {
   restoreOutcome: 'restored' | 'notFound';
   outcome: 'success' | 'cancel' | 'error';
   presence: 'inside' | 'outside';
+  motion: 'walking' | 'still';
   placement?: 'propped' | 'handheld';
 };
 export interface RuntimeControls {
@@ -27,6 +28,7 @@ export interface RuntimeControls {
   advance(ms: number): void;
   setSteps(value: number): void;
   setPresence(value: 'inside' | 'outside'): void;
+  setMotion(value: 'walking' | 'still'): void;
   setGait(value: 'none' | 'walking' | 'still'): void;
   createGaitPreview(): GaitPort;
   setPlacement(value: 'propped' | 'handheld'): void;

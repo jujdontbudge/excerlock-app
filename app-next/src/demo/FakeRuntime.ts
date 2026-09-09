@@ -88,11 +88,13 @@ export function FakeRuntime(): Runtime {
           events: [],
           accessibility: scenario.accessibility,
           presence: scenario.gym?.presence ?? 'outside',
+          motion: scenario.motion ?? 'still',
         });
         walking.resume();
       },
       advance: ctx.clock.advance,
       setPresence: (presence) => ctx.update({ presence }),
+      setMotion: (motion) => ctx.update({ motion }),
       setGait: gait.set,
       createGaitPreview: () => { const preview = GaitFake(true); preview.set('walking'); return preview; },
       setPlacement: (placement) => ctx.update({ placement }),

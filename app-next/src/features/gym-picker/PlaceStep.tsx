@@ -10,6 +10,14 @@ export function PlaceStep({ picker: p }: { picker: PickerState }) {
   return (
     <>
       <Heading title={c.pickTitle} />
+      <PickerMap
+        coordinate={p.pin}
+        radius={p.radius}
+        name={p.name}
+        height={Math.min(420, Math.max(340, height * 0.44))}
+        showLocation={!!p.location}
+        onSettle={p.setPin}
+      />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={c.search}
@@ -29,20 +37,12 @@ export function PlaceStep({ picker: p }: { picker: PickerState }) {
         <Icon name="search" variant="utility" size={t.layout.glyph} tint={t.brand.primary} />
         <Label tone="secondary">{c.search}</Label>
       </Pressable>
-      <PickerMap
-        coordinate={p.pin}
-        radius={p.radius}
-        name={p.name}
-        height={Math.min(320, Math.max(260, height * 0.34))}
-        showLocation={!!p.location}
-        onSettle={p.setPin}
-      />
       <View
         style={{
           paddingHorizontal: t.space.sm,
           gap: t.space.xs,
         }}>
-        <Label variant="label">{p.name}</Label>
+        <Label variant="label">{c.address}</Label>
         <Label variant="support" tone="secondary">
           {p.address || `${p.pin.latitude.toFixed(5)}, ${p.pin.longitude.toFixed(5)}`}
         </Label>
@@ -54,7 +54,7 @@ export function PlaceStep({ picker: p }: { picker: PickerState }) {
             gap: t.space.sm,
           }}>
           <Label variant="label">{c.radius}</Label>
-          <Label variant="label" style={{ color: t.brand.primary }}>
+          <Label variant="label" style={{ color: t.text.primary }}>
             {p.radius} m
           </Label>
         </View>

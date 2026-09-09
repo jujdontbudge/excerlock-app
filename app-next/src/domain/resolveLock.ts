@@ -1,5 +1,5 @@
 import { unlockHint } from './unlockHint';
-import { Rule, RuleDay, WalkingSession, LockDecision } from './types';
+import { Rule, RuleDay, WalkingSession, LockDecision, GymPresence } from './types';
 import { dayKey, windowInstances, currentInstances, nextInstanceStart, isActiveAt } from './schedule';
 import { addDays, localInstant } from './calendar';
 export type LockInput = {
@@ -8,8 +8,9 @@ export type LockInput = {
   rules: Rule[];
   ruleDays: RuleDay[];
   walkingSession: WalkingSession | null;
+  gymPresence?: GymPresence | null;
 };
-export function resolveLock({ now, timezone: tz, rules, ruleDays, walkingSession: session }: LockInput): LockDecision {
+export function resolveLock({ now, timezone: tz, rules, ruleDays, walkingSession: session, gymPresence }: LockInput): LockDecision {
   const enabled = rules.filter((r) => r.enabled),
     today = dayKey(now, tz);
   const active = enabled.filter((r) => isActiveAt(r, now, tz));
@@ -29,6 +30,10 @@ export function resolveLock({ now, timezone: tz, rules, ruleDays, walkingSession
     const relockAt = nextInstanceStart(enabled, new Date(Date.parse(cutoff) - 1).toISOString(), tz);
     if (relockAt && Date.parse(relockAt) <= Date.parse(now)) continue;
     return { state: 'unlockedMet', byRuleId: rule.id, relockAt };
+  }
+  if (gymPresence?.confirmedAt) {
+    const gym = active.find((r) => r.activity === 'gym');
+    if (gym) return { state: 'unlockedAtGym', ruleId: gym.id, placeId: gymPresence.placeId };
   }
   if (active.length) {
     const rows = active.flatMap((rule) =>

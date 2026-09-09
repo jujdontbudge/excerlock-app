@@ -1,8 +1,7 @@
 import { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
-import { ScreenShell, Label } from '../../design-system';
+import { View } from 'react-native';
+import { ScreenShell, Label, CloseButton } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
-import { feedback } from '../../motion/haptics';
 import { unlockCopy as c } from '../../content/unlock';
 import { Icon } from '../../icons/Icon';
 import Animated from 'react-native-reanimated';
@@ -23,21 +22,12 @@ export function UnlockLayout({
     <ScreenShell
       header={
         <View style={{ paddingHorizontal: t.layout.page, flexDirection: 'row', alignItems: 'center' }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={c.close}
-            onPress={() => {
-              feedback('press');
-              close();
-            }}
-            style={{ width: t.layout.touch, height: t.layout.touch, justifyContent: 'center' }}>
-            <Label style={{ fontSize: 32, color: t.brand.primary }}>×</Label>
-          </Pressable>
+          <CloseButton label={c.close} onPress={close} />
           {preview ? <Label tone="secondary">{c.preview}</Label> : null}
         </View>
       }
       footer={footer}>
-      <View style={{ paddingTop: 28, gap: t.space.md }}>{children}</View>
+      <View style={{ gap: t.space.md }}>{children}</View>
     </ScreenShell>
   );
 }

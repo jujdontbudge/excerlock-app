@@ -54,7 +54,7 @@ export function PlanSummary({
                 label={row.edit}
                 onPress={() => onEdit(row.step)}
                 style={{ minWidth: t.layout.touch, alignItems: 'center' }}>
-                <Label variant="support" style={{ color: t.brand.primary }}>
+                <Label variant="support" style={{ color: t.text.primary }}>
                   {c.edit}
                 </Label>
               </PressableScale>

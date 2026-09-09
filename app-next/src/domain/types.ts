@@ -56,6 +56,12 @@ export type WalkingSession = {
   phase: 'verifying' | 'walking' | 'grace' | 'ended';
 };
 
+export type GymPresence = {
+  placeId: string; // the saved gym being confirmed or occupied
+  startedAt: string; // ISO, when the 30-second presence confirmation began
+  confirmedAt: string | null; // ISO once presence held for the full confirmation; null while confirming
+};
+
 export type Profile = {
   warmupRating?: number | null;
   name: string;
@@ -96,4 +102,5 @@ export type LockDecision =
   | { state: 'locked'; activeRuleIds: string[]; nextUnlockHint: UnlockHint }
   | { state: 'unlockedMet'; byRuleId: string; relockAt: string | null } // met today, open until next day's window
   | { state: 'unlockedWalking'; sessionRuleId: string; leaseUntil: string }
+  | { state: 'unlockedAtGym'; ruleId: string; placeId: string } // confirmed at a saved gym; relocks on leaving
   | { state: 'afterWindow'; nextLockAt: string | null }; // today's windows are over, apps open

@@ -12,18 +12,19 @@ function Harness({ distance = false }: { distance?: boolean }) {
     />
   );
 }
-test('presets fill the number, and an empty field stays empty with a range error', async () => {
+test('wheel shows the current minutes and stepping it updates the goal', async () => {
   await render(<Harness />);
-  await userEvent.press(screen.getByRole('button', { name: '30 minutes' }));
-  expect(screen.getByLabelText('Goal')).toHaveDisplayValue('30');
-  await fireEvent.changeText(screen.getByLabelText('Goal'), '');
-  expect(screen.getByLabelText('Goal')).toHaveDisplayValue('');
-  expect(screen.getByText('Choose 5–300 minutes.')).toBeTruthy();
+  expect(screen.getByLabelText('Goal').props.accessibilityValue).toMatchObject({ now: 20 });
+  await fireEvent(screen.getByLabelText('Goal'), 'accessibilityAction', {
+    nativeEvent: { actionName: 'increment' },
+  });
+  expect(screen.getByLabelText('Goal').props.accessibilityValue).toMatchObject({ now: 25 });
 });
 test('distance units change range without converting the numeric input', async () => {
   await render(<Harness distance />);
   await userEvent.press(screen.getByRole('button', { name: 'Unit: mi' }));
   await userEvent.press(screen.getByRole('radio', { name: 'km' }));
   expect(screen.getByLabelText('Distance')).toHaveDisplayValue('2');
-  expect(screen.getByText('Choose 0.5–50 km.')).toBeTruthy();
+  expect(screen.queryByText('Choose 0.5–50 km.')).toBeNull();
+  expect(screen.getByLabelText('Distance').props.accessibilityValue).toMatchObject({ min: 0.5, max: 50 });
 });

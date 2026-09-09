@@ -30,7 +30,7 @@ export function TrialScreen({ step, onContinue }: { step: 'T1' | 'T2' | 'T3' | '
       {step === 'T1' ? (
         <>
           <Reveal>
-            <Label variant="metricSmall" style={{ color: t.brand.primary, textAlign: 'center' }}>
+            <Label variant="metricSmall" style={{ color: t.text.primary, textAlign: 'center' }}>
               {offer.label}
             </Label>
           </Reveal>
@@ -47,7 +47,7 @@ export function TrialScreen({ step, onContinue }: { step: 'T1' | 'T2' | 'T3' | '
       ) : null}
       {step === 'T2' ? (
         <Reveal index={1}>
-          <Label variant="metricSmall" style={{ textAlign: 'center', color: t.brand.primary }}>
+          <Label variant="metricSmall" style={{ textAlign: 'center', color: t.text.primary }}>
             {c.reminder}
           </Label>
         </Reveal>

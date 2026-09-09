@@ -35,7 +35,7 @@ export function LoopDiagram({
                 variant="support"
                 style={{
                   textAlign: 'center',
-                  color: i === phase ? t.brand.primary : t.text.secondary,
+                  color: i === phase ? t.text.primary : t.text.secondary,
                 }}>
                 {label}
               </Label>

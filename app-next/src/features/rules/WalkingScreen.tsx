@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import { Heading, ChoiceRow, NumberField, SecondaryButton, Label } from '../../design-system';
+import { Heading, ChoiceRow, NumberField, SecondaryButton } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { walkingCopy as c } from '../../content/rules';
 import { LivingIcon } from '../../motion/LivingIcon';
@@ -21,7 +21,7 @@ export function WalkingScreen({
     <>
       {!contentOnly ? (
         <>
-          <Heading title={c[step].title} support={c[step].body} />
+          <Heading title={c[step].title} />
           <LivingIcon
             name={step === 'W2' && d.walkingMode === 'state' ? 'lock-open' : 'walking'}
             size={t.layout.ring}
@@ -33,8 +33,7 @@ export function WalkingScreen({
             <Reveal key={p.id} index={index + 1}>
               <ChoiceRow
                 title={p.title}
-                support={p.support}
-                recommended={p.id === 'outside'}
+
                 selected={d.place === p.id}
                 compact
                 onPress={() => onAction({ type: 'setPlace', value: p.id })}
@@ -47,8 +46,7 @@ export function WalkingScreen({
             <Reveal key={m.id} index={index + 1}>
               <ChoiceRow
                 title={m.title}
-                support={m.support}
-                recommended={m.id === 'target'}
+
                 selected={d.walkingMode === m.id}
                 compact
                 onPress={() => onAction({ type: 'setWalkingMode', value: m.id })}
@@ -84,11 +82,7 @@ export function WalkingScreen({
               />
             </View>
           </View>
-          {valid ? (
-            <Reveal key={d.stepGoal}>
-              <Label tone="secondary">{c.helper(d.stepGoal)}</Label>
-            </Reveal>
-          ) : null}
+
         </Reveal>
       ) : null}
     </>

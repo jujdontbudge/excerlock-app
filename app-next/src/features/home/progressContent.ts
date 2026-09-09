@@ -1,7 +1,6 @@
 import { Rule, RuleDay, Permissions, WalkingSession } from '../../domain/types';
 import { homeCopy as c } from '../../content/home';
 import { ruleName } from '../../domain/ruleName';
-import { leaseClock } from './statusContent';
 export function progressContent(
   rule: Rule,
   row: RuleDay,
@@ -15,17 +14,31 @@ export function progressContent(
     format = (value: number) =>
       value.toLocaleString('en-US', { maximumFractionDigits: m.kind === 'target' && m.metric === 'distance' ? 1 : 0 });
   if (m.kind === 'state') {
-    const live =
-      session?.ruleId === rule.id &&
-      ['walking', 'grace'].includes(session.phase) &&
-      Date.parse(session.leaseUntil) > Date.parse(now);
+    const mine = session?.ruleId === rule.id && session.phase !== 'ended' ? session : null;
+    const live = !!mine && ['walking', 'grace'].includes(mine.phase) && Date.parse(mine.leaseUntil) > Date.parse(now);
+    const state = mine?.phase === 'verifying' ? 'verifying' : live ? mine!.phase : 'idle';
     return {
       title,
       icon: rule.activity,
       value: live ? 1 : 0,
-      detail: live ? c.left(leaseClock(session.leaseUntil, now)) : c.walkReady,
+      detail:
+        state === 'verifying'
+          ? c.checkingPace
+          : state === 'walking'
+            ? c.walkingLive
+            : state === 'grace'
+              ? c.keepWalking
+              : c.walkReady,
       action: 'walk',
-      label: live ? c.viewWalk : c.startWalk,
+      label:
+        state === 'verifying'
+          ? c.detectingWalk
+          : state === 'walking'
+            ? c.walkDetected
+            : state === 'grace'
+              ? c.keepWalking
+              : c.walkingEntry,
+      state,
     } as const;
   }
   if (m.kind === 'event')

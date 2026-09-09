@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, {
   useReducedMotion,
@@ -17,7 +17,7 @@ import {
   DOCK_INACTIVE_OPACITY,
   DOCK_SAFE_AREA_MIN,
 } from './dockGeometry';
-import { colors, motion } from './tokens';
+import { colors, motion, type } from './tokens';
 
 export { DOCK_BAR_HEIGHT, DOCK_ICON_SIZE } from './dockGeometry';
 
@@ -98,13 +98,14 @@ function DockTab<T extends string>({
       style={styles.tab}
       testID={`bottom-tab-item-${item.key}`}
     >
-      <Animated.View style={animatedStyle}>
+      <Animated.View style={[styles.tabContent, animatedStyle]}>
         <TabBarIcon
-          color={colors.text.primary}
+          color={colors.icon.dock}
           name={item.icon}
           size={DOCK_ICON_SIZE}
           testID={`bottom-tab-icon-${item.key}`}
         />
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={styles.label}>{item.label}</Text>
         {milestone ? <View accessibilityLabel={`New item in ${item.label}`} style={styles.dot} /> : null}
       </Animated.View>
     </Pressable>
@@ -130,6 +131,14 @@ const styles = StyleSheet.create({
     top: -2,
     width: 6,
   },
+  label: {
+    ...type.caption,
+    color: colors.icon.dock,
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: '500',
+  },
+  tabContent: { alignItems: 'center', gap: 4 },
   row: {
     alignItems: 'center',
     backgroundColor: 'transparent',

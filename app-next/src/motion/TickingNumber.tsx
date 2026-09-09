@@ -37,7 +37,7 @@ export function TickingNumber({
           maxFontSizeMultiplier={t.a11y.textScale}
           defaultValue={value.toFixed(precision).replace(/\.0$/, '')}
           animatedProps={props}
-          style={[t.type.metric, { color: t.brand.primary, textAlign: 'center', padding: 0, width: '100%' }]}
+          style={[t.type.metric, { color: t.text.primary, textAlign: 'center', padding: 0, width: '100%' }]}
         />
         <Label tone="secondary" style={{ textAlign: 'center' }}>
           {label}

@@ -28,6 +28,7 @@ export type HistoryDay = {
 export type Workout = { kind: 'running' | 'biking'; minutes: number; km: number };
 export type Scenario = {
   gait?: 'none' | 'walking' | 'still';
+  motion?: 'walking' | 'still';
   id: string;
   title: string;
   onboarding: 'fresh' | `resumeAt:${string}` | 'complete';

@@ -92,7 +92,7 @@ export function DetailedSettingsScreen({
         </>
       }>
       <PressableScale label="Back to Settings" onPress={onBack}>
-        <Label style={{ color: t.brand.primary }}>‹ Settings</Label>
+        <Label style={{ color: t.text.primary }}>‹ Settings</Label>
       </PressableScale>
       <Heading title="More settings" />
       <SettingsGroup title={c.general}>

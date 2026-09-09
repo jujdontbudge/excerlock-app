@@ -56,15 +56,30 @@ export function GymFake(ctx: FakeContext): GymPort & { dispose: () => void } {
       ctx.result();
       if (ctx.snapshot().presence !== 'inside') throw new Error('Outside saved gym');
       if (!list().some((p) => p.id === id)) throw new Error('Gym not found');
-      if (confirmation) await new Promise<void>((resolve, reject) => {
-        const finish = (error?: Error) => { clearTimeout(timer); stop(); confirmation.signal.removeEventListener('abort', abort); if (error) reject(error); else resolve(); };
-        const abort = () => finish(new Error('Check-in cancelled'));
-        const timer = setTimeout(() => finish(), confirmation.milliseconds);
-        const stop = ctx.subscribe(() => { if (ctx.snapshot().presence !== 'inside') finish(new Error('Left gym')); });
-        confirmation.signal.addEventListener('abort', abort);
-        if (confirmation.signal.aborted) abort();
-      });
+      const startedAt = ctx.clock.now();
+      const session = () => ruleDaysStore.getState().data.gymPresence;
+      const mine = () => session()?.placeId === id && session()?.startedAt === startedAt;
+      if (confirmation) {
+        if (!session()?.confirmedAt) ruleDaysStore.getState().patch({ gymPresence: { placeId: id, startedAt, confirmedAt: null } });
+        try {
+          await new Promise<void>((resolve, reject) => {
+            const finish = (error?: Error) => { clearTimeout(timer); stop(); confirmation.signal.removeEventListener('abort', abort); if (error) reject(error); else resolve(); };
+            const abort = () => finish(new Error('Check-in cancelled'));
+            const timer = setTimeout(() => finish(), confirmation.milliseconds);
+            const stop = ctx.subscribe(() => { if (ctx.snapshot().presence !== 'inside') finish(new Error('Left gym')); });
+            confirmation.signal.addEventListener('abort', abort);
+            if (confirmation.signal.aborted) abort();
+          });
+        } catch (error) {
+          if (mine()) ruleDaysStore.getState().patch({ gymPresence: null });
+          throw error;
+        }
+      }
+      if (ctx.snapshot().presence !== 'inside') throw new Error('Left gym');
+      if (!session()?.confirmedAt || session()?.placeId !== id)
+        ruleDaysStore.getState().patch({ gymPresence: { placeId: id, startedAt, confirmedAt: ctx.clock.now() } });
       progress.arrive();
+      ctx.log('gym_presence_confirmed', { id });
       const current = ruleDaysStore.getState().data.days;
       const updates = rulesStore
         .getState()

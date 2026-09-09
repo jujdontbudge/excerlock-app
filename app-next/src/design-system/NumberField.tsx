@@ -18,6 +18,7 @@ export function NumberField({
   step = 1,
   min = 0,
   max,
+  labelTone = 'secondary',
 }: {
   label: string;
   value: string;
@@ -29,14 +30,16 @@ export function NumberField({
   step?: number;
   min?: number;
   max?: number;
+  labelTone?: 'primary' | 'secondary';
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <View style={{ gap: t.space.md }}>
+    <View style={{ gap: t.space.lg }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
         <View style={{ flex: 1 }}>
           <TextField
             label={label}
+            labelTone={labelTone}
             accessibilityRole="adjustable"
             accessibilityValue={{
               now: value.trim() && Number.isFinite(Number(value)) ? Number(value) : undefined,
@@ -60,12 +63,12 @@ export function NumberField({
         </View>
         {units && onUnitChange ? (
           <PressableScale label={`${controls.unit}: ${unit}`} onPress={() => setOpen(!open)}>
-            <Label variant="label" style={{ color: t.brand.primary }}>
+            <Label variant="label" style={{ color: t.text.primary }}>
               {unit}
             </Label>
           </PressableScale>
         ) : (
-          <Label tone="secondary">{unit}</Label>
+          <Label>{unit}</Label>
         )}
       </View>
       {open ? (

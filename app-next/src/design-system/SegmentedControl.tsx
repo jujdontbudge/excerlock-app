@@ -69,7 +69,7 @@ export function SegmentedControl({
             <Label
               variant="support"
               style={{
-                color: option === value ? (prominent ? t.text.onAccent : t.brand.primary) : t.text.secondary,
+                color: option === value ? (prominent ? t.text.onAccent : t.text.primary) : t.text.secondary,
                 textAlign: 'center',
               }}>
               {option}

@@ -41,7 +41,7 @@ Tab bar: four tabs from `src/content/tabs.ts:1-6`, all kept mounted (`lazy: fals
 - Enable/disable: `RuleCard`'s `Switch` (`src/design-system/RuleCard.tsx:94-104`) → `toggleRule(id, value)` (`ConditionsScreen.tsx:57`) → `src/features/conditions/mutations.ts:11-15`, a plain `map` patch of `enabled`. Haptic on change (`RuleCard.tsx:100`). No confirmation, no undo.
 - Delete has **three** entry points on one card: swipe-left reveal ("Delete", `RuleCard.tsx:37-57`), a trash `PressableScale` in the card footer (`RuleCard.tsx:110-112`), and an accessibility custom action named `delete` (`RuleCard.tsx:74-77`). All call `onDelete` → `setDeleting(rule.id)` (`ConditionsScreen.tsx:58`) → a `ConfirmSheet` (`:33-44`) titled "Delete condition?" with body "This condition and its progress will be removed. Your other conditions and locked apps stay as they are.", confirm "Delete condition", cancel "Keep condition" (`src/content/conditions.ts:18-22`).
 - Confirmed delete → `deleteRule(id)` (`mutations.ts:16-23`): removes the rule **and** all `ruleDays` rows for it, and nulls `walkingSession` if it belonged to that rule. Toggling off does **not** touch `ruleDays` — a disabled rule keeps its met/progress rows, so re-enabling restores an already-met day.
-- Editing: card body press or the ✎ button (`RuleCard.tsx:71,107`) → `onEdit(rule.id)` → `/builder?id=`.
+- Editing: card body press (`RuleCard.tsx:71`) → `onEdit(rule.id)` → `/builder?id=`. The former ✎ button was removed.
 
 ### Card contents
 `title = ruleName(rule)` (`ConditionsScreen.tsx:52`, `src/domain/ruleName.ts:3-10`), `schedule = scheduleLabel(rule.schedule)` (`:53`, `src/domain/scheduleLabel.ts:8-18`), `icon = rule.activity` (`:54`).

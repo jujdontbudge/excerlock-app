@@ -27,7 +27,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
     [deleting, setDeleting] = useState<string | null>(null);
   const ordered = [...rules].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
-    <ScreenShell
+    <ScreenShell dock
       safeBottom={false}
       overlay={
         <ConfirmSheet
@@ -44,6 +44,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
         />
       }>
       <Heading title={c.title} />
+      {ordered.length ? <PrimaryButton label={c.add} onPress={onAdd} /> : null}
       {ordered.length ? (
         <>
           {ordered.map((rule, index) => (
@@ -63,7 +64,6 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
       ) : (
         <EmptyState icon="walking" title={c.empty} body={c.emptyBody} action={c.add} onAction={onAdd} />
       )}
-      {ordered.length ? <PrimaryButton label={c.add} onPress={onAdd} /> : null}
       <View style={{ backgroundColor: t.surface.card, borderRadius: t.radius.pill, boxShadow: '0px 6px 20px rgba(100,55,25,0.10)' }}>
         <SettingsRow title="Lock list" icon="lock" iconTint={t.brand.primary} onPress={() => void runtime.screenTime.presentAppPicker()} />
       </View>

@@ -55,3 +55,26 @@ test('relock and lease clocks are formatted using the scenario timezone', () => 
     }).subtitle,
   ).toBe('12:40 left');
 });
+test('a confirmed gym presence reads as unlocked while there, with the time note for minute goals', () => {
+  const gym = scenarios.find((s) => s.id === 'gym-time-user')!;
+  const decision = resolveLock({
+    now: gym.clock.now,
+    timezone: gym.clock.timezone,
+    rules: gym.rules,
+    ruleDays: gym.ruleDays,
+    walkingSession: null,
+    gymPresence: { placeId: 'p', startedAt: gym.clock.now, confirmedAt: gym.clock.now },
+  });
+  const model = statusContent({
+    decision,
+    rules: gym.rules,
+    permissions: gym.permissions,
+    apps: gym.lockedApps,
+    now: gym.clock.now,
+    timezone: gym.clock.timezone,
+  });
+  expect(model.state).toBe('unlockedAtGym');
+  expect(model.unlocked).toBe(true);
+  expect(model.title).toBe('Unlocked while at the gym');
+  expect(model.subtitle).toContain('Leaving the gym pauses it');
+});

@@ -21,11 +21,7 @@ export function ProfileHeading({ step }: { step: 'O04' | 'O05' | 'O06' | 'O07' }
           style={step === 'O04' || step === 'O05' ? p.largeTitle : p.title}>
           {title}
         </Label>
-        {copy.body ? (
-          <Label tone="secondary" style={p.support}>
-            {copy.body}
-          </Label>
-        ) : null}
+
       </View>
     </Reveal>
   );

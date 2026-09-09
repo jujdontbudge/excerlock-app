@@ -24,7 +24,7 @@ const safeAreaMetrics = {
 };
 
 describe('BottomTabBar', () => {
-  it('renders VTracer vector assets as accessible icon-only tabs', async () => {
+  it('renders VTracer vector assets as accessible tabs with visible labels', async () => {
     const view = await render(
       <SafeAreaProvider initialMetrics={safeAreaMetrics}>
         <BottomTabBar
@@ -41,8 +41,8 @@ describe('BottomTabBar', () => {
     expect(view.getByTestId('bottom-tab-bar')).toBeTruthy();
     expect(view.getByLabelText('Home')).toBeTruthy();
     expect(view.getByLabelText('Analysis')).toBeTruthy();
-    expect(view.queryByText('Home')).toBeNull();
-    expect(view.queryByText('Analysis')).toBeNull();
+    expect(view.getByText('Home')).toBeTruthy();
+    expect(view.getByText('Analysis')).toBeTruthy();
 
     const homeIcon = view.getByTestId('bottom-tab-icon-home', { includeHiddenElements: true });
     const analysisIcon = view.getByTestId('bottom-tab-icon-analysis', { includeHiddenElements: true });

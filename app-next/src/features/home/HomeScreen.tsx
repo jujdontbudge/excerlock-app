@@ -1,7 +1,7 @@
 import { HomeSheets } from '../sessions/HomeSheets';
-import { BlockingScheduleCard } from '../../design-system/BlockingScheduleCard';
-import { blockingSchedule } from './blockingSchedule';
-import { ruleName } from '../../domain/ruleName';
+import { HomeLockStatus } from './HomeLockStatus';
+import { ProgressBar } from '../../design-system/ProgressBar';
+import { scheduleLabel } from '../../domain/scheduleLabel';
 import { Icon } from '../../icons/Icon';
 import { useDemoProgress } from './useDemoProgress';
 import { useEffect, useState } from 'react';
@@ -10,9 +10,6 @@ import Animated from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import {
   ScreenShell,
-  Heading,
-  StatusCard,
-  ProgressCard,
   SettingsRow,
   StreakBadge,
   SecondaryButton,
@@ -30,7 +27,6 @@ import { statusContent } from './statusContent';
 import { progressContent } from './progressContent';
 import { useUnlockMoment } from './useUnlockMoment';
 import { homeCopy as c } from '../../content/home';
-import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { unlockKind } from '../unlock/entry';
 import { UnlockEntry } from '../unlock/UnlockEntry';
@@ -46,7 +42,8 @@ export function HomeScreen() {
   const { rules, lockedApps } = useRulesStore((s) => s.data),
     permissions = usePermissionsStore((s) => s.data),
     auto = useSettingsStore((s) => s.data.gymAutoDetect),
-    session = useRuleDaysStore((s) => s.data.walkingSession);
+    session = useRuleDaysStore((s) => s.data.walkingSession),
+    presence = useRuleDaysStore((s) => s.data.gymPresence);
   const status = statusContent({
       decision,
       rules,
@@ -72,52 +69,84 @@ export function HomeScreen() {
   useEffect(() => {
     runtime.analytics.screen('Home');
   }, [runtime]);
-  const scheduledRuleId =
-    decision.state === 'locked'
-      ? decision.nextUnlockHint.ruleId
-      : decision.state === 'beforeWindow'
-        ? decision.ruleId
-        : decision.state === 'unlockedMet'
-          ? decision.byRuleId
-          : decision.state === 'unlockedWalking'
-            ? decision.sessionRuleId
-            : undefined;
-  const scheduledRule = rules.find((rule) => rule.enabled && rule.id === scheduledRuleId);
-  const scheduleCard =
-    scheduledRule && !['permissionNeeded', 'noAppsSelected'].includes(status.state)
-      ? blockingSchedule(scheduledRule)
-      : undefined;
   const conditionCards = progress.map(({ rule, row }) => {
     const model = progressContent(rule, row, permissions, session, now, auto);
+    const kind = unlockKind(rule);
+    const active = decision.state === 'locked' && decision.activeRuleIds.includes(rule.id);
+    const atGym = kind === 'gym' && !row.met ? presence : null;
+    const walk = 'state' in model ? model.state : 'idle';
+    const status: { label: string; tone: 'success' | 'primary' | 'secondary' } = row.met
+      ? { label: c.complete, tone: 'success' }
+      : atGym
+        ? atGym.confirmedAt
+          ? { label: c.presentGym, tone: 'success' }
+          : { label: c.confirmingGym, tone: 'primary' }
+        : walk === 'walking'
+          ? { label: c.walkDetected, tone: 'success' }
+          : walk === 'verifying'
+            ? { label: c.detectingWalk, tone: 'primary' }
+            : walk === 'grace'
+              ? { label: c.keepWalking, tone: 'primary' }
+              : { label: active ? c.inProgress : c.scheduled, tone: 'primary' };
+    const detected = status.tone === 'success';
+    const onAction = () => {
+      if (kind) router.push({ pathname: `/unlock/${kind}`, params: { ruleId: rule.id } });
+      else if ('action' in model && model.action) setSheet({ type: model.action, ruleId: rule.id });
+    };
+    const onWalk = async () => {
+      if (walk === 'idle') {
+        try {
+          await runtime.walking.start(rule);
+        } catch {
+          return;
+        }
+      }
+      setSheet({ type: 'walk', ruleId: rule.id });
+    };
     return (
-      <ProgressCard
-        key={rule.id}
-        appearance={scheduleCard ? 'lock' : 'card'}
-        title={model.title}
-        icon={model.icon}
-        value={model.value}
-        detail={model.detail}
-        action={'label' in model ? model.label : undefined}
-        onAction={() => {
-          const kind = unlockKind(rule);
-          if (kind) router.push({ pathname: `/unlock/${kind}`, params: { ruleId: rule.id } });
-          else if ('action' in model && model.action) setSheet({ type: model.action, ruleId: rule.id });
-        }}
-      />
+      <View key={rule.id} testID={`home-condition-${rule.id}`} style={{
+        backgroundColor: t.surface.card, borderRadius: t.radius.card,
+        padding: t.space.lg, gap: t.space.md,
+        boxShadow: '0px 6px 20px rgba(100, 55, 25, 0.08)',
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
+          <Icon name={model.icon} variant="utility" size={32} tint={t.brand.primary} />
+          <View style={{ flex: 1, gap: t.space.xs }}>
+            <Label variant="label">{model.title}</Label>
+            <Label variant="support" tone="secondary">{scheduleLabel(rule.schedule)}</Label>
+          </View>
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: t.space.md }}>
+          <Label variant="support" style={{ color: detected ? t.state.success : t.text.primary, fontWeight: detected ? '600' : '400' }}>
+            {status.label}
+          </Label>
+          <Label variant="support" tone="secondary">{`${Math.round(Math.max(0, Math.min(1, model.value)) * 100)}%`}</Label>
+        </View>
+        <Label variant="label">{model.detail}</Label>
+        <ProgressBar value={Math.max(0, Math.min(1, model.value))} label={model.title} tone={detected ? 'success' : 'brand'} />
+        {row.met ? null : rule.mode.kind === 'state' ? (
+          <>
+            <UnlockEntry kind="walking" label={'label' in model && model.label ? model.label : c.walkingEntry} onPress={() => void onWalk()} inverted />
+            {kind === 'treadmill' && walk === 'idle' ? <UnlockEntry kind="treadmill" label={c.treadmillEntry} onPress={onAction} /> : null}
+          </>
+        ) : kind === 'gym' ? (
+          <UnlockEntry
+            kind={kind}
+            label={atGym ? (atGym.confirmedAt ? c.presentGym : c.confirmingGym) : c.gymEntry}
+            onPress={onAction}
+            inverted
+          />
+        ) : 'label' in model && model.label ? (
+          <SecondaryButton label={model.label} onPress={onAction} />
+        ) : null}
+      </View>
     );
   });
-  const entryRules =
-    decision.state === 'locked'
-      ? (['gym', 'treadmill'] as const)
-          .map((kind) =>
-            progress.find(({ rule }) => decision.activeRuleIds.includes(rule.id) && unlockKind(rule) === kind),
-          )
-          .filter((entry) => entry !== undefined)
-      : [];
   return (
-    <ScreenShell
+    <ScreenShell dock
       orangeBackground
       safeBottom={false}
+      scrollUnderStatusBar={false}
       overlay={
         <HomeSheets
           sheet={sheet}
@@ -130,116 +159,24 @@ export function HomeScreen() {
         />
       }>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: t.space.md }}>
-        <View style={{ flex: 1 }}>
-          <Heading
-            title={c.greeting(name)}
-            support={new Intl.DateTimeFormat('en-US', {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-              timeZone: runtime.clock.timezone(),
-            }).format(new Date(now))}
-          />
+        <View style={{ flex: 1, gap: t.space.xs }}>
+          <Label variant="question" accessibilityRole="header">
+            {c.greeting(name)}
+          </Label>
         </View>
         <StreakBadge count={streak.current} />
       </View>
-      {scheduleCard ? (
-        <Reveal>
-          <BlockingScheduleCard
-            {...scheduleCard}
-            lock
-            action={
-              entryRules.length ? (
-                <View style={{ paddingHorizontal: t.space.xl, paddingBottom: t.space.sm, gap: t.space.xs }}>
-                  {entryRules.map(({ rule, row }) => (
-                    <UnlockEntry
-                      key={rule.id}
-                      kind={unlockKind(rule)!}
-                      label={unlockKind(rule) === 'gym' ? c.gymEntry : c.treadmillEntry}
-                      detail={
-                        entryRules.length === 1
-                          ? progressContent(rule, row, permissions, session, now, auto).detail
-                          : undefined
-                      }
-                      onPress={() =>
-                        router.push({ pathname: `/unlock/${unlockKind(rule)!}`, params: { ruleId: rule.id } })
-                      }
-                    />
-                  ))}
-                </View>
-              ) : undefined
-            }>
-            {conditionCards}
-          </BlockingScheduleCard>
-        </Reveal>
-      ) : (
-        <StatusCard
-          appearance="orange"
-          title={status.title}
-          subtitle={status.subtitle}
-          unlocked={status.unlocked}
-          hero={
-            <Animated.View style={glyph}>
-              <LivingIcon name={status.icon} size={t.space.hero} tint={t.text.onAccent} />
-            </Animated.View>
-          }
-        />
-      )}
-      {scheduleCard && progress.length ? (
-        <View style={{ gap: t.space.md }}>
-          <View
-            style={{
-              backgroundColor: t.surface.card,
-              borderRadius: t.radius.sheet,
-              marginHorizontal: -t.space.sm,
-              paddingHorizontal: t.space.xl,
-              paddingTop: t.space.lg,
-              paddingBottom: 0,
-              boxShadow: '0px 6px 20px rgba(100, 55, 25, 0.10)',
-            }}>
-            <Label variant="section" accessibilityRole="header" style={{ marginBottom: t.space.sm }}>
-              {c.today}
-            </Label>
-            {progress.map(({ rule }) => (
-              <View
-                key={rule.id}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: t.space.lg,
-                  minHeight: t.layout.button,
-                  paddingVertical: t.space.sm,
-                  borderBottomWidth: t.stroke.hairline,
-                  borderBottomColor: t.border.default,
-                }}>
-                <Icon name={rule.activity} variant="utility" size={t.space.xxl} tint={t.brand.primary} />
-                <Label variant="label" style={{ flex: 1 }}>
-                  {ruleName(rule)}
-                </Label>
-              </View>
-            ))}
-            <SecondaryButton variant="tertiary" label={c.editAdd} onPress={() => router.navigate('/conditions')} />
-          </View>
+      <Animated.View style={glyph}>
+        <HomeLockStatus unlocked={status.unlocked} subtitle={status.unlocked ? `${status.title}. ${status.subtitle}` : 'Complete a condition to unlock'} />
+      </Animated.View>
+      {actionLabel ? <SecondaryButton label={actionLabel} onPress={action} /> : null}
+      <View style={{ gap: t.space.md }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Label variant="section" accessibilityRole="header">{c.today}</Label>
+          <SecondaryButton variant="tertiary" label={c.editAdd} onPress={() => router.navigate('/conditions')} />
         </View>
-      ) : null}
-      {scheduleCard && status.unlocked ? (
-        <Label tone="secondary">
-          {status.title}. {status.subtitle}
-        </Label>
-      ) : null}
-      {actionLabel ? (
-        <Reveal key={status.action}>
-          <SecondaryButton label={actionLabel} onPress={action} />
-        </Reveal>
-      ) : null}
-      {!scheduleCard && progress.length ? (
-        <Reveal>
-          <Label variant="section" accessibilityRole="header">
-            {c.today}
-          </Label>
-        </Reveal>
-      ) : null}
-      {!scheduleCard ? conditionCards : null}
+        {conditionCards}
+      </View>
       <Reveal>
         <View
           style={{
@@ -251,8 +188,6 @@ export function HomeScreen() {
         </View>
       </Reveal>
       <View style={{ gap: t.space.lg }}>
-        <SecondaryButton label="Test gym unlock" onPress={() => router.push('/unlock/gym?preview=1')} />
-        <SecondaryButton label="Test treadmill unlock" onPress={() => router.push('/unlock/treadmill?preview=1')} />
         <View
           style={{
             backgroundColor: t.surface.card,
@@ -274,7 +209,7 @@ export function HomeScreen() {
           }}>
           <SettingsRow title={c.history} icon="clock" iconTint={t.brand.primary} />
         </View>
-        {!scheduleCard ? <SecondaryButton label={c.add} onPress={add} /> : null}
+        {!progress.length ? <SecondaryButton label={c.add} onPress={add} /> : null}
       </View>
     </ScreenShell>
   );

@@ -17,7 +17,7 @@ jest.mock('../../sheets/GymPicker', () => ({
           onSaved?.();
           onDismiss();
         }}
-        onClose={onDismiss}
+        onBack={onDismiss}
       />
     ) : null;
   },
@@ -60,7 +60,9 @@ test('editing preserves identity and schedule; dirty cancel requires discard', a
   await mount('edit-me');
   const before = rulesStore.getState().data.rules[0];
   await userEvent.press(screen.getByRole('button', { name: 'Edit goal' }));
-  await fireEvent.changeText(screen.getByLabelText('Goal'), '35');
+  await fireEvent(screen.getByLabelText('Goal'), 'accessibilityAction', {
+    nativeEvent: { actionName: 'increment' },
+  });
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   await userEvent.press(screen.getByRole('button', { name: 'Back' }));
   expect(screen.getByText('Discard changes?')).toBeTruthy();
@@ -69,12 +71,14 @@ test('editing preserves identity and schedule; dirty cancel requires discard', a
   const after = rulesStore.getState().data.rules[0];
   expect(after.id).toBe(before.id);
   expect(after.schedule).toEqual(before.schedule);
-  expect(after.mode).toMatchObject({ goal: 35 });
+  expect(after.mode).toMatchObject({ goal: 25 });
 });
-test('canceling an invalid goal edit restores the summary', async () => {
+test('canceling a goal edit restores the summary', async () => {
   await mount('edit-me');
   await userEvent.press(screen.getByRole('button', { name: 'Edit goal' }));
-  await fireEvent.changeText(screen.getByLabelText('Goal'), '');
+  await fireEvent(screen.getByLabelText('Goal'), 'accessibilityAction', {
+    nativeEvent: { actionName: 'increment' },
+  });
   await userEvent.press(screen.getByRole('button', { name: 'Back' }));
   expect(screen.getByText('Run 20 minutes')).toBeTruthy();
 });

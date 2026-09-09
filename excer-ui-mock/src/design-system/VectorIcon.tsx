@@ -4,6 +4,7 @@ import { LocalSvg } from 'react-native-svg/css';
 
 export interface VectorIconProps {
   accessibilityLabel?: string;
+  color?: string;
   source: ImageSourcePropType;
   style?: StyleProp<ViewStyle>;
   testID?: string;
@@ -11,6 +12,7 @@ export interface VectorIconProps {
 
 export const VectorIcon = memo(function VectorIcon({
   accessibilityLabel,
+  color,
   source,
   style,
   testID,
@@ -22,6 +24,7 @@ export const VectorIcon = memo(function VectorIcon({
       accessibilityLabel={accessibilityLabel}
       accessibilityRole={accessibilityLabel ? 'image' : undefined}
       asset={source}
+      color={color}
       height="100%"
       pointerEvents="none"
       style={style}

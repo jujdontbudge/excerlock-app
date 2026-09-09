@@ -24,6 +24,13 @@ export function DevControls() {
         <SettingsRow title="Still / needs framing" onPress={() => runtime.dev.setGait('still')} />
         <SettingsRow title="No gait" onPress={() => runtime.dev.setGait('none')} />
       </SettingsGroup>
+      <SettingsGroup title={sessionCopy.motion}>
+        <SegmentedControl
+          options={sessionCopy.motions}
+          value={view.motion}
+          onChange={(v) => runtime.dev.setMotion(v as 'walking' | 'still')}
+        />
+      </SettingsGroup>
       <SettingsGroup title={sessionCopy.presence}>
         <SegmentedControl
           options={sessionCopy.presences}

@@ -1,5 +1,5 @@
 import { Pressable, View } from 'react-native';
-import { ScreenShell, PrimaryButton, Label } from '../../design-system';
+import { ScreenShell, PrimaryButton, Label, OnboardingHeader } from '../../design-system';
 import { Icon } from '../../icons/Icon';
 import { tokens as t } from '../../design-system/tokens';
 import { gymPickerCopy as c } from '../../content/gymPicker';
@@ -9,7 +9,15 @@ import { FindStep } from './FindStep';
 import { PlaceStep } from './PlaceStep';
 import Animated from 'react-native-reanimated';
 import { fadeIn } from '../../motion/presets';
-export function GymPickerScreen({ placeId, onSaved }: { placeId?: string; onSaved: () => void }) {
+export function GymPickerScreen({
+  placeId,
+  onSaved,
+  onBack,
+}: {
+  placeId?: string;
+  onSaved: () => void;
+  onBack?: () => void;
+}) {
   const { gym } = useRuntime();
   const p = usePicker(
     gym,
@@ -39,9 +47,11 @@ export function GymPickerScreen({ placeId, onSaved }: { placeId?: string; onSave
                 gap: t.space.sm,
               }}>
               <Icon name="back" variant="utility" size={t.layout.glyph} tint={t.brand.primary} />
-              <Label style={{ color: t.brand.primary }}>{c.searchTitle}</Label>
+              <Label style={{ color: t.text.primary }}>{c.searchTitle}</Label>
             </Pressable>
           </View>
+        ) : onBack ? (
+          <OnboardingHeader progress={0} showProgress={false} onBack={onBack} />
         ) : undefined
       }
       footer={

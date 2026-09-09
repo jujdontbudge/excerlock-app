@@ -26,6 +26,7 @@ test('all required scenarios are valid and the analytics fixture has six weeks o
     'analytics-no-measurement',
     'dynamic-type-xl',
     'reduce-motion',
+    'walk-state-ready',
     'unlock-treadmill-scan',
     'unlock-treadmill-framing',
     'unlock-treadmill-denied',

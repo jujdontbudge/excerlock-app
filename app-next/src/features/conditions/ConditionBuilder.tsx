@@ -27,7 +27,7 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
   const exit = m.reduced
     ? opacityOut(m.duration.slow)
     : (f.direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.slow);
-  if (f.step === 'GPlace') return <BuilderGymStep onSaved={f.next} />;
+  if (f.step === 'GPlace') return <BuilderGymStep onSaved={f.next} onBack={f.back} />;
   return (
     <SolidChoices>
     <ScreenShell
@@ -57,7 +57,7 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
           />
         </>
       }>
-      <Animated.View key={branch ? 'branch' : f.step} entering={enter} exiting={exit} style={{ gap: t.space.xl, marginTop: -t.space.md }}>
+      <Animated.View key={branch ? 'branch' : f.step} entering={enter} exiting={exit} style={{ gap: t.space.xl }}>
         {f.step === 'O20' ? (
           <O20
             answers={f.chosen ? { activity: f.draft.activity } : {}}

@@ -28,7 +28,7 @@ export function AnalyticsScreen() {
     (a) => a === 'walking' || a === 'gym' || model.activities[a] > 0,
   );
   return (
-    <ScreenShell
+    <ScreenShell dock
       safeBottom={false}
       contentStyle={{ paddingHorizontal: 20, paddingTop: 8, gap: 8 }}
       overlay={
@@ -64,7 +64,7 @@ export function AnalyticsScreen() {
           style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="back" variant="utility" size={20} tint={t.brand.primary} />
         </PressableScale>
-        <Label variant="label" style={{ color: t.brand.primary, textAlign: 'center', flex: 1 }}>
+        <Label variant="label" style={{ color: t.text.primary, textAlign: 'center', flex: 1 }}>
           {offset === 0 ? c.thisPeriod(period) : c.range(model.start, model.end)}
         </Label>
         <PressableScale

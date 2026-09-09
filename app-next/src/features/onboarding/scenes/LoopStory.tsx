@@ -52,7 +52,7 @@ function FinalLoopHeading() {
           variant="question"
           style={{ textAlign: 'center' }}>
           {finalLoopTitle.before}
-          <Label variant="question" style={{ color: t.brand.primary }}>
+          <Label variant="question" style={{ color: t.text.primary }}>
             {finalLoopTitle.emphasis}
           </Label>
           {finalLoopTitle.after}

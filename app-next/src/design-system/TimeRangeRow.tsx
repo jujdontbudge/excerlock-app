@@ -5,8 +5,9 @@ import { tokens as t } from './tokens';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { controls } from '../content/controls';
-import { Reveal } from '../motion/Reveal';
 import { feedback } from '../motion/haptics';
+const iosGreen = '#34C759';
+const iosGrouped = '#F2F2F7';
 export function TimeRangeRow({
   start,
   end,
@@ -22,48 +23,91 @@ export function TimeRangeRow({
   onChoose: (which: 'start' | 'end') => void;
   compact?: boolean;
 }) {
+  void compact;
   return (
-    <Animated.View layout={layoutTransition} style={{ gap: compact ? t.space.sm : t.space.lg }}>
+    <Animated.View layout={layoutTransition} style={{ gap: t.space.sm }}>
+      <Label variant="support" tone="secondary">
+        {controls.timeOfUse}
+      </Label>
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          backgroundColor: t.surface.card,
+          borderRadius: t.radius.field,
+          borderWidth: t.stroke.hairline,
+          borderColor: t.border.default,
+          overflow: 'hidden',
         }}>
-        <Label>{controls.allDay}</Label>
-        <Switch
-          accessibilityRole="switch"
-          accessibilityLabel={controls.allDay}
-          value={allDay}
-          onValueChange={(v) => {
-            feedback();
-            onAllDay(v);
-          }}
-          trackColor={{ true: t.brand.primary, false: t.border.default }}
-        />
-      </View>
-      {!allDay ? (
-        <Reveal style={{ flexDirection: 'row', gap: t.space.md }}>
-          {(['start', 'end'] as const).map((key) => (
-            <View key={key} style={{ flex: 1 }}>
-              <PressableScale
-                label={`${controls[key]}: ${key === 'start' ? start : end}`}
-                onPress={() => onChoose(key)}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: t.space.lg,
+            paddingVertical: t.space.md,
+          }}>
+          <Label>{controls.allDay}</Label>
+          <Switch
+            accessibilityRole="switch"
+            accessibilityLabel={controls.allDay}
+            value={allDay}
+            onValueChange={(v) => {
+              feedback();
+              onAllDay(v);
+            }}
+            trackColor={{ true: iosGreen, false: t.border.default }}
+          />
+        </View>
+        {!allDay ? (
+          <>
+            <View style={{ height: t.stroke.hairline, backgroundColor: t.border.default, marginLeft: t.space.lg }} />
+            <PressableScale
+              label={`${controls.start}: ${start}`}
+              onPress={() => onChoose('start')}>
+              <View
                 style={{
-                  padding: compact ? t.space.sm : t.space.lg,
-                  gap: t.space.xs,
-                  backgroundColor: t.surface.subtle,
-                  borderRadius: t.radius.field,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingHorizontal: t.space.lg,
+                  paddingVertical: t.space.md,
                 }}>
-                <Label variant="support" tone="secondary">
-                  {controls[key]}
-                </Label>
-                <Label variant="label">{key === 'start' ? start : end}</Label>
-              </PressableScale>
-            </View>
-          ))}
-        </Reveal>
-      ) : null}
+                <Label>{controls.start}</Label>
+                <View
+                  style={{
+                    backgroundColor: iosGrouped,
+                    borderRadius: t.radius.pill,
+                    paddingHorizontal: t.space.lg,
+                    paddingVertical: t.space.sm,
+                  }}>
+                  <Label variant="label">{start}</Label>
+                </View>
+              </View>
+            </PressableScale>
+            <View style={{ height: t.stroke.hairline, backgroundColor: t.border.default, marginLeft: t.space.lg }} />
+            <PressableScale label={`${controls.end}: ${end}`} onPress={() => onChoose('end')}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingHorizontal: t.space.lg,
+                  paddingVertical: t.space.md,
+                }}>
+                <Label>{controls.end}</Label>
+                <View
+                  style={{
+                    backgroundColor: iosGrouped,
+                    borderRadius: t.radius.pill,
+                    paddingHorizontal: t.space.lg,
+                    paddingVertical: t.space.sm,
+                  }}>
+                  <Label variant="label">{end}</Label>
+                </View>
+              </View>
+            </PressableScale>
+          </>
+        ) : null}
+      </View>
     </Animated.View>
   );
 }

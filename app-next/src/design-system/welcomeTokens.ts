@@ -2,7 +2,7 @@
 export const welcomeTokens = {
   canvasWidth: 354,
   heroHeight: 244,
-  headingTop: 72,
+  headingTop: 0,
   headingGap: 64,
   captionGap: 32,
   dotsGap: 32,

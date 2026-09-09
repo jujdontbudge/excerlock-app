@@ -1,7 +1,7 @@
 import { Heading, DayPicker, TimeRangeRow, Label } from '../../design-system';
 import { View } from 'react-native';
 import { RuleDraft } from './draft';
-import { RulePreviewLock } from './RulePreviewLock';
+
 import { Reveal } from '../../motion/Reveal';
 import { tokens as t } from '../../design-system/tokens';
 import { planCopy as c } from '../../content/plan';
@@ -12,7 +12,7 @@ export function ScheduleScreen({
   draft: d,
   onAction,
   onChoose,
-  ruleDraft,
+
 }: {
   draft: ScheduleDraft;
   ruleDraft?: RuleDraft;
@@ -21,12 +21,10 @@ export function ScheduleScreen({
 }) {
   const issues = scheduleIssues(d);
   return (
-    <View style={{ gap: t.space.sm }}>
-      <View style={{ gap: t.space.sm }}>
+    <View style={{ gap: t.space.md }}>
+      <View style={{ gap: t.space.md }}>
         <Heading title={c.S1} />
-        <Label variant="support" tone="secondary">
-          {c.scheduleBody}
-        </Label>
+
 
         <Reveal index={1}>
           <DayPicker days={d.days} onChange={(days) => onAction({ type: 'days', value: days as Weekday[] })} />
@@ -57,7 +55,7 @@ export function ScheduleScreen({
           </Label>
         </Reveal>
       </View>
-      {ruleDraft ? <RulePreviewLock draft={ruleDraft} schedule={toSchedule(d)} /> : null}
+
     </View>
   );
 }

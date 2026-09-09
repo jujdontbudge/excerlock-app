@@ -36,7 +36,9 @@ test('entitled boot opens Home, tabs navigate and selected apps open the shared 
   expect(r.getPathname()).toBe('/home');
   expect(screen.getByRole('header', { name: 'Conditions' })).toBeTruthy();
   expect(screen.getByText('Walk 5,000 steps')).toBeTruthy();
-  expect(screen.getByRole('header', { name: /Block from 9.AM to 9.PM until you walk 5,000 steps/ })).toBeTruthy();
+  expect(screen.getByRole('header', { name: 'Locked' })).toBeTruthy();
+  expect(screen.getByText('Complete a condition to unlock')).toBeTruthy();
+  expect(screen.getByText(/Mon.*9.AM.*9.PM/)).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: 'Edit / Add' }));
   expect(r.getPathname()).toBe('/conditions');
   await userEvent.press(screen.getByRole('tab', { name: 'Home' }));

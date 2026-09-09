@@ -30,6 +30,7 @@ export const colors = {
     danger: '#EF4444',
   },
   icon: {
+    dock: '#D1D1D6',
     primary: '#FFFFFF',
     inactive: '#FFFFFF',
     disabled: 'rgba(255,255,255,0.34)',

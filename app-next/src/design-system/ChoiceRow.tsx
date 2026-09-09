@@ -6,7 +6,7 @@ import { Label } from './Label';
 import { Icon, IconName } from '../icons/Icon';
 import { PressableScale } from './PressableScale';
 import { Reveal } from '../motion/Reveal';
-import { controls } from '../content/controls';
+
 import { useSolidChoices } from './ChoiceAppearance';
 import { SelectionCheck } from './SelectionCheck';
 export function ChoiceRow({
@@ -16,7 +16,7 @@ export function ChoiceRow({
   onPress,
   icon,
   leading,
-  recommended = false,
+
   multiple = false,
   compact = false,
 }: {
@@ -31,6 +31,7 @@ export function ChoiceRow({
   compact?: boolean;
 }) {
   const solid = useSolidChoices() && selected;
+  void compact; // sizing is universal — compact retained for API compat only
   return (
     <PressableScale
       label={title}
@@ -39,12 +40,12 @@ export function ChoiceRow({
       onPress={onPress}>
       <Animated.View
         style={{
-          minHeight: compact ? t.layout.touch : t.layout.row,
+          minHeight: t.layout.row,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: t.space.md,
-          paddingHorizontal: compact ? t.space.md : t.space.lg,
-          paddingVertical: compact ? t.space.sm : t.space.lg,
+          gap: t.space.lg,
+          paddingHorizontal: t.space.lg,
+          paddingVertical: t.space.lg,
           borderRadius: t.radius.choice,
           borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
           borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.default,
@@ -57,14 +58,10 @@ export function ChoiceRow({
           <Label variant="label" style={{ color: solid ? t.text.onAccent : t.text.primary }}>
             {title}
           </Label>
-          {recommended ? (
-            <Label variant="badge" style={{ color: solid ? t.text.onAccent : t.brand.primary }}>
-              {controls.recommended}
-            </Label>
-          ) : null}
+
           {support ? (
             <Label
-              variant={compact ? 'badge' : 'support'}
+              variant="support"
               tone="secondary"
               style={solid ? { color: t.text.onAccent } : undefined}>
               {support}
@@ -76,17 +73,17 @@ export function ChoiceRow({
         ) : (
           <View
             style={{
-              width: t.layout.glyph,
-              height: t.layout.glyph,
+              width: t.layout.choiceCheck,
+              height: t.layout.choiceCheck,
               borderRadius: t.radius.pill,
-              borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
+              borderWidth: t.stroke.selected,
               borderColor: selected ? t.brand.primary : t.border.default,
               alignItems: 'center',
               justifyContent: 'center',
             }}>
             {selected ? (
               <Reveal>
-                <Icon name="check" size={t.space.lg} variant="utility" tint={t.brand.primary} />
+                <Icon name="check" size={20} variant="utility" tint={t.brand.primary} />
               </Reveal>
             ) : null}
           </View>

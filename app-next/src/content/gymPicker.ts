@@ -13,6 +13,7 @@ export const gymPickerCopy = {
   drop: 'Drop a pin instead',
   hint: 'Move the map to adjust the pin',
   name: 'Gym name',
+  address: 'Address',
   radius: 'Arrival radius',
   helper: 'Bigger circle: detects you sooner, may include the parking lot.',
   save: 'Save gym',

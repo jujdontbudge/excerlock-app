@@ -16,5 +16,5 @@ test.each([false, true])('choice exposes selected=%s and responds to selection',
   expect(row.props.accessibilityState.checked).toBe(selected);
   await userEvent.press(row);
   expect(choose).toHaveBeenCalledTimes(1);
-  expect(screen.getByText('Recommended')).toBeTruthy();
+  expect(screen.queryByText('Recommended')).toBeNull();
 });

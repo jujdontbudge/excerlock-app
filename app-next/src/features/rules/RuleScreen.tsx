@@ -8,7 +8,7 @@ import { tokens as t } from '../../design-system/tokens';
 import { walkingCopy } from '../../content/rules';
 import { workoutCopy } from '../../content/workoutRules';
 import { View } from 'react-native';
-import { RulePreviewLock } from './RulePreviewLock';
+
 export type BranchStep = 'W1' | 'W2' | 'W3' | 'G1' | 'G2' | 'R1' | 'R2' | 'B1' | 'B2' | 'D';
 export function RuleScreen({
   step,
@@ -29,15 +29,15 @@ export function RuleScreen({
   );
   return (
     <>
-      <View style={{ gap: t.space.sm }}>
+      <View style={{ gap: t.space.md }}>
         <Reveal key={copy.title}>
-          <Heading title={copy.title} support={copy.body} />
+          <Heading title={copy.title} />
         </Reveal>
-        <Reveal key={step} style={{ gap: t.space.sm }}>
+        <Reveal key={step} style={{ gap: t.space.md }}>
           {body}
         </Reveal>
       </View>
-      <RulePreviewLock draft={props.draft} />
+
     </>
   );
 }

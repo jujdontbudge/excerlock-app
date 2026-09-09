@@ -13,8 +13,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
-import { Icon } from '../icons/Icon';
-import { PressableScale } from './PressableScale';
+import { CloseButton } from './CloseButton';
 import { controls } from '../content/controls';
 import { useMotion } from '../motion/useMotion';
 import { feedback } from '../motion/haptics';
@@ -122,12 +121,7 @@ function SheetPanel({ title, onDismiss, children, footer, expanded = false }: Pr
               <Label accessibilityRole="header" variant="section" style={{ flex: 1 }}>
                 {title}
               </Label>
-              <PressableScale
-                label={controls.close}
-                onPress={onDismiss}
-                style={{ minWidth: t.layout.touch, alignItems: 'center' }}>
-                <Icon name="close" variant="utility" size={t.layout.glyph} />
-              </PressableScale>
+              <CloseButton onPress={onDismiss} />
             </View>
           </Animated.View>
         </GestureDetector>

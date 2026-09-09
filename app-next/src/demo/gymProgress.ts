@@ -1,28 +1,27 @@
 import { FakeContext } from './FakeContext';
 import { rulesStore } from '../state/rulesStore';
 import { ruleDaysStore } from '../state/ruleDaysStore';
-import { settingsStore } from '../state/settingsStore';
-import { permissionsStore } from '../state/permissionsStore';
 import { dayKey, currentInstances } from '../domain/schedule';
 import { applyProgress } from '../domain/progress';
-/** Local presence clock: time is credited only after a manual or authorized automatic arrival. */
+/**
+ * Local presence clock. Minutes are credited only while a confirmed gym presence session exists in
+ * `ruleDaysStore.gymPresence` and the sampled presence is still inside; either signal dropping pauses the clock.
+ */
 export function gymProgress(ctx: FakeContext) {
   let last: number | null = null;
+  const confirmed = () => !!ruleDaysStore.getState().data.gymPresence?.confirmedAt;
   const arrive = () => {
     last = Date.parse(ctx.clock.now());
   };
-  const stopPresence = ctx.subscribe(() => {
+  const reconcile = () => {
     const s = ctx.snapshot();
-    if (s.loading || s.presence === 'outside') last = null;
-    else if (
-      last === null &&
-      settingsStore.getState().data.gymAutoDetect &&
-      permissionsStore.getState().data.location === 'always'
-    )
-      arrive();
-  });
+    if (s.loading || s.presence === 'outside' || !confirmed()) last = null;
+    else if (last === null) arrive();
+  };
+  const stopPresence = ctx.subscribe(reconcile);
+  const stopSession = ruleDaysStore.subscribe(reconcile);
   const stopClock = ctx.clock.observe(() => {
-    if (last === null || ctx.snapshot().loading || ctx.snapshot().presence !== 'inside') return;
+    if (last === null || ctx.snapshot().loading || ctx.snapshot().presence !== 'inside' || !confirmed()) return;
     const now = ctx.clock.now(),
       instant = Date.parse(now),
       minutes = Math.max(0, instant - last) / 60000;
@@ -57,6 +56,7 @@ export function gymProgress(ctx: FakeContext) {
     arrive,
     dispose: () => {
       stopPresence();
+      stopSession();
       stopClock();
     },
   };

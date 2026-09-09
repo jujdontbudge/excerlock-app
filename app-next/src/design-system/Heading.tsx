@@ -2,6 +2,7 @@ import { View } from 'react-native';
 import { Label } from './Label';
 import { tokens as t } from './tokens';
 import { Reveal } from '../motion/Reveal';
+import { useSolidChoices } from './ChoiceAppearance';
 export function Heading({
   title,
   support,
@@ -10,12 +11,13 @@ export function Heading({
 }: {
   title: string;
   support?: string;
-  variant?: 'hero' | 'question';
+  variant?: 'hero' | 'question' | 'section';
   centered?: boolean;
 }) {
+  const setupScreen = useSolidChoices();
   return (
     <Reveal>
-      <View style={{ gap: t.space.md }}>
+      <View style={{ gap: t.space.xs }}>
         <Label
           accessibilityLabel={title.replace(/\s+/g, ' ')}
           accessibilityRole="header"
@@ -23,7 +25,7 @@ export function Heading({
           style={{ textAlign: centered ? 'center' : 'left' }}>
           {title}
         </Label>
-        {support ? (
+        {support && !setupScreen ? (
           <Label tone="secondary" style={{ textAlign: centered ? 'center' : 'left' }}>
             {support}
           </Label>

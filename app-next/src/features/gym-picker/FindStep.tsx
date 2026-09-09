@@ -14,7 +14,7 @@ function Match({ text, query }: { text: string; query: string }) {
       ) : (
         <>
           {text.slice(0, index)}
-          <Label variant="label" style={{ color: t.brand.primary }}>
+          <Label variant="label" style={{ color: t.text.primary }}>
             {text.slice(index, index + query.trim().length)}
           </Label>
           {text.slice(index + query.trim().length)}

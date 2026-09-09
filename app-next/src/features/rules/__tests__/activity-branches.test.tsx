@@ -9,7 +9,7 @@ import { onboardingStore } from '../../../state/onboardingStore';
 import { commitPlan, draftFromAnswers } from '../plan';
 import { validateRule } from '../../../domain/validateRule';
 const paths = [
-  ['gym', 'G1', 'Spend time at the gym', 'How long at the gym?'],
+  ['gym', 'G1', 'Spend time at the gym', 'How long at the gym unlocks your phone?'],
   ['gym', 'G1', 'Arrive at the gym', 'When should blocking be active?'],
   ['running', 'R1', 'Run for a set time', 'Set your running goal'],
   ['running', 'R1', 'Run a set distance', 'Choose your distance'],
@@ -35,6 +35,10 @@ test.each(paths)(
       { initialUrl: '/onboarding/' + step },
     );
     await r;
+    expect(screen.queryByText('Recommended')).toBeNull();
+    expect(screen.queryByText("You'll pick your gym after setup.")).toBeNull();
+    expect(screen.queryByText('Unlocks your apps for the rest of the day')).toBeNull();
+    expect(screen.queryByRole('header', { name: /Block from/ })).toBeNull();
     await userEvent.press(screen.getByRole('radio', { name: choice }));
     await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(screen.getByRole('header', { name: title })).toBeTruthy();

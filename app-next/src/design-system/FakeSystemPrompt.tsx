@@ -66,7 +66,7 @@ export function FakeSystemPrompt({
                 borderTopWidth: granted ? t.stroke.hairline : 0,
                 borderColor: t.border.default,
               }}>
-              <Label variant="label" style={{ color: t.brand.primary }}>
+              <Label variant="label" style={{ color: t.text.primary }}>
                 {granted ? controls.allow : controls.deny}
               </Label>
             </PressableScale>

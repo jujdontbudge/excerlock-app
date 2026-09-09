@@ -1,6 +1,6 @@
 import { PropsWithChildren, ReactNode, useEffect, useLayoutEffect, useRef } from 'react';
 import { Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { tokens as t } from './tokens';
 export function ScreenShell({
@@ -9,6 +9,8 @@ export function ScreenShell({
   header,
   overlay,
   safeBottom = true,
+  dock = false,
+  scrollUnderStatusBar = true,
   tinted = true,
   orangeBackground = true,
   scrollToEndOnKeyboard = false,
@@ -19,6 +21,8 @@ export function ScreenShell({
   header?: ReactNode;
   overlay?: ReactNode;
   safeBottom?: boolean;
+  dock?: boolean;
+  scrollUnderStatusBar?: boolean;
   tinted?: boolean;
   orangeBackground?: boolean;
   scrollToEndOnKeyboard?: boolean;
@@ -26,6 +30,7 @@ export function ScreenShell({
   contentStyle?: StyleProp<ViewStyle>;
 }>) {
   const scroll = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
   useLayoutEffect(() => {
     if (scrollResetKey === undefined) return;
     scroll.current?.scrollTo({ y: 0, animated: false });
@@ -49,14 +54,27 @@ export function ScreenShell({
           style={orangeBackground ? [s.wash, { height: '100%' }] : s.wash}
         />
       ) : null}
-      <SafeAreaView style={s.rootClear} edges={safeBottom ? ['top', 'bottom'] : ['top']}>
+      <SafeAreaView
+        style={s.rootClear}
+        edges={scrollUnderStatusBar ? (safeBottom ? ['bottom'] : []) : safeBottom ? ['top', 'bottom'] : ['top']}>
         <KeyboardAvoidingView behavior="padding" style={s.rootClear}>
-          {header}
+          {!scrollUnderStatusBar ? header : null}
           <ScrollView
+            testID="screen-scroll"
             ref={scroll}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={[s.content, contentStyle]}
+            contentContainerStyle={[
+              s.content,
+              contentStyle,
+              dock && { paddingBottom: t.layout.tabHeight + insets.bottom + t.space.xl },
+              scrollUnderStatusBar && { paddingTop: insets.top + t.space.xs },
+            ]}
             showsVerticalScrollIndicator={false}>
+            {scrollUnderStatusBar && header ? (
+              <View style={{ marginHorizontal: -t.layout.page, marginBottom: t.space.xs - t.space.xl }}>
+                {header}
+              </View>
+            ) : null}
             {children}
           </ScrollView>
           {footer ? <View style={s.footer}>{footer}</View> : null}

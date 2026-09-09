@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { PressableScale } from './PressableScale';
+import { CloseButton } from './CloseButton';
 import { tokens as t } from './tokens';
 import { profileTokens as p } from './profileTokens';
 import { paths } from '../icons/paths';
@@ -26,7 +27,7 @@ export function OnboardingHeader({
     value.set(m.reduced ? amount : withTiming(amount, { duration: m.duration.standard }));
   }, [amount, value, m.reduced, m.duration.standard]);
   const fill = useAnimatedStyle(() => ({ width: `${value.get() * 100}%` }));
-  const arrow = (name: 'back' | 'close') => (
+  const arrow = (name: 'back') => (
     <Svg accessible={false} width={p.header.arrow} height={p.header.arrow} viewBox="0 0 24 24">
       <Path
         d={paths[name]}
@@ -84,11 +85,7 @@ export function OnboardingHeader({
           ]}
         />
       </View> : null}
-      {onClose ? (
-        <PressableScale label={c.close} onPress={onClose} style={{ width: t.layout.touch, alignItems: 'center' }}>
-          {arrow('close')}
-        </PressableScale>
-      ) : null}
+      {onClose ? <CloseButton onPress={onClose} /> : null}
     </View>
   );
 }

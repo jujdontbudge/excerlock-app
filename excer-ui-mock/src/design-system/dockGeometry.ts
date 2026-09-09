@@ -2,8 +2,8 @@ export const DOCK_BAR_HEIGHT = 49;
 export const DOCK_ICON_SIZE = 26;
 export const DOCK_ACTIVE_SCALE = 1.04;
 export const DOCK_SAFE_AREA_MIN = 12;
-/** Quitter inactive chrome is ~50% white; selection is opacity, never a fill. */
-export const DOCK_INACTIVE_OPACITY = 0.5;
+/** Quitter inactive chrome is muted grey; selection is opacity, never a fill. */
+export const DOCK_INACTIVE_OPACITY = 0.8;
 
 /**
  * Content-only dissolve. The live background is never inside this mask.

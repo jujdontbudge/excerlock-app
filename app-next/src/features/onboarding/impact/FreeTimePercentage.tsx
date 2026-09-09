@@ -26,7 +26,7 @@ export function FreeTimePercentage({ hours }: { hours: number }) {
         animationDuration: timing.fade,
         animationFillMode: 'backwards',
       }}>
-      <Label variant="metric" style={{ color: t.brand.primary, textAlign: 'center' }}>
+      <Label variant="metric" style={{ color: t.text.primary, textAlign: 'center' }}>
         {percent}%
       </Label>
       <Label variant="question" style={{ textAlign: 'center' }}>

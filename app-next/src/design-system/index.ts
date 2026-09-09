@@ -32,6 +32,7 @@ export { RuleCard } from './RuleCard';
 export { EmptyState } from './EmptyState';
 export { BottomSheet } from './BottomSheet';
 export { OnboardingHeader } from './OnboardingHeader';
+export { CloseButton } from './CloseButton';
 export { TabBar } from './TabBar';
 export { FakeSystemPrompt } from './FakeSystemPrompt';
 export { Label } from './Label';
