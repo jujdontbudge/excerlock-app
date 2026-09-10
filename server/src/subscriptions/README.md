@@ -14,9 +14,10 @@ Every event carries Adapty's `event_properties.environment` ("Sandbox" or
 "Production"), stored lowercase on both the ledger and the mirror. The field
 is required: an event that cannot be attributed to a store fails validation
 rather than defaulting into the revenue-bearing side. Sandbox events flow
-through the same pipeline — a TestFlight tester's access mirror works exactly
-like a customer's — but anything that counts revenue or customers must filter
-`environment = 'production'`. Both Adapty endpoints (production and sandbox)
+through the same pipeline, but state is independently keyed by `(user_id,
+environment)` and production authorization reads only `environment =
+'production'`. A newer sandbox event cannot overwrite or grant production.
+Equal business timestamps resolve deterministically by delivery key. Both Adapty endpoints (production and sandbox)
 point at the same URL with the same Authorization value; the payload's own
 stamp is the separator, so a misconfigured dashboard cannot mislabel events.
 
@@ -35,3 +36,19 @@ or account deletion.
 The receiver fails closed with `503` until `ADAPTY_WEBHOOK_SECRET` is set to
 the exact Authorization value configured in Adapty. This secret is independent
 from `ADAPTY_SECRET_KEY`, which authorizes server-side profile erasure.
+
+Authenticated `POST /v1/subscription/resync` derives the customer id only from
+the verified token and accepts no identity, environment, or access body. The
+documented profile API does not bind premium aggregates to a store environment,
+so resync is read-only and reports unavailable; aggregate access cannot grant.
+Null/missing webhook customer ids are acknowledged without creating a user.
+
+Only the documented `access_level_updated` event for
+`access_level_id=premium` writes authorization state. Transaction lifecycle
+events expose profile-wide access and are acknowledged without assigning that
+aggregate to a production or sandbox partition.
+
+Shared-backend configuration accepts `production,sandbox` via
+`ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS`; production authorization is
+fixed to `SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT=production` and parsing
+rejects sandbox authorization for this deployment.

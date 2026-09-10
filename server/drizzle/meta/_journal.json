@@ -57,6 +57,13 @@
       "when": 1789016179541,
       "tag": "0007_deletion-retry-index",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789018057815,
+      "tag": "0008_deep_firebrand",
+      "breakpoints": true
     }
   ]
 }

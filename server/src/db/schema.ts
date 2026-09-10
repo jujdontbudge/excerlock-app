@@ -2,6 +2,7 @@ import {
   boolean,
   index,
   integer,
+  primaryKey,
   pgTable,
   text,
   timestamp,
@@ -207,7 +208,7 @@ export type AdaptyEnvironment = "production" | "sandbox";
  * is sufficient for retry idempotency.
  */
 export const adaptyWebhookEvents = pgTable("adapty_webhook_events", {
-  deliveryKey: text("delivery_key").primaryKey(),
+  deliveryKey: text("delivery_key").notNull(),
   userId: text("user_id").references(() => users.id, {
     onDelete: "set null",
   }),
@@ -221,12 +222,12 @@ export const adaptyWebhookEvents = pgTable("adapty_webhook_events", {
     .$type<AdaptyEnvironment>()
     .notNull()
     .default("production"),
-});
+}, (table) => [primaryKey({ columns: [table.environment, table.deliveryKey] })]);
 
 /** Current subscription access mirror for active accounts only. */
 export const adaptySubscriptionStates = pgTable("adapty_subscription_states", {
   userId: text("user_id")
-    .primaryKey()
+    .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   hasAccess: boolean("has_access").notNull(),
   eventType: text("event_type").notNull(),
@@ -243,7 +244,12 @@ export const adaptySubscriptionStates = pgTable("adapty_subscription_states", {
     .$type<AdaptyEnvironment>()
     .notNull()
     .default("production"),
-});
+  status: text("status").notNull().default("unknown"),
+  isInGracePeriod: boolean("is_in_grace_period").notNull().default(false),
+  source: text("source").notNull().default("webhook"),
+  syncState: text("sync_state").notNull().default("current"),
+  lastDeliveryKey: text("last_delivery_key").notNull().default("legacy"),
+}, (table) => [primaryKey({ columns: [table.userId, table.environment] })]);
 
 export type AdaptyWebhookEvent = typeof adaptyWebhookEvents.$inferSelect;
 export type NewAdaptyWebhookEvent = typeof adaptyWebhookEvents.$inferInsert;
