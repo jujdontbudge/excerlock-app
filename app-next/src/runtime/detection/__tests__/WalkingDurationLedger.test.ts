@@ -128,3 +128,24 @@ test('rejects overlapping or timezone/day-mismatched persisted segments', async 
   setRaw({ ...base, segments: [{ from: 0, to: 1_000, day: '1970-01-02', timezone: 'UTC' }] });
   await expect(ledger.read()).rejects.toThrow('Invalid walking duration ledger');
 });
+test('continuous verified travel keeps its origin timezone across restart, then a closed run adopts the new zone', async () => {
+  const { ledger, restart } = setup();
+  const start = Date.parse('2026-09-10T04:59:58Z'); // 23:59:58 Sep 9 in Chicago
+  await ledger.observe(sample(start, true, 1, 'America/Chicago'));
+  await ledger.observe(sample(start + 4_000, true, 1, 'America/New_York'));
+  const cold = restart();
+  const continued = await cold.observe(sample(start + 6_000, true, 1, 'America/New_York'));
+  expect(continued.cursor?.timezone).toBe('America/Chicago');
+  expect(continued.segments).toEqual([
+    { from: start, to: start + 2_000, day: '2026-09-09', timezone: 'America/Chicago' },
+    { from: start + 2_000, to: start + 6_000, day: '2026-09-10', timezone: 'America/Chicago' },
+  ]);
+
+  await cold.observe(sample(start + 7_000, false, 1, 'America/New_York'));
+  await cold.observe(sample(start + 8_000, true, 1, 'America/New_York'));
+  const nextRun = await cold.observe(sample(start + 10_000, true, 1, 'America/New_York'));
+  expect(nextRun.cursor?.timezone).toBe('America/New_York');
+  expect(nextRun.segments.at(-1)).toEqual({
+    from: start + 8_000, to: start + 10_000, day: '2026-09-10', timezone: 'America/New_York',
+  });
+});
