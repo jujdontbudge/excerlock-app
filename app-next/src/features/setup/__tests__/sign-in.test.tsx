@@ -37,9 +37,11 @@ test.each(['apple', 'google'] as const)(
         <SignInScreen onContinue={onContinue} />
       </AppRuntimeProvider>,
     );
-    await userEvent.press(
-      screen.getByRole('button', { name: provider === 'apple' ? 'Continue with Apple' : 'Continue with Google' }),
-    );
+    const button = screen.getByRole('button', {
+      name: provider === 'apple' ? 'Continue with Apple' : 'Continue with Google',
+    });
+    if (provider === 'apple') await fireEvent(button, 'buttonPress');
+    else await userEvent.press(button);
     expect(onContinue).not.toHaveBeenCalled();
     expect(screen.getByText('Sign-in was canceled. You can try again or skip for now.')).toBeTruthy();
   },
@@ -55,7 +57,7 @@ test('required sign-in removes skip and a provider failure stays visible for ret
     </AppRuntimeProvider>,
   );
   expect(screen.queryByRole('button', { name: 'Skip for now' })).toBeNull();
-  await userEvent.press(screen.getByRole('button', { name: 'Continue with Apple' }));
+  await fireEvent(screen.getByRole('button', { name: 'Continue with Apple' }), 'buttonPress');
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not sign in. Please try again.');
   expect(screen.getByRole('button', { name: 'Continue with Apple' })).toBeEnabled();
 });
