@@ -530,3 +530,9 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   installed. Report profile validation failed before dependency installation/archive (assertion at group
   validation), so sequence stopped and lock released. Read-only portal/profile diagnosis assigned; do not
   blindly recreate profiles or claim signed artifact. No build upload, submission, or API deploy occurred.
+- Report profile diagnosis confirmed:735XMH25VL has correct Family Controls/distribution/certificate,
+  but an EMPTY App Groups entitlement. Capability toggle APP_GROUPS exists; intended group association
+  is missing. Universal ledger31b7e42 records this distinction. Read-only `asc web app-groups list` with
+  the exact Apple ID failed: password required, no cached web session. Browser CDP also unavailable.
+  No group assignment or profile deletion performed. Signed build remains gated on portal session/repair.
+  Separate unsigned Release compilation/Hermes-size verification assigned; it cannot substitute for signing.
