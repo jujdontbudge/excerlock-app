@@ -17,7 +17,7 @@ export interface UserDeletionState {
 }
 
 export interface UserDeletionRepository {
-  prepareDeletion(userId: string, deletedAt: Date): Promise<UserDeletionState>;
+  prepareDeletion(userId: string, deletedAt: Date, provider?: AuthErasureProvider | string): Promise<UserDeletionState>;
   markAdaptyErased(userId: string, erasedAt: Date): Promise<void>;
   markPosthogErased(userId: string, erasedAt: Date): Promise<void>;
   /**

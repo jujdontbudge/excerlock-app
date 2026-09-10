@@ -50,7 +50,7 @@ export function createUserDeletionService(options: {
 
   return {
     async deleteAccount(userId) {
-      const state = await options.repository.prepareDeletion(userId, now());
+      const state = await options.repository.prepareDeletion(userId, now(), authProvider);
 
       if (!state.adaptyErasedAt) {
         await options.downstream.eraseAdaptyProfile(userId);
