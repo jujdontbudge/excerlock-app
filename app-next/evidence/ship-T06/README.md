@@ -15,7 +15,7 @@
 ## Local verification
 
 - `npm run typecheck --workspace app-next` — passed.
-- Focused analytics/observability Jest — 3 suites, 10 tests passed.
+- Focused analytics/observability Jest — 3 suites, 15 tests passed.
 - `npm test --workspace packages/analytics-events` — 4 files, 29 tests passed; no type errors.
 - `sh -n app-next/scripts/upload-sourcemaps.sh` — passed.
 - `git diff --check` — passed.
@@ -31,3 +31,8 @@
 ## Integration note
 
 The current privacy manifest/App Store privacy-label plan must be reconciled by root/T13: canonical PostHog `identify` makes Product Interaction data linked to identity. This task does **not** claim that manifest or ASC labels are correct.
+
+Runtime composition and the concrete SDK-boundary factory are explicitly
+root-owned by the T06 architecture contract. Until root supplies that factory
+(including persisted queue clearing and `setPersonProperties` delegation),
+this evidence is adapter-level and does **not** claim end-to-end telemetry.
