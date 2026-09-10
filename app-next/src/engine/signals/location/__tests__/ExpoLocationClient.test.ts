@@ -10,7 +10,7 @@ describe("ExpoLocationClient", () => {
     const expo = new RecordingExpoLocationModule();
     const client = new ExpoLocationClient(
       expo,
-      new LocationTaskRuntime({ append: async () => undefined }),
+      new LocationTaskRuntime({ append: async () => undefined, readAll: async () => [] }),
     );
 
     await client.hydrateState();
@@ -23,7 +23,7 @@ describe("ExpoLocationClient", () => {
     const expo = new RecordingExpoLocationModule();
     const client = new ExpoLocationClient(
       expo,
-      new LocationTaskRuntime({ append: async () => undefined }),
+      new LocationTaskRuntime({ append: async () => undefined, readAll: async () => [] }),
     );
 
     expect(client.getAuthorizationStatus()).toBe("notDetermined");

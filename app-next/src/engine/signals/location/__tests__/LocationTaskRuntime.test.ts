@@ -1,73 +1,37 @@
-import type { GymVisit, GymVisitLog } from "../GymVisitLog";
-import type { LocationSample } from "..";
-import { LocationTaskRuntime } from "../LocationTaskRuntime";
-
-describe("LocationTaskRuntime", () => {
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  it("absorbs a quick geofence enter-exit without logging a visit", async () => {
+import type { GymTransitionRecord, GymVisitLog } from '../GymVisitLog';
+import type { LocationSample } from '..';
+import { LocationTaskRuntime } from '../LocationTaskRuntime';
+describe('LocationTaskRuntime', () => {
+  it('persists quick enter-exit in order and reports explicit exit immediately', async () => {
     jest.useFakeTimers({ now: 1_000 });
     const log = new RecordingGymVisitLog();
     const runtime = new LocationTaskRuntime(log);
-    const confirmed: string[] = [];
-    runtime.onRegionTransition((transition) =>
-      confirmed.push(`${transition.type}:${transition.regionId}`),
-    );
-
-    const entering = runtime.handleGeofencingTask({
-      eventType: 1,
-      region: {
-        identifier: "gym-a",
-        latitude: 40.741,
-        longitude: -73.989,
-        radius: 100,
-      },
-    });
-    await jest.advanceTimersByTimeAsync(4_000);
-    await runtime.handleGeofencingTask({
-      eventType: 2,
-      region: {
-        identifier: "gym-a",
-        latitude: 40.741,
-        longitude: -73.989,
-        radius: 100,
-      },
-    });
-    await entering;
-    await jest.advanceTimersByTimeAsync(30_000);
-
-    expect(runtime.getCachedRegionPresence("gym-a")).toBe(false);
-    expect(confirmed).toEqual([]);
-    expect(log.visits).toEqual([]);
+    const transitions: string[] = [];
+    runtime.onRegionTransition((event) => transitions.push(`${event.type}:${event.regionId}`));
+    await runtime.handleGeofencingTask({ eventType: 1, region: { identifier: 'gym-a' } });
+    jest.setSystemTime(5_000);
+    await runtime.handleGeofencingTask({ eventType: 2, region: { identifier: 'gym-a' } });
+    expect(runtime.getCachedRegionPresence('gym-a')).toBe(false);
+    expect(transitions).toEqual(['exit:gym-a']);
+    expect(log.records.map((row) => row.type)).toEqual(['enter', 'exit']);
+    jest.useRealTimers();
   });
-
-  it("delivers continuous task locations through the provider sample shape", () => {
+  it('delivers continuous task locations through the provider sample shape', () => {
     const runtime = new LocationTaskRuntime(new RecordingGymVisitLog());
     const samples: LocationSample[] = [];
     runtime.onLocation((sample) => samples.push(sample));
-
     runtime.handleLocationTask({
-      locations: [
-        {
-          coords: { latitude: 40.741, longitude: -73.989, accuracy: 8 },
-          timestamp: 2_000,
-        },
-      ],
+      locations: [{ coords: { latitude: 40.741, longitude: -73.989, accuracy: 8 }, timestamp: 2_000 }],
     });
-
-    expect(samples).toEqual([
-      { lat: 40.741, lon: -73.989, accuracy: 8, atMs: 2_000 },
-    ]);
-    expect(runtime.getLastLocation()).toEqual(samples[0]);
+    expect(samples).toEqual([{ lat: 40.741, lon: -73.989, accuracy: 8, atMs: 2_000 }]);
   });
 });
-
 class RecordingGymVisitLog implements GymVisitLog {
-  public readonly visits: GymVisit[] = [];
-
-  public async append(visit: GymVisit): Promise<void> {
-    this.visits.push(visit);
+  readonly records: GymTransitionRecord[] = [];
+  async append(record: GymTransitionRecord): Promise<void> {
+    this.records.push(record);
+  }
+  async readAll(): Promise<readonly GymTransitionRecord[]> {
+    return this.records;
   }
 }
