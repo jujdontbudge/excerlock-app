@@ -17,6 +17,7 @@ export function createIdentityServices(options: {
   adaptyPublicKey: string;
   analyticsFactory(getIdentity: () => AuthIdentity): AnalyticsIdentityHooks;
   beforeDelete(): Promise<void>;
+  afterDelete(): Promise<void>;
   sdk?: AdaptySdkPort;
 }) {
   let authServices: AuthServices | undefined;
@@ -46,6 +47,7 @@ export function createIdentityServices(options: {
       getPosthogDistinctId: () => analytics.getDistinctId(),
       setIntegrationIdentifier: (key, value) => sdk.setIntegrationIdentifier(key, value),
       onBeforeDelete: options.beforeDelete,
+      onAfterDelete: options.afterDelete,
     });
   } catch (error) { subscription.dispose(); analytics.dispose(); throw error; }
   let disposed = false;

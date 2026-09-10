@@ -45,6 +45,7 @@ test('factory awaits exact Adapty PostHog integration key before readiness', asy
     getPosthogDistinctId: () => 'posthog-person',
     setIntegrationIdentifier: integration,
     onBeforeDelete: jest.fn(async () => {}),
+    onAfterDelete: jest.fn(async () => {}),
   });
 
   try {

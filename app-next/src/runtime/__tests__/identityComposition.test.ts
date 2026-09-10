@@ -12,7 +12,7 @@ test('one auth barrier/readiness gate owns subscription calls; disposal is idemp
   const sdk = { activate: jest.fn(async () => {}), addEventListener: () => ({ remove: jest.fn() }), identify: jest.fn(async () => {}), setIntegrationIdentifier: jest.fn(async () => {}), restorePurchases: jest.fn(async () => ({ customerUserId: 'uid', accessLevels: {} })) };
   const services = createIdentityServices({
     config: { supabaseUrl: 'https://example.invalid', supabaseAnonKey: 'public', apiBaseUrl: 'https://api.example.invalid', googleIosClientId: 'client', googleRedirectUri: 'excerlock://auth' },
-    adaptyPublicKey: 'public', analyticsFactory: () => analytics, beforeDelete: async () => {}, sdk: sdk as never,
+    adaptyPublicKey: 'public', analyticsFactory: () => analytics, beforeDelete: async () => {}, afterDelete: async () => {}, sdk: sdk as never,
   });
   const config = jest.mocked(createAuthServices).mock.calls[0]![0];
   await config.subscriptionIdentify('uid');

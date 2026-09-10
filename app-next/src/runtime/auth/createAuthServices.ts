@@ -24,6 +24,7 @@ export type AuthServiceConfig = {
   getPosthogDistinctId: () => string | null;
   setIntegrationIdentifier: (key: string, value: string) => Promise<void>;
   onBeforeDelete: () => Promise<void>;
+  onAfterDelete: () => Promise<void>;
   bootTimeoutMs?: number;
 };
 
@@ -110,6 +111,7 @@ export function createAuthServices(config: AuthServiceConfig): AuthServices {
   };
 
   const onBeforeDelete = config.onBeforeDelete;
+  const onAfterDelete = config.onAfterDelete;
 
   const adapterDeps: AuthAdapterDeps = {
     supabase,
@@ -118,6 +120,7 @@ export function createAuthServices(config: AuthServiceConfig): AuthServices {
     apiBaseUrl,
     fetchImpl,
     onBeforeDelete,
+    onAfterDelete,
     onAccountSwitchReset,
     bootTimeoutMs,
     runIdentityOperation,
