@@ -12,7 +12,7 @@ export function NotificationsFake(ctx: FakeContext): NotificationsPort {
     status: () => permissionsStore.getState().data.notifications,
     request: () => ctx.request('notifications'),
     scheduleTrialReminder: (at) => schedule('trial_reminder', at),
-    scheduleWalkLeaseWarning: (at) => schedule('lease_warning', at),
+    scheduleOpenToUnlock: () => schedule('open_to_unlock', ctx.clock.now()),
     cancel: async (id) => {
       ctx.log('notification_cancelled', { id });
     },

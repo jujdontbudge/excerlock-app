@@ -226,3 +226,8 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   17tests, typecheck/lint pass. Root also moved earned relief ABOVE live walking in resolveLock per T10;
   this prevents watchdog-classifying an earned unlock as conditional relief. Legacy lease public model
   still pending replacement, not claimed complete. T10 native agent in ship-T10-native7fdb8f5.
+- Root T12 local-only notification planner/SDK57 Expo backend: trial expiry minus2days, eligible
+  closed-target discovery reminder, fixed identifiers with serialized replacement, OS permission recheck,
+  stale account cancellation and strict tap URL allowlist. Removed walk-lease warning port/fake method.
+  6tests, primary typecheck/lint pass. Native factory supplied, root scheduling/tap mounting still pending;
+  ShieldAction shield_open delegated native agent. No push token registration and no device delivery claim.
