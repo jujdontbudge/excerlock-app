@@ -28,7 +28,7 @@ export const settingsCopy = {
   exportError: 'Could not create your export. Please try again.',
   grantedCount: (n: number, total: number) => `${n} of ${total} granted`,
   legalHub: 'Privacy & terms',
-  legalPlaceholder: 'These are Phase 1 placeholder documents.',
+  legalDescription: 'Read our published Privacy Policy and Terms of Use.',
   signIn: 'Sign in',
   signOut: 'Sign out',
   anonymous: 'Not signed in',

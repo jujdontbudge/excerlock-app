@@ -74,7 +74,7 @@ test('expired membership can still restore and shows the App Store cancel path',
   expect(paywall).not.toHaveBeenCalled();
 });
 
-test('privacy and terms remain readable placeholder documents', async () => {
+test('privacy and terms routes offer their published documents', async () => {
   const navigate = jest.fn();
   await render(<LegalHubScreen navigate={navigate} onBack={() => {}} />);
   await userEvent.press(screen.getByRole('button', { name: 'Privacy Policy' }));
@@ -83,9 +83,9 @@ test('privacy and terms remain readable placeholder documents', async () => {
   expect(navigate).toHaveBeenCalledWith('legal/terms');
   await render(<LegalScreen doc="privacy" />);
   expect(screen.getByRole('header', { name: legalCopy.privacy.title })).toBeTruthy();
-  expect(screen.getByText(legalCopy.privacy.sections[0]!.body)).toBeTruthy();
+  expect(screen.getByText(legalCopy.privacy.url)).toBeTruthy();
   await render(<LegalScreen doc="terms" />);
-  expect(screen.getByText(/Deleting an ExcerLock account does not cancel a subscription/)).toBeTruthy();
+  expect(screen.getByRole('button', { name: legalCopy.terms.action })).toBeTruthy();
 });
 
 test('signed-in account delete lists the five facts and does not cancel a subscription', async () => {

@@ -1,22 +1,25 @@
-import { Heading, Label } from '../../design-system';
+import { useState } from 'react';
+import { Linking } from 'react-native';
+import { Heading, Label, PrimaryButton } from '../../design-system';
 import { legalCopy } from '../../content/legal';
-import { LivingIcon } from '../../motion/LivingIcon';
-import { Reveal } from '../../motion/Reveal';
-import { tokens as t } from '../../design-system/tokens';
 export function LegalScreen({ doc }: { doc: 'privacy' | 'terms' }) {
   const c = legalCopy[doc];
+  const [opening, setOpening] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const open = async () => {
+    if (opening) return;
+    setOpening(true);
+    setFailed(false);
+    try { await Linking.openURL(c.url); }
+    catch { setFailed(true); }
+    finally { setOpening(false); }
+  };
   return (
     <>
-      <Heading title={c.title} />
-      <LivingIcon name="shield" />
-      {c.sections.map((s, i) => (
-        <Reveal key={s.title} index={i} style={{ gap: t.space.md }}>
-          <Label variant="section" accessibilityRole="header">
-            {s.title}
-          </Label>
-          <Label>{s.body}</Label>
-        </Reveal>
-      ))}
+      <Heading title={c.title} support={legalCopy.description} />
+      <Label selectable tone="secondary">{c.url}</Label>
+      {failed ? <Label accessibilityRole="alert">{legalCopy.openError}</Label> : null}
+      <PrimaryButton label={c.action} loading={opening} onPress={() => void open()} />
     </>
   );
 }
