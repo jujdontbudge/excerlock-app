@@ -29,6 +29,8 @@ export type Runtime = {
   dataExport: ExportPort;
   clock: ClockPort;
   status: RuntimeStatusPort;
+  /** Live production safety; absent means unknown, never safe by default. */
+  safety?: () => { permissionPromptPending: boolean; cameraActive: boolean };
   /** Simulation-only surface. Real runtimes do not implement it. */
   dev?: RuntimeControls;
   dispose: () => void;

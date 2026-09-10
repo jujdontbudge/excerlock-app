@@ -1,3 +1,4 @@
+jest.mock('../NativeRuntimeEffects', () => ({ NativeRuntimeEffects: () => null }));
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import type { Runtime } from '../Runtime';

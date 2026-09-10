@@ -3,6 +3,8 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Runtime } from './Runtime';
 import type { RuntimeStatusSnapshot } from '../ports/RuntimeStatusPort';
+import { suspendGymVisitLogWritesAndReset } from '../engine/signals/location/AsyncStorageGymVisitLog';
+import { RuntimeSafety } from './RuntimeSafety';
 import { eraseProductionData } from './eraseProductionData';
 import { hydrateProductionStores } from './hydrateProductionStores';
 import { createClientServices } from './createClientServices';
@@ -48,6 +50,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
   if (!gait) throw new Error('The production gait module is missing');
   let selectionVersion = (await AsyncStorage.getItem(SELECTION_VERSION_KEY)) ?? 'initial';
   const clock = createNativeClockPort();
+  const safety = new RuntimeSafety();
   let disposed = false;
   let stopping: Promise<void> | null = null;
   let queue: Promise<void> = Promise.resolve();
@@ -120,20 +123,34 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         deletionSuspended = true;
         await queue;
         await host.reconcile(true);
-        await detection.awake.reconcile(false);
+        walking.stop();
+        await safety.stopCamera(() => gait.stop());
+        const awake = await detection.awake.reconcile(false);
+        if (awake.error) throw new Error(awake.error);
         await detection.location.stopMonitoringRegions();
         await detection.service.stop();
+        await detection.service.flush();
         regionsSignature = null;
       },
       afterDelete: async () => {
         await queue;
-        await eraseProductionData({ historyLedger: detection.historyLedger, gymLog: detection.gymLog, permissions: permissionsStore.getState().data });
-        await Promise.all(['trial_ending', 'open_to_unlock', 'shield_open'].map(id => client.notifications.cancel(id)));
+        await suspendGymVisitLogWritesAndReset();
+        await rawScreenTime.eraseLockedSelection();
+        await eraseProductionData({
+          historyLedger: detection.historyLedger,
+          gymLog: detection.gymLog,
+          permissions: permissionsStore.getState().data,
+        });
+        await Promise.all(
+          ['trial_ending', 'open_to_unlock', 'shield_open'].map((id) => client.notifications.cancel(id)),
+        );
         selectionVersion = `deleted:${Date.now()}`;
         await AsyncStorage.setItem(SELECTION_VERSION_KEY, selectionVersion);
         stepsByDay = {};
-        committedWalking = walking.snapshot(); committedGymPresence = null;
-        status = { ...status, history: [] }; listeners.forEach(listener => listener());
+        committedWalking = walking.snapshot();
+        committedGymPresence = null;
+        status = { ...status, history: [] };
+        listeners.forEach((listener) => listener());
       },
     });
     cleanups.push(() => client.dispose());
@@ -182,7 +199,10 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         .catch(() => undefined)
         .then(async () => {
           if (disposed) throw new Error('Runtime disposed');
-          if (deletionSuspended) { await host.reconcile(true); return; }
+          if (deletionSuspended) {
+            await host.reconcile(true);
+            return;
+          }
           const now = Date.now();
           insideReconcile = true;
           try {
@@ -191,7 +211,11 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             if (mode === 'full') {
               if (!deleting && motion === 'granted') await detection.start(wakeContext().walkingGraceMs);
               const regionPlan =
-                !deleting && settingsStore.getState().data.gymAutoDetect ? settingsStore.getState().data.gymPlaces : [];
+                !deleting &&
+                gym.authorizationStatus() === 'authorizedAlways' &&
+                settingsStore.getState().data.gymAutoDetect
+                  ? settingsStore.getState().data.gymPlaces
+                  : [];
               const signature = JSON.stringify(regionPlan);
               if (signature !== regionsSignature) {
                 if (regionPlan.length) await detection.registerGyms(regionPlan);
@@ -263,6 +287,22 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
                     confirmedAt: new Date(since).toISOString(),
                   }
                 : null;
+            if (
+              AppState.currentState !== 'active' &&
+              permissionsStore.getState().data.location !== 'always' &&
+              rows.some(
+                (row) =>
+                  row.met &&
+                  !previous.some((old) => old.ruleId === row.ruleId && old.day === row.day && old.met) &&
+                  rulesStore
+                    .getState()
+                    .data.rules.some(
+                      (rule) => rule.id === row.ruleId && rule.activity === 'walking' && rule.mode.kind === 'target',
+                    ),
+              )
+            ) {
+              void client.notifications.scheduleOpenToUnlock().catch(options.reportError);
+            }
             const history = projectMeasuredHistory(
               stepsByDay,
               detected.gym.intervals,
@@ -318,11 +358,18 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     const runtime: RealRuntime = {
       kind: 'real',
       clock,
-      gait,
+      gait: {
+        ...gait,
+        start: () => safety.startCamera(() => gait.start()),
+        stop: () => safety.stopCamera(() => gait.stop()),
+        permission: () => safety.prompt(() => gait.permission()),
+      },
+      safety: safety.read,
       gym: {
         ...gym,
+        enableAutoDetect: () => safety.prompt(() => gym.enableAutoDetect()),
         requestLocation: async () => {
-          const permission = await gym.requestLocation();
+          const permission = await safety.prompt(() => gym.requestLocation());
           permissionsStore.getState().patch({ location: permission });
           await reconcile();
           return permission;
@@ -334,7 +381,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         stepsSince: (day) => detection.steps.stepsSince(day),
         subscribe: (cb) => detection.steps.subscribe(cb),
         request: async () => {
-          const permission = await detection.steps.request();
+          const permission = await safety.prompt(() => detection.steps.request());
           permissionsStore.getState().patch({ motion: permission });
           await reconcile();
           return permission;
@@ -344,8 +391,8 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       auth: client.auth,
       subscription: client.subscription,
       analytics: client.analytics,
-      notifications: client.notifications,
-      dataExport: client.dataExport,
+      notifications: { ...client.notifications, request: () => safety.prompt(() => client.notifications.request()) },
+      dataExport: { requestShare: (payload) => safety.prompt(() => client.dataExport.requestShare(payload)) },
       // No rules-sync endpoint exists yet. Never acknowledge imaginary cloud writes.
       sync: {
         pushRules: async () => {
@@ -361,13 +408,13 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       screenTime: {
         ...rawScreenTime,
         requestAuthorization: async () => {
-          const permission = await rawScreenTime.requestAuthorization();
+          const permission = await safety.prompt(() => rawScreenTime.requestAuthorization());
           permissionsStore.getState().patch({ screenTime: permission });
           request();
           return permission;
         },
         presentAppPicker: async () => {
-          const selection = await rawScreenTime.presentAppPicker();
+          const selection = await safety.prompt(() => rawScreenTime.presentAppPicker());
           selectionVersion = `${Date.now()}:${native.getPolicyRevision() + 1}`;
           await AsyncStorage.setItem(SELECTION_VERSION_KEY, selectionVersion);
           rulesStore.getState().patch({ lockedApps: selection });
@@ -423,7 +470,10 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         ruleDaysStore.subscribe(request),
         permissionsStore.subscribe(request),
         entitlementStore.subscribe(request),
-        client.auth.subscribeIdentity(identity => { if (identity.kind !== 'deleting') deletionSuspended = false; request(); }),
+        client.auth.subscribeIdentity((identity) => {
+          if (identity.kind !== 'deleting') deletionSuspended = false;
+          request();
+        }),
       );
       const appState = AppState.addEventListener('change', (state) => {
         void reconcile(state === 'active' ? 'foreground' : 'background', state === 'active' ? 'full' : 'tick').catch(

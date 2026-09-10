@@ -80,5 +80,12 @@ function NativePickerHost() {
   const { NativeScreenTimePickerHost } =
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     require('../screentime/native/createNativeScreenTimePort') as typeof import('../screentime/native/createNativeScreenTimePort');
-  return <NativeScreenTimePickerHost />;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { NativeRuntimeEffects } = require('./NativeRuntimeEffects') as typeof import('./NativeRuntimeEffects');
+  return (
+    <>
+      <NativeScreenTimePickerHost />
+      <NativeRuntimeEffects />
+    </>
+  );
 }
