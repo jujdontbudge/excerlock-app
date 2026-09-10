@@ -347,3 +347,20 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   cold-bootstrap singleflight/no-silent-success and pure measured gym progress projection in parallel.
 - Next root work remains actual async production Runtime graph/startup mount and one reconcile loop;
   the production constructor still refuses fake fallback. No device or store activation claims.
+- Native clean preview prebuild/pods/unsigned generic Debug iOS build VERIFIED PASS at34bfb9e0;
+  /tmp/native-verify-build.log ends BUILD SUCCEEDED. No simulator/signing/upload/device activation.
+- Integrated headless bootstrap484ea036 (singleflight initializer, missing handler explicit error),
+  gym progress7f4d14cf (confirmed union minutes/event, midnight-safe), lightweight detector tickaf63edd8
+  (no history query, committed observers, permission-denied history-free wake).
+- Root actual async createRealRuntime graph now3dee241a, not yet public startup-mounted. Hydrates before
+  native/client construction, native-only ports, native revision source, one serialized full/tick/committed
+  root reconcile, persisted step + confirmed gym projection, permission refresh/grant restart, root
+  headless callback, foreground ticks, background lightweight wake, disposal cleanup. Explicit unsupported
+  cloud sync errors rather than fabricated remote success. Production dev surface absent.
+- Root corrected detector full-wake final committed notification (agent missed zero-history segment case);
+ 17DetectionService tests/typecheck/focused lint pass. Enforcement reads committed walking/gym snapshots,
+  not raw pre-persistence Zustand notifications. Factory-specific mocked tests in server lane pending.
+- OPEN before mounting/release: actual history status readmodel (native agent), after-confirmed deletion
+  cleanup callback/provisional deletion (auth agent), single shared async factory bootstrap/provider mount,
+  OTA/notification roots, walking-minute durable source, full device/store verification. Public createRuntime
+  still refuses real mode until bootstrap wiring replaces it; no success claim for installed production.
