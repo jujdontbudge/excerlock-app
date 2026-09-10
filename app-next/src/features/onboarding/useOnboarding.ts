@@ -31,7 +31,10 @@ export function useOnboarding() {
     runtime.analytics.screen(step);
     return () => { advanceEpoch.current += 1; };
   }, [step, runtime]);
-  useEffect(() => () => { mounted.current = false; }, []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   const move = (next: string, back = false) => {
     advanceEpoch.current += 1;
     Keyboard.dismiss();
@@ -65,7 +68,7 @@ export function useOnboarding() {
           catch { remote = false; }
         }
         const live = useOnboardingStore.getState().data;
-        if (advanceEpoch.current !== epoch || live.step !== 'O04' || live.answers.name !== latest.name) return;
+        if (!mounted.current || advanceEpoch.current !== epoch || live.step !== 'O04' || live.answers.name !== latest.name) return;
         if (local || remote) {
           const applied = applyReviewPreset(live.answers, {
             enabled: true, now: runtime.clock.now(), timezone: runtime.clock.timezone(),

@@ -19,6 +19,7 @@ export function NumberField({
   min = 0,
   max,
   labelTone = 'secondary',
+  adjustValue,
 }: {
   label: string;
   value: string;
@@ -31,6 +32,7 @@ export function NumberField({
   min?: number;
   max?: number;
   labelTone?: 'primary' | 'secondary';
+  adjustValue?: (current: number, direction: 'increment' | 'decrement') => number;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -50,8 +52,9 @@ export function NumberField({
             accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
             onAccessibilityAction={(e) => {
               if (!['increment', 'decrement'].includes(e.nativeEvent.actionName)) return;
+              const direction = e.nativeEvent.actionName as 'increment' | 'decrement';
               const current = Number(value) || min,
-                next = current + (e.nativeEvent.actionName === 'increment' ? step : -step);
+                next = adjustValue?.(current, direction) ?? current + (direction === 'increment' ? step : -step);
               onChange(String(Math.min(max ?? Infinity, Math.max(min, Number(next.toFixed(4))))));
             }}
             value={value}
