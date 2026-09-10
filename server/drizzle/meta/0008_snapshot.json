@@ -1,6 +1,6 @@
 {
-  "id": "504e513c-9254-4782-a25c-789a6a39c737",
-  "prevId": "0ac9ea40-4472-4b9e-a89d-2bd1d237dd35",
+  "id": "0ac9ea40-4472-4b9e-a89d-2bd1d237dd35",
+  "prevId": "0bf8a059-884a-49a3-9c54-5f84af23dedd",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -11,7 +11,7 @@
         "user_id": {
           "name": "user_id",
           "type": "text",
-          "primaryKey": false,
+          "primaryKey": true,
           "notNull": true
         },
         "has_access": {
@@ -51,41 +51,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'production'"
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'unknown'"
-        },
-        "is_in_grace_period": {
-          "name": "is_in_grace_period",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "source": {
-          "name": "source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'webhook'"
-        },
-        "sync_state": {
-          "name": "sync_state",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'current'"
-        },
-        "last_delivery_key": {
-          "name": "last_delivery_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'legacy'"
         }
       },
       "indexes": {},
@@ -104,15 +69,7 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "adapty_subscription_states_user_id_environment_pk": {
-          "name": "adapty_subscription_states_user_id_environment_pk",
-          "columns": [
-            "user_id",
-            "environment"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -125,7 +82,7 @@
         "delivery_key": {
           "name": "delivery_key",
           "type": "text",
-          "primaryKey": false,
+          "primaryKey": true,
           "notNull": true
         },
         "user_id": {
@@ -171,15 +128,7 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "adapty_webhook_events_environment_delivery_key_pk": {
-          "name": "adapty_webhook_events_environment_delivery_key_pk",
-          "columns": [
-            "environment",
-            "delivery_key"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},

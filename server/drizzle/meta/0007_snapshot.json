@@ -1,6 +1,6 @@
 {
-  "id": "0ac9ea40-4472-4b9e-a89d-2bd1d237dd35",
-  "prevId": "0bf8a059-884a-49a3-9c54-5f84af23dedd",
+  "id": "0bf8a059-884a-49a3-9c54-5f84af23dedd",
+  "prevId": "5f7689ca-f392-4aca-b383-49af8b7d88a1",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -478,29 +478,7 @@
           "notNull": false
         }
       },
-      "indexes": {
-        "users_deletion_retry_index": {
-          "name": "users_deletion_retry_index",
-          "columns": [
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "deletion_next_retry_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
