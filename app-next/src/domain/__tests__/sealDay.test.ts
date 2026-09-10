@@ -61,3 +61,9 @@ test.each(['Australia/Adelaide', 'Australia/Lord_Howe'])('DST/travel rollover us
   const rewind = sealDays(first, [], [], timezone, '2026-10-03T12:00Z');
   expect(rewind.days).toEqual(first.days);
 });
+
+test('a newly created rule never turns an earlier unopened day into a scheduled miss', () => {
+  const next = sealDays({ startedDay: '2026-09-08', days: [] }, [],
+    [{ ...rule, createdAt: '2026-09-10T12:00Z' }], 'UTC', '2026-09-10T13:00Z');
+  expect(next.days.every(row => !row.scheduled && !row.met)).toBe(true);
+});
