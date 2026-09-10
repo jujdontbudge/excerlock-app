@@ -28,6 +28,7 @@ jest.mock('../../domain/projectStepHistory', () => ({ projectStepHistory: (_rule
 jest.mock('../../domain/projectGymHistory', () => ({ ...jest.requireActual('../../domain/projectGymHistory'), projectGymHistory: (_rules: unknown, rows: unknown) => rows }));
 
 import { createRealRuntime } from '../createRealRuntime';
+import { RuntimeCleanupError } from '../RuntimeSingleton';
 
 const store = (data: object) => ({ persistBarrier: jest.fn(async () => {}), getState: () => ({ data, patch: jest.fn() }), subscribe: jest.fn(() => jest.fn()) });
 jest.mock('../../state/detectionStore', () => ({ detectionStore: store({ generation: 0 }) }));
@@ -106,6 +107,44 @@ test('startup failure releases every resource already constructed', async () => 
   expect(started.detection.awake.reconcile).toHaveBeenCalledWith(false);
   expect(started.clock.dispose).toHaveBeenCalled();
   expect((started.gait as { stop: jest.Mock }).stop).toHaveBeenCalled();
+});
+
+test('startup cleanup failure reports every failure, finishes cleanup, and requires restart', async () => {
+  const started = graph({ boot: async () => { throw new Error('boot failed'); } });
+  const clientFailure = new Error('client dispose failed');
+  const gaitFailure = new Error('gait stop failed');
+  started.client.dispose.mockRejectedValue(clientFailure);
+  (started.gait as { stop: jest.Mock }).stop.mockRejectedValue(gaitFailure);
+  const reportError = jest.fn();
+
+  const rejection = createRealRuntime({ reportError }).catch((error: unknown) => error);
+  const error = await rejection;
+
+  expect(error).toBeInstanceOf(RuntimeCleanupError);
+  expect((error as RuntimeCleanupError).failures).toEqual([
+    expect.objectContaining({ message: 'boot failed' }),
+    clientFailure,
+    gaitFailure,
+  ]);
+  expect(reportError).toHaveBeenCalledWith(clientFailure);
+  expect(reportError).toHaveBeenCalledWith(gaitFailure);
+  expect(started.detection.stop).toHaveBeenCalledTimes(1);
+  expect(started.clock.dispose).toHaveBeenCalledTimes(1);
+});
+
+test('explicit disposal rejects when cleanup is incomplete', async () => {
+  const started = graph();
+  const failure = new Error('detection stop failed');
+  started.detection.stop.mockRejectedValue(failure);
+  const reportError = jest.fn();
+  const runtime = await createRealRuntime({ reportError });
+
+  await expect(runtime.disposeAsync()).rejects.toEqual(
+    expect.objectContaining({ name: 'RuntimeCleanupError', failures: [failure] }),
+  );
+  expect(reportError).toHaveBeenCalledWith(failure);
+  expect(started.client.dispose).toHaveBeenCalledTimes(1);
+  expect(started.clock.dispose).toHaveBeenCalledTimes(1);
 });
 
 test('successful construction returns only the real graph and disposes idempotently', async () => {
