@@ -7,8 +7,8 @@ Spec: `04-identity-and-money.md` §1 steps 1, 5 and §2. Facts: `research/infra-
 
 1. `SupabaseAuthAdapter implements AuthPort` over `@supabase/supabase-js` with `expo-secure-store` storage:
    anonymous session at boot (5 s bound → provisional id → reconcile), `signInWithApple` (native
-   `expo-apple-authentication` → `signInWithIdToken` with nonce), `signInWithGoogle` (`expo-auth-session` id
-   token), `sendEmailCode`/`verifyEmailCode` (OTP), `signOut` (keeps anonymous uid), `deleteAccount`
+   `expo-apple-authentication` → `linkIdentity` native-token overload with nonce; returning account recovery is separate), `signInWithGoogle` (`expo-auth-session` id
+   token), `sendEmailCode`/`verifyEmailCode` (OTP), `signOut` (fresh anonymous uid after permanent-account logout; ADR 0011), `deleteAccount`
    (teardown order §1.5), `subscribe`.
 2. **Never silent**: map `ERR_REQUEST_CANCELED` → `cancelled`; every other failure → `AuthError` surfaced on
    `SignInScreen` with a retry. Test asserts a provider rejection is not swallowed.
@@ -20,12 +20,13 @@ Spec: `04-identity-and-money.md` §1 steps 1, 5 and §2. Facts: `research/infra-
 
 ## Tests first
 
-- Adapter contract suite (same as `AuthFake`) + `auth-order.test.ts` (Supabase → PostHog identify → Adapty
-  identify; sign-in keeps uid; delete order) + `auth-never-silent.test.ts`.
+- Adapter contract suite (same as `AuthFake`) + `auth-order.test.ts` (Supabase → VPS provision → PostHog identify → Adapty
+  identify; new-provider linking keeps uid; durable delete order) + `auth-never-silent.test.ts`.
 
 ## Acceptance
 
 - [ ] Simulator: Apple, Google, email sign-in each produce a Supabase session and the same uid before/after
-      linking; sign-out then sign-in returns the same uid.
+      new-provider linking; permanent sign-out creates a fresh anonymous uid, returning-account sign-in
+      recovers its existing uid without silently merging purchases or analytics people.
 - [ ] Physical device, `preview` build: one real native Apple sign-in succeeds (provider registration proven).
 - [ ] Flip `signInRequired` in PostHog → X4 loses "Skip" without a rebuild.

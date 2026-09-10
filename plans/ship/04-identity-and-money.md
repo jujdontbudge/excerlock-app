@@ -13,24 +13,30 @@ gate. It is, simultaneously: VPS `users.id`, Adapty `customer_user_id`, PostHog 
 Ordering contract (a test asserts the call order with mocked SDKs):
 
 1. Boot: Supabase anonymous session (bounded 5 s; on timeout proceed with a locally generated provisional id
-   and reconcile later — never hang a fresh install, TICKET-27).
+   and reconcile later — never hang a fresh install, TICKET-27). Provisional identity is explicitly
+   noncanonical: gate purchase/restore/person-bound exposures until canonical identity and the awaited spine
+   below are ready. Provision the VPS user with its authenticated token before monetization (ADR 0011).
 2. PostHog `identify(uid)`; register super-properties `environment` (`dev|preview|prod`, from the build
    profile, re-registered after every `reset`), `runtime_version`, `update_id`.
 3. Adapty `activate` then `identify(uid)`.
 4. **Before every purchase or restore call:** `adapty.setIntegrationIdentifier('posthog_distinct_id',
    posthog.getDistinctId())` — verify the exact key against Adapty's live PostHog-integration docs at
    implementation time. This is the F1 fix; without it the purchase lands on a person the exposure never met.
-5. Sign-in: `linkIdentity` → same uid → no re-identify needed; PostHog `alias` only if the uid changed (it
-   must not). Sign-out keeps the anonymous uid. Account deletion: `adapty.logout`, `posthog.reset`, Supabase
-   delete, VPS delete, then a fresh anonymous session — in that order (teardown ordering, architecture doc).
+5. New provider linking: native ID-token `linkIdentity` → same uid → no duplicate identification. Existing
+   account recovery adopts its canonical uid; never automatically alias established people or transfer paid
+   ownership. Permanent-account sign-out creates a fresh anonymous uid; anonymous sign-out can be a no-op.
+   Account deletion: retain auth for the authenticated durable VPS deletion job; tombstone/local VPS erasure
+   → Adapty erasure → PostHog erasure → Supabase deletion last, with durable retries. Only after server
+   acceptance finish local logout/reset and create a fresh anonymous session (ADR 0011).
 6. Experiments bucket on the **device id** (`$device_id`), primed before the first flags call; the first
    flagged surface gates on flags-ready with a control fallback and a 2 s timeout.
 
 ## 2. Auth (B47; absorbs P2-T01)
 
-- Providers: Apple (native `expo-apple-authentication` → Supabase `signInWithIdToken`), Google (`expo-auth-session`
+- Providers: Apple (native `expo-apple-authentication` → Supabase native-token `linkIdentity` for anonymous conversion;
+  `signInWithIdToken` only for returning-account recovery), Google (`expo-auth-session`
   → id token), email OTP. Supabase native-app registration (Team ID + bundle ID) is a T00 prerequisite;
-  without it native Apple sign-in silently returns no session.
+  verify the configured native bundle audience on a device; provider failures must be surfaced, never hidden.
 - **A failed sign-in is never silent.** Distinguish "user dismissed the sheet" (`ERR_REQUEST_CANCELED`) from
   "attempt ran and failed" (anything else) and surface the latter. The Recovi masking line
   `if (!sessionId) return;` is the anti-pattern.
