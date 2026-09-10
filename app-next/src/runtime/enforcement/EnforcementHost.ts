@@ -1,7 +1,9 @@
+import type { ScheduleIssue } from '../../domain/scheduleWindowPlan';
 import { planWatchdog, type WatchdogContext, type WatchdogRegistration } from '../../domain/watchdog';
 
 export type EnforcementSnapshot = {
   /** Monotonically increasing revision, including account/selection/eligibility changes. */
+  scheduleIssue?: ScheduleIssue;
   revision: number;
   now: number;
   context: WatchdogContext;

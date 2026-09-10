@@ -16,7 +16,7 @@ import {
 } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
-import { useClock, useLockDecision, useTodayProgress, useStreak, useWalkingStatus } from '../../state/selectors';
+import { useRuntimeStatus, useClock, useLockDecision, useTodayProgress, useStreak, useWalkingStatus } from '../../state/selectors';
 import { profileStore as useProfileStore } from '../../state/profileStore';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
@@ -38,6 +38,7 @@ export function HomeScreen() {
     decision = useLockDecision(),
     progress = useTodayProgress(),
     streak = useStreak();
+  const { scheduleIssue } = useRuntimeStatus();
   const name = useProfileStore((s) => s.data.name);
   const { rules, lockedApps } = useRulesStore((s) => s.data),
     permissions = usePermissionsStore((s) => s.data),
@@ -139,15 +140,25 @@ export function HomeScreen() {
         </View>
         <StreakBadge count={streak.current} />
       </View>
-      <Animated.View style={glyph}>
-        <HomeLockStatus unlocked={status.unlocked} subtitle={status.unlocked ? `${status.title}. ${status.subtitle}` : 'Complete a condition to unlock'} />
-      </Animated.View>
+      {scheduleIssue ? (
+        <View accessibilityRole="alert" style={{ padding: t.space.md, gap: t.space.md,
+          backgroundColor: t.surface.card, borderRadius: t.radius.card,
+          borderWidth: t.stroke.hairline, borderColor: t.border.outline }}>
+          <Label variant="section">{c.scheduleRecoveryTitle}</Label>
+          <Label variant="support">{c.scheduleRecoveryBody}</Label>
+          <SecondaryButton label={c.scheduleRecoveryAction} onPress={() => router.navigate('/conditions')} />
+        </View>
+      ) : (
+        <Animated.View style={glyph}>
+          <HomeLockStatus unlocked={status.unlocked} subtitle={status.unlocked ? `${status.title}. ${status.subtitle}` : 'Complete a condition to unlock'} />
+        </Animated.View>
+      )}
       {status.state === 'allPaused' ? (
         <Label accessibilityRole="header" variant="section">
           {c.paused}
         </Label>
       ) : null}
-      {actionLabel ? <SecondaryButton label={actionLabel} onPress={action} /> : null}
+      {!scheduleIssue && actionLabel ? <SecondaryButton label={actionLabel} onPress={action} /> : null}
       <View style={{ gap: t.space.md }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Label variant="section" accessibilityRole="header">{c.today}</Label>

@@ -3,6 +3,7 @@ import type { Rule } from './types';
 export type NativeScheduleWindow = Readonly<{ id: string; start: number; end: number }>;
 export type ScheduleWindowPlan = { ok: true; windows: NativeScheduleWindow[] } |
   { ok: false; reason: 'nativeWindowLimit' | 'nativeAnchorUnavailable'; required: number };
+export type ScheduleIssue = Pick<Extract<ScheduleWindowPlan, { ok: false }>, 'reason' | 'required'>;
 const WEEK=7*1440;
 /** Exact cyclic weekly union. It never fills gaps merely to satisfy Apple's monitor limit. */
 export function planScheduleWindows(rules: readonly Rule[], now: string, timezone: string, limit=7): ScheduleWindowPlan {

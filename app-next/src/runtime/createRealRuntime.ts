@@ -408,6 +408,10 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               void client.notifications.scheduleOpenToUnlock().catch(options.reportError);
             }
             const snapshot = source.read();
+            if (JSON.stringify(status.scheduleIssue) !== JSON.stringify(snapshot.scheduleIssue)) {
+              status = { ...status, scheduleIssue: snapshot.scheduleIssue };
+              listeners.forEach((listener) => listener());
+            }
             const awake = await detection.awake.reconcile(
               snapshot.state === 'shield' || snapshot.state === 'conditional',
             );

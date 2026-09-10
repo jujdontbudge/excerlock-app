@@ -36,14 +36,20 @@ export class RuntimeEnforcementSource {
     const plan = planScheduleWindows(input.rules, input.now, input.timezone);
     const ends = input.rules.flatMap(rule => currentInstances(rule, input.now, input.timezone)).map(instance => Date.parse(instance.end));
     const activeUntil = ends.length ? Math.max(...ends) : null;
-    const projected = projectEnforcement({
+    let projected: EnforcementSnapshot = projectEnforcement({
       revision: Math.max(0, this.revision), now: Date.parse(input.now),
       context: { policyGeneration: Math.max(0, this.revision), accountGeneration: input.accountGeneration, selectionVersion: input.selectionVersion },
       decision, entitlement: input.entitlement, deleting: input.deleting,
       screenTimeAuthorized: input.screenTimeAuthorized, selectionEmpty: input.selection.isEmpty || input.selection.handle === null,
       activeUntil, windows: plan.ok ? plan.windows : [],
     });
-    if (!plan.ok && projected.state !== 'unknown' && !['deleting', 'disabled', 'lapsed'].includes(projected.openReason ?? '')) throw new Error(`Native schedule cannot represent exact policy: ${plan.reason}`);
+    if (!plan.ok) {
+      const clearing = ['deleting', 'disabled', 'lapsed'].includes(projected.openReason ?? '');
+      // Keep boot and repair UI available without publishing an inexact policy.
+      // Explicit lifecycle cleanup must still revoke the old native protection.
+      projected = { ...projected, state: clearing ? projected.state : 'unknown',
+        scheduleIssue: { reason: plan.reason, required: plan.required } };
+    }
     // Clock ticks and progress below a target do not churn native registrations.
     // A rule edit still invalidates callbacks even if its current decision matches.
     const signature = JSON.stringify({

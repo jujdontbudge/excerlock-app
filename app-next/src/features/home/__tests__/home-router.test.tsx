@@ -47,3 +47,27 @@ test('entitled boot opens Home, tabs navigate and selected apps open the shared 
   await act(() => runtime.dev.resolvePrompt(false));
   await rendered.unmount();
 });
+
+test('unsupported schedule replaces normal lock claims with a reachable repair action', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('home-locked-walking');
+  const snapshot = { ...runtime.status.snapshot(), scheduleIssue: { reason: 'nativeWindowLimit' as const, required: 14 } };
+  jest.spyOn(runtime.status, 'snapshot').mockReturnValue(snapshot);
+  const r = renderRouter({
+    _layout: () => <AppRuntimeProvider runtime={runtime}><RootNavigator /></AppRuntimeProvider>,
+    index: BootGate,
+    '(tabs)/_layout': Tabs,
+    '(tabs)/home': HomeScreen,
+    '(tabs)/conditions': () => <TabPlaceholder tab="conditions" />,
+    '(tabs)/analytics': () => <TabPlaceholder tab="analytics" />,
+    '(tabs)/settings': () => <TabPlaceholder tab="settings" />,
+  }, { initialUrl: '/home' });
+  const rendered = await r;
+  expect(screen.getByText('Your schedule needs attention')).toBeTruthy();
+  expect(screen.queryByRole('header', { name: 'Locked' })).toBeNull();
+  expect(screen.queryByText('Complete a condition to unlock')).toBeNull();
+  await userEvent.press(screen.getByRole('button', { name: 'Review conditions' }));
+  expect(r.getPathname()).toBe('/conditions');
+  await rendered.unmount();
+  runtime.dispose();
+});

@@ -477,3 +477,25 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   otherwise searches bounded same-weekday exact anchor pairs; union/day partition unchanged and explicit
   unavailable result. Typecheck and focused schedule/calendar/policy suites pass. Added direct development
   midnight convergence assertion regression; device recurrence still unverified.
+
+### Schedule repair and live release inventory — 2026-09-10
+
+- b173449c validates complete proposed native schedules before rule save/enable and onboarding commit;
+  all production callers pass ClockPort context. Disable/delete remain available for recovery. Typed
+  rejection keeps builder/onboarding open and preserves old rules. Focused 3 suites/24 tests and typecheck
+  pass. Root reviewed production callers and mutation ordering.
+- Unsupported hydrated schedules no longer fail startup: unknown enforcement preserves existing bounded
+  native policy; deleting/disabled/lapsed still clear. Typed runtime issue replaces normal Home lock claims
+  with Conditions repair navigation and persistent Conditions notice. Source revisions still invalidate
+  in-flight work. ADR0017. Root 3 suites/17 tests, typecheck pass; lint 0 errors/52 existing warnings.
+  Actual device UI/native protection remains unverified. Full integrated suite running next.
+- Read-only live GCP inventory discovered applied superseded migrations0006/0007. Current rewritten0006
+  would fail on duplicate auth_deleted_at; five baseline feature/vendor tables were dropped by old0006.
+  Forward-only compatibility bridge and actual legacy-schema upgrade proof are required before deploy;
+  no applied history edits or remote mutation. Live /ready200 only proves OLD deployed code requirements.
+- Production durable PostHog deletion credentials are absent (personal API key/project ID); current
+  deletion readiness therefore false. No secrets printed or remote environment modified.
+- Fresh ASC inventory: zero builds, version1.0 PREPARE_FOR_SUBMISSION; seven validation blockers including
+  review details/build/screenshots/availability/rights/age fields. Six target subscriptions still missing
+  review screenshots; other45 untouched. Five bundle IDs exist, live distribution profiles absent.
+  No upload, submission, deploy, main push, or public OTA performed.
