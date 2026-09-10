@@ -29,7 +29,12 @@ export function NativeRuntimeEffects() {
   const navigation = useRootNavigationState();
   const router = useRouter();
   const live = useRef(true);
-  useEffect(() => { live.current = true; return () => { live.current = false; }; }, []);
+  useEffect(() => {
+    live.current = true;
+    return () => {
+      live.current = false;
+    };
+  }, []);
   const coordinator = useOtaCoordinator({
     getSafety: () => {
       const safety = runtime.safety?.();
@@ -41,12 +46,15 @@ export function NativeRuntimeEffects() {
         purchaseOrRestoreBusy: operation.busy || operation.pending,
         permissionPromptPending: safety?.permissionPromptPending ?? null,
         cameraActive: safety?.cameraActive ?? null,
-        walkingActive: walking && ['inactive', 'active', 'grace', 'verifying', 'unknown'].includes(walking.phase) ? ['active', 'grace', 'verifying'].includes(walking.phase) : null,
+        walkingActive:
+          walking && ['inactive', 'active', 'grace', 'verifying', 'unknown'].includes(walking.phase)
+            ? ['active', 'grace', 'verifying'].includes(walking.phase)
+            : null,
         proppedActive: typeof walking?.proppedVerified === 'boolean' ? walking.proppedVerified : null,
       };
     },
     // Rule drafts live only on builder routes; those routes are never safe to reload.
-    getEnvelope: () => live.current ? { route: pathname, draftIds: [] } : null,
+    getEnvelope: () => (live.current ? { route: pathname, draftIds: [] } : null),
     report: (message) => reportRuntimeError(new Error(message)),
   });
 
@@ -87,7 +95,9 @@ export function NativeRuntimeEffects() {
         reportRuntimeError(error);
       });
     };
-    const refresh = () => { void expoLocalNotifications.permission(false).then(update).catch(reportRuntimeError); };
+    const refresh = () => {
+      void expoLocalNotifications.permission(false).then(update).catch(reportRuntimeError);
+    };
     refresh();
     const stops = [
       runtime.subscription.subscribe(update),

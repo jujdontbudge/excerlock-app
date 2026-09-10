@@ -29,7 +29,7 @@ jest.mock('../../domain/projectGymHistory', () => ({ ...jest.requireActual('../.
 
 import { createRealRuntime } from '../createRealRuntime';
 
-const store = (data: object) => ({ getState: () => ({ data, patch: jest.fn() }), subscribe: jest.fn(() => jest.fn()) });
+const store = (data: object) => ({ persistBarrier: jest.fn(async () => {}), getState: () => ({ data, patch: jest.fn() }), subscribe: jest.fn(() => jest.fn()) });
 jest.mock('../../state/detectionStore', () => ({ detectionStore: store({ generation: 0 }) }));
 jest.mock('../../state/rulesStore', () => ({ rulesStore: store({ rules: [], lockedApps: { handle: null, isEmpty: true } }) }));
 jest.mock('../../state/ruleDaysStore', () => ({ ruleDaysStore: store({ days: [], gymPresence: null }) }));
@@ -49,7 +49,8 @@ function graph(options?: { gait?: object | null; boot?: () => Promise<void>; aut
     awake: { reconcile: jest.fn(async () => ({ requested: false, running: false, error: null })) },
     location: { stopMonitoringRegions: jest.fn(async () => {}) },
     start: jest.fn(async () => {}), stop: jest.fn(async () => {}), registerGyms: jest.fn(async () => {}),
-    reconcileWake: jest.fn(async () => {}), historyLedger: { read: jest.fn(async () => ({ stepsByDay: {} })) },
+    reconcileWake: jest.fn(async () => {}), walkingDurationLedger: { read: jest.fn(async () => ({ generation: 0, millisecondsByDay: {}, pending: [] })), reset: jest.fn(async () => {}), acknowledge: jest.fn(async () => {}) },
+    historyLedger: { read: jest.fn(async () => ({ stepsByDay: {} })) },
     snapshot: () => ({ gym: { intervals: [], regions: {} } }),
   };
   const identity = { kind: 'anonymous', generation: 0 };

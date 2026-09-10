@@ -30,6 +30,7 @@ import { currentInstances } from '../domain/schedule';
 import { projectMeasuredHistory } from '../domain/projectMeasuredHistory';
 import { projectGymHistory } from '../domain/projectGymHistory';
 import { registerHeadlessDetectionHandler } from './detection/headlessRegistry';
+import { projectWalkingMinutes } from '../domain/projectWalkingMinutes';
 import { projectStepHistory } from '../domain/projectStepHistory';
 import type { DetectionWake } from './detection/DetectionService';
 
@@ -146,6 +147,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         );
         selectionVersion = `deleted:${Date.now()}`;
         await AsyncStorage.setItem(SELECTION_VERSION_KEY, selectionVersion);
+        await detection.walkingDurationLedger.reset();
         stepsByDay = {};
         committedWalking = walking.snapshot();
         committedGymPresence = null;
@@ -260,9 +262,17 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             if (mode === 'full') stepsByDay = (await detection.historyLedger.read()).stepsByDay;
             if (disposed) return;
             const previous = ruleDaysStore.getState().data.days;
-            const stepRows = projectStepHistory(
+            const duration = await detection.walkingDurationLedger.read();
+            const minuteRows = projectWalkingMinutes(
               rulesStore.getState().data.rules,
               previous,
+              duration.millisecondsByDay,
+              clock.timezone(),
+              new Date(now).toISOString(),
+            );
+            const stepRows = projectStepHistory(
+              rulesStore.getState().data.rules,
+              minuteRows,
               stepsByDay,
               clock.timezone(),
               new Date(now).toISOString(),
@@ -325,6 +335,12 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             } finally {
               projecting = false;
             }
+            await ruleDaysStore.persistBarrier();
+            if (duration.generation !== null && duration.pending.length)
+              await detection.walkingDurationLedger.acknowledge(
+                duration.pending.map((intent) => intent.idempotencyKey),
+                duration.generation,
+              );
             const snapshot = source.read();
             const awake = await detection.awake.reconcile(
               snapshot.state === 'shield' || snapshot.state === 'conditional',

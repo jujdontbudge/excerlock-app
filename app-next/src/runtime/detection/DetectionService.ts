@@ -316,7 +316,7 @@ export class DetectionService {
       // Walking grace and propped pickup/handoff/propped-only relief are
       // intentionally excluded from measured exercise duration.
       const verified = isMeasuredWalkingState(data);
-      await this.deps.walkingDurationLedger.observe({ generation, at, verified, timezone });
+      await this.deps.walkingDurationLedger.observe({ generation, at: Math.max(at, data.walking.watermark, data.propped.watermark, data.gym.watermark), verified, timezone });
       this.assertGeneration(generation);
     }
     this.notifyCommitted();
