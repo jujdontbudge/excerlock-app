@@ -15,18 +15,12 @@ final class ExcerLockStoreKitUITests: XCTestCase {
   }
 
   func testFreshInstallInvokesLocalAnnualPurchase() async throws {
-    let expected = [
-      "com.johansardar.excerlock.premium.a.monthly",
-      "com.johansardar.excerlock.premium.a.annual",
-      "com.johansardar.excerlock.premium.a.winback.annual",
-      "com.johansardar.excerlock.premium.b.monthly",
-      "com.johansardar.excerlock.premium.b.annual",
-      "com.johansardar.excerlock.premium.b.winback.annual",
-    ]
-    let products = try await Product.products(for: expected)
-    XCTAssertEqual(Set(products.map(\.id)), Set(expected), "Local StoreKit catalog is incomplete")
-
     let app = XCUIApplication()
+    // Product.products(for:) resolves against the UI-test runner's bundle, not
+    // the application under test. The end-to-end transaction assertion below
+    // is the authoritative local StoreKit check. This launch argument disables
+    // Expo's first-run developer-menu auto-launch for this test target only.
+    app.launchArguments += ["-EXDevMenuDisableAutoLaunch", "YES"]
     app.launch()
     XCTAssertTrue(app.wait(for: .runningForeground, timeout: 20), "Real preview runtime did not launch")
     XCTAssertTrue(
