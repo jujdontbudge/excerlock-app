@@ -6,7 +6,7 @@ jest.mock('expo-router', () => {
   const Stack = function MockStack({ children }: { children?: React.ReactNode }) { return <>{children}</>; };
   Stack.Screen = function MockScreen() { return null; };
   Stack.Protected = function MockProtected({ children }: { children?: React.ReactNode }) { return <>{children}</>; };
-  return { Stack, useRouter: () => mockRouter };
+  return { Stack, useRouter: () => mockRouter, usePathname: () => '/home' };
 });
 jest.mock('../../../motion/useMotion', () => ({ useMotion: () => ({ reduced: true }) }));
 jest.mock('../../../runtime/AppRuntimeProvider', () => ({ useRuntime: () => ({ kind: 'real' }) }));
