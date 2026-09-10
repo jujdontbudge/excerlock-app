@@ -29,13 +29,19 @@ function authHook(
       };
       request.clerkIdentity = { userId, roles: [] };
     } else {
+      request.authIdentity = {
+        userId,
+        roles: [],
+        provider: "clerk",
+        isAnonymous: false,
+      };
       request.clerkIdentity = { userId, roles: [] };
     }
   };
 }
 
 describe("DELETE /v1/user", () => {
-  it("deletes the authenticated account", async () => {
+  it("rejects legacy Clerk deletion before destructive work", async () => {
     const deleteAccount = vi.fn(async () => undefined);
     app = Fastify({ logger: false });
     app.addHook("onRequest", authHook("clerk", "user_123"));
@@ -50,8 +56,8 @@ describe("DELETE /v1/user", () => {
     });
 
     expect({ status: response.statusCode, calls: deleteAccount.mock.calls }).toEqual({
-      status: 204,
-      calls: [["user_123"]],
+      status: 409,
+      calls: [],
     });
   });
 
@@ -96,7 +102,7 @@ describe("DELETE /v1/user", () => {
 
   it("returns a retryable response without exposing processor details", async () => {
     app = Fastify({ logger: false });
-    app.addHook("onRequest", authHook("clerk", "user_123"));
+    app.addHook("onRequest", authHook("supabase", SUPABASE_UUID));
     await app.register(
       createUserRoutes({
         identity,

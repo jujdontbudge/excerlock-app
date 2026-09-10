@@ -30,9 +30,16 @@ function durableRepository(): UserDeletionRepository {
       state.authProvider = provider;
     }),
     listIncompleteDeletions: vi.fn(async () =>
-      state.authDeletedAt ? [] : [USER_ID]),
-    recordDeletionFailure: vi.fn(async () => undefined),
-    clearDeletionLease: vi.fn(async () => {
+      state.authDeletedAt ? [] : [{ userId: USER_ID, attempts: state.deletionAttempts }]),
+    recordDeletionFailure: vi.fn(async (_id, _failed, nextRetry, _error, owner) => {
+      if (leaseOwner !== owner) return;
+      state.deletionAttempts += 1;
+      state.deletionNextRetryAt = nextRetry;
+      leaseOwner = null;
+      leaseExpiresAt = null;
+    }),
+    clearDeletionLease: vi.fn(async (_id, owner) => {
+      if (leaseOwner !== owner) return;
       leaseOwner = null;
       leaseExpiresAt = null;
     }),
@@ -89,6 +96,47 @@ describe("durable deletion retry worker", () => {
       expect.any(Date),
       expect.any(Date),
       "provider unavailable",
+      "replica-a",
     );
+  });
+
+  it("increases retry delay using persisted attempt count", async () => {
+    const repository = durableRepository();
+    const downstream = {
+      eraseAdaptyProfile: vi.fn(async () => undefined),
+      erasePosthogPerson: vi.fn(async () => undefined),
+      deleteAuthUser: vi.fn(async () => { throw new Error("provider unavailable"); }),
+    };
+    const current = new Date("2026-07-31T20:01:00.000Z");
+    const worker = createDeletionRetryWorker({
+      repository, downstream, ownerId: "replica-a", now: () => current,
+    });
+    await worker.runOnce();
+    await worker.runOnce();
+    const calls = vi.mocked(repository.recordDeletionFailure).mock.calls;
+    expect(calls[0]?.[2].getTime() - current.getTime()).toBeLessThan(60_000);
+    expect(calls[1]?.[2].getTime() - current.getTime()).toBeGreaterThanOrEqual(60_000);
+  });
+
+  it("cancels the startup tick on stop", async () => {
+    vi.useFakeTimers();
+    try {
+      const repository = durableRepository();
+      const worker = createDeletionRetryWorker({
+        repository,
+        downstream: {
+          eraseAdaptyProfile: vi.fn(async () => undefined),
+          erasePosthogPerson: vi.fn(async () => undefined),
+          deleteAuthUser: vi.fn(async () => undefined),
+        },
+        intervalMs: 10_000,
+      });
+      worker.start();
+      worker.stop();
+      await vi.advanceTimersByTimeAsync(20_000);
+      expect(repository.listIncompleteDeletions).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -284,6 +284,10 @@ async function seedIdentitySpine(): Promise<void> {
 }
 
 describe("provider-neutral checkpoints and retry bookkeeping", () => {
+  const candidateIds = async (
+    repository: ReturnType<typeof createDrizzleUserDeletionRepository>,
+    now?: Date,
+  ) => (await repository.listIncompleteDeletions(10, now)).map((item) => item.userId);
   it("never treats a legacy Clerk checkpoint as Supabase erasure", async () => {
     await seedIdentitySpine();
     const repository = createDrizzleUserDeletionRepository(postgres.db);
@@ -300,11 +304,11 @@ describe("provider-neutral checkpoints and retry bookkeeping", () => {
         deletedAt,
         clerkDeletedAt: deletedAt,
         authDeletedAt: null,
-        authProvider: null,
+        authProvider: "clerk",
       }),
     );
     // Incomplete for the Supabase worker.
-    expect(await repository.listIncompleteDeletions(10)).toContain("user_123");
+    expect(await candidateIds(repository)).not.toContain("user_123");
   });
 
   it("records Supabase erasure with an explicit provider field", async () => {
@@ -326,7 +330,7 @@ describe("provider-neutral checkpoints and retry bookkeeping", () => {
         authDeletedAt: deletedAt,
       }),
     );
-    expect(await repository.listIncompleteDeletions(10)).not.toContain(
+    expect(await candidateIds(repository)).not.toContain(
       "user_123",
     );
   });
@@ -341,7 +345,7 @@ describe("provider-neutral checkpoints and retry bookkeeping", () => {
     await repository.markPosthogErased("complete-user", deletedAt);
     await repository.markAuthDeleted("complete-user", deletedAt, "supabase");
 
-    const incomplete = await repository.listIncompleteDeletions(10);
+    const incomplete = await candidateIds(repository);
     expect(incomplete).toContain("incomplete-user");
     expect(incomplete).not.toContain("complete-user");
     expect(incomplete).not.toContain("active-user");
@@ -355,21 +359,26 @@ describe("provider-neutral checkpoints and retry bookkeeping", () => {
     await repository.markPosthogErased("provider-mismatch", deletedAt);
     await repository.markAuthDeleted("provider-mismatch", deletedAt, "clerk");
 
-    expect(await repository.listIncompleteDeletions(10)).toContain(
-      "provider-mismatch",
-    );
+    expect(await candidateIds(repository)).not.toContain("provider-mismatch");
   });
 
   it("tracks failures with bounded sanitized retry state and clears leases", async () => {
     const repository = createDrizzleUserDeletionRepository(postgres.db);
     const deletedAt = new Date("2026-07-31T20:00:00.000Z");
     await repository.prepareDeletion("user_123", deletedAt);
+    await repository.claimDeletionLease(
+      "user_123",
+      "test-owner",
+      deletedAt,
+      new Date(deletedAt.getTime() + 60_000),
+    );
     const nextRetry = new Date("2026-07-31T20:01:00.000Z");
     await repository.recordDeletionFailure(
       "user_123",
       deletedAt,
       nextRetry,
       "Supabase identity erasure did not succeed",
+      "test-owner",
     );
     let [row] = await postgres.db
       .select()
@@ -384,18 +393,12 @@ describe("provider-neutral checkpoints and retry bookkeeping", () => {
     );
     // Not yet retryable before nextRetry.
     expect(
-      await repository.listIncompleteDeletions(
-        10,
-        new Date("2026-07-31T20:00:30.000Z"),
-      ),
+      await candidateIds(repository, new Date("2026-07-31T20:00:30.000Z")),
     ).not.toContain("user_123");
     expect(
-      await repository.listIncompleteDeletions(
-        10,
-        new Date("2026-07-31T20:02:00.000Z"),
-      ),
+      await candidateIds(repository, new Date("2026-07-31T20:02:00.000Z")),
     ).toContain("user_123");
-    await repository.clearDeletionLease("user_123");
+    await repository.clearDeletionLease("user_123", "test-owner");
     [row] = await postgres.db
       .select()
       .from(users)
@@ -422,6 +425,31 @@ describe("provider-neutral checkpoints and retry bookkeeping", () => {
         new Date(expiresAt.getTime() + 60_001),
       ),
     ).toBe(true);
+  });
+
+  it("rejects stale candidates after completion and fences the wrong owner", async () => {
+    const repository = createDrizzleUserDeletionRepository(postgres.db);
+    const now = new Date("2026-07-31T20:00:00.000Z");
+    await repository.prepareDeletion("stale-user", now);
+    await repository.markAdaptyErased("stale-user", now);
+    await repository.markPosthogErased("stale-user", now);
+    await repository.markAuthDeleted("stale-user", now, "supabase");
+    expect(
+      await repository.claimDeletionLease(
+        "stale-user", "stale-worker", now, new Date(now.getTime() + 60_000),
+      ),
+    ).toBe(false);
+
+    await repository.prepareDeletion("fenced-user", now);
+    await repository.claimDeletionLease(
+      "fenced-user", "owner-a", now, new Date(now.getTime() + 60_000),
+    );
+    await repository.recordDeletionFailure(
+      "fenced-user", now, new Date(now.getTime() + 30_000), "failure", "owner-b",
+    );
+    const [row] = await postgres.db.select().from(users).where(eq(users.id, "fenced-user"));
+    expect(row.deletionAttempts).toBe(0);
+    expect(row.deletionLeaseOwner).toBe("owner-a");
   });
 
   it("keeps concurrent prepareDeletion calls serialized and replay-safe", async () => {

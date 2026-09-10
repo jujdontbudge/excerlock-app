@@ -1,4 +1,5 @@
 export type AuthErasureProvider = "supabase" | "clerk";
+export interface DeletionRetryCandidate { userId: string; attempts: number }
 
 export interface UserDeletionState {
   deletedAt: Date;
@@ -29,14 +30,15 @@ export interface UserDeletionRepository {
     deletedAt: Date,
     provider: AuthErasureProvider | string,
   ): Promise<void>;
-  listIncompleteDeletions(limit: number, now?: Date): Promise<string[]>;
+  listIncompleteDeletions(limit: number, now?: Date): Promise<DeletionRetryCandidate[]>;
   recordDeletionFailure(
     userId: string,
     failedAt: Date,
     nextRetryAt: Date,
     sanitizedError: string,
+    ownerId: string,
   ): Promise<void>;
-  clearDeletionLease(userId: string): Promise<void>;
+  clearDeletionLease(userId: string, ownerId: string): Promise<void>;
   claimDeletionLease(
     userId: string,
     ownerId: string,

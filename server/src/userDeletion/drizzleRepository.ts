@@ -130,7 +130,7 @@ export function createDrizzleUserDeletionRepository(
     async markClerkDeleted(userId, deletedAt) {
       await database
         .update(users)
-        .set({ clerkDeletedAt: deletedAt })
+        .set({ clerkDeletedAt: deletedAt, authProvider: "clerk" })
         .where(eq(users.id, userId));
     },
 
@@ -143,7 +143,7 @@ export function createDrizzleUserDeletionRepository(
 
     async listIncompleteDeletions(limit, now = new Date()) {
       const rows = await database
-        .select({ id: users.id })
+        .select({ id: users.id, attempts: users.deletionAttempts })
         .from(users)
         .where(
           and(
@@ -155,6 +155,7 @@ export function createDrizzleUserDeletionRepository(
               sql`${users.authProvider} IS DISTINCT FROM 'supabase'`,
             ),
             or(isNull(users.deletionNextRetryAt), lte(users.deletionNextRetryAt, now)),
+            or(isNull(users.authProvider), eq(users.authProvider, "supabase")),
             or(
               isNull(users.deletionLeaseExpiresAt),
               lte(users.deletionLeaseExpiresAt, now),
@@ -162,10 +163,10 @@ export function createDrizzleUserDeletionRepository(
           ),
         )
         .limit(limit);
-      return rows.map((row) => row.id);
+      return rows.map((row) => ({ userId: row.id, attempts: row.attempts ?? 0 }));
     },
 
-    async recordDeletionFailure(userId, failedAt, nextRetryAt, sanitizedError) {
+    async recordDeletionFailure(userId, failedAt, nextRetryAt, sanitizedError, ownerId) {
       await database
         .update(users)
         .set({
@@ -176,14 +177,14 @@ export function createDrizzleUserDeletionRepository(
           deletionLeaseExpiresAt: null,
           updatedAt: failedAt,
         })
-        .where(eq(users.id, userId));
+        .where(and(eq(users.id, userId), eq(users.deletionLeaseOwner, ownerId)));
     },
 
-    async clearDeletionLease(userId) {
+    async clearDeletionLease(userId, ownerId) {
       await database
         .update(users)
         .set({ deletionLeaseOwner: null, deletionLeaseExpiresAt: null })
-        .where(eq(users.id, userId));
+        .where(and(eq(users.id, userId), eq(users.deletionLeaseOwner, ownerId)));
     },
 
     async claimDeletionLease(userId, ownerId, claimedAt, expiresAt) {
@@ -194,6 +195,14 @@ export function createDrizzleUserDeletionRepository(
           and(
             eq(users.id, userId),
             sql`${users.deletedAt} IS NOT NULL`,
+            or(isNull(users.authProvider), eq(users.authProvider, "supabase")),
+            or(
+              isNull(users.adaptyErasedAt),
+              isNull(users.posthogErasedAt),
+              isNull(users.authDeletedAt),
+              sql`${users.authProvider} IS DISTINCT FROM 'supabase'`,
+            ),
+            or(isNull(users.deletionNextRetryAt), lte(users.deletionNextRetryAt, claimedAt)),
             or(
               isNull(users.deletionLeaseExpiresAt),
               lte(users.deletionLeaseExpiresAt, claimedAt),
