@@ -622,3 +622,9 @@ before T06; UI has substantive changes underway; auth intentional callback owner
 - Targeted npm Clerk refresh unexpectedly re-resolved broad Solana/Noble wallet subtree; agent restored
   clean lane and no update adopted. Root authorized a disposable official-metadata-only two-entry lock
   experiment, conditional on all dependency ranges and clean npm ci, before any adoption.
+
+- Browser session now verified PostHog project537075, named Default project, under organization
+  ExcerLock (visible project URL and organization menu). Earlier project451896 remains confirmed
+  Recovi/Edge and must not be used. Correct org/project identity is now known, but client ingestion-key
+  association, person:write credential, production configuration and real erasure remain unverified.
+  No credential created, permission changed, key copied or server configuration mutated.
