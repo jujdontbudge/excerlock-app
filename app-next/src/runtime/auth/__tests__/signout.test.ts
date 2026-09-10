@@ -157,3 +157,20 @@ test('permanent sign-out revokes readiness before waiting for serialized SDK res
   expect(adapter.identity().userId).toBe('fresh-transition');
   adapter.dispose();
 });
+
+test('intentional SDK callbacks before sign-out promises return remain operation-owned', async () => {
+  let callback: ((event: string, session: unknown) => void) | null = null;
+  const perm = permUser('callback-old');
+  const fresh = anonSession('callback-fresh');
+  const auth = {
+    getSession: jest.fn().mockResolvedValue({ data: { session: { access_token: 'a', refresh_token: 'r', user: perm } }, error: null }),
+    signOut: jest.fn(async () => { callback?.('SIGNED_OUT', null); return { error: null }; }),
+    signInAnonymously: jest.fn(async () => { callback?.('SIGNED_IN', fresh); return { data: { user: anonUser('callback-fresh'), session: fresh }, error: null }; }),
+    linkIdentity: jest.fn(), signInWithIdToken: jest.fn(), updateUser: jest.fn(), signInWithOtp: jest.fn(), verifyOtp: jest.fn(),
+    onAuthStateChange: jest.fn().mockImplementation((next) => { callback = next; return { data: { subscription: { unsubscribe: jest.fn() } } }; }),
+  };
+  const adapter = new SupabaseAuthAdapter({ supabase: { auth } as never, appleDeps: { signInAsync: jest.fn(), digestSHA256Hex: jest.fn() } as never, googleDeps: { clientId: 'c', redirectUri: 'r', buildRequest: jest.fn(), exchangeCode: jest.fn() } as never, apiBaseUrl: 'https://api.test' });
+  await adapter.boot(); await adapter.signOut(); await new Promise((resolve) => setTimeout(resolve, 5));
+  expect(adapter.identity()).toMatchObject({ kind: 'canonical', userId: 'callback-fresh', generation: 1 });
+  adapter.dispose();
+});
