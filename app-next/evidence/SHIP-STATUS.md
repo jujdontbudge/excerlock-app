@@ -13,7 +13,7 @@ Preserve those artifacts as historical evidence; never substitute them for curre
 
 | Evidence | What it proves | What it does not prove |
 | --- | --- | --- |
-| App candidate8d403650:248 suites,1182 tests,13 snapshots and typecheck pass (`/tmp/ship-combined-{app-tests,typecheck}.log`) | Covered local behavior including auth lifecycle drain; clean install with required postinstall | Real sensors, signed execution, device purchase/auth/shields, release UI |
+| App candidate217647f1:248 suites,1189 tests,13 snapshots and typecheck pass (`/tmp/ship-geofence-{full-tests,typecheck}.log`) | Covered local behavior including auth lifecycle drain; clean install with required postinstall | Real sensors, signed execution, device purchase/auth/shields, release UI |
 | Server c26bac8f:36files/192tests; typecheck/build/Drizzle check (`/tmp/ship-server-bridge-integrated.log`) | Fresh and exact legacy migration compatibility, journal preservation/replay, readiness schema checks | Applied remote migration or live provider erasure |
 | Distribution verifier:9Python tests and shell syntax | Verifier predicates tested | Existence of a verified signed IPA |
 | Real-graph synthetic production export at a4c738bc | Production JS dependency graph includes real runtime and excludes dev graph | Hermes size, signed/native runtime, current later edits |
@@ -29,20 +29,22 @@ Preserve those artifacts as historical evidence; never substitute them for curre
 - **T13:** Six subscriptions remain missing review screenshots/metadata readiness. App Store version has
   no build attached. Narrow product-backed ASC metadata updates passed readbacks under release lock;
   validation now has4 blockers: review details, attached build, availability, screenshots. Existing review notes are a draft. Privacy label
-  publication and truthful release screenshots are unverified. Do not tick checklist lines from this index.
+  publication and complete release screenshots are unverified. Reviewer preset remains unimplemented:
+  exact App Review name did not change5000step plan, and no runtime review_preset flag exists.
+  Do not tick checklist lines from this index.
 - **T14:** Physical iPhone13 Il is unavailable. Session-owned simulator EA6C9AC3-0C1A-430B-8EF9-A84A6E044206
-  was installed/launched with real-runtime Release candidate8d403650. Startup failed visibly with
-  `ERR_KEY_CHAIN` / missing entitlement. Correct Xcode ad-hoc simulator rebuild repaired entitlement
-  packaging without changing HBC, but repeat launch still shows startup recovery (no keychain error
-  in captured unified log). Remaining startup cause is under investigation, not an app-runtime pass.
-  Fresh simctl inventory reports this simulator shutdown. Current runtime/lock-state acceptance remains incomplete.
+  now runs clean real-runtime Release candidate217647f1. Correct simulator ad-hoc signing and a verified
+  geofence stop fix resolve the two observed startup failures. Walking onboarding reaches fetched
+  paywall; plan switching and restore-not-found observed. AX/screens in candidate-217647f1 folder.
+  No real/local StoreKit purchase completed; no physical sensor/lock-state acceptance. The .storekit
+  file and dedicated test scheme specified by T05 were found missing, not implicitly complete.
 - **T15:** Release startup/TTI and battery/device measurements absent. Home semantic-clock optimization
   passed local tests. Unsigned device Release at7619c5bd compiled, but its packaged Hermes bundle was
   7,881,912 bytes: FAIL against the strict decimal4,000,000-byte gate. A disposable single-core Sentry
   dependency experiment measured6,357,304 bytes without experimental optimization and5,947,932 bytes
   with command-only tree shaking. Both still FAIL; neither synthetic export proves native runtime acceptance.
-  Actual packaged Release simulator candidate8d403650 has6,372,060-byte Hermes bundle (SHA256 in
-  `ship-current-simulator/build.json`), also FAIL against4,000,000. RuntimeVersion2/main+4 extensions built;
+  Actual packaged Release simulator candidate217647f1 has6,372,948-byte Hermes bundle (SHA256 in
+  `ship-current-simulator/candidate-217647f1/build.json`), also FAIL against4,000,000. RuntimeVersion2/main+4 extensions built;
   local OTA channel missing and no OTA activation proved.
 - **T16 (revised scope):** No uploaded candidate or verified TestFlight install yet. Stop at verified
   submission readiness; do not execute App Review submission, public release, or production OTA.
