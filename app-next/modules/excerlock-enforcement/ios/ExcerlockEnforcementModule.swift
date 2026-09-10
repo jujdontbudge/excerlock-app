@@ -10,9 +10,18 @@ struct WindowInput: Record { @Field var id: String = ""; @Field var start: Doubl
 public final class ExcerlockEnforcementModule: Module {
   public func definition() -> ModuleDefinition {
     Name("ExcerlockEnforcement")
-
-    AsyncFunction("publish") { (input: EnforcementSnapshotInput) throws -> [String] in
-      let store = ExcerlockPolicyStore.shared
+    AsyncFunction("publish") { (input: EnforcementSnapshotInput) throws -> [String] in try self.publish(input: input) }
+    AsyncFunction("shield") { (revision: Int) throws -> Bool in try self.shield(revision: revision) }
+    AsyncFunction("unshield") { (revision: Int) throws -> Bool in try self.unshield(revision: revision) }
+    AsyncFunction("stageWatchdog") { (plan: WatchdogInput, revision: Int) async throws -> String in try await self.stageWatchdog(plan: plan, revision: revision) }
+    AsyncFunction("commitWatchdog") { (id: String, revision: Int) throws -> Bool in try self.commitWatchdog(id: id, revision: revision) }
+    AsyncFunction("cancelWatchdogs") { (revision: Int) throws -> Void in try self.cancelWatchdogs(revision: revision) }
+    AsyncFunction("replaceWindows") { (windows: [WindowInput], revision: Int) throws -> Void in try self.replaceWindows(windows: windows, revision: revision) }
+    Function("getPolicyRevision") { () throws -> Int in try self.getPolicyRevision() }
+  }
+  private func getPolicyRevision() throws -> Int { try ExcerlockPolicyStore.shared.locked { try ExcerlockPolicyStore.shared.readIfPresentLocked()?.revision ?? -1 } }
+  private func publish(input: EnforcementSnapshotInput) throws -> [String] {
+    let store = ExcerlockPolicyStore.shared
       var stale: [String] = []
       try store.locked {
         let revision = input.revision; let state = input.state; let now = input.now; let eligibleUntil = input.eligibleUntil
@@ -47,15 +56,20 @@ public final class ExcerlockEnforcementModule: Module {
           shielded: prior?.shielded ?? false)
         try store.writeLocked(record)
       }
-      if !stale.isEmpty { DeviceActivityCenter().stopMonitoring(stale.map(DeviceActivityName.init)) }
+      if !stale.isEmpty { DeviceActivityCenter().stopMonitoring(stale.map { DeviceActivityName($0) }) }
       return stale
-    }
+  }
 
-    AsyncFunction("shield") { (revision: Int) throws -> Bool in try ExcerlockPolicyStore.shared.apply(shield: true, revision: revision) }
-    AsyncFunction("unshield") { (revision: Int) throws -> Bool in try ExcerlockPolicyStore.shared.apply(shield: false, revision: revision) }
+  private func shield(revision: Int) throws -> Bool {
+    try ExcerlockPolicyStore.shared.apply(shield: true, revision: revision)
+  }
 
-    AsyncFunction("stageWatchdog") { (plan: WatchdogInput, revision: Int) async throws -> String in
-      let start = plan.start; let end = plan.end; let registeredAt = plan.registeredAt; let eligibleUntil = plan.eligibleUntil
+  private func unshield(revision: Int) throws -> Bool {
+    try ExcerlockPolicyStore.shared.apply(shield: false, revision: revision)
+  }
+
+  private func stageWatchdog(plan: WatchdogInput, revision: Int) async throws -> String {
+    let start = plan.start; let end = plan.end; let registeredAt = plan.registeredAt; let eligibleUntil = plan.eligibleUntil
       let policyGeneration = plan.policyGeneration; let accountGeneration = plan.accountGeneration; let selectionVersion = plan.selectionVersion
       guard end - start >= 15 * 60 * 1000, end > Date().timeIntervalSince1970 * 1000,
             end <= eligibleUntil else { throw ExcerlockPolicyError.invalidSnapshot }
@@ -94,10 +108,10 @@ public final class ExcerlockEnforcementModule: Module {
         throw error
       }
       return id
-    }
+  }
 
-    AsyncFunction("commitWatchdog") { (id: String, revision: Int) throws -> Bool in
-      var retire: [String] = []
+  private func commitWatchdog(id: String, revision: Int) throws -> Bool {
+    var retire: [String] = []
       let committed = try ExcerlockPolicyStore.shared.locked {
         var record = try ExcerlockPolicyStore.shared.readLocked()
         guard record.revision == revision, record.state == "conditional", var staged = record.registrations[id], !staged.committed,
@@ -111,23 +125,23 @@ public final class ExcerlockEnforcementModule: Module {
         if let old = record.committedId, old != id { retire.append(old); record.registrations.removeValue(forKey: old) }
         record.committedId = id; try ExcerlockPolicyStore.shared.writeLocked(record); return true
       }
-      if committed && !retire.isEmpty { DeviceActivityCenter().stopMonitoring(retire.map(DeviceActivityName.init)) }
+      if committed && !retire.isEmpty { DeviceActivityCenter().stopMonitoring(retire.map { DeviceActivityName($0) }) }
       return committed
-    }
+  }
 
-    AsyncFunction("cancelWatchdogs") { (revision: Int) throws -> Void in
-      var names: [String] = []
+  private func cancelWatchdogs(revision: Int) throws -> Void {
+    var names: [String] = []
       try ExcerlockPolicyStore.shared.locked {
         var record = try ExcerlockPolicyStore.shared.readLocked()
         guard record.revision == revision else { throw ExcerlockPolicyError.staleRevision }
         names = Array(record.registrations.keys); record.registrations = [:]; record.committedId = nil
         try ExcerlockPolicyStore.shared.writeLocked(record)
       }
-      if !names.isEmpty { DeviceActivityCenter().stopMonitoring(names.map(DeviceActivityName.init)) }
-    }
+      if !names.isEmpty { DeviceActivityCenter().stopMonitoring(names.map { DeviceActivityName($0) }) }
+  }
 
-    AsyncFunction("replaceWindows") { (windows: [WindowInput], revision: Int) throws -> Void in
-      guard windows.count <= 7 else { throw ExcerlockPolicyError.invalidSnapshot }
+  private func replaceWindows(windows: [WindowInput], revision: Int) throws -> Void {
+    guard windows.count <= 7 else { throw ExcerlockPolicyError.invalidSnapshot }
       let now = Date().timeIntervalSince1970 * 1000
       var staged: [ExcerlockScheduledWindow] = []
       let context = try ExcerlockPolicyStore.shared.locked { () -> (Int, Int, String) in
@@ -167,6 +181,5 @@ public final class ExcerlockEnforcementModule: Module {
         }
       } catch { if !started.isEmpty { DeviceActivityCenter().stopMonitoring(started.map { DeviceActivityName($0) }) }; throw error }
       if !retire.isEmpty { DeviceActivityCenter().stopMonitoring(retire.map { DeviceActivityName($0) }) }
-    }
   }
 }
