@@ -1,5 +1,6 @@
 import { Heading, DayPicker, TimeRangeRow, Label } from '../../design-system';
 import { View } from 'react-native';
+import { ReactNode } from 'react';
 import { RuleDraft } from './draft';
 
 import { Reveal } from '../../motion/Reveal';
@@ -12,19 +13,19 @@ export function ScheduleScreen({
   draft: d,
   onAction,
   onChoose,
-
+  preview,
 }: {
   draft: ScheduleDraft;
   ruleDraft?: RuleDraft;
   onAction: (a: ScheduleAction) => void;
   onChoose: (which: 'start' | 'end') => void;
+  preview?: ReactNode;
 }) {
   const issues = scheduleIssues(d);
   return (
-    <View style={{ gap: t.space.md }}>
+    <>
       <View style={{ gap: t.space.md }}>
         <Heading title={c.S1} />
-
 
         <Reveal index={1}>
           <DayPicker days={d.days} onChange={(days) => onAction({ type: 'days', value: days as Weekday[] })} />
@@ -55,7 +56,7 @@ export function ScheduleScreen({
           </Label>
         </Reveal>
       </View>
-
-    </View>
+      {preview}
+    </>
   );
 }

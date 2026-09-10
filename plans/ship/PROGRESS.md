@@ -80,3 +80,11 @@ created as an unintended side effect of the earlier EAS audit command. Only read
 AX tree; did not change, stop or boot a simulator.
 Second consecutive turn with the same device/work-order gate pending. Meaningful prerequisite progress
 was still possible, so goal remains active. Do not mark complete.
+
+## User authorization update
+
+Johan explicitly authorized proceeding with all work without further questions. Local implementation may
+run in parallel now; physical-device, truthful review screenshot, and submission evidence remain mandatory
+release gates. Prior pending work-order question is resolved. Original T00 sequencing is overridden by the
+latest user direction; no acceptance requirement is removed. Architecture/integration remains with root or
+Astra low. Muse xhigh handles bounded implementation; root reviews changes and validates integrated results.

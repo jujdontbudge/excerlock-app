@@ -1,6 +1,6 @@
 import { pathFor, nextStep, prevStep, progressFraction, resumeStep } from '../flow';
 const pre = Array.from({ length: 20 }, (_, i) => 'O' + String(i + 1).padStart(2, '0')).filter(
-  (step) => step !== 'O19',
+  (step) => step !== 'O07' && step !== 'O19',
 );
 const tail = ['S1', 'S2', 'S3', 'S4', 'T1', 'T2', 'T3', 'T4', 'P'];
 test.each([

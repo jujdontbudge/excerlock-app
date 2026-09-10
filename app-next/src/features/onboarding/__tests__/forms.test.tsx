@@ -14,7 +14,6 @@ test('name edits are persisted and oversized names show an inline error', async 
 test.each([
   ['O05', 'Friends', 'referralSource', 'friend'],
   ['O06', '25–34', 'ageBand', '25–34'],
-  ['O07', 'Remote worker', 'occupation', 'Remote worker'],
   ['O08', 'More exercise', 'improveFirst', 'exercise'],
   ['O09', 'Focus on what matters', 'mainReason', 'focus'],
 ])('%s commits its selected answer', async (step, label, key, value) => {

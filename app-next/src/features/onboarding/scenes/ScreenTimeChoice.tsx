@@ -19,7 +19,7 @@ export function ScreenTimeChoice({
       onPress={onPress}
       style={{
         borderRadius: t.radius.card,
-        backgroundColor: selected ? t.brand.pressed : t.border.default,
+        backgroundColor: selected ? t.brand.pressed : t.border.divider,
         paddingBottom: t.space.xs,
       }}>
       <View

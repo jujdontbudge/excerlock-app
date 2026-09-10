@@ -1,6 +1,5 @@
 export const habitLoopCopy = [
   {
-    center: 'Scrolling is\nthe habit',
     stages: [
       { title: 'The urge', detail: '“I might check socials”' },
       { title: 'The reward', detail: '“That feels good”' },
@@ -9,7 +8,6 @@ export const habitLoopCopy = [
     ],
   },
   {
-    center: 'Exercise becomes\nthe habit',
     stages: [
       { title: 'The urge', detail: '“I want to scroll”' },
       { title: 'The reward', detail: '“That feels good”' },
@@ -18,7 +16,6 @@ export const habitLoopCopy = [
     ],
   },
   {
-    center: 'Exercise is\nthe habit now',
     stages: [
       { title: 'Exercise first', detail: '“Time to exercise”' },
       { title: 'Unlock screentime', detail: '“I earned this”' },

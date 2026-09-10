@@ -1,3 +1,4 @@
+export { renderSupportEmail, sendSupportEmail } from "./notify.js";
 export {
   createSupportSubmissionService,
   type SupportSubmissionAnalytics,

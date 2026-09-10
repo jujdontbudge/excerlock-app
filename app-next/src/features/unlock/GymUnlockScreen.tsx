@@ -10,7 +10,6 @@ import { useGymUnlock } from './useGymUnlock';
 import { useCeremony } from './useCeremony';
 import { UnlockLayout, Detected } from './UnlockLayout';
 import { GymUnlockMap } from './GymUnlockMap';
-import { distanceLabel } from './geometry';
 import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
 import { dayKey } from '../../domain/calendar';
 export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; preview?: boolean }) {
@@ -40,24 +39,15 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
     runtime.analytics.track('unlock_screen_opened', { kind: 'gym', preview });
   }, [runtime, preview]);
   const noGym = !state.nearest && !preview;
-  const title = state.denied
-    ? c.gym.denied
-    : noGym
-      ? c.gym.noGym
-      : state.working
-        ? c.gym.confirming
-        : state.inside
-          ? c.gym.inside
-          : c.gym.outside;
+  const outside = !state.denied && !noGym && !state.working && !state.inside;
+  const title = state.denied ? c.gym.denied : noGym ? c.gym.noGym : state.working ? c.gym.confirming : c.gym.inside;
   const body = state.denied
     ? c.gym.deniedBody
     : state.working
       ? c.gym.confirmingBody
       : state.inside
         ? c.gym.insideBody(state.nearest?.name ?? 'your gym')
-        : state.nearest && state.distance !== null
-          ? c.gym.outsideBody(distanceLabel(state.distance), state.nearest.name)
-          : undefined;
+        : undefined;
   return (
     <UnlockLayout
       close={close}
@@ -69,14 +59,21 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
           <PrimaryButton label={c.gym.openSettings} onPress={() => void Linking.openSettings()} />
         ) : noGym ? (
           <PrimaryButton label={c.gym.chooseGym} onPress={() => router.push('/settings/gyms')} />
-        ) : state.inside ? (
-          <PrimaryButton
-            label={c.gym.unlock}
-            loading={state.working}
-            disabled={state.working}
-            onPress={() => void state.unlock()}
-          />
-        ) : undefined
+        ) : (
+          <>
+            {outside ? (
+              <Label accessibilityRole="alert" variant="support" tone="secondary" style={{ textAlign: 'center' }}>
+                {state.checking ? c.gym.checking : c.gym.outside}
+              </Label>
+            ) : null}
+            <PrimaryButton
+              label={c.gym.unlock}
+              loading={state.working || state.checking}
+              disabled={state.working || state.checking}
+              onPress={() => void state.unlock()}
+            />
+          </>
+        )
       }>
       <View
         accessibilityRole="progressbar"
@@ -90,7 +87,7 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
           overlay={ceremony.showMessage ? <Detected title={c.gym.detected} body={subline} /> : undefined}
         />
       </View>
-      {!ceremony.showMessage ? <Heading title={title} support={body} /> : null}
+      {!ceremony.showMessage && !outside ? <Heading title={title} support={body} /> : null}
       {state.error ? <Label accessibilityRole="alert">{state.error}</Label> : null}
     </UnlockLayout>
   );

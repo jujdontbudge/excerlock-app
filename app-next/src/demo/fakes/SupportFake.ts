@@ -7,6 +7,7 @@ export function SupportFake(ctx: FakeContext): SupportPort {
       await new Promise((resolve) => setTimeout(resolve, 600));
       if (ctx.result() === 'cancel') throw new Error('Cancelled');
       ctx.log('support_sent', { category, characters: message.trim().length });
+      return { via: 'server' };
     },
   };
 }

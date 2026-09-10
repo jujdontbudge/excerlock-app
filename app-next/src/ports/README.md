@@ -16,4 +16,4 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
 
 models.ts defines shared facts. RuntimeControls is a local-only developer interface and is never a product service adapter.
 
-`SupportPort` is a local request contract added with Settings. Its Phase 1 fake simulates latency/outcomes and sends no message over a network.
+`SupportPort.send` returns `{ via: 'server' | 'mail' }`. The Phase 1 fake returns `server` after simulated latency and sends nothing over a network. On device, `supportDelivery` opens a `mailto:` handoff after the inner port succeeds.

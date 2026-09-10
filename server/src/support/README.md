@@ -15,6 +15,15 @@ rather than on Drizzle.
   one-user/one-request constraint.
 - No earning, minutes, ledger, shield, or locking state crosses this module.
 
+After persist and analytics, the server best-effort emails
+`SUPPORT_NOTIFY_EMAIL` (default `johansardar77@gmail.com`) through Resend when
+`RESEND_API_KEY` is set. A missing key or send failure never fails
+`POST /v1/support`. Default `SUPPORT_FROM_EMAIL` is
+`ExcerLock <onboarding@resend.dev>`, which only delivers to the Resend account
+owner until a domain is verified. Do not commit API keys. App labels map as
+Problem→bug, Question→support, Idea→support; the server still accepts
+`support`, `bug`, and `feature`.
+
 ## Tests
 
 ```sh

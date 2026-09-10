@@ -1,13 +1,26 @@
 import { HistoryDay } from '../../ports/models';
+import { Rule, RuleDay } from '../../domain/types';
 import { reclaimedPeriod } from '../../domain/reclaimed';
 import { streak } from '../../domain/streak';
-import { periodBounds, dates, Period } from './period';
+import { addDays } from '../../domain/calendar';
+import { periodBounds, dates, Period, weekStart } from './period';
 import { analyticsCopy as c } from '../../content/analytics';
-export function analyticsModel(history: HistoryDay[], today: string, period: Period, offset: number, baseline: number) {
-  const { start, end } = periodBounds(today, period, offset),
-    prev = periodBounds(today, period, offset - 1),
-    rows = history.filter((d) => d.day >= start && d.day <= end && d.day <= today),
-    previousRows = history.filter((d) => d.day >= prev.start && d.day <= prev.end && d.day <= today),
+export type AnalyticsInputs = { rules?: Rule[]; ruleDays?: RuleDay[] };
+const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
+export function analyticsModel(
+  history: HistoryDay[],
+  today: string,
+  period: Period,
+  offset: number,
+  baseline: number,
+  { rules = [], ruleDays = [] }: AnalyticsInputs = {},
+) {
+  const firstDay = history.reduce((min, d) => (d.day < min ? d.day : min), today),
+    { start, end } = periodBounds(today, period, offset, firstDay),
+    prev = period === 'All' ? null : periodBounds(today, period, offset - 1, firstDay),
+    inRange = (day: string) => day >= start && day <= end && day <= today,
+    rows = history.filter((d) => inRange(d.day)),
+    previousRows = prev ? history.filter((d) => d.day >= prev.start && d.day <= prev.end && d.day <= today) : [],
     reclaimed = reclaimedPeriod(
       baseline,
       rows.map((d) => d.usageMinutes),
@@ -17,28 +30,41 @@ export function analyticsModel(history: HistoryDay[], today: string, period: Per
       previousRows.map((d) => d.usageMinutes),
     ),
     allDays = dates(start, end),
-    eligible = allDays.filter((d) => d <= today),
-    groups =
-      period === 'Week'
-        ? allDays.map((d) => [d])
-        : period === 'Month'
-          ? Array.from({ length: Math.ceil(allDays.length / 7) }, (_, i) => allDays.slice(i * 7, i * 7 + 7))
-          : Array.from({ length: 12 }, (_, i) => allDays.filter((d) => Number(d.slice(5, 7)) === i + 1));
+    eligible = allDays.filter((d) => d <= today);
+  // Day shows its surrounding week as a dot row; Week is daily; All time is weekly buckets.
+  const groupDays = period === 'Day' ? dates(weekStart(start), addDays(weekStart(start), 6)) : allDays;
+  const groups: string[][] =
+    period === 'All'
+      ? Object.values(
+          groupDays.reduce<Record<string, string[]>>((acc, d) => {
+            (acc[weekStart(d)] ??= []).push(d);
+            return acc;
+          }, {}),
+        )
+      : groupDays.map((d) => [d]);
   const series = groups.map((days) => {
-    const bucket = rows.filter((r) => days.includes(r.day)),
+    const bucket = history.filter((r) => days.includes(r.day) && r.day <= today),
       values = bucket.flatMap((r) => (r.usageMinutes === null ? [] : [r.usageMinutes]));
     return {
+      day: days[0],
+      days: days.length,
       label: c.point(days[0], period),
-      value: values.length ? values.reduce((a, b) => a + b, 0) / values.length : null,
+      value: values.length ? sum(values) / values.length : null,
       reclaimed: values.length ? reclaimedPeriod(baseline, values).minutes / values.length : null,
+      met: bucket.some((r) => r.met),
+      scheduled: bucket.some((r) => r.scheduled),
       activity: {
-        walking: bucket.reduce((s, r) => s + r.activity.walking, 0),
-        gym: bucket.reduce((s, r) => s + r.activity.gym, 0),
-        running: bucket.reduce((s, r) => s + r.activity.running, 0),
-        biking: bucket.reduce((s, r) => s + r.activity.biking, 0),
+        walking: sum(bucket.map((r) => r.activity.walking)),
+        gym: sum(bucket.map((r) => r.activity.gym)),
+        running: sum(bucket.map((r) => r.activity.running)),
+        biking: sum(bucket.map((r) => r.activity.biking)),
       },
     };
   });
+  const enabled = rules.filter((r) => r.enabled),
+    arrivalRules = enabled.filter((r) => r.mode.kind === 'event'),
+    stateRules = enabled.filter((r) => r.mode.kind === 'state'),
+    periodRuleDays = ruleDays.filter((d) => inRange(d.day));
   return {
     start,
     end,
@@ -52,11 +78,24 @@ export function analyticsModel(history: HistoryDay[], today: string, period: Per
     met: rows.filter((r) => r.scheduled && r.met).length,
     streak: streak(history, today),
     activities: {
-      walking: rows.reduce((s, r) => s + r.activity.walking, 0),
-      gym: rows.reduce((s, r) => s + r.activity.gym, 0),
-      running: rows.reduce((s, r) => s + r.activity.running, 0),
-      biking: rows.reduce((s, r) => s + r.activity.biking, 0),
+      walking: sum(rows.map((r) => r.activity.walking)),
+      gym: sum(rows.map((r) => r.activity.gym)),
+      running: sum(rows.map((r) => r.activity.running)),
+      biking: sum(rows.map((r) => r.activity.biking)),
+    },
+    /** Confirmed gym arrivals: met days of arrival-trigger rules inside the period. */
+    arrivals: periodRuleDays.filter((d) => d.met && arrivalRules.some((r) => r.id === d.ruleId)).length,
+    /** Verified walking minutes: state-rule progress inside the period. */
+    walkingMinutes: sum(periodRuleDays.filter((d) => stateRules.some((r) => r.id === d.ruleId)).map((d) => d.progress)),
+    conditions: {
+      gymMinutes: enabled.some((r) => r.activity === 'gym' && r.mode.kind === 'target'),
+      gymArrival: arrivalRules.length > 0,
+      steps: enabled.some((r) => r.activity === 'walking' && r.mode.kind === 'target'),
+      walking: stateRules.length > 0,
+      running: enabled.some((r) => r.activity === 'running'),
+      biking: enabled.some((r) => r.activity === 'biking'),
     },
     dayZero: history.every((r) => r.day >= today),
   };
 }
+export type AnalyticsModel = ReturnType<typeof analyticsModel>;

@@ -33,6 +33,7 @@ export function GymUnlockMap({
         initialRegion={region(location ?? gym ?? defaultCentre)}
         showsUserLocation
         showsMyLocationButton={false}
+        mapPadding={{ top: 0, right: 0, bottom: t.space.lg, left: t.space.sm }}
         onPanDrag={() => {
           setFollowing(false);
           setShowGym(false);

@@ -15,11 +15,14 @@ test.each([
   );
   expect(screen.getByRole('header', { name: title })).toBeTruthy();
   expect(screen.getByText('Gaps mean no measurement. They are excluded from time reclaimed.')).toBeTruthy();
-  await userEvent.press(screen.getByRole('tab', { name: 'Month' }));
-  expect(screen.getByText('This month')).toBeTruthy();
+  await userEvent.press(screen.getByRole('tab', { name: 'All time' }));
+  expect(screen.getByText(/^Since /)).toBeTruthy();
+  await userEvent.press(screen.getByRole('tab', { name: 'Day' }));
+  expect(screen.getByText('Today')).toBeTruthy();
+  expect(screen.getByLabelText('Days met this week')).toBeTruthy();
   expect(screen.queryByText('Your weekly recap')).toBeNull();
 });
-test('weekly recap uses readable whole-minute activity totals as the fake gym clock ticks', async () => {
+test('tiles follow the gym-minutes condition as the fake gym clock ticks', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('gym-time-user');
   await runtime.gym.checkIn(runtime.gym.listPlaces()[0].id);
@@ -29,9 +32,24 @@ test('weekly recap uses readable whole-minute activity totals as the fake gym cl
       <AnalyticsScreen />
     </AppRuntimeProvider>,
   );
-  expect(screen.getByText('30 minutes')).toBeTruthy();
+  expect(screen.getByLabelText(/^At the gym, 30m/)).toBeTruthy();
+  expect(screen.getByLabelText(/^Streak, /)).toBeTruthy();
+  expect(screen.queryByLabelText(/^Gym arrivals/)).toBeNull();
+  expect(screen.queryByLabelText(/^Steps, /)).toBeNull();
   expect(screen.getByRole('header', { name: 'How you earned time' })).toBeTruthy();
-  expect(screen.getAllByText('Time reclaimed').length).toBeGreaterThan(0);
-  expect(screen.getByLabelText('Screen time and time reclaimed chart')).toBeTruthy();
+  expect(screen.getByText('30 minutes')).toBeTruthy();
+  expect(screen.getAllByText('Screen time replaced').length).toBeGreaterThan(0);
+  expect(screen.getByLabelText('Screen time replaced chart')).toBeTruthy();
+  runtime.dispose();
+});
+test('an arrival condition shows check-ins instead of gym minutes', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('gym-arrival-user');
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <AnalyticsScreen />
+    </AppRuntimeProvider>,
+  );
+  expect(screen.getByLabelText(/^Gym arrivals, /)).toBeTruthy();
   runtime.dispose();
 });

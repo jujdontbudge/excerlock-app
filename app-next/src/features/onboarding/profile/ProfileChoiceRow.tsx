@@ -47,7 +47,7 @@ export function ProfileChoiceRow({
           paddingHorizontal: p.row.horizontal,
           paddingVertical: p.row.vertical,
           borderRadius: p.row.radius,
-          borderWidth: t.stroke.selected,
+          borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
           borderColor: selected ? t.brand.primary : p.colors.line,
           backgroundColor: selected ? t.brand.primary : leading ? p.colors.referral : p.colors.row,
           transitionProperty: ['backgroundColor', 'borderColor'],

@@ -17,7 +17,6 @@ export function commitPlan(a: Answers, unit: 'km' | 'mi', base?: RuleDraft) {
     'name',
     'referralSource',
     'ageBand',
-    'occupation',
     'improveFirst',
     'mainReason',
     'estimatedDailyMinutes',

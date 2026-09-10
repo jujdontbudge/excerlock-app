@@ -5,7 +5,6 @@ export const onboardingCopy = {
   O04: { title: 'What should we call you?', body: 'Let’s make this personal.' },
   O05: { title: 'How did you hear about us?', body: '' },
   O06: { title: 'How old are you?', body: 'This helps us tailor your plan.' },
-  O07: { title: 'What do you do?', body: 'We’ll fit your plan around your day.' },
   O08: { title: 'What is your goal?', body: 'Pick one. You can change it later.' },
   O09: { title: 'What’s the main reason you want to make a change?', body: 'Start with what matters to you.' },
   O10: {
@@ -19,13 +18,18 @@ export const onboardingCopy = {
     title: 'This is how much time you spend scrolling',
     body: 'A little less scrolling can make room for something you care about.',
   },
-  O15: { title: 'This is good.', body: 'We’ll use your screen time habits to help you exercise more.' },
+  O15: { title: 'This is good.', body: 'We’ll use your habit to fuel exercise instead.' },
   O16: { title: 'You’re stuck in a loop', body: 'An urge. A quick scroll. A little reward. Then, again.' },
   O17: { title: 'We’ll change the loop', body: 'Put a little movement between the urge and the app.' },
   O18: { title: 'You become ADDICTED to exercise', body: 'Want to scroll? Move first. Unlock your apps and enjoy.' },
   O20: { title: 'What exercise should unlock your apps?', body: 'Pick the one you will really do.' },
 } as const;
 export const finalLoopTitle = { before: 'You become ', emphasis: 'ADDICTED', after: ' to exercise' } as const;
+/** Loop subheads carry one orange word; the rest stays neutral at heading size. */
+export const loopSubheads = {
+  O16: { before: '', emphasis: 'Scrolling', after: ' is the habit' },
+  O17: { before: '', emphasis: 'Exercise', after: ' becomes the habit' },
+} as const;
 export const onboardingLabels = {
   start: 'Get started',
   continue: 'Continue',

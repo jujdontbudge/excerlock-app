@@ -19,8 +19,9 @@ export function O11({ answers }: AnswerProps) {
       <View
         style={{
           borderRadius: t.radius.card,
-          borderWidth: t.stroke.selected,
-          borderColor: t.brand.primary,
+          borderWidth: t.stroke.hairline,
+          borderColor: t.border.outline,
+          backgroundColor: t.surface.card,
           padding: t.space.xl,
           gap: t.space.lg,
         }}>

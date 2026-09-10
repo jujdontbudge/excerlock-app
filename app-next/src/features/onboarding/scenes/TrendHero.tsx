@@ -16,8 +16,9 @@ export function TrendHero() {
           style={{
             borderRadius: t.radius.sheet,
             backgroundColor: t.surface.card,
+            borderWidth: t.stroke.hairline,
+            borderColor: t.border.outline,
             padding: t.space.lg,
-            boxShadow: t.shadow.cta,
           }}>
           <View style={{ width: '100%', aspectRatio: 320 / 240 }}>
             <TrendCurves />

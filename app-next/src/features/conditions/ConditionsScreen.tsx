@@ -64,7 +64,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
       ) : (
         <EmptyState icon="walking" title={c.empty} body={c.emptyBody} action={c.add} onAction={onAdd} />
       )}
-      <View style={{ backgroundColor: t.surface.card, borderRadius: t.radius.pill, boxShadow: '0px 6px 20px rgba(100,55,25,0.10)' }}>
+      <View style={{ backgroundColor: t.surface.card, borderRadius: t.radius.pill, borderWidth: t.stroke.hairline, borderColor: t.border.outline }}>
         <SettingsRow title="Lock list" icon="lock" iconTint={t.brand.primary} onPress={() => void runtime.screenTime.presentAppPicker()} />
       </View>
     </ScreenShell>

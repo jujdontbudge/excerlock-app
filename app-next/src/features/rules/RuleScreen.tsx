@@ -8,15 +8,18 @@ import { tokens as t } from '../../design-system/tokens';
 import { walkingCopy } from '../../content/rules';
 import { workoutCopy } from '../../content/workoutRules';
 import { View } from 'react-native';
+import { ReactNode } from 'react';
 
 export type BranchStep = 'W1' | 'W2' | 'W3' | 'G1' | 'G2' | 'R1' | 'R2' | 'B1' | 'B2' | 'D';
 export function RuleScreen({
   step,
+  preview,
   ...props
 }: {
   step: BranchStep;
   draft: RuleDraft;
   onAction: (a: DraftAction) => void;
+  preview?: ReactNode;
 }) {
   const walking = step === 'W1' || step === 'W2' || step === 'W3';
   const copy = walking ? walkingCopy[step] : workoutCopy[step];
@@ -37,7 +40,7 @@ export function RuleScreen({
           {body}
         </Reveal>
       </View>
-
+      {preview}
     </>
   );
 }

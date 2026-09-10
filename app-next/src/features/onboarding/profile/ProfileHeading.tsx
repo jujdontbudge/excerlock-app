@@ -4,7 +4,7 @@ import { tokens as t } from '../../../design-system/tokens';
 import { profileTokens as p } from '../../../design-system/profileTokens';
 import { onboardingCopy as c } from '../../../content/onboarding';
 import { Reveal } from '../../../motion/Reveal';
-export function ProfileHeading({ step }: { step: 'O04' | 'O05' | 'O06' | 'O07' }) {
+export function ProfileHeading({ step }: { step: 'O04' | 'O05' | 'O06' }) {
   const copy = c[step];
   const title =
     step === 'O04'

@@ -54,12 +54,12 @@ export function TimeRangeRow({
               feedback();
               onAllDay(v);
             }}
-            trackColor={{ true: iosGreen, false: t.border.default }}
+            trackColor={{ true: iosGreen, false: t.border.divider }}
           />
         </View>
         {!allDay ? (
           <>
-            <View style={{ height: t.stroke.hairline, backgroundColor: t.border.default, marginLeft: t.space.lg }} />
+            <View style={{ height: t.stroke.hairline, backgroundColor: t.border.divider, marginLeft: t.space.lg }} />
             <PressableScale
               label={`${controls.start}: ${start}`}
               onPress={() => onChoose('start')}>
@@ -83,7 +83,7 @@ export function TimeRangeRow({
                 </View>
               </View>
             </PressableScale>
-            <View style={{ height: t.stroke.hairline, backgroundColor: t.border.default, marginLeft: t.space.lg }} />
+            <View style={{ height: t.stroke.hairline, backgroundColor: t.border.divider, marginLeft: t.space.lg }} />
             <PressableScale label={`${controls.end}: ${end}`} onPress={() => onChoose('end')}>
               <View
                 style={{

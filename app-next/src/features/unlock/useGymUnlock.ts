@@ -14,7 +14,8 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
   const [location, setLocation] = useState<Coordinates | null>(preview ? (places.at(-1) ?? defaultCentre) : null);
   const [presence, setPresence] = useState(false),
     [denied, setDenied] = useState(false);
-  const [working, setWorking] = useState(false),
+  const [checking, setChecking] = useState(false),
+    [working, setWorking] = useState(false),
     [lifted, setLifted] = useState(alreadyCredited),
     [value, setValue] = useState(alreadyCredited ? 1 : 0),
     [error, setError] = useState('');
@@ -84,7 +85,22 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
     return () => clearInterval(timer);
   }, [working, inside, preview, runtime]);
   const unlock = async () => {
-    if (!inside || working || lifted) return;
+    if (working || lifted || checking) return;
+    if (!inside) {
+      // Manual fallback: force a fresh fix; presence observers update `inside` when it lands at the gym.
+      setChecking(true);
+      runtime.analytics.track('gym_unlock_checked', { distance, preview });
+      try {
+        const p = await runtime.gym.currentLocation(true);
+        setLocation(p);
+        setDenied(!p);
+      } catch {
+        setDenied(true);
+      } finally {
+        setChecking(false);
+      }
+      return;
+    }
     const token = ++generation.current;
     request.current?.abort();
     request.current = new AbortController();
@@ -124,5 +140,5 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
             ? Math.min(1, Math.max(0, (Date.parse(now) - Date.parse(session.startedAt)) / PRESENCE_CONFIRM_MS))
             : value,
   };
-  return { location, nearest, distance, inside, denied, error, unlock, ...shown };
+  return { location, nearest, distance, inside, denied, error, unlock, checking, ...shown };
 }

@@ -17,7 +17,7 @@ export function O02({ onBack }: { onBack?: () => void }) {
             width: t.layout.dot,
             height: t.layout.dot,
             borderRadius: t.radius.pill,
-            backgroundColor: i === 1 ? t.brand.primary : t.border.default,
+            backgroundColor: i === 1 ? t.brand.primary : t.border.divider,
           }}
         />
       ))}
@@ -26,7 +26,8 @@ export function O02({ onBack }: { onBack?: () => void }) {
   return (
     <View style={{ flexGrow: 1, paddingTop: w.headingTop / Math.max(1, fontScale) }}>
       <Heading title={c.O02.title.replace('. ', '.\n')} centered variant="hero" />
-      <View style={{ marginTop: w.progress.gap }}>
+      {/* Artwork centres in the space under the heading; caption and dots ride just above the button. */}
+      <View style={{ flex: 1, justifyContent: 'center', paddingTop: w.progress.gap }}>
         <ProgressArtwork />
       </View>
       <Reveal index={3} style={{ marginTop: w.progress.captionGap, paddingHorizontal: t.space.xxl }}>

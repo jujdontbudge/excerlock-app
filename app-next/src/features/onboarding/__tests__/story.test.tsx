@@ -17,6 +17,7 @@ test('loop story changes the cue-to-reward path without losing its diagram', asy
   expect(screen.getByTestId('loop-heading-O16')).toBeTruthy();
   expect(screen.getByTestId('loop-heading-O17', { includeHiddenElements: true })).toBeTruthy();
   expect(screen.getByTestId('loop-heading-O18', { includeHiddenElements: true })).toBeTruthy();
+  expect(screen.getByLabelText('Scrolling is the habit')).toBeTruthy();
   expect(screen.getByText('The urge')).toBeTruthy();
   expect(screen.getByTestId('habit-loop-canvas').props.style.aspectRatio).toBeCloseTo(360 / 500);
   expect(screen.getByTestId('loop-stage-0').props.style.left).toBe('50%');
@@ -35,12 +36,12 @@ test('loop story changes the cue-to-reward path without losing its diagram', asy
   expect(screen.queryByText('Move first')).toBeNull();
   expect(screen.queryByText('“Movement first”')).toBeNull();
   expect(screen.getByText('Reinforcement')).toBeTruthy();
-  expect(screen.getByText('Exercise becomes\nthe habit')).toBeTruthy();
+  expect(screen.getByLabelText('Exercise becomes the habit')).toBeTruthy();
   await view.rerender(<LoopStory step="O18" />);
   expect(screen.getByText('Exercise first')).toBeTruthy();
   expect(screen.getByText('Unlock screentime')).toBeTruthy();
   expect(screen.getByRole('header', { name: 'You become ADDICTED to exercise' })).toBeTruthy();
-  expect(screen.getByText('ADDICTED')).toHaveStyle({ color: '#1D1D22' });
-  expect(screen.getByText('Exercise is\nthe habit now')).toBeTruthy();
+  expect(screen.getByText('ADDICTED')).toHaveStyle({ color: '#C94710' });
+  expect(screen.queryByText('Want to scroll? Move first. Unlock your apps and enjoy.')).toBeNull();
   expect(screen.queryByText('The movement loop')).toBeNull();
 });

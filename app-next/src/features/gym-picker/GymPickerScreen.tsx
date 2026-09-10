@@ -13,10 +13,12 @@ export function GymPickerScreen({
   placeId,
   onSaved,
   onBack,
+  onClose,
 }: {
   placeId?: string;
   onSaved: () => void;
   onBack?: () => void;
+  onClose?: () => void;
 }) {
   const { gym } = useRuntime();
   const p = usePicker(
@@ -51,7 +53,7 @@ export function GymPickerScreen({
             </Pressable>
           </View>
         ) : onBack ? (
-          <OnboardingHeader progress={0} showProgress={false} onBack={onBack} />
+          <OnboardingHeader progress={0} showProgress={false} onBack={onBack} onClose={onClose} />
         ) : undefined
       }
       footer={

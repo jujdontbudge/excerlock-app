@@ -74,7 +74,7 @@ export function GymSetup({ onContinue, onChoose }: { onContinue: () => void; onC
               value={settings.gymAutoDetect}
               disabled={busy}
               onValueChange={auto}
-              trackColor={{ true: t.brand.primary, false: t.border.default }}
+              trackColor={{ true: t.brand.primary, false: t.border.divider }}
             />
           </View>
           <Label variant="support" tone="secondary">
