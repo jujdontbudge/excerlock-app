@@ -2,6 +2,8 @@ import type { FastifyPluginAsync } from "fastify";
 import { config } from "../config.js";
 import { getDb } from "../db/index.js";
 import { checkSchemaReady, type ReadinessResult } from "../db/readiness.js";
+import type { Environment } from "../env.js";
+import { isUserDeletionConfigured } from "../userDeletion/configuration.js";
 
 export interface HealthResponse {
   ok: true;
@@ -9,10 +11,26 @@ export interface HealthResponse {
   uptime: number;
 }
 
-export type ReadyResponse = ReadinessResult & { version: string };
+export type ServiceReadinessResult =
+  | ReadinessResult
+  | { ready: false; reason: "configuration-missing" };
+export type ReadyResponse = ServiceReadinessResult & { version: string };
 
 interface HealthRouteDependencies {
-  checkReady?: () => Promise<ReadinessResult>;
+  checkSchema?: () => Promise<ReadinessResult>;
+  environment?: Environment;
+}
+
+export async function checkServiceReady(
+  environment: Environment,
+  checkSchema: () => Promise<ReadinessResult>,
+): Promise<ServiceReadinessResult> {
+  const schema = await checkSchema();
+  if (!schema.ready) return schema;
+  if (environment.nodeEnv === "production" && !isUserDeletionConfigured(environment)) {
+    return { ready: false, reason: "configuration-missing" };
+  }
+  return { ready: true };
 }
 
 /**
@@ -27,8 +45,9 @@ interface HealthRouteDependencies {
 export function createHealthRoutes(
   dependencies: HealthRouteDependencies = {},
 ): FastifyPluginAsync {
-  const checkReady =
-    dependencies.checkReady ?? (() => checkSchemaReady(getDb()));
+  const environment = dependencies.environment ?? config;
+  const checkSchema = dependencies.checkSchema ?? (() => checkSchemaReady(getDb()));
+  const checkReady = () => checkServiceReady(environment, checkSchema);
 
   return async (app) => {
     app.get<{ Reply: HealthResponse }>(
