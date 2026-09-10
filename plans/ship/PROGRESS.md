@@ -669,3 +669,15 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   log ERR_KEY_CHAIN / required entitlement missing. Native lane investigating artifact signing, without
   SecureStore bypass. Latest simctl inventory shows owned simulator Shutdown (no other sims booted).
   Updated stale dated status/ownership records; runtime/device acceptance remains explicitly incomplete.
+
+- Narrow ASC metadata mutation completed under release lock, with verified readbacks: both social
+  age-rating booleans false, content-rights declaration and idempotent Terms URL description append.
+  Validation blockers7→4: review details, attached build, availability, screenshots. Version remains
+  PREPARE_FOR_SUBMISSION; no App Review/public release/OTA action. Evidence: sibling
+  submission-readiness-audit-20260910/post-mutation-{summary,status,validate}.json.
+- Correct Xcode simulator ad-hoc build embeds simulator entitlements; original linker-signed artifact
+  preserved. Root installed/launched corrected app PID96512: still startup recovery screen, but no
+  ERR_KEY_CHAIN in captured unified log. Further diagnosis required; signing is not runtime acceptance.
+  AX/log at /tmp/ship-adhoc-launch-{ax.json,log} (log actual path /tmp/ship-adhoc-launch.log).
+  Owned simulator unexpectedly returned to Shutdown after console relaunch without root shutdown;
+  no further boot pending environment/startup diagnosis. Native lane investigating read-only.
