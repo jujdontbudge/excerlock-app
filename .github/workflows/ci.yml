@@ -30,6 +30,9 @@ jobs:
       - name: Verify actual Expo config loader
         run: node --test app-next/scripts/test-config-smoke.cjs
 
+      - name: Verify app-next Metro and bundle-budget regressions
+        run: node --test app-next/scripts/*.test.cjs
+
       - name: Verify signed-manifest validator fixtures
         run: python3 app-next/scripts/test_verify_signed_manifest.py
 
