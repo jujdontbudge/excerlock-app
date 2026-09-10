@@ -1,0 +1,27 @@
+{
+  "name": "shaky-cheat",
+  "version": 1,
+  "description": "Cadence-like spikes while motion classification remains stationary.",
+  "timeline": [
+    {
+      "atMs": 1000,
+      "event": "motion.activityChange",
+      "payload": { "activity": "stationary", "confidence": "high" }
+    },
+    {
+      "atMs": 2000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 6, "cadence": 3.2 }
+    },
+    {
+      "atMs": 5000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 16, "cadence": 3.4 }
+    },
+    {
+      "atMs": 10000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 17, "cadence": null }
+    }
+  ]
+}

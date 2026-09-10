@@ -1,0 +1,37 @@
+{
+  "name": "late-classification",
+  "version": 1,
+  "description": "Cadence is live for twenty seconds before iOS classifies the activity as walking.",
+  "timeline": [
+    {
+      "atMs": 1000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 2, "cadence": 1.7 }
+    },
+    {
+      "atMs": 10000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 17, "cadence": 1.7 }
+    },
+    {
+      "atMs": 20000,
+      "event": "motion.activityChange",
+      "payload": { "activity": "walking", "confidence": "high" }
+    },
+    {
+      "atMs": 30000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 51, "cadence": 1.7 }
+    },
+    {
+      "atMs": 32000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 54, "cadence": 1.7 }
+    },
+    {
+      "atMs": 40000,
+      "event": "motion.pedometerUpdate",
+      "payload": { "steps": 68, "cadence": 1.7 }
+    }
+  ]
+}
