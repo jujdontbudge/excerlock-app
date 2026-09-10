@@ -271,3 +271,10 @@ before T06; UI has substantive changes underway; auth intentional callback owner
 - Native unsigned build fails in Swift Expo result-builder compiler assertion; root requested typed
   service-method extraction and repeat actual build. Report ExtensionKit regression restored by agent;
   none of native T10 commits integrated until review/build. No signed/device proof yet.
+- T11 reviewed adapters/factory integratedf0ac15d2+ea44912d+db37e615. Primary4focused suites/19tests and
+  typecheck pass. Root fixed duplicate-write path: detectionStore now opts out of automatic Zustand writes;
+  explicit complete-snapshot durability commits serialize through one writer, preserving pending intent/
+  credit cursor ordering.2focused durability/service suites/7tests and lint pass. Root history transaction
+  dedup still required. Universal ledger updated for middleware-vs-explicit write race.
+- T10 native agent finally reports unsigned generic workspace build PASS after thin typed Expo result
+  builder refactor1bce3e83; native chain still root review pending. Same agent now real ScreenTimePort mapping.

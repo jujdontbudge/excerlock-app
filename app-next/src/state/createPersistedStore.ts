@@ -4,6 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export type Validators<T> = { [K in keyof T]: (value: unknown) => boolean };
 export type DataStore<T> = { data: T; patch: (value: Partial<T>) => void; reset: () => void };
 export type StoreHooks<T> = {
+  /** Safety-critical owners may require an explicit awaited durability transaction. */
+  manualPersistence?: boolean;
   /** Per-row filtering applied to in-memory patches and hydrated payloads before validation,
       so one malformed row can never erase the valid rows beside it. */
   sanitize?: (value: Partial<T>) => Partial<T>;
@@ -35,7 +37,13 @@ export function createPersistedStore<T extends object>(
       }),
       {
         name: `excerlock-next.${name}.v1`,
-        storage: createJSONStorage(() => AsyncStorage),
+        storage: createJSONStorage(() => hooks?.manualPersistence ? {
+          getItem: (key) => AsyncStorage.getItem(key),
+          removeItem: (key) => AsyncStorage.removeItem(key),
+          // The owner persists complete snapshots explicitly. An automatic late
+          // middleware write must not overwrite its committed intent/cursor.
+          setItem: async () => {},
+        } : AsyncStorage),
         partialize: (state) => ({ data: state.data }),
         merge: (persisted, current) => {
           const raw = (persisted as { data?: unknown } | null)?.data;

@@ -54,12 +54,18 @@ export const detectionStore = createPersistedStore('detection', initial, {
       typeof (value as PendingHistoryCredit).idempotencyKey === 'string' &&
       Number.isFinite((value as PendingHistoryCredit).from) &&
       Number.isFinite((value as PendingHistoryCredit).to) &&
-      Number.isFinite((value as PendingHistoryCredit).steps)),
-});
+      Number.isFinite((value as PendingHistoryCredit).steps) &&
+      (value as PendingHistoryCredit).steps >= 0 &&
+      (value as PendingHistoryCredit).to > (value as PendingHistoryCredit).from),
+}, { manualPersistence: true });
 /** Explicit durability barrier for background callbacks and serialized reconciliation. */
-export async function persistDetectionState(): Promise<void> {
-  await AsyncStorage.setItem(
+let durableWrites: Promise<void> = Promise.resolve();
+export function persistDetectionState(): Promise<void> {
+  const serialized = JSON.stringify({ state: { data: detectionStore.getState().data }, version: 0 });
+  const write = durableWrites.catch(() => undefined).then(() => AsyncStorage.setItem(
     'excerlock-next.detection.v1',
-    JSON.stringify({ state: { data: detectionStore.getState().data }, version: 0 }),
-  );
+    serialized,
+  ));
+  durableWrites = write.catch(() => undefined);
+  return write;
 }
