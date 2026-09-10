@@ -1,0 +1,250 @@
+import type { AuthIdentity } from '../../ports/AuthPort';
+import type { Entitlement } from '../../domain/types';
+import type {
+  PaywallProduct,
+  PurchaseResult,
+  SubscriptionEntitlement,
+  SubscriptionOperation,
+  SubscriptionPaywall,
+  SubscriptionPort,
+} from '../../ports/SubscriptionPort';
+import type { Unsubscribe } from '../../ports/models';
+import { entitlementStore } from '../../state/entitlementStore';
+import type { RunIdentityOperation } from '../auth/identityBarrier';
+import { mapEntitlement, reduceEntitlement, type ProfileSource } from './entitlementMapping';
+import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptySdkPort } from './adaptySdk';
+
+const INTEGRATION_KEY = 'posthog_distinct_user_id';
+type Loaded = {
+  generation: number;
+  identityGeneration: number;
+  flow: AdaptyFlow;
+  sdkProducts: Map<string, AdaptyPaywallProduct>;
+};
+
+export class AdaptySubscriptionAdapter implements SubscriptionPort {
+  private activation: Promise<void> | null = null;
+  private listener: { remove(): void } | null = null;
+  private expected: { userId: string; generation: number } | null = null;
+  private loaded: Loaded | null = null;
+  private paywallGeneration = 0;
+  private op: SubscriptionOperation = { busy: false, pending: false, error: null };
+  private restoreInFlight = false;
+  private disposed = false;
+  constructor(
+    private deps: {
+      sdk: AdaptySdkPort;
+      publicSdkKey: string;
+      getIdentity(): AuthIdentity;
+      waitForIdentityReady(): Promise<AuthIdentity>;
+      runIdentityOperation: RunIdentityOperation;
+      getPosthogDistinctId(): string | null;
+      openSubscriptionManagement(): Promise<void>;
+    },
+  ) {}
+
+  private ensureActivated(): Promise<void> {
+    if (!this.activation) {
+      this.activation = this.deps.sdk
+        .activate(this.deps.publicSdkKey, { __ignoreActivationOnFastRefresh: true })
+        .then(() => {
+          if (!this.listener)
+            this.listener = this.deps.sdk.addEventListener(
+              'onLatestProfileLoad',
+              (profile) => void this.publishProfile(profile, this.restoreInFlight ? 'restore-callback' : 'listener'),
+            );
+        });
+    }
+    return this.activation;
+  }
+  entitlement(): SubscriptionEntitlement {
+    return {
+      ...entitlementStore.getState().data.entitlement,
+      offer: { trialDays: 0, reminderDaysBefore: 0, label: '' },
+    };
+  }
+  operation(): SubscriptionOperation {
+    return this.op;
+  }
+  subscribe(callback: (entitlement: Entitlement) => void): Unsubscribe {
+    return entitlementStore.subscribe((state) => callback(state.data.entitlement));
+  }
+  async identify(userId: string): Promise<void> {
+    const identity = this.deps.getIdentity();
+    if (identity.kind !== 'canonical' || identity.userId !== userId) throw new Error('Canonical identity mismatch');
+    await this.ensureActivated();
+    await this.deps.sdk.identify(userId);
+    const after = this.deps.getIdentity();
+    if (after.kind !== 'canonical' || after.userId !== userId || after.generation !== identity.generation)
+      throw new Error('Identity changed during Adapty identify');
+    this.expected = { userId, generation: identity.generation };
+    entitlementStore.getState().patch({ entitlement: { status: 'unknown', renewsAt: null } });
+  }
+  async reset(): Promise<void> {
+    this.expected = null;
+    this.loaded = null;
+    await this.ensureActivated();
+    await this.deps.sdk.logout();
+  }
+  async refresh(): Promise<Entitlement> {
+    await this.ensureActivated();
+    const late = this.deps.sdk.getProfile().then((profile) => this.publishProfile(profile, 'refresh'));
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const budget = new Promise<Entitlement>((resolve) => {
+      timer = setTimeout(() => resolve(entitlementStore.getState().data.entitlement), 3000);
+    });
+    return Promise.race([late, budget]).finally(() => {
+      if (timer) clearTimeout(timer);
+    });
+  }
+  async loadPaywall(placement: SubscriptionPaywall['placement']): Promise<SubscriptionPaywall> {
+    const identity = this.requireExpected();
+    await this.ensureActivated();
+    const flow = await this.deps.sdk.getFlow(placement, {
+      fetchPolicy: 'reload_revalidating_cache_data',
+      loadTimeoutMs: 5000,
+    });
+    const products = await this.deps.sdk.getPaywallProducts(flow);
+    if (!products.length) throw new Error('Plans could not load');
+    const generation = ++this.paywallGeneration;
+    const remote = this.remoteCopy(flow);
+    const mapped = products.map((product, index) =>
+      this.mapProduct(product, generation, index, remote.recommendedProductId),
+    );
+    const publicPaywall = {
+      placement,
+      title: remote.title ?? String((flow as { name?: string }).name ?? 'Choose your plan'),
+      body: remote.body ?? '',
+      flowVariationId: String((flow as { variationId?: string }).variationId ?? ''),
+      products: mapped,
+      generation,
+    } as const;
+    this.loaded = {
+      generation,
+      identityGeneration: identity.generation,
+      flow,
+      sdkProducts: new Map(mapped.map((item, i) => [item.handle, products[i]!])),
+    };
+    return publicPaywall;
+  }
+  async logPaywallShown(generation: number): Promise<void> {
+    if (!this.loaded || this.loaded.generation !== generation) throw new Error('Paywall expired');
+    await this.deps.sdk.logShowFlow(this.loaded.flow);
+  }
+  async purchase(handle: string): Promise<PurchaseResult> {
+    this.op = { busy: true, pending: false, error: null };
+    try {
+      const ready = await this.deps.waitForIdentityReady();
+      return await this.deps.runIdentityOperation(async () => {
+        const loaded = this.loaded;
+        const product = loaded?.sdkProducts.get(handle);
+        if (!loaded || !product || loaded.identityGeneration !== ready.generation)
+          throw new Error('Plan expired. Reload plans.');
+        await this.attachIntegration(ready);
+        const result = await this.deps.sdk.makePurchase(product);
+        if (result.type !== 'success') {
+          if (result.type === 'pending') this.op = { busy: true, pending: true, error: null };
+          return { type: result.type };
+        }
+        const entitlement = this.publishProfile(result.profile, 'purchase');
+        return { type: 'success', entitlement };
+      });
+    } catch (error) {
+      this.op = { busy: true, pending: false, error: error instanceof Error ? error.message : 'Purchase failed' };
+      throw error;
+    } finally {
+      this.op = { ...this.op, busy: false };
+    }
+  }
+  async restore(): Promise<Entitlement> {
+    this.op = { busy: true, pending: false, error: null };
+    this.restoreInFlight = true;
+    try {
+      const ready = await this.deps.waitForIdentityReady();
+      return await this.deps.runIdentityOperation(async () => {
+        await this.attachIntegration(ready);
+        return this.publishProfile(await this.deps.sdk.restorePurchases(), 'restore-return');
+      });
+    } catch (error) {
+      this.op = { busy: true, pending: false, error: error instanceof Error ? error.message : 'Restore failed' };
+      throw error;
+    } finally {
+      this.op = { ...this.op, busy: false };
+      this.restoreInFlight = false;
+    }
+  }
+  async presentPaywall(): Promise<Entitlement> {
+    throw new Error('Navigation must render PaywallScreen and call purchase(handle)');
+  }
+  async manageSubscription(): Promise<void> {
+    await this.deps.openSubscriptionManagement();
+  }
+  dispose(): void {
+    this.disposed = true;
+    this.listener?.remove();
+    this.listener = null;
+  }
+  private requireExpected() {
+    const identity = this.deps.getIdentity();
+    if (
+      !this.expected ||
+      identity.kind !== 'canonical' ||
+      identity.userId !== this.expected.userId ||
+      identity.generation !== this.expected.generation
+    )
+      throw new Error('Canonical subscription identity unavailable');
+    return identity;
+  }
+  private async attachIntegration(identity: AuthIdentity) {
+    const current = this.requireExpected();
+    if (current.generation !== identity.generation) throw new Error('Identity changed');
+    const id = this.deps.getPosthogDistinctId();
+    if (!id) throw new Error('PostHog identity unavailable');
+    await this.deps.sdk.setIntegrationIdentifier(INTEGRATION_KEY, id);
+    this.requireExpected();
+  }
+  private publishProfile(profile: AdaptyProfile, source: ProfileSource): Entitlement {
+    if (this.disposed) return entitlementStore.getState().data.entitlement;
+    const expected = this.expected;
+    if (
+      !expected ||
+      profile.customerUserId !== expected.userId ||
+      this.deps.getIdentity().generation !== expected.generation
+    )
+      return entitlementStore.getState().data.entitlement;
+    const current = entitlementStore.getState().data.entitlement;
+    const next = reduceEntitlement(current, mapEntitlement(profile), source);
+    entitlementStore.getState().patch({ entitlement: next });
+    return next;
+  }
+  private mapProduct(
+    product: AdaptyPaywallProduct,
+    generation: number,
+    index: number,
+    recommendedProductId?: string,
+  ): PaywallProduct {
+    const period =
+      product.subscription?.localizedSubscriptionPeriod ?? product.subscription?.subscriptionPeriod?.unit ?? '';
+    const free = product.subscription?.offer?.phases.find((phase) => phase.paymentMode === 'free_trial');
+    return {
+      handle: `${generation}:${product.variationId}:${index}:${product.vendorProductId}`,
+      vendorProductId: product.vendorProductId,
+      title: product.localizedTitle,
+      detail: product.localizedDescription,
+      localizedPrice: product.price?.localizedString ?? '',
+      localizedPeriod: period,
+      offerLabel: free ? `${free.numberOfPeriods} ${free.subscriptionPeriod.unit} free` : null,
+      recommended: recommendedProductId === product.vendorProductId,
+    };
+  }
+  private remoteCopy(flow: AdaptyFlow): { title?: string; body?: string; recommendedProductId?: string } {
+    const data = (flow as { remoteConfig?: { data?: unknown } }).remoteConfig?.data;
+    if (!data || typeof data !== 'object') return {};
+    const value = data as Record<string, unknown>;
+    return {
+      title: typeof value.title === 'string' ? value.title : undefined,
+      body: typeof value.body === 'string' ? value.body : undefined,
+      recommendedProductId: typeof value.recommendedProductId === 'string' ? value.recommendedProductId : undefined,
+    };
+  }
+}

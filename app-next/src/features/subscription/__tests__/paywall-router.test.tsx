@@ -1,7 +1,7 @@
 import { Slot, router } from 'expo-router';
-import { act, fireEvent } from '@testing-library/react-native';
+import { act, fireEvent, userEvent } from '@testing-library/react-native';
 import { Text } from 'react-native';
-import { renderRouter, screen } from 'expo-router/testing-library';
+import { renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import { RootNavigator } from '../../launch/RootNavigator';
 import { BootGate } from '../../launch/BootGate';
 import { OnboardingRoute } from '../../onboarding/OnboardingRoute';
@@ -50,36 +50,34 @@ test('hard paywall removes onboarding history and refuses back navigation', asyn
   }
   expect(result.getPathname()).toBe('/paywall');
 });
-test('purchase stays busy for 800 ms, grants trial and resumes setup', async () => {
+test('purchase uses the selected fetched product, grants trial and resumes setup', async () => {
   const { result } = await mount();
-  jest.useFakeTimers();
-  await fireEvent.press(screen.getByRole('button', { name: 'Start free trial' }));
-  expect(screen.getByRole('button', { name: 'Start free trial' })).toBeDisabled();
-  await act(() => jest.advanceTimersByTime(799));
-  expect(entitlementStore.getState().data.entitlement.status).toBe('none');
-  await act(() => jest.advanceTimersByTime(1));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Start free trial' }));
+  await act(async () => {});
   expect(entitlementStore.getState().data.entitlement.status).toBe('trial');
   expect(result.getPathname()).toBe('/setup/X1');
 });
 test.each(['restored', 'notFound'] as const)('restore handles %s without real purchases', async (outcome) => {
   const { result, runtime } = await mount('trial-expired');
   await act(() => runtime.dev.setRestoreOutcome(outcome));
-  jest.useFakeTimers();
   expect(screen.getByText('Your trial has ended. Choose a plan to keep going.')).toBeTruthy();
-  await fireEvent.press(screen.getByRole('button', { name: 'Restore purchases' }));
-  await act(() => jest.advanceTimersByTime(800));
-  if (outcome === 'restored') expect(result.getPathname()).toBe('/home');
-  else expect(screen.getByText('No active purchase was found.')).toBeTruthy();
+  const restoreButton = await screen.findByRole('button', { name: 'Restore purchases' });
+  await waitFor(() => expect(restoreButton).toBeEnabled());
+  await userEvent.press(restoreButton);
+  if (outcome === 'restored') {
+    await waitFor(() => expect(result.getPathname()).toBe('/home'));
+  } else {
+    expect(await screen.findByText('No active purchase was found.')).toBeTruthy();
+  }
 });
 test('billing errors stay on the paywall and can retry', async () => {
   const { result, runtime } = await mount('billing-issue');
   await act(() => runtime.dev.setOutcome('error'));
-  jest.useFakeTimers();
   expect(
     screen.getByText('There is a billing issue with your subscription. Restore access or choose a plan.'),
   ).toBeTruthy();
-  await fireEvent.press(screen.getByRole('button', { name: 'Start free trial' }));
-  await act(() => jest.advanceTimersByTime(800));
-  expect(screen.getByText('Something went wrong. Please try again.')).toBeTruthy();
+  await userEvent.press(await screen.findByRole('button', { name: 'Start free trial' }));
+  await act(async () => {});
+  expect(screen.getByText('Purchase could not finish. Please retry.')).toBeTruthy();
   expect(result.getPathname()).toBe('/paywall');
 });

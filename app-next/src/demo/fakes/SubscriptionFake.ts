@@ -4,6 +4,7 @@ import { entitlementStore } from '../../state/entitlementStore';
 import { FakeContext } from '../FakeContext';
 export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
   const entitlement = () => ({ ...entitlementStore.getState().data.entitlement, offer: fakeOffer });
+  let operation = { busy: false, pending: false, error: null as string | null };
   return {
     entitlement,
     presentPaywall: async (placement) => {
@@ -32,6 +33,53 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
     reset: async () => {
       entitlementStore.getState().reset();
     },
+    refresh: async () => entitlement(),
+    loadPaywall: async (placement) => ({
+      placement,
+      title: 'Choose your plan',
+      body: 'Build a healthier relationship with your phone.',
+      flowVariationId: 'fake',
+      generation: 0,
+      products: [
+        {
+          handle: 'fake:annual',
+          vendorProductId: 'fake.annual',
+          title: 'Annual',
+          detail: '',
+          localizedPrice: '$49.99',
+          localizedPeriod: 'year',
+          offerLabel: '7 days free',
+          recommended: true,
+        },
+        {
+          handle: 'fake:monthly',
+          vendorProductId: 'fake.monthly',
+          title: 'Monthly',
+          detail: '',
+          localizedPrice: '$9.99',
+          localizedPeriod: 'month',
+          offerLabel: null,
+          recommended: false,
+        },
+      ],
+    }),
+    logPaywallShown: async () => undefined,
+    purchase: async () => {
+      operation = { busy: true, pending: false, error: null };
+      try {
+        if (ctx.result() === 'cancel') return { type: 'user_cancelled' as const };
+        const next = {
+          status: 'trial' as const,
+          renewsAt: new Date(Date.parse(ctx.clock.now()) + 7 * 86400000).toISOString(),
+        };
+        entitlementStore.getState().patch({ entitlement: next });
+        return { type: 'success' as const, entitlement: next };
+      } finally {
+        operation = { ...operation, busy: false };
+      }
+    },
+    operation: () => operation,
+    manageSubscription: async () => undefined,
     subscribe: (callback) => entitlementStore.subscribe((s) => callback(s.data.entitlement)),
   };
 }

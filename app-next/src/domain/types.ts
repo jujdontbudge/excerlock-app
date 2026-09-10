@@ -73,6 +73,11 @@ export type Profile = {
 export type Entitlement = {
   status: 'unknown' | 'none' | 'trial' | 'active' | 'expired' | 'billingIssue';
   renewsAt: string | null;
+  accessExpiresAt?: string | null;
+  willRenew?: boolean | null;
+  isInGracePeriod?: boolean;
+  isLifetime?: boolean;
+  observedAt?: string;
 };
 export type Session =
   { kind: 'anonymous' } | { kind: 'signedIn'; provider: 'apple' | 'google' | 'email'; email: string | null };
