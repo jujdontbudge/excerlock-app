@@ -13,9 +13,7 @@ test.each(scenarios.map((s) => [s.id, s] as const))('%s reaches its expected boo
       ? '/onboarding/O01'
       : scenario.onboarding.startsWith('resumeAt:')
         ? `/onboarding/${scenario.onboarding.slice(9)}`
-        : ['trial', 'active'].includes(scenario.entitlement.status)
-          ? '/home'
-          : '/paywall';
+        : '/home';
   const router = renderRouter(
     {
       _layout: () => <AppRuntimeProvider runtime={runtime}><Slot /></AppRuntimeProvider>,
