@@ -39,7 +39,7 @@ function sentryCoreOwners(sdkName) {
     const manifest = readManifest(manifestPath);
     if (manifest.dependencies?.['@sentry/core']) owners.push({ manifest, manifestPath });
     for (const dependency of Object.keys(manifest.dependencies ?? {})) {
-      if (dependency.startsWith('@sentry/') && dependency !== '@sentry/core') {
+      if ((dependency.startsWith('@sentry/') || dependency.startsWith('@sentry-internal/')) && dependency !== '@sentry/core') {
         pending.push(findManifest(dependency, manifestPath));
       }
     }
