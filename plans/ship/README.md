@@ -16,7 +16,7 @@ Completing this engineering scope does **not** mean Apple submission metadata is
 - [ ] Correct distribution signing and all five bundle IDs/extension entitlements; signed artifact
       uploaded and processed by App Store Connect. Distribution is not required; this scope does not
       authorize external tester invitations or notifications.
-- [ ] Required backend credentials/configuration, forward-only migrations and current deployment;
+- [x] Required backend credentials/configuration, forward-only migrations and current deployment;
       verified authentication, subscription resync/webhook and account/data deletion behavior.
 
 All other implemented product/OTA/identity safeguards remain required; this revision does not

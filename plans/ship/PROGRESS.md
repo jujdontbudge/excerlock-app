@@ -897,3 +897,22 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   retained as historical evidence only and are not a claim that the functionality passed.
 - Active completion is now limited to signing/build upload and backend functionality. The existing
   prohibition on App Review submission, public release and production OTA remains unchanged.
+
+### Backend current-scope acceptance — PASS
+
+- Stored the PostHog erasure credential outside the repository with owner-only permissions and
+  configured production project 537075 without logging the value. Verified credential access against
+  the PostHog user and project APIs.
+- Created and verified production backups of the database, service tree and environment before the
+  migration. Applied the forward journal through the current 12 migration records and deployed the
+  current backend under the operations lock. Public and host-local health/readiness all return 200;
+  the website remained 200 after the Caddy reload.
+- The first deployment exposed a stale production-only package lock and the first deletion proof
+  exposed a Drizzle raw-SQL Date encoding defect. Fixed them in `3dd53f7b` and `65588716`. A clean
+  production-only install resolves Fastify 5.12.3; 36 files / 198 server tests and build pass.
+- Live disposable-user proof: provision 204, Adapty profile creation 200, subscription resync 200,
+  account deletion 204, then Supabase 404 and Adapty 404. The retained tombstone showed all four
+  expected states (`deleted`, Adapty erased, PostHog erased, auth erased) before test-data cleanup.
+  Valid/invalid Adapty webhook authorization returned 200/401.
+- Backend acceptance is complete. The sole remaining active completion gate is distribution
+  signing/build upload. No App Review submission, public release or production OTA occurred.

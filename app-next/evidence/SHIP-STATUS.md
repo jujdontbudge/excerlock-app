@@ -1,6 +1,7 @@
 # Ship acceptance status — 2026-09-10
 
-**Current engineering scope incomplete. Full App Store submission preparation is deferred.**
+**Current engineering scope incomplete: signing/upload remains. Backend is complete. Full App Store
+submission preparation is deferred.**
 
 ## User scope override — 2026-09-10
 
@@ -10,6 +11,13 @@ startup/battery measurements and local StoreKit automation are TODO in `plans/po
 not active engineering completion gates. The4MBHermes limit is removed; old FAIL entries below are
 historical and no longer blockers. Privacy/deletion correctness and core runtime
 safeguards remain active. No AppReview/publicrelease/productionOTA authorized.
+
+Backend acceptance passed on the live service at commit `65588716`: forward migrations applied,
+public and host-local health/readiness returned 200, authenticated disposable-user provisioning,
+Adapty profile resync and deletion returned 204/200/204, Supabase and Adapty both returned 404 after
+deletion, and the durable tombstone recorded Adapty/PostHog/auth erasure checkpoints before test-data
+cleanup. Valid/invalid Adapty webhook authorization returned 200/401. The deployment uncovered and
+fixed a production-only Drizzle raw-Date encoding defect; 36 files / 198 tests and build pass.
 
 
 Current user-authorized endpoint: submission-ready only; TestFlight is allowed. App Review submission,
