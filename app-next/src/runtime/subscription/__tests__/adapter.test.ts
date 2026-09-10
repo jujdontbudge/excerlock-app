@@ -78,6 +78,14 @@ test('SDK4 flow preserves returned product order and exact handles', async () =>
   expect(sdk.makePurchase).toHaveBeenCalledWith(expect.objectContaining({ vendorProductId: 'a.annual' }));
 });
 
+test('dashboard flow name is never exposed as customer-facing paywall copy', async () => {
+  const { adapter } = setup();
+  await adapter.identify('uid');
+  await expect(adapter.loadPaywall('onboarding')).resolves.toEqual(
+    expect.objectContaining({ title: 'Choose your plan' }),
+  );
+});
+
 test('exact PostHog identifier is awaited immediately before purchase and restore', async () => {
   const { adapter, calls } = setup();
   await adapter.identify('uid');
