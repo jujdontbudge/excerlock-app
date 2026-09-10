@@ -86,14 +86,16 @@ export function WalkingScreen({
           <View style={{ flexDirection: 'row', gap: t.space.md }}>
             <View style={{ flex: 1 }}>
               <SecondaryButton
-                label={c.remove}
+                label={minutes ? c.removeMinutesCompact : c.removeCompact}
+                accessibilityLabel={minutes ? c.removeMinutes : c.remove}
                 disabled={!valid || value <= (minutes ? 5 : 500)}
                 onPress={() => change(value - (minutes ? 5 : 500))}
               />
             </View>
             <View style={{ flex: 1 }}>
               <SecondaryButton
-                label={c.add}
+                label={minutes ? c.addMinutesCompact : c.addCompact}
+                accessibilityLabel={minutes ? c.addMinutes : c.add}
                 disabled={!valid || value >= (minutes ? 180 : 30000)}
                 onPress={() => change(value + (minutes ? 5 : 500))}
               />
