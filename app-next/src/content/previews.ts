@@ -28,7 +28,7 @@ export const previewCopy = {
   today: 'Today',
   startWalk: 'Start walk',
   choose: 'Choose a time',
-  health: 'Health',
+  motion: 'Motion & Fitness',
   units: 'Units',
   miles: 'Miles',
   preferences: 'Preferences',

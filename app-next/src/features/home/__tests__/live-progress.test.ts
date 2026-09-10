@@ -49,6 +49,16 @@ test('switching scenarios cannot latch the previous scenario’s steps into the 
   stop();
   r.dispose();
 });
-test('yesterday’s Health workouts never fulfill the next day’s condition',async()=>{
- const r=createRuntime();await r.dev.load('runner-distance');const stop=startProgressSync(r);await Promise.resolve();await Promise.resolve();r.dev.advance(86400000);await Promise.resolve();await Promise.resolve();const today=ruleDaysStore.getState().data.days.find(d=>d.day==='2026-09-08');expect(today?.progress).toBe(0);expect(today?.met).toBe(false);stop();r.dispose();
+test('yesterday’s steps never fulfill the next day’s condition', async () => {
+  const r = createRuntime();
+  await r.dev.load('home-locked-walking');
+  const stop = startProgressSync(r);
+  r.dev.setSteps(9000);
+  expect(ruleDaysStore.getState().data.days.find((d) => d.day === '2026-09-07')?.met).toBe(true);
+  r.dev.advance(86400000);
+  const today = ruleDaysStore.getState().data.days.find((d) => d.day === '2026-09-08');
+  expect(today?.progress).toBe(0);
+  expect(today?.met).toBe(false);
+  stop();
+  r.dispose();
 });

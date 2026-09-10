@@ -30,7 +30,7 @@ coordinate the JSX block with P2-T13's test-button removal).
 | walking `state` or `minutes`, place treadmill | "I'm using a treadmill" |
 | … place either | "I'm using a treadmill" + "I'm walking with my phone" |
 | … place outside | "I'm walking with my phone" |
-| walking steps, running, biking | none |
+| walking steps | none | *(ship B38 / T07: running/biking removed)* |
 
 The handheld pill opens `WalkingSheet` with handheld placement; the sheet loses its unreachable treadmill
 block and the `treadmillFraming()` call (78, 113 folded), gains an error slot for a failed start (103) and

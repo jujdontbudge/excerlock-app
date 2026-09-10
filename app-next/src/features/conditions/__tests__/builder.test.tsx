@@ -26,7 +26,7 @@ async function mount(id?: string) {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
   if (id)
-    rulesStore.getState().patch({ rules: [{ ...toRule(createDraft('running'), toSchedule(scheduleDraft({}))), id }] });
+    rulesStore.getState().patch({ rules: [{ ...toRule(createDraft('gym'), toSchedule(scheduleDraft({}))), id }] });
   await render(
     <AppRuntimeProvider runtime={runtime}>
       <ConditionBuilder id={id} onClose={leave} />
@@ -36,10 +36,9 @@ async function mount(id?: string) {
 }
 test.each([
   ['Walking', 'Reach a step goal', 2],
+  ['Walking', 'Unlock while walking', 0],
   ['Gym', 'Spend time at the gym', 1],
   ['Gym', 'Arrive at the gym', 0],
-  ['Running', 'Run for a set time', 1],
-  ['Biking', 'Bike a set distance', 1],
 ])('creates valid %s / %s without onboarding', async (activity, mode, extra) => {
   await mount();
   await userEvent.press(screen.getByRole('radio', { name: activity }));
@@ -71,7 +70,7 @@ test('editing preserves identity and schedule; dirty cancel requires discard', a
   const after = rulesStore.getState().data.rules[0];
   expect(after.id).toBe(before.id);
   expect(after.schedule).toEqual(before.schedule);
-  expect(after.mode).toMatchObject({ goal: 25 });
+  expect(after.mode).toMatchObject({ goal: 35 });
 });
 test('canceling a goal edit restores the summary', async () => {
   await mount('edit-me');
@@ -80,7 +79,7 @@ test('canceling a goal edit restores the summary', async () => {
     nativeEvent: { actionName: 'increment' },
   });
   await userEvent.press(screen.getByRole('button', { name: 'Back' }));
-  expect(screen.getByText('Run 20 minutes')).toBeTruthy();
+  expect(screen.getByText('Spend 30 minutes at the gym')).toBeTruthy();
 });
 test('empty conditions offers creation', async () => {
   const runtime = createRuntime();
@@ -95,8 +94,8 @@ test('empty conditions offers creation', async () => {
 test('two mounted builders own independent draft transactions', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
-  const first = { ...toRule(createDraft('running'), toSchedule(scheduleDraft({}))), id: 'first' };
-  const second = { ...toRule(createDraft('biking'), toSchedule(scheduleDraft({}))), id: 'second' };
+  const first = { ...toRule(createDraft('walking'), toSchedule(scheduleDraft({}))), id: 'first' };
+  const second = { ...toRule(createDraft('gym'), toSchedule(scheduleDraft({}))), id: 'second' };
   rulesStore.getState().patch({ rules: [first, second] });
   await render(
     <AppRuntimeProvider runtime={runtime}>
@@ -104,6 +103,6 @@ test('two mounted builders own independent draft transactions', async () => {
       <ConditionBuilder id="second" onClose={leave} />
     </AppRuntimeProvider>,
   );
-  expect(screen.getByText('Run 20 minutes')).toBeTruthy();
-  expect(screen.getByText('Bike 30 minutes')).toBeTruthy();
+  expect(screen.getByText('Walk 5,000 steps')).toBeTruthy();
+  expect(screen.getByText('Spend 30 minutes at the gym')).toBeTruthy();
 });

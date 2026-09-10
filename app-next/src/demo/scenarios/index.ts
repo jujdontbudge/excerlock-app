@@ -10,8 +10,6 @@ import { scenario7 } from './home-permission-needed';
 import { scenario8 } from './home-no-apps';
 import { scenario9 } from './gym-arrival-user';
 import { scenario10 } from './gym-time-user';
-import { scenario11 } from './runner-distance';
-import { scenario12 } from './biker-time';
 import { scenario13 } from './multi-rule-overlap';
 import { scenario14 } from './window-crosses-midnight';
 import { scenario15 } from './trial-active';
@@ -36,8 +34,6 @@ export const scenarios = [
   scenario8,
   scenario9,
   scenario10,
-  scenario11,
-  scenario12,
   scenario13,
   scenario14,
   scenario15,

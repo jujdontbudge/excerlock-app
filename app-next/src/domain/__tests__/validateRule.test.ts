@@ -18,14 +18,13 @@ test('invalid data cannot create a condition; every activity keeps its prescribe
     expect(validateRule(invalid).length).toBeGreaterThan(0);
   const modes = [
     { kind: 'state', activity: 'walking', place: 'either' },
+    { kind: 'state', activity: 'walking', place: 'outside' },
+    { kind: 'state', activity: 'walking', place: 'treadmill' },
     { kind: 'event', activity: 'gym', trigger: 'arrival' },
+    { kind: 'target', activity: 'walking', metric: 'steps', goal: 500, place: 'outside' },
+    { kind: 'target', activity: 'walking', metric: 'steps', goal: 30000, place: 'either' },
     { kind: 'target', activity: 'gym', metric: 'minutes', goal: 10 },
-    { kind: 'target', activity: 'running', metric: 'minutes', goal: 5 },
-    { kind: 'target', activity: 'biking', metric: 'minutes', goal: 300 },
-    { kind: 'target', activity: 'running', metric: 'distance', unit: 'km', goal: 0.5 },
-    { kind: 'target', activity: 'running', metric: 'distance', unit: 'mi', goal: 0.25 },
-    { kind: 'target', activity: 'biking', metric: 'distance', unit: 'km', goal: 200 },
-    { kind: 'target', activity: 'biking', metric: 'distance', unit: 'mi', goal: 120 },
+    { kind: 'target', activity: 'gym', metric: 'minutes', goal: 180 },
   ];
   for (const mode of modes) {
     expect(validateRule({ ...rule, activity: mode.activity, mode })).toEqual([]);
@@ -42,6 +41,14 @@ test('malformed modes and missing schedule fields are rejected at hydration', ()
     { ...rule, mode: { kind: 'event', activity: 'walking', place: 'either', trigger: 'arrival' } },
     { ...rule, mode: { kind: 'rate', activity: 'walking', place: 'either' } },
     { ...rule, mode: { ...rule.mode, metric: 'distance', unit: 'km' } },
+    ...JSON.parse(
+      `[{"id":"run","activity":"running","mode":{"kind":"target","activity":"running","metric":"minutes","goal":20},
+        "schedule":{"days":[1],"window":{"kind":"allDay"}},"enabled":true,
+        "createdAt":"2026-09-01T00:00:00Z","updatedAt":"2026-09-01T00:00:00Z"},
+        {"id":"bike","activity":"biking","mode":{"kind":"target","activity":"biking","metric":"distance","goal":5,"unit":"mi"},
+        "schedule":{"days":[1],"window":{"kind":"allDay"}},"enabled":true,
+        "createdAt":"2026-09-01T00:00:00Z","updatedAt":"2026-09-01T00:00:00Z"}]`,
+    ).map((mode: unknown) => ({ ...rule, ...(mode as object) })),
     { ...rule, schedule: { days: [1] } },
     { ...rule, schedule: { days: [1], window: { kind: 'unknown' } } },
   ])

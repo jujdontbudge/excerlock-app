@@ -34,8 +34,6 @@ export function statsFor(model: AnalyticsModel): Stat[] {
   if (k.steps) stats.push({ key: 'steps', label: c.tiles.steps, value: count(a.walking), icon: 'walking' });
   if (k.walking)
     stats.push({ key: 'walking', label: c.tiles.walking, value: duration(model.walkingMinutes), icon: 'walking' });
-  if (k.running) stats.push({ key: 'running', label: c.tiles.running, value: duration(a.running), icon: 'running' });
-  if (k.biking) stats.push({ key: 'biking', label: c.tiles.biking, value: duration(a.biking), icon: 'biking' });
   stats.push({
     key: 'streak',
     label: c.tiles.streak,

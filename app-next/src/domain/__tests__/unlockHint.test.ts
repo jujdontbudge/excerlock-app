@@ -16,14 +16,14 @@ test('immediate actions rank first; numeric remainders compare only matching uni
     unlockHint([rule, smaller], [{ ruleId: 'walk', day: '2026-09-07', progress: 4500, met: false, metAt: null }])
       .ruleId,
   ).toBe('walk');
-  const run: Rule = {
+  const gymMinutes: Rule = {
     ...rule,
-    id: 'run',
-    activity: 'running',
-    mode: { kind: 'target', activity: 'running', metric: 'distance', goal: 2, unit: 'mi' },
+    id: 'gym-minutes',
+    activity: 'gym',
+    mode: { kind: 'target', activity: 'gym', metric: 'minutes', goal: 45 },
   };
-  expect(unlockHint([rule, run], []).ruleId).toBe('walk');
-  expect(unlockHint([run], []).unit).toBe('mi');
+  expect(unlockHint([rule, gymMinutes], []).ruleId).toBe('walk');
+  expect(unlockHint([gymMinutes], []).unit).toBe('minutes');
   expect(() => unlockHint([], [])).toThrow('No active rules');
 });
 test('the first immediate offer stays ahead of subsequent offers', () => {

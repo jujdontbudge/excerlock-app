@@ -9,7 +9,6 @@ export const permissionCopy = {
   },
   motion: { title: 'Let ExcerLock use Motion & Fitness?', body: 'Count your steps toward your walking goals.' },
   location: { title: 'Let ExcerLock use your location?', body: 'Recognize when you arrive at your saved gym.' },
-  health: { title: 'Let ExcerLock read your workouts?', body: 'Use running and biking workouts toward your goals.' },
   camera: {
     title: 'Let ExcerLock use your camera?',
     body: 'Check your walking movement when your phone is propped up.',

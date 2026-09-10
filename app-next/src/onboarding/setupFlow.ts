@@ -12,5 +12,5 @@ export function resumeSetup(state: { setupStep: string; setupComplete: boolean }
       : 'X1';
 }
 export function branchPermission(activity: Activity) {
-  return activity === 'walking' ? 'motion' : activity === 'gym' ? 'location' : 'health';
+  return activity === 'walking' ? 'motion' : 'location';
 }

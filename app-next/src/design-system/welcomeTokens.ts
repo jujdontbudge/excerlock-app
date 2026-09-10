@@ -20,10 +20,8 @@ export const welcomeTokens = {
     deep: '#DF4000',
     shadow: '0px 10px 14px rgba(93,54,31,0.14)',
     tiles: [
-      { icon: 'person-walking', x: 46, y: 8, tilt: '-5deg', peach: true },
-      { icon: 'person-running', x: 178, y: 20, tilt: '14deg', peach: false },
-      { icon: 'person-biking', x: 29, y: 132, tilt: '-12deg', peach: false },
-      { icon: 'dumbbell', x: 167, y: 141, tilt: '10deg', peach: true },
+      { icon: 'person-walking', x: 31, y: 72, tilt: '-5deg', peach: true },
+      { icon: 'dumbbell', x: 191, y: 72, tilt: '10deg', peach: false },
     ],
   },
   progress: {

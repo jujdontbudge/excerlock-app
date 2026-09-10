@@ -14,7 +14,6 @@ export function validateScenario(value: unknown): string[] {
     permissions: v.shape({
       screenTime: v.permission,
       motion: v.permission,
-      health: v.permission,
       camera: v.permission,
       notifications: v.permission,
       location: v.oneOf(['notDetermined', 'whenInUse', 'always', 'denied']),
@@ -29,7 +28,7 @@ export function validateScenario(value: unknown): string[] {
       v.shape({
         day: v.text,
         usageMinutes: v.nullable(v.number()),
-        activity: v.shape({ walking: v.number(), gym: v.number(), running: v.number(), biking: v.number() }),
+        activity: v.shape({ walking: v.number(), gym: v.number() }),
         met: v.bool,
         scheduled: v.bool,
       }),

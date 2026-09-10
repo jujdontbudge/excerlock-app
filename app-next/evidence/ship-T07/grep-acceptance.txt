@@ -1,0 +1,2 @@
+app-next/src/ports/__tests__/healthCapability.test.ts:7: * read it. HealthPort and HealthFake are deleted; the runtime exposes no health member.
+app-next/src/ports/__tests__/healthCapability.test.ts:11:  expect(() => require('../HealthPort')).toThrow();

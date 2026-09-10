@@ -46,6 +46,9 @@
 4. **`HealthAdapter implements HealthPort`** over `engine/signals/health` (`KingstinctHealthKitClient`):
    `workoutsToday('running' | 'biking')` → summed duration and distance from device-recorded workouts started
    today (manual entries excluded as before); background delivery bootstrap kept; claim-on-open.
+   *(Superseded by ship B38 / T07: running/biking are removed from the JS product surface — no JS path reads
+   HealthKit. The HealthKit entitlement, usage strings, pod and background-delivery bridge stay compiled so
+   run/bike can return as an OTA update.)*
 5. Port-level contract tests for each adapter (same suite as the fakes) plus fixture-driven tests using the
    existing recordings (`treadmillRecordings.json`, gait fixtures, geofence event fixtures).
 6. Permissions health (`permissionsStore`) reads live statuses from each adapter on foreground.
@@ -53,8 +56,8 @@
 ## Acceptance
 
 - [ ] Simulator: steps from a simulated pedometer fixture reach the goal and flip Home to `unlockedMet`;
-      gym check-in with simulated location inside/outside; HealthKit workouts from the simulator's Health app
-      count toward a run rule.
+      gym check-in with simulated location inside/outside. *(HealthKit-workout acceptance removed by ship
+      B38 / T07: there are no run rules to progress.)*
 - [ ] Harness app root can start a treadmill session and export a run, exactly as before.
 - [ ] Only `enableAutoDetect` requests Always location (grep + test).
 - [ ] Gym search on the simulator: three letters of a real gym name return Apple suggestions filtered to
@@ -78,8 +81,8 @@
   `domain/gymDwell.ts`; there is no adapter-side accumulator. The 30-second confirmation is unchanged.
 - **Foreground refresh** of Health and steps happens in P2-T17's single `AppState` handler, not here; §1 and
   §4's claim-on-open wording points at it. Home's claim-pending line is P2-T19's.
-- **`HealthPort.workoutsToday` returns `Workout.source`** and the adapter passes P2-T15's contract test "a
-  manually entered workout never counts".
+- *(Superseded by ship B38 / T07: `HealthPort`/`Workout` are deleted from the JS surface; no health contract
+  tests apply. The native HealthKit capability stays compiled for an OTA return.)*
 - **Camera permission** is requested and recorded before the scan (P2-T21 §4); `permissionsStore` reads it.
-- Acceptance rows added: the adapter passes `walkingContract`, `gymContract` and `healthContract`; a renewal
-  across an hour on hardware (P2-T11).
+- Acceptance rows added: the adapter passes `walkingContract` and `gymContract`; a renewal
+  across an hour on hardware (P2-T11). *(No `healthContract`: ship B38 / T07.)*

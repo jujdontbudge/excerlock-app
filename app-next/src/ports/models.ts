@@ -25,7 +25,6 @@ export type HistoryDay = {
   met: boolean;
   scheduled: boolean;
 };
-export type Workout = { kind: 'running' | 'biking'; minutes: number; km: number };
 export type Scenario = {
   gait?: 'none' | 'walking' | 'still';
   motion?: 'walking' | 'still';
@@ -46,7 +45,6 @@ export type Scenario = {
   walking?: { script: WalkingSession['phase'][]; stepMs: number };
   walkingSession?: WalkingSession;
   gym?: { places: SavedPlace[]; presence: 'inside' | 'outside' };
-  health?: { workoutsToday: Workout[] };
   fakeSystemPrompts: 'grant' | 'deny' | 'ask';
   accessibility?: 'xl' | 'reduceMotion';
 };

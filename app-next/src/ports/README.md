@@ -6,7 +6,6 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
 - StepsPort: Phase 2 implements Core Motion authorization and midnight-based pedometer totals.
 - WalkingPort: Phase 2 implements cadence/gait verification, renewable leases and treadmill framing.
 - GymPort: Phase 2 implements place search, saved locations, geofence presence and check-in.
-- HealthPort: Phase 2 reads authorized running/cycling workouts.
 - AuthPort: Phase 2 implements Supabase identity, OTP and deletion.
 - SubscriptionPort: Phase 2 implements Adapty entitlement, paywall and restore.
 - AnalyticsPort: Phase 2 emits sanitized PostHog events.

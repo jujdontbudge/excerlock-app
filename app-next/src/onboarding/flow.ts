@@ -26,12 +26,6 @@ export function pathFor(answers: Answers): string[] {
     case 'gym':
       branch = answers.gymMode === 'arrival' ? ['G1'] : ['G1', 'G2'];
       break;
-    case 'running':
-      branch = ['R1', answers.runMode === 'distance' ? 'D' : 'R2'];
-      break;
-    case 'biking':
-      branch = ['B1', answers.bikeMode === 'distance' ? 'D' : 'B2'];
-      break;
     default:
       branch = answers.walkingMode === 'state' ? ['W1', 'W2'] : ['W1', 'W2', 'W3'];
   }

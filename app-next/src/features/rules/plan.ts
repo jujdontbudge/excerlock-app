@@ -8,7 +8,7 @@ import { profileStore } from '../../state/profileStore';
 import { onboardingStore } from '../../state/onboardingStore';
 export { draftFromAnswers } from './answersDraft';
 export function commitPlan(a: Answers, unit: 'km' | 'mi', base?: RuleDraft) {
-  const draft = draftFromAnswers(a, unit, base),
+  const draft = draftFromAnswers(a, base),
     rule = toRule(draft, toSchedule(scheduleDraft(a)));
   const existing = rulesStore.getState().data.rules;
   rulesStore.getState().patch({ rules: [...existing.filter((r) => r.id !== rule.id), rule] });
@@ -31,6 +31,5 @@ export function commitPlan(a: Answers, unit: 'km' | 'mi', base?: RuleDraft) {
 }
 export function goalStep(d: RuleDraft) {
   if (d.activity === 'walking') return d.walkingMode === 'state' ? 'W2' : 'W3';
-  if (d.activity === 'gym') return d.gymMode === 'arrival' ? 'G1' : 'G2';
-  return d.runMode === 'distance' ? 'D' : d.activity === 'running' ? 'R2' : 'B2';
+  return d.gymMode === 'arrival' ? 'G1' : 'G2';
 }

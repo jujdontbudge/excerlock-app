@@ -9,6 +9,7 @@ export const tokens = {
     glass: 'rgba(255,255,255,0.62)',
     solid: '#FFFFFF',
     subtle: '#F7F7F8',
+    well: '#F2F2F7',
     selected: '#FFF1E8',
     scrim: 'rgba(29,29,34,0.32)',
     transparent: 'transparent',
@@ -30,6 +31,7 @@ export const tokens = {
   },
   border: { default: '#1D1D22', divider: '#E5E5EA', selected: '#C94710', outline: '#1D1D22' },
   state: {
+    switchOn: '#34C759',
     disabledFill: '#EEEEF1',
     disabledText: '#909099',
     success: '#27834A',

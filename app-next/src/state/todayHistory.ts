@@ -14,7 +14,7 @@ export function todayHistory(
   const base = history.find((d) => d.day === today) ?? {
     day: today,
     usageMinutes: null,
-    activity: { walking: 0, gym: 0, running: 0, biking: 0 },
+    activity: { walking: 0, gym: 0 },
     met: false,
     scheduled: false,
   };

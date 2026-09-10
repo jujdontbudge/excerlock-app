@@ -53,12 +53,7 @@ export function analyticsModel(
       reclaimed: values.length ? reclaimedPeriod(baseline, values).minutes / values.length : null,
       met: bucket.some((r) => r.met),
       scheduled: bucket.some((r) => r.scheduled),
-      activity: {
-        walking: sum(bucket.map((r) => r.activity.walking)),
-        gym: sum(bucket.map((r) => r.activity.gym)),
-        running: sum(bucket.map((r) => r.activity.running)),
-        biking: sum(bucket.map((r) => r.activity.biking)),
-      },
+      activity: { walking: sum(bucket.map((r) => r.activity.walking)), gym: sum(bucket.map((r) => r.activity.gym)) },
     };
   });
   const enabled = rules.filter((r) => r.enabled),
@@ -80,8 +75,6 @@ export function analyticsModel(
     activities: {
       walking: sum(rows.map((r) => r.activity.walking)),
       gym: sum(rows.map((r) => r.activity.gym)),
-      running: sum(rows.map((r) => r.activity.running)),
-      biking: sum(rows.map((r) => r.activity.biking)),
     },
     /** Confirmed gym arrivals: met days of arrival-trigger rules inside the period. */
     arrivals: periodRuleDays.filter((d) => d.met && arrivalRules.some((r) => r.id === d.ruleId)).length,
@@ -92,8 +85,6 @@ export function analyticsModel(
       gymArrival: arrivalRules.length > 0,
       steps: enabled.some((r) => r.activity === 'walking' && r.mode.kind === 'target'),
       walking: stateRules.length > 0,
-      running: enabled.some((r) => r.activity === 'running'),
-      biking: enabled.some((r) => r.activity === 'biking'),
     },
     dayZero: history.every((r) => r.day >= today),
   };

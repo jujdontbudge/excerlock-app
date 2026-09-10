@@ -3,7 +3,7 @@ import { PermissionPrimer } from '../PermissionPrimer';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { permissionsStore } from '../../../state/permissionsStore';
-test.each(['screenTime', 'motion', 'health', 'location'] as const)(
+test.each(['screenTime', 'motion', 'location'] as const)(
   '%s denied primer explains the missing ability and allows continuation',
   async (name) => {
     const r = createRuntime();

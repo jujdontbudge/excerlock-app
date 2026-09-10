@@ -10,7 +10,7 @@ export function canContinue(step: string, answers: Answers): boolean {
     const question = choiceQuestions[step];
     return question.options.some((o) => o.id === answers[question.key]);
   }
-  if (step === 'O20') return ['walking', 'gym', 'running', 'biking'].includes(String(answers.activity));
+  if (step === 'O20') return ['walking', 'gym'].includes(String(answers.activity));
   if (step === 'O10') {
     const minutes = answers.estimatedDailyMinutes ?? 180;
     return typeof minutes === 'number' && minutes >= 60 && minutes <= 720 && minutes % 30 === 0;
@@ -20,12 +20,9 @@ export function canContinue(step: string, answers: Answers): boolean {
     const n = Number(answers.stepGoal ?? 5000);
     return n >= 500 && n <= 30000 && n % 500 === 0;
   }
-  if (['G2', 'R2', 'B2', 'D'].includes(step)) {
-    const draft = draftFromAnswers(answers, 'mi');
-    return validGoal(
-      step === 'D' ? draft.distance : step === 'G2' ? draft.gymMinutes : draft.minutes,
-      goalRange(draft, step === 'D'),
-    );
+  if (step === 'G2') {
+    const draft = draftFromAnswers(answers);
+    return validGoal(draft.gymMinutes, goalRange(draft));
   }
   return true;
 }

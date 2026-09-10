@@ -35,7 +35,6 @@ export const devCopy = {
     screenTime: 'Screen Time',
     motion: 'Motion',
     location: 'Location',
-    health: 'Health',
     camera: 'Camera',
     notifications: 'Notifications',
   },

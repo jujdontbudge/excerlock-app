@@ -10,7 +10,6 @@ export const permissionIcons: Record<keyof Permissions, IconName> = {
   screenTime: 'shield',
   motion: 'walking',
   location: 'map-pin',
-  health: 'heart',
   camera: 'person',
   notifications: 'bell',
 };

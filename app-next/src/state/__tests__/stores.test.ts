@@ -17,8 +17,10 @@ test('all eight stores reject malformed persisted fields and accept valid produc
   expect(profileStore.getState().data.name).toBe('Alex');
   rulesStore.getState().patch({ rules: [rule] });
   expect(rulesStore.getState().data.rules).toEqual([rule]);
-  rulesStore.getState().patch({ rules: [{} as never] });
+  rulesStore.getState().patch({ rules: [rule, {} as never] });
   expect(rulesStore.getState().data.rules).toEqual([rule]);
+  rulesStore.getState().patch({ rules: [{} as never] });
+  expect(rulesStore.getState().data.rules).toEqual([]);
   entitlementStore.getState().patch({ entitlement: { status: 'trial', renewsAt: '2026-09-14T00:00:00Z' } });
   expect(entitlementStore.getState().data.entitlement.status).toBe('trial');
   permissionsStore.getState().patch({ motion: 'granted' });

@@ -20,7 +20,8 @@ on Johan's iPhone (dev-client build via `npx expo run:ios --device <device-udid>
 6. Gym: save a real gym via search; manual check-in inside the radius → met; enable auto-detect (Always
    prompt) → arrive at the gym with the app closed → met recorded when the app next opens or the geofence
    wakes the task.
-7. Running: record a run with the Watch or a Health-writing app → run rule progresses/meets from Health.
+7. *(Removed by ship B38 / T07: no running rules exist. The HealthKit background-delivery bootstrap is still
+   verified as compiled, not as a progress source.)*
 8. Trial reminder scheduled (pending list); Sentry test crash; PostHog events for the session.
 9. Restore on a second device or after reinstall via sign-in (P2-T08).
 10. Usage monitor: use a locked app for 10 minutes after unlocking → Analytics shows ~10 minutes the next

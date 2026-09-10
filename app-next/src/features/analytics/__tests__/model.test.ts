@@ -15,7 +15,7 @@ const row = (day: string, usageMinutes: number | null, scheduled = true, met = t
   usageMinutes,
   scheduled,
   met,
-  activity: { walking: 2000, gym: 30, running: 0, biking: 0 },
+  activity: { walking: 2000, gym: 30 },
 });
 test('all-time buckets average replaced minutes per calendar week after clamping each day', () => {
   const model = analyticsModel([row('2026-09-01', 240), row('2026-09-02', 60)], '2026-09-07', 'All', 0, 180);

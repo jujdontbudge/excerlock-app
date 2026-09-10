@@ -1,0 +1,96 @@
+
+> app-next@1.0.0 test
+> jest --runInBand --runInBand src/state/__tests__/rulesMigration.test.ts
+
+(node:39445) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL src/state/__tests__/rulesMigration.test.ts
+  ✕ a mixed persisted store keeps walking/gym rules, drops run/bike/malformed rows, and sets a one-line note (2 ms)
+  ✕ the retirement note is consumable: once dismissed it never returns
+  ✕ rule-day hydration drops only the malformed row and keeps valid progress (1 ms)
+
+  ● a mixed persisted store keeps walking/gym rules, drops run/bike/malformed rows, and sets a one-line note
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 1
+
+    - Array [
+    -   "walk",
+    -   "gym",
+    - ]
+    + Array []
+
+      43 |   );
+      44 |   await rulesStore.persist.rehydrate();
+    > 45 |   expect(rulesStore.getState().data.rules.map((r) => r.id)).toEqual(['walk', 'gym']);
+         |                                                             ^
+      46 |   expect(rulesStore.getState().data.migrationNote).toBe(rulesRetirementNote);
+      47 |   expect(rulesStore.getState().data.migrationNote).not.toContain('\n');
+      48 | });
+
+      at Object.toEqual (src/state/__tests__/rulesMigration.test.ts:45:61)
+      at asyncGeneratorStep (../../../ExcerLock/node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../../../ExcerLock/node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+  ● the retirement note is consumable: once dismissed it never returns
+
+    expect(received).toBeNull()
+
+    Received: undefined
+
+      56 |   expect(rulesStore.getState().data.migrationNote).toBe(rulesRetirementNote);
+      57 |   rulesStore.getState().patch({ migrationNote: null });
+    > 58 |   expect(rulesStore.getState().data.migrationNote).toBeNull();
+         |                                                    ^
+      59 |   await new Promise((resolve) => setImmediate(resolve));
+      60 |   await rulesStore.persist.rehydrate();
+      61 |   expect(rulesStore.getState().data.rules.map((r) => r.id)).toEqual(['walk']);
+
+      at Object.toBeNull (src/state/__tests__/rulesMigration.test.ts:58:52)
+      at asyncGeneratorStep (../../../ExcerLock/node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../../../ExcerLock/node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+  ● rule-day hydration drops only the malformed row and keeps valid progress
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 9
+    + Received  + 1
+
+    - Array [
+    -   Object {
+    -     "day": "2026-09-07",
+    -     "met": false,
+    -     "metAt": null,
+    -     "progress": 3200,
+    -     "ruleId": "walk",
+    -   },
+    - ]
+    + Array []
+
+      73 |   );
+      74 |   await ruleDaysStore.persist.rehydrate();
+    > 75 |   expect(ruleDaysStore.getState().data.days).toEqual([day]);
+         |                                              ^
+      76 | });
+      77 |
+
+      at Object.toEqual (src/state/__tests__/rulesMigration.test.ts:75:46)
+      at asyncGeneratorStep (../../../ExcerLock/node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (../../../ExcerLock/node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+
+Test Suites: 1 failed, 1 total
+Tests:       3 failed, 3 total
+Snapshots:   0 total
+Time:        0.251 s, estimated 1 s
+Ran all test suites matching /src\/state\/__tests__\/rulesMigration.test.ts/i.
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path /Users/johansardar/ExcerLock-build/ship-T07/app-next
+npm error workspace app-next@1.0.0
+npm error location /Users/johansardar/ExcerLock-build/ship-T07/app-next
+npm error command failed
+npm error command sh -c jest --runInBand --runInBand src/state/__tests__/rulesMigration.test.ts
+RED_EXIT:1 (expected 1)

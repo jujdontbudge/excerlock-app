@@ -31,7 +31,7 @@ export function TrendHero() {
                 alignItems: 'center',
                 gap: t.space.xs,
               }}>
-              <Icon name="running" size={t.space.xxl} tint={t.brand.primary} />
+              <Icon name="walking" size={t.space.xxl} tint={t.brand.primary} />
               <Label variant="label" style={{ color: t.text.primary }}>
                 {c.exercise}
               </Label>

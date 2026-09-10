@@ -13,8 +13,6 @@ test('all required scenarios are valid and the analytics fixture has six weeks o
     'home-no-apps',
     'gym-arrival-user',
     'gym-time-user',
-    'runner-distance',
-    'biker-time',
     'multi-rule-overlap',
     'window-crosses-midnight',
     'trial-active',

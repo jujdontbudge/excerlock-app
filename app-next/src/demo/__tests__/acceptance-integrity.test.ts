@@ -4,12 +4,11 @@ import { dayKey } from '../../domain/calendar';
 import { rulesStore } from '../../state/rulesStore';
 import { ruleDaysStore } from '../../state/ruleDaysStore';
 
-test('today Analytics uses the same live steps and workout minutes as the fake ports', async () => {
+test('today Analytics uses the same live steps and gym minutes as the fake ports', async () => {
   const r = createRuntime();
-  await r.dev.load('runner-distance');
+  await r.dev.load('home-locked-walking');
   const today = () => r.dev.snapshot().history.find((d) => d.day === dayKey(r.clock.now(), r.clock.timezone()))!;
   expect(today().activity.walking).toBe(await r.steps.stepsSince(r.clock.now()));
-  expect(today().activity.running).toBe(14);
   expect(today().usageMinutes).toBe(42);
   const past = r.dev.snapshot().history.filter((d) => d.day !== today().day);
   r.dev.setSteps(5400);
@@ -38,9 +37,9 @@ test('the local gym search can exercise the five-gym limit with fixed 100m place
   expect(r.gym.listPlaces()).toHaveLength(5);
   r.dispose();
 });
-test('fake usage, steps and workouts do not leak into a different calendar day', async () => {
+test('fake usage and steps do not leak into a different calendar day', async () => {
   const r = createRuntime();
-  await r.dev.load('runner-distance');
+  await r.dev.load('home-locked-walking');
   r.dev.advance(24 * 60 * 60000);
   let usage: number | null = 0;
   const stop = r.screenTime.observeUsage((value) => {
@@ -48,7 +47,6 @@ test('fake usage, steps and workouts do not leak into a different calendar day',
   });
   expect(usage).toBeNull();
   expect(await r.steps.stepsSince(r.clock.now())).toBe(0);
-  expect(await r.health.workoutsToday('running')).toEqual([]);
   stop();
   r.dispose();
 });

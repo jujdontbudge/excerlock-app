@@ -120,7 +120,7 @@ export function PreviewContent({
       return <UI.SettingsRow title={c.units} icon="ruler" value={c.miles} onPress={s.toggle} />;
     case 'PermissionRow':
       return (
-        <UI.PermissionRow title={c.health} icon="heart" status={s.flag ? 'Granted' : 'Needed'} onPress={s.toggle} />
+        <UI.PermissionRow title={c.motion} icon="walking" status={s.flag ? 'Granted' : 'Needed'} onPress={s.toggle} />
       );
     default:
       return <DisplayPreviews name={name} alternate={alternate} state={s} />;

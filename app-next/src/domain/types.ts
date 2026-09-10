@@ -1,5 +1,5 @@
 export type OpaqueSelectionHandle = { readonly token: string };
-export type Activity = 'walking' | 'gym' | 'running' | 'biking';
+export type Activity = 'walking' | 'gym';
 
 export type Rule = {
   id: string; // uuid
@@ -15,11 +15,7 @@ export type RuleMode =
   | { kind: 'target'; activity: 'walking'; metric: 'steps'; goal: number; place: WalkPlace }
   | { kind: 'state'; activity: 'walking'; place: WalkPlace }
   | { kind: 'event'; activity: 'gym'; trigger: 'arrival' }
-  | { kind: 'target'; activity: 'gym'; metric: 'minutes'; goal: number }
-  | { kind: 'target'; activity: 'running'; metric: 'minutes'; goal: number }
-  | { kind: 'target'; activity: 'running'; metric: 'distance'; goal: number; unit: 'km' | 'mi' }
-  | { kind: 'target'; activity: 'biking'; metric: 'minutes'; goal: number }
-  | { kind: 'target'; activity: 'biking'; metric: 'distance'; goal: number; unit: 'km' | 'mi' };
+  | { kind: 'target'; activity: 'gym'; metric: 'minutes'; goal: number };
 
 export type WalkPlace = 'outside' | 'treadmill' | 'either';
 
@@ -85,7 +81,6 @@ export type Permissions = {
   screenTime: PermissionStatus;
   motion: PermissionStatus;
   location: 'notDetermined' | 'whenInUse' | 'always' | 'denied';
-  health: PermissionStatus;
   camera: PermissionStatus;
   notifications: PermissionStatus;
 };

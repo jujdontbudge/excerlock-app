@@ -24,8 +24,8 @@ export function OnboardingRoute() {
     unit = useSettingsStore((s) => s.data.units),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null);
   const playback = useImpactPlayback(flow.step, flow.advance, focused);
-  const base = useMemo(() => createDraft('walking', unit), [unit]);
-  const draft = draftFromAnswers(flow.answers, unit, base),
+  const base = useMemo(() => createDraft('walking'), []);
+  const draft = draftFromAnswers(flow.answers, base),
     schedule = scheduleDraft(flow.answers);
   const onSchedule = (action: ScheduleAction) =>
     Object.entries(scheduleAnswers(reduceSchedule(schedule, action))).forEach(([key, value]) =>

@@ -9,7 +9,7 @@ export function unlockHint(rules: Rule[], days: RuleDay[]): UnlockHint {
       ruleId: rule.id,
       action: 'progress',
       remaining: Math.max(0, mode.goal - (days.find((d) => d.ruleId === rule.id)?.progress ?? 0)),
-      unit: mode.metric === 'distance' ? mode.unit : mode.metric,
+      unit: mode.metric,
     };
   });
   return offers.reduce((best, offer) => {

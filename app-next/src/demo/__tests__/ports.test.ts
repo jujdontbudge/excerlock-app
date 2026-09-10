@@ -10,7 +10,7 @@ test('fake permission and app-picker prompts resolve through local controls', as
   runtime.dev.resolvePrompt(false);
   expect(await permission).toBe('denied');
   runtime.dev.setPromptMode('grant');
-  expect(await runtime.health.request()).toBe('granted');
+  expect(await runtime.steps.request()).toBe('granted');
   const picker = runtime.screenTime.presentAppPicker();
   const selection = { handle: { token: 'opaque-fake' }, appCount: 2, categoryCount: 1 };
   runtime.dev.resolvePrompt(selection);

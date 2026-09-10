@@ -20,7 +20,7 @@ below are normative: field names, unions and invariants are what Codex implement
 ## 2. Types
 
 ```ts
-type Activity = 'walking' | 'gym' | 'running' | 'biking';
+type Activity = 'walking' | 'gym';   // B38: running/biking removed from the product surface
 
 type Rule = {
   id: string;                      // uuid
@@ -38,11 +38,7 @@ type RuleMode =
   | { kind: 'target'; activity: 'walking'; metric: 'minutes'; goal: number; place: WalkPlace }   // B28: minutes from the verified session
   | { kind: 'state';  activity: 'walking';                                   place: WalkPlace }
   | { kind: 'event';  activity: 'gym';     trigger: 'arrival' }
-  | { kind: 'target'; activity: 'gym';     metric: 'minutes'; goal: number }
-  | { kind: 'target'; activity: 'running'; metric: 'minutes'; goal: number }
-  | { kind: 'target'; activity: 'running'; metric: 'distance'; goal: number; unit: 'km' | 'mi' }
-  | { kind: 'target'; activity: 'biking';  metric: 'minutes'; goal: number }
-  | { kind: 'target'; activity: 'biking';  metric: 'distance'; goal: number; unit: 'km' | 'mi' };
+  | { kind: 'target'; activity: 'gym';     metric: 'minutes'; goal: number };   // B38: no run/bike modes
 
 type WalkPlace = 'outside' | 'treadmill' | 'either';
 
@@ -195,10 +191,8 @@ Progress is measured **from local midnight of the instance day**, not from the w
 | walking · state | Walking session verification (cadence + activity classification; treadmill propped path when `place` is `treadmill`/`either` and the phone is propped) | never "met"; opens apps only while live |
 | gym · arrival | A confirmed `GymVisit` (geofence entry or manual check-in, 30-second confirmation) at **any** saved gym (B24) | first confirmed visit today; `metAt = enteredAt` |
 | gym · minutes | Dwell summed from `GymVisit` enter/exit timestamps at any saved gym, clipped to the day and merged across overlaps; a visit with the app closed credits in full (B31); a per-day accumulator independent of the window (B8) | `progress >= goal`; the apps are open while presence holds (B22) |
-| running · minutes / distance | HealthKit workouts of type running started today, summed duration / distance | `progress >= goal` |
-| biking · minutes / distance | HealthKit workouts of type cycling started today | `progress >= goal` |
 
-Once `met` is true for a day it stays true (no un-meeting when a HealthKit sample is deleted). The moment a row
+Once `met` is true for a day it stays true (no un-meeting when a source sample is later deleted). The moment a row
 flips to met an `EarnedUnlock` is written (§3). Which day a progress row belongs to is decided by one helper,
 `progressDay(rule, at, tz)`: the containing instance's day, else today's instance day if the rule is scheduled
 today, else no row at all. Deleting the last saved gym pauses every gym rule with `pausedReason: 'noGym'`
@@ -248,7 +242,7 @@ type Profile = {
 type Entitlement = { status: 'unknown' | 'none' | 'trial' | 'active' | 'expired' | 'billingIssue'; renewsAt: string | null };
 type Session     = { kind: 'anonymous' } | { kind: 'signedIn'; provider: 'apple' | 'google' | 'email'; email: string | null };
 type PermissionStatus = 'notDetermined' | 'granted' | 'denied' | 'restricted';
-type Permissions = { screenTime: PermissionStatus; motion: PermissionStatus; location: 'notDetermined' | 'whenInUse' | 'always' | 'denied'; health: PermissionStatus; camera: PermissionStatus; notifications: PermissionStatus };
+type Permissions = { screenTime: PermissionStatus; motion: PermissionStatus; location: 'notDetermined' | 'whenInUse' | 'always' | 'denied'; camera: PermissionStatus; notifications: PermissionStatus };   // B38: no health permission in JS; the HealthKit entitlement stays compiled for an OTA return
 ```
 
 Access by status (B21; `domain/entitlementAccess.ts`): `none` → the hard paywall (never subscribed); `trial`

@@ -8,6 +8,4 @@ test('setup advances through every step, including optional skips', () => {
 test.each([
   ['walking', 'motion'],
   ['gym', 'location'],
-  ['running', 'health'],
-  ['biking', 'health'],
 ] as const)('%s asks for %s', (activity, permission) => expect(branchPermission(activity)).toBe(permission));
