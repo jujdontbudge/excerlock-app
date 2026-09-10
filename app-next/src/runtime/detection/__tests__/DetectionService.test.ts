@@ -179,3 +179,35 @@ test('cursor persistence failure retries the exact credited intent and key befor
   expect(creditHistory).toHaveBeenNthCalledWith(2, pending);
   expect(detectionStore.getState().data.creditedThrough.steps).toBe(1000);
 });
+
+test('qualified pickup walking joins propped policy and stops only after the one walking grace', async () => {
+  let qualifying: boolean | 'unknown' = true;
+  let observedAt = 0;
+  const data = detectionStore.getState().data;
+  detectionStore.getState().patch({
+    propped: { ...data.propped, phase: 'handheld', deadlineAt: 20_000, verifiedSince: 0 },
+  });
+  const motion = {
+    reconcile: () => ({ qualifying, observedAt, activityAt: observedAt, cadenceAt: null, cadencePerMinute: null }),
+  } as unknown as MotionAdapter;
+  const service = new DetectionService({
+    motion,
+    placement: {} as PlacementAdapter,
+    gymLog: { append: async () => {}, readAll: async () => [] },
+    creditHistory: async () => {},
+    persist: async () => {},
+  });
+  await service.reconcileMotion(0, 30_000, 0);
+  observedAt = 3_000;
+  await service.reconcileMotion(3_000, 30_000, 0);
+  expect(detectionStore.getState().data.propped.phase).toBe('active');
+  qualifying = false;
+  observedAt = 4_000;
+  await service.reconcileMotion(4_000, 30_000, 0);
+  expect(detectionStore.getState().data.walking.phase).toBe('grace');
+  expect(detectionStore.getState().data.propped.phase).toBe('active');
+  observedAt = 34_000;
+  await service.reconcileMotion(34_000, 30_000, 0);
+  expect(detectionStore.getState().data.walking.phase).toBe('inactive');
+  expect(detectionStore.getState().data.propped.phase).toBe('inactive');
+});

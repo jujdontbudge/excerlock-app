@@ -94,6 +94,11 @@ export class MotionAdapter {
     return this.provider.queryActivity(fromMs, toMs);
   }
 
+  /** Latest native cumulative counter, for display deltas only (never policy). */
+  cumulativeSteps(): number | null {
+    return this.cadence?.cumulativeSteps ?? null;
+  }
+
   private publish(at: number): void {
     const evidence = this.reconcile(Math.max(at, this.now()));
     this.listeners.forEach((listener) => listener(evidence));

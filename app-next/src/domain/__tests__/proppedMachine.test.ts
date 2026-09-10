@@ -46,7 +46,15 @@ test('rescan uses existing deadline; background returns to same bounded handoff'
 test('valid timely rescan resets propped; stale generation rejected', () => {
   const scan = run(handoff(), { kind: 'startScan', at: 10000, foreground: true });
   expect(run(scan, { kind: 'scanPass', at: 11000, generation: scan.generation - 1, foreground: true }).phase).toBe('scanning');
-  expect(run(scan, { kind: 'scanPass', at: 11000, generation: scan.generation, foreground: true }).phase).toBe('propped');
+  const passed = run(scan, { kind: 'scanPass', at: 11000, generation: scan.generation, foreground: true });
+  expect(passed.phase).toBe('propped');
+  expect(passed.verifiedSince).toBe(11000);
+});
+test('legacy verified state without a timestamp loses relief and requires rescan', () => {
+  const legacy = { ...propped() };
+  delete legacy.verifiedSince;
+  expect(proppedRelief(legacy)).toBe(false);
+  expect(run(legacy, { kind: 'tick' }, legacy.watermark).phase).toBe('inactive');
 });
 test('late wake and clock rewind cannot revive relief', () => {
   const expired = run(handoff(), { kind: 'tick' }, 100000);

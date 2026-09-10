@@ -8,6 +8,8 @@ export type ProppedState = {
   watermark: number;
   deadlineAt: number | null;
   scanGeneration: number | null;
+  /** Timestamp of the latest foreground scan pass. Missing on legacy v1 snapshots. */
+  verifiedSince?: number | null;
 };
 export type ProppedEvent =
   | { kind: 'tick' }
@@ -19,11 +21,12 @@ function time(value: number): void {
 }
 export function createProppedState(now: number): ProppedState {
   time(now);
-  return { version: 1, phase: 'inactive', generation: 0, watermark: now, deadlineAt: null, scanGeneration: null };
+  return { version: 1, phase: 'inactive', generation: 0, watermark: now, deadlineAt: null, scanGeneration: null, verifiedSince: null };
 }
 function validate(state: ProppedState): void {
   time(state.watermark);
   if (state.deadlineAt !== null) time(state.deadlineAt);
+  if (state.verifiedSince !== undefined && state.verifiedSince !== null) time(state.verifiedSince);
   if (state.version !== 1 || !['inactive', 'scanning', 'propped', 'handheld', 'active', 'handoff'].includes(state.phase) ||
     !Number.isSafeInteger(state.generation) || state.generation < 0 ||
     (state.phase === 'scanning' ? state.scanGeneration !== state.generation : state.scanGeneration !== null) ||
@@ -32,6 +35,7 @@ function validate(state: ProppedState): void {
 }
 function clear(state: ProppedState): void {
   state.phase = 'inactive'; state.deadlineAt = null; state.scanGeneration = null;
+  state.verifiedSince = null;
   state.generation++;
 }
 function expire(state: ProppedState, now: number): void {
@@ -39,12 +43,15 @@ function expire(state: ProppedState, now: number): void {
 }
 /** Scanning alone never grants relief; a rescan may use ONLY the existing handoff deadline. */
 export function proppedRelief(state: ProppedState): boolean {
-  return ['propped', 'handheld', 'active', 'handoff'].includes(state.phase) ||
-    (state.phase === 'scanning' && state.deadlineAt !== null);
+  // A legacy persisted pass without authoritative time cannot grant relief.
+  return state.verifiedSince != null && (['propped', 'handheld', 'active', 'handoff'].includes(state.phase) ||
+    (state.phase === 'scanning' && state.deadlineAt !== null));
 }
 export function reducePropped(previous: ProppedState, event: ProppedEvent, now: number): ProppedState {
   validate(previous); time(now);
-  const state = { ...previous };
+  const state = { ...previous, verifiedSince: previous.verifiedSince ?? null };
+  // Hydrated legacy propped states must rescan instead of retaining undated relief.
+  if (state.verifiedSince === null && ['propped', 'handheld', 'active', 'handoff'].includes(state.phase)) clear(state);
   const current = Math.max(now, state.watermark);
   if (event.kind !== 'tick') {
     time(event.at);
@@ -61,6 +68,7 @@ export function reducePropped(previous: ProppedState, event: ProppedEvent, now: 
         case 'scanPass':
           if (event.foreground && state.phase === 'scanning' && event.generation === state.scanGeneration) {
             state.phase = 'propped'; state.deadlineAt = null; state.scanGeneration = null;
+            state.verifiedSince = event.at;
           }
           break;
         case 'background': case 'scanCancel':
