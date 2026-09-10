@@ -38,6 +38,9 @@ Exhaustive. Every row is something that **cannot be added by an OTA update**. `a
 | 29 | OTA | `expo-updates` (+ code signing certificate if enabled) | `app/` | |
 | 30 | Config | `app.config.ts` resolving every key from EAS secrets with `~/.excerlock/env` fallback | `app/app.config.ts` | |
 | 31 | Misc Expo | `expo-device`, `expo-crypto`, `expo-store-review`, `expo-sharing`, `expo-web-browser`, `expo-auth-session`, `expo-network` | `app/package.json` | |
+| 32 | Startup diagnostics | app-owned `excerlock-startup` Expo module + AppDelegate Points of Interest markers (ADR 0021); diagnostic only, not full cold-launch acceptance | `app-next/modules/excerlock-startup/` | new |
+
+Native runtime boundary: adding row32 advances `app-next` runtimeVersion to `2`. No runtime2 OTA publication is authorized; build and test the new binary.
 
 ## 2. Config plugin order (LIFO — first in the array runs last)
 

@@ -21,11 +21,12 @@ test('actual Expo loader resolves external TS, preserves native plugins and excl
   assert.equal(config.extra.environment, 'preview');
   assert.ok(config.scheme.includes('com.googleusercontent.apps.fixture'));
   assert.equal(config.extra.clientAuth.googleRedirectUri, 'com.googleusercontent.apps.fixture:/oauthredirect');
-  assert.equal(config.runtimeVersion, '1');
+  assert.equal(config.runtimeVersion, '2');
   assert.equal(config.updates.checkAutomatically, 'ON_LOAD');
   assert.equal(config.ios.bundleIdentifier, 'com.johansardar.excerlock');
   assert.ok(config.plugins.includes('./plugins/withScreenTimeExtensionValidation'));
   assert.ok(config.plugins.includes('./plugins/withMainAppIntent'));
+  assert.ok(config.plugins.includes('./modules/excerlock-startup/app.plugin'));
   assert.ok(!result.stdout.includes(env.SENTRY_AUTH_TOKEN));
   assert.ok(!result.stdout.includes('SENTRY_AUTH_TOKEN'));
 });

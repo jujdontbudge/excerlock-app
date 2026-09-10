@@ -15,6 +15,8 @@ The existing simulator acceptance script opens a development-client URL and poll
 
 ## Consequences
 
+The added native module advances the candidate runtimeVersion from `1` to `2`; a new binary is required. No production OTA publication is authorized under the submission-ready-only scope.
+
 Points of Interest traces can explain native-delegate-to-React and delegate-to-interactive-Home regressions on one monotonic native clock. Home emits nothing for fake runtimes and waits for hydration, layout, and a frame; native-content races retry for at most eight frames. The helper exports raw xctrace XML and explicitly leaves numeric timing unverified until its schema is validated against an actual export fixture. A physical signed XCTest `XCTApplicationLaunchMetric`/device trace remains required; simulator and dev-client captures are harness checks only.
 
 ## References

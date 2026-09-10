@@ -20,7 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: ['excerlock', ...(google ? [google.scheme] : [])],
     name: config.name,
     slug: config.slug,
-    runtimeVersion: '1',
+    runtimeVersion: '2',
     ios: { ...config.ios, ...nativeConfig.ios, infoPlist: { ...config.ios?.infoPlist, ...nativeConfig.ios?.infoPlist } },
     plugins: [...nativeConfig.plugins],
     extra: { ...config.extra, ...extra, clientAuth: { ...extra.clientAuth, googleRedirectUri: google?.redirectUri } },
