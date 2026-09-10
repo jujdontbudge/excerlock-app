@@ -654,3 +654,12 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   EXCERLOCK_SIM_UDID. All8 node script regressions pass. No simulator boot/install yet. Preview Release
   simulator candidate build at pinned8d403650 assigned; source-only test commits do not change app code.
   Startup helper currently exports raw signposts only; no numeric/full-launch acceptance claimed.
+
+- Allocated a new session-owned iPhone13 simulator ExcerLock-Ship-8d403650, UUID
+  EA6C9AC3-0C1A-430B-8EF9-A84A6E044206, iOS26.4.1. It is NOT booted/installed; no other sim was
+  booted at allocation. Ownership JSON in app-next/evidence/ship-current-simulator. Root alone owns
+  boot/install/journey execution and eventual shutdown for this simulator.
+- Native agent confirmed live preview Release-iphonesimulator build session89165, artifact root
+  /tmp/t14-final-preview-8d403650-20260910-131116-59597. Actual generated config has runtime2 and
+  main+4extension bundle targets; no build result/runtime proof yet. Sentry upload disabled after
+  EAS preview injection; no signing/upload/boot performed.
