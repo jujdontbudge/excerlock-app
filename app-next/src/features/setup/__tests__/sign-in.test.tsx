@@ -50,15 +50,17 @@ test.each(['apple', 'google'] as const)(
 test('required sign-in removes skip and a provider failure stays visible for retry', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
-  runtime.auth.signInWithApple = jest.fn().mockRejectedValue(new Error('provider rejected'));
+  const signInWithApple = jest.fn().mockRejectedValue(new Error('provider rejected'));
+  runtime.auth.signInWithApple = signInWithApple;
   await render(
     <AppRuntimeProvider runtime={runtime}>
       <SignInScreen onContinue={() => {}} signInRequired />
     </AppRuntimeProvider>,
   );
   expect(screen.queryByRole('button', { name: 'Skip for now' })).toBeNull();
-  await fireEvent(screen.getByRole('button', { name: 'Continue with Apple' }), 'buttonPress');
+  await fireEvent(screen.getByRole('button', { name: 'Continue with Apple' }), 'accessibilityTap');
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not sign in. Please try again.');
+  expect(signInWithApple).toHaveBeenCalledTimes(1);
   expect(screen.getByRole('button', { name: 'Continue with Apple' })).toBeEnabled();
 });
 
