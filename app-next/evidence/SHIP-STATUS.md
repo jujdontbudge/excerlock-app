@@ -1,6 +1,16 @@
 # Ship acceptance status — 2026-09-10
 
-**Not submission-ready.**
+**Current engineering scope incomplete. Full App Store submission preparation is deferred.**
+
+## User scope override — 2026-09-10
+
+Authoritative active gates: `plans/ship/README.md` current scope section. Complete signing/upload,
+physical-iPhone functional verification and backend functionality. Submission metadata, formal
+startup/battery measurements and local StoreKit automation are TODO in `plans/post-ship/README.md`,
+not active engineering completion gates. The4MBHermes limit is removed; old FAIL entries below are
+historical and no longer blockers. Real purchases, privacy/deletion correctness and core runtime
+safeguards remain active. No AppReview/publicrelease/productionOTA authorized.
+
 
 Current user-authorized endpoint: submission-ready only; TestFlight is allowed. App Review submission,
 public release, and production OTA publication are prohibited. Historical public-store/OTA execution

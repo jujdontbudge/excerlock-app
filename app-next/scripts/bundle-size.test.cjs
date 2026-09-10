@@ -3,18 +3,15 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { verifyBundleSize, MAX_BUNDLE_BYTES } = require('./verify-bundle-size.cjs');
+const { verifyBundleSize } = require('./verify-bundle-size.cjs');
 const magic = Buffer.from('c61fbc03c103191f', 'hex');
-test('release budget is decimal 4 MB, accepts exact cap and rejects one byte over', () => {
+test('removed size budget does not reject valid Hermes artifacts above the historical cap', () => {
  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ship-bundle-size-'));
  try {
   const file = path.join(dir, 'main.jsbundle');
   fs.writeFileSync(file, magic);
-  assert.equal(MAX_BUNDLE_BYTES, 4_000_000);
-  fs.truncateSync(file, MAX_BUNDLE_BYTES);
-  assert.equal(verifyBundleSize(file).bytes, MAX_BUNDLE_BYTES);
-  fs.truncateSync(file, MAX_BUNDLE_BYTES + 1);
-  assert.throws(() => verifyBundleSize(file), /exceeds 4000000 bytes/);
+  fs.truncateSync(file, 8_000_000);
+  assert.deepEqual(verifyBundleSize(file), { bytes: 8_000_000, limit: null });
  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 test('missing, JS text, truncated header and linked artifacts cannot pass as Hermes bytecode', () => {

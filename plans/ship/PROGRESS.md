@@ -861,3 +861,15 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   territories, required App Store screenshot size and4target subscription review screenshots,
   privacy-label/agreement/first-subscription attachment verification; Hermes6,378,864vs4,000,000.
   No App Review submission, public release, production OTA, or claim of completed goal.
+
+### User scope revision — 2026-09-10 22:14 UTC
+
+- Three Luna Max lanes assigned: signing/build upload; backend credential/deploy/functionality;
+  physical iPhone functionality. Root owns integration/scope docs and release sequencing.
+- Submission metadata, formal startup/battery measurement and optional local StoreKit automation
+  moved to plans/post-ship/README.md as TODO, not completed. Full AppStore readiness is not claimed.
+- User removed4MBlimit: artifact verifier still rejects missing/non-Hermes/symlink artifacts but
+  reports size without numeric cap. Two focusedtestsPASS; actualcandidate4e8db1b0 inspected as
+ 6,378,864bytes informational. No auth-only refactor or unnecessary optimization applied.
+- Existing noAppReview/no public apprelease/no productionOTA boundary remains. Backend work is
+  authorized by latest request but exact migration/secret/deploy sequence is coordinated under lock.

@@ -1,5 +1,7 @@
 # T15 — Performance budgets
 
+> Formal measurements deferred to `../post-ship/README.md` F02 by Johan on 2026-09-10. Not completed.
+
 Facts: audit finding — rule set re-sorted every second while Home mounted; `research/recovery-postmortem.md`
 §PERF (startup gates).
 
@@ -8,7 +10,7 @@ Facts: audit finding — rule set re-sorted every second while Home mounted; `re
 - Cold start to first frame ≤ 1.5 s; time to interactive Home ≤ 2.5 s; airplane-mode fresh install ≤ 3.5 s.
 - Boot gate: Supabase ≤ 5 s bound, entitlement ≤ 3 s bound, updates ≤ 3 s bound, all concurrent, never
   serial; splash never waits on the network beyond the longest bound.
-- JS bundle ≤ 4 MB Hermes bytecode; camera and map modules lazy-loaded.
+- Historical 4 MB Hermes cap removed by Johan on 2026-09-10; size is informational. Camera and map modules remain lazy-loaded.
 - Home steady-state: zero work per second when nothing changed (replace the 1 s sort with a derived selector
   invalidated by store changes).
 

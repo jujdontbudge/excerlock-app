@@ -1,5 +1,29 @@
 # Ship
 
+## Current scope — user revision, 2026-09-10
+
+The active completion gates are signing/build upload, real-iPhone functional verification,
+and backend functionality per the existing product/identity/detection specifications.
+The rest of this document preserves the historical task map; it does not override this revision.
+Submission metadata, formal startup/battery measurements, and the optional local StoreKit harness
+are explicitly **deferred, not completed** to [the follow-up spec](../post-ship/README.md).
+The 4 MB Hermes cap is **removed**, not deferred or implicitly replaced by another cap.
+
+No App Review submission, public app release, or production OTA is authorized.
+Completing this engineering scope does **not** mean Apple submission metadata is complete.
+
+### Active acceptance
+- [ ] Correct distribution signing and all five bundle IDs/extension entitlements; signed artifact
+      uploaded and processed by App Store Connect. TestFlight distribution optional.
+- [ ] Build-identified physical-iPhone evidence for sign-in, purchase/restore, exercise detection,
+      Screen Time blocking/unlocking, and recovery paths from T04/T05/T11/T14. No simulator substitutes.
+- [ ] Required backend credentials/configuration, forward-only migrations and current deployment;
+      verified authentication, subscription resync/webhook and account/data deletion behavior.
+
+All other implemented product/OTA/identity safeguards remain required; this revision does not
+remove core app functionality, privacy obligations, or fixes for crashes and severe battery problems.
+
+
 **Johan, 2026-09-09.** The app running on the simulator is the app. This is what's left to ship it. Decisions
 B38–B54 in `../rebuild/00-decisions.md` §G. Interview record in `00-grill.md`. Evidence base (file:line for
 everything) in `research/`.
