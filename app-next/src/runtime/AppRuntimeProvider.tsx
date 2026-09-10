@@ -15,7 +15,7 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
       provided ??
       (runtimeMode(Constants.expoConfig?.extra?.environment, __DEV__) === 'fake' ? createRuntime('fake') : null),
   );
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<'retry' | 'restart' | null>(null);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (runtime) return;
@@ -26,7 +26,7 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
       },
       (error) => {
         reportRuntimeError(error);
-        if (current) setFailed(true);
+        if (current) setFailed(error && typeof error === 'object' && error.retryUnsafe === true ? 'restart' : 'retry');
       },
     );
     return () => {
@@ -43,15 +43,17 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
     return (
       <ScreenShell contentStyle={{ flexGrow: 1, justifyContent: 'center', gap: 24 }}>
         <Label style={{ textAlign: 'center' }}>
-          {failed
-            ? 'ExcerLock could not finish starting. Your saved data has not been cleared.'
-            : 'Starting ExcerLock…'}
+          {failed === 'restart'
+            ? 'Close ExcerLock from the app switcher, then open it again to finish starting safely.'
+            : failed
+              ? 'ExcerLock could not finish starting. Your saved data has not been cleared.'
+              : 'Starting ExcerLock…'}
         </Label>
-        {failed ? (
+        {failed === 'restart' ? null : failed ? (
           <PrimaryButton
             label="Try again"
             onPress={() => {
-              setFailed(false);
+              setFailed(null);
               setAttempt((value) => value + 1);
             }}
           />

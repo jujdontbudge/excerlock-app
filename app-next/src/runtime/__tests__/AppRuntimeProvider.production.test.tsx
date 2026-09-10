@@ -66,3 +66,12 @@ test('a provided fake keeps synchronous behavior and is disposed on provider unm
   await view.unmount();
   expect(dispose).toHaveBeenCalledTimes(1);
 });
+
+test('unsafe cleanup requests an app restart instead of offering a futile retry', async () => {
+  mockCreateRuntime.mockRejectedValueOnce(Object.assign(new Error('sensitive cleanup failure'), { retryUnsafe: true }));
+  await render(<AppRuntimeProvider><Child /></AppRuntimeProvider>);
+  expect(await screen.findByText('Close ExcerLock from the app switcher, then open it again to finish starting safely.')).toBeTruthy();
+  expect(screen.queryByText('Try again')).toBeNull();
+  expect(screen.queryByLabelText('Starting ExcerLock')).toBeNull();
+  expect(screen.queryByText(/sensitive cleanup failure/)).toBeNull();
+});

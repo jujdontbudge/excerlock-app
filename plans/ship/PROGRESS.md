@@ -424,3 +424,17 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   raw gym generic return typing, cursor-first partial-write safety, monotonic rewind handling and malformed
   cursor fail-closed (03d72361). Added root barrier-failure/ordering tests and concurrent unsafe-init disposal
   rejection. Integrated typecheck PASS; 5 focused suites/36tests PASS /tmp/ship-retention-integrated.log.
+- CRITICAL OPEN correctness audit (server lane): calendar totals cannot correctly credit overnight instance
+  ownership. Mon20–02 with4000Mon steps+1500Tue before00:30 must make Monday RuleDay5500 while History
+  stays4000/1500; current projectors skip Tue or write only Tue row. Same bug29Mon walking minutes+2Tue.
+  B8 says measure from midnight of INSTANCE day through min(now,instance.end); overlapping Monday-active
+  and Tuesday-get-ahead accounting can legitimately both use Tue morning facts. Scalar day totals observed
+  after02:00 cannot be clipped truthfully. Root architecture next: retain exact verified walking segments;
+  retain exact step query slices/prefixes split at instance ends; never prorate scalar steps. Preserve legacy
+  earned rows; never infer timestamp ownership from old aggregate totals. Add progressDay helper, Mon-only/
+  Mon+Tue overnight, late-wake cutoff, DST, replay and migration tests. References P2-T15§4/§6 and product
+  model§4/§5; T11§8 unchanged. This remains a release-blocking correctness gap, not solved by sealing alone.
+- Latest full integrated retention/cleanup checkpoint atbcc44e09: typecheck/lint PASS,
+  234suites/1081tests/13snapshots PASS (/tmp/ship-retention-final-full.log). Subsequent startup recovery copy
+  distinguishes unsafe cleanup (close/reopen required, no futile retry) from retryable boot error; targeted
+  production-provider5tests/typecheck PASS (/tmp/ship-restart-ui.log). Actual simulator UI remains unverified.
