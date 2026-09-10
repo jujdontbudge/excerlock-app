@@ -529,6 +529,7 @@ export class OtaCoordinator {
   private foregroundSeq = 0;
   private lastRunningId: string | null = null;
   private lastDownloadedId: string | null = null;
+  private guardTail: Promise<void> = Promise.resolve();
 
   constructor(deps: OtaCoordinatorDeps) {
     this.updates = deps.updates;
@@ -609,8 +610,9 @@ export class OtaCoordinator {
       }
       return;
     }
-    // Preserve unrelated staged state: do not overwrite a different pending id.
-    if (this.pendingUpdateId && this.pendingUpdateId !== downloaded) return;
+    // Expo reloads the MOST RECENT native download, not a requested update ID.
+    // A different observed candidate revokes every in-flight attempt for its predecessor.
+    if (this.pendingUpdateId && this.pendingUpdateId !== downloaded) this.epoch += 1;
     // Same id already staged: preserve its original source/seq (authority timing).
     if (this.pendingUpdateId === downloaded) return;
     this.pendingUpdateId = downloaded;
@@ -629,14 +631,29 @@ export class OtaCoordinator {
   /**
    * The ONLY path that clears the reload-loop guard. T10 calls this after the
    * hydrated stable app milestone (never auto-called on mount). No other
-   * method clears. Required storage failures propagate (fail closed).
+   * health method clears. Aborted pre-reload reservations can separately restore
+   * the prior guard. Required storage failures propagate (fail closed).
    */
   async markSuccessfulLaunch(runningUpdateId: string | null | undefined): Promise<void> {
     if (typeof runningUpdateId !== 'string' || !runningUpdateId) return;
-    const guard = await this.storage.loadGuard();
-    if (guard && guard.updateId === runningUpdateId) {
-      await this.storage.clearGuard();
-    }
+    await this.withGuardLock(async () => {
+      if (this.safeRunningId() !== runningUpdateId) return;
+      const guard = await this.storage.loadGuard();
+      // Re-read after storage: a stale health callback cannot clear a newer candidate.
+      if (this.safeRunningId() === runningUpdateId && guard?.updateId === runningUpdateId) {
+        await this.storage.clearGuard();
+      }
+    });
+  }
+
+  /** One JS owner serializes reservations, rollback and health acknowledgment. */
+  private async withGuardLock<T>(work: () => Promise<T>): Promise<T> {
+    const previous = this.guardTail;
+    let release!: () => void;
+    this.guardTail = new Promise<void>((resolve) => { release = resolve; });
+    await previous;
+    try { return await work(); }
+    finally { release(); }
   }
 
   private safeRunningId(): string | null {
@@ -997,7 +1014,17 @@ export class OtaCoordinator {
     }
   }
 
-  private async reloadIfSafeInternal(
+  private reloadIfSafeInternal(
+    getSafety: OtaSafetyGetter,
+    getEnvelope: OtaEnvelopeGetter | null,
+    nowMs: number,
+    epochAtStart: number,
+    currentSeq: number,
+  ): Promise<OtaReloadResult> {
+    return this.withGuardLock(() => this.reloadWithGuard(getSafety, getEnvelope, nowMs, epochAtStart, currentSeq));
+  }
+
+  private async reloadWithGuard(
     getSafety: OtaSafetyGetter,
     getEnvelope: OtaEnvelopeGetter | null,
     nowMs: number,
@@ -1006,128 +1033,101 @@ export class OtaCoordinator {
   ): Promise<OtaReloadResult> {
     const pending = this.pendingUpdateId;
     if (!pending) return { status: 'no-pending' };
-    // Observed downloads require a genuinely new foreground before they gain
-    // authority; the same foreground can never reload them (no resurrection).
-    if (this.pendingSource === 'observation') {
-      const stagedAt = this.pendingStagedAtSeq;
-      if (stagedAt == null || stagedAt >= currentSeq) {
-        return { status: 'deferred-unsafe', reason: 'needs-fresh-foreground', updateId: pending };
-      }
+    if (this.pendingSource === 'observation' &&
+        (this.pendingStagedAtSeq == null || this.pendingStagedAtSeq >= currentSeq)) {
+      return { status: 'deferred-unsafe', reason: 'needs-fresh-foreground', updateId: pending };
     }
-    // Never reload the currently running id; clear it.
-    let liveRunning: string | null = null;
-    try {
-      liveRunning = this.safeRunningId();
-    } catch (error) {
-      this.emitReport('ota.running-read-failed', { updateId: pending });
-      return { status: 'failed', error: error instanceof Error ? error.message : String(error) };
-    }
-    if (liveRunning && pending === liveRunning) {
-      this.pendingUpdateId = null;
-      this.pendingSource = null;
-      this.pendingStagedAtSeq = null;
-      return { status: 'already-running', updateId: pending };
-    }
-    // Required guard read: failures (including corrupt) deny reload and report.
     let guard: OtaPersistedGuard | null;
-    try {
-      guard = await this.storage.loadGuard();
-    } catch (error) {
-      this.emitReport('ota.guard-read-failed', {
-        updateId: pending,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return { status: 'failed', error: error instanceof Error ? error.message : String(error) };
+    try { guard = await this.storage.loadGuard(); }
+    catch {
+      this.emitReport('ota.guard-read-failed', { updateId: pending });
+      return { status: 'failed', error: 'guard storage unavailable or corrupt' };
     }
-    if (guard && guard.updateId === pending && guard.launchCount >= OTA_MAX_RELOAD_ATTEMPTS) {
+    if (guard?.updateId === pending && guard.launchCount >= OTA_MAX_RELOAD_ATTEMPTS) {
       this.emitReport('ota.loop-guard-blocked', { updateId: pending, launchCount: guard.launchCount });
       return { status: 'blocked-loop-guard', updateId: pending };
     }
-    // LIVE safety evaluation (fail closed if the getter throws).
-    let safety: OtaSafetyInput;
-    try {
-      safety = this.readLiveSafety(getSafety);
-    } catch {
-      return {
-        status: 'deferred-unsafe',
-        reason: 'safety-unavailable',
-        updateId: pending,
-      };
-    }
-    const evaluation = evaluateSafeBoundary(safety);
-    if (!evaluation.safe) {
-      return { status: 'deferred-unsafe', reason: evaluation.reason, updateId: pending };
-    }
-    if (this.epoch !== epochAtStart) throw new OtaAuthorityRevokedError();
-    // LIVE envelope (fail closed if the getter throws).
-    let envelope: { route: string; draftIds: string[] } | null;
-    try {
-      envelope = this.readLiveEnvelope(getEnvelope);
-    } catch (error) {
-      this.emitReport('ota.envelope-read-failed', { updateId: pending });
-      return { status: 'failed', error: error instanceof Error ? error.message : String(error) };
-    }
-    // Persist resume envelope before reloading (required; failures deny).
-    const toSave: OtaResumeEnvelope = {
-      route: envelope?.route ?? (typeof safety.route === 'string' ? safety.route : '/home'),
-      draftIds: Array.isArray(envelope?.draftIds) ? envelope.draftIds.filter((d) => typeof d === 'string') : [],
-      savedAtMs: nowMs,
+    const candidateCheck = (): OtaReloadResult | null => {
+      if (this.epoch !== epochAtStart || this.pendingUpdateId !== pending) {
+        return { status: 'deferred-unsafe', reason: 'candidate-superseded', updateId: pending };
+      }
+      try {
+        if (this.safeRunningId() === pending) {
+          this.pendingUpdateId = null; this.pendingSource = null; this.pendingStagedAtSeq = null;
+          return { status: 'already-running', updateId: pending };
+        }
+      } catch { return { status: 'failed', error: 'running update unavailable' }; }
+      return null;
     };
-    try {
-      await this.storage.saveEnvelope(toSave);
-    } catch (error) {
+    const readSnapshot = () => {
+      const safety = this.readLiveSafety(getSafety);
+      let supplied: ReturnType<OtaEnvelopeGetter>;
+      try { supplied = this.readLiveEnvelope(getEnvelope); }
+      catch { return { error: 'resume envelope unavailable' }; }
+      const envelope = supplied ?? { route: safety.route ?? '', draftIds: [] };
+      const safe = evaluateSafeBoundary(safety);
+      if (!safe.safe) return { reason: safe.reason };
+      if (normalizeOtaRoute(envelope.route) !== normalizeOtaRoute(safety.route) ||
+          !Array.isArray(envelope.draftIds) || envelope.draftIds.some((id) => typeof id !== 'string')) {
+        return { reason: 'incoherent-resume-envelope' };
+      }
+      return { envelope: { route: envelope.route, draftIds: [...envelope.draftIds] } };
+    };
+    const initialCandidate = candidateCheck();
+    if (initialCandidate) return initialCandidate;
+    let snapshot: ReturnType<typeof readSnapshot>;
+    try { snapshot = readSnapshot(); }
+    catch { return { status: 'deferred-unsafe', reason: 'safety-or-envelope-unavailable', updateId: pending }; }
+    if (snapshot.error) return { status: 'failed', error: snapshot.error };
+    if (!snapshot.envelope) return { status: 'deferred-unsafe', reason: snapshot.reason!, updateId: pending };
+    const envelope = snapshot.envelope;
+    const signature = JSON.stringify(envelope);
+    const revalidate = (): OtaReloadResult | null => {
+      const candidate = candidateCheck();
+      if (candidate) return candidate;
+      try {
+        const fresh = readSnapshot();
+        if (fresh.error) return { status: 'failed', error: fresh.error };
+        if (!fresh.envelope) return { status: 'deferred-unsafe', reason: fresh.reason!, updateId: pending };
+        if (JSON.stringify(fresh.envelope) !== signature) {
+          return { status: 'deferred-unsafe', reason: 'resume-envelope-changed', updateId: pending };
+        }
+      } catch { return { status: 'deferred-unsafe', reason: 'safety-or-envelope-unavailable', updateId: pending }; }
+      return null;
+    };
+    try { await this.storage.saveEnvelope({ ...envelope, savedAtMs: nowMs }); }
+    catch {
       this.emitReport('ota.envelope-write-failed', { updateId: pending });
-      return { status: 'failed', error: error instanceof Error ? error.message : String(error) };
+      return { status: 'failed', error: 'resume envelope persistence failed' };
     }
-    // Revalidate LIVE safety immediately after the async write; stale state defers.
-    try {
-      safety = this.readLiveSafety(getSafety);
-    } catch {
-      return { status: 'deferred-unsafe', reason: 'safety-unavailable', updateId: pending };
-    }
-    const afterEnvelope = evaluateSafeBoundary(safety);
-    if (!afterEnvelope.safe) {
-      return { status: 'deferred-unsafe', reason: afterEnvelope.reason, updateId: pending };
-    }
-    if (this.epoch !== epochAtStart) {
-      throw new OtaAuthorityRevokedError();
-    }
-    const nextCount = guard && guard.updateId === pending ? guard.launchCount + 1 : 1;
-    try {
-      await this.storage.saveGuard({ updateId: pending, launchCount: nextCount });
-    } catch (error) {
+    const afterEnvelope = revalidate();
+    if (afterEnvelope) return afterEnvelope;
+    const nextCount = guard?.updateId === pending ? guard.launchCount + 1 : 1;
+    try { await this.storage.saveGuard({ updateId: pending, launchCount: nextCount }); }
+    catch {
       this.emitReport('ota.guard-write-failed', { updateId: pending });
-      return { status: 'failed', error: error instanceof Error ? error.message : String(error) };
+      return { status: 'failed', error: 'guard persistence failed' };
     }
-    // Revalidate LIVE safety immediately before reload after every async write.
-    try {
-      safety = this.readLiveSafety(getSafety);
-    } catch {
-      return { status: 'deferred-unsafe', reason: 'safety-unavailable', updateId: pending };
+    const beforeReload = revalidate();
+    if (beforeReload) {
+      // The reservation never became a reload attempt. All writes/health callbacks
+      // share this lock, so restore the exact previous guard, never overwrite a newer owner.
+      try {
+        if (guard) await this.storage.saveGuard(guard);
+        else await this.storage.clearGuard();
+      } catch {
+        this.emitReport('ota.guard-rollback-failed', { updateId: pending });
+        return { status: 'failed', error: 'aborted reload guard rollback failed' };
+      }
+      return beforeReload;
     }
-    const beforeReload = evaluateSafeBoundary(safety);
-    if (!beforeReload.safe) {
-      return { status: 'deferred-unsafe', reason: beforeReload.reason, updateId: pending };
-    }
-    // Re-check running id immediately before reload (it may have changed).
-    try {
-      liveRunning = this.safeRunningId();
-    } catch (error) {
-      return { status: 'failed', error: error instanceof Error ? error.message : String(error) };
-    }
-    if (liveRunning && pending === liveRunning) {
-      this.pendingUpdateId = null;
-      this.pendingSource = null;
-      this.pendingStagedAtSeq = null;
-      return { status: 'already-running', updateId: pending };
-    }
-    if (this.epoch !== epochAtStart) {
-      // Authority was revoked while persisting; do not reload.
-      throw new OtaAuthorityRevokedError();
-    }
+    // No await between the last live check and the native call. Expo offers no
+    // atomic reload-by-ID API; later native-only supersession cannot be guaranteed by JS.
+    // A native reload call failure still counts as a real attempted activation.
     await this.updates.reload();
     return { status: 'reloaded', updateId: pending };
   }
+
 }
 
 export function createOtaCoordinator(deps: OtaCoordinatorDeps): OtaCoordinator {

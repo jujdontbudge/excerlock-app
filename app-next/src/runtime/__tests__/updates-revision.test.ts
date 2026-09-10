@@ -526,16 +526,16 @@ describe('revision: timed-out fetch cannot be resurrected via observation same f
     expect(updates.reloadCalls).toBe(1);
   });
 
-  test('observeDownloadedUpdate does not reset a different staged id', async () => {
+  test('newest native download supersedes a different staged id', async () => {
     const updates = makeFake();
     const c = new OtaCoordinator({ updates, storage: createMemoryOtaStorage() });
     c.observeStartup({ currentlyRunningUpdateId: 'r1', downloadedUpdateId: 'u-first' });
     expect((c as any).pendingId).toBe('u-first');
     (c as any).observeDownloadedUpdate('u-second', 'r1');
-    // Must preserve the first staged id (no reset).
-    expect((c as any).pendingId).toBe('u-first');
-    (c as any).observeDownloadedUpdate(null, 'r1');
-    expect((c as any).pendingId).toBe('u-first');
+    // Native reload selects the latest download, so guard its actual candidate.
+    expect(c.pendingId).toBe('u-second');
+    c.observeDownloadedUpdate(null, 'r1');
+    expect(c.pendingId).toBe('u-second');
   });
 });
 

@@ -238,7 +238,8 @@ describe('OTA reload-loop guard', () => {
   });
 
   test('guard resets only with successful launch of the guarded id', async () => {
-    const updates = makeFakeUpdates();
+    const native = { runningId: 'running-1' };
+    const updates = makeFakeUpdates(native);
     const storage = createMemoryOtaStorage();
     const coordinator = new OtaCoordinator({ updates, storage });
     coordinator.observeStartup({ currentlyRunningUpdateId: 'running-1', downloadedUpdateId: 'update-xyz' });
@@ -254,7 +255,11 @@ describe('OTA reload-loop guard', () => {
     await coordinator.markSuccessfulLaunch(undefined);
     expect(await storage.loadGuard()).toEqual({ updateId: 'update-xyz', launchCount: 1 });
 
-    // Only the matching successful launch clears.
+    // A caller claiming success cannot override the native running ID.
+    await coordinator.markSuccessfulLaunch('update-xyz');
+    expect(await storage.loadGuard()).toEqual({ updateId: 'update-xyz', launchCount: 1 });
+    // Only actual activation plus the matching health milestone clears.
+    native.runningId = 'update-xyz';
     await coordinator.markSuccessfulLaunch('update-xyz');
     expect(await storage.loadGuard()).toBeNull();
   });
