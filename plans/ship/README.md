@@ -14,7 +14,8 @@ Completing this engineering scope does **not** mean Apple submission metadata is
 
 ### Active acceptance
 - [ ] Correct distribution signing and all five bundle IDs/extension entitlements; signed artifact
-      uploaded and processed by App Store Connect. TestFlight distribution optional.
+      uploaded and processed by App Store Connect. Distribution is not required; this scope does not
+      authorize external tester invitations or notifications.
 - [ ] Build-identified physical-iPhone evidence for sign-in, purchase/restore, exercise detection,
       Screen Time blocking/unlocking, and recovery paths from T04/T05/T11/T14. No simulator substitutes.
 - [ ] Required backend credentials/configuration, forward-only migrations and current deployment;
@@ -22,6 +23,10 @@ Completing this engineering scope does **not** mean Apple submission metadata is
 
 All other implemented product/OTA/identity safeguards remain required; this revision does not
 remove core app functionality, privacy obligations, or fixes for crashes and severe battery problems.
+Engineering review safeguards (no exposed developer/test routes or controls and valid native API/
+entitlement use) remain active. Family Controls distribution approval and any paid-app agreements or
+IAP configuration that Apple actually requires for signing or real sandbox purchases remain active
+prerequisites; deferring administrative submission preparation does not bypass those dependencies.
 
 
 **Johan, 2026-09-09.** The app running on the simulator is the app. This is what's left to ship it. Decisions

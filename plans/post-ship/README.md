@@ -12,6 +12,9 @@ Reference: `../ship/T13-review-readiness.md`, `../ship/05-review-readiness.md`, 
 - [ ] Accurate privacy disclosures, required agreements and subscription/version attachments.
 - [ ] Review notes and App Store version build selection; run final submission-readiness validation.
 Preserve completed fields/screenshots; do not invent contact data, availability or evidence.
+Any agreement or product configuration that is a prerequisite for the ACTIVE signing or real-purchase
+checks must be resolved in that active work; only later submission preparation is deferred.
+Engineering review safeguards, including no exposed developer/test routes, are not metadata deferrals.
 The implemented reviewer preset stays in the app and is not rolled back.
 
 ## F02 — Formal performance measurement
