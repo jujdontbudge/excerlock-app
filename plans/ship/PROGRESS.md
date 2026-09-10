@@ -220,3 +220,9 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   suppression before cleanup, stages/commits watchdog BEFORE relief, preserves unknown without renewal,
   and only fail-closes eligible states.7host tests, typecheck/lint pass. Native transport contract requires
   atomic revision checks under shared native lock; not yet implemented or device proven. No root mounting yet.
+- T08/T09 integrated960de63+6ee5651. Primary full suite193suites:191pass/2fail (882pass/2fail tests),
+  both caused by T05 adding successful fake manageSubscription while old UI tests expected native failure.
+  Corrected tests to inject actual management-port failure (not obsolete Linking mock);3focused suites/
+  17tests, typecheck/lint pass. Root also moved earned relief ABOVE live walking in resolveLock per T10;
+  this prevents watchdog-classifying an earned unlock as conditional relief. Legacy lease public model
+  still pending replacement, not claimed complete. T10 native agent in ship-T10-native7fdb8f5.

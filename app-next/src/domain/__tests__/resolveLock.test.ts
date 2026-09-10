@@ -21,7 +21,7 @@ test('met morning condition opens an unmet evening condition until the earliest 
     }),
   ).toEqual({ state: 'unlockedMet', byRuleId: rule.id, relockAt: '2026-09-08T09:00:00.000Z' });
 });
-test('a live walking lease wins over a met target; grace remains live; expired and paused do not', () => {
+test('earned relief wins over live walking and grace so watchdog cannot relock it', () => {
   const walking: Rule = { ...rule, id: 'state', mode: { kind: 'state', activity: 'walking' } };
   const met = { ruleId: 'walk', day: '2026-09-07', progress: 5000, met: true, metAt: now };
   const walkingSession = {
@@ -31,14 +31,8 @@ test('a live walking lease wins over a met target; grace remains live; expired a
     leaseUntil: '2026-09-07T19:15:00Z',
   };
   const input = { ...base, rules: [rule, walking], ruleDays: [met], walkingSession };
-  expect(resolveLock(input)).toEqual({
-    state: 'unlockedWalking',
-    sessionRuleId: 'state',
-    leaseUntil: walkingSession.leaseUntil,
-  });
-  expect(resolveLock({ ...input, walkingSession: { ...walkingSession, phase: 'grace' } }).state).toBe(
-    'unlockedWalking',
-  );
+  expect(resolveLock(input).state).toBe('unlockedMet');
+  expect(resolveLock({ ...input, walkingSession: { ...walkingSession, phase: 'grace' } }).state).toBe('unlockedMet');
   expect(resolveLock({ ...input, walkingSession: { ...walkingSession, leaseUntil: now } }).state).toBe('unlockedMet');
   expect(resolveLock({ ...input, rules: [rule, { ...walking, enabled: false }] }).state).toBe('unlockedMet');
 });
@@ -102,9 +96,9 @@ test('seeded rule sets preserve precedence and future relock invariants', () => 
     };
     const result = resolveLock(input);
     expect(resolveLock({ ...input, rules: rules.filter((r) => r.enabled) })).toEqual(result);
-    if (rules[0].enabled) expect(result.state).toBe('unlockedWalking');
-    else if (ruleDays.some((d) => d.met && rules.find((r) => r.id === d.ruleId)!.enabled))
+    if (ruleDays.some((d) => d.met && rules.find((r) => r.id === d.ruleId)!.enabled))
       expect(result.state).toBe('unlockedMet');
+    else if (rules[0].enabled) expect(result.state).toBe('unlockedWalking');
     else if (rules.some((r) => r.enabled)) expect(result.state).toBe('locked');
     else expect(result.state).toBe('noRulesToday');
     if (result.state === 'unlockedMet' && result.relockAt)

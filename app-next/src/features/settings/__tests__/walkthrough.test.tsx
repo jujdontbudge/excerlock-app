@@ -55,6 +55,7 @@ test('bug report keeps a typed bug when send fails', async () => {
 
 test('expired membership can still restore and shows the App Store cancel path', async () => {
   const runtime = createRuntime();
+  runtime.subscription.manageSubscription = jest.fn().mockRejectedValue(new Error('unavailable'));
   await runtime.dev.load('trial-expired');
   const paywall = jest.spyOn(runtime.subscription, 'presentPaywall');
   await render(

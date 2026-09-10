@@ -1,5 +1,4 @@
 import { render, screen, userEvent, act, cleanup } from '@testing-library/react-native';
-import { Linking } from 'react-native';
 import { SubscriptionScreen } from '../SubscriptionScreen';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
@@ -59,13 +58,12 @@ test.each(['expired', 'none', 'billingIssue'] as const)(
     cleanup();
   },
 );
-test('manage shows the App Store fallback when Linking fails off-device', async () => {
-  jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('unavailable'));
+test('manage shows the App Store fallback when the native management port fails', async () => {
   const runtime = createRuntime();
+  runtime.subscription.manageSubscription = jest.fn().mockRejectedValue(new Error('unavailable'));
   await runtime.dev.load('fresh-install');
   await mount(runtime);
   await expect(userEvent.press(screen.getByRole('button', { name: subscriptionCopy.manage }))).resolves.toBeUndefined();
   expect(screen.getByRole('alert')).toHaveTextContent(subscriptionCopy.manageFallback);
-  jest.mocked(Linking.openURL).mockRestore();
   runtime.dispose();
 });

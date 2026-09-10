@@ -14,13 +14,6 @@ export function resolveLock({ now, timezone: tz, rules, ruleDays, walkingSession
   const enabled = rules.filter((r) => r.enabled),
     today = dayKey(now, tz);
   const active = enabled.filter((r) => isActiveAt(r, now, tz));
-  if (
-    session &&
-    ['walking', 'grace'].includes(session.phase) &&
-    Date.parse(session.leaseUntil) > Date.parse(now) &&
-    active.some((r) => r.id === session.ruleId && r.mode.kind === 'state')
-  )
-    return { state: 'unlockedWalking', sessionRuleId: session.ruleId, leaseUntil: session.leaseUntil };
   for (const row of ruleDays.filter((d) => d.met).sort((a, b) => b.day.localeCompare(a.day))) {
     const rule = enabled.find((r) => r.id === row.ruleId && r.mode.kind !== 'state');
     if (!rule || row.day > today) continue;
@@ -31,6 +24,13 @@ export function resolveLock({ now, timezone: tz, rules, ruleDays, walkingSession
     if (relockAt && Date.parse(relockAt) <= Date.parse(now)) continue;
     return { state: 'unlockedMet', byRuleId: rule.id, relockAt };
   }
+  if (
+    session &&
+    ['walking', 'grace'].includes(session.phase) &&
+    Date.parse(session.leaseUntil) > Date.parse(now) &&
+    active.some((r) => r.id === session.ruleId && r.mode.kind === 'state')
+  )
+    return { state: 'unlockedWalking', sessionRuleId: session.ruleId, leaseUntil: session.leaseUntil };
   if (gymPresence?.confirmedAt) {
     const gym = active.find((r) => r.activity === 'gym');
     if (gym) return { state: 'unlockedAtGym', ruleId: gym.id, placeId: gymPresence.placeId };
