@@ -503,3 +503,10 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   deleting/disabled/lapsed source snapshots carry no issue; existing notice clears only after successful
   current-revision native apply, not after a plan repair whose native write fails or is superseded.
   Regression root/source/host 3 suites/28 tests pass (/tmp/ship-schedule-review.log).
+- Fresh integrated checkpoint7619c5bd:238 suites/1154 tests/13 snapshots PASS, typecheck PASS,
+  lint0errors/52existing warnings (/tmp/ship-schedule-final-full.log). Distribution verifier9Python tests
+  and shell syntax PASS; this strengthens release gate, not evidence of an actual signed IPA.
+- Live identifier-level FAMILY_CONTROLS_DISTRIBUTION is present on all five bundle IDs; portal approval
+  evidence independently records approved team requests. No App Store provisioning profiles yet; agent
+  preparing exact clean-checkout signed build procedure. Device recheck: Il still unavailable; booted
+  ExcerLock-Next remains another session's simulator, unchanged. No device activation claimed.
