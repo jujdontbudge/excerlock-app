@@ -16,10 +16,11 @@ interface AdaptyWebhookRouteDependencies {
 
 function getService(
   dependencies: AdaptyWebhookRouteDependencies,
+  environment: Environment,
 ): AdaptyWebhookService {
   return (
     dependencies.service ??
-    createAdaptyWebhookService(createDrizzleAdaptyWebhookRepository())
+    createAdaptyWebhookService(createDrizzleAdaptyWebhookRepository(), undefined, environment.adaptyWebhookAcceptedStoreEnvironments)
   );
 }
 
@@ -61,7 +62,7 @@ export function createAdaptyWebhookRoutes(
       }
 
       try {
-        const result = await getService(dependencies).record(request.body);
+        const result = await getService(dependencies, environment).record(request.body);
         return { accepted: true, ...result };
       } catch (error) {
         if (error instanceof ZodError) {

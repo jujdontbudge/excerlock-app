@@ -48,21 +48,21 @@ describe("late Adapty webhooks after account deletion", () => {
     ).toEqual({ recorded: true });
 
     expect(await postgres.db.select().from(adaptySubscriptionStates)).toEqual([
-      {
+      expect.objectContaining({
         userId: "user_123",
         hasAccess: true,
-        eventType: "subscription_started",
+        eventType: "access_level_updated",
         environment: "production",
         eventOccurredAt: new Date("2026-08-31T20:00:00.000Z"),
         expiresAt: new Date("2026-09-30T20:00:00.000Z"),
         updatedAt: new Date("2026-07-31T20:00:00.000Z"),
-      },
+      }),
     ]);
     expect(await postgres.db.select().from(adaptyWebhookEvents)).toEqual([
       {
         deliveryKey: "start-event-id",
         userId: "user_123",
-        eventType: "subscription_started",
+        eventType: "access_level_updated",
         environment: "production",
         receivedAt: new Date("2026-07-31T20:00:00.000Z"),
       },
@@ -98,7 +98,7 @@ describe("late Adapty webhooks after account deletion", () => {
     expect(await postgres.db.select().from(adaptySubscriptionStates)).toEqual([
       expect.objectContaining({
         hasAccess: false,
-        eventType: "subscription_refunded",
+        eventType: "access_level_updated",
       }),
     ]);
   });
@@ -147,12 +147,12 @@ describe("late Adapty webhooks after account deletion", () => {
       expect.objectContaining({
         deliveryKey: "renewal-event-id",
         userId: null,
-        eventType: "subscription_renewed",
+        eventType: "access_level_updated",
       }),
       expect.objectContaining({
         deliveryKey: "refund-event-id",
         userId: null,
-        eventType: "subscription_refunded",
+        eventType: "access_level_updated",
       }),
     ]);
   });
@@ -166,13 +166,15 @@ function adaptyEvent(
 ) {
   return {
     customer_user_id: "user_123",
-    event_type: eventType,
+    event_type: "access_level_updated",
     event_datetime: eventDatetime,
     event_properties: {
       profile_event_id: profileEventId,
-      profile_has_access_level: hasAccess,
+      access_level_id: "premium",
+      is_active: hasAccess,
+      is_in_grace_period: false,
       environment: "Production",
-      subscription_expires_at: "2026-09-30T20:00:00.000000+0000",
+      expires_at: "2026-09-30T20:00:00.000000+0000",
     },
   };
 }

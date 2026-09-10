@@ -18,6 +18,8 @@ describe("parseEnv", () => {
       supabaseServiceRoleKey: undefined,
       adaptySecretKey: undefined,
       adaptyWebhookAuth: undefined,
+      adaptyWebhookAcceptedStoreEnvironments: ["production", "sandbox"],
+      subscriptionAuthorizationStoreEnvironment: "production",
       posthogApiKey: undefined,
       posthogHost: "https://us.i.posthog.com",
       posthogPersonalApiKey: undefined,
@@ -93,6 +95,8 @@ describe("parseEnv", () => {
       supabaseServiceRoleKey: "service-role-key",
       adaptySecretKey: "adapty-secret",
       adaptyWebhookAuth: "webhook-auth",
+      adaptyWebhookAcceptedStoreEnvironments: ["production", "sandbox"],
+      subscriptionAuthorizationStoreEnvironment: "production",
       posthogApiKey: undefined,
       posthogHost: "https://eu.i.posthog.com",
       posthogPersonalApiKey: "posthog-personal-key",
@@ -137,6 +141,17 @@ describe("parseEnv", () => {
 
     expect(parsed.nodeEnv).toBe("development");
     expect(parsed.posthogHost).toBe("https://us.i.posthog.com");
+  });
+
+  it("accepts both webhook stores but fixes shared authorization to production", () => {
+    const environment = parseEnv({
+      ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS: "sandbox, production",
+      SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT: "production",
+    });
+    expect(environment.adaptyWebhookAcceptedStoreEnvironments).toEqual(["sandbox", "production"]);
+    expect(environment.subscriptionAuthorizationStoreEnvironment).toBe("production");
+    expect(() => parseEnv({ SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT: "sandbox" })).toThrow();
+    expect(() => parseEnv({ ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS: "staging" })).toThrow();
   });
 
   it("treats blank Supabase keys as absent and keeps worker enabled by default", () => {

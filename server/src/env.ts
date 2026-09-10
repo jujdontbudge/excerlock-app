@@ -23,6 +23,17 @@ const optionalUrl = z.preprocess(
   blankToUndefined,
   z.string().url().optional(),
 );
+const acceptedStoreEnvironments = z.preprocess(
+  blankToUndefined,
+  z.string().default("production,sandbox").transform((value, context) => {
+    const values = [...new Set(value.split(",").map((item) => item.trim().toLowerCase()).filter(Boolean))];
+    if (values.length === 0 || values.some((item) => item !== "production" && item !== "sandbox")) {
+      context.addIssue({ code: "custom", message: "accepted store environments must contain only production,sandbox" });
+      return z.NEVER;
+    }
+    return values as ("production" | "sandbox")[];
+  }),
+);
 
 const envSchema = z.object({
   NODE_ENV: z
@@ -42,6 +53,8 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: optionalString,
   ADAPTY_SECRET_KEY: optionalString,
   ADAPTY_WEBHOOK_SECRET: optionalString,
+  ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS: acceptedStoreEnvironments,
+  SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT: z.literal("production").default("production"),
   POSTHOG_API_KEY: optionalString,
   POSTHOG_PERSONAL_API_KEY: optionalString,
   POSTHOG_PROJECT_ID: optionalString,
@@ -122,6 +135,8 @@ export interface Environment {
   supabaseServiceRoleKey: string | undefined;
   adaptySecretKey: string | undefined;
   adaptyWebhookAuth: string | undefined;
+  adaptyWebhookAcceptedStoreEnvironments: readonly ("production" | "sandbox")[];
+  subscriptionAuthorizationStoreEnvironment: "production";
   posthogApiKey: string | undefined;
   posthogHost: string;
   posthogPersonalApiKey: string | undefined;
@@ -170,6 +185,8 @@ export function parseEnv(
     supabaseServiceRoleKey: parsed.SUPABASE_SERVICE_ROLE_KEY,
     adaptySecretKey: parsed.ADAPTY_SECRET_KEY,
     adaptyWebhookAuth: parsed.ADAPTY_WEBHOOK_SECRET,
+    adaptyWebhookAcceptedStoreEnvironments: parsed.ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS,
+    subscriptionAuthorizationStoreEnvironment: parsed.SUBSCRIPTION_AUTHORIZATION_STORE_ENVIRONMENT,
     posthogApiKey: parsed.POSTHOG_API_KEY,
     posthogHost: parsed.POSTHOG_HOST,
     posthogPersonalApiKey: parsed.POSTHOG_PERSONAL_API_KEY,
