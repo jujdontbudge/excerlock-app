@@ -24,8 +24,11 @@ The current detector uses measured steps and confirmed gym intervals; missing us
 ## Consequences
 
 Sealed activity is intentionally not rewritten by late measurements. Sensor-history catch-up completeness
-before sealing, raw sensor ledger/log retention, timestamp convergence and cross-midnight rule ownership
-still need separate verification. This change bounds public history and rule accounting, not raw logs.
+before sealing, timestamp convergence and cross-midnight rule ownership still need separate verification.
+Post-seal retention now also bounds raw daily ledgers and gym history at 400 calendar days, preserving
+step dedup cursors, pending duration intents, open/cross-cutoff visits and account-generation ownership.
+Gym compaction first persists a monotonic cutoff; reads enforce it even after partial physical-write failure.
+Root awaits archive and RuleDay durability before pruning, once per forward calendar cutoff.
 No historical schedule versions exist before first observed state, so a new install does not fabricate
 hundreds of missed days. Existing historical measured facts establish an earlier start when available.
 Native enforcement has no separate JS earnedUnlocks store; retention of native suppression is handled by

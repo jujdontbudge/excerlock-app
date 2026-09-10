@@ -404,3 +404,23 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   progress day ownership and timezone convergence still open. Focused 4 suites /14 tests and typecheck pass.
 - Dedicated lanes handling generation-bound async export construction and fail-closed native cleanup
   ownership. No signed build, deployment, store submission, public OTA or device activation claimed.
+- Follow-up full checkpoint after sealing/export: 234 suites /1067tests /13snapshots PASS,
+  typecheck PASS and lint0errors (48existing warnings), /tmp/ship-seal-export-full.log. The first sealing
+  full run caught the fixed eight-store count assertion (now nine); do not cite that failed run as success.
+- Actual synthetic preview Expo iOS export at63c1e487 PASS,3974sources, real graph present and no demo/dev
+  graph. /tmp/ship-production-export.log. Still diagnostic no-bytecode export, not signed launch proof.
+- Native lane clean install/prebuild/pods/unsigned generic-device Debug build at4c62dd21 **BUILD SUCCEEDED**,
+  /tmp/excerlock-native-removal-build.log. Changed selection removal bridge compiled; custom entry resolved.
+- Simulator runtime verification blocked by an existing unowned booted ExcerLock-Next B68873CD-B6ED-4961-85AF-0C807E657999
+  (idb companion sinceSep9); did not boot another or interfere. Physical Il remains unavailable (last connected
+  Sep6), so no real-runtime device acceptance. Valid development/distribution identities exist, but report
+  extension development profile and all ExcerLock distribution profiles missing. No signing/upload attempted.
+- Integrated fail-closed cleanup37d09b05: aggregate independent cleanup failures and block new native runtime
+  for VM lifetime when ownership cannot be proven released; ordinary boot failure still retryable.
+- Raw retention APIs59947dc5 preserve cursors/pending/open-visit boundaries. Root wiring after archive and
+  RuleDay persistence underway; review identified gym log cursor atomicity/rewind/corruption fixes in lane.
+- Raw post-seal retention now wired through serialized DetectionService/root. Durable archive+RuleDay
+  barrier precedes pruning; cursor/pending/open-boundary preservation and daily dedup. Root review fixed
+  raw gym generic return typing, cursor-first partial-write safety, monotonic rewind handling and malformed
+  cursor fail-closed (03d72361). Added root barrier-failure/ordering tests and concurrent unsafe-init disposal
+  rejection. Integrated typecheck PASS; 5 focused suites/36tests PASS /tmp/ship-retention-integrated.log.

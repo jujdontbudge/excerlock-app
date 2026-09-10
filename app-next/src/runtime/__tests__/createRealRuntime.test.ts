@@ -27,6 +27,7 @@ jest.mock('../detection/headlessRegistry', () => ({ registerHeadlessDetectionHan
 jest.mock('../../domain/projectStepHistory', () => ({ projectStepHistory: (_rules: unknown, rows: unknown) => rows }));
 jest.mock('../../domain/projectGymHistory', () => ({ ...jest.requireActual('../../domain/projectGymHistory'), projectGymHistory: (_rules: unknown, rows: unknown) => rows }));
 
+import { historyStore } from '../../state/historyStore';
 import { createRealRuntime } from '../createRealRuntime';
 import { RuntimeCleanupError } from '../RuntimeSingleton';
 
@@ -44,14 +45,16 @@ function graph(options?: { gait?: object | null; boot?: () => Promise<void>; aut
   const detection = {
     service: {
       stop: jest.fn(async () => {}), tick: jest.fn(async () => {}), flush: jest.fn(async () => {}),
+      pruneGymHistory: jest.fn(async () => {}),
       observeCommitted: jest.fn(() => jest.fn()),
     }, motion: {}, placement: {},
     steps: { authorizationStatus: () => options?.authorization ?? 'denied' },
     awake: { reconcile: jest.fn(async () => ({ requested: false, running: false, error: null })) },
     location: { stopMonitoringRegions: jest.fn(async () => {}) },
     start: jest.fn(async () => {}), stop: jest.fn(async () => {}), registerGyms: jest.fn(async () => {}),
-    reconcileWake: jest.fn(async () => {}), walkingDurationLedger: { read: jest.fn(async () => ({ generation: 0, millisecondsByDay: {}, pending: [] })), reset: jest.fn(async () => {}), acknowledge: jest.fn(async () => {}) },
-    historyLedger: { read: jest.fn(async () => ({ stepsByDay: {} })) },
+    reconcileWake: jest.fn(async () => {}), walkingDurationLedger: { pruneBeforeDay: jest.fn(async () => {}), read: jest.fn(async () => ({ generation: 0, millisecondsByDay: {}, pending: [] })), reset: jest.fn(async () => {}), acknowledge: jest.fn(async () => {}) },
+    historyLedger: { pruneBeforeDay: jest.fn(async () => {}), read: jest.fn(async () => ({ stepsByDay: {} })) },
+    gymLog: { pruneBefore: jest.fn(async () => {}) },
     snapshot: () => ({ gym: { intervals: [], regions: {} } }),
   };
   const identity = { kind: 'anonymous', generation: 0 };
@@ -165,4 +168,26 @@ test('permission-denied fresh boot skips live motion and explicitly disables ste
   expect(started.detection.reconcileWake).toHaveBeenCalledTimes(1);
   expect(started.detection.reconcileWake).toHaveBeenCalledWith(expect.objectContaining({ source: 'foreground', includeStepHistory: false }));
   await runtime.disposeAsync();
+});
+
+test('raw retention cannot run when calendar seal persistence fails', async () => {
+  const barrier = jest.spyOn(historyStore, 'persistBarrier').mockRejectedValueOnce(new Error('seal disk full'));
+  const started = graph();
+  try {
+    await expect(createRealRuntime({ reportError: jest.fn() })).rejects.toThrow('seal disk full');
+    expect(started.detection.historyLedger.pruneBeforeDay).not.toHaveBeenCalled();
+    expect(started.detection.gymLog.pruneBefore).not.toHaveBeenCalled();
+  } finally { barrier.mockRestore(); }
+});
+
+test('raw retention follows seals and runs only once for the same calendar cutoff', async () => {
+  const barrier = jest.spyOn(historyStore, 'persistBarrier');
+  const started = graph();
+  const runtime = await createRealRuntime({ reportError: jest.fn() });
+  try {
+    expect(started.detection.historyLedger.pruneBeforeDay).toHaveBeenCalledWith('2025-08-07');
+    expect(started.detection.historyLedger.pruneBeforeDay.mock.invocationCallOrder[0]).toBeGreaterThan(barrier.mock.invocationCallOrder[0]);
+    await runtime.reconcile('manual');
+    expect(started.detection.historyLedger.pruneBeforeDay).toHaveBeenCalledTimes(1);
+  } finally { await runtime.disposeAsync(); barrier.mockRestore(); }
 });

@@ -48,3 +48,16 @@ test('cleanup failure during disposal blocks concurrent and later startup', asyn
   await expect(owner.dispose()).rejects.toBe(failure);
   expect(create).toHaveBeenCalledTimes(1);
 });
+
+test('concurrent disposal also rejects unsafe initialization cleanup', async () => {
+  const failure = new RuntimeCleanupError([new Error('native stop failed')]);
+  let reject!: (error: unknown) => void;
+  const singleton = new RuntimeSingleton(() => new Promise<{ disposeAsync(): Promise<void> }>((_, fail) => { reject = fail; }));
+  const started = singleton.get();
+  await Promise.resolve();
+  const disposed = singleton.dispose();
+  reject(failure);
+  await expect(started).rejects.toBe(failure);
+  await expect(disposed).rejects.toBe(failure);
+  await expect(singleton.get()).rejects.toBe(failure);
+});

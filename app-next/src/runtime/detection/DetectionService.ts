@@ -2,7 +2,7 @@ import { detectionStore, persistDetectionState } from '../../state/detectionStor
 import { createWalkingState, reduceWalking } from '../../domain/walkingMachine';
 import { reducePropped } from '../../domain/proppedMachine';
 import type { ProppedEvent, ProppedState } from '../../domain/proppedMachine';
-import { reduceGym } from '../../domain/gymMachine';
+import { reduceGym, pruneGymHistoryBefore } from '../../domain/gymMachine';
 import type { GymVisitLog } from '../../engine/signals/location/GymVisitLog';
 import type { MotionAdapter, MotionEvidence } from './MotionAdapter';
 import type { PlacementAdapter } from './PlacementAdapter';
@@ -177,6 +177,17 @@ export class DetectionService {
       const gym = reduceGym(before.gym, { kind: 'records', records }, now);
       detectionStore.getState().patch({ walking, propped, gym, observedAt: now });
       await this.commitObserved(now, generation);
+    });
+  }
+  /** Root calls only after durable history sealing; serialized with sensor writers. */
+  pruneGymHistory(cutoffMs: number, generation: number): Promise<void> {
+    return this.enqueue(async () => {
+      this.assertGeneration(generation);
+      const before = detectionStore.getState().data;
+      const gym = pruneGymHistoryBefore(before.gym, cutoffMs);
+      detectionStore.getState().patch({ gym });
+      await this.persist();
+      this.assertGeneration(generation);
     });
   }
   observeCommitted(callback: () => void): () => void {

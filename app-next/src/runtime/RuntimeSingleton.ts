@@ -44,7 +44,9 @@ export class RuntimeSingleton<T extends { disposeAsync(): Promise<void> }> {
           throw error;
         }
       },
-      () => undefined,
+      (error: unknown) => {
+        if (isRetryUnsafe(error)) { this.blocked = error; throw error; }
+      },
     );
     this.shutdown = shutdown;
     void shutdown

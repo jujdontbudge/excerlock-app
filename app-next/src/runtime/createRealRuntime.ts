@@ -25,7 +25,7 @@ import { ruleDaysStore } from '../state/ruleDaysStore';
 import { settingsStore } from '../state/settingsStore';
 import { permissionsStore } from '../state/permissionsStore';
 import { entitlementStore } from '../state/entitlementStore';
-import { dayKey, localInstant } from '../domain/calendar';
+import { addDays, dayKey, localInstant } from '../domain/calendar';
 import { currentInstances } from '../domain/schedule';
 import { historyStore } from '../state/historyStore';
 import { sealDays, retainRuleDays } from '../domain/sealDay';
@@ -59,6 +59,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
   let stopping: Promise<void> | null = null;
   let queue: Promise<void> = Promise.resolve();
   let lastOperation: Promise<void> = queue;
+  let lastPrunedDay: string | null = null;
   const stops: (() => void)[] = [];
   const listeners = new Set<() => void>();
   let status: RuntimeStatusSnapshot = { hydrated: true, loading: true, history: [] };
@@ -157,6 +158,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         await AsyncStorage.setItem(SELECTION_VERSION_KEY, selectionVersion);
         await detection.walkingDurationLedger.reset();
         stepsByDay = {};
+        lastPrunedDay = null;
         committedWalking = walking.snapshot();
         committedGymPresence = null;
         status = { ...status, history: [] };
@@ -369,6 +371,16 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
                 duration.pending.map((intent) => intent.idempotencyKey),
                 duration.generation,
               );
+            const retentionDay = addDays(today, -399);
+            if (lastPrunedDay === null || retentionDay > lastPrunedDay) {
+              const cutoffMs = Date.parse(localInstant(retentionDay, 0, clock.timezone()));
+              await detection.historyLedger.pruneBeforeDay(retentionDay);
+              await detection.walkingDurationLedger.pruneBeforeDay(retentionDay);
+              await detection.gymLog.pruneBefore(cutoffMs);
+              await detection.service.pruneGymHistory(cutoffMs, detectionStore.getState().data.generation);
+              stepsByDay = Object.fromEntries(Object.entries(stepsByDay).filter(([day]) => day >= retentionDay));
+              lastPrunedDay = retentionDay;
+            }
             const snapshot = source.read();
             const awake = await detection.awake.reconcile(
               snapshot.state === 'shield' || snapshot.state === 'conditional',
