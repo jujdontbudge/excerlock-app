@@ -364,3 +364,23 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   cleanup callback/provisional deletion (auth agent), single shared async factory bootstrap/provider mount,
   OTA/notification roots, walking-minute durable source, full device/store verification. Public createRuntime
   still refuses real mode until bootstrap wiring replaces it; no success claim for installed production.
+- Production startup is NOW MOUNTED (074844eb), superseding earlier refusal notes: createRuntime('real')
+  resolves one VM-owned async RuntimeSingleton shared by provider and cold tasks; custom index.js
+  registers bootstrap/tasks before expo-router/entry per official docs. Startup failure uses designed
+  retry surface, never a fake fallback. Real native picker mounted; FakePromptHost requires fake kind.
+- Integrated measured status history7f971d0f, confirmed deletion3f3b47f4, durable erasureeb390119 and
+  real graph constructor tests81e4ff38. Local erasure only post204/410/tombstone; provisional deletion also
+  suspends+erases. Middleware per-key barrier prevents old writes overwriting reset. Root deletionSuspended
+  stops queued tracking work, resumes on canonical recovery, clears after tombstone boot. Native selection
+  erasure/late raw task writes still under privacy review, not claimed proven.
+- Actual preview production iOS Expo export now contains real runtime graph and NO demo sources,
+  dev route or dev implementation:3967sources. /tmp/ship-production-export.log, dist/ship-production-check.
+  Strengthened verify-no-dev-bundle.cjs asserts real graph present and demo graph absent. Diagnostic
+  no-bytecode export uses synthetic config only; not signed installation/device activation.
+- Latest integrated typecheck/focused lint PASS; full Jest226suites/1033tests/13snapshots PASS,
+  /tmp/ship-runtime-mounted-jest.log. RuntimeSingleton UI/headless concurrency/failed-boot retry/teardown
+  interleavings covered. ADR0013 records actual async ownership and remaining gates.
+- Remaining root work: OTA/notification lifecycle root hooks and safe boundaries, walking-minute measured
+  progress, persisted day sealing/retention, raw-task deletion races, actual native startup/UI inspection,
+  signed build/TestFlight/AppStore/public OTA gates. Root provider UI tests, motion-source investigation
+  and deletion review delegated; no release success claimed.
