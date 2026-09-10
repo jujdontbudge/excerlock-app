@@ -1,5 +1,5 @@
 import { useMotion } from '../../motion/useMotion';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
@@ -9,6 +9,7 @@ import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { useRuntimeStatus } from '../../state/selectors';
 export function RootNavigator() {
   const motion = useMotion();
+  const pathname = usePathname();
   const router = useRouter();
   const runtime = useRuntime();
   const loading = useRuntimeStatus().loading;
@@ -24,9 +25,9 @@ export function RootNavigator() {
       (previous === 'trial' || previous === 'active') &&
       (status === 'expired' || status === 'billingIssue')
     ) {
-      router.push('/paywall');
+      if (pathname !== '/paywall') router.push('/paywall');
     }
-  }, [onboarding.setupComplete, router, status]);
+  }, [onboarding.setupComplete, pathname, router, status]);
   return (
     <>
       <Stack
