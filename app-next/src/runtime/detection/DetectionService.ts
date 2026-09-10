@@ -160,6 +160,7 @@ export class DetectionService {
         throw error;
       }
       this.assertGeneration(wake.generation);
+      this.notifyCommitted();
     });
   }
   /** Lightweight foreground clock tick: live reducers + durable gym events, never step history. */
@@ -332,7 +333,7 @@ export class DetectionService {
     this.queue = next.catch(() => undefined);
     return next;
   }
-  private notifyCommitted(): void { this.committedListeners.forEach((listener) => listener()); }
+  private notifyCommitted(): void { this.committedListeners.forEach((listener) => { try { listener(); } catch (error) { this.deps.onError?.(error); } }); }
   private runLifecycle(operation: () => Promise<void>): Promise<void> {
     const next = this.lifecycle.catch(() => undefined).then(operation);
     this.lifecycle = next.catch(() => undefined);

@@ -17,6 +17,8 @@ import { HistoryCreditLedger } from './HistoryCreditLedger';
 export type NativeDetectionFactoryOptions = {
   getWakeContext(): Omit<DetectionWake, 'now' | 'source'>;
   onError?(error: unknown): void;
+  /** Full runtime root owns headless reconciliation when false. */
+  registerHeadless?: boolean;
 };
 export function createNativeDetection(options: NativeDetectionFactoryOptions) {
   const rawMotion = new NativeMotionProvider(createExcerlockMotionModuleClient());
@@ -35,7 +37,7 @@ export function createNativeDetection(options: NativeDetectionFactoryOptions) {
   });
   const awake = new AwakeSession(location);
   const steps = new StepsDetectionAdapter(rawMotion);
-  const unregisterHeadless = registerHeadlessDetectionHandler(async () => {
+  const unregisterHeadless = options.registerHeadless === false ? () => {} : registerHeadlessDetectionHandler(async () => {
     const context = options.getWakeContext();
     await service.reconcileWake({ ...context, now: Date.now(), source: 'geofence' });
   });
