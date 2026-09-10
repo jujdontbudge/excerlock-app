@@ -7,3 +7,6 @@ describe('guarded native enforcement invariants',()=>{
  it('rejects conflicting revisions and revalidates staged monitors',()=>{ expect(ios).toContain('revision == prior.revision'); expect(ios).toContain('let stillCurrent'); expect(ios).toContain('activities.contains'); });
  it('uses recurring guarded callbacks and stage-before-retire',()=>{ expect(ios).toContain('repeats: true'); expect(ios.indexOf('startMonitoring')).toBeLessThan(ios.lastIndexOf('stopMonitoring(retire')); expect(monitor).not.toContain('blockSelection'); });
 });
+
+test('recurring anchors may be in the past and full-week windows avoid equal-boundary monitors',()=>{expect(ios).not.toContain('end > now else');expect(ios).toContain('window.end - window.start >= 7 * 24 * 60 * 60 * 1000 { continue }');expect(policy).toContain('return true')});
+test('earned suppression expires so a later weekly boundary can relock',()=>{expect(policy).toContain('earnedStillValid = r.openReason == "earned" && now < r.eligibleUntil');expect(policy).toContain('!earnedStillValid')});
