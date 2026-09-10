@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createWalkingState, reduceWalking, type WalkingState } from '../domain/walkingMachine';
 import { createProppedState, reducePropped, type ProppedState } from '../domain/proppedMachine';
 import { createGymState, reduceGym, type GymDetectionState } from '../domain/gymMachine';
+export type PendingHistoryCredit = { idempotencyKey: string; from: number; to: number; steps: number };
 export type DetectionData = {
   version: 1;
   generation: number;
@@ -11,6 +12,7 @@ export type DetectionData = {
   propped: ProppedState;
   gym: GymDetectionState;
   creditedThrough: Record<string, number>;
+  pendingHistory: PendingHistoryCredit | null;
 };
 const initial: DetectionData = {
   version: 1,
@@ -20,6 +22,7 @@ const initial: DetectionData = {
   propped: createProppedState(0),
   gym: createGymState(0),
   creditedThrough: {},
+  pendingHistory: null,
 };
 const validReducerState = (value: unknown, reducer: (value: never) => unknown) => {
   if (typeof value !== 'object' || value === null) return false;
@@ -44,6 +47,14 @@ export const detectionStore = createPersistedStore('detection', initial, {
     typeof value === 'object' &&
     value !== null &&
     Object.values(value).every((cursor) => typeof cursor === 'number' && Number.isFinite(cursor) && cursor >= 0),
+  pendingHistory: (value) =>
+    value === null ||
+    (typeof value === 'object' &&
+      value !== null &&
+      typeof (value as PendingHistoryCredit).idempotencyKey === 'string' &&
+      Number.isFinite((value as PendingHistoryCredit).from) &&
+      Number.isFinite((value as PendingHistoryCredit).to) &&
+      Number.isFinite((value as PendingHistoryCredit).steps)),
 });
 /** Explicit durability barrier for background callbacks and serialized reconciliation. */
 export async function persistDetectionState(): Promise<void> {
