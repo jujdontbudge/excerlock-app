@@ -644,3 +644,13 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   Sentry topology unchanged. No dependency override, wallet upgrade, or remote mutation.
 - Updated dated status index to revised submission-ready endpoint; public review/release/production
   OTA actions explicitly prohibited and removed as completion gates, not silently executed.
+
+- Combined candidate8d403650: clean install with postinstall,248 app-next suites/1182 tests/13 snapshots
+  PASS and app-next typecheck PASS (/tmp/ship-combined-{app-tests,typecheck}.log). Includes reviewed auth
+  ownership/drain/constructor rollback, startup diagnostics, runtimeVersion2 and security patches.
+  Type failure in auth lane was NOT pre-existing: its install used --ignore-scripts; required patch
+  application restored it. Added installed JS/types/Swift patch regression720df5cd to prevent false proof.
+- Headless simulator helper no longer defaults to another session's old UUID:9a351794 requires explicit
+  EXCERLOCK_SIM_UDID. All8 node script regressions pass. No simulator boot/install yet. Preview Release
+  simulator candidate build at pinned8d403650 assigned; source-only test commits do not change app code.
+  Startup helper currently exports raw signposts only; no numeric/full-launch acceptance claimed.
