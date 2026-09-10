@@ -732,3 +732,14 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   Actual HBC6,372,948 bytes SHA2565b442d6cffe78cc2430e6b2559d7f58c2e8032cbac5b43bcea238df2d9981108
   still FAIL4,000,000 gate. No diagnostic markers; runtime2/main+4extensions/signatures verified.
   Missing local OTA channel remains unverified, no production OTA published.
+
+- Real Release217647f1 resumed onboarding across attribution/age/goal/motivation, screen-time math
+  and year animation, habit education, Walking→Outside→step target, schedule, plan review, rating skip,
+  trial education/reminder skip, to live paywall. Synthetic App Review persona; no public rating posted.
+  AX and screenshots06–30 captured under candidate-217647f1. Animated interim states are not full
+  screen acceptance, and XL/gym/native permissions/device branches remain open.
+- Actual fetched paywall shows annual$59.99/1year with1week trial and monthly$9.99/1month. Switching
+  monthly removes trial disclosure/CTA; Restore returned visible 'No active purchase was found.'
+  No purchase attempted; local StoreKit session not configured for this Release simctl launch.
+  Internal-looking heading 'Premium A' being investigated against SDK contract before narrow fallback
+  correction. Separate read-only UI audit findings require scroll/animation/source corroboration.
