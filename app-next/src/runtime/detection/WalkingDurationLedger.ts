@@ -71,11 +71,17 @@ export class WalkingDurationLedger {
         return state;
       }
       let next = state;
+      // A timezone change cannot reframe an in-flight verified run. The first
+      // verified observation owns its temporal frame until negative evidence
+      // closes continuity; only the next run adopts the device's new timezone.
+      const cursor = prior?.verified && observation.verified
+        ? { ...observation, timezone: prior.timezone }
+        : observation;
       if (prior?.verified && observation.verified) {
         const end = Math.min(observation.at, prior.at + MAX_VERIFIED_OBSERVATION_GAP_MS);
         next = addInterval(next, prior.at, end, prior.timezone, observation.generation);
       }
-      next = { ...next, cursor: observation };
+      next = { ...next, cursor };
       await this.save(next);
       return next;
     });
