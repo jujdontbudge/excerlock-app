@@ -1,4 +1,3 @@
-# T03 typecheck — app-next
+# T03 typecheck — app-next (revision)
 
-`npx tsc --noEmit` exits 0 with no errors (SDK57 expo-updates types resolved via shared node_modules; no new dependencies installed).
-
+`npx tsc --noEmit` exits 0 with no errors (live `OtaSafetyGetter`/`OtaEnvelopeGetter`, generation-gated observation, canonical routes; shared node_modules read-only, no new dependencies).
