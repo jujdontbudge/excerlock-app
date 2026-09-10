@@ -9,6 +9,7 @@ jest.mock('../createRuntime', () => ({ createRuntime: (mode: unknown) => mockCre
 jest.mock('../environment', () => ({ runtimeMode: () => 'real' }));
 jest.mock('../productionRuntime', () => ({ reportRuntimeError: (error: unknown) => mockReportRuntimeError(error) }));
 jest.mock('../../screentime/native/createNativeScreenTimePort', () => ({ NativeScreenTimePickerHost: () => null }));
+jest.mock('../NativeRuntimeEffects', () => ({ NativeRuntimeEffects: () => null }));
 
 import { AppRuntimeProvider, useRuntime } from '../AppRuntimeProvider';
 
