@@ -693,3 +693,16 @@ before T06; UI has substantive changes underway; auth intentional callback owner
 - CoreSimulator log attributes owned-simulator shutdown to existing Simulator.app PID43989 (launched
   Sep8), not an app crash. Root sent graceful quit to honor headless policy, but process remained live on
   immediate readback. No force-kill, no second simulator, no new boot yet.
+
+- Disposable diagnostic Release/ad-hoc build succeeded after preview env correction (Sentry auto-upload
+  disabled). Root installed on same owned simulator and captured real phase evidence in
+  /tmp/ship-diagnostic-unified.log: client.boot completed; foreground reconciliation rejects Error
+  code ERR_UNEXPECTED. Sanitized stack is empty; this narrows failure to reconcile, not auth boot.
+  AX still startup recovery. No diagnostic artifact is release acceptance; clean corrected app retained.
+- Verified stale Simulator.app PID43989 exited after SIGTERM (graceful quit had not worked), with zero
+  simulators booted before termination. Subsequent root-only headless diagnostic launch remains alive.
+  Browser surface recheck failed native pipe startup; no signing portal change or credential attempt.
+- T15 source-map proxy attribution found no large font/icon/locale waste. Reanimated is the largest
+  avoidable remaining non-platform family (~0.913MB source text, NOT Hermes attribution), but ~60
+  imports and substantial motion/gesture parity requirements mean removal is not a safe small change
+  or evidence of closing2.372MB HBC deficit. No animation refactor or gate relaxation adopted.
