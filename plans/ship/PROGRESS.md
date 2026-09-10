@@ -767,3 +767,18 @@ before T06; UI has substantive changes underway; auth intentional callback owner
 - Reviewer9d395c41 and StoreKitfd558021/9752dcf3 held for review fixes: reviewer adjustable-field
   semantics/StrictMode/stale-await tests; StoreKit real AX journey, default-selected option, Debug
   bundle setup and generator preservation/CI coverage. None counted as completed acceptance.
+
+### Two-hour submission-readiness sprint — 2026-09-10 20:04 UTC
+
+- User requested a120-minute push, minimal targeted regressions, maximum useful parallelism with
+  Luna Max/Muse xhigh and Claude Code/Fable planning. Deadline target22:04UTC, not a proof waiver.
+  Three Luna Max lanes own signing, native test harness, and reviewer/lapse integration. Muse xhigh
+  attempt returned429; replaced immediately rather than waiting. Claude Code read-only Fable plan
+  completed (/tmp/excerlock-two-hour-fable-plan.txt). Preserve submission-only boundary.
+- Root measured Hermes compiler debug metadata on the exact217647f1 native build's JS input.
+  Explicit-O/g0 is6,372,948bytes, identical to packaged baseline: no debug metadata saving remains.
+  g1=7,832,852; g2=9,676,917. Stripping function names measures5,435,064 but still fails4,000,000
+  and may change function.name/diagnostics; NOT adopted. Artifacts /tmp/ship-hermes-sizing.
+- Use targeted checks for each reviewed change, one final combined suite/typecheck and incremental
+  native candidate build. Native/device, signing, metadata and external-service limits remain honest
+  gates, not replaceable by unit tests or server health. No production OTA or App Review submission.
