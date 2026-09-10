@@ -25,7 +25,7 @@ const mockHostReconcile = jest.fn(async () => 'applied');
 jest.mock('../enforcement/EnforcementHost', () => ({ EnforcementHost: function () { return { reconcile: mockHostReconcile, dispose: mockHostDispose }; } }));
 jest.mock('../detection/headlessRegistry', () => ({ registerHeadlessDetectionHandler: () => mockRegisterHeadless() }));
 jest.mock('../../domain/projectStepHistory', () => ({ projectStepHistory: (_rules: unknown, rows: unknown) => rows }));
-jest.mock('../../domain/projectGymHistory', () => ({ projectGymHistory: (_rules: unknown, rows: unknown) => rows }));
+jest.mock('../../domain/projectGymHistory', () => ({ ...jest.requireActual('../../domain/projectGymHistory'), projectGymHistory: (_rules: unknown, rows: unknown) => rows }));
 
 import { createRealRuntime } from '../createRealRuntime';
 

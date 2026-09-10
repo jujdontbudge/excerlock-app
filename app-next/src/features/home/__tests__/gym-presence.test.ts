@@ -7,7 +7,7 @@ import { permissionsStore } from '../../../state/permissionsStore';
 import { PRESENCE_CONFIRM_MS, PRESENCE_EXIT_GRACE_MS } from '../../../domain/presence';
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
-const state = (r: ReturnType<typeof createRuntime>) =>
+const state = (r: import('../../../demo/FakeRuntime').FakeRuntimeInstance) =>
   resolveLock({
     now: r.clock.now(),
     timezone: r.clock.timezone(),

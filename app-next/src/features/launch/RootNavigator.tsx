@@ -4,9 +4,11 @@ import { entitlementStore as useEntitlementStore } from '../../state/entitlement
 import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
 import { tokens as t } from '../../design-system/tokens';
 import { FakePromptHost } from '../permissions/FakePromptHost';
+import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { useRuntimeStatus } from '../../state/selectors';
 export function RootNavigator() {
   const motion = useMotion();
+  const runtime = useRuntime();
   const loading = useRuntimeStatus().loading;
   const status = useEntitlementStore((s) => s.data.entitlement.status),
     onboarding = useOnboardingStore((s) => s.data),
@@ -40,7 +42,7 @@ export function RootNavigator() {
           <Stack.Screen name="unlock/treadmill" options={{ presentation: 'fullScreenModal' }} />
         </Stack.Protected>
       </Stack>
-      {__DEV__ ? <FakePromptHost /> : null}
+      {__DEV__ && runtime.kind === 'fake' ? <FakePromptHost /> : null}
     </>
   );
 }

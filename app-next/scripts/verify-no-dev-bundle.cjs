@@ -11,4 +11,6 @@ assert.ok(map.sources.some((source) => /features\/home\/HomeScreen\.tsx$/.test(s
 assert.ok(!map.sources.some((source) => /(?:app\/dev\.tsx|features\/dev\/)/.test(source)), 'Dev modules included in export');
 assert.ok(!bundle.includes('./dev.tsx'), 'Dev route present in compiled router context');
 assert.ok(!bundle.includes('features/dev/DevRoute'), 'Dev implementation present in bundle');
+assert.ok(!map.sources.some(source => /(?:^|\/)src\/demo\//.test(source)), 'Fake runtime graph included in production export');
+assert.ok(map.sources.some(source => /runtime\/createRealRuntime\.ts$/.test(source)), 'Real runtime graph missing from production export');
 console.log(`Verified: ${map.sources.length} sources; dev route and implementation absent from actual iOS export.`);

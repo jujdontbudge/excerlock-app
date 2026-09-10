@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Runtime } from './Runtime';
 import type { RuntimeStatusSnapshot } from '../ports/RuntimeStatusPort';
+import { eraseProductionData } from './eraseProductionData';
 import { hydrateProductionStores } from './hydrateProductionStores';
 import { createClientServices } from './createClientServices';
 import { createNativeDetection } from './detection/createNativeDetection';
@@ -24,6 +25,7 @@ import { permissionsStore } from '../state/permissionsStore';
 import { entitlementStore } from '../state/entitlementStore';
 import { dayKey, localInstant } from '../domain/calendar';
 import { currentInstances } from '../domain/schedule';
+import { projectMeasuredHistory } from '../domain/projectMeasuredHistory';
 import { projectGymHistory } from '../domain/projectGymHistory';
 import { registerHeadlessDetectionHandler } from './detection/headlessRegistry';
 import { projectStepHistory } from '../domain/projectStepHistory';
@@ -105,6 +107,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     });
     let committedWalking = walking.snapshot();
     let committedGymPresence = ruleDaysStore.getState().data.gymPresence;
+    let deletionSuspended = false;
     let host!: EnforcementHost;
     const client = createClientServices({
       extra: Constants.expoConfig?.extra,
@@ -114,11 +117,23 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       beforeDelete: async () => {
         // Auth owns deletion state before invoking this hook. Publish suppression
         // and clear shields BEFORE stopping tracking; keep auth intact for retries.
+        deletionSuspended = true;
+        await queue;
         await host.reconcile(true);
         await detection.awake.reconcile(false);
         await detection.location.stopMonitoringRegions();
         await detection.service.stop();
         regionsSignature = null;
+      },
+      afterDelete: async () => {
+        await queue;
+        await eraseProductionData({ historyLedger: detection.historyLedger, gymLog: detection.gymLog, permissions: permissionsStore.getState().data });
+        await Promise.all(['trial_ending', 'open_to_unlock', 'shield_open'].map(id => client.notifications.cancel(id)));
+        selectionVersion = `deleted:${Date.now()}`;
+        await AsyncStorage.setItem(SELECTION_VERSION_KEY, selectionVersion);
+        stepsByDay = {};
+        committedWalking = walking.snapshot(); committedGymPresence = null;
+        status = { ...status, history: [] }; listeners.forEach(listener => listener());
       },
     });
     cleanups.push(() => client.dispose());
@@ -140,7 +155,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         walking: committedWalking,
         gymPresence: committedGymPresence,
         entitlement: client.subscription.entitlement(),
-        deleting: client.auth.identity().kind === 'deleting',
+        deleting: deletionSuspended || client.auth.identity().kind === 'deleting',
         accountGeneration: client.auth.identity().generation,
         screenTimeAuthorized: rawScreenTime.authorizationStatus() === 'granted',
         selection: rulesStore.getState().data.lockedApps,
@@ -167,6 +182,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         .catch(() => undefined)
         .then(async () => {
           if (disposed) throw new Error('Runtime disposed');
+          if (deletionSuspended) { await host.reconcile(true); return; }
           const now = Date.now();
           insideReconcile = true;
           try {
@@ -247,6 +263,19 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
                     confirmedAt: new Date(since).toISOString(),
                   }
                 : null;
+            const history = projectMeasuredHistory(
+              stepsByDay,
+              detected.gym.intervals,
+              configured,
+              rulesStore.getState().data.rules,
+              rows,
+              clock.timezone(),
+              new Date(now).toISOString(),
+            );
+            if (JSON.stringify(history) !== JSON.stringify(status.history)) {
+              status = { ...status, history };
+              listeners.forEach((listener) => listener());
+            }
             committedGymPresence = gymPresence;
             projecting = true;
             try {
@@ -386,6 +415,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       );
       // Starting auth is bounded by its own provisional/offline boot contract.
       await client.boot();
+      if (client.auth.identity().kind !== 'deleting') deletionSuspended = false;
       await reconcile('foreground');
       stops.push(
         rulesStore.subscribe(request),
@@ -393,7 +423,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         ruleDaysStore.subscribe(request),
         permissionsStore.subscribe(request),
         entitlementStore.subscribe(request),
-        client.auth.subscribeIdentity(request),
+        client.auth.subscribeIdentity(identity => { if (identity.kind !== 'deleting') deletionSuspended = false; request(); }),
       );
       const appState = AppState.addEventListener('change', (state) => {
         void reconcile(state === 'active' ? 'foreground' : 'background', state === 'active' ? 'full' : 'tick').catch(

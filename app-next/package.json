@@ -1,7 +1,7 @@
 {
   "name": "app-next",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "dependencies": {
     "@kingstinct/expo-apple-targets": "0.1.19",
     "@kingstinct/react-native-healthkit": "14.0.2",

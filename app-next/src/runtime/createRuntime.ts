@@ -1,22 +1,35 @@
-import { FakeRuntime, FakeRuntimeInstance } from '../demo/FakeRuntime';
-import { Runtime } from './Runtime';
-import { Platform } from 'react-native';
-import { foregroundGym } from './ForegroundGym';
-import Constants from 'expo-constants';
-import { nativeGait } from './NativeGait';
-import { supportDelivery } from './SupportDelivery';
-import { runtimeMode } from './environment';
+import type { FakeRuntimeInstance } from '../demo/FakeRuntime';
+import type { Runtime } from './Runtime';
+import { getProductionRuntime } from './productionRuntime';
 export type { Runtime } from './Runtime';
 export function createRuntime(): FakeRuntimeInstance;
 export function createRuntime(mode: 'fake'): FakeRuntimeInstance;
-export function createRuntime(mode: 'real'): Runtime;
-export function createRuntime(mode = runtimeMode(Constants.expoConfig?.extra?.environment, __DEV__)): Runtime {
-  if (mode === 'real') throw new Error('Real runtime is not integrated yet; refusing to ship demo services');
-  const runtime = FakeRuntime();
-  if (Platform.OS === 'ios' && process.env.NODE_ENV !== 'test') {
-    runtime.gym = foregroundGym(runtime.gym, runtime.dev.setPresence);
-    if (Constants.isDevice) runtime.gait = nativeGait() ?? runtime.gait;
-    runtime.support = supportDelivery(runtime.support);
+export function createRuntime(mode: 'real'): Promise<Runtime>;
+export function createRuntime(mode: 'fake' | 'real' = 'fake'): Runtime | Promise<Runtime> {
+  if (mode === 'real') return getProductionRuntime();
+  if (__DEV__) {
+    // Compile-time boundary: no fake graph is reachable in the production bundle.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { FakeRuntime } = require('../demo/FakeRuntime') as typeof import('../demo/FakeRuntime');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Platform } = require('react-native') as typeof import('react-native');
+    const runtime = FakeRuntime();
+    if (Platform.OS === 'ios' && process.env.NODE_ENV !== 'test') {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { foregroundGym } = require('./ForegroundGym') as typeof import('./ForegroundGym');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { supportDelivery } = require('./SupportDelivery') as typeof import('./SupportDelivery');
+      runtime.gym = foregroundGym(runtime.gym, runtime.dev.setPresence);
+      runtime.support = supportDelivery(runtime.support);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Constants = (require('expo-constants') as typeof import('expo-constants')).default;
+      if (Constants.isDevice) {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { nativeGait } = require('./NativeGait') as typeof import('./NativeGait');
+        runtime.gait = nativeGait() ?? runtime.gait;
+      }
+    }
+    return runtime;
   }
-  return runtime;
+  throw new Error('Demo services are unavailable in a release build');
 }

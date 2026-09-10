@@ -1,10 +1,11 @@
+jest.mock('../productionRuntime', () => ({ getProductionRuntime: jest.fn(async () => ({ kind: 'real' })) }));
 import { runtimeMode } from '../environment';
 import { createRuntime } from '../createRuntime';
 test('uses the local fake runtime by default', () => {
   expect(createRuntime().kind).toBe('fake');
 });
-test('does not silently activate real services until integration', () => {
-  expect(() => createRuntime('real')).toThrow('refusing to ship demo services');
+test('real mode uses the asynchronous production owner, never fake services', async () => {
+  await expect(createRuntime('real')).resolves.toMatchObject({ kind: 'real' });
 });
 
 test('preview and production never activate demo services, even under Metro', () => {
