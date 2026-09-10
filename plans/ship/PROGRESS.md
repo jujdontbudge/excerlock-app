@@ -570,3 +570,11 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   actual2890-source graph excludes dev. Still FAILS4MB; experimental flags remain uncommitted/unenabled.
   Lockfile audit found eight separate sameversion Sentry core10.37 copies beside servercore10.69;
   investigating supported dependency deduplication without SDK version overrides or product removal.
+
+- Continuation reviewed uncommitted root-core experiment at experiment/sentry-root-core, based on0af7b308.
+  Exact root production core10.37 collapses mobile copies8→1; all other package versions unchanged,
+  server origins preserve exact10.69 nested. Clean install and workspace typechecks passed. Synthetic
+  no-experimental-flags HBC6,357,304bytes; command-only optimized HBC5,947,932bytes. Both FAIL strict
+  decimal4,000,000 budget; no-dev verifier passes. Root requested app-next-specific full tests (root
+  test:app only covers legacy app), topology regression and ADR before adopting. Existing E2E YAML
+  contract failure remains reported, not suppressed. Further read-only HBC attribution underway.

@@ -28,7 +28,10 @@ Preserve those artifacts as historical evidence; never substitute them for curre
 - **T14:** Physical iPhone13 Il is unavailable. Another session owns the booted simulator; it was not
   modified. Current real-runtime simulator/device acceptance and lock-state matrix are incomplete.
 - **T15:** Release startup/TTI and battery/device measurements absent. Home semantic-clock optimization
-  and an unsigned Release/Hermes measurement are in progress; neither is acceptance until verified.
+  passed local tests. Unsigned device Release at7619c5bd compiled, but its packaged Hermes bundle was
+  7,881,912 bytes: FAIL against the strict decimal4,000,000-byte gate. A disposable single-core Sentry
+  dependency experiment measured6,357,304 bytes without experimental optimization and5,947,932 bytes
+  with command-only tree shaking. Both still FAIL; neither synthetic export proves native runtime acceptance.
 - **T16:** No upload, TestFlight install, App Review submission, public release, or production OTA.
   Store approval/public-install OTA proof requires external state and real-device observation.
 
