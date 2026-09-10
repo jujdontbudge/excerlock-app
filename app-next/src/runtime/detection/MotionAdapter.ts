@@ -5,6 +5,7 @@ import type {
   MotionProvider,
   Unsubscribe,
 } from '../../engine/signals/motion/MotionProvider';
+import { runCleanups } from './runCleanups';
 
 export const MOTION_FRESHNESS_MS = 5_000;
 export const MIN_WALKING_CADENCE_PER_MINUTE = 80;
@@ -53,8 +54,11 @@ export class MotionAdapter {
   }
 
   async stop(): Promise<void> {
-    this.unsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
-    await this.provider.stop();
+    const unsubscribes = this.unsubscribes.splice(0);
+    await runCleanups(
+      [...unsubscribes.map((unsubscribe) => () => unsubscribe()), () => this.provider.stop()],
+      'Motion adapter cleanup failed',
+    );
   }
 
   subscribe(callback: (evidence: MotionEvidence) => void): Unsubscribe {

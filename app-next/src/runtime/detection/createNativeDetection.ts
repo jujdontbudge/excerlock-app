@@ -15,6 +15,7 @@ import { registerHeadlessDetectionHandler } from './headlessRegistry';
 import { GymRegionAdapter } from './GymRegionAdapter';
 import { HistoryCreditLedger } from './HistoryCreditLedger';
 import { WalkingDurationLedger } from './WalkingDurationLedger';
+import { runCleanups } from './runCleanups';
 export type NativeDetectionFactoryOptions = {
   getWakeContext(): Omit<DetectionWake, 'now' | 'source'>;
   onError?(error: unknown): void;
@@ -65,13 +66,7 @@ export function createNativeDetection(options: NativeDetectionFactoryOptions) {
     registerGyms: gyms.registerSavedGyms.bind(gyms),
     deleteGym: (regionId: string) => gyms.deleteSavedGym(regionId),
     start: (graceMs: number) => service.start(graceMs),
-    stop: async () => {
-      unregisterHeadless();
-      await service.stop();
-      rawMotion.dispose();
-      rawPlacement.dispose();
-      location.dispose();
-    },
+    stop: () => stopNativeDetection({ unregisterHeadless, service, rawMotion, rawPlacement, location }),
     reconcileWake: (wake: DetectionWake) => service.reconcileWake(wake),
     snapshot: () => detectionStore.getState().data,
     startProppedScan: (now: number, generation: number) => service.startProppedScan(now, generation),
@@ -79,4 +74,23 @@ export function createNativeDetection(options: NativeDetectionFactoryOptions) {
       service.completeProppedScan(now, scanGeneration, generation),
     cancelProppedScan: (now: number, generation: number) => service.cancelProppedScan(now, generation),
   };
+}
+
+export function stopNativeDetection(owned: {
+  unregisterHeadless(): void;
+  service: Pick<DetectionService, 'stop'>;
+  rawMotion: Pick<NativeMotionProvider, 'dispose'>;
+  rawPlacement: Pick<NativePhonePlacementProvider, 'dispose'>;
+  location: { dispose(): void };
+}): Promise<void> {
+  return runCleanups(
+    [
+      () => owned.unregisterHeadless(),
+      () => owned.service.stop(),
+      () => owned.rawMotion.dispose(),
+      () => owned.rawPlacement.dispose(),
+      () => owned.location.dispose(),
+    ],
+    'Native detection cleanup failed',
+  );
 }
