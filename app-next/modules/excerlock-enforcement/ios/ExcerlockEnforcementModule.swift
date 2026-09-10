@@ -33,10 +33,8 @@ public final class ExcerlockEnforcementModule: Module {
         }
         let staleIds = registrations.filter { !$0.value.committed && $0.value.revision != revision }.map(\.key)
         stale.append(contentsOf: staleIds); staleIds.forEach { registrations.removeValue(forKey: $0) }
-        let committedId = prior?.committedId.flatMap { id in
-          guard state == "conditional", let registration = registrations[id], sameContext(registration), registration.end > now else { return nil }
-          return id
-        }
+        var committedId: String? = nil
+        if let id = prior?.committedId, state == "conditional", let registration = registrations[id], sameContext(registration), registration.end > now { committedId = id }
         if let old = prior?.committedId, committedId == nil { registrations.removeValue(forKey: old) }
         let record = ExcerlockPolicyRecord(
           version: excerlockPolicyVersion, revision: revision, publishedAt: now, state: state,
@@ -55,9 +53,6 @@ public final class ExcerlockEnforcementModule: Module {
     }
 
     AsyncFunction("shield") { (revision: Int) throws -> Bool in try ExcerlockPolicyStore.shared.apply(shield: true, revision: revision) }
-    Function("getPolicyRevision") { () throws -> Int? in
-      try ExcerlockPolicyStore.shared.locked { try ExcerlockPolicyStore.shared.readIfPresentLocked()?.revision }
-    }
     AsyncFunction("unshield") { (revision: Int) throws -> Bool in try ExcerlockPolicyStore.shared.apply(shield: false, revision: revision) }
 
     AsyncFunction("stageWatchdog") { (plan: [String: Any], revision: Int) async throws -> String in
