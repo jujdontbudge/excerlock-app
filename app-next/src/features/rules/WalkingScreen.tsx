@@ -7,6 +7,13 @@ import { Reveal } from '../../motion/Reveal';
 import { RuleDraft, DraftAction } from './draft';
 import { profileStore as useProfileStore } from '../../state/profileStore';
 import { useOptionalRuntime } from '../../runtime/AppRuntimeProvider';
+import {
+  isValidStepGoal,
+  MAX_STEP_GOAL,
+  MIN_STANDARD_STEP_GOAL,
+  REVIEW_STEP_GOAL,
+  STEP_GOAL_INCREMENT,
+} from '../../domain/stepGoal';
 export function WalkingScreen({
   step,
   draft: d,
@@ -24,7 +31,7 @@ export function WalkingScreen({
   const value = minutes ? d.walkMinutes : d.stepGoal;
   const valid = Number.isFinite(value) && (minutes
     ? Number.isInteger(value) && value >= 5 && value <= 180
-    : value >= 500 && value <= 30000 && value % 500 === 0);
+    : isValidStepGoal(value));
   const change = (next: number) => onAction({ type: minutes ? 'setWalkMinutes' : 'setStepGoal', value: next });
   return (
     <>
@@ -75,9 +82,9 @@ export function WalkingScreen({
         <Reveal index={1} style={{ gap: t.space.lg }}>
           <NumberField
             label={minutes ? c.minutesGoal : c.goal}
-            step={minutes ? 5 : 500}
-            min={minutes ? 5 : 500}
-            max={minutes ? 180 : 30000}
+            step={minutes ? 5 : STEP_GOAL_INCREMENT}
+            min={minutes ? 5 : REVIEW_STEP_GOAL}
+            max={minutes ? 180 : MAX_STEP_GOAL}
             value={Number.isNaN(value) ? '' : String(value)}
             unit={minutes ? c.minutesUnit : c.unit}
             onChange={(text) => change(text.trim() ? Number(text) : NaN)}
@@ -88,16 +95,18 @@ export function WalkingScreen({
               <SecondaryButton
                 label={minutes ? c.removeMinutesCompact : c.removeCompact}
                 accessibilityLabel={minutes ? c.removeMinutes : c.remove}
-                disabled={!valid || value <= (minutes ? 5 : 500)}
-                onPress={() => change(value - (minutes ? 5 : 500))}
+                disabled={!valid || (minutes ? value <= 5 : value === REVIEW_STEP_GOAL || value <= MIN_STANDARD_STEP_GOAL)}
+                onPress={() => change(value - (minutes ? 5 : STEP_GOAL_INCREMENT))}
               />
             </View>
             <View style={{ flex: 1 }}>
               <SecondaryButton
                 label={minutes ? c.addMinutesCompact : c.addCompact}
                 accessibilityLabel={minutes ? c.addMinutes : c.add}
-                disabled={!valid || value >= (minutes ? 180 : 30000)}
-                onPress={() => change(value + (minutes ? 5 : 500))}
+                disabled={!valid || value >= (minutes ? 180 : MAX_STEP_GOAL)}
+                onPress={() => change(minutes ? value + 5 : value === REVIEW_STEP_GOAL
+                  ? MIN_STANDARD_STEP_GOAL
+                  : value + STEP_GOAL_INCREMENT)}
               />
             </View>
           </View>

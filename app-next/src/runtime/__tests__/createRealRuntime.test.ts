@@ -66,6 +66,7 @@ function graph(options?: { gait?: object | null; boot?: () => Promise<void>; aut
     boot: jest.fn(options?.boot ?? (async () => {})), dispose: jest.fn(),
     auth: { identity: () => identity, subscribeIdentity: jest.fn(() => jest.fn()) },
     subscription: { entitlement: () => ({ status: 'unknown' }) }, analytics: {}, notifications: {}, dataExport: {},
+    reviewPreset: { isEnabled: jest.fn(async () => false), expose: jest.fn() },
   };
   const walking = { snapshot: () => ({ phase: 'inactive' }), stop: jest.fn() };
   const gym = { authorizationStatus: () => 'denied', requestLocation: jest.fn(async () => 'denied') };
@@ -162,6 +163,7 @@ test('successful construction returns only the real graph and disposes idempoten
   expect(runtime.kind).toBe('real');
   expect((runtime as unknown as { dev?: unknown }).dev).toBeUndefined();
   expect(runtime.walking).toBe(mockCreateWalking.mock.results[0].value);
+  expect(runtime.reviewPreset).toBe(started.client.reviewPreset);
   await Promise.all([runtime.disposeAsync(), runtime.disposeAsync()]);
   expect(started.detection.stop).toHaveBeenCalledTimes(1);
   expect(started.client.dispose).toHaveBeenCalledTimes(1);

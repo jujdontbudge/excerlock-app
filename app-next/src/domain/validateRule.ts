@@ -1,3 +1,5 @@
+import { isValidStepGoal } from './stepGoal';
+
 export type RuleIssue = 'identity' | 'mode' | 'goal' | 'days' | 'window';
 const record = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -23,8 +25,7 @@ export function validateRule(value: unknown): RuleIssue[] {
       if (m.activity !== 'gym' || m.trigger !== 'arrival') issues.push('mode');
     } else if (m.kind === 'target') {
       if (m.activity === 'walking' && m.metric === 'steps') {
-        if (finite(m.goal) && m.goal % 500 !== 0) issues.push('goal');
-        if (!finite(m.goal) || m.goal < 500 || m.goal > 30000) issues.push('goal');
+        if (!finite(m.goal) || !isValidStepGoal(m.goal)) issues.push('goal');
       } else if (m.activity === 'walking' && m.metric === 'minutes') {
         if (!finite(m.goal) || m.goal < 5 || m.goal > 180 || !Number.isInteger(m.goal)) issues.push('goal');
       } else if (m.activity === 'gym' && m.metric === 'minutes') {

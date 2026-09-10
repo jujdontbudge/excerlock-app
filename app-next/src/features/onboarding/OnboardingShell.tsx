@@ -21,6 +21,7 @@ export function OnboardingShell({
   continueLabel,
   hideContinue = false,
   hideBack = false,
+  continuing = false,
 }: PropsWithChildren<{
   step: string;
   progress: number;
@@ -32,6 +33,7 @@ export function OnboardingShell({
   continueLabel?: string;
   hideContinue?: boolean;
   hideBack?: boolean;
+  continuing?: boolean;
 }>) {
   const m = useMotion(),
     family = ['W1', 'W2', 'W3', 'G1', 'G2', 'R1', 'R2', 'B1', 'B2', 'D'].includes(step)
@@ -71,6 +73,7 @@ export function OnboardingShell({
                 label={continueLabel ?? (step === 'O01' ? c.start : c.continue)}
                 onPress={onContinue}
                 disabled={!valid}
+                loading={continuing}
               />
             </Reveal>
           )

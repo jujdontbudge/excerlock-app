@@ -8,6 +8,7 @@
 - [0004: Share core skills across agent CLIs](0004-share-core-skills-across-agent-clis.md) — **accepted**.
 - [0005: Prefer CLIs for iOS and service operations](0005-cli-first-ios-and-service-tooling.md) — **accepted**.
 - [0006: Route web extraction by source type](0006-route-web-extraction-by-source-type.md) — **accepted**.
+- [0023: Honest release reviewer preset](0023-reviewer-preset.md) — **accepted**.
 
 ## Recording decisions
 

@@ -1,4 +1,4 @@
-import { createPaywallExperimentPort, createPostHogAnalyticsAdapter, semanticScreenName, scrubAnalyticsProps, type CanonicalIdentity, type PostHogClientBoundary } from '../PostHogAnalyticsAdapter';
+import { createPaywallExperimentPort, createPostHogAnalyticsAdapter, createReviewPresetPort, semanticScreenName, scrubAnalyticsProps, type CanonicalIdentity, type PostHogClientBoundary } from '../PostHogAnalyticsAdapter';
 
 function fixture() {
   const calls: string[] = []; const captures: { event: string; props?: Record<string, unknown> }[] = []; let flag: string | boolean | undefined; const listeners = new Set<() => void>(); let registerGate: Promise<void> | undefined;
@@ -97,6 +97,15 @@ test('paywall port exposes only the mounted, settled variant and matching genera
   expect(x.captures.filter((c) => c.event === '$feature_flag_called')).toHaveLength(0);
   port.trackPaywallVariantExposure({ variant: 'variant_b', placement: 'onboarding', flowVariationId: 'flow-a', generation: 1 });
   await new Promise((resolve) => setTimeout(resolve, 0)); expect(x.captures.filter((c) => c.event === '$feature_flag_called')).toHaveLength(1);
+});
+test('review preset is boolean, fails closed, and exposes no entered name', async () => {
+  const x = fixture(); await x.adapter.identify('uid');
+  const port = createReviewPresetPort(x.adapter.flags);
+  x.setFlag('not-a-boolean'); expect(await port.isEnabled()).toBe(false);
+  x.adapter.flags.invalidate(); x.adapter.flags.beginGeneration(1); x.setFlag(true);
+  expect(await port.isEnabled()).toBe(true); port.expose();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(x.captures.at(-1)?.props).toEqual({ $feature_flag: 'review_preset', $feature_flag_response: true });
 });
 test('scrubs PII and route names are allowlisted', () => {
   expect(scrubAnalyticsProps({ email: 'x@y.com', reason: 'free text!', kind: 'walking', ms: 3 })).toEqual({ kind: 'walking', ms: 3 });

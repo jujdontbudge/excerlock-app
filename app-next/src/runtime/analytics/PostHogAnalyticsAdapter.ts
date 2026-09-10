@@ -132,9 +132,9 @@ export function createPostHogAnalyticsAdapter(options: {
   };
 }
 
-export type FlagName = 'paywall_variant' | 'signInRequired' | 'onboarding_variant';
+export type FlagName = 'paywall_variant' | 'signInRequired' | 'onboarding_variant' | 'review_preset';
 export type PaywallVariant = 'control' | 'variant_b';
-const allowedFlags: Record<FlagName, readonly (string | boolean)[]> = { paywall_variant: ['control', 'variant_b'], signInRequired: [false, true], onboarding_variant: ['control', 'variant_b'] };
+const allowedFlags: Record<FlagName, readonly (string | boolean)[]> = { paywall_variant: ['control', 'variant_b'], signInRequired: [false, true], onboarding_variant: ['control', 'variant_b'], review_preset: [false, true] };
 type FlagValue = string | boolean;
 type FlagOrigin = { userId: string; generation: number };
 type PendingFlag = { promise: Promise<FlagValue>; resolve: (value: FlagValue) => void; off?: () => void; timeout?: ReturnType<typeof globalThis.setTimeout>; origin: FlagOrigin };
@@ -150,7 +150,7 @@ export class PostHogFlagsController {
     private committed: () => CanonicalIdentity | null,
     private captureExposure: (origin: FlagOrigin, properties: Record<string, string | number | boolean>) => Promise<boolean>,
   ) {}
-  private fallback(name: FlagName): FlagValue { return name === 'signInRequired' ? false : 'control'; }
+  private fallback(name: FlagName): FlagValue { return name === 'signInRequired' || name === 'review_preset' ? false : 'control'; }
   private eligible(origin?: FlagOrigin): origin is FlagOrigin {
     const live = this.identity(), committed = this.committed();
     return !!origin && this.optedIn() && live.ready && !!committed &&
@@ -219,6 +219,12 @@ export function createPaywallExperimentPort(flags: PostHogFlagsController): Payw
   return {
     async getPaywallVariant() { return await flags.get('paywall_variant') as PaywallVariant; },
     trackPaywallVariantExposure(input) { flags.exposePaywall(input); },
+  };
+}
+export function createReviewPresetPort(flags: PostHogFlagsController) {
+  return {
+    async isEnabled() { return await flags.get('review_preset') === true; },
+    expose() { flags.expose('review_preset', 'onboarding'); },
   };
 }
 

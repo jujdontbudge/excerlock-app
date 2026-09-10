@@ -508,6 +508,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       auth: client.auth,
       subscription: client.subscription,
       analytics: client.analytics,
+      reviewPreset: client.reviewPreset,
       notifications: { ...client.notifications, request: () => safety.prompt(() => client.notifications.request()) },
       dataExport: { requestShare: (payload) => safety.prompt(() => client.dataExport.requestShare(payload)) },
       // No rules-sync endpoint exists yet. Never acknowledge imaginary cloud writes.
