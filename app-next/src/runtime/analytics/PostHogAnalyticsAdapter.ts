@@ -4,6 +4,12 @@ export type CanonicalIdentity = { userId: string | null; generation: number; rea
 export type WalkPlaces = 'outside' | 'treadmill' | 'outside_and_treadmill' | 'none';
 export type AnalyticsContext = { environment: string; runtime_version: string; update_id: string; walk_places: WalkPlaces };
 const walkPlacesValues = new Set<WalkPlaces>(['outside', 'treadmill', 'outside_and_treadmill', 'none']);
+export function normalizeWalkPlaces(value: unknown): WalkPlaces | null {
+  if (typeof value === 'string' && walkPlacesValues.has(value as WalkPlaces)) return value as WalkPlaces;
+  if (!Array.isArray(value) || value.some((item) => item !== 'outside' && item !== 'treadmill')) return null;
+  return value.includes('outside') && value.includes('treadmill') ? 'outside_and_treadmill'
+    : value.includes('outside') ? 'outside' : value.includes('treadmill') ? 'treadmill' : 'none';
+}
 export interface PostHogClientBoundary {
   ready(): Promise<void>; getDeviceId(): string; getDistinctId(): string;
   register(properties: Record<string, string | number | boolean>): Promise<void> | void;
@@ -65,7 +71,20 @@ export function createPostHogAnalyticsAdapter(options: {
     () => committed,
     (started, properties) => emit(started, () => client.capture('$feature_flag_called', properties)),
   );
+  let consentEpoch = 0;
   return {
+    async setEnabled(enabled) {
+      const epoch = ++consentEpoch;
+      flags.invalidate();
+      await client.optOut();
+      await client.clearPendingQueues();
+      if (epoch !== consentEpoch || !enabled || !options.analyticsEnabled()) return;
+      const started = origin();
+      if (!started || !committed || committed.userId !== started.userId || committed.generation !== started.generation) return;
+      await client.optIn();
+      if (epoch !== consentEpoch || !options.analyticsEnabled()) { await client.optOut(); return; }
+      flags.beginGeneration(started.generation);
+    },
     async identify(id) {
       committed = null;
       flags.invalidate();
@@ -88,11 +107,11 @@ export function createPostHogAnalyticsAdapter(options: {
     track(event, props) {
       const started = origin();
       if (!allowed(started) || /^(purchase_|trial_|subscription_)/.test(event)) return;
-      const walkPlaces = event === 'walk_places_updated' ? props?.walk_places : undefined;
-      if (event === 'walk_places_updated' && (typeof walkPlaces !== 'string' || !walkPlacesValues.has(walkPlaces as WalkPlaces))) return;
+      const walkPlaces = event === 'walk_places_updated' ? normalizeWalkPlaces(props?.walk_places) : null;
+      if (event === 'walk_places_updated' && walkPlaces === null) return;
       void emit(started!, async () => {
         if (event === 'walk_places_updated') await client.setPersonProperties({ walk_places: walkPlaces as WalkPlaces }, false);
-        if (allowed(started)) await client.capture(event, scrubAnalyticsProps(props));
+        if (allowed(started)) await client.capture(event, scrubAnalyticsProps(walkPlaces === null ? props : { ...props, walk_places: walkPlaces }));
       });
     },
     screen(name) {

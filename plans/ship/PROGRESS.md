@@ -247,3 +247,9 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   coverage-loss dwell resurrection, deep schema guards and history idempotency; not integrated yet.
 - T10 native38e1e753 + corrections01f465b7/60c8a841 NOT integrated: root caught end-callback time
   bounds/out-of-window shields/stale staging and requested actual independent install+prebuild+unsigned build.
+- Concrete PostHog/Sentry SDK factory integratedb4616eee. Root added missing Settings Usage analytics
+  switch + persisted analyticsEnabled; adapter opt-out clears queues, invalidates flags and gates captures;
+  opt-in requires current preference/canonical identity. Fixed actual UI walk_places array normalization
+  to enum person property and event.2focused suites/15tests, typecheck/lint pass. Factory/root still needs
+  analyticsEnabled getter binding; Settings visual inspection pending. T10-domain migration delegated
+  ship_server_finish; T11 reviewed fixes22ae5f17 ready, native factory/headless binding next same agent.

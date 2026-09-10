@@ -3,4 +3,5 @@ export interface AnalyticsPort {
   screen(name: string): void;
   identify(id: string): Promise<void>;
   reset(): Promise<void>;
+  setEnabled?(enabled: boolean): Promise<void>;
 }

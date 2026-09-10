@@ -102,3 +102,20 @@ test('scrubs PII and route names are allowlisted', () => {
   expect(scrubAnalyticsProps({ email: 'x@y.com', reason: 'free text!', kind: 'walking', ms: 3 })).toEqual({ kind: 'walking', ms: 3 });
   expect(semanticScreenName('/settings?email=x')).toBe('settings'); expect(semanticScreenName('/users/uuid')).toBeNull();
 });
+
+test('UI multi-select walking preferences become a typed person property', async () => {
+  const x = fixture(); await x.adapter.identify('uid');
+  x.adapter.track('walk_places_updated', { walk_places: ['outside', 'treadmill'] });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(x.calls).toContain('person:outside_and_treadmill:false');
+});
+
+test('opt-out clears queued events and opt-in resumes only with the current preference', async () => {
+  const x = fixture(); await x.adapter.identify('uid'); x.calls.length = 0;
+  x.disable(); await x.adapter.setEnabled!(false);
+  expect(x.calls).toEqual(['optOut', 'clear']);
+  x.adapter.track('condition_created'); await Promise.resolve();
+  expect(x.captures).toEqual([]);
+  x.enable(); await x.adapter.setEnabled!(true);
+  expect(x.calls.slice(-3)).toEqual(['optOut', 'clear', 'optIn']);
+});

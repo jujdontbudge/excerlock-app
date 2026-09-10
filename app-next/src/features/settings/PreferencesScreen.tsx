@@ -25,7 +25,8 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
     walkPlaces = useProfileStore((state) => state.data.walkPlaces),
     runtime = useRuntime(),
     [grace, setGrace] = useState(false),
-    [autoDenied, setAutoDenied] = useState(false);
+    [autoDenied, setAutoDenied] = useState(false),
+    [analyticsError, setAnalyticsError] = useState(false);
   return (
     <SettingsPage
       onBack={onBack}
@@ -45,6 +46,16 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
         </BottomSheet>
       }>
       <Heading title={c.privacyPermissions} />
+      <SettingsGroup>
+        <SettingsRow title="Usage analytics" subtitle="Help improve ExcerLock. Crash diagnostics remain enabled."
+          toggle={s.analyticsEnabled} onToggle={async (enabled) => {
+            useSettingsStore.getState().patch({ analyticsEnabled: enabled });
+            setAnalyticsError(false);
+            try { await runtime.analytics.setEnabled?.(enabled); }
+            catch { setAnalyticsError(true); }
+          }} />
+        {analyticsError ? <Label accessibilityRole="alert">Analytics preference saved. Restart ExcerLock to finish applying it.</Label> : null}
+      </SettingsGroup>
       <SettingsGroup title={c.permissions}>
         <View style={{ paddingHorizontal: t.space.lg }}>
           {(Object.keys(c.permissionNames) as (keyof Permissions)[]).map((name) => (

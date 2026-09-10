@@ -8,10 +8,11 @@ export type Settings = {
   stopGrace: number;
   gymAutoDetect: boolean;
   haptics: boolean;
+  analyticsEnabled: boolean;
 };
 export const settingsStore = createPersistedStore<Settings>(
   'settings',
-  { gymPlaces: [], units: defaultUnits, stopGrace: 30, gymAutoDetect: false, haptics: true },
+  { gymPlaces: [], units: defaultUnits, stopGrace: 30, gymAutoDetect: false, haptics: true, analyticsEnabled: true },
   {
     gymPlaces: v.array(
       v.shape({
@@ -27,5 +28,6 @@ export const settingsStore = createPersistedStore<Settings>(
     stopGrace: v.number(30, 300),
     gymAutoDetect: v.bool,
     haptics: v.bool,
+    analyticsEnabled: v.bool,
   },
 );
