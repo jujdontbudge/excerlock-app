@@ -1,75 +1,52 @@
-import type { RegionTransition } from "..";
-import type { GymVisit, GymVisitLog } from "../GymVisitLog";
-import {
-  GeofenceEventProcessor,
-  PRESENCE_CONFIRMATION_MS,
-} from "../GeofenceEventProcessor";
-
-describe("GeofenceEventProcessor", () => {
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  it("confirms an arrival after the fixed 30-second debounce", async () => {
-    jest.useFakeTimers();
-    const log = new RecordingGymVisitLog();
-    const presence: RegionTransition[] = [];
-    const confirmed: RegionTransition[] = [];
+import type { GymTransitionRecord, GymVisitLog } from '../GymVisitLog';
+import { GeofenceEventProcessor, PRESENCE_CONFIRMATION_MS } from '../GeofenceEventProcessor';
+import { readFileSync } from 'node:fs';
+describe('GeofenceEventProcessor', () => {
+  it('persists raw enter before notifying and never waits thirty seconds', async () => {
+    const order: string[] = [];
+    const log = new RecordingGymVisitLog(order);
     const processor = new GeofenceEventProcessor({
       log,
-      onPresence: (transition) => presence.push(transition),
-      onTransition: (transition) => confirmed.push(transition),
+      now: () => 1_005,
+      onPresence: () => order.push('presence'),
+      onTransition: () => order.push('transition'),
     });
-    const enter: RegionTransition = {
-      type: "enter",
-      regionId: "gym-a",
-      atMs: 1_000,
-    };
-
-    const processing = processor.process(enter);
-
+    await processor.process({ type: 'enter', regionId: 'gym-a', atMs: 1_000 });
     expect(PRESENCE_CONFIRMATION_MS).toBe(30_000);
-    expect(presence).toEqual([enter]);
-    expect(processor.isInside("gym-a")).toBe(true);
-    expect(confirmed).toEqual([]);
-    expect(log.visits).toEqual([]);
-
-    await jest.advanceTimersByTimeAsync(29_999);
-    expect(confirmed).toEqual([]);
-    expect(log.visits).toEqual([]);
-
-    await jest.advanceTimersByTimeAsync(1);
-    await processing;
-    expect(confirmed).toEqual([enter]);
-    expect(log.visits).toEqual([{ regionId: "gym-a", atMs: 1_000 }]);
+    expect(order).toEqual(['persist', 'presence']);
+    expect(log.records).toEqual([
+      { id: 'gym-a:enter:1000', regionId: 'gym-a', type: 'enter', atMs: 1_000, receivedAtMs: 1_005 },
+    ]);
+    expect(processor.isInside('gym-a')).toBe(true);
   });
-
-  it("rejects instead of hanging when the on-device visit log fails", async () => {
-    jest.useFakeTimers();
+  it('does not notify when durable persistence fails', async () => {
+    const notify = jest.fn();
     const processor = new GeofenceEventProcessor({
-      log: { append: async () => Promise.reject(new Error("storage failed")) },
-      onPresence: () => undefined,
-      onTransition: () => undefined,
+      log: {
+        append: async () => {
+          throw new Error('storage failed');
+        },
+        readAll: async () => [],
+      },
+      onPresence: notify,
+      onTransition: notify,
     });
-    const outcome = processor
-      .process({ type: "enter", regionId: "gym-a", atMs: 1_000 })
-      .then(
-        () => "resolved",
-        () => "rejected",
-      );
-
-    await jest.advanceTimersByTimeAsync(30_000);
-
-    await expect(
-      Promise.race([outcome, Promise.resolve("pending")]),
-    ).resolves.toBe("rejected");
+    await expect(processor.process({ type: 'exit', regionId: 'gym-a', atMs: 1_000 })).rejects.toThrow('storage failed');
+    expect(notify).not.toHaveBeenCalled();
   });
 });
-
+test('background geofence processor contains no timer-based dwell', () => {
+  const source = readFileSync(require.resolve('../GeofenceEventProcessor'), 'utf8');
+  expect(source).not.toMatch(/setTimeout|setInterval/);
+});
 class RecordingGymVisitLog implements GymVisitLog {
-  public readonly visits: GymVisit[] = [];
-
-  public async append(visit: GymVisit): Promise<void> {
-    this.visits.push(visit);
+  readonly records: GymTransitionRecord[] = [];
+  constructor(private readonly order: string[]) {}
+  async append(record: GymTransitionRecord): Promise<void> {
+    this.records.push(record);
+    this.order.push('persist');
+  }
+  async readAll(): Promise<readonly GymTransitionRecord[]> {
+    return this.records;
   }
 }
