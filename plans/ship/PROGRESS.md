@@ -714,3 +714,12 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   query, no-op only confirmed absence, serialized geofence mutations, propagate genuine errors with
   absent/present/failure/concurrency regressions. No catch-all or simulator-only runtime bypass.
   Root terminated diagnostic app and shut down owned simulator after evidence capture.
+
+- Reviewed production geofence fixc6753cfa, integrated as217647f1: live native task-registration
+  guard skips only false, serialized start/stop queue recovers after failure while returning real errors.
+  Added7 regressions including both concurrency directions and present→absent repeated stop.
+  Fresh integration acceptance:248 suites/1189 tests/13 snapshots PASS, app-next typecheck PASS;
+  node script regressions8/8 PASS (/tmp/ship-geofence-{full-tests,typecheck,script-tests}.log).
+  Universal iOS pitfall ledger committed2de1e8e. Corrected clean Release artifact/runtime verification
+  still pending; diagnostic instrumentation is NOT integrated. Build lane clean at217647f1; agent502
+  interrupted build orchestration, no live xcodebuild on root check; bounded build task resumed.
