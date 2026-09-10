@@ -6,3 +6,19 @@ test('returns explicit inability rather than broadening more than seven gaps',()
 test('uses local calendar across spring DST without fixed epoch weeks',()=>{const p=planScheduleWindows([rule('a',[0],60,180)],'2026-03-08T12:00:00Z','America/Chicago');expect(p.ok).toBe(true);if(p.ok){expect(new Date(p.windows[0].start).toISOString()).toBe('2026-03-08T07:00:00.000Z');expect(new Date(p.windows[0].end).toISOString()).toBe('2026-03-08T08:00:00.000Z')}});
 
 test.each([['spring','2026-03-08T12:00:00Z'],['fall','2026-11-01T12:00:00Z']])('partitions %s DST full-week coverage into seven daily rearm windows',(_label,now)=>{const all:Rule={...rule('all',[0],1,2),schedule:{days:[0,1,2,3,4,5,6],window:{kind:'allDay'}}};const p=planScheduleWindows([all],now,'America/Chicago');expect(p.ok&&p.windows).toHaveLength(7);if(p.ok)expect(p.windows.every((w,i)=>i===6||w.end===p.windows[i+1].start)).toBe(true)});
+
+const wall=(instant:number,timezone:string)=>new Intl.DateTimeFormat('en-CA',{timeZone:timezone,weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(instant));
+test.each([
+ ['America/Chicago','2026-03-08T12:00:00Z',150,240,'Sun 02:30','Sun 04:00'],
+ ['Australia/Adelaide','2026-10-04T12:00:00Z',150,240,'Sun 02:30','Sun 04:00'],
+ ['Australia/Lord_Howe','2026-10-04T12:00:00Z',135,180,'Sun 02:15','Sun 03:00'],
+] as const)('uses a converged weekly anchor preserving intended gap wall minutes in %s',(timezone,now,start,end,startWall,endWall)=>{
+ const p=planScheduleWindows([rule('gap',[0],start,end)],now,timezone);
+ expect(p.ok).toBe(true);
+ if(p.ok){expect(wall(p.windows[0].start,timezone)).toBe(startWall);expect(wall(p.windows[0].end,timezone)).toBe(endWall);expect(p.windows[0].end).toBeGreaterThan(p.windows[0].start);}
+});
+test('a collapsed current-week 02:30–03:00 range gets a valid same-wall recurring anchor',()=>{
+ const p=planScheduleWindows([rule('collapsed',[0],150,180)],'2026-03-08T12:00:00Z','America/Chicago');
+ expect(p.ok).toBe(true);
+ if(p.ok){expect(wall(p.windows[0].start,'America/Chicago')).toBe('Sun 02:30');expect(wall(p.windows[0].end,'America/Chicago')).toBe('Sun 03:00');expect(p.windows[0].end).toBeGreaterThan(p.windows[0].start);}
+});
