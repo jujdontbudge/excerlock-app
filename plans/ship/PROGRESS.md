@@ -873,3 +873,19 @@ before T06; UI has substantive changes underway; auth intentional callback owner
  6,378,864bytes informational. No auth-only refactor or unnecessary optimization applied.
 - Existing noAppReview/no public apprelease/no productionOTA boundary remains. Backend work is
   authorized by latest request but exact migration/secret/deploy sequence is coordinated under lock.
+
+### Current-scope lane handoff — fresh verification
+
+- Signing: ASC API authentication works, but the existing Chrome session freshly redirects the
+  Developer Portal identifiers page to Apple Sign In. Report App ID App Group association remains
+  unresolved; regenerating another profile before fixing it will not help. No build uploaded.
+- Device: paired iPhone Il is offline/unavailable, so Screen Time, exercise detection and sandbox
+  purchases remain unverified. Exact runnable acceptance handoff:
+  `/tmp/excerlock-device-preflight-20260910/README.md`. Simulator evidence is not device proof.
+- Backend Luna handoff: source `198d6327` (already integrated), 36 files / 197 tests, typecheck and
+  build passed. Live service remains stale. Remote lacks `POSTHOG_PERSONAL_API_KEY` and
+  `POSTHOG_PROJECT_ID`; confirmed target project is 537075 and erasure key needs person:write.
+  Required sequence after credential availability: verified backup, deploy, forward migrations,
+  restart, host-local/public health/readiness and subscription resync checks under operations lock.
+  No deployment attempted with known-invalid readiness configuration.
+- All three active acceptance gates remain INCOMPLETE, not passing. Follow-up tasks remain TODO.
