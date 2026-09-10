@@ -2,15 +2,20 @@ import { render, screen, userEvent } from '@testing-library/react-native';
 import { WalkingScreen } from '../WalkingScreen';
 import { createDraft } from '../draft';
 import { canContinue } from '../../../onboarding/validation';
-test('place and walking mode choices report draft actions', async () => {
+test('walking places persist as preferences and modes report draft actions', async () => {
   const onAction = jest.fn();
   const r = await render(<WalkingScreen step="W1" draft={createDraft('walking')} onAction={onAction} />);
-  await userEvent.press(screen.getByRole('radio', { name: 'Treadmill' }));
-  expect(onAction).toHaveBeenCalledWith({ type: 'setPlace', value: 'treadmill' });
+  await userEvent.press(screen.getByRole('checkbox', { name: 'Treadmill' }));
   await r.rerender(<WalkingScreen step="W2" draft={createDraft('walking')} onAction={onAction} />);
   await userEvent.press(screen.getByRole('radio', { name: 'Unlock while walking' }));
   expect(onAction).toHaveBeenCalledWith({ type: 'setWalkingMode', value: 'state' });
   expect(screen.queryByText('Apps open while you walk, close when you stop')).toBeNull();
+});
+test('walking minutes use their own bounded goal', async () => {
+  const onAction = jest.fn(), draft = { ...createDraft('walking'), walkingMode: 'minutes' as const };
+  await render(<WalkingScreen step="W3" draft={draft} onAction={onAction} />);
+  expect(screen.getByLabelText('Daily walking time')).toBeTruthy();
+  expect(canContinue('W3', { walkingMode: 'minutes', walkMinutes: 20 })).toBe(true);
 });
 test('step field keeps bounded steppers without duration helper copy', async () => {
   const onAction = jest.fn(),

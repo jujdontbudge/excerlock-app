@@ -25,7 +25,7 @@ export function SetupComplete({ activity }: { activity: Activity }) {
         ]}
         checked={[
           permissions.screenTime === 'granted',
-          apps.appCount + apps.categoryCount > 0,
+          !apps.isEmpty,
           ['granted', 'whenInUse', 'always'].includes(permissions[permission]),
           permissions.notifications === 'granted',
           session.kind === 'signedIn',

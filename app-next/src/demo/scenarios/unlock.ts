@@ -1,6 +1,6 @@
 import { base, makeRule } from './base';
 import { gymPlace } from '../places';
-const walk = makeRule('walk', { kind: 'state', activity: 'walking', place: 'treadmill' });
+const walk = makeRule('walk', { kind: 'state', activity: 'walking' });
 const gym = makeRule('gym', { kind: 'event', activity: 'gym', trigger: 'arrival' });
 export const unlockScenarios = [
   base('unlock-treadmill-scan', 'Unlock · treadmill scan', { rules: [walk], ruleDays: [], gait: 'walking' }),

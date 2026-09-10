@@ -6,8 +6,33 @@ import { PressableScale } from './PressableScale';
 import { controls } from '../content/controls';
 const order = [1, 2, 3, 4, 5, 6, 0];
 export function DayPicker({ days, onChange }: { days: number[]; onChange: (days: number[]) => void }) {
+  const shortcuts = [
+    { label: 'Every day', value: order },
+    { label: 'Weekdays', value: [1, 2, 3, 4, 5] },
+    { label: 'Weekend', value: [6, 0] },
+  ];
   return (
     <View style={{ gap: t.space.md }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: t.space.sm }}>
+        {shortcuts.map(({ label, value }) => (
+          <PressableScale
+            key={label}
+            label={label}
+            accessibilityRole="button"
+            onPress={() => onChange(value)}
+            style={{
+              minHeight: t.layout.touch,
+              justifyContent: 'center',
+              paddingHorizontal: t.space.lg,
+              borderRadius: t.radius.pill,
+              borderWidth: t.stroke.hairline,
+              borderColor: t.border.outline,
+              backgroundColor: t.surface.card,
+            }}>
+            <Label variant="support">{label}</Label>
+          </PressableScale>
+        ))}
+      </View>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         {order.map((d, i) => {
           const selected = days.includes(d);

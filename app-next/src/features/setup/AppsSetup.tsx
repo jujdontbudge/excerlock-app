@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import { Heading, Label, PrimaryButton, SecondaryButton } from '../../design-system';
+import { Heading, PrimaryButton, SecondaryButton } from '../../design-system';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { setupCopy as c } from '../../content/setup';
-import { pickerCopy } from '../../content/pickers';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
 export function AppsSetup({ onContinue }: { onContinue: () => void }) {
@@ -24,14 +23,11 @@ export function AppsSetup({ onContinue }: { onContinue: () => void }) {
     <>
       <Heading title={c.X2} support={c.appsBody} />
       <LivingIcon name="lock" />
-      <Reveal key={`${selection.appCount}-${selection.categoryCount}`}>
-        <Label>{pickerCopy.counts(selection.appCount, selection.categoryCount)}</Label>
-      </Reveal>
       <SecondaryButton label={c.chooseApps} disabled={busy} onPress={choose} />
       <View style={{ flexGrow: 1 }} />
       <PrimaryButton
         label={c.continue}
-        disabled={selection.appCount + selection.categoryCount === 0 || busy}
+        disabled={selection.isEmpty || busy}
         onPress={onContinue}
       />
       <SecondaryButton label={c.skip} variant="tertiary" disabled={busy} onPress={onContinue} />

@@ -5,6 +5,8 @@ import { walkingCopy as c } from '../../content/rules';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { RuleDraft, DraftAction } from './draft';
+import { profileStore as useProfileStore } from '../../state/profileStore';
+import { useOptionalRuntime } from '../../runtime/AppRuntimeProvider';
 export function WalkingScreen({
   step,
   draft: d,
@@ -16,7 +18,14 @@ export function WalkingScreen({
   draft: RuleDraft;
   onAction: (a: DraftAction) => void;
 }) {
-  const valid = Number.isFinite(d.stepGoal) && d.stepGoal >= 500 && d.stepGoal <= 30000 && d.stepGoal % 500 === 0;
+  const walkPlaces = useProfileStore((s) => s.data.walkPlaces);
+  const runtime = useOptionalRuntime();
+  const minutes = d.walkingMode === 'minutes';
+  const value = minutes ? d.walkMinutes : d.stepGoal;
+  const valid = Number.isFinite(value) && (minutes
+    ? Number.isInteger(value) && value >= 5 && value <= 180
+    : value >= 500 && value <= 30000 && value % 500 === 0);
+  const change = (next: number) => onAction({ type: minutes ? 'setWalkMinutes' : 'setStepGoal', value: next });
   return (
     <>
       {!contentOnly ? (
@@ -33,10 +42,18 @@ export function WalkingScreen({
             <Reveal key={p.id} index={index + 1}>
               <ChoiceRow
                 title={p.title}
-
-                selected={d.place === p.id}
+                multiple
+                selected={walkPlaces.includes(p.id as 'outside' | 'treadmill')}
                 compact
-                onPress={() => onAction({ type: 'setPlace', value: p.id })}
+                onPress={() => {
+                  const place = p.id as 'outside' | 'treadmill';
+                  const next = walkPlaces.includes(place)
+                    ? walkPlaces.filter((value) => value !== place)
+                    : [...walkPlaces, place];
+                  if (next.length === 0) return;
+                  useProfileStore.getState().patch({ walkPlaces: next });
+                  runtime?.analytics.track('walk_places_updated', { walk_places: next });
+                }}
               />
             </Reveal>
           ))
@@ -57,28 +74,28 @@ export function WalkingScreen({
       {step === 'W3' ? (
         <Reveal index={1} style={{ gap: t.space.lg }}>
           <NumberField
-            label={c.goal}
-            step={500}
-            min={500}
-            max={30000}
-            value={Number.isNaN(d.stepGoal) ? '' : String(d.stepGoal)}
-            unit={c.unit}
-            onChange={(value) => onAction({ type: 'setStepGoal', value: value.trim() ? Number(value) : NaN })}
-            error={valid ? undefined : c.range}
+            label={minutes ? c.minutesGoal : c.goal}
+            step={minutes ? 5 : 500}
+            min={minutes ? 5 : 500}
+            max={minutes ? 180 : 30000}
+            value={Number.isNaN(value) ? '' : String(value)}
+            unit={minutes ? c.minutesUnit : c.unit}
+            onChange={(text) => change(text.trim() ? Number(text) : NaN)}
+            error={valid ? undefined : minutes ? c.minutesRange : c.range}
           />
           <View style={{ flexDirection: 'row', gap: t.space.md }}>
             <View style={{ flex: 1 }}>
               <SecondaryButton
                 label={c.remove}
-                disabled={!valid || d.stepGoal <= 500}
-                onPress={() => onAction({ type: 'setStepGoal', value: d.stepGoal - 500 })}
+                disabled={!valid || value <= (minutes ? 5 : 500)}
+                onPress={() => change(value - (minutes ? 5 : 500))}
               />
             </View>
             <View style={{ flex: 1 }}>
               <SecondaryButton
                 label={c.add}
-                disabled={!valid || d.stepGoal >= 30000}
-                onPress={() => onAction({ type: 'setStepGoal', value: d.stepGoal + 500 })}
+                disabled={!valid || value >= (minutes ? 180 : 30000)}
+                onPress={() => change(value + (minutes ? 5 : 500))}
               />
             </View>
           </View>

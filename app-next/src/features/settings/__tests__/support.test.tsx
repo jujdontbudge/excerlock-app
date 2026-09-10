@@ -24,6 +24,7 @@ test('bug report blocks empty submissions, shows busy and then success through i
   expect(screen.getByRole('button', { name: 'Send report' })).toBeDisabled();
   expect(screen.getByText(/iOS/)).toBeTruthy();
   expect(screen.getByText(/ExcerLock 1.0.0/)).toBeTruthy();
+  await fireEvent.changeText(screen.getByLabelText('Reply email'), 'alex@example.com');
   await fireEvent.changeText(screen.getByLabelText('Describe the issue'), 'The lock never lifts');
   await userEvent.press(screen.getByRole('button', { name: 'Send report' }));
   expect(screen.getByRole('button', { name: 'Sending…' })).toBeTruthy();
@@ -42,6 +43,7 @@ test('feedback submits through the fake port and shows success', async () => {
     </AppRuntimeProvider>,
   );
   expect(screen.getByRole('button', { name: 'Submit feedback' })).toBeDisabled();
+  await fireEvent.changeText(screen.getByLabelText('Reply email'), 'alex@example.com');
   await fireEvent.changeText(screen.getByLabelText('Your feedback'), 'A useful idea');
   await userEvent.press(screen.getByRole('button', { name: 'Submit feedback' }));
   expect(screen.getByRole('button', { name: 'Sending…' })).toBeTruthy();
@@ -55,6 +57,7 @@ test('mail delivery shows the handoff title', async () => {
   const runtime = createRuntime();
   runtime.support.send = jest.fn().mockResolvedValue({ via: 'mail' });
   await renderBug(runtime);
+  await fireEvent.changeText(screen.getByLabelText('Reply email'), 'alex@example.com');
   await fireEvent.changeText(screen.getByLabelText('Describe the issue'), 'Please look at this');
   await userEvent.press(screen.getByRole('button', { name: 'Send report' }));
   expect(await screen.findByRole('header', { name: 'Finish sending in Mail' })).toBeTruthy();
@@ -64,6 +67,7 @@ test('failed send shows the support address and keeps the typed text', async () 
   const runtime = createRuntime();
   runtime.support.send = jest.fn().mockRejectedValue(new Error('offline'));
   await renderBug(runtime);
+  await fireEvent.changeText(screen.getByLabelText('Reply email'), 'alex@example.com');
   await fireEvent.changeText(screen.getByLabelText('Describe the issue'), 'Cannot send');
   await userEvent.press(screen.getByRole('button', { name: 'Send report' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(new RegExp(supportEmail));

@@ -22,7 +22,7 @@ test('met morning condition opens an unmet evening condition until the earliest 
   ).toEqual({ state: 'unlockedMet', byRuleId: rule.id, relockAt: '2026-09-08T09:00:00.000Z' });
 });
 test('a live walking lease wins over a met target; grace remains live; expired and paused do not', () => {
-  const walking: Rule = { ...rule, id: 'state', mode: { kind: 'state', activity: 'walking', place: 'either' } };
+  const walking: Rule = { ...rule, id: 'state', mode: { kind: 'state', activity: 'walking' } };
   const met = { ruleId: 'walk', day: '2026-09-07', progress: 5000, met: true, metAt: now };
   const walkingSession = {
     ruleId: 'state',
@@ -89,7 +89,7 @@ test('seeded rule sets preserve precedence and future relock invariants', () => 
       ...rule,
       id: String(j),
       enabled: random() > 0.3,
-      mode: j === 0 ? { kind: 'state', activity: 'walking', place: 'either' } : rule.mode,
+      mode: j === 0 ? { kind: 'state', activity: 'walking' } : rule.mode,
     }));
     const ruleDays = rules
       .slice(1)

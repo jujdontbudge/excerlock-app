@@ -22,8 +22,7 @@ export const signedIn = shape({
 export const units = oneOf(['km', 'mi']);
 export const lockedApps = shape({
   handle: nullable(shape({ token: text })),
-  appCount: number(),
-  categoryCount: number(),
+  isEmpty: bool,
 });
 export const ruleDay = shape({
   ruleId: text,

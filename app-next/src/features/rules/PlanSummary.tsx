@@ -21,9 +21,6 @@ export function PlanSummary({
   const rule = toRule(draft, schedule);
   const rows = [
     { label: c.activity, value: ruleName(rule), edit: c.editGoal, step: goalStep(draft) },
-    ...(draft.activity === 'walking'
-      ? [{ label: c.place, value: c.places[draft.place], edit: c.editPlace, step: 'W1' }]
-      : []),
     { label: c.schedule, value: scheduleLabel(schedule), edit: c.editSchedule, step: 'S1' },
   ];
   return (

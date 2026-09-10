@@ -24,12 +24,6 @@ export function FakeAppPicker({
       onDismiss={() => onResolve(false)}
       footer={<PrimaryButton label={c.done} onPress={() => onResolve(finishSelection(selected))} />}>
       <TextField label={c.search} value={query} onChangeText={setQuery} />
-      <Label tone="secondary">
-        {c.counts(
-          selected.filter((x) => x.startsWith('app-')).length,
-          selected.filter((x) => x.startsWith('category-')).length,
-        )}
-      </Label>
       {(['category', 'app'] as const).map((kind) => (
         <View key={kind} style={{ gap: t.space.md }}>
           <Label variant="section">{kind === 'app' ? c.apps : c.categories}</Label>

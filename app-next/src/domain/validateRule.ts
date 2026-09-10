@@ -17,7 +17,6 @@ export function validateRule(value: unknown): RuleIssue[] {
   if (!record(m) || m.activity !== value.activity || !['walking', 'gym'].includes(String(m.activity)))
     issues.push('mode');
   else {
-    if (m.activity === 'walking' && !['outside', 'treadmill', 'either'].includes(String(m.place))) issues.push('mode');
     if (m.kind === 'state') {
       if (m.activity !== 'walking') issues.push('mode');
     } else if (m.kind === 'event') {
@@ -26,6 +25,8 @@ export function validateRule(value: unknown): RuleIssue[] {
       if (m.activity === 'walking' && m.metric === 'steps') {
         if (finite(m.goal) && m.goal % 500 !== 0) issues.push('goal');
         if (!finite(m.goal) || m.goal < 500 || m.goal > 30000) issues.push('goal');
+      } else if (m.activity === 'walking' && m.metric === 'minutes') {
+        if (!finite(m.goal) || m.goal < 5 || m.goal > 180 || !Number.isInteger(m.goal)) issues.push('goal');
       } else if (m.activity === 'gym' && m.metric === 'minutes') {
         if (!finite(m.goal) || m.goal < 10 || m.goal > 180) issues.push('goal');
       } else issues.push('mode');

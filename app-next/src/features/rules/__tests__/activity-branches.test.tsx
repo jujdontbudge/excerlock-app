@@ -46,7 +46,7 @@ test.each(gymPaths)(
 );
 const walkingPaths = [
   ['W1', 'Outside', 'How should walking unlock your apps?'],
-  ['W2', 'Reach a step goal', 'Set your walking goal'],
+  ['W2', 'Reach a step goal (Recommended)', 'Set your walking goal'],
 ] as const;
 test.each(walkingPaths)(
   'walking through %s / %s reaches the correct goal and a valid rule',
@@ -91,7 +91,7 @@ test('canceling an invalid step-goal edit restores the valid summary', async () 
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
   onboardingStore.getState().patch({
-    answers: { activity: 'walking', walkPlace: 'outside', walkingMode: 'target', stepGoal: '5000' },
+    answers: { activity: 'walking', walkPlace: 'outside', walkingMode: 'steps', stepGoal: '5000' },
   });
   const r = renderRouter(
     {
@@ -116,7 +116,7 @@ test('a retained summary route does not validate the active route’s incomplete
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
   onboardingStore.getState().patch({
-    answers: { activity: 'walking', walkPlace: 'outside', walkingMode: 'target', stepGoal: '5000' },
+    answers: { activity: 'walking', walkPlace: 'outside', walkingMode: 'steps', stepGoal: '5000' },
   });
   const r = renderRouter(
     {

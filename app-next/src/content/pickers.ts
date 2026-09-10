@@ -16,8 +16,6 @@ export const pickerCopy = {
     { id: 'app-e', title: 'App E', kind: 'app' },
     { id: 'app-f', title: 'App F', kind: 'app' },
   ],
-  counts: (apps: number, categories: number) =>
-    `${apps} ${apps === 1 ? 'app' : 'apps'} · ${categories} ${categories === 1 ? 'category' : 'categories'}`,
   noResults: 'No matches. Try a different search.',
   gymTitle: 'Choose your gym',
   gymSearch: 'Search for a gym',

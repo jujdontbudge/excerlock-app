@@ -8,7 +8,7 @@ test('progress latches met and its original instant; state rules never become me
   expect(applyProgress(rule, row, -20, '2026-09-07T10:00:00Z')).toEqual(row);
   expect(
     applyProgress(
-      { ...rule, mode: { kind: 'state', activity: 'walking', place: 'either' } },
+      { ...rule, mode: { kind: 'state', activity: 'walking' } },
       row,
       9000,
       '2026-09-07T10:00:00Z',

@@ -16,28 +16,14 @@ export function progressContent(
   if (m.kind === 'state') {
     const mine = session?.ruleId === rule.id && session.phase !== 'ended' ? session : null;
     const live = !!mine && ['walking', 'grace'].includes(mine.phase) && Date.parse(mine.leaseUntil) > Date.parse(now);
-    const state = mine?.phase === 'verifying' ? 'verifying' : live ? mine!.phase : 'idle';
+    const state = live ? mine!.phase : 'idle';
     return {
       title,
       icon: rule.activity,
       value: live ? 1 : 0,
-      detail:
-        state === 'verifying'
-          ? c.checkingPace
-          : state === 'walking'
-            ? c.walkingLive
-            : state === 'grace'
-              ? c.keepWalking
-              : c.walkReady,
+      detail: permissions.motion === 'denied' ? c.walkReadyDenied : c.walkReady,
       action: 'walk',
-      label:
-        state === 'verifying'
-          ? c.detectingWalk
-          : state === 'walking'
-            ? c.walkDetected
-            : state === 'grace'
-              ? c.keepWalking
-              : c.walkingEntry,
+      label: state === 'walking' || state === 'grace' ? c.walkDetected : c.walkingEntry,
       state,
     } as const;
   }

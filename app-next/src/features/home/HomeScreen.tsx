@@ -1,4 +1,3 @@
-import { HomeSheets } from '../sessions/HomeSheets';
 import { HomeLockStatus } from './HomeLockStatus';
 import { ProgressBar } from '../../design-system/ProgressBar';
 import { scheduleLabel } from '../../domain/scheduleLabel';
@@ -30,6 +29,7 @@ import { homeCopy as c } from '../../content/home';
 import { Reveal } from '../../motion/Reveal';
 import { unlockKind } from '../unlock/entry';
 import { UnlockEntry } from '../unlock/UnlockEntry';
+import { feedback } from '../../motion/haptics';
 export function HomeScreen() {
   useDemoProgress();
   const runtime = useRuntime(),
@@ -53,7 +53,7 @@ export function HomeScreen() {
       timezone: runtime.clock.timezone(),
     }),
     glyph = useUnlockMoment(status.state);
-  const [sheet, setSheet] = useState<{ type: 'walk' | 'checkin'; ruleId: string } | null>(null);
+  const [walkChecks, setWalkChecks] = useState<Record<string, 'idle' | 'detected' | 'missed'>>({});
   const chooseApps = () => void runtime.screenTime.presentAppPicker();
   const add = () => router.push('/builder');
   const action = () => {
@@ -81,27 +81,29 @@ export function HomeScreen() {
         ? atGym.confirmedAt
           ? { label: c.presentGym, tone: 'success' }
           : { label: c.confirmingGym, tone: 'primary' }
-        : walk === 'walking'
+        : walk === 'walking' || walk === 'grace'
           ? { label: c.walkDetected, tone: 'success' }
-          : walk === 'verifying'
-            ? { label: c.detectingWalk, tone: 'primary' }
-            : walk === 'grace'
-              ? { label: c.keepWalking, tone: 'primary' }
               : { label: active ? c.inProgress : c.scheduled, tone: 'primary' };
     const detected = status.tone === 'success';
     const onAction = () => {
       if (kind) router.push({ pathname: `/unlock/${kind}`, params: { ruleId: rule.id } });
-      else if ('action' in model && model.action) setSheet({ type: model.action, ruleId: rule.id });
     };
     const onWalk = async () => {
-      if (walk === 'idle') {
-        try {
-          await runtime.walking.start(rule);
-        } catch {
-          return;
+      let observed = false;
+      const unsubscribe = runtime.walking.observeWalking((walking) => {
+        observed ||= walking;
+      });
+      setTimeout(async () => {
+        unsubscribe();
+        if (observed) {
+          await runtime.walking.start(rule).catch(() => undefined);
+          feedback('success');
+          setWalkChecks((checks) => ({ ...checks, [rule.id]: 'detected' }));
+        } else {
+          feedback('error');
+          setWalkChecks((checks) => ({ ...checks, [rule.id]: 'missed' }));
         }
-      }
-      setSheet({ type: 'walk', ruleId: rule.id });
+      }, 3000);
     };
     return (
       <View key={rule.id} testID={`home-condition-${rule.id}`} style={{
@@ -120,14 +122,19 @@ export function HomeScreen() {
           <Label variant="support" style={{ color: detected ? t.state.success : t.text.primary, fontWeight: detected ? '600' : '400' }}>
             {status.label}
           </Label>
-          <Label variant="support" tone="secondary">{`${Math.round(Math.max(0, Math.min(1, model.value)) * 100)}%`}</Label>
+          {rule.mode.kind === 'state' ? null : <Label variant="support" tone="secondary">{`${Math.round(Math.max(0, Math.min(1, model.value)) * 100)}%`}</Label>}
         </View>
         <Label variant="label">{model.detail}</Label>
-        <ProgressBar value={Math.max(0, Math.min(1, model.value))} label={model.title} tone={detected ? 'success' : 'brand'} />
+        {rule.mode.kind === 'state' ? null : <ProgressBar value={Math.max(0, Math.min(1, model.value))} label={model.title} tone={detected ? 'success' : 'brand'} />}
         {row.met ? null : rule.mode.kind === 'state' ? (
           <>
-            <UnlockEntry kind="walking" label={'label' in model && model.label ? model.label : c.walkingEntry} onPress={() => void onWalk()} inverted />
-            {kind === 'treadmill' && walk === 'idle' ? <UnlockEntry kind="treadmill" label={c.treadmillEntry} onPress={onAction} /> : null}
+            <UnlockEntry
+              kind="walking"
+              label={walkChecks[rule.id] === 'detected' ? c.walkDetected : walkChecks[rule.id] === 'missed' ? c.walkNotDetected : c.walkingEntry}
+              onPress={() => void onWalk()}
+              inverted
+            />
+            {walk === 'idle' ? <UnlockEntry kind="treadmill" label={c.treadmillEntry} onPress={() => router.push({ pathname: '/unlock/treadmill', params: { ruleId: rule.id } })} /> : null}
           </>
         ) : kind === 'gym' ? (
           <UnlockEntry
@@ -147,17 +154,7 @@ export function HomeScreen() {
       orangeBackground
       safeBottom={false}
       scrollUnderStatusBar={false}
-      overlay={
-        <HomeSheets
-          sheet={sheet}
-          rules={rules}
-          onDismiss={() => setSheet(null)}
-          onChooseGym={() => {
-            setSheet(null);
-            router.push('/settings/gyms');
-          }}
-        />
-      }>
+      >
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: t.space.md }}>
         <View style={{ flex: 1, gap: t.space.xs }}>
           <Label variant="question" accessibilityRole="header">
@@ -169,6 +166,11 @@ export function HomeScreen() {
       <Animated.View style={glyph}>
         <HomeLockStatus unlocked={status.unlocked} subtitle={status.unlocked ? `${status.title}. ${status.subtitle}` : 'Complete a condition to unlock'} />
       </Animated.View>
+      {status.state === 'allPaused' ? (
+        <Label accessibilityRole="header" variant="section">
+          {c.paused}
+        </Label>
+      ) : null}
       {actionLabel ? <SecondaryButton label={actionLabel} onPress={action} /> : null}
       <View style={{ gap: t.space.md }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -185,7 +187,13 @@ export function HomeScreen() {
             borderWidth: t.stroke.hairline,
             borderColor: t.border.outline,
           }}>
-          <SettingsRow title={c.lockedApps} icon="lock" iconTint={t.brand.primary} onPress={chooseApps} />
+          <SettingsRow
+            title={c.lockedApps}
+            subtitle={lockedApps.isEmpty ? c.noApps : undefined}
+            icon="lock"
+            iconTint={t.brand.primary}
+            onPress={chooseApps}
+          />
         </View>
       </Reveal>
       <View style={{ gap: t.space.lg }}>
@@ -202,15 +210,6 @@ export function HomeScreen() {
             iconTint={t.brand.primary}
             onPress={() => router.navigate('/analytics')}
           />
-        </View>
-        <View
-          style={{
-            backgroundColor: t.surface.card,
-            borderRadius: t.radius.pill,
-            borderWidth: t.stroke.hairline,
-            borderColor: t.border.outline,
-          }}>
-          <SettingsRow title={c.history} icon="clock" iconTint={t.brand.primary} />
         </View>
         {!progress.length ? <SecondaryButton label={c.add} onPress={add} /> : null}
       </View>

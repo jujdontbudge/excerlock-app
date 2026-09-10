@@ -9,9 +9,9 @@ export function draftFromAnswers(a: Answers, base?: RuleDraft): RuleDraft {
     ...d,
     id: String(a.ruleId ?? d.id),
     createdAt: String(a.ruleCreatedAt ?? d.createdAt),
-    place: (a.walkPlace ?? 'outside') as RuleDraft['place'],
-    walkingMode: a.walkingMode === 'state' ? 'state' : 'target',
+    walkingMode: ['minutes', 'state'].includes(String(a.walkingMode)) ? a.walkingMode as 'minutes' | 'state' : 'steps',
     stepGoal: number(a.stepGoal, 5000),
+    walkMinutes: number(a.walkMinutes, 20),
     gymMode: a.gymMode === 'arrival' ? 'arrival' : 'time',
     gymMinutes: number(a.gymMinutes, 30),
   };

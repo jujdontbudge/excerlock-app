@@ -35,7 +35,7 @@ async function mount(id?: string) {
   return runtime;
 }
 test.each([
-  ['Walking', 'Reach a step goal', 2],
+  ['Walking', 'Reach a step goal (Recommended)', 2],
   ['Walking', 'Unlock while walking', 0],
   ['Gym', 'Spend time at the gym', 1],
   ['Gym', 'Arrive at the gym', 0],

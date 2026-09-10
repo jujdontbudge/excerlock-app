@@ -17,7 +17,7 @@ const answers = {
   mainReason: 'focus',
   estimatedDailyMinutes: 180,
   activity: 'walking',
-  walkingMode: 'target',
+  walkingMode: 'steps',
 };
 const routes = {
   _layout: () => (

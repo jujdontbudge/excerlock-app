@@ -28,7 +28,7 @@ const validRuleRow = (row: unknown): row is Rule => validateRule(row).length ===
 export type RulesData = { rules: Rule[]; lockedApps: LockedApps; migrationNote: string | null };
 export const rulesStore = createPersistedStore<RulesData>(
   'rules',
-  { rules: [], lockedApps: { handle: null, appCount: 0, categoryCount: 0 }, migrationNote: null },
+  { rules: [], lockedApps: { handle: null, isEmpty: true }, migrationNote: null },
   {
     rules: (value): value is Rule[] => Array.isArray(value),
     lockedApps: v.lockedApps,

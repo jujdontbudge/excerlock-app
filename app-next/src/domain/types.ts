@@ -12,12 +12,10 @@ export type Rule = {
 };
 
 export type RuleMode =
-  | { kind: 'target'; activity: 'walking'; metric: 'steps'; goal: number; place: WalkPlace }
-  | { kind: 'state'; activity: 'walking'; place: WalkPlace }
+  | { kind: 'target'; activity: 'walking'; metric: 'steps' | 'minutes'; goal: number }
+  | { kind: 'state'; activity: 'walking' }
   | { kind: 'event'; activity: 'gym'; trigger: 'arrival' }
   | { kind: 'target'; activity: 'gym'; metric: 'minutes'; goal: number };
-
-export type WalkPlace = 'outside' | 'treadmill' | 'either';
 
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Sunday, JS convention
 
@@ -31,8 +29,7 @@ export type Schedule = {
 
 export type LockedApps = {
   handle: OpaqueSelectionHandle | null; // never contains app names or bundle ids
-  appCount: number;
-  categoryCount: number;
+  isEmpty: boolean; // the only UI-visible selection metadata
 };
 
 export type DayKey = string; // 'YYYY-MM-DD' in local time
@@ -68,6 +65,7 @@ export type Profile = {
   mainReason: string; // option id from the motivation screen
   estimatedDailyMinutes: number; // from the scrolling-hours screen; permanent
   units: 'km' | 'mi'; // default from device locale; editable in Settings
+  walkPlaces: Array<'treadmill' | 'outside'>; // preference/analytics only; never enforcement policy
 };
 
 export type Entitlement = {
