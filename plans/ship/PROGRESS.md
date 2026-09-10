@@ -706,3 +706,11 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   avoidable remaining non-platform family (~0.913MB source text, NOT Hermes attribution), but ~60
   imports and substantial motion/gesture parity requirements mean removal is not a safe small change
   or evidence of closing2.372MB HBC deficit. No animation refactor or gate relaxation adopted.
+
+- Fine diagnostic launch PID31940 causally isolated remaining startup rejection: ruleDays/history
+  persistence retries finish, then stopRegions begins and rejects ERR_UNEXPECTED before return.
+  Evidence /tmp/ship-diagnostic-fine-unified.log. Installed Expo Location unconditionally unregisters
+  the geofence task; TaskService throws when absent. Production fix assigned: live native registration
+  query, no-op only confirmed absence, serialized geofence mutations, propagate genuine errors with
+  absent/present/failure/concurrency regressions. No catch-all or simulator-only runtime bypass.
+  Root terminated diagnostic app and shut down owned simulator after evidence capture.
