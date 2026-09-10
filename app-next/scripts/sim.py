@@ -1,7 +1,11 @@
 """Headless accessibility-driven simulator helpers. One explicitly owned device."""
-import contextlib, json, signal, subprocess, time
+import contextlib, json, os, signal, subprocess, time, uuid
 from pathlib import Path
-SIM = 'B68873CD-B6ED-4961-85AF-0C807E657999'
+SIM = os.environ.get('EXCERLOCK_SIM_UDID', '')
+try:
+ uuid.UUID(SIM)
+except ValueError as error:
+ raise RuntimeError('Set EXCERLOCK_SIM_UDID to the explicitly owned simulator UUID; no default device is safe.') from error
 ROOT = Path(__file__).resolve().parents[1]
 def run(*args):
  return subprocess.run([str(a) for a in args], check=True, capture_output=True, text=True).stdout
