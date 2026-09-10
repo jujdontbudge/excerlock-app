@@ -1,6 +1,10 @@
 # Ship acceptance status — 2026-09-10
 
-**Not release-ready.** This index distinguishes current `plans/ship/` gates from older rebuild evidence.
+**Not submission-ready.**
+
+Current user-authorized endpoint: submission-ready only; TestFlight is allowed. App Review submission,
+public release, and production OTA publication are prohibited. Historical public-store/OTA execution
+requirements remain in the original plans for reference but are not completion gates for this revised goal. This index distinguishes current `plans/ship/` gates from older rebuild evidence.
 Existing `T13`, `T14`, `T15` and `T16` folders include historical task numbering, fake-runtime previews,
 and Debug recordings. Their filenames and passing tests do not certify the corresponding Ship tasks.
 Preserve those artifacts as historical evidence; never substitute them for current release acceptance.
@@ -32,8 +36,9 @@ Preserve those artifacts as historical evidence; never substitute them for curre
   7,881,912 bytes: FAIL against the strict decimal4,000,000-byte gate. A disposable single-core Sentry
   dependency experiment measured6,357,304 bytes without experimental optimization and5,947,932 bytes
   with command-only tree shaking. Both still FAIL; neither synthetic export proves native runtime acceptance.
-- **T16:** No upload, TestFlight install, App Review submission, public release, or production OTA.
-  Store approval/public-install OTA proof requires external state and real-device observation.
+- **T16 (revised scope):** No uploaded candidate or verified TestFlight install yet. Stop at verified
+  submission readiness; do not execute App Review submission, public release, or production OTA.
+  Device correctness and TestFlight checks are still open, not replaced by server/test evidence.
 
 ## Source and ownership
 

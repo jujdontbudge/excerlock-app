@@ -637,3 +637,10 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   Recovi/Edge and must not be used. Correct org/project identity is now known, but client ingestion-key
   association, person:write credential, production configuration and real erasure remain unverified.
   No credential created, permission changed, key copied or server configuration mutated.
+
+- Integrated approved minimal Clerk lock patch73161161 as04dda811. Exact two registry entries only,
+  clean ci retained lock hash, all204 legacy suites/1035 tests and241 app-next suites/1160 tests pass.
+  Direct Clerk high cleared; audit41 findings now40moderate/1high (remaining high build-only xmldom).
+  Sentry topology unchanged. No dependency override, wallet upgrade, or remote mutation.
+- Updated dated status index to revised submission-ready endpoint; public review/release/production
+  OTA actions explicitly prohibited and removed as completion gates, not silently executed.
