@@ -315,6 +315,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             ) {
               void client.notifications.scheduleOpenToUnlock().catch(options.reportError);
             }
+            const oldArchive = historyStore.getState().data;
             const measuredHistory = projectMeasuredHistory(
               stepsByDay,
               detected.gym.intervals,
@@ -323,8 +324,8 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               rows,
               clock.timezone(),
               new Date(now).toISOString(),
+              new Set(oldArchive.days.map((row) => row.day)),
             );
-            const oldArchive = historyStore.getState().data;
             const archive = sealDays(
               oldArchive,
               measuredHistory,

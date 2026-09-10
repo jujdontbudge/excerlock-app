@@ -15,6 +15,7 @@ export function projectMeasuredHistory(
   ruleDays: readonly RuleDay[],
   timezone: string,
   now: string,
+  sealedDays: ReadonlySet<string> = new Set(),
 ): HistoryDay[] {
   const today = dayKey(now, timezone);
   const gym = measuredGymMinutesByDay(gymIntervals, configuredRegionIds, timezone, now);
@@ -26,6 +27,7 @@ export function projectMeasuredHistory(
   const first = earliest < cutoff ? cutoff : earliest;
   const result: HistoryDay[] = [];
   for (let day = first; day <= today; day = addDays(day, 1)) {
+    if (sealedDays.has(day)) continue;
     const scheduled = rules.filter(
       (rule) =>
         rule.enabled &&

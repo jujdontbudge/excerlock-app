@@ -44,7 +44,7 @@ export function createClientServices(options: {
   let exportOrigin: ReturnType<typeof identity.auth.identity> | null = null;
   const exporter = createNativeJsonExport(() => {
     const live = identity.auth.identity();
-    return !disposed && exportOrigin !== null && live.generation === exportOrigin.generation && live.userId === exportOrigin.userId;
+    return !disposed && exportOrigin !== null && live.kind !== 'deleting' && live.kind === exportOrigin.kind && live.generation === exportOrigin.generation && live.userId === exportOrigin.userId;
   });
   const notifications = createNativeNotifications(() => !disposed, () => identity.auth.identity().generation);
   const dataExport = createAccountBoundExport(
