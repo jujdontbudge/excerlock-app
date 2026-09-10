@@ -9,7 +9,7 @@ function setup() {
     getItem: jest.fn(async () => raw),
     setItem: jest.fn(async (_key: string, value: string) => { raw = value; }),
   };
-  return { storage, ledger: new WalkingDurationLedger(storage), restart: () => new WalkingDurationLedger(storage) };
+  return { storage, ledger: new WalkingDurationLedger(storage), restart: () => new WalkingDurationLedger(storage), setRaw: (value: unknown) => { raw = JSON.stringify(value); } };
 }
 const sample = (at: number, verified = true, generation = 1, timezone = 'UTC') => ({ at, verified, generation, timezone });
 
@@ -19,6 +19,9 @@ test('credits only adjacent verified observations and caps an unobserved gap at 
   await ledger.observe(sample(4_000));
   await ledger.observe(sample(20_000));
   expect((await ledger.read()).millisecondsByDay['1970-01-01']).toBe(8_000);
+  expect((await ledger.read()).segments).toEqual([
+    { from: 1_000, to: 9_000, day: '1970-01-01', timezone: 'UTC' },
+  ]);
 });
 
 test('grace, unknown and handoff-equivalent unverified samples close rather than credit intervals', async () => {
@@ -50,11 +53,15 @@ test('one union verdict cannot double-credit overlapping walking and propped evi
 
 test('splits by original timezone local midnight and retains replay intents', async () => {
   const { ledger } = setup();
-  const midnight = Date.parse('2026-09-11T05:00:00Z'); // Chicago midnight (CDT)
+  const midnight = Date.parse('2026-03-08T06:00:00Z'); // Chicago midnight on spring DST transition day
   await ledger.observe(sample(midnight - 2_000, true, 1, 'America/Chicago'));
   const state = await ledger.observe(sample(midnight + 2_000, true, 1, 'America/Chicago'));
-  expect(state.millisecondsByDay).toEqual({ '2026-09-10': 2_000, '2026-09-11': 2_000 });
+  expect(state.millisecondsByDay).toEqual({ '2026-03-07': 2_000, '2026-03-08': 2_000 });
   expect(state.pending).toHaveLength(2);
+  expect(state.segments).toEqual([
+    { from: midnight - 2_000, to: midnight, day: '2026-03-07', timezone: 'America/Chicago' },
+    { from: midnight, to: midnight + 2_000, day: '2026-03-08', timezone: 'America/Chicago' },
+  ]);
 });
 
 test('atomic failure replays without double credit after restart and acknowledgement is idempotent', async () => {
@@ -67,7 +74,9 @@ test('atomic failure replays without double credit after restart and acknowledge
   const again = await restart().observe(sample(1_000));
   expect(again.millisecondsByDay['1970-01-01']).toBe(1_000);
   await restart().acknowledge(replayed.pending.map((p) => p.idempotencyKey), 1);
-  expect((await restart().read()).pending).toEqual([]);
+  const acknowledged = await restart().read();
+  expect(acknowledged.pending).toEqual([]);
+  expect(acknowledged.segments).toEqual([{ from: 0, to: 1_000, day: '1970-01-01', timezone: 'UTC' }]);
 });
 
 test('generation change erases authority and fences stale callbacks; reset supports deletion', async () => {
@@ -77,7 +86,7 @@ test('generation change erases authority and fences stale callbacks; reset suppo
   expect((await ledger.observe(sample(2_000, true, 2))).millisecondsByDay).toEqual({});
   await expect(ledger.observe(sample(3_000, true, 1))).rejects.toThrow('Obsolete');
   await ledger.reset();
-  expect(await ledger.read()).toMatchObject({ generation: null, cursor: null, millisecondsByDay: {}, pending: [] });
+  expect(await ledger.read()).toMatchObject({ generation: null, cursor: null, millisecondsByDay: {}, pending: [], segments: [] });
 });
 test('post-seal pruning preserves generation, cursor and pending replay intents', async () => {
   const { ledger } = setup();
@@ -89,5 +98,33 @@ test('post-seal pruning preserves generation, cursor and pending replay intents'
   expect(pruned.pending).toEqual(credited.pending);
   expect(pruned.millisecondsByDay['1970-01-01']).toBe(1_000);
   await ledger.acknowledge(pruned.pending.map(({ idempotencyKey }) => idempotencyKey), 1);
-  expect((await ledger.pruneBeforeDay('1970-01-02')).millisecondsByDay).toEqual({});
+  const fullyPruned = await ledger.pruneBeforeDay('1970-01-02');
+  expect(fullyPruned.millisecondsByDay).toEqual({});
+  expect(fullyPruned.segments).toEqual([]);
+});
+test('unverified gap is never bridged when exact segments are merged', async () => {
+  const { ledger } = setup();
+  await ledger.observe(sample(0)); await ledger.observe(sample(1_000));
+  await ledger.observe(sample(2_000, false));
+  await ledger.observe(sample(4_000)); await ledger.observe(sample(5_000));
+  expect((await ledger.read()).segments).toEqual([
+    { from: 0, to: 1_000, day: '1970-01-01', timezone: 'UTC' },
+    { from: 4_000, to: 5_000, day: '1970-01-01', timezone: 'UTC' },
+  ]);
+});
+test('legacy v1 aggregate migration creates no fabricated exact segments', async () => {
+  const { ledger, setRaw } = setup();
+  setRaw({ version: 1, generation: 1, cursor: sample(1_000), millisecondsByDay: { '1970-01-01': 999 }, pending: [] });
+  expect(await ledger.read()).toMatchObject({ millisecondsByDay: { '1970-01-01': 999 }, segments: [] });
+});
+test('rejects overlapping or timezone/day-mismatched persisted segments', async () => {
+  const { ledger, setRaw } = setup();
+  const base = { version: 1, generation: 1, cursor: sample(3_000), millisecondsByDay: {}, pending: [] };
+  setRaw({ ...base, segments: [
+    { from: 0, to: 2_000, day: '1970-01-01', timezone: 'UTC' },
+    { from: 1_000, to: 3_000, day: '1970-01-01', timezone: 'UTC' },
+  ] });
+  await expect(ledger.read()).rejects.toThrow('Invalid walking duration ledger');
+  setRaw({ ...base, segments: [{ from: 0, to: 1_000, day: '1970-01-02', timezone: 'UTC' }] });
+  await expect(ledger.read()).rejects.toThrow('Invalid walking duration ledger');
 });
