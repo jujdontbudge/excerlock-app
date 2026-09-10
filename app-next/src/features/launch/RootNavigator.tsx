@@ -1,5 +1,6 @@
 import { useMotion } from '../../motion/useMotion';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
 import { tokens as t } from '../../design-system/tokens';
@@ -8,11 +9,24 @@ import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { useRuntimeStatus } from '../../state/selectors';
 export function RootNavigator() {
   const motion = useMotion();
+  const router = useRouter();
   const runtime = useRuntime();
   const loading = useRuntimeStatus().loading;
   const status = useEntitlementStore((s) => s.data.entitlement.status),
     onboarding = useOnboardingStore((s) => s.data),
     entitled = status === 'trial' || status === 'active';
+  const previousSettledStatus = useRef(status);
+  useEffect(() => {
+    const previous = previousSettledStatus.current;
+    if (status !== 'unknown') previousSettledStatus.current = status;
+    if (
+      onboarding.setupComplete &&
+      (previous === 'trial' || previous === 'active') &&
+      (status === 'expired' || status === 'billingIssue')
+    ) {
+      router.push('/paywall');
+    }
+  }, [onboarding.setupComplete, router, status]);
   return (
     <>
       <Stack
@@ -27,16 +41,24 @@ export function RootNavigator() {
         <Stack.Protected guard={loading || (!onboarding.complete && onboarding.step !== 'P' && !entitled)}>
           <Stack.Screen name="onboarding/[step]" />
         </Stack.Protected>
-        <Stack.Protected guard={loading || !entitled}>
-          <Stack.Screen name="paywall" options={{ gestureEnabled: false }} />
+        <Stack.Protected guard={loading || !entitled || onboarding.setupComplete}>
+          <Stack.Screen
+            name="paywall"
+            options={{
+              presentation: onboarding.setupComplete ? 'modal' : 'card',
+              gestureEnabled: onboarding.setupComplete,
+            }}
+          />
         </Stack.Protected>
         <Stack.Protected guard={loading || (entitled && !onboarding.setupComplete)}>
           <Stack.Screen name="setup/[step]" />
         </Stack.Protected>
-        <Stack.Protected guard={loading || (entitled && onboarding.setupComplete)}>
+        <Stack.Protected guard={loading || onboarding.setupComplete}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="settings" />
           <Stack.Screen name="sign-in" options={{ presentation: 'fullScreenModal' }} />
+        </Stack.Protected>
+        <Stack.Protected guard={loading || (entitled && onboarding.setupComplete)}>
           <Stack.Screen name="builder" options={{ presentation: 'fullScreenModal' }} />
           <Stack.Screen name="unlock/gym" options={{ presentation: 'fullScreenModal' }} />
           <Stack.Screen name="unlock/treadmill" options={{ presentation: 'fullScreenModal' }} />

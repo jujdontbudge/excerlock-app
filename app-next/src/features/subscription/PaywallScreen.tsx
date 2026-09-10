@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Linking } from 'react-native';
-import { ChoiceRow, Heading, Label, PrimaryButton, ScreenShell, SecondaryButton } from '../../design-system';
+import { Linking, View } from 'react-native';
+import {
+  ChoiceRow,
+  CloseButton,
+  Heading,
+  Label,
+  PrimaryButton,
+  ScreenShell,
+  SecondaryButton,
+} from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import type { SubscriptionPaywall } from '../../ports/SubscriptionPort';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
@@ -12,9 +20,11 @@ const ignoreError = () => undefined;
 export function PaywallScreen({
   placement,
   reportError = ignoreError,
+  onClose,
 }: {
   placement: SubscriptionPaywall['placement'];
   reportError?: (error: unknown, operation: 'load' | 'purchase' | 'restore') => void;
+  onClose?: () => void;
 }) {
   const runtime = useRuntime(),
     status = useEntitlementStore((state) => state.data.entitlement.status),
@@ -78,6 +88,13 @@ export function PaywallScreen({
   const product = paywall?.products.find((item) => item.handle === selected);
   return (
     <ScreenShell
+      header={
+        onClose ? (
+          <View style={{ paddingHorizontal: t.layout.page }}>
+            <CloseButton label="Close" onPress={onClose} />
+          </View>
+        ) : undefined
+      }
       footer={
         <>
           <PrimaryButton
