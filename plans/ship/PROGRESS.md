@@ -167,3 +167,12 @@ Astra low. Muse xhigh handles bounded implementation; root reviews changes and v
 - Ledger commits7174c65 secure chunk sessions,a992de7 real config loader,4adfff7 signed capability values.
 - No simulator was opened/booted here, no signed archive/IPA uploaded, no production code deployed, no
   messages/emails sent. Device/store gates remain. Goal active; substantial implementation remains.
+
+## T10 pure policy started (next continuation)
+
+Root64d3c62 now implements domain/watchdog.ts (supersedes prior not-started note):21tests pass, typecheck/
+focused lint0. Only live conditional relief arms; earned/window/lapse/deletion cancel; unknown cannot renew;
+context/account/selection guards,5minute cadence,15minute minimum+backdating, explicit cleanup despite stale
+previous context, staged monitor budget<=20. This is pure planner ONLY; no root mounting/native enforcement
+claim. Remaining T10/T11 scope unchanged. Agents remain live; server is correcting T05 real-schema authority
+before T06; UI has substantive changes underway; auth intentional callback ownership fix still pending.
