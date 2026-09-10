@@ -17,8 +17,8 @@ upload credentials. On this Apple Silicon host, use the explicitly owned simulat
 `ARCHS=arm64 ONLY_ACTIVE_ARCH=YES`; a generic simulator destination can select x86_64 while cached
 Expo modules contain only arm64. Preserve the same DerivedData path for incremental builds.
 
-The shared scheme's StoreKit reference must resolve from
-`ios/ExcerLock.xcodeproj/xcshareddata/xcschemes/` to the generated catalog. A passing build or an
+The shared scheme's StoreKit reference must be bound by Xcode to the generated catalog; do not
+assume its identifier uses ordinary filesystem-relative scheme-directory semantics. A passing build or an
 existing `.storekit` source file alone does not prove the running app uses local StoreKit. An Apple
 account sign-in prompt instead of local purchase confirmation is a failed harness acceptance gate,
 not permission to enter credentials or count the purchase as passed.
