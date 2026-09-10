@@ -17,12 +17,15 @@ export type DetectionWake = {
   generation: number;
   timezone: string;
   source: 'foreground' | 'background' | 'geofence' | 'manual';
+  includeStepHistory?: boolean;
 };
 export type HistoryCredit = { idempotencyKey: string; from: number; to: number; steps: number };
 export class DetectionService {
   private disposers: (() => void)[] = [];
   private queue: Promise<void> = Promise.resolve();
   private lifecycle: Promise<void> = Promise.resolve();
+  private lastWork: Promise<void> = Promise.resolve();
+  private committedListeners = new Set<() => void>();
   constructor(
     private readonly deps: {
       motion: MotionAdapter;
@@ -63,6 +66,7 @@ export class DetectionService {
             });
             await this.persist();
             this.assertGeneration(generation);
+      this.notifyCommitted();
           }).catch((error) => this.deps.onError?.(error));
         }),
       ];
@@ -104,6 +108,13 @@ export class DetectionService {
       if (placement.placement === 'unknown' && before.propped.phase !== 'inactive')
         propped = reducePropped(propped, { kind: 'coverageLost', at: wake.now }, wake.now);
       const gym = reduceGym(before.gym, { kind: 'records', records }, wake.now);
+      if (wake.includeStepHistory === false) {
+        detectionStore.getState().patch({ walking, propped, gym, observedAt: wake.now });
+        await this.persist();
+        this.assertGeneration(wake.generation);
+        this.notifyCommitted();
+        return;
+      }
       let ledger = await this.deps.historyLedger.read();
       this.assertGeneration(wake.generation);
       // Replay the exact durable intent before consulting cursors or issuing a
@@ -130,6 +141,7 @@ export class DetectionService {
         detectionStore.getState().patch({ pendingHistory: pending });
         await this.persist();
         this.assertGeneration(wake.generation);
+      this.notifyCommitted();
         ledger = await this.commitHistory(pending, wake, ledger);
         cursor = Math.max(to, ledger.through ?? to);
         segments += 1;
@@ -150,6 +162,38 @@ export class DetectionService {
       this.assertGeneration(wake.generation);
     });
   }
+  /** Lightweight foreground clock tick: live reducers + durable gym events, never step history. */
+  tick(now: number, walkingGraceMs: number, generation: number): Promise<void> {
+    return this.enqueue(async () => {
+      this.assertGeneration(generation);
+      const before = detectionStore.getState().data;
+      const motion = this.deps.motion.reconcile(now);
+      const placement = this.deps.placement.reconcile(now);
+      const records = await this.deps.gymLog.readAll();
+      this.assertGeneration(generation);
+      let walking = reduceWalking(
+        before.walking,
+        { kind: 'evidence', at: motion.observedAt, qualifying: motion.qualifying },
+        now,
+        walkingGraceMs,
+      );
+      walking = reduceWalking(walking, { kind: 'tick' }, now, walkingGraceMs);
+      let propped = reducePropped(before.propped, { kind: 'tick' }, now);
+      if (placement.placement === 'unknown' && before.propped.phase !== 'inactive')
+        propped = reducePropped(propped, { kind: 'coverageLost', at: now }, now);
+      const gym = reduceGym(before.gym, { kind: 'records', records }, now);
+      detectionStore.getState().patch({ walking, propped, gym, observedAt: now });
+      await this.persist();
+      this.assertGeneration(generation);
+      this.notifyCommitted();
+    });
+  }
+  observeCommitted(callback: () => void): () => void {
+    this.committedListeners.add(callback);
+    return () => this.committedListeners.delete(callback);
+  }
+  /** Waits for the latest serialized mutation and preserves its rejection. */
+  flush(): Promise<void> { return this.lastWork; }
   private async commitHistory(pending: PendingHistoryCredit, wake: DetectionWake, previous: HistoryLedger): Promise<HistoryLedger> {
     // New intents persist their original timezone. The fallback exists only
     // for legacy pending v1 records written before timezone was recorded.
@@ -183,6 +227,7 @@ export class DetectionService {
       });
       await this.persist();
       this.assertGeneration(generation);
+      this.notifyCommitted();
     });
   }
   invalidateGymRegion(regionId: string, now: number, generation: number): Promise<void> {
@@ -192,6 +237,7 @@ export class DetectionService {
       detectionStore.getState().patch({ gym: reduceGym(data.gym, { kind: 'coverageLost', regionId }, now) });
       await this.persist();
       this.assertGeneration(generation);
+      this.notifyCommitted();
     });
   }
   async startProppedScan(now: number, generation: number): Promise<number | null> {
@@ -232,6 +278,7 @@ export class DetectionService {
       detectionStore.getState().patch({ walking, propped, observedAt: now });
       await this.persist();
       this.assertGeneration(generation);
+      this.notifyCommitted();
     });
   }
   private async applyMotion(evidence: MotionEvidence, graceMs: number, generation: number): Promise<void> {
@@ -255,6 +302,7 @@ export class DetectionService {
     });
     await this.persist();
     this.assertGeneration(generation);
+      this.notifyCommitted();
   }
   private applyPropped(
     event: ProppedEvent,
@@ -268,6 +316,7 @@ export class DetectionService {
       detectionStore.getState().patch({ propped: next, observedAt: now });
       await this.persist();
       this.assertGeneration(generation);
+      this.notifyCommitted();
       after?.(next);
     });
   }
@@ -279,9 +328,11 @@ export class DetectionService {
   }
   private enqueue(operation: () => Promise<void>): Promise<void> {
     const next = this.queue.catch(() => undefined).then(operation);
+    this.lastWork = next;
     this.queue = next.catch(() => undefined);
     return next;
   }
+  private notifyCommitted(): void { this.committedListeners.forEach((listener) => listener()); }
   private runLifecycle(operation: () => Promise<void>): Promise<void> {
     const next = this.lifecycle.catch(() => undefined).then(operation);
     this.lifecycle = next.catch(() => undefined);

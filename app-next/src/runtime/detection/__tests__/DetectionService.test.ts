@@ -50,7 +50,7 @@ test('coverage loss invalidates every transient live detector', async () => {
   });
   const service = new DetectionService({
     motion: {} as MotionAdapter,
-    placement: {} as PlacementAdapter,
+    placement: {} as unknown as PlacementAdapter,
     gymLog: { append: async () => {}, readAll: async () => [] },
     historyLedger: historyLedger(),
   });
@@ -308,7 +308,7 @@ test('qualified pickup walking joins propped policy and stops only after the one
   } as unknown as MotionAdapter;
   const service = new DetectionService({
     motion,
-    placement: {} as PlacementAdapter,
+    placement: {} as unknown as PlacementAdapter,
     gymLog: { append: async () => {}, readAll: async () => [] },
     historyLedger: historyLedger(),
     persist: async () => {},
@@ -327,3 +327,21 @@ test('qualified pickup walking joins propped policy and stops only after the one
   expect(detectionStore.getState().data.walking.phase).toBe('inactive');
   expect(detectionStore.getState().data.propped.phase).toBe('inactive');
 });
+
+test('lightweight tick settles walking and gym deadlines without history IO', async () => {
+  const querySteps=jest.fn();const ledger=historyLedger();const records=[{id:'g:enter:0',regionId:'g',type:'enter' as const,atMs:0,receivedAtMs:0}];
+  const motion={reconcile:(now:number)=>({qualifying:true as const,observedAt:now,activityAt:now,cadenceAt:now,cadencePerMinute:80}),querySteps} as unknown as MotionAdapter;
+  const placement={reconcile:()=>({placement:'handheld' as const,at:0})} as unknown as PlacementAdapter;
+  const persist=jest.fn(async()=>{});const service=new DetectionService({motion,placement,gymLog:{append:async()=>{},readAll:async()=>records},historyLedger:ledger,persist});
+  await service.tick(30_000,30_000,0);
+  expect(confirmedGymRegions(detectionStore.getState().data.gym)).toEqual(['g']);
+  expect(querySteps).not.toHaveBeenCalled();expect(ledger.read).not.toHaveBeenCalled();expect(persist).toHaveBeenCalledTimes(1);
+});
+
+test('lightweight tick is generation fenced after persisted gym read',async()=>{let release!:(x:readonly never[])=>void;const service=new DetectionService({motion:{reconcile:(now:number)=>({qualifying:'unknown' as const,observedAt:now})} as MotionAdapter,placement:{reconcile:()=>({placement:'unknown' as const,at:null})} as unknown as PlacementAdapter,gymLog:{append:async()=>{},readAll:()=>new Promise(r=>{release=r})},historyLedger:historyLedger()});const pending=service.tick(1000,30000,0);await Promise.resolve();await Promise.resolve();detectionStore.getState().patch({generation:1});release([]);await expect(pending).rejects.toThrow('Obsolete detection generation');expect(detectionStore.getState().data.observedAt).toBe(0)});
+
+test('lightweight tick expires persisted pickup deadline without new placement transition',async()=>{const data=detectionStore.getState().data;detectionStore.getState().patch({propped:{...data.propped,phase:'handheld',watermark:0,deadlineAt:20_000,verifiedSince:0}});const service=new DetectionService({motion:{reconcile:(now:number)=>({qualifying:'unknown' as const,observedAt:now})} as MotionAdapter,placement:{reconcile:()=>({placement:'handheld' as const,at:0})} as unknown as PlacementAdapter,gymLog:{append:async()=>{},readAll:async()=>[]},historyLedger:historyLedger(),persist:async()=>{}});await service.tick(20_000,30_000,0);expect(detectionStore.getState().data.propped.phase).toBe('inactive')});
+
+test('tick notifies committed observers only after durable write and flush preserves failure',async()=>{let reject!:(e:Error)=>void;const persist=jest.fn(()=>new Promise<void>((_r,x)=>{reject=x}));const service=new DetectionService({motion:{reconcile:(now:number)=>({qualifying:'unknown' as const,observedAt:now})} as MotionAdapter,placement:{reconcile:()=>({placement:'unknown' as const,at:null})} as unknown as PlacementAdapter,gymLog:{append:async()=>{},readAll:async()=>[]},historyLedger:historyLedger(),persist});const cb=jest.fn();service.observeCommitted(cb);const tick=service.tick(1000,30000,0);while(!persist.mock.calls.length)await Promise.resolve();expect(cb).not.toHaveBeenCalled();reject(new Error('disk'));await expect(tick).rejects.toThrow('disk');await expect(service.flush()).rejects.toThrow('disk');expect(cb).not.toHaveBeenCalled()});
+
+test('wake without motion authorization preserves pending history and skips ledger/query',async()=>{const querySteps=jest.fn();const ledger=historyLedger();const pending={idempotencyKey:'kept',from:0,to:1,steps:2,timezone:'UTC'};detectionStore.getState().patch({pendingHistory:pending});const service=new DetectionService({motion:{reconcile:(now:number)=>({qualifying:'unknown' as const,observedAt:now}),querySteps} as unknown as MotionAdapter,placement:{reconcile:()=>({placement:'unknown' as const,at:null})} as unknown as PlacementAdapter,gymLog:{append:async()=>{},readAll:async()=>[]},historyLedger:ledger,persist:async()=>{}});await service.reconcileWake({now:1000,dayStart:0,walkingGraceMs:30000,generation:0,timezone:'UTC',source:'foreground',includeStepHistory:false});expect(querySteps).not.toHaveBeenCalled();expect(ledger.read).not.toHaveBeenCalled();expect(detectionStore.getState().data.pendingHistory).toEqual(pending)});
