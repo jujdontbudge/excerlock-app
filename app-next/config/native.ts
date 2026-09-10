@@ -2,31 +2,40 @@
  * T01 native manifest export contract.
  *
  * Root `app.config.ts` merges `nativeConfig.ios` and `nativeConfig.plugins`
- * into the Expo config. No secrets, no EAS update configuration here — root
- * owns those (T02). Every `NS*UsageDescription` is set in exactly one plugin
- * (see plugins/README.md); this file never duplicates a plugin-owned string.
+ * into the Expo config and is the SOLE plugin-list owner downstream: this
+ * `nativePlugins` array is the complete list (no additions in app.json or
+ * app.config beyond this export). No secrets, no EAS update configuration
+ * here — root owns those (T02). Every `NS*UsageDescription` is set in exactly
+ * one plugin (see plugins/README.md); this file never duplicates a
+ * plugin-owned string.
  *
- * Canonical order is LIFO: first-listed runs last. The Screen Time validator
- * stays first-listed so it validates after every other Xcode mutation. B50
- * keeps push: `withNoPush` is absent and `aps-environment` is expected from
- * `expo-notifications` (provisioning must carry Push).
+ * Ordering note: the Screen Time validator and the main-app entitlements
+ * guard both use `withFinalizedMod` and therefore validate the GENERATED
+ * postconditions regardless of list position. First-listed placement of the
+ * validator is a readability convention, not an ordering mechanism (Expo
+ * does not guarantee global LIFO across interceptor kinds).
+ *
+ * Push (B50): `withNoPush` is absent. `aps-environment` is intentionally NOT
+ * set here: `expo-notifications` supplies the development default at
+ * prebuild and signing/EAS supplies the release value. Hardcoding
+ * `development` would mislabel a release binary.
  */
+
+import type { ExpoConfig } from "expo/config";
 
 export const NATIVE_APP_GROUP = "group.com.johansardar.excerlock";
 export const NATIVE_TEAM_ID = "AX3C2B78YD";
 export const NATIVE_DEPLOYMENT_TARGET = "17.4";
 
-export const NATIVE_BUNDLE_IDS = {
+export const NATIVE_BUNDLE_IDS: Record<string, string> = {
   app: "com.johansardar.excerlock",
   monitor: "com.johansardar.excerlock.monitor",
   shield: "com.johansardar.excerlock.shield",
   shieldaction: "com.johansardar.excerlock.shieldaction",
-  // Pending (no Xcode appex in T01; see targets/*/README.md):
   report: "com.johansardar.excerlock.report",
-  appintents: "com.johansardar.excerlock.appintents",
-} as const;
+};
 
-type ExpoPlugin = string | [string, Record<string, unknown>?];
+type ExpoPlugin = NonNullable<ExpoConfig["plugins"]>[number];
 
 export const healthKitPlugin: ExpoPlugin = [
   "@kingstinct/react-native-healthkit",
@@ -42,6 +51,7 @@ export const nativePlugins: ExpoPlugin[] = [
   "./plugins/withScreenTimeExtensionValidation",
   "./plugins/withMainAppEntitlements",
   "./plugins/withPrivacyManifest",
+  "./plugins/withMainAppIntent",
   healthKitPlugin,
   "./plugins/withHealthKitBackgroundBootstrap",
   [
@@ -49,10 +59,10 @@ export const nativePlugins: ExpoPlugin[] = [
     {
       appleTeamId: NATIVE_TEAM_ID,
       appGroup: NATIVE_APP_GROUP,
-      // Never copy the package targets into app-next/targets: the three
-      // required configs are source here; package Swift stays package-owned
-      // and is materialized byte-for-byte by the validator. A copy would
-      // shadow our bundle IDs with a stale ActivityMonitorExtension target.
+      // Never copy the package targets into app-next/targets: the required
+      // configs are source here; package Swift stays package-owned and is
+      // materialized byte-for-byte by the validator. A copy would shadow our
+      // bundle IDs with a stale ActivityMonitorExtension target.
       copyToTargetFolder: false,
     },
   ],
@@ -96,13 +106,20 @@ export const nativePlugins: ExpoPlugin[] = [
   ["@sentry/react-native/expo", { organization: "edge-ix", project: "excerlock-mobile" }],
 ];
 
-export const nativeConfig = {
+export const nativeConfig: {
+  ios: ExpoConfig["ios"];
+  plugins: ExpoPlugin[];
+} = {
   ios: {
     bundleIdentifier: NATIVE_BUNDLE_IDS.app,
     appleTeamId: NATIVE_TEAM_ID,
     supportsTablet: false,
     usesAppleSignIn: true,
-    backgroundModes: ["location", "fetch", "processing"],
+    // Background execution is declared via infoPlist.UIBackgroundModes (the
+    // real mechanism; ExpoConfig.ios has no backgroundModes key): location
+    // for geofence arrivals + Walk Session tracking (real TaskManager tasks
+    // in src/engine/signals/location), fetch for headless task execution.
+    // No processing mode: nothing registers a BGProcessingTask.
     associatedDomains: ["applinks:excerlock.com"],
     entitlements: {
       "com.apple.developer.family-controls": true,
@@ -110,29 +127,30 @@ export const nativeConfig = {
       "com.apple.developer.healthkit.background-delivery": true,
       "com.apple.security.application-groups": [NATIVE_APP_GROUP],
       "com.apple.developer.applesignin": ["Default"],
-      "aps-environment": "development",
       "com.apple.developer.associated-domains": ["applinks:excerlock.com"],
     },
     infoPlist: {
-      UIBackgroundModes: ["location", "fetch", "processing"],
+      UIBackgroundModes: ["location", "fetch"],
       // Single-place strings with no owning plugin (never duplicate a
-      // plugin-owned NS*UsageDescription here):
-      NSUserTrackingUsageDescription:
-        "ExcerLock does not track you across apps or websites. No tracking prompt is shown in v1.",
+      // plugin-owned NS*UsageDescription here). No NSUserTrackingUsageDescription:
+      // v1 shows no ATT prompt and declares NSPrivacyTracking=false.
+      // No CFBundleAlternateIcons: v1 bundles no alternate icon assets, so any
+      // declaration would be a phantom reference. Primary icon stays Expo-owned.
       NSLocationAlwaysUsageDescription:
         "Allow ExcerLock to detect arrivals at saved gyms when you opt into auto-detect.",
       CFBundleLocalizations: ["en"],
       CFBundleAllowMixedLocalizations: true,
-      CFBundleAlternateIcons: {
-        CFBundlePrimaryIcon: { CFBundleIconFiles: ["AppIcon"] },
-        AlternateIcon: {
-          CFBundleIconFiles: ["AlternateIcon"],
-          UIPrerenderedIcon: false,
-        },
-      },
     },
   },
-  plugins: nativePlugins as ExpoPlugin[],
-} as const;
+  plugins: nativePlugins,
+};
 
 export type NativeConfig = typeof nativeConfig;
+
+// Compile-time contract: the export must remain assignable to the Expo
+// config surface root `app.config.ts` consumes (mutable arrays, Expo plugin
+// entries, iOS options). Breaks the build here — not at prebuild — on drift.
+const __expoPluginList: NonNullable<ExpoConfig["plugins"]> = nativePlugins;
+const __expoIos: ExpoConfig["ios"] = nativeConfig.ios;
+void __expoPluginList;
+void __expoIos;

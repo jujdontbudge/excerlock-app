@@ -1,0 +1,181 @@
+diff --git a/node_modules/@kingstinct/expo-apple-targets/build/target.d.ts b/node_modules/@kingstinct/expo-apple-targets/build/target.d.ts
+index 1a7fe0a..5c9de15 100644
+--- a/node_modules/@kingstinct/expo-apple-targets/build/target.d.ts
++++ b/node_modules/@kingstinct/expo-apple-targets/build/target.d.ts
+@@ -1,5 +1,5 @@
+ import { PBXNativeTarget, XcodeProject } from "@bacons/xcode";
+-export type ExtensionType = "widget" | "notification-content" | "notification-service" | "share" | "intent" | "bg-download" | "intent-ui" | "spotlight" | "matter" | "quicklook-thumbnail" | "imessage" | "clip" | "watch" | "location-push" | "credentials-provider" | "account-auth" | "action" | "safari" | "app-intent" | "device-activity-monitor" | "shield-action" | "shield-configuration";
++export type ExtensionType = "widget" | "notification-content" | "notification-service" | "share" | "intent" | "bg-download" | "intent-ui" | "spotlight" | "matter" | "quicklook-thumbnail" | "imessage" | "clip" | "watch" | "location-push" | "credentials-provider" | "account-auth" | "action" | "safari" | "app-intent" | "device-activity-monitor" | "shield-action" | "shield-configuration" | "device-activity-report";
+ export declare const KNOWN_EXTENSION_POINT_IDENTIFIERS: Record<string, ExtensionType>;
+ export declare const SHOULD_USE_APP_GROUPS_BY_DEFAULT: Record<ExtensionType, boolean>;
+ export declare function getTargetInfoPlistForType(type: ExtensionType): string;
+diff --git a/node_modules/@kingstinct/expo-apple-targets/build/target.js b/node_modules/@kingstinct/expo-apple-targets/build/target.js
+index f1809af..fe8620b 100644
+--- a/node_modules/@kingstinct/expo-apple-targets/build/target.js
++++ b/node_modules/@kingstinct/expo-apple-targets/build/target.js
+@@ -26,6 +26,7 @@ exports.KNOWN_EXTENSION_POINT_IDENTIFIERS = {
+     "com.apple.deviceactivity.monitor-extension": "device-activity-monitor",
+     "com.apple.ManagedSettings.shield-action-service": "shield-action",
+     "com.apple.ManagedSettingsUI.shield-configuration-service": "shield-configuration",
++    "com.apple.deviceactivityui.report-extension": "device-activity-report",
+     // "com.apple.intents-service": "intents",
+ };
+ // An exhaustive list of extension types that should sync app groups from the main target by default when
+@@ -38,6 +39,7 @@ exports.SHOULD_USE_APP_GROUPS_BY_DEFAULT = {
+     "account-auth": false,
+     "credentials-provider": false,
+     "device-activity-monitor": false,
++    "device-activity-report": false,
+     "app-intent": false,
+     "intent-ui": false,
+     "location-push": false,
+@@ -287,6 +289,13 @@ function getTargetInfoPlistForType(type) {
+             },
+         });
+     }
++    else if (type === "device-activity-report") {
++        return plist_1.default.build({
++            EXAppExtensionAttributes: {
++                EXExtensionPointIdentifier: "com.apple.deviceactivityui.report-extension",
++            },
++        });
++    }
+     /*
+   <?xml version="1.0" encoding="UTF-8"?>
+   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+@@ -318,6 +327,8 @@ function productTypeForType(type) {
+             return "com.apple.product-type.application";
+         case "app-intent":
+             return "com.apple.product-type.extensionkit-extension";
++        case "device-activity-report":
++            return "com.apple.product-type.extensionkit-extension";
+         default:
+             return "com.apple.product-type.app-extension";
+     }
+@@ -335,6 +346,7 @@ function needsEmbeddedSwift(type) {
+         "matter",
+         "clip",
+         "device-activity-monitor",
++        "device-activity-report",
+         "shield-action",
+         "shield-configuration",
+     ].includes(type);
+@@ -369,6 +381,9 @@ function getFrameworksForType(type) {
+     else if (type === "device-activity-monitor") {
+         return ["DeviceActivity"];
+     }
++    else if (type === "device-activity-report") {
++        return ["DeviceActivity", "SwiftUI"];
++    }
+     else if (type === "shield-action") {
+         return ["ManagedSettingsUI"];
+     }
+@@ -395,6 +410,16 @@ function isNativeTargetOfType(target, type) {
+             "com.apple.product-type.application.on-demand-install-capable") {
+         return true;
+     }
++    if (target.props.productType === "com.apple.product-type.extensionkit-extension") {
++        const infoPlist = target.getDefaultConfiguration().getInfoPlist();
++        const pointId = (_b = infoPlist.EXAppExtensionAttributes) === null || _b === void 0 ? void 0 : _b.EXExtensionPointIdentifier;
++        if (!pointId) {
++            console.error("No EXExtensionPointIdentifier found in extension Info.plist for target: " +
++                target.getDisplayName());
++            return false;
++        }
++        return (exports.KNOWN_EXTENSION_POINT_IDENTIFIERS[pointId] === type);
++    }
+     if (target.props.productType !== "com.apple.product-type.app-extension") {
+         return false;
+     }
+diff --git a/node_modules/@kingstinct/expo-apple-targets/build/withXcodeChanges.js b/node_modules/@kingstinct/expo-apple-targets/build/withXcodeChanges.js
+index 95989d5..75826be 100644
+--- a/node_modules/@kingstinct/expo-apple-targets/build/withXcodeChanges.js
++++ b/node_modules/@kingstinct/expo-apple-targets/build/withXcodeChanges.js
+@@ -183,6 +183,68 @@ function createAppIntentConfigurationList(project, { name, cwd, bundleId }) {
+     });
+     return configurationList;
+ }
++function createDeviceActivityReportConfigurationList(project, { name, cwd, bundleId, deploymentTarget, currentProjectVersion, }) {
++    const commonBuildSettings = {
++        // @ts-expect-error
++        ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: "YES",
++        CLANG_ANALYZER_NONNULL: "YES",
++        CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION: "YES_AGGRESSIVE",
++        CLANG_CXX_LANGUAGE_STANDARD: "gnu++20",
++        CLANG_ENABLE_OBJC_WEAK: "YES",
++        CLANG_WARN_DOCUMENTATION_COMMENTS: "YES",
++        CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER: "YES",
++        CLANG_WARN_UNGUARDED_AVAILABILITY: "YES_AGGRESSIVE",
++        CODE_SIGN_STYLE: "Automatic",
++        CURRENT_PROJECT_VERSION: currentProjectVersion,
++        DEBUG_INFORMATION_FORMAT: "dwarf",
++        ENABLE_USER_SCRIPT_SANDBOXING: "YES",
++        GCC_C_LANGUAGE_STANDARD: "gnu17",
++        GENERATE_INFOPLIST_FILE: "YES",
++        INFOPLIST_FILE: cwd + "/Info.plist",
++        INFOPLIST_KEY_CFBundleDisplayName: name,
++        INFOPLIST_KEY_NSHumanReadableCopyright: "",
++        IPHONEOS_DEPLOYMENT_TARGET: deploymentTarget,
++        LD_RUNPATH_SEARCH_PATHS: [
++            "$(inherited)",
++            "@executable_path/Frameworks",
++            "@executable_path/../../Frameworks",
++        ],
++        LOCALIZATION_PREFERS_STRING_CATALOGS: "YES",
++        MARKETING_VERSION: "1.0",
++        MTL_FAST_MATH: "YES",
++        PRODUCT_BUNDLE_IDENTIFIER: bundleId,
++        PRODUCT_NAME: "$(TARGET_NAME)",
++        SKIP_INSTALL: "YES",
++        SWIFT_EMIT_LOC_STRINGS: "YES",
++        SWIFT_VERSION: "5.0",
++        TARGETED_DEVICE_FAMILY: "1,2",
++    };
++    const debugBuildConfig = xcode_1.XCBuildConfiguration.create(project, {
++        name: "Debug",
++        buildSettings: {
++            ...commonBuildSettings,
++            GCC_PREPROCESSOR_DEFINITIONS: ["DEBUG=1", "$(inherited)"],
++            MTL_ENABLE_DEBUG_INFO: "INCLUDE_SOURCE",
++            SWIFT_ACTIVE_COMPILATION_CONDITIONS: "DEBUG $(inherited)",
++            SWIFT_OPTIMIZATION_LEVEL: "-Onone",
++        },
++    });
++    const releaseBuildConfig = xcode_1.XCBuildConfiguration.create(project, {
++        name: "Release",
++        buildSettings: {
++            ...commonBuildSettings,
++            COPY_PHASE_STRIP: "NO",
++            DEBUG_INFORMATION_FORMAT: "dwarf-with-dsym",
++            ...{ SWIFT_COMPILATION_MODE: "wholemodule" },
++        },
++    });
++    const configurationList = xcode_1.XCConfigurationList.create(project, {
++        buildConfigurations: [debugBuildConfig, releaseBuildConfig],
++        defaultConfigurationIsVisible: 0,
++        defaultConfigurationName: "Release",
++    });
++    return configurationList;
++}
+ function createShareConfigurationList(project, { name, cwd, bundleId, deploymentTarget, currentProjectVersion, }) {
+     const common = {
+         CLANG_ANALYZER_NONNULL: "YES",
+@@ -628,6 +690,9 @@ function createConfigurationListForType(project, props) {
+     else if (props.type === "app-intent") {
+         return createAppIntentConfigurationList(project, props);
+     }
++    else if (props.type === "device-activity-report") {
++        return createDeviceActivityReportConfigurationList(project, props);
++    }
+     else {
+         // TODO: More
+         return createNotificationContentConfigurationList(project, props);
+@@ -796,7 +861,7 @@ async function applyXcodeChanges(config, project, props) {
+                     ? "wrapper.extensionkit-extension"
+                     : "wrapper.app-extension",
+                 includeInIndex: 0,
+-                path: productName + (isExtension ? ".appex" : ".app"),
++                path: productName + (isExtension || isExtensionKit ? ".appex" : ".app"),
+                 sourceTree: "BUILT_PRODUCTS_DIR",
+             }),
+             settings: {

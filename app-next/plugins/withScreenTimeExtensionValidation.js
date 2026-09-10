@@ -2,7 +2,9 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { IOSConfig, withFinalizedMod } = require("expo/config-plugins");
 
-const EXPECTED_TARGETS = [
+// Main app + FOUR Screen Time appex. The App Intent lives in the main app
+// target (see plugins/withMainAppIntent.js); there is no fifth appex.
+const EXPECTED_APPEX_TARGETS = [
   {
     name: "DeviceActivityMonitorExtension",
     bundleIdentifier: "com.johansardar.excerlock.monitor",
@@ -15,30 +17,25 @@ const EXPECTED_TARGETS = [
     name: "ShieldAction",
     bundleIdentifier: "com.johansardar.excerlock.shieldaction",
   },
-];
-
-// T01 pending definitions (Astra resolving fifth-target detail; arch file
-// absent 2026-09-10). The `.report` DeviceActivityReport bundle
-// (`com.johansardar.excerlock.report`) exists in ASC and holds Family Controls
-// approval with the other three Screen Time bundles, but
-// `react-native-device-activity@0.6.1` / `@kingstinct/expo-apple-targets@0.1.19`
-// expose no `device-activity-report` target type, so no valid Xcode appex can
-// be generated here without fabricating an invalid extension point. The App
-// Intents bundle must not inherit Family Controls. Both are preserved as
-// pending target definitions under `targets/` (config + stub source, no Xcode
-// target yet) and asserted as pending — never as signed appex — until tooling
-// and review resolve them.
-const PENDING_TARGETS = [
   {
     name: "DeviceActivityReportExtension",
     bundleIdentifier: "com.johansardar.excerlock.report",
-    directory: "DeviceActivityReportExtension",
+    productType: "com.apple.product-type.extensionkit-extension",
   },
-  {
-    name: "AppIntentsExtension",
-    bundleIdentifier: "com.johansardar.excerlock.appintents",
-    directory: "app-intents",
-  },
+];
+
+const EXPECTED_APP_COUNT = 1;
+const EXPECTED_APPEX_COUNT = EXPECTED_APPEX_TARGETS.length;
+
+// Capabilities that belong to the main app only and must never be demanded
+// on (or leak onto) an extension. Provisioning/signing-generated entries
+// (application-identifier, team identifier, keychain-access-groups,
+// get-task-allow) are always permitted wherever the signer adds them.
+const MAIN_ONLY_CAPABILITIES = [
+  "com.apple.developer.healthkit",
+  "com.apple.developer.applesignin",
+  "aps-environment",
+  "com.apple.developer.associated-domains",
 ];
 
 const MONITOR_PACKAGE_SOURCES = [
@@ -116,7 +113,7 @@ function buildConfigurations(project, target) {
   });
 }
 
-function assertTarget(project, expected) {
+function assertAppexTarget(project, expected) {
   const target = Object.entries(project.pbxNativeTargetSection()).find(
     ([key, candidate]) =>
       !key.endsWith("_comment") && withoutQuotes(candidate.name) === expected.name,
@@ -127,6 +124,14 @@ function assertTarget(project, expected) {
       .map(([, candidate]) => withoutQuotes(candidate.name));
     throw new Error(
       `Screen Time prebuild did not generate the ${expected.name} target (classic model has: ${names.join(", ") || "none"})`,
+    );
+  }
+  if (
+    expected.productType &&
+    withoutQuotes(target[1].productType) !== expected.productType
+  ) {
+    throw new Error(
+      `${expected.name} must use ${expected.productType}, got ${withoutQuotes(target[1].productType)}`,
     );
   }
 
@@ -152,15 +157,47 @@ function assertTarget(project, expected) {
   }
 }
 
+function assertTargetCountsClassic(project) {
+  const entries = Object.entries(project.pbxNativeTargetSection()).filter(
+    ([key]) => !key.endsWith("_comment"),
+  );
+  const apps = entries.filter(
+    ([, candidate]) =>
+      withoutQuotes(candidate.productType) === "com.apple.product-type.application",
+  );
+  const appex = entries.filter(([, candidate]) => {
+    const productType = withoutQuotes(candidate.productType);
+    return (
+      productType === "com.apple.product-type.app-extension" ||
+      productType === "com.apple.product-type.extensionkit-extension"
+    );
+  });
+  if (apps.length !== EXPECTED_APP_COUNT || appex.length !== EXPECTED_APPEX_COUNT) {
+    const names = entries.map(([, candidate]) => withoutQuotes(candidate.name));
+    throw new Error(
+      `Screen Time prebuild must generate main+${EXPECTED_APPEX_COUNT} appex (got ${apps.length} app + ${appex.length} appex: ${names.join(", ") || "none"})`,
+    );
+  }
+  const staleCopy = entries.find(([, candidate]) =>
+    withoutQuotes(candidate.name).includes("ActivityMonitorExtension") &&
+    withoutQuotes(candidate.name) !== "DeviceActivityMonitorExtension",
+  );
+  if (staleCopy) {
+    throw new Error(
+      "Stale package-copy target present (copyToTargetFolder:false): remove targets/ActivityMonitorExtension",
+    );
+  }
+}
+
 /**
  * T01 port adaptation (B12): `react-native-device-activity@0.6.1` generates
  * its appex through `@kingstinct/expo-apple-targets`, which edits the Xcode
  * project in the `@bacons/xcode` Beta model and writes the file after
- * finalized mods run. The classic `getPbxproj` disk read above therefore sees
- * the template on clean prebuilds (never the new targets), so it can no
- * longer be the prebuild-fail-fast mechanism. Read the Beta in-memory project
- * that the provider saved to `_internal.modResults.ios.xcodeProjectBeta2`
- * instead; the classic disk read stays only as a diagnostic fallback.
+ * finalized mods run. The classic `getPbxproj` disk read therefore sees the
+ * template on clean prebuilds (never the new targets), so it cannot be the
+ * prebuild-fail-fast mechanism. Read the Beta in-memory project that the
+ * provider saved to `_internal.modResults.ios.xcodeProjectBeta2` instead;
+ * the classic disk read stays only as a diagnostic fallback.
  */
 function betaProjectFromInternal(modConfig) {
   const internal = modConfig._internal ?? modConfig.modRequest?._internal;
@@ -186,6 +223,10 @@ function betaTargets(betaProject) {
   );
 }
 
+function betaProductType(target) {
+  return target.props?.productType ?? target.props?.producttype ?? "";
+}
+
 function assertBetaTarget(betaProject, expected) {
   const targets = betaTargets(betaProject);
   const names = targets.map((target) => target.props.productName);
@@ -195,6 +236,11 @@ function assertBetaTarget(betaProject, expected) {
   if (!target) {
     throw new Error(
       `Screen Time prebuild did not generate the ${expected.name} target (Beta model has: ${names.join(", ") || "none"})`,
+    );
+  }
+  if (expected.productType && betaProductType(target) !== expected.productType) {
+    throw new Error(
+      `${expected.name} must use ${expected.productType}, got ${betaProductType(target)}`,
     );
   }
   const settingsOf = (key) => {
@@ -218,11 +264,42 @@ function assertBetaTarget(betaProject, expected) {
   }
 }
 
+function assertTargetCountsBeta(betaProject) {
+  const targets = betaTargets(betaProject);
+  const apps = targets.filter(
+    (target) => betaProductType(target) === "com.apple.product-type.application",
+  );
+  const appex = targets.filter((target) => {
+    const productType = betaProductType(target);
+    return (
+      productType === "com.apple.product-type.app-extension" ||
+      productType === "com.apple.product-type.extensionkit-extension"
+    );
+  });
+  if (apps.length !== EXPECTED_APP_COUNT || appex.length !== EXPECTED_APPEX_COUNT) {
+    const names = targets.map((target) => target.props.productName);
+    throw new Error(
+      `Screen Time prebuild must generate main+${EXPECTED_APPEX_COUNT} appex (got ${apps.length} app + ${appex.length} appex: ${names.join(", ") || "none"})`,
+    );
+  }
+  if (targets.some((target) => target.props.productName === "ActivityMonitorExtension")) {
+    throw new Error(
+      "Stale package-copy target present (copyToTargetFolder:false): remove targets/ActivityMonitorExtension",
+    );
+  }
+  if (targets.some((target) => /intent/i.test(target.props.productName))) {
+    throw new Error(
+      "No fifth App Intents appex may exist: the intent lives in the main app target",
+    );
+  }
+}
+
 /**
  * The `generated.entitlements` files are written to disk by the apple-targets
  * config phase (before finalized mods run), so their contents are honestly
  * assertable here: Family Controls + App Groups, and none of the main-only
- * privileged capabilities.
+ * privileged capabilities. Signing-generated entries (application-identifier,
+ * team identifier, keychain-access-groups, get-task-allow) are permitted.
  */
 function assertGeneratedEntitlementsFile(projectRoot, directory, displayName) {
   const file = path.join(projectRoot, "targets", directory, "generated.entitlements");
@@ -236,12 +313,18 @@ function assertGeneratedEntitlementsFile(projectRoot, directory, displayName) {
   if (!text.includes("group.com.johansardar.excerlock")) {
     throw new Error(`${displayName} generated.entitlements is missing the app group`);
   }
-  for (const privileged of [
-    "com.apple.developer.healthkit",
-    "com.apple.developer.applesignin",
-    "aps-environment",
-    "com.apple.developer.associated-domains",
-  ]) {
+  for (const privileged of MAIN_ONLY_CAPABILITIES) {
+    if (privileged === "com.apple.developer.healthkit") {
+      // Exact-key match: the background-delivery subkey contains the parent
+      // string and belongs on extensions that need it — but ours must not
+      // carry either; match the parent key line precisely.
+      if (/(<key>|["'])com\.apple\.developer\.healthkit(<\/key>|["'])/.test(text)) {
+        throw new Error(
+          `${displayName} generated.entitlements must not carry main-only ${privileged}`,
+        );
+      }
+      continue;
+    }
     if (text.includes(privileged)) {
       throw new Error(
         `${displayName} generated.entitlements must not carry main-only ${privileged}`,
@@ -252,40 +335,37 @@ function assertGeneratedEntitlementsFile(projectRoot, directory, displayName) {
 
 /**
  * Postcondition for the installed Screen Time package's Apple-target plugin.
- * It intentionally validates rather than recreates the package-owned generator.
+ * It intentionally validates rather than recreates the package-owned
+ * generator. Registered with `withFinalizedMod` so it reads the generated
+ * project after every other Xcode mutation; its position in the plugin list
+ * is a readability convention, not an ordering mechanism (Expo does not
+ * guarantee global LIFO across interceptor kinds).
  *
  * @param {import("expo/config").ExpoConfig} config
  */
-function assertPendingTargetDefinition(projectRoot, pending) {
-  const dir = path.join(projectRoot, "targets", pending.directory);
-  const configPath = path.join(dir, "expo-target.config.pending.js");
-  if (!fs.existsSync(configPath)) {
-    throw new Error(
-      `${pending.name} is pending: missing ${pending.directory}/expo-target.config.pending.js (bundle ${pending.bundleIdentifier})`,
-    );
-  }
-}
-
 function withScreenTimeExtensionValidation(config) {
   return withFinalizedMod(config, ["ios", (modConfig) => {
     materializeMonitorSources(modConfig.modRequest.projectRoot);
     const betaProject = betaProjectFromInternal(modConfig);
     if (betaProject && betaTargets(betaProject).length > 0) {
-      for (const expected of EXPECTED_TARGETS) {
+      for (const expected of EXPECTED_APPEX_TARGETS) {
         assertBetaTarget(betaProject, expected);
       }
+      assertTargetCountsBeta(betaProject);
     } else {
       const project = IOSConfig.XcodeUtils.getPbxproj(
         modConfig.modRequest.projectRoot,
       );
-      for (const expected of EXPECTED_TARGETS) {
-        assertTarget(project, expected);
+      for (const expected of EXPECTED_APPEX_TARGETS) {
+        assertAppexTarget(project, expected);
       }
+      assertTargetCountsClassic(project);
     }
     const entitlementsByDir = {
       DeviceActivityMonitorExtension: "DeviceActivityMonitorExtension",
       ShieldConfiguration: "ShieldConfiguration",
       ShieldAction: "ShieldAction",
+      DeviceActivityReportExtension: "DeviceActivityReportExtension",
     };
     for (const [directory, displayName] of Object.entries(entitlementsByDir)) {
       assertGeneratedEntitlementsFile(
@@ -293,9 +373,6 @@ function withScreenTimeExtensionValidation(config) {
         directory,
         displayName,
       );
-    }
-    for (const pending of PENDING_TARGETS) {
-      assertPendingTargetDefinition(modConfig.modRequest.projectRoot, pending);
     }
     return modConfig;
   }]);

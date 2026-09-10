@@ -1,13 +1,15 @@
-# DeviceActivityReportExtension (pending)
+# DeviceActivityReportExtension (required)
 
 Bundle `com.johansardar.excerlock.report`. Display-only DeviceActivityReport
-(`com.apple.deviceactivity.report-extension`); cannot share data back.
+(`com.apple.deviceactivityui.report-extension`, ExtensionKit product type);
+cannot share data back into the main app ledger.
 
-Status: pending. ASC bundle exists; Family Controls approval held with the
-other three Screen Time bundles. No Xcode target is generated in T01 because
-the installed `react-native-device-activity@0.6.1` /
-`@kingstinct/expo-apple-targets@0.1.19` expose only `device-activity-monitor`,
-`shield-action` and `shield-configuration` — fabricating a report appex from a
-wrong type would sign an invalid extension. The validator asserts this
-definition exists; `scripts/verify-binary.sh` explicitly reports the report
-appex as unchecked.
+Sources mirror the installed Xcode 26 Device Activity Report template
+(`DeviceActivityReportExtension.swift`, `TotalActivityReport.swift`,
+`TotalActivityView.swift`): `import DeviceActivity + ExtensionKit + SwiftUI`,
+`@main struct …: DeviceActivityReportExtension`, scene context/content plus
+async `makeConfiguration`. The `device-activity-report` target type is supplied
+by the pinned repository patch
+`patches/@kingstinct+expo-apple-targets+0.1.19.patch` (installed
+`@kingstinct/expo-apple-targets@0.1.19` exposes only monitor/shield-action/
+shield-configuration). The validator asserts this target as required.

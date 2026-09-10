@@ -25,16 +25,20 @@ describe("T01 Info.plist guardrail (generated ios/, not config source)", () => {
       "NSHealthShareUsageDescription",
       "NSFaceIDUsageDescription",
       "NSPhotoLibraryUsageDescription",
-      "NSUserTrackingUsageDescription",
       "UIBackgroundModes",
-      "CFBundleAlternateIcons",
       "CFBundleLocalizations",
     ]) {
       expect(count(key), `${key} must appear exactly once`).toBe(1);
     }
-    for (const mode of ["location", "fetch", "processing"]) {
+    // No NSUserTrackingUsageDescription: v1 shows no ATT prompt
+    // (NSPrivacyTracking=false). No CFBundleAlternateIcons: v1 bundles no
+    // alternate icon assets, so any declaration would be phantom.
+    expect(count("NSUserTrackingUsageDescription")).toBe(0);
+    expect(count("CFBundleAlternateIcons")).toBe(0);
+    for (const mode of ["location", "fetch"]) {
       expect(text).toContain(`<string>${mode}</string>`);
     }
+    expect(text).not.toContain("<string>processing</string>");
   });
 
   it("privacy manifest is non-empty with collected types + required-reason APIs", () => {
@@ -56,5 +60,9 @@ describe("T01 Info.plist guardrail (generated ios/, not config source)", () => {
     ]) {
       expect(text).toContain(api);
     }
+    // Shared app-group defaults (1C8F.1: UserDefaults(suiteName:) in every
+    // extension) alongside own defaults (CA92.1).
+    expect(text).toContain("1C8F.1");
+    expect(text).toContain("CA92.1");
   });
 });

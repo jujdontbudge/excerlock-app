@@ -12,14 +12,16 @@ function pluginName(entry: string | [string, ...unknown[]]): string {
 }
 
 describe("T01 plugin-order guardrail (app-next)", () => {
-  it("keeps the Screen Time validator first-listed (runs last, LIFO)", () => {
+  it("keeps the Screen Time validator first-listed (finalized-postcondition convention)", () => {
     const config = readJson(join(appNextRoot, "app.json"));
     const plugins = config.expo?.plugins ?? [];
     expect(pluginName(plugins[0])).toBe(
       "./plugins/withScreenTimeExtensionValidation",
     );
-    // Validator must run after everything it validates: it holds the
-    // first-listed slot; no other plugin may take it.
+    // The validator and the main-app entitlements guard both use
+    // withFinalizedMod postconditions (position-independent); first-listed
+    // placement of the validator is a readability convention enforced here
+    // so the list has one canonical order.
     const validatorIndex = plugins.findIndex(
       (p: any) => pluginName(p) === "./plugins/withScreenTimeExtensionValidation",
     );
@@ -52,6 +54,7 @@ describe("T01 plugin-order guardrail (app-next)", () => {
       "./plugins/withScreenTimeExtensionValidation",
       "./plugins/withMainAppEntitlements",
       "./plugins/withPrivacyManifest",
+      "./plugins/withMainAppIntent",
       "./plugins/withHealthKitBackgroundBootstrap",
       "react-native-device-activity",
       "./modules/excerlock-motion/app.plugin",
