@@ -322,3 +322,14 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   /tmp/ship-integrated-jest.log. Latest targeted schedule/native11tests + typecheck pass. No signed/device
   acceptance implied. Auth agent refactoring production status, server agent finishing ledger cursor/
   midnight pending replay; root full Runtime remains the largest open task.
+- Superseding the temporary full-week limitation above: root directed daily boundary partitioning,
+  integrated c8ad4d99. All-week now7 exact local-midnight windows; no merging across day boundaries,
+  so next-day earned suppression expiry has a native start callback. Spring/fall DST and cross-midnight
+  coverage tests pass. >7 disjoint day-partitioned windows still explicit inability, never broadened.
+- Root policy projector996d9181 maps confirmed lapse/deletion/disabled cleanup, unknown preservation,
+  current-window live deadline and earned suppression's NEXT relock deadline (not current window end).
+ 8tests/typecheck/lint pass. Recurring anchors never mistaken for current window instances.
+- Production-safe Runtime.status now integrated34bfb9e0; dev optional, consumers migrated and guards
+  explicit. createRuntime still intentionally refuses real mode until full production composition exists.
+  Native agent now verifying clean preview prebuild/unsigned build at integrated HEAD; history ledger
+  agent reviewing pending-intent timezone preservation before final commit.
