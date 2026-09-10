@@ -120,7 +120,12 @@ test("Settings flow covers notification opt-in and support submissions", async (
 
   assert.match(flow, new RegExp(`^appId: ${APP_ID}$`, "m"));
   assert.match(flow, new RegExp(`^  SCENARIO: ${BUNDLED_SCENARIO}$`, "m"));
-  assert.match(flow, /id: notification-settings-card/);
+  // Historical flow content only; this test never runs the banned UI driver.
+  // The toggle, not the enclosing card, must be centered to stay above the tab bar.
+  assert.match(
+    flow,
+    /- scrollUntilVisible:\s+element:\s+id: notification-toggle-afternoonNudge\s+direction: DOWN\s+(?:#[^\n]*\n\s*)?centerElement: true/,
+  );
   assert.match(flow, /id: notification-toggle-afternoonNudge/);
   assert.match(flow, /id: notification-permission-primer/);
   assert.match(flow, /Allow notifications/);
