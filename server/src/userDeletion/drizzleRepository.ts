@@ -47,7 +47,7 @@ export function createDrizzleUserDeletionRepository(
   const database = requireDatabase(configuredDatabase);
 
   return {
-    async prepareDeletion(userId, deletedAt) {
+    async prepareDeletion(userId, deletedAt, provider = "supabase") {
       return database.transaction(async (transaction) => {
         await transaction
           .insert(users)
@@ -55,6 +55,7 @@ export function createDrizzleUserDeletionRepository(
             id: userId,
             email: null,
             deletedAt,
+            authProvider: provider,
             updatedAt: deletedAt,
           })
           .onConflictDoUpdate({
@@ -62,6 +63,7 @@ export function createDrizzleUserDeletionRepository(
             set: {
               email: null,
               deletedAt: sql`coalesce(${users.deletedAt}, ${deletedAt})`,
+              authProvider: sql`coalesce(${users.authProvider}, ${provider})`,
               updatedAt: sql`coalesce(${users.deletedAt}, ${deletedAt})`,
             },
           });
@@ -155,7 +157,7 @@ export function createDrizzleUserDeletionRepository(
               sql`${users.authProvider} IS DISTINCT FROM 'supabase'`,
             ),
             or(isNull(users.deletionNextRetryAt), lte(users.deletionNextRetryAt, now)),
-            or(isNull(users.authProvider), eq(users.authProvider, "supabase")),
+            eq(users.authProvider, "supabase"),
             or(
               isNull(users.deletionLeaseExpiresAt),
               lte(users.deletionLeaseExpiresAt, now),
@@ -195,7 +197,7 @@ export function createDrizzleUserDeletionRepository(
           and(
             eq(users.id, userId),
             sql`${users.deletedAt} IS NOT NULL`,
-            or(isNull(users.authProvider), eq(users.authProvider, "supabase")),
+            eq(users.authProvider, "supabase"),
             or(
               isNull(users.adaptyErasedAt),
               isNull(users.posthogErasedAt),

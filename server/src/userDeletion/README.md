@@ -17,6 +17,14 @@ Routes depend on `UserDeletionService`; database and vendor details stay here.
    durable bounded worker resumes incomplete tombstones without a client token;
    provider not-found is an idempotent success for lost-response recovery.
 
+The worker is fenced and idempotent **at least once**, not exactly once. Lease
+TTL covers the configured processor timeouts plus margin; a stalled database
+can still cause a replay after expiry, so every downstream operation must stay
+idempotent. Legacy Clerk deletion is deliberately unsupported at runtime and
+returns 409 before tombstoning; migrate/sign in to the canonical Supabase
+identity before deletion. Historic Clerk tombstones are retained for audit and
+are never sent to the Supabase admin deletion endpoint.
+
 Support submissions are deliberately deleted even though they are the sole
 copy. A deletion request is treated as withdrawal of consent to retain that
 user-authored content; ExcerLock has no stated legal-hold requirement.

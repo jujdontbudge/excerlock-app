@@ -33,31 +33,13 @@ function requireSuccess(
   throw new IdentityErasureRequestError(processor);
 }
 
-function withTimeout(timeoutMs: number | undefined): {
-  signal: AbortSignal | undefined;
-  cancel: () => void;
-} {
+function timeoutSignal(timeoutMs: number | undefined): AbortSignal | undefined {
   if (!timeoutMs || timeoutMs <= 0) {
-    return { signal: undefined, cancel: () => undefined };
+    return undefined;
   }
-  // AbortSignal.timeout is available on Node 22; fall back to manual timer.
-  try {
-    const signal =
-      typeof AbortSignal.timeout === "function"
-        ? AbortSignal.timeout(timeoutMs)
-        : undefined;
-    if (signal) {
-      return { signal, cancel: () => undefined };
-    }
-  } catch {
-    // Fall through to manual controller.
-  }
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  return {
-    signal: controller.signal,
-    cancel: () => clearTimeout(timer),
-  };
+  // Node 22 is the declared runtime. This signal remains armed after response
+  // headers arrive, so response.json()/body consumption is bounded too.
+  return AbortSignal.timeout(timeoutMs);
 }
 
 async function fetchWithTimeout(
@@ -66,12 +48,8 @@ async function fetchWithTimeout(
   init: RequestInit,
   timeoutMs: number | undefined,
 ): Promise<Response> {
-  const { signal, cancel } = withTimeout(timeoutMs);
-  try {
-    return await fetch(url, signal ? { ...init, signal } : init);
-  } finally {
-    cancel();
-  }
+  const signal = timeoutSignal(timeoutMs);
+  return fetch(url, signal ? { ...init, signal } : init);
 }
 
 export function supabaseAdminUserUrl(supabaseUrl: string, userId: string): string {
