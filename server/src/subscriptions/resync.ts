@@ -28,8 +28,8 @@ export function createSubscriptionResyncService(options: { repository: AdaptyWeb
     // environment for each premium access-level aggregate. Until Adapty
     // documents that binding, resync is deliberately read-only/fail-closed.
     const markUnavailable = (value: EnvironmentObservation | null) => value ? { ...value, syncState: "unavailable" as const } : null;
-    const production = markUnavailable(await options.repository.readSubscriptionState(userId, "production"));
+    const production = await options.repository.readSubscriptionState(userId, "production");
     const sandbox = markUnavailable(await options.repository.readSubscriptionState(userId, "sandbox"));
-    return { authorization: authorizeProduction(production, syncedAt), observations: { production, sandbox }, syncedAt };
+    return { authorization: authorizeProduction(production, syncedAt), observations: { production: markUnavailable(production), sandbox }, syncedAt };
   } };
 }

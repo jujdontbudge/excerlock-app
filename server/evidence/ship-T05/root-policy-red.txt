@@ -1,0 +1,55 @@
+
+ RUN  v4.1.10 /Users/johansardar/ExcerLock-build/ship/server
+
+ ❯ test/subscription-resync.test.ts (4 tests | 2 failed) 52ms
+     × fails closed for the unproven profile environment shape and preserves webhook state 3ms
+   × retains confirmed active grace past expiry without granting inactive grace 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/subscription-resync.test.ts > subscription environment authorization > fails closed for the unproven profile environment shape and preserves webhook state
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ test/subscription-resync.test.ts:36:44
+     34|     } } })) }, now: () => new Date("2026-09-10T00:00:00Z") });
+     35|     const result = await service.resync(UID);
+     36|     expect(result.authorization.hasAccess).toBe(true);
+       |                                            ^
+     37|     expect(result.authorization.status).toBe("active");
+     38|     expect(result.observations.production).toEqual(expect.objectContai…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/subscription-resync.test.ts > retains confirmed active grace past expiry without granting inactive grace
+AssertionError: expected { environment: 'production', …(3) } to deeply equal ObjectContaining{…}
+
+- Expected
++ Received
+
+- ObjectContaining {
+-   "hasAccess": true,
+-   "status": "active",
++ {
++   "environment": "production",
++   "expiresAt": 2026-09-09T00:00:00.000Z,
++   "hasAccess": false,
++   "status": "expired",
+  }
+
+ ❯ test/subscription-resync.test.ts:68:51
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 2 passed (4)
+   Start at  00:52:14
+   Duration  486ms (transform 83ms, setup 0ms, import 361ms, tests 52ms, environment 0ms)
+

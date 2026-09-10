@@ -1,0 +1,9 @@
+
+ RUN  v4.1.10 /Users/johansardar/ExcerLock-build/ship/server
+
+
+ Test Files  2 passed (2)
+      Tests  14 passed (14)
+   Start at  00:52:59
+   Duration  1.56s (transform 85ms, setup 0ms, import 544ms, tests 892ms, environment 0ms)
+

@@ -33,8 +33,8 @@ describe("subscription environment authorization", () => {
       },
     } } })) }, now: () => new Date("2026-09-10T00:00:00Z") });
     const result = await service.resync(UID);
-    expect(result.authorization.hasAccess).toBe(false);
-    expect(result.authorization.status).toBe("unknown");
+    expect(result.authorization.hasAccess).toBe(true);
+    expect(result.authorization.status).toBe("active");
     expect(result.observations.production).toEqual(expect.objectContaining({ hasAccess: true, syncState: "unavailable" }));
     expect(repository.writeObservation).not.toHaveBeenCalled();
 
@@ -61,3 +61,12 @@ describe("POST /v1/subscription/resync", () => {
     expect(resync).toHaveBeenCalledWith(UID);
   });
 });
+
+ it("retains confirmed active grace past expiry without granting inactive grace", () => {
+    const now = new Date("2026-09-10T00:00:00Z");
+    const observation: EnvironmentObservation = { environment: "production", status: "active", hasAccess: true, expiresAt: new Date("2026-09-09T00:00:00Z"), isInGracePeriod: true, observedAt: now, source: "webhook", syncState: "current" };
+    expect(authorizeProduction(observation, now)).toEqual(expect.objectContaining({ hasAccess: true, status: "active" }));
+    expect(authorizeProduction({ ...observation, hasAccess: false }, now).hasAccess).toBe(false);
+    expect(authorizeProduction({ ...observation, isInGracePeriod: false }, now)).toEqual(expect.objectContaining({ hasAccess: false, status: "expired" }));
+    expect(authorizeProduction({ ...observation, environment: "sandbox" }, now).hasAccess).toBe(false);
+  });
