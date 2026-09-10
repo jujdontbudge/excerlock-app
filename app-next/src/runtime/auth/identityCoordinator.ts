@@ -72,11 +72,10 @@ export class IdentityCoordinator {
     this.unsubscribe?.();
     this.unsubscribe = null;
     const error = new Error('Identity coordinator disposed');
-    for (const entries of this.readyResolvers.values()) {
-      for (const entry of entries) entry.reject(error);
-    }
+    const waiters = [...this.readyResolvers.values()].flatMap((entries) => [...entries]);
     this.readyResolvers.clear();
     this.readyByKey.clear();
+    for (const entry of waiters) entry.reject(error);
   }
 
   private revokeReadiness(identity: AuthIdentity): void {
@@ -85,6 +84,9 @@ export class IdentityCoordinator {
       if (!key || readyKey !== key || identity.kind !== 'canonical' || !identity.ready) {
         this.readyByKey.delete(readyKey);
       }
+    }
+    if (!key || identity.kind !== 'canonical' || !identity.ready || this.lastReadyKey !== key) {
+      this.lastReadyKey = null;
     }
   }
 
@@ -106,6 +108,7 @@ export class IdentityCoordinator {
    * generation changes. Never resolves while provisional or deleting.
    */
   async waitForIdentityReady(options?: { timeoutMs?: number }): Promise<AuthIdentity> {
+    if (this.disposed) throw new Error('Identity coordinator disposed');
     const timeoutMs = options?.timeoutMs ?? 15000;
     const start = this.deps.getIdentity();
     const startKey = this.keyFor(start);

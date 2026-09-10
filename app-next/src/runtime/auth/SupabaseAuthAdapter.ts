@@ -71,6 +71,7 @@ export class SupabaseAuthAdapter implements AuthPort {
   private appStateSubscription: { remove: () => void } | null = null;
   private disposed = false;
   private runIdentityOperation: RunIdentityOperation;
+  private expectedSignedOutGenerations = new Set<number>();
 
   constructor(deps: AuthAdapterDeps) {
     this.supabase = deps.supabase;
@@ -319,6 +320,7 @@ export class SupabaseAuthAdapter implements AuthPort {
           if (this.generation !== capturedGeneration) return; // stale after delete/signout
           if (this.currentIdentity.kind === 'deleting') return;
           if (!capturedSession?.user) {
+            if (capturedEvent === 'SIGNED_OUT' && this.expectedSignedOutGenerations.delete(capturedGeneration)) return;
             if (capturedEvent === 'SIGNED_OUT') this.invalidateRevokedSession(capturedGeneration);
             return;
           }
@@ -354,16 +356,16 @@ export class SupabaseAuthAdapter implements AuthPort {
     this.syncSessionStore();
   }
 
-  private beginIdentityTransition(): { identity: AuthIdentity; session: Session } {
+  private beginIdentityTransition(): { identity: AuthIdentity; session: Session; operationGeneration: number } {
     const previous = { identity: this.currentIdentity, session: this.currentSession };
     this.generation += 1;
     this.currentIdentity = { kind: 'provisional', userId: null, isAnonymous: true, generation: this.generation, ready: false };
     this.emitIdentityOnly();
-    return previous;
+    return { ...previous, operationGeneration: this.generation };
   }
 
-  private restoreFailedTransition(previous: { identity: AuthIdentity; session: Session }): void {
-    if (this.disposed) return;
+  private restoreFailedTransition(previous: { identity: AuthIdentity; session: Session; operationGeneration: number }): void {
+    if (this.disposed || this.generation !== previous.operationGeneration || this.currentIdentity.kind !== 'provisional') return;
     this.currentSession = previous.session;
     this.currentIdentity = {
       ...previous.identity,
@@ -373,6 +375,27 @@ export class SupabaseAuthAdapter implements AuthPort {
     };
     this.emit();
     this.syncSessionStore();
+  }
+
+  private assertTransition(generation: number): void {
+    if (this.disposed || this.generation !== generation || this.currentIdentity.kind !== 'provisional') {
+      throw new AuthError('Sign-in was interrupted. Please try again.', { code: 'STALE_SIGNIN' });
+    }
+  }
+
+  private captureCanonicalIdentity(): { userId: string; generation: number } {
+    const identity = this.currentIdentity;
+    if (identity.kind !== 'canonical' || !identity.userId) {
+      throw new AuthError('Sign-in is not ready yet. Please try again.', { code: 'IDENTITY_NOT_READY' });
+    }
+    return { userId: identity.userId, generation: identity.generation };
+  }
+
+  private assertCanonicalIdentity(expected: { userId: string; generation: number }): void {
+    const identity = this.currentIdentity;
+    if (identity.kind !== 'canonical' || identity.userId !== expected.userId || identity.generation !== expected.generation) {
+      throw new AuthError('Sign-in was interrupted. Please try again.', { code: 'STALE_SIGNIN' });
+    }
   }
 
   private registerForegroundRetry(): void {
@@ -406,16 +429,19 @@ export class SupabaseAuthAdapter implements AuthPort {
   // ---- Provider sign-in ----
 
   async signInWithApple(): Promise<Session> {
+    const expected = this.captureCanonicalIdentity();
     const credential = await requestAppleCredential(this.appleDeps);
-    return this.linkWithIdToken('apple', credential.identityToken, credential.rawNonce, undefined);
+    this.assertCanonicalIdentity(expected);
+    return this.runIdentityOperation(() => this.linkWithIdToken('apple', credential.identityToken, credential.rawNonce, undefined, expected));
   }
 
   async recoverWithApple(): Promise<Session> {
     const previous = this.beginIdentityTransition();
     try {
       const credential = await requestAppleCredential(this.appleDeps);
+      this.assertTransition(previous.operationGeneration);
       return await this.runIdentityOperation(() =>
-        this.recoverWithIdToken('apple', credential.identityToken, credential.rawNonce, undefined),
+        this.recoverWithIdToken('apple', credential.identityToken, credential.rawNonce, undefined, previous.operationGeneration),
       );
     } catch (error) {
       this.restoreFailedTransition(previous);
@@ -424,16 +450,19 @@ export class SupabaseAuthAdapter implements AuthPort {
   }
 
   async signInWithGoogle(): Promise<Session> {
+    const expected = this.captureCanonicalIdentity();
     const credential = await requestGoogleCredential(this.googleDeps);
-    return this.linkWithIdToken('google', credential.idToken, credential.accessToken ? undefined : undefined, credential.accessToken);
+    this.assertCanonicalIdentity(expected);
+    return this.runIdentityOperation(() => this.linkWithIdToken('google', credential.idToken, undefined, credential.accessToken, expected));
   }
 
   async recoverWithGoogle(): Promise<Session> {
     const previous = this.beginIdentityTransition();
     try {
       const credential = await requestGoogleCredential(this.googleDeps);
+      this.assertTransition(previous.operationGeneration);
       return await this.runIdentityOperation(() =>
-        this.recoverWithIdToken('google', credential.idToken, undefined, credential.accessToken),
+        this.recoverWithIdToken('google', credential.idToken, undefined, credential.accessToken, previous.operationGeneration),
       );
     } catch (error) {
       this.restoreFailedTransition(previous);
@@ -446,8 +475,9 @@ export class SupabaseAuthAdapter implements AuthPort {
     token: string,
     nonce: string | undefined,
     accessToken: string | undefined,
+    expected: { userId: string; generation: number },
   ): Promise<Session> {
-    const startGeneration = this.generation;
+    this.assertCanonicalIdentity(expected);
     // Exact native ID-token linkIdentity overload (auth-js 2.116.0):
     // linkIdentity({ provider, token, nonce?, access_token? }) sends
     // link_identity:true + current JWT to /token?grant_type=id_token.
@@ -458,9 +488,7 @@ export class SupabaseAuthAdapter implements AuthPort {
       nonce,
       access_token: accessToken,
     } as never);
-    if (this.generation !== startGeneration || this.disposed) {
-      throw new AuthError('Sign-in was interrupted. Please try again.', { code: 'STALE_SIGNIN' });
-    }
+    this.assertCanonicalIdentity(expected);
     if (error) {
       if (isLinkConflictError(error)) {
         throw new AuthRecoveryRequiredError(provider);
@@ -490,21 +518,24 @@ export class SupabaseAuthAdapter implements AuthPort {
     token: string,
     nonce: string | undefined,
     accessToken: string | undefined,
+    operationGeneration: number,
   ): Promise<Session> {
     // Returning-account recovery: server-verified existing UID via
     // signInWithIdToken. Never accepts a caller-supplied UID.
+    this.assertTransition(operationGeneration);
     try {
       await this.onAccountSwitchReset();
     } catch {
       throw new AuthError('Could not prepare account recovery. Please try again.', { code: 'RECOVERY_RESET_FAILED' });
     }
+    this.assertTransition(operationGeneration);
     const { data, error } = await this.supabase.auth.signInWithIdToken({
       provider,
       token,
       nonce,
       access_token: accessToken,
     });
-    if (this.disposed) throw new AuthError('Sign-in was interrupted. Please try again.', { code: 'STALE_SIGNIN' });
+    this.assertTransition(operationGeneration);
     if (error || !data.session?.user) {
       throw new AuthError('Could not recover that account. Please try again.', { code: 'RECOVERY_FAILED' });
     }
@@ -523,13 +554,17 @@ export class SupabaseAuthAdapter implements AuthPort {
 
   async sendEmailCode(email: string): Promise<void> {
     const normalized = validateEmail(email);
+    const expected = this.captureCanonicalIdentity();
+    return this.runIdentityOperation(() => this.sendEmailCodeCanonical(normalized, expected));
+  }
+
+  private async sendEmailCodeCanonical(normalized: string, expected: { userId: string; generation: number }): Promise<void> {
+    this.assertCanonicalIdentity(expected);
     const identity = this.currentIdentity;
-    if (identity.kind !== 'canonical' || !identity.userId) {
-      throw new AuthError('Sign-in is not ready yet. Please try again.', { code: 'IDENTITY_NOT_READY' });
-    }
     if (!identity.isAnonymous) {
       // Permanent account: returning sign-in via OTP (recovery flow kind).
       const { error } = await this.supabase.auth.signInWithOtp({ email: normalized });
+      this.assertCanonicalIdentity(expected);
       if (error) {
         throw new AuthError('Could not send a code. Please try again.', { code: 'EMAIL_SEND_FAILED' });
       }
@@ -540,6 +575,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     // Anonymous conversion: updateUser({ email }) preserves the anonymous UID.
     // Never signInWithOtp here; that would not preserve the UID.
     const { error } = await this.supabase.auth.updateUser({ email: normalized });
+    this.assertCanonicalIdentity(expected);
     if (!error) {
       this.pendingEmail = normalized;
       this.pendingFlow = 'conversion';
@@ -548,6 +584,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     if (isExistingAccountError(error) || isLinkConflictError(error)) {
       // Existing-account conflict: send recovery OTP, then explicit error.
       const { error: otpError } = await this.supabase.auth.signInWithOtp({ email: normalized });
+      this.assertCanonicalIdentity(expected);
       if (otpError) {
         throw new AuthError('Could not send a code. Please try again.', { code: 'EMAIL_SEND_FAILED' });
       }
@@ -569,32 +606,35 @@ export class SupabaseAuthAdapter implements AuthPort {
     const email = normalizeEmail(pendingEmail);
     if (pendingFlow === 'recovery') return this.verifyRecoveryEmail(email, normalizedCode);
     const type = 'email_change';
-    const startGeneration = this.generation;
-    const { data, error } = await this.supabase.auth.verifyOtp({ email, token: normalizedCode, type } as never);
-    if (this.generation !== startGeneration || this.disposed) {
-      throw new AuthError('Sign-in was interrupted. Please try again.', { code: 'STALE_SIGNIN' });
-    }
-    if (error || !data.session?.user) {
-      // Keep pending for visible retry; do not clear. Token intact.
-      throw new AuthError('That code did not work. Please try again.', { code: 'OTP_INVALID' });
-    }
-    this.pendingEmail = null;
-    this.pendingFlow = null;
-    this.applySupabaseSession(data.session, { preserveGeneration: true });
-    return this.currentSession;
+    const expected = this.captureCanonicalIdentity();
+    return this.runIdentityOperation(async () => {
+      this.assertCanonicalIdentity(expected);
+      const { data, error } = await this.supabase.auth.verifyOtp({ email, token: normalizedCode, type } as never);
+      this.assertCanonicalIdentity(expected);
+      if (error || !data.session?.user) {
+        // Keep pending for visible retry; do not clear. Token intact.
+        throw new AuthError('That code did not work. Please try again.', { code: 'OTP_INVALID' });
+      }
+      this.pendingEmail = null;
+      this.pendingFlow = null;
+      this.applySupabaseSession(data.session, { preserveGeneration: true });
+      return this.currentSession;
+    });
   }
 
   private async verifyRecoveryEmail(email: string, code: string): Promise<Session> {
     const previous = this.beginIdentityTransition();
     try {
       return await this.runIdentityOperation(async () => {
+        this.assertTransition(previous.operationGeneration);
         try {
           await this.onAccountSwitchReset();
         } catch {
           throw new AuthError('Could not prepare account recovery. Please try again.', { code: 'RECOVERY_RESET_FAILED' });
         }
+        this.assertTransition(previous.operationGeneration);
         const { data, error } = await this.supabase.auth.verifyOtp({ email, token: code, type: 'email' });
-        if (this.disposed) throw new AuthError('Sign-in was interrupted. Please try again.', { code: 'STALE_SIGNIN' });
+        this.assertTransition(previous.operationGeneration);
         if (error || !data.session?.user) {
           throw new AuthError('That code did not work. Please try again.', { code: 'OTP_INVALID' });
         }
@@ -634,6 +674,8 @@ export class SupabaseAuthAdapter implements AuthPort {
         } catch {
           throw new AuthError('Could not sign out. Please try again.', { code: 'SIGNOUT_RESET_FAILED' });
         }
+        this.assertTransition(nextGeneration);
+        this.expectedSignedOutGenerations.add(nextGeneration);
         const { error } = await this.supabase.auth.signOut();
         if (this.generation !== nextGeneration || this.disposed) return;
         if (error) throw new AuthError('Could not sign out. Please try again.', { code: 'SIGNOUT_FAILED' });
@@ -657,9 +699,32 @@ export class SupabaseAuthAdapter implements AuthPort {
 
   /** 410 tombstone: invalidate local auth and boot fresh anonymous (new UID, new generation). */
   async handleTombstone(): Promise<void> {
+    const identity = this.currentIdentity;
+    if (identity.kind !== 'canonical' || !identity.userId) return;
+    const generation = identity.generation;
+    const stillDeleting = () =>
+      !this.disposed &&
+      this.generation === generation &&
+      this.currentIdentity.kind === 'deleting' &&
+      this.currentIdentity.userId === identity.userId;
+    this.currentIdentity = { ...identity, kind: 'deleting', ready: false };
+    this.emitIdentityOnly();
     try {
-      await this.supabase.auth.signOut();
-    } catch { /* ignore */ }
+      await this.onBeforeDelete();
+      if (!stillDeleting()) throw new Error('stale tombstone cleanup');
+      await this.onAccountSwitchReset();
+      if (!stillDeleting()) throw new Error('stale tombstone cleanup');
+      this.expectedSignedOutGenerations.add(generation);
+      const { error } = await this.supabase.auth.signOut();
+      if (!stillDeleting()) throw new Error('stale tombstone cleanup');
+      if (error) throw error;
+    } catch {
+      if (this.generation === generation && this.currentIdentity.kind === 'deleting') {
+        this.currentIdentity = { ...identity, ready: false };
+        this.emitIdentityOnly();
+      }
+      throw new AuthError('Deleted account cleanup is pending. Please try again.', { code: 'TOMBSTONE_CLEANUP_FAILED' });
+    }
     this.generation += 1;
     const nextGeneration = this.generation;
     this.pendingEmail = null;
@@ -769,6 +834,7 @@ export class SupabaseAuthAdapter implements AuthPort {
       // reset again best-effort before new boot.
       try {
         await this.onAccountSwitchReset();
+        this.expectedSignedOutGenerations.add(startGeneration);
         const { error: signOutError } = await this.supabase.auth.signOut();
         if (signOutError) throw signOutError;
       } catch {
