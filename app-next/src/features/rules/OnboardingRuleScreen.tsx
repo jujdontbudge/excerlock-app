@@ -7,10 +7,12 @@ import { Activity } from '../../domain/types';
 import { draftFromAnswers, goalStep } from './plan';
 import { conditionSentence } from './conditionSentence';
 import { ConditionPreview } from './ConditionPreview';
+import { scheduleDraft, toSchedule } from './scheduleDraft';
 export function OnboardingRuleScreen({ step, answers, setAnswer }: AnswerProps & { step: BranchStep }) {
   const activity = (answers.activity ?? 'walking') as Activity;
   const base = useMemo(() => createDraft(activity), [activity]);
   const draft = useMemo(() => draftFromAnswers(answers, base), [answers, base]);
+  const schedule = useMemo(() => toSchedule(scheduleDraft(answers)), [answers]);
   useEffect(() => {
     useRuleDraftStore.getState().replace(draft);
   }, [draft]);
@@ -43,7 +45,8 @@ export function OnboardingRuleScreen({ step, answers, setAnswer }: AnswerProps &
       preview={
         <ConditionPreview
           icon={activity}
-          sentence={conditionSentence(answers, draft, { goalChosen: step === goalStep(draft) })}
+          schedule={schedule}
+          sentence={conditionSentence(answers, draft, { schedule, goalChosen: step === goalStep(draft) })}
         />
       }
     />

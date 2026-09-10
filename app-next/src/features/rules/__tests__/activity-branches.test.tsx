@@ -78,6 +78,30 @@ test.each(walkingPaths)(
     });
   },
 );
+test.each(['W1', 'W2', 'W3'] as const)('%s previews the reviewer preset schedule', async (step) => {
+  const runtime = createRuntime();
+  await runtime.dev.load('fresh-install');
+  onboardingStore.getState().reset();
+  onboardingStore.getState().patch({
+    answers: { activity: 'walking', walkingMode: 'steps', stepGoal: 20, days: [2], allDay: true },
+  });
+  const r = renderRouter(
+    {
+      _layout: () => (
+        <AppRuntimeProvider runtime={runtime}>
+          <Slot />
+        </AppRuntimeProvider>
+      ),
+      'onboarding/[step]': OnboardingRoute,
+      paywall: () => <Text>Paywall</Text>,
+    },
+    { initialUrl: '/onboarding/' + step },
+  );
+  await r;
+  expect(screen.getByRole('header', { name: /all day on Tue/ })).toBeTruthy();
+  expect(screen.getByText('12 AM')).toBeTruthy();
+  expect(screen.getByText('11:59 PM')).toBeTruthy();
+});
 test('activity defaults stay separate when answers switch between walking and gym', () => {
   const walking = draftFromAnswers({ activity: 'walking', stepGoal: '8000' });
   expect(walking.stepGoal).toBe(8000);
