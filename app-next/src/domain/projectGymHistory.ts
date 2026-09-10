@@ -6,6 +6,17 @@ import { applyProgress } from './progress';
 
 type Segment = { start: number; end: number };
 
+export function measuredGymMinutesByDay(
+  intervals: readonly GymInterval[], configuredRegionIds: readonly string[], timezone: string, now: string,
+): Readonly<Record<string, number>> {
+  const nowMs = Date.parse(now);
+  if (!Number.isFinite(nowMs)) throw new Error('Invalid gym history observation time');
+  const configured = new Set(configuredRegionIds);
+  const eligible = intervals.filter((interval) => { validateInterval(interval); return configured.has(interval.regionId) && interval.confirmedAt <= nowMs; });
+  const byDay = splitByLocalDay(union(eligible.map(interval => ({ start: interval.confirmedAt, end: Math.min(interval.exitedAt ?? nowMs, nowMs) }))), timezone);
+  return Object.fromEntries([...byDay].map(([day, segments]) => [day, segments.reduce((sum, segment) => sum + (segment.end - segment.start) / 60_000, 0)]));
+}
+
 /**
  * Projects confirmed geofence intervals into earned gym rule progress.
  *
