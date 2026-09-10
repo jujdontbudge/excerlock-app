@@ -1,6 +1,6 @@
 import { createIdentityServices } from './createIdentityServices';
 import { createPostHogRuntime } from './analytics/createPostHogRuntime';
-import { createPaywallExperimentPort, normalizeWalkPlaces } from './analytics/PostHogAnalyticsAdapter';
+import { createPaywallExperimentPort, createReviewPresetPort, normalizeWalkPlaces } from './analytics/PostHogAnalyticsAdapter';
 import { initializeSentrySdk } from './observability/SentryBinding';
 import { getOtaObservabilityContext } from './updates';
 import { readClientConfiguration } from './clientConfiguration';
@@ -63,7 +63,8 @@ export async function createClientServices(options: {
   );
   return {
     auth: identity.auth, subscription: identity.subscription, analytics: telemetry.analytics,
-    experiments: createPaywallExperimentPort(telemetry.analytics.flags), notifications,
+    experiments: createPaywallExperimentPort(telemetry.analytics.flags),
+    reviewPreset: createReviewPresetPort(telemetry.analytics.flags), notifications,
     // Snapshot account before file writing. Payload assembly must also bind its origin.
     dataExport,
     boot: identity.boot,

@@ -92,6 +92,7 @@ export function OnboardingRoute() {
       onBack={flow.back}
       onContinue={advance}
       valid={canContinue(flow.step, flow.answers)}
+      continuing={flow.isAdvancing}
       continueLabel={flow.step === 'S3' ? c.use : undefined}
       hideContinue={flow.step === 'S2' || flow.step === 'T3' || playback.hideContinue}
       overlay={

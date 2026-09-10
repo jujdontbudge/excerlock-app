@@ -1,4 +1,11 @@
 import { canContinue } from '../validation';
+
+test('20 steps is the explicit reviewer goal without lowering the ordinary floor', () => {
+  expect(canContinue('W3', { walkingMode: 'steps', stepGoal: 20 })).toBe(true);
+  expect(canContinue('W3', { walkingMode: 'steps', stepGoal: 21 })).toBe(false);
+  expect(canContinue('W3', { walkingMode: 'steps', stepGoal: 499 })).toBe(false);
+  expect(canContinue('W3', { walkingMode: 'steps', stepGoal: 500 })).toBe(true);
+});
 test('pre-branch forms require their answer while numeric scrolling starts with an editable default', () => {
   expect(canContinue('O04', {})).toBe(false);
   expect(canContinue('O04', { name: '  ' })).toBe(false);

@@ -95,6 +95,7 @@ export function FakeRuntime(): FakeRuntimeInstance {
     auth: AuthFake(ctx),
     subscription: SubscriptionFake(ctx),
     analytics: AnalyticsFake(ctx),
+    reviewPreset: { isEnabled: async () => false, expose: () => undefined },
     notifications: NotificationsFake(ctx),
     sync: SyncFake(),
     support: SupportFake(ctx),

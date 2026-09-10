@@ -3,6 +3,7 @@ import { Answers } from './types';
 import { choiceQuestions } from '../content/onboardingChoices';
 import { draftFromAnswers } from '../features/rules/answersDraft';
 import { goalRange, validGoal } from '../features/rules/goalRange';
+import { isValidStepGoal } from '../domain/stepGoal';
 export function canContinue(step: string, answers: Answers): boolean {
   if (step === 'O04')
     return typeof answers.name === 'string' && answers.name.trim().length > 0 && answers.name.trim().length <= 30;
@@ -19,7 +20,7 @@ export function canContinue(step: string, answers: Answers): boolean {
   if (step === 'W3') {
     const minutes = answers.walkingMode === 'minutes';
     const n = Number(minutes ? answers.walkMinutes ?? 20 : answers.stepGoal ?? 5000);
-    return minutes ? Number.isInteger(n) && n >= 5 && n <= 180 : n >= 500 && n <= 30000 && n % 500 === 0;
+    return minutes ? Number.isInteger(n) && n >= 5 && n <= 180 : isValidStepGoal(n);
   }
   if (step === 'G2') {
     const draft = draftFromAnswers(answers);

@@ -37,3 +37,16 @@ test('invalid typed step goals block progression', () => {
   expect(canContinue('W3', { stepGoal: 125 })).toBe(false);
   expect(canContinue('W3', { stepGoal: 5000 })).toBe(true);
 });
+test('review step goal remains editable without changing normal or minute increments', async () => {
+  const onAction = jest.fn();
+  const reviewDraft = { ...createDraft('walking'), stepGoal: 20 };
+  const r = await render(<WalkingScreen step="W3" draft={reviewDraft} onAction={onAction} />);
+  expect(screen.queryByText('Enter a goal from 500 to 30,000 steps')).toBeNull();
+  expect(screen.getByRole('button', { name: 'Remove 500 steps' })).toBeDisabled();
+  await userEvent.press(screen.getByRole('button', { name: 'Add 500 steps' }));
+  expect(onAction).toHaveBeenLastCalledWith({ type: 'setStepGoal', value: 500 });
+
+  await r.rerender(<WalkingScreen step="W3" draft={{ ...reviewDraft, walkingMode: 'minutes' }} onAction={onAction} />);
+  await userEvent.press(screen.getByRole('button', { name: 'Add 5 minutes' }));
+  expect(onAction).toHaveBeenLastCalledWith({ type: 'setWalkMinutes', value: 25 });
+});

@@ -13,6 +13,7 @@ import { RuntimeControls } from '../ports/RuntimeControls';
 import { GaitPort } from '../ports/GaitPort';
 import { ExportPort } from '../ports/ExportPort';
 import { RuntimeStatusPort } from '../ports/RuntimeStatusPort';
+import { ReviewPresetPort } from '../ports/ReviewPresetPort';
 export type Runtime = {
   readonly kind: 'fake' | 'real';
   screenTime: ScreenTimePort;
@@ -29,6 +30,7 @@ export type Runtime = {
   dataExport: ExportPort;
   clock: ClockPort;
   status: RuntimeStatusPort;
+  reviewPreset?: ReviewPresetPort;
   /** Live production safety; absent means unknown, never safe by default. */
   safety?: () => { permissionPromptPending: boolean; cameraActive: boolean };
   /** Simulation-only surface. Real runtimes do not implement it. */
