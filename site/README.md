@@ -6,6 +6,7 @@ directory verbatim to the VM, so what is here is what is live.
 
 | File | URL | Why it exists |
 | --- | --- | --- |
+| `.well-known/apple-app-site-association` | `/.well-known/apple-app-site-association` | Associates the iOS app; empty paths enable no universal links yet. |
 | `index.html` | `/` | Marketing URL for App Store Connect and the homepage the Google OAuth consent screen requires. |
 | `privacy.html` | `/privacy.html`, `/privacy` | Privacy policy URL for App Store Connect, the Google OAuth consent screen, and the Adapty paywall. |
 | `terms.html` | `/terms.html`, `/terms` | Terms-of-use URL for the Adapty paywall and the Google OAuth consent screen. |
@@ -83,3 +84,7 @@ done
 
 Certificate: `curl -sSI https://excerlock.com/ >/dev/null` fails loudly if it is
 invalid. Caddy's own log is `sudo journalctl -u caddy -n 100 --no-pager`.
+
+The deploy validates the AASA payload locally and requires an HTTP 200 JSON response
+without redirects after activation. Run deployment inside the app operations lock
+from an integrated checkout containing `scripts/agent-ops.py`.

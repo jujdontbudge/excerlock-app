@@ -87,6 +87,9 @@ DEPLOY_SSH_KEY="${DEPLOY_SSH_KEY/#\~/$HOME}"
 
 command -v rsync >/dev/null 2>&1 || die "rsync is required but was not found in PATH"
 command -v ssh >/dev/null 2>&1 || die "ssh is required but was not found in PATH"
+command -v python3 >/dev/null 2>&1 || die "python3 is required but was not found in PATH"
+command -v curl >/dev/null 2>&1 || die "curl is required but was not found in PATH"
+python3 "${SCRIPT_DIR}/validate-aasa.py" "${SITE_DIR}/.well-known/apple-app-site-association"
 
 SSH_OPTIONS=(
   -i "$DEPLOY_SSH_KEY"
@@ -155,6 +158,18 @@ log "Validate the Caddyfile and reload Caddy"
 run_command ssh "${SSH_OPTIONS[@]}" "$DEPLOY_HOST" "$REMOTE_ACTIVATE"
 
 if ! "$DRY_RUN"; then
+  log "Verify the live AASA response without following redirects"
+  aasa_body="$(mktemp)"
+  trap 'rm -f "$aasa_body"' EXIT
+  aasa_response="$(curl --silent --show-error --max-time 20 \
+    --output "$aasa_body" --write-out '%{http_code} %{content_type}' \
+    https://excerlock.com/.well-known/apple-app-site-association)"
+  [[ "$aasa_response" == "200 application/json" ]] || \
+    die "AASA expected 200 application/json, got: $aasa_response"
+  python3 "${SCRIPT_DIR}/validate-aasa.py" "$aasa_body"
+  rm -f "$aasa_body"
+  trap - EXIT
+
   log "Verify the live pages"
   for path in / /privacy.html /terms.html /support.html /privacy /terms; do
     # A connection failure makes curl print nothing, so the substitution has to
