@@ -723,3 +723,12 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   Universal iOS pitfall ledger committed2de1e8e. Corrected clean Release artifact/runtime verification
   still pending; diagnostic instrumentation is NOT integrated. Build lane clean at217647f1; agent502
   interrupted build orchestration, no live xcodebuild on root check; bounded build task resumed.
+
+- Clean production-code Release preview217647f1 installed/launched on owned simulator: startup now
+  succeeds, real onboarding visible. Root traversed all3 intro pages via AX-driven idb and visually
+  inspected screenshots; entered documented App Review name via UI, reached attribution question.
+  Evidence app-next/evidence/ship-current-simulator/candidate-217647f1 (AX/screens/build.json).
+  This was an upgrade of session-owned install, not fresh-install or physical-device acceptance.
+  Actual HBC6,372,948 bytes SHA2565b442d6cffe78cc2430e6b2559d7f58c2e8032cbac5b43bcea238df2d9981108
+  still FAIL4,000,000 gate. No diagnostic markers; runtime2/main+4extensions/signatures verified.
+  Missing local OTA channel remains unverified, no production OTA published.
