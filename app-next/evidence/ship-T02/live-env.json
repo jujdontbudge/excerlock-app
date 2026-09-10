@@ -1,0 +1,35 @@
+{
+  "checks": [
+    {
+      "service": "Supabase",
+      "status": "ok",
+      "detail": "Auth settings reachable with public key; real auth still requires device test"
+    },
+    {
+      "service": "API",
+      "status": "ok",
+      "detail": "Health route reachable; authenticated routes are separate checks"
+    },
+    {
+      "service": "PostHog",
+      "status": "ok",
+      "detail": "Decide endpoint accepted request; SDK ingestion still requires verification"
+    },
+    {
+      "service": "Sentry",
+      "status": "ok",
+      "detail": "Token authenticated; project upload scopes and DSN ingestion are separate checks"
+    },
+    {
+      "service": "Adapty",
+      "status": "ok",
+      "detail": "Server credential probe accepted; public SDK key and StoreKit require device purchase tests"
+    },
+    {
+      "service": "Google",
+      "status": "ok",
+      "detail": "OIDC discovery reachable and client ID present; configured client sign-in remains a device gate"
+    }
+  ],
+  "scope": "service probes only; no device activation evidence"
+}

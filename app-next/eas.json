@@ -1,0 +1,43 @@
+{
+  "cli": {
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "environment": "development",
+      "env": {
+        "EAS_BUILD_PROFILE": "development",
+        "EXCERLOCK_ENV": "dev"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "environment": "preview",
+      "env": {
+        "EAS_BUILD_PROFILE": "preview",
+        "EXCERLOCK_ENV": "preview"
+      }
+    },
+    "production": {
+      "channel": "production",
+      "environment": "production",
+      "autoIncrement": "buildNumber",
+      "env": {
+        "EAS_BUILD_PROFILE": "production",
+        "EXCERLOCK_ENV": "prod"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleTeamId": "AX3C2B78YD",
+        "ascAppId": "6787265352"
+      }
+    }
+  }
+}

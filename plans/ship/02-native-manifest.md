@@ -22,13 +22,13 @@ Exhaustive. Every row is something that **cannot be added by an OTA update**. `a
 | 13 | Background modes | `UIBackgroundModes: [location, fetch, processing]` | `ios/ExcerLock/Info.plist` | |
 | 14 | Local notifications | `expo-notifications` | `app/` | |
 | 15 | Push entitlement | `aps-environment` — **present and provisioned, no pushes sent**; delete `withNoPush` | `plugins/withNoPush.js` (do the opposite) | reversal |
-| 16 | Sign in with Apple | entitlement `com.apple.developer.applesignin` + `expo-apple-authentication`; capability `SIGN_IN_WITH_APPLE` on the App ID | absent from both apps | new |
+| 16 | Sign in with Apple | entitlement `com.apple.developer.applesignin` + `expo-apple-authentication`; capability `APPLE_ID_AUTH` on the App ID | absent from both apps | new |
 | 17 | Associated Domains | entitlement + `ASSOCIATED_DOMAINS` capability; AASA at `excerlock.com` (empty `applinks` is fine for now) | absent | new |
 | 18 | App Tracking Transparency | `NSUserTrackingUsageDescription` (string only; no prompt in v1) | absent | new |
 | 19 | HealthKit + background delivery | entitlements + `NSHealthShareUsageDescription` + pinned `@kingstinct/react-native-healthkit@14.0.2` + `patches/` + `withHealthKitBackgroundBootstrap` (`@_silgen_name` bridge, `.mm` file) | `plugins/withHealthKitBackgroundBootstrap.js`, `plugins/healthkit/` | |
 | 20 | Secure storage | `expo-secure-store` + `NSFaceIDUsageDescription` | `app/app.json:76` | |
 | 21 | Photo library | `NSPhotoLibraryUsageDescription` + `expo-image-picker` | `app/app.json:68-75` | |
-| 22 | App Intents / Siri | 5th appex target, empty intent | placeholder in `native-targets.json` | new |
+| 22 | App Intents / Siri | Open ExcerLock AppIntent in main target (ADR 0010) | idempotent source/framework plugin | new |
 | 23 | Alternate app icons | `CFBundleAlternateIcons` with one alternate | absent | new |
 | 24 | Localizations | `CFBundleLocalizations: [en]` + `CFBundleAllowMixedLocalizations` | absent | new |
 | 25 | Privacy manifest | `PrivacyInfo.xcprivacy` with every collected data type (PostHog, Sentry, Adapty, Supabase) and required-reason APIs | empty in `app-next` | fix |
@@ -68,15 +68,15 @@ string is set in exactly one place (the plugin), never both.
    codesign -d --entitlements :- Payload/ExcerLock.app
    for x in Payload/ExcerLock.app/PlugIns/*.appex; do codesign -d --entitlements :- "$x"; done
    ```
-   Assert: main has every entitlement in §1; each appex has **exactly** its subset (Family Controls + App
-   Groups; nothing else). A capable profile is not sufficient — the executable signature is the truth.
+   Assert: main has every entitlement in §1; each appex has its required Family Controls + App Groups subset, plus valid provisioning-generated
+   identifiers/team/keychain groups/get-task-allow (ADR 0010). Main-only capabilities are not required on appex. A capable profile is not sufficient — the executable signature is the truth.
 3. `plutil -p Payload/ExcerLock.app/Info.plist` — assert every `NS*UsageDescription` in §1, `UIBackgroundModes`,
    `CFBundleAlternateIcons`, `CFBundleLocalizations`.
 4. `plutil -p Payload/ExcerLock.app/PrivacyInfo.xcprivacy` — non-empty `NSPrivacyCollectedDataTypes`.
 5. `security cms -D -i embedded.mobileprovision` for main + each appex — the capability list matches.
 6. App ID capabilities via `asc bundle-ids capabilities list --bundle <ID>` for all five: `FAMILY_CONTROLS`,
-   `FAMILY_CONTROLS_DISTRIBUTION`, `APP_GROUPS`, `IN_APP_PURCHASE`; main additionally `HEALTHKIT`,
-   `SIGN_IN_WITH_APPLE`, `PUSH_NOTIFICATIONS`, `ASSOCIATED_DOMAINS`. Verified present 2026-09-09 for the first
+   `FAMILY_CONTROLS_DISTRIBUTION`, `APP_GROUPS`; main additionally `IN_APP_PURCHASE`, `HEALTHKIT`,
+   `APPLE_ID_AUTH`, `PUSH_NOTIFICATIONS`, `ASSOCIATED_DOMAINS`. Verified present 2026-09-09 for the first
    four on all five IDs; the last three must be added (T00).
 7. Prebuild twice and diff `ios/` — the generated project is deterministic (ledger: a stale `ios/` omits new
    local modules and plugin plist keys).

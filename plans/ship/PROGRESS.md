@@ -88,3 +88,21 @@ run in parallel now; physical-device, truthful review screenshot, and submission
 release gates. Prior pending work-order question is resolved. Original T00 sequencing is overridden by the
 latest user direction; no acceptance requirement is removed. Architecture/integration remains with root or
 Astra low. Muse xhigh handles bounded implementation; root reviews changes and validates integrated results.
+
+## Local implementation / review checkpoint (2026-09-10 UTC)
+
+- Baseline preserved in 39ebb52 + 3184cc3; three isolated Muse xhigh lanes running (T01 native,
+  T07 cuts, T03 OTA). CLI works; native Muse collaboration does not. Root/Astra review architecture.
+- ADR0010 adopts main + four Screen Time appex and main-target AppIntent, corrects contradictory spec.
+  Detailed T04 identity/backend-deletion and T10/T11 enforcement contracts prepared outside repo for handoff.
+- T02 config implemented: 24 focused tests pass; six live service probes pass with explicit limited scope.
+  EAS/CI secrets not yet provisioned; root native config import awaits T01. Preview/prod explicitly refuse
+  demo runtime until T10 integrated. No EXPO_PUBLIC_RUNTIME read remains in app-next runtime.
+- T03 initial 0d0e7f6 reviewed but NOT integrated/accepted: stale safety across awaits, swallowed required
+  persistence, missed native downloaded-state changes/deferred foreground retry, premature success clearing,
+  and incomplete binary/dual-store artifact checks. Muse revision running; tests alone were insufficient.
+- Root full-suite baseline: 134 suites passed, 2 failed; 545 tests passed, 2 failed. Existing imported UI/test
+  drift in conditions-tabs paused header and DayPicker Every day. Baseline lint literal colors in TabBar,
+  TimeRangeRow and WorkoutGoalScreen effect. Reconcile in T07/T09; do not weaken assertions indiscriminately.
+- Universal ledger updated/committed 024887b: OTA build-profile env is not update env; live safety rechecks.
+- No build, TestFlight upload or App Store submission yet; device-only release gates unchanged.

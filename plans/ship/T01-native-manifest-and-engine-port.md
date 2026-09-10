@@ -21,7 +21,7 @@ Spec: `02-native-manifest.md`. Facts: `research/native-inventory.md` §1–§9. 
 3. Write `plugins/withMainAppEntitlements.js`: asserts every app-target build configuration's
    `CODE_SIGN_ENTITLEMENTS` points at `ios/ExcerLock/ExcerLock.entitlements` (ledger: stale/`undefined.entitlements`
    ships an executable without its capabilities). Fails prebuild otherwise.
-4. Extend the validator to the `.report` target; add a fifth target definition for App Intents (empty intent).
+4. Extend the validator to the `.report` target; compile an Open ExcerLock AppIntent into the main app (ADR 0010; no fifth appex).
 5. `app.json` → `app.config.ts` shell (T02 fills secrets): full `ios` block per §1 — every usage string set
    **only** in its plugin, `UIBackgroundModes`, `CFBundleAlternateIcons`, `CFBundleLocalizations`, `entitlements`
    with Family Controls, HealthKit ×2, App Groups, `applesignin`, `aps-environment`, associated domains.

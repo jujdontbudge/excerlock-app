@@ -33,5 +33,38 @@ jobs:
       - name: Run unit suites
         run: npm run test:unit
 
+      - name: Run app-next unit suite
+        run: npm run test --workspace app-next
+
+      - name: Run app-next lint
+        run: npm run lint --workspace app-next
+
       - name: Run architecture guardrails
         run: npm run test:guardrails
+
+  ship-service-readiness:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Verify ship service environment (not device activation)
+        working-directory: app-next
+        run: npx tsx scripts/check-env.ts
+        env:
+          EXPO_PUBLIC_ADAPTY_KEY: ${{ secrets.EXPO_PUBLIC_ADAPTY_KEY }}
+          EXPO_PUBLIC_POSTHOG_KEY: ${{ secrets.EXPO_PUBLIC_POSTHOG_KEY }}
+          EXPO_PUBLIC_POSTHOG_HOST: ${{ vars.EXPO_PUBLIC_POSTHOG_HOST }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: ${{ vars.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID }}
+          ADAPTY_SECRET_KEY: ${{ secrets.ADAPTY_SECRET_KEY }}
