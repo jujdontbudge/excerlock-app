@@ -1,6 +1,5 @@
 import type { GymPort } from '../../ports/GymPort';
 import type { SavedPlace } from '../../ports/models';
-import type { Coordinates } from '../../ports/PlaceSearch';
 import type { AppLocationProvider } from '../../engine/signals/location/ManualGymCheckIn';
 import { settingsStore } from '../../state/settingsStore';
 import { nativePlaceSearch } from '../NativePlaceSearch';
@@ -40,10 +39,10 @@ export function createNativeGymPort(owner: NativeGymOwner): NativeGymPort {
     }),
     deletePlace: id => serialize(async () => { await owner.deleteGym(id); persist(places().filter(p => p.id !== id)); }),
     listPlaces: () => [...places()],
-    enableAutoDetect: async () => {
+    enableAutoDetect: () => serialize(async () => {
       try { await owner.registerGyms(places()); const enabled = location.getAuthorizationStatus() === 'authorizedAlways'; persist(places(), enabled); return enabled; }
       catch { persist(places(), false); return false; }
-    },
+    }),
     disableAutoDetect: () => serialize(async () => { await location.stopMonitoringRegions(); persist(places(), false); }),
     checkIn: async id => {
       const place = places().find(p => p.id === id); if (!place) throw new Error('Saved gym not found');

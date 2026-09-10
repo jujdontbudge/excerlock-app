@@ -7,3 +7,21 @@ describe('NativeGymPort',()=>{beforeEach(()=>settingsStore.getState().patch({gym
 
 test('disable failure remains visible and does not lie in persistence', async()=>{settingsStore.getState().patch({gymPlaces:[],gymAutoDetect:true});const failing={...location,stopMonitoringRegions:jest.fn(async()=>{throw new Error('stop failed')})};const port=createNativeGymPort({location:failing,registerGyms:jest.fn(),deleteGym:jest.fn()});await expect(port.disableAutoDetect()).rejects.toThrow('stop failed');expect(settingsStore.getState().data.gymAutoDetect).toBe(true)});
 test('overlapping region exit recomputes all saved gym presence',()=>{settingsStore.getState().patch({gymPlaces:[place('a'),place('b')]});let region:(x:any)=>void=()=>{};const overlapping={...location,isInsideRegion:jest.fn((id:string)=>id==='b'),on:jest.fn((_e:string,cb:any)=>{region=cb;return()=>{}})};const port=createNativeGymPort({location:overlapping,registerGyms:jest.fn(),deleteGym:jest.fn()});const cb=jest.fn();port.observePresence(cb);region({type:'exit',regionId:'a'});expect(cb).toHaveBeenLastCalledWith('inside')});
+
+test('enable and disable share one mutation queue so late enable cannot resurrect monitoring', async () => {
+  settingsStore.getState().patch({ gymPlaces: [place('a')], gymAutoDetect: false });
+  let finish!: () => void;
+  const order: string[] = [];
+  const serialLocation = { ...location, stopMonitoringRegions: jest.fn(async () => { order.push('stop'); }) };
+  const port = createNativeGymPort({ location: serialLocation, deleteGym: jest.fn(), registerGyms: jest.fn(async () => {
+    order.push('start'); await new Promise<void>(resolve => { finish = resolve; });
+  }) });
+  const enabling = port.enableAutoDetect();
+  const disabling = port.disableAutoDetect();
+  await Promise.resolve();
+  expect(order).toEqual(['start']);
+  finish();
+  await enabling; await disabling;
+  expect(order).toEqual(['start', 'stop']);
+  expect(settingsStore.getState().data.gymAutoDetect).toBe(false);
+});
