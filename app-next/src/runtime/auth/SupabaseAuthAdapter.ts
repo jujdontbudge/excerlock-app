@@ -23,6 +23,8 @@ export type AuthAdapterDeps = {
   fetchImpl?: typeof fetch;
   /** Disable analytics/money + clear shields before DELETE. Root provides real; tests inject mock. */
   onBeforeDelete?: () => Promise<void>;
+  /** Erase local account-owned data only after server acceptance/tombstone validation. */
+  onAfterDelete?: () => Promise<void>;
   /** Reset SDK identity on sign-out / account switch (analytics reset + subscription reset). */
   onAccountSwitchReset?: () => Promise<void>;
   bootTimeoutMs?: number;
@@ -55,6 +57,7 @@ export class SupabaseAuthAdapter implements AuthPort {
   private apiBaseUrl: string;
   private fetchImpl: typeof fetch;
   private onBeforeDelete: () => Promise<void>;
+  private onAfterDelete: () => Promise<void>;
   private onAccountSwitchReset: () => Promise<void>;
   private bootTimeoutMs: number;
 
@@ -82,6 +85,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     this.apiBaseUrl = deps.apiBaseUrl.replace(/\/$/, '');
     this.fetchImpl = deps.fetchImpl ?? fetch;
     this.onBeforeDelete = deps.onBeforeDelete ?? (async () => undefined);
+    this.onAfterDelete = deps.onAfterDelete ?? (async () => undefined);
     this.onAccountSwitchReset = deps.onAccountSwitchReset ?? (async () => undefined);
     this.bootTimeoutMs = deps.bootTimeoutMs ?? BOOT_TIMEOUT_MS;
     this.runIdentityOperation = deps.runIdentityOperation ?? (async (operation) => operation());
@@ -735,6 +739,8 @@ export class SupabaseAuthAdapter implements AuthPort {
     try {
       await this.onBeforeDelete();
       if (!stillDeleting()) throw new Error('stale tombstone cleanup');
+      await this.onAfterDelete();
+      if (!stillDeleting()) throw new Error('stale tombstone cleanup');
       await this.onAccountSwitchReset();
       if (!stillDeleting()) throw new Error('stale tombstone cleanup');
       this.expectedSignedOutGenerations.add(generation);
@@ -792,15 +798,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     const identity = this.currentIdentity;
     // Provisional-only local erase: no server UID exists, no DELETE possible.
     if (identity.kind === 'provisional' || !identity.userId) {
-      this.generation += 1;
-      this.pendingEmail = null;
-      this.pendingFlow = null;
-      this.currentSession = { kind: 'anonymous' };
-      this.currentIdentity = { kind: 'provisional', userId: null, isAnonymous: true, generation: this.generation, ready: false };
-      this.emit();
-      this.syncSessionStore();
-      // Never emit account_deleted under an erased person (no UID, no event).
-      return;
+      return this.runIdentityOperation(() => this.deleteProvisionalAccount(identity));
     }
     const startGeneration = this.generation;
     const userId = identity.userId;
@@ -853,9 +851,11 @@ export class SupabaseAuthAdapter implements AuthPort {
     if (response.status === 204 || response.status === 410) {
       // Durable server acceptance: local cleanup/logout + fresh anonymous boot.
       // Adapty logout / PostHog reset are local cleanup, NOT vendor erasure
-      // (server owns erasure). They already ran via onBeforeDelete; run switch
-      // reset again best-effort before new boot.
+      // (server owns erasure). Run post-acceptance local erasure, then reset
+      // vendor identity before the fresh anonymous boot.
       try {
+        await this.onAfterDelete();
+        if (this.generation !== startGeneration || this.disposed) throw new Error('stale deletion cleanup');
         await this.onAccountSwitchReset();
         this.expectedSignedOutGenerations.add(startGeneration);
         const { error: signOutError } = await this.supabase.auth.signOut();
@@ -896,6 +896,26 @@ export class SupabaseAuthAdapter implements AuthPort {
     this.currentIdentity = { kind: 'canonical', userId, isAnonymous: identity.isAnonymous, generation: startGeneration, ready: false };
     this.emitIdentityOnly();
     throw new AuthError('Could not delete your account. Please try again.', { code: `DELETE_${response.status}` });
+  }
+
+  private async deleteProvisionalAccount(identity: AuthIdentity): Promise<void> {
+    if (this.disposed || this.generation !== identity.generation || this.currentIdentity.kind !== 'provisional')
+      throw new AuthError('Deletion was interrupted. Please try again.', { code: 'STALE_DELETE' });
+    // There is no server identity to accept deletion. Suspending enforcement is
+    // still mandatory, and local erasure must complete before reporting success.
+    await this.onBeforeDelete();
+    if (this.disposed || this.generation !== identity.generation || this.currentIdentity.kind !== 'provisional')
+      throw new AuthError('Deletion was interrupted. Please try again.', { code: 'STALE_DELETE' });
+    await this.onAfterDelete();
+    if (this.disposed || this.generation !== identity.generation || this.currentIdentity.kind !== 'provisional')
+      throw new AuthError('Deletion was interrupted. Please try again.', { code: 'STALE_DELETE' });
+    this.generation += 1;
+    this.pendingEmail = null;
+    this.pendingFlow = null;
+    this.currentSession = { kind: 'anonymous' };
+    this.currentIdentity = { kind: 'provisional', userId: null, isAnonymous: true, generation: this.generation, ready: false };
+    this.emit();
+    this.syncSessionStore();
   }
 }
 

@@ -55,6 +55,7 @@ function adapterWith(session: never, fetchImpl: typeof fetch, opts: Record<strin
     apiBaseUrl: 'https://api.test',
     fetchImpl,
     onBeforeDelete: (opts.onBeforeDelete as never) ?? (async () => undefined),
+    onAfterDelete: (opts.onAfterDelete as never) ?? (async () => undefined),
     onAccountSwitchReset: (opts.onAccountSwitchReset as never) ?? (async () => undefined),
   });
   return { adapter, supabase: supabase as unknown as { auth: Record<string, jest.Mock> } };
@@ -122,6 +123,8 @@ test('lost-response network failure reports pending, not false completion', asyn
 
 test('provisional-only local erase needs no server UID and makes no fetch', async () => {
   const fetchImpl = jest.fn();
+  const beforeDelete = jest.fn(async () => {});
+  const afterDelete = jest.fn(async () => {});
   const supabase = { auth: {
     getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
     signInAnonymously: jest.fn().mockImplementation(() => new Promise(() => undefined)),
@@ -140,11 +143,15 @@ test('provisional-only local erase needs no server UID and makes no fetch', asyn
     apiBaseUrl: 'https://api.test',
     fetchImpl: fetchImpl as never,
     bootTimeoutMs: 20,
+    onBeforeDelete: beforeDelete,
+    onAfterDelete: afterDelete,
   });
   await adapter.boot();
   expect(adapter.identity().kind).toBe('provisional');
   await adapter.deleteAccount();
   expect(fetchImpl).not.toHaveBeenCalled();
+  expect(beforeDelete).toHaveBeenCalledTimes(1);
+  expect(afterDelete).toHaveBeenCalledTimes(1);
   expect(adapter.identity().kind).toBe('provisional');
   adapter.dispose();
 });
@@ -240,5 +247,41 @@ test('each deletion failure keeps deleting visible with token intact and cleanup
   await expect(adapter.deleteAccount()).rejects.toThrow(/incomplete|try again/i);
   expect(cleanup).toBe(1);
   expect(await adapter.getAccessToken()).toBe('access-perm-cleanup');
+  adapter.dispose();
+});
+
+test('post-acceptance cleanup failure retries without an unsafe duplicate anonymous boot', async () => {
+  const fetchImpl = jest.fn()
+    .mockResolvedValueOnce({ status: 204 } as Response)
+    .mockResolvedValueOnce({ status: 410 } as Response);
+  const afterDelete = jest.fn()
+    .mockRejectedValueOnce(new Error('local storage busy'))
+    .mockResolvedValueOnce(undefined);
+  const { adapter, supabase } = adapterWith(permSession('accepted-cleanup') as never, fetchImpl as never, {
+    onAfterDelete: afterDelete,
+  });
+  await adapter.boot();
+  await expect(adapter.deleteAccount()).rejects.toBeInstanceOf(AuthPendingDeletionError);
+  expect(adapter.identity()).toMatchObject({ kind: 'deleting', userId: 'accepted-cleanup' });
+  expect(supabase.auth.signInAnonymously).not.toHaveBeenCalled();
+
+  await adapter.deleteAccount();
+  expect(fetchImpl).toHaveBeenCalledTimes(2);
+  expect(afterDelete).toHaveBeenCalledTimes(2);
+  expect(supabase.auth.signInAnonymously).toHaveBeenCalledTimes(1);
+  expect(adapter.identity().userId).toBe('anon-fresh-after-delete');
+  adapter.dispose();
+});
+
+test('provisional cleanup failure preserves identity and can retry safely', async () => {
+  const afterDelete = jest.fn().mockRejectedValueOnce(new Error('busy')).mockResolvedValueOnce(undefined);
+  const { adapter } = adapterWith(null as never, jest.fn() as never, { onAfterDelete: afterDelete });
+  // Exercise the provisional state before boot creates a canonical anonymous UID.
+  const generation = adapter.identity().generation;
+  await expect(adapter.deleteAccount()).rejects.toThrow('busy');
+  expect(adapter.identity()).toMatchObject({ kind: 'provisional', generation });
+  await adapter.deleteAccount();
+  expect(afterDelete).toHaveBeenCalledTimes(2);
+  expect(adapter.identity()).toMatchObject({ kind: 'provisional', generation: generation + 1 });
   adapter.dispose();
 });

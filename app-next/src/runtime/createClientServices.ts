@@ -15,13 +15,14 @@ export function createClientServices(options: {
   version: string;
   build: string;
   beforeDelete(): Promise<void>;
+  afterDelete(): Promise<void>;
   reportError(error: unknown): void;
 }) {
   const config = readClientConfiguration(options.extra);
   initializeSentrySdk(config.sentryDsn, { version: options.version, build: options.build, environment: config.environment });
   let telemetry!: ReturnType<typeof createPostHogRuntime>;
   const identity = createIdentityServices({
-    config: config.auth, adaptyPublicKey: config.adaptyPublicKey, beforeDelete: options.beforeDelete,
+    config: config.auth, adaptyPublicKey: config.adaptyPublicKey, beforeDelete: options.beforeDelete, afterDelete: options.afterDelete,
     analyticsFactory: (getIdentity) => {
       telemetry = createPostHogRuntime(config.posthog, {
         getIdentity,
