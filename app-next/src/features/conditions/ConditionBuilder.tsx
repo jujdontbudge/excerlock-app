@@ -1,7 +1,7 @@
 import { opacityIn, opacityOut } from '../../motion/presets';
 import { useState } from 'react';
 import Animated, { SlideInRight, SlideInLeft, SlideOutLeft, SlideOutRight } from 'react-native-reanimated';
-import { ScreenShell, PrimaryButton, OnboardingHeader } from '../../design-system';
+import { ScreenShell, PrimaryButton, OnboardingHeader, Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
 import { conditionsCopy as c } from '../../content/conditions';
@@ -40,7 +40,12 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
           onClose={f.cancel}
         />
       }
-      footer={<PrimaryButton label={f.step === 'S3' ? c.save : c.continue} disabled={!f.valid} onPress={f.next} />}
+      footer={
+        <Animated.View style={{ gap: t.space.sm }}>
+          {f.scheduleError ? <Label style={{ color: t.text.secondary }}>{c.scheduleLimit}</Label> : null}
+          <PrimaryButton label={f.step === 'S3' ? c.save : c.continue} disabled={!f.valid} onPress={f.next} />
+        </Animated.View>
+      }
       overlay={
         <>
           <TimeSheet

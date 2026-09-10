@@ -22,10 +22,14 @@ import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { ConfirmSheet } from './ConfirmSheet';
 import { toggleRule, deleteRule } from './mutations';
+import { SchedulePlanError } from '../../domain/scheduleRepresentability';
+import { useRuntimeStatus } from '../../state/selectors';
 export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit: (id: string) => void }) {
   const { rules, lockedApps, migrationNote } = useRulesStore((s) => s.data),
     runtime = useRuntime(),
-    [deleting, setDeleting] = useState<string | null>(null);
+    { scheduleIssue } = useRuntimeStatus(),
+    [deleting, setDeleting] = useState<string | null>(null),
+    [scheduleError, setScheduleError] = useState(false);
   const ordered = [...rules].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
     <ScreenShell dock
@@ -45,6 +49,30 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
         />
       }>
       <Heading title={c.title} />
+      {scheduleIssue ? (
+        <View
+          style={{
+            padding: t.space.lg,
+            borderRadius: t.radius.card,
+            backgroundColor: t.surface.card,
+            borderWidth: t.stroke.hairline,
+            borderColor: t.border.outline,
+          }}>
+          <Label style={{ color: t.text.secondary }}>{c.scheduleRecovery}</Label>
+        </View>
+      ) : null}
+      {scheduleError ? (
+        <View
+          style={{
+            padding: t.space.lg,
+            borderRadius: t.radius.card,
+            backgroundColor: t.surface.card,
+            borderWidth: t.stroke.hairline,
+            borderColor: t.border.outline,
+          }}>
+          <Label style={{ color: t.text.secondary }}>{c.scheduleLimit}</Label>
+        </View>
+      ) : null}
       {migrationNote ? (
         <View
           style={{
@@ -77,7 +105,18 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
                 icon={rule.activity}
                 enabled={rule.enabled}
                 onOpen={() => onEdit(rule.id)}
-                onToggle={(value) => toggleRule(rule.id, value)}
+                onToggle={(value) => {
+                  try {
+                    toggleRule(rule.id, value, {
+                      now: runtime.clock.now(),
+                      timezone: runtime.clock.timezone(),
+                    });
+                    setScheduleError(false);
+                  } catch (error) {
+                    if (!(error instanceof SchedulePlanError)) throw error;
+                    setScheduleError(true);
+                  }
+                }}
                 onDelete={() => setDeleting(rule.id)}
               />
             </Reveal>

@@ -17,6 +17,8 @@ export const planCopy = {
   targetSupport: 'Unlocks your apps for the rest of the day',
   stateSupport: 'Apps stay open while you walk',
   use: 'Use this plan',
+  scheduleLimit:
+    'This schedule cannot be saved exactly. Shorten its active times or pause another condition, then try again.',
   S4: 'Help us make ExcerLock better',
   ratingBody: 'How does your plan feel so far?',
   ratingHelper: 'Your feedback helps us improve the experience.',

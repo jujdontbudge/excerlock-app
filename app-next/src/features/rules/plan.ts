@@ -6,12 +6,15 @@ import { scheduleDraft, toSchedule } from './scheduleDraft';
 import { rulesStore } from '../../state/rulesStore';
 import { profileStore } from '../../state/profileStore';
 import { onboardingStore } from '../../state/onboardingStore';
+import { assertScheduleRepresentable, type SchedulePlanContext } from '../../domain/scheduleRepresentability';
 export { draftFromAnswers } from './answersDraft';
-export function commitPlan(a: Answers, unit: 'km' | 'mi', base?: RuleDraft) {
+export function commitPlan(a: Answers, unit: 'km' | 'mi', base?: RuleDraft, context?: SchedulePlanContext) {
   const draft = draftFromAnswers(a, base),
     rule = toRule(draft, toSchedule(scheduleDraft(a)));
   const existing = rulesStore.getState().data.rules;
-  rulesStore.getState().patch({ rules: [...existing.filter((r) => r.id !== rule.id), rule] });
+  const proposed = [...existing.filter((r) => r.id !== rule.id), rule];
+  assertScheduleRepresentable(proposed, context);
+  rulesStore.getState().patch({ rules: proposed });
   const profile: Partial<Profile> = { units: unit };
   for (const key of [
     'name',

@@ -10,6 +10,7 @@ import { scheduleDraft, reduceSchedule, toSchedule, ScheduleAction } from '../ru
 import { builderPath, builderValid } from './builderFlow';
 import { saveRule } from './mutations';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { SchedulePlanError } from '../../domain/scheduleRepresentability';
 export function useBuilder(id: string | undefined, onClose: () => void) {
   const runtime = useRuntime();
   const gymCount = useSettingsStore((s) => s.data.gymPlaces.length);
@@ -34,6 +35,7 @@ export function useBuilder(id: string | undefined, onClose: () => void) {
     [step, setStep] = useState(initial.editing ? 'S3' : 'O20'),
     [chosen, setChosen] = useState(initial.editing),
     [confirm, setConfirm] = useState(false),
+    [scheduleError, setScheduleError] = useState(false),
     [backup, setBackup] = useState<{ draft: typeof draft; schedule: typeof schedule } | null>(null),
     [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const dirty =
@@ -50,14 +52,19 @@ export function useBuilder(id: string | undefined, onClose: () => void) {
     step,
     chosen,
     confirm,
+    scheduleError,
     direction,
     dispatch,
     valid: step === 'GPlace' ? gymCount > 0 : builderValid(step, draft, schedule, chosen),
     choose: (activity: Activity) => {
+      setScheduleError(false);
       store.getState().replace(createDraft(activity, runtime.clock.now()));
       setChosen(true);
     },
-    onSchedule: (a: ScheduleAction) => setSchedule((s) => reduceSchedule(s, a)),
+    onSchedule: (a: ScheduleAction) => {
+      setScheduleError(false);
+      setSchedule((s) => reduceSchedule(s, a));
+    },
     edit: (target: string) => {
       setBackup({ draft, schedule });
       move(target, true);
@@ -75,8 +82,17 @@ export function useBuilder(id: string | undefined, onClose: () => void) {
     },
     next: () => {
       if (step === 'S3') {
-        saveRule(toRule({ ...draft, updatedAt: runtime.clock.now() }, toSchedule(schedule)));
-        onClose();
+        try {
+          saveRule(toRule({ ...draft, updatedAt: runtime.clock.now() }, toSchedule(schedule)), {
+            now: runtime.clock.now(),
+            timezone: runtime.clock.timezone(),
+          });
+          setScheduleError(false);
+          onClose();
+        } catch (error) {
+          if (!(error instanceof SchedulePlanError)) throw error;
+          setScheduleError(true);
+        }
       } else if (backup) {
         setBackup(null);
         move('S3');

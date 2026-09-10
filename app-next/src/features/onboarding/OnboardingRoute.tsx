@@ -1,5 +1,6 @@
 import { useIsFocused } from 'expo-router';
 import { useMemo, useState } from 'react';
+import { View } from 'react-native';
 import { TrialScreen } from '../subscription/TrialScreen';
 import { OnboardingShell } from './OnboardingShell';
 import { useOnboarding } from './useOnboarding';
@@ -18,11 +19,17 @@ import { planCopy as c } from '../../content/plan';
 import { useImpactPlayback } from './impact/useImpactPlayback';
 import { conditionSentence } from '../rules/conditionSentence';
 import { ConditionPreview } from '../rules/ConditionPreview';
+import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { SchedulePlanError } from '../../domain/scheduleRepresentability';
+import { Label } from '../../design-system';
+import { tokens as t } from '../../design-system/tokens';
 export function OnboardingRoute() {
   const focused = useIsFocused();
+  const runtime = useRuntime();
   const flow = useOnboarding(),
     unit = useSettingsStore((s) => s.data.units),
-    [wheel, setWheel] = useState<'start' | 'end' | null>(null);
+    [wheel, setWheel] = useState<'start' | 'end' | null>(null),
+    [scheduleError, setScheduleError] = useState(false);
   const playback = useImpactPlayback(flow.step, flow.advance, focused);
   const base = useMemo(() => createDraft('walking'), []);
   const draft = draftFromAnswers(flow.answers, base),
@@ -32,7 +39,19 @@ export function OnboardingRoute() {
       flow.setAnswer(key, value),
     );
   const advance = () => {
-    if (flow.step === 'S3') commitPlan(flow.answers, unit, draft);
+    if (flow.step === 'S3') {
+      try {
+        commitPlan(flow.answers, unit, draft, {
+          now: runtime.clock.now(),
+          timezone: runtime.clock.timezone(),
+        });
+        setScheduleError(false);
+      } catch (error) {
+        if (!(error instanceof SchedulePlanError)) throw error;
+        setScheduleError(true);
+        return;
+      }
+    }
     flow.advance();
   };
   // A pushed route can retain an earlier summary while this shared draft is incomplete.
@@ -57,7 +76,13 @@ export function OnboardingRoute() {
       />
     );
   if (flow.step === 'S2') body = <PlanBuild rule={toRule(draft, toSchedule(schedule))} onComplete={flow.advance} />;
-  if (flow.step === 'S3') body = <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} />;
+  if (flow.step === 'S3')
+    body = (
+      <View style={{ gap: t.space.lg }}>
+        <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} />
+        {scheduleError ? <Label style={{ color: t.text.secondary }}>{c.scheduleLimit}</Label> : null}
+      </View>
+    );
   if (flow.step === 'S4') body = <ReviewWarmup onSkip={flow.advance} />;
   return (
     <OnboardingShell
