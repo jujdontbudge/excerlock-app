@@ -231,3 +231,10 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   stale account cancellation and strict tap URL allowlist. Removed walk-lease warning port/fake method.
   6tests, primary typecheck/lint pass. Native factory supplied, root scheduling/tap mounting still pending;
   ShieldAction shield_open delegated native agent. No push token registration and no device delivery claim.
+- T06 base/review corrections integratedd3827ec+6653c9f: originating identity binding, stable singleflight
+  flags and explicit settled-value exposures, stricter crash scrubber. Concrete PostHog factory/queue
+  storage and real Sentry binding still same agent task; no ingestion/symbolication proof.
+- Root added concrete typed SDK4 Adapty binding and createIdentityServices composition: one auth graph,
+  exact shared purchase/restore barrier/readiness, real analytics hooks required, native management URL,
+  deletion callback required and idempotent disposal.4focused suites/16tests + primary typecheck/lint pass.
+  Not mounted as real Runtime yet; no preview/devices or fake-to-real activation claim.
