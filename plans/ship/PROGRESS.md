@@ -303,3 +303,22 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   minute/state rules; get-ahead allowed, earned timestamp preserved, reproject idempotent.2tests pass;
   typecheck/focused lint pass. Still needs root callback and hydration projection wiring before shipping.
 - GymPort8c9755a1 ready review; native clock/support next. WalkingPort implemented/under full lane tests.
+- Integrated native Gym/clock/support/Walking chains (e6f72214,0b9e2cfb,b5bb8ee4,ff3fc847).
+  Root corrected enable-auto-detect missing the mutation queue: a late enable could resurrect registration
+  after disable; regression test and typecheck pass (1b9a081b).13focused native-port tests pass.
+- Integrated T13 audit/metadata chain through a832e823. ASC metadata readback now truthful and canonical
+  public URLs verified. AASA empty paths deliberately retained per native manifest (no universal routes).
+  Still no store build, submission, screenshot assets or product-review screenshots.
+- Production hydration barrier06cbaefe includes detection and checks Zustand hasHydrated, because read
+  errors are swallowed by middleware. Waits for ALL stores to settle before recovery.3tests/typecheck/
+  focused lint pass; cross-app pitfall recorded c7305fb. Actual production root construction still pending.
+- Exact weekly schedule planner + recurrence correction integrated2ca2f8f1/05255a6b/3e2b83e7.
+  Preserves disjoint gaps; past recurring anchors accepted; earned suppression expires at eligibleUntil.
+  Root rejected agent's silent full-week callback skip: final code explicitly returns
+  nativeFullWeekUnsupported and native rejects equal cyclic boundary components. All-week support is an
+  OPEN RELEASE GAP, not a passed feature; >7 exact union windows also explicitly unsupported. DST
+  spring/fall all-week rejection covered.11planner/native SOURCE tests pass, not Swift runtime proof.
+- Integrated full Jest checkpoint (before subsequent schedule tests):216suites/973tests/13snapshots PASS,
+  /tmp/ship-integrated-jest.log. Latest targeted schedule/native11tests + typecheck pass. No signed/device
+  acceptance implied. Auth agent refactoring production status, server agent finishing ledger cursor/
+  midnight pending replay; root full Runtime remains the largest open task.
