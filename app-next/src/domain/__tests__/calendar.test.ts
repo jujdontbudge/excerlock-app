@@ -1,4 +1,4 @@
-import { localInstant, resolveLocalInstant } from '../calendar';
+import { localInstant, resolveLocalInstant, localDayStart } from '../calendar';
 
 test.each([
   ['America/Chicago', '2026-01-15', 720, '2026-01-15T18:00:00.000Z'],
@@ -38,4 +38,17 @@ test('cached resolution results cannot be changed by callers', () => {
   const first=resolveLocalInstant('2026-09-10',720,'UTC');
   first.instant='corrupted';
   expect(resolveLocalInstant('2026-09-10',720,'UTC').instant).toBe('2026-09-10T12:00:00.000Z');
+});
+
+
+test('accounting midnight exposes nonconvergence in development, while production keeps the explicit gap policy', () => {
+  const host = globalThis as typeof globalThis & { __DEV__: boolean };
+  const before = host.__DEV__;
+  try {
+    expect(resolveLocalInstant('2026-09-06', 0, 'America/Santiago').converged).toBe(false);
+    host.__DEV__ = true;
+    expect(() => localDayStart('2026-09-06', 'America/Santiago')).toThrow('Nonconverged local day boundary');
+    host.__DEV__ = false;
+    expect(localDayStart('2026-09-06', 'America/Santiago')).toBe(resolveLocalInstant('2026-09-06', 0, 'America/Santiago').instant);
+  } finally { host.__DEV__ = before; }
 });

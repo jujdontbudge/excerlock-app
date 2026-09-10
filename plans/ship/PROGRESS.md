@@ -469,3 +469,11 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   stuck on an unchanged failed snapshot; retry only the latest failed serialized operation, never old state.
 - Intermediate full overnight checkpoint:237suites/1130tests/13snapshots PASS. Subsequent review fixes
   passed typecheck and targeted3suites/28tests (/tmp/ship-recovery-final.log); final fresh full check follows.
+- Fresh full exact-accounting checkpoint at a4c738bc: typecheck/lint PASS,237suites/1137tests/13snapshots
+  PASS (/tmp/ship-exact-final-full.log). Fresh synthetic preview production export PASS:3975sources,
+  real graph present, no demo/dev graph; actual export verifier PASS. Not signed/device proof.
+- Subsequent native-recurring DST review found shifted epoch anchors would change Swift-extracted
+  weekly wall minutes (02:30→03:30) or invert intervals. f7258bb6 preserves converged current-week anchors,
+  otherwise searches bounded same-weekday exact anchor pairs; union/day partition unchanged and explicit
+  unavailable result. Typecheck and focused schedule/calendar/policy suites pass. Added direct development
+  midnight convergence assertion regression; device recurrence still unverified.

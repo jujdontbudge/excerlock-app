@@ -24,3 +24,13 @@ Schedule resolution now has consistent behavior for one-hour and half-hour DST t
 - `app-next/src/domain/calendar.ts`
 - `app-next/src/domain/schedule.ts`
 - `plans/rebuild/phase-2-backend/P2-T15-session-credit-engine.md`, section 6
+
+## Native recurring anchors
+
+DeviceActivity extracts weekday/hour/minute from encoded epoch anchors. A deliberately gap-shifted
+current-day instant must not silently change the recurring wall-clock minute for future weeks. The
+weekly native planner therefore keeps the current-week pair only when both endpoints converge and
+form a positive interval; otherwise it checks bounded nearby same-weekday weeks for exact anchors.
+This does not change current-day `windowInstances` gap/collapse policy or broaden schedule unions.
+No safe anchor produces explicit `nativeAnchorUnavailable`. Actual OS recurrence through DST still
+requires device verification.
