@@ -8,7 +8,8 @@ import type { MotionAdapter, MotionEvidence } from './MotionAdapter';
 import type { PlacementAdapter } from './PlacementAdapter';
 import type { HistoryCreditLedger, HistoryLedger } from './HistoryCreditLedger';
 import { addDays, dayKey, localInstant } from '../../domain/calendar';
-import type { PendingHistoryCredit } from '../../state/detectionStore';
+import type { DetectionData, PendingHistoryCredit } from '../../state/detectionStore';
+import type { WalkingDurationLedger } from './WalkingDurationLedger';
 export const MAX_HISTORY_SEGMENTS_PER_WAKE = 8;
 export type DetectionWake = {
   now: number;
@@ -32,6 +33,8 @@ export class DetectionService {
       placement: PlacementAdapter;
       gymLog: GymVisitLog;
       historyLedger: Pick<HistoryCreditLedger, 'read' | 'apply'>;
+      walkingDurationLedger?: Pick<WalkingDurationLedger, 'observe'>;
+      walkingTimezone?: () => string;
       persist?: () => Promise<void>;
       onError?: (error: unknown) => void;
     },
@@ -64,9 +67,7 @@ export class DetectionService {
               ...(kind === 'putDown' ? { walking: createWalkingState(at) } : {}),
               observedAt: at,
             });
-            await this.persist();
-            this.assertGeneration(generation);
-      this.notifyCommitted();
+            await this.commitObserved(at, generation);
           }).catch((error) => this.deps.onError?.(error));
         }),
       ];
@@ -110,9 +111,7 @@ export class DetectionService {
       const gym = reduceGym(before.gym, { kind: 'records', records }, wake.now);
       if (wake.includeStepHistory === false) {
         detectionStore.getState().patch({ walking, propped, gym, observedAt: wake.now });
-        await this.persist();
-        this.assertGeneration(wake.generation);
-        this.notifyCommitted();
+        await this.commitObserved(wake.now, wake.generation, wake.timezone);
         return;
       }
       let ledger = await this.deps.historyLedger.read();
@@ -141,7 +140,6 @@ export class DetectionService {
         detectionStore.getState().patch({ pendingHistory: pending });
         await this.persist();
         this.assertGeneration(wake.generation);
-      this.notifyCommitted();
         ledger = await this.commitHistory(pending, wake, ledger);
         cursor = Math.max(to, ledger.through ?? to);
         segments += 1;
@@ -154,13 +152,7 @@ export class DetectionService {
         creditedThrough: { ...before.creditedThrough, steps: cursor },
         pendingHistory: null,
       });
-      try {
-        await this.persist();
-      } catch (error) {
-        throw error;
-      }
-      this.assertGeneration(wake.generation);
-      this.notifyCommitted();
+      await this.commitObserved(wake.now, wake.generation, wake.timezone);
     });
   }
   /** Lightweight foreground clock tick: live reducers + durable gym events, never step history. */
@@ -184,9 +176,7 @@ export class DetectionService {
         propped = reducePropped(propped, { kind: 'coverageLost', at: now }, now);
       const gym = reduceGym(before.gym, { kind: 'records', records }, now);
       detectionStore.getState().patch({ walking, propped, gym, observedAt: now });
-      await this.persist();
-      this.assertGeneration(generation);
-      this.notifyCommitted();
+      await this.commitObserved(now, generation);
     });
   }
   observeCommitted(callback: () => void): () => void {
@@ -226,9 +216,7 @@ export class DetectionService {
         gym: reduceGym(data.gym, { kind: 'coverageLost' }, now),
         observedAt: now,
       });
-      await this.persist();
-      this.assertGeneration(generation);
-      this.notifyCommitted();
+      await this.commitObserved(now, generation);
     });
   }
   invalidateGymRegion(regionId: string, now: number, generation: number): Promise<void> {
@@ -236,9 +224,7 @@ export class DetectionService {
       this.assertGeneration(generation);
       const data = detectionStore.getState().data;
       detectionStore.getState().patch({ gym: reduceGym(data.gym, { kind: 'coverageLost', regionId }, now) });
-      await this.persist();
-      this.assertGeneration(generation);
-      this.notifyCommitted();
+      await this.commitObserved(now, generation);
     });
   }
   async startProppedScan(now: number, generation: number): Promise<number | null> {
@@ -277,9 +263,7 @@ export class DetectionService {
       else if (walking.phase === 'inactive' && propped.phase === 'active')
         propped = reducePropped(propped, { kind: 'walkingStopped', at: now }, now);
       detectionStore.getState().patch({ walking, propped, observedAt: now });
-      await this.persist();
-      this.assertGeneration(generation);
-      this.notifyCommitted();
+      await this.commitObserved(now, generation);
     });
   }
   private async applyMotion(evidence: MotionEvidence, graceMs: number, generation: number): Promise<void> {
@@ -301,9 +285,7 @@ export class DetectionService {
       propped,
       observedAt: evidence.observedAt,
     });
-    await this.persist();
-    this.assertGeneration(generation);
-      this.notifyCommitted();
+    await this.commitObserved(evidence.observedAt, generation);
   }
   private applyPropped(
     event: ProppedEvent,
@@ -315,9 +297,7 @@ export class DetectionService {
       this.assertGeneration(generation);
       const next = reducePropped(detectionStore.getState().data.propped, event, now);
       detectionStore.getState().patch({ propped: next, observedAt: now });
-      await this.persist();
-      this.assertGeneration(generation);
-      this.notifyCommitted();
+      await this.commitObserved(now, generation);
       after?.(next);
     });
   }
@@ -326,6 +306,20 @@ export class DetectionService {
   }
   private persist(): Promise<void> {
     return (this.deps.persist ?? persistDetectionState)();
+  }
+  private async commitObserved(at: number, generation: number, timezone = this.deps.walkingTimezone?.()): Promise<void> {
+    await this.persist();
+    this.assertGeneration(generation);
+    if (this.deps.walkingDurationLedger) {
+      if (!timezone) throw new Error('Walking duration timezone unavailable');
+      const data = detectionStore.getState().data;
+      // Walking grace and propped pickup/handoff/propped-only relief are
+      // intentionally excluded from measured exercise duration.
+      const verified = isMeasuredWalkingState(data);
+      await this.deps.walkingDurationLedger.observe({ generation, at, verified, timezone });
+      this.assertGeneration(generation);
+    }
+    this.notifyCommitted();
   }
   private enqueue(operation: () => Promise<void>): Promise<void> {
     const next = this.queue.catch(() => undefined).then(operation);
@@ -339,6 +333,10 @@ export class DetectionService {
     this.lifecycle = next.catch(() => undefined);
     return next;
   }
+}
+
+export function isMeasuredWalkingState(data: Pick<DetectionData, 'walking' | 'propped'>): boolean {
+  return data.walking.phase === 'active' || (data.propped.phase === 'active' && data.propped.verifiedSince != null);
 }
 
 function nextLocalMidnight(from: number, timezone: string): number {
