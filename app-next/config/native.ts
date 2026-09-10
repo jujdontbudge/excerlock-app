@@ -54,6 +54,7 @@ export const nativePlugins: ExpoPlugin[] = [
   "./plugins/withMainAppIntent",
   healthKitPlugin,
   "./plugins/withHealthKitBackgroundBootstrap",
+  "./modules/excerlock-startup/app.plugin",
   [
     "react-native-device-activity",
     {

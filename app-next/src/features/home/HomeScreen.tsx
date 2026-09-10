@@ -31,6 +31,7 @@ import { Reveal } from '../../motion/Reveal';
 import { unlockKind } from '../unlock/entry';
 import { UnlockEntry } from '../unlock/UnlockEntry';
 import { WalkingCheckButton } from './WalkingCheckButton';
+import { useInteractiveHomeMarker } from '../../runtime/startup/useInteractiveHomeMarker';
 export function HomeScreen() {
   useDemoProgress();
   const runtime = useRuntime(),
@@ -40,7 +41,8 @@ export function HomeScreen() {
     decision = useLockDecision(now),
     progress = useTodayProgress(now),
     streak = useStreak(now);
-  const { scheduleIssue } = useRuntimeStatus();
+  const { scheduleIssue, loading, hydrated } = useRuntimeStatus();
+  const markHomeLayout = useInteractiveHomeMarker(runtime, !loading && hydrated);
   const name = useProfileStore((s) => s.data.name);
   const { rules, lockedApps } = useRulesStore((s) => s.data),
     permissions = usePermissionsStore((s) => s.data),
@@ -130,6 +132,7 @@ export function HomeScreen() {
   });
   return (
     <ScreenShell dock
+      onLayout={markHomeLayout}
       orangeBackground
       safeBottom={false}
       scrollUnderStatusBar={false}

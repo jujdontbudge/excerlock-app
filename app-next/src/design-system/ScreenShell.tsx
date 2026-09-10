@@ -1,5 +1,5 @@
 import { PropsWithChildren, ReactNode, useEffect, useLayoutEffect, useRef } from 'react';
-import { Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, LayoutChangeEvent, ScrollView, StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { tokens as t } from './tokens';
@@ -16,6 +16,7 @@ export function ScreenShell({
   scrollToEndOnKeyboard = false,
   scrollResetKey,
   contentStyle,
+  onLayout,
 }: PropsWithChildren<{
   footer?: ReactNode;
   header?: ReactNode;
@@ -28,6 +29,7 @@ export function ScreenShell({
   scrollToEndOnKeyboard?: boolean;
   scrollResetKey?: string;
   contentStyle?: StyleProp<ViewStyle>;
+  onLayout?: (event: LayoutChangeEvent) => void;
 }>) {
   const scroll = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
@@ -43,7 +45,7 @@ export function ScreenShell({
     return () => listener.remove();
   }, [scrollToEndOnKeyboard]);
   return (
-    <View style={s.root}>
+    <View style={s.root} onLayout={onLayout}>
       {tinted ? (
         <LinearGradient
           pointerEvents="none"
