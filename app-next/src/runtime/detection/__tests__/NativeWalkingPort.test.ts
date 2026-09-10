@@ -26,7 +26,7 @@ function setup() {
   const motion = new MotionAdapter(provider, () => now);
   const placement = {
     start: async () => {}, stop: async () => {}, subscribe: () => () => {},
-    reconcile: () => ({ placement: 'handheld' as const, at: now }),
+    reconcile: () => ({ placement: now <= 5_000 ? 'handheld' as const : 'unknown' as const, at: 0 }),
   } as unknown as PlacementAdapter;
   const service = new DetectionService({
     motion, placement, gymLog: { append: async () => {}, readAll: async () => [] }, historyLedger: { read: async () => ({ version: 1, through: null, stepsByDay: {} }), apply: async () => { throw new Error('Walking-only test must not query history'); } }, persist: async () => {},
@@ -83,4 +83,32 @@ test('observeWalking reports fused OR evidence rather than fabricated session st
   s.setNow(1000); s.emitCadence(0, 4);
   stop();
   expect(seen).toEqual([false, true, false]);
+});
+
+test('snapshot identity is stable until an effective projected field changes', async () => {
+  const s = setup();
+  const first = s.port.snapshot();
+  expect(s.port.snapshot()).toBe(first);
+  s.setNow(4_999);
+  expect(s.port.snapshot()).toBe(first);
+
+  await s.port.start(stateRule);
+  const started = s.port.snapshot();
+  expect(started).not.toBe(first);
+  expect(s.port.snapshot()).toBe(started);
+});
+
+test('a store tick publishes time-based placement expiry and then stabilizes', () => {
+  let notifications = 0;
+  const s = setup();
+  const stop = s.port.observe(() => { notifications++; });
+  const fresh = s.port.snapshot();
+  s.setNow(6_000);
+  detectionStore.getState().patch({ observedAt: 6_000 });
+  expect(notifications).toBe(1);
+  const expired = s.port.snapshot();
+  expect(expired).not.toBe(fresh);
+  expect(expired.placement).toBe('unknown');
+  expect(s.port.snapshot()).toBe(expired);
+  stop();
 });

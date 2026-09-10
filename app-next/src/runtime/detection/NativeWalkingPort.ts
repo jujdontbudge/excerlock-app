@@ -32,6 +32,8 @@ export class NativeWalkingPort implements WalkingPort {
   private stepBaseline: number | null = null;
   private readonly now: () => number;
   private readonly sleep: (ms: number) => Promise<void>;
+  private lastSnapshot: WalkingStatus | null = null;
+  private localListeners = new Set<() => void>();
 
   constructor(private readonly options: NativeWalkingPortOptions) {
     this.now = options.now ?? Date.now;
@@ -42,6 +44,7 @@ export class NativeWalkingPort implements WalkingPort {
     this.assertStateRule(rule);
     const operation = ++this.operationGeneration;
     this.ruleId = rule.id;
+    this.publishLocal();
     this.stepBaseline = this.options.motion.cumulativeSteps();
     await this.options.service.start(this.options.walkingGraceMs());
     if (operation !== this.operationGeneration) throw new Error('Walking start was cancelled');
@@ -80,6 +83,7 @@ export class NativeWalkingPort implements WalkingPort {
     this.scanGeneration = null;
     this.ruleId = null;
     this.stepBaseline = null;
+    this.publishLocal();
     if (scan !== null) {
       const data = detectionStore.getState().data;
       void this.options.service.cancelProppedScan(this.now(), data.generation).catch(this.options.onError);
@@ -101,7 +105,7 @@ export class NativeWalkingPort implements WalkingPort {
     const propped = proppedRelief(data.propped);
     const phase = propped ? 'active' : data.walking.phase;
     const since = data.walking.activeSince ?? data.walking.qualifyingSince;
-    return {
+    const next: WalkingStatus = {
       ...inactiveWalkingStatus,
       ruleId: this.ruleId ?? this.options.resolveRuleId?.() ?? null,
       phase,
@@ -110,10 +114,22 @@ export class NativeWalkingPort implements WalkingPort {
       proppedVerified: propped,
       proppedSince: data.propped.verifiedSince == null ? null : new Date(data.propped.verifiedSince).toISOString(),
     };
+    const previous = this.lastSnapshot;
+    if (previous && Object.keys(next).every((key) => previous[key as keyof WalkingStatus] === next[key as keyof WalkingStatus]))
+      return previous;
+    this.lastSnapshot = next;
+    return next;
   }
 
   observe(callback: () => void): () => void {
-    return detectionStore.subscribe(callback);
+    this.localListeners.add(callback);
+    const stopStore = detectionStore.subscribe(callback);
+    const stopPlacement = this.options.placement.subscribe(callback);
+    return () => {
+      this.localListeners.delete(callback);
+      stopStore();
+      stopPlacement();
+    };
   }
 
   observeWalking(callback: (walking: boolean) => void): () => void {
@@ -150,5 +166,9 @@ export class NativeWalkingPort implements WalkingPort {
   private assertStateRule(rule: Rule): void {
     if (!rule.enabled || rule.activity !== 'walking' || rule.mode.kind !== 'state')
       throw new Error('An enabled walking state condition is required');
+  }
+
+  private publishLocal(): void {
+    this.localListeners.forEach((listener) => listener());
   }
 }
