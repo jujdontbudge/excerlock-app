@@ -120,7 +120,7 @@ export function GymFake(ctx: FakeContext): GymPort & { dispose: () => void } {
       }
       return false;
     },
-    disableAutoDetect: () => settingsStore.getState().patch({ gymAutoDetect: false }),
+    disableAutoDetect: async () => { settingsStore.getState().patch({ gymAutoDetect: false }); },
     observePresence: (callback) => {
       let last = ctx.snapshot().presence;
       callback(last);
