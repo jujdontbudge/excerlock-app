@@ -1,6 +1,10 @@
 /** Build-only resolver. Do not import this module from the application bundle. */
 export type BuildEnvironment = 'dev' | 'preview' | 'prod';
 export type EnvironmentValues = Readonly<Record<string, string | undefined>>;
+/** Direct prebuild/xcodebuild must embed the same channel as EAS Build. */
+export function updateChannel(environment: BuildEnvironment): string {
+  return { dev: 'development', preview: 'preview', prod: 'production' }[environment];
+}
 export const CLIENT_ENV_NAMES = [
   'EXPO_PUBLIC_ADAPTY_KEY',
   'EXPO_PUBLIC_POSTHOG_KEY',

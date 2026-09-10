@@ -782,3 +782,14 @@ before T06; UI has substantive changes underway; auth intentional callback owner
 - Use targeted checks for each reviewed change, one final combined suite/typecheck and incremental
   native candidate build. Native/device, signing, metadata and external-service limits remain honest
   gates, not replaceable by unit tests or server health. No production OTA or App Review submission.
+
+- Revalidated signing: report Bundle ID association is still missing; a newly generated replacement
+  profile also has empty App Groups (not a repair). ASC/EAS auth valid but Apple web session absent,
+  native CUA pipe unavailable and phone unavailable. Read-only service audit confirms all6 vendor
+  probes pass, Supabase anonymous/Apple/Google/email enabled, but live POST subscription/resync404
+  and PostHog personal erasure key absent. Evidence /tmp/ship-sprint-service-audit.
+- Claude Code/Fable approved profile-derived native OTA channel config, not a fragile plist patch.
+  Root added exact EAS channel mapping; real Expo loader3profile+conflict smoke4/4 and typecheck PASS,
+  independent review clean. RED demonstrated undefined headers before fix. Public update probe
+  without channel400; preview header404 because this EAS project has zero channels/branches.
+  Native artifact validation and empty preview channel setup remain next; no OTA is published.

@@ -14,15 +14,17 @@ const env = {
   EXPO_PUBLIC_SUPABASE_ANON_KEY: 'fixture-anon', EXPO_PUBLIC_API_URL: 'https://api.example.com',
   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: 'fixture.apps.googleusercontent.com',
 };
-test('actual Expo loader resolves external TS, preserves native plugins and excludes private credentials', () => {
-  const result = spawnSync(process.execPath, [cli, 'config', '--type', 'public', '--json'], { cwd, env, encoding: 'utf8', timeout: 30_000 });
+for (const [profile, environment] of [['development', 'dev'], ['preview', 'preview'], ['production', 'prod']]) {
+test(`actual Expo loader preserves ${profile} native configuration and excludes private credentials`, () => {
+  const result = spawnSync(process.execPath, [cli, 'config', '--type', 'public', '--json'], { cwd, env: { ...env, EAS_BUILD_PROFILE: profile, EXCERLOCK_ENV: environment }, encoding: 'utf8', timeout: 30_000 });
   assert.equal(result.status, 0, 'Expo config loading failed (output withheld)');
   const config = JSON.parse(result.stdout);
-  assert.equal(config.extra.environment, 'preview');
+  assert.equal(config.extra.environment, environment);
   assert.ok(config.scheme.includes('com.googleusercontent.apps.fixture'));
   assert.equal(config.extra.clientAuth.googleRedirectUri, 'com.googleusercontent.apps.fixture:/oauthredirect');
   assert.equal(config.runtimeVersion, '2');
   assert.equal(config.updates.checkAutomatically, 'ON_LOAD');
+  assert.deepEqual(config.updates.requestHeaders, { 'expo-channel-name': require('../eas.json').build[profile].channel });
   assert.equal(config.ios.bundleIdentifier, 'com.johansardar.excerlock');
   assert.ok(config.plugins.includes('./plugins/withScreenTimeExtensionValidation'));
   assert.ok(config.plugins.includes('./plugins/withMainAppIntent'));
@@ -30,6 +32,7 @@ test('actual Expo loader resolves external TS, preserves native plugins and excl
   assert.ok(!result.stdout.includes(env.SENTRY_AUTH_TOKEN));
   assert.ok(!result.stdout.includes('SENTRY_AUTH_TOKEN'));
 });
+}
 test('actual Expo loader refuses conflicting release environment', () => {
   const result = spawnSync(process.execPath, [cli, 'config', '--type', 'public', '--json'], {
     cwd, env: { ...env, EXCERLOCK_ENV: 'prod' }, encoding: 'utf8', timeout: 30_000,

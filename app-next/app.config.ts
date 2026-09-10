@@ -1,6 +1,6 @@
 import 'tsx/cjs'; // Expo transpiles only the entry; register external TS config imports.
 import type { ConfigContext, ExpoConfig } from 'expo/config';
-import { buildClientExtra, resolveBuildEnvironment } from './config/environment';
+import { buildClientExtra, resolveBuildEnvironment, updateChannel } from './config/environment';
 import { loadBuildEnvironment } from './config/loadEnvironment';
 import { nativeConfig } from './config/native';
 import { googleOAuthRedirect } from './config/googleOAuth';
@@ -27,6 +27,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     updates: {
       url: 'https://u.expo.dev/9a358379-d939-4c56-bcea-de3ac5699be2',
       enabled: true,
+      requestHeaders: { 'expo-channel-name': updateChannel(environment) },
       checkAutomatically: 'ON_LOAD',
       fallbackToCacheTimeout: 3000,
       useEmbeddedUpdate: true,
