@@ -1,3 +1,12 @@
+## Current user-authorized endpoint (supersedes earlier release objective)
+
+User changed scope on 2026-09-10: **submission-ready only**. TestFlight upload/distribution is allowed.
+**Do not submit for App Review, release publicly, or publish production OTA.**
+Preserve the underlying plans as reference, but public release/production OTA execution and public-store
+activation are excluded from this goal. Submission readiness must still be verified; TestFlight upload
+alone does not establish readiness. All applicable signing, review metadata, privacy, correctness,
+security, device, and performance gates remain unless explicitly revised by the user.
+
 # Ship execution status
 
 Authoritative implementation checkout: `/Users/johansardar/ExcerLock-build/ship`, branch `ship/implementation`.
