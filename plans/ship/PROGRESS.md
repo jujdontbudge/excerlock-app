@@ -799,3 +799,18 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   update uploaded and no production channel/OTA touched. Evidence /tmp/ship-eas-preview-*.json.
   Alternate normal Chrome UI path works via AppleScript, but Developer Portal redirects to Sign In;
   task-owned background tab closed. No Apple session/credentials extracted or guessed.
+
+- Candidate27a6bcdf headless Release UI journey completed: exact App Review name produces20-step
+  W3 goal; kill/relaunch persists it; Thursday-only/all-day schedule and20-step final plan confirmed.
+  Real live paywall shows annual$59.99/year with1week trial and monthly$9.99/month, correct CTA
+  switch and restore/legal actions. Google native consent reaches real provider sign-in (no credential
+  entry/completed auth claim). Published Privacy/Terms opened in Safari. Evidence in ignored
+  app-next/evidence/ship-current-simulator/candidate-27a6bcdf/; screenshots46/47 are real paywall.
+- Integrated native Apple-branded WHITE_OUTLINE button879e95a4; Expo native control preserves busy
+  guard and existing auth actions. Combined app suite at879e95a4:250/250 suites,1210/1210 tests,
+  13/13 snapshots PASS in56s; typecheck PASS. No new broad suite authored. Final native rebuild
+  remains pending tiny schedule-preview correction. Candidate27 does not prove these newer changes.
+- Local StoreKit Debug build-for-testing recovered after proper workspace dependency install;
+  first runtime attempt found harness defects: StoreKit Product.products queried from UI-test runner
+  returns empty, and Expo first-run dev-menu overlays the journey. This is NOT purchase proof;
+  bounded test-only recovery assigned. No production or sandbox purchase acceptance claimed.
