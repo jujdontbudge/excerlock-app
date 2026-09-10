@@ -578,3 +578,13 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   decimal4,000,000 budget; no-dev verifier passes. Root requested app-next-specific full tests (root
   test:app only covers legacy app), topology regression and ADR before adopting. Existing E2E YAML
   contract failure remains reported, not suppressed. Further read-only HBC attribution underway.
+
+- Adopted reviewed core topology as3a17550a; root follow-up0c6b2865 includes @sentry-internal owners
+  in regression traversal and accepts ADR0020. Clean integrated npm ci passed; all5 topology/Metro/size
+  node tests pass. Candidate app-next full suite241/1160/13 snapshots passed (not legacy app tests).
+  No experimental optimizer flags adopted. Remaining app-source audit found no large fixture/test or
+  duplicate workspace pollution, and React Compiler is genuinely active. Supported auth-only Supabase
+  client equivalence research assigned before any architecture change. Budget remains FAIL.
+- Browser creation works again, but Apple Developer actually redirects to an empty Sign In form; no
+  authenticated portal session is available. Preserved signing portal tab for login handoff, entered no
+  credentials. Claiming existing PostHog tab still times out. No permissions, keys or profiles changed.
