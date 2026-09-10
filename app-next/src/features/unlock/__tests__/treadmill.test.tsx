@@ -29,6 +29,6 @@ test('camera denial offers handheld walking instead of granting scan credit', as
   expect(screen.getByRole('header', { name: 'Camera access is off' })).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Continue with phone in hand' }));
   expect(start).toHaveBeenCalledTimes(2);
-  expect(runtime.dev.snapshot().placement).toBe('handheld');
+  expect(runtime.walking.snapshot().placement).toBe('handheld');
   await act(() => runtime.dispose()); jest.useRealTimers();
 });

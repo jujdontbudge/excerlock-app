@@ -4,6 +4,7 @@ import type { LockApplyResult, ScreenTimePort } from '../../ports/ScreenTimePort
 import { deviceActivityApi } from './deviceActivityApi';
 import { nativeScreenTimePicker, NativeScreenTimePickerHost } from './NativeScreenTimePickerHost';
 import { NATIVE_LOCKED_SELECTION } from './nativeSelection';
+import { rulesStore } from '../../state/rulesStore';
 
 export type NativeScreenTimeEnforcementHandler = Readonly<{
   applyLock(decision: LockDecision): Promise<LockApplyResult>;
@@ -23,12 +24,12 @@ export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcem
   let authorizationPromptBusy = false;
   let pickerBusy = false;
   return {
-    authorizationStatus: () => authorization,
+    authorizationStatus: () => { authorization = mapAuthorization(deviceActivityApi.authorizationStatus()); return authorization; },
     requestAuthorization: async () => {
       if (authorizationPromptBusy) return authorization;
       authorizationPromptBusy = true;
       try {
-        if (authorization === 'notDetermined') await deviceActivityApi.requestAuthorization('individual').catch(() => undefined);
+        if (authorization === 'notDetermined') await deviceActivityApi.requestAuthorization('individual');
         authorization = mapAuthorization(deviceActivityApi.authorizationStatus());
         return authorization;
       } finally { authorizationPromptBusy = false; }
@@ -39,10 +40,10 @@ export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcem
       pickerBusy = true;
       try {
         const contents = await nativeScreenTimePicker.pick(NATIVE_LOCKED_SELECTION);
+        if (!contents) return rulesStore.getState().data.lockedApps;
         return {
           handle: contents && (contents.applicationCount > 0 || contents.categoryCount > 0) ? { token: NATIVE_LOCKED_SELECTION } : null,
-          appCount: contents?.applicationCount ?? 0,
-          categoryCount: contents?.categoryCount ?? 0,
+          isEmpty: !contents || (contents.applicationCount === 0 && contents.categoryCount === 0),
         };
       } finally { pickerBusy = false; }
     },

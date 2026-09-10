@@ -14,6 +14,7 @@ import { PRESENCE_CONFIRM_MS, PRESENCE_EXIT_GRACE_MS, PRESENCE_RETRY_MS } from '
  * a later phase, so the manual "I'm at the gym" route stays the safety net.
  */
 export function startGymPresenceSync(runtime: Runtime) {
+  if (runtime.kind !== 'fake') return () => undefined;
   let active = true,
     presence: 'inside' | 'outside' = 'outside',
     outsideSince: number | null = null,

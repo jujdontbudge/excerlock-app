@@ -13,7 +13,7 @@ import { RuntimeControls } from '../ports/RuntimeControls';
 import { GaitPort } from '../ports/GaitPort';
 import { ExportPort } from '../ports/ExportPort';
 export type Runtime = {
-  readonly kind: 'fake';
+  readonly kind: 'fake' | 'real';
   screenTime: ScreenTimePort;
   steps: StepsPort;
   walking: WalkingPort;

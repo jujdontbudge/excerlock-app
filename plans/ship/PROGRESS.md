@@ -287,3 +287,11 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   incremental unsigned build pass. Await root integration/review, no hardware acceptance claim.
 - T10 domain1906b2cc ready: public lease/WalkingSession removed,198suites/903tests pass in lane. New
   WalkingPort snapshot/check; root adapters need detection timestamps, not invented current-time evidence.
+- Native ScreenTimePort232c3fd5 integratedc593a5b4. Root corrected old lane count-shaped picker output
+  to {handle,isEmpty}, reads actual authorization on status call, surfaces native auth request errors,
+  preserves prior persisted selection on cancelled picker.4port tests/typecheck pass.
+- Root prepares real Runtime discrimination, disables Home demo progress/gym writers for real runtime,
+  blocks demo query-parameter mutations outside dev fake mode, removes real treadmill reliance on
+  runtime.dev.setPlacement (walking.start options now owns it).5targeted tests + focused lint pass.
+  Also prevents legacy fake step updater from incorrectly crediting minutes with step counts. Complete
+  Runtime construction/headless root still pending actual walking/gym adapters and history transaction.

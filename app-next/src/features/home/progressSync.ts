@@ -6,6 +6,8 @@ import { dayKey, windowInstances, currentInstances } from '../../domain/schedule
 import { applyProgress } from '../../domain/progress';
 /** Synchronizes port observations into persisted per-rule facts; no UI owns counters. */
 export function startProgressSync(runtime: Runtime) {
+  // Production history transactions are root-owned, never driven by Home mounts.
+  if (runtime.kind !== 'fake') return () => undefined;
   let active = true,
     steps = 0;
   const update = () => {
@@ -17,7 +19,7 @@ export function startProgressSync(runtime: Runtime) {
     const old = ruleDaysStore.getState().data.days;
     const changes = rulesStore.getState().data.rules.flatMap((rule) => {
       const m = rule.mode;
-      if (!rule.enabled || m.kind !== 'target' || m.activity !== 'walking') return [];
+      if (!rule.enabled || m.kind !== 'target' || m.activity !== 'walking' || m.metric !== 'steps') return [];
       if (permissions.motion !== 'granted') return [];
       const instance = currentInstances(rule, now, tz)[0] ?? windowInstances(rule, today, tz)[0];
       if (!instance) return [];

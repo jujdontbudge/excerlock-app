@@ -56,7 +56,6 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
       try {
         if (!preview) {
           if (!rule || rule.mode.kind !== 'state') throw new Error('Choose a treadmill walking condition first.');
-          runtime.dev.setPlacement('propped');
           await runtime.walking.start(rule, { placement: 'propped' });
         }
         if (active) {
@@ -110,7 +109,6 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
             label={c.treadmill.handheld}
             onPress={async () => {
               if (rule && !preview) {
-                runtime.dev.setPlacement('handheld');
                 await runtime.walking.start(rule);
                 verified.current = true;
               }
