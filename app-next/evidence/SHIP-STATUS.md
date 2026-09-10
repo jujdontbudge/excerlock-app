@@ -4,11 +4,11 @@
 
 ## User scope override — 2026-09-10
 
-Authoritative active gates: `plans/ship/README.md` current scope section. Complete signing/upload,
-physical-iPhone functional verification and backend functionality. Submission metadata, formal
+Authoritative active gates: `plans/ship/README.md` current scope section. Complete signing/upload
+and backend functionality. Physical-iPhone verification was cancelled. Submission metadata, formal
 startup/battery measurements and local StoreKit automation are TODO in `plans/post-ship/README.md`,
 not active engineering completion gates. The4MBHermes limit is removed; old FAIL entries below are
-historical and no longer blockers. Real purchases, privacy/deletion correctness and core runtime
+historical and no longer blockers. Privacy/deletion correctness and core runtime
 safeguards remain active. No AppReview/publicrelease/productionOTA authorized.
 
 

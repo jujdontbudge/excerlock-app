@@ -2,8 +2,8 @@
 
 ## Current scope — user revision, 2026-09-10
 
-The active completion gates are signing/build upload, real-iPhone functional verification,
-and backend functionality per the existing product/identity/detection specifications.
+The active completion gates are signing/build upload and backend functionality per the existing
+product/identity specifications. Physical-iPhone verification was cancelled by Johan on 2026-09-10.
 The rest of this document preserves the historical task map; it does not override this revision.
 Submission metadata, formal startup/battery measurements, and the optional local StoreKit harness
 are explicitly **deferred, not completed** to [the follow-up spec](../post-ship/README.md).
@@ -16,8 +16,6 @@ Completing this engineering scope does **not** mean Apple submission metadata is
 - [ ] Correct distribution signing and all five bundle IDs/extension entitlements; signed artifact
       uploaded and processed by App Store Connect. Distribution is not required; this scope does not
       authorize external tester invitations or notifications.
-- [ ] Build-identified physical-iPhone evidence for sign-in, purchase/restore, exercise detection,
-      Screen Time blocking/unlocking, and recovery paths from T04/T05/T11/T14. No simulator substitutes.
 - [ ] Required backend credentials/configuration, forward-only migrations and current deployment;
       verified authentication, subscription resync/webhook and account/data deletion behavior.
 

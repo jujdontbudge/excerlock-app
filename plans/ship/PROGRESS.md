@@ -888,4 +888,12 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   Required sequence after credential availability: verified backup, deploy, forward migrations,
   restart, host-local/public health/readiness and subscription resync checks under operations lock.
   No deployment attempted with known-invalid readiness configuration.
-- All three active acceptance gates remain INCOMPLETE, not passing. Follow-up tasks remain TODO.
+- The physical-iPhone acceptance gate was cancelled by Johan after this handoff. The two remaining
+  active gates—signing/upload and backend—remain INCOMPLETE. Follow-up tasks remain TODO.
+
+### Scope correction — physical-iPhone verification cancelled
+
+- Physical-iPhone verification is no longer an active completion gate. Existing device findings are
+  retained as historical evidence only and are not a claim that the functionality passed.
+- Active completion is now limited to signing/build upload and backend functionality. The existing
+  prohibition on App Review submission, public release and production OTA remains unchanged.
