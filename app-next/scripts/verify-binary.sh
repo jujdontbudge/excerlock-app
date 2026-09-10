@@ -30,14 +30,21 @@ pass() { echo "VERIFY PASS: $*"; }
 pass "prebuild outputs present in $IOS_DIR"
 
 # Info.plist keys (§3 step 3) from the generated plist, not app.json.
-for key in NSMotionUsageDescription NSCameraUsageDescription NSLocationWhenInUseUsageDescription NSLocationAlwaysAndWhenInUseUsageDescription NSLocationAlwaysUsageDescription NSHealthShareUsageDescription NSFaceIDUsageDescription NSPhotoLibraryUsageDescription NSUserTrackingUsageDescription UIBackgroundModes CFBundleAlternateIcons CFBundleLocalizations; do
+# No NSUserTrackingUsageDescription (no ATT prompt) and no
+# CFBundleAlternateIcons (no alternate assets) — their absence is asserted.
+for key in NSMotionUsageDescription NSCameraUsageDescription NSLocationWhenInUseUsageDescription NSLocationAlwaysAndWhenInUseUsageDescription NSLocationAlwaysUsageDescription NSHealthShareUsageDescription NSFaceIDUsageDescription NSPhotoLibraryUsageDescription UIBackgroundModes CFBundleLocalizations; do
   count=$(grep -c "<key>$key</key>" "$IOS_DIR/ExcerLock/Info.plist" || true)
   [[ "$count" == "1" ]] || fail "Info.plist key $key count=$count (want 1)"
 done
-for mode in location fetch processing; do
+for absent in NSUserTrackingUsageDescription CFBundleAlternateIcons; do
+  count=$(grep -c "<key>$absent</key>" "$IOS_DIR/ExcerLock/Info.plist" || true)
+  [[ "$count" == "0" ]] || fail "Info.plist key $absent count=$count (want 0)"
+done
+for mode in location fetch; do
   grep -q "<string>$mode</string>" "$IOS_DIR/ExcerLock/Info.plist" || fail "UIBackgroundModes missing $mode"
 done
-pass "Info.plist keys present once with location/fetch/processing"
+grep -q "<string>processing</string>" "$IOS_DIR/ExcerLock/Info.plist" && fail "UIBackgroundModes must not contain processing (no BGProcessingTask)"
+pass "Info.plist keys present once with location/fetch (no tracking, no alternate icons, no processing)"
 
 # Privacy manifest (§3 step 4): non-empty collected types.
 grep -q "NSPrivacyCollectedDataTypes" "$IOS_DIR/ExcerLock/PrivacyInfo.xcprivacy" || fail "privacy manifest missing collected types"
@@ -66,12 +73,19 @@ check_main() {
   pass "main signature carries every §1 entitlement"
 }
 check_appex() {
-  local found=0
-  for x in "$APP"/PlugIns/*.appex; do
+  local found_plugins=0
+  local found_extensionkit=0
+  for x in "$APP"/PlugIns/*.appex "$APP"/Extensions/*.appex; do
     [[ -e "$x" ]] || continue
-    found=$((found+1))
     local name dump
     name=$(basename "$x")
+    if [[ "$x" == "$APP"/PlugIns/* ]]; then
+      found_plugins=$((found_plugins+1))
+    else
+      found_extensionkit=$((found_extensionkit+1))
+      [[ "$name" == "DeviceActivityReportExtension.appex" ]] || fail "unexpected ExtensionKit product $name"
+      [[ "$(plutil -extract EXAppExtensionAttributes.EXExtensionPointIdentifier raw "$x/Info.plist" 2>/dev/null)" == "com.apple.deviceactivityui.report-extension" ]] || fail "$name has wrong EX extension point"
+    fi
     dump=$(codesign -d --entitlements :- "$x" 2>/dev/null) || fail "codesign $name failed"
     echo "$dump" | grep -q "com.apple.developer.family-controls" || fail "$name missing Family Controls"
     echo "$dump" | grep -q "com.apple.security.application-groups" || fail "$name missing App Groups"
@@ -84,15 +98,11 @@ check_appex() {
         echo "$dump" | grep -q "$priv" && fail "$name must not carry main-only $priv"
       fi
     done
-    # App Intents must never inherit Family Controls — but no App Intents appex
-    # is expected in T01 (pending); if one appears, it must lack Family Controls.
-    if echo "$name" | grep -qi "intent"; then
-      echo "$dump" | grep -q "com.apple.developer.family-controls" && fail "$name (App Intents) must not inherit Family Controls"
-    fi
     pass "$name signature subset exact"
   done
-  [[ "$found" -ge 3 ]] || fail "want >=3 appex (monitor/shield/shieldaction), found $found"
-  echo "NOTE: report + App Intents appex are pending in T01 and unchecked (see targets/*/README.md)."
+  [[ "$found_plugins" == "3" ]] || fail "want exactly 3 Foundation appex in PlugIns, found $found_plugins"
+  [[ "$found_extensionkit" == "1" ]] || fail "want exactly 1 report appex in Extensions, found $found_extensionkit"
+  echo "NOTE: no fifth App Intents appex is expected (intent lives in the main app target)."
 }
 check_main
 check_appex
@@ -103,10 +113,10 @@ plutil -p "$APP/PrivacyInfo.xcprivacy" >/dev/null || fail "plutil PrivacyInfo fa
 pass "signed Info.plist + PrivacyInfo parse"
 
 # Step 5: provisioning capabilities match (main + each appex).
-for prov in "$APP/embedded.mobileprovision" "$APP"/PlugIns/*.appex/embedded.mobileprovision; do
+for prov in "$APP/embedded.mobileprovision" "$APP"/PlugIns/*.appex/embedded.mobileprovision "$APP"/Extensions/*.appex/embedded.mobileprovision; do
   [[ -f "$prov" ]] || fail "missing $prov"
   security cms -D -i "$prov" >/dev/null || fail "provisioning decode failed for $prov"
 done
 pass "embedded.mobileprovision decodes for main + each appex"
 
-echo "All T01 binary checks passed (report/App Intents explicitly unchecked)."
+echo "All T01 binary checks passed (main+4 appex signed; App Intent verified in main target via prebuild guardrails)."

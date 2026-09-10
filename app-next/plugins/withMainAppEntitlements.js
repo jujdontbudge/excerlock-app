@@ -25,9 +25,11 @@ function buildConfigurations(project, target) {
  * capabilities (Family Controls, HealthKit, App Groups, Sign in with Apple,
  * push, associated domains). Fails prebuild otherwise.
  *
- * Finalized (like the Screen Time validator) so it reads the project after
- * every other Xcode mutation has linked the entitlements file. Listed second
- * so the validator (first-listed, last-running) still validates after it.
+ * Finalized so it reads the generated project after every other Xcode
+ * mutation has linked the entitlements file. Both this guard and the Screen
+ * Time validator use `withFinalizedMod` postconditions; neither relies on
+ * plugin-list position for ordering (Expo does not guarantee global LIFO
+ * across interceptor kinds).
  *
  * @param {import("expo/config").ExpoConfig} config
  */
