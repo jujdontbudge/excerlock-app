@@ -7,6 +7,7 @@ import { shieldEvents, type ShieldEventProps } from './events/shield'
 import { subscriptionEvents, type SubscriptionEventProps } from './events/subscription'
 import { supportEvents, type SupportEventProps } from './events/support'
 import { vendorEvents, type VendorEventProps } from './events/vendors'
+import { runtimeEvents, type RuntimeEventProps } from './events/runtime'
 
 /**
  * The complete v1 event registry: every allowed PostHog event name with its
@@ -22,6 +23,7 @@ export const EVENTS = {
   ...supportEvents,
   ...vendorEvents,
   ...subscriptionEvents,
+  ...runtimeEvents,
 } as const
 
 export type EventRegistry = typeof EVENTS
@@ -36,7 +38,8 @@ type EventPropsMap = OnboardingEventProps &
   EngagementEventProps &
   SupportEventProps &
   VendorEventProps &
-  SubscriptionEventProps
+  SubscriptionEventProps &
+  RuntimeEventProps
 
 /** Properties type of one event. */
 export type PropsOf<E extends EventName> = EventPropsMap[E]

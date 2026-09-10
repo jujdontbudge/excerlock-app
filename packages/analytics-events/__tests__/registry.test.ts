@@ -14,6 +14,7 @@ import { shieldEvents } from '../src/events/shield'
 import { subscriptionEvents } from '../src/events/subscription'
 import { supportEvents } from '../src/events/support'
 import { vendorEvents } from '../src/events/vendors'
+import { runtimeEvents } from '../src/events/runtime'
 
 // D3: object_action, lowercase snake_case, static literals. No $-prefix (PostHog-reserved).
 const SNAKE_CASE = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/
@@ -56,6 +57,7 @@ describe('event registry shape', () => {
       supportEvents,
       vendorEvents,
       subscriptionEvents,
+      runtimeEvents,
     ]
     const total = modules.reduce((n, m) => n + Object.keys(m).length, 0)
     expect(Object.keys(EVENTS).length).toBe(total)
