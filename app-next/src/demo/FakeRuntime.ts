@@ -59,6 +59,16 @@ export function FakeRuntime(): Runtime {
     notifications: NotificationsFake(ctx),
     sync: SyncFake(),
     support: SupportFake(ctx),
+    dataExport: {
+      requestShare: async (payload) => {
+        ctx.log('export_requested', {
+          rules: payload.rules.length,
+          days: payload.days.length,
+          earnedUnlocks: payload.earnedUnlocks.length,
+          visits: payload.visits.length,
+        });
+      },
+    },
     dev: {
       ready: () => ready,
       flush: persistence.flush,

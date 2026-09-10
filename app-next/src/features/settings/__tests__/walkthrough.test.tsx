@@ -46,6 +46,7 @@ test('bug report keeps a typed bug when send fails', async () => {
       <BugReportScreen />
     </AppRuntimeProvider>,
   );
+  await fireEvent.changeText(screen.getByLabelText('Reply email'), 'alex@example.com');
   await fireEvent.changeText(screen.getByLabelText('Describe the issue'), bug);
   await userEvent.press(screen.getByRole('button', { name: 'Send report' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(new RegExp(supportEmail));

@@ -1,21 +1,45 @@
 import { useRef, useState } from 'react';
 import Constants from 'expo-constants';
-import { ScreenShell, Label, PressableScale } from '../../design-system';
+import { ScreenShell, Label, PressableScale, BottomSheet, PrimaryButton, SecondaryButton } from '../../design-system';
 import { CompactGroup, CompactRow } from '../../design-system/CompactGroup';
 import { profileStore as useProfileStore } from '../../state/profileStore';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 import { settingsCopy as c } from '../../content/settings';
 import { supportCopy as s } from '../../content/support';
 import { openSupportEmail } from '../../runtime/SupportDelivery';
+import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { buildExportPayload } from './exportPayload';
 
 export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) => void; onDev: () => void }) {
   const name = useProfileStore((s) => s.data.name),
+    runtime = useRuntime(),
     entitlement = useEntitlementStore((s) => s.data.entitlement),
     taps = useRef(0),
-    [mailNote, setMailNote] = useState(false);
+    [mailNote, setMailNote] = useState(false),
+    [exportOpen, setExportOpen] = useState(false),
+    [exportNote, setExportNote] = useState(''),
+    [exportBusy, setExportBusy] = useState(false);
   const version = c.version(Constants.expoConfig?.version ?? '1.0.0', Constants.expoConfig?.ios?.buildNumber ?? '1');
   return (
-    <ScreenShell dock safeBottom={false} contentStyle={{ paddingHorizontal: 20, paddingTop: 4, gap: 8 }}>
+    <ScreenShell dock safeBottom={false} contentStyle={{ paddingHorizontal: 20, paddingTop: 4, gap: 8 }} overlay={
+      <BottomSheet open={exportOpen} title={c.exportTitle} onDismiss={() => setExportOpen(false)}>
+        <Label tone="secondary">{c.exportConsent}</Label>
+        <PrimaryButton label={exportBusy ? 'Creating…' : c.exportConfirm} disabled={exportBusy} onPress={async () => {
+          if (exportBusy) return;
+          setExportBusy(true);
+          try {
+            await runtime.dataExport.requestShare(await buildExportPayload(runtime.clock.now()));
+            setExportNote(c.exportReady);
+            setExportOpen(false);
+          } catch {
+            setExportNote(c.exportError);
+          } finally {
+            setExportBusy(false);
+          }
+        }} />
+        <SecondaryButton label={c.close} variant="tertiary" onPress={() => setExportOpen(false)} />
+      </BottomSheet>
+    }>
       <Label accessibilityRole="header" variant="hero" style={{ paddingHorizontal: 8 }}>
         {c.title}
       </Label>
@@ -66,12 +90,14 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
           }}
         />
         <CompactRow title={c.legal} subtitle={c.legalBody} icon="list" onPress={() => navigate('legal')} />
+        <CompactRow title={c.exportData} subtitle={c.exportBody} icon="list" onPress={() => setExportOpen(true)} />
       </CompactGroup>
       {mailNote ? (
         <Label accessibilityRole="alert" selectable>
           {s.errorWithAddress}
         </Label>
       ) : null}
+      {exportNote ? <Label accessibilityRole="alert">{exportNote}</Label> : null}
       <PressableScale
         label={version}
         onPress={() => {

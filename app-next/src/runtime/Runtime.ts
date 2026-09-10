@@ -11,6 +11,7 @@ import { SyncPort } from '../ports/SyncPort';
 import { ClockPort } from '../ports/ClockPort';
 import { RuntimeControls } from '../ports/RuntimeControls';
 import { GaitPort } from '../ports/GaitPort';
+import { ExportPort } from '../ports/ExportPort';
 export type Runtime = {
   readonly kind: 'fake';
   screenTime: ScreenTimePort;
@@ -24,6 +25,7 @@ export type Runtime = {
   notifications: NotificationsPort;
   sync: SyncPort;
   support: SupportPort;
+  dataExport: ExportPort;
   clock: ClockPort;
   dev: RuntimeControls;
   dispose: () => void;
