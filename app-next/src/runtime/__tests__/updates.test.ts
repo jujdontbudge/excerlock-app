@@ -20,7 +20,7 @@ const SAFE_TAB_ROOT: OtaSafetyInput = {
   walkingActive: false,
   proppedActive: false,
   isForeground: true,
-  route: '/',
+  route: '/home',
 };
 
 function makeSafety(overrides: Partial<OtaSafetyInput>): OtaSafetyInput {
@@ -130,16 +130,27 @@ describe('OTA safe boundaries', () => {
     expect(evaluateSafeBoundary(makeSafety({ route: null })).safe).toBe(false);
   });
 
-  test('route allowlist is tab roots only', () => {
-    expect(isOtaSafeRoute('/')).toBe(true);
+  test('route allowlist is actual group-excluded tab paths (no false positives)', () => {
+    // Canonical tab paths (as returned by usePathname, groups excluded).
+    expect(isOtaSafeRoute('/home')).toBe(true);
+    expect(isOtaSafeRoute('/conditions')).toBe(true);
+    expect(isOtaSafeRoute('/analytics')).toBe(true);
+    expect(isOtaSafeRoute('/settings')).toBe(true);
+    // Legacy Stack names with groups normalize to the same canonical paths.
     expect(isOtaSafeRoute('/(tabs)/home')).toBe(true);
-    expect(isOtaSafeRoute('/(tabs)/settings')).toBe(true);
+    expect(isOtaSafeRoute('(tabs)/conditions')).toBe(true);
+    // '/' is BootGate transient (redirects after onboarding guard), never safe.
+    expect(isOtaSafeRoute('/')).toBe(false);
+    expect(isOtaSafeRoute('/index')).toBe(false);
+    expect(isOtaSafeRoute('index')).toBe(false);
+    expect(isOtaSafeRoute('/(tabs)')).toBe(false);
     expect(isOtaSafeRoute('/builder')).toBe(false);
     expect(isOtaSafeRoute('/unlock/gym')).toBe(false);
     expect(isOtaSafeRoute('/unlock/treadmill')).toBe(false);
     expect(isOtaSafeRoute('/onboarding/welcome')).toBe(false);
     expect(isOtaSafeRoute('/paywall')).toBe(false);
     expect(isOtaSafeRoute('/gym-picker')).toBe(false);
+    expect(isOtaSafeRoute('/settings/gyms')).toBe(false);
     expect(isOtaSafeRoute(null)).toBe(false);
     expect(isOtaSafeRoute('')).toBe(false);
   });
@@ -152,14 +163,14 @@ describe('OTA coordinator reload gating', () => {
     const coordinator = new OtaCoordinator({ updates, storage });
     coordinator.observeStartup({ currentlyRunningUpdateId: 'running-1', downloadedUpdateId: 'update-aaa' });
     const result = await coordinator.tryReloadIfSafe({
-      safety: SAFE_TAB_ROOT,
-      envelope: { route: '/(tabs)/home', draftIds: ['draft-1'] },
+      getSafety: () => ({ ...SAFE_TAB_ROOT }),
+      getEnvelope: () => ({ route: '/home', draftIds: ['draft-1'] }),
       nowMs: 1_000_000,
     });
     expect(result).toEqual({ status: 'reloaded', updateId: 'update-aaa' });
     expect(updates.reloadCalls).toBe(1);
     const envelope = await storage.loadEnvelope();
-    expect(envelope).toMatchObject({ route: '/(tabs)/home', draftIds: ['draft-1'] });
+    expect(envelope).toMatchObject({ route: '/home', draftIds: ['draft-1'] });
     expect(envelope?.savedAtMs).toBe(1_000_000);
     const guard = await storage.loadGuard();
     expect(guard).toEqual({ updateId: 'update-aaa', launchCount: 1 });
@@ -179,8 +190,8 @@ describe('OTA coordinator reload gating', () => {
     const coordinator = new OtaCoordinator({ updates, storage });
     coordinator.observeStartup({ currentlyRunningUpdateId: 'running-1', downloadedUpdateId: 'update-bbb' });
     const result = await coordinator.tryReloadIfSafe({
-      safety: makeSafety(overrides as Partial<OtaSafetyInput>),
-      envelope: { route: '/builder', draftIds: [] },
+      getSafety: () => makeSafety(overrides as Partial<OtaSafetyInput>),
+      getEnvelope: () => ({ route: '/builder', draftIds: [] }),
       nowMs: 2_000_000,
     });
     expect(result.status).toBe('deferred-unsafe');
@@ -198,12 +209,12 @@ describe('OTA reload-loop guard', () => {
     coordinator.observeStartup({ currentlyRunningUpdateId: 'running-1', downloadedUpdateId: 'update-loop' });
 
     // First failed activation (no successful launch in between).
-    expect(await coordinator.tryReloadIfSafe({ safety: SAFE_TAB_ROOT, nowMs: 1000 })).toEqual({
+    expect(await coordinator.tryReloadIfSafe({ getSafety: () => (SAFE_TAB_ROOT), nowMs: 1000 })).toEqual({
       status: 'reloaded',
       updateId: 'update-loop',
     });
     // Second failed activation.
-    expect(await coordinator.tryReloadIfSafe({ safety: SAFE_TAB_ROOT, nowMs: 2000 })).toEqual({
+    expect(await coordinator.tryReloadIfSafe({ getSafety: () => (SAFE_TAB_ROOT), nowMs: 2000 })).toEqual({
       status: 'reloaded',
       updateId: 'update-loop',
     });
@@ -212,14 +223,14 @@ describe('OTA reload-loop guard', () => {
     expect(OTA_MAX_RELOAD_ATTEMPTS).toBe(2);
 
     // Third attempt is blocked and reports without reloading.
-    const reported: Array<{ message: string; extra?: Record<string, unknown> }> = [];
+    const reported: { message: string; extra?: Record<string, unknown> }[] = [];
     const coordinator2 = new OtaCoordinator({
       updates,
       storage,
       report: (message, extra) => reported.push({ message, extra }),
     });
     coordinator2.observeStartup({ currentlyRunningUpdateId: 'running-1', downloadedUpdateId: 'update-loop' });
-    const blocked = await coordinator2.tryReloadIfSafe({ safety: SAFE_TAB_ROOT, nowMs: 3000 });
+    const blocked = await coordinator2.tryReloadIfSafe({ getSafety: () => (SAFE_TAB_ROOT), nowMs: 3000 });
     expect(blocked).toEqual({ status: 'blocked-loop-guard', updateId: 'update-loop' });
     expect(updates.reloadCalls).toBe(2);
     expect(reported.length).toBe(1);
@@ -231,7 +242,7 @@ describe('OTA reload-loop guard', () => {
     const storage = createMemoryOtaStorage();
     const coordinator = new OtaCoordinator({ updates, storage });
     coordinator.observeStartup({ currentlyRunningUpdateId: 'running-1', downloadedUpdateId: 'update-xyz' });
-    await coordinator.tryReloadIfSafe({ safety: SAFE_TAB_ROOT, nowMs: 1000 });
+    await coordinator.tryReloadIfSafe({ getSafety: () => (SAFE_TAB_ROOT), nowMs: 1000 });
     expect(await storage.loadGuard()).toEqual({ updateId: 'update-xyz', launchCount: 1 });
 
     // Check/fetch and unrelated launches do not clear.
@@ -253,7 +264,7 @@ describe('OTA reload-loop guard', () => {
     const storage = createMemoryOtaStorage({ guard: { updateId: 'update-old', launchCount: 2 } });
     const coordinator = new OtaCoordinator({ updates, storage });
     coordinator.observeStartup({ currentlyRunningUpdateId: 'running-1', downloadedUpdateId: 'update-new' });
-    const result = await coordinator.tryReloadIfSafe({ safety: SAFE_TAB_ROOT, nowMs: 5000 });
+    const result = await coordinator.tryReloadIfSafe({ getSafety: () => (SAFE_TAB_ROOT), nowMs: 5000 });
     expect(result).toEqual({ status: 'reloaded', updateId: 'update-new' });
     expect(await storage.loadGuard()).toEqual({ updateId: 'update-new', launchCount: 1 });
   });
@@ -278,8 +289,8 @@ describe('OTA first-launch ownership (native ON_LOAD)', () => {
     const result = await coordinator.onForeground({
       nowMs: 10_000_000,
       backgroundedAtMs: null,
-      safety: SAFE_TAB_ROOT,
-      envelope: null,
+      getSafety: () => ({ ...SAFE_TAB_ROOT }),
+      getEnvelope: () => null,
     });
     expect(result).toEqual({ status: 'suppressed-first-launch' });
     expect(updates.checkCalls).toBe(0);
@@ -292,8 +303,8 @@ describe('OTA first-launch ownership (native ON_LOAD)', () => {
     const result = await coordinator.onForeground({
       nowMs: 10_000_000,
       backgroundedAtMs: 10_000_000 - 7 * HOUR,
-      safety: SAFE_TAB_ROOT,
-      envelope: null,
+      getSafety: () => ({ ...SAFE_TAB_ROOT }),
+      getEnvelope: () => null,
     });
     expect(result).toEqual({ status: 'suppressed-first-launch' });
     expect(updates.checkCalls).toBe(0);
@@ -324,8 +335,8 @@ describe('OTA 6h foreground policy', () => {
     const result = await coordinator.onForeground({
       nowMs: now,
       backgroundedAtMs: now - 1 * HOUR,
-      safety: SAFE_TAB_ROOT,
-      envelope: null,
+      getSafety: () => ({ ...SAFE_TAB_ROOT }),
+      getEnvelope: () => null,
     });
     expect(result.status).toBe('suppressed-not-due');
     expect(updates.checkCalls).toBe(0);
@@ -339,8 +350,8 @@ describe('OTA 6h foreground policy', () => {
     const result = await coordinator.onForeground({
       nowMs: 50 * HOUR,
       backgroundedAtMs: 50 * HOUR - 7 * HOUR,
-      safety: SAFE_TAB_ROOT,
-      envelope: null,
+      getSafety: () => ({ ...SAFE_TAB_ROOT }),
+      getEnvelope: () => null,
     });
     expect(result).toEqual({ status: 'suppressed-disabled' });
     expect(updates.checkCalls).toBe(0);
@@ -410,8 +421,8 @@ describe('OTA authority revocation (no unsafe Promise.race reload)', () => {
     const result = await coordinator.onForeground({
       nowMs: now,
       backgroundedAtMs: now - 7 * HOUR,
-      safety: SAFE_TAB_ROOT,
-      envelope: { route: '/', draftIds: [] },
+      getSafety: () => ({ ...SAFE_TAB_ROOT }),
+      getEnvelope: () => ({ route: '/home', draftIds: [] }),
     });
     expect(result.status).toBe('failed');
     expect(updates.reloadCalls).toBe(0);
@@ -435,8 +446,8 @@ describe('OTA authority revocation (no unsafe Promise.race reload)', () => {
     const ok = await coordinator2.onForeground({
       nowMs: now,
       backgroundedAtMs: now - 7 * HOUR,
-      safety: SAFE_TAB_ROOT,
-      envelope: { route: '/', draftIds: [] },
+      getSafety: () => ({ ...SAFE_TAB_ROOT }),
+      getEnvelope: () => ({ route: '/home', draftIds: [] }),
     });
     expect(ok).toEqual({ status: 'reloaded', updateId: 'update-fresh' });
   });
@@ -451,14 +462,14 @@ describe('OTA authority revocation (no unsafe Promise.race reload)', () => {
     const first = coordinator.onForeground({
       nowMs: now,
       backgroundedAtMs: now - 7 * HOUR,
-      safety: SAFE_TAB_ROOT,
-      envelope: null,
+      getSafety: () => ({ ...SAFE_TAB_ROOT }),
+      getEnvelope: () => null,
     });
     const second = await coordinator.onForeground({
       nowMs: now,
       backgroundedAtMs: now - 7 * HOUR,
-      safety: SAFE_TAB_ROOT,
-      envelope: null,
+      getSafety: () => ({ ...SAFE_TAB_ROOT }),
+      getEnvelope: () => null,
     });
     expect(second).toEqual({ status: 'busy' });
     expect(updates.checkCalls).toBe(1);
@@ -478,10 +489,10 @@ describe('OTA authority revocation (no unsafe Promise.race reload)', () => {
     const foreground = coordinator.onForeground({
       nowMs: now,
       backgroundedAtMs: now - 7 * HOUR,
-      safety: SAFE_TAB_ROOT,
-      envelope: null,
+      getSafety: () => ({ ...SAFE_TAB_ROOT }),
+      getEnvelope: () => null,
     });
-    const reloadAttempt = await coordinator.tryReloadIfSafe({ safety: SAFE_TAB_ROOT, nowMs: now });
+    const reloadAttempt = await coordinator.tryReloadIfSafe({ getSafety: () => (SAFE_TAB_ROOT), nowMs: now });
     expect(reloadAttempt.status).toBe('failed');
     checkGate.resolve({ isAvailable: false, updateId: null });
     await foreground;
@@ -496,8 +507,8 @@ describe('OTA storage injection', () => {
     expect(await storage.loadGuard()).toEqual({ updateId: 'u1', launchCount: 1 });
     await storage.clearGuard();
     expect(await storage.loadGuard()).toBeNull();
-    await storage.saveEnvelope({ route: '/', draftIds: ['a'], savedAtMs: 123 });
-    expect(await storage.loadEnvelope()).toEqual({ route: '/', draftIds: ['a'], savedAtMs: 123 });
+    await storage.saveEnvelope({ route: '/home', draftIds: ['a'], savedAtMs: 123 });
+    expect(await storage.loadEnvelope()).toEqual({ route: '/home', draftIds: ['a'], savedAtMs: 123 });
     expect(await storage.loadLastCheckAtMs()).toBeNull();
     await storage.saveLastCheckAtMs(456);
     expect(await storage.loadLastCheckAtMs()).toBe(456);
