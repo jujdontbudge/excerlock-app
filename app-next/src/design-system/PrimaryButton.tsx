@@ -8,6 +8,7 @@ import { useMotion } from '../motion/useMotion';
 import { feedback } from '../motion/haptics';
 export type ButtonProps = {
   label: string;
+  accessibilityLabel?: string;
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
@@ -16,6 +17,7 @@ export type ButtonProps = {
 };
 export function PrimaryButton({
   label,
+  accessibilityLabel,
   onPress,
   disabled = false,
   loading = false,
@@ -29,7 +31,7 @@ export function PrimaryButton({
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: unavailable, busy: loading }}
       disabled={unavailable}
       onPressIn={() => setPressed(true)}

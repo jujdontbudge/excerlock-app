@@ -15,6 +15,10 @@ test('walking minutes use their own bounded goal', async () => {
   const onAction = jest.fn(), draft = { ...createDraft('walking'), walkingMode: 'minutes' as const };
   await render(<WalkingScreen step="W3" draft={draft} onAction={onAction} />);
   expect(screen.getByLabelText('Daily walking time')).toBeTruthy();
+  expect(screen.getByText('−5 min')).toBeTruthy();
+  expect(screen.getByText('+5 min')).toBeTruthy();
+  await userEvent.press(screen.getByRole('button', { name: 'Add 5 minutes' }));
+  expect(onAction).toHaveBeenLastCalledWith({ type: 'setWalkMinutes', value: 25 });
   expect(canContinue('W3', { walkingMode: 'minutes', walkMinutes: 20 })).toBe(true);
 });
 test('step field keeps bounded steppers without duration helper copy', async () => {
@@ -22,6 +26,8 @@ test('step field keeps bounded steppers without duration helper copy', async () 
     draft = createDraft('walking');
   const r = await render(<WalkingScreen step="W3" draft={draft} onAction={onAction} />);
   expect(screen.queryByText('About 50 minutes of walking')).toBeNull();
+  expect(screen.getByText('−500 steps')).toBeTruthy();
+  expect(screen.getByText('+500 steps')).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: 'Add 500 steps' }));
   expect(onAction).toHaveBeenLastCalledWith({ type: 'setStepGoal', value: 5500 });
   await r.rerender(<WalkingScreen step="W3" draft={{ ...draft, stepGoal: 500 }} onAction={onAction} />);
