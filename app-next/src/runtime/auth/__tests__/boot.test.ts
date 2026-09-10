@@ -67,6 +67,47 @@ test('secure hydration restores canonical identity without anonymous call', asyn
   adapter.dispose();
 });
 
+test('unexpected secure hydration failure stays provisional and never creates replacement identity', async () => {
+  const supabase = mockSupabase({
+    getSession: jest.fn().mockRejectedValue(new Error('keychain unavailable')),
+    signInAnonymously: jest.fn(),
+  });
+  const adapter = new SupabaseAuthAdapter({
+    supabase,
+    appleDeps: appleDeps() as never,
+    googleDeps: googleDeps() as never,
+    apiBaseUrl: 'https://api.test',
+  });
+  await expect(adapter.boot()).rejects.toMatchObject({ code: 'STORAGE_READ_FAILED' });
+  expect(adapter.identity().kind).toBe('provisional');
+  expect(supabase.auth.signInAnonymously).not.toHaveBeenCalled();
+  adapter.dispose();
+});
+
+test('deferred null SIGNED_OUT callback fails closed instead of keeping ready identity', async () => {
+  let callback: ((event: string, session: null) => void) | null = null;
+  const supabase = mockSupabase({
+    getSession: jest.fn().mockResolvedValue({ data: { session: anonSession('revoked') }, error: null }),
+    onAuthStateChange: jest.fn().mockImplementation((next) => {
+      callback = next;
+      return { data: { subscription: { unsubscribe: jest.fn() } } };
+    }),
+  });
+  const adapter = new SupabaseAuthAdapter({
+    supabase,
+    appleDeps: appleDeps() as never,
+    googleDeps: googleDeps() as never,
+    apiBaseUrl: 'https://api.test',
+  });
+  await adapter.boot();
+  const generation = adapter.identity().generation;
+  (callback as unknown as (event: string, session: null) => void)('SIGNED_OUT', null);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  expect(adapter.identity()).toMatchObject({ kind: 'provisional', userId: null, ready: false });
+  expect(adapter.identity().generation).toBe(generation + 1);
+  adapter.dispose();
+});
+
 test('boot timeout returns provisional but late success reconciles with single flight', async () => {
   jest.useFakeTimers();
   let resolveAnon!: (v: never) => void;

@@ -110,7 +110,12 @@ export function buildRealGoogleRequest(clientId: string, redirectUri: string): G
       });
       return {
         promptAsync: (discovery) => req.promptAsync(discovery as never) as unknown as Promise<{ type: string; params?: Record<string, string> }>,
-        codeVerifier: (req as unknown as { codeVerifier?: string }).codeVerifier,
+        // AuthRequest prepares PKCE lazily during promptAsync. A snapshot here
+        // is always undefined; expose a getter so requestGoogleCredential reads
+        // the verifier only after the prompt completes.
+        get codeVerifier() {
+          return (req as unknown as { codeVerifier?: string }).codeVerifier;
+        },
       };
     },
     exchangeCode: async ({ code, codeVerifier, redirectUri: redirect }) => {

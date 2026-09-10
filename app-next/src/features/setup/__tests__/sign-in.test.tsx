@@ -59,3 +59,21 @@ test('required sign-in removes skip and a provider failure stays visible for ret
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not sign in. Please try again.');
   expect(screen.getByRole('button', { name: 'Continue with Apple' })).toBeEnabled();
 });
+
+test('sign-in requirement failure stays fail-closed with a visible retry', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('fresh-install');
+  const source = jest
+    .fn<Promise<boolean>, []>()
+    .mockRejectedValueOnce(new Error('flags offline'))
+    .mockResolvedValueOnce(false);
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <SignInScreen onContinue={() => {}} signInRequired={source} />
+    </AppRuntimeProvider>,
+  );
+  expect(await screen.findByRole('alert')).toHaveTextContent(/requirements could not load/i);
+  expect(screen.queryByRole('button', { name: 'Skip for now' })).toBeNull();
+  await userEvent.press(screen.getByRole('button', { name: 'Retry sign-in requirements' }));
+  expect(await screen.findByRole('button', { name: 'Skip for now' })).toBeTruthy();
+});

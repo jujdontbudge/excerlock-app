@@ -1,6 +1,21 @@
 import { SupabaseAuthAdapter } from '../SupabaseAuthAdapter';
 import { AuthCancelledError, AuthError, AuthRecoveryRequiredError } from '../../../ports/AuthPort';
 import { sessionStore } from '../../../state/sessionStore';
+import { buildRealGoogleRequest, requestGoogleCredential } from '../providerGoogle';
+
+const mockExchangeCodeAsync = jest.fn();
+jest.mock('expo-auth-session', () => ({
+  ResponseType: { Code: 'code' },
+  CodeChallengeMethod: { S256: 'S256' },
+  AuthRequest: class {
+    codeVerifier: string | undefined;
+    async promptAsync() {
+      this.codeVerifier = 'lazy-verifier';
+      return { type: 'success', params: { code: 'lazy-code' } };
+    }
+  },
+  exchangeCodeAsync: (...args: unknown[]) => mockExchangeCodeAsync(...args),
+}));
 
 function anonUser(id: string) {
   return { id, is_anonymous: true, app_metadata: {}, user_metadata: {}, aud: 'authenticated', created_at: new Date().toISOString() } as never;
@@ -132,6 +147,17 @@ test('Google code/PKCE+state flow exchanges without client secret and links with
   expect(auth.linkIdentity).toHaveBeenCalledWith(expect.objectContaining({ provider: 'google', token: 'google-id-token' }));
   expect(auth.signInWithIdToken).not.toHaveBeenCalled();
   adapter.dispose();
+});
+
+test('real Google factory reads lazily generated PKCE verifier after prompt', async () => {
+  mockExchangeCodeAsync.mockResolvedValueOnce({ idToken: 'real-id-token', accessToken: 'real-access-token' });
+  const deps = buildRealGoogleRequest('ios-client', 'excerlock://oauth');
+  const credential = await requestGoogleCredential(deps);
+  expect(mockExchangeCodeAsync).toHaveBeenCalledWith(
+    expect.objectContaining({ code: 'lazy-code', extraParams: { code_verifier: 'lazy-verifier' } }),
+    expect.any(Object),
+  );
+  expect(credential).toEqual({ idToken: 'real-id-token', accessToken: 'real-access-token' });
 });
 
 test('cancellation typed separately from failures and missing tokens', async () => {

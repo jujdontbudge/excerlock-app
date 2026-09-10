@@ -29,16 +29,28 @@ export function SignInScreen({
     [required, setRequired] = useState<boolean | null>(
       signInRequired === undefined ? false : typeof signInRequired === 'boolean' ? signInRequired : null,
     ),
+    [flagError, setFlagError] = useState(false),
+    [flagAttempt, setFlagAttempt] = useState(0),
     [recoveryProvider, setRecoveryProvider] = useState<'apple' | 'google' | null>(null);
   useEffect(() => {
     let active = true;
-    void Promise.resolve(resolveSignInRequired(signInRequired, false)).then((value) => {
-      if (active) setRequired(value);
-    });
+    void Promise.resolve(resolveSignInRequired(signInRequired, false))
+      .then((value) => {
+        if (active) {
+          setFlagError(false);
+          setRequired(value);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setRequired(null);
+          setFlagError(true);
+        }
+      });
     return () => {
       active = false;
     };
-  }, [signInRequired]);
+  }, [flagAttempt, signInRequired]);
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const signIn = async (provider: 'apple' | 'google' | 'email') => {
     if (busy) return;
@@ -170,6 +182,21 @@ export function SignInScreen({
                   .finally(() => setBusy(false));
               }}
             />
+          ) : null}
+          {flagError ? (
+            <>
+              <Label accessibilityRole="alert" style={{ color: t.state.error }}>
+                Sign-in requirements could not load. Please retry.
+              </Label>
+              <SecondaryButton
+                label="Retry sign-in requirements"
+                onPress={() => {
+                  setFlagError(false);
+                  setRequired(null);
+                  setFlagAttempt((value) => value + 1);
+                }}
+              />
+            </>
           ) : null}
         </>
       )}

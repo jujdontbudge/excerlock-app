@@ -126,3 +126,34 @@ test('sign-out failure leaves visible retry with session intact', async () => {
   expect(adapter.session().kind).toBe('signedIn');
   adapter.dispose();
 });
+
+test('permanent sign-out revokes readiness before waiting for serialized SDK reset', async () => {
+  let finishReset!: () => void;
+  const reset = new Promise<void>((resolve) => {
+    finishReset = resolve;
+  });
+  const perm = permUser('perm-transition');
+  const supabase = { auth: {
+    getSession: jest.fn().mockResolvedValue({ data: { session: { access_token: 'a', refresh_token: 'r', user: perm } }, error: null }),
+    signInAnonymously: jest.fn().mockResolvedValue({ data: { user: anonUser('fresh-transition'), session: anonSession('fresh-transition') }, error: null }),
+    linkIdentity: jest.fn(), signInWithIdToken: jest.fn(), updateUser: jest.fn(), signInWithOtp: jest.fn(), verifyOtp: jest.fn(),
+    signOut: jest.fn().mockResolvedValue({ error: null }),
+    onAuthStateChange: jest.fn().mockReturnValue({ data: { subscription: { unsubscribe: jest.fn() } } }),
+  } } as never;
+  const adapter = new SupabaseAuthAdapter({
+    supabase,
+    appleDeps: { signInAsync: jest.fn(), digestSHA256Hex: jest.fn() } as never,
+    googleDeps: { clientId: 'c', redirectUri: 'r', buildRequest: jest.fn(), exchangeCode: jest.fn() } as never,
+    apiBaseUrl: 'https://api.test',
+    onAccountSwitchReset: () => reset,
+  });
+  await adapter.boot();
+  adapter.markReady('perm-transition', 0);
+  const operation = adapter.signOut();
+  expect(adapter.identity()).toMatchObject({ kind: 'provisional', userId: null, ready: false, generation: 1 });
+  expect((supabase as unknown as { auth: Record<string, jest.Mock> }).auth.signOut).not.toHaveBeenCalled();
+  finishReset();
+  await operation;
+  expect(adapter.identity().userId).toBe('fresh-transition');
+  adapter.dispose();
+});
