@@ -1,5 +1,5 @@
 import { detectionStore, persistDetectionState } from '../../state/detectionStore';
-import { reduceWalking } from '../../domain/walkingMachine';
+import { createWalkingState, reduceWalking } from '../../domain/walkingMachine';
 import { reducePropped } from '../../domain/proppedMachine';
 import type { ProppedEvent, ProppedState } from '../../domain/proppedMachine';
 import { reduceGym } from '../../domain/gymMachine';
@@ -44,13 +44,17 @@ export class DetectionService {
             this.assertGeneration(generation);
             const data = detectionStore.getState().data;
             const kind = result.transition!.kind === 'pickedUp' ? 'pickup' : 'putDown';
+            const at = result.transition!.timestampMs;
             detectionStore.getState().patch({
               propped: reducePropped(
                 data.propped,
-                { kind, at: result.transition!.timestampMs },
-                result.transition!.timestampMs,
+                { kind, at },
+                at,
               ),
-              observedAt: result.transition!.timestampMs,
+              // Put-down enters the dedicated 60-second handoff. Do not retain
+              // a separate walking grace that could outlive/stack with it.
+              ...(kind === 'putDown' ? { walking: createWalkingState(at) } : {}),
+              observedAt: at,
             });
             await this.persist();
             this.assertGeneration(generation);
@@ -171,16 +175,46 @@ export class DetectionService {
   cancelProppedScan(now: number, generation: number): Promise<void> {
     return this.applyPropped({ kind: 'scanCancel', at: now }, now, generation);
   }
+  /** Serialized foreground sample used by the bounded manual check. */
+  reconcileMotion(now: number, graceMs: number, generation: number): Promise<void> {
+    return this.enqueue(async () => {
+      this.assertGeneration(generation);
+      const evidence = this.deps.motion.reconcile(now);
+      const data = detectionStore.getState().data;
+      let walking = reduceWalking(
+        data.walking,
+        { kind: 'evidence', at: evidence.observedAt, qualifying: evidence.qualifying },
+        now,
+        graceMs,
+      );
+      walking = reduceWalking(walking, { kind: 'tick' }, now, graceMs);
+      let propped = data.propped;
+      if (walking.phase === 'active' && propped.phase === 'handheld')
+        propped = reducePropped(propped, { kind: 'walkingQualified', at: now }, now);
+      else if (walking.phase === 'inactive' && propped.phase === 'active')
+        propped = reducePropped(propped, { kind: 'walkingStopped', at: now }, now);
+      detectionStore.getState().patch({ walking, propped, observedAt: now });
+      await this.persist();
+      this.assertGeneration(generation);
+    });
+  }
   private async applyMotion(evidence: MotionEvidence, graceMs: number, generation: number): Promise<void> {
     this.assertGeneration(generation);
     const data = detectionStore.getState().data;
-    detectionStore.getState().patch({
-      walking: reduceWalking(
+    const walking = reduceWalking(
         data.walking,
         { kind: 'evidence', at: evidence.observedAt, qualifying: evidence.qualifying },
         evidence.observedAt,
         graceMs,
-      ),
+      );
+    let propped = data.propped;
+    if (walking.phase === 'active' && propped.phase === 'handheld')
+      propped = reducePropped(propped, { kind: 'walkingQualified', at: evidence.observedAt }, evidence.observedAt);
+    else if (walking.phase === 'inactive' && propped.phase === 'active')
+      propped = reducePropped(propped, { kind: 'walkingStopped', at: evidence.observedAt }, evidence.observedAt);
+    detectionStore.getState().patch({
+      walking,
+      propped,
       observedAt: evidence.observedAt,
     });
     await this.persist();
