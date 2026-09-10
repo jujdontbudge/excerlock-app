@@ -117,6 +117,10 @@ check_appex() {
 check_main
 check_appex
 
+if [[ "$MODE" == "distribution" ]]; then
+  node "$(cd "$(dirname "$0")" && pwd)/verify-bundle-size.cjs" "$APP/main.jsbundle"
+fi
+
 # Step 3/4 on the signed payload (not just ios/).
 plutil -p "$APP/Info.plist" >/dev/null || fail "plutil Info.plist failed"
 plutil -p "$APP/PrivacyInfo.xcprivacy" >/dev/null || fail "plutil PrivacyInfo failed"

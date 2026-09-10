@@ -38,10 +38,12 @@ export function scrubSentryBreadcrumb<T extends Record<string, any>>(breadcrumb:
   if (!['lock', 'watchdog', 'ota'].includes(String(breadcrumb.category))) return null;
   return { category: breadcrumb.category, level: breadcrumb.level, data: Object.fromEntries(Object.entries(breadcrumb.data ?? {}).filter(([key, value]) => safeExtra.has(key) && safeDiagnosticValue(value))) } as unknown as T;
 }
+// Sentry treats any numeric tracesSampleRate (including zero) as tracing enabled.
+// Omit both tracing keys for the documented crash-only integration contract.
 export function buildSentryOptions(dsn: string | undefined, metadata: SentryBuildMetadata) {
   if (!dsn) return null;
   const ota = getOtaObservabilityContext();
-  return { dsn, environment: metadata.environment, release: sentryRelease(metadata), dist: sentryDist(ota.update_id, ota.runtime_version), sendDefaultPii: false, attachScreenshot: false, attachViewHierarchy: false, enableAutoPerformanceTracing: false, enableAppStartTracking: false, enableAutoSessionTracking: false, enableCaptureFailedRequests: false, enableNativeCrashHandling: true, enableNativeFramesTracking: false, enableStallTracking: false, enableUserInteractionTracing: false, tracesSampleRate: 0, replaysSessionSampleRate: 0, replaysOnErrorSampleRate: 0, beforeSend: scrubSentryEvent, beforeBreadcrumb: scrubSentryBreadcrumb };
+  return { dsn, environment: metadata.environment, release: sentryRelease(metadata), dist: sentryDist(ota.update_id, ota.runtime_version), sendDefaultPii: false, attachScreenshot: false, attachViewHierarchy: false, enableAutoPerformanceTracing: false, enableAppStartTracking: false, enableAutoSessionTracking: false, enableCaptureFailedRequests: false, enableNativeCrashHandling: true, enableNativeFramesTracking: false, enableStallTracking: false, enableUserInteractionTracing: false, replaysSessionSampleRate: 0, replaysOnErrorSampleRate: 0, beforeSend: scrubSentryEvent, beforeBreadcrumb: scrubSentryBreadcrumb };
 }
 
 let initialized = false;
