@@ -67,6 +67,7 @@ export const nativePlugins: ExpoPlugin[] = [
     },
   ],
   "./modules/excerlock-motion/app.plugin",
+  "./modules/excerlock-enforcement/app.plugin",
   "./modules/excerlock-gait-vision/app.plugin",
   [
     "expo-location",
