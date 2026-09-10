@@ -1,11 +1,12 @@
 import { render, screen } from '@testing-library/react-native';
 const mockFakePromptHost = jest.fn(() => null);
+const mockRouter = { push: jest.fn() };
 
 jest.mock('expo-router', () => {
   const Stack = function MockStack({ children }: { children?: React.ReactNode }) { return <>{children}</>; };
   Stack.Screen = function MockScreen() { return null; };
   Stack.Protected = function MockProtected({ children }: { children?: React.ReactNode }) { return <>{children}</>; };
-  return { Stack };
+  return { Stack, useRouter: () => mockRouter };
 });
 jest.mock('../../../motion/useMotion', () => ({ useMotion: () => ({ reduced: true }) }));
 jest.mock('../../../runtime/AppRuntimeProvider', () => ({ useRuntime: () => ({ kind: 'real' }) }));
