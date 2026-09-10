@@ -27,11 +27,14 @@ Preserve those artifacts as historical evidence; never substitute them for curre
 - **T04/T06:** Production PostHog erasure personal key/project configuration absent. No live deletion
   acceptance or device identity-spine proof. A schema-ready database alone does not prove erasure ready.
 - **T13:** Six subscriptions remain missing review screenshots/metadata readiness. App Store version has
-  no build attached and validation blockers remain. Existing review notes are a draft. Privacy label
+  no build attached. Narrow product-backed ASC metadata updates passed readbacks under release lock;
+  validation now has4 blockers: review details, attached build, availability, screenshots. Existing review notes are a draft. Privacy label
   publication and truthful release screenshots are unverified. Do not tick checklist lines from this index.
 - **T14:** Physical iPhone13 Il is unavailable. Session-owned simulator EA6C9AC3-0C1A-430B-8EF9-A84A6E044206
   was installed/launched with real-runtime Release candidate8d403650. Startup failed visibly with
-  `ERR_KEY_CHAIN` / missing entitlement; signing diagnosis is in progress, not an app-runtime pass.
+  `ERR_KEY_CHAIN` / missing entitlement. Correct Xcode ad-hoc simulator rebuild repaired entitlement
+  packaging without changing HBC, but repeat launch still shows startup recovery (no keychain error
+  in captured unified log). Remaining startup cause is under investigation, not an app-runtime pass.
   Fresh simctl inventory reports this simulator shutdown. Current runtime/lock-state acceptance remains incomplete.
 - **T15:** Release startup/TTI and battery/device measurements absent. Home semantic-clock optimization
   passed local tests. Unsigned device Release at7619c5bd compiled, but its packaged Hermes bundle was
