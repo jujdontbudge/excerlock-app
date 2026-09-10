@@ -12,6 +12,7 @@ export function TrendHero() {
       <Reveal>
         <View
           accessible
+          accessibilityRole="image"
           accessibilityLabel={trendCopy.description}
           style={{
             borderRadius: t.radius.sheet,

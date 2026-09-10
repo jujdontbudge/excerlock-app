@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react-native';
 import { O02 } from '../screens/O02';
 import { O03 } from '../screens/O03';
+import { TrendHero } from '../scenes/TrendHero';
+import { trendCopy } from '../../../content/trend';
 test('progress intro explains the illustrative screen-time reduction', async () => {
   await render(<O02 />);
   expect(screen.getByRole('header', { name: 'Block apps. Exercise more.' })).toBeTruthy();
@@ -16,4 +18,8 @@ test('third introduction shows the two activities and the final page marker', as
     expect(screen.getByRole('image', { name })).toBeTruthy();
   expect(screen.getByLabelText('Introduction, page 3 of 3')).toBeTruthy();
   expect(screen.getByText('Exercise more each week and stay consistent.')).toBeTruthy();
+});
+test('trend illustration exposes image semantics and its description', async () => {
+  await render(<TrendHero />);
+  expect(screen.getByRole('image', { name: trendCopy.description })).toBeTruthy();
 });

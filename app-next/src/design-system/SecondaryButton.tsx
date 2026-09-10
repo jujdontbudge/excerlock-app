@@ -8,6 +8,7 @@ import { feedback } from '../motion/haptics';
 import { useMotion } from '../motion/useMotion';
 export function SecondaryButton({
   label,
+  accessibilityLabel,
   onPress,
   disabled,
   variant = 'secondary',
@@ -19,7 +20,7 @@ export function SecondaryButton({
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPressIn={() => setPressed(true)}
