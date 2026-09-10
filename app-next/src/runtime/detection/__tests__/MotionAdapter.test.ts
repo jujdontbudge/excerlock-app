@@ -33,6 +33,7 @@ test('medium walking OR cadence at eighty qualifies, with cadence converted once
   await s.adapter.start();
   s.emitActivity({ classes: ['walking'], confidence: 'medium', startedAt: 0, receivedAt: 0 });
   expect(s.adapter.reconcile(0).qualifying).toBe(true);
+  s.setNow(1000);
   s.emitActivity({ classes: ['stationary'], confidence: 'high', startedAt: 1000, receivedAt: 1000 });
   s.emitCadence({ stepsPerSecond: 80 / 60, cumulativeSteps: 4, asOf: 1000 });
   expect(s.adapter.reconcile(1000)).toMatchObject({ qualifying: true, cadencePerMinute: 80 });
@@ -41,6 +42,7 @@ test('quiet classification does not kill fresh cadence, but each source expires 
   const s = setup();
   await s.adapter.start();
   s.emitActivity({ classes: ['stationary'], confidence: 'high', startedAt: 0, receivedAt: 0 });
+  s.setNow(4000);
   s.emitCadence({ stepsPerSecond: 2, cumulativeSteps: 8, asOf: 4000 });
   expect(s.adapter.reconcile(6000).qualifying).toBe(true);
   expect(s.adapter.reconcile(9001).qualifying).toBe('unknown');
@@ -49,7 +51,19 @@ test('old cadence cannot make a newer negative activity qualify and history rema
   const s = setup();
   await s.adapter.start();
   s.emitCadence({ stepsPerSecond: 2, cumulativeSteps: 8, asOf: 0 });
+  s.setNow(6000);
   s.emitActivity({ classes: ['stationary'], confidence: 'high', startedAt: 6000, receivedAt: 6000 });
   expect(s.adapter.reconcile(6000).qualifying).toBe(false);
   await expect(s.adapter.querySteps(0, 6000)).resolves.toEqual({ steps: 12 });
+});
+test('rejects future and out-of-order source replacement and expires at exactly five seconds', async () => {
+  const s = setup();
+  await s.adapter.start();
+  s.setNow(1000);
+  s.emitCadence({ stepsPerSecond: 2, cumulativeSteps: 8, asOf: 1000 });
+  s.emitCadence({ stepsPerSecond: 0, cumulativeSteps: 8, asOf: 999 });
+  expect(s.adapter.reconcile(1000).qualifying).toBe(true);
+  expect(s.adapter.reconcile(6000).qualifying).toBe('unknown');
+  s.emitActivity({ classes: ['walking'], confidence: 'high', startedAt: 7000, receivedAt: 7000 });
+  expect(s.adapter.reconcile(6000).qualifying).toBe('unknown');
 });

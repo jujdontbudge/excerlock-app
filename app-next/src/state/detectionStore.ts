@@ -1,7 +1,8 @@
 import { createPersistedStore } from './createPersistedStore';
-import { createWalkingState, type WalkingState } from '../domain/walkingMachine';
-import { createProppedState, type ProppedState } from '../domain/proppedMachine';
-import { createGymState, type GymDetectionState } from '../domain/gymMachine';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createWalkingState, reduceWalking, type WalkingState } from '../domain/walkingMachine';
+import { createProppedState, reducePropped, type ProppedState } from '../domain/proppedMachine';
+import { createGymState, reduceGym, type GymDetectionState } from '../domain/gymMachine';
 export type DetectionData = {
   version: 1;
   generation: number;
@@ -20,13 +21,34 @@ const initial: DetectionData = {
   gym: createGymState(0),
   creditedThrough: {},
 };
-const object = (value: unknown) => typeof value === 'object' && value !== null;
+const validReducerState = (value: unknown, reducer: (value: never) => unknown) => {
+  if (typeof value !== 'object' || value === null) return false;
+  try {
+    reducer(value as never);
+    return true;
+  } catch {
+    return false;
+  }
+};
 export const detectionStore = createPersistedStore('detection', initial, {
   version: (value) => value === 1,
   generation: (value) => Number.isSafeInteger(value) && Number(value) >= 0,
   observedAt: (value) => typeof value === 'number' && Number.isFinite(value),
-  walking: object,
-  propped: object,
-  gym: object,
-  creditedThrough: object,
+  walking: (value) =>
+    validReducerState(value, (state: WalkingState) => reduceWalking(state, { kind: 'tick' }, state.watermark, 30_000)),
+  propped: (value) =>
+    validReducerState(value, (state: ProppedState) => reducePropped(state, { kind: 'tick' }, state.watermark)),
+  gym: (value) =>
+    validReducerState(value, (state: GymDetectionState) => reduceGym(state, { kind: 'tick' }, state.watermark)),
+  creditedThrough: (value) =>
+    typeof value === 'object' &&
+    value !== null &&
+    Object.values(value).every((cursor) => typeof cursor === 'number' && Number.isFinite(cursor) && cursor >= 0),
 });
+/** Explicit durability barrier for background callbacks and serialized reconciliation. */
+export async function persistDetectionState(): Promise<void> {
+  await AsyncStorage.setItem(
+    'excerlock-next.detection.v1',
+    JSON.stringify({ state: { data: detectionStore.getState().data }, version: 0 }),
+  );
+}
