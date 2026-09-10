@@ -124,9 +124,10 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     const mapped = products.map((product, index) =>
       this.mapProduct(product, generation, index, remote.recommendedProductId),
     );
+    const title = remote.title?.trim() ? remote.title : 'Choose your plan';
     const publicPaywall = {
       placement,
-      title: remote.title ?? String((flow as { name?: string }).name ?? 'Choose your plan'),
+      title,
       body: remote.body ?? '',
       flowVariationId: String((flow as { variationId?: string }).variationId ?? ''),
       products: mapped,
