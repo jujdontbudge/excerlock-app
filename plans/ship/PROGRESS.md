@@ -438,3 +438,34 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   234suites/1081tests/13snapshots PASS (/tmp/ship-retention-final-full.log). Subsequent startup recovery copy
   distinguishes unsafe cleanup (close/reopen required, no futile retry) from retryable boot error; targeted
   production-provider5tests/typecheck PASS (/tmp/ship-restart-ui.log). Actual simulator UI remains unverified.
+
+### Exact overnight accounting and DST — 2026-09-10
+
+- Environment change discovered while working: original ExcerLock was moved intact to
+  `/Users/johansardar/ExcerLock-backup-20260910-104501`, leaving a new empty initialized original. Verified
+  rootHEAD117f9c4f and worktree records in backup; reconnected ONLY four active owned worktree .git files
+  to existing backup metadata. New empty original untouched. Future Git/release operations must not assume
+  original path still hosts this project. Root source remains ExcerLock-build/ship.
+- Exact walking segmentscd04f2aa survive ack/restart, original-zone midnight split, adjacent-only merging,
+  strict validation, pending-safe retention; legacy missing segments migrate empty, never inferred totals.
+- Exact step checkpoints8d0f37fd preserve calendar-credit cursors, serialized generation-fenced native range
+  queries, exact endpoint cache, atomic persistence and400day retention. Root new domain/projector wiring
+  fixes Mon-only and Mon+Tue20–02 accounting without prorating steps; exact walking/gym intervals provide
+  measured minute thresholds. Overnight calendar seals defer until the accounting window closes.
+- Walking origin timezone866db716 stays fixed across consecutive verified observations and resets after
+  negative evidence. Root source-frame projection protects same-evidence travel/replay ownership.
+- Native cleanup45d3d907 now propagates adapter/service/factory stop failures. Root review corrected
+  stop's queued-data error handling: wait for settled queue, but keep query/persistence failures in flush;
+  an ordinary reported data error must not masquerade as unsafe native teardown after all stops succeed.
+- Deterministic DST resolver9762ad9b fixes backward spring gaps in Adelaide/Lord Howe; explicit convergence,
+  earliest fold occurrence, forward gap shift, collapsed windows omitted. ADR0015. Root added bounded
+  result cache and accounting midnight convergence assertions in development. ADR0016 describes exact
+  instance accounting. Focused overnight+root/service checkpoints pass; full integrated check underway.
+- Independent review caught two further issues, now corrected: final unpruned RuleDays commit BEFORE
+  immutable archive (then prune/ack after archive), preventing a cross-store crash from permanently losing
+  final per-rule achievement; source-zone overnight end deadlines also defer sealing after east/west travel.
+  Fault-injected crash/restart and Chicago→NY premature-seal tests pass. Goal notifications now wait until
+  measured facts are durable. Explicit persisted-store retry0546177a avoids a recovered disk remaining
+  stuck on an unchanged failed snapshot; retry only the latest failed serialized operation, never old state.
+- Intermediate full overnight checkpoint:237suites/1130tests/13snapshots PASS. Subsequent review fixes
+  passed typecheck and targeted3suites/28tests (/tmp/ship-recovery-final.log); final fresh full check follows.

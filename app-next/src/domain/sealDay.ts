@@ -14,6 +14,7 @@ export function sealDays(
   rules: readonly Rule[],
   timezone: string,
   now: string,
+  deferUntil: Readonly<Record<string, number>> = {},
 ): HistoryArchive {
   const today = dayKey(now, timezone);
   const cutoff = addDays(today, -399);
@@ -21,7 +22,15 @@ export function sealDays(
   const existing = new Map(archive.days.filter((row) => row.day >= cutoff).map((row) => [row.day, row]));
   const facts = new Map(measured.map((row) => [row.day, row]));
   for (let day = startedDay < cutoff ? cutoff : startedDay; day < today; day = addDays(day, 1)) {
-    if (existing.has(day)) continue;
+    if (existing.has(day) || (deferUntil[day] ?? -Infinity) > Date.parse(now)) continue;
+    // Calendar rollover cannot finalize an accounting day whose overnight
+    // instance still accepts timestamped progress on this alive path.
+    if (
+      rules.some((rule) =>
+        windowInstances(rule, day, timezone).some((instance) => Date.parse(instance.end) > Date.parse(now)),
+      )
+    )
+      continue;
     const row = facts.get(day) ?? {
       day,
       usageMinutes: null,
@@ -47,8 +56,17 @@ export function retainRuleDays(
   today: string,
 ): RuleDay[] {
   const cutoff = addDays(today, -34);
-  const sealed = new Set(archive.days.map((row) => row.day));
-  return [...previous.filter((row) => sealed.has(row.day)), ...projected.filter((row) => !sealed.has(row.day))]
+  return preserveSealedRuleDays(previous, projected, archive)
     .filter((row) => row.day >= cutoff)
     .sort((a, b) => a.day.localeCompare(b.day) || a.ruleId.localeCompare(b.ruleId));
+}
+
+/** Phase-one accounting write keeps all source rows until the archive is durable. */
+export function preserveSealedRuleDays(
+  previous: readonly RuleDay[],
+  projected: readonly RuleDay[],
+  archive: HistoryArchive,
+): RuleDay[] {
+  const sealed = new Set(archive.days.map((row) => row.day));
+  return [...previous.filter((row) => sealed.has(row.day)), ...projected.filter((row) => !sealed.has(row.day))];
 }

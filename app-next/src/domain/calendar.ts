@@ -1,6 +1,12 @@
 import { DayKey } from './types';
 
 export type LocalInstantResolution = { instant: string; converged: boolean };
+const resolutionCache = new Map<string, LocalInstantResolution>();
+function remember(key: string, result: LocalInstantResolution): LocalInstantResolution {
+  if (resolutionCache.size >= 2048) resolutionCache.delete(resolutionCache.keys().next().value!);
+  resolutionCache.set(key, Object.freeze({ ...result }));
+  return result;
+}
 
 export function dayKey(instant: string, timezone: string): DayKey {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -31,6 +37,9 @@ export function resolveLocalInstant(day: DayKey, minute: number, timezone: strin
   if (!Number.isInteger(minute) || minute < 0 || minute >= 1440)
     throw new RangeError(`Invalid local minute: ${minute}`);
 
+  const cacheKey = JSON.stringify([day, minute, timezone]);
+  const cached = resolutionCache.get(cacheKey);
+  if (cached) return { ...cached };
   const wall = Date.parse(`${day}T00:00:00Z`) + minute * 60000;
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
@@ -55,12 +64,21 @@ export function resolveLocalInstant(day: DayKey, minute: number, timezone: strin
   }
   const candidates = [...offsets].map((offset) => wall - offset);
   const exact = candidates.filter((instant) => renderedWall(instant) === wall).sort((a, b) => a - b);
-  if (exact.length) return { instant: new Date(exact[0]).toISOString(), converged: true };
+  if (exact.length) return remember(cacheKey, { instant: new Date(exact[0]).toISOString(), converged: true });
 
   const after = candidates
     .map((instant) => ({ instant, delta: renderedWall(instant) - wall }))
     .filter(({ delta }) => delta > 0)
     .sort((a, b) => a.delta - b.delta || a.instant - b.instant)[0];
   if (!after) throw new RangeError(`Unable to resolve local instant: ${day} minute ${minute} in ${timezone}`);
-  return { instant: new Date(after.instant).toISOString(), converged: false };
+  return remember(cacheKey, { instant: new Date(after.instant).toISOString(), converged: false });
+}
+
+/** Accounting/deadline boundary: unlike deliberate schedule gap shifting,
+ * development must surface a nonconverged day boundary for investigation. */
+export function localDayStart(day: DayKey, timezone: string): string {
+  const result = resolveLocalInstant(day, 0, timezone);
+  if (typeof __DEV__ !== 'undefined' && __DEV__ && !result.converged)
+    throw new Error(`Nonconverged local day boundary: ${day} in ${timezone}`);
+  return result.instant;
 }

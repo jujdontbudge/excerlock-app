@@ -27,11 +27,13 @@ jest.mock('../detection/headlessRegistry', () => ({ registerHeadlessDetectionHan
 jest.mock('../../domain/projectStepHistory', () => ({ projectStepHistory: (_rules: unknown, rows: unknown) => rows }));
 jest.mock('../../domain/projectGymHistory', () => ({ ...jest.requireActual('../../domain/projectGymHistory'), projectGymHistory: (_rules: unknown, rows: unknown) => rows }));
 
+import { ruleDaysStore } from '../../state/ruleDaysStore';
+import { rulesStore } from '../../state/rulesStore';
 import { historyStore } from '../../state/historyStore';
 import { createRealRuntime } from '../createRealRuntime';
 import { RuntimeCleanupError } from '../RuntimeSingleton';
 
-const store = (data: object) => ({ persistBarrier: jest.fn(async () => {}), getState: () => ({ data, patch: jest.fn() }), subscribe: jest.fn(() => jest.fn()) });
+const store = (data: object) => ({ retryPersistence: jest.fn(async () => {}), persistBarrier: jest.fn(async () => {}), getState: () => ({ data, patch: jest.fn() }), subscribe: jest.fn(() => jest.fn()) });
 jest.mock('../../state/detectionStore', () => ({ detectionStore: store({ generation: 0 }) }));
 jest.mock('../../state/rulesStore', () => ({ rulesStore: store({ rules: [], lockedApps: { handle: null, isEmpty: true } }) }));
 jest.mock('../../state/ruleDaysStore', () => ({ ruleDaysStore: store({ days: [], gymPresence: null }) }));
@@ -45,6 +47,7 @@ function graph(options?: { gait?: object | null; boot?: () => Promise<void>; aut
   const detection = {
     service: {
       stop: jest.fn(async () => {}), tick: jest.fn(async () => {}), flush: jest.fn(async () => {}),
+      measureStepRanges: jest.fn(async () => ({})),
       pruneGymHistory: jest.fn(async () => {}),
       observeCommitted: jest.fn(() => jest.fn()),
     }, motion: {}, placement: {},
@@ -52,8 +55,8 @@ function graph(options?: { gait?: object | null; boot?: () => Promise<void>; aut
     awake: { reconcile: jest.fn(async () => ({ requested: false, running: false, error: null })) },
     location: { stopMonitoringRegions: jest.fn(async () => {}) },
     start: jest.fn(async () => {}), stop: jest.fn(async () => {}), registerGyms: jest.fn(async () => {}),
-    reconcileWake: jest.fn(async () => {}), walkingDurationLedger: { pruneBeforeDay: jest.fn(async () => {}), read: jest.fn(async () => ({ generation: 0, millisecondsByDay: {}, pending: [] })), reset: jest.fn(async () => {}), acknowledge: jest.fn(async () => {}) },
-    historyLedger: { pruneBeforeDay: jest.fn(async () => {}), read: jest.fn(async () => ({ stepsByDay: {} })) },
+    reconcileWake: jest.fn(async () => {}), walkingDurationLedger: { pruneBeforeDay: jest.fn(async () => {}), read: jest.fn(async () => ({ generation: 0, millisecondsByDay: {}, pending: [], segments: [] })), reset: jest.fn(async () => {}), acknowledge: jest.fn(async () => {}) },
+    historyLedger: { pruneBeforeDay: jest.fn(async () => {}), read: jest.fn(async () => ({ stepsByDay: {}, instanceMeasurements: {} })) },
     gymLog: { pruneBefore: jest.fn(async () => {}) },
     snapshot: () => ({ gym: { intervals: [], regions: {} } }),
   };
@@ -190,4 +193,48 @@ test('raw retention follows seals and runs only once for the same calendar cutof
     await runtime.reconcile('manual');
     expect(started.detection.historyLedger.pruneBeforeDay).toHaveBeenCalledTimes(1);
   } finally { await runtime.disposeAsync(); barrier.mockRestore(); }
+});
+
+test('a crash after sealing cannot lose the final per-rule result on restart', async () => {
+  const now = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-10T03:00Z'));
+  const rules = rulesStore.getState().data.rules;
+  const originalBarrier = ruleDaysStore.persistBarrier;
+  let live = { days: [] as import('../../domain/types').RuleDay[], gymPresence: null };
+  let disk = JSON.parse(JSON.stringify(live)) as typeof live;
+  const getter = jest.spyOn(ruleDaysStore, 'getState').mockImplementation(() => ({
+    data: live, patch: (patch) => { live = {...live,...patch} as typeof live; }, reset: jest.fn(),
+  }));
+  let writes = 0;
+  ruleDaysStore.persistBarrier = jest.fn(async () => {
+    if (++writes === 2) throw new Error('crash after seal');
+    disk = JSON.parse(JSON.stringify(live));
+  });
+  const configure = () => {
+    const started = graph();
+    started.detection.walkingDurationLedger.read.mockResolvedValue({
+      generation:0, millisecondsByDay:{}, pending:[], segments:[{
+        from:Date.parse('2026-09-09T23:40Z'),to:Date.parse('2026-09-10T00:00Z'),day:'2026-09-09',timezone:'UTC',
+      }, {
+        from:Date.parse('2026-09-10T00:00Z'),to:Date.parse('2026-09-10T00:20Z'),day:'2026-09-10',timezone:'UTC',
+      }],
+    } as never);
+    return started;
+  };
+  historyStore.getState().reset();
+  await historyStore.persistBarrier();
+  rules.push({id:'overnight',activity:'walking',mode:{kind:'target',activity:'walking',metric:'minutes',goal:30},schedule:{days:[3],window:{kind:'range',startMinute:1200,endMinute:120}},enabled:true,createdAt:'2026-09-01T00:00Z',updatedAt:''});
+  try {
+    configure();
+    await expect(createRealRuntime({reportError:jest.fn()})).rejects.toThrow('crash after seal');
+    expect(historyStore.getState().data.days.find(row=>row.day==='2026-09-09')?.met).toBe(true);
+    expect(disk.days.find(row=>row.day==='2026-09-09')?.met).toBe(true);
+    live=JSON.parse(JSON.stringify(disk));
+    configure();
+    const resumed=await createRealRuntime({reportError:jest.fn()});
+    expect(disk.days.find(row=>row.day==='2026-09-09')?.met).toBe(true);
+    await resumed.disposeAsync();
+  } finally {
+    rules.splice(0); getter.mockRestore(); ruleDaysStore.persistBarrier=originalBarrier;
+    historyStore.getState().reset(); await historyStore.persistBarrier(); now.mockRestore();
+  }
 });

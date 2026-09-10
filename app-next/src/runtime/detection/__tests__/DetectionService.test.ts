@@ -56,7 +56,7 @@ test('a synchronous subscriber disposer and failed queued work do not prevent na
   motionListener({ qualifying: true, observedAt: 1, activityAt: 1, cadenceAt: null, cadencePerMinute: null } as never);
   await expect(service.flush()).rejects.toBe(workError);
   const stopped = service.stop();
-  await expect(stopped).rejects.toMatchObject({ errors: [disposerError, workError] });
+  await expect(stopped).rejects.toBe(disposerError);
   expect(motion.stop).toHaveBeenCalledTimes(1);
   expect(placement.stop).toHaveBeenCalledTimes(1);
 });
@@ -459,4 +459,19 @@ test('full wake publishes final committed reducer state even with no history seg
   const committed = jest.fn(); service.observeCommitted(committed);
   await service.reconcileWake({ now: 0, dayStart: 0, timezone: 'UTC', generation: 0, walkingGraceMs: 30000, source: 'foreground' });
   expect(committed).toHaveBeenCalledTimes(1);
+});
+
+test('an earlier data-write failure does not make successful native teardown unsafe', async () => {
+  const failure = new Error('write failed');
+  let listener!: (value: never) => void;
+  const motion = { subscribe: (next: (value: never) => void) => { listener = next; return () => {}; },
+    start: async () => {}, stop: jest.fn(async () => {}) } as unknown as MotionAdapter;
+  const placement = { subscribe: () => () => {}, start: async () => {}, stop: jest.fn(async () => {}) } as unknown as PlacementAdapter;
+  const service = new DetectionService({ motion, placement, gymLog: {append: async()=>{}, readAll: async()=>[]}, historyLedger: historyLedger(), persist: async()=>{throw failure;} });
+  await service.start(30_000);
+  listener({ qualifying:true, observedAt:1, activityAt:1, cadenceAt:null, cadencePerMinute:null } as never);
+  await expect(service.flush()).rejects.toBe(failure);
+  await expect(service.stop()).resolves.toBeUndefined();
+  expect(motion.stop).toHaveBeenCalledTimes(1);
+  expect(placement.stop).toHaveBeenCalledTimes(1);
 });

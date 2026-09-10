@@ -1,6 +1,6 @@
 import type { GymInterval } from './gymMachine';
 import type { Rule, RuleDay } from './types';
-import { addDays, dayKey, localInstant } from './calendar';
+import { addDays, dayKey, localDayStart } from './calendar';
 import { windowInstances } from './schedule';
 import { applyProgress } from './progress';
 
@@ -98,7 +98,7 @@ function splitByLocalDay(segments: readonly Segment[], timezone: string): Map<st
     let cursor = segment.start;
     while (cursor < segment.end) {
       const day = dayKey(new Date(cursor).toISOString(), timezone);
-      const midnight = Date.parse(localInstant(addDays(day, 1), 0, timezone));
+      const midnight = Date.parse(localDayStart(addDays(day, 1), timezone));
       if (!Number.isFinite(midnight) || midnight <= cursor) throw new Error('Invalid gym local-day boundary');
       const part = { start: cursor, end: Math.min(segment.end, midnight) };
       result.set(day, [...(result.get(day) ?? []), part]);

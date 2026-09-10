@@ -25,15 +25,18 @@ import { ruleDaysStore } from '../state/ruleDaysStore';
 import { settingsStore } from '../state/settingsStore';
 import { permissionsStore } from '../state/permissionsStore';
 import { entitlementStore } from '../state/entitlementStore';
-import { addDays, dayKey, localInstant } from '../domain/calendar';
+import { addDays, dayKey, localDayStart } from '../domain/calendar';
 import { currentInstances } from '../domain/schedule';
 import { historyStore } from '../state/historyStore';
-import { sealDays, retainRuleDays } from '../domain/sealDay';
+import { sealDays, retainRuleDays, preserveSealedRuleDays } from '../domain/sealDay';
 import { projectMeasuredHistory } from '../domain/projectMeasuredHistory';
-import { projectGymHistory } from '../domain/projectGymHistory';
+import {
+  planStepInstanceMeasurements,
+  projectInstanceProgress,
+  walkingAccountingDeadlines,
+  type ExactStepMeasurement,
+} from '../domain/projectInstanceProgress';
 import { registerHeadlessDetectionHandler } from './detection/headlessRegistry';
-import { projectWalkingMinutes } from '../domain/projectWalkingMinutes';
-import { projectStepHistory } from '../domain/projectStepHistory';
 import type { DetectionWake } from './detection/DetectionService';
 import { RuntimeCleanupError } from './RuntimeSingleton';
 
@@ -60,6 +63,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
   let queue: Promise<void> = Promise.resolve();
   let lastOperation: Promise<void> = queue;
   let lastPrunedDay: string | null = null;
+  let instanceMeasurements: Record<string, ExactStepMeasurement> = {};
   const stops: (() => void)[] = [];
   const listeners = new Set<() => void>();
   let status: RuntimeStatusSnapshot = { hydrated: true, loading: true, history: [] };
@@ -88,7 +92,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         timezone = clock.timezone();
       return {
         timezone,
-        dayStart: Date.parse(localInstant(dayKey(now, timezone), 0, timezone)),
+        dayStart: Date.parse(localDayStart(dayKey(now, timezone), timezone)),
         walkingGraceMs: settingsStore.getState().data.stopGrace * 1000,
         generation: detectionStore.getState().data.generation,
       };
@@ -158,6 +162,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         await AsyncStorage.setItem(SELECTION_VERSION_KEY, selectionVersion);
         await detection.walkingDurationLedger.reset();
         stepsByDay = {};
+        instanceMeasurements = {};
         lastPrunedDay = null;
         committedWalking = walking.snapshot();
         committedGymPresence = null;
@@ -221,6 +226,8 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             const motion = detection.steps.authorizationStatus();
             const deleting = client.auth.identity().kind === 'deleting';
             if (mode === 'full') {
+              await ruleDaysStore.retryPersistence();
+              await historyStore.retryPersistence();
               if (!deleting && motion === 'granted') await detection.start(wakeContext().walkingGraceMs);
               const regionPlan =
                 !deleting &&
@@ -269,33 +276,35 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               await detection.service.tick(now, wakeContext().walkingGraceMs, wakeContext().generation);
             else await detection.service.flush();
             if (disposed) return;
-            if (mode === 'full') stepsByDay = (await detection.historyLedger.read()).stepsByDay;
+            if (mode === 'full') {
+              if (motion === 'granted' && !deleting) {
+                const ranges = planStepInstanceMeasurements(
+                  rulesStore.getState().data.rules,
+                  new Date(now).toISOString(),
+                  clock.timezone(),
+                  new Set(historyStore.getState().data.days.map((row) => row.day)),
+                );
+                await detection.service.measureStepRanges(ranges, detectionStore.getState().data.generation);
+              }
+              const ledger = await detection.historyLedger.read();
+              stepsByDay = ledger.stepsByDay;
+              instanceMeasurements = ledger.instanceMeasurements;
+            }
             if (disposed) return;
             const previous = ruleDaysStore.getState().data.days;
             const duration = await detection.walkingDurationLedger.read();
-            const minuteRows = projectWalkingMinutes(
-              rulesStore.getState().data.rules,
-              previous,
-              duration.millisecondsByDay,
-              clock.timezone(),
-              new Date(now).toISOString(),
-            );
-            const stepRows = projectStepHistory(
-              rulesStore.getState().data.rules,
-              minuteRows,
-              stepsByDay,
-              clock.timezone(),
-              new Date(now).toISOString(),
-            );
             const detected = detection.snapshot();
             const configured = settingsStore.getState().data.gymPlaces.map((place) => place.id);
-            const rows = projectGymHistory(
+            const rows = projectInstanceProgress(
               rulesStore.getState().data.rules,
-              stepRows,
+              previous,
+              instanceMeasurements,
+              duration.segments,
               detected.gym.intervals,
               configured,
               clock.timezone(),
               new Date(now).toISOString(),
+              new Set(historyStore.getState().data.days.map((row) => row.day)),
             );
             const confirmedId = configured.find((id) => detected.gym.regions[id]?.confirmedSince != null);
             const since = confirmedId ? detected.gym.regions[confirmedId].confirmedSince : null;
@@ -307,22 +316,6 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
                     confirmedAt: new Date(since).toISOString(),
                   }
                 : null;
-            if (
-              AppState.currentState !== 'active' &&
-              permissionsStore.getState().data.location !== 'always' &&
-              rows.some(
-                (row) =>
-                  row.met &&
-                  !previous.some((old) => old.ruleId === row.ruleId && old.day === row.day && old.met) &&
-                  rulesStore
-                    .getState()
-                    .data.rules.some(
-                      (rule) => rule.id === row.ruleId && rule.activity === 'walking' && rule.mode.kind === 'target',
-                    ),
-              )
-            ) {
-              void client.notifications.scheduleOpenToUnlock().catch(options.reportError);
-            }
             const oldArchive = historyStore.getState().data;
             const measuredHistory = projectMeasuredHistory(
               stepsByDay,
@@ -340,7 +333,24 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               rulesStore.getState().data.rules,
               clock.timezone(),
               new Date(now).toISOString(),
+              walkingAccountingDeadlines(
+                rulesStore.getState().data.rules,
+                duration.segments,
+                new Date(now).toISOString(),
+                duration.cursor?.verified ? duration.cursor.timezone : undefined,
+              ),
             );
+            // Commit unpruned per-rule facts BEFORE an immutable aggregate seal.
+            // A crash between stores must leave reconstructable source rows.
+            const finalRows = preserveSealedRuleDays(previous, rows, oldArchive);
+            projecting = true;
+            try {
+              if (JSON.stringify(finalRows) !== JSON.stringify(ruleDaysStore.getState().data.days))
+                ruleDaysStore.getState().patch({ days: finalRows });
+            } finally {
+              projecting = false;
+            }
+            await ruleDaysStore.persistBarrier();
             if (JSON.stringify(archive) !== JSON.stringify(oldArchive)) historyStore.getState().patch(archive);
             // Persist seals BEFORE pruning the facts they preserve. A failed write
             // prevents native policy/acknowledgement and is retried on reconciliation.
@@ -360,7 +370,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             try {
               if (JSON.stringify(gymPresence) !== JSON.stringify(ruleDaysStore.getState().data.gymPresence))
                 ruleDaysStore.getState().patch({ gymPresence });
-              if (JSON.stringify(retainedRows) !== JSON.stringify(previous))
+              if (JSON.stringify(retainedRows) !== JSON.stringify(ruleDaysStore.getState().data.days))
                 ruleDaysStore.getState().patch({ days: retainedRows });
             } finally {
               projecting = false;
@@ -373,13 +383,29 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               );
             const retentionDay = addDays(today, -399);
             if (lastPrunedDay === null || retentionDay > lastPrunedDay) {
-              const cutoffMs = Date.parse(localInstant(retentionDay, 0, clock.timezone()));
+              const cutoffMs = Date.parse(localDayStart(retentionDay, clock.timezone()));
               await detection.historyLedger.pruneBeforeDay(retentionDay);
               await detection.walkingDurationLedger.pruneBeforeDay(retentionDay);
               await detection.gymLog.pruneBefore(cutoffMs);
               await detection.service.pruneGymHistory(cutoffMs, detectionStore.getState().data.generation);
               stepsByDay = Object.fromEntries(Object.entries(stepsByDay).filter(([day]) => day >= retentionDay));
               lastPrunedDay = retentionDay;
+            }
+            if (
+              AppState.currentState !== 'active' &&
+              permissionsStore.getState().data.location !== 'always' &&
+              rows.some(
+                (row) =>
+                  row.met &&
+                  !previous.some((old) => old.ruleId === row.ruleId && old.day === row.day && old.met) &&
+                  rulesStore
+                    .getState()
+                    .data.rules.some(
+                      (rule) => rule.id === row.ruleId && rule.activity === 'walking' && rule.mode.kind === 'target',
+                    ),
+              )
+            ) {
+              void client.notifications.scheduleOpenToUnlock().catch(options.reportError);
             }
             const snapshot = source.read();
             const awake = await detection.awake.reconcile(

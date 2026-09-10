@@ -1,4 +1,4 @@
-import { addDays, dayKey, localInstant } from '../../domain/calendar';
+import { addDays, dayKey, localDayStart } from '../../domain/calendar';
 
 export const MAX_VERIFIED_OBSERVATION_GAP_MS = 5_000;
 const KEY = 'excerlock-next.walking-duration-ledger.v1';
@@ -151,7 +151,7 @@ function addInterval(state: WalkingDurationState, start: number, end: number, ti
   let cursor = start;
   while (cursor < end) {
     const day = dayKey(new Date(cursor).toISOString(), timezone);
-    const midnight = Date.parse(localInstant(addDays(day, 1), 0, timezone));
+    const midnight = Date.parse(localDayStart(addDays(day, 1), timezone));
     if (!Number.isFinite(midnight) || midnight <= cursor) throw new Error('Invalid local walking boundary');
     const segmentEnd = Math.min(end, midnight);
     const milliseconds = segmentEnd - cursor;

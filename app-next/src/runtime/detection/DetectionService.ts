@@ -7,7 +7,7 @@ import type { GymVisitLog } from '../../engine/signals/location/GymVisitLog';
 import type { MotionAdapter, MotionEvidence } from './MotionAdapter';
 import type { PlacementAdapter } from './PlacementAdapter';
 import type { HistoryCreditLedger, HistoryLedger, InstanceStepMeasurement } from './HistoryCreditLedger';
-import { addDays, dayKey, localInstant } from '../../domain/calendar';
+import { addDays, dayKey, localDayStart } from '../../domain/calendar';
 import type { DetectionData, PendingHistoryCredit } from '../../state/detectionStore';
 import type { WalkingDurationLedger } from './WalkingDurationLedger';
 import { runCleanups } from './runCleanups';
@@ -93,7 +93,9 @@ export class DetectionService {
           ...disposers.map((dispose) => () => dispose()),
           () => this.deps.motion.stop(),
           () => this.deps.placement.stop(),
-          () => this.lastWork,
+          // A previously reported query/write rejection is not a native
+          // cleanup failure. Wait for quiescence; flush() still exposes it.
+          () => this.queue,
         ],
         'Detection service cleanup failed',
       );
@@ -391,7 +393,7 @@ export function isMeasuredWalkingState(data: Pick<DetectionData, 'walking' | 'pr
 
 function nextLocalMidnight(from: number, timezone: string): number {
   const day = dayKey(new Date(from).toISOString(), timezone);
-  const next = Date.parse(localInstant(addDays(day, 1), 0, timezone));
+  const next = Date.parse(localDayStart(addDays(day, 1), timezone));
   if (!Number.isFinite(next) || next <= from) throw new Error('Invalid local history boundary');
   return next;
 }

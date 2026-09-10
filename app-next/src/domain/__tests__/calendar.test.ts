@@ -33,3 +33,9 @@ test('rejects invalid local inputs', () => {
   expect(() => resolveLocalInstant('2026-01-01', 1440, 'UTC')).toThrow(RangeError);
   expect(() => resolveLocalInstant('2026-01-01', 0, 'Not/A_Timezone')).toThrow(RangeError);
 });
+
+test('cached resolution results cannot be changed by callers', () => {
+  const first=resolveLocalInstant('2026-09-10',720,'UTC');
+  first.instant='corrupted';
+  expect(resolveLocalInstant('2026-09-10',720,'UTC').instant).toBe('2026-09-10T12:00:00.000Z');
+});
