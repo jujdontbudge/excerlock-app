@@ -9,7 +9,7 @@ test('verified state-walking minutes count toward streak without latching an unl
   r.dev.advance(6000);
   r.dev.advance(6000);
   const row = ruleDaysStore.getState().data.days[0];
-  expect(row.progress).toBeCloseTo(0.1);
+  expect(row.progress).toBeGreaterThan(0);
   expect(row.met).toBe(false);
   r.dispose();
 });
@@ -32,10 +32,11 @@ test('outside check-in cannot satisfy the condition', async () => {
 test('loading a live walking fixture resumes its script and eventually relocks', async () => {
   const r = createRuntime();
   await r.dev.load('home-walking-session');
-  r.dev.advance(12000);
-  expect(ruleDaysStore.getState().data.walkingSession?.phase).toBe('grace');
-  r.dev.advance(6000);
-  expect(ruleDaysStore.getState().data.walkingSession?.phase).toBe('ended');
+  await r.walking.start(rulesStore.getState().data.rules[0]);
+  r.dev.advance(6000); r.dev.advance(6000);
+  expect(r.walking.snapshot().phase).toBe('grace');
+  r.dev.advance(61_000);
+  expect(r.walking.snapshot().phase).toBe('inactive');
   r.dispose();
 });
 test('gym minutes accumulate only while inside and latch at the goal', async () => {

@@ -11,7 +11,8 @@ function content(overrides: Partial<typeof scenario> = {}) {
       timezone: s.clock.timezone,
       rules: s.rules,
       ruleDays: s.ruleDays,
-      walkingSession: s.walkingSession ?? null,
+      detection: s.id === 'home-walking-session' ? { state: 'active', since: s.clock.now } : { state: 'inactive', since: null },
+      placement: { state: 'unknown', liveRelief: false, since: null },
     }),
     rules: s.rules,
     permissions: s.permissions,
@@ -36,24 +37,10 @@ test('no rules today, after window and all paused are distinct', () => {
   expect(content({ clock: { now: '2026-09-08T02:00:00Z', timezone: 'America/New_York' } }).state).toBe('afterWindow');
   expect(content({ rules: [{ ...makeRule(), enabled: false }] }).state).toBe('allPaused');
 });
-test('relock and lease clocks are formatted using the scenario timezone', () => {
-  const common = {
-    rules: scenario.rules,
-    permissions: scenario.permissions,
-    apps: scenario.lockedApps,
-    now: '2026-09-07T15:00:00Z',
-    timezone: 'America/New_York',
-  };
-  expect(
-    statusContent({ ...common, decision: { state: 'unlockedMet', byRuleId: 'walk', relockAt: '2026-09-08T13:00:00Z' } })
-      .subtitle,
-  ).toBe('Blocking resumes tomorrow at 9:00\u00a0AM');
-  expect(
-    statusContent({
-      ...common,
-      decision: { state: 'unlockedWalking', sessionRuleId: 'walk', leaseUntil: '2026-09-07T15:12:40Z' },
-    }).subtitle,
-  ).toBe('12:40 left');
+test('relock copy uses the scenario timezone and live walking has no countdown', () => {
+  const common = { rules: scenario.rules, permissions: scenario.permissions, apps: scenario.lockedApps, now: '2026-09-07T15:00:00Z', timezone: 'America/New_York' };
+  expect(statusContent({ ...common, decision: { state: 'unlockedMet', byRuleId: 'walk', byName: 'Walking', metAt: '2026-09-07T14:00:00Z', relockAt: '2026-09-08T13:00:00Z' } }).subtitle).toBe('Blocking resumes tomorrow at 9:00\u00a0AM');
+  expect(statusContent({ ...common, decision: { state: 'unlockedWalking', ruleId: 'walk', since: '2026-09-07T14:59:00Z' } }).subtitle).not.toMatch(/\d+:\d+/);
 });
 test('a confirmed gym presence reads as unlocked while there, with the time note for minute goals', () => {
   const gym = scenarios.find((s) => s.id === 'gym-time-user')!;
@@ -62,7 +49,8 @@ test('a confirmed gym presence reads as unlocked while there, with the time note
     timezone: gym.clock.timezone,
     rules: gym.rules,
     ruleDays: gym.ruleDays,
-    walkingSession: null,
+    detection: { state: 'inactive', since: null },
+    placement: { state: 'unknown', liveRelief: false, since: null },
     gymPresence: { placeId: 'p', startedAt: gym.clock.now, confirmedAt: gym.clock.now },
   });
   const model = statusContent({

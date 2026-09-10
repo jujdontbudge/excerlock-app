@@ -42,12 +42,8 @@ export type RuleDay = {
   metAt: string | null; // ISO, local instant when it became met
 };
 
-export type WalkingSession = {
-  ruleId: string; // the state-mode rule it belongs to
-  startedAt: string;
-  leaseUntil: string; // Apple's 15-minute renewable lease; a lapsed lease ends the session
-  phase: 'verifying' | 'walking' | 'grace' | 'ended';
-};
+export type WalkingDetection = { state: 'active' | 'inactive' | 'unknown'; since: string | null };
+export type PlacementEvidence = { state: 'propped' | 'handheld' | 'unknown'; liveRelief: boolean; since: string | null };
 
 export type GymPresence = {
   placeId: string; // the saved gym being confirmed or occupied
@@ -95,10 +91,11 @@ export type UnlockHint = {
   unit: string | null;
 };
 export type LockDecision =
-  | { state: 'noRulesToday' } // apps open, nothing scheduled today
-  | { state: 'beforeWindow'; nextLockAt: string; ruleId: string } // apps open, blocking starts later today
+  | { state: 'noRulesToday'; nextLockAt: string | null }
+  | { state: 'beforeWindow'; nextLockAt: string; ruleId: string; getAheadRuleId: string | null }
   | { state: 'locked'; activeRuleIds: string[]; nextUnlockHint: UnlockHint }
-  | { state: 'unlockedMet'; byRuleId: string; relockAt: string | null } // met today, open until next day's window
-  | { state: 'unlockedWalking'; sessionRuleId: string; leaseUntil: string }
-  | { state: 'unlockedAtGym'; ruleId: string; placeId: string } // confirmed at a saved gym; relocks on leaving
-  | { state: 'afterWindow'; nextLockAt: string | null }; // today's windows are over, apps open
+  | { state: 'unlockedMet'; byRuleId: string; byName: string; metAt: string; relockAt: string | null }
+  | { state: 'unlockedWalking'; ruleId: string; since: string }
+  | { state: 'unlockedPropped'; ruleId: string; since: string }
+  | { state: 'unlockedAtGym'; ruleId: string; placeId: string; since: string }
+  | { state: 'afterWindow'; nextLockAt: string | null };

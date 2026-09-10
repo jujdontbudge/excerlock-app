@@ -11,7 +11,7 @@ export type StatusModel = {
   title: string;
   subtitle: string;
   unlocked: boolean;
-  action?: 'permission' | 'apps' | 'add' | 'conditions' | 'stop';
+  action?: 'permission' | 'apps' | 'add' | 'conditions';
 };
 type Input = {
   decision: LockDecision;
@@ -21,10 +21,6 @@ type Input = {
   now: string;
   timezone: string;
 };
-export function leaseClock(until: string, now: string) {
-  const seconds = Math.max(0, Math.ceil((Date.parse(until) - Date.parse(now)) / 1000));
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-}
 export function statusContent({ decision: d, rules, permissions, apps, now, timezone }: Input): StatusModel {
   const time = (at: string) =>
     new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: timezone }).format(new Date(at)).replace(/\s(?=[AP]M$)/, '\u00a0');
@@ -73,7 +69,8 @@ export function statusContent({ decision: d, rules, permissions, apps, now, time
       subtitle: rules.find((r) => r.id === d.ruleId)?.mode.kind === 'target' ? c.atGymTime : c.atGymBody,
     };
   if (d.state === 'unlockedWalking')
-    return { ...model, title: c.walking, subtitle: c.left(leaseClock(d.leaseUntil, now)), action: 'stop' };
+    return { ...model, title: c.walking, subtitle: c.walkingBody };
+  if (d.state === 'unlockedPropped') return { ...model, title: c.propped, subtitle: c.proppedBody };
   if (d.state === 'beforeWindow')
     return {
       ...model,

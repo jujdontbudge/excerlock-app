@@ -14,7 +14,8 @@ test('clock enters window, fake steps reach goal and latch unlock; new day start
       timezone: r.clock.timezone(),
       rules: rulesStore.getState().data.rules,
       ruleDays: ruleDaysStore.getState().data.days,
-      walkingSession: null,
+      detection: { state: 'inactive', since: null },
+        placement: { state: 'unknown', liveRelief: false, since: null },
     }).state;
   expect(state()).toBe('beforeWindow');
   r.dev.advance(3600000);

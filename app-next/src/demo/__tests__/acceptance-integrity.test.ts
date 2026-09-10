@@ -81,7 +81,8 @@ test.each(['gym-arrival-user', 'gym-time-user'])(
         timezone: r.clock.timezone(),
         rules: rulesStore.getState().data.rules,
         ruleDays: ruleDaysStore.getState().data.days,
-        walkingSession: null,
+        detection: { state: 'inactive', since: null },
+        placement: { state: 'unknown', liveRelief: false, since: null },
       }).state,
     ).toBe('unlockedMet');
     if (id === 'gym-time-user')

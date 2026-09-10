@@ -8,7 +8,6 @@ import {
   LockedApps,
   Session,
   Entitlement,
-  WalkingSession,
 } from '../domain/types';
 export type SavedPlace = {
   id: string;
@@ -42,8 +41,7 @@ export type Scenario = {
   usageMinutesToday: number | null;
   history: HistoryDay[];
   steps: { today: number; autoIncrementPerSecond?: number };
-  walking?: { script: WalkingSession['phase'][]; stepMs: number };
-  walkingSession?: WalkingSession;
+  walking?: { script: Array<'walking' | 'still' | 'unknown'>; stepMs: number };
   gym?: { places: SavedPlace[]; presence: 'inside' | 'outside' };
   fakeSystemPrompts: 'grant' | 'deny' | 'ask';
   accessibility?: 'xl' | 'reduceMotion';

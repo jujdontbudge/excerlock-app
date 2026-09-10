@@ -12,36 +12,28 @@ const rule = toRule(
   { days: [1, 2, 3, 4, 5], window: { kind: 'allDay' } },
 );
 
-test('three-second walking check reports detected and missed while keeping its idle label during observation', async () => {
-  const start = jest.fn().mockResolvedValue(undefined), unsubscribe = jest.fn();
-  let detectedFinish!: () => void | Promise<void>;
-  let missedFinish!: () => void | Promise<void>;
+test('bounded port check reports detected and missed without a UI-owned timer', async () => {
+  const detected = jest.fn().mockResolvedValue(true), missed = jest.fn().mockResolvedValue(false);
   await render(<>
     <WalkingCheckButton
       rule={rule}
-      observe={(callback) => { callback(true); return unsubscribe; }}
-      start={start}
-      schedule={(callback) => { detectedFinish = callback; }}
+      checkWalking={detected}
     />
     <WalkingCheckButton
       rule={{ ...rule, id: 'missed' }}
-      observe={(callback) => { callback(false); return unsubscribe; }}
-      start={start}
-      schedule={(callback) => { missedFinish = callback; }}
+      checkWalking={missed}
     />
   </>);
   const [detectedButton] = screen.getAllByRole('button', { name: 'Check walking' });
   fireEvent.press(detectedButton!);
-  expect(screen.getAllByRole('button', { name: 'Check walking' })).toHaveLength(2);
-  await act(async () => { await detectedFinish(); });
+  await act(async () => { await Promise.resolve(); });
   expect(screen.getByRole('button', { name: 'Detected' })).toBeTruthy();
 
   fireEvent.press(screen.getByRole('button', { name: 'Check walking' }));
-  expect(screen.getByRole('button', { name: 'Check walking' })).toBeTruthy();
-  await act(async () => { await missedFinish(); });
+  await act(async () => { await Promise.resolve(); });
   await waitFor(() => expect(screen.getByRole('button', { name: 'Not detected — hold your phone and walk' })).toBeTruthy());
-  expect(unsubscribe).toHaveBeenCalledTimes(2);
-  expect(start).toHaveBeenCalledTimes(1);
+  expect(detected).toHaveBeenCalledTimes(1);
+  expect(missed).toHaveBeenCalledTimes(1);
 });
 
 test('state walking card has no percentage, progress bar, or detecting copy', async () => {
