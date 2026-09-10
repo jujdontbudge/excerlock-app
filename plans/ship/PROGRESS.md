@@ -205,3 +205,7 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   checks before exposure. Native SDK57 adapter uses explicit expo-file-system57.0.6 legacy import and
   expo-sharing.8tests, primary typecheck and focused lint pass. Not yet wired to pending UI ExportPort;
   actual device share sheet, process-death orphan cleanup and generation binding remain integration work.
+- Root T11 persisted propped ceremony/handoff reducer: foreground-only generation-bound scan pass,
+  verified background retention vs explicit coverage-loss invalidation, single20second pickup and60second
+  handoff deadlines, rescan cannot extend handoff, stale scans/late wakes/clock rewind rejected.9tests,
+  typecheck/lint pass. Pure policy only; native placement/camera/root wiring and hardware latency remain.
