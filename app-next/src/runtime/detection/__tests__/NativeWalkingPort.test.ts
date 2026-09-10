@@ -29,7 +29,7 @@ function setup() {
     reconcile: () => ({ placement: 'handheld' as const, at: now }),
   } as unknown as PlacementAdapter;
   const service = new DetectionService({
-    motion, placement, gymLog: { append: async () => {}, readAll: async () => [] }, creditHistory: async () => {}, persist: async () => {},
+    motion, placement, gymLog: { append: async () => {}, readAll: async () => [] }, historyLedger: { read: async () => ({ version: 1, through: null, stepsByDay: {} }), apply: async () => { throw new Error('Walking-only test must not query history'); } }, persist: async () => {},
   });
   const port = new NativeWalkingPort({
     service, motion, placement, walkingGraceMs: () => 30_000, now: () => now,

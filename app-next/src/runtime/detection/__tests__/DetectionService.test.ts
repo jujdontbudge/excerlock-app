@@ -310,7 +310,7 @@ test('qualified pickup walking joins propped policy and stops only after the one
     motion,
     placement: {} as PlacementAdapter,
     gymLog: { append: async () => {}, readAll: async () => [] },
-    creditHistory: async () => {},
+    historyLedger: historyLedger(),
     persist: async () => {},
   });
   await service.reconcileMotion(0, 30_000, 0);
