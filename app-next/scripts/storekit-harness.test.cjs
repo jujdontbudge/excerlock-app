@@ -64,3 +64,19 @@ test('scheme is opt-in Debug-only and never archives or profiles', () => {
   assert.doesNotMatch(xml, /ArchiveAction|ProfileAction|buildConfiguration="Release"/);
   assert.match(xml, /buildForArchiving="NO"/);
 });
+
+test('StoreKit reference resolves from the real shared-scheme directory', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'storekit-reference-'));
+  const schemeDir = path.join(root, 'ios', 'ExcerLock.xcodeproj', 'xcshareddata', 'xcschemes');
+  const storeKit = path.join(root, 'ios', 'ExcerLockStoreKitUITests', 'ExcerLock.storekit');
+  fs.mkdirSync(schemeDir, { recursive: true });
+  fs.mkdirSync(path.dirname(storeKit), { recursive: true });
+  fs.writeFileSync(storeKit, '{}');
+
+  const xml = scheme({ uuid: 'APP' }, { uuid: 'TEST' });
+  const identifier = xml.match(/<StoreKitConfigurationFileReference identifier = "([^"]+)"/u)?.[1];
+  assert.ok(identifier, 'scheme must contain a StoreKit configuration reference');
+  const resolved = path.resolve(schemeDir, identifier);
+  assert.equal(resolved, storeKit);
+  assert.ok(fs.existsSync(resolved), `StoreKit configuration is missing at ${resolved}`);
+});
