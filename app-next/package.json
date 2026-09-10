@@ -68,7 +68,7 @@
     "test": "jest --runInBand",
     "lint": "expo lint",
     "ios:storekit-harness": "node scripts/generate-storekit-harness.cjs",
-    "test:storekit-harness": "node --test scripts/test-storekit-harness.cjs"
+    "test:storekit-harness": "node --test scripts/storekit-harness.test.cjs"
   },
   "private": true
 }
