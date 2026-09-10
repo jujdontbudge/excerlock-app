@@ -46,9 +46,9 @@ struct ShieldActionRoute {
   private static func defaultDeepLink(for cause: String) -> String {
     switch cause {
     case "fullLock", "lockWindow":
-      return "excerlock://locked-apps"
+      return "excerlock://home"
     default:
-      return "excerlock://"
+      return cause == "walkAndScrollEnded" ? "excerlock://unlock/propped" : "excerlock://home"
     }
   }
 }

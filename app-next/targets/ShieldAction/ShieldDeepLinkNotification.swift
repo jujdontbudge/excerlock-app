@@ -11,7 +11,7 @@ enum ShieldDeepLinkNotification {
       "shieldCause": cause,
     ]
     let request = UNNotificationRequest(
-      identifier: "excerlock.shield.open.\(cause)",
+      identifier: "shield_open",
       content: content,
       trigger: nil
     )

@@ -19,7 +19,8 @@ public final class ExcerlockEnforcementModule: Module {
               let accountGeneration = context["accountGeneration"] as? Int,
               let selectionVersion = context["selectionVersion"] as? String,
               revision >= 0, !selectionVersion.isEmpty else { throw ExcerlockPolicyError.invalidSnapshot }
-        let prior = try? store.readLocked()
+        let prior = try store.readIfPresentLocked()
+        if let prior, revision <= prior.revision { throw ExcerlockPolicyError.staleRevision }
         var registrations = prior?.registrations ?? [:]
         let sameContext: (ExcerlockMonitorRegistration) -> Bool = {
           $0.policyGeneration == policyGeneration && $0.accountGeneration == accountGeneration && $0.selectionVersion == selectionVersion
@@ -65,7 +66,8 @@ public final class ExcerlockEnforcementModule: Module {
         registeredAt: registeredAt, eligibleUntil: eligibleUntil, committed: false)
       try ExcerlockPolicyStore.shared.locked {
         var record = try ExcerlockPolicyStore.shared.readLocked()
-        guard record.revision == revision, record.state == "conditional" else { throw ExcerlockPolicyError.staleRevision }
+        guard record.revision == revision, record.state == "conditional", record.policyGeneration == policyGeneration, record.accountGeneration == accountGeneration, record.selectionVersion == selectionVersion else { throw ExcerlockPolicyError.staleRevision }
+        guard DeviceActivityCenter().activities.count < 20 else { throw ExcerlockPolicyError.invalidSnapshot }
         record.registrations[id] = registration
         try ExcerlockPolicyStore.shared.writeLocked(record)
       }
@@ -131,8 +133,8 @@ public final class ExcerlockEnforcementModule: Module {
         let calendar = Calendar.autoupdatingCurrent
         for window in staged {
           let schedule = DeviceActivitySchedule(
-            intervalStart: calendar.dateComponents([.era,.year,.month,.day,.hour,.minute,.second], from: Date(timeIntervalSince1970: window.start / 1000)),
-            intervalEnd: calendar.dateComponents([.era,.year,.month,.day,.hour,.minute,.second], from: Date(timeIntervalSince1970: window.end / 1000)), repeats: false)
+            intervalStart: calendar.dateComponents([.weekday,.hour,.minute,.second], from: Date(timeIntervalSince1970: window.start / 1000)),
+            intervalEnd: calendar.dateComponents([.weekday,.hour,.minute,.second], from: Date(timeIntervalSince1970: window.end / 1000)), repeats: true)
           try DeviceActivityCenter().startMonitoring(DeviceActivityName(window.monitorId), during: schedule)
           started.append(window.monitorId)
         }
