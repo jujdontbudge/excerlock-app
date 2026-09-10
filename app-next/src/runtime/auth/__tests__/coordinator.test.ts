@@ -127,7 +127,7 @@ test('fresh unchanged identity does not repeatedly identify', async () => {
   await new Promise((r) => setTimeout(r, 30));
   expect(putCount).toBe(1);
   // Re-emit same identity (same generation+uid): must not re-run.
-  emit(canonical('uid-same'));
+  emit({ ...canonical('uid-same'), ready: true });
   await new Promise((r) => setTimeout(r, 30));
   expect(putCount).toBe(1);
   expect(analyticsCount).toBe(1);

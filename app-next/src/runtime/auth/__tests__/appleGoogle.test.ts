@@ -278,3 +278,64 @@ test('explicit recovery adopts server-verified existing UID without arbitrary me
   // Error must not contain tokens.
   adapter.dispose();
 });
+
+test('late first recovery cannot overwrite a newer recovery result', async () => {
+  let resolveFirst!: (value: unknown) => void;
+  const firstCredential = new Promise((resolve) => {
+    resolveFirst = resolve;
+  });
+  const supabase = baseSupabase() as never;
+  const auth = (supabase as unknown as { auth: Record<string, jest.Mock> }).auth;
+  const newest = permUser('newest-account', 'apple');
+  auth.signInWithIdToken.mockResolvedValue({
+    data: { user: newest, session: { access_token: 'new', refresh_token: 'new-r', user: newest } },
+    error: null,
+  });
+  const signInAsync = jest
+    .fn()
+    .mockReturnValueOnce(firstCredential)
+    .mockResolvedValueOnce({ identityToken: 'new-token', authorizationCode: 'new-code', user: 'new-user' });
+  const adapter = new SupabaseAuthAdapter({
+    supabase,
+    appleDeps: { signInAsync, digestSHA256Hex: jest.fn().mockResolvedValue('hash') } as never,
+    googleDeps: { clientId: 'c', redirectUri: 'r', buildRequest: jest.fn(), exchangeCode: jest.fn() } as never,
+    apiBaseUrl: 'https://api.test',
+  });
+  await adapter.boot();
+  const first = adapter.recoverWithApple();
+  const second = adapter.recoverWithApple();
+  await second;
+  resolveFirst({ identityToken: 'old-token', authorizationCode: 'old-code', user: 'old-user' });
+  await expect(first).rejects.toMatchObject({ code: 'STALE_SIGNIN' });
+  expect(adapter.identity().userId).toBe('newest-account');
+  expect(auth.signInWithIdToken).toHaveBeenCalledTimes(1);
+  adapter.dispose();
+});
+
+test('late provider popup cannot link the fresh identity created after deletion', async () => {
+  let resolveCredential!: (value: unknown) => void;
+  const credential = new Promise((resolve) => {
+    resolveCredential = resolve;
+  });
+  const supabase = baseSupabase() as never;
+  const auth = (supabase as unknown as { auth: Record<string, jest.Mock> }).auth;
+  auth.signInAnonymously.mockResolvedValue({
+    data: { user: anonUser('fresh-after-delete'), session: anonSession('fresh-after-delete') },
+    error: null,
+  });
+  const adapter = new SupabaseAuthAdapter({
+    supabase,
+    appleDeps: { signInAsync: jest.fn().mockReturnValue(credential), digestSHA256Hex: jest.fn().mockResolvedValue('hash') } as never,
+    googleDeps: { clientId: 'c', redirectUri: 'r', buildRequest: jest.fn(), exchangeCode: jest.fn() } as never,
+    apiBaseUrl: 'https://api.test',
+    fetchImpl: jest.fn().mockResolvedValue({ status: 204 }) as never,
+  });
+  await adapter.boot();
+  const linking = adapter.signInWithApple();
+  await adapter.deleteAccount();
+  resolveCredential({ identityToken: 'late-token', authorizationCode: 'late-code', user: 'late-user' });
+  await expect(linking).rejects.toMatchObject({ code: 'STALE_SIGNIN' });
+  expect(adapter.identity().userId).toBe('fresh-after-delete');
+  expect(auth.linkIdentity).not.toHaveBeenCalled();
+  adapter.dispose();
+});
