@@ -162,6 +162,9 @@ export function SignInScreen({
                 onPress={() => {
                   if (!busy) void signIn('apple');
                 }}
+                onAccessibilityTap={() => {
+                  if (!busy) void signIn('apple');
+                }}
               />
               <SecondaryButton label={c.google} disabled={busy} onPress={() => signIn('google')} />
               <SecondaryButton
