@@ -10,4 +10,4 @@ No demo account is required. Sign in with Apple is available; anonymous use must
 
 If Screen Time permission is denied or no apps are selected, the app shows that state and provides recovery guidance.
 
-Reviewer contact, phone, and final support/privacy URLs must be entered in App Store Connect before submission. This file is a draft and is not evidence that the `App Review` preset or any external metadata is present/active.
+Canonical support and privacy URLs are now entered in App Store Connect. Reviewer contact and phone must still be entered before submission. This file remains a draft and is not evidence that the `App Review` preset is present/active.
