@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createWalkingState, reduceWalking, type WalkingState } from '../domain/walkingMachine';
 import { createProppedState, reducePropped, type ProppedState } from '../domain/proppedMachine';
 import { createGymState, reduceGym, type GymDetectionState } from '../domain/gymMachine';
-export type PendingHistoryCredit = { idempotencyKey: string; from: number; to: number; steps: number };
+export type PendingHistoryCredit = { idempotencyKey: string; from: number; to: number; steps: number; timezone?: string };
 export type DetectionData = {
   version: 1;
   generation: number;
@@ -56,6 +56,8 @@ export const detectionStore = createPersistedStore('detection', initial, {
       Number.isFinite((value as PendingHistoryCredit).to) &&
       Number.isFinite((value as PendingHistoryCredit).steps) &&
       (value as PendingHistoryCredit).steps >= 0 &&
+      ((value as PendingHistoryCredit).timezone === undefined ||
+        (typeof (value as PendingHistoryCredit).timezone === 'string' && (value as PendingHistoryCredit).timezone!.length > 0)) &&
       (value as PendingHistoryCredit).to > (value as PendingHistoryCredit).from),
 }, { manualPersistence: true });
 /** Explicit durability barrier for background callbacks and serialized reconciliation. */
