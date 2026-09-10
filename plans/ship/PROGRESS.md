@@ -755,3 +755,15 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   Root approved separate bounded implementations: one-shot exact-name/offline or bounded boolean flag
   preset, honest20step summary and shared validation; opt-in test-only native StoreKit generator with
   Debug UI-test target, no default shipping/native runtime change. Neither gate is yet accepted.
+
+- Local T13 audit found true lapse routing trap (completed expired users protected away from Settings)
+  and placeholder legal surface. Lapse router fix assigned with actual navigation regressions. Root
+  fixed Legal to published canonical documents (verified fresh web content) with explicit external
+  browser action/selectable URL/visible retry;4 RED failures then10 tests+typecheck PASS; independent
+  review clean; commitc11fc26b. Rendered verification remains pending.
+- Privacy audit correction: integration ios file is generated/ignored, NOT tracked. Actual packaged
+  candidate217647f1 collected-data declarations match canonical; saved privacy-parity.json. Stale local
+  generated tree does not prove a release privacy mismatch. Signed IPA/privacy labels still unverified.
+- Reviewer9d395c41 and StoreKitfd558021/9752dcf3 held for review fixes: reviewer adjustable-field
+  semantics/StrictMode/stale-await tests; StoreKit real AX journey, default-selected option, Debug
+  bundle setup and generator preservation/CI coverage. None counted as completed acceptance.
