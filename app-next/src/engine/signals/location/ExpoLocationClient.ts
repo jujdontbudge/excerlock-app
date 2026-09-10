@@ -50,6 +50,7 @@ export interface ExpoLocationModule {
       readonly notifyOnExit: boolean;
     }[],
   ): Promise<void>;
+  hasStartedGeofencingAsync(taskName: string): Promise<boolean>;
   stopGeofencingAsync(taskName: string): Promise<void>;
   startLocationUpdatesAsync(
     taskName: string,
@@ -65,6 +66,7 @@ export interface ExpoLocationModule {
 
 export class ExpoLocationClient implements NativeLocationClient {
   private authorizationStatus: LocationAuthorizationStatus = "notDetermined";
+  private geofenceOperation: Promise<void> = Promise.resolve();
   private locationUpdatesActive = false;
 
   public constructor(
@@ -136,21 +138,32 @@ export class ExpoLocationClient implements NativeLocationClient {
   public async startGeofencing(
     regions: readonly GeofenceRegion[],
   ): Promise<void> {
-    await this.expo.startGeofencingAsync(
-      GEOFENCE_TASK_NAME,
-      regions.map((region) => ({
-        identifier: region.id,
-        latitude: region.latitude,
-        longitude: region.longitude,
-        radius: region.radiusMeters,
-        notifyOnEnter: true,
-        notifyOnExit: true,
-      })),
+    return this.serializeGeofenceOperation(() =>
+      this.expo.startGeofencingAsync(
+        GEOFENCE_TASK_NAME,
+        regions.map((region) => ({
+          identifier: region.id,
+          latitude: region.latitude,
+          longitude: region.longitude,
+          radius: region.radiusMeters,
+          notifyOnEnter: true,
+          notifyOnExit: true,
+        })),
+      ),
     );
   }
 
   public async stopGeofencing(): Promise<void> {
-    await this.expo.stopGeofencingAsync(GEOFENCE_TASK_NAME);
+    return this.serializeGeofenceOperation(async () => {
+      if ((await this.expo.hasStartedGeofencingAsync(GEOFENCE_TASK_NAME)) === false) return;
+      await this.expo.stopGeofencingAsync(GEOFENCE_TASK_NAME);
+    });
+  }
+
+  private serializeGeofenceOperation(operation: () => Promise<void>): Promise<void> {
+    const result = this.geofenceOperation.catch(() => undefined).then(operation);
+    this.geofenceOperation = result.catch(() => undefined);
+    return result;
   }
 
   public async startLocationUpdates(): Promise<void> {
