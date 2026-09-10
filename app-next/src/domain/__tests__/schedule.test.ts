@@ -41,3 +41,28 @@ test('nonexistent spring time shifts forward; repeated fall time chooses its fir
   const fold: Rule = { ...gap, schedule: { days: [0], window: { kind: 'range', startMinute: 90, endMinute: 180 } } };
   expect(windowInstances(fold, '2026-11-01', 'America/New_York')[0].start).toBe('2026-11-01T05:30:00.000Z');
 });
+
+test.each([
+  ['America/Chicago', '2026-03-08', 23],
+  ['America/Chicago', '2026-11-01', 25],
+  ['Australia/Adelaide', '2026-10-04', 23],
+  ['Australia/Adelaide', '2026-04-05', 25],
+  ['Australia/Lord_Howe', '2026-10-04', 23.5],
+  ['Australia/Lord_Howe', '2026-04-05', 24.5],
+])('all-day %s %s spans its actual %s-hour day', (timezone, day, hours) => {
+  const all: Rule = { ...rule, schedule: { days: [0], window: { kind: 'allDay' } } };
+  const window = windowInstances(all, day as string, timezone)[0];
+  expect((Date.parse(window.end) - Date.parse(window.start)) / 3600000).toBe(hours);
+});
+
+test.each([
+  ['America/Chicago', '2026-03-08', 150, 180],
+  ['Australia/Adelaide', '2026-10-04', 150, 180],
+  ['Australia/Lord_Howe', '2026-10-04', 135, 150],
+])('a spring-gap range that resolves backward has no instance in %s', (timezone, day, startMinute, endMinute) => {
+  const collapsed: Rule = {
+    ...rule,
+    schedule: { days: [0], window: { kind: 'range', startMinute, endMinute } },
+  };
+  expect(windowInstances(collapsed, day as string, timezone)).toEqual([]);
+});
