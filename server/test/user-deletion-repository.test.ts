@@ -25,6 +25,13 @@ import { createPgliteTestDatabase } from "./pgliteTestDatabase.js";
 
 let postgres: Awaited<ReturnType<typeof createPgliteTestDatabase>>;
 
+function containsDateParameter(value: unknown, seen = new WeakSet<object>()): boolean {
+  if (value instanceof Date) return true;
+  if (!value || typeof value !== "object" || seen.has(value)) return false;
+  seen.add(value);
+  return Object.values(value).some((entry) => containsDateParameter(entry, seen));
+}
+
 beforeAll(async () => {
   postgres = await createPgliteTestDatabase();
 });
@@ -38,6 +45,34 @@ afterAll(async () => {
 });
 
 describe("account deletion persistence", () => {
+  it("does not pass raw Date objects through conflict-update SQL", async () => {
+    const stopAfterUpsert = new Error("upsert inspected");
+    let updateSet: unknown;
+    const database = {
+      transaction: async (operation: (transaction: unknown) => Promise<unknown>) =>
+        operation({
+          insert: () => ({
+            values: () => ({
+              onConflictDoUpdate: (configuration: { set: unknown }) => {
+                updateSet = configuration.set;
+                throw stopAfterUpsert;
+              },
+            }),
+          }),
+        }),
+    };
+    const repository = createDrizzleUserDeletionRepository(database as never);
+
+    await expect(
+      repository.prepareDeletion(
+        "user_123",
+        new Date("2026-07-31T20:00:00.000Z"),
+      ),
+    ).rejects.toBe(stopAfterUpsert);
+
+    expect(containsDateParameter(updateSet)).toBe(false);
+  });
+
   it("atomically erases user content and credentials while retaining an anonymized tombstone", async () => {
     await seedIdentitySpine();
     const repository = createDrizzleUserDeletionRepository(postgres.db);

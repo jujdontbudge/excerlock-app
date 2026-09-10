@@ -62,9 +62,9 @@ export function createDrizzleUserDeletionRepository(
             target: users.id,
             set: {
               email: null,
-              deletedAt: sql`coalesce(${users.deletedAt}, ${deletedAt})`,
-              authProvider: sql`coalesce(${users.authProvider}, ${provider})`,
-              updatedAt: sql`coalesce(${users.deletedAt}, ${deletedAt})`,
+              deletedAt: sql`coalesce(${users.deletedAt}, excluded.deleted_at)`,
+              authProvider: sql`coalesce(${users.authProvider}, excluded.auth_provider)`,
+              updatedAt: sql`coalesce(${users.deletedAt}, excluded.deleted_at)`,
             },
           });
 
