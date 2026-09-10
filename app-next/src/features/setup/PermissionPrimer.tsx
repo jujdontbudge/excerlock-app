@@ -16,7 +16,6 @@ const content = {
     icon: 'shield',
   },
   motion: { title: c.motionTitle, body: c.motionBody, allow: c.motionAllow, denied: c.motionDenied, icon: 'walking' },
-  health: { title: c.healthTitle, body: c.healthBody, allow: c.healthAllow, denied: c.healthDenied, icon: 'heart' },
   location: {
     title: c.locationTitle,
     body: c.locationBody,
@@ -39,7 +38,6 @@ export function PermissionPrimer({ name, onContinue }: { name: keyof typeof cont
     try {
       if (name === 'screenTime') await runtime.screenTime.requestAuthorization();
       else if (name === 'motion') await runtime.steps.request();
-      else if (name === 'health') await runtime.health.request();
       else await runtime.gym.requestLocation();
     } finally {
       setBusy(false);

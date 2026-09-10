@@ -11,8 +11,7 @@ import { permissionsStore } from '../../../state/permissionsStore';
 import { profileStore } from '../../../state/profileStore';
 import { settingsCopy as c } from '../../../content/settings';
 import { supportEmail } from '../../../content/support';
-import { createDraft, toRule } from '../../rules/draft';
-import { toSchedule, scheduleDraft } from '../../rules/scheduleDraft';
+import { validateRule } from '../../../domain/validateRule';
 
 test('root rows navigate to destinations and seven taps open developer', async () => {
   const runtime = createRuntime();
@@ -92,20 +91,22 @@ test('UnitsScreen writes kilometers', async () => {
   expect(settingsStore.getState().data.units).toBe('km');
 });
 
-test('UnitsScreen keeps units when a distance goal is out of range', async () => {
+test('UnitsScreen switches units without touching step and minute goals', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('multi-rule-overlap');
-  const d = { ...createDraft('running'), runMode: 'distance' as const, distance: 0.25, unit: 'mi' as const };
   settingsStore.getState().patch({ units: 'mi' });
-  rulesStore.getState().patch({ rules: [toRule(d, toSchedule(scheduleDraft({})))] });
   await render(
     <AppRuntimeProvider runtime={runtime}>
       <UnitsScreen onBack={() => {}} />
     </AppRuntimeProvider>,
   );
   await userEvent.press(screen.getByRole('radio', { name: 'Kilometers' }));
-  expect(screen.getByRole('alert')).toHaveTextContent(c.unitsError);
-  expect(settingsStore.getState().data.units).toBe('mi');
+  expect(settingsStore.getState().data.units).toBe('km');
+  expect(screen.queryByRole('alert')).toBeNull();
+  for (const r of rulesStore.getState().data.rules) {
+    expect(['walking', 'gym']).toContain(r.activity);
+    expect(validateRule(r)).toEqual([]);
+  }
 });
 
 test('PreferencesScreen lists permissions, grace, haptics and gyms', async () => {
@@ -118,7 +119,8 @@ test('PreferencesScreen lists permissions, grace, haptics and gyms', async () =>
     </AppRuntimeProvider>,
   );
   expect(screen.getByRole('header', { name: c.privacyPermissions })).toBeTruthy();
-  expect(screen.getAllByRole('button', { name: /, (Granted|Needed|Off)$/ })).toHaveLength(6);
+  expect(screen.getAllByRole('button', { name: /, (Granted|Needed|Off)$/ })).toHaveLength(5);
+  expect(screen.queryByRole('button', { name: /Health/ })).toBeNull();
   await userEvent.press(screen.getByRole('button', { name: /Walk & Scroll stop grace/ }));
   await userEvent.press(screen.getByRole('radio', { name: '2 minutes' }));
   expect(settingsStore.getState().data.stopGrace).toBe(120);

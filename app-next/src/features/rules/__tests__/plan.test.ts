@@ -10,13 +10,13 @@ test.each([
   { activity: 'walking', walkingMode: 'state' },
   { activity: 'gym', gymMode: 'arrival' },
   { activity: 'gym', gymMode: 'time', gymMinutes: 45 },
-  { activity: 'running', runMode: 'distance', distance: 3, unit: 'km' },
-  { activity: 'running', runMode: 'minutes', minutes: 20 },
-  { activity: 'biking', bikeMode: 'distance', distance: 8, unit: 'km' },
-  { activity: 'biking', bikeMode: 'minutes', minutes: 30 },
-])('summary draft is valid for $activity $walkingMode $gymMode $runMode $bikeMode', (a) => {
+  { activity: 'gym', gymMode: 'time', gymMinutes: 10 },
+  { activity: 'gym', gymMode: 'time', gymMinutes: 180 },
+  { activity: 'walking', walkingMode: 'target', stepGoal: 500 },
+  { activity: 'walking', walkingMode: 'target', stepGoal: 30000 },
+])('summary draft is valid for $activity $walkingMode $gymMode', (a) => {
   const answers = JSON.parse(JSON.stringify(a));
-  expect(validateRule(toRule(draftFromAnswers(answers, 'mi'), schedule))).toEqual([]);
+  expect(validateRule(toRule(draftFromAnswers(answers), schedule))).toEqual([]);
 });
 test('commit is idempotent, stores profile answers, and marks the rule step done', () => {
   rulesStore.getState().reset();

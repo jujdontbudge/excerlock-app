@@ -13,11 +13,10 @@ export function activityHistory(ctx: FakeContext) {
     const base = s.history.find((d) => d.day === day) ?? {
       day,
       usageMinutes: null,
-      activity: { walking: 0, gym: 0, running: 0, biking: 0 },
+      activity: { walking: 0, gym: 0 },
       met: false,
       scheduled: false,
     };
-    const workouts = sameDay ? (ctx.scenario.health?.workoutsToday ?? []) : [];
     const gymRules = rulesStore
       .getState()
       .data.rules.filter((r) => r.activity === 'gym' && r.mode.kind === 'target' && r.mode.metric === 'minutes');
@@ -32,12 +31,7 @@ export function activityHistory(ctx: FakeContext) {
     const current = {
       ...base,
       usageMinutes: sameDay ? ctx.scenario.usageMinutesToday : base.usageMinutes,
-      activity: {
-        walking: stepCount(ctx),
-        gym,
-        running: workouts.filter((w) => w.kind === 'running').reduce((n, w) => n + w.minutes, 0),
-        biking: workouts.filter((w) => w.kind === 'biking').reduce((n, w) => n + w.minutes, 0),
-      },
+      activity: { walking: stepCount(ctx), gym },
     };
     if (JSON.stringify(base) === JSON.stringify(current) && s.history.some((d) => d.day === day)) return;
     ctx.update({

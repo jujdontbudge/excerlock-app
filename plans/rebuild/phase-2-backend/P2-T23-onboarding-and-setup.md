@@ -28,7 +28,7 @@ Decisions: B10, B11, B24, B26, B33. Findings: 20, 26, 27, 70, 71, 72, 73, 104. P
 
 `features/onboarding/__tests__/flow.test.ts` (the real file; not `onboarding.test.tsx`): "the path includes
 O19"; "O10 renders a slider from 1 to 12 hours"; "O02 and O03 headings differ from O01"; "O03 lists walking,
-gym, running, biking". `features/setup/__tests__/setup-router.test.tsx`: "a gym user is asked for Location
+gym". `features/setup/__tests__/setup-router.test.tsx`: "a gym user is asked for Location
 in X3"; "an unchecked X5 row routes to its fix".
 
 ## Acceptance

@@ -3,7 +3,7 @@ import { useStore } from 'zustand';
 import { Keyboard } from 'react-native';
 import { Activity } from '../../domain/types';
 import { rulesStore } from '../../state/rulesStore';
-import { settingsStore, settingsStore as useSettingsStore } from '../../state/settingsStore';
+import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { createDraft, fromRule, toRule } from '../rules/draft';
 import { createRuleDraftStore } from '../rules/RuleDraftStore';
 import { scheduleDraft, reduceSchedule, toSchedule, ScheduleAction } from '../rules/scheduleDraft';
@@ -17,7 +17,7 @@ export function useBuilder(id: string | undefined, onClose: () => void) {
     const rule = rulesStore.getState().data.rules.find((r) => r.id === id);
     const draft = rule
       ? fromRule(rule)
-      : createDraft('walking', settingsStore.getState().data.units, runtime.clock.now());
+      : createDraft('walking', runtime.clock.now());
     const schedule = rule
       ? scheduleDraft({
           days: rule.schedule.days,
@@ -54,7 +54,7 @@ export function useBuilder(id: string | undefined, onClose: () => void) {
     dispatch,
     valid: step === 'GPlace' ? gymCount > 0 : builderValid(step, draft, schedule, chosen),
     choose: (activity: Activity) => {
-      store.getState().replace(createDraft(activity, settingsStore.getState().data.units, runtime.clock.now()));
+      store.getState().replace(createDraft(activity, runtime.clock.now()));
       setChosen(true);
     },
     onSchedule: (a: ScheduleAction) => setSchedule((s) => reduceSchedule(s, a)),

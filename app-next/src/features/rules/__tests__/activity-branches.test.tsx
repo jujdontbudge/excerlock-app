@@ -8,20 +8,16 @@ import { createRuntime } from '../../../runtime/createRuntime';
 import { onboardingStore } from '../../../state/onboardingStore';
 import { commitPlan, draftFromAnswers } from '../plan';
 import { validateRule } from '../../../domain/validateRule';
-const paths = [
-  ['gym', 'G1', 'Spend time at the gym', 'How long at the gym unlocks your phone?'],
-  ['gym', 'G1', 'Arrive at the gym', 'When should blocking be active?'],
-  ['running', 'R1', 'Run for a set time', 'Set your running goal'],
-  ['running', 'R1', 'Run a set distance', 'Choose your distance'],
-  ['biking', 'B1', 'Bike for a set time', 'Set your biking goal'],
-  ['biking', 'B1', 'Bike a set distance', 'Choose your distance'],
+const gymPaths = [
+  ['G1', 'Spend time at the gym', 'How long at the gym unlocks your phone?'],
+  ['G1', 'Arrive at the gym', 'When should blocking be active?'],
 ] as const;
-test.each(paths)(
-  '%s through %s / %s reaches the correct goal and a valid rule',
-  async (activity, step, choice, title) => {
+test.each(gymPaths)(
+  'gym through %s / %s reaches the correct goal and a valid rule',
+  async (step, choice, title) => {
     const runtime = createRuntime();
     await runtime.dev.load('fresh-install');
-    onboardingStore.getState().patch({ answers: { activity } });
+    onboardingStore.getState().patch({ answers: { activity: 'gym' } });
     const r = renderRouter(
       {
         _layout: () => (
@@ -48,20 +44,55 @@ test.each(paths)(
     });
   },
 );
-test('activity defaults stay separate and distance unit changes do not convert the number', () => {
-  const running = draftFromAnswers({ activity: 'running', runDistance: 2, runUnit: 'km' }, 'mi');
-  expect(running.distance).toBe(2);
-  expect(running.unit).toBe('km');
-  const biking = draftFromAnswers({ activity: 'biking', runMinutes: 25, runDistance: 2 }, 'mi');
-  expect(biking.minutes).toBe(30);
-  expect(biking.distance).toBe(5);
+const walkingPaths = [
+  ['W1', 'Outside', 'How should walking unlock your apps?'],
+  ['W2', 'Reach a step goal', 'Set your walking goal'],
+] as const;
+test.each(walkingPaths)(
+  'walking through %s / %s reaches the correct goal and a valid rule',
+  async (step, choice, title) => {
+    const runtime = createRuntime();
+    await runtime.dev.load('fresh-install');
+    onboardingStore.getState().patch({ answers: { activity: 'walking' } });
+    const r = renderRouter(
+      {
+        _layout: () => (
+          <AppRuntimeProvider runtime={runtime}>
+            <Slot />
+          </AppRuntimeProvider>
+        ),
+        'onboarding/[step]': OnboardingRoute,
+        paywall: () => <Text>Paywall</Text>,
+      },
+      { initialUrl: '/onboarding/' + step },
+    );
+    await r;
+    expect(screen.queryByText("You'll pick your gym after setup.")).toBeNull();
+    expect(screen.queryByRole('header', { name: /Block from/ })).toBeNull();
+    await userEvent.press(screen.getByRole('radio', { name: choice }));
+    await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
+    expect(screen.getByRole('header', { name: title })).toBeTruthy();
+    const answers = onboardingStore.getState().data.answers;
+    await act(() => {
+      expect(validateRule(commitPlan(answers, 'mi'))).toEqual([]);
+    });
+  },
+);
+test('activity defaults stay separate when answers switch between walking and gym', () => {
+  const walking = draftFromAnswers({ activity: 'walking', stepGoal: '8000' });
+  expect(walking.stepGoal).toBe(8000);
+  const gym = draftFromAnswers({ activity: 'gym', gymMode: 'arrival' });
+  expect(gym.gymMode).toBe('arrival');
+  const switched = draftFromAnswers({ activity: 'gym' }, walking);
+  expect(switched.activity).toBe('gym');
+  expect(switched.gymMinutes).toBe(30);
 });
-test('canceling an invalid distance edit restores the valid summary', async () => {
+test('canceling an invalid step-goal edit restores the valid summary', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
-  onboardingStore
-    .getState()
-    .patch({ answers: { activity: 'running', runMode: 'distance', runDistance: 2, runUnit: 'mi' } });
+  onboardingStore.getState().patch({
+    answers: { activity: 'walking', walkPlace: 'outside', walkingMode: 'target', stepGoal: '5000' },
+  });
   const r = renderRouter(
     {
       _layout: () => (
@@ -75,16 +106,18 @@ test('canceling an invalid distance edit restores the valid summary', async () =
   );
   await r;
   await userEvent.press(screen.getByRole('button', { name: 'Edit goal' }));
-  await fireEvent.changeText(screen.getByLabelText('Distance'), '');
+  await fireEvent.changeText(screen.getByLabelText('Daily step goal'), '');
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
   await userEvent.press(screen.getByRole('button', { name: 'Back' }));
   expect(screen.getByRole('header', { name: 'Your plan is ready' })).toBeTruthy();
-  expect(screen.getByText('Run 2 mi')).toBeTruthy();
+  expect(screen.getByText('Walk 5,000 steps')).toBeTruthy();
 });
 test('a retained summary route does not validate the active route’s incomplete input', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
-  onboardingStore.getState().patch({ answers: { activity: 'running', runMode: 'distance', runDistance: 2 } });
+  onboardingStore.getState().patch({
+    answers: { activity: 'walking', walkPlace: 'outside', walkingMode: 'target', stepGoal: '5000' },
+  });
   const r = renderRouter(
     {
       _layout: () => (
@@ -97,7 +130,7 @@ test('a retained summary route does not validate the active route’s incomplete
     { initialUrl: '/onboarding/S3' },
   );
   await r;
-  await act(() => router.push('/onboarding/D'));
-  await fireEvent.changeText(screen.getByLabelText('Distance'), '');
+  await act(() => router.push('/onboarding/W3'));
+  await fireEvent.changeText(screen.getByLabelText('Daily step goal'), '');
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
 });

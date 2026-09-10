@@ -3,7 +3,6 @@ import { ScreenTimePort } from '../ports/ScreenTimePort';
 import { StepsPort } from '../ports/StepsPort';
 import { WalkingPort } from '../ports/WalkingPort';
 import { GymPort } from '../ports/GymPort';
-import { HealthPort } from '../ports/HealthPort';
 import { AuthPort } from '../ports/AuthPort';
 import { SubscriptionPort } from '../ports/SubscriptionPort';
 import { AnalyticsPort } from '../ports/AnalyticsPort';
@@ -19,7 +18,6 @@ export type Runtime = {
   walking: WalkingPort;
   gait: GaitPort;
   gym: GymPort;
-  health: HealthPort;
   auth: AuthPort;
   subscription: SubscriptionPort;
   analytics: AnalyticsPort;

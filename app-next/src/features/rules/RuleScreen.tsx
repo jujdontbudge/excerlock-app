@@ -10,7 +10,7 @@ import { workoutCopy } from '../../content/workoutRules';
 import { View } from 'react-native';
 import { ReactNode } from 'react';
 
-export type BranchStep = 'W1' | 'W2' | 'W3' | 'G1' | 'G2' | 'R1' | 'R2' | 'B1' | 'B2' | 'D';
+export type BranchStep = 'W1' | 'W2' | 'W3' | 'G1' | 'G2';
 export function RuleScreen({
   step,
   preview,
@@ -25,7 +25,7 @@ export function RuleScreen({
   const copy = walking ? walkingCopy[step] : workoutCopy[step];
   const body = walking ? (
     <WalkingScreen contentOnly step={step} {...props} />
-  ) : step === 'G1' || step === 'R1' || step === 'B1' ? (
+  ) : step === 'G1' ? (
     <WorkoutModeScreen step={step} {...props} />
   ) : (
     <WorkoutGoalScreen step={step} {...props} />

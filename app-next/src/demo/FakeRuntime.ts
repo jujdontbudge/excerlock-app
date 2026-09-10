@@ -15,7 +15,6 @@ import { StepsFake } from './fakes/StepsFake';
 import { WalkingFake } from './fakes/WalkingFake';
 import { GaitFake } from './fakes/GaitFake';
 import { GymFake } from './fakes/GymFake';
-import { HealthFake } from './fakes/HealthFake';
 import { AuthFake } from './fakes/AuthFake';
 import { SubscriptionFake } from './fakes/SubscriptionFake';
 import { AnalyticsFake } from './fakes/AnalyticsFake';
@@ -54,7 +53,6 @@ export function FakeRuntime(): Runtime {
     walking,
     gait,
     gym,
-    health: HealthFake(ctx),
     auth: AuthFake(ctx),
     subscription: SubscriptionFake(ctx),
     analytics: AnalyticsFake(ctx),

@@ -24,23 +24,7 @@ export function rulePreviewModel(draft: RuleDraft, schedule?: Schedule): RulePre
     const goal = number(draft.stepGoal);
     return { message: block(c.walkingTarget(goal)), progress: c.progress(goal, 'steps'), icon: 'walking' };
   }
-  if (draft.activity === 'gym') {
-    if (draft.gymMode === 'arrival') return { message: block(c.gymArrival), progress: c.gymWaiting, icon: 'gym' };
-    const goal = number(draft.gymMinutes);
-    return { message: block(c.gymTime(goal)), progress: c.progress(goal, 'minutes'), icon: 'gym' };
-  }
-  const goal = number(draft.runMode === 'distance' ? draft.distance : draft.minutes);
-  const condition =
-    draft.runMode === 'distance'
-      ? draft.activity === 'running'
-        ? c.runningDistance(goal, draft.unit)
-        : c.bikingDistance(goal, draft.unit)
-      : draft.activity === 'running'
-        ? c.runningTime(goal)
-        : c.bikingTime(goal);
-  return {
-    message: block(condition),
-    progress: c.progress(goal, draft.runMode === 'distance' ? draft.unit : 'minutes'),
-    icon: draft.activity,
-  };
+  if (draft.gymMode === 'arrival') return { message: block(c.gymArrival), progress: c.gymWaiting, icon: 'gym' };
+  const goal = number(draft.gymMinutes);
+  return { message: block(c.gymTime(goal)), progress: c.progress(goal, 'minutes'), icon: 'gym' };
 }

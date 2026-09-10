@@ -11,19 +11,13 @@ export type RuleDraft = {
   stepGoal: number;
   gymMode: 'time' | 'arrival';
   gymMinutes: number;
-  runMode: 'minutes' | 'distance';
-  minutes: number;
-  distance: number;
-  unit: 'km' | 'mi';
 };
 export type DraftAction =
   | { type: 'setPlace'; value: WalkPlace }
   | { type: 'setWalkingMode'; value: 'target' | 'state' }
-  | { type: 'setStepGoal' | 'setGymMinutes' | 'setMinutes'; value: number }
-  | { type: 'setGymMode'; value: 'time' | 'arrival' }
-  | { type: 'setRunMode'; value: 'minutes' | 'distance' }
-  | { type: 'setDistance'; value: number; unit: 'km' | 'mi' };
-export function createDraft(activity: Activity, unit: 'km' | 'mi' = 'mi', now = new Date().toISOString()): RuleDraft {
+  | { type: 'setStepGoal' | 'setGymMinutes'; value: number }
+  | { type: 'setGymMode'; value: 'time' | 'arrival' };
+export function createDraft(activity: Activity, now = new Date().toISOString()): RuleDraft {
   return {
     id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
       const r = Math.floor(Math.random() * 16);
@@ -38,10 +32,6 @@ export function createDraft(activity: Activity, unit: 'km' | 'mi' = 'mi', now = 
     stepGoal: 5000,
     gymMode: 'time',
     gymMinutes: 30,
-    runMode: 'minutes',
-    minutes: activity === 'running' ? 20 : 30,
-    distance: activity === 'biking' ? (unit === 'mi' ? 5 : 8) : unit === 'mi' ? 2 : 3,
-    unit,
   };
 }
 export function reduceDraft(d: RuleDraft, a: DraftAction): RuleDraft {
@@ -56,12 +46,6 @@ export function reduceDraft(d: RuleDraft, a: DraftAction): RuleDraft {
       return { ...d, gymMode: a.value };
     case 'setGymMinutes':
       return { ...d, gymMinutes: a.value };
-    case 'setRunMode':
-      return { ...d, runMode: a.value };
-    case 'setMinutes':
-      return { ...d, minutes: a.value };
-    case 'setDistance':
-      return { ...d, distance: a.value, unit: a.unit };
   }
 }
 function mode(d: RuleDraft): RuleMode {
@@ -70,13 +54,9 @@ function mode(d: RuleDraft): RuleMode {
     return d.walkingMode === 'state'
       ? { kind: 'state', activity, place: d.place }
       : { kind: 'target', activity, place: d.place, metric: 'steps', goal: d.stepGoal };
-  if (activity === 'gym')
-    return d.gymMode === 'arrival'
-      ? { kind: 'event', activity, trigger: 'arrival' }
-      : { kind: 'target', activity, metric: 'minutes', goal: d.gymMinutes };
-  return d.runMode === 'distance'
-    ? { kind: 'target', activity, metric: 'distance', goal: d.distance, unit: d.unit }
-    : { kind: 'target', activity, metric: 'minutes', goal: d.minutes };
+  return d.gymMode === 'arrival'
+    ? { kind: 'event', activity, trigger: 'arrival' }
+    : { kind: 'target', activity, metric: 'minutes', goal: d.gymMinutes };
 }
 export function toRule(d: RuleDraft, schedule: Schedule): Rule {
   const rule: Rule = {
@@ -94,19 +74,14 @@ export function toRule(d: RuleDraft, schedule: Schedule): Rule {
 }
 export function fromRule(rule: Rule): RuleDraft {
   const m = rule.mode,
-    d = createDraft(rule.activity, 'unit' in m ? m.unit : 'mi', rule.createdAt);
+    d = createDraft(rule.activity, rule.createdAt);
   Object.assign(d, { id: rule.id, updatedAt: rule.updatedAt, enabled: rule.enabled });
   if (m.activity === 'walking')
     Object.assign(d, { place: m.place, walkingMode: m.kind, ...(m.kind === 'target' ? { stepGoal: m.goal } : {}) });
-  else if (m.activity === 'gym')
+  else
     Object.assign(d, {
       gymMode: m.kind === 'event' ? 'arrival' : 'time',
       ...(m.kind === 'target' ? { gymMinutes: m.goal } : {}),
-    });
-  else
-    Object.assign(d, {
-      runMode: m.metric,
-      ...(m.metric === 'distance' ? { distance: m.goal, unit: m.unit } : { minutes: m.goal }),
     });
   return d;
 }

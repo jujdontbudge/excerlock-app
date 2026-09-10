@@ -56,7 +56,6 @@ export const homeCopy = {
   autoOn: 'Auto-detect on',
   autoOff: 'Auto-detect off',
   motionNeeded: 'Motion & Fitness access needed to update steps',
-  healthNeeded: 'Health access needed to update workouts',
   locationNeeded: 'Location access needed to recognize your gym',
   completed: 'Goal reached',
   progress: (value: string, goal: string, unit: string) => `${value} / ${goal} ${unit}`,

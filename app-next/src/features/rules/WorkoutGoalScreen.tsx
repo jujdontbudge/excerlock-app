@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { FlatList, NativeScrollEvent, NativeSyntheticEvent, View } from 'react-native';
-import { NumberField, Label, PressableScale } from '../../design-system';
+import { Label, PressableScale } from '../../design-system';
 import { Reveal } from '../../motion/Reveal';
 import { tokens as t } from '../../design-system/tokens';
 import { workoutCopy as c } from '../../content/workoutRules';
@@ -27,10 +27,12 @@ function MinutesWheel({
   const current = Number.isFinite(value) ? Math.min(max, Math.max(min, Math.round(value / 5) * 5)) : min,
     selected = options.indexOf(current),
     list = useRef<FlatList<number>>(null),
-    [active, setActive] = useState(selected);
-  useEffect(() => {
+    [active, setActive] = useState(selected),
+    [prevSelected, setPrevSelected] = useState(selected);
+  if (prevSelected !== selected) {
+    setPrevSelected(selected);
     setActive(selected);
-  }, [selected]);
+  }
   const settle = (y: number) => {
     const index = Math.min(options.length - 1, Math.max(0, Math.round(y / ITEM)));
     setActive(index);
@@ -109,46 +111,18 @@ function MinutesWheel({
   );
 }
 export function WorkoutGoalScreen({
-  step,
   draft: d,
   onAction,
 }: {
-  step: 'G2' | 'R2' | 'B2' | 'D';
+  step: 'G2';
   draft: RuleDraft;
   onAction: (a: DraftAction) => void;
 }) {
-  const distance = step === 'D',
-    activity = d.activity === 'walking' ? 'running' : d.activity,
-    value = distance ? d.distance : activity === 'gym' ? d.gymMinutes : d.minutes,
-    range = goalRange(d, distance),
-    unit = distance ? d.unit : c.minutes;
-  const change = (value: number) =>
-    onAction(
-      distance
-        ? { type: 'setDistance', value, unit: d.unit }
-        : { type: activity === 'gym' ? 'setGymMinutes' : 'setMinutes', value },
-    );
-  const hint = c.range(...range, unit),
+  const value = d.gymMinutes,
+    range = goalRange(d),
+    change = (value: number) => onAction({ type: 'setGymMinutes', value }),
+    hint = c.range(...range, c.minutes),
     valid = validGoal(value, range);
-  if (distance) {
-    return (
-      <Reveal index={1} style={{ gap: t.space.xl, paddingTop: t.space.md }}>
-        <NumberField
-          label={c.distance}
-          labelTone="primary"
-          min={range[0]}
-          max={range[1]}
-          step={range[0]}
-          value={Number.isNaN(value) ? '' : String(value)}
-          unit={unit}
-          units={['mi', 'km']}
-          onUnitChange={(unit) => onAction({ type: 'setDistance', value, unit: unit as 'mi' | 'km' })}
-          onChange={(text) => change(text.trim() ? Number(text.replace(',', '.')) : NaN)}
-          error={valid ? undefined : hint}
-        />
-      </Reveal>
-    );
-  }
   const minutes = Number.isFinite(value) ? Math.min(range[1], Math.max(range[0], Math.round(value / 5) * 5)) : range[0];
   return (
     <Reveal index={1} style={{ gap: t.space.lg, paddingTop: t.space.md, alignItems: 'center' }}>

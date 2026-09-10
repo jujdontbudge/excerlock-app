@@ -55,13 +55,5 @@ function conditionClause(a: Answers, d: RuleDraft, goalChosen: boolean): string 
     if (d.gymMode === 'arrival') return c.until(c.gymArrival);
     return c.until(c.spendAt(known(a.gymMinutes) ? c.minutes(number(d.gymMinutes)) : c.blank, c.gym));
   }
-  const biking = d.activity === 'biking',
-    prefix = biking ? 'bike' : 'run';
-  if (a[prefix + 'Mode'] === undefined) return null;
-  if (d.runMode === 'distance') {
-    const distance = known(a[prefix + 'Distance']) ? number(d.distance) : c.blank;
-    return c.until((biking ? c.bike : c.run)(`${distance} ${d.unit}`));
-  }
-  const amount = known(a[prefix + 'Minutes']) ? c.minutes(number(d.minutes)) : c.blank;
-  return c.until(c.spendDoing(amount, biking ? c.biking : c.running));
+  return null;
 }

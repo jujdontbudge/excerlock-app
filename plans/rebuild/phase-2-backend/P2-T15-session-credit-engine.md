@@ -63,7 +63,7 @@ Visits persist in `excerlock-next.gymVisits.v1` (migration entry via P2-T13). `s
 clips every visit to the local day, merges overlaps (overlapping radii never double-count), treats an open
 visit as running to `now`, and sums. Dwell is a per-day accumulator independent of the rule's window (B8
 parity with steps), so a visit before the condition existed counts. `progressSync` becomes the single applier
-for gym as it is for steps and workouts; `demo/gymProgress.ts` and the duplicate write in `GymFake.checkIn`
+for gym as it is for steps *(ship B38 / T07: workout progress is gone; sync is steps-only)*; `demo/gymProgress.ts` and the duplicate write in `GymFake.checkIn`
 are deleted. `arrivalFor(rules, visits, now)` derives P2-T14's `gymPresence` input from the open confirmed
 visit. Cooldowns, stated once and tested: `VISIT_MERGE_GAP_MS = 120_000` (exit then re-enter within two
 minutes extends the same visit; also stops the arrival ceremony replaying at the door);

@@ -41,7 +41,7 @@ CTA. Answers persist immediately so killing the app resumes at the same step.
 | O17 | "Let's break the loop." | State 2: ExcerLock logo enters the gap, reward nodes fade. | | explainer |
 | O18 | "Make moving the habit." | State 3: want to scroll → move → unlock → enjoy. | | explainer |
 | O19 | "Built around small, repeatable habits" | Three principle rows with icons. No institution logos. | | principles |
-| O20 | "What exercise should unlock your apps?" | `ChoiceGrid` 2×2: Walking, Gym, Running, Biking (multicolor icons). "Pick the one you will really do." | none · selected (card lifts) | activity picker |
+| O20 | "What exercise should unlock your apps?" | `ChoiceGrid`: Walking, Gym (B38: two cards only). "Pick the one you will really do." | none · selected (card lifts) | activity picker |
 
 O16→O17→O18 are one screen component with three states; the heading crossfades and the diagram animates
 between states rather than pushing a new screen (the handoff calls these "State 1/2/3").
@@ -66,21 +66,6 @@ Each branch is a sequence inside the same flow machine; Back walks the actual pa
 | G1 | "What counts at the gym?" | Spend time at the gym (Recommended) · Arrive at the gym. Support: "Any gym you save counts. You'll pick your gyms after setup." (B24; no gym step inside the builder) | | time → G2 · arrival → S1 |
 | G2 | "How long at the gym?" | `NumberField` minutes, default 30, presets 30/45/60. | | S1 |
 
-**Running**
-
-| Id | Screen | Content | States | Next |
-| --- | --- | --- | --- | --- |
-| R1 | "What counts as a run?" | Run for a set time (Recommended) · Run a set distance | | time → R2 · distance → D |
-| R2 | "Set your running goal" | minutes, default 20, presets 15/20/30. | | S1 |
-| D | "Choose your distance" | `NumberField` + unit dropdown km/mi, default 2 mi / 3 km. **Shared with biking** (same component, different defaults). | | S1 |
-
-**Biking**
-
-| Id | Screen | Content | States | Next |
-| --- | --- | --- | --- | --- |
-| B1 | "What counts as a bike ride?" | Bike for a set time (Recommended) · Bike a set distance | | time → B2 · distance → D |
-| B2 | "Set your biking goal" | minutes, default 30, presets 20/30/45. | | S1 |
-
 ## 4. Onboarding — shared tail
 
 | Id | Screen | Content | States | Next |
@@ -104,7 +89,7 @@ and the relevant message, above the tabs.
 | --- | --- | --- | --- | --- |
 | X1 | "Let ExcerLock block your apps" | Screen Time permission primer: shield icon, three bullets (what it does, what we can't see, how to change later). CTA "Allow Screen Time" → Phase 1 fake sheet · Phase 2 FamilyControls request. | notDetermined · granted · denied (denied shows "Open Settings" + "Continue anyway", the app then shows a permission-needed status on Home) | X2 |
 | X2 | "Pick the apps to block" | Button opens the app picker. Phase 1: `FakeAppPicker` sheet with a fake list of app/category rows and multi-select. Phase 2: system `FamilyActivityPicker`. Shows "N apps · M categories" after selection. Cannot continue with zero selected (hard requirement) but can "Skip for now" (Home then nags). | empty · selected | X3 |
-| X3 | Branch permission | Walking: "Let ExcerLock count your steps" (Motion). Gym: "Find your gym" — map search + pin (`GymPicker`), then Location permission (When in use first; Always offered as the auto-detect upgrade toggle with explanation). Running/Biking: "Read your workouts from Apple Health" (Health). | per permission: notDetermined · granted · denied | X4 |
+| X3 | Branch permission | Walking: "Let ExcerLock count your steps" (Motion). Gym: "Find your gym" — map search + pin (`GymPicker`), then Location permission (When in use first; Always offered as the auto-detect upgrade toggle with explanation).  | per permission: notDetermined · granted · denied | X4 |
 | X4 | "Save your progress" | Sign in with Apple · Continue with Google · Continue with email (email → OTP code screen). Secondary "Skip for now". | idle · submitting · error · code entry | X5 |
 | X5 | "You're all set" | Checklist of what is on: Blocking ✓ · Apps ✓ · Steps ✓ (branch) · Reminder (if granted). CTA "Go to Home". | | Home |
 
@@ -168,7 +153,7 @@ Grouping and order follow OtterLife's settings screen as inventoried in the refe
 
 - Profile header: name, sign-in state (Signed in with Apple · Not signed in → Sign in).
 - Subscription: plan and renewal (from Entitlement), Manage subscription (App Store), Restore purchases.
-- Permissions: `PermissionRow` × Screen Time, Motion, Location, Health, Camera, Notifications, each with Fix / Open Settings.
+- Permissions: `PermissionRow` × Screen Time, Motion, Location, Camera, Notifications, each with Fix / Open Settings. (B38: no Health row; the HealthKit entitlement stays compiled for an OTA return.)
 - Preferences: Units (km/mi), Walk & Scroll stop grace (30 s–5 min), Gym auto-detect (Always location) with explanation, Haptics on/off.
 - Locked apps (shortcut).
 - Support: Contact support (composer: category, message, send state), Rate ExcerLock, Share ExcerLock.

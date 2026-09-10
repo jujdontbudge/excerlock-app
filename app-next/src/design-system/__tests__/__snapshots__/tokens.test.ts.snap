@@ -166,6 +166,7 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
     "error": "#BD3038",
     "locked": "#1D1D22",
     "success": "#27834A",
+    "switchOn": "#34C759",
   },
   "stroke": {
     "chart": 3,
@@ -189,6 +190,7 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
     "topTint": "#FFF0E5",
     "topTintMid": "#FFF8F3",
     "transparent": "transparent",
+    "well": "#F2F2F7",
   },
   "text": {
     "muted": "#767680",

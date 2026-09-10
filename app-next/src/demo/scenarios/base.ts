@@ -22,12 +22,7 @@ export const history = (): HistoryDay[] =>
     return {
       day,
       usageMinutes: Math.max(25, 160 - i * 2 + (i % 5) * 8),
-      activity: {
-        walking: 2400 + (i % 7) * 650,
-        gym: i % 3 === 0 ? 35 : 0,
-        running: i % 4 === 0 ? 25 : 0,
-        biking: i % 6 === 0 ? 40 : 0,
-      },
+      activity: { walking: 2400 + (i % 7) * 650, gym: i % 3 === 0 ? 35 : 0 },
       met: scheduled && i % 6 !== 0,
       scheduled,
     };
@@ -55,7 +50,6 @@ export function base(id: string, title: string, overrides: Partial<Scenario> = {
       screenTime: 'granted',
       motion: 'granted',
       location: 'whenInUse',
-      health: 'granted',
       camera: 'granted',
       notifications: 'granted',
     },

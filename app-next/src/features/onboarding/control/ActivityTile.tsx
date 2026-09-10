@@ -8,8 +8,6 @@ import { useMotion } from '../../../motion/useMotion';
 import { Reveal } from '../../../motion/Reveal';
 const activityNames: Record<string, IconName> = {
   'person-walking': 'walking',
-  'person-running': 'running',
-  'person-biking': 'biking',
   dumbbell: 'gym',
 };
 export function ActivityTile({ index }: { index: number }) {

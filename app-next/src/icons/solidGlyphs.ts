@@ -11,8 +11,6 @@ const rect = (x: number, y: number, w: number, h: number, r: number) =>
 /** Shared 24-unit rounded silhouettes; never copy these into screens. */
 export const solidGlyphs: Partial<Record<IconName, string>> = {
   walking: activity('person-walking'),
-  running: activity('person-running'),
-  biking: activity('person-biking'),
   ruler: fill(
     'M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm2 0v6h2V5Zm5 0v4h2V5Zm5 0v6h2V5Z',
   ),

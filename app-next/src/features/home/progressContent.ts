@@ -12,7 +12,7 @@ export function progressContent(
   const m = rule.mode,
     title = ruleName(rule),
     format = (value: number) =>
-      value.toLocaleString('en-US', { maximumFractionDigits: m.kind === 'target' && m.metric === 'distance' ? 1 : 0 });
+      value.toLocaleString('en-US');
   if (m.kind === 'state') {
     const mine = session?.ruleId === rule.id && session.phase !== 'ended' ? session : null;
     const live = !!mine && ['walking', 'grace'].includes(mine.phase) && Date.parse(mine.leaseUntil) > Date.parse(now);
@@ -50,15 +50,12 @@ export function progressContent(
       action: row.met ? undefined : 'checkin',
       label: row.met ? undefined : c.checkIn,
     } as const;
-  const unit = m.metric === 'distance' ? m.unit : m.metric;
+  const unit = m.metric;
   const permission =
     rule.activity === 'walking'
       ? permissions.motion === 'granted'
-      : rule.activity === 'gym'
-        ? ['whenInUse', 'always'].includes(permissions.location)
-        : permissions.health === 'granted';
-  const needed =
-    rule.activity === 'walking' ? c.motionNeeded : rule.activity === 'gym' ? c.locationNeeded : c.healthNeeded;
+      : ['whenInUse', 'always'].includes(permissions.location);
+  const needed = rule.activity === 'walking' ? c.motionNeeded : c.locationNeeded;
   return {
     title,
     icon: rule.activity,

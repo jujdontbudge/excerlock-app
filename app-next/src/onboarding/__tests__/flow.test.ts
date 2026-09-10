@@ -8,10 +8,8 @@ test.each([
   [{ activity: 'walking', walkingMode: 'state' }, ['W1', 'W2']],
   [{ activity: 'gym', gymMode: 'time' }, ['G1', 'G2']],
   [{ activity: 'gym', gymMode: 'arrival' }, ['G1']],
-  [{ activity: 'running', runMode: 'minutes' }, ['R1', 'R2']],
-  [{ activity: 'running', runMode: 'distance' }, ['R1', 'D']],
-  [{ activity: 'biking', bikeMode: 'minutes' }, ['B1', 'B2']],
-  [{ activity: 'biking', bikeMode: 'distance' }, ['B1', 'D']],
+  [{ activity: 'gym', gymMode: 'time' }, ['G1', 'G2']],
+  [{ activity: 'gym', gymMode: 'arrival' }, ['G1']],
 ] as const)('each branch walks forward, back and monotonically to P: %j', (answers, branch) => {
   const expected = [...pre, ...branch, ...tail];
   expect(pathFor(answers)).toEqual(expected);

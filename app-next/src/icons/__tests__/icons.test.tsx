@@ -6,8 +6,6 @@ test('every semantic icon renders with its accessible identity', async () => {
     expect.arrayContaining([
       'walking',
       'gym',
-      'running',
-      'biking',
       'bell',
       'ruler',
       'flame',

@@ -14,11 +14,7 @@ export function validateRule(value: unknown): RuleIssue[] {
   )
     issues.push('identity');
   const m = value.mode;
-  if (
-    !record(m) ||
-    m.activity !== value.activity ||
-    !['walking', 'gym', 'running', 'biking'].includes(String(m.activity))
-  )
+  if (!record(m) || m.activity !== value.activity || !['walking', 'gym'].includes(String(m.activity)))
     issues.push('mode');
   else {
     if (m.activity === 'walking' && !['outside', 'treadmill', 'either'].includes(String(m.place))) issues.push('mode');
@@ -27,24 +23,12 @@ export function validateRule(value: unknown): RuleIssue[] {
     } else if (m.kind === 'event') {
       if (m.activity !== 'gym' || m.trigger !== 'arrival') issues.push('mode');
     } else if (m.kind === 'target') {
-      let min = 0,
-        max = 0;
       if (m.activity === 'walking' && m.metric === 'steps') {
-        min = 500;
-        max = 30000;
         if (finite(m.goal) && m.goal % 500 !== 0) issues.push('goal');
-      } else if (m.metric === 'minutes' && m.activity !== 'walking') {
-        min = m.activity === 'gym' ? 10 : 5;
-        max = m.activity === 'gym' ? 180 : 300;
-      } else if (
-        m.metric === 'distance' &&
-        (m.activity === 'running' || m.activity === 'biking') &&
-        (m.unit === 'km' || m.unit === 'mi')
-      ) {
-        min = m.activity === 'running' ? (m.unit === 'km' ? 0.5 : 0.25) : 1;
-        max = m.activity === 'running' ? (m.unit === 'km' ? 50 : 30) : m.unit === 'km' ? 200 : 120;
+        if (!finite(m.goal) || m.goal < 500 || m.goal > 30000) issues.push('goal');
+      } else if (m.activity === 'gym' && m.metric === 'minutes') {
+        if (!finite(m.goal) || m.goal < 10 || m.goal > 180) issues.push('goal');
       } else issues.push('mode');
-      if (!finite(m.goal) || m.goal < min || m.goal > max) issues.push('goal');
     } else issues.push('mode');
   }
   const s = value.schedule;

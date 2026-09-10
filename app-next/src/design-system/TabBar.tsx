@@ -22,7 +22,7 @@ export function TabBar({ selected, onSelect }: { selected: TabId; onSelect: (tab
       }}>
       <LinearGradient
         pointerEvents="none"
-        colors={['rgba(255,247,241,0)', 'rgba(255,247,241,0.92)', '#FFF7F1']}
+        colors={['rgba(255,247,241,0)', 'rgba(255,247,241,0.92)', t.surface.orangeGradient[2]]}
         locations={[0, 0.42, 1]}
         style={{ position: 'absolute', top: -56, bottom: 0, left: 0, right: 0 }}
       />

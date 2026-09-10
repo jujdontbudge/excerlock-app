@@ -12,17 +12,9 @@ test('condition names and schedules use the product vocabulary', () => {
   expect(
     ruleName({
       ...rule,
-      activity: 'running',
-      mode: { kind: 'target', activity: 'running', metric: 'distance', goal: 2, unit: 'mi' },
+      mode: { kind: 'target', activity: 'walking', metric: 'steps', goal: 10000, place: 'outside' },
     }),
-  ).toBe('Run 2 mi');
-  expect(
-    ruleName({
-      ...rule,
-      activity: 'biking',
-      mode: { kind: 'target', activity: 'biking', metric: 'minutes', goal: 30 },
-    }),
-  ).toBe('Bike 30 minutes');
+  ).toBe('Walk 10,000 steps');
   expect(
     ruleName({ ...rule, activity: 'gym', mode: { kind: 'target', activity: 'gym', metric: 'minutes', goal: 30 } }),
   ).toBe('Spend 30 minutes at the gym');

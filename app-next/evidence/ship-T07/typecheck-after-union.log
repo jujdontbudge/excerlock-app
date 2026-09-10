@@ -1,0 +1,75 @@
+
+> app-next@1.0.0 typecheck
+> tsc --noEmit
+
+src/demo/__tests__/acceptance-integrity.test.ts(12,27): error TS2339: Property 'running' does not exist on type 'Record<Activity, number>'.
+src/demo/scenarios/biker-time.ts(3,46): error TS2322: Type '"biking"' is not assignable to type '"gym"'.
+src/demo/scenarios/multi-rule-overlap.ts(5,39): error TS2322: Type '"running"' is not assignable to type '"gym"'.
+src/demo/scenarios/runner-distance.ts(3,45): error TS2322: Type '"running"' is not assignable to type '"walking" | "gym"'.
+src/demo/scenarios/runner-distance.ts(3,66): error TS2322: Type '"distance"' is not assignable to type '"steps" | "minutes"'.
+src/domain/__tests__/labels.test.ts(15,7): error TS2322: Type '"running"' is not assignable to type 'Activity'.
+src/domain/__tests__/labels.test.ts(16,31): error TS2322: Type '"running"' is not assignable to type '"walking" | "gym"'.
+src/domain/__tests__/labels.test.ts(16,52): error TS2322: Type '"distance"' is not assignable to type '"steps" | "minutes"'.
+src/domain/__tests__/labels.test.ts(22,7): error TS2322: Type '"biking"' is not assignable to type 'Activity'.
+src/domain/__tests__/labels.test.ts(23,31): error TS2322: Type '"biking"' is not assignable to type '"walking" | "gym"'.
+src/domain/__tests__/unlockHint.test.ts(22,5): error TS2322: Type '"running"' is not assignable to type 'Activity'.
+src/domain/__tests__/unlockHint.test.ts(23,29): error TS2322: Type '"running"' is not assignable to type '"walking" | "gym"'.
+src/domain/__tests__/unlockHint.test.ts(23,50): error TS2322: Type '"distance"' is not assignable to type '"steps" | "minutes"'.
+src/domain/ruleName.ts(7,16): error TS2367: This comparison appears to be unintentional because the types '"steps" | "minutes"' and '"distance"' have no overlap.
+src/domain/ruleName.ts(7,44): error TS2339: Property 'unit' does not exist on type 'never'.
+src/domain/unlockHint.ts(12,13): error TS2367: This comparison appears to be unintentional because the types '"steps" | "minutes"' and '"distance"' have no overlap.
+src/domain/unlockHint.ts(12,47): error TS2339: Property 'unit' does not exist on type 'never'.
+src/features/analytics/__tests__/model.test.ts(18,39): error TS2353: Object literal may only specify known properties, and 'running' does not exist in type 'Record<Activity, number>'.
+src/features/analytics/analyticsModel.ts(59,51): error TS2339: Property 'running' does not exist on type 'Record<Activity, number>'.
+src/features/analytics/analyticsModel.ts(60,50): error TS2339: Property 'biking' does not exist on type 'Record<Activity, number>'.
+src/features/analytics/analyticsModel.ts(83,47): error TS2339: Property 'running' does not exist on type 'Record<Activity, number>'.
+src/features/analytics/analyticsModel.ts(84,46): error TS2339: Property 'biking' does not exist on type 'Record<Activity, number>'.
+src/features/analytics/analyticsModel.ts(95,36): error TS2367: This comparison appears to be unintentional because the types 'Activity' and '"running"' have no overlap.
+src/features/analytics/analyticsModel.ts(96,35): error TS2367: This comparison appears to be unintentional because the types 'Activity' and '"biking"' have no overlap.
+src/features/conditions/__tests__/builder.test.tsx(29,67): error TS2345: Argument of type '"running"' is not assignable to parameter of type 'Activity'.
+src/features/conditions/__tests__/builder.test.tsx(98,41): error TS2345: Argument of type '"running"' is not assignable to parameter of type 'Activity'.
+src/features/conditions/__tests__/builder.test.tsx(99,42): error TS2345: Argument of type '"biking"' is not assignable to parameter of type 'Activity'.
+src/features/home/progressContent.ts(15,85): error TS2367: This comparison appears to be unintentional because the types '"steps" | "minutes"' and '"distance"' have no overlap.
+src/features/home/progressContent.ts(53,16): error TS2367: This comparison appears to be unintentional because the types '"steps" | "minutes"' and '"distance"' have no overlap.
+src/features/home/progressContent.ts(53,44): error TS2339: Property 'unit' does not exist on type 'never'.
+src/features/home/progressSync.ts(40,30): error TS2367: This comparison appears to be unintentional because the types '"running" | "biking"' and 'Activity' have no overlap.
+src/features/home/progressSync.ts(46,33): error TS2339: Property 'metric' does not exist on type 'never'.
+src/features/home/progressSync.ts(46,60): error TS2339: Property 'unit' does not exist on type 'never'.
+src/features/rules/__tests__/draft.test.ts(16,42): error TS2345: Argument of type '"gym" | "running" | "biking"' is not assignable to parameter of type 'Activity'.
+  Type '"running"' is not assignable to type 'Activity'.
+src/features/rules/__tests__/draft.test.ts(24,37): error TS2345: Argument of type '"running" | "biking"' is not assignable to parameter of type 'Activity'.
+  Type '"running"' is not assignable to type 'Activity'.
+src/features/rules/__tests__/rule-preview.test.ts(9,21): error TS2345: Argument of type '"running"' is not assignable to parameter of type 'Activity'.
+src/features/rules/__tests__/rule-preview.test.ts(10,21): error TS2345: Argument of type '"running"' is not assignable to parameter of type 'Activity'.
+src/features/rules/__tests__/rule-preview.test.ts(11,21): error TS2345: Argument of type '"biking"' is not assignable to parameter of type 'Activity'.
+src/features/rules/__tests__/rule-preview.test.ts(12,21): error TS2345: Argument of type '"biking"' is not assignable to parameter of type 'Activity'.
+src/features/rules/__tests__/schedule-screen.test.tsx(15,42): error TS2345: Argument of type '"running"' is not assignable to parameter of type 'Activity'.
+src/features/rules/__tests__/workout-goals.test.tsx(6,56): error TS2345: Argument of type '"running"' is not assignable to parameter of type 'Activity'.
+src/features/rules/answersDraft.ts(7,18): error TS2367: This comparison appears to be unintentional because the types 'Activity' and '"biking"' have no overlap.
+src/features/rules/answersDraft.ts(18,16): error TS2367: This comparison appears to be unintentional because the types 'Activity' and '"biking"' have no overlap.
+src/features/rules/draft.ts(42,14): error TS2367: This comparison appears to be unintentional because the types 'Activity' and '"running"' have no overlap.
+src/features/rules/draft.ts(43,15): error TS2367: This comparison appears to be unintentional because the types 'Activity' and '"biking"' have no overlap.
+src/features/rules/draft.ts(78,35): error TS2322: Type '"distance"' is not assignable to type '"steps" | "minutes"'.
+src/features/rules/draft.ts(97,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type '"km" | "mi" | undefined'.
+src/features/rules/draft.ts(108,18): error TS2339: Property 'metric' does not exist on type 'never'.
+src/features/rules/draft.ts(109,13): error TS2339: Property 'metric' does not exist on type 'never'.
+src/features/rules/draft.ts(109,51): error TS2339: Property 'goal' does not exist on type 'never'.
+src/features/rules/draft.ts(109,65): error TS2339: Property 'unit' does not exist on type 'never'.
+src/features/rules/draft.ts(109,87): error TS2339: Property 'goal' does not exist on type 'never'.
+src/features/rules/goalRange.ts(4,10): error TS2367: This comparison appears to be unintentional because the types 'Activity' and '"biking"' have no overlap.
+src/features/rules/OnboardingRuleScreen.tsx(21,20): error TS2367: This comparison appears to be unintentional because the types 'Activity' and '"biking"' have no overlap.
+src/features/settings/__tests__/preferences.test.ts(8,30): error TS2345: Argument of type '"running"' is not assignable to parameter of type 'Activity'.
+src/features/settings/__tests__/preferences.test.ts(15,30): error TS2345: Argument of type '"running"' is not assignable to parameter of type 'Activity'.
+src/features/settings/__tests__/screen.test.tsx(98,30): error TS2345: Argument of type '"running"' is not assignable to parameter of type 'Activity'.
+src/features/settings/preferences.ts(8,35): error TS2367: This comparison appears to be unintentional because the types '"steps" | "minutes"' and '"distance"' have no overlap.
+src/features/settings/preferences.ts(8,82): error TS2698: Spread types may only be created from object types.
+src/features/setup/__tests__/setupFlow.test.ts(13,81): error TS2345: Argument of type '"walking" | "gym" | "running" | "biking"' is not assignable to parameter of type 'Activity'.
+  Type '"running"' is not assignable to type 'Activity'.
+npm error Lifecycle script `typecheck` failed with error:
+npm error code 2
+npm error path /Users/johansardar/ExcerLock-build/ship-T07/app-next
+npm error workspace app-next@1.0.0
+npm error location /Users/johansardar/ExcerLock-build/ship-T07/app-next
+npm error command failed
+npm error command sh -c tsc --noEmit
+EXIT:2

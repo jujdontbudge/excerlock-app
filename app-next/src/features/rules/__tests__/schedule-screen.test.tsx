@@ -12,7 +12,7 @@ test('rule preview keeps one canonical size with or without a schedule', async (
   expect(screen.getByTestId('rule-preview-lock').props.style).toEqual(branchStyle);
 });
 test('schedule controls follow edited times and all-day without a decorative lock', async () => {
-  const props = { ruleDraft: createDraft('running'), onAction: jest.fn(), onChoose: jest.fn() };
+  const props = { ruleDraft: createDraft('gym'), onAction: jest.fn(), onChoose: jest.fn() };
   const view = await render(<ScheduleScreen {...props} draft={scheduleDraft({})} />);
   expect(screen.queryByTestId('rule-preview-lock')).toBeNull();
   expect(screen.getByRole('button', { name: /Start at: 9.AM/ })).toBeTruthy();

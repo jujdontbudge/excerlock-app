@@ -5,8 +5,7 @@ test.each([
   'home-walking-session',
   'gym-arrival-user',
   'gym-time-user',
-  'runner-distance',
-  'biker-time',
+  'multi-rule-overlap',
 ])('%s progress variant', (id) => {
   const s = scenarios.find((s) => s.id === id)!;
   expect(

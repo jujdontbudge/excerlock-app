@@ -11,8 +11,8 @@ import { LoopBrandMark } from './LoopBrandMark';
 
 const icons = [
   ['bell', 'star', 'flame', 'phone'],
-  ['bell', 'star', 'flame', 'running'],
-  ['running', 'lock-open', 'flame', 'check'],
+  ['bell', 'star', 'flame', 'walking'],
+  ['walking', 'lock-open', 'flame', 'check'],
 ] as const;
 const original = [
   { x: 180, y: 72, width: 160 },
@@ -134,7 +134,7 @@ export function HabitLoop({
               animationFillMode: 'backwards',
               animationTimingFunction: 'ease-out',
             }}>
-            {index === 0 ? <LoopBrandMark /> : <LivingIcon name="running" size={t.space.xxl} tint={t.brand.primary} />}
+            {index === 0 ? <LoopBrandMark /> : <LivingIcon name="walking" size={t.space.xxl} tint={t.brand.primary} />}
             <Label variant="label" style={{ textAlign: 'center' }}>
               {stage.title}
             </Label>

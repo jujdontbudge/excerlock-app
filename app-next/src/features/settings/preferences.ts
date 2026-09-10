@@ -1,13 +1,7 @@
-import { validateRule } from '../../domain/validateRule';
 import { settingsStore } from '../../state/settingsStore';
-import { rulesStore } from '../../state/rulesStore';
+/** Step and minute goals are unit-free, so switching units always succeeds. Distance
+    rules (and their range guard) were removed with running/biking; the units preference
+    stays so a future activity can reuse it without a data migration. */
 export function setUnits(unit: 'km' | 'mi') {
-  const rules = rulesStore
-    .getState()
-    .data.rules.map((r) =>
-      r.mode.kind === 'target' && r.mode.metric === 'distance' ? { ...r, mode: { ...r.mode, unit } } : r,
-    );
-  if (rules.some((r) => validateRule(r).length)) throw new Error('Distance goal outside supported range');
-  rulesStore.getState().patch({ rules });
   settingsStore.getState().patch({ units: unit });
 }

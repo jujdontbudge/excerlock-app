@@ -8,6 +8,7 @@ import {
   SettingsGroup,
   RuleCard,
   PrimaryButton,
+  PressableScale,
   EmptyState,
   Label,
 } from '../../design-system';
@@ -22,7 +23,7 @@ import { Reveal } from '../../motion/Reveal';
 import { ConfirmSheet } from './ConfirmSheet';
 import { toggleRule, deleteRule } from './mutations';
 export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit: (id: string) => void }) {
-  const { rules, lockedApps } = useRulesStore((s) => s.data),
+  const { rules, lockedApps, migrationNote } = useRulesStore((s) => s.data),
     runtime = useRuntime(),
     [deleting, setDeleting] = useState<string | null>(null);
   const ordered = [...rules].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -44,6 +45,27 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
         />
       }>
       <Heading title={c.title} />
+      {migrationNote ? (
+        <View
+          style={{
+            padding: t.space.lg,
+            borderRadius: t.radius.card,
+            backgroundColor: t.surface.card,
+            borderWidth: t.stroke.hairline,
+            borderColor: t.border.default,
+            gap: t.space.sm,
+          }}>
+          <Label>{migrationNote}</Label>
+          <PressableScale
+            label={c.dismissRetired}
+            onPress={() => useRulesStore.getState().patch({ migrationNote: null })}
+            style={{ alignSelf: 'flex-start', minHeight: t.layout.touch, justifyContent: 'center' }}>
+            <Label variant="support" style={{ color: t.text.primary }}>
+              {c.dismissRetired}
+            </Label>
+          </PressableScale>
+        </View>
+      ) : null}
       {ordered.length ? <PrimaryButton label={c.add} onPress={onAdd} /> : null}
       {ordered.length ? (
         <>

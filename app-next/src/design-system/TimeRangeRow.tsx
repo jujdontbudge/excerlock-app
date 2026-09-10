@@ -6,8 +6,7 @@ import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { controls } from '../content/controls';
 import { feedback } from '../motion/haptics';
-const iosGreen = '#34C759';
-const iosGrouped = '#F2F2F7';
+
 export function TimeRangeRow({
   start,
   end,
@@ -54,7 +53,7 @@ export function TimeRangeRow({
               feedback();
               onAllDay(v);
             }}
-            trackColor={{ true: iosGreen, false: t.border.divider }}
+            trackColor={{ true: t.state.switchOn, false: t.border.divider }}
           />
         </View>
         {!allDay ? (
@@ -74,7 +73,7 @@ export function TimeRangeRow({
                 <Label>{controls.start}</Label>
                 <View
                   style={{
-                    backgroundColor: iosGrouped,
+                    backgroundColor: t.surface.well,
                     borderRadius: t.radius.pill,
                     paddingHorizontal: t.space.lg,
                     paddingVertical: t.space.sm,
@@ -96,7 +95,7 @@ export function TimeRangeRow({
                 <Label>{controls.end}</Label>
                 <View
                   style={{
-                    backgroundColor: iosGrouped,
+                    backgroundColor: t.surface.well,
                     borderRadius: t.radius.pill,
                     paddingHorizontal: t.space.lg,
                     paddingVertical: t.space.sm,

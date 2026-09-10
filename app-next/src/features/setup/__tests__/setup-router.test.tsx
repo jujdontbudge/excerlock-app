@@ -12,7 +12,7 @@ import { permissionsStore } from '../../../state/permissionsStore';
 test.each([
   ['home-locked-walking', 'Let ExcerLock count your steps'],
   ['gym-arrival-user', 'Pick your gym'],
-  ['runner-distance', 'Read your workouts from Apple Health'],
+  ['gym-time-user', 'Pick your gym'],
 ] as const)('%s resumes the correct X3', async (scenario, title) => {
   const runtime = createRuntime();
   await runtime.dev.load(scenario);
