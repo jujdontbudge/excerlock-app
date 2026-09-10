@@ -1,0 +1,10 @@
+HTTP/2 200
+accept-ranges: bytes
+alt-svc: h3=":443"; ma=2592000
+content-type: application/json
+etag: "dlbc40x9mj6g2p"
+last-modified: Thu, 10 Sep 2026 04:00:05 GMT
+server: Caddy
+vary: Accept-Encoding
+content-length: 97
+date: Thu, 10 Sep 2026 04:00:56 GMT

@@ -1,0 +1,21 @@
+{
+  "observedAt": "2026-09-10T04:14:40.515221+00:00",
+  "serviceID": "com.johansardar.excerlock.signin",
+  "portalID": "4NQNWBP93L",
+  "team": "AX3C2B78YD",
+  "primaryAppID": "AX3C2B78YD.com.johansardar.excerlock",
+  "signInWithAppleEnabled": true,
+  "domains": [
+    "excerlock.com",
+    "hqgqhefftjxwdhqeushr.supabase.co"
+  ],
+  "returnURLs": [
+    "https://hqgqhefftjxwdhqeushr.supabase.co/auth/v1/callback"
+  ],
+  "supabaseClientIDs": [
+    "com.johansardar.excerlock.signin",
+    "com.johansardar.excerlock"
+  ],
+  "verification": "Reopened Apple registered identifier and configuration; reopened Supabase Apple provider after browser reload. Both persisted.",
+  "limit": "No signing key generated or web OAuth secret rotation performed; this proves registration, not native or web end-to-end sign-in."
+}

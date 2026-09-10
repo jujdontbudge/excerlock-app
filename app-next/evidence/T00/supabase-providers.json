@@ -1,0 +1,29 @@
+{
+  "observedAt": "2026-09-10T03:59:46.657871+00:00",
+  "source": "Signed-in Supabase dashboard > ExcerLock > Authentication > Sign In / Providers",
+  "projectRef": "hqgqhefftjxwdhqeushr",
+  "allowNewUsers": true,
+  "allowManualLinking": true,
+  "allowAnonymousSignIns": true,
+  "confirmEmail": false,
+  "emailEnabled": true,
+  "apple": {
+    "enabled": true,
+    "clientIDs": [
+      "com.johansardar.excerlock.signin",
+      "com.johansardar.excerlock"
+    ],
+    "servicesIDPresent": true,
+    "nativeBundleRegistered": true
+  },
+  "google": {
+    "enabled": true,
+    "clientIDs": [
+      "174877771548-29d0rmkestal3uvavcg6th9q974tt3vo.apps.googleusercontent.com",
+      "174877771548-84f11rmr3pr678am867gh02j8hotaagp.apps.googleusercontent.com"
+    ],
+    "skipNonceChecks": true
+  },
+  "note": "Native registration retained; Services ID registered and listed first per official Supabase docs. Device sign-in and web client-secret validity are not verified.",
+  "updatedAt": "2026-09-10T04:14:40.515221+00:00"
+}

@@ -1,0 +1,107 @@
+{
+  "observedAt": "2026-09-10T03:53:04.926360+00:00",
+  "method": "Signed-in Apple Developer portal, each bundle detail > Capability Requests > Family Controls (Distribution) > Assigned > Request History",
+  "records": [
+    {
+      "bundle": "com.johansardar.excerlock",
+      "portalID": "CP88689L49",
+      "url": "https://developer.apple.com/account/resources/identifiers/bundleId/edit/CP88689L49",
+      "assigned": true,
+      "requestHistory": [
+        {
+          "id": "467V4M9Y95",
+          "requestedAt": "2026-07-20",
+          "type": "Team",
+          "status": "Approved"
+        },
+        {
+          "id": "UY4548S755",
+          "requestedAt": "2026-07-03",
+          "type": "Team",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "bundle": "com.johansardar.excerlock.monitor",
+      "portalID": "532CQ452SU",
+      "url": "https://developer.apple.com/account/resources/identifiers/bundleId/edit/532CQ452SU",
+      "assigned": true,
+      "requestHistory": [
+        {
+          "id": "467V4M9Y95",
+          "requestedAt": "2026-07-20",
+          "type": "Team",
+          "status": "Approved"
+        },
+        {
+          "id": "UY4548S755",
+          "requestedAt": "2026-07-03",
+          "type": "Team",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "bundle": "com.johansardar.excerlock.shield",
+      "portalID": "FJHCLWK3KL",
+      "url": "https://developer.apple.com/account/resources/identifiers/bundleId/edit/FJHCLWK3KL",
+      "assigned": true,
+      "requestHistory": [
+        {
+          "id": "467V4M9Y95",
+          "requestedAt": "2026-07-20",
+          "type": "Team",
+          "status": "Approved"
+        },
+        {
+          "id": "UY4548S755",
+          "requestedAt": "2026-07-03",
+          "type": "Team",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "bundle": "com.johansardar.excerlock.shieldaction",
+      "portalID": "9ZJH73L6Q7",
+      "url": "https://developer.apple.com/account/resources/identifiers/bundleId/edit/9ZJH73L6Q7",
+      "assigned": true,
+      "requestHistory": [
+        {
+          "id": "467V4M9Y95",
+          "requestedAt": "2026-07-20",
+          "type": "Team",
+          "status": "Approved"
+        },
+        {
+          "id": "UY4548S755",
+          "requestedAt": "2026-07-03",
+          "type": "Team",
+          "status": "Approved"
+        }
+      ]
+    },
+    {
+      "bundle": "com.johansardar.excerlock.report",
+      "portalID": "T2K3M3B7J8",
+      "url": "https://developer.apple.com/account/resources/identifiers/bundleId/edit/T2K3M3B7J8",
+      "assigned": true,
+      "requestHistory": [
+        {
+          "id": "467V4M9Y95",
+          "requestedAt": "2026-07-20",
+          "type": "Team",
+          "status": "Approved"
+        },
+        {
+          "id": "UY4548S755",
+          "requestedAt": "2026-07-03",
+          "type": "Team",
+          "status": "Approved"
+        }
+      ]
+    }
+  ],
+  "scope": "Team approval history visible independently on all five bundle pages; not a claim of App Review approval."
+}
