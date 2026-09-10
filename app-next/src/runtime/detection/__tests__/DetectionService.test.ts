@@ -97,7 +97,16 @@ test('concurrent wakes serialize credits and a failed transaction does not poiso
   release({ steps: 1 });
   await expect(first).rejects.toThrow('credit failed');
   await expect(second).resolves.toBeUndefined();
-  expect(querySteps).toHaveBeenNthCalledWith(2, 0, 2000);
+  expect(querySteps).toHaveBeenCalledTimes(1);
+  expect(detectionStore.getState().data.creditedThrough.steps).toBe(1000);
+  await service.reconcileWake({
+    now: 2000,
+    dayStart: 0,
+    walkingGraceMs: 30000,
+    generation: 0,
+    source: 'background',
+  });
+  expect(querySteps).toHaveBeenNthCalledWith(2, 1000, 2000);
   expect(detectionStore.getState().data.creditedThrough.steps).toBe(2000);
 });
 test('late wake rejects after account generation changes during an await', async () => {
@@ -134,4 +143,39 @@ test('late wake rejects after account generation changes during an await', async
   release([]);
   await expect(wake).rejects.toThrow('Obsolete detection generation');
   expect(detectionStore.getState().data.observedAt).toBe(0);
+});
+test('cursor persistence failure retries the exact credited intent and key before a newer range', async () => {
+  const creditHistory = jest.fn(async () => {});
+  let writes = 0;
+  const persist = jest.fn(async () => {
+    writes += 1;
+    if (writes === 2) throw new Error('disk full');
+  });
+  const querySteps = jest.fn(async () => ({ steps: 5 }));
+  const motion = {
+    reconcile: (now: number) => ({
+      qualifying: 'unknown' as const,
+      observedAt: now,
+      activityAt: null,
+      cadenceAt: null,
+      cadencePerMinute: null,
+    }),
+    querySteps,
+  } as unknown as MotionAdapter;
+  const placement = { reconcile: () => ({ placement: 'unknown' as const, at: null }) } as unknown as PlacementAdapter;
+  const service = new DetectionService({
+    motion,
+    placement,
+    gymLog: { append: async () => {}, readAll: async () => [] },
+    creditHistory,
+    persist,
+  });
+  const first = { now: 1000, dayStart: 0, walkingGraceMs: 30000, generation: 0, source: 'foreground' as const };
+  await expect(service.reconcileWake(first)).rejects.toThrow('disk full');
+  const pending = detectionStore.getState().data.pendingHistory!;
+  await service.reconcileWake({ ...first, now: 2000 });
+  expect(querySteps).toHaveBeenCalledTimes(1);
+  expect(creditHistory).toHaveBeenNthCalledWith(1, pending);
+  expect(creditHistory).toHaveBeenNthCalledWith(2, pending);
+  expect(detectionStore.getState().data.creditedThrough.steps).toBe(1000);
 });

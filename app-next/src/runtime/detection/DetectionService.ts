@@ -1,6 +1,7 @@
 import { detectionStore, persistDetectionState } from '../../state/detectionStore';
 import { reduceWalking } from '../../domain/walkingMachine';
 import { reducePropped } from '../../domain/proppedMachine';
+import type { ProppedEvent, ProppedState } from '../../domain/proppedMachine';
 import { reduceGym } from '../../domain/gymMachine';
 import type { GymVisitLog } from '../../engine/signals/location/GymVisitLog';
 import type { MotionAdapter, MotionEvidence } from './MotionAdapter';
@@ -23,6 +24,7 @@ export class DetectionService {
       placement: PlacementAdapter;
       gymLog: GymVisitLog;
       creditHistory: (credit: HistoryCredit) => Promise<void>;
+      persist?: () => Promise<void>;
       onError?: (error: unknown) => void;
     },
   ) {}
@@ -50,7 +52,7 @@ export class DetectionService {
               ),
               observedAt: result.transition!.timestampMs,
             });
-            await persistDetectionState();
+            await this.persist();
             this.assertGeneration(generation);
           }).catch((error) => this.deps.onError?.(error));
         }),
@@ -94,11 +96,22 @@ export class DetectionService {
         propped = reducePropped(propped, { kind: 'coverageLost', at: wake.now }, wake.now);
       const gym = reduceGym(before.gym, { kind: 'records', records }, wake.now);
       const cursor = Math.max(wake.dayStart, before.creditedThrough.steps ?? wake.dayStart);
-      if (cursor < wake.now) {
+      let pending = before.pendingHistory;
+      if (!pending && cursor < wake.now) {
         const { steps } = await this.deps.motion.querySteps(cursor, wake.now);
         this.assertGeneration(wake.generation);
-        const idempotencyKey = `steps:${wake.generation}:${cursor}:${wake.now}`;
-        await this.deps.creditHistory({ idempotencyKey, from: cursor, to: wake.now, steps });
+        pending = {
+          idempotencyKey: `steps:${wake.generation}:${cursor}:${wake.now}`,
+          from: cursor,
+          to: wake.now,
+          steps,
+        };
+        detectionStore.getState().patch({ pendingHistory: pending });
+        await this.persist();
+        this.assertGeneration(wake.generation);
+      }
+      if (pending) {
+        await this.deps.creditHistory(pending);
         this.assertGeneration(wake.generation);
       }
       detectionStore.getState().patch({
@@ -106,9 +119,15 @@ export class DetectionService {
         propped,
         gym,
         observedAt: wake.now,
-        creditedThrough: { ...before.creditedThrough, steps: wake.now },
+        creditedThrough: { ...before.creditedThrough, steps: pending?.to ?? cursor },
+        pendingHistory: null,
       });
-      await persistDetectionState();
+      try {
+        await this.persist();
+      } catch (error) {
+        if (pending) detectionStore.getState().patch({ pendingHistory: pending });
+        throw error;
+      }
       this.assertGeneration(wake.generation);
     });
   }
@@ -122,9 +141,35 @@ export class DetectionService {
         gym: reduceGym(data.gym, { kind: 'coverageLost' }, now),
         observedAt: now,
       });
-      await persistDetectionState();
+      await this.persist();
       this.assertGeneration(generation);
     });
+  }
+  invalidateGymRegion(regionId: string, now: number, generation: number): Promise<void> {
+    return this.enqueue(async () => {
+      this.assertGeneration(generation);
+      const data = detectionStore.getState().data;
+      detectionStore.getState().patch({ gym: reduceGym(data.gym, { kind: 'coverageLost', regionId }, now) });
+      await this.persist();
+      this.assertGeneration(generation);
+    });
+  }
+  async startProppedScan(now: number, generation: number): Promise<number | null> {
+    let scanGeneration: number | null = null;
+    await this.applyPropped({ kind: 'startScan', at: now, foreground: true }, now, generation, (state) => {
+      scanGeneration = state.scanGeneration;
+    });
+    return scanGeneration;
+  }
+  completeProppedScan(now: number, scanGeneration: number, generation: number): Promise<void> {
+    return this.applyPropped(
+      { kind: 'scanPass', at: now, generation: scanGeneration, foreground: true },
+      now,
+      generation,
+    );
+  }
+  cancelProppedScan(now: number, generation: number): Promise<void> {
+    return this.applyPropped({ kind: 'scanCancel', at: now }, now, generation);
   }
   private async applyMotion(evidence: MotionEvidence, graceMs: number, generation: number): Promise<void> {
     this.assertGeneration(generation);
@@ -138,11 +183,29 @@ export class DetectionService {
       ),
       observedAt: evidence.observedAt,
     });
-    await persistDetectionState();
+    await this.persist();
     this.assertGeneration(generation);
+  }
+  private applyPropped(
+    event: ProppedEvent,
+    now: number,
+    generation: number,
+    after?: (state: ProppedState) => void,
+  ): Promise<void> {
+    return this.enqueue(async () => {
+      this.assertGeneration(generation);
+      const next = reducePropped(detectionStore.getState().data.propped, event, now);
+      detectionStore.getState().patch({ propped: next, observedAt: now });
+      await this.persist();
+      this.assertGeneration(generation);
+      after?.(next);
+    });
   }
   private assertGeneration(expected: number): void {
     if (detectionStore.getState().data.generation !== expected) throw new Error('Obsolete detection generation');
+  }
+  private persist(): Promise<void> {
+    return (this.deps.persist ?? persistDetectionState)();
   }
   private enqueue(operation: () => Promise<void>): Promise<void> {
     const next = this.queue.catch(() => undefined).then(operation);
