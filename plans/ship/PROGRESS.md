@@ -546,3 +546,16 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   no-remote-mutation statement was incorrect. No remote deletion/reversal attempted. Root inspected
   installed Sentry scripts and now requires SENTRY_DISABLE_AUTO_UPLOAD=true plus unset SENTRY_AUTH_TOKEN
   after env injection for verification builds; pending signed preparation script corrected. No ASC upload.
+- Integrated Home semantic clock e3321c92 as aec6dfe4:239suites/1158tests/13snapshots PASS,
+  typecheck PASS, lint0errors/52warnings (/tmp/ship-home-clock-integrated.log). Exact interval cache
+  suppresses unchanged Home derivation while root enforcement clock remains untouched. ADR0019.
+- Integrated production readiness3c94c76b as bb3db21e:197server tests/typecheck/build PASS
+  (/tmp/ship-readiness-config-integrated.log). /ready now refuses missing production erasure config even
+  with migrated schema; health remains independent and failure details never expose secret names.
+- Bundle diagnosis: Sentry web/replay export graph dominates mapped JS spans (proxy, not HBC byte
+  attribution). Read installed Sentry7.11.0 Metro implementation: supported includeWebReplay:false
+  excludes unused browser replay while retaining native crash handling. Root regression RED reproduced
+  missing replay exclusion; supported config fix GREEN. Actual differential HBC export running.
+- Experimental Expo57 optimize-graph/tree-shaking command-only probe produced6,544,816byte HBC,
+  still over4MiB; no experimental flags enabled in committed config. Source graph2990sources passes
+  no-dev verifier. This experiment is synthetic preview config, not a signed/runtime acceptance.
