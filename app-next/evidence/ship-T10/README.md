@@ -10,3 +10,9 @@ Host/native bridge must still arm-before-unshield, preserve old monitor during r
 native generation guards, handle transport failure without locking ineligible states, and mount above UI.
 Hardware minimum/backdating acceptance, force-quit timing and extension callbacks are NOT proven here.
 The decision input temporarily supports the existing union plus unlockedPropped until T10 replaces leases.
+
+Pure walking reducer now added:12tests cover3second qualification,5second silence, one stop grace,
+unknown/late wake/clock rewind, positive resume versus requalification, duplicate/conflicting timestamps,
+immutable/idempotent transitions and corrupted persisted evidence. Grace stores its actual first deadline;
+a late wake cannot restart it. Raw motion/cadence fusion, measured history credit, persistence/schema
+hydration, native adapters, propped handoff and root mounting remain T11 work; no hardware relief claimed.

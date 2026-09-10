@@ -1,0 +1,30 @@
+
+> app-next@1.0.0 test
+> jest --runInBand --runTestsByPath src/domain/__tests__/walkingMachine.test.ts
+
+FAIL src/domain/__tests__/walkingMachine.test.ts
+  ● Test suite failed to run
+
+    Cannot find module '../walkingMachine' from 'src/domain/__tests__/walkingMachine.test.ts'
+
+    > 1 | import { createWalkingState, reduceWalking, walkingRelief } from '../walkingMachine';
+        | ^
+      2 | const start = createWalkingState(0);
+      3 | const evidence = (at: number, qualifying: boolean | 'unknown') => ({ kind: 'evidence' as const, at, qualifying });
+      4 | const tick = { kind: 'tick' as const };
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/resolver.js:427:11)
+      at Object.<anonymous> (src/domain/__tests__/walkingMachine.test.ts:1:1)
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        0.474 s
+Ran all test suites within paths "src/domain/__tests__/walkingMachine.test.ts".
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path /Users/johansardar/ExcerLock-build/ship/app-next
+npm error workspace app-next@1.0.0
+npm error location /Users/johansardar/ExcerLock-build/ship/app-next
+npm error command failed
+npm error command sh -c jest --runInBand --runTestsByPath src/domain/__tests__/walkingMachine.test.ts
