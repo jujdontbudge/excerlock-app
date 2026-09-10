@@ -10,8 +10,10 @@ test.each([
   ['trial', { ...base, isActive: true, activeIntroductoryOfferType: 'free_trial' }],
   ['active', { ...base, isActive: true, willRenew: true, expiresAt: new Date('2030-01-01') }],
   ['active', { ...base, isActive: true, willRenew: false, expiresAt: new Date('2030-01-01') }],
-  ['active', { ...base, isInGracePeriod: true, expiresAt: new Date('2020-01-01') }],
-  ['active', { ...base, isLifetime: true }],
+  ['active', { ...base, isActive: true, isInGracePeriod: true, expiresAt: new Date('2020-01-01') }],
+  ['active', { ...base, isActive: true, isLifetime: true }],
+  ['expired', { ...base, isInGracePeriod: true }],
+  ['expired', { ...base, isLifetime: true }],
   ['billingIssue', { ...base, billingIssueDetectedAt: new Date('2026-01-01') }],
   ['expired', { ...base, expiresAt: new Date('2025-01-01') }],
 ] as const)('maps premium access to %s', (status, premium) => {

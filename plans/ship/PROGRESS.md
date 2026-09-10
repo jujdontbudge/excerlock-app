@@ -209,3 +209,10 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   verified background retention vs explicit coverage-loss invalidation, single20second pickup and60second
   handoff deadlines, rescan cannot extend handoff, stale scans/late wakes/clock rewind rejected.9tests,
   typecheck/lint pass. Pure policy only; native placement/camera/root wiring and hardware latency remain.
+- T05 client8634c4c integratedfb6e36c. Root review corrected inactive grace/lifetime accidentally granting
+  active premium; isActive is authority. Added exact async identity checks around loaded plans/refresh/
+  purchase/restore, disposed guard and concurrent-operation rejection.22focused adapter/mapping tests,
+  primary typecheck pass. SDK/root composition, actual flow exposure and device purchases remain.
+- T11 agent now /root/ship_auth_finish in new ship-T11, owns motion/placement/location adapters and
+  persisted detection service; root owns native enforcement/root composition. T06 9a10a64 not integrated:
+  root found stale-account event/flag races and unstable late flag exposure; corrections delegated same lane.

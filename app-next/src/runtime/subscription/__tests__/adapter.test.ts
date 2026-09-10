@@ -16,7 +16,7 @@ const product = (id: string, price: string) => ({
   subscription: { localizedSubscriptionPeriod: 'month', subscriptionPeriod: { unit: 'month', numberOfUnits: 1 } },
 });
 
-function setup() {
+function setup(getIdentity = () => identity) {
   let listener: ((value: unknown) => void) | null = null;
   const calls: string[] = [];
   const remove = jest.fn();
@@ -51,8 +51,8 @@ function setup() {
   const adapter = new AdaptySubscriptionAdapter({
     sdk: sdk as never,
     publicSdkKey: 'public',
-    getIdentity: () => identity,
-    waitForIdentityReady: async () => identity,
+    getIdentity,
+    waitForIdentityReady: async () => getIdentity(),
     runIdentityOperation: async (operation) => operation(),
     getPosthogDistinctId: () => 'posthog-id',
     openSubscriptionManagement: jest.fn(async () => {}),
@@ -154,4 +154,39 @@ test('a paywall reload invalidates previously loaded product handles', async () 
   await adapter.loadPaywall('in_app');
   await expect(adapter.purchase(paywall.products[0]!.handle)).rejects.toThrow('Plan expired');
   expect(sdk.makePurchase).not.toHaveBeenCalled();
+});
+
+
+test('paywall result from an old account cannot replace loaded plans', async () => {
+  let live = identity;
+  const { adapter, sdk } = setup(() => live);
+  await adapter.identify('uid');
+  let finish!: (value: any) => void;
+  sdk.getPaywallProducts.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+  const loading = adapter.loadPaywall('in_app');
+  await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+  live = { ...identity, userId: 'other', generation: 5 };
+  finish([product('old.monthly', '$1')]);
+  await expect(loading).rejects.toThrow('identity');
+});
+
+test('concurrent restore cannot overlap purchase or clear its busy flag', async () => {
+  const { adapter, sdk } = setup();
+  await adapter.identify('uid');
+  const paywall = await adapter.loadPaywall('in_app');
+  let finish!: (value: any) => void;
+  sdk.makePurchase.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+  const purchase = adapter.purchase(paywall.products[0]!.handle);
+  await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+  await expect(adapter.restore()).rejects.toThrow('already running');
+  expect(adapter.operation().busy).toBe(true);
+  finish({ type: 'success', profile: profile(true) });
+  await purchase;
+});
+
+test('disposed adapter cannot activate or serve a paywall', async () => {
+  const { adapter, sdk } = setup();
+  adapter.dispose();
+  await expect(adapter.identify('uid')).rejects.toThrow('disposed');
+  expect(sdk.activate).not.toHaveBeenCalled();
 });

@@ -32,7 +32,7 @@ export function mapEntitlement(profile: AdaptyProfileLike | null, now = new Date
     isLifetime: access.isLifetime === true,
     observedAt: now.toISOString(),
   };
-  if (access.isActive || access.isLifetime || access.isInGracePeriod) {
+  if (access.isActive) {
     return { ...metadata, status: access.activeIntroductoryOfferType === 'free_trial' ? 'trial' : 'active' };
   }
   if (access.billingIssueDetectedAt) return { ...metadata, status: 'billingIssue' };

@@ -44,11 +44,12 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
   ) {}
 
   private ensureActivated(): Promise<void> {
+    if (this.disposed) throw new Error('Subscription adapter disposed');
     if (!this.activation) {
       this.activation = this.deps.sdk
         .activate(this.deps.publicSdkKey, { __ignoreActivationOnFastRefresh: true })
         .then(() => {
-          if (!this.listener)
+          if (!this.disposed && !this.listener)
             this.listener = this.deps.sdk.addEventListener(
               'onLatestProfileLoad',
               (profile) => void this.publishProfile(profile, this.restoreInFlight ? 'restore-callback' : 'listener'),
@@ -72,7 +73,12 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
   async identify(userId: string): Promise<void> {
     const identity = this.deps.getIdentity();
     if (identity.kind !== 'canonical' || identity.userId !== userId) throw new Error('Canonical identity mismatch');
+    this.expected = null;
+    this.loaded = null;
     await this.ensureActivated();
+    const before = this.deps.getIdentity();
+    if (before.kind !== 'canonical' || before.userId !== userId || before.generation !== identity.generation || this.disposed)
+      throw new Error('Identity changed before Adapty identify');
     await this.deps.sdk.identify(userId);
     const after = this.deps.getIdentity();
     if (after.kind !== 'canonical' || after.userId !== userId || after.generation !== identity.generation)
@@ -87,8 +93,13 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     await this.deps.sdk.logout();
   }
   async refresh(): Promise<Entitlement> {
+    const identity = this.requireExpected();
     await this.ensureActivated();
-    const late = this.deps.sdk.getProfile().then((profile) => this.publishProfile(profile, 'refresh'));
+    this.assertIdentity(identity);
+    const late = this.deps.sdk.getProfile().then((profile) => {
+      this.assertIdentity(identity);
+      return this.publishProfile(profile, 'refresh');
+    });
     let timer: ReturnType<typeof setTimeout> | undefined;
     const budget = new Promise<Entitlement>((resolve) => {
       timer = setTimeout(() => resolve(entitlementStore.getState().data.entitlement), 3000);
@@ -104,7 +115,9 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       fetchPolicy: 'reload_revalidating_cache_data',
       loadTimeoutMs: 5000,
     });
+    this.assertIdentity(identity);
     const products = await this.deps.sdk.getPaywallProducts(flow);
+    this.assertIdentity(identity);
     if (!products.length) throw new Error('Plans could not load');
     const generation = ++this.paywallGeneration;
     const remote = this.remoteCopy(flow);
@@ -128,10 +141,12 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     return publicPaywall;
   }
   async logPaywallShown(generation: number): Promise<void> {
-    if (!this.loaded || this.loaded.generation !== generation) throw new Error('Paywall expired');
+    const identity = this.requireExpected();
+    if (!this.loaded || this.loaded.generation !== generation || this.loaded.identityGeneration !== identity.generation) throw new Error('Paywall expired');
     await this.deps.sdk.logShowFlow(this.loaded.flow);
   }
   async purchase(handle: string): Promise<PurchaseResult> {
+    if (this.op.busy) throw new Error('A subscription operation is already running');
     this.op = { busy: true, pending: false, error: null };
     try {
       const ready = await this.deps.waitForIdentityReady();
@@ -142,6 +157,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
           throw new Error('Plan expired. Reload plans.');
         await this.attachIntegration(ready);
         const result = await this.deps.sdk.makePurchase(product);
+        this.assertIdentity(ready);
         if (result.type !== 'success') {
           if (result.type === 'pending') this.op = { busy: true, pending: true, error: null };
           return { type: result.type };
@@ -157,13 +173,16 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     }
   }
   async restore(): Promise<Entitlement> {
+    if (this.op.busy) throw new Error('A subscription operation is already running');
     this.op = { busy: true, pending: false, error: null };
     this.restoreInFlight = true;
     try {
       const ready = await this.deps.waitForIdentityReady();
       return await this.deps.runIdentityOperation(async () => {
         await this.attachIntegration(ready);
-        return this.publishProfile(await this.deps.sdk.restorePurchases(), 'restore-return');
+        const profile = await this.deps.sdk.restorePurchases();
+        this.assertIdentity(ready);
+        return this.publishProfile(profile, 'restore-return');
       });
     } catch (error) {
       this.op = { busy: true, pending: false, error: error instanceof Error ? error.message : 'Restore failed' };
@@ -184,9 +203,14 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     this.listener?.remove();
     this.listener = null;
   }
+  private assertIdentity(expected: AuthIdentity): void {
+    const current = this.requireExpected();
+    if (current.userId !== expected.userId || current.generation !== expected.generation) throw new Error('Identity changed');
+  }
   private requireExpected() {
     const identity = this.deps.getIdentity();
     if (
+      this.disposed ||
       !this.expected ||
       identity.kind !== 'canonical' ||
       identity.userId !== this.expected.userId ||
@@ -201,7 +225,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     const id = this.deps.getPosthogDistinctId();
     if (!id) throw new Error('PostHog identity unavailable');
     await this.deps.sdk.setIntegrationIdentifier(INTEGRATION_KEY, id);
-    this.requireExpected();
+    this.assertIdentity(identity);
   }
   private publishProfile(profile: AdaptyProfile, source: ProfileSource): Entitlement {
     if (this.disposed) return entitlementStore.getState().data.entitlement;
