@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 export type Validators<T> = { [K in keyof T]: (value: unknown) => boolean };
 export type DataStore<T> = { data: T; patch: (value: Partial<T>) => void; reset: () => void };
-export type PersistenceBarrier = { persistBarrier(): Promise<void> };
+export type PersistenceBarrier = { persistBarrier(): Promise<void>; retryPersistence(): Promise<void> };
 export type StoreHooks<T> = {
   /** Safety-critical owners may require an explicit awaited durability transaction. */
   manualPersistence?: boolean;
@@ -19,24 +19,40 @@ export function createPersistedStore<T extends object>(
   validators: Validators<T>,
   hooks?: StoreHooks<T>,
 ) {
+  type StorageOperation =
+    | { kind: 'set'; key: string; value: string; status: 'pending' | 'succeeded' | 'failed' }
+    | { kind: 'remove'; key: string; status: 'pending' | 'succeeded' | 'failed' };
   let writeTail: Promise<void> = Promise.resolve();
   let latestWrite: Promise<void> = writeTail;
+  let latestOperation: StorageOperation | null = null;
+  const perform = async (operation: StorageOperation): Promise<void> => {
+    operation.status = 'pending';
+    try {
+      if (operation.kind === 'set') await AsyncStorage.setItem(operation.key, operation.value);
+      else await AsyncStorage.removeItem(operation.key);
+      operation.status = 'succeeded';
+    } catch (error) {
+      operation.status = 'failed';
+      throw error;
+    }
+  };
+  const enqueue = (operation: StorageOperation): Promise<void> => {
+    latestOperation = operation;
+    const write = writeTail.then(() => perform(operation));
+    writeTail = write.catch(() => undefined);
+    latestWrite = write;
+    return write;
+  };
   const serializedStorage = {
     getItem: async (key: string) => {
       await writeTail;
       return AsyncStorage.getItem(key);
     },
     setItem: (key: string, value: string) => {
-      const write = writeTail.then(() => AsyncStorage.setItem(key, value));
-      writeTail = write.catch(() => undefined);
-      latestWrite = write;
-      return write;
+      return enqueue({ kind: 'set', key, value, status: 'pending' });
     },
     removeItem: (key: string) => {
-      const write = writeTail.then(() => AsyncStorage.removeItem(key));
-      writeTail = write.catch(() => undefined);
-      latestWrite = write;
-      return write;
+      return enqueue({ kind: 'remove', key, status: 'pending' });
     },
   };
   const fresh = (): T => JSON.parse(JSON.stringify(initial));
@@ -75,5 +91,17 @@ export function createPersistedStore<T extends object>(
       },
     ),
   );
-  return Object.assign(store, { persistBarrier: () => latestWrite });
+  const retryPersistence = (): Promise<void> => {
+    const retry = writeTail.then(async () => {
+      const operation = latestOperation;
+      // A newer middleware write queued after this retry request owns
+      // durability. Never replay the older failed snapshot ahead of it.
+      if (!operation || operation.status !== 'failed') return;
+      await perform(operation);
+    });
+    writeTail = retry.catch(() => undefined);
+    latestWrite = retry;
+    return retry;
+  };
+  return Object.assign(store, { persistBarrier: () => latestWrite, retryPersistence });
 }
