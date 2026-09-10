@@ -1,4 +1,4 @@
-import { userEvent, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, userEvent, waitFor } from '@testing-library/react-native';
 import { Slot } from 'expo-router';
 import { renderRouter, screen } from 'expo-router/testing-library';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
@@ -35,6 +35,11 @@ const routesWithRuntime = (runtime: Runtime) => ({
   ...routes,
   _layout: () => <AppRuntimeProvider runtime={runtime}><Slot /></AppRuntimeProvider>,
 });
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => { resolve = done; });
+  return { promise, resolve };
+}
 test.each(preBranch)('%s renders, advances, and returns through the actual router', async (step) => {
   await hydrateStores();
   onboardingStore.getState().reset();
@@ -100,4 +105,36 @@ test('remote reviewer assignment applies once and telemetry failure cannot block
   expect(onboardingStore.getState().data.answers.stepGoal).toBe(20);
   expect(isEnabled).toHaveBeenCalledTimes(1);
   expect(expose).toHaveBeenCalledTimes(1);
+});
+
+test('pending remote lookup guards duplicate taps, stale edits, and Back', async () => {
+  onboardingStore.getState().reset();
+  onboardingStore.getState().patch({ step: 'O04', answers: { name: 'Reviewer', stepGoal: 5000 } });
+  const runtime = createRuntime('fake');
+  const gate = deferred<boolean>();
+  const backGate = deferred<boolean>();
+  const isEnabled = jest.fn(() => gate.promise);
+  runtime.reviewPreset = { isEnabled, expose: jest.fn() };
+  const routed = renderRouter(routesWithRuntime(runtime), { initialUrl: '/onboarding/O04' });
+  await routed;
+  const button = screen.getByRole('button', { name: 'Continue' });
+  fireEvent.press(button);
+  fireEvent.press(button);
+  expect(isEnabled).toHaveBeenCalledTimes(1);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' }).props.accessibilityState)
+    .toEqual(expect.objectContaining({ busy: true, disabled: true })));
+  fireEvent.changeText(screen.getByLabelText('First name'), 'Changed');
+  await act(async () => { gate.resolve(true); await Promise.resolve(); });
+  await waitFor(() => expect(onboardingStore.getState().data.answers.name).toBe('Changed'));
+  expect(routed.getPathname()).toBe('/onboarding/O04');
+  expect(onboardingStore.getState().data.answers).toEqual(expect.objectContaining({ name: 'Changed', stepGoal: 5000 }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' }).props.accessibilityState.busy).toBe(false));
+  isEnabled.mockImplementationOnce(() => backGate.promise);
+  fireEvent.changeText(screen.getByLabelText('First name'), 'Reviewer');
+  fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  await waitFor(() => expect(isEnabled).toHaveBeenCalledTimes(2));
+  fireEvent.press(screen.getByRole('button', { name: 'Back' }));
+  await waitFor(() => expect(routed.getPathname()).toBe('/onboarding/O03'));
+  await act(async () => { backGate.resolve(true); await Promise.resolve(); });
+  expect(onboardingStore.getState().data.answers.stepGoal).toBe(5000);
 });

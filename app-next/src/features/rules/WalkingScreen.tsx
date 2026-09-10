@@ -88,6 +88,11 @@ export function WalkingScreen({
             value={Number.isNaN(value) ? '' : String(value)}
             unit={minutes ? c.minutesUnit : c.unit}
             onChange={(text) => change(text.trim() ? Number(text) : NaN)}
+            adjustValue={minutes ? undefined : (current, direction) => {
+              if (direction === 'increment' && current === REVIEW_STEP_GOAL) return MIN_STANDARD_STEP_GOAL;
+              if (direction === 'decrement' && current <= MIN_STANDARD_STEP_GOAL) return current;
+              return current + (direction === 'increment' ? STEP_GOAL_INCREMENT : -STEP_GOAL_INCREMENT);
+            }}
             error={valid ? undefined : minutes ? c.minutesRange : c.range}
           />
           <View style={{ flexDirection: 'row', gap: t.space.md }}>

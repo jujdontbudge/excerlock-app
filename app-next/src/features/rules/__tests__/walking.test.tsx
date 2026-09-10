@@ -1,4 +1,4 @@
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
 import { WalkingScreen } from '../WalkingScreen';
 import { createDraft } from '../draft';
 import { canContinue } from '../../../onboarding/validation';
@@ -45,8 +45,11 @@ test('review step goal remains editable without changing normal or minute increm
   expect(screen.getByRole('button', { name: 'Remove 500 steps' })).toBeDisabled();
   await userEvent.press(screen.getByRole('button', { name: 'Add 500 steps' }));
   expect(onAction).toHaveBeenLastCalledWith({ type: 'setStepGoal', value: 500 });
+  fireEvent(screen.getByRole('adjustable'), 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
+  expect(onAction).toHaveBeenLastCalledWith({ type: 'setStepGoal', value: 500 });
 
-  await r.rerender(<WalkingScreen step="W3" draft={{ ...reviewDraft, walkingMode: 'minutes' }} onAction={onAction} />);
-  await userEvent.press(screen.getByRole('button', { name: 'Add 5 minutes' }));
-  expect(onAction).toHaveBeenLastCalledWith({ type: 'setWalkMinutes', value: 25 });
+  await r.rerender(<WalkingScreen step="W3" draft={{ ...reviewDraft, stepGoal: 500 }} onAction={onAction} />);
+  fireEvent(screen.getByRole('adjustable'), 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } });
+  expect(onAction).toHaveBeenLastCalledWith({ type: 'setStepGoal', value: 500 });
+
 });
