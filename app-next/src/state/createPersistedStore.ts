@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 export type Validators<T> = { [K in keyof T]: (value: unknown) => boolean };
 export type DataStore<T> = { data: T; patch: (value: Partial<T>) => void; reset: () => void };
+export type PersistenceBarrier = { persistBarrier(): Promise<void> };
 export type StoreHooks<T> = {
   /** Safety-critical owners may require an explicit awaited durability transaction. */
   manualPersistence?: boolean;
@@ -18,6 +19,26 @@ export function createPersistedStore<T extends object>(
   validators: Validators<T>,
   hooks?: StoreHooks<T>,
 ) {
+  let writeTail: Promise<void> = Promise.resolve();
+  let latestWrite: Promise<void> = writeTail;
+  const serializedStorage = {
+    getItem: async (key: string) => {
+      await writeTail;
+      return AsyncStorage.getItem(key);
+    },
+    setItem: (key: string, value: string) => {
+      const write = writeTail.then(() => AsyncStorage.setItem(key, value));
+      writeTail = write.catch(() => undefined);
+      latestWrite = write;
+      return write;
+    },
+    removeItem: (key: string) => {
+      const write = writeTail.then(() => AsyncStorage.removeItem(key));
+      writeTail = write.catch(() => undefined);
+      latestWrite = write;
+      return write;
+    },
+  };
   const fresh = (): T => JSON.parse(JSON.stringify(initial));
   const validated = (value: unknown, base: T): T => {
     const result = { ...base };
@@ -28,7 +49,7 @@ export function createPersistedStore<T extends object>(
     }
     return result;
   };
-  return create<DataStore<T>>()(
+  const store = create<DataStore<T>>()(
     persist(
       (set) => ({
         data: fresh(),
@@ -43,7 +64,7 @@ export function createPersistedStore<T extends object>(
           // The owner persists complete snapshots explicitly. An automatic late
           // middleware write must not overwrite its committed intent/cursor.
           setItem: async () => {},
-        } : AsyncStorage),
+        } : serializedStorage),
         partialize: (state) => ({ data: state.data }),
         merge: (persisted, current) => {
           const raw = (persisted as { data?: unknown } | null)?.data;
@@ -54,4 +75,5 @@ export function createPersistedStore<T extends object>(
       },
     ),
   );
+  return Object.assign(store, { persistBarrier: () => latestWrite });
 }
