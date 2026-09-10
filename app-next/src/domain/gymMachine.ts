@@ -18,7 +18,7 @@ export type GymDetectionState = {
   records: GymTransitionRecord[];
   regions: Record<string, GymRegionState>;
   intervals: GymInterval[];
-  coverageLostAt: number | null;
+  coverageLostAt: Record<string, number>;
 };
 export type GymEvent =
   | { kind: 'records'; records: readonly GymTransitionRecord[] }
@@ -26,33 +26,39 @@ export type GymEvent =
   | { kind: 'coverageLost'; regionId?: string };
 export function createGymState(now: number): GymDetectionState {
   valid(now);
-  return { version: 1, watermark: now, records: [], regions: {}, intervals: [], coverageLostAt: null };
+  return { version: 1, watermark: now, records: [], regions: {}, intervals: [], coverageLostAt: {} };
 }
 export function reduceGym(previous: GymDetectionState, event: GymEvent, now: number): GymDetectionState {
   valid(now);
   validate(previous);
   const current = Math.max(now, previous.watermark);
   let records = previous.records;
-  let coverageLostAt = previous.coverageLostAt;
+  let coverageLostAt = { ...previous.coverageLostAt };
   if (event.kind === 'records') {
     const byId = new Map(records.map((record) => [record.id, record]));
     for (const record of event.records) if (record.atMs <= now && !byId.has(record.id)) byId.set(record.id, record);
     records = [...byId.values()];
-  } else if (event.kind === 'coverageLost' && event.regionId === undefined) coverageLostAt = current;
-  const derived = derive(records, current, coverageLostAt);
-  if (event.kind === 'coverageLost' && event.regionId !== undefined && derived.regions[event.regionId]) {
-    derived.regions[event.regionId] = {
-      ...derived.regions[event.regionId],
-      pendingEnterAt: null,
-      confirmedSince: null,
-    };
+  } else if (event.kind === 'coverageLost') {
+    const ids = event.regionId
+      ? [event.regionId]
+      : new Set([...Object.keys(previous.regions), ...records.map((record) => record.regionId)]);
+    for (const id of ids) coverageLostAt[id] = current;
   }
+  const derived = derive(records, current, coverageLostAt, previous.intervals);
   return { version: 1, watermark: current, records, coverageLostAt, ...derived };
 }
-function derive(records: readonly GymTransitionRecord[], now: number, coverageLostAt: number | null) {
+function derive(
+  records: readonly GymTransitionRecord[],
+  now: number,
+  coverageLostAt: Record<string, number>,
+  knownIntervals: readonly GymInterval[],
+) {
   const regions: Record<string, GymRegionState> = {};
   const intervals: GymInterval[] = [];
-  for (const record of [...records].sort((a, b) => a.atMs - b.atMs || a.id.localeCompare(b.id))) {
+  for (const record of [...records].sort(
+    (a, b) => a.atMs - b.atMs || transitionRank(a.type) - transitionRank(b.type) || a.id.localeCompare(b.id),
+  )) {
+    applyCoverageDue(regions, intervals, coverageLostAt, knownIntervals, record.atMs);
     confirmDue(regions, intervals, record.atMs);
     const region = regions[record.regionId] ?? { pendingEnterAt: null, confirmedSince: null, lastEventAt: null };
     if (record.type === 'enter') {
@@ -70,15 +76,35 @@ function derive(records: readonly GymTransitionRecord[], now: number, coverageLo
     region.lastEventAt = Math.max(region.lastEventAt ?? record.atMs, record.atMs);
     regions[record.regionId] = region;
   }
+  applyCoverageDue(regions, intervals, coverageLostAt, knownIntervals, now);
   confirmDue(regions, intervals, now);
-  if (coverageLostAt !== null)
-    for (const region of Object.values(regions))
-      if ((region.lastEventAt ?? -Infinity) <= coverageLostAt) {
-        region.pendingEnterAt = null;
-        region.confirmedSince = null;
-      }
   return { regions, intervals };
 }
+function applyCoverageDue(
+  regions: Record<string, GymRegionState>,
+  intervals: GymInterval[],
+  coverageLostAt: Record<string, number>,
+  knownIntervals: readonly GymInterval[],
+  at: number,
+): void {
+  for (const [regionId, lostAt] of Object.entries(coverageLostAt)) {
+    if (lostAt > at) continue;
+    const region = regions[regionId];
+    if (!region || (region.lastEventAt ?? -Infinity) > lostAt) continue;
+    const open = [...intervals].reverse().find((visit) => visit.regionId === regionId && visit.exitedAt === null);
+    if (open) open.exitedAt = Math.max(open.confirmedAt, lostAt);
+    else {
+      const known = [...knownIntervals]
+        .reverse()
+        .find((visit) => visit.regionId === regionId && visit.exitedAt === null);
+      if (known && !intervals.some(({ id }) => id === known.id))
+        intervals.push({ ...known, exitedAt: Math.max(known.confirmedAt, lostAt) });
+    }
+    region.pendingEnterAt = null;
+    region.confirmedSince = null;
+  }
+}
+const transitionRank = (type: GymTransitionRecord['type']) => (type === 'enter' ? 0 : 1);
 function confirmDue(regions: Record<string, GymRegionState>, intervals: GymInterval[], at: number): void {
   for (const [regionId, region] of Object.entries(regions))
     if (region.pendingEnterAt !== null && at >= region.pendingEnterAt + GYM_CONFIRM_MS) {
@@ -108,6 +134,21 @@ function valid(value: number): void {
   if (!Number.isFinite(value)) throw new Error('Invalid gym timestamp');
 }
 function validate(state: GymDetectionState): void {
-  if (state.version !== 1 || !Number.isFinite(state.watermark) || !Array.isArray(state.records))
+  if (
+    state.version !== 1 ||
+    !Number.isFinite(state.watermark) ||
+    !Array.isArray(state.records) ||
+    state.records.some(
+      (row) =>
+        !row ||
+        typeof row.id !== 'string' ||
+        typeof row.regionId !== 'string' ||
+        !['enter', 'exit'].includes(row.type) ||
+        !Number.isFinite(row.atMs) ||
+        !Number.isFinite(row.receivedAtMs),
+    ) ||
+    typeof state.coverageLostAt !== 'object' ||
+    Object.values(state.coverageLostAt).some((value) => !Number.isFinite(value))
+  )
     throw new Error('Invalid persisted gym state');
 }

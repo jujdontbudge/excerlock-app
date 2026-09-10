@@ -39,14 +39,14 @@ export class MotionAdapter {
 
   async start(): Promise<void> {
     if (this.unsubscribes.length) return;
+    this.activity = null;
+    this.cadence = null;
     this.unsubscribes = [
       this.provider.on('activity', (sample) => {
-        this.activity = sample;
-        this.publish(sample.receivedAt);
+        this.acceptActivity(sample);
       }),
       this.provider.on('cadence', (sample) => {
-        this.cadence = sample;
-        this.publish(sample.asOf);
+        this.acceptCadence(sample);
       }),
     ];
     await this.provider.start();
@@ -63,8 +63,10 @@ export class MotionAdapter {
   }
 
   reconcile(at = this.now()): MotionEvidence {
-    const activityFresh = this.activity !== null && at - this.activity.receivedAt <= MOTION_FRESHNESS_MS;
-    const cadenceFresh = this.cadence !== null && at - this.cadence.asOf <= MOTION_FRESHNESS_MS;
+    const activityAge = this.activity === null ? Infinity : at - this.activity.receivedAt;
+    const cadenceAge = this.cadence === null ? Infinity : at - this.cadence.asOf;
+    const activityFresh = activityAge >= 0 && activityAge < MOTION_FRESHNESS_MS;
+    const cadenceFresh = cadenceAge >= 0 && cadenceAge < MOTION_FRESHNESS_MS;
     const activityQualifies =
       activityFresh &&
       (this.activity!.confidence === 'medium' || this.activity!.confidence === 'high') &&
@@ -95,5 +97,25 @@ export class MotionAdapter {
   private publish(at: number): void {
     const evidence = this.reconcile(Math.max(at, this.now()));
     this.listeners.forEach((listener) => listener(evidence));
+  }
+
+  private acceptActivity(sample: ActivitySample): void {
+    if (!Number.isFinite(sample.receivedAt) || sample.receivedAt < sample.startedAt || sample.receivedAt > this.now())
+      return;
+    if (this.activity !== null && sample.receivedAt <= this.activity.receivedAt) return;
+    this.activity = sample;
+    this.publish(sample.receivedAt);
+  }
+
+  private acceptCadence(sample: CadenceSample): void {
+    if (
+      !Number.isFinite(sample.asOf) ||
+      sample.asOf > this.now() ||
+      (sample.stepsPerSecond !== null && (!Number.isFinite(sample.stepsPerSecond) || sample.stepsPerSecond < 0))
+    )
+      return;
+    if (this.cadence !== null && sample.asOf <= this.cadence.asOf) return;
+    this.cadence = sample;
+    this.publish(sample.asOf);
   }
 }
