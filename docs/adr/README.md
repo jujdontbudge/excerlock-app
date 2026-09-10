@@ -20,3 +20,5 @@ Every core architectural decision belongs here in a short file explaining what w
 - Add each ADR to this README's index with its title and current status. References to ADRs should state their status.
 - Preserve history: mark a replaced decision `superseded` and link the replacement; use `deprecated` when retired without a replacement. Do not delete or silently rewrite the original rationale.
 - Keep records concise. Do not invent past reasons or turn routine coding choices into ADRs.
+
+- [0024: Keep account access after subscription lapse](0024-keep-account-access-after-subscription-lapse.md) — **accepted**.

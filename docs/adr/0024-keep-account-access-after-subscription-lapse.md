@@ -3,7 +3,7 @@ status: accepted
 date: 2026-09-10
 ---
 
-# 0023: Keep account access after subscription lapse
+# 0024: Keep account access after subscription lapse
 
 ## Decision
 
