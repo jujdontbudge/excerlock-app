@@ -87,6 +87,22 @@ export class WalkingDurationLedger {
 
   reset(): Promise<void> { return this.serialize(() => this.save(empty())); }
 
+  /** Removes only sealed daily totals. Cursor, generation, and unacknowledged
+   * projection intents remain authoritative even when older than the cutoff. */
+  pruneBeforeDay(cutoffDay: string): Promise<WalkingDurationState> {
+    return this.serialize(async () => {
+      validateRetentionDay(cutoffDay);
+      const state = await this.load();
+      const pendingDays = new Set(state.pending.map(({ day }) => day));
+      const millisecondsByDay = Object.fromEntries(
+        Object.entries(state.millisecondsByDay).filter(([day]) => day >= cutoffDay || pendingDays.has(day)),
+      );
+      const next = { ...state, millisecondsByDay };
+      if (Object.keys(millisecondsByDay).length !== Object.keys(state.millisecondsByDay).length) await this.save(next);
+      return next;
+    });
+  }
+
   private async load(): Promise<WalkingDurationState> {
     const raw = await this.storage.getItem(KEY);
     if (raw === null) return empty();
@@ -101,6 +117,11 @@ export class WalkingDurationLedger {
     this.queue = next.catch(() => undefined);
     return next;
   }
+}
+function validateRetentionDay(day: string): void {
+  const parsed = Date.parse(`${day}T00:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(parsed) || new Date(parsed).toISOString().slice(0, 10) !== day)
+    throw new Error('Invalid walking retention day');
 }
 
 function addInterval(state: WalkingDurationState, start: number, end: number, timezone: string, generation: number): WalkingDurationState {

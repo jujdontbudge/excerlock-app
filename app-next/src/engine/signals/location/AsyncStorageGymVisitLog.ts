@@ -3,6 +3,7 @@ import type { GymTransitionRecord, GymVisitLog } from './GymVisitLog';
 export const GYM_VISIT_LOG_STORAGE_KEY = '@excerlock/location/gym-transitions/v2';
 export const LEGACY_GYM_VISIT_LOG_STORAGE_KEY = '@excerlock/location/confirmed-gym-visits/v1';
 export const GYM_VISIT_LOG_ACCEPTANCE_KEY = '@excerlock/location/gym-transitions-acceptance/v1';
+export const GYM_VISIT_LOG_PRUNED_THROUGH_KEY = '@excerlock/location/gym-transitions-pruned-through/v1';
 type GymVisitAcceptance = Readonly<{ epoch: number; regionIds: readonly string[] }>;
 
 // TaskManager and the foreground runtime intentionally construct separate log
@@ -22,7 +23,7 @@ export function suspendGymVisitLogWritesAndReset(): Promise<void> {
     const previous = parseAcceptance(await AsyncStorage.getItem(GYM_VISIT_LOG_ACCEPTANCE_KEY));
     const epoch = (previous?.epoch ?? 0) + 1;
     await AsyncStorage.setItem(GYM_VISIT_LOG_ACCEPTANCE_KEY, JSON.stringify({ epoch, regionIds: [] }));
-    await AsyncStorage.multiRemove([GYM_VISIT_LOG_STORAGE_KEY, LEGACY_GYM_VISIT_LOG_STORAGE_KEY]);
+    await AsyncStorage.multiRemove([GYM_VISIT_LOG_STORAGE_KEY, LEGACY_GYM_VISIT_LOG_STORAGE_KEY, GYM_VISIT_LOG_PRUNED_THROUGH_KEY]);
   });
 }
 
@@ -50,6 +51,9 @@ export class AsyncStorageGymVisitLog implements GymVisitLog {
         const acceptance = parseAcceptance(storedAcceptance);
         if (!acceptance?.regionIds.includes(safe.regionId)) return;
       }
+      const rawPrunedThrough = await AsyncStorage.getItem(GYM_VISIT_LOG_PRUNED_THROUGH_KEY);
+      const prunedThrough = rawPrunedThrough === null ? null : Number(rawPrunedThrough);
+      if (prunedThrough !== null && Number.isFinite(prunedThrough) && safe.atMs < prunedThrough) return;
       const records = await readStored();
       if (records.some(({ id }) => id === safe.id)) return;
       await AsyncStorage.setItem(GYM_VISIT_LOG_STORAGE_KEY, JSON.stringify([...records, safe]));
@@ -61,8 +65,31 @@ export class AsyncStorageGymVisitLog implements GymVisitLog {
   }
   reset(): Promise<void> {
     return serialize(() =>
-      AsyncStorage.multiRemove([GYM_VISIT_LOG_STORAGE_KEY, LEGACY_GYM_VISIT_LOG_STORAGE_KEY]));
+      AsyncStorage.multiRemove([GYM_VISIT_LOG_STORAGE_KEY, LEGACY_GYM_VISIT_LOG_STORAGE_KEY, GYM_VISIT_LOG_PRUNED_THROUGH_KEY]));
   }
+  /** Call only after intervals before cutoff are sealed into retained history. */
+  pruneBefore(cutoffMs: number): Promise<readonly GymTransitionRecord[]> {
+    return serialize(async () => {
+      if (!Number.isFinite(cutoffMs)) throw new Error('Invalid gym retention cutoff');
+      const records = await readStored();
+      const retained = retainGymTransitions(records, cutoffMs);
+      await AsyncStorage.setItem(GYM_VISIT_LOG_STORAGE_KEY, JSON.stringify(retained));
+      await AsyncStorage.setItem(GYM_VISIT_LOG_PRUNED_THROUGH_KEY, String(cutoffMs));
+      await AsyncStorage.removeItem(LEGACY_GYM_VISIT_LOG_STORAGE_KEY);
+      return retained;
+    });
+  }
+}
+export function retainGymTransitions(records: readonly GymTransitionRecord[], cutoffMs: number): GymTransitionRecord[] {
+  const retained = records.filter(({ atMs }) => atMs >= cutoffMs);
+  const regions = new Set(records.map(({ regionId }) => regionId));
+  for (const regionId of regions) {
+    const boundary = records
+      .filter((record) => record.regionId === regionId && record.atMs < cutoffMs)
+      .sort((a, b) => b.atMs - a.atMs || b.id.localeCompare(a.id))[0];
+    if (boundary?.type === 'enter') retained.push(boundary);
+  }
+  return retained.sort((a, b) => a.atMs - b.atMs || a.id.localeCompare(b.id));
 }
 function parseAcceptance(value: string | null): GymVisitAcceptance | null {
   if (value === null) return null;

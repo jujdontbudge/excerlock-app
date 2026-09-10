@@ -130,6 +130,24 @@ export function gymDwellMs(state: GymDetectionState, regionId: string, now: numb
     .filter((v) => v.regionId === regionId)
     .reduce((sum, visit) => sum + Math.max(0, (visit.exitedAt ?? now) - visit.confirmedAt), 0);
 }
+/** Pure companion for post-seal retention. Keeps open/cross-cutoff visits and
+ * the transition boundary required to derive their current state. */
+export function pruneGymHistoryBefore(state: GymDetectionState, cutoffMs: number): GymDetectionState {
+  valid(cutoffMs);
+  validate(state);
+  const records = retainTransitions(state.records, cutoffMs);
+  const intervals = state.intervals.filter((visit) => visit.exitedAt === null || visit.exitedAt >= cutoffMs);
+  return { ...state, records, intervals };
+}
+function retainTransitions(records: readonly GymTransitionRecord[], cutoffMs: number): GymTransitionRecord[] {
+  const retained = records.filter(({ atMs }) => atMs >= cutoffMs);
+  for (const regionId of new Set(records.map(({ regionId }) => regionId))) {
+    const boundary = records.filter((r) => r.regionId === regionId && r.atMs < cutoffMs)
+      .sort((a, b) => b.atMs - a.atMs || b.id.localeCompare(a.id))[0];
+    if (boundary?.type === 'enter') retained.push(boundary);
+  }
+  return retained.sort((a, b) => a.atMs - b.atMs || a.id.localeCompare(b.id));
+}
 function valid(value: number): void {
   if (!Number.isFinite(value)) throw new Error('Invalid gym timestamp');
 }

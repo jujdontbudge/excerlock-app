@@ -6,6 +6,7 @@ import {
   AsyncStorageGymVisitLog,
   GYM_VISIT_LOG_ACCEPTANCE_KEY,
   GYM_VISIT_LOG_STORAGE_KEY,
+  GYM_VISIT_LOG_PRUNED_THROUGH_KEY,
   resumeGymVisitLogWrites,
   suspendGymVisitLogWritesAndReset,
 } from '../AsyncStorageGymVisitLog';
@@ -55,5 +56,20 @@ describe('AsyncStorageGymVisitLog', () => {
     await expect(taskLog.readAll()).resolves.toEqual([
       { id: 'next-account', regionId: 'gym-b', type: 'enter', atMs: 5, receivedAtMs: 6 },
     ]);
+  });
+  it('prunes sealed transitions while retaining open boundaries and a late-event cursor', async () => {
+    const log = new AsyncStorageGymVisitLog();
+    await Promise.all([
+      log.append({ id: 'closed-enter', regionId: 'closed', type: 'enter', atMs: 1, receivedAtMs: 1 }),
+      log.append({ id: 'closed-exit', regionId: 'closed', type: 'exit', atMs: 2, receivedAtMs: 2 }),
+      log.append({ id: 'open-enter', regionId: 'open', type: 'enter', atMs: 3, receivedAtMs: 3 }),
+      log.append({ id: 'recent', regionId: 'recent', type: 'enter', atMs: 20, receivedAtMs: 20 }),
+    ]);
+    await expect(log.pruneBefore(10)).resolves.toEqual([
+      expect.objectContaining({ id: 'open-enter' }), expect.objectContaining({ id: 'recent' }),
+    ]);
+    expect(await AsyncStorage.getItem(GYM_VISIT_LOG_PRUNED_THROUGH_KEY)).toBe('10');
+    await log.append({ id: 'late-old', regionId: 'closed', type: 'exit', atMs: 2, receivedAtMs: 30 });
+    expect((await log.readAll()).map(({ id }) => id)).toEqual(['open-enter', 'recent']);
   });
 });
