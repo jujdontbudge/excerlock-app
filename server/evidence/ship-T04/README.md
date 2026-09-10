@@ -21,6 +21,11 @@ tombstone lookup, provider-last erasure, per-stage replay, Supabase not-found
 idempotency, lost-response checkpoint recovery, atomic replica leases, retry
 bookkeeping, and late-webhook non-resurrection.
 
-Deployment must apply local migrations `0006_supabase-identity-and-durable-erasure.sql`
-and `0007_deletion-retry-index.sql` before starting this server version. Runtime
-configuration is documented in `src/userDeletion/README.md`.
+Deployment must use the current ordered journal, including the forward-only
+`0006_legacy-production-bridge.sql`, followed by identity `0007`, retry-index
+`0008`, and Adapty partition `0009`. Production already applied superseded
+0006/0007; never overwrite their history or apply the old instructions by index.
+The bridge refuses ambiguous provider tombstones before mutation. Fresh and
+exact-legacy upgrade/replay tests are in `test/migration-compatibility.test.ts`;
+see ADR0018. Runtime configuration is documented in `src/userDeletion/README.md`.
+This is local upgrade proof, not evidence of production deployment.

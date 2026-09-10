@@ -13,7 +13,9 @@ behind `index.ts`; consumers do not deep-import them.
 
 ## Invariants
 
-- Clerk user id is the `users.id` primary key and the shared identity spine.
+- Canonical Supabase UUID is the current `users.id` identity spine. Legacy Clerk IDs
+  and historic tombstones retain explicit provider lineage; never infer a provider
+  from a renamed checkpoint alone. See ADR0011 and ADR0018.
 - `vendor_oauth_states` stores only a SHA-256 state hash and expires each
   one-use OAuth state after ten minutes.
 - `vendor_connections` stores access and refresh tokens only as versioned
@@ -46,3 +48,13 @@ columns enter vendor persistence.
 ```sh
 cd server && npx vitest run test/vendor-schema.test.ts test/vendor-repository.test.ts
 ```
+
+## Production migration compatibility
+
+Use the complete current Drizzle journal. The forward-only legacy bridge runs
+after the actual superseded production migration timestamps and before new
+identity columns. It restores dropped API tables without deleting existing sync
+data or rewriting applied history, and refuses ambiguous auth tombstones.
+Readiness validates current columns, valid retry indexing and environment-scoped
+primary keys as well as table presence. A green old deployment is not schema
+compatibility proof for new code. See `test/migration-compatibility.test.ts`.

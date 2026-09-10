@@ -510,3 +510,18 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   evidence independently records approved team requests. No App Store provisioning profiles yet; agent
   preparing exact clean-checkout signed build procedure. Device recheck: Il still unavailable; booted
   ExcerLock-Next remains another session's simulator, unchanged. No device activation claimed.
+
+### Production compatibility integration — 2026-09-10
+
+- Integrated18040883 as c26bac8f: forward-only bridge, renamed unapplied0007–0009 sequence, restored five
+  API tables, strict readiness columns/valid-index/composite-PK checks. Root review added fail-closed
+  ambiguous provider precondition, table-bound constraint joins, valid/ready index verification, and
+  original journal retention/idempotent replay proof. ADR0018 records the decision.
+- Fresh integrated server verification:36files/192tests PASS, typecheck/build/Drizzle check PASS
+  (/tmp/ship-server-bridge-integrated.log). Exact deployed legacy SQL fixtures preserve all8 historic
+  rows, migrate to12, and replay unchanged; fresh migrates to10. No remote mutation/deployment.
+- Created clean detached build checkout release-7619c5bd, claimed codex-ship-production-artifact.
+  Native lane preparing reviewed manual-distribution archive script. Root rejected archive deletion,
+  production-only dependency install, and automatic-signing assumptions before execution.
+- Local PostHog personal erasure key absent; project/browser connection attempted but CDP timed out.
+  No credential creation/storage/transmission. Server erasure activation remains unverified/unconfigured.
