@@ -15,6 +15,7 @@ api.excerlock.com {
 excerlock.com, www.excerlock.com {
 	encode zstd gzip
 	root * /var/www/excerlock
+	header /.well-known/apple-app-site-association Content-Type application/json
 	try_files {path} {path}.html
 	file_server
 }
