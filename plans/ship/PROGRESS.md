@@ -253,3 +253,11 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   to enum person property and event.2focused suites/15tests, typecheck/lint pass. Factory/root still needs
   analyticsEnabled getter binding; Settings visual inspection pending. T10-domain migration delegated
   ship_server_finish; T11 reviewed fixes22ae5f17 ready, native factory/headless binding next same agent.
+- Root found native Google OAuth client ID present but no registered reverse-client-ID redirect scheme.
+  Added one shared config derivation: scheme array preserves excerlock and registers reversed Google ID;
+  clientAuth.googleRedirectUri uses same scheme:/oauthredirect for root AuthSession/code exchange.
+  Official Google native OAuth docs consulted; actual Expo loader2tests/typecheck/lint pass. Signed plist
+  and physical Google completion still required. Universal ledger19f455d records diagnosed mechanism.
+- T11 review found history key upper bound changes on retry after successful credit/failed cursor save,
+  allowing overlapping double-credit. Agent now persisting pending intent before root credit and testing
+  new-wake retry; no false exactly-once claim. Native/domain/factory agents remain active.

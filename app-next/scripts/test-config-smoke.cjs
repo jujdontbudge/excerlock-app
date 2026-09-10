@@ -19,6 +19,8 @@ test('actual Expo loader resolves external TS, preserves native plugins and excl
   assert.equal(result.status, 0, 'Expo config loading failed (output withheld)');
   const config = JSON.parse(result.stdout);
   assert.equal(config.extra.environment, 'preview');
+  assert.ok(config.scheme.includes('com.googleusercontent.apps.fixture'));
+  assert.equal(config.extra.clientAuth.googleRedirectUri, 'com.googleusercontent.apps.fixture:/oauthredirect');
   assert.equal(config.runtimeVersion, '1');
   assert.equal(config.updates.checkAutomatically, 'ON_LOAD');
   assert.equal(config.ios.bundleIdentifier, 'com.johansardar.excerlock');
