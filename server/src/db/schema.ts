@@ -1,6 +1,7 @@
 import {
   boolean,
   index,
+  integer,
   pgTable,
   text,
   timestamp,
@@ -10,8 +11,14 @@ import type { SupportCategory } from "@excerlock/analytics-events";
 import type { Vendor } from "../vendors/types.js";
 
 /**
- * Clerk is the identity spine: this primary key is also the Clerk user id,
- * Adapty customer_user_id, and PostHog distinct_id after sign-up.
+ * Canonical Supabase identity spine: this primary key is the Supabase user id
+ * (canonical UUID, anonymous or permanent), and simultaneously the Adapty
+ * customer_user_id and PostHog distinct_id after provisioning.
+ *
+ * Legacy Clerk ids (user_*) remain only on historic tombstones. The
+ * auth_provider/auth_deleted_at pair records provider-neutral erasure;
+ * clerk_deleted_at is retained for audit and must never be treated as proof
+ * of Supabase erasure.
  */
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -22,7 +29,16 @@ export const users = pgTable("users", {
   adaptyErasedAt: timestamp("adapty_erased_at", { withTimezone: true }),
   posthogErasedAt: timestamp("posthog_erased_at", { withTimezone: true }),
   clerkDeletedAt: timestamp("clerk_deleted_at", { withTimezone: true }),
-});
+  authProvider: text("auth_provider"),
+  authDeletedAt: timestamp("auth_deleted_at", { withTimezone: true }),
+  deletionAttempts: integer("deletion_attempts").notNull().default(0),
+  deletionNextRetryAt: timestamp("deletion_next_retry_at", { withTimezone: true }),
+  deletionLeaseOwner: text("deletion_lease_owner"),
+  deletionLeaseExpiresAt: timestamp("deletion_lease_expires_at", { withTimezone: true }),
+  deletionLastError: text("deletion_last_error"),
+}, (table) => [
+  index("users_deletion_retry_index").on(table.deletedAt, table.deletionNextRetryAt),
+]);
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

@@ -165,3 +165,111 @@ describe("vendor OAuth routes", () => {
     });
   });
 });
+
+describe("neutral identity and tombstones", () => {
+  it("serves unrelated protected routes through neutral Supabase identity", async () => {
+    const readSince = vi.fn(async () => ({ events: [], nextCursor: null }));
+    app = Fastify({ logger: false });
+    await app.register(
+      async (protectedScope) => {
+        protectedScope.addHook("onRequest", async (request) => {
+          request.authIdentity = {
+            userId: "550e8400-e29b-41d4-a716-446655440000",
+            roles: [],
+            provider: "supabase",
+            isAnonymous: true,
+          };
+        });
+        await protectedScope.register(
+          createVendorProtectedRoutes({ eventFeed: { readSince } }),
+        );
+      },
+      { prefix: "/v1" },
+    );
+    const response = await app.inject({ method: "GET", url: "/v1/vendors/events" });
+    expect(response.statusCode).toBe(200);
+    expect(readSince).toHaveBeenCalledWith(
+      "550e8400-e29b-41d4-a716-446655440000",
+      null,
+      50,
+    );
+  });
+
+  it("keeps legacy clerkIdentity working through the neutral helper", async () => {
+    const { requireActiveRouteUserId } = await import(
+      "../src/routes/vendorRouteSupport.js"
+    );
+    const reply = {
+      code: vi.fn().mockReturnThis(),
+      send: vi.fn(),
+    } as unknown as Parameters<typeof requireActiveRouteUserId>[1];
+    const userId = await requireActiveRouteUserId(
+      { clerkIdentity: { userId: "user_123", roles: [] } } as never,
+      reply,
+      async () => false,
+    );
+    expect(userId).toBe("user_123");
+  });
+
+  it("rejects tombstoned users with 410 even with a valid JWT", async () => {
+    const { requireActiveRouteUserId } = await import(
+      "../src/routes/vendorRouteSupport.js"
+    );
+    let status = 0;
+    let body: unknown = null;
+    const reply = {
+      code(code: number) {
+        status = code;
+        return this;
+      },
+      async send(payload: unknown) {
+        body = payload;
+      },
+    } as unknown as Parameters<typeof requireActiveRouteUserId>[1];
+    const userId = await requireActiveRouteUserId(
+      {
+        authIdentity: {
+          userId: "550e8400-e29b-41d4-a716-446655440000",
+          roles: [],
+          provider: "supabase",
+          isAnonymous: false,
+        },
+      } as never,
+      reply,
+      async () => true,
+    );
+    expect(userId).toBeNull();
+    expect(status).toBe(410);
+    expect(body).toEqual({
+      error: { code: "ACCOUNT_DELETED", message: "This account has been deleted" },
+    });
+  });
+
+  it("fails closed when tombstone status cannot be checked", async () => {
+    const { requireActiveRouteUserId } = await import(
+      "../src/routes/vendorRouteSupport.js"
+    );
+    const reply = {
+      code: vi.fn().mockReturnThis(),
+      send: vi.fn(),
+    } as unknown as Parameters<typeof requireActiveRouteUserId>[1];
+    const userId = await requireActiveRouteUserId(
+      {
+        authIdentity: {
+          userId: "550e8400-e29b-41d4-a716-446655440000",
+          roles: [], provider: "supabase", isAnonymous: false,
+        },
+      } as never,
+      reply,
+      async () => { throw new Error("database unavailable"); },
+    );
+    expect(userId).toBeNull();
+    expect(reply.code).toHaveBeenCalledWith(503);
+    expect(reply.send).toHaveBeenCalledWith({
+      error: {
+        code: "IDENTITY_UNAVAILABLE",
+        message: "Identity status is temporarily unavailable",
+      },
+    });
+  });
+});

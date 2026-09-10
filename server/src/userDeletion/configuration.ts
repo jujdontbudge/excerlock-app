@@ -14,27 +14,42 @@ export class UserDeletionConfigurationError extends Error {
   }
 }
 
+export function isUserDeletionConfigured(
+  environment: Environment = config,
+): boolean {
+  return Boolean(
+    environment.databaseUrl &&
+      environment.supabaseUrl &&
+      environment.supabaseServiceRoleKey &&
+      environment.adaptySecretKey &&
+      environment.posthogPersonalApiKey &&
+      environment.posthogProjectId,
+  );
+}
+
 export function createConfiguredUserDeletionService(
   environment: Environment = config,
 ): UserDeletionService {
-  if (
-    !environment.databaseUrl ||
-    !environment.clerkSecretKey ||
-    !environment.adaptySecretKey ||
-    !environment.posthogPersonalApiKey ||
-    !environment.posthogProjectId
-  ) {
+  if (!isUserDeletionConfigured(environment)) {
     throw new UserDeletionConfigurationError();
   }
 
   return createUserDeletionService({
+    // Canonical provider is Supabase; legacy clerkDeletedAt rows are never
+    // treated as Supabase erasure (see drizzleRepository + migration 0006).
+    authProvider: "supabase",
     repository: createDrizzleUserDeletionRepository(),
     downstream: createIdentityErasureGateway({
-      clerkSecretKey: environment.clerkSecretKey,
-      adaptySecretKey: environment.adaptySecretKey,
-      posthogPersonalApiKey: environment.posthogPersonalApiKey,
-      posthogProjectId: environment.posthogProjectId,
+      adaptySecretKey: environment.adaptySecretKey as string,
+      posthogPersonalApiKey: environment.posthogPersonalApiKey as string,
+      posthogProjectId: environment.posthogProjectId as string,
       posthogApiHost: environment.posthogApiHost,
+      supabaseUrl: environment.supabaseUrl as string,
+      supabaseServiceRoleKey: environment.supabaseServiceRoleKey as string,
+      ...(environment.clerkSecretKey
+        ? { clerkSecretKey: environment.clerkSecretKey }
+        : {}),
+      timeoutMs: environment.deletionGatewayTimeoutMs,
     }),
   });
 }

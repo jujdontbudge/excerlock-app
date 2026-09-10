@@ -1,0 +1,1 @@
+CREATE INDEX "users_deletion_retry_index" ON "users" USING btree ("deleted_at","deletion_next_retry_at");
