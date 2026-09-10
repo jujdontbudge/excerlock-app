@@ -9,12 +9,14 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 class SignedManifestTests(unittest.TestCase):
-    def fixture(self, main=True):
+    def fixture(self, main=True, distribution=False):
         bundle = module.BUNDLE if main else module.BUNDLE + '.report'
         ent = dict(module.MAIN_REQUIRED if main else module.EXT_REQUIRED)
         ent.update({'application-identifier': module.TEAM + '.' + bundle, 'com.apple.developer.team-identifier': module.TEAM, 'get-task-allow': False})
         profile = {'TeamIdentifier': [module.TEAM], 'ApplicationIdentifierPrefix': [module.TEAM],
                    'ExpirationDate': dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1), 'Entitlements': copy.deepcopy(ent)}
+        if distribution:
+            profile['Entitlements']['beta-reports-active'] = True
         return bundle, ent, profile
 
     def test_valid_exact_signed_capabilities(self):
@@ -56,6 +58,22 @@ class SignedManifestTests(unittest.TestCase):
             bundle, ent, profile = self.fixture()
             profile['Entitlements'][key] = value
             with self.assertRaises(ValueError): module.verify_entitlements(bundle, ent, profile, main=True)
+
+    def test_distribution_requires_app_store_profile_and_production_push(self):
+        for main in [True, False]:
+            module.verify_entitlements(*self.fixture(main, distribution=True), main=main, distribution=True)
+        mutations = [
+            ('push', lambda ent, profile: ent.__setitem__('aps-environment', 'development')),
+            ('debug', lambda ent, profile: ent.__setitem__('get-task-allow', True)),
+            ('devices', lambda ent, profile: profile.__setitem__('ProvisionedDevices', ['device-id'])),
+            ('enterprise', lambda ent, profile: profile.__setitem__('ProvisionsAllDevices', True)),
+            ('not-app-store', lambda ent, profile: profile['Entitlements'].pop('beta-reports-active')),
+        ]
+        for name, mutate in mutations:
+            bundle, ent, profile = self.fixture(main=True, distribution=True)
+            mutate(ent, profile)
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                module.verify_entitlements(bundle, ent, profile, main=True, distribution=True)
 
     def test_signed_payload_plist_is_checked_not_generated_project(self):
         good = {key: 'Permission explanation' for key in module.USAGE_KEYS}
