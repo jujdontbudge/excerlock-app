@@ -33,3 +33,11 @@ test('corrupt ledger fails visibly; explicit erasure resets credit authority', a
   await expect(ledger.read()).rejects.toThrow('Invalid');
   await ledger.reset(); expect((await ledger.read()).through).toBeNull();
 });
+test('post-seal pruning removes old totals but preserves the deduplication cursor', async () => {
+  const { ledger } = setup();
+  await ledger.apply(first, 'UTC');
+  const through = (await ledger.read()).through;
+  const pruned = await ledger.pruneBeforeDay('1970-01-02');
+  expect(pruned).toEqual({ version: 1, through, stepsByDay: {} });
+  expect((await ledger.apply(first, 'UTC')).stepsByDay).toEqual({});
+});

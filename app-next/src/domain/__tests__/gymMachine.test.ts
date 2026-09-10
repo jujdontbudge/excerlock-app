@@ -1,4 +1,4 @@
-import { confirmedGymRegions, createGymState, gymDwellMs, reduceGym } from '../gymMachine';
+import { confirmedGymRegions, createGymState, gymDwellMs, pruneGymHistoryBefore, reduceGym } from '../gymMachine';
 const row = (id: string, regionId: string, type: 'enter' | 'exit', atMs: number) => ({
   id,
   regionId,
@@ -69,4 +69,14 @@ test('exit deterministically dominates enter at the same timestamp', () => {
     40000,
   );
   expect(confirmedGymRegions(state)).toEqual([]);
+});
+test('post-seal pruning drops closed history but preserves an open visit boundary', () => {
+  const state = reduceGym(createGymState(0), { kind: 'records', records: [
+    row('closed-in', 'closed', 'enter', 1), row('closed-out', 'closed', 'exit', 40_000),
+    row('open-in', 'open', 'enter', 50_000),
+  ] }, 100_000);
+  const pruned = pruneGymHistoryBefore(state, 45_000);
+  expect(pruned.records.map(({ id }) => id)).toEqual(['open-in']);
+  expect(pruned.intervals.map(({ regionId }) => regionId)).toEqual(['open']);
+  expect(confirmedGymRegions(reduceGym(pruned, { kind: 'tick' }, 110_000))).toEqual(['open']);
 });

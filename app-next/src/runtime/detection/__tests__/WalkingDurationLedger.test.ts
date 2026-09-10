@@ -79,3 +79,15 @@ test('generation change erases authority and fences stale callbacks; reset suppo
   await ledger.reset();
   expect(await ledger.read()).toMatchObject({ generation: null, cursor: null, millisecondsByDay: {}, pending: [] });
 });
+test('post-seal pruning preserves generation, cursor and pending replay intents', async () => {
+  const { ledger } = setup();
+  await ledger.observe(sample(0));
+  const credited = await ledger.observe(sample(1_000));
+  const pruned = await ledger.pruneBeforeDay('1970-01-02');
+  expect(pruned.generation).toBe(credited.generation);
+  expect(pruned.cursor).toEqual(credited.cursor);
+  expect(pruned.pending).toEqual(credited.pending);
+  expect(pruned.millisecondsByDay['1970-01-01']).toBe(1_000);
+  await ledger.acknowledge(pruned.pending.map(({ idempotencyKey }) => idempotencyKey), 1);
+  expect((await ledger.pruneBeforeDay('1970-01-02')).millisecondsByDay).toEqual({});
+});

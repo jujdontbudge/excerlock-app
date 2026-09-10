@@ -28,6 +28,17 @@ export class HistoryCreditLedger {
   }
   /** Must be awaited as part of account deletion/local data erasure. */
   reset(): Promise<void> { return this.serialize(() => this.storage.setItem(KEY, JSON.stringify({ version: 1, through: null, stepsByDay: {} }))); }
+  /** Call only after the corresponding immutable history rows are durable. */
+  pruneBeforeDay(cutoffDay: string): Promise<HistoryLedger> {
+    return this.serialize(async () => {
+      validateDay(cutoffDay);
+      const state = await this.load();
+      const stepsByDay = Object.fromEntries(Object.entries(state.stepsByDay).filter(([day]) => day >= cutoffDay));
+      if (Object.keys(stepsByDay).length !== Object.keys(state.stepsByDay).length)
+        await this.storage.setItem(KEY, JSON.stringify({ ...state, stepsByDay }));
+      return { ...state, stepsByDay };
+    });
+  }
   private async load(): Promise<HistoryLedger> {
     const raw = await this.storage.getItem(KEY);
     if (raw === null) return { version: 1, through: null, stepsByDay: {} };
@@ -44,4 +55,9 @@ export class HistoryCreditLedger {
     this.queue = result.catch(() => undefined);
     return result;
   }
+}
+function validateDay(day: string): void {
+  const parsed = Date.parse(`${day}T00:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(parsed) || new Date(parsed).toISOString().slice(0, 10) !== day)
+    throw new Error('Invalid history retention day');
 }
