@@ -26,8 +26,12 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
       entitlementStore.getState().patch({ entitlement: next });
       return entitlement();
     },
-    identify: (id) => ctx.log('subscription_identify', { id }),
-    reset: () => entitlementStore.getState().reset(),
+    identify: async (id) => {
+      ctx.log('subscription_identify', { id });
+    },
+    reset: async () => {
+      entitlementStore.getState().reset();
+    },
     subscribe: (callback) => entitlementStore.subscribe((s) => callback(s.data.entitlement)),
   };
 }

@@ -100,3 +100,18 @@ test('signed-in account delete lists the five facts and does not cancel a subscr
   await userEvent.press(screen.getByRole('button', { name: c.deleteConfirm }));
   expect(await screen.findByText(c.deleted)).toBeTruthy();
 });
+
+test('anonymous account deletion is available and a failure keeps visible retry', async () => {
+  const runtime = createRuntime();
+  await runtime.dev.load('fresh-install');
+  runtime.auth.deleteAccount = jest.fn().mockRejectedValue(new Error('server unavailable'));
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <AccountScreen onSignIn={() => {}} onBack={() => {}} />
+    </AppRuntimeProvider>,
+  );
+  await userEvent.press(screen.getByRole('button', { name: c.delete }));
+  await userEvent.press(screen.getByRole('button', { name: c.deleteConfirm }));
+  expect(await screen.findByRole('alert')).toHaveTextContent(c.error);
+  expect(screen.getByRole('button', { name: c.deleteConfirm })).toBeEnabled();
+});

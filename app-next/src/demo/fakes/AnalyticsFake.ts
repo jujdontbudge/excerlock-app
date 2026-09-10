@@ -4,7 +4,11 @@ export function AnalyticsFake(ctx: FakeContext): AnalyticsPort {
   return {
     track: ctx.log,
     screen: (name) => ctx.log('screen', { name }),
-    identify: (id) => ctx.log('identify', { id }),
-    reset: () => ctx.update({ events: [] }),
+    identify: async (id) => {
+      ctx.log('identify', { id });
+    },
+    reset: async () => {
+      ctx.update({ events: [] });
+    },
   };
 }
