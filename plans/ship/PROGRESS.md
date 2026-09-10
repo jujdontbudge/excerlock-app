@@ -599,3 +599,15 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   does not drain in-flight refresh/storage operations. Existing service dispose does not invoke SDK
   cleanup. Root is reviewing a public lock/drain solution before implementation; foreground-only
   refresh proposal rejected as insufficient to preserve long-active refresh behavior.
+
+- Integrated reviewed supported security patches b7f81a5d/77479425: nanoid3.3.18 lock-only and
+  Fastify floor5.12.3. Clean candidate install,241 app-next suites/1160 tests/13 snapshots,197 server
+  tests, both typechecks/server build and Sentry topology pass. Audit43→41 (high3→2, moderate40→39);
+  remaining advisories are not waived. Fixture-only iOS HBC unchanged6,357,304bytes, no-dev PASS;
+  strict4MB gate still FAIL. No deploy, broad override, Clerk or Vitest change.
+- Root fixed historical notification source contract to require centering the toggle rather than
+  enclosing card; retired legacy banned runner with immediate exit2 before any device/tool discovery.
+  All16 E2E source/retirement tests pass. These tests are NOT current T14 simulator acceptance.
+  CI now runs app-next Metro/bundle-budget node regressions (5 passed locally).
+- Auth lifecycle drain implementation and honest native startup diagnostic instrumentation remain
+  in independent claimed lanes; awaiting code review and actual checks before integration.
