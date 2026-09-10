@@ -588,3 +588,14 @@ before T06; UI has substantive changes underway; auth intentional callback owner
 - Browser creation works again, but Apple Developer actually redirects to an empty Sign In form; no
   authenticated portal session is available. Preserved signing portal tab for login handoff, entered no
   credentials. Claiming existing PostHog tab still times out. No permissions, keys or profiles changed.
+
+- Fresh browser read disproves guessed PostHog project:451896 is Recovi in Edge, NOT ExcerLock.
+  Organization menu lists a separate ExcerLock organization; switching/navigation detached before
+  its project ID could be verified. Do not configure deletion against451896. No key creation occurred.
+- Fresh local audit identified missing current T14 real-runtime acceptance, T15 first-frame/TTI
+  instrumentation, and potentially stale T13 security advisories; targeted source/audit revalidation
+  assigned rather than accepting old evidence or deleting legacy dependencies speculatively.
+- Auth-only bundle research exposed an independent lifecycle risk: SDK dispose cancels timers but
+  does not drain in-flight refresh/storage operations. Existing service dispose does not invoke SDK
+  cleanup. Root is reviewing a public lock/drain solution before implementation; foreground-only
+  refresh proposal rejected as insufficient to preserve long-active refresh behavior.
