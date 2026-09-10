@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { GymTransitionRecord, GymVisitLog } from './GymVisitLog';
 export const GYM_VISIT_LOG_STORAGE_KEY = '@excerlock/location/gym-transitions/v2';
-const LEGACY_KEY = '@excerlock/location/confirmed-gym-visits/v1';
+export const LEGACY_GYM_VISIT_LOG_STORAGE_KEY = '@excerlock/location/confirmed-gym-visits/v1';
 export class AsyncStorageGymVisitLog implements GymVisitLog {
   private writes: Promise<void> = Promise.resolve();
   append(record: GymTransitionRecord): Promise<void> {
@@ -17,6 +17,12 @@ export class AsyncStorageGymVisitLog implements GymVisitLog {
   async readAll(): Promise<readonly GymTransitionRecord[]> {
     await this.writes;
     return readStored();
+  }
+  reset(): Promise<void> {
+    const write = this.writes.catch(() => undefined).then(() =>
+      AsyncStorage.multiRemove([GYM_VISIT_LOG_STORAGE_KEY, LEGACY_GYM_VISIT_LOG_STORAGE_KEY]));
+    this.writes = write.catch(() => undefined);
+    return write;
   }
 }
 function coordinateFree(record: GymTransitionRecord): GymTransitionRecord {
@@ -38,7 +44,7 @@ async function readStored(): Promise<readonly GymTransitionRecord[]> {
       return [];
     }
   }
-  const legacy = await AsyncStorage.getItem(LEGACY_KEY);
+  const legacy = await AsyncStorage.getItem(LEGACY_GYM_VISIT_LOG_STORAGE_KEY);
   if (legacy === null) return [];
   try {
     const value: unknown = JSON.parse(legacy);
