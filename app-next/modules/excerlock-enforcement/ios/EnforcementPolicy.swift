@@ -62,7 +62,6 @@ final class ExcerlockPolicyStore {
     try writeLocked(r); return true
   }}
   private func windowActive(_ w: ExcerlockScheduledWindow, now: Double) -> Bool {
-    if w.end - w.start >= 7 * 24 * 60 * 60 * 1000 { return true }
     let calendar = Calendar.autoupdatingCurrent
     func weeklySecond(_ date: Date) -> Int { let c = calendar.dateComponents([.weekday, .hour, .minute, .second], from: date); return ((c.weekday ?? 1) - 1) * 86_400 + (c.hour ?? 0) * 3_600 + (c.minute ?? 0) * 60 + (c.second ?? 0) }
     let current = weeklySecond(Date(timeIntervalSince1970: now / 1000)); let start = weeklySecond(Date(timeIntervalSince1970: w.start / 1000)); let end = weeklySecond(Date(timeIntervalSince1970: w.end / 1000))
