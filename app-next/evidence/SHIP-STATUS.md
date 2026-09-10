@@ -9,7 +9,7 @@ Existing `T13`, `T14`, `T15` and `T16` folders include historical task numbering
 and Debug recordings. Their filenames and passing tests do not certify the corresponding Ship tasks.
 Preserve those artifacts as historical evidence; never substitute them for current release acceptance.
 
-## Latest sprint checkpoint — 21:17 UTC
+## Latest sprint checkpoint — 21:40 UTC
 
 Final Release simulator artifact: `4e8db1b0` (later docs-only commits do not alter runtime).
 Build/install/deep-strict signature/main+4 extensions/runtime2/preview OTA header/canonical privacy
@@ -30,7 +30,9 @@ size, review contact/territories, signing/build attachment, and other external g
 
 Local StoreKit test recovery reaches full reviewer20 journey and actual purchase CTA, but opens Apple
 account sign-in rather than local confirmation; xcresult reports1failed/0passed. The local StoreKit
-configuration binding is being diagnosed; this is explicitly NOT transaction acceptance.
+configuration binding remains unresolved; this is explicitly NOT transaction acceptance. A proposed
+relative-path fix was reverted after independent evidence invalidated its filesystem-relative
+assumption. Do not repeat the same UI run without new binding evidence.
 
 ## Current verified local checkpoints
 
@@ -58,7 +60,7 @@ configuration binding is being diagnosed; this is explicitly NOT transaction acc
   has verified real-runtime Release candidate4e8db1b0. Correct simulator ad-hoc signing and a verified
   geofence stop fix resolve the two observed startup failures. Walking onboarding reaches fetched
   paywall; plan switching and restore-not-found observed. AX/screens in candidate-217647f1 folder.
-  No real/local StoreKit purchase completed; no physical sensor/lock-state acceptance. The six-product .storekit catalog and opt-in Debug test scheme now exist and build-for-testing passes. Runner catalog/Expo dev-menu problems were corrected; the next run reaches the actual CTA but lacks local StoreKit binding. Recovery continues; no purchase acceptance.
+  No real/local StoreKit purchase completed; no physical sensor/lock-state acceptance. The six-product .storekit catalog and opt-in Debug test scheme now exist and build-for-testing passes. Runner catalog/Expo dev-menu problems were corrected; the next run reaches the actual CTA but lacks local StoreKit binding. No purchase acceptance; further runtime attempts require new binding evidence.
 - **T15:** Release startup/TTI and battery/device measurements absent. Home semantic-clock optimization
   passed local tests. Unsigned device Release at7619c5bd compiled, but its packaged Hermes bundle was
   7,881,912 bytes: FAIL against the strict decimal4,000,000-byte gate. A disposable single-core Sentry

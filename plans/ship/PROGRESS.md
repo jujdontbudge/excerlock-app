@@ -837,3 +837,27 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   form verified. No VoiceOver runtime/full provider sign-in claimed. Local StoreKit second run traversed
   full reviewer20 flow and CTA but opened Apple-account sign-in, not local confirmation; xcresult1fail,
   0pass. Native lane investigating missing StoreKit config binding via Claude Code/Fable recovery.
+
+### Sprint stopping point — submission readiness remains blocked
+
+- Production runtime source frozen at4e8db1b0; later commits are harness/documentation only.
+  Final simulator artifact remains under /tmp/t14-final-preview-8d403650-20260910-131116-59597/
+  ExcerLock-candidate-4e8db1b0-adhoc.app. Restored this artifact after isolated harness tests;
+  cleared status-bar override and shut down the single owned headless simulator.
+- StoreKit recovery: safe root build-for-testing PASS with preview environment, Sentry token unset,
+  upload disabled, arm64-only. A guessed ../../../ scheme path was NOT validated by binding output;
+  maintained RevenueCat SampleCat scheme/file layout disproved the naive filesystem-relative
+  assumption. Reverted path change and its unsound regression inbf29a771. Scheme-based diagnostic
+  test interrupted; never counted as passing. Existing local purchase gate remains unverified.
+  Claude Code/Fable recovery consultation: /tmp/ship-storekit-fable-recovery.txt. Its missing-artifact
+  observation looked in the integration lane; actual build artifacts remain in storekit-harness.
+- Read-only server audit reconfirmed deployment NO-GO: current source readiness would require erasure
+  configuration in production; existing live200/404 pair is stale deployment, not candidate acceptance.
+  Deploy README now accurately describes migration-before-restart, forward-only journal, and
+  schema-compatible application rollback. No server deployment/config mutation occurred.
+- Remaining exact gates: Apple Developer authenticated association for report App Group then valid
+  distribution profile/IPA/TestFlight; physical iPhone and full auth/sensor/lock/purchase acceptance;
+  PostHog personal erasure key/project then authorized migration/deploy/health checks; review contact,
+  territories, required App Store screenshot size and4target subscription review screenshots,
+  privacy-label/agreement/first-subscription attachment verification; Hermes6,378,864vs4,000,000.
+  No App Review submission, public release, production OTA, or claim of completed goal.
