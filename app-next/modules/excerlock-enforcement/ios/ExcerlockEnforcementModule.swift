@@ -142,7 +142,6 @@ public final class ExcerlockEnforcementModule: Module {
 
   private func replaceWindows(windows: [WindowInput], revision: Int) throws -> Void {
     guard windows.count <= 7 else { throw ExcerlockPolicyError.invalidSnapshot }
-      let now = Date().timeIntervalSince1970 * 1000
       var staged: [ExcerlockScheduledWindow] = []
       let context = try ExcerlockPolicyStore.shared.locked { () -> (Int, Int, String) in
         let record = try ExcerlockPolicyStore.shared.readLocked()
@@ -153,7 +152,7 @@ public final class ExcerlockEnforcementModule: Module {
         let domainId = window.id; let start = window.start; let end = window.end
         guard !domainId.isEmpty,
               start.isFinite, end.isFinite, end > start, end - start >= 15 * 60 * 1000,
-              end > now else { throw ExcerlockPolicyError.invalidSnapshot }
+              end - start <= 7 * 24 * 60 * 60 * 1000 else { throw ExcerlockPolicyError.invalidSnapshot }
         staged.append(ExcerlockScheduledWindow(monitorId: excerlockWindowPrefix + UUID().uuidString,
           id: domainId, revision: revision, policyGeneration: context.0, accountGeneration: context.1,
           selectionVersion: context.2, start: start, end: end))
@@ -162,6 +161,10 @@ public final class ExcerlockEnforcementModule: Module {
       do {
         let calendar = Calendar.autoupdatingCurrent
         for window in staged {
+          // A full cyclic week needs no DeviceActivity boundary callback; it
+          // remains policy-active continuously and avoids an invalid equal
+          // weekday/time start/end schedule.
+          if window.end - window.start >= 7 * 24 * 60 * 60 * 1000 { continue }
           let schedule = DeviceActivitySchedule(
             intervalStart: calendar.dateComponents([.weekday,.hour,.minute,.second], from: Date(timeIntervalSince1970: window.start / 1000)),
             intervalEnd: calendar.dateComponents([.weekday,.hour,.minute,.second], from: Date(timeIntervalSince1970: window.end / 1000)), repeats: true)
