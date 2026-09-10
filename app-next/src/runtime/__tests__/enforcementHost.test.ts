@@ -58,3 +58,20 @@ test('dispose stops ownership without cancelling native safety', async () => {
   const { host, calls } = setup(); await host.reconcile(); calls.length = 0; host.dispose();
   await expect(host.reconcile()).rejects.toThrow('disposed'); expect(calls).toEqual([]);
 });
+
+test('root publishes exact future windows, skips unchanged schedule, force wake reapplies', async () => {
+  const { host, transport, set } = setup();
+  const windows = [{ id: 'monday', start: 1000000, end: 2000000 }];
+  set({ futureEnforcementEligible: true, windows });
+  await host.reconcile(); await host.reconcile();
+  expect(transport.replaceWindows).toHaveBeenCalledTimes(1);
+  expect(transport.replaceWindows).toHaveBeenCalledWith(windows, 1);
+  await host.reconcile(true);
+  expect(transport.replaceWindows).toHaveBeenCalledTimes(2);
+});
+test('confirmed lapse clears scheduled authority instead of retaining future windows', async () => {
+  const { host, transport, set } = setup();
+  set({ state: 'open', openReason: 'lapsed', futureEnforcementEligible: false, windows: [{ id: 'old', start: 1, end: 900001 }] });
+  await host.reconcile();
+  expect(transport.replaceWindows).toHaveBeenCalledWith([], 1);
+});

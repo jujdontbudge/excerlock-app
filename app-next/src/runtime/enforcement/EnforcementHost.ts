@@ -10,6 +10,8 @@ export type EnforcementSnapshot = {
   eligibleUntil: number;
   openReason?: 'earned' | 'outsideWindow' | 'lapsed' | 'disabled' | 'deleting';
   futureEnforcementEligible: boolean;
+  /** Exact union windows, supplied by root schedule planner; never broaden gaps. */
+  windows?: { id: string; start: number; end: number }[];
 };
 export interface EnforcementTransport {
   /** Atomically publishes eligibility/suppression before callbacks can write shields. */
@@ -33,6 +35,7 @@ export class EnforcementHost {
   private requested = 0;
   private disposed = false;
   private previous: WatchdogRegistration | null = null;
+  private windowsSignature: string | null = null;
   constructor(private deps: {
     read(): EnforcementSnapshot;
     transport: EnforcementTransport;
@@ -59,6 +62,13 @@ export class EnforcementHost {
     try {
       await native.publish(snapshot);
       if (!fresh()) return 'superseded';
+      const windows = snapshot.futureEnforcementEligible ? snapshot.windows ?? [] : [];
+      const signature = JSON.stringify([snapshot.revision, windows]);
+      if (force || signature !== this.windowsSignature) {
+        await native.replaceWindows(windows, snapshot.revision);
+        if (!fresh()) return 'superseded';
+        this.windowsSignature = signature;
+      }
       if (snapshot.state === 'open') {
         // Native snapshot has already invalidated queued callback authority.
         if (!await native.unshield(snapshot.revision)) throw new Error('Native open policy was not applied');

@@ -278,3 +278,12 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   dedup still required. Universal ledger updated for middleware-vs-explicit write race.
 - T10 native agent finally reports unsigned generic workspace build PASS after thin typed Expo result
   builder refactor1bce3e83; native chain still root review pending. Same agent now real ScreenTimePort mapping.
+- Native T10 buildable chain integrated2044eb1a through682aa845 (includes report regression+restoration
+  as historical commits; HEAD preserves ExtensionKit). Root host now replaces exact supplied future
+  windows before applying, clears them on confirmed lapse, skips unchanged schedule and force-reapplies
+  on wake.2focused suites/12tests typecheck/lint pass; native source assertions NOT device proof.
+- Native recurrence/DST review fixes + concrete ScreenTimePort232c3fd5 ready; root caught old start guard
+  preventing subsequent weekly locks and fixed-week modulo diverging from DST calendar. Agent reports
+  incremental unsigned build pass. Await root integration/review, no hardware acceptance claim.
+- T10 domain1906b2cc ready: public lease/WalkingSession removed,198suites/903tests pass in lane. New
+  WalkingPort snapshot/check; root adapters need detection timestamps, not invented current-time evidence.
