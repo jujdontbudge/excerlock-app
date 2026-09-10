@@ -10,9 +10,17 @@ import { streak } from '../domain/streak';
 import { reclaimedPeriod } from '../domain/reclaimed';
 import { addDays } from '../domain/calendar';
 import { inactiveWalkingStatus } from '../ports/WalkingPort';
-export function useClock() {
+const noopSubscribe = () => () => undefined;
+function useClockValue(supplied?: string) {
   const runtime = useRuntime();
-  return useSyncExternalStore(runtime.clock.subscribe, runtime.clock.now, runtime.clock.now);
+  return useSyncExternalStore(
+    supplied === undefined ? runtime.clock.subscribe : noopSubscribe,
+    supplied === undefined ? runtime.clock.now : () => supplied,
+    supplied === undefined ? runtime.clock.now : () => supplied,
+  );
+}
+export function useClock() {
+  return useClockValue();
 }
 export function useDevSnapshot() {
   const runtime = useRuntime();
@@ -23,9 +31,9 @@ export function useRuntimeStatus() {
   const { status } = useRuntime();
   return useSyncExternalStore(status.subscribe, status.snapshot, status.snapshot);
 }
-export function useLockDecision() {
+export function useLockDecision(suppliedNow?: string) {
   const runtime = useRuntime(),
-    now = useClock(),
+    now = useClockValue(suppliedNow),
     timezone = runtime.clock.timezone(),
     rules = useRulesStore((s) => s.data.rules),
     { days, gymPresence } = useRuleDaysStore((s) => s.data),
@@ -44,9 +52,9 @@ export function useWalkingStatus() {
   const runtime = useRuntime();
   return useSyncExternalStore((notify) => runtime.walking.observe(notify), () => runtime.walking.snapshot(), () => inactiveWalkingStatus);
 }
-export function useTodayProgress() {
+export function useTodayProgress(suppliedNow?: string) {
   const runtime = useRuntime(),
-    now = useClock(),
+    now = useClockValue(suppliedNow),
     tz = runtime.clock.timezone(),
     rules = useRulesStore((s) => s.data.rules),
     days = useRuleDaysStore((s) => s.data.days);
@@ -69,22 +77,24 @@ export function useTodayProgress() {
     [rules, days, now, tz],
   );
 }
-export function useHistory() {
+export function useHistory(suppliedNow?: string) {
   const runtime = useRuntime(),
-    now = useClock(),
+    now = useClockValue(suppliedNow),
+    timezone = runtime.clock.timezone(),
     { history } = useRuntimeStatus(),
     rules = useRulesStore((s) => s.data.rules),
     days = useRuleDaysStore((s) => s.data.days);
   return useMemo(
-    () => todayHistory(history, rules, days, now, runtime.clock.timezone()),
-    [history, rules, days, now, runtime],
+    () => todayHistory(history, rules, days, now, timezone),
+    [history, rules, days, now, timezone],
   );
 }
-export function useStreak() {
+export function useStreak(suppliedNow?: string) {
   const runtime = useRuntime(),
-    now = useClock(),
-    history = useHistory();
-  return useMemo(() => streak(history, dayKey(now, runtime.clock.timezone())), [history, now, runtime]);
+    now = useClockValue(suppliedNow),
+    timezone = runtime.clock.timezone(),
+    history = useHistory(now);
+  return useMemo(() => streak(history, dayKey(now, timezone)), [history, now, timezone]);
 }
 export function useAnalytics(period: 'Week' | 'Month' | 'Year') {
   const runtime = useRuntime(),
