@@ -30,3 +30,26 @@ References inspected:
   upload token uses secret visibility, client config sensitive visibility; full dotfile never uploaded.
 
 Raw local test output stays ignored in this evidence directory; no secrets in logs or evidence.
+
+## Root integrated configuration — 2026-09-10
+
+T01 now integrated, with primary app.json preserved (native config owns complete plugin list).
+Independent primary npm install after unlinking ONLY node_modules symlinks: original checkout untouched.
+Supabase2.116 explicitly declared; tsx4.23.1 declared for config/scripts. Generator patch applied by root
+postinstall. npm reports43 audit findings (40moderate/3high); not force-upgraded, requires T13 dependency triage.
+
+Actual Expo CLI uncovered two defects hidden by typecheck/Jest: imported TS modules need tsx/cjs registration
+(official https://docs.expo.dev/workflow/configuration/ and https://docs.expo.dev/guides/typescript/; verified
+installed @expo/require-utils loader), and EAS23.2 allows string buildNumber only under build.production.ios,
+not the common profile. Both fixed. Actual-loader subprocess smoke now runs in CI with synthetic values,
+checks no private upload token exported, and rejects conflicting environments. 32focused Jest tests pass;
+actual config smoke2pass; primary whole typecheck0; dynamic preview prebuild+prebuild-only checks pass.
+
+Under the app operations lock, six sanitized service probes passed again, all10allowlisted variables were
+uploaded to EACH EAS development/preview/production environment, and the GitHub production environment
+was created with6secrets+4public variables for the existing CI job. No entire dotfile upload, no credential
+values logged. Name-only GitHub readback passed; EAS preview name readback separately checked. Initial
+attempt failed before any upload on invalid EAS schema; retry completed. Logs are bounded service/setup
+evidence, NOT device activation, purchase/auth success, or completed remote CI.
+
+No release build, main push, remote CI execution, TestFlight upload or production code deployment occurred.

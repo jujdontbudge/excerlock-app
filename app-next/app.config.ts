@@ -1,3 +1,4 @@
+import 'tsx/cjs'; // Expo transpiles only the entry; register external TS config imports.
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 import { buildClientExtra, resolveBuildEnvironment } from './config/environment';
 import { loadBuildEnvironment } from './config/loadEnvironment';

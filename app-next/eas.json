@@ -25,10 +25,12 @@
     "production": {
       "channel": "production",
       "environment": "production",
-      "autoIncrement": "buildNumber",
       "env": {
         "EAS_BUILD_PROFILE": "production",
         "EXCERLOCK_ENV": "prod"
+      },
+      "ios": {
+        "autoIncrement": "buildNumber"
       }
     }
   },

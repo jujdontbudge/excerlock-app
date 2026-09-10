@@ -1,0 +1,12 @@
+
+> app-next@1.0.0 test
+> jest --runInBand --runTestsByPath src/runtime/__tests__/config.test.ts src/runtime/auth/__tests__/secureStorage.test.ts
+
+PASS src/runtime/auth/__tests__/secureStorage.test.ts
+PASS src/runtime/__tests__/config.test.ts
+
+Test Suites: 2 passed, 2 total
+Tests:       32 passed, 32 total
+Snapshots:   0 total
+Time:        0.975 s, estimated 1 s
+Ran all test suites within paths "src/runtime/__tests__/config.test.ts", "src/runtime/auth/__tests__/secureStorage.test.ts".

@@ -27,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify actual Expo config loader
+        run: node --test app-next/scripts/test-config-smoke.cjs
+
       - name: Run workspace type checks
         run: npm run typecheck
 
