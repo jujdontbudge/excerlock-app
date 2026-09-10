@@ -47,7 +47,7 @@ export class RuntimeEnforcementSource {
       const clearing = ['deleting', 'disabled', 'lapsed'].includes(projected.openReason ?? '');
       // Keep boot and repair UI available without publishing an inexact policy.
       // Explicit lifecycle cleanup must still revoke the old native protection.
-      projected = { ...projected, state: clearing ? projected.state : 'unknown',
+      if (!clearing) projected = { ...projected, state: 'unknown',
         scheduleIssue: { reason: plan.reason, required: plan.required } };
     }
     // Clock ticks and progress below a target do not churn native registrations.

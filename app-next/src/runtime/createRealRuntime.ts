@@ -408,7 +408,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               void client.notifications.scheduleOpenToUnlock().catch(options.reportError);
             }
             const snapshot = source.read();
-            if (JSON.stringify(status.scheduleIssue) !== JSON.stringify(snapshot.scheduleIssue)) {
+            if (snapshot.scheduleIssue && JSON.stringify(status.scheduleIssue) !== JSON.stringify(snapshot.scheduleIssue)) {
               status = { ...status, scheduleIssue: snapshot.scheduleIssue };
               listeners.forEach((listener) => listener());
             }
@@ -416,7 +416,14 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               snapshot.state === 'shield' || snapshot.state === 'conditional',
             );
             if (awake.error) options.reportError(new Error(awake.error));
-            await host.reconcile(wakeSource !== 'manual');
+            const applied = await host.reconcile(wakeSource !== 'manual');
+            // A repaired plan is not proof of native activation. Keep the recovery
+            // notice until apply succeeds and this source revision is still current.
+            if (applied === 'applied' && !snapshot.scheduleIssue && status.scheduleIssue &&
+                source.read().revision === snapshot.revision) {
+              status = { ...status, scheduleIssue: undefined };
+              listeners.forEach((listener) => listener());
+            }
           } finally {
             insideReconcile = false;
           }

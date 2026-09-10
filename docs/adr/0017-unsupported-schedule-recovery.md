@@ -28,3 +28,9 @@ Existing native protection may remain active until the user repairs the schedule
 - `app-next/src/runtime/enforcement/RuntimeEnforcementSource.ts`
 - `app-next/src/runtime/enforcement/EnforcementHost.ts`
 - `0015-deterministic-local-time-resolution.md`
+
+## Recovery completion
+
+Only the non-clearing unknown branch carries protection uncertainty. A failed plan does not suppress
+explicit cleanup. An existing notice clears only after successful, current-revision native application,
+not merely after the edited plan becomes representable; a failed or superseded apply retains it.

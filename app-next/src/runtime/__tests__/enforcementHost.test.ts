@@ -76,13 +76,14 @@ test('confirmed lapse clears scheduled authority instead of retaining future win
   expect(transport.replaceWindows).toHaveBeenCalledWith([], 1);
 });
 
-test('unrepresentable schedule preserves native policy without publishing or replacing windows', async () => {
+test.each(['deleting', 'disabled', 'lapsed'] as const)('unrepresentable schedule preserves policy then %s clears', async (openReason) => {
   const { host, set, transport, calls } = setup();
   set({ state: 'unknown', scheduleIssue: { reason: 'nativeWindowLimit', required: 14 } });
   await expect(host.reconcile(true)).resolves.toBe('preserved');
   expect(calls).toEqual([]);
   expect(transport.replaceWindows).not.toHaveBeenCalled();
-  set({ revision: 2, state: 'open', openReason: 'deleting' });
+  set({ revision: 2, state: 'open', openReason });
   await expect(host.reconcile()).resolves.toBe('applied');
   expect(calls).toEqual(['publish', 'unshield', 'cancel']);
+  expect(transport.replaceWindows).toHaveBeenCalledWith([], 2);
 });

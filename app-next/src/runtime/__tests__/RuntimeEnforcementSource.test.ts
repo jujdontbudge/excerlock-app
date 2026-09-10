@@ -41,10 +41,13 @@ test('explicit deletion clears even an unrepresentable schedule', () => {
   live.rules[1] = { ...live.rules[1], enabled: true };
   live.entitlement = { status: 'expired', renewsAt: null };
   expect(source.read()).toMatchObject({ state: 'open', openReason: 'lapsed', windows: [] });
+  expect(source.read().scheduleIssue).toBeUndefined();
   live.entitlement = { status: 'active', renewsAt: null };
   live.screenTimeAuthorized = false;
   expect(source.read()).toMatchObject({ state: 'open', openReason: 'disabled', windows: [] });
+  expect(source.read().scheduleIssue).toBeUndefined();
   live.screenTimeAuthorized = true;
   live.deleting = true;
   expect(source.read()).toMatchObject({ state: 'open', openReason: 'deleting', windows: [] });
+  expect(source.read().scheduleIssue).toBeUndefined();
 });

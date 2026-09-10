@@ -19,7 +19,8 @@ jest.mock('../NativeGait', () => ({ nativeGait: () => mockNativeGait() }));
 jest.mock('../../screentime/native/createNativeScreenTimePort', () => ({ createNativeScreenTimePort: (...args: unknown[]) => mockCreateScreenTime(...args) }));
 jest.mock('../../../modules/excerlock-enforcement', () => ({ getExcerlockEnforcementModule: () => ({ getPolicyRevision: () => 1 }) }));
 jest.mock('../enforcement/native/NativeEnforcementTransport', () => ({ NativeEnforcementTransport: function () { return {}; } }));
-jest.mock('../enforcement/RuntimeEnforcementSource', () => ({ RuntimeEnforcementSource: function () { return { read: () => ({ state: 'open' }) }; } }));
+const mockSourceRead = jest.fn();
+jest.mock('../enforcement/RuntimeEnforcementSource', () => ({ RuntimeEnforcementSource: function () { return { read: mockSourceRead }; } }));
 const mockHostDispose = jest.fn();
 const mockHostReconcile = jest.fn(async () => 'applied');
 jest.mock('../enforcement/EnforcementHost', () => ({ EnforcementHost: function () { return { reconcile: mockHostReconcile, dispose: mockHostDispose }; } }));
@@ -82,6 +83,8 @@ function graph(options?: { gait?: object | null; boot?: () => Promise<void>; aut
 beforeEach(() => {
   jest.clearAllMocks();
   mockHydrate.mockResolvedValue();
+  mockSourceRead.mockReturnValue({ state: 'open', revision: 1 });
+  mockHostReconcile.mockResolvedValue('applied');
 });
 
 test('hydration completes before any native or client graph construction', async () => {
@@ -237,4 +240,25 @@ test('a crash after sealing cannot lose the final per-rule result on restart', a
     rules.splice(0); getter.mockRestore(); ruleDaysStore.persistBarrier=originalBarrier;
     historyStore.getState().reset(); await historyStore.persistBarrier(); now.mockRestore();
   }
+});
+
+
+test('schedule recovery notice clears only after native apply, not a failed repaired plan', async () => {
+  graph();
+  const issue = { reason: 'nativeWindowLimit', required: 14 };
+  mockSourceRead.mockReturnValue({ state: 'unknown', revision: 1, scheduleIssue: issue });
+  mockHostReconcile.mockResolvedValue('preserved');
+  const runtime = await createRealRuntime({ reportError: jest.fn() });
+  expect(runtime.status.snapshot().scheduleIssue).toEqual(issue);
+  mockSourceRead.mockReturnValue({ state: 'open', revision: 2 });
+  mockHostReconcile.mockRejectedValueOnce(new Error('native apply failed'));
+  await expect(runtime.reconcile('manual')).rejects.toThrow('native apply failed');
+  expect(runtime.status.snapshot().scheduleIssue).toEqual(issue);
+  mockHostReconcile.mockResolvedValueOnce('superseded');
+  await runtime.reconcile('manual');
+  expect(runtime.status.snapshot().scheduleIssue).toEqual(issue);
+  mockHostReconcile.mockResolvedValue('applied');
+  await runtime.reconcile('manual');
+  expect(runtime.status.snapshot().scheduleIssue).toBeUndefined();
+  await runtime.disposeAsync();
 });

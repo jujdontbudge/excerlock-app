@@ -499,3 +499,7 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   review details/build/screenshots/availability/rights/age fields. Six target subscriptions still missing
   review screenshots; other45 untouched. Five bundle IDs exist, live distribution profiles absent.
   No upload, submission, deploy, main push, or public OTA performed.
+- Independent recovery review found cleanup could retain misleading uncertainty copy. Corrected:
+  deleting/disabled/lapsed source snapshots carry no issue; existing notice clears only after successful
+  current-revision native apply, not after a plan repair whose native write fails or is superseded.
+  Regression root/source/host 3 suites/28 tests pass (/tmp/ship-schedule-review.log).
