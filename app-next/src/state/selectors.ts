@@ -16,7 +16,12 @@ export function useClock() {
 }
 export function useDevSnapshot() {
   const runtime = useRuntime();
+  if (!runtime.dev) throw new Error('Development controls are unavailable in the real runtime');
   return useSyncExternalStore(runtime.dev.subscribe, runtime.dev.snapshot, runtime.dev.snapshot);
+}
+export function useRuntimeStatus() {
+  const { status } = useRuntime();
+  return useSyncExternalStore(status.subscribe, status.snapshot, status.snapshot);
 }
 export function useLockDecision() {
   const runtime = useRuntime(),
@@ -67,7 +72,7 @@ export function useTodayProgress() {
 export function useHistory() {
   const runtime = useRuntime(),
     now = useClock(),
-    { history } = useDevSnapshot(),
+    { history } = useRuntimeStatus(),
     rules = useRulesStore((s) => s.data.rules),
     days = useRuleDaysStore((s) => s.data.days);
   return useMemo(

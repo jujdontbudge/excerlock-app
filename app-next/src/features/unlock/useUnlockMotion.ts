@@ -5,6 +5,7 @@ const noop = () => () => {};
 export function useUnlockMotion() {
   const runtime = useOptionalRuntime(),
     motion = useMotion();
-  const scenario = useSyncExternalStore(runtime?.dev.subscribe ?? noop, () => runtime?.dev.snapshot().accessibility);
+  const dev = __DEV__ ? runtime?.dev : undefined;
+  const scenario = useSyncExternalStore(dev?.subscribe ?? noop, () => dev?.snapshot().accessibility);
   return { ...motion, reduced: motion.reduced || scenario === 'reduceMotion' };
 }

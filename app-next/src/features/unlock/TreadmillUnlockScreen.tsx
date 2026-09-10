@@ -12,7 +12,7 @@ import { UnlockLayout, Detected } from './UnlockLayout';
 export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: string; preview?: boolean }) {
   const runtime = useRuntime(),
     router = useRouter();
-  const [provider] = useState(() => (preview ? runtime.dev.createGaitPreview() : runtime.gait));
+  const [provider] = useState(() => (preview && __DEV__ && runtime.dev ? runtime.dev.createGaitPreview() : runtime.gait));
   const [snapshot, setSnapshot] = useState<TreadmillScanSnapshot>({ phase: 'idle', confidence: 0 });
   const verified = useRef(false),
     rule = useRulesStore((s) => s.data.rules.find((r) => r.id === ruleId));

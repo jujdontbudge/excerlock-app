@@ -13,6 +13,8 @@ export class FakeContext {
     this.scenario = scenario;
     this.clock = new FakeClock(scenario.clock.now, scenario.clock.timezone);
     this.view = {
+      hydrated: false,
+      loading: false,
       scenarioId: scenario.id,
       promptMode: scenario.fakeSystemPrompts,
       prompt: null,

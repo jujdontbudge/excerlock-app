@@ -20,7 +20,8 @@ import { SubscriptionFake } from './fakes/SubscriptionFake';
 import { AnalyticsFake } from './fakes/AnalyticsFake';
 import { NotificationsFake } from './fakes/NotificationsFake';
 import { SyncFake } from './fakes/SyncFake';
-export function FakeRuntime(): Runtime {
+export type FakeRuntimeInstance = Runtime & { kind: 'fake'; dev: NonNullable<Runtime['dev']> };
+export function FakeRuntime(): FakeRuntimeInstance {
   const ctx = new FakeContext(scenarios[0]),
     walking = WalkingFake(ctx),
     gait = GaitFake(),
@@ -45,6 +46,44 @@ export function FakeRuntime(): Runtime {
       gait.set(ctx.scenario.gait ?? 'none');
       activity.refresh();
     });
+  const dev: FakeRuntimeInstance['dev'] = {
+      ready: () => ready,
+      flush: persistence.flush,
+      scenarios: scenarios.map(({ id, title }) => ({ id, title })),
+      load: async (id, keepEdits = false) => {
+        await ready;
+        const scenario = scenarios.find((s) => s.id === id);
+        if (!scenario) throw new Error('Unknown scenario');
+        ctx.update({ loading: true });
+        walking.stop();
+        ctx.resolve(false);
+        await loadScenario(scenario, keepEdits);
+        ctx.scenario = scenario;
+        gait.set(scenario.gait ?? 'none');
+        ctx.clock.set(scenario.clock.now, scenario.clock.timezone);
+        ctx.update({
+          stepsOverride: undefined, placement: 'propped', loading: false, scenarioId: id, outcome: 'success',
+          restoreOutcome: ['trial', 'active'].includes(scenario.entitlement.status) ? 'restored' : 'notFound',
+          promptMode: scenario.fakeSystemPrompts, history: scenario.history, events: [], accessibility: scenario.accessibility,
+          presence: scenario.gym?.presence ?? 'outside', motion: scenario.motion ?? 'still',
+        });
+        walking.resume();
+      },
+      advance: ctx.clock.advance,
+      setPresence: (presence) => ctx.update({ presence }), setMotion: (motion) => ctx.update({ motion }),
+      setGait: gait.set, createGaitPreview: () => { const preview = GaitFake(true); preview.set('walking'); return preview; },
+      setPlacement: (placement) => ctx.update({ placement }),
+      setSteps: (value) => {
+        if (!Number.isFinite(value) || value < 0) throw new Error('Invalid step count');
+        ctx.update({ stepsOverride: { value: Math.floor(value), day: dayKey(ctx.clock.now(), ctx.clock.timezone()), at: ctx.clock.now() } });
+      },
+      setTime: ctx.clock.set, setPromptMode: (promptMode) => ctx.update({ promptMode }),
+      setPermission: (name, status) => permissionsStore.getState().patch({ [name]: status }),
+      setEntitlement: (status) => entitlementStore.getState().patch({ entitlement: { status, renewsAt: entitlementStore.getState().data.entitlement.renewsAt } }),
+      setSession: (session) => sessionStore.getState().patch({ session }),
+      setRestoreOutcome: (restoreOutcome) => ctx.update({ restoreOutcome }), setOutcome: (outcome) => ctx.update({ outcome }),
+      resolvePrompt: ctx.resolve, snapshot: ctx.snapshot, subscribe: ctx.subscribe,
+    };
   return {
     kind: 'fake',
     clock: ctx.clock,
@@ -69,67 +108,8 @@ export function FakeRuntime(): Runtime {
         });
       },
     },
-    dev: {
-      ready: () => ready,
-      flush: persistence.flush,
-      scenarios: scenarios.map(({ id, title }) => ({ id, title })),
-      load: async (id, keepEdits = false) => {
-        await ready;
-        const scenario = scenarios.find((s) => s.id === id);
-        if (!scenario) throw new Error('Unknown scenario');
-        ctx.update({ loading: true });
-        walking.stop();
-        ctx.resolve(false);
-        await loadScenario(scenario, keepEdits);
-        ctx.scenario = scenario;
-        gait.set(scenario.gait ?? 'none');
-        ctx.clock.set(scenario.clock.now, scenario.clock.timezone);
-        ctx.update({
-          stepsOverride: undefined,
-          placement: 'propped',
-          loading: false,
-          scenarioId: id,
-          outcome: 'success',
-          restoreOutcome: ['trial', 'active'].includes(scenario.entitlement.status) ? 'restored' : 'notFound',
-          promptMode: scenario.fakeSystemPrompts,
-          history: scenario.history,
-          events: [],
-          accessibility: scenario.accessibility,
-          presence: scenario.gym?.presence ?? 'outside',
-          motion: scenario.motion ?? 'still',
-        });
-        walking.resume();
-      },
-      advance: ctx.clock.advance,
-      setPresence: (presence) => ctx.update({ presence }),
-      setMotion: (motion) => ctx.update({ motion }),
-      setGait: gait.set,
-      createGaitPreview: () => { const preview = GaitFake(true); preview.set('walking'); return preview; },
-      setPlacement: (placement) => ctx.update({ placement }),
-      setSteps: (value) => {
-        if (!Number.isFinite(value) || value < 0) throw new Error('Invalid step count');
-        ctx.update({
-          stepsOverride: {
-            value: Math.floor(value),
-            day: dayKey(ctx.clock.now(), ctx.clock.timezone()),
-            at: ctx.clock.now(),
-          },
-        });
-      },
-      setTime: ctx.clock.set,
-      setPromptMode: (promptMode) => ctx.update({ promptMode }),
-      setPermission: (name, status) => permissionsStore.getState().patch({ [name]: status }),
-      setEntitlement: (status) =>
-        entitlementStore
-          .getState()
-          .patch({ entitlement: { status, renewsAt: entitlementStore.getState().data.entitlement.renewsAt } }),
-      setSession: (session) => sessionStore.getState().patch({ session }),
-      setRestoreOutcome: (restoreOutcome) => ctx.update({ restoreOutcome }),
-      setOutcome: (outcome) => ctx.update({ outcome }),
-      resolvePrompt: ctx.resolve,
-      snapshot: ctx.snapshot,
-      subscribe: ctx.subscribe,
-    },
+    status: { ready: () => ready, flush: persistence.flush, snapshot: ctx.snapshot, subscribe: ctx.subscribe },
+    dev,
     dispose: () => {
       activity.dispose();
       persistence.dispose();

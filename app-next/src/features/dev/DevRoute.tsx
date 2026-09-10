@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { PreviewGallery } from './PreviewGallery';
 import { DevMenu } from './DevMenu';
+import { requireRuntimeControls } from '../../runtime/Runtime';
 export function DevRoute() {
   const { component, gallery, stage, scenario, restore, outcome, prompt, setup } = useLocalSearchParams<{
       component?: string;
@@ -17,11 +18,12 @@ export function DevRoute() {
       setup?: string;
     }>(),
     runtime = useRuntime(),
+    dev = requireRuntimeControls(runtime),
     router = useRouter();
   useEffect(() => {
     if (scenario || restore || outcome || prompt || setup)
-      void applyDevControls(runtime.dev, { scenario, restore, outcome, prompt, setup }).then(() => router.replace('/'));
-  }, [scenario, restore, outcome, prompt, setup, runtime, router]);
+      void applyDevControls(dev, { scenario, restore, outcome, prompt, setup }).then(() => router.replace('/'));
+  }, [scenario, restore, outcome, prompt, setup, dev, router]);
   if (stage === 'shield')
     return <ShieldPreview onOpen={() => router.replace('/home')} onClose={() => router.replace('/dev')} />;
   return component || gallery ? <PreviewGallery /> : <DevMenu />;

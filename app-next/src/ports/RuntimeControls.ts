@@ -1,12 +1,11 @@
 import { Entitlement, LockedApps, Permissions, Session } from '../domain/types';
 import { HistoryDay, Unsubscribe } from './models';
 import { GaitPort } from './GaitPort';
+import { RuntimeStatusPort, RuntimeStatusSnapshot } from './RuntimeStatusPort';
 export type FakePrompt =
   { kind: 'permission'; name: keyof Permissions; scope?: 'always' } | { kind: 'picker'; initial: LockedApps };
 export type RuntimeEvent = { at: string; event: string; props: Record<string, unknown> };
-export type DevSnapshot = {
-  hydrated?: boolean;
-  loading?: boolean;
+export type DevSnapshot = RuntimeStatusSnapshot & {
   stepsOverride?: { value: number; day: string; at: string };
   scenarioId: string;
   promptMode: 'grant' | 'deny' | 'ask';
@@ -20,9 +19,7 @@ export type DevSnapshot = {
   motion: 'walking' | 'still';
   placement?: 'propped' | 'handheld';
 };
-export interface RuntimeControls {
-  ready(): Promise<void>;
-  flush(): Promise<void>;
+export interface RuntimeControls extends RuntimeStatusPort {
   scenarios: { id: string; title: string }[];
   load(id: string, keepEdits?: boolean): Promise<void>;
   advance(ms: number): void;

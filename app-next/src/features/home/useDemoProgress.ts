@@ -11,18 +11,21 @@ export function useDemoProgress() {
     }>(),
     runtime = useRuntime();
   useEffect(() => {
-    if (!__DEV__ || runtime.kind !== 'fake') return;
-    if (presence === 'inside' || presence === 'outside') runtime.dev.setPresence(presence);
-    if (placement === 'propped' || placement === 'handheld') runtime.dev.setPlacement(placement);
+    const dev = runtime.dev;
+    if (!__DEV__ || runtime.kind !== 'fake' || !dev) return;
+    if (presence === 'inside' || presence === 'outside') dev.setPresence(presence);
+    if (placement === 'propped' || placement === 'handheld') dev.setPlacement(placement);
   }, [presence, placement, runtime]);
   useEffect(() => {
-    if (!__DEV__ || runtime.kind !== 'fake') return;
+    const dev = runtime.dev;
+    if (!__DEV__ || runtime.kind !== 'fake' || !dev) return;
     if (steps !== undefined && Number.isFinite(Number(steps)) && Number(steps) >= 0)
-      runtime.dev.setSteps(Number(steps));
+      dev.setSteps(Number(steps));
   }, [steps, runtime]);
   useEffect(() => {
-    if (!__DEV__ || runtime.kind !== 'fake') return;
+    const dev = runtime.dev;
+    if (!__DEV__ || runtime.kind !== 'fake' || !dev) return;
     if (advance !== undefined && Number.isFinite(Number(advance)) && Number(advance) > 0)
-      runtime.dev.advance(Number(advance));
+      dev.advance(Number(advance));
   }, [advance, runtime]);
 }

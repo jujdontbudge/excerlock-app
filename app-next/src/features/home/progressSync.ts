@@ -11,7 +11,7 @@ export function startProgressSync(runtime: Runtime) {
   let active = true,
     steps = 0;
   const update = () => {
-    if (!active || runtime.dev.snapshot().loading) return;
+    if (!active || runtime.status.snapshot().loading) return;
     const now = runtime.clock.now(),
       tz = runtime.clock.timezone(),
       today = dayKey(now, tz),
@@ -47,7 +47,7 @@ export function startProgressSync(runtime: Runtime) {
     }),
     rulesStore.subscribe(update),
     permissionsStore.subscribe(update),
-    runtime.dev.subscribe(update),
+    runtime.status.subscribe(update),
     runtime.clock.subscribe(update),
   ];
   return () => {

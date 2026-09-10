@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Href, useRouter } from 'expo-router';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { requireRuntimeControls } from '../../runtime/Runtime';
 import { useDevSnapshot } from '../../state/selectors';
 import { ScreenShell, Heading, SettingsGroup, SettingsRow, SecondaryButton, Label } from '../../design-system';
 import { DevControls } from './DevControls';
@@ -8,13 +9,14 @@ import { devCopy as c } from '../../content/dev';
 import { LivingIcon } from '../../motion/LivingIcon';
 export function DevMenu() {
   const runtime = useRuntime(),
+    dev = requireRuntimeControls(runtime),
     router = useRouter(),
     view = useDevSnapshot(),
     [busy, setBusy] = useState(false);
   const load = async (id: string, keep = false) => {
     setBusy(true);
     try {
-      await runtime.dev.load(id, keep);
+      await dev.load(id, keep);
     } finally {
       setBusy(false);
     }
@@ -26,7 +28,7 @@ export function DevMenu() {
       <Label>{view.scenarioId}</Label>
       <DevControls />
       <SettingsGroup>
-        {runtime.dev.scenarios.map((s) => (
+        {dev.scenarios.map((s) => (
           <SettingsGroup key={s.id} title={s.title}>
             <SettingsRow
               title={c.loadPrefix(s.title)}
