@@ -832,3 +832,8 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   integrated guarded handler4e8db1b0, targeted sign-in+rule tests15/15 and typecheck PASS. No actual
   VoiceOver double-tap observation claimed. A refreshed Release candidate is building. Physical
   iPhone Il freshly rechecked21:12UTC and still unavailable. CUA native pipe still fails.
+- Final Release4e8db1b0 built and installed: signature/main+4extensions/runtime2/preview/privacy parity
+  PASS; Hermes6,378,864bytes FAIL unchanged4MB. Post-reboot real startup/native Apple prompt/email
+  form verified. No VoiceOver runtime/full provider sign-in claimed. Local StoreKit second run traversed
+  full reviewer20 flow and CTA but opened Apple-account sign-in, not local confirmation; xcresult1fail,
+  0pass. Native lane investigating missing StoreKit config binding via Claude Code/Fable recovery.

@@ -9,9 +9,28 @@ Existing `T13`, `T14`, `T15` and `T16` folders include historical task numbering
 and Debug recordings. Their filenames and passing tests do not certify the corresponding Ship tasks.
 Preserve those artifacts as historical evidence; never substitute them for current release acceptance.
 
-## Latest sprint checkpoint — 21:01 UTC
+## Latest sprint checkpoint — 21:17 UTC
 
-At source879e95a4:250/250 app suites,1210/1210 tests,13/13 snapshots and typecheck PASS. Actual candidate27a6bcdf verifies reviewer20/all-day flow, published legal documents, Google provider sign-in launch (not completed auth), and annual/monthly live paywall. Later Apple-branding/duplicate-paywall fixes require final native artifact inspection.
+Final Release simulator artifact: `4e8db1b0` (later docs-only commits do not alter runtime).
+Build/install/deep-strict signature/main+4 extensions/runtime2/preview OTA header/canonical privacy
+collected-data parity PASS. Native Apple button rendered and tap launches the Apple account requirement;
+email form renders. No completed provider sign-in or VoiceOver runtime activation claim.
+Hermes **6,378,864 bytes**, SHA256 `68dd188328a5bdede4c0e3baa3e823f058b658cb4e71f70314465c68b391a01f`:
+**FAIL** unchanged4,000,000-byte gate.
+
+Combined app verification at879e95a4:250/250 suites,1210/1210 tests,13/13 snapshots PASS.
+Subsequent schedule-preview and Apple accessibility-handler delta:15/15 targeted tests and typecheck PASS.
+Real candidate986f738a verifies corrected20-step/all-day/Thu previews; final candidate adds only the
+guarded Apple accessibility callback. Candidate27a6bcdf verifies full reviewer journey/restart, published
+legal documents, Google provider sign-in launch (not completed auth), and live annual/monthly paywall.
+
+Two target subscription review screenshots (A annual/monthly) uploaded under release lock, both
+COMPLETE/association/dimensions verified. Four target screenshots, required primary App Store screenshot
+size, review contact/territories, signing/build attachment, and other external gates remain open.
+
+Local StoreKit test recovery reaches full reviewer20 journey and actual purchase CTA, but opens Apple
+account sign-in rather than local confirmation; xcresult reports1failed/0passed. The local StoreKit
+configuration binding is being diagnosed; this is explicitly NOT transaction acceptance.
 
 ## Current verified local checkpoints
 
@@ -36,10 +55,10 @@ At source879e95a4:250/250 app suites,1210/1210 tests,13/13 snapshots and typeche
   publication and complete release screenshots are unverified. Reviewer preset is implemented: exact trimmed App Review name or bounded review_preset flag sets20steps and today-only/all-day weekly schedule. Real candidate27a6bcdf journey and restart proved the visible/persisted20step plan. No purchase/sensor/auth bypass exists.
   Do not tick checklist lines from this index.
 - **T14:** Physical iPhone13 Il is unavailable. Session-owned simulator EA6C9AC3-0C1A-430B-8EF9-A84A6E044206
-  has verified real-runtime Release candidate986f738a (final accessibility-handler refresh is building). Correct simulator ad-hoc signing and a verified
+  has verified real-runtime Release candidate4e8db1b0. Correct simulator ad-hoc signing and a verified
   geofence stop fix resolve the two observed startup failures. Walking onboarding reaches fetched
   paywall; plan switching and restore-not-found observed. AX/screens in candidate-217647f1 folder.
-  No real/local StoreKit purchase completed; no physical sensor/lock-state acceptance. The six-product .storekit catalog and opt-in Debug test scheme now exist and build-for-testing passes. First UI-test run exposed harness-only runner catalog/Expo dev-menu problems; bounded recovery is in progress, not purchase acceptance.
+  No real/local StoreKit purchase completed; no physical sensor/lock-state acceptance. The six-product .storekit catalog and opt-in Debug test scheme now exist and build-for-testing passes. Runner catalog/Expo dev-menu problems were corrected; the next run reaches the actual CTA but lacks local StoreKit binding. Recovery continues; no purchase acceptance.
 - **T15:** Release startup/TTI and battery/device measurements absent. Home semantic-clock optimization
   passed local tests. Unsigned device Release at7619c5bd compiled, but its packaged Hermes bundle was
   7,881,912 bytes: FAIL against the strict decimal4,000,000-byte gate. A disposable single-core Sentry
