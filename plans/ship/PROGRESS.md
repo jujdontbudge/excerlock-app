@@ -525,3 +525,8 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   production-only dependency install, and automatic-signing assumptions before execution.
 - Local PostHog personal erasure key absent; project/browser connection attempted but CDP timed out.
   No credential creation/storage/transmission. Server erasure activation remains unverified/unconfigured.
+- Release-locked artifact preparation attempted from clean pinned7619c5bd checkout. Created five missing
+  IOS_APP_STORE profiles; first four passed strict team/certificate/Family Controls/app-group checks and
+  installed. Report profile validation failed before dependency installation/archive (assertion at group
+  validation), so sequence stopped and lock released. Read-only portal/profile diagnosis assigned; do not
+  blindly recreate profiles or claim signed artifact. No build upload, submission, or API deploy occurred.
