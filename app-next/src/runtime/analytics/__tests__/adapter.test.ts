@@ -60,6 +60,14 @@ test('sets bounded walk places only for the originating canonical account', asyn
   await x.adapter.identify('uid-2'); x.adapter.setWalkPlaces('treadmill'); await new Promise((resolve) => setTimeout(resolve, 0));
   expect(x.calls).toContain('person:treadmill:false');
 });
+test('maps the typed walk places event to a person property and rejects unknown values', async () => {
+  const x = fixture(); await x.adapter.identify('uid');
+  x.adapter.track('walk_places_updated', { walk_places: 'outside' });
+  x.adapter.track('walk_places_updated', { walk_places: 'somewhere_private' });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(x.calls.filter((call) => call.startsWith('person:'))).toEqual(['person:outside:false']);
+  expect(x.captures.filter((capture) => capture.event === 'walk_places_updated')).toHaveLength(1);
+});
 test('stale identify cannot commit after canonical identity changes', async () => {
   const x = fixture(); const release = x.deferRegisters(); const identifying = x.adapter.identify('uid');
   x.setIdentity({ userId: 'uid-2', generation: 2, ready: false }); release();

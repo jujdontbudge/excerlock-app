@@ -32,7 +32,8 @@
 
 The current privacy manifest/App Store privacy-label plan must be reconciled by root/T13: canonical PostHog `identify` makes Product Interaction data linked to identity. This task does **not** claim that manifest or ASC labels are correct.
 
-Runtime composition and the concrete SDK-boundary factory are explicitly
-root-owned by the T06 architecture contract. Until root supplies that factory
-(including persisted queue clearing and `setPersonProperties` delegation),
-this evidence is adapter-level and does **not** claim end-to-end telemetry.
+Runtime composition remains root-owned. T06 now supplies the concrete SDK
+factory, including persisted queue clearing, `setPersonProperties` delegation,
+singleton disposal, and the actual typed Sentry binding. This still does
+**not** claim end-to-end telemetry until root composes it and the external
+release gates above pass.

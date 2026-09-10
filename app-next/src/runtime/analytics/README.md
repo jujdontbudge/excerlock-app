@@ -15,11 +15,19 @@ Native 4.61 preserves its event and logs queues across `reset()`. Composition
 must clear those persisted queues before delegating to SDK reset so a previous
 account's events cannot be sent under the next identity.
 
+`createPostHogRuntime` is the concrete, singleton SDK factory. Its subclass
+uses PostHog's public persisted queue keys plus protected storage flush hook to
+clear and durably persist the event, AI, and logs queues without uploading
+them. The factory applies the privacy options, exposes the adapter and distinct
+ID getter, and requires disposal before another client can be created.
+
 `setWalkPlaces` is the typed person-property seam for
 `walk_places_updated`. It accepts only the `WalkPlaces` enum, revalidates the
 originating canonical identity after registration, and delegates to the SDK's
 documented `setPersonProperties(..., false)` behavior without reloading a
 flag underneath a mounted surface.
+The generic `track('walk_places_updated', ...)` path performs this mapping too,
+so the UI caller cannot accidentally leave the person property stale.
 
 The first mounted surface settles within two seconds and keeps that assignment
 for its identity generation. Unknown values use control/false. Client code
