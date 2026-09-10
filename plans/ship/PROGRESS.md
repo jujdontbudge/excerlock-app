@@ -200,3 +200,8 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   AsyncStorageGymVisitLog; T11 must align it to raw persisted visit log, not claim missing data as empty.
 - T06 agent now in ship-T06 after backend review, handoff T06-architecture.md. Native privacy manifest's
   ProductInteraction Linked=false needs T13 reconciliation with canonical PostHog identification.
+- Root local JSON export transport added: opaque cache filename, availability check, awaited write/share,
+  cleanup on dismissal/error/partial write, concurrent-share guard and caller-owned account/consent freshness
+  checks before exposure. Native SDK57 adapter uses explicit expo-file-system57.0.6 legacy import and
+  expo-sharing.8tests, primary typecheck and focused lint pass. Not yet wired to pending UI ExportPort;
+  actual device share sheet, process-death orphan cleanup and generation binding remain integration work.
