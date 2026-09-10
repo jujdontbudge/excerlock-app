@@ -14,6 +14,12 @@ fake ports. UI unmount does not dispose the VM's background owner. Explicit tear
 resource disposal before allowing a replacement. The custom Expo entry registers bootstrap/tasks before
 Expo Router, following Expo's documented custom-entry contract.
 
+If construction or explicit teardown cannot release any native or client resource, runtime ownership
+fails closed for the remainder of that JavaScript VM. All later startup and teardown requests reject with
+the cleanup failure and require an app/process restart; only initialization failures whose cleanup fully
+succeeds remain retryable. This prevents a replacement graph from overlapping resources whose stop state
+is unknown.
+
 ## Context
 
 The previous production constructor deliberately threw rather than shipping demo services. Native,

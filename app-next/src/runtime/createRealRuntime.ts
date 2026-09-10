@@ -35,6 +35,7 @@ import { registerHeadlessDetectionHandler } from './detection/headlessRegistry';
 import { projectWalkingMinutes } from '../domain/projectWalkingMinutes';
 import { projectStepHistory } from '../domain/projectStepHistory';
 import type { DetectionWake } from './detection/DetectionService';
+import { RuntimeCleanupError } from './RuntimeSingleton';
 
 const SELECTION_VERSION_KEY = 'excerlock-next.selection-version.v1';
 export type RealRuntime = Runtime & {
@@ -62,18 +63,23 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
   const listeners = new Set<() => void>();
   let status: RuntimeStatusSnapshot = { hydrated: true, loading: true, history: [] };
   const cleanups: (() => void | Promise<void>)[] = [() => clock.dispose(), () => gait.stop()];
-  let cleaned = false;
-  const cleanupResources = async () => {
-    if (cleaned) return;
-    cleaned = true;
-    // Continue releasing independent resources even when one native stop fails.
-    for (const cleanup of cleanups.reverse()) {
-      try {
-        await cleanup();
-      } catch (error) {
-        options.reportError(error);
+  let cleanupResult: Promise<void> | null = null;
+  const cleanupResources = (): Promise<void> => {
+    if (cleanupResult) return cleanupResult;
+    cleanupResult = (async () => {
+      const failures: unknown[] = [];
+      // Continue releasing independent resources even when one native stop fails.
+      for (const cleanup of [...cleanups].reverse()) {
+        try {
+          await cleanup();
+        } catch (error) {
+          failures.push(error);
+          options.reportError(error);
+        }
       }
-    }
+      if (failures.length) throw new RuntimeCleanupError(failures);
+    })();
+    return cleanupResult;
   };
   try {
     const wakeContext = () => {
@@ -383,13 +389,37 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     const disposeAsync = (): Promise<void> => {
       if (stopping) return stopping;
       disposed = true;
-      stops.splice(0).forEach((stop) => stop());
-      host.dispose();
-      clock.dispose();
       listeners.clear();
       stopping = (async () => {
-        await queue;
-        await cleanupResources();
+        const cleanupFailures: unknown[] = [];
+        let operationError: unknown;
+        for (const stop of stops.splice(0)) {
+          try {
+            stop();
+          } catch (error) {
+            cleanupFailures.push(error);
+            options.reportError(error);
+          }
+        }
+        try {
+          host.dispose();
+        } catch (error) {
+          cleanupFailures.push(error);
+          options.reportError(error);
+        }
+        try {
+          await queue;
+        } catch (error) {
+          operationError = error;
+        }
+        try {
+          await cleanupResources();
+        } catch (error) {
+          if (error instanceof RuntimeCleanupError) cleanupFailures.push(...error.failures);
+          else cleanupFailures.push(error);
+        }
+        if (cleanupFailures.length) throw new RuntimeCleanupError(cleanupFailures);
+        if (operationError !== undefined) throw operationError;
       })();
       return stopping;
     };
@@ -533,11 +563,26 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       listeners.forEach((listener) => listener());
       return runtime;
     } catch (error) {
-      await disposeAsync().catch(options.reportError);
+      try {
+        await disposeAsync();
+      } catch (cleanupError) {
+        if (cleanupError instanceof RuntimeCleanupError) {
+          throw new RuntimeCleanupError([error, ...cleanupError.failures]);
+        }
+        throw cleanupError;
+      }
       throw error;
     }
   } catch (error) {
-    await cleanupResources();
+    try {
+      await cleanupResources();
+    } catch (cleanupError) {
+      if (error instanceof RuntimeCleanupError) throw error;
+      if (cleanupError instanceof RuntimeCleanupError) {
+        throw new RuntimeCleanupError([error, ...cleanupError.failures]);
+      }
+      throw cleanupError;
+    }
     throw error;
   }
 }
