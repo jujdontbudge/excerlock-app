@@ -16,7 +16,8 @@ import {
 } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
-import { useRuntimeStatus, useClock, useLockDecision, useTodayProgress, useStreak, useWalkingStatus } from '../../state/selectors';
+import { useRuntimeStatus, useLockDecision, useTodayProgress, useStreak, useWalkingStatus } from '../../state/selectors';
+import { useHomeClock } from '../../state/homeClock';
 import { profileStore as useProfileStore } from '../../state/profileStore';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
@@ -34,10 +35,11 @@ export function HomeScreen() {
   useDemoProgress();
   const runtime = useRuntime(),
     router = useRouter(),
-    now = useClock(),
-    decision = useLockDecision(),
-    progress = useTodayProgress(),
-    streak = useStreak();
+    homeClock = useHomeClock(),
+    now = homeClock.now,
+    decision = useLockDecision(now),
+    progress = useTodayProgress(now),
+    streak = useStreak(now);
   const { scheduleIssue } = useRuntimeStatus();
   const name = useProfileStore((s) => s.data.name);
   const { rules, lockedApps } = useRulesStore((s) => s.data),
