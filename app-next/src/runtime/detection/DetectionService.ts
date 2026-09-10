@@ -6,7 +6,7 @@ import { reduceGym, pruneGymHistoryBefore } from '../../domain/gymMachine';
 import type { GymVisitLog } from '../../engine/signals/location/GymVisitLog';
 import type { MotionAdapter, MotionEvidence } from './MotionAdapter';
 import type { PlacementAdapter } from './PlacementAdapter';
-import type { HistoryCreditLedger, HistoryLedger } from './HistoryCreditLedger';
+import type { HistoryCreditLedger, HistoryLedger, InstanceStepMeasurement } from './HistoryCreditLedger';
 import { addDays, dayKey, localInstant } from '../../domain/calendar';
 import type { DetectionData, PendingHistoryCredit } from '../../state/detectionStore';
 import type { WalkingDurationLedger } from './WalkingDurationLedger';
@@ -26,14 +26,15 @@ export class DetectionService {
   private disposers: (() => void)[] = [];
   private queue: Promise<void> = Promise.resolve();
   private lifecycle: Promise<void> = Promise.resolve();
-  private lastWork: Promise<void> = Promise.resolve();
+  private lastWork: Promise<unknown> = Promise.resolve();
   private committedListeners = new Set<() => void>();
   constructor(
     private readonly deps: {
       motion: MotionAdapter;
       placement: PlacementAdapter;
       gymLog: GymVisitLog;
-      historyLedger: Pick<HistoryCreditLedger, 'read' | 'apply'>;
+      historyLedger: Pick<HistoryCreditLedger, 'read' | 'apply'> &
+        Partial<Pick<HistoryCreditLedger, 'readInstanceMeasurement' | 'recordInstanceMeasurement'>>;
       walkingDurationLedger?: Pick<WalkingDurationLedger, 'observe'>;
       walkingTimezone?: () => string;
       persist?: () => Promise<void>;
@@ -163,6 +164,36 @@ export class DetectionService {
       await this.commitObserved(wake.now, wake.generation, wake.timezone);
     });
   }
+  measureStepRanges(
+    ranges: readonly { key: string; from: number; to: number; timezone: string }[],
+    generation: number,
+  ): Promise<Readonly<Record<string, InstanceStepMeasurement>>> {
+    return this.enqueue(async () => {
+      this.assertGeneration(generation);
+      const read = this.deps.historyLedger.readInstanceMeasurement;
+      const record = this.deps.historyLedger.recordInstanceMeasurement;
+      if (!read || !record) throw new Error('Instance step measurement storage is unavailable');
+      const result: Record<string, InstanceStepMeasurement> = {};
+      for (const range of ranges) {
+        if (!range.key || !Number.isFinite(range.from) || !Number.isFinite(range.to) || range.to <= range.from ||
+          !range.timezone) throw new Error('Invalid instance step measurement range');
+        dayKey(new Date(range.from).toISOString(), range.timezone);
+        this.assertGeneration(generation);
+        const cached = await read.call(this.deps.historyLedger, range.key);
+        this.assertGeneration(generation);
+        if (cached && cached.from === range.from && cached.through === range.to && cached.timezone === range.timezone) {
+          result[range.key] = cached;
+          continue;
+        }
+        const { steps } = await this.deps.motion.querySteps(range.from, range.to);
+        this.assertGeneration(generation);
+        const sample = { from: range.from, through: range.to, steps, timezone: range.timezone };
+        result[range.key] = await record.call(this.deps.historyLedger, range.key, sample);
+        this.assertGeneration(generation);
+      }
+      return result;
+    });
+  }
   /** Lightweight foreground clock tick: live reducers + durable gym events, never step history. */
   tick(now: number, walkingGraceMs: number, generation: number): Promise<void> {
     return this.enqueue(async () => {
@@ -203,7 +234,7 @@ export class DetectionService {
     return () => this.committedListeners.delete(callback);
   }
   /** Waits for the latest serialized mutation and preserves its rejection. */
-  flush(): Promise<void> { return this.lastWork; }
+  async flush(): Promise<void> { await this.lastWork; }
   private async commitHistory(pending: PendingHistoryCredit, wake: DetectionWake, previous: HistoryLedger): Promise<HistoryLedger> {
     // New intents persist their original timezone. The fallback exists only
     // for legacy pending v1 records written before timezone was recorded.
@@ -340,10 +371,10 @@ export class DetectionService {
     }
     this.notifyCommitted();
   }
-  private enqueue(operation: () => Promise<void>): Promise<void> {
+  private enqueue<T>(operation: () => Promise<T>): Promise<T> {
     const next = this.queue.catch(() => undefined).then(operation);
     this.lastWork = next;
-    this.queue = next.catch(() => undefined);
+    this.queue = next.then(() => undefined, () => undefined);
     return next;
   }
   private notifyCommitted(): void { this.committedListeners.forEach((listener) => { try { listener(); } catch (error) { this.deps.onError?.(error); } }); }

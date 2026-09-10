@@ -28,7 +28,9 @@ test('erases owned stores and durable detection artifacts while preserving actua
   expect(profileStore.getState().data.name).toBe('');
   expect(permissionsStore.getState().data).toEqual({ screenTime: 'granted', motion: 'denied', location: 'always', camera: 'denied', notifications: 'granted' });
   expect(detectionStore.getState().data).toMatchObject({ generation: 5, observedAt: 200, creditedThrough: {}, pendingHistory: null });
-  await expect(historyLedger.read()).resolves.toEqual({ version: 1, through: null, stepsByDay: {} });
+  await expect(historyLedger.read()).resolves.toEqual({
+    version: 1, through: null, stepsByDay: {}, instanceMeasurements: {},
+  });
   await expect(AsyncStorage.getItem(GYM_VISIT_LOG_STORAGE_KEY)).resolves.toBeNull();
   await expect(AsyncStorage.getItem(LEGACY_GYM_VISIT_LOG_STORAGE_KEY)).resolves.toBeNull();
 });
