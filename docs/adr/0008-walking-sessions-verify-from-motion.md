@@ -1,9 +1,12 @@
 ---
-status: accepted
+status: superseded
 date: 2026-09-09
 ---
 
 # 0008: Walk & Scroll sessions verify from the motion signal
+
+Superseded for the ship architecture by [ADR 0012](0012-persisted-detection-and-conditional-watchdog.md).
+Historical implementation below is preserved; T10/T11 integration and device verification remain pending.
 
 ## Decision
 

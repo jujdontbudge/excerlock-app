@@ -12,7 +12,8 @@ handler) except where §5/§6 replace them.
    returns `{ register: { start, end } | null, cancel: boolean }` using backdated start
    (`min(now, deadline - increment)`) and constants `WATCHDOG_MS`, `WATCHDOG_RENEW_MS`.
 3. `ScreenTimePort` gains `registerWatchdog(plan)`/`cancelWatchdog()`; `applyLock` becomes
-   `Promise<{ applied; reason? }>`; fail-closed (shield first, then report) when registration fails.
+   `Promise<{ applied; reason? }>`; fail-closed while enforcement is eligible (shield first, then report) when registration fails. Never
+   manufacture a lock during earned unlock, outside-window states or confirmed lapse; see ADR 0012.
 4. Enforcement host at the runtime root, above every guard: subscribes to the decision stream, applies
    shields, plans the watchdog, re-derives everything on foreground and on every background wake (task
    manager entry), never in a React hook inside a tab.
@@ -25,7 +26,9 @@ handler) except where §5/§6 replace them.
 
 - `resolveLock.test.ts` rewritten for §7 scenarios (every bullet is a test).
 - `watchdog.test.ts`: renewal always describes an interval ≥ platform minimum; deadline never in the past;
-  cancel on lock; fires-when-dead scenario via a fake clock.
+  cancel on lock/earned unlock/window end/lapse; stale native callbacks reject generation/selection
+  changes; arm-before-unshield/renewal failure interleavings; fires-when-dead policy via fake clock
+  (not proof of physical extension execution).
 - `enforcementHost.test.ts`: applies on decision change; re-applies on foreground; survives Home unmount.
 
 ## Acceptance
