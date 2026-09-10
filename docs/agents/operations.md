@@ -48,3 +48,86 @@ Policy:
 - Preserve uncertain cases and record why. Missing or unreadable activity information aborts cleanup.
 
 State and the latest report live in `~/.local/state/agent-ops/<app-id>/`. The scheduler runs in Codex on this Mac; it requires the host to be available. It must not mark worktrees finished automatically, fetch or alter Git history, deploy, or broaden deletion targets. On a different machine, configure a scheduler deliberately.
+
+## OTA updates (T03 coordinator, T16 release gate)
+
+Single owner: `app-next/src/runtime/updates.ts` owns every `expo-updates` call.
+No other source file may import `expo-updates` (enforced by
+`src/runtime/__tests__/updates-import-boundary.test.ts`). Config
+(`runtimeVersion`, `updates` block), `eas.json`, dependency manifests,
+`createRuntime`, and root mounting remain root-owned; T03 does not edit them.
+
+### Coordinator mount contract
+
+Mount `useOtaCoordinator` at the runtime root (T10), above every guard. It is
+never gated on paywall or setup state; it receives primitive safe-boundary
+inputs via DI and fails closed when any input is unknown:
+
+- `purchaseOrRestoreBusy`, `permissionPromptPending`, `cameraActive`,
+  `walkingActive`, `proppedActive`, `isForeground`, `route`
+- Safe only when all clear, foreground, and on a tab root (not onboarding,
+  builder, paywall, or ceremony). See `evaluateSafeBoundary`/`isOtaSafeRoute`.
+- First launch: native `ON_LOAD` owns check+download inside
+  `fallbackToCacheTimeout`. JS only observes `useUpdates()` via
+  `observeStartup()`; it never runs a duplicate check on the same launch.
+- Later: on foreground after ≥ 6 h in background, `checkForUpdateAsync` then
+  `fetchUpdateAsync` with separate budgets (`OTA_CHECK_BUDGET_MS`,
+  `OTA_FETCH_BUDGET_MS`; never one shared budget), then `reloadAsync` only at
+  the next safe boundary. Timed-out work revokes its epoch and can never
+  reload late; concurrent checks/reloads return `busy`/`operation in flight`.
+- Reload-loop guard persists `{ updateId, launchCount }`; the same update id
+  is retried at most twice without a successful launch, then blocked and
+  reported. Only `markSuccessfulLaunch(runningUpdateId)` clears the guard,
+  called when the new runtime reaches the coordinator steady milestone.
+- Persist a `resumeEnvelope` (`route` + `draftIds`) before every reload.
+- Observability: `getOtaObservabilityContext()` exposes `update_id` and
+  `runtime_version` for T06 to register as Sentry `release`/`dist`
+  (`com.johansardar.excerlock@<version>+<build>`, `<runtimeVersion>-<updateId>`)
+  and PostHog super-properties after every reset. Sourcemaps upload per
+  `eas update`/build remains T06/root-owned.
+
+Code signing: Expo account is Free, so the conditional signing requirement is
+not enabled. Do not create keys and do not claim tamper verification. The
+tamper-manifest proof below runs once per certificate only when signing is
+enabled.
+
+### Release ritual (gate for T16; script `app-next/scripts/verify-ota.sh`)
+
+1. `eas update --branch production --message "<sha>"` only from a tagged
+   commit on `main` after CI is green, under the release lock
+   (`python3 scripts/agent-ops.py run -- ...`).
+2. Determine the numerically newest `READY_FOR_SALE` IOS version from all
+   paginated ASC versions (never from local `app.json`), resolve its attached
+   build, and read that build's embedded `runtimeVersion` from its exported
+   `Expo.plist` (`EXUpdatesRuntimeVersion`, via `--expo-plist` or `--ipa`).
+   Publish only to that runtime. Fail if the intended runtime differs.
+3. On a physical phone: delete the app, install from the public App Store
+   (and separately from TestFlight), launch twice, then pull
+   `Library/Application Support/.expo-internal/expo-v11.db` and assert the
+   intended `update_id` is present with `successful_launch_count > 0` (BLOB
+   `id` compared via `hex(id)`). Both installs. Manifest/server metadata is
+   never device proof. Fail the release otherwise. Missing `--db-path` is a
+   `RUNTIME LIMIT` (exit 2), never a skipped test marked passed.
+4. Prove a tampered manifest is rejected by the release binary once per
+   certificate (signing-enabled builds only; skipped with no claim on Free).
+5. Record all of it in `app-next/evidence/release-<version>/`.
+
+Example:
+
+```sh
+app-next/scripts/verify-ota.sh \
+  --asc-app-id 6787265352 \
+  --expected-update-id <uuid> \
+  --expected-runtime 1 \
+  --db-path /path/to/expo-v11.db \
+  --expo-plist /path/to/Expo.plist
+```
+
+### Bumping `runtimeVersion`
+
+Only when `plans/ship/02-native-manifest.md` changes or a native
+dependency's iOS code changes. Procedure: bump the string, build, submit,
+wait for Ready for Sale, then publish JS to both the old and the new runtime
+until the old runtime's 30-day active-install share is under 5%. Never orphan
+a runtime that still has installs. Version bumps never change
+`runtimeVersion`.
