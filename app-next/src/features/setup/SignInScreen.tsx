@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
+import {
+  AppleAuthenticationButton,
+  AppleAuthenticationButtonStyle,
+  AppleAuthenticationButtonType,
+} from 'expo-apple-authentication';
 import { Heading, Label, TextField, PrimaryButton, SecondaryButton } from '../../design-system';
 import { setupCopy as c } from '../../content/setup';
 import { tokens as t } from '../../design-system/tokens';
@@ -145,7 +150,19 @@ export function SignInScreen({
             </>
           ) : (
             <>
-              <PrimaryButton label={c.apple} loading={busy} onPress={() => signIn('apple')} />
+              <AppleAuthenticationButton
+                buttonType={AppleAuthenticationButtonType.CONTINUE}
+                buttonStyle={AppleAuthenticationButtonStyle.WHITE_OUTLINE}
+                cornerRadius={t.radius.cta}
+                style={{ width: '100%', height: t.layout.button }}
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel={c.apple}
+                accessibilityState={{ disabled: busy, busy }}
+                onPress={() => {
+                  if (!busy) void signIn('apple');
+                }}
+              />
               <SecondaryButton label={c.google} disabled={busy} onPress={() => signIn('google')} />
               <SecondaryButton
                 label={c.email}
