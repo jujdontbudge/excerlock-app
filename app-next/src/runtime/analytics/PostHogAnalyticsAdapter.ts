@@ -3,20 +3,23 @@ import type { AnalyticsPort } from '../../ports/AnalyticsPort';
 export type CanonicalIdentity = { userId: string | null; generation: number; ready: boolean };
 export type WalkPlaces = 'outside' | 'treadmill' | 'outside_and_treadmill' | 'none';
 export type AnalyticsContext = { environment: string; runtime_version: string; update_id: string; walk_places: WalkPlaces };
+const walkPlacesValues = new Set<WalkPlaces>(['outside', 'treadmill', 'outside_and_treadmill', 'none']);
 export interface PostHogClientBoundary {
   ready(): Promise<void>; getDeviceId(): string; getDistinctId(): string;
-  register(properties: Record<string, unknown>): Promise<void> | void;
+  register(properties: Record<string, string | number | boolean>): Promise<void> | void;
   identify(id: string): void; reset(): void; optIn(): Promise<void>; optOut(): Promise<void>;
   clearPendingQueues(): Promise<void> | void;
   setPersonProperties(properties: Record<string, string | number | boolean>, reloadFeatureFlags?: boolean): Promise<void> | void;
-  capture(event: string, properties?: Record<string, unknown>): Promise<void> | void;
-  screen(name: string, properties?: Record<string, unknown>): Promise<void> | void;
+  capture(event: string, properties?: Record<string, string | number | boolean>): Promise<void> | void;
+  screen(name: string, properties?: Record<string, string | number | boolean>): Promise<void> | void;
   onFeatureFlags(callback: () => void): () => void;
   getFeatureFlag(key: string, options?: { sendEvent?: boolean }): boolean | string | undefined;
 }
 export const POSTHOG_OPTIONS = {
   captureAppLifecycleEvents: false, enableSessionReplay: false, preloadFeatureFlags: false,
-  disableSurveys: true, errorTracking: { autocaptureErrors: false },
+  disableSurveys: true, disableGeoip: true, defaultOptIn: false,
+  capturePushNotificationSubscriptions: false, capturePushNotificationOpened: false,
+  setDefaultPersonProperties: false, errorTracking: { autocapture: false },
   personProfiles: 'identified_only',
 } as const;
 const forbidden = /email|address|latitude|longitude|receipt|token|user_?id|message|error|url/i;
@@ -85,7 +88,12 @@ export function createPostHogAnalyticsAdapter(options: {
     track(event, props) {
       const started = origin();
       if (!allowed(started) || /^(purchase_|trial_|subscription_)/.test(event)) return;
-      void emit(started!, () => client.capture(event, scrubAnalyticsProps(props)));
+      const walkPlaces = event === 'walk_places_updated' ? props?.walk_places : undefined;
+      if (event === 'walk_places_updated' && (typeof walkPlaces !== 'string' || !walkPlacesValues.has(walkPlaces as WalkPlaces))) return;
+      void emit(started!, async () => {
+        if (event === 'walk_places_updated') await client.setPersonProperties({ walk_places: walkPlaces as WalkPlaces }, false);
+        if (allowed(started)) await client.capture(event, scrubAnalyticsProps(props));
+      });
     },
     screen(name) {
       const started = origin();
@@ -121,7 +129,7 @@ export class PostHogFlagsController {
     private identity: () => CanonicalIdentity,
     private optedIn: () => boolean,
     private committed: () => CanonicalIdentity | null,
-    private captureExposure: (origin: FlagOrigin, properties: Record<string, unknown>) => Promise<boolean>,
+    private captureExposure: (origin: FlagOrigin, properties: Record<string, string | number | boolean>) => Promise<boolean>,
   ) {}
   private fallback(name: FlagName): FlagValue { return name === 'signInRequired' ? false : 'control'; }
   private eligible(origin?: FlagOrigin): origin is FlagOrigin {
