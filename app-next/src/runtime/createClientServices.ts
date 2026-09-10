@@ -8,6 +8,7 @@ import { settingsStore } from '../state/settingsStore';
 import { profileStore } from '../state/profileStore';
 import { createNativeNotifications } from './notifications/createNativeNotifications';
 import { createNativeJsonExport } from './NativeJsonExport';
+import { createAccountBoundExport } from './AccountBoundExport';
 
 /** Real client services; root must hydrate stores before construction and supply native deletion cleanup. */
 export function createClientServices(options: {
@@ -40,23 +41,28 @@ export function createClientServices(options: {
     },
   });
   let disposed = false;
-  let exportBusy = false;
   let exportOrigin: ReturnType<typeof identity.auth.identity> | null = null;
   const exporter = createNativeJsonExport(() => {
     const live = identity.auth.identity();
     return !disposed && exportOrigin !== null && live.generation === exportOrigin.generation && live.userId === exportOrigin.userId;
   });
   const notifications = createNativeNotifications(() => !disposed, () => identity.auth.identity().generation);
+  const dataExport = createAccountBoundExport(
+    () => identity.auth.identity(),
+    {
+      requestShare: async (payload) => {
+        exportOrigin = identity.auth.identity();
+        try { await exporter.requestShare(payload); }
+        finally { exportOrigin = null; }
+      },
+    },
+    () => disposed,
+  );
   return {
     auth: identity.auth, subscription: identity.subscription, analytics: telemetry.analytics,
     experiments: createPaywallExperimentPort(telemetry.analytics.flags), notifications,
     // Snapshot account before file writing. Payload assembly must also bind its origin.
-    dataExport: { async requestShare(payload: unknown) {
-      if (exportBusy) throw new Error('An export is already open');
-      exportBusy = true; exportOrigin = identity.auth.identity();
-      try { await exporter.requestShare(payload); }
-      finally { exportBusy = false; exportOrigin = null; }
-    } },
+    dataExport,
     boot: identity.boot,
     waitForIdentityReady: identity.waitForIdentityReady,
     runIdentityOperation: identity.runIdentityOperation,

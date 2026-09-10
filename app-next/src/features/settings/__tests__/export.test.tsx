@@ -6,7 +6,8 @@ import { SettingsScreen } from '../SettingsScreen';
 test('export requires consent and sends the complete payload to the port', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('multi-rule-overlap');
-  runtime.dataExport.requestShare = jest.fn().mockResolvedValue(undefined);
+  let payload: unknown;
+  runtime.dataExport.requestShare = jest.fn(async (buildPayload) => { payload = await buildPayload(); });
   await render(
     <AppRuntimeProvider runtime={runtime}>
       <SettingsScreen navigate={jest.fn()} onDev={jest.fn()} />
@@ -16,7 +17,7 @@ test('export requires consent and sends the complete payload to the port', async
   expect(runtime.dataExport.requestShare).not.toHaveBeenCalled();
   expect(screen.getByText(/profile, conditions, progress, earned unlocks and gym visits/)).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: 'Create export' }));
-  expect(runtime.dataExport.requestShare).toHaveBeenCalledWith(expect.objectContaining({
+  expect(payload).toEqual(expect.objectContaining({
     exportedAt: expect.any(String),
     rules: expect.any(Array),
     days: expect.any(Array),
