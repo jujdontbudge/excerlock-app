@@ -295,3 +295,11 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   runtime.dev.setPlacement (walking.start options now owns it).5targeted tests + focused lint pass.
   Also prevents legacy fake step updater from incorrectly crediting minutes with step counts. Complete
   Runtime construction/headless root still pending actual walking/gym adapters and history transaction.
+- Root adds HistoryCreditLedger: one atomic serialized record stores measured daily totals AND dedup
+  cursor, retries after process recreation don't double-credit, failed commits don't advance, overlapping
+  scalar ranges/midnight-spanning totals reject instead of fabricated prorating. Root must initialize
+  detection query cursor from committed ledger and split history at local-day boundaries.5tests pass.
+- projectStepHistory converts measured totals only to enabled scheduled walking STEP targets, never
+  minute/state rules; get-ahead allowed, earned timestamp preserved, reproject idempotent.2tests pass;
+  typecheck/focused lint pass. Still needs root callback and hydration projection wiring before shipping.
+- GymPort8c9755a1 ready review; native clock/support next. WalkingPort implemented/under full lane tests.
