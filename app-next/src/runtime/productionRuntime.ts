@@ -3,9 +3,11 @@ import type { RealRuntime } from './createRealRuntime';
 import { registerHeadlessDetectionBootstrap } from './detection/headlessRegistry';
 
 export function reportRuntimeError(error: unknown): void {
+  // Keep SDK evaluation behind the runtime error path while exposing only the
+  // local capture binding to Metro's static dependency graph.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const Sentry = require('@sentry/react-native') as typeof import('@sentry/react-native');
-  Sentry.captureException(error);
+  const { reportSentryError } = require('./observability/SentryCapture') as typeof import('./observability/SentryCapture');
+  reportSentryError(error);
 }
 const singleton = new RuntimeSingleton<RealRuntime>(async () => {
   // Lazy construction keeps native work behind the explicit boot/hydration gate.
