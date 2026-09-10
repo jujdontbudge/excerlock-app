@@ -1,3 +1,4 @@
+import { historyStore } from './historyStore';
 import { profileStore } from './profileStore';
 import { rulesStore } from './rulesStore';
 import { ruleDaysStore } from './ruleDaysStore';
@@ -7,6 +8,7 @@ import { permissionsStore } from './permissionsStore';
 import { settingsStore } from './settingsStore';
 import { onboardingStore } from './onboardingStore';
 export const stores = [
+  historyStore,
   profileStore,
   rulesStore,
   ruleDaysStore,

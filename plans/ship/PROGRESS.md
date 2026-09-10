@@ -384,3 +384,23 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   progress, persisted day sealing/retention, raw-task deletion races, actual native startup/UI inspection,
   signed build/TestFlight/AppStore/public OTA gates. Root provider UI tests, motion-source investigation
   and deletion review delegated; no release success claimed.
+
+### Continued production integration — 2026-09-10
+
+- Mounted guarded OTA/notification root effects (5f11482c, 996e963e): live prompt/camera/purchase/
+  walking/AppState safety, post-flush healthy launch acknowledgement, permission refresh, reminder
+  cancellation/scheduling and allowlisted deduplicated notification routing. Device OTA delivery unproven.
+- Privacy cddc4833/6e7dcac0 serialize raw gym log writers across foreground and TaskManager, durable
+  suspension and region allowlist reject obsolete callbacks; selection removal bridge deletes only the
+  owned handle. Clean unsigned native rebuild including changed package patch is underway in a dedicated
+  worktree, not claimed verified by the older build.
+- Walking duration a7c4bc29/4c62dd21 credits adjacent verified committed observations only, caps gaps at
+  5 seconds, splits original local midnight, acknowledges after RuleDay persistence, resets after deletion.
+  No step-to-minute conversion or invented historical open tail. Full checkpoint: typecheck/lint and
+  232 suites / 1057 tests / 13 snapshots passed (/tmp/ship-effects-minutes-full.log).
+- Added immutable production calendar-history sealing + first-observation anchor, gap missed days,
+  400-calendar-day public history bound and 35-day rule accounting retention. Included in owned-store
+  hydration/erasure. ADR0014 records limits: raw sensor retention, catch-up completeness before sealing,
+  progress day ownership and timezone convergence still open. Focused 4 suites /14 tests and typecheck pass.
+- Dedicated lanes handling generation-bound async export construction and fail-closed native cleanup
+  ownership. No signed build, deployment, store submission, public OTA or device activation claimed.

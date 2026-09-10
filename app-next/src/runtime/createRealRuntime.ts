@@ -27,6 +27,8 @@ import { permissionsStore } from '../state/permissionsStore';
 import { entitlementStore } from '../state/entitlementStore';
 import { dayKey, localInstant } from '../domain/calendar';
 import { currentInstances } from '../domain/schedule';
+import { historyStore } from '../state/historyStore';
+import { sealDays, retainRuleDays } from '../domain/sealDay';
 import { projectMeasuredHistory } from '../domain/projectMeasuredHistory';
 import { projectGymHistory } from '../domain/projectGymHistory';
 import { registerHeadlessDetectionHandler } from './detection/headlessRegistry';
@@ -313,7 +315,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             ) {
               void client.notifications.scheduleOpenToUnlock().catch(options.reportError);
             }
-            const history = projectMeasuredHistory(
+            const measuredHistory = projectMeasuredHistory(
               stepsByDay,
               detected.gym.intervals,
               configured,
@@ -321,6 +323,24 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               rows,
               clock.timezone(),
               new Date(now).toISOString(),
+            );
+            const oldArchive = historyStore.getState().data;
+            const archive = sealDays(
+              oldArchive,
+              measuredHistory,
+              rulesStore.getState().data.rules,
+              clock.timezone(),
+              new Date(now).toISOString(),
+            );
+            if (JSON.stringify(archive) !== JSON.stringify(oldArchive)) historyStore.getState().patch(archive);
+            // Persist seals BEFORE pruning the facts they preserve. A failed write
+            // prevents native policy/acknowledgement and is retried on reconciliation.
+            await historyStore.persistBarrier();
+            const today = dayKey(new Date(now).toISOString(), clock.timezone());
+            const retainedRows = retainRuleDays(previous, rows, oldArchive, today);
+            const sealedKeys = new Set(archive.days.map((row) => row.day));
+            const history = [...archive.days, ...measuredHistory.filter((row) => !sealedKeys.has(row.day))].sort(
+              (a, b) => a.day.localeCompare(b.day),
             );
             if (JSON.stringify(history) !== JSON.stringify(status.history)) {
               status = { ...status, history };
@@ -331,7 +351,8 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             try {
               if (JSON.stringify(gymPresence) !== JSON.stringify(ruleDaysStore.getState().data.gymPresence))
                 ruleDaysStore.getState().patch({ gymPresence });
-              if (JSON.stringify(rows) !== JSON.stringify(previous)) ruleDaysStore.getState().patch({ days: rows });
+              if (JSON.stringify(retainedRows) !== JSON.stringify(previous))
+                ruleDaysStore.getState().patch({ days: retainedRows });
             } finally {
               projecting = false;
             }
