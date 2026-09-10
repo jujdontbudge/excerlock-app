@@ -17,5 +17,9 @@ test('fake offer and restore outcomes are explicit and controllable', async () =
 test('entitled users resume setup until it is complete', () => {
   expect(bootDestination(false, 'P', 'trial', false, 'X2')).toBe('/setup/X2');
   expect(bootDestination(true, 'P', 'active', true, 'done')).toBe('/(tabs)/home');
-  expect(bootDestination(true, 'P', 'expired', true, 'done')).toBe('/paywall');
+  expect(bootDestination(true, 'P', 'expired', true, 'done')).toBe('/(tabs)/home');
+  expect(bootDestination(true, 'P', 'billingIssue', true, 'done')).toBe('/(tabs)/home');
+  expect(bootDestination(true, 'P', 'unknown', true, 'done')).toBe('/(tabs)/home');
+  expect(bootDestination(true, 'P', 'expired', false, 'X2')).toBe('/paywall');
+  expect(bootDestination(true, 'P', 'active', false, 'X2')).toBe('/setup/X2');
 });

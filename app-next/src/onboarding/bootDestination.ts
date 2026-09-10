@@ -6,6 +6,7 @@ export function bootDestination(
   setupComplete = true,
   setupStep = 'X1',
 ): string | null {
+  if (complete && setupComplete) return '/(tabs)/home';
   if (entitlement === 'unknown') return null;
   if (entitlement === 'trial' || entitlement === 'active')
     return setupComplete ? '/(tabs)/home' : `/setup/${setupStep}`;
