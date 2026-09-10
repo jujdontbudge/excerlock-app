@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeMotionProvider } from '../../engine/signals/motion/NativeMotionProvider';
 import { createExcerlockMotionModuleClient } from '../../engine/signals/motion/MotionModuleClient';
 import { NativePhonePlacementProvider } from '../../engine/signals/placement/NativePhonePlacementProvider';
@@ -7,13 +8,13 @@ import { AsyncStorageGymVisitLog } from '../../engine/signals/location/AsyncStor
 import { detectionStore } from '../../state/detectionStore';
 import { MotionAdapter } from './MotionAdapter';
 import { PlacementAdapter } from './PlacementAdapter';
-import { DetectionService, type DetectionWake, type HistoryCredit } from './DetectionService';
+import { DetectionService, type DetectionWake } from './DetectionService';
 import { AwakeSession } from './AwakeSession';
 import { StepsDetectionAdapter } from './StepsDetectionAdapter';
 import { registerHeadlessDetectionHandler } from './headlessRegistry';
 import { GymRegionAdapter } from './GymRegionAdapter';
+import { HistoryCreditLedger } from './HistoryCreditLedger';
 export type NativeDetectionFactoryOptions = {
-  creditHistory(credit: HistoryCredit): Promise<void>;
   getWakeContext(): Omit<DetectionWake, 'now' | 'source'>;
   onError?(error: unknown): void;
 };
@@ -24,11 +25,12 @@ export function createNativeDetection(options: NativeDetectionFactoryOptions) {
   const gymLog = new AsyncStorageGymVisitLog();
   const motion = new MotionAdapter(rawMotion);
   const placement = new PlacementAdapter(rawPlacement);
+  const historyLedger = new HistoryCreditLedger(AsyncStorage);
   const service = new DetectionService({
     motion,
     placement,
     gymLog,
-    creditHistory: options.creditHistory,
+    historyLedger,
     onError: options.onError,
   });
   const awake = new AwakeSession(location);
@@ -51,6 +53,7 @@ export function createNativeDetection(options: NativeDetectionFactoryOptions) {
     location,
     gymLog,
     gyms,
+    historyLedger,
     registerGyms: gyms.registerSavedGyms.bind(gyms),
     deleteGym: (regionId: string) => gyms.deleteSavedGym(regionId),
     start: (graceMs: number) => service.start(graceMs),

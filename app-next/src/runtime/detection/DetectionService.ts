@@ -6,11 +6,16 @@ import { reduceGym } from '../../domain/gymMachine';
 import type { GymVisitLog } from '../../engine/signals/location/GymVisitLog';
 import type { MotionAdapter, MotionEvidence } from './MotionAdapter';
 import type { PlacementAdapter } from './PlacementAdapter';
+import type { HistoryCreditLedger, HistoryLedger } from './HistoryCreditLedger';
+import { addDays, dayKey, localInstant } from '../../domain/calendar';
+import type { PendingHistoryCredit } from '../../state/detectionStore';
+export const MAX_HISTORY_SEGMENTS_PER_WAKE = 8;
 export type DetectionWake = {
   now: number;
   dayStart: number;
   walkingGraceMs: number;
   generation: number;
+  timezone: string;
   source: 'foreground' | 'background' | 'geofence' | 'manual';
 };
 export type HistoryCredit = { idempotencyKey: string; from: number; to: number; steps: number };
@@ -23,7 +28,7 @@ export class DetectionService {
       motion: MotionAdapter;
       placement: PlacementAdapter;
       gymLog: GymVisitLog;
-      creditHistory: (credit: HistoryCredit) => Promise<void>;
+      historyLedger: Pick<HistoryCreditLedger, 'read' | 'apply'>;
       persist?: () => Promise<void>;
       onError?: (error: unknown) => void;
     },
@@ -99,41 +104,72 @@ export class DetectionService {
       if (placement.placement === 'unknown' && before.propped.phase !== 'inactive')
         propped = reducePropped(propped, { kind: 'coverageLost', at: wake.now }, wake.now);
       const gym = reduceGym(before.gym, { kind: 'records', records }, wake.now);
-      const cursor = Math.max(wake.dayStart, before.creditedThrough.steps ?? wake.dayStart);
-      let pending = before.pendingHistory;
-      if (!pending && cursor < wake.now) {
-        const { steps } = await this.deps.motion.querySteps(cursor, wake.now);
+      let ledger = await this.deps.historyLedger.read();
+      this.assertGeneration(wake.generation);
+      // Replay the exact durable intent before consulting cursors or issuing a
+      // newer query. Ledger.apply is idempotent across process restarts.
+      if (before.pendingHistory) {
+        ledger = await this.commitHistory(before.pendingHistory, wake, ledger);
+      }
+      const knownCursors = [before.creditedThrough.steps, ledger.through].filter(
+        (value): value is number => value !== undefined && value !== null,
+      );
+      let cursor = knownCursors.length ? Math.max(...knownCursors) : wake.dayStart;
+      let segments = 0;
+      while (cursor < wake.now && segments < MAX_HISTORY_SEGMENTS_PER_WAKE) {
+        const to = Math.min(wake.now, nextLocalMidnight(cursor, wake.timezone));
+        const { steps } = await this.deps.motion.querySteps(cursor, to);
         this.assertGeneration(wake.generation);
-        pending = {
-          idempotencyKey: `steps:${wake.generation}:${cursor}:${wake.now}`,
+        const pending = {
+          idempotencyKey: `steps:${wake.generation}:${cursor}:${to}`,
           from: cursor,
-          to: wake.now,
+          to,
           steps,
+          timezone: wake.timezone,
         };
         detectionStore.getState().patch({ pendingHistory: pending });
         await this.persist();
         this.assertGeneration(wake.generation);
-      }
-      if (pending) {
-        await this.deps.creditHistory(pending);
-        this.assertGeneration(wake.generation);
+        ledger = await this.commitHistory(pending, wake, ledger);
+        cursor = Math.max(to, ledger.through ?? to);
+        segments += 1;
       }
       detectionStore.getState().patch({
         walking,
         propped,
         gym,
         observedAt: wake.now,
-        creditedThrough: { ...before.creditedThrough, steps: pending?.to ?? cursor },
+        creditedThrough: { ...before.creditedThrough, steps: cursor },
         pendingHistory: null,
       });
       try {
         await this.persist();
       } catch (error) {
-        if (pending) detectionStore.getState().patch({ pendingHistory: pending });
         throw error;
       }
       this.assertGeneration(wake.generation);
     });
+  }
+  private async commitHistory(pending: PendingHistoryCredit, wake: DetectionWake, previous: HistoryLedger): Promise<HistoryLedger> {
+    // New intents persist their original timezone. The fallback exists only
+    // for legacy pending v1 records written before timezone was recorded.
+    const ledger = await this.deps.historyLedger.apply(pending, pending.timezone ?? wake.timezone);
+    this.assertGeneration(wake.generation);
+    detectionStore.getState().patch({
+      creditedThrough: {
+        ...detectionStore.getState().data.creditedThrough,
+        steps: Math.max(previous.through ?? pending.from, ledger.through ?? pending.to),
+      },
+      pendingHistory: null,
+    });
+    try {
+      await this.persist();
+    } catch (error) {
+      detectionStore.getState().patch({ pendingHistory: pending });
+      throw error;
+    }
+    this.assertGeneration(wake.generation);
+    return ledger;
   }
   noteCoverageLost(now: number, walkingGraceMs: number, generation: number): Promise<void> {
     return this.enqueue(async () => {
@@ -251,4 +287,11 @@ export class DetectionService {
     this.lifecycle = next.catch(() => undefined);
     return next;
   }
+}
+
+function nextLocalMidnight(from: number, timezone: string): number {
+  const day = dayKey(new Date(from).toISOString(), timezone);
+  const next = Date.parse(localInstant(addDays(day, 1), 0, timezone));
+  if (!Number.isFinite(next) || next <= from) throw new Error('Invalid local history boundary');
+  return next;
 }
