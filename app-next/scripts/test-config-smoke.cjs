@@ -1,3 +1,4 @@
+/* global __dirname */
 // Exercise Expo's real config loader, not Jest/tsx's already-installed TS hooks.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
