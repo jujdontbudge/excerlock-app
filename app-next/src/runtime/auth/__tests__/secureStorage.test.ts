@@ -90,3 +90,109 @@ test('write failures reject visibly', async () => {
   const storage = new SecureSupabaseStorage(failing);
   await expect(storage.setItem('k6', 'value')).rejects.toThrow(/unavailable/i);
 });
+
+test('interrupted replacement leaves previous committed session byte-for-byte intact', async () => {
+  const backend = memoryBackend();
+  const storage = new SecureSupabaseStorage(backend);
+  const oldValue = JSON.stringify({ value: 'a'.repeat(4000) });
+  await storage.setItem('session', oldValue);
+  const write = backend.setItemAsync.bind(backend);
+  let writes = 0;
+  backend.setItemAsync = async (key, value) => {
+    if (++writes === 2) throw new Error('interrupted write');
+    await write(key, value);
+  };
+  await expect(storage.setItem('session', JSON.stringify({ value: 'b'.repeat(5000) }))).rejects.toThrow();
+  expect(await new SecureSupabaseStorage(backend).getItem('session')).toBe(oldValue);
+});
+
+test('concurrent replacements serialize; no mixed session can be read', async () => {
+  const backend = memoryBackend();
+  const one = new SecureSupabaseStorage(backend);
+  const two = new SecureSupabaseStorage(backend);
+  const values = ['a', 'b', 'c'].map((v) => JSON.stringify({ value: v.repeat(4100) }));
+  await Promise.all([one.setItem('session', values[0]), two.setItem('session', values[1]), one.setItem('session', values[2])]);
+  expect(await one.getItem('session')).toBe(values[2]);
+});
+
+test('chunks are bounded by UTF-8 bytes, not UTF-16 length', async () => {
+  const backend = memoryBackend();
+  const storage = new SecureSupabaseStorage(backend);
+  const value = JSON.stringify({ name: '🏃漢'.repeat(1500) });
+  await storage.setItem('session', value);
+  for (const part of backend.store.values()) expect(Buffer.byteLength(part, 'utf8')).toBeLessThanOrEqual(SECURE_CHUNK_SIZE);
+  expect(await storage.getItem('session')).toBe(value);
+});
+
+test('silent chunk corruption is rejected by manifest integrity check', async () => {
+  const backend = memoryBackend();
+  const storage = new SecureSupabaseStorage(backend);
+  await storage.setItem('session', 'a'.repeat(4000));
+  const key = [...backend.store.keys()].find((k) => k.includes('__chunk__'))!;
+  backend.store.set(key, backend.store.get(key)!.replace('a', 'b'));
+  await expect(storage.getItem('session')).rejects.toThrow(/corrupt/i);
+});
+
+test('session JSON corruption rejects before Supabase can treat it as absent', async () => {
+  const backend = memoryBackend();
+  const storage = new SecureSupabaseStorage(backend);
+  backend.store.set('excerlock-supabase-auth-v1', '{broken');
+  await expect(storage.getItem('excerlock-supabase-auth-v1')).rejects.toThrow(/corrupt/i);
+});
+
+test('failed secret erasure is visible and tombstone prevents session resurrection', async () => {
+  const backend = memoryBackend();
+  const storage = new SecureSupabaseStorage(backend);
+  await storage.setItem('session', 'a'.repeat(4000));
+  const remove = backend.deleteItemAsync.bind(backend);
+  backend.deleteItemAsync = async (key) => {
+    if (key.includes('__chunk__')) throw new Error('keychain unavailable');
+    await remove(key);
+  };
+  await expect(storage.removeItem('session')).rejects.toThrow();
+  expect(await storage.getItem('session')).toBeNull();
+  backend.deleteItemAsync = remove;
+  await storage.removeItem('session');
+  expect(backend.store.size).toBe(0);
+});
+
+test('legacy chunk manifest remains readable and migrates on successful rewrite', async () => {
+  const backend = memoryBackend();
+  backend.store.set('session', JSON.stringify({ __chunked: true, chunks: 2 }));
+  backend.store.set('session__chunk__0', 'legacy');
+  backend.store.set('session__chunk__1', '-session');
+  const storage = new SecureSupabaseStorage(backend);
+  expect(await storage.getItem('session')).toBe('legacy-session');
+  await storage.setItem('session', 'new'.repeat(2000));
+  expect(await storage.getItem('session')).toBe('new'.repeat(2000));
+  expect(backend.store.has('session__chunk__0')).toBe(false);
+});
+
+test('every interrupted chunk/manifest write preserves the old committed session', async () => {
+  for (let failAt = 1; failAt <= 4; failAt++) {
+    const backend = memoryBackend();
+    const storage = new SecureSupabaseStorage(backend);
+    const before = JSON.stringify({ value: 'a'.repeat(4000) });
+    await storage.setItem('session', before);
+    const write = backend.setItemAsync.bind(backend);
+    let writes = 0;
+    backend.setItemAsync = async (key, value) => {
+      if (++writes === failAt) throw new Error('interrupted');
+      return write(key, value);
+    };
+    await expect(storage.setItem('session', JSON.stringify({ value: 'b'.repeat(5000) }))).rejects.toThrow();
+    expect(await new SecureSupabaseStorage(backend).getItem('session')).toBe(before);
+  }
+});
+
+test('unavailable orphan read never returns absent and sparse orphan is detected', async () => {
+  const backend = memoryBackend();
+  backend.store.set('session__chunk__b__9', 'secret');
+  const storage = new SecureSupabaseStorage(backend);
+  await expect(storage.getItem('session')).rejects.toThrow(/corrupt/i);
+  backend.getItemAsync = async (key) => {
+    if (key.includes('__chunk__')) throw new Error('unavailable');
+    return null;
+  };
+  await expect(storage.getItem('session')).rejects.toThrow(/unavailable/i);
+});
