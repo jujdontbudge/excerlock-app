@@ -45,11 +45,12 @@ describe('AsyncStorageGymVisitLog', () => {
   it('durably rejects late task events until explicit next-account resumption', async () => {
     const taskLog = new AsyncStorageGymVisitLog();
     await suspendGymVisitLogWritesAndReset();
-    expect(await AsyncStorage.getItem(GYM_VISIT_LOG_ACCEPTANCE_KEY)).toBe('suspended');
+    expect(JSON.parse((await AsyncStorage.getItem(GYM_VISIT_LOG_ACCEPTANCE_KEY))!)).toEqual({ epoch: 1, regionIds: [] });
     await taskLog.append({ id: 'deleted-account', regionId: 'gym-a', type: 'exit', atMs: 3, receivedAtMs: 4 });
     expect(await AsyncStorage.getItem(GYM_VISIT_LOG_STORAGE_KEY)).toBeNull();
 
-    await resumeGymVisitLogWrites();
+    await resumeGymVisitLogWrites(['gym-b']);
+    await taskLog.append({ id: 'old-late', regionId: 'gym-a', type: 'exit', atMs: 4, receivedAtMs: 5 });
     await taskLog.append({ id: 'next-account', regionId: 'gym-b', type: 'enter', atMs: 5, receivedAtMs: 6 });
     await expect(taskLog.readAll()).resolves.toEqual([
       { id: 'next-account', regionId: 'gym-b', type: 'enter', atMs: 5, receivedAtMs: 6 },

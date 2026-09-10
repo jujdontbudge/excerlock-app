@@ -1,5 +1,6 @@
 import type { LocationProvider, GeofenceRegion } from '../../engine/signals/location/LocationProvider';
 import { assertGymRegionsAllowed } from '../../engine/signals/location/gymRegions';
+import { resumeGymVisitLogWrites } from '../../engine/signals/location/AsyncStorageGymVisitLog';
 import type { SavedPlace } from '../../ports/models';
 export class GymRegionAdapter {
   constructor(
@@ -15,6 +16,7 @@ export class GymRegionAdapter {
     }));
     assertGymRegionsAllowed(regions);
     await this.location.startMonitoringRegions(regions);
+    await resumeGymVisitLogWrites(regions.map(({ id }) => id));
   }
   async deleteSavedGym(regionId: string): Promise<void> {
     await this.location.stopMonitoringRegions([regionId]);

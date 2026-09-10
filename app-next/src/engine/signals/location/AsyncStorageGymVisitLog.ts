@@ -3,6 +3,7 @@ import type { GymTransitionRecord, GymVisitLog } from './GymVisitLog';
 export const GYM_VISIT_LOG_STORAGE_KEY = '@excerlock/location/gym-transitions/v2';
 export const LEGACY_GYM_VISIT_LOG_STORAGE_KEY = '@excerlock/location/confirmed-gym-visits/v1';
 export const GYM_VISIT_LOG_ACCEPTANCE_KEY = '@excerlock/location/gym-transitions-acceptance/v1';
+type GymVisitAcceptance = Readonly<{ epoch: number; regionIds: readonly string[] }>;
 
 // TaskManager and the foreground runtime intentionally construct separate log
 // objects. Their storage operations must nevertheless have one ordering spine.
@@ -18,20 +19,37 @@ function serialize(work: () => Promise<void>): Promise<void> {
  * registers its gyms. The marker survives a cold headless task process. */
 export function suspendGymVisitLogWritesAndReset(): Promise<void> {
   return serialize(async () => {
-    await AsyncStorage.setItem(GYM_VISIT_LOG_ACCEPTANCE_KEY, 'suspended');
+    const previous = parseAcceptance(await AsyncStorage.getItem(GYM_VISIT_LOG_ACCEPTANCE_KEY));
+    const epoch = (previous?.epoch ?? 0) + 1;
+    await AsyncStorage.setItem(GYM_VISIT_LOG_ACCEPTANCE_KEY, JSON.stringify({ epoch, regionIds: [] }));
     await AsyncStorage.multiRemove([GYM_VISIT_LOG_STORAGE_KEY, LEGACY_GYM_VISIT_LOG_STORAGE_KEY]);
   });
 }
 
-export function resumeGymVisitLogWrites(): Promise<void> {
-  return serialize(() => AsyncStorage.removeItem(GYM_VISIT_LOG_ACCEPTANCE_KEY));
+/** Accept only regions successfully registered for the next account. An empty
+ * registration deliberately remains suspended. */
+export function resumeGymVisitLogWrites(regionIds: readonly string[]): Promise<void> {
+  return serialize(async () => {
+    const previous = parseAcceptance(await AsyncStorage.getItem(GYM_VISIT_LOG_ACCEPTANCE_KEY));
+    const acceptance: GymVisitAcceptance = {
+      epoch: previous?.epoch ?? 0,
+      regionIds: [...new Set(regionIds.filter((id) => id.length > 0))],
+    };
+    await AsyncStorage.setItem(GYM_VISIT_LOG_ACCEPTANCE_KEY, JSON.stringify(acceptance));
+  });
 }
 
 export class AsyncStorageGymVisitLog implements GymVisitLog {
   append(record: GymTransitionRecord): Promise<void> {
     const safe = coordinateFree(record);
     return serialize(async () => {
-      if ((await AsyncStorage.getItem(GYM_VISIT_LOG_ACCEPTANCE_KEY)) === 'suspended') return;
+      const storedAcceptance = await AsyncStorage.getItem(GYM_VISIT_LOG_ACCEPTANCE_KEY);
+      // A missing marker preserves pre-upgrade behavior. Once deletion writes an
+      // epoch, every later callback must belong to that epoch's registered set.
+      if (storedAcceptance !== null) {
+        const acceptance = parseAcceptance(storedAcceptance);
+        if (!acceptance?.regionIds.includes(safe.regionId)) return;
+      }
       const records = await readStored();
       if (records.some(({ id }) => id === safe.id)) return;
       await AsyncStorage.setItem(GYM_VISIT_LOG_STORAGE_KEY, JSON.stringify([...records, safe]));
@@ -44,6 +62,19 @@ export class AsyncStorageGymVisitLog implements GymVisitLog {
   reset(): Promise<void> {
     return serialize(() =>
       AsyncStorage.multiRemove([GYM_VISIT_LOG_STORAGE_KEY, LEGACY_GYM_VISIT_LOG_STORAGE_KEY]));
+  }
+}
+function parseAcceptance(value: string | null): GymVisitAcceptance | null {
+  if (value === null) return null;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const candidate = parsed as Partial<GymVisitAcceptance>;
+    if (!Number.isInteger(candidate.epoch) || !Array.isArray(candidate.regionIds)) return null;
+    if (!candidate.regionIds.every((id) => typeof id === 'string')) return null;
+    return { epoch: candidate.epoch!, regionIds: candidate.regionIds };
+  } catch {
+    return null;
   }
 }
 function coordinateFree(record: GymTransitionRecord): GymTransitionRecord {
