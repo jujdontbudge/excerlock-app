@@ -176,3 +176,27 @@ context/account/selection guards,5minute cadence,15minute minimum+backdating, ex
 previous context, staged monitor budget<=20. This is pure planner ONLY; no root mounting/native enforcement
 claim. Remaining T10/T11 scope unchanged. Agents remain live; server is correcting T05 real-schema authority
 before T06; UI has substantive changes underway; auth intentional callback ownership fix still pending.
+
+## T05 backend correction and walking reducer checkpoint
+
+- T05 backend accepted revised source1bf2cbb (amended replacement, NEVER cherry-pick e30d3f5), integrated
+  02fea0f. Root90ee47e fixes active grace past nominal expiry and preserves trusted webhook authorization
+  during ambiguous resync. Only documented access_level_updated/premium/environment writes authorization;
+  profile-wide transaction aggregates ack without granting. Resync actual provider fetch is read-only because
+  per-env premium binding is unproven in documented profile API; no guessed parsing or active grants. Current
+  authoritative production webhook state may authorize, absent/unknown/sandbox cannot.35server suites/
+  184tests and typecheck pass after root corrections. Migration0008required; no live deploy or webhook proof.
+- Auth narrow34e3487 integratedff20730: intentional SDK callback ownership and fallback timer cleanup.
+  Root4focused suites/46tests (auth boot/signout+walking/watchdog), typecheck/lint pass without open-handle
+  warning. Actual native provider activation remains unverified. Auth agent now T05client.
+- Root8d96b11 adds isolated persisted walkingMachine.ts (12tests):3second qualification,5second silence,
+  single first stop-grace deadline, late-wake/clock watermark, duplicate/stale evidence and corrupt-state
+  rejection. No JS suspension timer, no fabricated steps. Raw motion/cadence fusion/history/propped/gym/
+  persistence/root host remain T11. UI current walking methods not replaced yet.
+- UI35cb66f NOT integrated: initial74file slice changes RuleMode (steps|minutes|state, no place) and
+  LockedApps {handle,isEmpty}, plus profile walkingPlaces. Root requested full-suite regression reconciliation
+  and export completion; agent continues SAME ship-T08-T09. ExportPort boundary being added with explicit
+  Settings consent; native sharing adapter/composition still root-owned. Agent export builder reads existing
+  AsyncStorageGymVisitLog; T11 must align it to raw persisted visit log, not claim missing data as empty.
+- T06 agent now in ship-T06 after backend review, handoff T06-architecture.md. Native privacy manifest's
+  ProductInteraction Linked=false needs T13 reconciliation with canonical PostHog identification.

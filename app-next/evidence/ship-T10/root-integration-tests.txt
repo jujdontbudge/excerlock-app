@@ -1,0 +1,16 @@
+
+> app-next@1.0.0 test
+> jest --runInBand --runTestsByPath src/runtime/auth/__tests__/boot.test.ts src/runtime/auth/__tests__/signout.test.ts src/domain/__tests__/walkingMachine.test.ts src/domain/__tests__/watchdog.test.ts
+
+PASS src/domain/__tests__/walkingMachine.test.ts
+PASS src/domain/__tests__/watchdog.test.ts
+(node:92138) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS src/runtime/auth/__tests__/boot.test.ts
+PASS src/runtime/auth/__tests__/signout.test.ts
+
+Test Suites: 4 passed, 4 total
+Tests:       46 passed, 46 total
+Snapshots:   0 total
+Time:        0.777 s, estimated 1 s
+Ran all test suites within paths "src/runtime/auth/__tests__/boot.test.ts", "src/runtime/auth/__tests__/signout.test.ts", "src/domain/__tests__/walkingMachine.test.ts", "src/domain/__tests__/watchdog.test.ts".
