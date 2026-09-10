@@ -681,3 +681,15 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   AX/log at /tmp/ship-adhoc-launch-{ax.json,log} (log actual path /tmp/ship-adhoc-launch.log).
   Owned simulator unexpectedly returned to Shutdown after console relaunch without root shutdown;
   no further boot pending environment/startup diagnosis. Native lane investigating read-only.
+
+- Read-only readiness source audit found no authoritative review contact/phone/email or app territory
+  decision. Draft review Notes exist but are not contact data. Six target subscriptions have existing
+  names/descriptions/pricing and subscription availability; review screenshots and first-of-type
+  attachment remain unverified. Do not infer app territories from subscription availability.
+- Corrected ad-hoc launch log verifies successful SecureStore access and Supabase anonymous signup200;
+  the remaining runtime rejection is not attributed by those successes. Sentry issue access for confirmed
+  edge-ix/excerlock-mobile returns403 with available CI-scoped credential, not absence of an event.
+  Disposable sanitized diagnostic build assigned; it will not substitute for release acceptance.
+- CoreSimulator log attributes owned-simulator shutdown to existing Simulator.app PID43989 (launched
+  Sep8), not an app crash. Root sent graceful quit to honor headless policy, but process remained live on
+  immediate readback. No force-kill, no second simulator, no new boot yet.
