@@ -22,7 +22,7 @@ afterEach(async () => {
   await Promise.all(clients.splice(0).map((client) => client.close()));
 });
 
-describe("checkSchemaReady", () => {
+describe("checkSchemaReady", { timeout: 15_000 }, () => {
   it("reports not ready when the database has no tables at all", async () => {
     const { db } = newDatabase();
 
@@ -43,6 +43,22 @@ describe("checkSchemaReady", () => {
     const { client, db } = newDatabase();
     await migrate(db, { migrationsFolder });
     await client.exec("drop table adapty_subscription_states cascade");
+
+    await expect(checkSchemaReady(db)).resolves.toEqual({
+      ready: false,
+      reason: "schema-missing",
+    });
+  });
+
+  it.each([
+    ["a required column", "alter table users drop column deletion_next_retry_at cascade"],
+    ["the deletion retry index", "drop index users_deletion_retry_index"],
+    ["a deletion retry index on the wrong columns", "drop index users_deletion_retry_index; create index users_deletion_retry_index on users (updated_at)"],
+    ["an environment-scoped primary key", "alter table adapty_webhook_events drop constraint adapty_webhook_events_environment_delivery_key_pk"],
+  ])("reports not ready when %s is missing", async (_label, mutation) => {
+    const { client, db } = newDatabase();
+    await migrate(db, { migrationsFolder });
+    await client.exec(mutation);
 
     await expect(checkSchemaReady(db)).resolves.toEqual({
       ready: false,

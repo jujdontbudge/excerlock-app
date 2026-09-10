@@ -1,5 +1,5 @@
 {
-  "id": "0bf8a059-884a-49a3-9c54-5f84af23dedd",
+  "id": "5f7689ca-f392-4aca-b383-49af8b7d88a1",
   "prevId": "c6c29b6f-76f9-4b4c-896c-8ca23eaba820",
   "version": "7",
   "dialect": "postgresql",
@@ -431,49 +431,6 @@
         "clerk_deleted_at": {
           "name": "clerk_deleted_at",
           "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "auth_provider": {
-          "name": "auth_provider",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "auth_deleted_at": {
-          "name": "auth_deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deletion_attempts": {
-          "name": "deletion_attempts",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "deletion_next_retry_at": {
-          "name": "deletion_next_retry_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deletion_lease_owner": {
-          "name": "deletion_lease_owner",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deletion_lease_expires_at": {
-          "name": "deletion_lease_expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deletion_last_error": {
-          "name": "deletion_last_error",
-          "type": "text",
           "primaryKey": false,
           "notNull": false
         }
