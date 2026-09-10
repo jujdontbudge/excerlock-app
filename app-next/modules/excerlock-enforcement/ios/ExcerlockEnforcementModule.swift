@@ -20,7 +20,13 @@ public final class ExcerlockEnforcementModule: Module {
               let selectionVersion = context["selectionVersion"] as? String,
               revision >= 0, !selectionVersion.isEmpty else { throw ExcerlockPolicyError.invalidSnapshot }
         let prior = try store.readIfPresentLocked()
-        if let prior, revision <= prior.revision { throw ExcerlockPolicyError.staleRevision }
+        if let prior, revision < prior.revision { throw ExcerlockPolicyError.staleRevision }
+        if let prior, revision == prior.revision {
+          guard prior.state == state, prior.policyGeneration == policyGeneration,
+                prior.accountGeneration == accountGeneration,
+                prior.selectionVersion == selectionVersion,
+                prior.eligibleUntil == eligibleUntil else { throw ExcerlockPolicyError.staleRevision }
+        }
         var registrations = prior?.registrations ?? [:]
         let sameContext: (ExcerlockMonitorRegistration) -> Bool = {
           $0.policyGeneration == policyGeneration && $0.accountGeneration == accountGeneration && $0.selectionVersion == selectionVersion
@@ -49,6 +55,9 @@ public final class ExcerlockEnforcementModule: Module {
     }
 
     AsyncFunction("shield") { (revision: Int) throws -> Bool in try ExcerlockPolicyStore.shared.apply(shield: true, revision: revision) }
+    Function("getPolicyRevision") { () throws -> Int? in
+      try ExcerlockPolicyStore.shared.locked { try ExcerlockPolicyStore.shared.readIfPresentLocked()?.revision }
+    }
     AsyncFunction("unshield") { (revision: Int) throws -> Bool in try ExcerlockPolicyStore.shared.apply(shield: false, revision: revision) }
 
     AsyncFunction("stageWatchdog") { (plan: [String: Any], revision: Int) async throws -> String in
@@ -77,6 +86,16 @@ public final class ExcerlockEnforcementModule: Module {
           intervalStart: calendar.dateComponents([.era,.year,.month,.day,.hour,.minute,.second], from: Date(timeIntervalSince1970: start / 1000)),
           intervalEnd: calendar.dateComponents([.era,.year,.month,.day,.hour,.minute,.second], from: Date(timeIntervalSince1970: end / 1000)), repeats: false)
         try DeviceActivityCenter().startMonitoring(DeviceActivityName(id), during: schedule)
+        let stillCurrent = try ExcerlockPolicyStore.shared.locked { () -> Bool in
+          let record = try ExcerlockPolicyStore.shared.readLocked()
+          return record.revision == revision && record.state == "conditional" &&
+            record.policyGeneration == policyGeneration && record.accountGeneration == accountGeneration &&
+            record.selectionVersion == selectionVersion && record.registrations[id] != nil
+        }
+        if !stillCurrent {
+          DeviceActivityCenter().stopMonitoring([DeviceActivityName(id)])
+          throw ExcerlockPolicyError.staleRevision
+        }
       } catch {
         try? ExcerlockPolicyStore.shared.locked {
           var record = try ExcerlockPolicyStore.shared.readLocked(); record.registrations.removeValue(forKey: id); try ExcerlockPolicyStore.shared.writeLocked(record)
@@ -90,7 +109,13 @@ public final class ExcerlockEnforcementModule: Module {
       var retire: [String] = []
       let committed = try ExcerlockPolicyStore.shared.locked {
         var record = try ExcerlockPolicyStore.shared.readLocked()
-        guard record.revision == revision, record.state == "conditional", var staged = record.registrations[id], !staged.committed else { return false }
+        guard record.revision == revision, record.state == "conditional", var staged = record.registrations[id], !staged.committed,
+              staged.end > Date().timeIntervalSince1970 * 1000,
+              DeviceActivityCenter().activities.contains(DeviceActivityName(id)) else {
+          record.registrations.removeValue(forKey: id); try ExcerlockPolicyStore.shared.writeLocked(record)
+          DeviceActivityCenter().stopMonitoring([DeviceActivityName(id)])
+          return false
+        }
         staged.committed = true; record.registrations[id] = staged
         if let old = record.committedId, old != id { retire.append(old); record.registrations.removeValue(forKey: old) }
         record.committedId = id; try ExcerlockPolicyStore.shared.writeLocked(record); return true
