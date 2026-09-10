@@ -814,3 +814,21 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   first runtime attempt found harness defects: StoreKit Product.products queried from UI-test runner
   returns empty, and Expo first-run dev-menu overlays the journey. This is NOT purchase proof;
   bounded test-only recovery assigned. No production or sandbox purchase acceptance claimed.
+
+- ASC subscription review screenshots uploaded under release lock with exact product/USA price
+  preflight: premium.a.annual6796884321 →0bd78ed4-9c91-406a-ab3d-3474394a080d;
+  premium.a.monthly6796884508 →21ea0715-7972-4489-843f-badf5607eafa. Both delivery COMPLETE,
+  association/dimensions verified; source is actual candidate27 paywall, not mockups. Evidence
+  /tmp/ship-subscription-review-screenshots/result-sanitized.json. Other four target products and
+  required App Store screenshot sizes remain open; no submission or public release performed.
+- Final-source candidate986f738a Release build/install/signature checks PASS, main+4 extensions,
+  runtime2/preview, canonical collected-data privacy parity. Hermes6,378,820bytes still FAIL4MB.
+  Native Apple button rendered correctly; tap reaches native Apple-account sign-in requirement
+  (simulator is not signed in), not completed auth. Actual W1/W2/W3 reviewer previews now correctly
+  show20steps/all-day/Thu. Rapid idb name entry initially truncated to App Re; actual AX readback
+  caught automation input loss, slow completion to exact App Review then verified preset persistence.
+  Evidence app-next/evidence/ship-current-simulator/candidate-986f738a/.
+- Independent source review found native Apple wrapper activation needed onAccessibilityTap;
+  integrated guarded handler4e8db1b0, targeted sign-in+rule tests15/15 and typecheck PASS. No actual
+  VoiceOver double-tap observation claimed. A refreshed Release candidate is building. Physical
+  iPhone Il freshly rechecked21:12UTC and still unavailable. CUA native pipe still fails.
