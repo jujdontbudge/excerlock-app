@@ -9,9 +9,10 @@ import { profileStore } from '../state/profileStore';
 import { createNativeNotifications } from './notifications/createNativeNotifications';
 import { createNativeJsonExport } from './NativeJsonExport';
 import { createAccountBoundExport } from './AccountBoundExport';
+import { RuntimeCleanupError } from './RuntimeSingleton';
 
 /** Real client services; root must hydrate stores before construction and supply native deletion cleanup. */
-export function createClientServices(options: {
+export async function createClientServices(options: {
   extra: unknown;
   version: string;
   build: string;
@@ -22,7 +23,7 @@ export function createClientServices(options: {
   const config = readClientConfiguration(options.extra);
   initializeSentrySdk(config.sentryDsn, { version: options.version, build: options.build, environment: config.environment });
   let telemetry!: ReturnType<typeof createPostHogRuntime>;
-  const identity = createIdentityServices({
+  const identity = await createIdentityServices({
     config: config.auth, adaptyPublicKey: config.adaptyPublicKey, beforeDelete: options.beforeDelete, afterDelete: options.afterDelete,
     analyticsFactory: (getIdentity) => {
       telemetry = createPostHogRuntime(config.posthog, {
@@ -36,11 +37,13 @@ export function createClientServices(options: {
       return {
         identify: (id) => telemetry.analytics.identify(id), reset: () => telemetry.analytics.reset(),
         getDistinctId: telemetry.getDistinctId,
-        dispose: () => { void telemetry.dispose().catch(options.reportError); },
+        dispose: () => telemetry.dispose(),
       };
     },
   });
+  try {
   let disposed = false;
+  let disposal: Promise<void> | null = null;
   let exportOrigin: ReturnType<typeof identity.auth.identity> | null = null;
   const exporter = createNativeJsonExport(() => {
     const live = identity.auth.identity();
@@ -66,6 +69,19 @@ export function createClientServices(options: {
     boot: identity.boot,
     waitForIdentityReady: identity.waitForIdentityReady,
     runIdentityOperation: identity.runIdentityOperation,
-    dispose() { if (disposed) return; disposed = true; identity.dispose(); },
+    dispose() {
+      if (disposal) return disposal;
+      disposed = true;
+      disposal = identity.dispose();
+      return disposal;
+    },
   };
+  } catch (error) {
+    try { await identity.dispose(); }
+    catch (cleanupError) {
+      const failures = cleanupError instanceof AggregateError ? cleanupError.errors : [cleanupError];
+      throw new RuntimeCleanupError([error, ...failures]);
+    }
+    throw error;
+  }
 }

@@ -4,15 +4,16 @@ import { createAuthServices, type AuthServiceConfig, type AuthServices } from '.
 import { AdaptySubscriptionAdapter } from './subscription/AdaptySubscriptionAdapter';
 import { nativeAdaptySdk } from './subscription/nativeAdaptySdk';
 import type { AdaptySdkPort } from './subscription/adaptySdk';
+import { RuntimeCleanupError } from './RuntimeSingleton';
 
 type AnalyticsIdentityHooks = {
   identify(id: string): Promise<void>;
   reset(): Promise<void>;
   getDistinctId(): string | null;
-  dispose(): void;
+  dispose(): void | Promise<void>;
 };
 /** One identity graph: callbacks close over services, never create competing gates. */
-export function createIdentityServices(options: {
+export async function createIdentityServices(options: {
   config: Pick<AuthServiceConfig, 'supabaseUrl' | 'supabaseAnonKey' | 'apiBaseUrl' | 'googleIosClientId' | 'googleRedirectUri'>;
   adaptyPublicKey: string;
   analyticsFactory(getIdentity: () => AuthIdentity): AnalyticsIdentityHooks;
@@ -40,7 +41,7 @@ export function createIdentityServices(options: {
     openSubscriptionManagement: () => Linking.openURL('https://apps.apple.com/account/subscriptions'),
   });
   try {
-    authServices = createAuthServices({
+    authServices = await createAuthServices({
       ...options.config,
       analyticsIdentify: (id) => analytics.identify(id), analyticsReset: () => analytics.reset(),
       subscriptionIdentify: (id) => subscription.identify(id), subscriptionReset: () => subscription.reset(),
@@ -49,16 +50,35 @@ export function createIdentityServices(options: {
       onBeforeDelete: options.beforeDelete,
       onAfterDelete: options.afterDelete,
     });
-  } catch (error) { subscription.dispose(); analytics.dispose(); throw error; }
+  } catch (error) {
+    const cleanup = await Promise.allSettled([
+      Promise.resolve().then(() => subscription.dispose()),
+      Promise.resolve().then(() => analytics.dispose()),
+    ]);
+    const failures = cleanup.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+    if (failures.length) throw new RuntimeCleanupError([error, ...failures.map(({ reason }) => reason)]);
+    throw error;
+  }
   let disposed = false;
+  let disposal: Promise<void> | null = null;
   return {
     auth: authServices.auth, subscription, analytics,
     boot: () => authServices!.auth.boot(),
     waitForIdentityReady: authServices.waitForIdentityReady,
     runIdentityOperation: authServices.runIdentityOperation,
     dispose() {
-      if (disposed) return;
-      disposed = true; authServices!.dispose(); subscription.dispose(); analytics.dispose();
+      if (disposal) return disposal;
+      disposed = true;
+      disposal = (async () => {
+        const results = await Promise.allSettled([
+          Promise.resolve().then(() => authServices!.dispose()),
+          Promise.resolve().then(() => subscription.dispose()),
+          Promise.resolve().then(() => analytics.dispose()),
+        ]);
+        const failures = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+        if (failures.length) throw new AggregateError(failures.map(({ reason }) => reason), 'Identity cleanup failed');
+      })();
+      return disposal;
     },
   };
 }

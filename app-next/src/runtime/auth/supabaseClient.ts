@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { SecureSupabaseStorage, SUPABASE_STORAGE_KEY } from './secureStorage';
 import type { SecureStoreBackend } from './secureStorage';
+import type { LockFunc } from '@supabase/auth-js';
 
 export type SupabaseClientConfig = {
   supabaseUrl: string;
@@ -8,6 +9,7 @@ export type SupabaseClientConfig = {
   storageKey?: string;
   secureBackend?: SecureStoreBackend;
   fetchImpl?: typeof fetch;
+  lock?: LockFunc;
 };
 
 /**
@@ -20,7 +22,7 @@ export type SupabaseClientConfig = {
  * - flowType pkce for email OTP + updateUser email_change.
  */
 export function createSupabaseClient(config: SupabaseClientConfig): SupabaseClient {
-  const { supabaseUrl, supabaseAnonKey, storageKey = SUPABASE_STORAGE_KEY, secureBackend, fetchImpl } = config;
+  const { supabaseUrl, supabaseAnonKey, storageKey = SUPABASE_STORAGE_KEY, secureBackend, fetchImpl, lock } = config;
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Supabase client requires supabaseUrl and supabaseAnonKey (clientAuth contract)');
   }
@@ -33,6 +35,7 @@ export function createSupabaseClient(config: SupabaseClientConfig): SupabaseClie
       persistSession: true,
       detectSessionInUrl: false,
       flowType: 'pkce',
+      lock,
     },
     global: fetchImpl ? { fetch: fetchImpl as typeof fetch } : undefined,
   });

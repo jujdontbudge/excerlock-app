@@ -1,4 +1,5 @@
 import { createAuthServices } from '../createAuthServices';
+import { IdentityCoordinator } from '../identityCoordinator';
 
 function anonymousSession() {
   const user = {
@@ -15,7 +16,7 @@ function anonymousSession() {
 test('factory awaits exact Adapty PostHog integration key before readiness', async () => {
   const session = anonymousSession();
   const integration = jest.fn(async () => {});
-  const services = createAuthServices({
+  const services = await createAuthServices({
     supabaseUrl: 'https://supabase.test',
     supabaseAnonKey: 'public-anon-key',
     apiBaseUrl: 'https://api.test',
@@ -55,6 +56,43 @@ test('factory awaits exact Adapty PostHog integration key before readiness', asy
     expect(integration).toHaveBeenCalledWith('posthog_distinct_user_id', 'posthog-person');
     expect(ready.ready).toBe(true);
   } finally {
-    services.dispose();
+    await services.dispose();
   }
+});
+
+test('factory rolls back auth callback ownership when coordinator startup throws', async () => {
+  const unsubscribe = jest.fn();
+  const start = jest.spyOn(IdentityCoordinator.prototype, 'start').mockImplementationOnce(() => { throw new Error('coordinator startup'); });
+  const supabase = { auth: {
+    onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe } } })),
+  } } as never;
+  await expect(createAuthServices({
+    supabaseUrl: 'https://supabase.test', supabaseAnonKey: 'public', apiBaseUrl: 'https://api.test',
+    googleIosClientId: 'google', googleRedirectUri: 'excerlock://auth', supabase,
+    appleDeps: {} as never, googleDeps: {} as never,
+    analyticsIdentify: async () => {}, analyticsReset: async () => {}, subscriptionIdentify: async () => {}, subscriptionReset: async () => {},
+    getPosthogDistinctId: () => null, setIntegrationIdentifier: async () => {}, onBeforeDelete: async () => {}, onAfterDelete: async () => {},
+  })).rejects.toThrow('coordinator startup');
+  expect(unsubscribe).toHaveBeenCalledTimes(1);
+  start.mockRestore();
+});
+
+test('disposing services does not tear down a caller-owned injected client', async () => {
+  const unsubscribe = jest.fn();
+  const initialize = jest.fn(async () => undefined);
+  const stopAutoRefresh = jest.fn(async () => undefined);
+  const disposeClient = jest.fn(async () => undefined);
+  const services = await createAuthServices({
+    supabaseUrl: 'https://supabase.test', supabaseAnonKey: 'public', apiBaseUrl: 'https://api.test',
+    googleIosClientId: 'google', googleRedirectUri: 'excerlock://auth',
+    supabase: { auth: { initialize, stopAutoRefresh, dispose: disposeClient, onAuthStateChange: () => ({ data: { subscription: { unsubscribe } } }) } } as never,
+    appleDeps: {} as never, googleDeps: {} as never, analyticsIdentify: async () => {}, analyticsReset: async () => {},
+    subscriptionIdentify: async () => {}, subscriptionReset: async () => {}, getPosthogDistinctId: () => null,
+    setIntegrationIdentifier: async () => {}, onBeforeDelete: async () => {}, onAfterDelete: async () => {},
+  });
+  await services.dispose();
+  expect(unsubscribe).toHaveBeenCalledTimes(1);
+  expect(initialize).not.toHaveBeenCalled();
+  expect(stopAutoRefresh).not.toHaveBeenCalled();
+  expect(disposeClient).not.toHaveBeenCalled();
 });

@@ -126,7 +126,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     let committedGymPresence = ruleDaysStore.getState().data.gymPresence;
     let deletionSuspended = false;
     let host!: EnforcementHost;
-    const client = createClientServices({
+    const client = await createClientServices({
       extra: Constants.expoConfig?.extra,
       version: Constants.expoConfig?.version ?? '1.0.0',
       build: Constants.expoConfig?.ios?.buildNumber ?? '1',

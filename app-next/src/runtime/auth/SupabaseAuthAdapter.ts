@@ -17,6 +17,7 @@ import type { RunIdentityOperation } from './identityBarrier';
 
 export type AuthAdapterDeps = {
   supabase: SupabaseClient;
+  runSdk?: <T>(operation: () => Promise<T>) => Promise<T>;
   appleDeps: AppleNativeDeps;
   googleDeps: GoogleAuthDeps;
   apiBaseUrl: string;
@@ -52,6 +53,7 @@ function isAnonymousUser(user: SupabaseUser | null): boolean {
 
 export class SupabaseAuthAdapter implements AuthPort {
   private supabase: SupabaseClient;
+  private runSdk: <T>(operation: () => Promise<T>) => Promise<T>;
   private appleDeps: AppleNativeDeps;
   private googleDeps: GoogleAuthDeps;
   private apiBaseUrl: string;
@@ -80,6 +82,7 @@ export class SupabaseAuthAdapter implements AuthPort {
 
   constructor(deps: AuthAdapterDeps) {
     this.supabase = deps.supabase;
+    this.runSdk = deps.runSdk ?? ((operation) => operation());
     this.appleDeps = deps.appleDeps;
     this.googleDeps = deps.googleDeps;
     this.apiBaseUrl = deps.apiBaseUrl.replace(/\/$/, '');
@@ -190,7 +193,7 @@ export class SupabaseAuthAdapter implements AuthPort {
   private async runBoot(startGeneration: number): Promise<AuthIdentity> {
     // 1. Hydrate existing secure session first. No anonymous yet.
     try {
-      const { data, error } = await this.supabase.auth.getSession();
+      const { data, error } = await this.runSdk(() => this.supabase.auth.getSession());
       if (this.generation !== startGeneration || this.disposed) {
         // Stale boot after delete/signout: ignore.
         return this.currentIdentity;
@@ -216,7 +219,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     }
 
     // 2. Single-flight anonymous sign-in with 5s UI fallback.
-    const anonymousPromise = this.supabase.auth.signInAnonymously().then(
+    const anonymousPromise = this.runSdk(() => this.supabase.auth.signInAnonymously()).then(
       (result) => result,
       (error) => ({ data: { user: null, session: null }, error }),
     );
@@ -437,7 +440,8 @@ export class SupabaseAuthAdapter implements AuthPort {
     }
   }
 
-  dispose(): void {
+  beginDispose(): void {
+    if (this.disposed) return;
     this.disposed = true;
     this.authSubscription?.unsubscribe();
     this.authSubscription = null;
@@ -448,6 +452,8 @@ export class SupabaseAuthAdapter implements AuthPort {
     for (const timer of this.bootTimers) clearTimeout(timer);
     this.bootTimers.clear();
   }
+
+  dispose(): void { this.beginDispose(); }
 
   // ---- Provider sign-in ----
 
@@ -505,12 +511,12 @@ export class SupabaseAuthAdapter implements AuthPort {
     // linkIdentity({ provider, token, nonce?, access_token? }) sends
     // link_identity:true + current JWT to /token?grant_type=id_token.
     // Never signInWithIdToken here; that would not preserve the anonymous UID.
-    const { data, error } = await this.supabase.auth.linkIdentity({
+    const { data, error } = await this.runSdk(() => this.supabase.auth.linkIdentity({
       provider,
       token,
       nonce,
       access_token: accessToken,
-    } as never);
+    } as never));
     this.assertCanonicalIdentity(expected);
     if (error) {
       if (isLinkConflictError(error)) {
@@ -552,12 +558,12 @@ export class SupabaseAuthAdapter implements AuthPort {
       throw new AuthError('Could not prepare account recovery. Please try again.', { code: 'RECOVERY_RESET_FAILED' });
     }
     this.assertTransition(operationGeneration);
-    const { data, error } = await this.supabase.auth.signInWithIdToken({
+    const { data, error } = await this.runSdk(() => this.supabase.auth.signInWithIdToken({
       provider,
       token,
       nonce,
       access_token: accessToken,
-    });
+    }));
     this.assertTransition(operationGeneration);
     if (error || !data.session?.user) {
       throw new AuthError('Could not recover that account. Please try again.', { code: 'RECOVERY_FAILED' });
@@ -587,7 +593,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     const identity = this.currentIdentity;
     if (!identity.isAnonymous) {
       // Permanent account: returning sign-in via OTP (recovery flow kind).
-      const { error } = await this.supabase.auth.signInWithOtp({ email: normalized });
+      const { error } = await this.runSdk(() => this.supabase.auth.signInWithOtp({ email: normalized }));
       this.assertCanonicalIdentity(expected);
       if (error) {
         throw new AuthError('Could not send a code. Please try again.', { code: 'EMAIL_SEND_FAILED' });
@@ -598,7 +604,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     }
     // Anonymous conversion: updateUser({ email }) preserves the anonymous UID.
     // Never signInWithOtp here; that would not preserve the UID.
-    const { error } = await this.supabase.auth.updateUser({ email: normalized });
+    const { error } = await this.runSdk(() => this.supabase.auth.updateUser({ email: normalized }));
     this.assertCanonicalIdentity(expected);
     if (!error) {
       this.pendingEmail = normalized;
@@ -607,7 +613,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     }
     if (isExistingAccountError(error) || isLinkConflictError(error)) {
       // Existing-account conflict: send recovery OTP, then explicit error.
-      const { error: otpError } = await this.supabase.auth.signInWithOtp({ email: normalized });
+      const { error: otpError } = await this.runSdk(() => this.supabase.auth.signInWithOtp({ email: normalized }));
       this.assertCanonicalIdentity(expected);
       if (otpError) {
         throw new AuthError('Could not send a code. Please try again.', { code: 'EMAIL_SEND_FAILED' });
@@ -633,7 +639,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     const expected = this.captureCanonicalIdentity();
     return this.runIdentityOperation(async () => {
       this.assertCanonicalIdentity(expected);
-      const { data, error } = await this.supabase.auth.verifyOtp({ email, token: normalizedCode, type } as never);
+      const { data, error } = await this.runSdk(() => this.supabase.auth.verifyOtp({ email, token: normalizedCode, type } as never));
       this.assertCanonicalIdentity(expected);
       if (error || !data.session?.user) {
         // Keep pending for visible retry; do not clear. Token intact.
@@ -657,7 +663,7 @@ export class SupabaseAuthAdapter implements AuthPort {
           throw new AuthError('Could not prepare account recovery. Please try again.', { code: 'RECOVERY_RESET_FAILED' });
         }
         this.assertTransition(previous.operationGeneration);
-        const { data, error } = await this.supabase.auth.verifyOtp({ email, token: code, type: 'email' });
+        const { data, error } = await this.runSdk(() => this.supabase.auth.verifyOtp({ email, token: code, type: 'email' }));
         this.assertTransition(previous.operationGeneration);
         if (error || !data.session?.user) {
           throw new AuthError('That code did not work. Please try again.', { code: 'OTP_INVALID' });
@@ -701,12 +707,12 @@ export class SupabaseAuthAdapter implements AuthPort {
         }
         this.assertTransition(nextGeneration);
         this.expectedSignedOutGenerations.add(nextGeneration);
-        const { error } = await this.supabase.auth.signOut();
+        const { error } = await this.runSdk(() => this.supabase.auth.signOut());
         if (this.generation !== nextGeneration || this.disposed) return;
         if (error) throw new AuthError('Could not sign out. Please try again.', { code: 'SIGNOUT_FAILED' });
         this.currentSession = { kind: 'anonymous' };
         this.syncSessionStore();
-        const { data, error: anonError } = await this.supabase.auth.signInAnonymously();
+        const { data, error: anonError } = await this.runSdk(() => this.supabase.auth.signInAnonymously());
         if (this.generation !== nextGeneration || this.disposed) return;
         if (anonError || !data.session?.user) {
           this.lastBootError = anonError ?? new Error('Anonymous boot failed after sign-out');
@@ -744,7 +750,7 @@ export class SupabaseAuthAdapter implements AuthPort {
       await this.onAccountSwitchReset();
       if (!stillDeleting()) throw new Error('stale tombstone cleanup');
       this.expectedSignedOutGenerations.add(generation);
-      const { error } = await this.supabase.auth.signOut();
+      const { error } = await this.runSdk(() => this.supabase.auth.signOut());
       if (!stillDeleting()) throw new Error('stale tombstone cleanup');
       if (error) throw error;
     } catch {
@@ -763,7 +769,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     this.emit();
     this.syncSessionStore();
     try {
-      const { data, error } = await this.supabase.auth.signInAnonymously();
+      const { data, error } = await this.runSdk(() => this.supabase.auth.signInAnonymously());
       if (this.generation !== nextGeneration || this.disposed) return;
       if (!error && data.session?.user) {
         this.applySupabaseSession(data.session, { preserveGeneration: true });
@@ -773,7 +779,7 @@ export class SupabaseAuthAdapter implements AuthPort {
 
   async getAccessToken(): Promise<string | null> {
     try {
-      const { data } = await this.supabase.auth.getSession();
+      const { data } = await this.runSdk(() => this.supabase.auth.getSession());
       return data.session?.access_token ?? null;
     } catch {
       return null;
@@ -783,7 +789,7 @@ export class SupabaseAuthAdapter implements AuthPort {
   async getAuthContext(): Promise<{ accessToken: string; userId: string; generation: number } | null> {
     const generation = this.generation;
     try {
-      const { data, error } = await this.supabase.auth.getSession();
+      const { data, error } = await this.runSdk(() => this.supabase.auth.getSession());
       const session = data.session;
       if (error || !session?.access_token || !session.user?.id) return null;
       if (this.generation !== generation || !['canonical', 'deleting'].includes(this.currentIdentity.kind)) return null;
@@ -858,7 +864,7 @@ export class SupabaseAuthAdapter implements AuthPort {
         if (this.generation !== startGeneration || this.disposed) throw new Error('stale deletion cleanup');
         await this.onAccountSwitchReset();
         this.expectedSignedOutGenerations.add(startGeneration);
-        const { error: signOutError } = await this.supabase.auth.signOut();
+        const { error: signOutError } = await this.runSdk(() => this.supabase.auth.signOut());
         if (signOutError) throw signOutError;
       } catch {
         throw new AuthPendingDeletionError('Deletion was accepted, but local cleanup is pending. Please retry.');
@@ -873,7 +879,7 @@ export class SupabaseAuthAdapter implements AuthPort {
       this.syncSessionStore();
       // Fresh anonymous boot (new UID). Failures remain provisional retry.
       try {
-        const { data, error } = await this.supabase.auth.signInAnonymously();
+        const { data, error } = await this.runSdk(() => this.supabase.auth.signInAnonymously());
         if (this.generation !== nextGeneration || this.disposed) return;
         if (!error && data.session?.user) {
           this.applySupabaseSession(data.session, { preserveGeneration: true });
