@@ -6,6 +6,7 @@ import type {
   PhonePlacementProvider,
   PhonePlacementSubscription,
 } from '../../engine/signals/placement/PhonePlacementProvider';
+import { runCleanups } from './runCleanups';
 
 export const PLACEMENT_FRESHNESS_MS = 5_000;
 export type PlacementEvidence = { placement: 'propped' | 'handheld' | 'unknown'; at: number | null };
@@ -28,9 +29,12 @@ export class PlacementAdapter {
   }
 
   async stop(): Promise<void> {
-    this.unsubscribe?.();
+    const unsubscribe = this.unsubscribe;
     this.unsubscribe = null;
-    await this.provider.stop();
+    await runCleanups(
+      [...(unsubscribe ? [() => unsubscribe()] : []), () => this.provider.stop()],
+      'Placement adapter cleanup failed',
+    );
   }
 
   subscribe(callback: (result: PhonePlacementResult) => void): PhonePlacementSubscription {

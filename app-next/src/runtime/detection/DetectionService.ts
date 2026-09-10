@@ -10,6 +10,7 @@ import type { HistoryCreditLedger, HistoryLedger } from './HistoryCreditLedger';
 import { addDays, dayKey, localInstant } from '../../domain/calendar';
 import type { DetectionData, PendingHistoryCredit } from '../../state/detectionStore';
 import type { WalkingDurationLedger } from './WalkingDurationLedger';
+import { runCleanups } from './runCleanups';
 export const MAX_HISTORY_SEGMENTS_PER_WAKE = 8;
 export type DetectionWake = {
   now: number;
@@ -85,9 +86,16 @@ export class DetectionService {
   }
   stop(): Promise<void> {
     return this.runLifecycle(async () => {
-      this.disposers.splice(0).forEach((dispose) => dispose());
-      await Promise.allSettled([this.deps.motion.stop(), this.deps.placement.stop()]);
-      await this.queue;
+      const disposers = this.disposers.splice(0);
+      await runCleanups(
+        [
+          ...disposers.map((dispose) => () => dispose()),
+          () => this.deps.motion.stop(),
+          () => this.deps.placement.stop(),
+          () => this.lastWork,
+        ],
+        'Detection service cleanup failed',
+      );
     });
   }
   reconcileWake(wake: DetectionWake): Promise<void> {

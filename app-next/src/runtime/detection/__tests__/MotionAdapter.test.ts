@@ -67,3 +67,21 @@ test('rejects future and out-of-order source replacement and expires at exactly 
   s.emitActivity({ classes: ['walking'], confidence: 'high', startedAt: 7000, receivedAt: 7000 });
   expect(s.adapter.reconcile(6000).qualifying).toBe('unknown');
 });
+
+test('stop releases every subscription and stops the provider despite synchronous cleanup failures', async () => {
+  const removals = [jest.fn(() => { throw new Error('activity remove'); }), jest.fn(() => { throw new Error('cadence remove'); })];
+  const provider = {
+    getAuthorizationStatus: () => 'authorized', requestAuthorization: async () => 'authorized',
+    on: jest.fn(() => removals.shift()!), start: async () => {},
+    stop: jest.fn(async () => { throw new Error('provider stop'); }),
+  } as unknown as MotionProvider;
+  const adapter = new MotionAdapter(provider);
+  await adapter.start();
+  const stopped = adapter.stop();
+  await expect(stopped).rejects.toMatchObject({ errors: expect.arrayContaining([
+    expect.objectContaining({ message: 'activity remove' }),
+    expect.objectContaining({ message: 'cadence remove' }),
+    expect.objectContaining({ message: 'provider stop' }),
+  ]) });
+  expect(provider.stop).toHaveBeenCalledTimes(1);
+});

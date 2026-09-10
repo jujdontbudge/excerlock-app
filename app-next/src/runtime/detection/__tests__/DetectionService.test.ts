@@ -14,6 +14,52 @@ function historyLedger(applyImpl?: (credit: HistoryCredit) => Promise<void>) {
   });
   return { read: jest.fn(async () => ({ version: 1 as const, through, stepsByDay: {} })), apply };
 }
+
+test('stop attempts both adapters and propagates a placement failure after motion fails', async () => {
+  const motionError = new Error('motion stop failed');
+  const placementError = new Error('placement stop failed');
+  const motion = {
+    subscribe: () => () => {}, start: async () => {}, stop: jest.fn(async () => { throw motionError; }),
+  } as unknown as MotionAdapter;
+  const placement = {
+    subscribe: () => () => {}, start: async () => {}, stop: jest.fn(async () => { throw placementError; }),
+  } as unknown as PlacementAdapter;
+  const service = new DetectionService({
+    motion, placement, gymLog: { append: async () => {}, readAll: async () => [] }, historyLedger: historyLedger(),
+  });
+
+  await service.start(30_000);
+  const stopped = service.stop();
+  await expect(stopped).rejects.toBeInstanceOf(AggregateError);
+  await expect(stopped).rejects.toMatchObject({ errors: [motionError, placementError] });
+  expect(motion.stop).toHaveBeenCalledTimes(1);
+  expect(placement.stop).toHaveBeenCalledTimes(1);
+});
+
+test('a synchronous subscriber disposer and failed queued work do not prevent native stops', async () => {
+  const disposerError = new Error('subscriber dispose failed');
+  const workError = new Error('queued work failed');
+  let motionListener!: (evidence: never) => void;
+  const motion = {
+    subscribe: (listener: (evidence: never) => void) => { motionListener = listener; return () => { throw disposerError; }; },
+    start: async () => {}, stop: jest.fn(async () => {}),
+  } as unknown as MotionAdapter;
+  const placement = {
+    subscribe: () => () => {}, start: async () => {}, stop: jest.fn(async () => {}),
+  } as unknown as PlacementAdapter;
+  const service = new DetectionService({
+    motion, placement, gymLog: { append: async () => {}, readAll: async () => [] }, historyLedger: historyLedger(),
+    persist: async () => { throw workError; },
+  });
+
+  await service.start(30_000);
+  motionListener({ qualifying: true, observedAt: 1, activityAt: 1, cadenceAt: null, cadencePerMinute: null } as never);
+  await expect(service.flush()).rejects.toBe(workError);
+  const stopped = service.stop();
+  await expect(stopped).rejects.toMatchObject({ errors: [disposerError, workError] });
+  expect(motion.stop).toHaveBeenCalledTimes(1);
+  expect(placement.stop).toHaveBeenCalledTimes(1);
+});
 beforeEach(() => detectionStore.getState().reset());
 test('headless wake consumes durable gym events and credits step history once', async () => {
   const querySteps = jest.fn(async () => ({ steps: 123 }));
