@@ -82,14 +82,14 @@ export const settingsCopy = {
     motion: 'Counts walking steps from your phone.',
     location: 'Recognizes visits to your saved gyms.',
     camera: 'Checks walking movement when your phone is propped on a treadmill.',
-    notifications: 'Reminds you before the trial ends and before a walking lease expires.',
+    notifications: 'Reminds you before the trial ends and when a condition needs attention.',
   },
   without: {
     screenTime: 'Your selected apps cannot be blocked without access.',
     motion: 'Your walking step goal cannot update without access.',
     location: 'Automatic gym detection needs location. Your other activities still work.',
     camera: 'Treadmill camera verification is unavailable without access.',
-    notifications: 'You will not receive the trial or walking-lease reminders.',
+    notifications: 'You will not receive trial or condition reminders.',
   },
   statuses: {
     granted: 'Granted',

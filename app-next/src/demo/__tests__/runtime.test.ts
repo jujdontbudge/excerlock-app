@@ -12,7 +12,8 @@ test('scenario loading resets persisted facts, keep-edits preserves them, and po
       timezone: runtime.clock.timezone(),
       rules: rulesStore.getState().data.rules,
       ruleDays: ruleDaysStore.getState().data.days,
-      walkingSession: null,
+      detection: { state: 'inactive', since: null },
+        placement: { state: 'unknown', liveRelief: false, since: null },
     });
   expect(decision().state).toBe('beforeWindow');
   runtime.dev.advance(3600000);

@@ -8,12 +8,12 @@ test('cold runtime restores scenario clock and step signals without resetting ed
 test('corrupt fake context is ignored without blocking launch',async()=>{
  await AsyncStorage.setItem('excerlock-next.fake-context.v1','broken');const r=createRuntime();await r.dev.ready();expect(r.dev.snapshot().hydrated).toBe(true);r.dispose();
 });
-test('cold runtime resumes a saved walking lease without losing verified minutes', async () => {
+test('cold fake runtime does not manufacture live walking relief', async () => {
   await AsyncStorage.clear();
   const first = createRuntime(); await first.dev.load('home-walking-session');
   await first.walking.start(rulesStore.getState().data.rules[0]); first.dev.advance(9000);
   await first.dev.flush(); first.dispose();
-  const second = createRuntime(); await second.dev.ready(); second.dev.advance(3000);
-  expect(second.walking.details().walkingSeconds).toBe(6);
+  const second = createRuntime(); await second.dev.ready();
+  expect(second.walking.snapshot().phase).toBe('inactive');
   second.dispose();
 });

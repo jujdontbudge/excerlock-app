@@ -9,6 +9,7 @@ import { profileStore as useProfileStore } from './profileStore';
 import { streak } from '../domain/streak';
 import { reclaimedPeriod } from '../domain/reclaimed';
 import { addDays } from '../domain/calendar';
+import { inactiveWalkingStatus } from '../ports/WalkingPort';
 export function useClock() {
   const runtime = useRuntime();
   return useSyncExternalStore(runtime.clock.subscribe, runtime.clock.now, runtime.clock.now);
@@ -22,11 +23,21 @@ export function useLockDecision() {
     now = useClock(),
     timezone = runtime.clock.timezone(),
     rules = useRulesStore((s) => s.data.rules),
-    { days, walkingSession, gymPresence } = useRuleDaysStore((s) => s.data);
+    { days, gymPresence } = useRuleDaysStore((s) => s.data),
+    walking = useSyncExternalStore((notify) => runtime.walking.observe(notify), () => runtime.walking.snapshot(), () => inactiveWalkingStatus);
   return useMemo(
-    () => resolveLock({ now, timezone, rules, ruleDays: days, walkingSession, gymPresence }),
-    [now, timezone, rules, days, walkingSession, gymPresence],
+    () => resolveLock({
+      now, timezone, rules, ruleDays: days,
+      detection: { state: walking.phase === 'active' || walking.phase === 'grace' ? 'active' : walking.phase === 'unknown' ? 'unknown' : 'inactive', since: walking.since },
+      placement: { state: walking.placement, liveRelief: walking.proppedVerified, since: walking.proppedSince },
+      gymPresence,
+    }),
+    [now, timezone, rules, days, walking, gymPresence],
   );
+}
+export function useWalkingStatus() {
+  const runtime = useRuntime();
+  return useSyncExternalStore((notify) => runtime.walking.observe(notify), () => runtime.walking.snapshot(), () => inactiveWalkingStatus);
 }
 export function useTodayProgress() {
   const runtime = useRuntime(),

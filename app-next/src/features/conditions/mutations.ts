@@ -15,9 +15,6 @@ export function toggleRule(id: string, enabled: boolean) {
 }
 export function deleteRule(id: string) {
   rulesStore.getState().patch({ rules: rulesStore.getState().data.rules.filter((r) => r.id !== id) });
-  const { days, walkingSession } = ruleDaysStore.getState().data;
-  ruleDaysStore.getState().patch({
-    days: days.filter((d) => d.ruleId !== id),
-    walkingSession: walkingSession?.ruleId === id ? null : walkingSession,
-  });
+  const { days } = ruleDaysStore.getState().data;
+  ruleDaysStore.getState().patch({ days: days.filter((d) => d.ruleId !== id) });
 }

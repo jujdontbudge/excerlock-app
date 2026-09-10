@@ -13,8 +13,9 @@ test.each([
       s.rules[0],
       s.ruleDays[0] ?? { ruleId: s.rules[0].id, day: '2026-09-07', progress: 0, met: false, metAt: null },
       s.permissions,
-      s.walkingSession ?? null,
-      s.clock.now,
+      s.id === 'home-walking-session'
+        ? { ruleId: s.rules[0].id, phase: 'active', since: s.clock.now, placement: 'handheld', proppedVerified: false, proppedSince: null }
+        : { ruleId: null, phase: 'inactive', since: null, placement: 'unknown', proppedVerified: false, proppedSince: null },
       false,
     ),
   ).toMatchSnapshot();

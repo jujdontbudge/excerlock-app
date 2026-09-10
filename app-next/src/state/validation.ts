@@ -31,7 +31,4 @@ export const ruleDay = shape({
   met: bool,
   metAt: nullable(iso),
 });
-export const walkingSession = nullable(
-  shape({ ruleId: text, startedAt: iso, leaseUntil: iso, phase: oneOf(['verifying', 'walking', 'grace', 'ended']) }),
-);
 export const gymPresence = nullable(shape({ placeId: text, startedAt: iso, confirmedAt: nullable(iso) }));

@@ -1,12 +1,12 @@
-import { Rule, RuleDay, Permissions, WalkingSession } from '../../domain/types';
+import { Rule, RuleDay, Permissions } from '../../domain/types';
+import type { WalkingStatus } from '../../ports/WalkingPort';
 import { homeCopy as c } from '../../content/home';
 import { ruleName } from '../../domain/ruleName';
 export function progressContent(
   rule: Rule,
   row: RuleDay,
   permissions: Permissions,
-  session: WalkingSession | null,
-  now: string,
+  session: WalkingStatus,
   auto: boolean,
 ) {
   const m = rule.mode,
@@ -14,8 +14,8 @@ export function progressContent(
     format = (value: number) =>
       value.toLocaleString('en-US');
   if (m.kind === 'state') {
-    const mine = session?.ruleId === rule.id && session.phase !== 'ended' ? session : null;
-    const live = !!mine && ['walking', 'grace'].includes(mine.phase) && Date.parse(mine.leaseUntil) > Date.parse(now);
+    const mine = session.ruleId === rule.id ? session : null;
+    const live = !!mine && ['active', 'grace'].includes(mine.phase);
     const state = live ? mine!.phase : 'idle';
     return {
       title,
@@ -23,7 +23,7 @@ export function progressContent(
       value: live ? 1 : 0,
       detail: permissions.motion === 'denied' ? c.walkReadyDenied : c.walkReady,
       action: 'walk',
-      label: state === 'walking' || state === 'grace' ? c.walkDetected : c.walkingEntry,
+      label: state === 'active' || state === 'grace' ? c.walkDetected : c.walkingEntry,
       state,
     } as const;
   }

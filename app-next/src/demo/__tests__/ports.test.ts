@@ -22,14 +22,13 @@ test('scripted walking phases and gym arrivals update observable local facts', a
   const runtime = createRuntime();
   await runtime.dev.load('home-walking-session');
   const phases: string[] = [];
-  const stop = runtime.walking.observe((s) => {
-    if (s) phases.push(s.phase);
-  });
+  const stop = runtime.walking.observe(() => { phases.push(runtime.walking.snapshot().phase); });
   await runtime.walking.start(rulesStore.getState().data.rules[0]);
   runtime.dev.advance(6000);
   runtime.dev.advance(6000);
   runtime.dev.advance(6000);
-  expect(phases).toEqual(expect.arrayContaining(['verifying', 'walking', 'grace', 'ended']));
+  expect(phases).toEqual(expect.arrayContaining(['verifying', 'active', 'grace']));
+  runtime.walking.stop(); expect(runtime.walking.snapshot().phase).toBe('inactive');
   stop();
   await runtime.dev.load('gym-arrival-user');
   const gym = runtime.gym.listPlaces()[0];

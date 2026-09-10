@@ -16,7 +16,7 @@ import {
 } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
-import { useClock, useLockDecision, useTodayProgress, useStreak } from '../../state/selectors';
+import { useClock, useLockDecision, useTodayProgress, useStreak, useWalkingStatus } from '../../state/selectors';
 import { profileStore as useProfileStore } from '../../state/profileStore';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
@@ -42,7 +42,7 @@ export function HomeScreen() {
   const { rules, lockedApps } = useRulesStore((s) => s.data),
     permissions = usePermissionsStore((s) => s.data),
     auto = useSettingsStore((s) => s.data.gymAutoDetect),
-    session = useRuleDaysStore((s) => s.data.walkingSession),
+    session = useWalkingStatus(),
     presence = useRuleDaysStore((s) => s.data.gymPresence);
   const status = statusContent({
       decision,
@@ -60,16 +60,15 @@ export function HomeScreen() {
     if (status.action === 'apps') chooseApps();
     if (status.action === 'add') add();
     if (status.action === 'conditions') router.navigate('/conditions');
-    if (status.action === 'stop') runtime.walking.stop();
   };
   const actionLabel = status.action
-    ? { permission: c.fix, apps: c.chooseApps, add: c.add, conditions: c.conditions, stop: c.stopWalk }[status.action]
+    ? { permission: c.fix, apps: c.chooseApps, add: c.add, conditions: c.conditions }[status.action]
     : undefined;
   useEffect(() => {
     runtime.analytics.screen('Home');
   }, [runtime]);
   const conditionCards = progress.map(({ rule, row }) => {
-    const model = progressContent(rule, row, permissions, session, now, auto);
+    const model = progressContent(rule, row, permissions, session, auto);
     const kind = unlockKind(rule);
     const active = decision.state === 'locked' && decision.activeRuleIds.includes(rule.id);
     const atGym = kind === 'gym' && !row.met ? presence : null;
@@ -80,7 +79,7 @@ export function HomeScreen() {
         ? atGym.confirmedAt
           ? { label: c.presentGym, tone: 'success' }
           : { label: c.confirmingGym, tone: 'primary' }
-        : walk === 'walking' || walk === 'grace'
+        : walk === 'active' || walk === 'grace'
           ? { label: c.walkDetected, tone: 'success' }
               : { label: active ? c.inProgress : c.scheduled, tone: 'primary' };
     const detected = status.tone === 'success';
@@ -110,7 +109,7 @@ export function HomeScreen() {
         {rule.mode.kind === 'state' ? null : <ProgressBar value={Math.max(0, Math.min(1, model.value))} label={model.title} tone={detected ? 'success' : 'brand'} />}
         {row.met ? null : rule.mode.kind === 'state' ? (
           <>
-            <WalkingCheckButton rule={rule} observe={runtime.walking.observeWalking} start={runtime.walking.start} />
+            <WalkingCheckButton rule={rule} checkWalking={(target) => runtime.walking.check(target)} />
             {walk === 'idle' ? <UnlockEntry kind="treadmill" label={c.treadmillEntry} onPress={() => router.push({ pathname: '/unlock/treadmill', params: { ruleId: rule.id } })} /> : null}
           </>
         ) : kind === 'gym' ? (
