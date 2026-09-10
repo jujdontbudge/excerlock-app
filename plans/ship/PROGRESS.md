@@ -536,3 +536,13 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   the exact Apple ID failed: password required, no cached web session. Browser CDP also unavailable.
   No group assignment or profile deletion performed. Signed build remains gated on portal session/repair.
   Separate unsigned Release compilation/Hermes-size verification assigned; it cannot substitute for signing.
+- Unsigned generic-device production Release build at7619c5bd SUCCEEDED. Actual packaged Hermes v98
+  bytecode is7,881,912bytes (7.517MiB), FAILS T15<=4MiB. Actual source map3946sources passes no-dev graph
+  verifier, exact3PlugIns+1ExtensionKit report packaged. Artifacts preserved at
+  /tmp/excerlock-unsigned-release-7619c5bd-20260910-114438-16097. Bundle-size attribution underway;
+  do not loosen the budget or treat unsigned native compilation as runtime/signature acceptance.
+- Correction: that local Release build's existing Sentry phase DID upload an artifact bundle for release
+  com.johansardar.excerlock@1.0.0+1/dist1 (bundle1bc84d7c-0fb1-54cc-8fd4-addffdd1dd58). The lane's earlier
+  no-remote-mutation statement was incorrect. No remote deletion/reversal attempted. Root inspected
+  installed Sentry scripts and now requires SENTRY_DISABLE_AUTO_UPLOAD=true plus unset SENTRY_AUTH_TOKEN
+  after env injection for verification builds; pending signed preparation script corrected. No ASC upload.
