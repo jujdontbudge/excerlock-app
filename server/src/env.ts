@@ -5,6 +5,9 @@ const DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com";
 const DEFAULT_POSTHOG_API_HOST = "https://us.posthog.com";
 const DEFAULT_SUPPORT_NOTIFY_EMAIL = "johansardar77@gmail.com";
 const DEFAULT_SUPPORT_FROM_EMAIL = "ExcerLock <onboarding@resend.dev>";
+const DEFAULT_DELETION_WORKER_INTERVAL_MS = 30_000;
+const DEFAULT_DELETION_WORKER_BATCH_SIZE = 10;
+const DEFAULT_DELETION_GATEWAY_TIMEOUT_MS = 10_000;
 
 function blankToUndefined(value: unknown): unknown {
   if (typeof value !== "string") {
@@ -16,6 +19,10 @@ function blankToUndefined(value: unknown): unknown {
 }
 
 const optionalString = z.preprocess(blankToUndefined, z.string().optional());
+const optionalUrl = z.preprocess(
+  blankToUndefined,
+  z.string().url().optional(),
+);
 
 const envSchema = z.object({
   NODE_ENV: z
@@ -27,6 +34,12 @@ const envSchema = z.object({
   DATABASE_URL: optionalString,
   SENTRY_DSN: optionalString,
   CLERK_SECRET_KEY: optionalString,
+  CLERK_ISSUER: optionalUrl,
+  SUPABASE_URL: optionalUrl,
+  SUPABASE_JWKS_URL: optionalUrl,
+  SUPABASE_JWT_SECRET: optionalString,
+  SUPABASE_JWT_ALGORITHMS: optionalString,
+  SUPABASE_SERVICE_ROLE_KEY: optionalString,
   ADAPTY_SECRET_KEY: optionalString,
   ADAPTY_WEBHOOK_SECRET: optionalString,
   POSTHOG_API_KEY: optionalString,
@@ -67,6 +80,31 @@ const envSchema = z.object({
       .default(DEFAULT_POSTHOG_API_HOST)
       .catch(DEFAULT_POSTHOG_API_HOST),
   ),
+  DELETION_WORKER_ENABLED: z.preprocess(
+    blankToUndefined,
+    z.string().optional(),
+  ),
+  DELETION_WORKER_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .min(1_000)
+    .max(600_000)
+    .default(DEFAULT_DELETION_WORKER_INTERVAL_MS)
+    .catch(DEFAULT_DELETION_WORKER_INTERVAL_MS),
+  DELETION_WORKER_BATCH_SIZE: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(DEFAULT_DELETION_WORKER_BATCH_SIZE)
+    .catch(DEFAULT_DELETION_WORKER_BATCH_SIZE),
+  DELETION_GATEWAY_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(1_000)
+    .max(60_000)
+    .default(DEFAULT_DELETION_GATEWAY_TIMEOUT_MS)
+    .catch(DEFAULT_DELETION_GATEWAY_TIMEOUT_MS),
 });
 
 export interface Environment {
@@ -76,6 +114,12 @@ export interface Environment {
   databaseUrl: string | undefined;
   sentryDsn: string | undefined;
   clerkSecretKey: string | undefined;
+  clerkIssuer: string | undefined;
+  supabaseUrl: string | undefined;
+  supabaseJwksUrl: string | undefined;
+  supabaseJwtSecret: string | undefined;
+  supabaseJwtAlgorithms: string | undefined;
+  supabaseServiceRoleKey: string | undefined;
   adaptySecretKey: string | undefined;
   adaptyWebhookAuth: string | undefined;
   posthogApiKey: string | undefined;
@@ -100,6 +144,10 @@ export interface Environment {
   resendApiKey: string | undefined;
   supportNotifyEmail: string;
   supportFromEmail: string;
+  deletionWorkerEnabled: boolean;
+  deletionWorkerIntervalMs: number;
+  deletionWorkerBatchSize: number;
+  deletionGatewayTimeoutMs: number;
 }
 
 export function parseEnv(
@@ -114,6 +162,12 @@ export function parseEnv(
     databaseUrl: parsed.DATABASE_URL,
     sentryDsn: parsed.SENTRY_DSN,
     clerkSecretKey: parsed.CLERK_SECRET_KEY,
+    clerkIssuer: parsed.CLERK_ISSUER,
+    supabaseUrl: parsed.SUPABASE_URL,
+    supabaseJwksUrl: parsed.SUPABASE_JWKS_URL,
+    supabaseJwtSecret: parsed.SUPABASE_JWT_SECRET,
+    supabaseJwtAlgorithms: parsed.SUPABASE_JWT_ALGORITHMS,
+    supabaseServiceRoleKey: parsed.SUPABASE_SERVICE_ROLE_KEY,
     adaptySecretKey: parsed.ADAPTY_SECRET_KEY,
     adaptyWebhookAuth: parsed.ADAPTY_WEBHOOK_SECRET,
     posthogApiKey: parsed.POSTHOG_API_KEY,
@@ -138,5 +192,9 @@ export function parseEnv(
     resendApiKey: parsed.RESEND_API_KEY,
     supportNotifyEmail: parsed.SUPPORT_NOTIFY_EMAIL,
     supportFromEmail: parsed.SUPPORT_FROM_EMAIL,
+    deletionWorkerEnabled: parsed.DELETION_WORKER_ENABLED !== "false",
+    deletionWorkerIntervalMs: parsed.DELETION_WORKER_INTERVAL_MS,
+    deletionWorkerBatchSize: parsed.DELETION_WORKER_BATCH_SIZE,
+    deletionGatewayTimeoutMs: parsed.DELETION_GATEWAY_TIMEOUT_MS,
   };
 }

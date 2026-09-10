@@ -89,14 +89,22 @@ describe("account deletion persistence", () => {
         adaptyErasedAt: null,
         posthogErasedAt: null,
         clerkDeletedAt: null,
+        authProvider: null,
+        authDeletedAt: null,
+        deletionAttempts: 0,
+        deletionNextRetryAt: null,
       },
       retry: {
         deletedAt,
         adaptyErasedAt: null,
         posthogErasedAt: null,
         clerkDeletedAt: null,
+        authProvider: null,
+        authDeletedAt: null,
+        deletionAttempts: 0,
+        deletionNextRetryAt: null,
       },
-      deletedUser: {
+      deletedUser: expect.objectContaining({
         id: "user_123",
         email: null,
         createdAt: new Date("2026-07-30T20:00:00.000Z"),
@@ -105,7 +113,11 @@ describe("account deletion persistence", () => {
         adaptyErasedAt: null,
         posthogErasedAt: null,
         clerkDeletedAt: null,
-      },
+        authProvider: null,
+        authDeletedAt: null,
+        deletionAttempts: 0,
+        deletionNextRetryAt: null,
+      }),
       deletedSupport: 0,
       deletedVotes: 0,
       deletedConnections: 0,
@@ -270,3 +282,167 @@ async function seedIdentitySpine(): Promise<void> {
     eventType: "subscription_started",
   });
 }
+
+describe("provider-neutral checkpoints and retry bookkeeping", () => {
+  it("never treats a legacy Clerk checkpoint as Supabase erasure", async () => {
+    await seedIdentitySpine();
+    const repository = createDrizzleUserDeletionRepository(postgres.db);
+    const deletedAt = new Date("2026-07-31T20:00:00.000Z");
+    await repository.prepareDeletion("user_123", deletedAt);
+    await repository.markClerkDeleted("user_123", deletedAt);
+
+    const state = await repository.prepareDeletion(
+      "user_123",
+      new Date("2026-08-01T20:00:00.000Z"),
+    );
+    expect(state).toEqual(
+      expect.objectContaining({
+        deletedAt,
+        clerkDeletedAt: deletedAt,
+        authDeletedAt: null,
+        authProvider: null,
+      }),
+    );
+    // Incomplete for the Supabase worker.
+    expect(await repository.listIncompleteDeletions(10)).toContain("user_123");
+  });
+
+  it("records Supabase erasure with an explicit provider field", async () => {
+    await seedIdentitySpine();
+    const repository = createDrizzleUserDeletionRepository(postgres.db);
+    const deletedAt = new Date("2026-07-31T20:00:00.000Z");
+    await repository.prepareDeletion("user_123", deletedAt);
+    await repository.markAdaptyErased("user_123", deletedAt);
+    await repository.markPosthogErased("user_123", deletedAt);
+    await repository.markAuthDeleted("user_123", deletedAt, "supabase");
+
+    const [row] = await postgres.db
+      .select()
+      .from(users)
+      .where(eq(users.id, "user_123"));
+    expect(row).toEqual(
+      expect.objectContaining({
+        authProvider: "supabase",
+        authDeletedAt: deletedAt,
+      }),
+    );
+    expect(await repository.listIncompleteDeletions(10)).not.toContain(
+      "user_123",
+    );
+  });
+
+  it("lists only incomplete tombstones for the durable worker", async () => {
+    const repository = createDrizzleUserDeletionRepository(postgres.db);
+    const deletedAt = new Date("2026-07-31T20:00:00.000Z");
+    await postgres.db.insert(users).values([{ id: "active-user" }]);
+    await repository.prepareDeletion("incomplete-user", deletedAt);
+    await repository.prepareDeletion("complete-user", deletedAt);
+    await repository.markAdaptyErased("complete-user", deletedAt);
+    await repository.markPosthogErased("complete-user", deletedAt);
+    await repository.markAuthDeleted("complete-user", deletedAt, "supabase");
+
+    const incomplete = await repository.listIncompleteDeletions(10);
+    expect(incomplete).toContain("incomplete-user");
+    expect(incomplete).not.toContain("complete-user");
+    expect(incomplete).not.toContain("active-user");
+  });
+
+  it("does not treat a checkpoint for a different auth provider as complete", async () => {
+    const repository = createDrizzleUserDeletionRepository(postgres.db);
+    const deletedAt = new Date("2026-07-31T20:00:00.000Z");
+    await repository.prepareDeletion("provider-mismatch", deletedAt);
+    await repository.markAdaptyErased("provider-mismatch", deletedAt);
+    await repository.markPosthogErased("provider-mismatch", deletedAt);
+    await repository.markAuthDeleted("provider-mismatch", deletedAt, "clerk");
+
+    expect(await repository.listIncompleteDeletions(10)).toContain(
+      "provider-mismatch",
+    );
+  });
+
+  it("tracks failures with bounded sanitized retry state and clears leases", async () => {
+    const repository = createDrizzleUserDeletionRepository(postgres.db);
+    const deletedAt = new Date("2026-07-31T20:00:00.000Z");
+    await repository.prepareDeletion("user_123", deletedAt);
+    const nextRetry = new Date("2026-07-31T20:01:00.000Z");
+    await repository.recordDeletionFailure(
+      "user_123",
+      deletedAt,
+      nextRetry,
+      "Supabase identity erasure did not succeed",
+    );
+    let [row] = await postgres.db
+      .select()
+      .from(users)
+      .where(eq(users.id, "user_123"));
+    expect(row).toEqual(
+      expect.objectContaining({
+        deletionAttempts: 1,
+        deletionNextRetryAt: nextRetry,
+        deletionLastError: "Supabase identity erasure did not succeed",
+      }),
+    );
+    // Not yet retryable before nextRetry.
+    expect(
+      await repository.listIncompleteDeletions(
+        10,
+        new Date("2026-07-31T20:00:30.000Z"),
+      ),
+    ).not.toContain("user_123");
+    expect(
+      await repository.listIncompleteDeletions(
+        10,
+        new Date("2026-07-31T20:02:00.000Z"),
+      ),
+    ).toContain("user_123");
+    await repository.clearDeletionLease("user_123");
+    [row] = await postgres.db
+      .select()
+      .from(users)
+      .where(eq(users.id, "user_123"));
+    expect(row.deletionLeaseOwner).toBeNull();
+  });
+
+  it("atomically grants a deletion lease to only one replica until expiry", async () => {
+    const repository = createDrizzleUserDeletionRepository(postgres.db);
+    const now = new Date("2026-07-31T20:00:00.000Z");
+    await repository.prepareDeletion("leased-user", now);
+    const expiresAt = new Date(now.getTime() + 60_000);
+
+    const claims = await Promise.all([
+      repository.claimDeletionLease("leased-user", "replica-a", now, expiresAt),
+      repository.claimDeletionLease("leased-user", "replica-b", now, expiresAt),
+    ]);
+    expect(claims.filter(Boolean)).toHaveLength(1);
+    expect(
+      await repository.claimDeletionLease(
+        "leased-user",
+        "replica-c",
+        new Date(expiresAt.getTime() + 1),
+        new Date(expiresAt.getTime() + 60_001),
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps concurrent prepareDeletion calls serialized and replay-safe", async () => {
+    await seedIdentitySpine();
+    const repository = createDrizzleUserDeletionRepository(postgres.db);
+    const deletedAt = new Date("2026-07-31T20:00:00.000Z");
+    const results = await Promise.all([
+      repository.prepareDeletion("user_123", deletedAt),
+      repository.prepareDeletion("user_123", deletedAt),
+      repository.prepareDeletion(
+        "user_123",
+        new Date("2026-08-02T20:00:00.000Z"),
+      ),
+    ]);
+    for (const state of results) {
+      expect(state.deletedAt).toEqual(deletedAt);
+    }
+    const [row] = await postgres.db
+      .select()
+      .from(users)
+      .where(eq(users.id, "user_123"));
+    expect(row.deletedAt).toEqual(deletedAt);
+  });
+});

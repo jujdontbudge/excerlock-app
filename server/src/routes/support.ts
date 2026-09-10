@@ -15,7 +15,7 @@ import type {
   FeatureRequestVoteService,
   SupportSubmissionService,
 } from "../support/index.js";
-import { requireRouteUserId } from "./vendorRouteSupport.js";
+import { requireActiveRouteUserId } from "./vendorRouteSupport.js";
 import { sendSupportRouteError } from "./supportRouteError.js";
 
 interface SupportRouteDependencies {
@@ -49,7 +49,7 @@ export function createSupportRoutes(
 ): FastifyPluginAsync {
   return async (app) => {
     app.get("/feature-requests", async (request, reply) => {
-      const userId = await requireRouteUserId(request, reply);
+      const userId = await requireActiveRouteUserId(request, reply);
       if (!userId) {
         return;
       }
@@ -64,7 +64,7 @@ export function createSupportRoutes(
     app.post<{ Params: FeatureRequestParams }>(
       "/feature-requests/:featureRequestId/votes",
       async (request, reply) => {
-        const userId = await requireRouteUserId(request, reply);
+        const userId = await requireActiveRouteUserId(request, reply);
         if (!userId) {
           return;
         }
@@ -84,7 +84,7 @@ export function createSupportRoutes(
     );
 
     app.post<{ Body: unknown }>("/support", async (request, reply) => {
-      const userId = await requireRouteUserId(request, reply);
+      const userId = await requireActiveRouteUserId(request, reply);
       if (!userId) {
         return;
       }

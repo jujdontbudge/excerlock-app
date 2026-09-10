@@ -1,21 +1,104 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
+import { and, eq, isNull } from "drizzle-orm";
+import { getDb, users } from "../db/index.js";
 import { isVendor, type Vendor } from "../vendors/index.js";
+
+export function verifiedRouteUserId(request: FastifyRequest): string | null {
+  return request.authIdentity?.userId ?? request.clerkIdentity?.userId ?? null;
+}
 
 export async function requireRouteUserId(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<string | null> {
-  const userId = request.clerkIdentity?.userId;
+  const userId = verifiedRouteUserId(request);
   if (!userId) {
     await reply.code(401).send({
       error: {
         code: "UNAUTHORIZED",
-        message: "A verified Clerk user is required",
+        message: "A verified user is required",
       },
     });
     return null;
   }
   return userId;
+}
+
+export interface TombstoneChecker {
+  (userId: string): Promise<boolean>;
+}
+
+async function defaultTombstoneCheck(userId: string): Promise<boolean> {
+  const db = getDb();
+  if (!db) {
+    return false;
+  }
+  const [row] = await db
+    .select({ deletedAt: users.deletedAt })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return row?.deletedAt != null;
+}
+
+/**
+ * Provider-neutral active-user gate. Returns 410 ACCOUNT_DELETED for a
+ * tombstoned identity even when the presented JWT is still cryptographically
+ * valid. DELETE /v1/user intentionally uses requireRouteUserId instead so a
+ * tombstoned caller can still resume the durable erasure workflow.
+ */
+export async function requireActiveRouteUserId(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  isTombstoned: TombstoneChecker = defaultTombstoneCheck,
+): Promise<string | null> {
+  const userId = await requireRouteUserId(request, reply);
+  if (!userId) {
+    return null;
+  }
+  let tombstoned = false;
+  try {
+    tombstoned = await isTombstoned(userId);
+  } catch {
+    await reply.code(503).send({
+      error: {
+        code: "IDENTITY_UNAVAILABLE",
+        message: "Identity status is temporarily unavailable",
+      },
+    });
+    return null;
+  }
+  if (tombstoned) {
+    await reply.code(410).send({
+      error: {
+        code: "ACCOUNT_DELETED",
+        message: "This account has been deleted",
+      },
+    });
+    return null;
+  }
+  return userId;
+}
+
+export function isTombstonedError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  const message = error instanceof Error ? error.message : "";
+  if (
+    error instanceof Error &&
+    (error.name === "DeletedIdentityError" ||
+      message.includes("User is deleted") ||
+      message.includes("Deleted identity"))
+  ) {
+    return true;
+  }
+  // Support layer throws plain Errors with this message for deleted rows.
+  return (
+    typeof message === "string" &&
+    (message.includes("User is deleted or missing") ||
+      message.includes("Deleted identity"))
+  );
 }
 
 export async function requireRouteVendor(
@@ -38,6 +121,15 @@ export async function sendVendorRouteError(
   reply: FastifyReply,
   error: unknown,
 ): Promise<void> {
+  if (isTombstonedError(error)) {
+    await reply.code(410).send({
+      error: {
+        code: "ACCOUNT_DELETED",
+        message: "This account has been deleted",
+      },
+    });
+    return;
+  }
   const message =
     error instanceof Error ? error.message : "Vendor request failed";
   const status =

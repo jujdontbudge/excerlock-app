@@ -15,7 +15,7 @@ import {
   type NotImplementedResponse,
 } from "./notImplemented.js";
 import {
-  requireRouteUserId,
+  requireActiveRouteUserId,
   requireRouteVendor,
   sendVendorRouteError,
 } from "./vendorRouteSupport.js";
@@ -112,7 +112,7 @@ export function createVendorProtectedRoutes(
     app.get<{ Querystring: VendorEventQuery }>(
       "/vendors/events",
       async (request, reply) => {
-        const userId = await requireRouteUserId(request, reply);
+        const userId = await requireActiveRouteUserId(request, reply);
         if (!userId) {
           return;
         }
@@ -137,7 +137,7 @@ export function createVendorProtectedRoutes(
     app.get<{ Params: VendorParams }>(
       "/vendors/:vendor/connect",
       async (request, reply) => {
-        const userId = await requireRouteUserId(request, reply);
+        const userId = await requireActiveRouteUserId(request, reply);
         if (!userId) {
           return;
         }
@@ -163,7 +163,7 @@ export function createVendorProtectedRoutes(
     app.delete<{ Params: VendorParams }>(
       "/vendors/:vendor",
       async (request, reply) => {
-        const userId = await requireRouteUserId(request, reply);
+        const userId = await requireActiveRouteUserId(request, reply);
         if (!userId) {
           return;
         }

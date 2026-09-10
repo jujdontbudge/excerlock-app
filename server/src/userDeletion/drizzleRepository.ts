@@ -1,4 +1,4 @@
-import { eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, lte, or, sql } from "drizzle-orm";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 import {
   adaptySubscriptionStates,
@@ -17,10 +17,7 @@ import type {
   UserDeletionState,
 } from "./repository.js";
 
-type UserDeletionDatabase = PgDatabase<
-  any,
-  DatabaseSchema
->;
+type UserDeletionDatabase = PgDatabase<any, DatabaseSchema>;
 
 function requireDatabase(
   database: UserDeletionDatabase | null,
@@ -38,6 +35,10 @@ const stateSelection = {
   adaptyErasedAt: users.adaptyErasedAt,
   posthogErasedAt: users.posthogErasedAt,
   clerkDeletedAt: users.clerkDeletedAt,
+  authProvider: users.authProvider,
+  authDeletedAt: users.authDeletedAt,
+  deletionAttempts: users.deletionAttempts,
+  deletionNextRetryAt: users.deletionNextRetryAt,
 };
 
 export function createDrizzleUserDeletionRepository(
@@ -97,7 +98,18 @@ export function createDrizzleUserDeletionRepository(
         if (!state?.deletedAt) {
           throw new Error("Deletion tombstone was not persisted");
         }
-        return state as UserDeletionState;
+        // Checkpoint writes are serialized by the surrounding transaction
+        // row lock; concurrent callers replay the same idempotent steps.
+        return {
+          deletedAt: state.deletedAt,
+          adaptyErasedAt: state.adaptyErasedAt,
+          posthogErasedAt: state.posthogErasedAt,
+          clerkDeletedAt: state.clerkDeletedAt,
+          authProvider: state.authProvider,
+          authDeletedAt: state.authDeletedAt,
+          deletionAttempts: state.deletionAttempts ?? 0,
+          deletionNextRetryAt: state.deletionNextRetryAt,
+        } satisfies UserDeletionState;
       });
     },
 
@@ -120,6 +132,76 @@ export function createDrizzleUserDeletionRepository(
         .update(users)
         .set({ clerkDeletedAt: deletedAt })
         .where(eq(users.id, userId));
+    },
+
+    async markAuthDeleted(userId, deletedAt, provider) {
+      await database
+        .update(users)
+        .set({ authDeletedAt: deletedAt, authProvider: provider })
+        .where(eq(users.id, userId));
+    },
+
+    async listIncompleteDeletions(limit, now = new Date()) {
+      const rows = await database
+        .select({ id: users.id })
+        .from(users)
+        .where(
+          and(
+            sql`${users.deletedAt} IS NOT NULL`,
+            or(
+              isNull(users.adaptyErasedAt),
+              isNull(users.posthogErasedAt),
+              isNull(users.authDeletedAt),
+              sql`${users.authProvider} IS DISTINCT FROM 'supabase'`,
+            ),
+            or(isNull(users.deletionNextRetryAt), lte(users.deletionNextRetryAt, now)),
+            or(
+              isNull(users.deletionLeaseExpiresAt),
+              lte(users.deletionLeaseExpiresAt, now),
+            ),
+          ),
+        )
+        .limit(limit);
+      return rows.map((row) => row.id);
+    },
+
+    async recordDeletionFailure(userId, failedAt, nextRetryAt, sanitizedError) {
+      await database
+        .update(users)
+        .set({
+          deletionAttempts: sql`coalesce(${users.deletionAttempts}, 0) + 1`,
+          deletionNextRetryAt: nextRetryAt,
+          deletionLastError: sanitizedError.slice(0, 500),
+          deletionLeaseOwner: null,
+          deletionLeaseExpiresAt: null,
+          updatedAt: failedAt,
+        })
+        .where(eq(users.id, userId));
+    },
+
+    async clearDeletionLease(userId) {
+      await database
+        .update(users)
+        .set({ deletionLeaseOwner: null, deletionLeaseExpiresAt: null })
+        .where(eq(users.id, userId));
+    },
+
+    async claimDeletionLease(userId, ownerId, claimedAt, expiresAt) {
+      const claimed = await database
+        .update(users)
+        .set({ deletionLeaseOwner: ownerId, deletionLeaseExpiresAt: expiresAt })
+        .where(
+          and(
+            eq(users.id, userId),
+            sql`${users.deletedAt} IS NOT NULL`,
+            or(
+              isNull(users.deletionLeaseExpiresAt),
+              lte(users.deletionLeaseExpiresAt, claimedAt),
+            ),
+          ),
+        )
+        .returning({ id: users.id });
+      return claimed.length > 0;
     },
   };
 }
