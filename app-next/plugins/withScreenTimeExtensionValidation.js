@@ -20,7 +20,7 @@ const EXPECTED_APPEX_TARGETS = [
   {
     name: "DeviceActivityReportExtension",
     bundleIdentifier: "com.johansardar.excerlock.report",
-    productType: "com.apple.product-type.app-extension",
+    productType: "com.apple.product-type.extensionkit-extension",
   },
 ];
 

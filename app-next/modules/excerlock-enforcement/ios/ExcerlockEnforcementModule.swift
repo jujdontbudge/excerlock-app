@@ -2,23 +2,22 @@ import ExpoModulesCore
 import DeviceActivity
 import Foundation
 
+struct EnforcementContextInput: Record { @Field var policyGeneration: Int = 0; @Field var accountGeneration: Int = 0; @Field var selectionVersion: String = "" }
+struct EnforcementSnapshotInput: Record { @Field var revision: Int = 0; @Field var now: Double = 0; @Field var context = EnforcementContextInput(); @Field var state: String = "unknown"; @Field var relief: String?; @Field var eligibleUntil: Double = 0; @Field var openReason: String?; @Field var futureEnforcementEligible: Bool = false }
+struct WatchdogInput: Record { @Field var start: Double = 0; @Field var end: Double = 0; @Field var registeredAt: Double = 0; @Field var eligibleUntil: Double = 0; @Field var policyGeneration: Int = 0; @Field var accountGeneration: Int = 0; @Field var selectionVersion: String = "" }
+struct WindowInput: Record { @Field var id: String = ""; @Field var start: Double = 0; @Field var end: Double = 0 }
+
 public final class ExcerlockEnforcementModule: Module {
   public func definition() -> ModuleDefinition {
     Name("ExcerlockEnforcement")
 
-    AsyncFunction("publish") { (input: [String: Any]) throws -> [String] in
+    AsyncFunction("publish") { (input: EnforcementSnapshotInput) throws -> [String] in
       let store = ExcerlockPolicyStore.shared
       var stale: [String] = []
       try store.locked {
-        guard let revision = input["revision"] as? Int,
-              let state = input["state"] as? String,
-              let now = input["now"] as? Double,
-              let eligibleUntil = input["eligibleUntil"] as? Double,
-              let context = input["context"] as? [String: Any],
-              let policyGeneration = context["policyGeneration"] as? Int,
-              let accountGeneration = context["accountGeneration"] as? Int,
-              let selectionVersion = context["selectionVersion"] as? String,
-              revision >= 0, !selectionVersion.isEmpty else { throw ExcerlockPolicyError.invalidSnapshot }
+        let revision = input.revision; let state = input.state; let now = input.now; let eligibleUntil = input.eligibleUntil
+        let policyGeneration = input.context.policyGeneration; let accountGeneration = input.context.accountGeneration; let selectionVersion = input.context.selectionVersion
+        guard revision >= 0, !selectionVersion.isEmpty else { throw ExcerlockPolicyError.invalidSnapshot }
         let prior = try store.readIfPresentLocked()
         if let prior, revision < prior.revision { throw ExcerlockPolicyError.staleRevision }
         if let prior, revision == prior.revision {
@@ -38,9 +37,9 @@ public final class ExcerlockEnforcementModule: Module {
         if let old = prior?.committedId, committedId == nil { registrations.removeValue(forKey: old) }
         let record = ExcerlockPolicyRecord(
           version: excerlockPolicyVersion, revision: revision, publishedAt: now, state: state,
-          relief: input["relief"] as? String, eligibleUntil: eligibleUntil,
-          openReason: input["openReason"] as? String,
-          futureEnforcementEligible: input["futureEnforcementEligible"] as? Bool ?? false,
+          relief: input.relief, eligibleUntil: eligibleUntil,
+          openReason: input.openReason,
+          futureEnforcementEligible: input.futureEnforcementEligible,
           policyGeneration: policyGeneration, accountGeneration: accountGeneration,
           selectionVersion: selectionVersion, selectionPayload: store.currentSelectionPayload(),
           registrations: registrations, committedId: committedId,
@@ -55,13 +54,10 @@ public final class ExcerlockEnforcementModule: Module {
     AsyncFunction("shield") { (revision: Int) throws -> Bool in try ExcerlockPolicyStore.shared.apply(shield: true, revision: revision) }
     AsyncFunction("unshield") { (revision: Int) throws -> Bool in try ExcerlockPolicyStore.shared.apply(shield: false, revision: revision) }
 
-    AsyncFunction("stageWatchdog") { (plan: [String: Any], revision: Int) async throws -> String in
-      guard let start = plan["start"] as? Double, let end = plan["end"] as? Double,
-            let registeredAt = plan["registeredAt"] as? Double, let eligibleUntil = plan["eligibleUntil"] as? Double,
-            let policyGeneration = plan["policyGeneration"] as? Int,
-            let accountGeneration = plan["accountGeneration"] as? Int,
-            let selectionVersion = plan["selectionVersion"] as? String,
-            end - start >= 15 * 60 * 1000, end > Date().timeIntervalSince1970 * 1000,
+    AsyncFunction("stageWatchdog") { (plan: WatchdogInput, revision: Int) async throws -> String in
+      let start = plan.start; let end = plan.end; let registeredAt = plan.registeredAt; let eligibleUntil = plan.eligibleUntil
+      let policyGeneration = plan.policyGeneration; let accountGeneration = plan.accountGeneration; let selectionVersion = plan.selectionVersion
+      guard end - start >= 15 * 60 * 1000, end > Date().timeIntervalSince1970 * 1000,
             end <= eligibleUntil else { throw ExcerlockPolicyError.invalidSnapshot }
       let id = excerlockWatchdogPrefix + "stage." + UUID().uuidString
       let registration = ExcerlockMonitorRegistration(id: id, revision: revision,
@@ -130,7 +126,7 @@ public final class ExcerlockEnforcementModule: Module {
       if !names.isEmpty { DeviceActivityCenter().stopMonitoring(names.map(DeviceActivityName.init)) }
     }
 
-    AsyncFunction("replaceWindows") { (windows: [[String: Any]], revision: Int) throws -> Void in
+    AsyncFunction("replaceWindows") { (windows: [WindowInput], revision: Int) throws -> Void in
       guard windows.count <= 7 else { throw ExcerlockPolicyError.invalidSnapshot }
       let now = Date().timeIntervalSince1970 * 1000
       var staged: [ExcerlockScheduledWindow] = []
@@ -140,8 +136,8 @@ public final class ExcerlockEnforcementModule: Module {
         return (record.policyGeneration, record.accountGeneration, record.selectionVersion)
       }
       for window in windows {
-        guard let domainId = window["id"] as? String, !domainId.isEmpty,
-              let start = window["start"] as? Double, let end = window["end"] as? Double,
+        let domainId = window.id; let start = window.start; let end = window.end
+        guard !domainId.isEmpty,
               start.isFinite, end.isFinite, end > start, end - start >= 15 * 60 * 1000,
               end > now else { throw ExcerlockPolicyError.invalidSnapshot }
         staged.append(ExcerlockScheduledWindow(monitorId: excerlockWindowPrefix + UUID().uuidString,

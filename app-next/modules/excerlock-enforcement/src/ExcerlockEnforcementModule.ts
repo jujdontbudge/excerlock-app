@@ -3,7 +3,6 @@ import type { EnforcementSnapshot } from '../../../src/runtime/enforcement/Enfor
 import type { WatchdogRegistration } from '../../../src/domain/watchdog';
 
 export class ExcerlockEnforcementModule extends NativeModule {
-  getPolicyRevision!: () => number | null;
   publish!: (snapshot: EnforcementSnapshot) => Promise<readonly string[]>;
   shield!: (revision: number) => Promise<boolean>;
   unshield!: (revision: number) => Promise<boolean>;
