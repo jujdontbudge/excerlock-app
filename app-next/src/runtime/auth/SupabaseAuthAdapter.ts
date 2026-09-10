@@ -72,6 +72,8 @@ export class SupabaseAuthAdapter implements AuthPort {
   private disposed = false;
   private runIdentityOperation: RunIdentityOperation;
   private expectedSignedOutGenerations = new Set<number>();
+  private ownedTransitionGenerations = new Set<number>();
+  private bootTimers = new Set<ReturnType<typeof setTimeout>>();
 
   constructor(deps: AuthAdapterDeps) {
     this.supabase = deps.supabase;
@@ -216,8 +218,19 @@ export class SupabaseAuthAdapter implements AuthPort {
     );
 
     // Race for UI fallback only; the anonymous request continues in background.
-    const timeoutPromise = new Promise<'timeout'>((resolve) => setTimeout(() => resolve('timeout'), this.bootTimeoutMs));
+    let timeoutHandle: ReturnType<typeof setTimeout>;
+    const timeoutPromise = new Promise<'timeout'>((resolve) => {
+      timeoutHandle = setTimeout(() => {
+        this.bootTimers.delete(timeoutHandle);
+        resolve('timeout');
+      }, this.bootTimeoutMs);
+      this.bootTimers.add(timeoutHandle);
+    });
     const winner = await Promise.race([anonymousPromise.then(() => 'done' as const), timeoutPromise]);
+    if (winner === 'done') {
+      clearTimeout(timeoutHandle!);
+      this.bootTimers.delete(timeoutHandle!);
+    }
     if (this.generation !== startGeneration || this.disposed) {
       // Stale: ignore late result entirely (it must not restore identity).
       // Still await background to avoid unhandled rejection, but discard.
@@ -318,6 +331,7 @@ export class SupabaseAuthAdapter implements AuthPort {
         setTimeout(() => {
           if (this.disposed) return;
           if (this.generation !== capturedGeneration) return; // stale after delete/signout
+          if (this.ownedTransitionGenerations.has(capturedGeneration)) return;
           if (this.currentIdentity.kind === 'deleting') return;
           if (!capturedSession?.user) {
             if (capturedEvent === 'SIGNED_OUT' && this.expectedSignedOutGenerations.delete(capturedGeneration)) return;
@@ -359,6 +373,7 @@ export class SupabaseAuthAdapter implements AuthPort {
   private beginIdentityTransition(): { identity: AuthIdentity; session: Session; operationGeneration: number } {
     const previous = { identity: this.currentIdentity, session: this.currentSession };
     this.generation += 1;
+    this.ownedTransitionGenerations.add(this.generation);
     this.currentIdentity = { kind: 'provisional', userId: null, isAnonymous: true, generation: this.generation, ready: false };
     this.emitIdentityOnly();
     return { ...previous, operationGeneration: this.generation };
@@ -366,6 +381,7 @@ export class SupabaseAuthAdapter implements AuthPort {
 
   private restoreFailedTransition(previous: { identity: AuthIdentity; session: Session; operationGeneration: number }): void {
     if (this.disposed || this.generation !== previous.operationGeneration || this.currentIdentity.kind !== 'provisional') return;
+    this.ownedTransitionGenerations.delete(previous.operationGeneration);
     this.currentSession = previous.session;
     this.currentIdentity = {
       ...previous.identity,
@@ -384,6 +400,7 @@ export class SupabaseAuthAdapter implements AuthPort {
   }
 
   private captureCanonicalIdentity(): { userId: string; generation: number } {
+    if (this.disposed) throw new AuthError('Sign-in was interrupted. Please try again.', { code: 'STALE_SIGNIN' });
     const identity = this.currentIdentity;
     if (identity.kind !== 'canonical' || !identity.userId) {
       throw new AuthError('Sign-in is not ready yet. Please try again.', { code: 'IDENTITY_NOT_READY' });
@@ -424,6 +441,8 @@ export class SupabaseAuthAdapter implements AuthPort {
     this.appStateSubscription = null;
     this.sessionListeners.clear();
     this.identityListeners.clear();
+    for (const timer of this.bootTimers) clearTimeout(timer);
+    this.bootTimers.clear();
   }
 
   // ---- Provider sign-in ----
@@ -544,6 +563,7 @@ export class SupabaseAuthAdapter implements AuthPort {
     this.pendingEmail = null;
     this.pendingFlow = null;
     this.applySupabaseSession(data.session, { preserveGeneration: true });
+    this.ownedTransitionGenerations.delete(operationGeneration);
     // New generation, new UID, not ready until coordinator spine completes.
     this.currentIdentity = { ...this.currentIdentity, ready: false };
     this.emitIdentityOnly();
@@ -641,6 +661,7 @@ export class SupabaseAuthAdapter implements AuthPort {
         this.pendingEmail = null;
         this.pendingFlow = null;
         this.applySupabaseSession(data.session, { preserveGeneration: true });
+        this.ownedTransitionGenerations.delete(previous.operationGeneration);
         this.currentIdentity = { ...this.currentIdentity, ready: false };
         this.emitIdentityOnly();
         return this.currentSession;
@@ -685,9 +706,11 @@ export class SupabaseAuthAdapter implements AuthPort {
         if (this.generation !== nextGeneration || this.disposed) return;
         if (anonError || !data.session?.user) {
           this.lastBootError = anonError ?? new Error('Anonymous boot failed after sign-out');
+          this.ownedTransitionGenerations.delete(nextGeneration);
           return;
         }
         this.applySupabaseSession(data.session, { preserveGeneration: true });
+        this.ownedTransitionGenerations.delete(nextGeneration);
       });
     } catch (error) {
       this.restoreFailedTransition(previous);
