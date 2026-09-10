@@ -1,4 +1,4 @@
-import { FakeRuntime } from '../demo/FakeRuntime';
+import { FakeRuntime, FakeRuntimeInstance } from '../demo/FakeRuntime';
 import { Runtime } from './Runtime';
 import { Platform } from 'react-native';
 import { foregroundGym } from './ForegroundGym';
@@ -7,6 +7,9 @@ import { nativeGait } from './NativeGait';
 import { supportDelivery } from './SupportDelivery';
 import { runtimeMode } from './environment';
 export type { Runtime } from './Runtime';
+export function createRuntime(): FakeRuntimeInstance;
+export function createRuntime(mode: 'fake'): FakeRuntimeInstance;
+export function createRuntime(mode: 'real'): Runtime;
 export function createRuntime(mode = runtimeMode(Constants.expoConfig?.extra?.environment, __DEV__)): Runtime {
   if (mode === 'real') throw new Error('Real runtime is not integrated yet; refusing to ship demo services');
   const runtime = FakeRuntime();

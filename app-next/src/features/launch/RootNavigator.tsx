@@ -4,10 +4,10 @@ import { entitlementStore as useEntitlementStore } from '../../state/entitlement
 import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
 import { tokens as t } from '../../design-system/tokens';
 import { FakePromptHost } from '../permissions/FakePromptHost';
-import { useDevSnapshot } from '../../state/selectors';
+import { useRuntimeStatus } from '../../state/selectors';
 export function RootNavigator() {
   const motion = useMotion();
-  const loading = Boolean(useDevSnapshot().loading);
+  const loading = useRuntimeStatus().loading;
   const status = useEntitlementStore((s) => s.data.entitlement.status),
     onboarding = useOnboardingStore((s) => s.data),
     entitled = status === 'trial' || status === 'active';
@@ -40,7 +40,7 @@ export function RootNavigator() {
           <Stack.Screen name="unlock/treadmill" options={{ presentation: 'fullScreenModal' }} />
         </Stack.Protected>
       </Stack>
-      <FakePromptHost />
+      {__DEV__ ? <FakePromptHost /> : null}
     </>
   );
 }

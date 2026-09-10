@@ -35,7 +35,7 @@ export function startGymPresenceSync(runtime: Runtime) {
     });
   };
   const watching = () =>
-    !runtime.dev.snapshot().loading &&
+    !runtime.status.snapshot().loading &&
     !!settingsStore.getState().data.gymPlaces.length &&
     (!!session() || (located() && candidate()));
   const nearest = () =>
@@ -105,7 +105,7 @@ export function startGymPresenceSync(runtime: Runtime) {
     settingsStore.subscribe(reconcile),
     permissionsStore.subscribe(reconcile),
     ruleDaysStore.subscribe(reconcile),
-    runtime.dev.subscribe(reconcile),
+    runtime.status.subscribe(reconcile),
     runtime.clock.subscribe(tick),
   ];
   reconcile();

@@ -23,7 +23,7 @@ const flush = async () => {
   for (let i = 0; i < 6; i++) await Promise.resolve();
 };
 /** Real timers drive the 30-second confirmation; the fake clock drives minutes and the exit grace. */
-const settle = async (r: ReturnType<typeof createRuntime>, ms: number) => {
+const settle = async (r: { dev: { advance(ms: number): void } }, ms: number) => {
   jest.advanceTimersByTime(ms);
   r.dev.advance(ms);
   await flush();

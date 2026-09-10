@@ -4,10 +4,10 @@ import { entitlementStore as useEntitlementStore } from '../../state/entitlement
 import { useHydrated } from '../../state/useHydrated';
 import { bootDestination } from '../../onboarding/bootDestination';
 import { BootScreen } from './BootScreen';
-import { useDevSnapshot } from '../../state/selectors';
+import { useRuntimeStatus } from '../../state/selectors';
 export function BootGate() {
   const hydrated = useHydrated(),
-    runtimeState = useDevSnapshot(),
+    runtimeState = useRuntimeStatus(),
     { complete, step, setupComplete, setupStep } = useOnboardingStore((s) => s.data),
     { entitlement } = useEntitlementStore((s) => s.data);
   const destination = bootDestination(complete, step, entitlement.status, setupComplete, setupStep);

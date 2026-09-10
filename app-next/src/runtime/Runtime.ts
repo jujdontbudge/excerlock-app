@@ -12,6 +12,7 @@ import { ClockPort } from '../ports/ClockPort';
 import { RuntimeControls } from '../ports/RuntimeControls';
 import { GaitPort } from '../ports/GaitPort';
 import { ExportPort } from '../ports/ExportPort';
+import { RuntimeStatusPort } from '../ports/RuntimeStatusPort';
 export type Runtime = {
   readonly kind: 'fake' | 'real';
   screenTime: ScreenTimePort;
@@ -27,6 +28,13 @@ export type Runtime = {
   support: SupportPort;
   dataExport: ExportPort;
   clock: ClockPort;
-  dev: RuntimeControls;
+  status: RuntimeStatusPort;
+  /** Simulation-only surface. Real runtimes do not implement it. */
+  dev?: RuntimeControls;
   dispose: () => void;
 };
+
+export function requireRuntimeControls(runtime: Runtime): RuntimeControls {
+  if (!__DEV__ || runtime.kind !== 'fake' || !runtime.dev) throw new Error('Development controls are unavailable');
+  return runtime.dev;
+}
