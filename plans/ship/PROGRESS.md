@@ -333,3 +333,17 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   explicit. createRuntime still intentionally refuses real mode until full production composition exists.
   Native agent now verifying clean preview prebuild/unsigned build at integrated HEAD; history ledger
   agent reviewing pending-intent timezone preservation before final commit.
+- Integrated durable history930281ab: DetectionWake now requires timezone; createNativeDetection owns
+  and returns HistoryCreditLedger (no injected creditHistory). Pending intent carries origin timezone;
+  exact replay precedes new queries after restart/travel; local-midnight split and8segment/wake cap.
+  Root fixed two old walking test constructors after contract integration (1aa62a44).
+- Root RuntimeEnforcementSource8b14f5a2 seeds revisions from durable native revision and reads live
+  inputs during in-flight native awaits, not only queued root callbacks. Stable clock ticks do not churn
+  monitors; account/selection/rule/eligibility changes revoke old authority immediately. Explicit cleanup
+  still succeeds with an otherwise unrepresentable >7-window schedule.5tests plus history/walking tests
+ 20total pass and typecheck pass after integrated test fixes.
+- Fixed native walking external-store snapshot identity2d43b168: scalar-equal snapshots stable; local
+  start/stop, persisted detection and placement notifications propagate. Root requested headless registry
+  cold-bootstrap singleflight/no-silent-success and pure measured gym progress projection in parallel.
+- Next root work remains actual async production Runtime graph/startup mount and one reconcile loop;
+  the production constructor still refuses fake fallback. No device or store activation claims.
