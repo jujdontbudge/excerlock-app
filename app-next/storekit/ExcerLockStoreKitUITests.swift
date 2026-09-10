@@ -14,7 +14,7 @@ final class ExcerLockStoreKitUITests: XCTestCase {
     session.clearTransactions()
   }
 
-  func testRealRuntimeLaunchesWithLocalStoreKitCatalog() async throws {
+  func testFreshInstallInvokesLocalAnnualPurchase() async throws {
     let expected = [
       "com.johansardar.excerlock.premium.a.monthly",
       "com.johansardar.excerlock.premium.a.annual",
@@ -31,21 +31,11 @@ final class ExcerLockStoreKitUITests: XCTestCase {
     XCTAssertTrue(app.wait(for: .runningForeground, timeout: 20), "Real preview runtime did not launch")
     XCTAssertTrue(
       app.staticTexts["Block apps. Exercise more."].waitForExistence(timeout: 20),
-      "Embedded real-runtime UI did not appear"
-    )
-  }
-
-  func testFreshInstallInvokesLocalAnnualPurchase() throws {
-    let app = XCUIApplication()
-    app.launch()
-    XCTAssertTrue(app.wait(for: .runningForeground, timeout: 20), "Real preview runtime did not launch")
-    XCTAssertTrue(
-      app.staticTexts["Block apps. Exercise more."].waitForExistence(timeout: 20),
-      "Fresh-install precondition failed; erase only the dedicated test simulator before rerunning"
+      "Fresh-install precondition failed; reset only the dedicated test app before rerunning"
     )
 
-    tap("Get started", in: app)
-    tap("Get started", in: app)
+    tap("Get started", in: app, destination: "Reduce your screen time and track your progress.")
+    tap("Get started", in: app, destination: "Exercise more each week and stay consistent.")
     tap("Get started", in: app, destination: "First name")
     let name = app.textFields["First name"]
     XCTAssertTrue(name.waitForExistence(timeout: 20), "First-name field did not appear")
@@ -81,9 +71,15 @@ final class ExcerLockStoreKitUITests: XCTestCase {
     tap("Continue", in: app, destination: "How should walking unlock your apps?")
     tap("Reach a step goal (Recommended)", in: app)
     tap("Continue", in: app, destination: "Set your walking goal")
-    tap("Continue", in: app, destination: "When should blocking be active?") // default 5,000 steps
-    tap("Continue", in: app, destination: "Setting up your plan…") // default weekday schedule
-    tap("Use this plan", in: app, destination: "Help us make ExcerLock")
+    let reviewGoal = app.descendants(matching: .any).matching(
+      NSPredicate(format: "label == %@ AND value == %@", "Daily step goal", "20 steps")
+    ).firstMatch
+    XCTAssertTrue(reviewGoal.waitForExistence(timeout: 20), "App Review preset must be visible before continuing")
+    tap("Continue", in: app, destination: "When should blocking be active?")
+    tap("Continue", in: app, destination: "Setting up your plan…")
+    XCTAssertTrue(app.staticTexts["Your plan is ready"].waitForExistence(timeout: 30))
+    XCTAssertTrue(app.staticTexts["Walk 20 steps"].exists, "Reviewer summary must match the persisted goal")
+    tap("Use this plan", in: app, destination: "Help us make ExcerLock better")
     tap("Not now", in: app, destination: "Try ExcerLock free")
     tap("Continue", in: app, destination: "We'll remind you before it ends")
     tap("Continue", in: app, destination: "Want a trial reminder?")
@@ -119,13 +115,13 @@ final class ExcerLockStoreKitUITests: XCTestCase {
     timeout: TimeInterval = 20,
     destination: String? = nil
   ) {
-    let element = app.descendants(matching: .any)[label]
+    let element = app.descendants(matching: .any).matching(identifier: label).firstMatch
     XCTAssertTrue(element.waitForExistence(timeout: timeout), "Missing required control: \(label)")
     for _ in 0..<8 where !element.isHittable { app.swipeUp() }
     XCTAssertTrue(element.isHittable, "Required control is not hittable: \(label)")
     element.tap()
     if let destination {
-      let next = app.descendants(matching: .any)[destination]
+      let next = app.descendants(matching: .any).matching(identifier: destination).firstMatch
       XCTAssertTrue(
         next.waitForExistence(timeout: timeout),
         "Destination did not appear after \(label): \(destination)"
