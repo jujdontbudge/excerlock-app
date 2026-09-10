@@ -559,3 +559,14 @@ before T06; UI has substantive changes underway; auth intentional callback owner
 - Experimental Expo57 optimize-graph/tree-shaking command-only probe produced6,544,816byte HBC,
   still over4MiB; no experimental flags enabled in committed config. Source graph2990sources passes
   no-dev verifier. This experiment is synthetic preview config, not a signed/runtime acceptance.
+- Added strict actual-Hermes size gate to --distribution binary verification: decimal4,000,000bytes
+  (T15 MB, not a looser MiB cap), magic/header/regular-file checks, exact-cap/one-byte-over/invalid-artifact
+  regressions. Verifier tests pass; current actual7,248,824byte export correctly FAILS.
+- Sentry crash-only review: numeric tracesSampleRate0 still enables SDK tracing integration selection.
+  Removed both tracing keys while retaining native/default error integrations and scrubbing. RED/GREEN
+  tests/typecheck pass; universal ledger3cb78ad. Public named imports now retain lazy capture via local
+  binding (be86ec6c), with exact forwarding/no-init tests.
+- Combined command-only tree-shake+no-replay export6,253,900bytes; named-import follow-up6,175,296bytes,
+  actual2890-source graph excludes dev. Still FAILS4MB; experimental flags remain uncommitted/unenabled.
+  Lockfile audit found eight separate sameversion Sentry core10.37 copies beside servercore10.69;
+  investigating supported dependency deduplication without SDK version overrides or product removal.
