@@ -75,6 +75,14 @@ export function createUserRoutes(
       if (!userId) {
         return;
       }
+      if (request.authIdentity?.provider === "clerk") {
+        return reply.code(409).send({
+          error: {
+            code: "ACCOUNT_DELETION_PROVIDER_UNSUPPORTED",
+            message: "Sign in with the current account provider before deleting this account",
+          },
+        });
+      }
 
       try {
         await dependencies.deletion.deleteAccount(userId);
