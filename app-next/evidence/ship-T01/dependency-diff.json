@@ -1,0 +1,79 @@
+{
+  "added": {
+    "@kingstinct/react-native-healthkit": "14.0.2",
+    "@sentry/react-native": "~7.11.0",
+    "expo-apple-authentication": "~57.0.1",
+    "expo-auth-session": "~57.0.5",
+    "expo-crypto": "~57.0.1",
+    "expo-device": "~57.0.1",
+    "expo-image-picker": "~57.0.7",
+    "expo-location": "~57.0.7",
+    "expo-notifications": "~57.0.8",
+    "expo-secure-store": "~57.0.1",
+    "expo-sharing": "~57.0.8",
+    "expo-store-review": "~57.0.1",
+    "expo-task-manager": "~57.0.7",
+    "expo-updates": "~57.0.11",
+    "expo-web-browser": "~57.0.2",
+    "posthog-react-native": "^4.61.2",
+    "react-native-adapty": "^4.0.2",
+    "react-native-device-activity": "^0.6.1"
+  },
+  "kept_newer_no_downgrades": {
+    "expo": [
+      "~57.0.8",
+      "~57.0.20"
+    ],
+    "expo-build-properties": [
+      "~57.0.7",
+      "~57.0.17"
+    ],
+    "expo-constants": [
+      "~57.0.7",
+      "~57.0.17"
+    ],
+    "expo-dev-client": [
+      "~57.0.9",
+      "~57.0.18"
+    ],
+    "expo-font": [
+      "~57.0.1",
+      "~57.0.3"
+    ],
+    "expo-haptics": [
+      "~57.0.1",
+      "~57.0.2"
+    ],
+    "expo-linking": [
+      "~57.0.4",
+      "~57.0.9"
+    ],
+    "expo-router": [
+      "~57.0.8",
+      "~57.0.19"
+    ],
+    "expo-splash-screen": [
+      "~57.0.5",
+      "~57.0.8"
+    ],
+    "react-native": [
+      "0.86.0",
+      "0.86.3"
+    ],
+    "react-native-reanimated": [
+      "4.5.0",
+      "4.5.1"
+    ],
+    "react-native-worklets": [
+      "0.10.0",
+      "0.10.1"
+    ],
+    "zustand": [
+      "^5.0.14",
+      "^5.0.15"
+    ]
+  },
+  "from_old_pins": true,
+  "expo_network": "deferred (not in app/package.json, not installed, no T01 importer)",
+  "lock": "ROOT package-lock.json: app-next mirror + node_modules/expo-apple-authentication@57.0.1 (29 insertions, 0 deletions); all other added deps reused existing locked entries"
+}

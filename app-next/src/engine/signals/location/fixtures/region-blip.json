@@ -1,0 +1,17 @@
+{
+  "name": "region-blip",
+  "version": 1,
+  "description": "A transient region entry that exits four seconds later.",
+  "timeline": [
+    {
+      "atMs": 1000,
+      "event": "location.enterRegion",
+      "payload": { "regionId": "gym-primary" }
+    },
+    {
+      "atMs": 5000,
+      "event": "location.exitRegion",
+      "payload": { "regionId": "gym-primary" }
+    }
+  ]
+}
