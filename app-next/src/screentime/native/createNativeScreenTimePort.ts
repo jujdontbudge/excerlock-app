@@ -12,6 +12,11 @@ export type NativeScreenTimeEnforcementHandler = Readonly<{
   cancelWatchdog(): Promise<void>;
 }>;
 export type NativeScreenTimeRequestState = Readonly<{ authorizationPromptBusy: boolean; pickerBusy: boolean }>;
+export type NativeScreenTimePort = ScreenTimePort & {
+  requestState(): NativeScreenTimeRequestState;
+  /** Erases only ExcerLock's persisted FamilyControls token selection. */
+  eraseLockedSelection(): Promise<void>;
+};
 const mapAuthorization = (value: 0 | 1 | 2): PermissionStatus => value === 2 ? 'granted' : value === 1 ? 'denied' : 'notDetermined';
 
 /**
@@ -19,7 +24,7 @@ const mapAuthorization = (value: 0 | 1 | 2): PermissionStatus => value === 2 ? '
  * remains the sole policy authority; this adapter never invokes the legacy scheduler.
  * NativeScreenTimePickerHost must be mounted once at the runtime React root.
  */
-export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcementHandler): ScreenTimePort & { requestState(): NativeScreenTimeRequestState } {
+export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcementHandler): NativeScreenTimePort {
   let authorization = mapAuthorization(deviceActivityApi.authorizationStatus());
   let authorizationPromptBusy = false;
   let pickerBusy = false;
@@ -51,6 +56,9 @@ export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcem
     registerWatchdog: enforcement.registerWatchdog,
     cancelWatchdog: enforcement.cancelWatchdog,
     observeUsage: (callback) => { callback(null); return () => undefined; },
+    eraseLockedSelection: async () => {
+      deviceActivityApi.removeFamilyActivitySelectionId(NATIVE_LOCKED_SELECTION);
+    },
     requestState: () => ({ authorizationPromptBusy, pickerBusy }),
   };
 }

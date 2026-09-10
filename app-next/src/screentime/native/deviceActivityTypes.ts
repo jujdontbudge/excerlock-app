@@ -13,6 +13,7 @@ export type DeviceActivityApi = Readonly<{
   authorizationStatus(): DeviceActivityAuthorizationStatus;
   requestAuthorization(forMember: "individual" | "child"): Promise<void>;
   getFamilyActivitySelectionId(id: string): string | undefined;
+  removeFamilyActivitySelectionId(id: string): void;
   setSharedValue(key: string, value: Readonly<Record<string, unknown>>): void;
   blockSelection(selection: { activitySelectionId: string }): void;
   unblockSelection(selection: { activitySelectionId: string }): void;

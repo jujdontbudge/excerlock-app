@@ -2,27 +2,48 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { GymTransitionRecord, GymVisitLog } from './GymVisitLog';
 export const GYM_VISIT_LOG_STORAGE_KEY = '@excerlock/location/gym-transitions/v2';
 export const LEGACY_GYM_VISIT_LOG_STORAGE_KEY = '@excerlock/location/confirmed-gym-visits/v1';
+export const GYM_VISIT_LOG_ACCEPTANCE_KEY = '@excerlock/location/gym-transitions-acceptance/v1';
+
+// TaskManager and the foreground runtime intentionally construct separate log
+// objects. Their storage operations must nevertheless have one ordering spine.
+let sharedWrites: Promise<void> = Promise.resolve();
+
+function serialize(work: () => Promise<void>): Promise<void> {
+  const write = sharedWrites.catch(() => undefined).then(work);
+  sharedWrites = write.catch(() => undefined);
+  return write;
+}
+
+/** Persistently reject task deliveries until the next account explicitly
+ * registers its gyms. The marker survives a cold headless task process. */
+export function suspendGymVisitLogWritesAndReset(): Promise<void> {
+  return serialize(async () => {
+    await AsyncStorage.setItem(GYM_VISIT_LOG_ACCEPTANCE_KEY, 'suspended');
+    await AsyncStorage.multiRemove([GYM_VISIT_LOG_STORAGE_KEY, LEGACY_GYM_VISIT_LOG_STORAGE_KEY]);
+  });
+}
+
+export function resumeGymVisitLogWrites(): Promise<void> {
+  return serialize(() => AsyncStorage.removeItem(GYM_VISIT_LOG_ACCEPTANCE_KEY));
+}
+
 export class AsyncStorageGymVisitLog implements GymVisitLog {
-  private writes: Promise<void> = Promise.resolve();
   append(record: GymTransitionRecord): Promise<void> {
     const safe = coordinateFree(record);
-    const write = this.writes.then(async () => {
+    return serialize(async () => {
+      if ((await AsyncStorage.getItem(GYM_VISIT_LOG_ACCEPTANCE_KEY)) === 'suspended') return;
       const records = await readStored();
       if (records.some(({ id }) => id === safe.id)) return;
       await AsyncStorage.setItem(GYM_VISIT_LOG_STORAGE_KEY, JSON.stringify([...records, safe]));
     });
-    this.writes = write.catch(() => undefined);
-    return write;
   }
   async readAll(): Promise<readonly GymTransitionRecord[]> {
-    await this.writes;
+    await sharedWrites;
     return readStored();
   }
   reset(): Promise<void> {
-    const write = this.writes.catch(() => undefined).then(() =>
+    return serialize(() =>
       AsyncStorage.multiRemove([GYM_VISIT_LOG_STORAGE_KEY, LEGACY_GYM_VISIT_LOG_STORAGE_KEY]));
-    this.writes = write.catch(() => undefined);
-    return write;
   }
 }
 function coordinateFree(record: GymTransitionRecord): GymTransitionRecord {

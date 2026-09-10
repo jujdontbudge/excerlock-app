@@ -47,6 +47,7 @@ function createDeviceActivityApi(
     getFamilyActivitySelectionId: jest.fn(
       () => "opaque-apple-selection-token",
     ),
+    removeFamilyActivitySelectionId: jest.fn(),
     setShieldActive(active) {
       shieldActive = active;
     },

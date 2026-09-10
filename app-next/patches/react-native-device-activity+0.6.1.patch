@@ -1,0 +1,104 @@
+diff --git a/node_modules/react-native-device-activity/build/ReactNativeDeviceActivity.types.d.ts b/node_modules/react-native-device-activity/build/ReactNativeDeviceActivity.types.d.ts
+index 414d011..8c71903 100644
+--- a/node_modules/react-native-device-activity/build/ReactNativeDeviceActivity.types.d.ts
++++ b/node_modules/react-native-device-activity/build/ReactNativeDeviceActivity.types.d.ts
+@@ -345,6 +345,7 @@ export type ReactNativeDeviceActivityNativeModule = {
+     difference: (familyActivitySelectionOne: ActivitySelectionInputWithBlocks, familyActivitySelectionTwo: ActivitySelectionInputWithBlocks, options: SetOperationOptions) => ActivitySelectionWithMetadata;
+     symmetricDifference: (familyActivitySelectionOne: ActivitySelectionInputWithBlocks, familyActivitySelectionTwo: ActivitySelectionInputWithBlocks, options: SetOperationOptions) => ActivitySelectionWithMetadata;
+     renameActivitySelection: (previousFamilyActivitySelectionId: string, newFamilyActivitySelectionId: string) => void;
++    removeActivitySelection: (familyActivitySelectionId: string) => void;
+     requestAuthorization: (forIndividualOrChild: "individual" | "child") => PromiseLike<void>;
+     revokeAuthorization: () => PromiseLike<void>;
+     authorizationStatus: () => AuthorizationStatusType;
+diff --git a/node_modules/react-native-device-activity/build/ReactNativeDeviceActivityModule.js b/node_modules/react-native-device-activity/build/ReactNativeDeviceActivityModule.js
+index df7207f..6898cf1 100644
+--- a/node_modules/react-native-device-activity/build/ReactNativeDeviceActivityModule.js
++++ b/node_modules/react-native-device-activity/build/ReactNativeDeviceActivityModule.js
+@@ -69,6 +69,7 @@ const mockModule = {
+     isWebContentFilterPolicyActive: warnFnBoolean,
+     removeSelectionFromWhitelistAndUpdateBlock: warnFn,
+     renameActivitySelection: warnFn,
++    removeActivitySelection: warnFn,
+     resetBlocks: warnFn,
+     clearWhitelist: warnFn,
+     unblockSelection: warnFn,
+diff --git a/node_modules/react-native-device-activity/build/index.d.ts b/node_modules/react-native-device-activity/build/index.d.ts
+index cb17cf5..06c1f2e 100644
+--- a/node_modules/react-native-device-activity/build/index.d.ts
++++ b/node_modules/react-native-device-activity/build/index.d.ts
+@@ -39,6 +39,7 @@ export declare const setFamilyActivitySelectionId: ({ id, familyActivitySelectio
+     familyActivitySelection: string;
+ }) => void;
+ export declare const getFamilyActivitySelectionId: (id: string) => string | undefined;
++export declare const removeFamilyActivitySelectionId: (id: string) => void;
+ export declare function getAppGroupFileDirectory(): string;
+ export declare function onDeviceActivityDetected(listener: OnDeviceActivityDetectedListener): EventSubscription;
+ export declare const useDeviceActivities: () => string[];
+diff --git a/node_modules/react-native-device-activity/build/index.js b/node_modules/react-native-device-activity/build/index.js
+index 67bb113..2d8d5a1 100644
+--- a/node_modules/react-native-device-activity/build/index.js
++++ b/node_modules/react-native-device-activity/build/index.js
+@@ -165,6 +165,9 @@ export const getFamilyActivitySelectionId = (id) => {
+     const previousValue = ReactNativeDeviceActivityModule?.userDefaultsGet("familyActivitySelectionIds") ?? {};
+     return previousValue[id];
+ };
++export const removeFamilyActivitySelectionId = (id) => {
++    ReactNativeDeviceActivityModule?.removeActivitySelection(id);
++};
+ export function getAppGroupFileDirectory() {
+     return ReactNativeDeviceActivityModule?.getAppGroupFileDirectory() ?? "";
+ }
+diff --git a/node_modules/react-native-device-activity/ios/ReactNativeDeviceActivityModule.swift b/node_modules/react-native-device-activity/ios/ReactNativeDeviceActivityModule.swift
+index 8aee1f2..50704f3 100644
+--- a/node_modules/react-native-device-activity/ios/ReactNativeDeviceActivityModule.swift
++++ b/node_modules/react-native-device-activity/ios/ReactNativeDeviceActivityModule.swift
+@@ -694,6 +694,10 @@ public class ReactNativeDeviceActivityModule: Module {
+         previousId: previousFamilyActivitySelectionId, newId: newFamilyActivitySelectionId)
+     }
+ 
++    Function("removeActivitySelection") { (familyActivitySelectionId: String) in
++      removeFamilyActivitySelectionById(id: familyActivitySelectionId)
++    }
++
+     Function("activitySelectionMetadata") {
+       (familyActivitySelection: [String: Any]) -> ActivitySelectionMetadata in
+       let selection = parseActivitySelectionInput(input: familyActivitySelection)
+diff --git a/node_modules/react-native-device-activity/src/ReactNativeDeviceActivity.types.ts b/node_modules/react-native-device-activity/src/ReactNativeDeviceActivity.types.ts
+index da7edd3..90eb522 100644
+--- a/node_modules/react-native-device-activity/src/ReactNativeDeviceActivity.types.ts
++++ b/node_modules/react-native-device-activity/src/ReactNativeDeviceActivity.types.ts
+@@ -479,6 +479,7 @@ export type ReactNativeDeviceActivityNativeModule = {
+     previousFamilyActivitySelectionId: string,
+     newFamilyActivitySelectionId: string,
+   ) => void;
++  removeActivitySelection: (familyActivitySelectionId: string) => void;
+ 
+   // auth functions
+   requestAuthorization: (
+diff --git a/node_modules/react-native-device-activity/src/ReactNativeDeviceActivityModule.ts b/node_modules/react-native-device-activity/src/ReactNativeDeviceActivityModule.ts
+index 33738da..5a0210a 100644
+--- a/node_modules/react-native-device-activity/src/ReactNativeDeviceActivityModule.ts
++++ b/node_modules/react-native-device-activity/src/ReactNativeDeviceActivityModule.ts
+@@ -82,6 +82,7 @@ const mockModule: ReactNativeDeviceActivityNativeModule | null = {
+   isWebContentFilterPolicyActive: warnFnBoolean,
+   removeSelectionFromWhitelistAndUpdateBlock: warnFn,
+   renameActivitySelection: warnFn,
++  removeActivitySelection: warnFn,
+   resetBlocks: warnFn,
+   clearWhitelist: warnFn,
+   unblockSelection: warnFn,
+diff --git a/node_modules/react-native-device-activity/src/index.ts b/node_modules/react-native-device-activity/src/index.ts
+index 0656b8d..20b4770 100644
+--- a/node_modules/react-native-device-activity/src/index.ts
++++ b/node_modules/react-native-device-activity/src/index.ts
+@@ -349,6 +349,10 @@ export const getFamilyActivitySelectionId = (id: string) => {
+   return previousValue[id];
+ };
+ 
++export const removeFamilyActivitySelectionId = (id: string) => {
++  ReactNativeDeviceActivityModule?.removeActivitySelection(id);
++};
++
+ export function getAppGroupFileDirectory(): string {
+   return ReactNativeDeviceActivityModule?.getAppGroupFileDirectory() ?? "";
+ }
