@@ -99,7 +99,8 @@ export function FakeRuntime(): FakeRuntimeInstance {
     sync: SyncFake(),
     support: SupportFake(ctx),
     dataExport: {
-      requestShare: async (payload) => {
+      requestShare: async (buildPayload) => {
+        const payload = await buildPayload();
         ctx.log('export_requested', {
           rules: payload.rules.length,
           days: payload.days.length,

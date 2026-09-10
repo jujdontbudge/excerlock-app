@@ -28,7 +28,7 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
           if (exportBusy) return;
           setExportBusy(true);
           try {
-            await runtime.dataExport.requestShare(await buildExportPayload(runtime.clock.now()));
+            await runtime.dataExport.requestShare(() => buildExportPayload(runtime.clock.now()));
             setExportNote(c.exportReady);
             setExportOpen(false);
           } catch {
