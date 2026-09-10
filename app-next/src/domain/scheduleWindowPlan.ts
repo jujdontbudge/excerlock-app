@@ -1,7 +1,8 @@
-import { addDays, dayKey, localInstant } from './calendar';
+import { addDays, dayKey, resolveLocalInstant } from './calendar';
 import type { Rule } from './types';
 export type NativeScheduleWindow = Readonly<{ id: string; start: number; end: number }>;
-export type ScheduleWindowPlan = { ok: true; windows: NativeScheduleWindow[] } | { ok: false; reason: 'nativeWindowLimit'; required: number };
+export type ScheduleWindowPlan = { ok: true; windows: NativeScheduleWindow[] } |
+  { ok: false; reason: 'nativeWindowLimit' | 'nativeAnchorUnavailable'; required: number };
 const WEEK=7*1440;
 /** Exact cyclic weekly union. It never fills gaps merely to satisfy Apple's monitor limit. */
 export function planScheduleWindows(rules: readonly Rule[], now: string, timezone: string, limit=7): ScheduleWindowPlan {
@@ -13,5 +14,27 @@ export function planScheduleWindows(rules: readonly Rule[], now: string, timezon
  if(merged.length>limit)return{ok:false,reason:'nativeWindowLimit',required:merged.length};
  const today=dayKey(now,timezone);
  const names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const name=new Intl.DateTimeFormat('en-US',{timeZone:timezone,weekday:'short'}).format(new Date(now));const sunday=addDays(today,-names.indexOf(name));
- return{ok:true,windows:merged.map((s,i)=>({id:`weekly-${i}-${s.start}-${s.end}`,start:Date.parse(localInstant(addDays(sunday,Math.floor(s.start/1440)),s.start%1440,timezone)),end:Date.parse(localInstant(addDays(sunday,Math.floor(s.end/1440)),s.end%1440,timezone))}))};
+ const windows:NativeScheduleWindow[]=[];
+ for(let i=0;i<merged.length;i++){
+  const s=merged[i], anchor=resolveRecurringAnchor(sunday,s.start,s.end,timezone);
+  if(!anchor)return{ok:false,reason:'nativeAnchorUnavailable',required:merged.length};
+  windows.push({id:`weekly-${i}-${s.start}-${s.end}`,...anchor});
+ }
+ return{ok:true,windows};
+}
+
+/** DeviceActivity extracts recurring weekday/hour/minute components from these
+ * instants. A DST-gap-shifted instant would permanently change those wall
+ * components, so choose a nearby same-weekday week only when this week's pair
+ * is nonconverged or collapsed. */
+function resolveRecurringAnchor(sunday:string,start:number,end:number,timezone:string):{start:number;end:number}|null{
+ for(const weekShift of [0,-7,7,-14,14]){
+  const startDay=addDays(sunday,Math.floor(start/1440)+weekShift);
+  const endDay=addDays(sunday,Math.floor(end/1440)+weekShift);
+  const resolvedStart=resolveLocalInstant(startDay,start%1440,timezone);
+  const resolvedEnd=resolveLocalInstant(endDay,end%1440,timezone);
+  const startAt=Date.parse(resolvedStart.instant),endAt=Date.parse(resolvedEnd.instant);
+  if(resolvedStart.converged&&resolvedEnd.converged&&endAt>startAt)return{start:startAt,end:endAt};
+ }
+ return null;
 }
