@@ -8,6 +8,8 @@ export type EnforcementSnapshot = {
   state: 'shield' | 'open' | 'conditional' | 'unknown';
   relief: 'unlockedWalking' | 'unlockedPropped' | 'unlockedAtGym';
   eligibleUntil: number;
+  openReason?: 'earned' | 'outsideWindow' | 'lapsed' | 'disabled' | 'deleting';
+  futureEnforcementEligible: boolean;
 };
 export interface EnforcementTransport {
   /** Atomically publishes eligibility/suppression before callbacks can write shields. */
@@ -20,6 +22,8 @@ export interface EnforcementTransport {
   /** Commit staged protection and retire old registration without a protection gap. */
   commitWatchdog(id: string, revision: number): Promise<boolean>;
   cancelWatchdogs(revision: number): Promise<void>;
+  /** Atomically replace the guarded DeviceActivity schedule (at most seven union windows). */
+  replaceWindows(windows: { id: string; start: number; end: number }[], snapshotRevision: number): Promise<void>;
 }
 export type EnforcementResult = 'applied' | 'preserved' | 'superseded';
 

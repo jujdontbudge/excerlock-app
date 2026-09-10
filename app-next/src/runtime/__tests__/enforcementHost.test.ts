@@ -1,6 +1,6 @@
 import { EnforcementHost, EnforcementSnapshot, EnforcementTransport } from '../enforcement/EnforcementHost';
 function setup() {
-  let snapshot: EnforcementSnapshot = { revision: 1, now: 0, context: { policyGeneration: 1, accountGeneration: 1, selectionVersion: 's1' }, state: 'conditional', relief: 'unlockedWalking', eligibleUntil: 3600000 };
+  let snapshot: EnforcementSnapshot = { revision: 1, now: 0, context: { policyGeneration: 1, accountGeneration: 1, selectionVersion: 's1' }, state: 'conditional', relief: 'unlockedWalking', futureEnforcementEligible: false, eligibleUntil: 3600000 };
   const calls: string[] = [];
   const transport: EnforcementTransport = {
     publish: jest.fn(async () => { calls.push('publish'); }),
@@ -8,7 +8,8 @@ function setup() {
     unshield: jest.fn(async () => { calls.push('unshield'); return true; }),
     stageWatchdog: jest.fn(async () => { calls.push('stage'); return 'watchdog-b'; }),
     commitWatchdog: jest.fn(async () => { calls.push('commit'); return true; }),
-    cancelWatchdogs: jest.fn(async () => { calls.push('cancel'); }),
+    replaceWindows: jest.fn().mockResolvedValue(undefined),
+      cancelWatchdogs: jest.fn(async () => { calls.push('cancel'); }),
   };
   const report = jest.fn();
   const host = new EnforcementHost({ read: () => snapshot, transport, report });
