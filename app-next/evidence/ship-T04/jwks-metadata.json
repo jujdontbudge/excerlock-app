@@ -1,0 +1,6 @@
+{
+  "checkedAt": "2026-09-10T05:00:00Z",
+  "source": "https://hqgqhefftjxwdhqeushr.supabase.co/auth/v1/.well-known/jwks.json",
+  "keys": [{ "kid": "4c69a8ad-5bcf-4c45-88b7-35623b3c35f1", "kty": "EC", "alg": "ES256", "use": "sig" }],
+  "scope": "Public signing-key metadata only; no real session or provider login verified. Timestamp rounded to minute."
+}

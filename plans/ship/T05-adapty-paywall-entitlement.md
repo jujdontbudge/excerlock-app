@@ -7,7 +7,7 @@ out), §4 (offline).
 ## Steps
 
 1. `AdaptySubscriptionAdapter implements SubscriptionPort`: `activate` → `identify(uid)`; `onLatestProfileLoad`;
-   `getPaywall(placement)` + `getPaywallProducts`; `purchase(product)`; `restore`; `logout`; `busy` flag for the
+   `getFlow(placement)` + `getPaywallProducts`; `purchase(product)`; `restore`; `logout`; `busy` flag for the
    OTA coordinator. **Before `purchase`/`restore`:** `setIntegrationIdentifier` with the PostHog distinct id
    (verify the key name against Adapty's live docs; record the doc URL in the adapter README).
 2. Entitlement mapping table §4 as one pure function with one test file; `unknown` 3 s budget; transient
@@ -19,13 +19,14 @@ out), §4 (offline).
 4. Restore-not-found never downgrades (test from finding 12).
 5. Lapse: `enforcementPlan` clears shields (T10); app stays mounted; `in_app` modal.
 6. StoreKit configuration file `ExcerLock.storekit` with the six products for simulator purchases; wired into
-   the `ios` scheme for debug/preview.
+   an explicit Debug simulator launch/test scheme only. Preview-device/TestFlight verification uses real
+   sandbox StoreKit; a bundled .storekit file is not evidence of sandbox/vendor integration.
 7. Webhook (server): §5 rules; resync endpoint.
 
 ## Tests first
 
 - `entitlementMapping.test.ts` (every row of §4) · `paywall-render.test.tsx` (order/pairing/links from a
-  fixture matching a real `getPaywall` response) · `purchase-order.test.ts` (integration identifier set
+  fixture matching a real SDK4 `getFlow` / products response) · `purchase-order.test.ts` (integration identifier set
   before purchase) · `restore-never-downgrades.test.ts`.
 
 ## Acceptance
@@ -35,3 +36,6 @@ out), §4 (offline).
       webhook row on the VPS → PostHog shows the purchase event on the same person as `paywall_variant`
       exposure. Screenshot each hop in `evidence/T05/`.
 - [ ] Paywall renders Terms, Privacy, price, renewal text from a real fetch.
+
+SDK4 implementation correction: `getFlow` replaces the old `getPaywall` API; custom-rendered flows use
+`logShowFlow`. Follow the installed SDK types and official docs, not an invented v3 compatibility alias.

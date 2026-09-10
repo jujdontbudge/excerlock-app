@@ -19,9 +19,10 @@ Ordering contract (a test asserts the call order with mocked SDKs):
 2. PostHog `identify(uid)`; register super-properties `environment` (`dev|preview|prod`, from the build
    profile, re-registered after every `reset`), `runtime_version`, `update_id`.
 3. Adapty `activate` then `identify(uid)`.
-4. **Before every purchase or restore call:** `adapty.setIntegrationIdentifier('posthog_distinct_id',
+4. **Before every purchase or restore call:** `adapty.setIntegrationIdentifier('posthog_distinct_user_id',
    posthog.getDistinctId())` — verify the exact key against Adapty's live PostHog-integration docs at
-   implementation time. This is the F1 fix; without it the purchase lands on a person the exposure never met.
+   implementation time. Verified SDK4 call: `(key, value)`, official https://adapty.io/docs/posthog.
+   This is the F1 fix; without it the purchase lands on a person the exposure never met.
 5. New provider linking: native ID-token `linkIdentity` → same uid → no duplicate identification. Existing
    account recovery adopts its canonical uid; never automatically alias established people or transfer paid
    ownership. Permanent-account sign-out creates a fresh anonymous uid; anonymous sign-out can be a no-op.
@@ -47,7 +48,7 @@ Ordering contract (a test asserts the call order with mocked SDKs):
 
 ## 3. Adapty adapter (B46; absorbs P2-T06 minus the Builder, P2-T18)
 
-- `getPaywall(placement)` + `getPaywallProducts(paywall)` render **the returned products in the returned order**.
+- `getFlow(placement)` + `getPaywallProducts(flow)` render **the returned products in the returned order**.
   No hardcoded prices, plan count or order; pair by `vendorProductId` from the response, never by a constant.
   A fetch failure shows a visible fallback ("Plans couldn't load — retry") that reports itself to Sentry;
   never a silent static price list (F8).
@@ -88,3 +89,6 @@ ASC app `6787265352` has 51 subscriptions, all `MISSING_METADATA`. The paywall r
 description, a review screenshot, pricing, and must be attached to the first version submission. The other
 45 (the `.{price}.t{0,3,7}` grid) are left unsubmitted or deleted — Johan's call; the app never references
 them. Paid Apps Agreement, banking and tax confirmed before T05 starts.
+
+SDK4 implementation correction: `getFlow` replaces the old `getPaywall` API; custom-rendered flows use
+`logShowFlow`. Follow the installed SDK types and official docs, not an invented v3 compatibility alias.
