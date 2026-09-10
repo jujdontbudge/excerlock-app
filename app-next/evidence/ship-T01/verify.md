@@ -26,3 +26,18 @@ UNCHECKED (explicitly, per constraints — no EAS build/upload, no simulator, no
 - Report + App Intents appex (pending definitions, no valid tooling target yet).
 
 No signed IPA or device acceptance is claimed: there is no artifact.
+
+## Root structured signed-manifest correction (2026-09-10)
+
+The initial shell verifier checked key names and only decoded profiles, allowing false capability values,
+wrong groups/IDs and mismatched profiles to pass. A mandatory structured Python verifier now precedes
+those smoke checks: codesign strict validity, exact five bundle IDs/extension points/embedding paths,
+required entitlement VALUES (including booleans/group IDs), no unexpected/main-only extension privileges,
+team/application-prefix binding, unexpired profile authorization for every signed entitlement, build/version
+coherence, signed-payload usage/privacy declarations, and deep signature verification. Debug/production
+push modes must match provisioning. Release workflow must still additionally require distribution signing.
+
+Eight pure regression tests pass; bad capability/profile/group/team/expiry/privilege/push/debug and payload
+Info.plist fixtures are rejected. No signed IPA available: this is verifier regression proof only, NOT an
+accepted archive or device Family Controls activation. Existing --prebuild-only continues to report only
+prebuild evidence. Privacy labeling/content correctness and App Store approval remain T13 gates.
