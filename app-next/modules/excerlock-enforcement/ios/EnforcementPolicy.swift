@@ -45,6 +45,7 @@ final class ExcerlockPolicyStore {
   private func lockURL() throws -> URL { try container().appendingPathComponent("enforcement-policy-v1.lock") }
   func locked<T>(_ body: () throws -> T) throws -> T { let fd = open(try lockURL().path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR); guard fd >= 0 else { throw ExcerlockPolicyError.lockUnavailable }; guard flock(fd, LOCK_EX) == 0 else { close(fd); throw ExcerlockPolicyError.lockUnavailable }; defer { flock(fd, LOCK_UN); close(fd) }; return try body() }
   func readLocked() throws -> ExcerlockPolicyRecord { try JSONDecoder().decode(ExcerlockPolicyRecord.self, from: Data(contentsOf: try policyURL())) }
+  func readIfPresentLocked() throws -> ExcerlockPolicyRecord? { let url = try policyURL(); guard FileManager.default.fileExists(atPath: url.path) else { return nil }; return try JSONDecoder().decode(ExcerlockPolicyRecord.self, from: Data(contentsOf: url)) }
   func writeLocked(_ value: ExcerlockPolicyRecord) throws { try JSONEncoder().encode(value).write(to: policyURL(), options: [.atomic]) }
   func currentSelectionPayload() -> String? { UserDefaults(suiteName: appGroup)?.dictionary(forKey: excerlockSelectionDefaultsKey)?[excerlockSelectionHandle] as? String }
   private func selection(_ payload: String?) throws -> FamilyActivitySelection { guard let payload, let data = payload.data(using: .utf8), let value = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) else { throw ExcerlockPolicyError.missingSelection }; return value }
@@ -54,10 +55,11 @@ final class ExcerlockPolicyStore {
     record.shielded = shield
   }
   func apply(shield: Bool, revision: Int) throws -> Bool { try locked { var r = try readLocked(); guard r.revision == revision else { return false }; try apply(shield, record: &r); try writeLocked(r); return true } }
-  func handleWatchdog(_ id: String, now: Double = Date().timeIntervalSince1970 * 1000) throws -> Bool { try locked { var r = try readLocked(); guard r.version == excerlockPolicyVersion, r.state == "conditional", r.committedId == id, let m = r.registrations[id], m.committed, m.policyGeneration == r.policyGeneration, m.accountGeneration == r.accountGeneration, m.selectionVersion == r.selectionVersion, now >= m.start, now <= m.end, now <= m.eligibleUntil, now <= r.eligibleUntil else { return false }; try apply(true, record: &r); try writeLocked(r); return true } }
+  func handleWatchdog(_ id: String, now: Double = Date().timeIntervalSince1970 * 1000) throws -> Bool { try locked { var r = try readLocked(); guard r.version == excerlockPolicyVersion, r.state == "conditional", r.committedId == id, let m = r.registrations[id], m.committed, m.policyGeneration == r.policyGeneration, m.accountGeneration == r.accountGeneration, m.selectionVersion == r.selectionVersion, now >= m.end, now < m.eligibleUntil, now < r.eligibleUntil, (r.windows.isEmpty || r.windows.values.contains { windowActive($0, now: now) }) else { return false }; try apply(true, record: &r); try writeLocked(r); return true } }
   func handleWindow(_ id: String, started: Bool, now: Double = Date().timeIntervalSince1970 * 1000) throws -> Bool { try locked { var r = try readLocked(); guard let w = r.windows[id], w.revision == r.revision, w.policyGeneration == r.policyGeneration, w.accountGeneration == r.accountGeneration, w.selectionVersion == r.selectionVersion else { return false }
-    if started { guard r.futureEnforcementEligible, r.openReason == "outsideWindow", now >= w.start, now <= w.end else { return false }; try apply(true, record: &r) }
-    else { let active = r.windows.values.contains { now >= $0.start && now < $0.end }; guard !active, r.state == "open", r.openReason == "outsideWindow" else { return false }; try apply(false, record: &r) }
+    if started { guard r.futureEnforcementEligible, r.openReason == "outsideWindow", windowActive(w, now: now) else { return false }; try apply(true, record: &r) }
+    else { let active = r.windows.values.contains { windowActive($0, now: now) }; guard !active, r.openReason != "earned", r.openReason != "lapsed", r.openReason != "disabled", r.openReason != "deleting" else { return false }; try apply(false, record: &r) }
     try writeLocked(r); return true
   }}
+  private func windowActive(_ w: ExcerlockScheduledWindow, now: Double) -> Bool { let week = 7.0 * 24 * 60 * 60 * 1000; let offset = ((now - w.start).truncatingRemainder(dividingBy: week) + week).truncatingRemainder(dividingBy: week); let duration = w.end - w.start; return offset >= 0 && offset < duration }
 }
