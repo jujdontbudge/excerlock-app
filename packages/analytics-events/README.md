@@ -1,5 +1,10 @@
 # @excerlock/analytics-events
 
+Permission outcomes, unlock method and review presets use bounded enum
+vocabulary. Raw answers, locations, account identifiers, receipts, and SDK
+errors never cross this seam. Subscription/trial lifecycle and revenue remain
+owned only by the Adapty integration.
+
 The typed PostHog event registry — the single source of truth for **every event name the product
 is allowed to emit**, its properties type, and its **owner** (`client | server | adapty`). Pure
 TypeScript data and types: no React, no React Native, no I/O, no PostHog SDK.
