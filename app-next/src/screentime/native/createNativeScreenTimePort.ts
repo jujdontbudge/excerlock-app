@@ -41,6 +41,7 @@ export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcem
         const contents = await nativeScreenTimePicker.pick(NATIVE_LOCKED_SELECTION);
         return {
           handle: contents && (contents.applicationCount > 0 || contents.categoryCount > 0) ? { token: NATIVE_LOCKED_SELECTION } : null,
+          isEmpty: !contents || (contents.applicationCount === 0 && contents.categoryCount === 0),
           appCount: contents?.applicationCount ?? 0,
           categoryCount: contents?.categoryCount ?? 0,
         };
