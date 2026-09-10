@@ -2,6 +2,7 @@
 export const tokens = {
   surface: {
     orangeGradient: ['#F6B583', '#FBE2CF', '#FFF7F1'],
+    tabBarGradient: ['rgba(255,247,241,0)', 'rgba(255,247,241,0.92)', '#FFF7F1'],
     canvas: '#FFFFFF',
     topTint: '#FFF0E5',
     topTintMid: '#FFF8F3',

@@ -24,7 +24,7 @@ function permUser(id: string) {
 
 beforeEach(() => {
   sessionStore.getState().patch({ session: { kind: 'anonymous' } });
-  rulesStore.getState().patch({ rules: [], lockedApps: { handle: null, appCount: 0, categoryCount: 0 } });
+  rulesStore.getState().patch({ rules: [], lockedApps: { handle: null, isEmpty: true } });
 });
 
 test('permanent sign-out creates a NEW anonymous uid and preserves local rules', async () => {
@@ -41,7 +41,7 @@ test('permanent sign-out creates a NEW anonymous uid and preserves local rules',
     onAuthStateChange: jest.fn().mockReturnValue({ data: { subscription: { unsubscribe: jest.fn() } } }),
   } } as never;
   // Seed a rule to verify preservation.
-  const rule = { id: 'rule-1', activity: 'walking', mode: { kind: 'state', activity: 'walking', place: 'outside' }, schedule: { days: [1], window: { kind: 'allDay' } }, enabled: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as never;
+  const rule = { id: 'rule-1', activity: 'walking', mode: { kind: 'state', activity: 'walking' }, schedule: { days: [1], window: { kind: 'allDay' } }, enabled: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as never;
   rulesStore.getState().patch({ rules: [rule] });
   let resetCount = 0;
   const adapter = new SupabaseAuthAdapter({

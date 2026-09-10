@@ -15,7 +15,7 @@ test('unscheduled days are transparent and today remains in progress until it en
     longest: 2,
   });
   expect(streak([], '2026-09-07')).toEqual({ current: 0, longest: 0 });
-  const state = { ...rule, mode: { kind: 'state' as const, activity: 'walking' as const, place: 'either' as const } };
+  const state = { ...rule, mode: { kind: 'state' as const, activity: 'walking' as const } };
   expect(isMetDay([state], [], 10)).toBe(true);
   expect(isMetDay([state], [], 9)).toBe(false);
   expect(isMetDay([state, rule], [], 20)).toBe(false);

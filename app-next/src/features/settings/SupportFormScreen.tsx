@@ -37,14 +37,16 @@ export function SupportFormScreen({
   deviceInfo?: boolean;
 }) {
   const runtime = useRuntime(),
+    [replyEmail, setReplyEmail] = useState(''),
     [message, setMessage] = useState(''),
     [state, setState] = useState<'idle' | 'sending' | 'sent' | 'handedOff' | 'error'>('idle');
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(replyEmail.trim());
   const send = async () => {
-    if (!message.trim() || state === 'sending') return;
+    if (!message.trim() || !emailValid || state === 'sending') return;
     Keyboard.dismiss();
     setState('sending');
     try {
-      const { via } = await runtime.support.send(category, message);
+      const { via } = await runtime.support.send(category, `Reply email: ${replyEmail.trim()}\n\n${message.trim()}`);
       setState(via === 'mail' ? 'handedOff' : 'sent');
     } catch {
       setState('error');
@@ -81,7 +83,7 @@ export function SupportFormScreen({
           <PrimaryButton
             label={state === 'sending' ? s.sending : submit}
             loading={state === 'sending'}
-            disabled={!message.trim()}
+            disabled={!message.trim() || !emailValid}
             onPress={() => void send()}
           />
           <SecondaryButton label={s.emailInstead} disabled={state === 'sending'} onPress={() => void emailInstead()} />
@@ -89,6 +91,15 @@ export function SupportFormScreen({
       }>
       <Heading title={title} support={support} />
       <LivingIcon name={icon} />
+      <TextField
+        label={s.replyEmail}
+        value={replyEmail}
+        onChangeText={setReplyEmail}
+        placeholder={s.replyEmailPlaceholder}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        error={replyEmail.length > 0 && !emailValid ? s.replyEmailInvalid : undefined}
+      />
       <TextField
         label={field}
         value={message}

@@ -4,10 +4,9 @@ import { Schedule } from '../../../domain/types';
 const schedule: Schedule = { days: [1, 2, 3, 4, 5], window: { kind: 'allDay' } };
 test('walking defaults, edits, serialization and identity survive a round trip', () => {
   let d = createDraft('walking');
-  d = reduceDraft(d, { type: 'setPlace', value: 'treadmill' });
   d = reduceDraft(d, { type: 'setStepGoal', value: 6500 });
   const r = toRule(d, schedule);
-  expect(r.mode).toEqual({ kind: 'target', activity: 'walking', metric: 'steps', goal: 6500, place: 'treadmill' });
+  expect(r.mode).toEqual({ kind: 'target', activity: 'walking', metric: 'steps', goal: 6500 });
   expect(validateRule(r)).toEqual([]);
   expect(toRule(fromRule(r), schedule)).toEqual(r);
   expect(toRule(reduceDraft(d, { type: 'setWalkingMode', value: 'state' }), schedule).mode.kind).toBe('state');

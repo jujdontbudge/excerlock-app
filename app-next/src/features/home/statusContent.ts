@@ -52,7 +52,7 @@ export function statusContent({ decision: d, rules, permissions, apps, now, time
     return { ...model, state: 'allPaused', title: c.paused, subtitle: c.resume, action: 'conditions' };
   if (permissions.screenTime !== 'granted')
     return { ...model, state: 'permissionNeeded', subtitle: c.permission, action: 'permission' };
-  if (apps.appCount + apps.categoryCount === 0)
+  if (apps.isEmpty)
     return { ...model, state: 'noAppsSelected', subtitle: c.noApps, action: 'apps' };
   if (d.state === 'locked') {
     const hint = d.nextUnlockHint,

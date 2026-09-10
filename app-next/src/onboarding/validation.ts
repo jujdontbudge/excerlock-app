@@ -17,8 +17,9 @@ export function canContinue(step: string, answers: Answers): boolean {
   }
   if (step === 'S1') return scheduleIssues(scheduleDraft(answers)).length === 0;
   if (step === 'W3') {
-    const n = Number(answers.stepGoal ?? 5000);
-    return n >= 500 && n <= 30000 && n % 500 === 0;
+    const minutes = answers.walkingMode === 'minutes';
+    const n = Number(minutes ? answers.walkMinutes ?? 20 : answers.stepGoal ?? 5000);
+    return minutes ? Number.isInteger(n) && n >= 5 && n <= 180 : n >= 500 && n <= 30000 && n % 500 === 0;
   }
   if (step === 'G2') {
     const draft = draftFromAnswers(answers);

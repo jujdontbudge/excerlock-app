@@ -1,7 +1,7 @@
 import { unlockHint } from '../unlockHint';
 import { rule } from './fixtures';
 import { Rule } from '../types';
-const state: Rule = { ...rule, id: 'state', mode: { kind: 'state', activity: 'walking', place: 'outside' } };
+const state: Rule = { ...rule, id: 'state', mode: { kind: 'state', activity: 'walking' } };
 const gym: Rule = { ...rule, id: 'gym', activity: 'gym', mode: { kind: 'event', activity: 'gym', trigger: 'arrival' } };
 test('immediate actions rank first; numeric remainders compare only matching units', () => {
   expect(unlockHint([rule, state], [])).toEqual({ ruleId: 'state', action: 'walk', remaining: null, unit: null });
@@ -9,7 +9,7 @@ test('immediate actions rank first; numeric remainders compare only matching uni
   const smaller: Rule = {
     ...rule,
     id: 'small',
-    mode: { kind: 'target', activity: 'walking', metric: 'steps', goal: 1000, place: 'either' },
+    mode: { kind: 'target', activity: 'walking', metric: 'steps', goal: 1000 },
   };
   expect(unlockHint([rule, smaller], []).ruleId).toBe('small');
   expect(

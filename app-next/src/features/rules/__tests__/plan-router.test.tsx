@@ -20,11 +20,10 @@ beforeEach(() => {
   profileStore.getState().reset();
   onboardingStore
     .getState()
-    .patch({ answers: { activity: 'walking', walkingMode: 'target', name: 'Alex', stepGoal: 5000 } });
+    .patch({ answers: { activity: 'walking', walkingMode: 'steps', name: 'Alex', stepGoal: 5000 } });
 });
 test.each([
   ['Edit goal', 'W3'],
-  ['Edit place', 'W1'],
   ['Edit schedule', 'S1'],
 ])('%s returns directly to the summary', async (label, step) => {
   const route = renderRouter(routes, { initialUrl: '/onboarding/S3' });

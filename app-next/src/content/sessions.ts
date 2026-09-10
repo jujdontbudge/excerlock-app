@@ -1,11 +1,8 @@
 export const sessionCopy = {
   walk: 'Walk & Scroll',
   start: 'Start walking',
-  verifying: 'Detecting walking…',
-  verifyingBody: 'Checking your pace',
   walking: 'Walking detected',
   walkingBody: 'Your apps are open while you walk.',
-  grace: 'Keep walking to stay unlocked',
   ended: 'Walk complete',
   ready: 'Ready when you are',
   readyBody: 'Start your walk and we’ll check your pace.',

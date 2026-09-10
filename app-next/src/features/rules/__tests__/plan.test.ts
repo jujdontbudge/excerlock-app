@@ -6,14 +6,14 @@ import { toRule } from '../draft';
 import { validateRule } from '../../../domain/validateRule';
 const schedule = { days: [1 as const], window: { kind: 'allDay' as const } };
 test.each([
-  { activity: 'walking', walkingMode: 'target', stepGoal: 6000 },
+  { activity: 'walking', walkingMode: 'steps', stepGoal: 6000 },
   { activity: 'walking', walkingMode: 'state' },
   { activity: 'gym', gymMode: 'arrival' },
   { activity: 'gym', gymMode: 'time', gymMinutes: 45 },
   { activity: 'gym', gymMode: 'time', gymMinutes: 10 },
   { activity: 'gym', gymMode: 'time', gymMinutes: 180 },
-  { activity: 'walking', walkingMode: 'target', stepGoal: 500 },
-  { activity: 'walking', walkingMode: 'target', stepGoal: 30000 },
+  { activity: 'walking', walkingMode: 'steps', stepGoal: 500 },
+  { activity: 'walking', walkingMode: 'steps', stepGoal: 30000 },
 ])('summary draft is valid for $activity $walkingMode $gymMode', (a) => {
   const answers = JSON.parse(JSON.stringify(a));
   expect(validateRule(toRule(draftFromAnswers(answers), schedule))).toEqual([]);

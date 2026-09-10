@@ -17,12 +17,12 @@ test('invalid data cannot create a condition; every activity keeps its prescribe
   ])
     expect(validateRule(invalid).length).toBeGreaterThan(0);
   const modes = [
-    { kind: 'state', activity: 'walking', place: 'either' },
-    { kind: 'state', activity: 'walking', place: 'outside' },
-    { kind: 'state', activity: 'walking', place: 'treadmill' },
+    { kind: 'state', activity: 'walking' },
+    { kind: 'state', activity: 'walking' },
+    { kind: 'state', activity: 'walking' },
     { kind: 'event', activity: 'gym', trigger: 'arrival' },
-    { kind: 'target', activity: 'walking', metric: 'steps', goal: 500, place: 'outside' },
-    { kind: 'target', activity: 'walking', metric: 'steps', goal: 30000, place: 'either' },
+    { kind: 'target', activity: 'walking', metric: 'steps', goal: 500 },
+    { kind: 'target', activity: 'walking', metric: 'steps', goal: 30000 },
     { kind: 'target', activity: 'gym', metric: 'minutes', goal: 10 },
     { kind: 'target', activity: 'gym', metric: 'minutes', goal: 180 },
   ];
@@ -36,10 +36,10 @@ test('invalid data cannot create a condition; every activity keeps its prescribe
 });
 test('malformed modes and missing schedule fields are rejected at hydration', () => {
   for (const invalid of [
-    { ...rule, mode: { ...rule.mode, place: 'indoors' } },
+    { ...rule, mode: { kind: 'target', activity: 'walking', metric: 'minutes', goal: 2 } },
     { ...rule, activity: 'gym', mode: { kind: 'state', activity: 'gym' } },
-    { ...rule, mode: { kind: 'event', activity: 'walking', place: 'either', trigger: 'arrival' } },
-    { ...rule, mode: { kind: 'rate', activity: 'walking', place: 'either' } },
+    { ...rule, mode: { kind: 'event', activity: 'walking', trigger: 'arrival' } },
+    { ...rule, mode: { kind: 'rate', activity: 'walking' } },
     { ...rule, mode: { ...rule.mode, metric: 'distance', unit: 'km' } },
     ...JSON.parse(
       `[{"id":"run","activity":"running","mode":{"kind":"target","activity":"running","metric":"minutes","goal":20},

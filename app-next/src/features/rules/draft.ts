@@ -1,4 +1,4 @@
-import { Activity, Rule, RuleMode, Schedule, WalkPlace } from '../../domain/types';
+import { Activity, Rule, RuleMode, Schedule } from '../../domain/types';
 import { validateRule } from '../../domain/validateRule';
 export type RuleDraft = {
   id: string;
@@ -6,16 +6,15 @@ export type RuleDraft = {
   createdAt: string;
   updatedAt: string;
   enabled: boolean;
-  place: WalkPlace;
-  walkingMode: 'target' | 'state';
+  walkingMode: 'steps' | 'minutes' | 'state';
   stepGoal: number;
+  walkMinutes: number;
   gymMode: 'time' | 'arrival';
   gymMinutes: number;
 };
 export type DraftAction =
-  | { type: 'setPlace'; value: WalkPlace }
-  | { type: 'setWalkingMode'; value: 'target' | 'state' }
-  | { type: 'setStepGoal' | 'setGymMinutes'; value: number }
+  | { type: 'setWalkingMode'; value: 'steps' | 'minutes' | 'state' }
+  | { type: 'setStepGoal' | 'setWalkMinutes' | 'setGymMinutes'; value: number }
   | { type: 'setGymMode'; value: 'time' | 'arrival' };
 export function createDraft(activity: Activity, now = new Date().toISOString()): RuleDraft {
   return {
@@ -27,21 +26,21 @@ export function createDraft(activity: Activity, now = new Date().toISOString()):
     createdAt: now,
     updatedAt: now,
     enabled: true,
-    place: 'outside',
-    walkingMode: 'target',
+    walkingMode: 'steps',
     stepGoal: 5000,
+    walkMinutes: 20,
     gymMode: 'time',
     gymMinutes: 30,
   };
 }
 export function reduceDraft(d: RuleDraft, a: DraftAction): RuleDraft {
   switch (a.type) {
-    case 'setPlace':
-      return { ...d, place: a.value };
     case 'setWalkingMode':
       return { ...d, walkingMode: a.value };
     case 'setStepGoal':
       return { ...d, stepGoal: a.value };
+    case 'setWalkMinutes':
+      return { ...d, walkMinutes: a.value };
     case 'setGymMode':
       return { ...d, gymMode: a.value };
     case 'setGymMinutes':
@@ -52,8 +51,8 @@ function mode(d: RuleDraft): RuleMode {
   const activity = d.activity;
   if (activity === 'walking')
     return d.walkingMode === 'state'
-      ? { kind: 'state', activity, place: d.place }
-      : { kind: 'target', activity, place: d.place, metric: 'steps', goal: d.stepGoal };
+      ? { kind: 'state', activity }
+      : { kind: 'target', activity, metric: d.walkingMode, goal: d.walkingMode === 'steps' ? d.stepGoal : d.walkMinutes };
   return d.gymMode === 'arrival'
     ? { kind: 'event', activity, trigger: 'arrival' }
     : { kind: 'target', activity, metric: 'minutes', goal: d.gymMinutes };
@@ -77,7 +76,10 @@ export function fromRule(rule: Rule): RuleDraft {
     d = createDraft(rule.activity, rule.createdAt);
   Object.assign(d, { id: rule.id, updatedAt: rule.updatedAt, enabled: rule.enabled });
   if (m.activity === 'walking')
-    Object.assign(d, { place: m.place, walkingMode: m.kind, ...(m.kind === 'target' ? { stepGoal: m.goal } : {}) });
+    Object.assign(d, m.kind === 'state' ? { walkingMode: 'state' } : {
+      walkingMode: m.metric,
+      ...(m.metric === 'steps' ? { stepGoal: m.goal } : { walkMinutes: m.goal }),
+    });
   else
     Object.assign(d, {
       gymMode: m.kind === 'event' ? 'arrival' : 'time',

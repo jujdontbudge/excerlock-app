@@ -29,6 +29,6 @@ test('overnight and all-day schedules remain explicit', () => {
 });
 test('walking state does not claim a permanent unlock', () => {
   expect(
-    blockingSchedule({ ...rule, mode: { kind: 'state', activity: 'walking', place: 'outside' } }).message,
+    blockingSchedule({ ...rule, mode: { kind: 'state', activity: 'walking' } }).message,
   ).toContain('unlock while you walk');
 });

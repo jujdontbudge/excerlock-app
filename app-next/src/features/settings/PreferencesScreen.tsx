@@ -7,9 +7,11 @@ import {
   PermissionRow,
   BottomSheet,
   ChoiceRow,
+  Label,
 } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
+import { profileStore as useProfileStore } from '../../state/profileStore';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
 import { settingsCopy as c } from '../../content/settings';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
@@ -20,8 +22,10 @@ const graceSeconds = [30, 60, 120, 180, 300];
 export function PreferencesScreen({ navigate, onBack }: { navigate: (path: string) => void; onBack: () => void }) {
   const permissions = usePermissionsStore((s) => s.data),
     s = useSettingsStore((s) => s.data),
+    walkPlaces = useProfileStore((state) => state.data.walkPlaces),
     runtime = useRuntime(),
-    [grace, setGrace] = useState(false);
+    [grace, setGrace] = useState(false),
+    [autoDenied, setAutoDenied] = useState(false);
   return (
     <SettingsPage
       onBack={onBack}
@@ -61,6 +65,28 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
         </View>
       </SettingsGroup>
       <SettingsGroup>
+        <Label variant="section">{c.walkPlaces}</Label>
+        {([
+          ['outside', c.walkOutside],
+          ['treadmill', c.walkTreadmill],
+        ] as const).map(([place, title]) => (
+          <ChoiceRow
+            key={place}
+            title={title}
+            multiple
+            selected={walkPlaces.includes(place)}
+            onPress={() => {
+              const next = walkPlaces.includes(place)
+                ? walkPlaces.filter((value) => value !== place)
+                : [...walkPlaces, place];
+              if (next.length === 0) return;
+              useProfileStore.getState().patch({ walkPlaces: next });
+              runtime.analytics.track('walk_places_updated', { walk_places: next });
+            }}
+          />
+        ))}
+      </SettingsGroup>
+      <SettingsGroup>
         <SettingsRow
           title={c.grace}
           value={c.graceOptions[graceSeconds.indexOf(s.stopGrace)]}
@@ -70,16 +96,19 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
           title={c.auto}
           subtitle={c.autoBody}
           toggle={s.gymAutoDetect}
-          onToggle={(v) => {
-            if (v) void runtime.gym.enableAutoDetect();
-            else runtime.gym.disableAutoDetect();
+          onToggle={async (v) => {
+            if (!v) {
+              runtime.gym.disableAutoDetect();
+              useSettingsStore.getState().patch({ gymAutoDetect: false });
+              setAutoDenied(false);
+              return;
+            }
+            const enabled = await runtime.gym.enableAutoDetect().catch(() => false);
+            useSettingsStore.getState().patch({ gymAutoDetect: enabled });
+            setAutoDenied(!enabled);
           }}
         />
-        <SettingsRow
-          title={c.haptics}
-          toggle={s.haptics}
-          onToggle={(haptics) => useSettingsStore.getState().patch({ haptics })}
-        />
+        {autoDenied ? <Label accessibilityRole="alert" tone="secondary">{c.autoDenied}</Label> : null}
       </SettingsGroup>
       <SettingsGroup>
         <SettingsRow title={c.gyms} icon="gym" onPress={() => navigate('gyms')} />

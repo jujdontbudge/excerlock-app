@@ -1,16 +1,4 @@
-import { Rule } from '../../domain/types';
-import { WalkingSheet } from './WalkingSheet';
-export function HomeSheets({
-  sheet,
-  rules,
-  onDismiss,
-}: {
-  sheet: { type: 'walk' | 'checkin'; ruleId: string } | null;
-  rules: Rule[];
-  onDismiss: () => void;
-  onChooseGym: () => void;
-}) {
-  const rule = rules.find((r) => r.enabled && r.id === sheet?.ruleId);
-  if (sheet?.type === 'walk' && rule) return <WalkingSheet rule={rule} onDismiss={onDismiss} />;
+/** Walking checks are inline on Home; there is no walking popup sheet. */
+export function HomeSheets() {
   return null;
 }

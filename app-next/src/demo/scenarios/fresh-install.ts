@@ -4,7 +4,7 @@ export const scenario0 = base('fresh-install', 'Fresh install', {
   onboarding: 'fresh',
   profile: { name: '' },
   rules: [],
-  lockedApps: { handle: null, appCount: 0, categoryCount: 0 },
+  lockedApps: { handle: null, isEmpty: true },
   ruleDays: [],
   permissions: emptyPermissions,
   entitlement: { status: 'none', renewsAt: null },

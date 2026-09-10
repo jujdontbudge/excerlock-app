@@ -36,9 +36,9 @@ exports[`home-locked-walking progress variant 1`] = `
 exports[`home-walking-session progress variant 1`] = `
 {
   "action": "walk",
-  "detail": "Your apps are open while you walk.",
+  "detail": "Check your walking movement to open your apps.",
   "icon": "walking",
-  "label": "Walking detected",
+  "label": "Detected",
   "state": "walking",
   "title": "Unlock while walking",
   "value": 1,

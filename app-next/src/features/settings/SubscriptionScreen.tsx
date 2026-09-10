@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { Linking } from 'react-native';
-import Constants from 'expo-constants';
 import { Heading, Label, SettingsGroup, SettingsRow } from '../../design-system';
 import { settingsCopy as c } from '../../content/settings';
-import { appStoreSubscriptionsUrl, subscriptionCopy } from '../../content/subscription';
+import { subscriptionCopy } from '../../content/subscription';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { Reveal } from '../../motion/Reveal';
@@ -27,8 +25,11 @@ export function SubscriptionScreen({ onBack }: { onBack: () => void }) {
   };
   const manage = async () => {
     try {
-      if (Constants.isDevice) await Linking.openURL(appStoreSubscriptionsUrl);
-      else setNote(subscriptionCopy.manageFallback);
+      const action = (runtime.subscription as typeof runtime.subscription & {
+        manageSubscription?: () => Promise<void>;
+      }).manageSubscription;
+      if (!action) throw new Error('Subscription management unavailable');
+      await action.call(runtime.subscription);
     } catch {
       setNote(subscriptionCopy.manageFallback);
     }

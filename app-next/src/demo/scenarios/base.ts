@@ -4,7 +4,7 @@ import { addDays } from '../../domain/calendar';
 export const NOW = '2026-09-07T15:00:00.000Z';
 export const makeRule = (
   id = 'walk',
-  mode: RuleMode = { kind: 'target', activity: 'walking', metric: 'steps', goal: 5000, place: 'outside' },
+  mode: RuleMode = { kind: 'target', activity: 'walking', metric: 'steps', goal: 5000 },
 ): Rule => ({
   id,
   activity: mode.activity,
@@ -43,7 +43,7 @@ export function base(id: string, title: string, overrides: Partial<Scenario> = {
       units: 'mi',
     },
     rules: [makeRule()],
-    lockedApps: { handle: { token: 'fake-selection-default' }, appCount: 3, categoryCount: 1 },
+    lockedApps: { handle: { token: 'fake-selection-default' }, isEmpty: false },
     ruleDays: [{ ruleId: 'walk', day: '2026-09-07', progress: 3200, met: false, metAt: null }],
     clock: { now: NOW, timezone: 'America/New_York' },
     permissions: {

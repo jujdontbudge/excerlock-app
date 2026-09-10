@@ -20,14 +20,14 @@ test('each activity phrases its own condition', () => {
     'Your apps are blocked until you spend 60 minutes at the gym',
   );
 });
-test('walking carries the place and switches to unless while walking', () => {
-  expect(say({ activity: 'walking', walkPlace: 'outside' })).toBe(
-    'Your apps are blocked until you walk _____ steps outside',
+test('walking modes do not depend on preferred walking places', () => {
+  expect(say({ activity: 'walking', walkingMode: 'steps', stepGoal: '5000' })).toBe(
+    'Your apps are blocked until you walk 5,000 steps',
   );
-  expect(say({ activity: 'walking', walkPlace: 'treadmill', walkingMode: 'target', stepGoal: '5000' })).toBe(
-    'Your apps are blocked until you walk 5,000 steps on a treadmill',
+  expect(say({ activity: 'walking', walkingMode: 'minutes', walkMinutes: '20' })).toBe(
+    'Your apps are blocked until you walk for 20 minutes',
   );
-  expect(say({ activity: 'walking', walkPlace: 'either', walkingMode: 'state' })).toBe(
+  expect(say({ activity: 'walking', walkingMode: 'state' })).toBe(
     'Your apps are blocked unless you are walking',
   );
 });

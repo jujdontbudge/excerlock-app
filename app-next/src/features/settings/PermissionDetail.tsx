@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { Linking } from 'react-native';
 import { Heading, Label, PrimaryButton } from '../../design-system';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
 import { settingsCopy as c } from '../../content/settings';
 import { Permissions } from '../../domain/types';
 import { LivingIcon } from '../../motion/LivingIcon';
-import { Reveal } from '../../motion/Reveal';
 import { IconName } from '../../icons/Icon';
 export const permissionIcons: Record<keyof Permissions, IconName> = {
   screenTime: 'shield',
@@ -14,20 +13,14 @@ export const permissionIcons: Record<keyof Permissions, IconName> = {
   notifications: 'bell',
 };
 export function PermissionDetail({ name }: { name: keyof Permissions }) {
-  const status = usePermissionsStore((s) => s.data[name]),
-    [note, setNote] = useState(false);
+  const status = usePermissionsStore((s) => s.data[name]);
   return (
     <>
       <Heading title={c.permissionNames[name]} support={c.statuses[status]} />
       <LivingIcon name={permissionIcons[name]} />
       <Label>{c.why[name]}</Label>
       <Label tone="secondary">{c.without[name]}</Label>
-      <PrimaryButton label={c.openSettings} onPress={() => setNote(true)} />
-      {note ? (
-        <Reveal>
-          <Label>{c.settingsNote}</Label>
-        </Reveal>
-      ) : null}
+      <PrimaryButton label={c.openSettings} onPress={() => void Linking.openSettings()} />
     </>
   );
 }

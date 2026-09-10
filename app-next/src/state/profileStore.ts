@@ -14,6 +14,7 @@ export const profileStore = createPersistedStore<Profile>(
     mainReason: '',
     estimatedDailyMinutes: 180,
     units: defaultUnits,
+    walkPlaces: ['outside'],
   },
   {
     warmupRating: (value) =>
@@ -26,5 +27,6 @@ export const profileStore = createPersistedStore<Profile>(
     mainReason: v.text,
     estimatedDailyMinutes: v.number(0, 1440),
     units: v.units,
+    walkPlaces: v.array(v.oneOf(['treadmill', 'outside'])),
   },
 );

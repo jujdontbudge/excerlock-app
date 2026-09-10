@@ -187,6 +187,11 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
     "selected": "#FFF1E8",
     "solid": "#FFFFFF",
     "subtle": "#F7F7F8",
+    "tabBarGradient": [
+      "rgba(255,247,241,0)",
+      "rgba(255,247,241,0.92)",
+      "#FFF7F1",
+    ],
     "topTint": "#FFF0E5",
     "topTintMid": "#FFF8F3",
     "transparent": "transparent",

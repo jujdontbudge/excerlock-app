@@ -27,7 +27,7 @@ const legacyRows = JSON.parse(
     {"id":"broken","activity":"walking"}
   ]`,
 ) as unknown[];
-const lockedApps = { handle: null, appCount: 0, categoryCount: 0 };
+const lockedApps = { handle: null, isEmpty: true };
 
 beforeEach(async () => {
   await AsyncStorage.removeItem(RULES_KEY);

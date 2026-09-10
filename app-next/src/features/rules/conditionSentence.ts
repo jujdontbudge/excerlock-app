@@ -43,12 +43,11 @@ export function conditionSentence(
 function conditionClause(a: Answers, d: RuleDraft, goalChosen: boolean): string | null {
   const known = (value: unknown) => goalChosen || answered(value);
   if (d.activity === 'walking') {
-    const place = a.walkPlace !== undefined,
-      mode = a.walkingMode !== undefined;
-    if (!place && !mode) return null;
-    const where = place ? c.places[d.place] : '';
-    if (mode && d.walkingMode === 'state') return c.unless(c.walking + where);
-    return c.until(c.steps(known(a.stepGoal) ? number(d.stepGoal) : c.blank) + where);
+    if (a.walkingMode === undefined) return null;
+    if (d.walkingMode === 'state') return c.unless(c.walking);
+    if (d.walkingMode === 'minutes')
+      return c.until(c.walkMinutes(known(a.walkMinutes) ? number(d.walkMinutes) : c.blank));
+    return c.until(c.steps(known(a.stepGoal) ? number(d.stepGoal) : c.blank));
   }
   if (d.activity === 'gym') {
     if (a.gymMode === undefined) return null;

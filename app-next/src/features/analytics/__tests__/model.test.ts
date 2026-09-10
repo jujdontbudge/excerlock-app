@@ -66,7 +66,7 @@ test('history keeps a cross-midnight result on its supplied start day', () => {
 test('conditions drive arrivals and verified walking minutes inside the period', () => {
   const rules = [
     makeRule('arrive', { kind: 'event', activity: 'gym', trigger: 'arrival' }),
-    makeRule('walk', { kind: 'state', activity: 'walking', place: 'either' }),
+    makeRule('walk', { kind: 'state', activity: 'walking' }),
   ];
   const ruleDays = [
     { ruleId: 'arrive', day: '2026-09-01', progress: 1, met: true, metAt: null },
