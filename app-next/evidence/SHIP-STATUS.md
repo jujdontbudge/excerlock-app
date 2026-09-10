@@ -23,8 +23,8 @@ Preserve those artifacts as historical evidence; never substitute them for curre
 - **T00/T01:** Team-level Family Controls approval and identifier capabilities evidenced for all five IDs.
   Five App Store profiles were created under release lock, but report profile735XMH25VL has an empty App
   Groups entitlement. The intended group relationship must be assigned and that profile regenerated.
-  `asc web` lacks an authenticated session; browser CDP attempts failed. First four profiles passed checks.
-- **T04/T06:** Production PostHog erasure personal key/project configuration absent. No live deletion
+  `asc web` lacks an authenticated session; CUA pipe fails and a normal Chrome Developer Portal visit redirects to Sign In. First four profiles passed checks. Regenerating the report profile before fixing the association again produced an empty App Group entitlement, not a repair.
+- **T04/T06:** Production PostHog erasure personal key/project configuration absent. A fresh six-vendor probe passes; anonymous/Apple/Google/email providers are enabled, but live POST /v1/subscription/resync still404. No live deletion
   acceptance or device identity-spine proof. A schema-ready database alone does not prove erasure ready.
 - **T13:** Six subscriptions remain missing review screenshots/metadata readiness. App Store version has
   no build attached. Narrow product-backed ASC metadata updates passed readbacks under release lock;
@@ -45,7 +45,7 @@ Preserve those artifacts as historical evidence; never substitute them for curre
   with command-only tree shaking. Both still FAIL; neither synthetic export proves native runtime acceptance.
   Actual packaged Release simulator candidate217647f1 has6,372,948-byte Hermes bundle (SHA256 in
   `ship-current-simulator/candidate-217647f1/build.json`), also FAIL against4,000,000. RuntimeVersion2/main+4 extensions built;
-  local OTA channel missing and no OTA activation proved.
+  that older artifact lacks the local OTA channel. Source970d59aa now derives channels from the build environment;4 real-loader smoke checks/typecheck pass. An empty preview channel/branch was created under lock (zero update groups), returning204. New native artifact and installed OTA activation remain unverified; no OTA published.
 - **T16 (revised scope):** No uploaded candidate or verified TestFlight install yet. Stop at verified
   submission readiness; do not execute App Review submission, public release, or production OTA.
   Device correctness and TestFlight checks are still open, not replaced by server/test evidence.

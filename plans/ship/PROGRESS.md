@@ -793,3 +793,9 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   independent review clean. RED demonstrated undefined headers before fix. Public update probe
   without channel400; preview header404 because this EAS project has zero channels/branches.
   Native artifact validation and empty preview channel setup remain next; no OTA is published.
+
+- Under release lock, created EMPTY EAS preview channel/branch after inventory proved none existed.
+  Readback contains zero update groups; public preview/runtime2/iOS probe now204 (was404). No JS
+  update uploaded and no production channel/OTA touched. Evidence /tmp/ship-eas-preview-*.json.
+  Alternate normal Chrome UI path works via AppleScript, but Developer Portal redirects to Sign In;
+  task-owned background tab closed. No Apple session/credentials extracted or guessed.
