@@ -8,9 +8,9 @@ type GymVisitAcceptance = Readonly<{ epoch: number; regionIds: readonly string[]
 
 // TaskManager and the foreground runtime intentionally construct separate log
 // objects. Their storage operations must nevertheless have one ordering spine.
-let sharedWrites: Promise<void> = Promise.resolve();
+let sharedWrites: Promise<unknown> = Promise.resolve();
 
-function serialize(work: () => Promise<void>): Promise<void> {
+function serialize<T>(work: () => Promise<T>): Promise<T> {
   const write = sharedWrites.catch(() => undefined).then(work);
   sharedWrites = write.catch(() => undefined);
   return write;
@@ -51,17 +51,17 @@ export class AsyncStorageGymVisitLog implements GymVisitLog {
         const acceptance = parseAcceptance(storedAcceptance);
         if (!acceptance?.regionIds.includes(safe.regionId)) return;
       }
-      const rawPrunedThrough = await AsyncStorage.getItem(GYM_VISIT_LOG_PRUNED_THROUGH_KEY);
-      const prunedThrough = rawPrunedThrough === null ? null : Number(rawPrunedThrough);
-      if (prunedThrough !== null && Number.isFinite(prunedThrough) && safe.atMs < prunedThrough) return;
-      const records = await readStored();
+      const prunedThrough = await readPrunedThrough();
+      if (prunedThrough !== null && safe.atMs < prunedThrough) return;
+      const records = await readRetainedStored(prunedThrough);
       if (records.some(({ id }) => id === safe.id)) return;
       await AsyncStorage.setItem(GYM_VISIT_LOG_STORAGE_KEY, JSON.stringify([...records, safe]));
     });
   }
   async readAll(): Promise<readonly GymTransitionRecord[]> {
     await sharedWrites;
-    return readStored();
+    const prunedThrough = await readPrunedThrough();
+    return readRetainedStored(prunedThrough);
   }
   reset(): Promise<void> {
     return serialize(() =>
@@ -71,14 +71,29 @@ export class AsyncStorageGymVisitLog implements GymVisitLog {
   pruneBefore(cutoffMs: number): Promise<readonly GymTransitionRecord[]> {
     return serialize(async () => {
       if (!Number.isFinite(cutoffMs)) throw new Error('Invalid gym retention cutoff');
-      const records = await readStored();
-      const retained = retainGymTransitions(records, cutoffMs);
+      const previousCutoff = await readPrunedThrough();
+      const effectiveCutoff = Math.max(cutoffMs, previousCutoff ?? -Infinity);
+      const records = await readRetainedStored(previousCutoff);
+      const retained = retainGymTransitions(records, effectiveCutoff);
+      // Cursor first is conservative: after a partial failure, reads and appends
+      // still enforce the new boundary even if physical compaction retries later.
+      await AsyncStorage.setItem(GYM_VISIT_LOG_PRUNED_THROUGH_KEY, String(effectiveCutoff));
       await AsyncStorage.setItem(GYM_VISIT_LOG_STORAGE_KEY, JSON.stringify(retained));
-      await AsyncStorage.setItem(GYM_VISIT_LOG_PRUNED_THROUGH_KEY, String(cutoffMs));
       await AsyncStorage.removeItem(LEGACY_GYM_VISIT_LOG_STORAGE_KEY);
       return retained;
     });
   }
+}
+async function readPrunedThrough(): Promise<number | null> {
+  const raw = await AsyncStorage.getItem(GYM_VISIT_LOG_PRUNED_THROUGH_KEY);
+  if (raw === null) return null;
+  const value = Number(raw);
+  if (!Number.isFinite(value) || String(value) !== raw) throw new Error('Invalid gym retention cursor');
+  return value;
+}
+async function readRetainedStored(cutoff: number | null): Promise<readonly GymTransitionRecord[]> {
+  const records = await readStored();
+  return cutoff === null ? records : retainGymTransitions(records, cutoff);
 }
 export function retainGymTransitions(records: readonly GymTransitionRecord[], cutoffMs: number): GymTransitionRecord[] {
   const retained = records.filter(({ atMs }) => atMs >= cutoffMs);

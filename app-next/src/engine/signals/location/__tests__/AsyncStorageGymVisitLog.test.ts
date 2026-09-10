@@ -72,4 +72,38 @@ describe('AsyncStorageGymVisitLog', () => {
     await log.append({ id: 'late-old', regionId: 'closed', type: 'exit', atMs: 2, receivedAtMs: 30 });
     expect((await log.readAll()).map(({ id }) => id)).toEqual(['open-enter', 'recent']);
   });
+  it('advances the cursor before compaction so a failed write cannot replay sealed events', async () => {
+    const log = new AsyncStorageGymVisitLog();
+    await log.append({ id: 'old-in', regionId: 'closed', type: 'enter', atMs: 1, receivedAtMs: 1 });
+    await log.append({ id: 'old-out', regionId: 'closed', type: 'exit', atMs: 2, receivedAtMs: 2 });
+    const originalSetItem = AsyncStorage.setItem;
+    AsyncStorage.setItem = jest.fn(async (key, value) => {
+      if (key === GYM_VISIT_LOG_STORAGE_KEY) throw new Error('disk');
+      return originalSetItem(key, value);
+    });
+    await expect(log.pruneBefore(10)).rejects.toThrow('disk');
+    AsyncStorage.setItem = originalSetItem;
+    expect(await AsyncStorage.getItem(GYM_VISIT_LOG_PRUNED_THROUGH_KEY)).toBe('10');
+    await log.append({ id: 'late-replay', regionId: 'closed', type: 'exit', atMs: 2, receivedAtMs: 20 });
+    expect(await log.readAll()).toEqual([]);
+  });
+  it('never regresses a durable cutoff and applies the effective boundary', async () => {
+    const log = new AsyncStorageGymVisitLog();
+    await log.append({ id: 'open', regionId: 'open', type: 'enter', atMs: 15, receivedAtMs: 15 });
+    await log.append({ id: 'recent', regionId: 'recent', type: 'enter', atMs: 25, receivedAtMs: 25 });
+    await log.pruneBefore(20);
+    await expect(log.pruneBefore(10)).resolves.toEqual([
+      expect.objectContaining({ id: 'open' }), expect.objectContaining({ id: 'recent' }),
+    ]);
+    expect(await AsyncStorage.getItem(GYM_VISIT_LOG_PRUNED_THROUGH_KEY)).toBe('20');
+  });
+  it('fails closed on a malformed retention cursor', async () => {
+    const log = new AsyncStorageGymVisitLog();
+    await AsyncStorage.setItem(GYM_VISIT_LOG_PRUNED_THROUGH_KEY, 'not-a-number');
+    await expect(log.append({ id: 'unsafe', regionId: 'gym', type: 'enter', atMs: 20, receivedAtMs: 20 }))
+      .rejects.toThrow('Invalid gym retention cursor');
+    await expect(log.readAll()).rejects.toThrow('Invalid gym retention cursor');
+    await expect(log.pruneBefore(30)).rejects.toThrow('Invalid gym retention cursor');
+    expect(await AsyncStorage.getItem(GYM_VISIT_LOG_STORAGE_KEY)).toBeNull();
+  });
 });
