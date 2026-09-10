@@ -10,7 +10,7 @@ import { openSupportEmail } from '../../runtime/SupportDelivery';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { buildExportPayload } from './exportPayload';
 
-export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) => void; onDev: () => void }) {
+export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) => void; onDev?: () => void }) {
   const name = useProfileStore((s) => s.data.name),
     runtime = useRuntime(),
     entitlement = useEntitlementStore((s) => s.data.entitlement),
@@ -103,7 +103,7 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
         onPress={() => {
           if (taps.current === 6) {
             taps.current = 0;
-            onDev();
+            onDev?.();
           } else taps.current += 1;
         }}>
         <Label tone="secondary" style={{ textAlign: 'center' }}>

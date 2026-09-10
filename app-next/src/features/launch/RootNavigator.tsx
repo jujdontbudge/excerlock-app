@@ -20,7 +20,7 @@ export function RootNavigator() {
           animationDuration: t.motion.duration.navigation,
         }}>
         <Stack.Screen name="index" />
-        <Stack.Screen name="dev" />
+        {__DEV__ ? <Stack.Screen name="dev" /> : null}
         <Stack.Screen name="gym-picker" options={{ presentation: 'fullScreenModal' }} />
         <Stack.Protected guard={loading || (!onboarding.complete && onboarding.step !== 'P' && !entitled)}>
           <Stack.Screen name="onboarding/[step]" />

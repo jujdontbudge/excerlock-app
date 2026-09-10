@@ -238,3 +238,12 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   exact shared purchase/restore barrier/readiness, real analytics hooks required, native management URL,
   deletion callback required and idempotent disposal.4focused suites/16tests + primary typecheck/lint pass.
   Not mounted as real Runtime yet; no preview/devices or fake-to-real activation claim.
+- Root T09 production dev exclusion implemented via Metro file-map blocklist (preview/prod or production
+  bundling), stripped navigator registration and absent Settings handler in release. Actual Expo iOS export
+  with synthetic preview env succeeded; complete2216-source map contains neither app/dev.tsx nor features/dev,
+  compiled router context has no ./dev.tsx. Verifier scripts/verify-no-dev-bundle.cjs and evidence/ship-T09.
+  This was no-bytecode diagnostic export, NOT signed release/device activation. Typecheck/focused lint pass.
+- Review T11 f566dac returned to agent for serialized durable wake updates, motion timestamp validity,
+  coverage-loss dwell resurrection, deep schema guards and history idempotency; not integrated yet.
+- T10 native38e1e753 + corrections01f465b7/60c8a841 NOT integrated: root caught end-callback time
+  bounds/out-of-window shields/stale staging and requested actual independent install+prebuild+unsigned build.
