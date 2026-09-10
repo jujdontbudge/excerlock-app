@@ -14,6 +14,7 @@ import { StepsDetectionAdapter } from './StepsDetectionAdapter';
 import { registerHeadlessDetectionHandler } from './headlessRegistry';
 import { GymRegionAdapter } from './GymRegionAdapter';
 import { HistoryCreditLedger } from './HistoryCreditLedger';
+import { WalkingDurationLedger } from './WalkingDurationLedger';
 export type NativeDetectionFactoryOptions = {
   getWakeContext(): Omit<DetectionWake, 'now' | 'source'>;
   onError?(error: unknown): void;
@@ -28,11 +29,14 @@ export function createNativeDetection(options: NativeDetectionFactoryOptions) {
   const motion = new MotionAdapter(rawMotion);
   const placement = new PlacementAdapter(rawPlacement);
   const historyLedger = new HistoryCreditLedger(AsyncStorage);
+  const walkingDurationLedger = new WalkingDurationLedger(AsyncStorage);
   const service = new DetectionService({
     motion,
     placement,
     gymLog,
     historyLedger,
+    walkingDurationLedger,
+    walkingTimezone: () => options.getWakeContext().timezone,
     onError: options.onError,
   });
   const awake = new AwakeSession(location);
@@ -56,6 +60,8 @@ export function createNativeDetection(options: NativeDetectionFactoryOptions) {
     gymLog,
     gyms,
     historyLedger,
+    walkingDurationLedger,
+    walkingDurationTotals: async () => (await walkingDurationLedger.read()).millisecondsByDay,
     registerGyms: gyms.registerSavedGyms.bind(gyms),
     deleteGym: (regionId: string) => gyms.deleteSavedGym(regionId),
     start: (graceMs: number) => service.start(graceMs),
