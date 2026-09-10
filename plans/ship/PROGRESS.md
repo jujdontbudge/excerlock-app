@@ -743,3 +743,15 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   No purchase attempted; local StoreKit session not configured for this Release simctl launch.
   Internal-looking heading 'Premium A' being investigated against SDK contract before narrow fallback
   correction. Separate read-only UI audit findings require scroll/animation/source corroboration.
+
+- Reviewed paywall titlee30c974c→e4c04804: explicit nonblank remote copy preserved, internal Adapty
+  dashboard name no longer shown;12 adapter tests and integrated typecheck PASS.
+- UI source audit retracted initial motivation clipping/AX-type claims: card is scrollable above sibling
+  footer, and bridge/animation timing explains mixed raw AX types/check-state captures. Confirmed
+  compact-step label and chart-role fixes8271c096→0cb0b8ca integrated. Root caught and corrected WIP
+  minutes-mode label regression before integration; now±5min and±500steps with descriptive AX labels.
+  Integrated7 UI tests/typecheck PASS; updated rendered verification pending next clean binary.
+- T13 reviewer preset and T05 StoreKit harness were actually missing, not completed by prior tests/docs.
+  Root approved separate bounded implementations: one-shot exact-name/offline or bounded boolean flag
+  preset, honest20step summary and shared validation; opt-in test-only native StoreKit generator with
+  Debug UI-test target, no default shipping/native runtime change. Neither gate is yet accepted.
