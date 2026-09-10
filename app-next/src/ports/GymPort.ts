@@ -8,7 +8,7 @@ export interface GymPort extends PlaceSearch {
   listPlaces(): SavedPlace[];
   checkIn(placeId: string, confirmation?: { milliseconds: number; signal: AbortSignal }): Promise<void>;
   enableAutoDetect(): Promise<boolean>;
-  disableAutoDetect(): void;
+  disableAutoDetect(): Promise<void>;
   observePresence(callback: (presence: 'inside' | 'outside') => void): Unsubscribe;
   observeLocation(callback: (location: Coordinates | null) => void): Unsubscribe;
   distanceTo(placeId: string): number | null;
