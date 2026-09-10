@@ -1,4 +1,5 @@
 import { IdentityCoordinator } from '../identityCoordinator';
+import { createIdentityBarrier } from '../identityBarrier';
 import type { AuthIdentity } from '../../../ports/AuthPort';
 
 function canonical(userId: string, generation = 0): AuthIdentity {
@@ -34,7 +35,7 @@ test('spine order is PUT -> analytics -> subscription -> integration, ready only
         listeners.delete(cb);
       };
     },
-    getAccessToken: async () => 'token-123',
+    getAuthContext: async () => ({ accessToken: 'token-123', userId: 'uid-order', generation: 0 }),
     putUser: async () => {
       order.push('put');
       return putGate.promise;
@@ -109,7 +110,7 @@ test('fresh unchanged identity does not repeatedly identify', async () => {
         listeners.delete(cb);
       };
     },
-    getAccessToken: async () => 't',
+    getAuthContext: async () => ({ accessToken: 't', userId: 'uid-same', generation: 0 }),
     putUser: async () => {
       putCount += 1;
       return { status: 200 };
@@ -141,7 +142,7 @@ test('PUT 410 triggers tombstone and never becomes ready', async () => {
   const coordinator = new IdentityCoordinator({
     getIdentity: () => current,
     subscribeIdentity: () => () => undefined,
-    getAccessToken: async () => 't',
+    getAuthContext: async () => ({ accessToken: 't', userId: 'uid-tomb', generation: 0 }),
     putUser: async () => ({ status: 410 }),
     analyticsIdentify: async () => {
       throw new Error('must not identify tombstoned');
@@ -171,7 +172,7 @@ test('PUT 503 and identify failures remain unready with visible retry', async ()
   const coordinator = new IdentityCoordinator({
     getIdentity: () => current,
     subscribeIdentity: () => () => undefined,
-    getAccessToken: async () => 't',
+    getAuthContext: async () => ({ accessToken: 't', userId: 'uid-retry', generation: 0 }),
     putUser: async () => ({ status: putStatus }),
     analyticsIdentify: async () => {},
     subscriptionIdentify: async () => {},
@@ -196,7 +197,7 @@ test('generation change abandons stale spine without marking ready', async () =>
   const coordinator = new IdentityCoordinator({
     getIdentity: () => currentFor(),
     subscribeIdentity: () => () => undefined,
-    getAccessToken: async () => 't',
+    getAuthContext: async () => ({ accessToken: 't', userId: 'uid-stale', generation: gen }),
     putUser: async () => putGate.promise,
     analyticsIdentify,
     subscriptionIdentify: async () => {},
@@ -212,4 +213,103 @@ test('generation change abandons stale spine without marking ready', async () =>
   expect(analyticsIdentify).not.toHaveBeenCalled();
   coordinator.dispose();
   void provisional;
+});
+
+test('one global barrier prevents old and new account vendor transitions from overlapping', async () => {
+  const oldAnalytics = deferred<void>();
+  const calls: string[] = [];
+  let current: AuthIdentity = canonical('old', 0);
+  const listeners = new Set<(identity: AuthIdentity) => void>();
+  const coordinator = new IdentityCoordinator({
+    getIdentity: () => current,
+    subscribeIdentity: (callback) => {
+      listeners.add(callback);
+      return () => listeners.delete(callback);
+    },
+    getAuthContext: async () => ({ accessToken: 'token', userId: current.userId!, generation: current.generation }),
+    putUser: async ({ userId }) => {
+      calls.push(`put:${userId}`);
+      return { status: 200 };
+    },
+    analyticsIdentify: async (userId) => {
+      calls.push(`analytics:${userId}`);
+      if (userId === 'old') await oldAnalytics.promise;
+    },
+    subscriptionIdentify: async (userId) => {
+      calls.push(`subscription:${userId}`);
+    },
+    attachIntegration: async (userId) => {
+      calls.push(`integration:${userId}`);
+    },
+    runIdentityOperation: createIdentityBarrier(),
+  });
+  coordinator.start();
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  current = canonical('new', 1);
+  for (const listener of listeners) listener(current);
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  expect(calls).toEqual(['put:old', 'analytics:old']);
+  oldAnalytics.resolve();
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  expect(calls).not.toContain('subscription:old');
+  expect(calls).toEqual([
+    'put:old',
+    'analytics:old',
+    'put:new',
+    'analytics:new',
+    'subscription:new',
+    'integration:new',
+  ]);
+  coordinator.dispose();
+});
+
+test('stale 410 after account switch cannot tombstone the new account', async () => {
+  const put = deferred<{ status: number }>();
+  let current: AuthIdentity = canonical('old', 0);
+  const onTombstone = jest.fn(async () => {});
+  const coordinator = new IdentityCoordinator({
+    getIdentity: () => current,
+    subscribeIdentity: () => () => undefined,
+    getAuthContext: async () => ({ accessToken: 'old-token', userId: 'old', generation: 0 }),
+    putUser: async () => put.promise,
+    analyticsIdentify: async () => {},
+    subscriptionIdentify: async () => {},
+    attachIntegration: async () => {},
+    onTombstone,
+  });
+  coordinator.start();
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  current = canonical('new', 1);
+  put.resolve({ status: 410 });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  expect(onTombstone).not.toHaveBeenCalled();
+  coordinator.dispose();
+});
+
+test('deleting transition revokes cached readiness and disposal rejects waiters', async () => {
+  let current: AuthIdentity = canonical('uid', 0);
+  const listeners = new Set<(identity: AuthIdentity) => void>();
+  const coordinator = new IdentityCoordinator({
+    getIdentity: () => current,
+    subscribeIdentity: (callback) => {
+      listeners.add(callback);
+      return () => listeners.delete(callback);
+    },
+    getAuthContext: async () => ({ accessToken: 'token', userId: 'uid', generation: 0 }),
+    putUser: async () => ({ status: 200 }),
+    analyticsIdentify: async () => {},
+    subscriptionIdentify: async () => {},
+    attachIntegration: async () => {},
+  });
+  coordinator.start();
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  expect(coordinator.isReady()).toBe(true);
+  current = { ...current, kind: 'deleting', ready: false };
+  for (const listener of listeners) listener(current);
+  expect(coordinator.isReady()).toBe(false);
+  await expect(coordinator.waitForIdentityReady({ timeoutMs: 100 })).rejects.toThrow(/deleting/i);
+  current = provisional(1);
+  const waiting = coordinator.waitForIdentityReady({ timeoutMs: 1000 });
+  coordinator.dispose();
+  await expect(waiting).rejects.toThrow(/disposed/i);
 });

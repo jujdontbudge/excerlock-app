@@ -191,6 +191,43 @@ test('stale auth callbacks after delete are ignored', async () => {
   adapter.dispose();
 });
 
+test('same-UID refresh callback cannot turn deleting identity canonical', async () => {
+  let resolveDelete!: (response: Response) => void;
+  const fetchImpl = jest.fn().mockImplementation(
+    () =>
+      new Promise<Response>((resolve) => {
+        resolveDelete = resolve;
+      }),
+  );
+  let callback: ((event: string, session: unknown) => void) | null = null;
+  const session = permSession('deleting-refresh');
+  const { adapter, supabase } = adapterWith(session as never, fetchImpl as never);
+  supabase.auth.onAuthStateChange.mockImplementation((next) => {
+    callback = next;
+    return { data: { subscription: { unsubscribe: jest.fn() } } };
+  });
+  // Constructor already registered the original callback; create a fresh
+  // adapter with the capture installed before construction.
+  adapter.dispose();
+  const active = new SupabaseAuthAdapter({
+    supabase: supabase as never,
+    appleDeps: { signInAsync: jest.fn(), digestSHA256Hex: jest.fn() } as never,
+    googleDeps: { clientId: 'c', redirectUri: 'r', buildRequest: jest.fn(), exchangeCode: jest.fn() } as never,
+    apiBaseUrl: 'https://api.test',
+    fetchImpl: fetchImpl as never,
+  });
+  await active.boot();
+  const deletion = active.deleteAccount();
+  await Promise.resolve();
+  expect(active.identity().kind).toBe('deleting');
+  (callback as unknown as (event: string, session: unknown) => void)('TOKEN_REFRESHED', session);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  expect(active.identity().kind).toBe('deleting');
+  resolveDelete({ status: 503 } as Response);
+  await expect(deletion).rejects.toThrow(/incomplete/i);
+  active.dispose();
+});
+
 test('each deletion failure keeps deleting visible with token intact and cleanup ran', async () => {
   const fetchImpl = jest.fn().mockResolvedValue({ status: 500 } as Response);
   let cleanup = 0;

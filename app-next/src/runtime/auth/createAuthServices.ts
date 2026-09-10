@@ -4,6 +4,7 @@ import { IdentityCoordinator, type IdentityCoordinatorDeps } from './identityCoo
 import type { AppleNativeDeps } from './providerApple';
 import type { GoogleAuthDeps } from './providerGoogle';
 import type { AuthIdentity } from '../../ports/AuthPort';
+import { createIdentityBarrier, type RunIdentityOperation } from './identityBarrier';
 
 export type AuthServiceConfig = {
   supabaseUrl: string;
@@ -32,6 +33,8 @@ export type AuthServices = {
   /** SAME gate T05 must await before every purchase/restore. */
   waitForIdentityReady: (options?: { timeoutMs?: number }) => Promise<AuthIdentity>;
   dispose: () => void;
+  /** Shared global serializer for T05 identity-sensitive vendor transitions. */
+  runIdentityOperation: RunIdentityOperation;
 };
 
 function defaultAppleDeps(): AppleNativeDeps {
@@ -68,6 +71,7 @@ function defaultGoogleDeps(clientId: string, redirectUri: string): GoogleAuthDep
  * Does NOT integrate into createRuntime/FakeRuntime; see README root wiring.
  */
 export function createAuthServices(config: AuthServiceConfig): AuthServices {
+  const runIdentityOperation = createIdentityBarrier();
   const {
     supabaseUrl,
     supabaseAnonKey,
@@ -116,6 +120,7 @@ export function createAuthServices(config: AuthServiceConfig): AuthServices {
     onBeforeDelete,
     onAccountSwitchReset,
     bootTimeoutMs,
+    runIdentityOperation,
   };
   const auth = new SupabaseAuthAdapter(adapterDeps);
 
@@ -140,7 +145,7 @@ export function createAuthServices(config: AuthServiceConfig): AuthServices {
   const coordinator = new IdentityCoordinator({
     getIdentity: () => auth.identity(),
     subscribeIdentity: (cb) => auth.subscribeIdentity(cb),
-    getAccessToken: () => auth.getAccessToken(),
+    getAuthContext: () => auth.getAuthContext(),
     putUser,
     analyticsIdentify,
     subscriptionIdentify,
@@ -151,6 +156,7 @@ export function createAuthServices(config: AuthServiceConfig): AuthServices {
     onReady: (identity) => {
       auth.markReady(identity.userId as string, identity.generation);
     },
+    runIdentityOperation,
   });
 
   coordinator.start();
@@ -159,6 +165,7 @@ export function createAuthServices(config: AuthServiceConfig): AuthServices {
     auth,
     coordinator,
     waitForIdentityReady: (options) => coordinator.waitForIdentityReady(options),
+    runIdentityOperation,
     dispose: () => {
       coordinator.dispose();
       auth.dispose();
