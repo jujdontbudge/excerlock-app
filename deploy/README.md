@@ -140,11 +140,23 @@ changing either machine. A real deploy then:
 
 1. checks key-based SSH, passwordless sudo, and `/etc/excerlock/env`;
 2. runs `npm run build --workspace server` locally;
-3. rsyncs `server/dist/`, `server/package.json`, and
-   `server/package-lock.json` to `/opt/excerlock/server`;
+3. rsyncs `server/dist/`, the complete `server/drizzle/` journal, the
+   production-pruned `package.json`, the lockfile, and the Caddy/systemd files
+   to `/opt/excerlock/server`;
 4. runs `npm ci --omit=dev` as the `excerlock` user;
-5. validates and installs the Caddy/systemd files, reloads Caddy, restarts
-   `excerlock-api.service`, and waits for the local `/v1/health` check.
+5. runs `node dist/migrate.js` through `systemd-run` with the service's
+   `/etc/excerlock/env`, **before** restarting the service;
+6. validates and installs the Caddy/systemd files, reloads Caddy, restarts
+   `excerlock-api.service`, and checks local `/v1/health`, local `/v1/ready`,
+   and the active systemd state.
+
+The migration step is part of every real deploy. Drizzle's journal makes an
+up-to-date deploy a no-op, but a pending migration changes the database before
+the new process starts. The current journal is forward-only; for the legacy
+production shape it applies `0006_legacy-production-bridge.sql`, then
+`0007_supabase-identity-and-durable-erasure.sql`, `0008_deletion-retry-index.sql`,
+and `0009_deep_firebrand.sql`. Never rewrite applied journal rows or substitute
+the superseded migrations by matching file number.
 
 Re-running the same revision is safe: rsync converges the built files,
 `npm ci` recreates dependencies from the lockfile, config installation is
@@ -158,7 +170,18 @@ Public and local health checks:
 curl --fail --show-error https://api.excerlock.com/v1/health
 ssh -i "$DEPLOY_SSH_KEY" "$DEPLOY_HOST" \
   'curl --fail --show-error http://127.0.0.1:3000/v1/health'
+curl --fail --show-error https://api.excerlock.com/v1/ready
+ssh -i "$DEPLOY_SSH_KEY" "$DEPLOY_HOST" \
+  'curl --fail --show-error http://127.0.0.1:3000/v1/ready'
 ```
+
+`/v1/health` is liveness only: it proves that the process answers and does not
+inspect the database. `/v1/ready` checks the current schema and, when
+`NODE_ENV=production`, requires the complete account-erasure configuration,
+including `POSTHOG_PERSONAL_API_KEY` and `POSTHOG_PROJECT_ID`. A green health
+response is therefore not readiness or erasure proof. Check both host-local and
+public responses after a deploy; a public response from an older process does
+not identify the revision that is running.
 
 Service status and recent logs:
 
@@ -175,9 +198,12 @@ For a live tail, replace `-n 200 --no-pager` with `-f`.
 
 ## 5. Rollback
 
-Deploys do not mutate the database schema. Roll back application code by
-redeploying a known-good Git revision; its lockfile also restores the matching
-production dependencies. A separate worktree avoids disturbing local work:
+Deploys can apply pending database migrations before restarting the service.
+Those migrations are forward-only and are not rolled back by redeploying older
+application code. Roll back application code only by redeploying a known-good
+Git revision whose server is compatible with the schema already applied; its
+lockfile restores the matching production dependencies. A separate worktree
+avoids disturbing local work:
 
 ```sh
 git worktree add ../excerlock-rollback <known-good-commit>
@@ -191,6 +217,12 @@ DEPLOY_HOST="$DEPLOY_HOST" DEPLOY_SSH_KEY="$DEPLOY_SSH_KEY" \
 cd -
 git worktree remove ../excerlock-rollback
 ```
+
+If migration completed and the new service then fails readiness, do not restore
+old migration files or delete journal rows. Keep the forward schema and either
+correct the deployment configuration or redeploy a schema-compatible revision.
+If migration itself fails, `deploy/deploy.sh` aborts before its restart step, so
+the previous service remains running while the migration error is investigated.
 
 Choose a known-good revision at or after ticket #37 so it contains this deploy
 tooling. If the first-ever deploy has no earlier application revision, stop the
