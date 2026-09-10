@@ -8,5 +8,5 @@ describe('guarded native enforcement invariants',()=>{
  it('uses recurring guarded callbacks and stage-before-retire',()=>{ expect(ios).toContain('repeats: true'); expect(ios.indexOf('startMonitoring')).toBeLessThan(ios.lastIndexOf('stopMonitoring(retire')); expect(monitor).not.toContain('blockSelection'); });
 });
 
-test('recurring anchors may be in the past and full-week windows avoid equal-boundary monitors',()=>{expect(ios).not.toContain('end > now else');expect(ios).toContain('window.end - window.start >= 7 * 24 * 60 * 60 * 1000 { continue }');expect(policy).toContain('return true')});
+test('recurring anchors may be past but equal weekly boundaries are rejected',()=>{expect(ios).not.toContain('end > now else');expect(ios).toContain('guard startComponents != endComponents');expect(ios).not.toContain('{ continue }')});
 test('earned suppression expires so a later weekly boundary can relock',()=>{expect(policy).toContain('earnedStillValid = r.openReason == "earned" && now < r.eligibleUntil');expect(policy).toContain('!earnedStillValid')});

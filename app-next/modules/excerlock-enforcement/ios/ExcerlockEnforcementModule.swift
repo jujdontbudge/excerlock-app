@@ -152,7 +152,7 @@ public final class ExcerlockEnforcementModule: Module {
         let domainId = window.id; let start = window.start; let end = window.end
         guard !domainId.isEmpty,
               start.isFinite, end.isFinite, end > start, end - start >= 15 * 60 * 1000,
-              end - start <= 7 * 24 * 60 * 60 * 1000 else { throw ExcerlockPolicyError.invalidSnapshot }
+              end - start <= 8 * 24 * 60 * 60 * 1000 else { throw ExcerlockPolicyError.invalidSnapshot }
         staged.append(ExcerlockScheduledWindow(monitorId: excerlockWindowPrefix + UUID().uuidString,
           id: domainId, revision: revision, policyGeneration: context.0, accountGeneration: context.1,
           selectionVersion: context.2, start: start, end: end))
@@ -161,13 +161,11 @@ public final class ExcerlockEnforcementModule: Module {
       do {
         let calendar = Calendar.autoupdatingCurrent
         for window in staged {
-          // A full cyclic week needs no DeviceActivity boundary callback; it
-          // remains policy-active continuously and avoids an invalid equal
-          // weekday/time start/end schedule.
-          if window.end - window.start >= 7 * 24 * 60 * 60 * 1000 { continue }
+          let startComponents = calendar.dateComponents([.weekday,.hour,.minute,.second], from: Date(timeIntervalSince1970: window.start / 1000))
+          let endComponents = calendar.dateComponents([.weekday,.hour,.minute,.second], from: Date(timeIntervalSince1970: window.end / 1000))
+          guard startComponents != endComponents else { throw ExcerlockPolicyError.invalidSnapshot }
           let schedule = DeviceActivitySchedule(
-            intervalStart: calendar.dateComponents([.weekday,.hour,.minute,.second], from: Date(timeIntervalSince1970: window.start / 1000)),
-            intervalEnd: calendar.dateComponents([.weekday,.hour,.minute,.second], from: Date(timeIntervalSince1970: window.end / 1000)), repeats: true)
+            intervalStart: startComponents, intervalEnd: endComponents, repeats: true)
           try DeviceActivityCenter().startMonitoring(DeviceActivityName(window.monitorId), during: schedule)
           started.append(window.monitorId)
         }
