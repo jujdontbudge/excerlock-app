@@ -1,3 +1,5 @@
+> **Historical harness:** Maestro is banned machine-wide. `scripts/run-suite.sh` now fails closed before any device/tool action. The YAML and old instructions below are archival, not runnable Ship acceptance. Current verification must use headless `xcrun simctl` + `idb` on an explicitly owned simulator.
+
 # ExcerLock Maestro simulator suite
 
 > **Status: simulator-verified.** On 2026-07-31, the Release configuration built
