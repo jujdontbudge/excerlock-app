@@ -124,3 +124,46 @@ Astra low. Muse xhigh handles bounded implementation; root reviews changes and v
   Report protocols available iOS16+, compile/runtime still gates. Prior ordinary app-extension advice withdrawn.
 - Public Supabase JWKS exposes EC/ES256 key (sanitized metadata evidence); no user token/sign-in proof.
 - All work remains local/unreleased; existing main checkout user edits are untouched.
+
+## Native/auth integration, real config, and review checkpoint (2026-09-10 UTC)
+
+- T01 integrated f137755+fdc3a4b from0f4675b+3c1150a; root kept app.json unchanged and dynamic nativeConfig
+  authoritative. Native lane verified two clean prebuilds, Pod install and UNSIGNED generic iOS build with
+  main+four appex (ExtensionKit report in Extensions). No signed/device acceptance asserted.
+- Primary now owns independent node_modules (only symlinks unlinked; original untouched). Supabase2.116
+  explicitly declared; native generator patch applies through root postinstall. npm audit43 findings
+  (40moderate/3high) remain T13 triage; no force upgrades. Native lane also has independent install.
+- T04 server integrated f119f29+23664e7+f85fec4 frombb93b79+b081f91+23e8b5e. Root-reviewed corrections:
+  scheduler singleflight/stop, persisted retry attempts, stale claim fencing, immutable provider, legacy Clerk
+  migration isolation. Clerk deletion explicitly409unsupported BEFORE destructive work; current Supabase
+  deletion works by durable at-least-once vendor-last retries. 173serial server tests and typecheck pass.
+  No migrations/deploy yet; deploy requires0006then0007, ES256 Supabase env/service role, worker config.
+- T04 auth base5356cce froma7ec17d; exact PostHog integration key fixed8a3369f; identity serialization/revocation/
+  token binding/disposal/provider race fixes c50259a+5554b23 from5083422+c1b960e. Root storageb0306ac adds
+  copy-on-write UTF-8 chunks, integrity/shape validation, serialized operations, visible erasure failures.
+  Root latest auth-focused7suites/53tests pass, app-next typecheck0. Remaining intentional callback ownership
+  and fallback timer cleanup sent to auth agent; auth not claimed hardware-verified. Same barrier required T05.
+- T02 root931682e: actual Expo CLI uncovered external TS import loader failure (fixed explicit tsx/cjs) and
+  invalid common autoIncrement string (moved under production.ios). Actual subprocess config smoke2pass,
+  32focused Jest pass, dynamic preview prebuild+prebuild-only verifier pass. CI now runs real config smoke.
+  All10allowlisted variables uploaded to EACH EAS environment; GitHub production created with6secrets+4vars,
+  under app operations lock. Preview EAS names and GH secret names read back. Six live probes passed again.
+  No values logged; no actual build/CI push or release. Initial env attempt failed on schema before upload.
+- T01 root9e03053: structured signed-payload verifier enforces actual entitlement values, exact bundles/points/
+  embedding, team/prefix/provisioning expiry+allowance, signed Info/privacy and strict signatures. Eight
+  validator fixture tests pass; no IPA to validate. No manifest claims substitute for runtime activation.
+- Integrated suite before latest auth revisions:182suites pass/2fail;788tests pass/2fail;13snapshots pass.
+  Same two baseline UI failures (paused Home status, DayPicker Every day); UI lane actively fixing. Root
+  focused lint clean after declaring Node __dirname in CLI smoke. Evidence committed in a270825.
+- Live agents reused, all Sol low (Muse429 fallback): ship_native_finish now T08/T09 in NEW ship-T08-T09
+  worktree, branch ship/T08-T09, owner codex-ship-ui. ship_auth_finish stays ship-T04-auth, finishes small
+  auth fixes then T05 CLIENT. ship_server_finish T05 backend e30d3f5 NOT integrated: root found unsafe
+  arbitrary-product premium inference, environment omission in authorizeProduction, guessed Adapty schemas;
+  corrections in OLD ship-T04-server requested. Then T06 CLIENT in NEW ship-T06 (owner codex-ship-telemetry).
+  Detailed T06 architecture is ~/.local/state/excerlock-ship/tasks/T06-architecture.md. T06+UI links read-only
+  into primary independent deps; do not install through them. T01 lane preserved clean with build evidence.
+- Root planned watchdog code was NOT started; switched to auth/native correctness review. T10/T11/T12+
+  remain. Primary createRuntime still refuses real composition intentionally; do not ship demo runtime.
+- Ledger commits7174c65 secure chunk sessions,a992de7 real config loader,4adfff7 signed capability values.
+- No simulator was opened/booted here, no signed archive/IPA uploaded, no production code deployed, no
+  messages/emails sent. Device/store gates remain. Goal active; substantial implementation remains.
