@@ -10,6 +10,8 @@ const blockList = [...defaults, /[/\\]app-next[/\\](evidence|build|coverage|dist
 if (process.env.NODE_ENV === 'production' || ['preview', 'prod'].includes(process.env.EXCERLOCK_ENV)) {
   blockList.push(/[/\\]app-next[/\\]app[/\\]dev\.tsx$/, /[/\\]app-next[/\\]src[/\\]features[/\\]dev[/\\].*/);
 }
-const sentryConfig = getSentryExpoConfig(__dirname);
+// This native app does not collect browser replay. Keep native crash reporting
+// and Sentry debug IDs while excluding the SDK's unused web replay graph.
+const sentryConfig = getSentryExpoConfig(__dirname, { includeWebReplay: false });
 sentryConfig.resolver.blockList = blockList;
 module.exports = sentryConfig;
