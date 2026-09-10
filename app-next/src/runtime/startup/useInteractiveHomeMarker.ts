@@ -22,7 +22,11 @@ export function useInteractiveHomeMarker(runtime: Runtime, ready: boolean) {
         frame.current = null;
         if (!mounted.current || epoch.current !== scheduledEpoch || marked.current || !ready || !isReal) return;
         attempts.current += 1;
-        marked.current = markInteractiveHome();
+        try {
+          marked.current = markInteractiveHome();
+        } catch {
+          marked.current = false;
+        }
         if (!marked.current && attempts.current < MAX_NATIVE_MARK_ATTEMPTS) schedule();
         else if (!marked.current) console.warn('Startup diagnostic unavailable: native React content marker was not observed.');
       });

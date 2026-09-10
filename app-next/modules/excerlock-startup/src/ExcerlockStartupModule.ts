@@ -1,3 +1,3 @@
-import { requireNativeModule } from 'expo';
+import { requireOptionalNativeModule } from 'expo-modules-core';
 type StartupModule = { markInteractiveHome(): boolean };
-export default requireNativeModule<StartupModule>('ExcerlockStartup');
+export default requireOptionalNativeModule<StartupModule>('ExcerlockStartup');

@@ -45,3 +45,23 @@ test('stops retrying when the native marker is unavailable', async () => {
   expect(warning).toHaveBeenCalledTimes(1);
   warning.mockRestore();
 });
+test('contains native exceptions and stops after the bounded retries', async () => {
+  mockMark.mockImplementation(() => { throw new Error('missing native implementation'); });
+  const warning = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+  const hook=await renderHook(() => useInteractiveHomeMarker(runtime,true));
+  await act(() => hook.result.current({} as never));
+  for (let index=0; index<8; index += 1) {
+    const callback=[...callbacks.values()][0]; callbacks.clear();
+    expect(() => callback(index)).not.toThrow();
+  }
+  expect(mockMark).toHaveBeenCalledTimes(8);
+  expect(warning).toHaveBeenCalledTimes(1);
+  warning.mockRestore();
+});
+test('never schedules or marks for a fake runtime', async () => {
+  const fakeRuntime = { kind: 'fake' } as never;
+  const hook=await renderHook(() => useInteractiveHomeMarker(fakeRuntime,true));
+  await act(() => hook.result.current({} as never));
+  expect(callbacks.size).toBe(0);
+  expect(mockMark).not.toHaveBeenCalled();
+});
