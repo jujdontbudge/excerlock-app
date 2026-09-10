@@ -30,20 +30,30 @@ test('root rows navigate to destinations and seven taps open developer', async (
   expect(screen.getAllByRole('button').map((node) => node.props.accessibilityLabel)).toEqual([
     profile,
     c.manage,
+    c.preferences,
+    c.unitsRow,
+    c.permissionNames.screenTime,
+    c.permissionNames.motion,
+    c.permissionNames.location,
+    c.permissionNames.camera,
+    c.permissionNames.notifications,
     c.reportBug,
     c.giveFeedback,
     c.supportRow,
     c.legal,
-    expect.stringMatching(/ExcerLock /),
+    c.exportData,
+    c.version('1.0.0', '1'),
   ]);
-  expect(screen.queryByRole('button', { name: /Units/ })).toBeNull();
-  expect(screen.queryByRole('button', { name: c.privacyPermissions })).toBeNull();
-  expect(screen.getByRole('switch', { name: c.permissionNames.notifications })).toBeTruthy();
+  expect(screen.getByRole('button', { name: c.unitsRow })).toBeTruthy();
+  expect(screen.getByRole('button', { name: c.permissionNames.notifications })).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: c.manage }));
   expect(navigate).toHaveBeenCalledWith('subscription');
-  expect(navigate).not.toHaveBeenCalledWith('permission/notifications');
-  expect(navigate).not.toHaveBeenCalledWith('units');
-  expect(navigate).not.toHaveBeenCalledWith('preferences');
+  await userEvent.press(screen.getByRole('button', { name: c.permissionNames.notifications }));
+  expect(navigate).toHaveBeenCalledWith('permission/notifications');
+  await userEvent.press(screen.getByRole('button', { name: c.unitsRow }));
+  expect(navigate).toHaveBeenCalledWith('units');
+  await userEvent.press(screen.getByRole('button', { name: c.preferences }));
+  expect(navigate).toHaveBeenCalledWith('preferences');
   await userEvent.press(screen.getByRole('button', { name: c.reportBug }));
   expect(navigate).toHaveBeenCalledWith('bug');
   await userEvent.press(screen.getByRole('button', { name: c.giveFeedback }));
@@ -63,18 +73,18 @@ test('root rows navigate to destinations and seven taps open developer', async (
   openURL.mockRestore();
 });
 
-test('Notifications toggle writes the permission', async () => {
+test('Notifications row navigates to its live permission detail', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('multi-rule-overlap');
+  const navigate = jest.fn();
   await render(
     <AppRuntimeProvider runtime={runtime}>
-      <SettingsScreen navigate={jest.fn()} onDev={jest.fn()} />
+      <SettingsScreen navigate={navigate} onDev={jest.fn()} />
     </AppRuntimeProvider>,
   );
   expect(permissionsStore.getState().data.notifications).toBe('granted');
-  await fireEvent(screen.getByRole('switch', { name: c.permissionNames.notifications }), 'valueChange', false);
-  expect(permissionsStore.getState().data.notifications).toBe('denied');
-  await fireEvent(screen.getByRole('switch', { name: c.permissionNames.notifications }), 'valueChange', true);
+  await userEvent.press(screen.getByRole('button', { name: c.permissionNames.notifications }));
+  expect(navigate).toHaveBeenCalledWith('permission/notifications');
   expect(permissionsStore.getState().data.notifications).toBe('granted');
 });
 
@@ -109,7 +119,7 @@ test('UnitsScreen switches units without touching step and minute goals', async 
   }
 });
 
-test('PreferencesScreen lists permissions, grace, haptics and gyms', async () => {
+test('PreferencesScreen lists permissions, walking places, grace and gyms', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('multi-rule-overlap');
   const navigate = jest.fn();
@@ -124,9 +134,8 @@ test('PreferencesScreen lists permissions, grace, haptics and gyms', async () =>
   await userEvent.press(screen.getByRole('button', { name: /Walk & Scroll stop grace/ }));
   await userEvent.press(screen.getByRole('radio', { name: '2 minutes' }));
   expect(settingsStore.getState().data.stopGrace).toBe(120);
-  const haptics = settingsStore.getState().data.haptics;
-  await fireEvent(screen.getByRole('switch', { name: 'Touch feedback' }), 'valueChange', !haptics);
-  expect(settingsStore.getState().data.haptics).toBe(!haptics);
+  expect(screen.queryByRole('switch', { name: 'Touch feedback' })).toBeNull();
+  expect(screen.getByRole('checkbox', { name: c.walkOutside })).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: 'Saved gyms' }));
   expect(navigate).toHaveBeenCalledWith('gyms');
 });

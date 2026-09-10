@@ -3,7 +3,7 @@ import { ProgressBar } from '../../design-system/ProgressBar';
 import { scheduleLabel } from '../../domain/scheduleLabel';
 import { Icon } from '../../icons/Icon';
 import { useDemoProgress } from './useDemoProgress';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
@@ -29,7 +29,7 @@ import { homeCopy as c } from '../../content/home';
 import { Reveal } from '../../motion/Reveal';
 import { unlockKind } from '../unlock/entry';
 import { UnlockEntry } from '../unlock/UnlockEntry';
-import { feedback } from '../../motion/haptics';
+import { WalkingCheckButton } from './WalkingCheckButton';
 export function HomeScreen() {
   useDemoProgress();
   const runtime = useRuntime(),
@@ -53,7 +53,6 @@ export function HomeScreen() {
       timezone: runtime.clock.timezone(),
     }),
     glyph = useUnlockMoment(status.state);
-  const [walkChecks, setWalkChecks] = useState<Record<string, 'idle' | 'detected' | 'missed'>>({});
   const chooseApps = () => void runtime.screenTime.presentAppPicker();
   const add = () => router.push('/builder');
   const action = () => {
@@ -88,23 +87,6 @@ export function HomeScreen() {
     const onAction = () => {
       if (kind) router.push({ pathname: `/unlock/${kind}`, params: { ruleId: rule.id } });
     };
-    const onWalk = async () => {
-      let observed = false;
-      const unsubscribe = runtime.walking.observeWalking((walking) => {
-        observed ||= walking;
-      });
-      setTimeout(async () => {
-        unsubscribe();
-        if (observed) {
-          await runtime.walking.start(rule).catch(() => undefined);
-          feedback('success');
-          setWalkChecks((checks) => ({ ...checks, [rule.id]: 'detected' }));
-        } else {
-          feedback('error');
-          setWalkChecks((checks) => ({ ...checks, [rule.id]: 'missed' }));
-        }
-      }, 3000);
-    };
     return (
       <View key={rule.id} testID={`home-condition-${rule.id}`} style={{
         backgroundColor: t.surface.card, borderRadius: t.radius.card,
@@ -128,12 +110,7 @@ export function HomeScreen() {
         {rule.mode.kind === 'state' ? null : <ProgressBar value={Math.max(0, Math.min(1, model.value))} label={model.title} tone={detected ? 'success' : 'brand'} />}
         {row.met ? null : rule.mode.kind === 'state' ? (
           <>
-            <UnlockEntry
-              kind="walking"
-              label={walkChecks[rule.id] === 'detected' ? c.walkDetected : walkChecks[rule.id] === 'missed' ? c.walkNotDetected : c.walkingEntry}
-              onPress={() => void onWalk()}
-              inverted
-            />
+            <WalkingCheckButton rule={rule} observe={runtime.walking.observeWalking} start={runtime.walking.start} />
             {walk === 'idle' ? <UnlockEntry kind="treadmill" label={c.treadmillEntry} onPress={() => router.push({ pathname: '/unlock/treadmill', params: { ruleId: rule.id } })} /> : null}
           </>
         ) : kind === 'gym' ? (

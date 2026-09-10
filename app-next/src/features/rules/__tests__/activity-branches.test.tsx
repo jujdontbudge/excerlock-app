@@ -69,7 +69,7 @@ test.each(walkingPaths)(
     await r;
     expect(screen.queryByText("You'll pick your gym after setup.")).toBeNull();
     expect(screen.queryByRole('header', { name: /Block from/ })).toBeNull();
-    await userEvent.press(screen.getByRole('radio', { name: choice }));
+    await userEvent.press(screen.getByRole(step === 'W1' ? 'checkbox' : 'radio', { name: choice }));
     await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(screen.getByRole('header', { name: title })).toBeTruthy();
     const answers = onboardingStore.getState().data.answers;
