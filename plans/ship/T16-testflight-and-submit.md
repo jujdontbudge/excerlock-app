@@ -1,5 +1,8 @@
 # T16 — TestFlight, submission, first OTA
 
+> Scope revision (Johan, 2026-09-10): active work ends at valid signing, processed build upload and real-device functional verification. Version metadata/build selection is deferred to `../post-ship/README.md` F01. App Review submission, public release and production OTA steps below are historical and NOT authorized.
+
+
 Spec: `03-ota-and-release.md` §5; `docs/agents/operations.md` (wrap in `scripts/agent-ops.py run`).
 
 ## Steps

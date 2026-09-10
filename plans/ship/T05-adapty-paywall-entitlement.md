@@ -1,5 +1,8 @@
 # T05 — Adapty, custom paywall, entitlement
 
+> Scope revision (Johan, 2026-09-10): local StoreKit configuration/harness acceptance is deferred, NOT completed, to `../post-ship/README.md` F03. Real device/sandbox purchase, restore, entitlement and backend/vendor identity behavior remain ACTIVE requirements.
+
+
 Spec: `04-identity-and-money.md` §1 steps 3–4, §3–§6. Facts: `research/infra-audit.md` §2 (old
 `AdaptySubscriptionModule`, `SubscriptionPaywall.tsx`, restore-downgrade bug); P2-T18 §1 (lapse never locks
 out), §4 (offline).

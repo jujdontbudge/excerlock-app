@@ -1,5 +1,8 @@
 # T13 — Review readiness (B51; `05-review-readiness.md`)
 
+> Scope revision (Johan, 2026-09-10): submission metadata/review preparation is deferred, NOT completed, to `../post-ship/README.md` F01. Keep the implemented reviewer preset and published legal/support functionality.
+
+
 ## Steps
 
 1. Reviewer preset: a `review_preset` PostHog flag **and** a Review-Notes-documented gesture (enter the name

@@ -1,5 +1,8 @@
 # T14 — Verification pass and evidence (tested like a real user)
 
+> Scope revision (Johan, 2026-09-10): physical-device functional checks remain ACTIVE. Formal startup/battery measurements are deferred to `../post-ship/README.md` F02; crashes, hangs and severe battery defects are not deferred.
+
+
 Repo rules: Maestro banned; headless simulator; `asc`/`simctl`/`idb`; screenshots record the bundle/update id.
 
 ## Steps
