@@ -611,3 +611,14 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   CI now runs app-next Metro/bundle-budget node regressions (5 passed locally).
 - Auth lifecycle drain implementation and honest native startup diagnostic instrumentation remain
   in independent claimed lanes; awaiting code review and actual checks before integration.
+
+- Fresh integrated security install succeeded; Sentry topology1/1 and E2E source/retirement16/16 pass.
+  Root review of in-progress auth cleanup flagged constructor rollback, silently optional required SDK
+  cleanup, late-lock detection and independent cleanup after synchronous errors; fixes requested.
+  Startup review flagged duplicate/stale RAF callbacks and trace-directory validation; fixes requested.
+- Fresh device inventory: physical Il still unavailable, but NO simulator is now booted. Previous
+  unowned-simulator restriction no longer blocks allocating one owned simulator once preview candidate
+  is ready. Root has not booted or operated any simulator this continuation.
+- Targeted npm Clerk refresh unexpectedly re-resolved broad Solana/Noble wallet subtree; agent restored
+  clean lane and no update adopted. Root authorized a disposable official-metadata-only two-entry lock
+  experiment, conditional on all dependency ranges and clean npm ci, before any adoption.
