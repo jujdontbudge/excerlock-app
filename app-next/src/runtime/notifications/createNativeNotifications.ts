@@ -4,8 +4,8 @@ import { expoLocalNotifications } from './ExpoLocalNotifications';
 import { LocalNotifications } from './LocalNotifications';
 import { openToUnlockPlan } from '../../domain/notificationPlan';
 /** Caller binds account generation and invokes open-to-unlock only for eligible discoveries. */
-export function createNativeNotifications(isCurrent: () => boolean): NotificationsPort {
-  const local = new LocalNotifications(expoLocalNotifications, isCurrent);
+export function createNativeNotifications(isCurrent: () => boolean, generation: () => number = () => 0): NotificationsPort {
+  const local = new LocalNotifications(expoLocalNotifications, isCurrent, generation);
   return {
     status: () => permissionsStore.getState().data.notifications,
     request: () => expoLocalNotifications.permission(true),

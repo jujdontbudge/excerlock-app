@@ -43,3 +43,12 @@ test('fixed identifier updates serialize cancel-before-schedule', async () => {
   await Promise.all([service.schedule(plan), service.schedule(plan)]);
   expect(calls).toEqual(['cancel', 'schedule', 'cancel', 'schedule']);
 });
+
+test('generation changing while queued cannot schedule for the new account', async () => {
+  let generation = 1;
+  const { backend } = setup();
+  const service = new LocalNotifications(backend, () => true, () => generation);
+  const scheduled = service.schedule(plan); generation = 2;
+  await expect(scheduled).rejects.toThrow('session changed');
+  expect(backend.schedule).not.toHaveBeenCalled();
+});

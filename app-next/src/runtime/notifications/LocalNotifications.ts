@@ -8,20 +8,22 @@ export interface LocalNotificationsBackend {
 /** Serialized fixed IDs replace prior plans; no device token or server registration. */
 export class LocalNotifications {
   private tail: Promise<unknown> = Promise.resolve();
-  constructor(private backend: LocalNotificationsBackend, private isCurrent: () => boolean) {}
+  constructor(private backend: LocalNotificationsBackend, private isCurrent: () => boolean, private generation: () => number = () => 0) {}
   schedule(plan: LocalNotificationPlan): Promise<string> {
+    const generation = this.generation();
+    const current = () => this.isCurrent() && this.generation() === generation;
     const work = this.tail.then(async () => {
-      if (!this.isCurrent()) throw new Error('Notification session changed');
+      if (!current()) throw new Error('Notification session changed');
       const permission = await this.backend.permission(false);
-      if (!this.isCurrent()) throw new Error('Notification session changed');
+      if (!current()) throw new Error('Notification session changed');
       if (permission !== 'granted') {
         await this.backend.cancel(plan.id);
         throw new Error('Notifications are disabled in Settings');
       }
       await this.backend.cancel(plan.id);
-      if (!this.isCurrent()) throw new Error('Notification session changed');
+      if (!current()) throw new Error('Notification session changed');
       const id = await this.backend.schedule(plan);
-      if (!this.isCurrent()) {
+      if (!current()) {
         await this.backend.cancel(id);
         throw new Error('Notification session changed');
       }

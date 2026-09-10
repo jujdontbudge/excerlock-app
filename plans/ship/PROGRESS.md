@@ -261,3 +261,13 @@ before T06; UI has substantive changes underway; auth intentional callback owner
 - T11 review found history key upper bound changes on retry after successful credit/failed cursor save,
   allowing overlapping double-credit. Agent now persisting pending intent before root credit and testing
   new-wake retry; no false exactly-once claim. Native/domain/factory agents remain active.
+- Root createClientServices now binds actual PostHog/Sentry+auth/Adapty from strict public extras, live
+  analytics consent/profile/OTA context, typed experiments, native local notifications and account-bound
+  serialized JSON export. Still deliberately not substituted for full Runtime until enforcement/detection
+  ports are composed. Added per-request notification generation check (including queued requests).
+  3focused suites/10tests, primary typecheck/lint pass. Payload assembly account binding still pending.
+- T11 factory/durable pending credit correctiond29b7498 ready for root integration; root must atomically
+  dedup history credit intent before callback resolves. Agent moved to independent T13 audit/fixes.
+- Native unsigned build fails in Swift Expo result-builder compiler assertion; root requested typed
+  service-method extraction and repeat actual build. Report ExtensionKit regression restored by agent;
+  none of native T10 commits integrated until review/build. No signed/device proof yet.
