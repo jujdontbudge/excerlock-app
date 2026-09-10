@@ -8,6 +8,7 @@ export interface PostHogClientBoundary {
   register(properties: Record<string, unknown>): Promise<void> | void;
   identify(id: string): void; reset(): void; optIn(): Promise<void>; optOut(): Promise<void>;
   clearPendingQueues(): Promise<void> | void;
+  setPersonProperties(properties: Record<string, string | number | boolean>, reloadFeatureFlags?: boolean): Promise<void> | void;
   capture(event: string, properties?: Record<string, unknown>): Promise<void> | void;
   screen(name: string, properties?: Record<string, unknown>): Promise<void> | void;
   onFeatureFlags(callback: () => void): () => void;
@@ -31,39 +32,75 @@ export function scrubAnalyticsProps(props: Record<string, unknown> = {}): Record
 export function createPostHogAnalyticsAdapter(options: {
   client: PostHogClientBoundary; getIdentity: () => CanonicalIdentity;
   analyticsEnabled: () => boolean; getContext: () => AnalyticsContext;
-}): AnalyticsPort & { discardPending(): Promise<void>; flags: PostHogFlagsController } {
+}): AnalyticsPort & { discardPending(): Promise<void>; setWalkPlaces(value: WalkPlaces): void; flags: PostHogFlagsController } {
   const { client } = options;
   let committed: CanonicalIdentity | null = null;
+  type Origin = { userId: string; generation: number };
   const register = async () => client.register({ ...options.getContext(), $device_id: client.getDeviceId() });
-  const allowed = () => {
+  const origin = (): Origin | null => {
     const live = options.getIdentity();
-    return options.analyticsEnabled() && live.ready && !!committed && live.userId === committed.userId && live.generation === committed.generation;
+    return live.userId ? { userId: live.userId, generation: live.generation } : null;
   };
-  const flags = new PostHogFlagsController(client, options.getIdentity, options.analyticsEnabled, () => committed);
-  const emit = (action: () => Promise<void> | void) => {
-    void (async () => {
+  const allowed = (started?: Origin | null) => {
+    const live = options.getIdentity();
+    return options.analyticsEnabled() && live.ready && !!committed && !!started &&
+      live.userId === started.userId && live.generation === started.generation &&
+      committed.userId === started.userId && committed.generation === started.generation;
+  };
+  const emit = async (started: Origin, action: () => Promise<void> | void): Promise<boolean> => {
+    try {
+      if (!allowed(started)) return false;
       await register();
-      // register can cross an auth generation while it awaits storage. Never let
-      // the continuation enqueue an event for the next account.
-      if (allowed()) await action();
-    })().catch(() => undefined);
+      if (!allowed(started)) return false;
+      await action(); return true;
+    } catch { return false; }
   };
+  const flags = new PostHogFlagsController(
+    client,
+    options.getIdentity,
+    options.analyticsEnabled,
+    () => committed,
+    (started, properties) => emit(started, () => client.capture('$feature_flag_called', properties)),
+  );
   return {
     async identify(id) {
+      committed = null;
+      flags.invalidate();
+      const started = options.getIdentity();
+      if (started.userId !== id) throw new Error('Analytics identity is not canonical');
       await client.ready();
-      await register(); // device id is primed before identify's implicit flags request
-      if (options.analyticsEnabled()) await client.optIn(); else await client.optOut();
-      client.identify(id);
-      const live = options.getIdentity();
-      if (live.userId !== id) throw new Error('Analytics identity changed during identify');
-      committed = { ...live };
       await register();
-      flags.beginGeneration(live.generation);
+      const live = options.getIdentity();
+      if (live.userId !== id || live.generation !== started.generation) throw new Error('Analytics identity changed during identify');
+      if (options.analyticsEnabled()) await client.optIn(); else await client.optOut();
+      const beforeIdentify = options.getIdentity();
+      if (beforeIdentify.userId !== id || beforeIdentify.generation !== started.generation) throw new Error('Analytics identity changed during identify');
+      client.identify(id);
+      await register();
+      const completed = options.getIdentity();
+      if (completed.userId !== id || completed.generation !== started.generation) throw new Error('Analytics identity changed during identify');
+      committed = { ...completed };
+      flags.beginGeneration(beforeIdentify.generation);
     },
-    track(event, props) { if (!allowed() || /^(purchase_|trial_|subscription_)/.test(event)) return; emit(() => client.capture(event, scrubAnalyticsProps(props))); },
-    screen(name) { if (!allowed()) return; const route = semanticScreenName(name); if (!route) return; emit(() => client.screen(route)); },
+    track(event, props) {
+      const started = origin();
+      if (!allowed(started) || /^(purchase_|trial_|subscription_)/.test(event)) return;
+      void emit(started!, () => client.capture(event, scrubAnalyticsProps(props)));
+    },
+    screen(name) {
+      const started = origin();
+      if (!allowed(started)) return;
+      const route = semanticScreenName(name); if (!route) return;
+      void emit(started!, () => client.screen(route));
+    },
+    setWalkPlaces(value) {
+      const started = origin(); if (!allowed(started)) return;
+      // The installed SDK emits the documented `$set` update. Avoid a flag
+      // reload so an already-mounted surface cannot change underneath the user.
+      void emit(started!, () => client.setPersonProperties({ walk_places: value }, false));
+    },
     async reset() { committed = null; flags.invalidate(); await client.optOut(); await client.clearPendingQueues(); client.reset(); await client.ready(); await register(); if (options.analyticsEnabled()) await client.optIn(); },
-    async discardPending() { await client.optOut(); await client.clearPendingQueues(); },
+    async discardPending() { committed = null; flags.invalidate(); await client.optOut(); await client.clearPendingQueues(); },
     flags,
   };
 }
@@ -71,29 +108,75 @@ export function createPostHogAnalyticsAdapter(options: {
 export type FlagName = 'paywall_variant' | 'signInRequired' | 'onboarding_variant';
 export type PaywallVariant = 'control' | 'variant_b';
 const allowedFlags: Record<FlagName, readonly (string | boolean)[]> = { paywall_variant: ['control', 'variant_b'], signInRequired: [false, true], onboarding_variant: ['control', 'variant_b'] };
+type FlagValue = string | boolean;
+type FlagOrigin = { userId: string; generation: number };
+type PendingFlag = { promise: Promise<FlagValue>; resolve: (value: FlagValue) => void; off?: () => void; timeout?: ReturnType<typeof globalThis.setTimeout>; origin: FlagOrigin };
 export class PostHogFlagsController {
-  private generation = -1; private settled = new Map<FlagName, string | boolean>(); private exposures = new Set<string>(); private unsubscribe?: () => void;
-  constructor(private client: PostHogClientBoundary, private identity: () => CanonicalIdentity, private optedIn: () => boolean, private committed: () => CanonicalIdentity | null) {}
-  beginGeneration(generation: number) { this.invalidate(); this.generation = generation; }
-  invalidate() { this.unsubscribe?.(); this.unsubscribe = undefined; this.settled.clear(); this.exposures.clear(); this.generation = -1; }
-  async get(name: FlagName, timeoutMs = 2_000): Promise<string | boolean> {
-    if (this.settled.has(name)) return this.settled.get(name)!;
+  private generation = -1;
+  private settled = new Map<FlagName, FlagValue>();
+  private exposures = new Set<string>();
+  private pending = new Map<FlagName, PendingFlag>();
+  constructor(
+    private client: PostHogClientBoundary,
+    private identity: () => CanonicalIdentity,
+    private optedIn: () => boolean,
+    private committed: () => CanonicalIdentity | null,
+    private captureExposure: (origin: FlagOrigin, properties: Record<string, unknown>) => Promise<boolean>,
+  ) {}
+  private fallback(name: FlagName): FlagValue { return name === 'signInRequired' ? false : 'control'; }
+  private eligible(origin?: FlagOrigin): origin is FlagOrigin {
     const live = this.identity(), committed = this.committed();
-    if (!this.optedIn() || !live.ready || !committed || live.generation !== this.generation || live.userId !== committed.userId) return name === 'signInRequired' ? false : 'control';
-    let timeout: number | undefined;
-    let off: (() => void) | undefined;
-    const value = await Promise.race([new Promise<string | boolean | undefined>((resolve) => {
-      const current = this.client.getFeatureFlag(name, { sendEvent: false }); if (current !== undefined) return resolve(current);
-      off = this.client.onFeatureFlags(() => { off?.(); resolve(this.client.getFeatureFlag(name, { sendEvent: false })); });
-    }), new Promise<undefined>((resolve) => { timeout = setTimeout(resolve, timeoutMs); })]);
-    if (timeout) clearTimeout(timeout);
-    off?.();
-    const fallback = name === 'signInRequired' ? false : 'control';
-    const accepted = allowedFlags[name].includes(value as never) ? value! : fallback;
-    if (this.identity().generation !== this.generation) return fallback;
-    this.settled.set(name, accepted); return accepted;
+    return !!origin && this.optedIn() && live.ready && !!committed &&
+      origin.generation === this.generation && live.generation === origin.generation && committed.generation === origin.generation &&
+      live.userId === origin.userId && committed.userId === origin.userId;
   }
-  expose(name: FlagName, placement: string) { const live = this.identity(); const key = `${this.generation}:${name}:${placement}`; if (!this.settled.has(name) || this.exposures.has(key) || !this.optedIn() || !live.ready || live.generation !== this.generation) return; this.exposures.add(key); this.client.getFeatureFlag(name, { sendEvent: true }); }
+  beginGeneration(generation: number) { this.invalidate(); this.generation = generation; }
+  invalidate() {
+    for (const [name, pending] of this.pending) {
+      pending.off?.(); if (pending.timeout !== undefined) clearTimeout(pending.timeout);
+      pending.resolve(this.fallback(name));
+    }
+    this.pending.clear(); this.settled.clear(); this.exposures.clear(); this.generation = -1;
+  }
+  async get(name: FlagName, timeoutMs = 2_000): Promise<FlagValue> {
+    const live = this.identity();
+    const started = live.userId ? { userId: live.userId, generation: live.generation } : undefined;
+    if (!this.eligible(started)) return this.fallback(name);
+    if (this.settled.has(name)) return this.settled.get(name)!;
+    const existing = this.pending.get(name);
+    if (existing) return existing.promise;
+    let resolve!: (value: FlagValue) => void;
+    const promise = new Promise<FlagValue>((done) => { resolve = done; });
+    const pending: PendingFlag = { promise, resolve, origin: started };
+    this.pending.set(name, pending);
+    const finish = (candidate: FlagValue | undefined) => {
+      if (this.pending.get(name) !== pending) return;
+      pending.off?.(); if (pending.timeout !== undefined) clearTimeout(pending.timeout);
+      this.pending.delete(name);
+      const accepted = allowedFlags[name].includes(candidate as never) ? candidate! : this.fallback(name);
+      if (!this.eligible(started)) { resolve(this.fallback(name)); return; }
+      this.settled.set(name, accepted); resolve(accepted);
+    };
+    const current = this.client.getFeatureFlag(name, { sendEvent: false });
+    if (current !== undefined) finish(current);
+    else {
+      pending.off = this.client.onFeatureFlags(() => finish(this.client.getFeatureFlag(name, { sendEvent: false })));
+      if (this.pending.get(name) !== pending) pending.off();
+      else pending.timeout = globalThis.setTimeout(() => finish(undefined), timeoutMs);
+    }
+    return promise;
+  }
+  expose(name: FlagName, placement: string) {
+    const live = this.identity(); const started = live.userId ? { userId: live.userId, generation: live.generation } : undefined;
+    const value = this.settled.get(name); const key = `${this.generation}:${name}:${placement}`;
+    if (value === undefined || this.exposures.has(key) || !this.eligible(started)) return;
+    this.exposures.add(key);
+    // Snapshot the value shown by the mounted surface. Calling getFeatureFlag
+    // here would expose a late SDK value instead of the stable assignment.
+    void this.captureExposure(started, { $feature_flag: name, $feature_flag_response: value }).then((captured) => {
+      if (!captured) this.exposures.delete(key);
+    });
+  }
   exposePaywall(input: PaywallVariantExposure) {
     if (input.generation !== this.generation || this.settled.get('paywall_variant') !== input.variant) return;
     this.expose('paywall_variant', `${input.placement}:${input.flowVariationId}`);

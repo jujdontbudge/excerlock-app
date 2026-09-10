@@ -1,17 +1,18 @@
 import { createPaywallExperimentPort, createPostHogAnalyticsAdapter, semanticScreenName, scrubAnalyticsProps, type CanonicalIdentity, type PostHogClientBoundary } from '../PostHogAnalyticsAdapter';
 
 function fixture() {
-  const calls: string[] = []; let flag: string | boolean | undefined; const listeners: (() => void)[] = [];
+  const calls: string[] = []; const captures: { event: string; props?: Record<string, unknown> }[] = []; let flag: string | boolean | undefined; const listeners = new Set<() => void>(); let registerGate: Promise<void> | undefined;
   const client: PostHogClientBoundary = {
     ready: async () => { calls.push('ready'); }, getDeviceId: () => (calls.push('device'), 'device-1'), getDistinctId: () => 'uid',
-    register: async () => { calls.push('register'); }, identify: () => { calls.push('identify'); }, reset: () => { calls.push('reset'); },
+    register: async () => { calls.push('register'); await registerGate; }, identify: () => { calls.push('identify'); }, reset: () => { calls.push('reset'); },
     clearPendingQueues: async () => { calls.push('clear'); },
-    optIn: async () => { calls.push('optIn'); }, optOut: async () => { calls.push('optOut'); }, capture: (e) => { calls.push(`capture:${e}`); }, screen: (s) => { calls.push(`screen:${s}`); },
-    onFeatureFlags: (cb) => { listeners.push(cb); return () => undefined; }, getFeatureFlag: (_k, o) => { if (o?.sendEvent) calls.push('exposure'); return flag; },
+    setPersonProperties: async (props, reload) => { calls.push(`person:${String(props.walk_places)}:${String(reload)}`); },
+    optIn: async () => { calls.push('optIn'); }, optOut: async () => { calls.push('optOut'); }, capture: (e, props) => { calls.push(`capture:${e}`); captures.push({ event: e, props }); }, screen: (s) => { calls.push(`screen:${s}`); },
+    onFeatureFlags: (cb) => { listeners.add(cb); return () => { listeners.delete(cb); }; }, getFeatureFlag: (_k, o) => { if (o?.sendEvent) calls.push('exposure'); return flag; },
   };
   let identity: CanonicalIdentity = { userId: 'uid', generation: 1, ready: true }; let enabled = true;
   const adapter = createPostHogAnalyticsAdapter({ client, getIdentity: () => identity, analyticsEnabled: () => enabled, getContext: () => ({ environment: 'preview', runtime_version: '1', update_id: 'embedded', walk_places: 'outside' }) });
-  return { adapter, calls, setFlag(v: typeof flag) { flag = v; listeners.forEach((cb) => cb()); }, setIdentity(v: CanonicalIdentity) { identity = v; }, disable() { enabled = false; } };
+  return { adapter, calls, captures, setFlag(v: typeof flag) { flag = v; [...listeners].forEach((cb) => cb()); }, setIdentity(v: CanonicalIdentity) { identity = v; }, disable() { enabled = false; }, enable() { enabled = true; }, deferRegisters() { let release!: () => void; registerGate = new Promise<void>((resolve) => { release = resolve; }); return release; } };
 }
 
 test('primes device and registers before identify, then gates capture', async () => {
@@ -43,10 +44,41 @@ test('rechecks generation after an asynchronous register and clears queues on re
   await x.adapter.reset();
   expect(x.calls.indexOf('clear')).toBeLessThan(x.calls.indexOf('reset'));
 });
+
+test('drops an event whose register crosses into a newly committed account', async () => {
+  const x = fixture(); await x.adapter.identify('uid'); const release = x.deferRegisters();
+  x.adapter.track('condition_created');
+  x.setIdentity({ userId: 'uid-2', generation: 2, ready: true });
+  const identifying = x.adapter.identify('uid-2'); release(); await identifying; await Promise.resolve();
+  expect(x.captures.filter((capture) => capture.event === 'condition_created')).toEqual([]);
+});
+test('sets bounded walk places only for the originating canonical account', async () => {
+  const x = fixture(); await x.adapter.identify('uid'); const release = x.deferRegisters();
+  x.adapter.setWalkPlaces('outside_and_treadmill');
+  x.setIdentity({ userId: 'uid-2', generation: 2, ready: true }); release(); await Promise.resolve(); await Promise.resolve();
+  expect(x.calls.filter((call) => call.startsWith('person:'))).toEqual([]);
+  await x.adapter.identify('uid-2'); x.adapter.setWalkPlaces('treadmill'); await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(x.calls).toContain('person:treadmill:false');
+});
+test('stale identify cannot commit after canonical identity changes', async () => {
+  const x = fixture(); const release = x.deferRegisters(); const identifying = x.adapter.identify('uid');
+  x.setIdentity({ userId: 'uid-2', generation: 2, ready: false }); release();
+  await expect(identifying).rejects.toThrow('identity changed');
+  expect(x.calls).not.toContain('identify');
+});
+test('flag reads singleflight and an old generation cannot poison the new settlement', async () => {
+  const x = fixture(); await x.adapter.identify('uid');
+  const oldA = x.adapter.flags.get('paywall_variant'); const oldB = x.adapter.flags.get('paywall_variant');
+  x.setIdentity({ userId: 'uid-2', generation: 2, ready: false }); await x.adapter.identify('uid-2');
+  expect(await oldA).toBe('control'); expect(await oldB).toBe('control');
+  x.setIdentity({ userId: 'uid-2', generation: 2, ready: true }); x.setFlag('variant_b');
+  expect(await x.adapter.flags.get('paywall_variant')).toBe('variant_b');
+  x.disable(); expect(await x.adapter.flags.get('paywall_variant')).toBe('control');
+});
 test('settles control after 2s and exposes only once after mount', async () => {
   jest.useFakeTimers(); const x = fixture(); await x.adapter.identify('uid'); const pending = x.adapter.flags.get('paywall_variant'); await jest.advanceTimersByTimeAsync(2000);
   expect(await pending).toBe('control'); x.setFlag('variant_b'); expect(await x.adapter.flags.get('paywall_variant')).toBe('control');
-  x.adapter.flags.expose('paywall_variant', 'onboarding'); x.adapter.flags.expose('paywall_variant', 'onboarding'); expect(x.calls.filter((c) => c === 'exposure')).toHaveLength(1); jest.useRealTimers();
+  x.adapter.flags.expose('paywall_variant', 'onboarding'); x.adapter.flags.expose('paywall_variant', 'onboarding'); await jest.advanceTimersByTimeAsync(0); expect(x.captures.filter((c) => c.event === '$feature_flag_called')).toHaveLength(1); expect(x.captures.at(-1)?.props).toEqual({ $feature_flag: 'paywall_variant', $feature_flag_response: 'control' }); jest.useRealTimers();
 });
 test('paywall port exposes only the mounted, settled variant and matching generation', async () => {
   const x = fixture(); await x.adapter.identify('uid'); x.setFlag('variant_b');
@@ -54,9 +86,9 @@ test('paywall port exposes only the mounted, settled variant and matching genera
   expect(await port.getPaywallVariant()).toBe('variant_b');
   port.trackPaywallVariantExposure({ variant: 'control', placement: 'onboarding', flowVariationId: 'flow-a', generation: 1 });
   port.trackPaywallVariantExposure({ variant: 'variant_b', placement: 'onboarding', flowVariationId: 'flow-a', generation: 2 });
-  expect(x.calls).not.toContain('exposure');
+  expect(x.captures.filter((c) => c.event === '$feature_flag_called')).toHaveLength(0);
   port.trackPaywallVariantExposure({ variant: 'variant_b', placement: 'onboarding', flowVariationId: 'flow-a', generation: 1 });
-  expect(x.calls.filter((c) => c === 'exposure')).toHaveLength(1);
+  await new Promise((resolve) => setTimeout(resolve, 0)); expect(x.captures.filter((c) => c.event === '$feature_flag_called')).toHaveLength(1);
 });
 test('scrubs PII and route names are allowlisted', () => {
   expect(scrubAnalyticsProps({ email: 'x@y.com', reason: 'free text!', kind: 'walking', ms: 3 })).toEqual({ kind: 'walking', ms: 3 });
