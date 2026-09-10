@@ -15,7 +15,7 @@ unreachable; every "Open Settings" inert; auto-detect switch discards result; su
    continue with empty; "Skip for now" stays. Fallback view behind the SwiftUI picker crash (G7).
 2. **History row** deleted; Home Analytics row kept.
 3. **Settings one screen** (B34/B52): merge "More settings" back; add navigation entries for
-   `/settings/preferences`, `/settings/units`, `/settings/permission/[name]` (all six rows incl. Camera);
+   `/settings/preferences`, `/settings/units`, `/settings/permission/[name]` (all five remaining rows incl. Camera; Health permission UI was removed by T07);
    `Linking.openSettings()` on every fix button; permission rows read live status on foreground; auto-detect
    switch reflects the real Always result with a reason when denied; delete "Touch feedback"; support form
    gains a reply address field.

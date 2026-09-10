@@ -106,3 +106,21 @@ Astra low. Muse xhigh handles bounded implementation; root reviews changes and v
   TimeRangeRow and WorkoutGoalScreen effect. Reconcile in T07/T09; do not weaken assertions indiscriminately.
 - Universal ledger updated/committed 024887b: OTA build-profile env is not update env; live safety rechecks.
 - No build, TestFlight upload or App Store submission yet; device-only release gates unchanged.
+
+## Integration checkpoint and model fallback
+
+- Root commits:9f6d115 configuration;0928a0b canonical auth/deletion ADR0011;186fa70 persisted detection/
+  conditional watchdog ADR0012 (supersedes historical0007/0008);4489b75 SDK4 Adapty correction.
+- T03 integrated as5dd8bd7+da05987, then root review fixcb9a3cb: latest native candidate supersession,
+  coherent resume snapshots, serialized guard rollback/health acknowledgment.82 OTA tests pass; root
+  reports source-level native reload atomicity limit honestly. T10 mounting still pending.
+- T07 integrated2355889: removes run/bike and HealthPort product surfaces, per-row migration, one-time note.
+  Two pre-existing UI tests remain open; root decision for T09 recorded in task handoff.
+- Muse endpoint returned429 and terminated T01 revision/T04 client/T04 server (all exit1 confirmed).
+  Uncommitted work preserved. Authorized Sol-low native agents now continue the SAME worktrees:
+  /root/ship_native_finish, /root/ship_auth_finish, /root/ship_server_finish. No duplicate Muse processes.
+- T01 packaging correction from installed Xcode/SDK: DeviceActivityReport uses ExtensionKit product,
+  EXAppExtensionAttributes, .appex suffix and Extensions embed directory; other three use PlugIns.
+  Report protocols available iOS16+, compile/runtime still gates. Prior ordinary app-extension advice withdrawn.
+- Public Supabase JWKS exposes EC/ES256 key (sanitized metadata evidence); no user token/sign-in proof.
+- All work remains local/unreleased; existing main checkout user edits are untouched.
