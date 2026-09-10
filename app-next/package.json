@@ -66,7 +66,9 @@
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "ios:storekit-harness": "node scripts/generate-storekit-harness.cjs",
+    "test:storekit-harness": "node --test scripts/test-storekit-harness.cjs"
   },
   "private": true
 }

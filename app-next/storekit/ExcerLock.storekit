@@ -1,0 +1,193 @@
+{
+  "identifier": "6E9DE68C-9759-55F4-B24D-DDA9EB6040D5",
+  "nonRenewingSubscriptions": [],
+  "products": [],
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [
+    {
+      "id": "F4940C00-B55C-5659-95AB-DEA21BB0482C",
+      "localizations": [
+        {
+          "description": "ExcerLock Premium plans for local testing.",
+          "displayName": "Premium A",
+          "locale": "en_US"
+        }
+      ],
+      "name": "Premium A",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "9.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "9486A113-4A76-5DB1-803F-9162165C0D13",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium A Monthly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.a.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium A Monthly",
+          "subscriptionGroupID": "F4940C00-B55C-5659-95AB-DEA21BB0482C",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "59.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "2B9B7B42-7290-5323-B57C-5C7634446B9E",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium A Annual",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.a.annual",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium A Annual",
+          "subscriptionGroupID": "F4940C00-B55C-5659-95AB-DEA21BB0482C",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "0E0578FD-E070-52B5-A663-3661C3DAF000",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "29.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "F72B4855-397D-5FEC-ACCC-28E33E46EF99",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium A Win-back Annual",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.a.winback.annual",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium A Win-back Annual",
+          "subscriptionGroupID": "F4940C00-B55C-5659-95AB-DEA21BB0482C",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "97D1C755-E654-5623-A85A-75308D7A6857",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        }
+      ]
+    },
+    {
+      "id": "C3DFE298-BDDB-5CD0-8210-97FF4FE7C2C3",
+      "localizations": [
+        {
+          "description": "ExcerLock Premium plans for local testing.",
+          "displayName": "Premium B",
+          "locale": "en_US"
+        }
+      ],
+      "name": "Premium B",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "12.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "BDA626B3-2D68-5724-9965-B79688710DA2",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium B Monthly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.b.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium B Monthly",
+          "subscriptionGroupID": "C3DFE298-BDDB-5CD0-8210-97FF4FE7C2C3",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "79.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "DB1F336C-3586-5ACB-BCF4-21FDF4AE5B06",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium B Annual",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.b.annual",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium B Annual",
+          "subscriptionGroupID": "C3DFE298-BDDB-5CD0-8210-97FF4FE7C2C3",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "58CAADE6-56BF-5B83-BBEB-51E20E8D3D47",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "39.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "4A5B5628-99C5-5E04-8F8C-58F2E4E8D62E",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium B Win-back Annual",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.b.winback.annual",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium B Win-back Annual",
+          "subscriptionGroupID": "C3DFE298-BDDB-5CD0-8210-97FF4FE7C2C3",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "8C1503C2-299B-5796-95F3-E2C72329B854",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        }
+      ]
+    }
+  ],
+  "version": {
+    "major": 4,
+    "minor": 0
+  }
+}
