@@ -663,3 +663,9 @@ before T06; UI has substantive changes underway; auth intentional callback owner
   /tmp/t14-final-preview-8d403650-20260910-131116-59597. Actual generated config has runtime2 and
   main+4extension bundle targets; no build result/runtime proof yet. Sentry upload disabled after
   EAS preview injection; no signing/upload/boot performed.
+
+- Revalidated actual Release simulator bundle8d403650: SHA256 matches build.json,6,372,060 bytes,
+  FAIL strict4,000,000-byte gate. Real launch AX/screenshot recorded startup recovery screen and native
+  log ERR_KEY_CHAIN / required entitlement missing. Native lane investigating artifact signing, without
+  SecureStore bypass. Latest simctl inventory shows owned simulator Shutdown (no other sims booted).
+  Updated stale dated status/ownership records; runtime/device acceptance remains explicitly incomplete.
