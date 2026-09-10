@@ -4,13 +4,18 @@
 # embedded.mobileprovision, prebuild diff. Never config source alone.
 # Usage:
 #   app-next/scripts/verify-binary.sh <PayloadDir> [iosDir]
+#   app-next/scripts/verify-binary.sh --distribution <PayloadDir> [iosDir]
 #   app-next/scripts/verify-binary.sh --prebuild-only [iosDir]
 set -euo pipefail
 
 MODE="binary"
 PAYLOAD_DIR=""
 IOS_DIR="ios"
-if [[ "${1:-}" == "--prebuild-only" ]]; then
+if [[ "${1:-}" == "--distribution" ]]; then
+  MODE="distribution"
+  PAYLOAD_DIR="${2:-}"
+  IOS_DIR="${3:-ios}"
+elif [[ "${1:-}" == "--prebuild-only" ]]; then
   MODE="prebuild"
   IOS_DIR="${2:-ios}"
 else
@@ -56,13 +61,15 @@ if [[ "$MODE" == "prebuild" ]]; then
   exit 0
 fi
 
-[[ -n "$PAYLOAD_DIR" ]] || fail "usage: verify-binary.sh <PayloadDir> [iosDir]"
+[[ -n "$PAYLOAD_DIR" ]] || fail "usage: verify-binary.sh [--distribution] <PayloadDir> [iosDir]"
 APP=$(echo "$PAYLOAD_DIR"/ExcerLock.app)
 [[ -d "$APP" ]] || APP=$(echo "$PAYLOAD_DIR"/Payload/ExcerLock.app)
 [[ -d "$APP" ]] || fail "no ExcerLock.app under $PAYLOAD_DIR"
 
 # Structured checks bind actual signed values and provisioning to exact bundle IDs.
-python3 "$(cd "$(dirname "$0")" && pwd)/verify_signed_manifest.py" "$APP"
+manifest_args=()
+[[ "$MODE" == "distribution" ]] && manifest_args+=(--distribution)
+python3 "$(cd "$(dirname "$0")" && pwd)/verify_signed_manifest.py" "${manifest_args[@]}" "$APP"
 
 # Step 2: executable signatures are the truth (tolerate Apple's normal
 # signature-identity entitlements, reject missing/unexpected privileged ones).
