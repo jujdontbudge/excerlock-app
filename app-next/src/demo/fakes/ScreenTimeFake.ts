@@ -14,7 +14,9 @@ export function ScreenTimeFake(ctx: FakeContext): ScreenTimePort {
       rulesStore.getState().patch({ lockedApps: selected });
       return selected;
     },
-    applyLock: (decision) => ctx.log('lock_applied', { state: decision.state }),
+    applyLock: async (decision) => { ctx.log('lock_applied', { state: decision.state }); return { applied: true }; },
+    registerWatchdog: async (plan) => plan,
+    cancelWatchdog: async () => undefined,
     observeUsage: (callback) => {
       const update = () =>
         callback(
