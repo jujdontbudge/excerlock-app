@@ -6,7 +6,7 @@ export interface SubscriptionPort {
   entitlement(): SubscriptionEntitlement;
   presentPaywall(placement: string): Promise<Entitlement>;
   restore(): Promise<Entitlement>;
-  identify(userId: string): void;
-  reset(): void;
+  identify(userId: string): Promise<void>;
+  reset(): Promise<void>;
   subscribe(callback: (entitlement: Entitlement) => void): Unsubscribe;
 }

@@ -14,6 +14,7 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
     [note, setNote] = useState('');
   const action = async (deleting: boolean) => {
     setBusy(true);
+    setNote('');
     try {
       if (deleting) {
         await runtime.auth.deleteAccount();
@@ -41,6 +42,7 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
               <Label>{fact}</Label>
             </Reveal>
           ))}
+          {note ? <Label accessibilityRole="alert">{note}</Label> : null}
           <PrimaryButton label={c.deleteConfirm} loading={busy} onPress={() => void action(true)} />
           <SecondaryButton label={c.keepAccount} disabled={busy} onPress={() => setConfirm(false)} />
         </BottomSheet>
@@ -54,7 +56,10 @@ export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBa
       ) : null}
       <Reveal key={session.kind === 'anonymous' ? 'anonymous' : 'signedIn'}>
         {session.kind === 'anonymous' ? (
-          <PrimaryButton label={c.signIn} onPress={onSignIn} />
+          <>
+            <PrimaryButton label={c.signIn} onPress={onSignIn} />
+            <SecondaryButton label={c.delete} disabled={busy} onPress={() => setConfirm(true)} />
+          </>
         ) : (
           <>
             <SecondaryButton label={c.signOut} disabled={busy} onPress={() => void action(false)} />

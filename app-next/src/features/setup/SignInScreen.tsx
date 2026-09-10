@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Heading, Label, TextField, PrimaryButton, SecondaryButton } from '../../design-system';
 import { setupCopy as c } from '../../content/setup';
@@ -8,7 +8,16 @@ import { Reveal } from '../../motion/Reveal';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { sessionStore as useSessionStore } from '../../state/sessionStore';
 import { EmailCodeScreen } from './EmailCodeScreen';
-export function SignInScreen({ onContinue }: { onContinue: () => void }) {
+import { isAuthCancelled, isAuthRecoveryRequired } from '../../ports/AuthPort';
+import { resolveSignInRequired, type SignInRequiredSource } from '../../runtime/auth/createAuthServices';
+
+export function SignInScreen({
+  onContinue,
+  signInRequired,
+}: {
+  onContinue: () => void;
+  signInRequired?: SignInRequiredSource;
+}) {
   const runtime = useRuntime(),
     session = useSessionStore((s) => s.data.session),
     [phase, setPhase] = useState<'options' | 'email' | 'code'>('options'),
@@ -16,12 +25,26 @@ export function SignInScreen({ onContinue }: { onContinue: () => void }) {
     [code, setCode] = useState(''),
     [error, setError] = useState(''),
     [note, setNote] = useState(''),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [required, setRequired] = useState<boolean | null>(
+      signInRequired === undefined ? false : typeof signInRequired === 'boolean' ? signInRequired : null,
+    ),
+    [recoveryProvider, setRecoveryProvider] = useState<'apple' | 'google' | null>(null);
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve(resolveSignInRequired(signInRequired, false)).then((value) => {
+      if (active) setRequired(value);
+    });
+    return () => {
+      active = false;
+    };
+  }, [signInRequired]);
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const signIn = async (provider: 'apple' | 'google' | 'email') => {
     if (busy) return;
     setBusy(true);
     setError('');
+    setRecoveryProvider(null);
     try {
       const result =
         provider === 'apple'
@@ -31,8 +54,20 @@ export function SignInScreen({ onContinue }: { onContinue: () => void }) {
             : await runtime.auth.verifyEmailCode(code);
       if (result.kind === 'signedIn') onContinue();
       else setError(c.cancelled);
-    } catch {
-      setError(provider === 'email' ? c.codeError : c.authError);
+    } catch (caught) {
+      if (isAuthCancelled(caught)) {
+        setError(c.cancelled);
+      } else if (isAuthRecoveryRequired(caught)) {
+        if (caught.provider === 'email') {
+          setPhase('code');
+          setError(caught.message);
+        } else {
+          setRecoveryProvider(caught.provider);
+          setError(caught.message);
+        }
+      } else {
+        setError(provider === 'email' ? c.codeError : c.authError);
+      }
     } finally {
       setBusy(false);
     }
@@ -41,12 +76,18 @@ export function SignInScreen({ onContinue }: { onContinue: () => void }) {
     if (busy || !validEmail) return;
     setBusy(true);
     setError('');
+    setRecoveryProvider(null);
     try {
       await runtime.auth.sendEmailCode(email.trim());
       if (phase === 'code') setNote(c.resent);
       setPhase('code');
-    } catch {
-      setError(c.authError);
+    } catch (caught) {
+      if (isAuthRecoveryRequired(caught) && caught.provider === 'email') {
+        setPhase('code');
+        setError(caught.message);
+      } else {
+        setError(c.authError);
+      }
     } finally {
       setBusy(false);
     }
@@ -106,8 +147,29 @@ export function SignInScreen({ onContinue }: { onContinue: () => void }) {
           )}
           {error ? (
             <Reveal>
-              <Label style={{ color: t.state.error }}>{error}</Label>
+              <Label accessibilityRole="alert" style={{ color: t.state.error }}>{error}</Label>
             </Reveal>
+          ) : null}
+          {recoveryProvider ? (
+            <SecondaryButton
+              label={`Recover with ${recoveryProvider === 'apple' ? 'Apple' : 'Google'}`}
+              disabled={busy}
+              onPress={() => {
+                setBusy(true);
+                setError('');
+                const recovery =
+                  recoveryProvider === 'apple'
+                    ? runtime.auth.recoverWithApple()
+                    : runtime.auth.recoverWithGoogle();
+                void recovery
+                  .then((result) => {
+                    if (result.kind === 'signedIn') onContinue();
+                    else setError(c.authError);
+                  })
+                  .catch((caught) => setError(isAuthCancelled(caught) ? c.cancelled : c.authError))
+                  .finally(() => setBusy(false));
+              }}
+            />
           ) : null}
         </>
       )}
@@ -123,7 +185,7 @@ export function SignInScreen({ onContinue }: { onContinue: () => void }) {
           }}
         />
       ) : null}
-      <SecondaryButton label={c.skip} disabled={busy} variant="tertiary" onPress={onContinue} />
+      {required === false ? <SecondaryButton label={c.skip} disabled={busy} variant="tertiary" onPress={onContinue} /> : null}
     </Reveal>
   );
 }
