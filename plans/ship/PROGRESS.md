@@ -216,3 +216,7 @@ before T06; UI has substantive changes underway; auth intentional callback owner
 - T11 agent now /root/ship_auth_finish in new ship-T11, owns motion/placement/location adapters and
   persisted detection service; root owns native enforcement/root composition. T06 9a10a64 not integrated:
   root found stale-account event/flag races and unstable late flag exposure; corrections delegated same lane.
+- Root T10 EnforcementHost serializes root/headless requests, revision-checks after awaits, publishes native
+  suppression before cleanup, stages/commits watchdog BEFORE relief, preserves unknown without renewal,
+  and only fail-closes eligible states.7host tests, typecheck/lint pass. Native transport contract requires
+  atomic revision checks under shared native lock; not yet implemented or device proven. No root mounting yet.
