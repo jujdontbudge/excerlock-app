@@ -10,9 +10,9 @@ function historyLedger(applyImpl?: (credit: HistoryCredit) => Promise<void>) {
   const apply = jest.fn(async (credit: HistoryCredit, _timezone: string) => {
     await applyImpl?.(credit);
     if (through === null || credit.to > through) through = credit.to;
-    return { version: 1 as const, through, stepsByDay: {} };
+    return { version: 1 as const, through, stepsByDay: {}, instanceMeasurements: {} };
   });
-  return { read: jest.fn(async () => ({ version: 1 as const, through, stepsByDay: {} })), apply };
+  return { read: jest.fn(async () => ({ version: 1 as const, through, stepsByDay: {}, instanceMeasurements: {} })), apply };
 }
 beforeEach(() => detectionStore.getState().reset());
 test('headless wake consumes durable gym events and credits step history once', async () => {
@@ -157,6 +157,66 @@ test('late wake rejects after account generation changes during an await', async
   release([]);
   await expect(wake).rejects.toThrow('Obsolete detection generation');
   expect(detectionStore.getState().data.observedAt).toBe(0);
+});
+
+test('instance step measurement queries exact endpoints and reuses only an exact cached range', async () => {
+  let raw: string | null = null;
+  const ledger = new HistoryCreditLedger({
+    getItem: async () => raw,
+    setItem: async (_key, value) => { raw = value; },
+  });
+  const querySteps = jest.fn(async (from: number, to: number) => ({ steps: to - from }));
+  const service = new DetectionService({
+    motion: { querySteps } as unknown as MotionAdapter,
+    placement: {} as PlacementAdapter,
+    gymLog: { append: async () => {}, readAll: async () => [] },
+    historyLedger: ledger,
+  });
+  const range = { key: 'r:2026-09-10:end', from: 100, to: 250, timezone: 'UTC' };
+  await expect(service.measureStepRanges([range], 0)).resolves.toEqual({
+    [range.key]: { from: 100, through: 250, steps: 150, timezone: 'UTC' },
+  });
+  await service.measureStepRanges([range], 0);
+  expect(querySteps).toHaveBeenCalledTimes(1);
+  expect(querySteps).toHaveBeenCalledWith(100, 250);
+});
+
+test('instance measurement extends a stable-key checkpoint but rejects an older cutoff without substituting cache', async () => {
+  let raw: string | null = null;
+  const ledger = new HistoryCreditLedger({ getItem: async () => raw, setItem: async (_key, value) => { raw = value; } });
+  const querySteps = jest.fn(async (_from: number, to: number) => ({ steps: to }));
+  const service = new DetectionService({
+    motion: { querySteps } as unknown as MotionAdapter, placement: {} as PlacementAdapter,
+    gymLog: { append: async () => {}, readAll: async () => [] }, historyLedger: ledger,
+  });
+  const base = { key: 'stable', from: 0, timezone: 'UTC' };
+  await service.measureStepRanges([{ ...base, to: 100 }], 0);
+  await service.measureStepRanges([{ ...base, to: 200 }], 0);
+  await expect(service.measureStepRanges([{ ...base, to: 150 }], 0)).rejects.toThrow('backwards');
+  expect(querySteps.mock.calls).toEqual([[0, 100], [0, 200], [0, 150]]);
+  expect(await ledger.readInstanceMeasurement('stable')).toEqual({ from: 0, through: 200, steps: 200, timezone: 'UTC' });
+});
+
+test('instance measurement propagates native errors and generation-fences awaited queries', async () => {
+  let release!: (value: { steps: number }) => void;
+  const querySteps = jest.fn(() => new Promise<{ steps: number }>((resolve) => { release = resolve; }));
+  let raw: string | null = null;
+  const ledger = new HistoryCreditLedger({ getItem: async () => raw, setItem: async (_key, value) => { raw = value; } });
+  const service = new DetectionService({
+    motion: { querySteps } as unknown as MotionAdapter, placement: {} as PlacementAdapter,
+    gymLog: { append: async () => {}, readAll: async () => [] }, historyLedger: ledger,
+  });
+  const pending = service.measureStepRanges([{ key: 'late', from: 0, to: 100, timezone: 'UTC' }], 0);
+  while (!querySteps.mock.calls.length) await Promise.resolve();
+  detectionStore.getState().patch({ generation: 1 });
+  release({ steps: 3 });
+  await expect(pending).rejects.toThrow('Obsolete detection generation');
+  expect(await ledger.readInstanceMeasurement('late')).toBeNull();
+
+  detectionStore.getState().reset();
+  querySteps.mockRejectedValueOnce(new Error('motion unavailable'));
+  await expect(service.measureStepRanges([{ key: 'error', from: 0, to: 100, timezone: 'UTC' }], 0))
+    .rejects.toThrow('motion unavailable');
 });
 test('cursor persistence failure retries the exact credited intent and key before a newer range', async () => {
   const ledger = historyLedger();

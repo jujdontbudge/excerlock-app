@@ -1,6 +1,12 @@
 import type { HistoryCredit } from './DetectionService';
 import { dayKey } from '../../domain/calendar';
-export type HistoryLedger = { version: 1; through: number | null; stepsByDay: Record<string, number> };
+export type InstanceStepMeasurement = { from: number; through: number; steps: number; timezone: string };
+export type HistoryLedger = {
+  version: 1;
+  through: number | null;
+  stepsByDay: Record<string, number>;
+  instanceMeasurements: Record<string, InstanceStepMeasurement>;
+};
 export interface HistoryLedgerStorage { getItem(key: string): Promise<string | null>; setItem(key: string, value: string): Promise<void>; }
 const KEY = 'excerlock-next.history-credit-ledger.v1';
 /** A single durable record owns both observed totals and the deduplication cursor. */
@@ -21,40 +27,88 @@ export class HistoryCreditLedger {
       if (previous.through !== null && credit.from < previous.through) throw new Error('History interval overlaps committed credit');
       const steps = (previous.stepsByDay[day] ?? 0) + credit.steps;
       if (!Number.isSafeInteger(steps)) throw new Error('History total exceeds supported range');
-      const next: HistoryLedger = { version: 1, through: credit.to, stepsByDay: { ...previous.stepsByDay, [day]: steps } };
+      const next: HistoryLedger = { ...previous, through: credit.to, stepsByDay: { ...previous.stepsByDay, [day]: steps } };
       await this.storage.setItem(KEY, JSON.stringify(next));
       return next;
     });
   }
   /** Must be awaited as part of account deletion/local data erasure. */
-  reset(): Promise<void> { return this.serialize(() => this.storage.setItem(KEY, JSON.stringify({ version: 1, through: null, stepsByDay: {} }))); }
+  reset(): Promise<void> { return this.serialize(() => this.save(empty())); }
+  readInstanceMeasurement(key: string): Promise<InstanceStepMeasurement | null> {
+    return this.serialize(async () => {
+      validateKey(key);
+      return (await this.load()).instanceMeasurements[key] ?? null;
+    });
+  }
+  recordInstanceMeasurement(key: string, sample: InstanceStepMeasurement): Promise<InstanceStepMeasurement> {
+    return this.serialize(async () => {
+      validateKey(key);
+      validateMeasurement(sample);
+      const state = await this.load();
+      const previous = state.instanceMeasurements[key];
+      if (previous && (previous.from !== sample.from || previous.timezone !== sample.timezone))
+        throw new Error('Instance measurement key conflicts with its range');
+      if (previous && sample.through < previous.through)
+        throw new Error('Instance measurement cannot move backwards');
+      if (previous && sample.through === previous.through) {
+        if (sample.steps !== previous.steps) throw new Error('Instance measurement replay changed steps');
+        return previous;
+      }
+      const next = { ...state, instanceMeasurements: { ...state.instanceMeasurements, [key]: sample } };
+      await this.save(next);
+      return sample;
+    });
+  }
   /** Call only after the corresponding immutable history rows are durable. */
   pruneBeforeDay(cutoffDay: string): Promise<HistoryLedger> {
     return this.serialize(async () => {
       validateDay(cutoffDay);
       const state = await this.load();
       const stepsByDay = Object.fromEntries(Object.entries(state.stepsByDay).filter(([day]) => day >= cutoffDay));
-      if (Object.keys(stepsByDay).length !== Object.keys(state.stepsByDay).length)
-        await this.storage.setItem(KEY, JSON.stringify({ ...state, stepsByDay }));
-      return { ...state, stepsByDay };
+      const instanceMeasurements = Object.fromEntries(
+        Object.entries(state.instanceMeasurements).filter(([, sample]) =>
+          dayKey(new Date(sample.from).toISOString(), sample.timezone) >= cutoffDay),
+      );
+      if (Object.keys(stepsByDay).length !== Object.keys(state.stepsByDay).length ||
+        Object.keys(instanceMeasurements).length !== Object.keys(state.instanceMeasurements).length)
+        await this.save({ ...state, stepsByDay, instanceMeasurements });
+      return { ...state, stepsByDay, instanceMeasurements };
     });
   }
   private async load(): Promise<HistoryLedger> {
     const raw = await this.storage.getItem(KEY);
-    if (raw === null) return { version: 1, through: null, stepsByDay: {} };
+    if (raw === null) return empty();
     const value: unknown = JSON.parse(raw);
     if (!value || typeof value !== 'object') throw new Error('Invalid history ledger');
     const record = value as HistoryLedger;
     if (record.version !== 1 || (record.through !== null && !Number.isFinite(record.through)) || !record.stepsByDay ||
       typeof record.stepsByDay !== 'object' || Array.isArray(record.stepsByDay) ||
       Object.entries(record.stepsByDay).some(([day, steps]) => !/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isSafeInteger(steps) || steps < 0)) throw new Error('Invalid history ledger');
-    return record;
+    const measurements = (record as HistoryLedger & { instanceMeasurements?: unknown }).instanceMeasurements;
+    if (measurements !== undefined && (!measurements || typeof measurements !== 'object' || Array.isArray(measurements) ||
+      Object.entries(measurements).some(([key, sample]) => {
+        try { validateKey(key); validateMeasurement(sample); return false; } catch { return true; }
+      }))) throw new Error('Invalid history ledger');
+    return { ...record, instanceMeasurements: (measurements ?? {}) as Record<string, InstanceStepMeasurement> };
   }
+  private save(state: HistoryLedger): Promise<void> { return this.storage.setItem(KEY, JSON.stringify(state)); }
   private serialize<T>(operation: () => Promise<T>): Promise<T> {
     const result = this.queue.catch(() => undefined).then(operation);
     this.queue = result.catch(() => undefined);
     return result;
   }
+}
+const empty = (): HistoryLedger => ({ version: 1, through: null, stepsByDay: {}, instanceMeasurements: {} });
+function validateKey(key: string): void {
+  if (!key) throw new Error('Invalid instance measurement key');
+}
+function validateMeasurement(value: unknown): asserts value is InstanceStepMeasurement {
+  if (!value || typeof value !== 'object') throw new Error('Invalid instance measurement');
+  const sample = value as InstanceStepMeasurement;
+  if (!Number.isFinite(sample.from) || !Number.isFinite(sample.through) || sample.through <= sample.from ||
+    !Number.isSafeInteger(sample.steps) || sample.steps < 0 || !sample.timezone)
+    throw new Error('Invalid instance measurement');
+  dayKey(new Date(sample.from).toISOString(), sample.timezone);
 }
 function validateDay(day: string): void {
   const parsed = Date.parse(`${day}T00:00:00Z`);
