@@ -30,3 +30,8 @@ test('walking evidence never bypasses inactive or disabled STATE windows', () =>
   expect(resolveLock({ ...base, rules: [{ ...walkState, enabled: false }], detection }).state).toBe('noRulesToday');
   expect(resolveLock({ ...base, now: '2026-09-07T12:00:00Z', detection }).state).not.toBe('unlockedWalking');
 });
+test('earned accounting older than yesterday cannot supply live relief', () => {
+  const met: RuleDay = { ruleId: walkTarget.id, day: '2026-09-07', progress: 20, met: true, metAt: now };
+  expect(resolveLock({ ...base, now: '2026-09-09T19:00:00Z', rules: [walkTarget], ruleDays: [met] }).state).toBe('noRulesToday');
+  expect(resolveLock({ ...base, now: '2026-09-08T19:00:00Z', rules: [walkTarget], ruleDays: [met] }).state).toBe('unlockedMet');
+});
