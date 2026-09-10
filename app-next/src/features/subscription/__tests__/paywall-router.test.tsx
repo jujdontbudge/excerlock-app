@@ -112,6 +112,9 @@ test('a lapse transition presents one dismissible notice instead of repeatedly t
   };
   const routed = renderRouter(routes, { initialUrl: '/' });
   await routed;
+  await act(async () => entitlementStore.getState().patch({ entitlement: { status: 'unknown', renewsAt: null } }));
+  await act(async () => router.push('/paywall'));
+  await waitFor(() => expect(routed.getPathname()).toBe('/paywall'));
   await act(async () => entitlementStore.getState().patch({ entitlement: { status: 'expired', renewsAt: null } }));
   await waitFor(() => expect(routed.getPathname()).toBe('/paywall'));
   await userEvent.press(screen.getByRole('button', { name: 'Close' }));
