@@ -6,7 +6,7 @@ This directory owns ExcerLock's client-side Supabase identity boundary. `createA
 
 The root composition must provide `clientAuth.supabaseUrl`, `clientAuth.supabaseAnonKey`, `clientApi.apiBaseUrl`, the Google iOS client ID and redirect URI, plus real awaited functions for analytics identify/reset, subscription activate+identify/reset, PostHog distinct-ID lookup, and Adapty `setIntegrationIdentifier`. The factory has no no-op identity-vendor defaults. Root must expose `auth` through `Runtime`, call `auth.boot()` at startup, retain the returned services for app lifetime, and call `dispose()` on teardown.
 
-Every purchase and restore path must await the exact `waitForIdentityReady` function returned by this factory. A canonical UID alone is insufficient: the gate resolves only after authenticated `PUT /v1/user`, PostHog identify, Adapty activate/identify, and `posthog_distinct_id` attachment finish in order.
+Every purchase and restore path must await the exact `waitForIdentityReady` function returned by this factory. A canonical UID alone is insufficient: the gate resolves only after authenticated `PUT /v1/user`, PostHog identify, Adapty activate/identify, and `posthog_distinct_user_id` attachment finish in order.
 
 `SignInScreen` accepts an injected `signInRequired` boolean or function (sync or async, default false). Root/T06 should pass the existing PostHog flag result; this module does not create another PostHog client.
 

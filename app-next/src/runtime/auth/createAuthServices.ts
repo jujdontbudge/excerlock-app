@@ -134,7 +134,7 @@ export function createAuthServices(config: AuthServiceConfig): AuthServices {
     void userId;
     const distinctId = getPosthogDistinctId();
     if (!distinctId) throw new Error('PostHog distinct ID unavailable; identity spine remains unready');
-    await setIntegrationIdentifier('posthog_distinct_id', distinctId);
+    await setIntegrationIdentifier('posthog_distinct_user_id', distinctId);
   };
 
   const coordinator = new IdentityCoordinator({
