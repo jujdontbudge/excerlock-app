@@ -1,5 +1,18 @@
 # Agent releases and housekeeping
 
+## Canonical branch and application
+
+`main` is the authoritative integration and release source. The primary checkout
+is `/Users/johansardar/ExcerLock`; the shipping iOS application is `app-next/`.
+Do not package the legacy `app/` tree. Integrate completed task branches into
+`main` and record the exact source commit for every App Store build and OTA update.
+The Expo `production` channel is independent of the Git branch name.
+
+Push-to-main CI runs verification and service readiness probes only. It does not
+publish an OTA, upload/submit a binary, or deploy the server. The active scope
+continues to exclude App Review submission, public release, and production OTA
+publication. See [ADR 0025](../adr/0025-main-is-the-release-source.md).
+
 ## Release coordination
 
 Run the **whole** release sequence under one app lock:

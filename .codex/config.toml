@@ -1,0 +1,128 @@
+# ExcerLock: minimal context; shared user configuration remains intact.
+[features]
+plugins = true
+apps = true
+skill_search = true
+
+[skills]
+
+[mcp_servers."openaiDeveloperDocs"]
+enabled = true
+
+[mcp_servers."node_repl"]
+enabled = true
+
+[mcp_servers."mac-computer-use"]
+enabled = true
+
+[mcp_servers."open-computer-use"]
+enabled = true
+
+[mcp_servers."computer-use"]
+enabled = true
+
+[mcp_servers."expo"]
+enabled = false
+
+[mcp_servers."xcodebuildmcp"]
+enabled = true
+
+[mcp_servers."screensdesign"]
+enabled = true
+
+[mcp_servers."playwright-headless"]
+enabled = true
+
+[mcp_servers."playwright-youtube"]
+enabled = true
+
+[mcp_servers."figma"]
+enabled = true
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/audit-clerk-skill"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/audit-expo-skill"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-android"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-astro-patterns"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-backend-api"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-billing"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-chrome-extension-patterns"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-cli"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-custom-ui"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-expo"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-nextjs-patterns"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-nuxt-patterns"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-orgs"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-react-patterns"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-react-router-patterns"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-setup"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-swift"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-tanstack-patterns"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-testing"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-vue-patterns"
+enabled = false
+
+[[skills.config]]
+path = "/Users/johansardar/.agents/skills/clerk-webhooks"
+enabled = false

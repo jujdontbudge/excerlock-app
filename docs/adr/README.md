@@ -2,8 +2,14 @@
 
 ## Index
 
+- [0025: Main is the release source](0025-main-is-the-release-source.md) — **accepted**.
+
+- [0008: Share installed agent capability inventory](0008-share-installed-agent-capability-inventory.md) — **accepted**.
+
+- [0007: Restore kept capabilities across coding agents](0007-restore-kept-agent-capabilities.md) — **accepted**.
+
 - [0001: Coordinate releases and retire agent work conservatively](0001-coordinate-releases-and-retire-agent-work.md) — **accepted**.
-- [0002: Minimal default agent context](0002-minimal-agent-context.md) — **accepted**, scoped to lean Codex/Claude by 0004.
+- [0002: Minimal default agent context](0002-minimal-agent-context.md) — **superseded** by 0007.
 - [0003: Four explicit on-demand skills](0003-four-on-demand-skills.md) — **superseded** by 0004.
 - [0004: Share core skills across agent CLIs](0004-share-core-skills-across-agent-clis.md) — **accepted**.
 - [0005: Prefer CLIs for iOS and service operations](0005-cli-first-ios-and-service-tooling.md) — **accepted**.

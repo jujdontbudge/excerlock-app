@@ -1,7 +1,10 @@
 # ExcerLock
 
+- Canonical source: `main` in `/Users/johansardar/ExcerLock`; the shipping iOS app is `app-next/`. Integrate completed task work into `main`. See `docs/agents/operations.md` for release scope and coordination.
+
 - Product: `excerlock-app-prd.md`; domain: `CONTEXT.md`. Read only docs relevant to the task.
 - Before creating visual assets, follow `design/STYLE.md`; ask if no defined style family fits.
+- UI: read `design/UI-STYLE.md` before making or changing any screen or component and follow it. Depart from it only when Johan deliberately asks for something that contradicts it; say that you are doing so.
 - For Expo API/native/dependency/build changes, consult official docs matching the installed version. Run affected checks and fix introduced regressions.
 - Read relevant `docs/adr/` records before architectural changes. Record core decisions, rationale and project state using `docs/adr/TEMPLATE.md`; preserve superseded records.
 - Releases: follow `docs/agents/operations.md`; wrap the entire authorized merge-to-health-check sequence in `python3 scripts/agent-ops.py run -- <command>`. If busy, stop and revalidate later. The lock does not authorize release.
@@ -37,4 +40,4 @@ Pi and Hermes discover the kept skills in `.agents/skills/`: opensrc, Adapty int
 
 ## Text color
 
-- UI text must not be orange. Use neutral primary/secondary text on light surfaces and white text on orange fills; orange remains available for backgrounds, icons and non-text indicators.
+- UI text must not be orange, except the single hero metric on a screen and one emphasis word inside an onboarding headline. Use neutral primary/secondary text on light surfaces and white text on orange fills; orange remains available for backgrounds, icons and non-text indicators.
