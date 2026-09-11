@@ -104,6 +104,15 @@ while npm 11.19.0 installed the same lockfile successfully. The failure was
 reproduced locally with npm 10.9.3. CI and `packageManager` now pin npm 11.19.0;
 the dependency versions and lockfile remain unchanged.
 
+The next CI run (`34636399025`) passed installation, type checks, the legacy,
+package and server tests, and service readiness. Its shipping suite exposed one
+test-only Expo mock failure (249 suites passed): a startup test replaced all
+`expo-modules-core` exports, removing `requireNativeModule` needed by Expo's lazy
+fetch global during Node 22 teardown. The fixture now preserves the preset's
+other exports and restores its factory after each test. The exact failure was
+reproduced locally on Node 22; both existing startup tests passed after the fix.
+No application runtime behavior changed.
+
 App Review submission, public release, and production OTA publication remain
 outside the authorized scope. Merging and pushing `main` does not complete the
 deferred metadata, export-compliance, or device-verification work.
