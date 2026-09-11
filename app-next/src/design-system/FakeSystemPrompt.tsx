@@ -52,7 +52,7 @@ export function FakeSystemPrompt({
         <View
           style={{
             borderTopWidth: t.stroke.hairline,
-            borderColor: t.border.default,
+            borderColor: t.border.divider,
           }}>
           {[false, true].map((granted) => (
             <PressableScale
@@ -64,7 +64,7 @@ export function FakeSystemPrompt({
                 minHeight: t.layout.touch,
                 alignItems: 'center',
                 borderTopWidth: granted ? t.stroke.hairline : 0,
-                borderColor: t.border.default,
+                borderColor: t.border.divider,
               }}>
               <Label variant="label" style={{ color: t.text.primary }}>
                 {granted ? controls.allow : controls.deny}

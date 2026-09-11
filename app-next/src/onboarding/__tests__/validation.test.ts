@@ -7,7 +7,6 @@ test('pre-branch forms require their answer while numeric scrolling starts with 
   for (const [step, key, value] of [
     ['O05', 'referralSource', 'friend'],
     ['O06', 'ageBand', '25–34'],
-    ['O07', 'occupation', 'Remote worker'],
     ['O08', 'improveFirst', 'exercise'],
     ['O09', 'mainReason', 'focus'],
     ['O20', 'activity', 'walking'],

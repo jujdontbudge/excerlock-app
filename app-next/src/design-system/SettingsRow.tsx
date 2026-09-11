@@ -69,7 +69,7 @@ export function SettingsRow({
             feedback();
             onToggle(v);
           }}
-          trackColor={{ true: t.brand.primary, false: t.border.default }}
+          trackColor={{ true: t.brand.primary, false: t.border.divider }}
         />
       ) : onPress ? (
         <Icon name="chevron" variant="utility" size={t.space.lg} tint={iconTint ?? t.text.muted} />

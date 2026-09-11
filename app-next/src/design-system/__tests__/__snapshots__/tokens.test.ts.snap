@@ -7,7 +7,9 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
     "textScale": 1.6,
   },
   "border": {
-    "default": "#E5E5EA",
+    "default": "#1D1D22",
+    "divider": "#E5E5EA",
+    "outline": "#1D1D22",
     "selected": "#C94710",
   },
   "brand": {
@@ -173,7 +175,8 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
   },
   "surface": {
     "canvas": "#FFFFFF",
-    "card": "#FFFFFF",
+    "card": "rgba(255,255,255,0.62)",
+    "glass": "rgba(255,255,255,0.62)",
     "orangeGradient": [
       "#F6B583",
       "#FBE2CF",
@@ -181,6 +184,7 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
     ],
     "scrim": "rgba(29,29,34,0.32)",
     "selected": "#FFF1E8",
+    "solid": "#FFFFFF",
     "subtle": "#F7F7F8",
     "topTint": "#FFF0E5",
     "topTintMid": "#FFF8F3",

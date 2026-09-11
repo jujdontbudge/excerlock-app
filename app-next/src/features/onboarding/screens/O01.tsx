@@ -10,7 +10,8 @@ export function O01() {
   return (
     <View style={{ flexGrow: 1, paddingTop: w.headingTop }}>
       <Heading title={onboardingCopy.O01.title.replace('. ', '.\n')} centered variant="hero" />
-      <View style={{ marginTop: w.headingGap }}>
+      {/* Artwork centres in the space under the heading; caption and dots ride just above the button. */}
+      <View style={{ flex: 1, justifyContent: 'center', paddingTop: w.headingGap }}>
         <WelcomeArtwork />
       </View>
       <Reveal index={3} style={{ marginTop: w.captionGap }}>
@@ -27,7 +28,7 @@ export function O01() {
                 width: t.layout.dot,
                 height: t.layout.dot,
                 borderRadius: t.radius.pill,
-                backgroundColor: i === 0 ? t.brand.primary : t.border.default,
+                backgroundColor: i === 0 ? t.brand.primary : t.border.divider,
               }}
             />
           ))}

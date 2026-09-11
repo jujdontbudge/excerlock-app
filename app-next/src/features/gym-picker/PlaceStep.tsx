@@ -26,13 +26,12 @@ export function PlaceStep({ picker: p }: { picker: PickerState }) {
           minHeight: t.layout.field,
           borderRadius: t.radius.field,
           backgroundColor: t.surface.card,
-          borderWidth: t.stroke.selected,
-          borderColor: t.brand.primary,
+          borderWidth: t.stroke.hairline,
+          borderColor: t.border.outline,
           paddingHorizontal: t.space.lg,
           flexDirection: 'row',
           alignItems: 'center',
           gap: t.space.md,
-          boxShadow: t.shadow.cta,
         }}>
         <Icon name="search" variant="utility" size={t.layout.glyph} tint={t.brand.primary} />
         <Label tone="secondary">{c.search}</Label>

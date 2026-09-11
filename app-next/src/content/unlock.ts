@@ -19,8 +19,8 @@ export const unlockCopy = {
   gym: {
     inside: 'Location detected at the gym',
     insideBody: (name: string) => `You're at ${name}.`,
-    outside: 'Not at the gym yet',
-    outsideBody: (distance: string, name: string) => `You're ${distance} from ${name}.`,
+    outside: 'Location not at gym. Go to a selected gym to unlock.',
+    checking: 'Checking your location…',
     confirming: "Confirming you're here",
     confirmingBody: 'Stay put for a moment.',
     unlock: 'Unlock',

@@ -13,7 +13,6 @@ const answers = {
   name: 'Alex',
   referralSource: 'friend',
   ageBand: '25–34',
-  occupation: 'Remote worker',
   improveFirst: 'exercise',
   mainReason: 'focus',
   estimatedDailyMinutes: 180,
@@ -44,22 +43,19 @@ test.each(preBranch)('%s renders, advances, and returns through the actual route
   await userEvent.press(screen.getByRole('button', { name: 'Back' }));
   expect(routed.getPathname()).toBe('/onboarding/' + step);
 });
-test.each(['O04', 'O05', 'O06', 'O07', 'O08', 'O09', 'O20'])(
-  '%s blocks continuation without an answer',
-  async (step) => {
-    onboardingStore.getState().reset();
-    const routed = renderRouter(routes, { initialUrl: `/onboarding/${step}` });
-    await routed;
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-  },
-);
+test.each(['O04', 'O05', 'O06', 'O08', 'O09', 'O20'])('%s blocks continuation without an answer', async (step) => {
+  onboardingStore.getState().reset();
+  const routed = renderRouter(routes, { initialUrl: `/onboarding/${step}` });
+  await routed;
+  expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+});
 test('rehydration and remount resume the persisted step and answer', async () => {
   await hydrateStores();
-  onboardingStore.getState().patch({ step: 'O07', answers });
+  onboardingStore.getState().patch({ step: 'O06', answers });
   entitlementStore.getState().reset();
   await onboardingStore.persist.rehydrate();
   const routed = renderRouter(routes, { initialUrl: '/' });
   await routed;
-  expect(routed.getPathname()).toBe('/onboarding/O07');
-  expect(screen.getByRole('radio', { name: 'Remote worker' })).toBeChecked();
+  expect(routed.getPathname()).toBe('/onboarding/O06');
+  expect(screen.getByRole('radio', { name: '25–34' })).toBeChecked();
 });

@@ -58,8 +58,8 @@ export function RuleCard({
         <Animated.View
           style={[
             {
-              backgroundColor: t.surface.card,
-              borderColor: t.border.default,
+              backgroundColor: t.surface.solid,
+              borderColor: t.border.outline,
               borderWidth: t.stroke.hairline,
               borderRadius: t.radius.card,
               padding: t.space.lg,
@@ -100,7 +100,7 @@ export function RuleCard({
               feedback();
               onToggle(v);
             }}
-            trackColor={{ true: t.brand.primary, false: t.border.default }}
+            trackColor={{ true: t.brand.primary, false: t.border.divider }}
           />
           </View>
           <View style={{ flexDirection: 'row', gap: t.space.sm }}>

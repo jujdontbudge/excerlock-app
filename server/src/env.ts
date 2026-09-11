@@ -3,6 +3,8 @@ import { z } from "zod";
 
 const DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com";
 const DEFAULT_POSTHOG_API_HOST = "https://us.posthog.com";
+const DEFAULT_SUPPORT_NOTIFY_EMAIL = "johansardar77@gmail.com";
+const DEFAULT_SUPPORT_FROM_EMAIL = "ExcerLock <onboarding@resend.dev>";
 
 function blankToUndefined(value: unknown): unknown {
   if (typeof value !== "string") {
@@ -44,6 +46,15 @@ const envSchema = z.object({
   POLAR_CLIENT_ID: optionalString,
   POLAR_CLIENT_SECRET: optionalString,
   POLAR_WEBHOOK_SIGNATURE_SECRET: optionalString,
+  RESEND_API_KEY: optionalString,
+  SUPPORT_NOTIFY_EMAIL: z.preprocess(
+    blankToUndefined,
+    z.string().default(DEFAULT_SUPPORT_NOTIFY_EMAIL),
+  ),
+  SUPPORT_FROM_EMAIL: z.preprocess(
+    blankToUndefined,
+    z.string().default(DEFAULT_SUPPORT_FROM_EMAIL),
+  ),
   POSTHOG_HOST: z.preprocess(
     blankToUndefined,
     z.string().url().default(DEFAULT_POSTHOG_HOST).catch(DEFAULT_POSTHOG_HOST),
@@ -86,6 +97,9 @@ export interface Environment {
   polarClientId: string | undefined;
   polarClientSecret: string | undefined;
   polarWebhookSignatureSecret: string | undefined;
+  resendApiKey: string | undefined;
+  supportNotifyEmail: string;
+  supportFromEmail: string;
 }
 
 export function parseEnv(
@@ -121,5 +135,8 @@ export function parseEnv(
     polarClientId: parsed.POLAR_CLIENT_ID,
     polarClientSecret: parsed.POLAR_CLIENT_SECRET,
     polarWebhookSignatureSecret: parsed.POLAR_WEBHOOK_SIGNATURE_SECRET,
+    resendApiKey: parsed.RESEND_API_KEY,
+    supportNotifyEmail: parsed.SUPPORT_NOTIFY_EMAIL,
+    supportFromEmail: parsed.SUPPORT_FROM_EMAIL,
   };
 }

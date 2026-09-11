@@ -106,8 +106,8 @@ export function HomeScreen() {
     return (
       <View key={rule.id} testID={`home-condition-${rule.id}`} style={{
         backgroundColor: t.surface.card, borderRadius: t.radius.card,
+        borderWidth: t.stroke.hairline, borderColor: t.border.outline,
         padding: t.space.lg, gap: t.space.md,
-        boxShadow: '0px 6px 20px rgba(100, 55, 25, 0.08)',
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
           <Icon name={model.icon} variant="utility" size={32} tint={t.brand.primary} />
@@ -182,7 +182,8 @@ export function HomeScreen() {
           style={{
             backgroundColor: t.surface.card,
             borderRadius: t.radius.pill,
-            boxShadow: '0px 6px 20px rgba(100, 55, 25, 0.10)',
+            borderWidth: t.stroke.hairline,
+            borderColor: t.border.outline,
           }}>
           <SettingsRow title={c.lockedApps} icon="lock" iconTint={t.brand.primary} onPress={chooseApps} />
         </View>
@@ -192,7 +193,8 @@ export function HomeScreen() {
           style={{
             backgroundColor: t.surface.card,
             borderRadius: t.radius.pill,
-            boxShadow: '0px 6px 20px rgba(100, 55, 25, 0.10)',
+            borderWidth: t.stroke.hairline,
+            borderColor: t.border.outline,
           }}>
           <SettingsRow
             title={c.analytics}
@@ -205,7 +207,8 @@ export function HomeScreen() {
           style={{
             backgroundColor: t.surface.card,
             borderRadius: t.radius.pill,
-            boxShadow: '0px 6px 20px rgba(100, 55, 25, 0.10)',
+            borderWidth: t.stroke.hairline,
+            borderColor: t.border.outline,
           }}>
           <SettingsRow title={c.history} icon="clock" iconTint={t.brand.primary} />
         </View>

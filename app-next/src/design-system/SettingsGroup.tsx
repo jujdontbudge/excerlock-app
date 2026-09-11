@@ -13,7 +13,9 @@ export function SettingsGroup({ title, children }: PropsWithChildren<{ title?: s
       ) : null}
       <View
         style={{
-          backgroundColor: t.surface.subtle,
+          backgroundColor: t.surface.card,
+          borderWidth: t.stroke.hairline,
+          borderColor: t.border.outline,
           borderRadius: t.radius.card,
           overflow: 'hidden',
         }}>
@@ -22,7 +24,7 @@ export function SettingsGroup({ title, children }: PropsWithChildren<{ title?: s
             <View
               style={{
                 borderTopWidth: index ? t.stroke.hairline : 0,
-                borderColor: t.border.default,
+                borderColor: t.border.divider,
               }}>
               {child}
             </View>

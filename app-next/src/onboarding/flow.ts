@@ -6,7 +6,6 @@ export const preBranch = [
   'O04',
   'O05',
   'O06',
-  'O07',
   'O08',
   'O09',
   'O10',

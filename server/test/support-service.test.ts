@@ -180,6 +180,77 @@ describe("support submission service", () => {
     ).rejects.toThrow("database unavailable");
     expect(supportRequestSubmitted).not.toHaveBeenCalled();
   });
+
+  it("invokes notify once after persist and analytics", async () => {
+    const order: string[] = [];
+    const repository: SupportSubmissionRepository = {
+      async userExists() {
+        return true;
+      },
+      async insertSupportSubmission() {
+        order.push("insert");
+      },
+    };
+    const supportRequestSubmitted = vi.fn(() => {
+      order.push("analytics");
+    });
+    const notify = vi.fn(async () => {
+      order.push("notify");
+      return true;
+    });
+    const createdAt = new Date("2026-07-29T21:00:00.000Z");
+    const service = createSupportSubmissionService({
+      repository,
+      analytics: { supportRequestSubmitted },
+      notify,
+      now: () => createdAt,
+      randomId: () => "support-request-id",
+    });
+
+    await expect(
+      service.submit("user_123", {
+        category: "support",
+        message: "My workout did not unlock my apps.",
+      }),
+    ).resolves.toEqual({
+      submissionId: "support-request-id",
+    });
+    expect(order).toEqual(["insert", "analytics", "notify"]);
+    expect(notify).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledWith({
+      id: "support-request-id",
+      userId: "user_123",
+      category: "support",
+      title: null,
+      message: "My workout did not unlock my apps.",
+      createdAt,
+      featureRequest: null,
+    });
+  });
+
+  it("still resolves the submission when notify rejects", async () => {
+    const repository = new MemorySupportSubmissionRepository();
+    const notify = vi.fn(async () => {
+      throw new Error("resend unavailable");
+    });
+    const service = createSupportSubmissionService({
+      repository,
+      analytics: { supportRequestSubmitted: vi.fn() },
+      notify,
+      randomId: () => "support-request-id",
+    });
+
+    await expect(
+      service.submit("user_123", {
+        category: "bug",
+        message: "Permission status is wrong.",
+      }),
+    ).resolves.toEqual({
+      submissionId: "support-request-id",
+    });
+    expect(repository.submissions).toHaveLength(1);
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("feature request service", () => {

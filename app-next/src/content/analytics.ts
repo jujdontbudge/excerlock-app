@@ -1,10 +1,20 @@
 import { Activity } from '../domain/types';
+const date = (day: string, options: Intl.DateTimeFormatOptions) =>
+  new Date(day + 'T12:00:00Z').toLocaleDateString('en-US', { timeZone: 'UTC', ...options });
 export const analyticsCopy = {
   title: 'Analytics',
-  periods: ['Week', 'Month', 'Year'],
+  periods: ['Day', 'Week', 'All time'],
+  periodIds: { Day: 'Day', Week: 'Week', 'All time': 'All' } as const,
   previous: 'Previous period',
   next: 'Next period',
-  reclaimed: 'minutes reclaimed',
+  replaced: 'Screen time replaced',
+  replacedSupport: (baselineMinutes: number, period: string) =>
+    period === 'Day'
+      ? `Against your ${Math.round(baselineMinutes / 60)}h starting estimate`
+      : 'Against your starting screen time',
+  chart: 'Screen time replaced chart',
+  chartAverage: (n: number) => `${Math.round(n)}m a day on average`,
+  weekDots: 'Days met this week',
   measured: (n: number, m: number) => `Measured on ${n} of ${m} days`,
   delta: (n: number) => `${n >= 0 ? '+' : ''}${Math.round(n)} min vs previous period`,
   noComparison: 'No previous measurement to compare',
@@ -15,30 +25,39 @@ export const analyticsCopy = {
   exercise: 'Your movement',
   activities: { walking: 'Walking', gym: 'Gym', running: 'Running', biking: 'Biking' },
   activityUnit: (a: Activity) => (a === 'walking' ? 'steps' : 'minutes'),
-  daysMet: 'Days met',
+  tiles: {
+    gymMinutes: 'At the gym',
+    gymArrival: 'Gym arrivals',
+    steps: 'Steps',
+    walking: 'Walking',
+    running: 'Running',
+    biking: 'Biking',
+    streak: 'Streak',
+  },
+  arrivals: (n: number) => (n === 1 ? '1 check-in' : `${n} check-ins`),
+  best: (n: number) => `Best ${n} ${n === 1 ? 'day' : 'days'}`,
+  daysMet: (met: number, scheduled: number) => `${met} of ${scheduled} scheduled days met`,
   scheduled: (n: number) => `${n} scheduled`,
   current: 'Current streak',
   longest: 'Longest streak',
   days: 'days',
+  dayUnit: (n: number) => (n === 1 ? 'day' : 'days'),
   recap: 'Your weekly recap',
   total: 'Total movement',
+  earned: 'How you earned time',
   noData: 'No measurement yet',
-  noDataBody: 'Your time reclaimed will appear when locked-app usage is available.',
+  noDataBody: 'Your screen time replaced will appear when locked-app usage is available.',
   dayZero: 'Your first week starts today',
   dayZeroBody: 'Every bit of movement is a start. Your progress will grow here.',
   noRules: 'Make room for movement',
   noRulesBody: 'Add a condition to start tracking your progress.',
-  thisPeriod: (p: string) => `This ${p.toLowerCase()}`,
+  thisPeriod: (p: string) => (p === 'Day' ? 'Today' : p === 'Week' ? 'This week' : 'All time'),
   range: (start: string, end: string) =>
-    `${new Date(start + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} – ${new Date(end + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}`,
+    start === end
+      ? date(start, { weekday: 'short', month: 'short', day: 'numeric' })
+      : `${date(start, { month: 'short', day: 'numeric' })} – ${date(end, { month: 'short', day: 'numeric', year: 'numeric' })}`,
+  since: (start: string) => `Since ${date(start, { month: 'short', day: 'numeric', year: 'numeric' })}`,
   point: (day: string, period: string) =>
-    new Date(day + 'T12:00:00Z').toLocaleDateString('en-US', {
-      timeZone: 'UTC',
-      ...(period === 'Week'
-        ? { weekday: 'short' }
-        : period === 'Year'
-          ? { month: 'short' }
-          : { month: 'short', day: 'numeric' }),
-    }),
+    period === 'All' ? date(day, { month: 'short', day: 'numeric' }) : date(day, { weekday: 'short' }),
   noMeasurement: 'No measurement',
 } as const;

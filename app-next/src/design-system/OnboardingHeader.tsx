@@ -84,7 +84,7 @@ export function OnboardingHeader({
             fill,
           ]}
         />
-      </View> : null}
+      </View> : <View style={{ flex: 1 }} />}
       {onClose ? <CloseButton onPress={onClose} /> : null}
     </View>
   );

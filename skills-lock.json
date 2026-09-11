@@ -12,6 +12,12 @@
       "sourceType": "github",
       "skillPath": "skills/ads-manager/SKILL.md",
       "computedHash": "0a5c51e9b44223f003773045983bb74853169fb7e03de772c895a37cc6a1e9b8"
+    },
+    "screensdesign-data": {
+      "source": "screensdesign-com/screensdesign-agent-skill",
+      "sourceType": "github",
+      "skillPath": "screensdesign-data/SKILL.md",
+      "computedHash": "3c7b6ae555542ff57548269b9d9bb50f0928b1a180da2e3eb88b158f857cf221"
     }
   }
 }

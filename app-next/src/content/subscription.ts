@@ -44,4 +44,10 @@ export const subscriptionCopy = {
   devNote: 'Paywall stand-in. Prices and the 7-day trial are placeholders. No purchase occurs.',
   restoreOutcome: 'Restore result',
   restoreOutcomes: ['restored', 'notFound'],
+  manage: 'Manage in App Store',
+  manageFallback:
+    "Change or cancel in Settings → Apple Account → Subscriptions. TestFlight sandbox subscriptions aren't listed there and end on their own.",
+  billingSupport: 'Billing is handled by the App Store.',
 } as const;
+
+export const appStoreSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';

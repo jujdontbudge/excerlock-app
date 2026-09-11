@@ -1,12 +1,14 @@
 import { Children, PropsWithChildren } from 'react';
-import { View, StyleSheet, useWindowDimensions } from 'react-native';
+import { Switch, View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Icon, IconName } from '../icons/Icon';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { tokens as t } from './tokens';
+import { feedback } from '../motion/haptics';
 
 /** Opt-in reference-sized groups; existing sheets keep their geometry. */
-export function CompactGroup({ title, children }: PropsWithChildren<{ title?: string }>) {
+/** `outline` swaps the grey hairline for the black analytics outline on a translucent card. */
+export function CompactGroup({ title, outline = false, children }: PropsWithChildren<{ title?: string; outline?: boolean }>) {
   return (
     <View style={{ gap: 8 }}>
       {title ? (
@@ -14,7 +16,7 @@ export function CompactGroup({ title, children }: PropsWithChildren<{ title?: st
           {title}
         </Label>
       ) : null}
-      <View style={s.group}>
+      <View style={[s.group, outline && { borderColor: t.border.outline, backgroundColor: t.surface.glass }]}>
         {Children.toArray(children).map((child, i) => (
           <View key={i}>
             {i ? <View style={s.divider} /> : null}
@@ -32,6 +34,8 @@ export function CompactRow({
   icon,
   onPress,
   status,
+  toggle,
+  onToggle,
 }: {
   title: string;
   value?: string;
@@ -39,6 +43,8 @@ export function CompactRow({
   icon: IconName;
   onPress?: () => void;
   status?: boolean;
+  toggle?: boolean;
+  onToggle?: (value: boolean) => void;
 }) {
   const stacked = useWindowDimensions().fontScale > 1.2;
   const content = (
@@ -67,10 +73,23 @@ export function CompactRow({
           </Label>
         </View>
       ) : null}
-      {onPress ? <Icon name="chevron" variant="utility" size={16} tint={t.brand.primary} /> : null}
+      {onToggle ? (
+        <Switch
+          accessibilityRole="switch"
+          accessibilityLabel={title}
+          value={toggle}
+          onValueChange={(v) => {
+            feedback();
+            onToggle(v);
+          }}
+          trackColor={{ true: t.brand.primary, false: t.border.divider }}
+        />
+      ) : onPress ? (
+        <Icon name="chevron" variant="utility" size={16} tint={t.brand.primary} />
+      ) : null}
     </View>
   );
-  return onPress ? (
+  return onPress && !onToggle ? (
     <PressableScale label={[title, value].filter(Boolean).join(', ')} onPress={onPress}>
       {content}
     </PressableScale>
@@ -94,7 +113,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  divider: { height: 1, backgroundColor: t.border.default, marginLeft: 56, marginRight: 16 },
+  divider: { height: 1, backgroundColor: t.border.divider, marginLeft: 56, marginRight: 16 },
   status: { flexDirection: 'row', gap: 6, alignItems: 'center', flexShrink: 1 },
   dot: { width: 6, height: 6, borderRadius: 3 },
 });

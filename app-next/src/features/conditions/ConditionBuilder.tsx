@@ -27,13 +27,18 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
   const exit = m.reduced
     ? opacityOut(m.duration.slow)
     : (f.direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.slow);
-  if (f.step === 'GPlace') return <BuilderGymStep onSaved={f.next} onBack={f.back} />;
+  if (f.step === 'GPlace') return <BuilderGymStep onSaved={f.next} onBack={f.back} onClose={f.cancel} />;
   return (
     <SolidChoices>
     <ScreenShell
       scrollResetKey={f.step}
       header={
-        <OnboardingHeader progress={0} showProgress={false} onBack={f.step === 'O20' || f.step === 'S3' ? f.cancel : f.back} />
+        <OnboardingHeader
+          progress={0}
+          showProgress={false}
+          onBack={f.step === 'O20' || f.step === 'S3' ? f.cancel : f.back}
+          onClose={f.cancel}
+        />
       }
       footer={<PrimaryButton label={f.step === 'S3' ? c.save : c.continue} disabled={!f.valid} onPress={f.next} />}
       overlay={

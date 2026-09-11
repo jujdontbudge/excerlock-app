@@ -70,7 +70,14 @@ export function PickerMap({
   };
   return (
     <View
-      style={{ height, borderRadius: t.radius.sheet, overflow: 'hidden', backgroundColor: t.surface.subtle }}
+      style={{
+        height,
+        borderRadius: t.radius.sheet,
+        overflow: 'hidden',
+        backgroundColor: t.surface.subtle,
+        borderWidth: t.stroke.hairline,
+        borderColor: t.border.outline,
+      }}
       onLayout={(e) => {
         const next = e.nativeEvent.layout;
         if (next.width === size.width && next.height === size.height) return;
@@ -131,7 +138,7 @@ export function PickerMap({
                 borderRadius: t.radius.pill,
                 backgroundColor: t.brand.primary,
                 borderWidth: g.pin.border,
-                borderColor: t.surface.card,
+                borderColor: t.surface.solid,
                 boxShadow: t.shadow.cta,
               },
               pinStyle,
@@ -144,8 +151,9 @@ export function PickerMap({
               paddingHorizontal: t.space.md,
               paddingVertical: t.space.xs,
               borderRadius: t.radius.pill,
-              backgroundColor: t.surface.card,
-              boxShadow: t.shadow.cta,
+              backgroundColor: t.surface.solid,
+              borderWidth: t.stroke.hairline,
+              borderColor: t.border.outline,
             }}>
             <Label numberOfLines={1} variant="support">
               {name || c.newName}
@@ -158,10 +166,12 @@ export function PickerMap({
               position: 'absolute',
               bottom: t.space.lg,
               alignSelf: 'center',
-              backgroundColor: t.surface.card,
+              backgroundColor: t.surface.solid,
               paddingHorizontal: t.space.md,
               paddingVertical: t.space.sm,
               borderRadius: t.radius.pill,
+              borderWidth: t.stroke.hairline,
+              borderColor: t.border.outline,
             }}>
             <Label variant="support">{c.hint}</Label>
           </View>

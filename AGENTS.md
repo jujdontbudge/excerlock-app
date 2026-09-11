@@ -2,11 +2,10 @@
 
 - Product: `excerlock-app-prd.md`; domain: `CONTEXT.md`. Read only docs relevant to the task.
 - Before creating visual assets, follow `design/STYLE.md`; ask if no defined style family fits.
+- UI: read `design/UI-STYLE.md` before making or changing any screen or component and follow it. Depart from it only when Johan deliberately asks for something that contradicts it; say that you are doing so.
 - For Expo API/native/dependency/build changes, consult official docs matching the installed version. Run affected checks and fix introduced regressions.
 - Read relevant `docs/adr/` records before architectural changes. Record core decisions, rationale and project state using `docs/adr/TEMPLATE.md`; preserve superseded records.
 - Releases: follow `docs/agents/operations.md`; wrap the entire authorized merge-to-health-check sequence in `python3 scripts/agent-ops.py run -- <command>`. If busy, stop and revalidate later. The lock does not authorize release.
-- Claim your worktree with `scripts/agent-ops.py claim`; finish only your committed completed work with the correct base ref. Follow the operations guide; never force cleanup.
-- Issues: `JohanSardar/excerlock-app` via `gh`; details in `docs/agents/issue-tracker.md`.
 - Agent context configuration and opt-in tools: `docs/agents/context.md`.
 
 - Service tooling: use `supabase`, `az` + SSH/rsync, `sentry`/`sentry-cli`, `posthog-cli`, `resend`, `eas`, `adapty`, `asc` and `gh` as appropriate. Read `docs/agents/service-cli.md` only for service/deployment tasks; discover commands with `--help`.
@@ -31,10 +30,3 @@ For known web URLs, prefer `/Users/johansardar/.local/bin/agent-web` over generi
 For iOS/Xcode/TestFlight work, read /Users/johansardar/.local/share/agent-ios/GUIDE.md on demand. Prefer installed CLIs: asc xcode/build/test/archive/export and asc TestFlight workflows, native xcodebuild, xcrun simctl/devicectl/xcresulttool, and idb. Discover actual schemes/destinations; verify builds, tests and runtime behavior. Keep simulator work headless, obey repo release locks and the Maestro ban. Keep Xcode/TestFlight skills available; no extra MCP needed.
 <!-- agent-ios:end -->
 
-<!-- excerlock-shared-skills:start -->
-Pi and Hermes discover the kept skills in `.agents/skills/`: opensrc, Adapty integration, mobile UI design, React Native, iOS pitfall logging, image generation and Xcode/TestFlight/signing/release diagnostics. Load only the relevant skill body. Image skills provide guidance, not credentials or a Codex image tool: check the current host capability and follow the skill's fallback requirements; never assume a ChatGPT subscription supplies image API access. Web extraction and service CLIs use the on-demand guides above.
-<!-- excerlock-shared-skills:end -->
-
-## Text color
-
-- UI text must not be orange. Use neutral primary/secondary text on light surfaces and white text on orange fills; orange remains available for backgrounds, icons and non-text indicators.

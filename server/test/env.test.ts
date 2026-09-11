@@ -31,6 +31,9 @@ describe("parseEnv", () => {
       polarClientId: undefined,
       polarClientSecret: undefined,
       polarWebhookSignatureSecret: undefined,
+      resendApiKey: undefined,
+      supportNotifyEmail: "johansardar77@gmail.com",
+      supportFromEmail: "ExcerLock <onboarding@resend.dev>",
     });
   });
 
@@ -50,6 +53,9 @@ describe("parseEnv", () => {
         POSTHOG_PERSONAL_API_KEY: " posthog-personal-key ",
         POSTHOG_PROJECT_ID: " 12345 ",
         POSTHOG_API_HOST: "https://eu.posthog.com",
+        RESEND_API_KEY: "   ",
+        SUPPORT_NOTIFY_EMAIL: " ops@example.com ",
+        SUPPORT_FROM_EMAIL: "",
       }),
     ).toEqual({
       nodeEnv: "test",
@@ -79,6 +85,9 @@ describe("parseEnv", () => {
       polarClientId: undefined,
       polarClientSecret: undefined,
       polarWebhookSignatureSecret: undefined,
+      resendApiKey: undefined,
+      supportNotifyEmail: "ops@example.com",
+      supportFromEmail: "ExcerLock <onboarding@resend.dev>",
     });
   });
 

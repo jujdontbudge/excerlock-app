@@ -4,7 +4,7 @@ import { O20 } from '../screens/O20';
 test('the outcome chart explains the trend without a visible forecast caption', async () => {
   await render(<O15 />);
   expect(screen.getByRole('header', { name: 'This is good.' })).toBeTruthy();
-  expect(screen.getByText('We’ll use your screen time habits to help you exercise more.')).toBeTruthy();
+  expect(screen.getByText('We’ll use your habit to fuel exercise instead.')).toBeTruthy();
   expect(screen.getByText('Now')).toBeTruthy();
   expect(screen.getByText('Future')).toBeTruthy();
   expect(screen.queryByText('Illustrative, not a forecast')).toBeNull();

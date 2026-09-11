@@ -50,7 +50,7 @@ function Row({
         gap: t.space.lg,
         paddingVertical: t.space.lg,
         borderBottomWidth: t.stroke.hairline,
-        borderBottomColor: t.border.default,
+        borderBottomColor: t.border.divider,
       }}>
       {showLocationIcon ? (
         <View style={{ backgroundColor: t.surface.selected, borderRadius: t.radius.field, padding: t.space.md }}>

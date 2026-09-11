@@ -25,7 +25,8 @@ test('gym confirmation takes 30 seconds and loss of presence resets it', async (
   await act(() => jest.advanceTimersByTime(15000));
   expect(screen.queryByRole('button', { name: 'Done' })).toBeNull();
   await act(() => runtime.dev.setPresence('outside'));
-  expect(screen.queryByRole('button', { name: 'Unlock' })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Unlock' })).toBeTruthy();
+  expect(screen.getByRole('alert')).toHaveTextContent('Location not at gym. Go to a selected gym to unlock.');
   expect(screen.getByLabelText('Presence check').props.accessibilityValue.now).toBe(0);
   runtime.dispose();
 });
@@ -53,4 +54,22 @@ test('arrival credit is booked only after the full presence confirmation', async
   expect(ruleDaysStore.getState().data.days.some((d) => d.met)).toBe(true);
   expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
   await act(() => runtime.dispose());
+});
+test('outside the gym, Unlock re-checks location instead of starting a check-in', async () => {
+  const runtime = await mount();
+  await act(() => runtime.dev.setPresence('outside'));
+  const checkIn = jest.spyOn(runtime.gym, 'checkIn'),
+    locate = jest.spyOn(runtime.gym, 'currentLocation');
+  expect(screen.queryByRole('header', { name: 'Not at the gym yet' })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'Unlock' }));
+  await act(async () => {
+    await Promise.resolve();
+  });
+  expect(locate).toHaveBeenCalledWith(true);
+  expect(checkIn).not.toHaveBeenCalled();
+  expect(screen.getByRole('alert')).toHaveTextContent('Location not at gym. Go to a selected gym to unlock.');
+  await act(() => runtime.dev.setPresence('inside'));
+  await fireEvent.press(screen.getByRole('button', { name: 'Unlock' }));
+  expect(checkIn).toHaveBeenCalled();
+  runtime.dispose();
 });

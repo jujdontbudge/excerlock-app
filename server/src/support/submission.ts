@@ -31,6 +31,7 @@ export interface SupportSubmissionAnalytics {
 export interface SupportSubmissionServiceOptions {
   repository: SupportSubmissionRepository;
   analytics: SupportSubmissionAnalytics;
+  notify?: (record: NewSupportSubmissionRecord) => Promise<boolean>;
   now?: () => Date;
   randomId?: () => string;
 }
@@ -77,6 +78,7 @@ export function createSupportSubmissionService(
 
       await options.repository.insertSupportSubmission(submission);
       options.analytics.supportRequestSubmitted(userId, input.category);
+      void options.notify?.(submission).catch(() => {});
 
       return featureRequest
         ? { submissionId, featureRequestId: featureRequest.id }

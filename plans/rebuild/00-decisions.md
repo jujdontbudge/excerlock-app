@@ -100,3 +100,36 @@ integrations · swimming/calorie/active-minute conditions · in-app GPS run trac
 Activities · Siri/App Intents · iPad · Android · localization (English only) · the old Pillow, blue-violet and
 orange-gradient visual systems · the old "Manage"/"Analysis" tab names · the old 98-state prototype matrix ·
 the old dashboard build spec.
+
+## G. Ship amendments (Johan, 2026-09-09; interview record in `../ship/00-grill.md`)
+
+Entries below supersede earlier entries **by number**. Superseded text above is preserved unchanged, per the
+ADR rule. Where an entry is silent, the earlier decision stands.
+
+| # | Decision | Supersedes |
+| --- | --- | --- |
+| B38 | **Activities are Walking and Gym.** Running and biking are removed from the product surface — types, copy, screens, tests. The HealthKit entitlement, usage strings, pod and background-delivery bridge stay compiled into the binary so run/bike can return as an OTA update. | B10, B11 (run/bike) |
+| B39 | **Rule kinds:** target (walking steps, walking minutes, gym minutes), event (gym arrival), state (while walking). No run/bike modes. `Activity = 'walking' \| 'gym'`. | B4 |
+| B40 | **Walking is one condition.** Treadmill walking with the phone in hand is the same accelerometer signal as outdoor walking and is never branched on. "Where do you walk?" is a multi-select (Treadmill / Outside) asked in onboarding and Settings, stored, sent to PostHog as a user property, and read by nothing else. | B11 (walking place), B27, B28 |
+| B41 | **There is no lease.** Detection is live: walking-active ends when motion says walking stopped (after the single stop-grace setting); propped ends when the phone moves; gym ends on geofence exit. Underneath all three sits one OS-scheduled fail-closed re-lock the app pushes forward while alive (the watchdog), never user-facing. Spec: `../ship/01-detection-model.md`. | B3 (lease part), B29, `docs/specs/treadmill-mode.md` lease timings |
+| B42 | **The app stays awake with an always-on, coarsest-accuracy location session** so walking is detected in the background within seconds. "Always" location is requested from every user at setup with honest copy; it is the price of background unlocking and is accepted. | P2-T05 "only auto-detect requests Always" |
+| B43 | **Propped mode** (phone on the console) is entered from the in-app button, verified by a foreground camera scan, and exits on pickup (micro-tremor + gravity-vector change, ~1 s) into walking-active, or on put-down into a 60 s re-scan window. No 15-minute lease. The residual "stand beside the treadmill using the propped phone untouched" case is accepted. | treadmill-mode.md `PROPPED` lease |
+| B44 | **The in-app "check walking" button is a manual fallback only.** It observes for 3 seconds; walking during those 3 seconds turns the state on. No percentage, no progress bar, no popup — the orange button itself reads "Detected". Detection UI may never show an indefinite spinner; after 3 s it resolves to on or to a named cause. | Home/Conditions "Detecting walking…" UI |
+| B45 | **Tapping any lock-list row presents Apple's `FamilyActivityPicker` directly.** No intermediate screen, no "N apps · M categories" anywhere. The one emptiness signal is the Home lock card's "No apps selected" state. The Home History row is deleted; the Home Analytics row stays as a shortcut. | X2 count, C-tab count, Home row |
+| B46 | **The paywall is a custom in-app screen.** Adapty supplies products, prices and entitlements (`getPaywall` + `getPaywallProducts`, rendered from the remote catalog, never hardcoded) and processes purchases and restores. Adapty's Paywall Builder is not used. Paywall layout/copy variants are chosen by a PostHog feature flag and ship OTA. Price, trial-length and plan-mix tests are **deferred**; when run, they run in Adapty A/B, never in PostHog. | C6 |
+| B47 | **Sign-in is optional at launch and can be made mandatory over-the-air** by a PostHog flag. Apple, Google and email OTP all fully work in binary #1 (Sign in with Apple entitlement added). In-app account deletion is built. Tokens in `expo-secure-store`. | B18 (mechanism) |
+| B48 | **One identity spine.** Supabase user id (anonymous from first launch) = VPS `users.id` = Adapty `customer_user_id` = PostHog `distinct_id`. Before every purchase call the PostHog distinct id is attached to the Adapty profile (`setIntegrationIdentifier`). Sign-in links, never replaces. Experiments bucket on the stable device id. Spec: `../ship/04-identity-and-money.md`. | — (new; previously unwired) |
+| B49 | **OTA:** explicit manual `runtimeVersion: "1"`, decoupled from app version and bumped by hand only when native code changes; channels `production` and `preview`; `checkAutomatically: ON_LOAD` with a bounded first-session gate and embedded-bundle fallback; exactly one update coordinator, never gated on state behind the paywall; no reload while a purchase, permission prompt, camera scan or walking session is in flight; EAS code signing on when the plan allows; a post-publish device verification ritual is a release gate. Spec: `../ship/03-ota-and-release.md`. | `app/` `appVersion` policy; `app-next` `enabled:false` |
+| B50 | **Binary #1 contains every native capability, exhaustively.** Family Controls + 4 extension targets (monitor, shield, shield action, report), App Groups, CoreMotion, camera/Vision, location When-In-Use + Always + background modes + geofencing, local notifications, **push entitlement (present, provisioned, no pushes sent)**, Sign in with Apple, Associated Domains, App Tracking Transparency string, HealthKit + background delivery, `expo-secure-store`, `expo-updates`, Adapty, Sentry, PostHog, photo library, App Intents target, alternate icons, `CFBundleLocalizations`, complete `PrivacyInfo.xcprivacy`, `app.config.ts`. Nothing deferred. Spec: `../ship/02-native-manifest.md`. | B14 (push entitlement stripping), `withNoPush` |
+| B51 | **Reviewer path:** App Review Information notes plus a preset condition with a trivially reachable goal so the reviewer can unlock at a desk. Not a hidden dev route, not a demo account. | — |
+| B52 | **Settings is one screen with every sub-tree reachable**; "Manage subscription" opens the native subscription sheet; "Export my data" and an analytics opt-out exist; "Touch feedback" is deleted. | B34 (confirmed), inventory |
+| B53 | **Implementer:** the Astra Codex agent, orchestrating Sol and Muse agents. Task files in `ship/` are the contract, in the `P2-T*` format. | A2 (process) |
+| B54 | **No submission date.** Risk-first sequencing; nothing cut for schedule. | — |
+
+**Prerequisites Johan owns (blocking, dashboard-only):** confirm Apple's Family Controls *distribution approval
+record* for all five bundle IDs (portal shows the capability assigned; Recovi was auto-rejected in that same
+state) · complete metadata on the six App Store subscription products the paywall renders (all 51 are
+`MISSING_METADATA`) and decide the fate of the other 45 · confirm the Paid Apps Agreement, banking and tax
+(`asc web agreements status --apple-id …`) · add `SIGN_IN_WITH_APPLE`, `PUSH_NOTIFICATIONS`,
+`ASSOCIATED_DOMAINS` capabilities to the App ID · register Team ID + bundle ID under Supabase's native apps for
+Sign in with Apple · confirm the EAS plan tier for update code signing · name the physical test iPhone.

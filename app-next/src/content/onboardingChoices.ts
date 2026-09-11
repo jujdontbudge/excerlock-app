@@ -16,18 +16,6 @@ export const choiceQuestions: { [step: string]: { key: string; options: Onboardi
     key: 'ageBand',
     options: ['Under 18', '18–24', '25–34', '35–44', '45–54', '55–64', '65+'].map((title) => ({ id: title, title })),
   },
-  O07: {
-    key: 'occupation',
-    options: [
-      'Software developer',
-      'Founder',
-      'Remote worker',
-      'Finance or accounting',
-      'Architecture',
-      'Education',
-      'Other',
-    ].map((title) => ({ id: title, title })),
-  },
   O08: {
     key: 'improveFirst',
     options: [

@@ -67,7 +67,7 @@ export function OnboardingShell({
           ) : (
             <Reveal key={['O11', 'O12', 'O13', 'O14'].includes(step) ? step : 'continue'}>
               <PrimaryButton
-                shape={['O04', 'O05', 'O06', 'O07'].includes(step) ? 'rounded' : 'pill'}
+                shape={['O04', 'O05', 'O06'].includes(step) ? 'rounded' : 'pill'}
                 label={continueLabel ?? (step === 'O01' ? c.start : c.continue)}
                 onPress={onContinue}
                 disabled={!valid}

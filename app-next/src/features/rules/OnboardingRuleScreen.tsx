@@ -5,7 +5,9 @@ import { useRuleDraftStore } from './RuleDraftStore';
 import { RuleScreen, BranchStep } from './RuleScreen';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { Activity } from '../../domain/types';
-import { draftFromAnswers } from './plan';
+import { draftFromAnswers, goalStep } from './plan';
+import { conditionSentence } from './conditionSentence';
+import { ConditionPreview } from './ConditionPreview';
 export function OnboardingRuleScreen({ step, answers, setAnswer }: AnswerProps & { step: BranchStep }) {
   const unit = useSettingsStore((s) => s.data.units),
     activity = (answers.activity ?? 'walking') as Activity;
@@ -46,5 +48,17 @@ export function OnboardingRuleScreen({ step, answers, setAnswer }: AnswerProps &
         break;
     }
   };
-  return <RuleScreen step={step} draft={draft} onAction={onAction} />;
+  return (
+    <RuleScreen
+      step={step}
+      draft={draft}
+      onAction={onAction}
+      preview={
+        <ConditionPreview
+          icon={activity}
+          sentence={conditionSentence(answers, draft, { goalChosen: step === goalStep(draft) })}
+        />
+      }
+    />
+  );
 }

@@ -6,7 +6,7 @@ import { AnswerProps } from '../types';
 import { ProfileHeading } from './ProfileHeading';
 import { ProfileChoiceRow } from './ProfileChoiceRow';
 import { ReferralIcon } from './ReferralIcon';
-export function ProfileQuestion({ step, answers, setAnswer }: AnswerProps & { step: 'O05' | 'O06' | 'O07' }) {
+export function ProfileQuestion({ step, answers, setAnswer }: AnswerProps & { step: 'O05' | 'O06' }) {
   const question = choiceQuestions[step];
   return (
     <>

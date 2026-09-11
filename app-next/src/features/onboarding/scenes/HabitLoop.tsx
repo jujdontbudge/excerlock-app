@@ -32,12 +32,22 @@ const inserted = [
 ];
 
 /** Keep semantic nodes mounted while geometry moves, then crossfade their meaning. */
-export function HabitLoop({ phase, contentPhase = phase }: { phase: number; contentPhase?: number }) {
+export function HabitLoop({
+  phase,
+  contentPhase = phase,
+  width,
+}: {
+  phase: number;
+  contentPhase?: number;
+  width?: number;
+}) {
   const m = useMotion(),
     changed = phase === 1,
     positions = changed ? expanded : original;
   return (
-    <View testID="habit-loop-canvas" style={{ width: '100%', aspectRatio: 360 / 500 }}>
+    <View
+      testID="habit-loop-canvas"
+      style={{ width: width ?? '100%', aspectRatio: 360 / 500, alignSelf: 'center' }}>
       <LoopArrows expanded={changed} />
       {habitLoopCopy[0].stages.map((_, index) => {
         const anchor = positions[index];
@@ -133,35 +143,6 @@ export function HabitLoop({ phase, contentPhase = phase }: { phase: number; cont
             </Label>
           </Animated.View>
         ))}
-      <View
-        style={{
-          position: 'absolute',
-          left: '29%',
-          top: '42%',
-          width: '42%',
-          height: 80,
-          justifyContent: 'center',
-        }}>
-        {habitLoopCopy.map((layerCopy, layerPhase) => (
-          <Animated.View
-            key={layerPhase}
-            pointerEvents="none"
-            accessibilityElementsHidden={contentPhase !== layerPhase}
-            importantForAccessibility={contentPhase === layerPhase ? 'auto' : 'no-hide-descendants'}
-            style={{
-              position: 'absolute',
-              width: '100%',
-              opacity: contentPhase === layerPhase ? 1 : 0,
-              transitionProperty: 'opacity',
-              transitionDuration: m.reduced ? 0 : m.duration.slow,
-              transitionTimingFunction: 'ease-in-out',
-            }}>
-            <Label variant="label" style={{ textAlign: 'center', color: t.text.primary }}>
-              {layerCopy.center}
-            </Label>
-          </Animated.View>
-        ))}
-      </View>
     </View>
   );
 }

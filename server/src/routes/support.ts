@@ -8,6 +8,7 @@ import {
   createFeatureRequestService,
   createFeatureRequestVoteService,
   createSupportSubmissionService,
+  sendSupportEmail,
 } from "../support/index.js";
 import type {
   FeatureRequestService,
@@ -117,6 +118,7 @@ export const supportRoutes = createSupportRoutes({
     submit(userId, input) {
       return createSupportSubmissionService({
         analytics,
+        notify: sendSupportEmail,
         repository: createDrizzleSupportSubmissionRepository(),
       }).submit(userId, input);
     },

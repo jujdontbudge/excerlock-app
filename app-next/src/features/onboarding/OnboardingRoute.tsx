@@ -16,6 +16,8 @@ import { ReviewWarmup } from '../rules/ReviewWarmup';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { planCopy as c } from '../../content/plan';
 import { useImpactPlayback } from './impact/useImpactPlayback';
+import { conditionSentence } from '../rules/conditionSentence';
+import { ConditionPreview } from '../rules/ConditionPreview';
 export function OnboardingRoute() {
   const focused = useIsFocused();
   const flow = useOnboarding(),
@@ -39,7 +41,21 @@ export function OnboardingRoute() {
   if (flow.step === 'T1' || flow.step === 'T2' || flow.step === 'T3' || flow.step === 'T4')
     body = <TrialScreen step={flow.step} onContinue={flow.advance} />;
   if (flow.step === 'S1')
-    body = <ScheduleScreen ruleDraft={draft} draft={schedule} onAction={onSchedule} onChoose={setWheel} />;
+    body = (
+      <ScheduleScreen
+        ruleDraft={draft}
+        draft={schedule}
+        onAction={onSchedule}
+        onChoose={setWheel}
+        preview={
+          <ConditionPreview
+            icon={draft.activity}
+            schedule={toSchedule(schedule)}
+            sentence={conditionSentence(flow.answers, draft, { schedule: toSchedule(schedule), goalChosen: true })}
+          />
+        }
+      />
+    );
   if (flow.step === 'S2') body = <PlanBuild rule={toRule(draft, toSchedule(schedule))} onComplete={flow.advance} />;
   if (flow.step === 'S3') body = <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} />;
   if (flow.step === 'S4') body = <ReviewWarmup onSkip={flow.advance} />;

@@ -11,12 +11,18 @@ export function SegmentedControl({
   value,
   onChange,
   prominent = false,
+  variant = prominent ? 'prominent' : 'default',
 }: {
   options: readonly string[];
   value: string;
   onChange: (value: string) => void;
   prominent?: boolean;
+  /** Every variant renders the app-wide look: black hairline track, full-height orange pill, white text on it. */
+  variant?: 'default' | 'prominent' | 'outline';
 }) {
+  void variant;
+  const pill = true,
+    outline = true;
   const [width, setWidth] = useState(0),
     x = useSharedValue(0);
   const m = useMotion();
@@ -33,8 +39,10 @@ export function SegmentedControl({
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       style={{
         flexDirection: 'row',
-        borderRadius: prominent ? t.radius.pill : t.radius.field,
-        backgroundColor: prominent ? t.surface.card : t.surface.subtle,
+        borderRadius: pill ? t.radius.pill : t.radius.field,
+        backgroundColor: outline ? t.surface.transparent : t.surface.subtle,
+        borderWidth: outline ? t.stroke.hairline : 0,
+        borderColor: t.border.outline,
       }}>
       <Animated.View
         key={m.reduced ? value : 'indicator'}
@@ -43,13 +51,13 @@ export function SegmentedControl({
         style={[
           {
             position: 'absolute',
-            top: t.space.xs,
-            bottom: t.space.xs,
+            top: outline ? 0 : t.space.xs,
+            bottom: outline ? 0 : t.space.xs,
             width: width / options.length,
-            borderRadius: prominent ? t.radius.pill : t.radius.field,
-            backgroundColor: prominent ? t.brand.primary : t.surface.selected,
+            borderRadius: pill ? t.radius.pill : t.radius.field,
+            backgroundColor: pill ? t.brand.primary : t.surface.selected,
             borderWidth: t.stroke.hairline,
-            borderColor: t.brand.light,
+            borderColor: outline ? t.brand.primary : t.brand.light,
           },
           position,
         ]}
@@ -65,11 +73,13 @@ export function SegmentedControl({
               paddingVertical: t.space.md,
               paddingHorizontal: t.space.xs,
               alignItems: 'center',
+              justifyContent: 'center',
             }}>
             <Label
-              variant="support"
+              variant={outline ? 'label' : 'support'}
               style={{
-                color: option === value ? (prominent ? t.text.onAccent : t.text.primary) : t.text.secondary,
+                color:
+                  option === value ? (pill ? t.text.onAccent : t.text.primary) : t.text.secondary,
                 textAlign: 'center',
               }}>
               {option}

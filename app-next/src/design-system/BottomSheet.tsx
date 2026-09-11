@@ -108,7 +108,7 @@ function SheetPanel({ title, onDismiss, children, footer, expanded = false }: Pr
                 width: t.layout.grabber,
                 height: t.space.xs,
                 borderRadius: t.radius.pill,
-                backgroundColor: t.border.default,
+                backgroundColor: t.border.divider,
               }}
             />
             <View

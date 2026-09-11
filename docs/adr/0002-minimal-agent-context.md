@@ -1,7 +1,7 @@
 # 0002: Minimal default agent context
 
 - Date: 2026-09-08
-- Status: Accepted for lean Codex/Claude; amended by 0003 and clarified by [0004](0004-share-core-skills-across-agent-clis.md); implemented in the main checkout
+- Status: Superseded by [0007](0007-restore-kept-agent-capabilities.md); historical rationale below.
 
 ## Context
 
