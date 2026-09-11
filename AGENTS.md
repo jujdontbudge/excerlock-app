@@ -1,6 +1,6 @@
 # ExcerLock
 
-- Canonical source: `main` in `/Users/johansardar/ExcerLock`; the shipping iOS app is `app-next/`. Integrate completed task work into `main`. See `docs/agents/operations.md` for release scope and coordination.
+- Canonical source: `main` in `JohanSardar/excerlock-app`; the shipping iOS app is `app-next/`. Local checkouts and agent worktrees may live anywhere. Integrate completed task work into `main`. See `docs/agents/operations.md` for release scope and coordination.
 
 - Product: `excerlock-app-prd.md`; domain: `CONTEXT.md`. Read only docs relevant to the task.
 - Before creating visual assets, follow `design/STYLE.md`; ask if no defined style family fits.
