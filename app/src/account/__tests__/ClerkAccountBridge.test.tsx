@@ -118,10 +118,14 @@ describe("ClerkAccountBridge", () => {
   it("publishes a restored session only after provisioning retries succeed", async () => {
     mockIsSignedIn = true;
     mockHookUser = mockUser;
+    let finishProvisioning!: (response: Response) => void;
+    const provisioning = new Promise<Response>((resolve) => {
+      finishProvisioning = resolve;
+    });
     const fetchSpy = jest
       .spyOn(globalThis, "fetch")
       .mockRejectedValueOnce(new Error("temporary network failure"))
-      .mockResolvedValue(new Response(null, { status: 204 }));
+      .mockReturnValue(provisioning);
     const account = new ClerkAccountModule();
     try {
       await render(
@@ -130,7 +134,12 @@ describe("ClerkAccountBridge", () => {
         </ClerkAccountBridge>,
       );
 
+      await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(2));
       expect((await account.getSnapshot()).session.status).toBe("signedOut");
+      await act(async () => {
+        finishProvisioning(new Response(null, { status: 204 }));
+        await provisioning;
+      });
       await waitFor(async () => {
         expect((await account.getSnapshot()).session.status).toBe("signedIn");
       });

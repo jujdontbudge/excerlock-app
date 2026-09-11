@@ -189,6 +189,7 @@ test('raw retention cannot run when calendar seal persistence fails', async () =
 });
 
 test('raw retention follows seals and runs only once for the same calendar cutoff', async () => {
+  const now = jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-10T12:00:00Z'));
   const barrier = jest.spyOn(historyStore, 'persistBarrier');
   const started = graph();
   const runtime = await createRealRuntime({ reportError: jest.fn() });
@@ -197,7 +198,7 @@ test('raw retention follows seals and runs only once for the same calendar cutof
     expect(started.detection.historyLedger.pruneBeforeDay.mock.invocationCallOrder[0]).toBeGreaterThan(barrier.mock.invocationCallOrder[0]);
     await runtime.reconcile('manual');
     expect(started.detection.historyLedger.pruneBeforeDay).toHaveBeenCalledTimes(1);
-  } finally { await runtime.disposeAsync(); barrier.mockRestore(); }
+  } finally { await runtime.disposeAsync(); barrier.mockRestore(); now.mockRestore(); }
 });
 
 test('a crash after sealing cannot lose the final per-rule result on restart', async () => {
