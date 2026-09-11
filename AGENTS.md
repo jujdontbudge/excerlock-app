@@ -13,6 +13,7 @@
 - Agent context configuration and opt-in tools: `docs/agents/context.md`.
 
 - Service tooling: use `supabase`, `az` + SSH/rsync, `sentry`/`sentry-cli`, `posthog-cli`, `resend`, `eas`, `adapty`, `asc` and `gh` as appropriate. Read `docs/agents/service-cli.md` only for service/deployment tasks; discover commands with `--help`.
+- Memory: relevant Mem0 memories are recalled automatically. `local_memory` shares project memory across this repository's clones and worktrees while keeping it isolated from other repositories; session scope is available for temporary context. Mutations require explicit approval. Commands: `/mem0-remember`, `/mem0-forget`, `/mem0-search`, `/mem0-tour`, `/mem0-scope`, `/mem0-status`, and `/memory-review`.
 
 ## On-demand skills
 
