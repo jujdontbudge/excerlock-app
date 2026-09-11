@@ -98,6 +98,12 @@ It contains no deployment, OTA publication, App Store upload/submission, or
 tester invitation. The readiness job's required secret/variable names exist in
 the GitHub production environment.
 
+The first main CI run (`34636120057`) exposed a package-manager mismatch:
+npm 10 rejected the workspace override graph as missing old React Native packages,
+while npm 11.19.0 installed the same lockfile successfully. The failure was
+reproduced locally with npm 10.9.3. CI and `packageManager` now pin npm 11.19.0;
+the dependency versions and lockfile remain unchanged.
+
 App Review submission, public release, and production OTA publication remain
 outside the authorized scope. Merging and pushing `main` does not complete the
 deferred metadata, export-compliance, or device-verification work.

@@ -27,6 +27,9 @@ for the observed Apple/Expo state and consolidation evidence.
 
 ## Local checks
 
+Use npm 11.19.0 (pinned in `package.json` and CI). npm 10 resolves this
+workspace override graph differently and rejects the otherwise valid lockfile.
+
 ```sh
 npm ci
 npm run typecheck
