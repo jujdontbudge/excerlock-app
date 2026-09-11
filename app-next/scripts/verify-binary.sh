@@ -37,7 +37,7 @@ pass "prebuild outputs present in $IOS_DIR"
 # Info.plist keys (§3 step 3) from the generated plist, not app.json.
 # No NSUserTrackingUsageDescription (no ATT prompt) and no
 # CFBundleAlternateIcons (no alternate assets) — their absence is asserted.
-for key in NSMotionUsageDescription NSCameraUsageDescription NSLocationWhenInUseUsageDescription NSLocationAlwaysAndWhenInUseUsageDescription NSLocationAlwaysUsageDescription NSHealthShareUsageDescription NSFaceIDUsageDescription NSPhotoLibraryUsageDescription UIBackgroundModes CFBundleLocalizations; do
+for key in NSMotionUsageDescription NSCameraUsageDescription NSLocationWhenInUseUsageDescription NSLocationAlwaysAndWhenInUseUsageDescription NSLocationAlwaysUsageDescription NSHealthShareUsageDescription NSHealthUpdateUsageDescription NSFaceIDUsageDescription NSPhotoLibraryUsageDescription UIBackgroundModes CFBundleLocalizations; do
   count=$(grep -c "<key>$key</key>" "$IOS_DIR/ExcerLock/Info.plist" || true)
   [[ "$count" == "1" ]] || fail "Info.plist key $key count=$count (want 1)"
 done

@@ -25,7 +25,8 @@ EXTENSIONS = {
 }
 USAGE_KEYS = ['NSMotionUsageDescription', 'NSCameraUsageDescription', 'NSLocationWhenInUseUsageDescription',
               'NSLocationAlwaysAndWhenInUseUsageDescription', 'NSLocationAlwaysUsageDescription',
-              'NSHealthShareUsageDescription', 'NSFaceIDUsageDescription', 'NSPhotoLibraryUsageDescription']
+              'NSHealthShareUsageDescription', 'NSHealthUpdateUsageDescription', 'NSFaceIDUsageDescription',
+              'NSPhotoLibraryUsageDescription']
 
 def require(condition, message):
     if not condition: raise ValueError(message)

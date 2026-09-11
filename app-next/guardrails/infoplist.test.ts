@@ -23,6 +23,7 @@ describe("T01 Info.plist guardrail (generated ios/, not config source)", () => {
       "NSLocationAlwaysAndWhenInUseUsageDescription",
       "NSLocationAlwaysUsageDescription",
       "NSHealthShareUsageDescription",
+      "NSHealthUpdateUsageDescription",
       "NSFaceIDUsageDescription",
       "NSPhotoLibraryUsageDescription",
       "UIBackgroundModes",

@@ -43,7 +43,10 @@ export const healthKitPlugin: ExpoPlugin = [
     background: false,
     NSHealthShareUsageDescription:
       "ExcerLock reads your activity to detect completed fitness conditions on this device.",
-    NSHealthUpdateUsageDescription: false,
+    // The SDK links HealthKit write APIs even though ExcerLock requests only
+    // read access, so App Store static validation still requires this key.
+    NSHealthUpdateUsageDescription:
+      "ExcerLock uses Health access only to read completed activities and does not write data to Health.",
   },
 ];
 
