@@ -33,6 +33,11 @@ class SignedManifestTests(unittest.TestCase):
         profile['Entitlements']['com.apple.developer.family-controls'] = False
         with self.assertRaises(ValueError): module.verify_entitlements(bundle, ent, profile, main=True)
 
+    def test_scalar_profile_wildcard_authorizes_list_entitlement(self):
+        bundle, ent, profile = self.fixture()
+        profile['Entitlements']['com.apple.developer.associated-domains'] = '*'
+        module.verify_entitlements(bundle, ent, profile, main=True)
+
     def test_wrong_group_and_extra_group_rejected(self):
         for groups in [['group.other'], [module.GROUP, 'group.other']]:
             bundle, ent, profile = self.fixture(False)

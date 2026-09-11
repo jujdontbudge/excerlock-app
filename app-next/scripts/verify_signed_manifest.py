@@ -40,7 +40,11 @@ def verify_info(info):
 
 def allowed(actual, permitted):
     if isinstance(actual, list):
-        return isinstance(permitted, list) and all(any(allowed(item, p) for p in permitted) for item in actual)
+        if isinstance(permitted, list):
+            return all(any(allowed(item, p) for p in permitted) for item in actual)
+        # Some App Store profiles authorize every value of a list entitlement
+        # with a scalar wildcard (for example Associated Domains = "*").
+        return isinstance(permitted, str) and all(allowed(item, permitted) for item in actual)
     if isinstance(actual, str) and isinstance(permitted, str):
         return fnmatch.fnmatchcase(actual, permitted)
     return type(actual) is type(permitted) and actual == permitted
