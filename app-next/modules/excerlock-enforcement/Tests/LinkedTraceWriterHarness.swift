@@ -19,6 +19,7 @@ struct LinkedTraceWriterHarness {
       .appendingPathComponent("linked-trace-writer-tests-\(UUID().uuidString)", isDirectory: true)
     defer { try? FileManager.default.removeItem(at: root) }
     try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    precondition(linkedTraceAppGroup != excerlockProductionAppGroup, "research config must never fall back to production storage")
 
     let sessionId = UUID().uuidString.lowercased()
     let nonce = String(repeating: "ab", count: 32)
@@ -32,9 +33,11 @@ struct LinkedTraceWriterHarness {
       _ = try writer.startSession(sessionId: sessionId, nonce: String(repeating: "cd", count: 32))
       preconditionFailure("active session accepted a different nonce")
     } catch LinkedTraceError.invalidNonce {}
-    precondition(!writer.record(producer: .hostJS, eventType: .testMarker, payload: ["token": "must_reject"]))
-    precondition(!writer.record(producer: .hostJS, eventType: .testMarker,
-                                payload: ["kind": "session", "phase": "start", "label": "arbitrary_error_text"]))
+    precondition(!writer.record(producer: .hostJS, eventType: .clockAnchor, payload: ["token": "must_reject"]))
+    precondition(!writer.record(producer: .hostJS, eventType: .clockAnchor,
+                                payload: ["label": "arbitrary_error_text"]))
+    precondition(!writer.record(producer: .hostNative, eventType: .motionCallbackNative,
+                                payload: ["stream": "device_motion", "gravityX": 0.25, "bridgeAttempted": true]))
     precondition(writer.record(
       producer: .monitorExtension,
       eventType: .extensionCallback,
@@ -51,8 +54,8 @@ struct LinkedTraceWriterHarness {
         for _ in 0..<100 {
           precondition(concurrentWriter.record(
             producer: .hostJS,
-            eventType: .testMarker,
-            payload: ["kind": "session", "phase": "start", "label": "consent_confirmed"]
+            eventType: .clockAnchor,
+            payload: ["label": "session_started"]
           ))
         }
       }
@@ -67,7 +70,7 @@ struct LinkedTraceWriterHarness {
     }
     let sequences = rows.compactMap { ($0["sequence"] as? NSNumber)?.uint64Value }.sorted()
     precondition(sequences == Array(1...UInt64(rows.count)))
-    precondition(rows.filter { $0["eventType"] as? String == "test_marker" }.count == 400)
+    precondition(rows.filter { $0["eventType"] as? String == "clock_anchor" }.count == 400)
     precondition(rows.filter { $0["eventType"] as? String == "trace_start" }.count == 1)
     precondition(rows.filter { $0["eventType"] as? String == "trace_stop" }.count == 1)
     precondition(!writer.status().active)
@@ -79,8 +82,8 @@ struct LinkedTraceWriterHarness {
     _ = try limited.startSession(sessionId: limitedId, nonce: nonce)
     precondition(limited.hashIdentifier("stable-local-id") != firstSessionHash)
     for _ in 0..<100 {
-      _ = limited.record(producer: .hostJS, eventType: .testMarker,
-                         payload: ["kind": "session", "phase": "start", "label": "consent_confirmed"])
+      _ = limited.record(producer: .hostJS, eventType: .clockAnchor,
+                         payload: ["label": "session_started"])
     }
     precondition(limited.status().truncated)
     let limitedExport = try limited.stopSession(sessionId: limitedId, nonce: nonce)
@@ -96,10 +99,18 @@ struct LinkedTraceWriterHarness {
     _ = try expiryWriter.startSession(sessionId: expiryId, nonce: nonce)
     stamp.advance(to: 10_000 + linkedTraceSessionTTLMilliseconds + 1)
     precondition(!expiryWriter.status().active)
-    precondition(!expiryWriter.record(producer: .hostJS, eventType: .testMarker,
-                                      payload: ["kind": "session", "phase": "stop", "label": "operator_finished"]))
-    let expiredExport = try expiryWriter.stopSession(sessionId: expiryId, nonce: nonce)
-    precondition(FileManager.default.fileExists(atPath: expiredExport.path))
+    precondition(!expiryWriter.record(producer: .hostJS, eventType: .clockAnchor,
+                                      payload: ["label": "session_started"]))
+    do {
+      try expiryWriter.deleteSession(sessionId: expiryId)
+      preconditionFailure("generic deletion bypassed explicit expired-session abandon")
+    } catch LinkedTraceError.sessionMismatch {}
+    try expiryWriter.abandonExpiredSession(sessionId: expiryId)
+    precondition(expiryWriter.status().sessionId == nil)
+    let afterExpiryId = UUID().uuidString.lowercased()
+    let afterExpiry = try expiryWriter.startSession(sessionId: afterExpiryId, nonce: nonce)
+    precondition(afterExpiry.active)
+    _ = try expiryWriter.stopSession(sessionId: afterExpiryId, nonce: nonce)
 
     let retentionRoot = root.appendingPathComponent("retention", isDirectory: true)
     let retentionTraceRoot = retentionRoot.appendingPathComponent("linked-trace/v1", isDirectory: true)
@@ -129,11 +140,11 @@ struct LinkedTraceWriterHarness {
     let dropWriter = LinkedTraceWriter(containerURL: dropRoot, maxPendingEvents: 0)
     _ = try dropWriter.startSession(sessionId: dropId, nonce: nonce)
     for _ in 0..<3 {
-      dropWriter.recordDeferred(producer: .hostJS, eventType: .testMarker,
-                                payload: ["kind": "session", "phase": "start", "label": "consent_confirmed"])
+      dropWriter.recordDeferred(producer: .hostJS, eventType: .clockAnchor,
+                                payload: ["label": "session_started"])
     }
-    precondition(dropWriter.record(producer: .hostJS, eventType: .testMarker,
-                                   payload: ["kind": "session", "phase": "stop", "label": "operator_finished"]))
+    precondition(dropWriter.record(producer: .hostJS, eventType: .clockAnchor,
+                                   payload: ["label": "session_started"]))
     let dropExport = try dropWriter.stopSession(sessionId: dropId, nonce: nonce)
     let dropRows = try String(contentsOf: dropExport, encoding: .utf8).split(separator: "\n").map {
       try JSONSerialization.jsonObject(with: Data($0.utf8)) as! [String: Any]

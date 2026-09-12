@@ -4,6 +4,8 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const { resolve, dirname } = require('node:path');
+require('tsx/cjs');
+const { readClientConfiguration } = require('../src/runtime/clientConfiguration');
 const cwd = resolve(__dirname, '..');
 const cli = resolve(dirname(require.resolve('expo/package.json')), 'bin/cli');
 const env = {
@@ -26,6 +28,7 @@ test(`actual Expo loader preserves ${profile} native configuration and excludes 
   assert.equal(config.updates.checkAutomatically, 'ON_LOAD');
   assert.deepEqual(config.updates.requestHeaders, { 'expo-channel-name': require('../eas.json').build[profile].channel });
   assert.equal(config.ios.bundleIdentifier, 'com.johansardar.excerlock');
+  assert.deepEqual(config.ios.entitlements['com.apple.security.application-groups'], ['group.com.johansardar.excerlock']);
   assert.ok(config.plugins.includes('./plugins/withScreenTimeExtensionValidation'));
   assert.ok(config.plugins.includes('./plugins/withMainAppIntent'));
   assert.ok(config.plugins.includes('./modules/excerlock-startup/app.plugin'));
@@ -50,16 +53,35 @@ test('actual Expo loader creates an isolated local-only Linked Recorder research
   assert.equal(config.name, 'ExcerLock');
   assert.equal(config.ios.infoPlist.CFBundleDisplayName, 'ExcerLock Trace Lab');
   assert.equal(config.ios.bundleIdentifier, 'com.johansardar.excerlock.lab.linkedtrace');
+  assert.deepEqual(config.ios.entitlements['com.apple.security.application-groups'], ['group.com.johansardar.excerlock.lab.linkedtrace']);
+  const deviceActivityPlugin = config.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === 'react-native-device-activity');
+  assert.equal(deviceActivityPlugin?.[1]?.appGroup, 'group.com.johansardar.excerlock.lab.linkedtrace');
   assert.deepEqual(config.scheme.filter((value) => value.startsWith('excerlock')), ['excerlock-linked-trace']);
   assert.equal(config.runtimeVersion, '2-linked-recorder-1');
   assert.equal(config.updates.enabled, false);
   assert.equal(config.updates.checkAutomatically, 'NEVER');
   assert.equal(config.updates.url, undefined);
   assert.equal(config.updates.requestHeaders, undefined);
-  assert.equal(config.extra.linkedRecorderResearch, true);
-  assert.deepEqual(config.extra.clientObservability, {});
+  assert.deepEqual(config.extra.clientObservability, {
+    posthogApiKey: 'linked-trace-local',
+    posthogHost: 'https://localhost',
+    sentryDsn: 'https://localhost',
+  });
+  assert.equal(config.extra.linkedRecorderResearch, undefined);
+  assert.doesNotThrow(() => readClientConfiguration(config.extra));
   assert.ok(!config.plugins.some((plugin) => (Array.isArray(plugin) ? plugin[0] : plugin) === '@sentry/react-native/expo'));
   assert.ok(!result.stdout.includes(researchEnv.SENTRY_AUTH_TOKEN));
+});
+
+test('actual Expo loader refuses malformed Linked Recorder opt-in values', () => {
+  const result = spawnSync(process.execPath, [cli, 'config', '--type', 'public', '--json'], {
+    cwd,
+    env: { ...env, EXCERLOCK_ENV: 'dev', EXCERLOCK_LINKED_RECORDER_TRACE: '0' },
+    encoding: 'utf8',
+    timeout: 30_000,
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /must be exactly 1 or unset/);
 });
 
 test('actual Expo loader refuses Linked Recorder research mode in EAS Build', () => {

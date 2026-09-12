@@ -116,6 +116,9 @@ enum MotionPermission: String, Codable {
     case restricted
 
     static var current: MotionPermission {
+        #if os(macOS)
+        return .restricted
+        #else
         switch CMMotionActivityManager.authorizationStatus() {
         case .notDetermined: return .notDetermined
         case .authorized: return .authorized
@@ -123,6 +126,7 @@ enum MotionPermission: String, Codable {
         case .restricted: return .restricted
         @unknown default: return .restricted
         }
+        #endif
     }
 }
 
@@ -135,6 +139,9 @@ struct SensorAvailability: Codable, Equatable {
     let deviceMotion: Bool
 
     static var current: SensorAvailability {
+        #if os(macOS)
+        return SensorAvailability(activity: false, cadence: false, stepCounting: false, accelerometer: false, gyroscope: false, deviceMotion: false)
+        #else
         let manager = CMMotionManager()
         return SensorAvailability(
             activity: CMMotionActivityManager.isActivityAvailable(),
@@ -144,6 +151,7 @@ struct SensorAvailability: Codable, Equatable {
             gyroscope: manager.isGyroAvailable,
             deviceMotion: manager.isDeviceMotionAvailable
         )
+        #endif
     }
 
     var unavailableNames: [String] {
@@ -186,7 +194,21 @@ enum CaptureReadiness: Equatable {
     }
 }
 
-enum SessionCompletionStatus: String, Codable {
+struct LinkedTraceRecovery: Codable, Equatable, Identifiable {
+    let sessionId: String
+    let nonce: String
+    let protocolVersion: Int
+
+    var id: String { sessionId }
+
+    init(sessionId: String, nonce: String, protocolVersion: Int = 1) {
+        self.sessionId = sessionId
+        self.nonce = nonce
+        self.protocolVersion = protocolVersion
+    }
+}
+
+enum SessionCompletionStatus: String, Codable, Hashable {
     case completed
     case interrupted
     case storageLimit

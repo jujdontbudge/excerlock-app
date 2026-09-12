@@ -31,6 +31,7 @@ final class SessionWriter {
 
     private let clock: CaptureClock
     private let maxBytes: Int64
+    private let linkedTraceRecovery: LinkedTraceRecovery?
     private let lock = NSLock()
     private var handles: [CaptureEventChannel: FileHandle] = [:]
     private var buffers: [CaptureEventChannel: Data] = [:]
@@ -46,12 +47,14 @@ final class SessionWriter {
         startedAt: CaptureStamp,
         metadata: [String: Any],
         clock: CaptureClock = SystemCaptureClock(),
-        maxBytes: Int64 = maximumSessionBytes
+        maxBytes: Int64 = maximumSessionBytes,
+        linkedTraceRecovery: LinkedTraceRecovery? = nil
     ) throws {
         self.id = id
         self.startedAt = startedAt
         self.clock = clock
         self.maxBytes = maxBytes
+        self.linkedTraceRecovery = linkedTraceRecovery
         directoryURL = baseURL.appendingPathComponent("\(id)\(sessionDirectorySuffix)", isDirectory: true)
 
         try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
@@ -60,7 +63,7 @@ final class SessionWriter {
             FileManager.default.createFile(
                 atPath: url.path,
                 contents: nil,
-                attributes: [.protectionKey: FileProtectionType.completeUnlessOpen]
+                attributes: Self.protectedFileAttributes
             )
             handles[channel] = try FileHandle(forWritingTo: url)
             buffers[channel] = Data()
@@ -154,7 +157,11 @@ final class SessionWriter {
             directoryName: provisional.directoryName
         )
         try Self.writeEncodable(summary, to: manifestURL)
-        try? FileManager.default.removeItem(at: directoryURL.appendingPathComponent("recovery.json"))
+        if linkedTraceRecovery == nil {
+            try? FileManager.default.removeItem(at: directoryURL.appendingPathComponent("recovery.json"))
+        } else {
+            try writeRecovery(timeline: timeline, gapCount: gapCount, recorderFinalized: true)
+        }
         return summary
     }
 
@@ -210,8 +217,8 @@ final class SessionWriter {
         if synchronize { try handle.synchronize() }
     }
 
-    private func writeRecovery(timeline: LabelTimeline, gapCount: Int) throws {
-        let recovery: [String: Any] = [
+    private func writeRecovery(timeline: LabelTimeline, gapCount: Int, recorderFinalized: Bool = false) throws {
+        var recovery: [String: Any] = [
             "schemaVersion": recorderSchemaVersion,
             "sessionId": id,
             "startedAt": Self.stampDictionary(startedAt),
@@ -221,8 +228,19 @@ final class SessionWriter {
             "gapCount": gapCount,
             "scenarioCounts": timeline.scenarioCounts,
             "activeLabel": timeline.active?.rawValue ?? NSNull(),
-            "note": "Presence of this file means the session was not cleanly finalized. Recovery time is observed on next launch, not an exact suspension or termination timestamp."
+            "recorderFinalized": recorderFinalized,
+            "note": recorderFinalized
+                ? "The Recorder archive is finalized. This protected file remains only until the linked Trace Lab session is finalized or explicitly abandoned."
+                : "Presence of this file means the session was not cleanly finalized. Recovery time is observed on next launch, not an exact suspension or termination timestamp."
         ]
+        if let linkedTraceRecovery {
+            recovery["linkedTraceRecovery"] = [
+                "sessionId": linkedTraceRecovery.sessionId,
+                "nonce": linkedTraceRecovery.nonce,
+                "protocolVersion": linkedTraceRecovery.protocolVersion,
+                "excludedFromExport": true
+            ]
+        }
         try Self.writeJSONObject(recovery, to: directoryURL.appendingPathComponent("recovery.json"))
     }
 
@@ -280,8 +298,51 @@ final class SessionWriter {
                 directoryName: directory.lastPathComponent
             )
             try? writeEncodable(summary, to: manifestURL)
-            try? FileManager.default.removeItem(at: recoveryURL)
+            if linkedTraceRecovery(from: recovery) == nil {
+                try? FileManager.default.removeItem(at: recoveryURL)
+            } else {
+                var retained = recovery
+                retained["recorderFinalized"] = true
+                retained["note"] = "The interrupted Recorder archive was finalized on relaunch. This protected file remains only until the linked Trace Lab session is finalized or explicitly abandoned."
+                try? writeJSONObject(retained, to: recoveryURL)
+            }
         }
+    }
+
+    static func pendingLinkedTraceRecoveries(baseURL: URL) -> [LinkedTraceRecovery] {
+        guard let directories = try? FileManager.default.contentsOfDirectory(
+            at: baseURL,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else { return [] }
+        return directories.compactMap { directory in
+            let recoveryURL = directory.appendingPathComponent("recovery.json")
+            let manifestURL = directory.appendingPathComponent("manifest.json")
+            guard FileManager.default.fileExists(atPath: manifestURL.path),
+                  let data = try? Data(contentsOf: recoveryURL),
+                  let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            else { return nil }
+            return linkedTraceRecovery(from: object)
+        }
+    }
+
+    static func clearLinkedTraceRecovery(sessionId: String, baseURL: URL) throws {
+        let directory = baseURL.appendingPathComponent("\(sessionId)\(sessionDirectorySuffix)", isDirectory: true)
+        guard directory.deletingLastPathComponent().standardizedFileURL == baseURL.standardizedFileURL else { return }
+        let recoveryURL = directory.appendingPathComponent("recovery.json")
+        if FileManager.default.fileExists(atPath: recoveryURL.path) { try FileManager.default.removeItem(at: recoveryURL) }
+    }
+
+    private static func linkedTraceRecovery(from recovery: [String: Any]) -> LinkedTraceRecovery? {
+        guard let linked = recovery["linkedTraceRecovery"] as? [String: Any],
+              let sessionId = linked["sessionId"] as? String,
+              let nonce = linked["nonce"] as? String,
+              let protocolVersion = linked["protocolVersion"] as? Int,
+              protocolVersion == 1,
+              UUID(uuidString: sessionId)?.uuidString.lowercased() == sessionId.lowercased(),
+              nonce.utf8.count >= 64
+        else { return nil }
+        return LinkedTraceRecovery(sessionId: sessionId.lowercased(), nonce: nonce, protocolVersion: protocolVersion)
     }
 
     static func stampDictionary(_ stamp: CaptureStamp) -> [String: Any] {
@@ -317,16 +378,32 @@ final class SessionWriter {
         return total
     }
 
+    private static var protectedFileAttributes: [FileAttributeKey: Any]? {
+        #if os(iOS)
+        return [.protectionKey: FileProtectionType.completeUnlessOpen]
+        #else
+        return nil
+        #endif
+    }
+
     private static func writeJSONObject(_ object: [String: Any], to url: URL) throws {
         let data = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
+        #if os(iOS)
         try data.write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])
+        #else
+        try data.write(to: url, options: .atomic)
+        #endif
     }
 
     private static func writeEncodable<T: Encodable>(_ value: T, to url: URL) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         let data = try encoder.encode(value)
+        #if os(iOS)
         try data.write(to: url, options: [.atomic, .completeFileProtectionUnlessOpen])
+        #else
+        try data.write(to: url, options: .atomic)
+        #endif
     }
 
     private static let schemaDocument: [String: Any] = [
@@ -367,6 +444,7 @@ final class SessionWriter {
 
 final class SessionRepository: ObservableObject {
     @Published private(set) var sessions: [SessionSummary] = []
+    @Published private(set) var pendingLinkedTraceRecoveries: [LinkedTraceRecovery] = []
     let baseURL: URL
 
     init(baseURL: URL? = nil) {
@@ -393,6 +471,7 @@ final class SessionRepository: ObservableObject {
             guard let data = try? Data(contentsOf: manifest) else { return nil }
             return try? decoder.decode(SessionSummary.self, from: data)
         }.sorted { $0.startedAt.wallTimeMs > $1.startedAt.wallTimeMs }
+        pendingLinkedTraceRecoveries = SessionWriter.pendingLinkedTraceRecoveries(baseURL: baseURL)
     }
 
     var totalStoredBytes: Int64 { sessions.reduce(0) { $0 + $1.byteCount } }
@@ -406,6 +485,11 @@ final class SessionRepository: ObservableObject {
         let url = baseURL.appendingPathComponent(session.directoryName, isDirectory: true)
         guard url.deletingLastPathComponent().standardizedFileURL == baseURL.standardizedFileURL else { return }
         try FileManager.default.removeItem(at: url)
+        reload()
+    }
+
+    func clearLinkedTraceRecovery(sessionId: String) throws {
+        try SessionWriter.clearLinkedTraceRecovery(sessionId: sessionId, baseURL: baseURL)
         reload()
     }
 

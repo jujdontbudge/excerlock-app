@@ -10,8 +10,10 @@ Pod::Spec.new do |s|
   s.source = { :git => '' }
   s.static_framework = true
   s.dependency 'ExpoModulesCore'
-  s.frameworks = 'DeviceActivity', 'FamilyControls', 'ManagedSettings'
   trace_enabled = ENV['EXCERLOCK_LINKED_RECORDER_TRACE'] == '1'
+  frameworks = ['DeviceActivity', 'FamilyControls', 'ManagedSettings']
+  frameworks.unshift('CoreMotion') if trace_enabled
+  s.frameworks = frameworks
   trace_condition = trace_enabled ? ' EXCERLOCK_LINKED_RECORDER_TRACE' : ''
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',

@@ -8,7 +8,7 @@ const { bundleIdentifier } = require("../../plugins/linkedRecorderResearchConfig
 module.exports = (config) => ({
   ...createShieldActionConfig(config),
   appleTeamId: "AX3C2B78YD",
-  bundleIdentifier: bundleIdentifier("shieldaction", "com.johansardar.excerlock.shieldaction"),
+  bundleIdentifier: bundleIdentifier("shieldaction"),
   deploymentTarget: "17.4",
   frameworks: ["ManagedSettings", "UserNotifications"],
 });

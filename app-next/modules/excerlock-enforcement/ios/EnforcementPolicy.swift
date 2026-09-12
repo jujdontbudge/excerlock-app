@@ -42,7 +42,7 @@ enum ExcerlockPolicyError: Error, LocalizedError {
 }
 final class ExcerlockPolicyStore {
   static let shared = ExcerlockPolicyStore()
-  private let appGroup = "group.com.johansardar.excerlock"
+  private let appGroup = excerlockAppGroup
   private let managed = ManagedSettingsStore(named: ManagedSettingsStore.Name("ExcerLockEnforcement"))
   private func container() throws -> URL { guard let u = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) else { throw ExcerlockPolicyError.appGroupUnavailable }; return u }
   private func policyURL() throws -> URL { try container().appendingPathComponent("enforcement-policy-v1.json") }
@@ -52,6 +52,10 @@ final class ExcerlockPolicyStore {
   func readIfPresentLocked() throws -> ExcerlockPolicyRecord? { let url = try policyURL(); guard FileManager.default.fileExists(atPath: url.path) else { return nil }; return try JSONDecoder().decode(ExcerlockPolicyRecord.self, from: Data(contentsOf: url)) }
   func writeLocked(_ value: ExcerlockPolicyRecord) throws { try JSONEncoder().encode(value).write(to: policyURL(), options: [.atomic]) }
   func currentSelectionPayload() -> String? { UserDefaults(suiteName: appGroup)?.dictionary(forKey: excerlockSelectionDefaultsKey)?[excerlockSelectionHandle] as? String }
+  func currentSelectionCounts() -> (applications: Int, categories: Int, webDomains: Int)? {
+    guard let value = try? selection(currentSelectionPayload()) else { return nil }
+    return (value.applicationTokens.count, value.categoryTokens.count, value.webDomainTokens.count)
+  }
   private func selection(_ payload: String?) throws -> FamilyActivitySelection { guard let payload, let data = payload.data(using: .utf8), let value = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) else { throw ExcerlockPolicyError.missingSelection }; return value }
 
   private func apply(_ shield: Bool, record: inout ExcerlockPolicyRecord, initiator: String) throws {

@@ -262,6 +262,23 @@ struct RecorderHomeView: View {
                 .buttonStyle(CompactTestButtonStyle())
             }
             .recorderCard()
+        } else if let recovery = controller.pendingLinkedTraceRecovery {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Linked trace needs finalization", systemImage: "arrow.clockwise.circle.fill")
+                    .font(.headline)
+                    .foregroundStyle(RecorderTheme.primaryText)
+                Text("Session \(recovery.sessionId.prefix(8))… kept a protected one-time recovery link after completion, interruption, storage limit, or sensor failure.")
+                    .font(.subheadline)
+                    .foregroundStyle(RecorderTheme.secondaryText)
+                Text("Open Trace Lab to stop and export the production trace. The nonce stays outside every Recorder export and survives another app relaunch until you clear it.")
+                    .font(.caption)
+                    .foregroundStyle(RecorderTheme.secondaryText)
+                Button("Open Trace Lab to finalize") { controller.openPendingLinkedTrace() }
+                    .buttonStyle(PrimaryButtonStyle())
+                Button("I already exported or abandoned this trace") { controller.clearPendingLinkedTraceRecovery() }
+                    .buttonStyle(SecondaryButtonStyle())
+            }
+            .recorderCard()
         } else if !controller.isRecording {
             VStack(alignment: .leading, spacing: 12) {
                 Label("Optional linked background test", systemImage: "link")
@@ -280,7 +297,7 @@ struct RecorderHomeView: View {
                             Text("I consent to create a linked local session")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(RecorderTheme.primaryText)
-                            Text("The one-time nonce is never written into the recorder archive.")
+                            Text("The nonce is kept only in a protected recovery file excluded from every export, then removed after finalization.")
                                 .font(.caption)
                                 .foregroundStyle(RecorderTheme.secondaryText)
                         }

@@ -201,16 +201,6 @@ final class CoreMotionService {
       }
       trace[outputKey] = value
     }
-    if let gravity = payload["gravity"] as? [String: Any] {
-      trace["gravityX"] = gravity["x"]
-      trace["gravityY"] = gravity["y"]
-      trace["gravityZ"] = gravity["z"]
-    }
-    if let rotation = payload["rotationRate"] as? [String: Any] {
-      trace["rotationX"] = rotation["x"]
-      trace["rotationY"] = rotation["y"]
-      trace["rotationZ"] = rotation["z"]
-    }
     LinkedTraceWriter.shared.recordDeferred(producer: .hostNative, eventType: .motionCallbackNative, payload: trace)
   }
   #endif

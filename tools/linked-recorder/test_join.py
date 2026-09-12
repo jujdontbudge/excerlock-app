@@ -93,6 +93,27 @@ class JoinTests(unittest.TestCase):
             self.assertEqual(len(validation["canaryObservations"]), 1)
             self.assertFalse(validation["claims"]["managedSettingsReturnedMeansVisibleShield"])
 
+    def test_production_trace_rejects_human_canary_labels(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            recorder, production = self.fixture(root)
+            rows = [json.loads(line) for line in production.read_text(encoding="utf-8").splitlines()]
+            rows[-1]["sequence"] = 7
+            rows.insert(-1, production_event(6, "canary_outcome", {
+                "phase": "lock", "outcome": "shield_visible", "expected": "shield_visible",
+            }))
+            production.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+            output = root / "joined"
+            result = subprocess.run(
+                ["python3", str(SCRIPT), "--recorder", str(recorder), "--production", str(production), "--output", str(output)],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 2)
+            validation = json.loads((output / "validation.json").read_text(encoding="utf-8"))
+            self.assertIn("production trace has an unknown event type", validation["errors"])
+
     def test_session_mismatch_fails_closed(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

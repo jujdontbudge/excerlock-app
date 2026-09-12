@@ -3,7 +3,7 @@ import CryptoKit
 import Darwin
 import Foundation
 
-public let linkedTraceAppGroup = "group.com.johansardar.excerlock"
+public let linkedTraceAppGroup = excerlockAppGroup
 public let linkedTraceProtocolVersion = 1
 public let linkedTraceSessionTTLMilliseconds: Int64 = 2 * 60 * 60 * 1_000
 public let linkedTraceDefaultSessionLimitBytes: Int64 = 25 * 1_024 * 1_024
@@ -33,8 +33,6 @@ public enum LinkedTraceEventType: String, Codable, CaseIterable, Sendable {
   case watchdogOperation = "watchdog_operation"
   case extensionCallback = "extension_callback"
   case shieldWrite = "shield_write"
-  case testMarker = "test_marker"
-  case canaryOutcome = "canary_outcome"
 }
 
 public struct LinkedTraceStamp: Codable, Equatable, Sendable {
@@ -158,7 +156,7 @@ public final class LinkedTraceWriter: @unchecked Sendable {
     .clockAnchor: ["label"],
     .appLifecycle: ["layer", "state", "previous"],
     .executionOpportunity: ["source", "status"],
-    .motionCallbackNative: ["stream", "classes", "confidence", "startedAtWallMs", "receivedAtWallMs", "stepsPerSecond", "cumulativeSteps", "asOfWallMs", "timestampWallMs", "gravityX", "gravityY", "gravityZ", "rotationX", "rotationY", "rotationZ", "bridgeAttempted"],
+    .motionCallbackNative: ["stream", "classes", "confidence", "startedAtWallMs", "receivedAtWallMs", "stepsPerSecond", "cumulativeSteps", "asOfWallMs", "timestampWallMs", "bridgeAttempted"],
     .motionInputJS: ["stream", "status", "reason", "sourceAtWallMs"],
     .motionEvidence: ["qualifying", "observedAtWallMs", "activityAtWallMs", "cadenceAtWallMs", "cadencePerMinute"],
     .detectorPersist: ["trigger", "status", "generation", "observedAtWallMs", "phaseBefore", "phaseAfter", "watermarkBefore", "watermarkAfter", "qualifyingSinceBefore", "qualifyingSinceAfter", "activeSinceBefore", "activeSinceAfter", "lastEvidenceAtBefore", "lastEvidenceAtAfter", "lastQualifyingBefore", "lastQualifyingAfter", "graceEndsAtBefore", "graceEndsAtAfter"],
@@ -166,8 +164,6 @@ public final class LinkedTraceWriter: @unchecked Sendable {
     .watchdogOperation: ["operation", "status", "monitorIdHash", "revision", "startWallMs", "endWallMs", "registeredAtWallMs", "eligibleUntilWallMs", "reason"],
     .extensionCallback: ["callback", "status", "monitorIdHash", "reason"],
     .shieldWrite: ["operation", "status", "desired", "initiator", "revision", "configured", "applicationCount", "webDomainCount", "applicationCategoriesConfigured", "webDomainCategoriesConfigured", "reason"],
-    .testMarker: ["kind", "phase", "label"],
-    .canaryOutcome: ["phase", "outcome", "expected"],
   ]
   private static let forbiddenKeyFragments = ["token", "payload", "bundle", "accountid", "deviceid", "latitude", "longitude", "coordinate", "message", "description", "name"]
   private static let activityClasses: Set<String> = ["walking", "running", "cycling", "automotive", "stationary", "unknown"]
@@ -228,14 +224,6 @@ public final class LinkedTraceWriter: @unchecked Sendable {
       "operation": ["shield", "unshield"], "status": ["attempt", "returned", "rejected", "failed"],
       "initiator": ["host", "watchdog", "window", "policy_open", "policy_shield", "conditional_relief", "fail_closed"],
       "reason": ["policy_error", "native_error"]
-    ],
-    .testMarker: [
-      "kind": ["session", "canary_check"], "phase": ["start", "stop", "lock", "unlock"],
-      "label": ["consent_confirmed", "operator_finished", "observation_started"]
-    ],
-    .canaryOutcome: [
-      "phase": ["lock", "unlock"], "outcome": ["shield_visible", "app_opened", "uncertain"],
-      "expected": ["shield_visible", "app_opened"]
     ]
   ]
 
@@ -410,25 +398,31 @@ public final class LinkedTraceWriter: @unchecked Sendable {
     }
   }
 
-  public func exportURL(sessionId: String) throws -> URL {
-    try onQueue { try exportURLLocked(sessionId: sessionId.lowercased()) }
-  }
-
   public func deleteSession(sessionId: String) throws {
     try onQueue {
       try withTraceLock {
         let normalized = sessionId.lowercased()
+        guard Self.validSessionId(normalized) else { throw LinkedTraceError.invalidSession }
         if let descriptor = try readDescriptorLocked(), descriptor.sessionId == normalized {
-          guard descriptor.expiresAtWallTimeMs <= stampProvider().wallTimeMs else { throw LinkedTraceError.sessionMismatch }
-          try removeDescriptorLocked()
+          throw LinkedTraceError.sessionMismatch
         }
-        let directory = try sessionDirectory(normalized)
-        if fileManager.fileExists(atPath: directory.path) { try fileManager.removeItem(at: directory) }
-        let export = fileManager.temporaryDirectory
-          .appendingPathComponent("ExcerLockLinkedTraceExports", isDirectory: true)
-          .appendingPathComponent("excerlock-linked-trace-\(normalized).ndjson")
-        if fileManager.fileExists(atPath: export.path) { try? fileManager.removeItem(at: export) }
+        try deleteSessionFilesLocked(sessionId: normalized)
       }
+    }
+  }
+
+  public func abandonExpiredSession(sessionId: String) throws {
+    try onQueue {
+      try withTraceLock {
+        let normalized = sessionId.lowercased()
+        guard Self.validSessionId(normalized) else { throw LinkedTraceError.invalidSession }
+        guard let descriptor = try readDescriptorLocked() else { throw LinkedTraceError.inactive }
+        guard descriptor.sessionId == normalized else { throw LinkedTraceError.sessionMismatch }
+        guard descriptor.expiresAtWallTimeMs <= stampProvider().wallTimeMs else { throw LinkedTraceError.sessionMismatch }
+        try removeDescriptorLocked()
+        try deleteSessionFilesLocked(sessionId: normalized)
+      }
+      announcedSessionId = nil
     }
   }
 
@@ -640,6 +634,15 @@ public final class LinkedTraceWriter: @unchecked Sendable {
     try String(next).write(to: url, atomically: true, encoding: .utf8)
     try applyProtection(to: url)
     return next
+  }
+
+  private func deleteSessionFilesLocked(sessionId: String) throws {
+    let directory = try sessionDirectory(sessionId)
+    if fileManager.fileExists(atPath: directory.path) { try fileManager.removeItem(at: directory) }
+    let export = fileManager.temporaryDirectory
+      .appendingPathComponent("ExcerLockLinkedTraceExports", isDirectory: true)
+      .appendingPathComponent("excerlock-linked-trace-\(sessionId).ndjson")
+    if fileManager.fileExists(atPath: export.path) { try? fileManager.removeItem(at: export) }
   }
 
   private func exportURLLocked(sessionId: String) throws -> URL {

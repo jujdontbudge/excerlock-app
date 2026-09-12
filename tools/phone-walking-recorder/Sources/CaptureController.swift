@@ -68,6 +68,7 @@ final class CaptureController: NSObject, ObservableObject {
     @Published var exportingSessionID: String?
     @Published var linkedRecorderConsent = false
     @Published private(set) var linkedSessionID: String?
+    @Published private(set) var pendingLinkedTraceRecovery: LinkedTraceRecovery?
 
     let repository: SessionRepository
 
@@ -108,6 +109,7 @@ final class CaptureController: NSObject, ObservableObject {
         #endif
         super.init()
         motionService.delegate = self
+        refreshPendingLinkedTraceRecovery()
     }
 
     deinit { ticker?.invalidate() }
@@ -144,6 +146,7 @@ final class CaptureController: NSObject, ObservableObject {
         permission = motionService.permission
         availability = motionService.availability
         repository.reload()
+        refreshPendingLinkedTraceRecovery()
     }
 
     func requestPermission() {
@@ -193,6 +196,31 @@ final class CaptureController: NSObject, ObservableObject {
             }
         } catch {
             notice = "Could not open the linked trace: \(error.localizedDescription)"
+        }
+    }
+
+    func openPendingLinkedTrace() {
+        guard let pendingLinkedTraceRecovery else { return }
+        do {
+            let url = try Self.linkedTraceURL(
+                sessionID: pendingLinkedTraceRecovery.sessionId,
+                nonce: pendingLinkedTraceRecovery.nonce
+            )
+            UIApplication.shared.open(url) { [weak self] opened in
+                if !opened { self?.notice = "ExcerLock Trace Lab is not installed. The protected recovery link remains on this phone." }
+            }
+        } catch {
+            notice = "Could not reopen the linked trace: \(error.localizedDescription)"
+        }
+    }
+
+    func clearPendingLinkedTraceRecovery() {
+        guard let pendingLinkedTraceRecovery else { return }
+        do {
+            try repository.clearLinkedTraceRecovery(sessionId: pendingLinkedTraceRecovery.sessionId)
+            refreshPendingLinkedTraceRecovery()
+        } catch {
+            notice = "Could not clear the protected recovery link: \(error.localizedDescription)"
         }
     }
 
@@ -332,6 +360,10 @@ final class CaptureController: NSObject, ObservableObject {
     }
 
     func delete(_ session: SessionSummary) {
+        guard pendingLinkedTraceRecovery?.sessionId != session.id else {
+            notice = "Finalize or explicitly abandon the linked Trace Lab session before deleting this Recorder archive."
+            return
+        }
         do {
             try repository.delete(session)
         } catch {
@@ -368,15 +400,17 @@ final class CaptureController: NSObject, ObservableObject {
 
         mode = .preparing
         let started = clock.now()
+        let sessionID = UUID().uuidString.lowercased()
+        var linkedNonce: String?
         do {
-            let sessionID = UUID().uuidString.lowercased()
-            let linkedNonce = linkedRecorderConsent ? try Self.makeLinkedNonce() : nil
+            linkedNonce = linkedRecorderConsent ? try Self.makeLinkedNonce() : nil
             let writer = try SessionWriter(
                 baseURL: repository.baseURL,
                 id: sessionID,
                 startedAt: started,
                 metadata: buildMetadata(startedAt: started, linkedSessionID: linkedNonce == nil ? nil : sessionID),
-                clock: clock
+                clock: clock,
+                linkedTraceRecovery: linkedNonce.map { LinkedTraceRecovery(sessionId: sessionID, nonce: $0) }
             )
             self.writer = writer
             linkedSessionID = linkedNonce == nil ? nil : sessionID
@@ -445,7 +479,9 @@ final class CaptureController: NSObject, ObservableObject {
             }
             self.writer = nil
             detector = nil
+            if linkedNonce != nil { try? repository.clearLinkedTraceRecovery(sessionId: sessionID) }
             repository.reload()
+            refreshPendingLinkedTraceRecovery()
             mode = .failed(error.localizedDescription)
             notice = "Recording did not start: \(error.localizedDescription)"
         }
@@ -568,7 +604,7 @@ final class CaptureController: NSObject, ObservableObject {
         }
         let end = clock.now()
         let linkedStopURL: URL?
-        if status == .completed, let linkedSessionID, let linkedSessionNonce {
+        if let linkedSessionID, let linkedSessionNonce {
             linkedStopURL = try? Self.linkedTraceURL(sessionID: linkedSessionID, nonce: linkedSessionNonce)
         } else {
             linkedStopURL = nil
@@ -619,6 +655,7 @@ final class CaptureController: NSObject, ObservableObject {
         do {
             _ = try writer.finalize(status: status, timeline: timeline, gapCount: gapCount, endedAt: end, detail: finalDetail)
             repository.reload()
+            refreshPendingLinkedTraceRecovery()
             notice = status == .completed ? "Session saved on this phone." : finalDetail
             resetAfterFinish()
             if let linkedStopURL { UIApplication.shared.open(linkedStopURL) }
@@ -629,6 +666,10 @@ final class CaptureController: NSObject, ObservableObject {
             detector = nil
             repository.reload()
         }
+    }
+
+    private func refreshPendingLinkedTraceRecovery() {
+        pendingLinkedTraceRecovery = repository.pendingLinkedTraceRecoveries.first
     }
 
     private func resetAfterFinish() {

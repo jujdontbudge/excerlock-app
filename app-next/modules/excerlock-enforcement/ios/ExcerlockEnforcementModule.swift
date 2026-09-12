@@ -2,6 +2,8 @@ import ExpoModulesCore
 import DeviceActivity
 import Foundation
 #if EXCERLOCK_LINKED_RECORDER_TRACE
+import CoreMotion
+import FamilyControls
 import UIKit
 #endif
 
@@ -29,12 +31,15 @@ public final class ExcerlockEnforcementModule: Module {
     #if EXCERLOCK_LINKED_RECORDER_TRACE
     Function("startLinkedTrace") { (sessionId: String, nonce: String) throws -> [String: Any] in
       let status = try LinkedTraceWriter.shared.startSession(sessionId: sessionId, nonce: nonce)
-      self.installLinkedTraceLifecycleObservers()
+      self.installLinkedTraceLifecycleObserversOnMain()
       _ = LinkedTraceWriter.shared.record(producer: .hostNative, eventType: .clockAnchor, payload: ["label": "session_started"])
       return self.linkedTraceStatusPayload(status)
     }
     Function("linkedTraceStatus") { () -> [String: Any] in
       self.linkedTraceStatusPayload(LinkedTraceWriter.shared.status())
+    }
+    Function("linkedTracePreflight") { () -> [String: Any] in
+      self.linkedTracePreflightPayload()
     }
     Function("recordLinkedTrace") { (eventType: String, operationId: String?, payload: [String: Any]) throws -> Bool in
       guard let type = LinkedTraceEventType(rawValue: eventType) else { throw LinkedTraceError.invalidEvent }
@@ -48,6 +53,9 @@ public final class ExcerlockEnforcementModule: Module {
     }
     Function("deleteLinkedTrace") { (sessionId: String) throws -> Void in
       try LinkedTraceWriter.shared.deleteSession(sessionId: sessionId)
+    }
+    Function("abandonExpiredLinkedTrace") { (sessionId: String) throws -> Void in
+      try LinkedTraceWriter.shared.abandonExpiredSession(sessionId: sessionId)
     }
     OnDestroy {
       self.removeLinkedTraceLifecycleObservers()
@@ -64,6 +72,39 @@ public final class ExcerlockEnforcementModule: Module {
       "expiresAtWallTimeMs": status.expiresAtWallTimeMs ?? NSNull(),
       "truncated": status.truncated
     ]
+  }
+
+  private func linkedTracePreflightPayload() -> [String: Any] {
+    let selection = ExcerlockPolicyStore.shared.currentSelectionCounts()
+    let canarySelectionValid = selection?.applications == 1 && selection?.categories == 0 && selection?.webDomains == 0
+    let screenTimeAuthorized = AuthorizationCenter.shared.authorizationStatus == .approved
+    let motionAuthorized = CMMotionActivityManager.authorizationStatus() == .authorized
+    let motionAvailable = CMMotionActivityManager.isActivityAvailable() &&
+      CMPedometer.isCadenceAvailable() && CMPedometer.isStepCountingAvailable()
+    let bundleIdentifier = Bundle.main.bundleIdentifier ?? ""
+    let labContainerAvailable = FileManager.default.containerURL(
+      forSecurityApplicationGroupIdentifier: linkedTraceAppGroup
+    ) != nil
+    let labStorageIsolated = labContainerAvailable &&
+      linkedTraceAppGroup != excerlockProductionAppGroup &&
+      linkedTraceAppGroup.contains(".lab.") && bundleIdentifier.contains(".lab.")
+    return [
+      "labStorageIsolated": labStorageIsolated,
+      "screenTimeAuthorized": screenTimeAuthorized,
+      "motionReady": motionAuthorized && motionAvailable,
+      "canarySelectionValid": canarySelectionValid,
+      "canaryApplicationCount": selection?.applications ?? 0,
+      "canaryCategoryCount": selection?.categories ?? 0,
+      "canaryWebDomainCount": selection?.webDomains ?? 0
+    ]
+  }
+
+  private func installLinkedTraceLifecycleObserversOnMain() {
+    if Thread.isMainThread {
+      installLinkedTraceLifecycleObservers()
+    } else {
+      DispatchQueue.main.sync { self.installLinkedTraceLifecycleObservers() }
+    }
   }
 
   private func installLinkedTraceLifecycleObservers() {

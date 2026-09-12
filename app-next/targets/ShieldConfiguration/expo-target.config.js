@@ -8,6 +8,6 @@ const { bundleIdentifier } = require("../../plugins/linkedRecorderResearchConfig
 module.exports = (config) => ({
   ...createShieldConfigurationConfig(config),
   appleTeamId: "AX3C2B78YD",
-  bundleIdentifier: bundleIdentifier("shield", "com.johansardar.excerlock.shield"),
+  bundleIdentifier: bundleIdentifier("shield"),
   deploymentTarget: "17.4",
 });

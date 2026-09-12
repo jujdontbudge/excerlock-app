@@ -2,7 +2,13 @@ const { getDefaultConfig } = require('expo/metro-config');
 const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 const config = getDefaultConfig(__dirname);
 const path = require('node:path');
-const linkedRecorderResearch = process.env.EXCERLOCK_LINKED_RECORDER_TRACE === '1';
+const { researchEnabled } = require('./plugins/linkedRecorderResearchConfig');
+const linkedRecorderResearch = researchEnabled(process.env);
+// Babel and virtual-module selection depend on this opt-in. Metro's persistent
+// transform cache must not reuse research transforms in a later ordinary build.
+const cacheVersion = linkedRecorderResearch
+  ? 'excerlock-linked-recorder-research-v1'
+  : 'excerlock-ordinary-v1';
 // Captures are development output, never modules. Otherwise saving evidence can
 // trigger an HMR refresh banner in the very recording being captured.
 const defaults = config.resolver.blockList ? [].concat(config.resolver.blockList) : [];
@@ -21,6 +27,7 @@ if (!linkedRecorderResearch) {
 // This native app does not collect browser replay. Keep native crash reporting
 // and Sentry debug IDs while excluding the SDK's unused web replay graph.
 const sentryConfig = getSentryExpoConfig(__dirname, { includeWebReplay: false });
+sentryConfig.cacheVersion = cacheVersion;
 sentryConfig.resolver.blockList = blockList;
 const aliases = {
   ...(sentryConfig.resolver.alias ?? {}),
@@ -55,7 +62,6 @@ const aliases = {
       : 'src/runtime/observability/SentryCapture.ts',
   ),
 };
-sentryConfig.resolver.alias = aliases;
 // Metro does not resolve `resolver.alias` itself. Resolve these exact virtual
 // modules explicitly, while preserving Sentry's resolver for replay exclusion.
 const sentryResolveRequest = sentryConfig.resolver.resolveRequest;

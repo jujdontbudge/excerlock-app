@@ -14,12 +14,15 @@ When the flag is present, Expo config:
 
 - uses `ExcerLock Trace Lab` and the `excerlock-linked-trace` scheme;
 - uses `com.johansardar.excerlock.lab.linkedtrace` plus distinct `.monitor`, `.shield`, `.shieldaction`, and `.report` extension identifiers;
+- uses the distinct `group.com.johansardar.excerlock.lab.linkedtrace` App Group for the research app and every research extension, never the production group;
 - sets runtime `2-linked-recorder-1`;
 - disables Expo Updates and removes its URL/channel headers;
 - omits the Sentry config plugin and selects local no-network Sentry/PostHog implementations;
 - defines native trace compilation only for the research pod/monitor targets.
 
-The config refuses the flag when `EAS_BUILD=true`, any `EAS_BUILD_PROFILE` is set, or `EXCERLOCK_ENV` is not `dev`. There is no EAS research profile. Separate explicit App IDs/profiles with Family Controls and `group.com.johansardar.excerlock` access are required before a later authorized local signing step.
+The config refuses the flag when `EAS_BUILD=true`, any `EAS_BUILD_PROFILE` is set, or `EXCERLOCK_ENV` is not `dev`. There is no EAS research profile. The CommonJS research configuration is the single executable owner of the opt-in, app/extension bundle identifiers, App Group, URL scheme, and runtime version used by Expo config, target configs, Babel, and Metro.
+
+A later authorized signing step requires already-authorized App IDs/profiles with Family Controls and `group.com.johansardar.excerlock.lab.linkedtrace` access. This source work does not create App IDs, groups, profiles, certificates, or portal records. If that isolated lab group is not already authorized, stop at this prerequisite; never share the production App Group or uninstall/replace production ExcerLock.
 
 Ordinary exports select no-op JS boundaries, block `*.research.ts[x]`, compile Swift trace bodies out, retain production identifiers/updates/observability, and must pass:
 
@@ -31,12 +34,12 @@ After any trace prebuild, delete the generated `ios/` tree and run an unflagged 
 
 ## Minimal test protocol
 
-1. Select a benign, nonessential canary app in ExcerLock Screen Time settings. **Never select Walking Recorder.**
-2. In Walking Recorder, explicitly opt into a linked local session and start the desired label. The recorder creates a UUID and a 256-bit one-time nonce; the nonce stays in memory and is not exported.
-3. Tap **Open ExcerLock Trace Lab**. Review the second consent surface and start the production trace.
+1. Complete Trace Lab setup locally: use a signed build whose profile grants the isolated lab App Group, sign in to the development environment with a pre-existing trial/active lab entitlement, authorize Screen Time, select exactly one benign nonessential canary app (no categories or websites), and authorize Motion & Fitness. **Never select Walking Recorder.** Trace Lab's visible preflight blocks Start and names any missing step. It never uses production Adapty, auto-grants access, or fabricates a subscription entitlement; if authorized development access is unavailable, stop.
+2. In Walking Recorder, explicitly opt into a linked local session and start the desired label. The recorder creates a UUID and a 256-bit one-time nonce. The nonce is transactionally retained only in the recorder session's protected recovery file, excluded from every export, and removed after the operator confirms Trace Lab was finalized or explicitly abandoned.
+3. Tap **Open ExcerLock Trace Lab**. Review the second consent surface, confirm the harmless canary prerequisite, and start the production trace.
 4. Return to Walking Recorder. Keep its foreground labels honest while ExcerLock moves through the real production/background path.
-5. Mark lock/unlock test phases and the canary outcome you actually observed. A Managed Settings call returning is not a visible outcome.
-6. Finish Walking Recorder; it reopens Trace Lab. End/export the production trace, then export the saved Recorder archive. No file is uploaded automatically.
+5. Mark lock/unlock test phases and the canary outcome you actually observed in Walking Recorder, the sole human-label owner. Trace Lab has no duplicate phase/outcome controls. A Managed Settings call returning is not a visible outcome.
+6. Finish Walking Recorder; completion, interruption, storage-limit, and sensor-error paths preserve and reopen the protected Trace Lab link. End/export the production trace, then export the saved Recorder archive. If the recorder was terminated, relaunch it and use the visible recovery card. No file is uploaded automatically.
 7. Join them offline:
 
 ```sh
@@ -50,7 +53,7 @@ The joiner validates protocol/session identity, sequence continuity, `mach_conti
 
 ## Trace contract
 
-`LinkedTraceWriter` writes one JSON object per line under the ExcerLock App Group. The host and Device Activity monitor extension serialize through `flock` and a shared sequence file. Each event has:
+`LinkedTraceWriter` writes one JSON object per line under the isolated Trace Lab App Group. The host and Device Activity monitor extension resolve that group from the generated native configuration and serialize through `flock` and a shared sequence file. Each event has:
 
 - schema/session/sequence;
 - producer and process-instance UUID;
@@ -61,7 +64,7 @@ The joiner validates protocol/session identity, sequence continuity, `mach_conti
 
 The trace covers native motion callback receipt, JS input/fusion, durable detector transitions, runtime/headless opportunities, policy publication, watchdog operations, extension callback receipt/guard result, and shield setter attempt/return/readback. It rejects arbitrary keys/nested payloads, selection tokens, bundle/account/device identifiers, coordinates, and free-form errors.
 
-Raw inertial streams and labels remain only in Walking Recorder. The ExcerLock trace has a 25 MiB session cap, 100 MiB retained cap, bounded in-memory queue with drop summaries, two-hour active TTL, seven-day next-access retention pruning, complete-until-first-authentication file protection, explicit finalization/export, and manual deletion.
+Raw inertial vectors and all human labels remain only in Walking Recorder. ExcerLock retains callback stream/receipt/source timing, activity/cadence fields already consumed by production, and derived causal evidence, but no gravity or rotation vectors. The ExcerLock trace has a 25 MiB session cap, 100 MiB retained cap, bounded in-memory queue with drop summaries, two-hour active TTL, seven-day next-access retention pruning, complete-until-first-authentication file protection, explicit finalization/export, and manual deletion. A nonce-less abandon is available only after the active descriptor has expired and requires explicit local confirmation; it deletes rather than exports the expired trace.
 
 ## Local checks
 

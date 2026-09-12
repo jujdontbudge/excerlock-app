@@ -1,7 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { IOSConfig, withFinalizedMod } = require("expo/config-plugins");
-const { bundleIdentifier, researchEnabled } = require("./linkedRecorderResearchConfig");
+const { appGroupIdentifier, bundleIdentifier, researchEnabled } = require("./linkedRecorderResearchConfig");
 
 // Main app + FOUR Screen Time appex. The App Intent lives in the main app
 // target (see plugins/withMainAppIntent.js); there is no fifth appex.
@@ -9,19 +9,19 @@ function expectedAppexTargets() {
   return [
     {
       name: "DeviceActivityMonitorExtension",
-      bundleIdentifier: bundleIdentifier("monitor", "com.johansardar.excerlock.monitor"),
+      bundleIdentifier: bundleIdentifier("monitor"),
     },
     {
       name: "ShieldConfiguration",
-      bundleIdentifier: bundleIdentifier("shield", "com.johansardar.excerlock.shield"),
+      bundleIdentifier: bundleIdentifier("shield"),
     },
     {
       name: "ShieldAction",
-      bundleIdentifier: bundleIdentifier("shieldaction", "com.johansardar.excerlock.shieldaction"),
+      bundleIdentifier: bundleIdentifier("shieldaction"),
     },
     {
       name: "DeviceActivityReportExtension",
-      bundleIdentifier: bundleIdentifier("report", "com.johansardar.excerlock.report"),
+      bundleIdentifier: bundleIdentifier("report"),
       productType: "com.apple.product-type.extensionkit-extension",
     },
   ];
@@ -42,6 +42,10 @@ const MAIN_ONLY_CAPABILITIES = [
 ];
 
 const MONITOR_PACKAGE_SOURCES = [
+  {
+    destination: "ExcerlockAppGroup.generated.swift",
+    localSource: path.join("modules", "excerlock-enforcement", "ios", "ExcerlockAppGroup.swift"),
+  },
   {
     destination: "EnforcementPolicy.generated.swift",
     localSource: path.join("modules", "excerlock-enforcement", "ios", "EnforcementPolicy.swift"),
@@ -299,8 +303,8 @@ function assertGeneratedEntitlementsFile(projectRoot, directory, displayName) {
   if (!text.includes("com.apple.developer.family-controls")) {
     throw new Error(`${displayName} generated.entitlements is missing Family Controls`);
   }
-  if (!text.includes("group.com.johansardar.excerlock")) {
-    throw new Error(`${displayName} generated.entitlements is missing the app group`);
+  if (!text.includes(appGroupIdentifier())) {
+    throw new Error(`${displayName} generated.entitlements is missing the configured app group`);
   }
   for (const privileged of MAIN_ONLY_CAPABILITIES) {
     if (privileged === "com.apple.developer.healthkit") {

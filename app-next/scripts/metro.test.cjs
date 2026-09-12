@@ -23,15 +23,22 @@ test('linked-recorder virtual modules resolve to the selected compile boundary',
  const configPath = require.resolve('../metro.config');
  const original = process.env.EXCERLOCK_LINKED_RECORDER_TRACE;
  const resolve = enabled => {
-  process.env.EXCERLOCK_LINKED_RECORDER_TRACE = enabled ? '1' : '0';
+  if (enabled) process.env.EXCERLOCK_LINKED_RECORDER_TRACE = '1';
+  else delete process.env.EXCERLOCK_LINKED_RECORDER_TRACE;
   delete require.cache[configPath];
   const config = require(configPath);
   const context = { resolveRequest: (_context, moduleName) => ({ type: 'sourceFile', filePath: moduleName }) };
-  return config.resolver.resolveRequest(context, '@linked-trace', 'ios').filePath;
+  return {
+   filePath: config.resolver.resolveRequest(context, '@linked-trace', 'ios').filePath,
+   cacheVersion: config.cacheVersion,
+  };
  };
  try {
-  assert.match(resolve(false), /LinkedTrace\.disabled\.ts$/);
-  assert.match(resolve(true), /LinkedTrace\.research\.ts$/);
+  const ordinary = resolve(false);
+  const research = resolve(true);
+  assert.match(ordinary.filePath, /LinkedTrace\.disabled\.ts$/);
+  assert.match(research.filePath, /LinkedTrace\.research\.ts$/);
+  assert.notEqual(ordinary.cacheVersion, research.cacheVersion);
  } finally {
   if (original === undefined) delete process.env.EXCERLOCK_LINKED_RECORDER_TRACE;
   else process.env.EXCERLOCK_LINKED_RECORDER_TRACE = original;

@@ -8,7 +8,7 @@ const { bundleIdentifier, researchEnabled } = require("../../plugins/linkedRecor
 module.exports = (config) => ({
   ...createDeviceActivityMonitorConfig(config),
   appleTeamId: "AX3C2B78YD",
-  bundleIdentifier: bundleIdentifier("monitor", "com.johansardar.excerlock.monitor"),
+  bundleIdentifier: bundleIdentifier("monitor"),
   deploymentTarget: "17.4",
   swiftActiveCompilationConditions: researchEnabled() ? ["EXCERLOCK_LINKED_RECORDER_TRACE"] : [],
   name: "DeviceActivityMonitorExtension",

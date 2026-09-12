@@ -1,9 +1,9 @@
 import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AppState, StyleSheet, View } from 'react-native';
 
-import { linkedTrace, type LinkedTraceStatus } from '@linked-trace';
+import { linkedTrace, type LinkedTracePreflight, type LinkedTraceStatus } from '@linked-trace';
 import {
   ChoiceRow,
   Heading,
@@ -14,36 +14,58 @@ import {
   StatusCard,
 } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
+import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 
-type Phase = 'idle' | 'active' | 'exported' | 'deleted';
-type CanaryPhase = 'lock' | 'unlock';
-type CanaryOutcome = 'shield_visible' | 'app_opened' | 'uncertain';
+type Phase = 'idle' | 'active' | 'expired' | 'exported' | 'deleted';
 
 function first(value: string | string[] | undefined): string { return Array.isArray(value) ? value[0] ?? '' : value ?? ''; }
 function validSession(value: string): boolean { return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value); }
 function validNonce(value: string): boolean { return /^[0-9a-f-]{64,160}$/i.test(value); }
 
 export function LinkedTraceScreen() {
+  const runtime = useRuntime();
+  const entitlementStatus = useEntitlementStore((state) => state.data.entitlement.status);
   const params = useLocalSearchParams<{ sessionId?: string | string[]; nonce?: string | string[]; protocolVersion?: string | string[] }>();
   const sessionId = first(params.sessionId).toLowerCase();
   const nonce = first(params.nonce);
   const protocolVersion = first(params.protocolVersion);
   const validHandshake = validSession(sessionId) && validNonce(nonce) && protocolVersion === '1';
   const [consented, setConsented] = useState(false);
+  const [canaryConfirmed, setCanaryConfirmed] = useState(false);
+  const [abandonConfirmed, setAbandonConfirmed] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [status, setStatus] = useState<LinkedTraceStatus | null>(null);
+  const [preflight, setPreflight] = useState<LinkedTracePreflight | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exportUri, setExportUri] = useState<string | null>(null);
-  const [lockOutcome, setLockOutcome] = useState<CanaryOutcome | null>(null);
-  const [unlockOutcome, setUnlockOutcome] = useState<CanaryOutcome | null>(null);
+
+  const refreshPreflight = async () => {
+    try {
+      const current = await linkedTrace.preflight();
+      setPreflight(current);
+      return current;
+    } catch {
+      setError('Preflight could not read the local requirements. Reopen Trace Lab and try again.');
+      return null;
+    }
+  };
 
   useEffect(() => {
-    if (!validHandshake) return;
-    void linkedTrace.status().then((current) => {
-      setStatus(current);
-      if (current.sessionId === sessionId) setPhase('active');
-    });
+    let cancelled = false;
+    void Promise.all([linkedTrace.status(), linkedTrace.preflight()])
+      .then(([current, readiness]) => {
+        if (cancelled) return;
+        setStatus(current);
+        setPreflight(readiness);
+        if (current.sessionId === sessionId && validHandshake) setPhase('active');
+        else if (current.sessionId && current.active === false) setPhase('expired');
+      })
+      .catch(() => {
+        if (!cancelled) setError('Preflight could not read the local requirements. Reopen Trace Lab and try again.');
+      });
+    return () => { cancelled = true; };
   }, [sessionId, validHandshake]);
 
   useEffect(() => {
@@ -62,42 +84,57 @@ export function LinkedTraceScreen() {
     return () => subscription.remove();
   }, [phase]);
 
-  const title = !validHandshake
-    ? 'Recorder link required'
-    : phase === 'active'
-      ? 'Trace in progress'
+  const missingStep = useMemo(() => {
+    if (!preflight) return 'Wait for the local preflight check.';
+    if (!preflight.labStorageIsolated) return 'Use a signed Trace Lab build with its isolated lab App Group entitlement.';
+    if (entitlementStatus !== 'active' && entitlementStatus !== 'trial') return 'Sign in to the development environment with existing lab access.';
+    if (!preflight.screenTimeAuthorized) return 'Allow Screen Time in Trace Lab setup.';
+    if (!preflight.canarySelectionValid) return 'Select exactly one harmless canary app, with no category or website selection.';
+    if (!canaryConfirmed) return 'Confirm the canary is harmless and is not Walking Recorder.';
+    if (!preflight.motionReady) return 'Allow Motion & Fitness and confirm required motion services are available.';
+    return null;
+  }, [canaryConfirmed, entitlementStatus, preflight]);
+  const preflightReady = missingStep === null;
+
+  const completePrerequisite = async (operation: () => Promise<unknown>) => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await operation();
+      await refreshPreflight();
+    } catch {
+      setError('That prerequisite was not completed. Your current system choice was preserved.');
+    } finally { setBusy(false); }
+  };
+
+  const title = phase === 'active'
+    ? 'Trace in progress'
+    : phase === 'expired'
+      ? 'Expired trace found'
       : phase === 'exported'
         ? 'Trace ready to share'
         : phase === 'deleted'
           ? 'Local trace deleted'
-          : 'Linked background test';
+          : validHandshake ? 'Linked background test' : 'Recorder link required';
 
   const begin = async () => {
     if (!validHandshake || !consented || busy) return;
     setBusy(true);
     setError(null);
     try {
+      const latest = await refreshPreflight();
+      if (!latest?.labStorageIsolated || (entitlementStatus !== 'active' && entitlementStatus !== 'trial') ||
+          !latest.screenTimeAuthorized || !latest.motionReady || !latest.canarySelectionValid || !canaryConfirmed) {
+        setError('The trace did not start. Complete the named preflight step first.');
+        return;
+      }
       const active = await linkedTrace.start(sessionId, nonce);
       setStatus(active);
       setPhase('active');
-      linkedTrace.record('test_marker', { kind: 'session', phase: 'start', label: 'consent_confirmed' });
     } catch {
       setError('The local trace could not start. Reopen this screen from Walking Recorder.');
     } finally { setBusy(false); }
-  };
-
-  const markCanary = (canaryPhase: CanaryPhase, outcome: CanaryOutcome) => {
-    if (canaryPhase === 'lock') setLockOutcome(outcome);
-    else setUnlockOutcome(outcome);
-    linkedTrace.record('canary_outcome', {
-      phase: canaryPhase,
-      outcome,
-      expected: canaryPhase === 'lock' ? 'shield_visible' : 'app_opened',
-    });
-  };
-
-  const markPhase = (canaryPhase: CanaryPhase) => {
-    linkedTrace.record('test_marker', { kind: 'canary_check', phase: canaryPhase, label: 'observation_started' });
   };
 
   const stopAndExport = async () => {
@@ -105,7 +142,6 @@ export function LinkedTraceScreen() {
     setBusy(true);
     setError(null);
     try {
-      linkedTrace.record('test_marker', { kind: 'session', phase: 'stop', label: 'operator_finished' });
       const uri = await linkedTrace.stop(sessionId, nonce);
       setExportUri(uri);
       setStatus(await linkedTrace.status());
@@ -116,24 +152,65 @@ export function LinkedTraceScreen() {
     } finally { setBusy(false); }
   };
 
+  const abandonExpired = async () => {
+    const expiredSessionId = status?.sessionId;
+    if (!expiredSessionId || status.active || !abandonConfirmed || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await linkedTrace.abandonExpiredSession(expiredSessionId);
+      setStatus(await linkedTrace.status());
+      setPhase('deleted');
+    } catch {
+      setError('The expired trace could not be abandoned. No active trace was changed.');
+    } finally { setBusy(false); }
+  };
+
   return (
     <ScreenShell orangeBackground={false} contentStyle={s.content}>
       <Heading title={title} support="Research-only build · local export · two-hour session limit" />
       <StatusCard
         title={phase === 'active'
           ? status?.active === false ? 'Two-hour recording limit reached' : 'Local diagnostic recording active'
-          : phase === 'exported' ? 'Recording stopped' : phase === 'deleted' ? 'Files removed' : 'Not recording'}
+          : phase === 'expired' ? 'Expired local trace is blocking a clean start'
+            : phase === 'exported' ? 'Recording stopped' : phase === 'deleted' ? 'Files removed' : 'Not recording'}
         subtitle={validHandshake ? `Session ${sessionId.slice(0, 8)}…` : 'Open the one-time link from Walking Recorder.'}
-        nextChange={status?.truncated ? 'Trace reached its size limit.' : 'No GPS, microphone, camera, or Health history is collected.'}
+        nextChange={status?.truncated ? 'Trace reached its size limit.' : 'No GPS, microphone, camera, raw vectors, or Health history is collected.'}
         unlocked={phase !== 'active'}
       />
 
       {phase === 'idle' ? (
         <View style={s.section}>
+          <Label variant="section">Preflight</Label>
+          <Label tone="secondary">Trace Lab checks real local prerequisites before it can record. Access must come from the development environment; this screen never grants or overrides it.</Label>
+          <PreflightRow label="Isolated lab App Group entitlement" ready={preflight?.labStorageIsolated === true} />
+          <PreflightRow label="Existing development access" ready={entitlementStatus === 'active' || entitlementStatus === 'trial'} />
+          <PreflightRow label="Screen Time authorized" ready={preflight?.screenTimeAuthorized === true} />
+          {preflight?.screenTimeAuthorized === false ? (
+            <SecondaryButton label="Allow Screen Time" onPress={() => void completePrerequisite(() => runtime.screenTime.requestAuthorization())} />
+          ) : null}
+          <PreflightRow label="Exactly one app selected as canary" ready={preflight?.canarySelectionValid === true} />
+          {preflight?.screenTimeAuthorized === true && preflight.canarySelectionValid === false ? (
+            <SecondaryButton label="Select one canary app" onPress={() => void completePrerequisite(() => runtime.screenTime.presentAppPicker())} />
+          ) : null}
+          <PreflightRow label="Motion & Fitness ready" ready={preflight?.motionReady === true} />
+          {preflight?.motionReady === false ? (
+            <SecondaryButton label="Allow Motion & Fitness" onPress={() => void completePrerequisite(() => runtime.steps.request())} />
+          ) : null}
+          <ChoiceRow
+            title="My selected app is a harmless canary"
+            support="Walking Recorder is not selected. Categories and websites are not selected."
+            selected={canaryConfirmed}
+            multiple
+            onPress={() => setCanaryConfirmed((value) => !value)}
+          />
+          <SecondaryButton label="Refresh preflight" onPress={() => void refreshPreflight()} />
+          {missingStep ? <Label accessibilityRole="alert">Next: {missingStep}</Label> : null}
+
           <Label variant="section">Consent</Label>
           <Label tone="secondary">
-            This records local motion callbacks, detector transitions, policy and watchdog operations, extension callbacks,
-            and shield-write return values. It cannot prove what is visibly shown; you mark that below.
+            This records local motion callback receipts, detector transitions, policy and watchdog operations, extension callbacks,
+            and shield-write return values. Visible canary outcomes and all human labels stay in Walking Recorder.
           </Label>
           <ChoiceRow
             title="I consent to this local research trace"
@@ -142,25 +219,33 @@ export function LinkedTraceScreen() {
             multiple
             onPress={() => setConsented((value) => !value)}
           />
-          <PrimaryButton label={busy ? 'Starting…' : 'Start linked trace'} disabled={!validHandshake || !consented || busy} onPress={() => void begin()} />
+          <PrimaryButton label={busy ? 'Starting…' : 'Start linked trace'} disabled={!validHandshake || !consented || !preflightReady || busy} onPress={() => void begin()} />
         </View>
       ) : null}
 
       {phase === 'active' ? (
         <View style={s.section}>
-          <Label variant="section">Visible canary checks</Label>
+          <Label variant="section">Continue in Walking Recorder</Label>
           <Label tone="secondary">
-            Use only the benign canary app selected in Screen Time. Walking Recorder must never be selected for shielding.
+            Walking Recorder owns test phases and visible canary outcomes. Return here only to finalize and export this separate production-path trace.
           </Label>
-          <SecondaryButton label="Begin lock check" onPress={() => markPhase('lock')} />
-          <ChoiceRow title="Lock check: shield was visible" selected={lockOutcome === 'shield_visible'} onPress={() => markCanary('lock', 'shield_visible')} />
-          <ChoiceRow title="Lock check: canary opened" selected={lockOutcome === 'app_opened'} onPress={() => markCanary('lock', 'app_opened')} />
-          <ChoiceRow title="Lock check: unsure" selected={lockOutcome === 'uncertain'} onPress={() => markCanary('lock', 'uncertain')} />
-          <SecondaryButton label="Begin unlock check" onPress={() => markPhase('unlock')} />
-          <ChoiceRow title="Unlock check: canary opened" selected={unlockOutcome === 'app_opened'} onPress={() => markCanary('unlock', 'app_opened')} />
-          <ChoiceRow title="Unlock check: shield remained" selected={unlockOutcome === 'shield_visible'} onPress={() => markCanary('unlock', 'shield_visible')} />
-          <ChoiceRow title="Unlock check: unsure" selected={unlockOutcome === 'uncertain'} onPress={() => markCanary('unlock', 'uncertain')} />
           <PrimaryButton label={busy ? 'Finalizing…' : status?.active === false ? 'Finalize expired trace' : 'End trace and export'} disabled={busy} onPress={() => void stopAndExport()} />
+        </View>
+      ) : null}
+
+      {phase === 'expired' && status?.sessionId ? (
+        <View style={s.section}>
+          <Label variant="section">Explicit local cleanup</Label>
+          <Label tone="secondary">
+            The two-hour limit has passed and the one-time Recorder link is unavailable. Abandon deletes this expired local trace without exporting it. An unexpired trace can never use this path.
+          </Label>
+          <ChoiceRow
+            title="I understand this expired trace will be deleted"
+            selected={abandonConfirmed}
+            multiple
+            onPress={() => setAbandonConfirmed((value) => !value)}
+          />
+          <PrimaryButton label={busy ? 'Deleting…' : 'Abandon expired trace'} disabled={!abandonConfirmed || busy} onPress={() => void abandonExpired()} />
         </View>
       ) : null}
 
@@ -189,8 +274,18 @@ export function LinkedTraceScreen() {
   );
 }
 
+function PreflightRow({ label, ready }: { label: string; ready: boolean }) {
+  return (
+    <View style={s.preflightRow} accessibilityLabel={`${label}: ${ready ? 'ready' : 'missing'}`}>
+      <Label>{ready ? 'Ready' : 'Missing'}</Label>
+      <Label tone="secondary">{label}</Label>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   content: { gap: t.space.xl, paddingBottom: t.space.xxxl },
   section: { gap: t.space.lg },
+  preflightRow: { gap: t.space.xs },
   error: { color: t.state.error },
 });

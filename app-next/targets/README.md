@@ -15,8 +15,11 @@ Required (generated as Xcode appex on every clean prebuild):
 - `DeviceActivityReportExtension` (`com.johansardar.excerlock.report`,
   ExtensionKit `com.apple.deviceactivityui.report-extension`, display-only)
 
-All four keep the canonical app group `group.com.johansardar.excerlock`,
-Family Controls entitlement, team `AX3C2B78YD` and iOS 17.4 deployment target.
+Ordinary builds keep the canonical app group `group.com.johansardar.excerlock`.
+The explicit local Linked Recorder research mode instead gives the app and all
+four extensions `group.com.johansardar.excerlock.lab.linkedtrace`, preventing a
+co-installed lab build from mutating production policy or selection state. Both
+modes keep the Family Controls entitlement, team `AX3C2B78YD` and iOS 17.4 target.
 The finalized validator materializes the monitor class and shared runtime
 byte-for-byte from the installed package; those `*.generated.swift` files are
 ignored (see `.gitignore` pattern below). The App Intent lives in the MAIN app

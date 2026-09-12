@@ -4,17 +4,15 @@ import { buildClientExtra, resolveBuildEnvironment, updateChannel } from './conf
 import { loadBuildEnvironment } from './config/loadEnvironment';
 import { nativeConfig } from './config/native';
 import { googleOAuthRedirect } from './config/googleOAuth';
-import {
-  LINKED_RECORDER_BUNDLE_IDS,
-  LINKED_RECORDER_RUNTIME,
-  LINKED_RECORDER_SCHEME,
-  linkedRecorderResearchEnabled,
-  linkedRecorderUpdatesConfig,
-} from './config/linkedRecorderResearch';
+// CommonJS is the single executable owner used by Expo config, target configs,
+// Babel, and Metro so research identifiers and opt-in parsing cannot drift.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const linkedRecorderConfig = require('./plugins/linkedRecorderResearchConfig') as typeof import('./plugins/linkedRecorderResearchConfig');
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   if (!config.name || !config.slug) throw new Error('app.json must define name and slug');
-  const linkedRecorderResearch = linkedRecorderResearchEnabled(process.env);
+  const linkedRecorderResearch = linkedRecorderConfig.assertResearchBuildAllowed(process.env);
+  const linkedIdentifiers = linkedRecorderConfig.identifiers(process.env);
   const environment = resolveBuildEnvironment(process.env);
   const values = loadBuildEnvironment();
   const extra = buildClientExtra(values, environment, { requireUploadToken: process.env.EAS_BUILD === 'true' });
@@ -24,18 +22,29 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   }
   const google = values.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ? googleOAuthRedirect(values.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID) : null;
   const plugins = linkedRecorderResearch
-    ? nativeConfig.plugins.filter((plugin) => (Array.isArray(plugin) ? plugin[0] : plugin) !== '@sentry/react-native/expo')
+    ? nativeConfig.plugins
+      .filter((plugin) => (Array.isArray(plugin) ? plugin[0] : plugin) !== '@sentry/react-native/expo')
+      .map((plugin) => {
+        if (!Array.isArray(plugin) || plugin[0] !== 'react-native-device-activity') return plugin;
+        return [plugin[0], { ...(plugin[1] as Record<string, unknown>), appGroup: linkedIdentifiers.appGroup }] as [string, Record<string, unknown>];
+      })
     : nativeConfig.plugins;
   return {
     ...config,
-    scheme: [linkedRecorderResearch ? LINKED_RECORDER_SCHEME : 'excerlock', ...(google ? [google.scheme] : [])],
+    scheme: [linkedRecorderResearch ? linkedRecorderConfig.URL_SCHEME : 'excerlock', ...(google ? [google.scheme] : [])],
     name: config.name,
     slug: config.slug,
-    runtimeVersion: linkedRecorderResearch ? LINKED_RECORDER_RUNTIME : '2',
+    runtimeVersion: linkedRecorderResearch ? linkedRecorderConfig.RUNTIME_VERSION : '2',
     ios: {
       ...config.ios,
       ...nativeConfig.ios,
-      ...(linkedRecorderResearch ? { bundleIdentifier: LINKED_RECORDER_BUNDLE_IDS.app } : {}),
+      ...(linkedRecorderResearch ? {
+        bundleIdentifier: linkedIdentifiers.bundleIds.app,
+        entitlements: {
+          ...nativeConfig.ios?.entitlements,
+          'com.apple.security.application-groups': [linkedIdentifiers.appGroup],
+        },
+      } : {}),
       infoPlist: {
         ...config.ios?.infoPlist,
         ...nativeConfig.ios?.infoPlist,
@@ -49,11 +58,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     extra: {
       ...config.extra,
       ...extra,
-      ...(linkedRecorderResearch ? { clientObservability: {} } : {}),
+      ...(linkedRecorderResearch ? {
+        clientObservability: {
+          posthogApiKey: 'linked-trace-local',
+          posthogHost: 'https://localhost',
+          sentryDsn: 'https://localhost',
+        },
+      } : {}),
       clientAuth: { ...extra.clientAuth, googleRedirectUri: google?.redirectUri },
-      ...(linkedRecorderResearch ? { linkedRecorderResearch: true } : {}),
     },
-    updates: linkedRecorderResearch ? linkedRecorderUpdatesConfig() : {
+    updates: linkedRecorderResearch ? linkedRecorderConfig.updatesConfig() : {
       url: 'https://u.expo.dev/9a358379-d939-4c56-bcea-de3ac5699be2',
       enabled: true,
       requestHeaders: { 'expo-channel-name': updateChannel(environment) },

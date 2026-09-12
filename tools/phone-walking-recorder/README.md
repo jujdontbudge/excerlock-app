@@ -33,11 +33,11 @@ The recorder can create a post-hoc correlation session for the separately provis
 
 1. Explicitly select **I consent to create a linked local session** before starting a recording.
 2. Start the desired activity label, then tap **Open ExcerLock Trace Lab**.
-3. Consent again in ExcerLock and start its trace, then return to the recorder.
+3. In Trace Lab, complete its visible isolated-App-Group, existing development access, Screen Time, one-app canary, and Motion preflight; consent and start its trace, then return to the recorder. Access must already be trial/active in the development environment; this setup never uses production Adapty or auto-grants an entitlement.
 4. Mark lock/unlock checks and the outcome actually observed in a benign canary app. Never select this recorder as the Screen Time shield target.
 5. Tap **Finish & Save**; the recorder reopens Trace Lab so you can end/export its trace. Export the saved recorder archive separately, then use `tools/linked-recorder/join.py` locally.
 
-The two apps exchange only a random session UUID, protocol version, and 256-bit one-time nonce in a deep link. There is no live label IPC. The nonce remains in recorder memory and is never written to the archive. Both exports use `mach_continuous_time` receipt timestamps for offline ordering.
+The two apps exchange only a random session UUID, protocol version, and 256-bit one-time nonce in a deep link. There is no live label IPC. Walking Recorder is the sole owner of test-phase, visible-canary, and activity labels. The nonce is written transactionally only to the session's protected `recovery.json`, which is excluded from every archive export; this lets completion, storage-limit, sensor-error, and process-termination paths reopen Trace Lab until you confirm it was finalized or explicitly abandoned. Both exports use `mach_continuous_time` receipt timestamps for offline ordering.
 
 ## Capture archive
 
@@ -48,13 +48,13 @@ Each share action creates one `walking-capture-<session-id>.zip` containing:
 | `raw-motion.ndjson` | Live activity/confidence, cadence and cumulative steps, 50 Hz requested raw accelerometer, raw gyroscope, and fused device motion: total/user acceleration, gravity, rotation rate, attitude and magnetic field where supported. Invalid values are explicit. |
 | `labels.ndjson` | User label boundaries on the shared monotonic clock. A null `toLabel` means unlabeled transition/baseline, not assumed stationary. |
 | `decisions.ndjson` | Current production-derived evidence, phase, relief intent, grace and deadlines. Actual Managed Settings shields are not instrumented or claimed. |
-| `system.ndjson` | Permission/subscription state, configured and observed rates, lifecycle callbacks, sensor errors, recording gaps, clock mapping, flush/recovery events, and optional linked-session/canary markers. |
+| `system.ndjson` | Permission/subscription state, configured and observed rates, lifecycle callbacks, sensor errors, recording gaps, clock mapping, flush/recovery events, and optional linked-session/canary markers owned by Walking Recorder. |
 | `metadata.json` | Build/source commit, non-unique device model and OS, permission/availability, production parity constants, lab-only fields. |
 | `schema.json` | Field/timebase/unit guide. |
 | `manifest.json` | Completion status, duration, event/segment/gap counts, size and per-scenario counts. |
 | `README.txt` | Archive interpretation cautions. |
 
-All event streams use one monotonically increasing `sequence`. Every event includes receipt-time `mach_continuous_time` converted to nanoseconds plus a wall-clock pair. Core Motion source timestamps remain separately named with their native clock domain. Writes are incrementally buffered to 64 KB and critical label/lifecycle boundaries are synchronized immediately. A `recovery.json` checkpoint makes an unfinished session recover as `interrupted` on next launch.
+All event streams use one monotonically increasing `sequence`. Every event includes receipt-time `mach_continuous_time` converted to nanoseconds plus a wall-clock pair. Core Motion source timestamps remain separately named with their native clock domain. Writes are incrementally buffered to 64 KB and critical label/lifecycle boundaries are synchronized immediately. A protected `recovery.json` checkpoint makes an unfinished session recover as `interrupted` on next launch. For linked sessions it also retains the non-exported one-time link until the operator confirms the separate Trace Lab trace was finalized or expired and explicitly abandoned.
 
 ## Production-path parity
 

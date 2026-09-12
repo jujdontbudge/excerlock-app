@@ -23,7 +23,6 @@ PRODUCTION_EVENT_TYPES = {
     "trace_start", "trace_stop", "trace_truncated", "trace_drop_summary", "process", "clock_anchor",
     "app_lifecycle", "execution_opportunity", "motion_callback_native", "motion_input_js", "motion_evidence",
     "detector_persist", "policy_publish", "watchdog_operation", "extension_callback", "shield_write",
-    "test_marker", "canary_outcome",
 }
 CANARY_PHASES = {"lock", "unlock"}
 CANARY_OUTCOMES = {"shield_visible", "app_opened", "uncertain"}
@@ -36,7 +35,6 @@ CAUSAL_TYPES = {
     "watchdogOperation": "watchdog_operation",
     "extensionCallback": "extension_callback",
     "shieldWrite": "shield_write",
-    "canaryOutcome": "canary_outcome",
 }
 
 

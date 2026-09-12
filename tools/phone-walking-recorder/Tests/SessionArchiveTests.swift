@@ -115,6 +115,63 @@ final class SessionArchiveTests: XCTestCase {
         XCTAssertTrue((payload["meaning"] as? String)?.contains("not the exact") == true)
     }
 
+    func testLinkedRecoverySurvivesTerminationAndNeverEntersExport() throws {
+        let root = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let clock = TestCaptureClock()
+        let sessionId = "123e4567-e89b-42d3-a456-426614174000"
+        let nonce = String(repeating: "ab", count: 32)
+        var writer: SessionWriter? = try SessionWriter(
+            baseURL: root,
+            id: sessionId,
+            startedAt: clock.now(),
+            metadata: ["schemaVersion": 1],
+            clock: clock,
+            linkedTraceRecovery: LinkedTraceRecovery(sessionId: sessionId, nonce: nonce)
+        )
+        try writer?.checkpoint(timeline: LabelTimeline(), gapCount: 0)
+        let recoveryURL = try XCTUnwrap(writer?.directoryURL.appendingPathComponent("recovery.json"))
+        XCTAssertTrue(try String(contentsOf: recoveryURL, encoding: .utf8).contains(nonce))
+        writer = nil
+
+        let repository = SessionRepository(baseURL: root)
+        XCTAssertEqual(repository.sessions.first?.status, .interrupted)
+        XCTAssertEqual(repository.pendingLinkedTraceRecoveries, [LinkedTraceRecovery(sessionId: sessionId, nonce: nonce)])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: recoveryURL.path))
+
+        let archive = try repository.export(try XCTUnwrap(repository.sessions.first))
+        let archiveData = try Data(contentsOf: archive)
+        let archiveText = String(decoding: archiveData, as: UTF8.self)
+        XCTAssertFalse(archiveText.contains("recovery.json"))
+        XCTAssertFalse(archiveText.contains(nonce))
+
+        try repository.clearLinkedTraceRecovery(sessionId: sessionId)
+        XCTAssertTrue(repository.pendingLinkedTraceRecoveries.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: recoveryURL.path))
+    }
+
+    func testFailureFinalizationRetainsLinkedRecoveryForStopAndExport() throws {
+        let root = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let nonce = String(repeating: "cd", count: 32)
+        for status in [SessionCompletionStatus.storageLimit, .sensorError] {
+            let sessionId = UUID().uuidString.lowercased()
+            let clock = TestCaptureClock()
+            let writer = try SessionWriter(
+                baseURL: root,
+                id: sessionId,
+                startedAt: clock.now(),
+                metadata: ["schemaVersion": 1],
+                clock: clock,
+                linkedTraceRecovery: LinkedTraceRecovery(sessionId: sessionId, nonce: nonce)
+            )
+            _ = try writer.finalize(status: status, timeline: LabelTimeline(), gapCount: 0)
+        }
+        let repository = SessionRepository(baseURL: root)
+        XCTAssertEqual(Set(repository.pendingLinkedTraceRecoveries.map(\.sessionId)).count, 2)
+        XCTAssertEqual(Set(repository.sessions.map(\.status)), Set([.storageLimit, .sensorError]))
+    }
+
     func testStorageLimitStopsBeforeUnboundedBufferGrowth() throws {
         let root = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
