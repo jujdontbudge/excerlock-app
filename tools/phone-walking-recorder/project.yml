@@ -1,0 +1,53 @@
+name: PhoneWalkingRecorder
+options:
+  bundleIdPrefix: com.johansardar.excerlock.lab
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    DEVELOPMENT_TEAM: AX3C2B78YD
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    RECORDER_SOURCE_COMMIT: unknown
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: "1"
+    SUPPORTS_MACCATALYST: NO
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: NO
+targets:
+  PhoneWalkingRecorder:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.johansardar.excerlock.lab.walkingrecorder
+        PRODUCT_NAME: PhoneWalkingRecorder
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Support/Info.plist
+        TARGETED_DEVICE_FAMILY: "1"
+  PhoneWalkingRecorderTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+      - path: Fixtures
+        buildPhase: resources
+    dependencies:
+      - target: PhoneWalkingRecorder
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.johansardar.excerlock.lab.walkingrecorder.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  PhoneWalkingRecorder:
+    build:
+      targets:
+        PhoneWalkingRecorder: all
+        PhoneWalkingRecorderTests: [test]
+    test:
+      gatherCoverageData: true
+      targets:
+        - PhoneWalkingRecorderTests

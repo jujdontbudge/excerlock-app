@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0026: Isolate the phone motion recorder from the shipping app](0026-isolate-phone-motion-recorder.md) — **accepted**.
 - [0025: Main is the release source](0025-main-is-the-release-source.md) — **accepted**.
 
 - [0008: Share installed agent capability inventory](0008-share-installed-agent-capability-inventory.md) — **accepted**.

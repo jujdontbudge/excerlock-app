@@ -1,0 +1,7 @@
+PhoneWalkingRecorder.xcodeproj/
+DerivedData/
+.build/
+*.xcresult
+*.ipa
+*.app
+Exports/
