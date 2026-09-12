@@ -33,6 +33,46 @@ test(`actual Expo loader preserves ${profile} native configuration and excludes 
   assert.ok(!result.stdout.includes('SENTRY_AUTH_TOKEN'));
 });
 }
+test('actual Expo loader creates an isolated local-only Linked Recorder research config', () => {
+  const researchEnv = {
+    ...env,
+    NODE_ENV: 'production',
+    EXCERLOCK_ENV: 'dev',
+    EXCERLOCK_LINKED_RECORDER_TRACE: '1',
+    EAS_BUILD: 'false',
+  };
+  delete researchEnv.EAS_BUILD_PROFILE;
+  const result = spawnSync(process.execPath, [cli, 'config', '--type', 'public', '--json'], {
+    cwd, env: researchEnv, encoding: 'utf8', timeout: 30_000,
+  });
+  assert.equal(result.status, 0, 'Linked Recorder Expo config loading failed (output withheld)');
+  const config = JSON.parse(result.stdout);
+  assert.equal(config.name, 'ExcerLock');
+  assert.equal(config.ios.infoPlist.CFBundleDisplayName, 'ExcerLock Trace Lab');
+  assert.equal(config.ios.bundleIdentifier, 'com.johansardar.excerlock.lab.linkedtrace');
+  assert.deepEqual(config.scheme.filter((value) => value.startsWith('excerlock')), ['excerlock-linked-trace']);
+  assert.equal(config.runtimeVersion, '2-linked-recorder-1');
+  assert.equal(config.updates.enabled, false);
+  assert.equal(config.updates.checkAutomatically, 'NEVER');
+  assert.equal(config.updates.url, undefined);
+  assert.equal(config.updates.requestHeaders, undefined);
+  assert.equal(config.extra.linkedRecorderResearch, true);
+  assert.deepEqual(config.extra.clientObservability, {});
+  assert.ok(!config.plugins.some((plugin) => (Array.isArray(plugin) ? plugin[0] : plugin) === '@sentry/react-native/expo'));
+  assert.ok(!result.stdout.includes(researchEnv.SENTRY_AUTH_TOKEN));
+});
+
+test('actual Expo loader refuses Linked Recorder research mode in EAS Build', () => {
+  const result = spawnSync(process.execPath, [cli, 'config', '--type', 'public', '--json'], {
+    cwd,
+    env: { ...env, EXCERLOCK_ENV: 'dev', EXCERLOCK_LINKED_RECORDER_TRACE: '1', EAS_BUILD: 'true' },
+    encoding: 'utf8',
+    timeout: 30_000,
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /local-only and cannot use EAS Build/);
+});
+
 test('actual Expo loader refuses conflicting release environment', () => {
   const result = spawnSync(process.execPath, [cli, 'config', '--type', 'public', '--json'], {
     cwd, env: { ...env, EXCERLOCK_ENV: 'prod' }, encoding: 'utf8', timeout: 30_000,

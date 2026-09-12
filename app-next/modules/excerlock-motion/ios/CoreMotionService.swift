@@ -1,6 +1,9 @@
 import CoreMotion
 import ExpoModulesCore
 import Foundation
+#if EXCERLOCK_LINKED_RECORDER_TRACE
+import ExcerlockEnforcement
+#endif
 
 final class CoreMotionService {
   private let activityManager = CMMotionActivityManager()
@@ -50,11 +53,19 @@ final class CoreMotionService {
 
     activityManager.startActivityUpdates(to: operationQueue) { [weak self] activity in
       guard let self, self.isStarted, let activity else { return }
-      onActivity(motionActivityPayload(activity))
+      let payload = motionActivityPayload(activity)
+      #if EXCERLOCK_LINKED_RECORDER_TRACE
+      self.traceMotionCallback(stream: "activity", payload: payload)
+      #endif
+      onActivity(payload)
     }
     pedometer.startUpdates(from: Date()) { [weak self] data, _ in
       guard let self, self.isStarted, let data else { return }
-      onCadence(cadencePayload(data))
+      let payload = cadencePayload(data)
+      #if EXCERLOCK_LINKED_RECORDER_TRACE
+      self.traceMotionCallback(stream: "cadence", payload: payload)
+      #endif
+      onCadence(payload)
     }
   }
 
@@ -85,7 +96,11 @@ final class CoreMotionService {
     deviceMotionManager.startDeviceMotionUpdates(to: operationQueue) {
       [weak self] data, _ in
       guard let self, self.isDeviceMotionStarted, let data else { return }
-      onDeviceMotion(deviceMotionPayload(data))
+      let payload = deviceMotionPayload(data)
+      #if EXCERLOCK_LINKED_RECORDER_TRACE
+      self.traceMotionCallback(stream: "device_motion", payload: payload)
+      #endif
+      onDeviceMotion(payload)
     }
   }
 
@@ -170,6 +185,35 @@ final class CoreMotionService {
     defer { stateLock.unlock() }
     return deviceMotionStarted
   }
+
+  #if EXCERLOCK_LINKED_RECORDER_TRACE
+  private func traceMotionCallback(stream: String, payload: MotionPayload) {
+    var trace: [String: Any] = ["stream": stream, "bridgeAttempted": true]
+    for key in ["classes", "confidence", "startedAt", "receivedAt", "stepsPerSecond", "cumulativeSteps", "asOf", "timestampMs"] {
+      guard let value = payload[key] else { continue }
+      let outputKey: String
+      switch key {
+      case "startedAt": outputKey = "startedAtWallMs"
+      case "receivedAt": outputKey = "receivedAtWallMs"
+      case "asOf": outputKey = "asOfWallMs"
+      case "timestampMs": outputKey = "timestampWallMs"
+      default: outputKey = key
+      }
+      trace[outputKey] = value
+    }
+    if let gravity = payload["gravity"] as? [String: Any] {
+      trace["gravityX"] = gravity["x"]
+      trace["gravityY"] = gravity["y"]
+      trace["gravityZ"] = gravity["z"]
+    }
+    if let rotation = payload["rotationRate"] as? [String: Any] {
+      trace["rotationX"] = rotation["x"]
+      trace["rotationY"] = rotation["y"]
+      trace["rotationZ"] = rotation["z"]
+    }
+    LinkedTraceWriter.shared.recordDeferred(producer: .hostNative, eventType: .motionCallbackNative, payload: trace)
+  }
+  #endif
 
   private func assertUsable() throws {
     try assertAuthorized()

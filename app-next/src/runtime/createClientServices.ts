@@ -1,7 +1,7 @@
 import { createIdentityServices } from './createIdentityServices';
-import { createPostHogRuntime } from './analytics/createPostHogRuntime';
+import { createPostHogRuntime } from '@posthog-runtime';
 import { createPaywallExperimentPort, createReviewPresetPort, normalizeWalkPlaces } from './analytics/PostHogAnalyticsAdapter';
-import { initializeSentrySdk } from './observability/SentryBinding';
+import { initializeSentrySdk } from '@sentry-binding';
 import { getOtaObservabilityContext } from './updates';
 import { readClientConfiguration } from './clientConfiguration';
 import { settingsStore } from '../state/settingsStore';

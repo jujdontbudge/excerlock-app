@@ -11,6 +11,7 @@ import { addDays, dayKey, localDayStart } from '../../domain/calendar';
 import type { DetectionData, PendingHistoryCredit } from '../../state/detectionStore';
 import type { WalkingDurationLedger } from './WalkingDurationLedger';
 import { runCleanups } from './runCleanups';
+import { linkedTrace } from '@linked-trace';
 export const MAX_HISTORY_SEGMENTS_PER_WAKE = 8;
 export type DetectionWake = {
   now: number;
@@ -28,6 +29,7 @@ export class DetectionService {
   private lifecycle: Promise<void> = Promise.resolve();
   private lastWork: Promise<unknown> = Promise.resolve();
   private committedListeners = new Set<() => void>();
+  private lastDurableTraceData: DetectionData | null = null;
   constructor(
     private readonly deps: {
       motion: MotionAdapter;
@@ -45,6 +47,7 @@ export class DetectionService {
     return this.runLifecycle(async () => {
       if (this.disposers.length) return;
       const generation = detectionStore.getState().data.generation;
+      if (__LINKED_RECORDER_TRACE__) this.lastDurableTraceData = detectionStore.getState().data;
       this.disposers = [
         this.deps.motion.subscribe((evidence) => {
           void this.enqueue(() => this.applyMotion(evidence, walkingGraceMs, generation)).catch((error) =>
@@ -69,7 +72,7 @@ export class DetectionService {
               ...(kind === 'putDown' ? { walking: createWalkingState(at) } : {}),
               observedAt: at,
             });
-            await this.commitObserved(at, generation);
+            await this.commitObserved(at, generation, undefined, 'placement');
           }).catch((error) => this.deps.onError?.(error));
         }),
       ];
@@ -122,7 +125,7 @@ export class DetectionService {
       const gym = reduceGym(before.gym, { kind: 'records', records }, wake.now);
       if (wake.includeStepHistory === false) {
         detectionStore.getState().patch({ walking, propped, gym, observedAt: wake.now });
-        await this.commitObserved(wake.now, wake.generation, wake.timezone);
+        await this.commitObserved(wake.now, wake.generation, wake.timezone, 'wake');
         return;
       }
       let ledger = await this.deps.historyLedger.read();
@@ -163,7 +166,7 @@ export class DetectionService {
         creditedThrough: { ...before.creditedThrough, steps: cursor },
         pendingHistory: null,
       });
-      await this.commitObserved(wake.now, wake.generation, wake.timezone);
+      await this.commitObserved(wake.now, wake.generation, wake.timezone, 'wake');
     });
   }
   measureStepRanges(
@@ -217,7 +220,7 @@ export class DetectionService {
         propped = reducePropped(propped, { kind: 'coverageLost', at: now }, now);
       const gym = reduceGym(before.gym, { kind: 'records', records }, now);
       detectionStore.getState().patch({ walking, propped, gym, observedAt: now });
-      await this.commitObserved(now, generation);
+      await this.commitObserved(now, generation, undefined, 'tick');
     });
   }
   /** Root calls only after durable history sealing; serialized with sensor writers. */
@@ -268,7 +271,7 @@ export class DetectionService {
         gym: reduceGym(data.gym, { kind: 'coverageLost' }, now),
         observedAt: now,
       });
-      await this.commitObserved(now, generation);
+      await this.commitObserved(now, generation, undefined, 'coverage_lost');
     });
   }
   invalidateGymRegion(regionId: string, now: number, generation: number): Promise<void> {
@@ -276,7 +279,7 @@ export class DetectionService {
       this.assertGeneration(generation);
       const data = detectionStore.getState().data;
       detectionStore.getState().patch({ gym: reduceGym(data.gym, { kind: 'coverageLost', regionId }, now) });
-      await this.commitObserved(now, generation);
+      await this.commitObserved(now, generation, undefined, 'gym_region_invalidated');
     });
   }
   async startProppedScan(now: number, generation: number): Promise<number | null> {
@@ -315,7 +318,7 @@ export class DetectionService {
       else if (walking.phase === 'inactive' && propped.phase === 'active')
         propped = reducePropped(propped, { kind: 'walkingStopped', at: now }, now);
       detectionStore.getState().patch({ walking, propped, observedAt: now });
-      await this.commitObserved(now, generation);
+      await this.commitObserved(now, generation, undefined, 'manual_motion');
     });
   }
   private async applyMotion(evidence: MotionEvidence, graceMs: number, generation: number): Promise<void> {
@@ -337,7 +340,7 @@ export class DetectionService {
       propped,
       observedAt: evidence.observedAt,
     });
-    await this.commitObserved(evidence.observedAt, generation);
+    await this.commitObserved(evidence.observedAt, generation, undefined, 'live_motion');
   }
   private applyPropped(
     event: ProppedEvent,
@@ -349,7 +352,7 @@ export class DetectionService {
       this.assertGeneration(generation);
       const next = reducePropped(detectionStore.getState().data.propped, event, now);
       detectionStore.getState().patch({ propped: next, observedAt: now });
-      await this.commitObserved(now, generation);
+      await this.commitObserved(now, generation, undefined, 'propped');
       after?.(next);
     });
   }
@@ -359,9 +362,48 @@ export class DetectionService {
   private persist(): Promise<void> {
     return (this.deps.persist ?? persistDetectionState)();
   }
-  private async commitObserved(at: number, generation: number, timezone = this.deps.walkingTimezone?.()): Promise<void> {
-    await this.persist();
+  private traceDetectorPersist(trigger: string, status: string, before: DetectionData, after: DetectionData): void {
+    if (!__LINKED_RECORDER_TRACE__) return;
+    linkedTrace.record('detector_persist', {
+      trigger,
+      status,
+      generation: after.generation,
+      observedAtWallMs: after.observedAt,
+      phaseBefore: before.walking.phase,
+      phaseAfter: after.walking.phase,
+      watermarkBefore: before.walking.watermark,
+      watermarkAfter: after.walking.watermark,
+      qualifyingSinceBefore: before.walking.qualifyingSince,
+      qualifyingSinceAfter: after.walking.qualifyingSince,
+      activeSinceBefore: before.walking.activeSince,
+      activeSinceAfter: after.walking.activeSince,
+      lastEvidenceAtBefore: before.walking.lastEvidenceAt,
+      lastEvidenceAtAfter: after.walking.lastEvidenceAt,
+      lastQualifyingBefore: before.walking.lastQualifying,
+      lastQualifyingAfter: after.walking.lastQualifying,
+      graceEndsAtBefore: before.walking.graceEndsAt,
+      graceEndsAtAfter: after.walking.graceEndsAt,
+    });
+  }
+  private async commitObserved(
+    at: number,
+    generation: number,
+    timezone = this.deps.walkingTimezone?.(),
+    trigger = 'commit',
+  ): Promise<void> {
+    const before = __LINKED_RECORDER_TRACE__ ? this.lastDurableTraceData ?? detectionStore.getState().data : null;
+    const candidate = __LINKED_RECORDER_TRACE__ ? detectionStore.getState().data : null;
+    try {
+      await this.persist();
+    } catch (error) {
+      if (__LINKED_RECORDER_TRACE__) this.traceDetectorPersist(trigger, 'failed', before!, candidate!);
+      throw error;
+    }
     this.assertGeneration(generation);
+    if (__LINKED_RECORDER_TRACE__) {
+      this.traceDetectorPersist(trigger, 'returned', before!, candidate!);
+      this.lastDurableTraceData = candidate!;
+    }
     if (this.deps.walkingDurationLedger) {
       if (!timezone) throw new Error('Walking duration timezone unavailable');
       const data = detectionStore.getState().data;

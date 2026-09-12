@@ -6,6 +6,7 @@ import type {
   Unsubscribe,
 } from '../../engine/signals/motion/MotionProvider';
 import { runCleanups } from './runCleanups';
+import { linkedTrace } from '@linked-trace';
 
 export const MOTION_FRESHNESS_MS = 5_000;
 export const MIN_WALKING_CADENCE_PER_MINUTE = 80;
@@ -105,25 +106,45 @@ export class MotionAdapter {
 
   private publish(at: number): void {
     const evidence = this.reconcile(Math.max(at, this.now()));
+    if (__LINKED_RECORDER_TRACE__) linkedTrace.record('motion_evidence', {
+      qualifying: evidence.qualifying === 'unknown' ? 'unknown' : evidence.qualifying,
+      observedAtWallMs: evidence.observedAt,
+      activityAtWallMs: evidence.activityAt,
+      cadenceAtWallMs: evidence.cadenceAt,
+      cadencePerMinute: evidence.cadencePerMinute,
+    });
     this.listeners.forEach((listener) => listener(evidence));
   }
 
   private acceptActivity(sample: ActivitySample): void {
-    if (!Number.isFinite(sample.receivedAt) || sample.receivedAt < sample.startedAt || sample.receivedAt > this.now())
+    const invalid = !Number.isFinite(sample.receivedAt) || sample.receivedAt < sample.startedAt || sample.receivedAt > this.now();
+    if (invalid) {
+      if (__LINKED_RECORDER_TRACE__) linkedTrace.record('motion_input_js', { stream: 'activity', status: 'rejected', reason: 'invalid_time', sourceAtWallMs: sample.receivedAt });
       return;
-    if (this.activity !== null && sample.receivedAt <= this.activity.receivedAt) return;
+    }
+    if (this.activity !== null && sample.receivedAt <= this.activity.receivedAt) {
+      if (__LINKED_RECORDER_TRACE__) linkedTrace.record('motion_input_js', { stream: 'activity', status: 'rejected', reason: 'stale', sourceAtWallMs: sample.receivedAt });
+      return;
+    }
+    if (__LINKED_RECORDER_TRACE__) linkedTrace.record('motion_input_js', { stream: 'activity', status: 'accepted', sourceAtWallMs: sample.receivedAt });
     this.activity = sample;
     this.publish(sample.receivedAt);
   }
 
   private acceptCadence(sample: CadenceSample): void {
-    if (
+    const invalid =
       !Number.isFinite(sample.asOf) ||
       sample.asOf > this.now() ||
-      (sample.stepsPerSecond !== null && (!Number.isFinite(sample.stepsPerSecond) || sample.stepsPerSecond < 0))
-    )
+      (sample.stepsPerSecond !== null && (!Number.isFinite(sample.stepsPerSecond) || sample.stepsPerSecond < 0));
+    if (invalid) {
+      if (__LINKED_RECORDER_TRACE__) linkedTrace.record('motion_input_js', { stream: 'cadence', status: 'rejected', reason: 'invalid_value', sourceAtWallMs: sample.asOf });
       return;
-    if (this.cadence !== null && sample.asOf <= this.cadence.asOf) return;
+    }
+    if (this.cadence !== null && sample.asOf <= this.cadence.asOf) {
+      if (__LINKED_RECORDER_TRACE__) linkedTrace.record('motion_input_js', { stream: 'cadence', status: 'rejected', reason: 'stale', sourceAtWallMs: sample.asOf });
+      return;
+    }
+    if (__LINKED_RECORDER_TRACE__) linkedTrace.record('motion_input_js', { stream: 'cadence', status: 'accepted', sourceAtWallMs: sample.asOf });
     this.cadence = sample;
     this.publish(sample.asOf);
   }

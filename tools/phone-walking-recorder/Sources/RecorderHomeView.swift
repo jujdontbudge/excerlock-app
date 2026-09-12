@@ -30,6 +30,7 @@ struct RecorderHomeView: View {
                     header
                     if controller.isUIPreview { previewBanner }
                     permissionOrHealthCard
+                    linkedTestSection
                     scenarioSection
                     savedSessionsSection
                 }
@@ -217,6 +218,83 @@ struct RecorderHomeView: View {
             .foregroundStyle(RecorderTheme.secondaryText)
         }
         .recorderCard()
+    }
+
+    @ViewBuilder
+    private var linkedTestSection: some View {
+        if controller.isRecording, controller.linkedSessionID != nil {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Local diagnostic recording active", systemImage: "link.circle.fill")
+                    .font(.headline)
+                    .foregroundStyle(RecorderTheme.primaryText)
+                Text("Linked background test")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(RecorderTheme.secondaryText)
+                Text("Open ExcerLock Trace Lab once to consent and start its production-path trace, then return here. Labels stay in Walking Recorder; the apps do not exchange live labels.")
+                    .font(.subheadline)
+                    .foregroundStyle(RecorderTheme.secondaryText)
+                Button("Open ExcerLock Trace Lab") { controller.openLinkedTraceLab() }
+                    .buttonStyle(SecondaryButtonStyle())
+                Divider().overlay(RecorderTheme.divider)
+                Text("Canary observations")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RecorderTheme.primaryText)
+                Text("Use only a benign canary app. Never select Walking Recorder as a shield target.")
+                    .font(.caption)
+                    .foregroundStyle(RecorderTheme.secondaryText)
+                VStack(spacing: 8) {
+                    Button("Begin lock check") { controller.markLinkedTestPhase("lock") }
+                    HStack(spacing: 8) {
+                        Button("Shield visible") { controller.markCanaryOutcome(phase: "lock", outcome: "shield_visible") }
+                        Button("App opened") { controller.markCanaryOutcome(phase: "lock", outcome: "app_opened") }
+                        Button("Unsure") { controller.markCanaryOutcome(phase: "lock", outcome: "uncertain") }
+                    }
+                }
+                .buttonStyle(CompactTestButtonStyle())
+                VStack(spacing: 8) {
+                    Button("Begin unlock check") { controller.markLinkedTestPhase("unlock") }
+                    HStack(spacing: 8) {
+                        Button("App opened") { controller.markCanaryOutcome(phase: "unlock", outcome: "app_opened") }
+                        Button("Still shielded") { controller.markCanaryOutcome(phase: "unlock", outcome: "shield_visible") }
+                        Button("Unsure") { controller.markCanaryOutcome(phase: "unlock", outcome: "uncertain") }
+                    }
+                }
+                .buttonStyle(CompactTestButtonStyle())
+            }
+            .recorderCard()
+        } else if !controller.isRecording {
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Optional linked background test", systemImage: "link")
+                    .font(.headline)
+                    .foregroundStyle(RecorderTheme.primaryText)
+                Text("Creates a random one-time session link so this recorder export can be joined later with a separate ExcerLock Trace Lab export. No App Group access and no live label sharing.")
+                    .font(.subheadline)
+                    .foregroundStyle(RecorderTheme.secondaryText)
+                Button {
+                    controller.setLinkedRecorderConsent(!controller.linkedRecorderConsent)
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: controller.linkedRecorderConsent ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(controller.linkedRecorderConsent ? RecorderTheme.orange : RecorderTheme.secondaryText)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("I consent to create a linked local session")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(RecorderTheme.primaryText)
+                            Text("The one-time nonce is never written into the recorder archive.")
+                                .font(.caption)
+                                .foregroundStyle(RecorderTheme.secondaryText)
+                        }
+                        Spacer()
+                    }
+                    .padding(14)
+                    .background(controller.linkedRecorderConsent ? RecorderTheme.selected : RecorderTheme.solid, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(RecorderTheme.outline, lineWidth: 1))
+                }
+                .buttonStyle(ScalePressStyle())
+                .accessibilityValue(controller.linkedRecorderConsent ? "Selected" : "Not selected")
+            }
+            .recorderCard()
+        }
     }
 
     private var scenarioSection: some View {
@@ -447,6 +525,19 @@ private struct SecondaryButtonStyle: ButtonStyle {
             .padding(.horizontal, 12)
             .background(configuration.isPressed ? RecorderTheme.selected : RecorderTheme.solid, in: RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(RecorderTheme.outline, lineWidth: 1))
+    }
+}
+
+private struct CompactTestButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(RecorderTheme.primaryText)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .padding(.horizontal, 6)
+            .background(configuration.isPressed ? RecorderTheme.selected : RecorderTheme.solid, in: RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(RecorderTheme.outline, lineWidth: 1))
     }
 }
 

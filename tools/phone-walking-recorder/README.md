@@ -27,6 +27,18 @@ Keep the recorder screen open. The display stays awake during a recording. The c
 
 Recording health, unavailable streams, denied permission, sensor errors, the 250 MB per-session limit, the 750 MB local-retention limit, and low disk space are visible. The app never reports a successful capture when the production-path motion inputs are unavailable.
 
+## Optional linked ExcerLock research session
+
+The recorder can create a post-hoc correlation session for the separately provisioned **ExcerLock Trace Lab** build. This does not give the recorder App Group, Family Controls, Managed Settings, background modes, OTA, or network access.
+
+1. Explicitly select **I consent to create a linked local session** before starting a recording.
+2. Start the desired activity label, then tap **Open ExcerLock Trace Lab**.
+3. Consent again in ExcerLock and start its trace, then return to the recorder.
+4. Mark lock/unlock checks and the outcome actually observed in a benign canary app. Never select this recorder as the Screen Time shield target.
+5. Tap **Finish & Save**; the recorder reopens Trace Lab so you can end/export its trace. Export the saved recorder archive separately, then use `tools/linked-recorder/join.py` locally.
+
+The two apps exchange only a random session UUID, protocol version, and 256-bit one-time nonce in a deep link. There is no live label IPC. The nonce remains in recorder memory and is never written to the archive. Both exports use `mach_continuous_time` receipt timestamps for offline ordering.
+
 ## Capture archive
 
 Each share action creates one `walking-capture-<session-id>.zip` containing:
@@ -36,7 +48,7 @@ Each share action creates one `walking-capture-<session-id>.zip` containing:
 | `raw-motion.ndjson` | Live activity/confidence, cadence and cumulative steps, 50 Hz requested raw accelerometer, raw gyroscope, and fused device motion: total/user acceleration, gravity, rotation rate, attitude and magnetic field where supported. Invalid values are explicit. |
 | `labels.ndjson` | User label boundaries on the shared monotonic clock. A null `toLabel` means unlabeled transition/baseline, not assumed stationary. |
 | `decisions.ndjson` | Current production-derived evidence, phase, relief intent, grace and deadlines. Actual Managed Settings shields are not instrumented or claimed. |
-| `system.ndjson` | Permission/subscription state, configured and observed rates, lifecycle callbacks, sensor errors, recording gaps, clock mapping, flush/recovery events. |
+| `system.ndjson` | Permission/subscription state, configured and observed rates, lifecycle callbacks, sensor errors, recording gaps, clock mapping, flush/recovery events, and optional linked-session/canary markers. |
 | `metadata.json` | Build/source commit, non-unique device model and OS, permission/availability, production parity constants, lab-only fields. |
 | `schema.json` | Field/timebase/unit guide. |
 | `manifest.json` | Completion status, duration, event/segment/gap counts, size and per-scenario counts. |

@@ -11,6 +11,12 @@ Pod::Spec.new do |s|
   s.static_framework = true
   s.dependency 'ExpoModulesCore'
   s.frameworks = 'DeviceActivity', 'FamilyControls', 'ManagedSettings'
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
+  trace_enabled = ENV['EXCERLOCK_LINKED_RECORDER_TRACE'] == '1'
+  trace_condition = trace_enabled ? ' EXCERLOCK_LINKED_RECORDER_TRACE' : ''
+  s.pod_target_xcconfig = {
+    'DEFINES_MODULE' => 'YES',
+    'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => '$(inherited)' + trace_condition
+  }
   s.source_files = '**/*.{h,m,mm,swift,hpp,cpp}'
+  s.exclude_files = 'LinkedTraceWriter.swift' unless trace_enabled
 end

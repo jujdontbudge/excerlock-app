@@ -8,3 +8,4 @@ npm run lint
 npx expo install --check
 npx expo-doctor
 npx expo export --platform ios --max-workers 4
+node scripts/verify-no-linked-trace.cjs dist

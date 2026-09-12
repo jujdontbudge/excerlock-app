@@ -6,7 +6,7 @@ export function reportRuntimeError(error: unknown): void {
   // Keep SDK evaluation behind the runtime error path while exposing only the
   // local capture binding to Metro's static dependency graph.
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { reportSentryError } = require('./observability/SentryCapture') as typeof import('./observability/SentryCapture');
+  const { reportSentryError } = require('@sentry-capture') as typeof import('@sentry-capture');
   reportSentryError(error);
 }
 const singleton = new RuntimeSingleton<RealRuntime>(async () => {

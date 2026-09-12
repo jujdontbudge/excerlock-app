@@ -25,6 +25,10 @@ struct ExcerlockPolicyRecord: Codable, Equatable {
   var selectionPayload: String?; var registrations: [String: ExcerlockMonitorRegistration]
   var committedId: String?; var windows: [String: ExcerlockScheduledWindow]; var shielded: Bool
 }
+struct ExcerlockCallbackResult: Equatable {
+  let applied: Bool
+  let reason: String
+}
 enum ExcerlockPolicyError: Error, LocalizedError {
   case appGroupUnavailable, lockUnavailable, missingSnapshot, staleRevision, missingSelection, invalidSnapshot
   var errorDescription: String? { switch self {
@@ -49,17 +53,121 @@ final class ExcerlockPolicyStore {
   func writeLocked(_ value: ExcerlockPolicyRecord) throws { try JSONEncoder().encode(value).write(to: policyURL(), options: [.atomic]) }
   func currentSelectionPayload() -> String? { UserDefaults(suiteName: appGroup)?.dictionary(forKey: excerlockSelectionDefaultsKey)?[excerlockSelectionHandle] as? String }
   private func selection(_ payload: String?) throws -> FamilyActivitySelection { guard let payload, let data = payload.data(using: .utf8), let value = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) else { throw ExcerlockPolicyError.missingSelection }; return value }
-  private func apply(_ shield: Bool, record: inout ExcerlockPolicyRecord) throws {
-    if shield { let s = try selection(record.selectionPayload); managed.shield.applications = s.applicationTokens; managed.shield.webDomains = s.webDomainTokens; managed.shield.applicationCategories = s.categoryTokens.isEmpty ? nil : .specific(s.categoryTokens); managed.shield.webDomainCategories = s.categoryTokens.isEmpty ? nil : .specific(s.categoryTokens) }
-    else { managed.shield.applications = nil; managed.shield.webDomains = nil; managed.shield.applicationCategories = nil; managed.shield.webDomainCategories = nil }
-    record.shielded = shield
+
+  private func apply(_ shield: Bool, record: inout ExcerlockPolicyRecord, initiator: String) throws {
+    #if EXCERLOCK_LINKED_RECORDER_TRACE
+    let operationId = UUID().uuidString.lowercased()
+    LinkedTraceWriter.shared.recordDeferred(
+      producer: Bundle.main.bundlePath.hasSuffix(".appex") ? .monitorExtension : .hostNative,
+      eventType: .shieldWrite,
+      operationId: operationId,
+      payload: [
+        "operation": shield ? "shield" : "unshield", "status": "attempt", "desired": shield,
+        "initiator": initiator, "revision": record.revision
+      ]
+    )
+    #endif
+
+    do {
+      #if EXCERLOCK_LINKED_RECORDER_TRACE
+      var applications = 0
+      var webDomains = 0
+      var applicationCategories = false
+      var webDomainCategories = false
+      #endif
+      if shield {
+        let s = try selection(record.selectionPayload)
+        managed.shield.applications = s.applicationTokens
+        managed.shield.webDomains = s.webDomainTokens
+        managed.shield.applicationCategories = s.categoryTokens.isEmpty ? nil : .specific(s.categoryTokens)
+        managed.shield.webDomainCategories = s.categoryTokens.isEmpty ? nil : .specific(s.categoryTokens)
+        #if EXCERLOCK_LINKED_RECORDER_TRACE
+        applications = s.applicationTokens.count
+        webDomains = s.webDomainTokens.count
+        applicationCategories = !s.categoryTokens.isEmpty
+        webDomainCategories = !s.categoryTokens.isEmpty
+        #endif
+      } else {
+        managed.shield.applications = nil
+        managed.shield.webDomains = nil
+        managed.shield.applicationCategories = nil
+        managed.shield.webDomainCategories = nil
+      }
+      record.shielded = shield
+      #if EXCERLOCK_LINKED_RECORDER_TRACE
+      let configured = !(managed.shield.applications ?? []).isEmpty ||
+        !(managed.shield.webDomains ?? []).isEmpty ||
+        managed.shield.applicationCategories != nil || managed.shield.webDomainCategories != nil
+      LinkedTraceWriter.shared.recordDeferred(
+        producer: Bundle.main.bundlePath.hasSuffix(".appex") ? .monitorExtension : .hostNative,
+        eventType: .shieldWrite,
+        operationId: operationId,
+        payload: [
+          "operation": shield ? "shield" : "unshield", "status": "returned", "desired": shield,
+          "initiator": initiator, "revision": record.revision, "configured": configured,
+          "applicationCount": applications, "webDomainCount": webDomains,
+          "applicationCategoriesConfigured": applicationCategories,
+          "webDomainCategoriesConfigured": webDomainCategories
+        ]
+      )
+      #endif
+    } catch {
+      #if EXCERLOCK_LINKED_RECORDER_TRACE
+      LinkedTraceWriter.shared.recordDeferred(
+        producer: Bundle.main.bundlePath.hasSuffix(".appex") ? .monitorExtension : .hostNative,
+        eventType: .shieldWrite,
+        operationId: operationId,
+        payload: [
+          "operation": shield ? "shield" : "unshield", "status": "rejected", "desired": shield,
+          "initiator": initiator, "revision": record.revision,
+          "reason": error is ExcerlockPolicyError ? "policy_error" : "native_error"
+        ]
+      )
+      #endif
+      throw error
+    }
   }
-  func apply(shield: Bool, revision: Int) throws -> Bool { try locked { var r = try readLocked(); guard r.revision == revision else { return false }; try apply(shield, record: &r); try writeLocked(r); return true } }
-  func handleWatchdog(_ id: String, now: Double = Date().timeIntervalSince1970 * 1000) throws -> Bool { try locked { var r = try readLocked(); guard r.version == excerlockPolicyVersion, r.state == "conditional", r.committedId == id, let m = r.registrations[id], m.committed, m.policyGeneration == r.policyGeneration, m.accountGeneration == r.accountGeneration, m.selectionVersion == r.selectionVersion, now >= m.end, now < m.eligibleUntil, now < r.eligibleUntil, (r.windows.isEmpty || r.windows.values.contains { windowActive($0, now: now) }) else { return false }; try apply(true, record: &r); try writeLocked(r); return true } }
-  func handleWindow(_ id: String, started: Bool, now: Double = Date().timeIntervalSince1970 * 1000) throws -> Bool { try locked { var r = try readLocked(); guard let w = r.windows[id], w.revision == r.revision, w.policyGeneration == r.policyGeneration, w.accountGeneration == r.accountGeneration, w.selectionVersion == r.selectionVersion else { return false }
-    if started { let indefinitelySuppressed = ["lapsed", "disabled", "deleting"].contains(r.openReason ?? ""); let earnedStillValid = r.openReason == "earned" && now < r.eligibleUntil; let liveConditional = r.state == "conditional" && now < r.eligibleUntil; guard r.futureEnforcementEligible, !indefinitelySuppressed, !earnedStillValid, !liveConditional, windowActive(w, now: now) else { return false }; try apply(true, record: &r) }
-    else { let active = r.windows.values.contains { windowActive($0, now: now) }; guard !active, r.openReason != "earned", r.openReason != "lapsed", r.openReason != "disabled", r.openReason != "deleting" else { return false }; try apply(false, record: &r) }
-    try writeLocked(r); return true
+
+  func apply(shield: Bool, revision: Int) throws -> Bool { try locked { var r = try readLocked(); guard r.revision == revision else { return false }; try apply(shield, record: &r, initiator: "host"); try writeLocked(r); return true } }
+  func handleWatchdog(_ id: String, now: Double = Date().timeIntervalSince1970 * 1000) throws -> Bool { try handleWatchdogResult(id, now: now).applied }
+  func handleWatchdogResult(_ id: String, now: Double = Date().timeIntervalSince1970 * 1000) throws -> ExcerlockCallbackResult { try locked {
+    var r = try readLocked()
+    guard r.version == excerlockPolicyVersion else { return .init(applied: false, reason: "policy_version") }
+    guard r.state == "conditional" else { return .init(applied: false, reason: "not_conditional") }
+    guard r.committedId == id else { return .init(applied: false, reason: "not_committed") }
+    guard let m = r.registrations[id], m.committed else { return .init(applied: false, reason: "registration_missing") }
+    guard m.policyGeneration == r.policyGeneration, m.accountGeneration == r.accountGeneration, m.selectionVersion == r.selectionVersion else { return .init(applied: false, reason: "generation_mismatch") }
+    guard now >= m.end else { return .init(applied: false, reason: "before_end") }
+    guard now < m.eligibleUntil, now < r.eligibleUntil else { return .init(applied: false, reason: "ineligible") }
+    guard r.windows.isEmpty || r.windows.values.contains(where: { windowActive($0, now: now) }) else { return .init(applied: false, reason: "outside_window") }
+    try apply(true, record: &r, initiator: "watchdog"); try writeLocked(r)
+    return .init(applied: true, reason: "applied")
+  }}
+  func handleWindow(_ id: String, started: Bool, now: Double = Date().timeIntervalSince1970 * 1000) throws -> Bool { try handleWindowResult(id, started: started, now: now).applied }
+  func handleWindowResult(_ id: String, started: Bool, now: Double = Date().timeIntervalSince1970 * 1000) throws -> ExcerlockCallbackResult { try locked {
+    var r = try readLocked()
+    guard let w = r.windows[id] else { return .init(applied: false, reason: "window_missing") }
+    guard w.revision == r.revision, w.policyGeneration == r.policyGeneration, w.accountGeneration == r.accountGeneration, w.selectionVersion == r.selectionVersion else { return .init(applied: false, reason: "generation_mismatch") }
+    if started {
+      let indefinitelySuppressed = ["lapsed", "disabled", "deleting"].contains(r.openReason ?? "")
+      let earnedStillValid = r.openReason == "earned" && now < r.eligibleUntil
+      let liveConditional = r.state == "conditional" && now < r.eligibleUntil
+      guard r.futureEnforcementEligible else { return .init(applied: false, reason: "future_ineligible") }
+      guard !indefinitelySuppressed else { return .init(applied: false, reason: "suppressed") }
+      guard !earnedStillValid else { return .init(applied: false, reason: "earned") }
+      guard !liveConditional else { return .init(applied: false, reason: "live_conditional") }
+      guard windowActive(w, now: now) else { return .init(applied: false, reason: "outside_window") }
+      try apply(true, record: &r, initiator: "window")
+    } else {
+      let active = r.windows.values.contains { windowActive($0, now: now) }
+      guard !active else { return .init(applied: false, reason: "another_window_active") }
+      guard r.openReason != "earned" else { return .init(applied: false, reason: "earned") }
+      guard r.openReason != "lapsed" else { return .init(applied: false, reason: "lapsed") }
+      guard r.openReason != "disabled" else { return .init(applied: false, reason: "disabled") }
+      guard r.openReason != "deleting" else { return .init(applied: false, reason: "deleting") }
+      try apply(false, record: &r, initiator: "window")
+    }
+    try writeLocked(r); return .init(applied: true, reason: "applied")
   }}
   private func windowActive(_ w: ExcerlockScheduledWindow, now: Double) -> Bool {
     let calendar = Calendar.autoupdatingCurrent

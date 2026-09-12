@@ -1,31 +1,34 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { IOSConfig, withFinalizedMod } = require("expo/config-plugins");
+const { bundleIdentifier, researchEnabled } = require("./linkedRecorderResearchConfig");
 
 // Main app + FOUR Screen Time appex. The App Intent lives in the main app
 // target (see plugins/withMainAppIntent.js); there is no fifth appex.
-const EXPECTED_APPEX_TARGETS = [
-  {
-    name: "DeviceActivityMonitorExtension",
-    bundleIdentifier: "com.johansardar.excerlock.monitor",
-  },
-  {
-    name: "ShieldConfiguration",
-    bundleIdentifier: "com.johansardar.excerlock.shield",
-  },
-  {
-    name: "ShieldAction",
-    bundleIdentifier: "com.johansardar.excerlock.shieldaction",
-  },
-  {
-    name: "DeviceActivityReportExtension",
-    bundleIdentifier: "com.johansardar.excerlock.report",
-    productType: "com.apple.product-type.extensionkit-extension",
-  },
-];
+function expectedAppexTargets() {
+  return [
+    {
+      name: "DeviceActivityMonitorExtension",
+      bundleIdentifier: bundleIdentifier("monitor", "com.johansardar.excerlock.monitor"),
+    },
+    {
+      name: "ShieldConfiguration",
+      bundleIdentifier: bundleIdentifier("shield", "com.johansardar.excerlock.shield"),
+    },
+    {
+      name: "ShieldAction",
+      bundleIdentifier: bundleIdentifier("shieldaction", "com.johansardar.excerlock.shieldaction"),
+    },
+    {
+      name: "DeviceActivityReportExtension",
+      bundleIdentifier: bundleIdentifier("report", "com.johansardar.excerlock.report"),
+      productType: "com.apple.product-type.extensionkit-extension",
+    },
+  ];
+}
 
 const EXPECTED_APP_COUNT = 1;
-const EXPECTED_APPEX_COUNT = EXPECTED_APPEX_TARGETS.length;
+const EXPECTED_APPEX_COUNT = expectedAppexTargets().length;
 
 // Capabilities that belong to the main app only and must never be demanded
 // on (or leak onto) an extension. Provisioning/signing-generated entries
@@ -44,6 +47,10 @@ const MONITOR_PACKAGE_SOURCES = [
     localSource: path.join("modules", "excerlock-enforcement", "ios", "EnforcementPolicy.swift"),
   },
 ];
+const LINKED_TRACE_MONITOR_SOURCE = {
+  destination: "LinkedTraceWriter.generated.swift",
+  localSource: path.join("modules", "excerlock-enforcement", "ios", "LinkedTraceWriter.swift"),
+};
 
 function materializeMonitorSources(projectRoot) {
   const targetRoot = path.join(
@@ -56,8 +63,12 @@ function materializeMonitorSources(projectRoot) {
   // materialization so it can never contribute a second, unguarded delegate.
   fs.rmSync(path.join(targetRoot, "DeviceActivityMonitorExtension.generated.swift"), { force: true });
   fs.rmSync(path.join(targetRoot, "PackageRuntime.generated.swift"), { force: true });
+  fs.rmSync(path.join(targetRoot, LINKED_TRACE_MONITOR_SOURCE.destination), { force: true });
 
-  for (const source of MONITOR_PACKAGE_SOURCES) {
+  const sources = researchEnabled()
+    ? [...MONITOR_PACKAGE_SOURCES, LINKED_TRACE_MONITOR_SOURCE]
+    : MONITOR_PACKAGE_SOURCES;
+  for (const source of sources) {
     const sourcePath = path.join(projectRoot, source.localSource);
     const destinationPath = path.join(targetRoot, source.destination);
     fs.copyFileSync(sourcePath, destinationPath);
@@ -121,6 +132,11 @@ function assertAppexTarget(project, expected) {
     }
     if (!withoutQuotes(settings.CODE_SIGN_ENTITLEMENTS)?.endsWith("generated.entitlements")) {
       throw new Error(`${expected.name} lost its generated entitlements file`);
+    }
+    const conditions = withoutQuotes(settings.SWIFT_ACTIVE_COMPILATION_CONDITIONS) ?? "";
+    const shouldTrace = researchEnabled() && expected.name === "DeviceActivityMonitorExtension";
+    if (shouldTrace !== conditions.split(/\s+/).includes("EXCERLOCK_LINKED_RECORDER_TRACE")) {
+      throw new Error(`${expected.name} has an invalid Linked Recorder trace compilation condition`);
     }
   }
 }
@@ -230,6 +246,11 @@ function assertBetaTarget(betaProject, expected) {
   if (typeof entitlements !== "string" || !entitlements.endsWith("generated.entitlements")) {
     throw new Error(`${expected.name} lost its generated entitlements file`);
   }
+  const conditions = settingsOf("SWIFT_ACTIVE_COMPILATION_CONDITIONS") ?? "";
+  const shouldTrace = researchEnabled() && expected.name === "DeviceActivityMonitorExtension";
+  if (shouldTrace !== conditions.split(/\s+/).includes("EXCERLOCK_LINKED_RECORDER_TRACE")) {
+    throw new Error(`${expected.name} has an invalid Linked Recorder trace compilation condition`);
+  }
 }
 
 function assertTargetCountsBeta(betaProject) {
@@ -316,7 +337,7 @@ function withScreenTimeExtensionValidation(config) {
     materializeMonitorSources(modConfig.modRequest.projectRoot);
     const betaProject = betaProjectFromInternal(modConfig);
     if (betaProject && betaTargets(betaProject).length > 0) {
-      for (const expected of EXPECTED_APPEX_TARGETS) {
+      for (const expected of expectedAppexTargets()) {
         assertBetaTarget(betaProject, expected);
       }
       assertTargetCountsBeta(betaProject);
@@ -324,7 +345,7 @@ function withScreenTimeExtensionValidation(config) {
       const project = IOSConfig.XcodeUtils.getPbxproj(
         modConfig.modRequest.projectRoot,
       );
-      for (const expected of EXPECTED_APPEX_TARGETS) {
+      for (const expected of expectedAppexTargets()) {
         assertAppexTarget(project, expected);
       }
       assertTargetCountsClassic(project);

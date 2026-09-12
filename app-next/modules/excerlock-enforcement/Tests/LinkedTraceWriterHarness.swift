@@ -1,0 +1,147 @@
+#if EXCERLOCK_LINKED_RECORDER_TRACE
+import Foundation
+
+private final class MutableStamp: @unchecked Sendable {
+  private let lock = NSLock()
+  private var wallTimeMs: Int64
+  init(_ wallTimeMs: Int64) { self.wallTimeMs = wallTimeMs }
+  func advance(to value: Int64) { lock.lock(); wallTimeMs = value; lock.unlock() }
+  func read() -> LinkedTraceStamp {
+    lock.lock(); let value = wallTimeMs; lock.unlock()
+    return LinkedTraceStamp(monotonicNs: UInt64(max(0, value)) * 1_000_000, wallTimeMs: value, wallTimeISO8601: "1970-01-01T00:00:00Z")
+  }
+}
+
+@main
+struct LinkedTraceWriterHarness {
+  static func main() throws {
+    let root = FileManager.default.temporaryDirectory
+      .appendingPathComponent("linked-trace-writer-tests-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: root) }
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+
+    let sessionId = UUID().uuidString.lowercased()
+    let nonce = String(repeating: "ab", count: 32)
+    let writer = LinkedTraceWriter(containerURL: root, sessionLimitBytes: 1_000_000, totalLimitBytes: 2_000_000)
+    let started = try writer.startSession(sessionId: sessionId, nonce: nonce)
+    precondition(started.active && started.sessionId == sessionId)
+    let firstSessionHash = writer.hashIdentifier("stable-local-id")
+    let restarted = try writer.startSession(sessionId: sessionId, nonce: nonce)
+    precondition(restarted == started)
+    do {
+      _ = try writer.startSession(sessionId: sessionId, nonce: String(repeating: "cd", count: 32))
+      preconditionFailure("active session accepted a different nonce")
+    } catch LinkedTraceError.invalidNonce {}
+    precondition(!writer.record(producer: .hostJS, eventType: .testMarker, payload: ["token": "must_reject"]))
+    precondition(!writer.record(producer: .hostJS, eventType: .testMarker,
+                                payload: ["kind": "session", "phase": "start", "label": "arbitrary_error_text"]))
+    precondition(writer.record(
+      producer: .monitorExtension,
+      eventType: .extensionCallback,
+      payload: ["callback": "interval_started", "status": "received", "reason": "start_only",
+                "monitorIdHash": "0123456789abcdef"]
+    ))
+
+    let writers = (0..<4).map { _ in
+      LinkedTraceWriter(containerURL: root, sessionLimitBytes: 1_000_000, totalLimitBytes: 2_000_000)
+    }
+    let group = DispatchGroup()
+    for concurrentWriter in writers {
+      DispatchQueue.global().async(group: group) {
+        for _ in 0..<100 {
+          precondition(concurrentWriter.record(
+            producer: .hostJS,
+            eventType: .testMarker,
+            payload: ["kind": "session", "phase": "start", "label": "consent_confirmed"]
+          ))
+        }
+      }
+    }
+    group.wait()
+    let export = try writer.stopSession(sessionId: sessionId, nonce: nonce)
+    let data = try Data(contentsOf: export)
+    let text = String(decoding: data, as: UTF8.self)
+    precondition(!text.contains(nonce))
+    let rows = try text.split(separator: "\n").map {
+      try JSONSerialization.jsonObject(with: Data($0.utf8)) as! [String: Any]
+    }
+    let sequences = rows.compactMap { ($0["sequence"] as? NSNumber)?.uint64Value }.sorted()
+    precondition(sequences == Array(1...UInt64(rows.count)))
+    precondition(rows.filter { $0["eventType"] as? String == "test_marker" }.count == 400)
+    precondition(rows.filter { $0["eventType"] as? String == "trace_start" }.count == 1)
+    precondition(rows.filter { $0["eventType"] as? String == "trace_stop" }.count == 1)
+    precondition(!writer.status().active)
+
+    let limitedRoot = root.appendingPathComponent("limited", isDirectory: true)
+    try FileManager.default.createDirectory(at: limitedRoot, withIntermediateDirectories: true)
+    let limitedId = UUID().uuidString.lowercased()
+    let limited = LinkedTraceWriter(containerURL: limitedRoot, sessionLimitBytes: 700, totalLimitBytes: 2_000)
+    _ = try limited.startSession(sessionId: limitedId, nonce: nonce)
+    precondition(limited.hashIdentifier("stable-local-id") != firstSessionHash)
+    for _ in 0..<100 {
+      _ = limited.record(producer: .hostJS, eventType: .testMarker,
+                         payload: ["kind": "session", "phase": "start", "label": "consent_confirmed"])
+    }
+    precondition(limited.status().truncated)
+    let limitedExport = try limited.stopSession(sessionId: limitedId, nonce: nonce)
+    let limitedText = try String(contentsOf: limitedExport, encoding: .utf8)
+    precondition(limitedText.contains("trace_truncated"))
+    precondition(limitedText.contains("trace_stop"))
+
+    let stamp = MutableStamp(10_000)
+    let expiryRoot = root.appendingPathComponent("expiry", isDirectory: true)
+    try FileManager.default.createDirectory(at: expiryRoot, withIntermediateDirectories: true)
+    let expiryId = UUID().uuidString.lowercased()
+    let expiryWriter = LinkedTraceWriter(containerURL: expiryRoot, stampProvider: { stamp.read() })
+    _ = try expiryWriter.startSession(sessionId: expiryId, nonce: nonce)
+    stamp.advance(to: 10_000 + linkedTraceSessionTTLMilliseconds + 1)
+    precondition(!expiryWriter.status().active)
+    precondition(!expiryWriter.record(producer: .hostJS, eventType: .testMarker,
+                                      payload: ["kind": "session", "phase": "stop", "label": "operator_finished"]))
+    let expiredExport = try expiryWriter.stopSession(sessionId: expiryId, nonce: nonce)
+    precondition(FileManager.default.fileExists(atPath: expiredExport.path))
+
+    let retentionRoot = root.appendingPathComponent("retention", isDirectory: true)
+    let retentionTraceRoot = retentionRoot.appendingPathComponent("linked-trace/v1", isDirectory: true)
+    try FileManager.default.createDirectory(at: retentionTraceRoot, withIntermediateDirectories: true)
+    let retainedIds = [UUID().uuidString.lowercased(), UUID().uuidString.lowercased()]
+    for (index, id) in retainedIds.enumerated() {
+      let directory = retentionTraceRoot.appendingPathComponent(id, isDirectory: true)
+      try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+      try Data(repeating: UInt8(index), count: 800).write(to: directory.appendingPathComponent("production.ndjson"))
+      try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSince1970: Double(index + 1))], ofItemAtPath: directory.path)
+    }
+    let retentionId = UUID().uuidString.lowercased()
+    let retentionWriter = LinkedTraceWriter(
+      containerURL: retentionRoot,
+      totalLimitBytes: 1_000,
+      retentionMilliseconds: Int64.max
+    )
+    _ = try retentionWriter.startSession(sessionId: retentionId, nonce: nonce)
+    precondition(retainedIds.filter { FileManager.default.fileExists(atPath: retentionTraceRoot.appendingPathComponent($0).path) }.count == 1)
+    _ = retentionWriter.status()
+    precondition(retainedIds.allSatisfy { !FileManager.default.fileExists(atPath: retentionTraceRoot.appendingPathComponent($0).path) })
+    _ = try retentionWriter.stopSession(sessionId: retentionId, nonce: nonce)
+
+    let dropRoot = root.appendingPathComponent("drop", isDirectory: true)
+    try FileManager.default.createDirectory(at: dropRoot, withIntermediateDirectories: true)
+    let dropId = UUID().uuidString.lowercased()
+    let dropWriter = LinkedTraceWriter(containerURL: dropRoot, maxPendingEvents: 0)
+    _ = try dropWriter.startSession(sessionId: dropId, nonce: nonce)
+    for _ in 0..<3 {
+      dropWriter.recordDeferred(producer: .hostJS, eventType: .testMarker,
+                                payload: ["kind": "session", "phase": "start", "label": "consent_confirmed"])
+    }
+    precondition(dropWriter.record(producer: .hostJS, eventType: .testMarker,
+                                   payload: ["kind": "session", "phase": "stop", "label": "operator_finished"]))
+    let dropExport = try dropWriter.stopSession(sessionId: dropId, nonce: nonce)
+    let dropRows = try String(contentsOf: dropExport, encoding: .utf8).split(separator: "\n").map {
+      try JSONSerialization.jsonObject(with: Data($0.utf8)) as! [String: Any]
+    }
+    let dropSummary = dropRows.first { $0["eventType"] as? String == "trace_drop_summary" }
+    precondition(((dropSummary?["payload"] as? [String: Any])?["count"] as? NSNumber)?.intValue == 3)
+
+    print("LinkedTraceWriter harness passed (\(rows.count) events)")
+  }
+}
+#endif

@@ -4,6 +4,7 @@ import { reconcilePersistedGeofenceEvent } from '../../../runtime/detection/head
 import { AsyncStorageGymVisitLog } from './AsyncStorageGymVisitLog';
 import { LocationTaskRuntime, type GeofencingTaskData, type LocationTaskData } from './LocationTaskRuntime';
 import { GEOFENCE_TASK_NAME, WALK_LOCATION_TASK_NAME } from './locationTaskNames';
+import { linkedTrace } from '@linked-trace';
 
 export { GEOFENCE_TASK_NAME, WALK_LOCATION_TASK_NAME };
 
@@ -11,9 +12,8 @@ export const locationTaskRuntime = new LocationTaskRuntime(new AsyncStorageGymVi
 
 if (!TaskManager.isTaskDefined(GEOFENCE_TASK_NAME)) {
   TaskManager.defineTask<GeofencingTaskData>(GEOFENCE_TASK_NAME, async ({ data, error }) => {
-    if (error !== null) {
-      return;
-    }
+    if (__LINKED_RECORDER_TRACE__) linkedTrace.record('execution_opportunity', { source: 'geofence_task', status: error === null ? 'received' : 'error' });
+    if (error !== null) return;
     await locationTaskRuntime.handleGeofencingTask(data);
     const regionId = data.region?.identifier;
     if (regionId !== undefined && (data.eventType === 1 || data.eventType === 2)) {
@@ -23,13 +23,16 @@ if (!TaskManager.isTaskDefined(GEOFENCE_TASK_NAME)) {
         atMs: Date.now(),
       });
     }
+    if (__LINKED_RECORDER_TRACE__) linkedTrace.record('execution_opportunity', { source: 'geofence_task', status: 'completed' });
   });
 }
 
 if (!TaskManager.isTaskDefined(WALK_LOCATION_TASK_NAME)) {
   TaskManager.defineTask<LocationTaskData>(WALK_LOCATION_TASK_NAME, async ({ data, error }) => {
+    if (__LINKED_RECORDER_TRACE__) linkedTrace.record('execution_opportunity', { source: 'walk_location_task', status: error === null ? 'received' : 'error' });
     if (error === null) {
       locationTaskRuntime.handleLocationTask(data);
+      if (__LINKED_RECORDER_TRACE__) linkedTrace.record('execution_opportunity', { source: 'walk_location_task', status: 'completed' });
     }
   });
 }

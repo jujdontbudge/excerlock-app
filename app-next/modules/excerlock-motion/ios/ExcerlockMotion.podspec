@@ -11,7 +11,12 @@ Pod::Spec.new do |s|
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
+  trace_enabled = ENV['EXCERLOCK_LINKED_RECORDER_TRACE'] == '1'
+  s.dependency 'ExcerlockEnforcement' if trace_enabled
   s.frameworks = 'CoreMotion'
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
+  s.pod_target_xcconfig = {
+    'DEFINES_MODULE' => 'YES',
+    'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => '$(inherited)' + (trace_enabled ? ' EXCERLOCK_LINKED_RECORDER_TRACE' : '')
+  }
   s.source_files = '**/*.{h,m,mm,swift,hpp,cpp}'
 end

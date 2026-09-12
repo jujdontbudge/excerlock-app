@@ -1,8 +1,21 @@
 import Combine
 import CoreMotion
 import Foundation
+import Security
 import SwiftUI
 import UIKit
+
+enum RecorderLinkedTraceError: LocalizedError {
+    case invalidLink
+    case randomUnavailable
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidLink: return "The linked trace URL could not be created."
+        case .randomUnavailable: return "A secure one-time link could not be created."
+        }
+    }
+}
 
 @MainActor
 final class CaptureController: NSObject, ObservableObject {
@@ -53,6 +66,8 @@ final class CaptureController: NSObject, ObservableObject {
     @Published var notice: String?
     @Published var shareURL: URL?
     @Published var exportingSessionID: String?
+    @Published var linkedRecorderConsent = false
+    @Published private(set) var linkedSessionID: String?
 
     let repository: SessionRepository
 
@@ -67,6 +82,7 @@ final class CaptureController: NSObject, ObservableObject {
     private var lastInertialSourceSeconds: [String: TimeInterval] = [:]
     private var streamStats: [String: StreamStats] = [:]
     private var finishingAfterError = false
+    private var linkedSessionNonce: String?
 
     #if DEBUG
     let isUIPreview = ProcessInfo.processInfo.arguments.contains("--ui-preview")
@@ -148,6 +164,56 @@ final class CaptureController: NSObject, ObservableObject {
     func openSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)
+    }
+
+    func setLinkedRecorderConsent(_ consent: Bool) {
+        guard !isRecording else { return }
+        linkedRecorderConsent = consent
+    }
+
+    func openLinkedTraceLab() {
+        guard isRecording, let writer, let linkedSessionID, let linkedSessionNonce else { return }
+        let stamp = clock.now()
+        do {
+            try writer.append(
+                channel: .system,
+                type: "linked_trace_launch_requested",
+                payload: [
+                    "linkedProtocolVersion": 1,
+                    "linkedSessionId": linkedSessionID,
+                    "clockDomain": "mach_continuous_time",
+                    "nonceExported": false
+                ],
+                stamp: stamp,
+                critical: true
+            )
+            let url = try Self.linkedTraceURL(sessionID: linkedSessionID, nonce: linkedSessionNonce)
+            UIApplication.shared.open(url) { [weak self] opened in
+                if !opened { self?.notice = "ExcerLock Trace Lab is not installed. The Walking Recorder session is still local and valid." }
+            }
+        } catch {
+            notice = "Could not open the linked trace: \(error.localizedDescription)"
+        }
+    }
+
+    func markLinkedTestPhase(_ phase: String) {
+        guard ["lock", "unlock"].contains(phase) else { return }
+        appendLinkedTestEvent(type: "test_marker", payload: ["kind": "canary_check", "phase": phase, "label": "observation_started"])
+    }
+
+    func markCanaryOutcome(phase: String, outcome: String) {
+        guard ["lock", "unlock"].contains(phase),
+              ["shield_visible", "app_opened", "uncertain"].contains(outcome) else { return }
+        appendLinkedTestEvent(
+            type: "canary_outcome",
+            payload: ["phase": phase, "outcome": outcome, "expected": phase == "lock" ? "shield_visible" : "app_opened"]
+        )
+    }
+
+    private func appendLinkedTestEvent(type: String, payload: [String: Any]) {
+        guard isRecording, linkedSessionID != nil, let writer else { return }
+        do { try writer.append(channel: .system, type: type, payload: payload, critical: true) }
+        catch { stopAfterWriteFailure(error) }
     }
 
     func tapScenario(_ scenario: GroundTruthScenario) {
@@ -303,13 +369,18 @@ final class CaptureController: NSObject, ObservableObject {
         mode = .preparing
         let started = clock.now()
         do {
+            let sessionID = UUID().uuidString.lowercased()
+            let linkedNonce = linkedRecorderConsent ? try Self.makeLinkedNonce() : nil
             let writer = try SessionWriter(
                 baseURL: repository.baseURL,
+                id: sessionID,
                 startedAt: started,
-                metadata: buildMetadata(startedAt: started),
+                metadata: buildMetadata(startedAt: started, linkedSessionID: linkedNonce == nil ? nil : sessionID),
                 clock: clock
             )
             self.writer = writer
+            linkedSessionID = linkedNonce == nil ? nil : sessionID
+            linkedSessionNonce = linkedNonce
             sessionStartedAt = started
             detector = ProductionWalkingDetectorPort(startMonotonicMs: started.monotonicMs)
             timeline = LabelTimeline()
@@ -327,7 +398,12 @@ final class CaptureController: NSObject, ObservableObject {
                     "microphoneCollected": false,
                     "cameraCollected": false,
                     "healthHistoryQueried": false,
-                    "requestedDeviceMotionRateHz": requestedDeviceMotionHz
+                    "requestedDeviceMotionRateHz": requestedDeviceMotionHz,
+                    "linkedTraceRequested": linkedNonce != nil,
+                    "linkedProtocolVersion": linkedNonce == nil ? NSNull() : 1,
+                    "linkedSessionId": linkedNonce == nil ? NSNull() : sessionID,
+                    "linkedClockDomain": linkedNonce == nil ? NSNull() : "mach_continuous_time",
+                    "linkedNonceExported": false
                 ],
                 stamp: started,
                 critical: true
@@ -491,6 +567,12 @@ final class CaptureController: NSObject, ObservableObject {
             return
         }
         let end = clock.now()
+        let linkedStopURL: URL?
+        if status == .completed, let linkedSessionID, let linkedSessionNonce {
+            linkedStopURL = try? Self.linkedTraceURL(sessionID: linkedSessionID, nonce: linkedSessionNonce)
+        } else {
+            linkedStopURL = nil
+        }
         var finalDetail = detail
         if status != .storageLimit {
             do {
@@ -499,6 +581,21 @@ final class CaptureController: NSObject, ObservableObject {
                         channel: .system,
                         type: "sensor_subscription",
                         payload: ["stream": stream, "state": "stopped", "summary": stats.dictionary],
+                        stamp: end,
+                        critical: true
+                    )
+                }
+                if linkedStopURL != nil, let linkedSessionID {
+                    try writer.append(
+                        channel: .system,
+                        type: "linked_trace_stop_requested",
+                        payload: [
+                            "linkedProtocolVersion": 1,
+                            "linkedSessionId": linkedSessionID,
+                            "clockDomain": "mach_continuous_time",
+                            "productionStopWasAssumed": false,
+                            "nonceExported": false
+                        ],
                         stamp: end,
                         critical: true
                     )
@@ -524,6 +621,7 @@ final class CaptureController: NSObject, ObservableObject {
             repository.reload()
             notice = status == .completed ? "Session saved on this phone." : finalDetail
             resetAfterFinish()
+            if let linkedStopURL { UIApplication.shared.open(linkedStopURL) }
         } catch {
             mode = .failed(error.localizedDescription)
             notice = "The session stopped, but final saving needs attention: \(error.localizedDescription)"
@@ -545,7 +643,34 @@ final class CaptureController: NSObject, ObservableObject {
         rawSampleCount = 0
         isAppActive = true
         finishingAfterError = false
+        linkedRecorderConsent = false
+        linkedSessionID = nil
+        linkedSessionNonce = nil
         mode = .idle
+    }
+
+    private static func linkedTraceURL(sessionID: String, nonce: String) throws -> URL {
+        var components = URLComponents()
+        components.scheme = "excerlock-linked-trace"
+        components.host = "linked-trace"
+        components.queryItems = [
+            URLQueryItem(name: "sessionId", value: sessionID),
+            URLQueryItem(name: "nonce", value: nonce),
+            URLQueryItem(name: "protocolVersion", value: "1")
+        ]
+        guard let url = components.url else { throw RecorderLinkedTraceError.invalidLink }
+        return url
+    }
+
+    private static func makeLinkedNonce() throws -> String {
+        var bytes = [UInt8](repeating: 0, count: 32)
+        let status = bytes.withUnsafeMutableBytes { buffer in
+            SecRandomCopyBytes(kSecRandomDefault, buffer.count, buffer.baseAddress!)
+        }
+        guard status == errSecSuccess else {
+            throw RecorderLinkedTraceError.randomUnavailable
+        }
+        return bytes.map { String(format: "%02x", $0) }.joined()
     }
 
     private func stopAfterWriteFailure(_ error: Error) {
@@ -596,7 +721,7 @@ final class CaptureController: NSObject, ObservableObject {
         observeStream(stream, stamp: stamp)
     }
 
-    private func buildMetadata(startedAt: CaptureStamp) -> [String: Any] {
+    private func buildMetadata(startedAt: CaptureStamp, linkedSessionID: String?) -> [String: Any] {
         let bundle = Bundle.main
         let sourceCommit = bundle.object(forInfoDictionaryKey: "RecorderSourceCommit") as? String ?? "unknown"
         return [
@@ -617,6 +742,14 @@ final class CaptureController: NSObject, ObservableObject {
                 "systemName": UIDevice.current.systemName,
                 "systemVersion": UIDevice.current.systemVersion,
                 "personalIdentifiersCollected": false
+            ],
+            "linkedTrace": [
+                "requested": linkedSessionID != nil,
+                "protocolVersion": linkedSessionID == nil ? NSNull() : 1,
+                "sessionId": linkedSessionID.map { $0 as Any } ?? NSNull(),
+                "clockDomain": linkedSessionID == nil ? NSNull() : "mach_continuous_time",
+                "productionStartWasAssumed": false,
+                "nonceExported": false
             ],
             "permissionAtStart": [
                 "motionAndFitness": permission.rawValue,

@@ -1,3 +1,16 @@
+diff --git a/node_modules/@kingstinct/expo-apple-targets/build/config.d.ts b/node_modules/@kingstinct/expo-apple-targets/build/config.d.ts
+index 9819d4f..a9e5b4d 100644
+--- a/node_modules/@kingstinct/expo-apple-targets/build/config.d.ts
++++ b/node_modules/@kingstinct/expo-apple-targets/build/config.d.ts
+@@ -86,6 +86,8 @@ export type Config = {
+     frameworks?: string[];
+     /** Deployment iOS version for the target. Defaults to `18.0` */
+     deploymentTarget?: string;
++    /** Additional Swift compilation conditions for every build configuration. */
++    swiftActiveCompilationConditions?: string[];
+     /** Apple team ID to use for signing the target. Defaults to whatever is used in the main App target. */
+     appleTeamId?: string;
+     /** Optional entitlements to add to the target. */
 diff --git a/node_modules/@kingstinct/expo-apple-targets/build/target.d.ts b/node_modules/@kingstinct/expo-apple-targets/build/target.d.ts
 index 1a7fe0a..5c9de15 100644
 --- a/node_modules/@kingstinct/expo-apple-targets/build/target.d.ts
@@ -87,11 +100,63 @@ index f1809af..fe8620b 100644
      if (target.props.productType !== "com.apple.product-type.app-extension") {
          return false;
      }
+diff --git a/node_modules/@kingstinct/expo-apple-targets/build/withWidget.js b/node_modules/@kingstinct/expo-apple-targets/build/withWidget.js
+index 23608e1..94d53e9 100644
+--- a/node_modules/@kingstinct/expo-apple-targets/build/withWidget.js
++++ b/node_modules/@kingstinct/expo-apple-targets/build/withWidget.js
+@@ -184,6 +184,7 @@ const withWidget = (config, props) => {
+         cwd: "../" +
+             path_1.default.relative(config._internal.projectRoot, path_1.default.resolve(props.directory)),
+         deploymentTarget: (_f = props.deploymentTarget) !== null && _f !== void 0 ? _f : DEFAULT_DEPLOYMENT_TARGET,
++        swiftActiveCompilationConditions: props.swiftActiveCompilationConditions,
+         bundleId,
+         icon: props.icon,
+         hasAccentColor: !!((_g = props.colors) === null || _g === void 0 ? void 0 : _g.$accent),
+diff --git a/node_modules/@kingstinct/expo-apple-targets/build/withXcodeChanges.d.ts b/node_modules/@kingstinct/expo-apple-targets/build/withXcodeChanges.d.ts
+index 01edb6d..060e7f5 100644
+--- a/node_modules/@kingstinct/expo-apple-targets/build/withXcodeChanges.d.ts
++++ b/node_modules/@kingstinct/expo-apple-targets/build/withXcodeChanges.d.ts
+@@ -6,6 +6,7 @@ export type XcodeSettings = {
+     cwd: string;
+     bundleId: string;
+     deploymentTarget: string;
++    swiftActiveCompilationConditions?: string[];
+     currentProjectVersion: number;
+     frameworks: string[];
+     type: ExtensionType;
 diff --git a/node_modules/@kingstinct/expo-apple-targets/build/withXcodeChanges.js b/node_modules/@kingstinct/expo-apple-targets/build/withXcodeChanges.js
-index 95989d5..75826be 100644
+index 95989d5..bececaa 100644
 --- a/node_modules/@kingstinct/expo-apple-targets/build/withXcodeChanges.js
 +++ b/node_modules/@kingstinct/expo-apple-targets/build/withXcodeChanges.js
-@@ -183,6 +183,68 @@ function createAppIntentConfigurationList(project, { name, cwd, bundleId }) {
+@@ -20,7 +20,7 @@ const withXcodeChanges = (config, props) => {
+     });
+ };
+ exports.withXcodeChanges = withXcodeChanges;
+-function createNotificationContentConfigurationList(project, { name, cwd, bundleId, deploymentTarget, currentProjectVersion, }) {
++function createNotificationContentConfigurationList(project, { name, cwd, bundleId, deploymentTarget, currentProjectVersion, swiftActiveCompilationConditions = [], }) {
+     const common = {
+         CLANG_ANALYZER_NONNULL: "YES",
+         CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION: "YES_AGGRESSIVE",
+@@ -54,6 +54,9 @@ function createNotificationContentConfigurationList(project, { name, cwd, bundle
+         SWIFT_OPTIMIZATION_LEVEL: "-O",
+         SWIFT_VERSION: "5.0",
+         TARGETED_DEVICE_FAMILY: "1,2",
++        ...(swiftActiveCompilationConditions.length ? {
++            SWIFT_ACTIVE_COMPILATION_CONDITIONS: ["$(inherited)", ...swiftActiveCompilationConditions].join(" "),
++        } : {}),
+     };
+     const debugBuildConfig = xcode_1.XCBuildConfiguration.create(project, {
+         name: "Debug",
+@@ -61,7 +64,7 @@ function createNotificationContentConfigurationList(project, { name, cwd, bundle
+             ...common,
+             // Diff
+             MTL_ENABLE_DEBUG_INFO: "INCLUDE_SOURCE",
+-            SWIFT_ACTIVE_COMPILATION_CONDITIONS: "DEBUG",
++            SWIFT_ACTIVE_COMPILATION_CONDITIONS: ["DEBUG", ...swiftActiveCompilationConditions].join(" "),
+             SWIFT_OPTIMIZATION_LEVEL: "-Onone",
+             DEBUG_INFORMATION_FORMAT: "dwarf",
+         },
+@@ -183,6 +186,68 @@ function createAppIntentConfigurationList(project, { name, cwd, bundleId }) {
      });
      return configurationList;
  }
@@ -160,7 +225,7 @@ index 95989d5..75826be 100644
  function createShareConfigurationList(project, { name, cwd, bundleId, deploymentTarget, currentProjectVersion, }) {
      const common = {
          CLANG_ANALYZER_NONNULL: "YES",
-@@ -628,6 +690,9 @@ function createConfigurationListForType(project, props) {
+@@ -628,6 +693,9 @@ function createConfigurationListForType(project, props) {
      else if (props.type === "app-intent") {
          return createAppIntentConfigurationList(project, props);
      }
@@ -170,7 +235,7 @@ index 95989d5..75826be 100644
      else {
          // TODO: More
          return createNotificationContentConfigurationList(project, props);
-@@ -796,7 +861,7 @@ async function applyXcodeChanges(config, project, props) {
+@@ -796,7 +864,7 @@ async function applyXcodeChanges(config, project, props) {
                      ? "wrapper.extensionkit-extension"
                      : "wrapper.app-extension",
                  includeInIndex: 0,

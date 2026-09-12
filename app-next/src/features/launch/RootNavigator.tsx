@@ -7,6 +7,7 @@ import { tokens as t } from '../../design-system/tokens';
 import { FakePromptHost } from '../permissions/FakePromptHost';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { useRuntimeStatus } from '../../state/selectors';
+import { linkedTrace } from '@linked-trace';
 export function RootNavigator() {
   const motion = useMotion();
   const pathname = usePathname();
@@ -38,6 +39,9 @@ export function RootNavigator() {
         }}>
         <Stack.Screen name="index" />
         {__DEV__ ? <Stack.Screen name="dev" /> : null}
+        <Stack.Protected guard={__LINKED_RECORDER_TRACE__ && linkedTrace.enabled}>
+          <Stack.Screen name="linked-trace" />
+        </Stack.Protected>
         <Stack.Screen name="gym-picker" options={{ presentation: 'fullScreenModal' }} />
         <Stack.Protected guard={loading || (!onboarding.complete && onboarding.step !== 'P' && !entitled)}>
           <Stack.Screen name="onboarding/[step]" />

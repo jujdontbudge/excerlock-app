@@ -1,6 +1,9 @@
 import ExpoModulesCore
 import DeviceActivity
 import Foundation
+#if EXCERLOCK_LINKED_RECORDER_TRACE
+import UIKit
+#endif
 
 struct EnforcementContextInput: Record { @Field var policyGeneration: Int = 0; @Field var accountGeneration: Int = 0; @Field var selectionVersion: String = "" }
 struct EnforcementSnapshotInput: Record { @Field var revision: Int = 0; @Field var now: Double = 0; @Field var context = EnforcementContextInput(); @Field var state: String = "unknown"; @Field var relief: String?; @Field var eligibleUntil: Double = 0; @Field var openReason: String?; @Field var futureEnforcementEligible: Bool = false }
@@ -8,6 +11,11 @@ struct WatchdogInput: Record { @Field var start: Double = 0; @Field var end: Dou
 struct WindowInput: Record { @Field var id: String = ""; @Field var start: Double = 0; @Field var end: Double = 0 }
 
 public final class ExcerlockEnforcementModule: Module {
+  #if EXCERLOCK_LINKED_RECORDER_TRACE
+  private var linkedTraceLifecycleObservers: [NSObjectProtocol] = []
+  private var linkedTraceLifecycleState = "unknown"
+  #endif
+
   public func definition() -> ModuleDefinition {
     Name("ExcerlockEnforcement")
     AsyncFunction("publish") { (input: EnforcementSnapshotInput) throws -> [String] in try self.publish(input: input) }
@@ -18,9 +26,140 @@ public final class ExcerlockEnforcementModule: Module {
     AsyncFunction("cancelWatchdogs") { (revision: Int) throws -> Void in try self.cancelWatchdogs(revision: revision) }
     AsyncFunction("replaceWindows") { (windows: [WindowInput], revision: Int) throws -> Void in try self.replaceWindows(windows: windows, revision: revision) }
     Function("getPolicyRevision") { () throws -> Int in try self.getPolicyRevision() }
+    #if EXCERLOCK_LINKED_RECORDER_TRACE
+    Function("startLinkedTrace") { (sessionId: String, nonce: String) throws -> [String: Any] in
+      let status = try LinkedTraceWriter.shared.startSession(sessionId: sessionId, nonce: nonce)
+      self.installLinkedTraceLifecycleObservers()
+      _ = LinkedTraceWriter.shared.record(producer: .hostNative, eventType: .clockAnchor, payload: ["label": "session_started"])
+      return self.linkedTraceStatusPayload(status)
+    }
+    Function("linkedTraceStatus") { () -> [String: Any] in
+      self.linkedTraceStatusPayload(LinkedTraceWriter.shared.status())
+    }
+    Function("recordLinkedTrace") { (eventType: String, operationId: String?, payload: [String: Any]) throws -> Bool in
+      guard let type = LinkedTraceEventType(rawValue: eventType) else { throw LinkedTraceError.invalidEvent }
+      LinkedTraceWriter.shared.recordDeferred(producer: .hostJS, eventType: type, operationId: operationId, payload: payload)
+      return true
+    }
+    Function("stopLinkedTrace") { (sessionId: String, nonce: String) throws -> String in
+      let url = try LinkedTraceWriter.shared.stopSession(sessionId: sessionId, nonce: nonce)
+      self.removeLinkedTraceLifecycleObservers()
+      return url.absoluteString
+    }
+    Function("deleteLinkedTrace") { (sessionId: String) throws -> Void in
+      try LinkedTraceWriter.shared.deleteSession(sessionId: sessionId)
+    }
+    OnDestroy {
+      self.removeLinkedTraceLifecycleObservers()
+      LinkedTraceWriter.shared.flush()
+    }
+    #endif
   }
+
+  #if EXCERLOCK_LINKED_RECORDER_TRACE
+  private func linkedTraceStatusPayload(_ status: LinkedTraceStatus) -> [String: Any] {
+    [
+      "active": status.active,
+      "sessionId": status.sessionId ?? NSNull(),
+      "expiresAtWallTimeMs": status.expiresAtWallTimeMs ?? NSNull(),
+      "truncated": status.truncated
+    ]
+  }
+
+  private func installLinkedTraceLifecycleObservers() {
+    removeLinkedTraceLifecycleObservers()
+    let center = NotificationCenter.default
+    let transitions: [(Notification.Name, String)] = [
+      (UIApplication.didBecomeActiveNotification, "active"),
+      (UIApplication.willResignActiveNotification, "inactive"),
+      (UIApplication.didEnterBackgroundNotification, "background"),
+      (UIApplication.willEnterForegroundNotification, "foreground")
+    ]
+    linkedTraceLifecycleObservers = transitions.map { name, state in
+      center.addObserver(forName: name, object: nil, queue: nil) { [weak self] _ in
+        guard let self else { return }
+        let previous = self.linkedTraceLifecycleState
+        self.linkedTraceLifecycleState = state
+        LinkedTraceWriter.shared.recordDeferred(
+          producer: .hostNative,
+          eventType: .appLifecycle,
+          payload: ["layer": "native", "state": state, "previous": previous]
+        )
+      }
+    }
+    let state: String
+    switch UIApplication.shared.applicationState {
+    case .active: state = "active"
+    case .inactive: state = "inactive"
+    case .background: state = "background"
+    @unknown default: state = "unknown"
+    }
+    linkedTraceLifecycleState = state
+    LinkedTraceWriter.shared.recordDeferred(
+      producer: .hostNative,
+      eventType: .appLifecycle,
+      payload: ["layer": "native", "state": state, "previous": "observer_installed"]
+    )
+  }
+
+  private func removeLinkedTraceLifecycleObservers() {
+    let center = NotificationCenter.default
+    linkedTraceLifecycleObservers.forEach(center.removeObserver)
+    linkedTraceLifecycleObservers = []
+  }
+
+  private func tracePolicy(_ input: EnforcementSnapshotInput, status: String, revision: Int?, reason: String? = nil) {
+    var payload: [String: Any] = [
+      "layer": "native",
+      "status": reason.map { status + "_" + $0 } ?? status,
+      "revision": revision ?? input.revision,
+      "state": input.state,
+      "eligibleUntilWallMs": input.eligibleUntil,
+      "futureEnforcementEligible": input.futureEnforcementEligible,
+      "policyGeneration": input.context.policyGeneration,
+      "accountGeneration": input.context.accountGeneration,
+      "selectionVersionHash": LinkedTraceWriter.shared.hashIdentifier(input.context.selectionVersion)
+    ]
+    if let relief = input.relief { payload["relief"] = relief }
+    if let openReason = input.openReason { payload["openReason"] = openReason }
+    LinkedTraceWriter.shared.recordDeferred(producer: .hostNative, eventType: .policyPublish, payload: payload)
+  }
+
+  private func traceWatchdog(
+    operationId: String,
+    operation: String,
+    status: String,
+    monitorId: String?,
+    revision: Int,
+    start: Double? = nil,
+    end: Double? = nil,
+    registeredAt: Double? = nil,
+    eligibleUntil: Double? = nil,
+    reason: String? = nil
+  ) {
+    var payload: [String: Any] = ["operation": operation, "status": status, "revision": revision]
+    if let monitorId { payload["monitorIdHash"] = LinkedTraceWriter.shared.hashIdentifier(monitorId) }
+    if let start { payload["startWallMs"] = start }
+    if let end { payload["endWallMs"] = end }
+    if let registeredAt { payload["registeredAtWallMs"] = registeredAt }
+    if let eligibleUntil { payload["eligibleUntilWallMs"] = eligibleUntil }
+    if let reason { payload["reason"] = reason }
+    LinkedTraceWriter.shared.recordDeferred(
+      producer: .hostNative,
+      eventType: .watchdogOperation,
+      operationId: operationId,
+      payload: payload
+    )
+  }
+  #endif
+
   private func getPolicyRevision() throws -> Int { try ExcerlockPolicyStore.shared.locked { try ExcerlockPolicyStore.shared.readIfPresentLocked()?.revision ?? -1 } }
   private func publish(input: EnforcementSnapshotInput) throws -> [String] {
+    #if EXCERLOCK_LINKED_RECORDER_TRACE
+    var linkedTraceStatus = "rejected"
+    tracePolicy(input, status: "attempt", revision: input.revision)
+    defer { tracePolicy(input, status: linkedTraceStatus, revision: input.revision) }
+    #endif
     let store = ExcerlockPolicyStore.shared
       var stale: [String] = []
       try store.locked {
@@ -57,6 +196,9 @@ public final class ExcerlockEnforcementModule: Module {
         try store.writeLocked(record)
       }
       if !stale.isEmpty { DeviceActivityCenter().stopMonitoring(stale.map { DeviceActivityName($0) }) }
+      #if EXCERLOCK_LINKED_RECORDER_TRACE
+      linkedTraceStatus = "returned"
+      #endif
       return stale
   }
 
@@ -74,6 +216,15 @@ public final class ExcerlockEnforcementModule: Module {
       guard end - start >= 15 * 60 * 1000, end > Date().timeIntervalSince1970 * 1000,
             end <= eligibleUntil else { throw ExcerlockPolicyError.invalidSnapshot }
       let id = excerlockWatchdogPrefix + "stage." + UUID().uuidString
+      #if EXCERLOCK_LINKED_RECORDER_TRACE
+      let linkedTraceOperationId = UUID().uuidString.lowercased()
+      var linkedTraceStatus = "failed"
+      traceWatchdog(operationId: linkedTraceOperationId, operation: "stage", status: "attempt", monitorId: id,
+                    revision: revision, start: start, end: end, registeredAt: registeredAt, eligibleUntil: eligibleUntil)
+      defer { traceWatchdog(operationId: linkedTraceOperationId, operation: "stage", status: linkedTraceStatus,
+                            monitorId: id, revision: revision, start: start, end: end,
+                            registeredAt: registeredAt, eligibleUntil: eligibleUntil) }
+      #endif
       let registration = ExcerlockMonitorRegistration(id: id, revision: revision,
         policyGeneration: policyGeneration, accountGeneration: accountGeneration,
         selectionVersion: selectionVersion, start: start, end: end,
@@ -107,10 +258,17 @@ public final class ExcerlockEnforcementModule: Module {
         }
         throw error
       }
+      #if EXCERLOCK_LINKED_RECORDER_TRACE
+      linkedTraceStatus = "returned"
+      #endif
       return id
   }
 
   private func commitWatchdog(id: String, revision: Int) throws -> Bool {
+    #if EXCERLOCK_LINKED_RECORDER_TRACE
+    let linkedTraceOperationId = UUID().uuidString.lowercased()
+    traceWatchdog(operationId: linkedTraceOperationId, operation: "commit", status: "attempt", monitorId: id, revision: revision)
+    #endif
     var retire: [String] = []
       let committed = try ExcerlockPolicyStore.shared.locked {
         var record = try ExcerlockPolicyStore.shared.readLocked()
@@ -126,10 +284,19 @@ public final class ExcerlockEnforcementModule: Module {
         record.committedId = id; try ExcerlockPolicyStore.shared.writeLocked(record); return true
       }
       if committed && !retire.isEmpty { DeviceActivityCenter().stopMonitoring(retire.map { DeviceActivityName($0) }) }
+      #if EXCERLOCK_LINKED_RECORDER_TRACE
+      traceWatchdog(operationId: linkedTraceOperationId, operation: "commit", status: committed ? "returned" : "rejected", monitorId: id, revision: revision)
+      #endif
       return committed
   }
 
   private func cancelWatchdogs(revision: Int) throws -> Void {
+    #if EXCERLOCK_LINKED_RECORDER_TRACE
+    let linkedTraceOperationId = UUID().uuidString.lowercased()
+    traceWatchdog(operationId: linkedTraceOperationId, operation: "cancel", status: "attempt", monitorId: nil, revision: revision)
+    var linkedTraceStatus = "failed"
+    defer { traceWatchdog(operationId: linkedTraceOperationId, operation: "cancel", status: linkedTraceStatus, monitorId: nil, revision: revision) }
+    #endif
     var names: [String] = []
       try ExcerlockPolicyStore.shared.locked {
         var record = try ExcerlockPolicyStore.shared.readLocked()
@@ -138,6 +305,9 @@ public final class ExcerlockEnforcementModule: Module {
         try ExcerlockPolicyStore.shared.writeLocked(record)
       }
       if !names.isEmpty { DeviceActivityCenter().stopMonitoring(names.map { DeviceActivityName($0) }) }
+      #if EXCERLOCK_LINKED_RECORDER_TRACE
+      linkedTraceStatus = "returned"
+      #endif
   }
 
   private func replaceWindows(windows: [WindowInput], revision: Int) throws -> Void {

@@ -16,6 +16,7 @@ import { createNativeSupportPort } from './NativeSupportPort';
 import { nativeGait } from './NativeGait';
 import { createNativeScreenTimePort } from '../screentime/native/createNativeScreenTimePort';
 import { getExcerlockEnforcementModule } from '../../modules/excerlock-enforcement';
+import { linkedTrace } from '@linked-trace';
 import { NativeEnforcementTransport } from './enforcement/native/NativeEnforcementTransport';
 import { EnforcementHost } from './enforcement/EnforcementHost';
 import { RuntimeEnforcementSource } from './enforcement/RuntimeEnforcementSource';
@@ -216,11 +217,15 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         .catch(() => undefined)
         .then(async () => {
           if (disposed) throw new Error('Runtime disposed');
+          const opportunitySource = __LINKED_RECORDER_TRACE__ ? `runtime_${wakeSource}_${mode}` : '';
+          if (__LINKED_RECORDER_TRACE__) linkedTrace.record('execution_opportunity', { source: opportunitySource, status: 'received' });
           if (deletionSuspended) {
             await host.reconcile(true);
+            if (__LINKED_RECORDER_TRACE__) linkedTrace.record('execution_opportunity', { source: opportunitySource, status: 'completed' });
             return;
           }
           const now = Date.now();
+          let opportunityStatus = 'failed';
           insideReconcile = true;
           try {
             const motion = detection.steps.authorizationStatus();
@@ -424,7 +429,9 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               status = { ...status, scheduleIssue: undefined };
               listeners.forEach((listener) => listener());
             }
+            opportunityStatus = 'completed';
           } finally {
+            if (__LINKED_RECORDER_TRACE__) linkedTrace.record('execution_opportunity', { source: opportunitySource, status: opportunityStatus });
             insideReconcile = false;
           }
         });

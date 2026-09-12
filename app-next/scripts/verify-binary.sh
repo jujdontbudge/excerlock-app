@@ -33,6 +33,9 @@ pass() { echo "VERIFY PASS: $*"; }
 [[ -f "$IOS_DIR/ExcerLock/PrivacyInfo.xcprivacy" ]] || fail "missing PrivacyInfo.xcprivacy"
 [[ -f "$IOS_DIR/ExcerLock/ExcerLock.entitlements" ]] || fail "missing main entitlements"
 pass "prebuild outputs present in $IOS_DIR"
+node "$(cd "$(dirname "$0")" && pwd)/verify-no-linked-trace.cjs" \
+  "$IOS_DIR/ExcerLock" "$IOS_DIR/ExcerLock.xcodeproj/project.pbxproj" || fail "ordinary prebuild contains Linked Recorder research markers"
+pass "ordinary prebuild excludes Linked Recorder research markers"
 
 # Info.plist keys (§3 step 3) from the generated plist, not app.json.
 # No NSUserTrackingUsageDescription (no ATT prompt) and no
@@ -65,6 +68,8 @@ fi
 APP=$(echo "$PAYLOAD_DIR"/ExcerLock.app)
 [[ -d "$APP" ]] || APP=$(echo "$PAYLOAD_DIR"/Payload/ExcerLock.app)
 [[ -d "$APP" ]] || fail "no ExcerLock.app under $PAYLOAD_DIR"
+node "$(cd "$(dirname "$0")" && pwd)/verify-no-linked-trace.cjs" "$APP" || fail "shipping app contains Linked Recorder research markers"
+pass "shipping app excludes Linked Recorder research markers"
 
 # Structured checks bind actual signed values and provisioning to exact bundle IDs.
 manifest_args=()
