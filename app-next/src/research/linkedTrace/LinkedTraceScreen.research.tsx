@@ -20,8 +20,6 @@ import { entitlementStore as useEntitlementStore } from '../../state/entitlement
 type Phase = 'idle' | 'active' | 'expired' | 'exported' | 'deleted';
 
 function first(value: string | string[] | undefined): string { return Array.isArray(value) ? value[0] ?? '' : value ?? ''; }
-function validSession(value: string): boolean { return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value); }
-function validNonce(value: string): boolean { return /^[0-9a-f-]{64,160}$/i.test(value); }
 
 export function LinkedTraceScreen() {
   const runtime = useRuntime();
@@ -30,7 +28,7 @@ export function LinkedTraceScreen() {
   const sessionId = first(params.sessionId).toLowerCase();
   const nonce = first(params.nonce);
   const protocolVersion = first(params.protocolVersion);
-  const validHandshake = validSession(sessionId) && validNonce(nonce) && protocolVersion === '1';
+  const validHandshake = sessionId !== '' && nonce !== '' && protocolVersion === '1';
   const [consented, setConsented] = useState(false);
   const [canaryConfirmed, setCanaryConfirmed] = useState(false);
   const [abandonConfirmed, setAbandonConfirmed] = useState(false);
@@ -132,8 +130,10 @@ export function LinkedTraceScreen() {
       const active = await linkedTrace.start(sessionId, nonce);
       setStatus(active);
       setPhase('active');
-    } catch {
-      setError('The local trace could not start. Reopen this screen from Walking Recorder.');
+    } catch (cause) {
+      setError(String(cause).includes('sessionExists')
+        ? 'This session was already finalized on this phone; its trace was kept. Start a new linked session from Walking Recorder.'
+        : 'The local trace could not start. Reopen this screen from Walking Recorder.');
     } finally { setBusy(false); }
   };
 
@@ -160,7 +160,7 @@ export function LinkedTraceScreen() {
     try {
       await linkedTrace.abandonExpiredSession(expiredSessionId);
       setStatus(await linkedTrace.status());
-      setPhase('deleted');
+      setPhase(validHandshake ? 'idle' : 'deleted');
     } catch {
       setError('The expired trace could not be abandoned. No active trace was changed.');
     } finally { setBusy(false); }

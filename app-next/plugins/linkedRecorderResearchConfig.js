@@ -1,6 +1,12 @@
 const TRACE_FLAG = 'EXCERLOCK_LINKED_RECORDER_TRACE';
 const RUNTIME_VERSION = '2-linked-recorder-1';
 const URL_SCHEME = 'excerlock-linked-trace';
+// Trace Lab registers only its own URL scheme: no production Google OAuth
+// redirect scheme and no `applinks:excerlock.com`, so a production sign-in
+// redirect or universal link can never open the co-installed research app.
+// This placeholder client satisfies the runtime redirect contract without
+// naming the production client; Trace Lab signs in with Apple or email.
+const LAB_GOOGLE_IOS_CLIENT_ID = 'linked-trace-local.apps.googleusercontent.com';
 // `dev` research builds are served by Metro (expo-dev-client). `lab` research
 // builds are standalone Release artifacts with an embedded JS bundle: no
 // Metro, no dev-client, no LAN, no OTA. Only these two environments may carry
@@ -95,6 +101,7 @@ module.exports = {
   TRACE_FLAG,
   RUNTIME_VERSION,
   URL_SCHEME,
+  LAB_GOOGLE_IOS_CLIENT_ID,
   STANDALONE_ENV,
   RESEARCH_ENVS,
   DEV_CLIENT_MODULES,

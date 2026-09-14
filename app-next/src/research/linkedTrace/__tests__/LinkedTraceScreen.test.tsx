@@ -98,3 +98,35 @@ test('allows only an explicit nonce-less abandon after expiry', async () => {
   await user.press(abandon);
   await waitFor(() => expect(mockLinkedTrace.abandonExpiredSession).toHaveBeenCalledWith(SESSION));
 });
+
+test('abandoning an expired trace returns to Start when a new Recorder link is open', async () => {
+  const user = userEvent.setup();
+  const expired = '9f1b2c3d-4e5f-4a6b-8c7d-0e1f2a3b4c5d';
+  mockLinkedTrace.status
+    .mockResolvedValueOnce({ active: false, sessionId: expired, expiresAtWallTimeMs: Date.now() - 1, truncated: false })
+    .mockResolvedValue({ active: false, sessionId: null, expiresAtWallTimeMs: null, truncated: false });
+  await render(<LinkedTraceScreen />);
+
+  await screen.findByText('Explicit local cleanup');
+  expect(screen.queryByRole('button', { name: 'Start linked trace' })).toBeNull();
+  await user.press(screen.getByRole('checkbox', { name: /I understand this expired trace will be deleted/ }));
+  await user.press(screen.getByLabelText('Abandon expired trace'));
+
+  await waitFor(() => expect(mockLinkedTrace.abandonExpiredSession).toHaveBeenCalledWith(expired));
+  expect(await screen.findByRole('button', { name: 'Start linked trace' })).toBeTruthy();
+  expect(screen.queryByText('Local trace deleted')).toBeNull();
+});
+
+test('explains a finalized session instead of restarting it', async () => {
+  const user = userEvent.setup();
+  mockLinkedTrace.start.mockRejectedValue(new Error('UnexpectedException: sessionExists (at LinkedTraceWriter.swift:304)'));
+  await render(<LinkedTraceScreen />);
+
+  await screen.findByText('Isolated lab App Group entitlement');
+  await user.press(screen.getByRole('checkbox', { name: /My selected app is a harmless canary/ }));
+  await user.press(screen.getByRole('checkbox', { name: /I consent to this local research trace/ }));
+  await user.press(screen.getByRole('button', { name: 'Start linked trace' }));
+
+  expect(await screen.findByText(/already finalized on this phone; its trace was kept/)).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Start linked trace' })).toBeTruthy();
+});

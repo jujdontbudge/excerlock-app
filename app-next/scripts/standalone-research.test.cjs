@@ -14,6 +14,7 @@ const verifier = path.join(__dirname, 'verify-standalone-research.cjs');
 
 const APP_BUNDLE_ID = 'com.johansardar.excerlock.lab.linkedtrace';
 const APP_GROUP = 'group.com.johansardar.excerlock.lab.linkedtrace';
+const LAB_GOOGLE_IOS_CLIENT_ID = 'linked-trace-local.apps.googleusercontent.com';
 
 function plistValue(value, indent) {
   const pad = '  '.repeat(indent);
@@ -50,6 +51,17 @@ function makeApp(root, overrides = {}) {
     }),
   );
   fs.writeFileSync(path.join(app, 'Expo.plist'), plist({ EXUpdatesEnabled: false, EXUpdatesRuntimeVersion: '2-linked-recorder-1', ...(overrides.expo ?? {}) }));
+  fs.mkdirSync(path.join(app, 'EXConstants.bundle'));
+  fs.writeFileSync(
+    path.join(app, 'EXConstants.bundle', 'app.config'),
+    JSON.stringify({
+      scheme: ['excerlock-linked-trace'],
+      ios: { bundleIdentifier: APP_BUNDLE_ID },
+      updates: { enabled: false, checkAutomatically: 'NEVER' },
+      extra: { environment: 'lab', clientAuth: { googleIosClientId: LAB_GOOGLE_IOS_CLIENT_ID } },
+      ...(overrides.config ?? {}),
+    }),
+  );
   fs.writeFileSync(path.join(app, 'main.jsbundle'), `hermes-placeholder\nRecorder link required\nStart linked trace\n${overrides.bundle ?? ''}`);
   fs.writeFileSync(path.join(app, 'ExcerLock'), Buffer.from(`binary ${overrides.binary ?? 'LinkedTraceWriter'}`));
   fs.writeFileSync(
@@ -113,8 +125,59 @@ test('rejects a dev-client URL scheme or LAN Bonjour surface', () => inTemp((roo
     }),
   );
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /dev-client URL scheme/);
+  assert.match(result.stderr, /URL scheme\(s\) outside the lab identity: exp\+excerlock/);
   assert.match(result.stderr, /_expo\._tcp/);
+}));
+
+test('accepts the bundle-identifier scheme Expo registers next to the lab scheme', () => inTemp((root) => {
+  const result = runVerifier(makeApp(root, { info: { CFBundleURLTypes: [{ CFBundleURLSchemes: ['excerlock-linked-trace', APP_BUNDLE_ID] }] } }));
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+}));
+
+test('rejects production Google OAuth or universal-link routing into Trace Lab', () => inTemp((root) => {
+  const result = runVerifier(
+    makeApp(root, {
+      info: { CFBundleURLTypes: [{ CFBundleURLSchemes: ['excerlock-linked-trace', 'com.googleusercontent.apps.174877771548-production'] }] },
+      entitlements: { 'com.apple.developer.associated-domains': ['applinks:excerlock.com'] },
+      config: {
+        scheme: ['excerlock-linked-trace', 'com.googleusercontent.apps.174877771548-production'],
+        ios: { bundleIdentifier: APP_BUNDLE_ID, associatedDomains: ['applinks:excerlock.com'] },
+        extra: { environment: 'lab', clientAuth: { googleIosClientId: '174877771548-production.apps.googleusercontent.com' } },
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /outside the lab identity: com\.googleusercontent\.apps\.174877771548-production/);
+  assert.match(result.stderr, /associated domains \["applinks:excerlock\.com"\]/);
+  assert.match(result.stderr, /embedded Expo config scheme is/);
+  assert.match(result.stderr, /embedded Expo config carries associated domains/);
+  assert.match(result.stderr, /clientAuth\.googleIosClientId is 174877771548-production/);
+}));
+
+test('rejects an embedded Expo config that would boot outside the lab environment', () => inTemp((root) => {
+  const result = runVerifier(
+    makeApp(root, {
+      config: {
+        scheme: ['excerlock-linked-trace'],
+        ios: { bundleIdentifier: 'com.johansardar.excerlock' },
+        updates: { enabled: true, url: 'https://u.expo.dev/9a358379-d939-4c56-bcea-de3ac5699be2' },
+        extra: { environment: 'dev', clientAuth: { googleIosClientId: LAB_GOOGLE_IOS_CLIENT_ID } },
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /extra\.environment is dev \(want lab\)/);
+  assert.match(result.stderr, /updates\.enabled is true/);
+  assert.match(result.stderr, /carries an OTA update URL/);
+  assert.match(result.stderr, /ios\.bundleIdentifier is com\.johansardar\.excerlock \(want/);
+}));
+
+test('rejects an artifact without the embedded Expo config', () => inTemp((root) => {
+  const app = makeApp(root);
+  fs.rmSync(path.join(app, 'EXConstants.bundle'), { recursive: true });
+  const result = runVerifier(app);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /missing embedded Expo config/);
 }));
 
 test('rejects an enabled OTA update URL', () => inTemp((root) => {

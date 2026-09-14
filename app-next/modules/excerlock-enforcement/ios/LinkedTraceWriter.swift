@@ -69,6 +69,7 @@ public enum LinkedTraceError: String, Error, LocalizedError {
   case inactive
   case expired
   case sessionMismatch
+  case sessionExists
   case io
 
   public var errorDescription: String? { rawValue }
@@ -300,7 +301,7 @@ public final class LinkedTraceWriter: @unchecked Sendable {
           return
         }
         let directory = try sessionDirectory(descriptor.sessionId)
-        if fileManager.fileExists(atPath: directory.path) { try fileManager.removeItem(at: directory) }
+        guard !fileManager.fileExists(atPath: directory.path) else { throw LinkedTraceError.sessionExists }
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
         try applyProtection(to: directory)
         try writeDescriptorLocked(descriptor)
@@ -489,7 +490,7 @@ public final class LinkedTraceWriter: @unchecked Sendable {
       }
       return false
     }
-    let sequence = try nextSequenceLocked(descriptor.sessionId)
+    let sequence = lastSequenceLocked(descriptor.sessionId) + 1
     let writeStamp = stampProvider()
     let envelope = LinkedTraceEnvelope(
       schemaVersion: linkedTraceProtocolVersion,
@@ -527,6 +528,7 @@ public final class LinkedTraceWriter: @unchecked Sendable {
     try handle.seekToEnd()
     try handle.write(contentsOf: line)
     if eventType != .motionCallbackNative { try handle.synchronize() }
+    try writeSequenceLocked(descriptor.sessionId, sequence)
     return true
   }
 
@@ -627,13 +629,14 @@ public final class LinkedTraceWriter: @unchecked Sendable {
     if fileManager.fileExists(atPath: url.path) { try fileManager.removeItem(at: url) }
   }
 
-  private func nextSequenceLocked(_ sessionId: String) throws -> UInt64 {
+  private func lastSequenceLocked(_ sessionId: String) -> UInt64 {
+    (try? String(contentsOf: sequenceURL(sessionId), encoding: .utf8)).flatMap(UInt64.init) ?? 0
+  }
+
+  private func writeSequenceLocked(_ sessionId: String, _ sequence: UInt64) throws {
     let url = try sequenceURL(sessionId)
-    let previous = (try? String(contentsOf: url, encoding: .utf8)).flatMap(UInt64.init) ?? 0
-    let next = previous + 1
-    try String(next).write(to: url, atomically: true, encoding: .utf8)
+    try String(sequence).write(to: url, atomically: true, encoding: .utf8)
     try applyProtection(to: url)
-    return next
   }
 
   private func deleteSessionFilesLocked(sessionId: String) throws {

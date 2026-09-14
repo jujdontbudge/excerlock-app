@@ -9,23 +9,27 @@
 //   verify-standalone-research.cjs <ExcerLock.app> [options]
 //
 // Options:
-//   --bundle <file>            JS bundle to inspect (default <app>/main.jsbundle)
 //   --entitlements <file>      Entitlements plist/JSON instead of codesign (tests)
 //   --skip-codesign            Do not invoke codesign (fixture tests)
 //   --min-bundle-bytes <n>     Minimum embedded bundle size (default 1000000)
 /* global process */
 const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
+const plist = require('@expo/plist').default;
 
 const APP_BUNDLE_ID = 'com.johansardar.excerlock.lab.linkedtrace';
 const APP_DISPLAY_NAME = 'ExcerLock Trace Lab';
 const APP_GROUP = 'group.com.johansardar.excerlock.lab.linkedtrace';
 const TEAM = 'AX3C2B78YD';
 const SCHEME = 'excerlock-linked-trace';
+const LAB_GOOGLE_IOS_CLIENT_ID = 'linked-trace-local.apps.googleusercontent.com';
 const OTA_PROJECT_URL = 'u.expo.dev/9a358379';
 const MAX_SCAN_BYTES = 200 * 1024 * 1024;
+// Expo registers the bundle identifier as a URL scheme next to the configured
+// one; both are lab-only. Anything else (dev-client, production, Google OAuth)
+// would route another app's links into Trace Lab.
+const LAB_URL_SCHEMES = [SCHEME, APP_BUNDLE_ID];
 // The research screen strings prove the research JS selection reached the
 // embedded bundle; they are literals in LinkedTraceScreen.research.tsx.
 const REQUIRED_BUNDLE_MARKERS = ['Recorder link required', 'Start linked trace'];
@@ -47,31 +51,32 @@ const FORBIDDEN_MARKERS = [
   OTA_PROJECT_URL,
 ];
 
-function plistToJson(file) {
-  const output = execFileSync('plutil', ['-convert', 'json', '-o', '-', file], { encoding: 'utf8' });
-  return JSON.parse(output);
+// Xcode writes binary plists into device artifacts; only those need plutil
+// (macOS). XML plists (fixtures, codesign output) parse in-process anywhere.
+function parsePlist(data) {
+  if (data.subarray(0, 6).toString('latin1') === 'bplist') {
+    return JSON.parse(execFileSync('plutil', ['-convert', 'json', '-o', '-', '-'], { input: data, encoding: 'utf8' }));
+  }
+  return plist.parse(data.toString('utf8'));
+}
+
+function readPlist(file) {
+  return parsePlist(fs.readFileSync(file));
 }
 
 function readEntitlements(options) {
   if (options.entitlements) {
-    const raw = fs.readFileSync(options.entitlements, 'utf8');
+    const raw = fs.readFileSync(options.entitlements);
     try {
-      return JSON.parse(raw);
+      return JSON.parse(raw.toString('utf8'));
     } catch {
-      return plistToJson(options.entitlements);
+      return parsePlist(raw);
     }
   }
   const dumped = execFileSync('codesign', ['-d', '--entitlements', ':-', options.app], {
-    encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
   });
-  const temp = path.join(os.tmpdir(), `standalone-research-entitlements-${process.pid}.plist`);
-  try {
-    fs.writeFileSync(temp, dumped);
-    return plistToJson(temp);
-  } finally {
-    fs.rmSync(temp, { force: true });
-  }
+  return parsePlist(dumped);
 }
 
 function urlSchemes(info) {
@@ -96,6 +101,36 @@ function verifyBundle(bundlePath, minBytes, failures, passed) {
   }
 }
 
+// expo-constants embeds the public Expo config the JS runtime boots from. A
+// native project prebuilt for lab but bundled under another environment
+// verifies everywhere else and still throws at AppRuntimeProvider boot.
+function verifyEmbeddedConfig(app, failures, passed) {
+  const configPath = path.join(app, 'EXConstants.bundle', 'app.config');
+  if (!fs.existsSync(configPath)) {
+    failures.push(`missing embedded Expo config: ${configPath}`);
+    return;
+  }
+  const before = failures.length;
+  let config;
+  try {
+    config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } catch {
+    failures.push('embedded Expo config is not valid JSON');
+    return;
+  }
+  const environment = config.extra?.environment;
+  if (environment !== 'lab') failures.push(`embedded Expo config extra.environment is ${String(environment)} (want lab)`);
+  if (config.updates?.enabled !== false) failures.push(`embedded Expo config updates.enabled is ${String(config.updates?.enabled)} (want false)`);
+  if (config.updates?.url !== undefined) failures.push('embedded Expo config carries an OTA update URL');
+  if (config.ios?.bundleIdentifier !== APP_BUNDLE_ID) failures.push(`embedded Expo config ios.bundleIdentifier is ${String(config.ios?.bundleIdentifier)} (want ${APP_BUNDLE_ID})`);
+  if (JSON.stringify(config.scheme) !== JSON.stringify([SCHEME])) failures.push(`embedded Expo config scheme is ${JSON.stringify(config.scheme)} (want exactly ${JSON.stringify([SCHEME])})`);
+  if (config.ios?.associatedDomains !== undefined) failures.push('embedded Expo config carries associated domains');
+  if (config.extra?.clientAuth?.googleIosClientId !== LAB_GOOGLE_IOS_CLIENT_ID) {
+    failures.push(`embedded Expo config clientAuth.googleIosClientId is ${String(config.extra?.clientAuth?.googleIosClientId)} (want ${LAB_GOOGLE_IOS_CLIENT_ID})`);
+  }
+  if (failures.length === before) passed.push('embedded Expo config boots the lab environment with updates off and lab-only identifiers');
+}
+
 function verifyInfoPlist(app, failures, passed) {
   const infoPlist = path.join(app, 'Info.plist');
   if (!fs.existsSync(infoPlist)) {
@@ -103,13 +138,13 @@ function verifyInfoPlist(app, failures, passed) {
     return;
   }
   const before = failures.length;
-  const info = plistToJson(infoPlist);
+  const info = readPlist(infoPlist);
   if (info.CFBundleIdentifier !== APP_BUNDLE_ID) failures.push(`CFBundleIdentifier is ${String(info.CFBundleIdentifier)} (want ${APP_BUNDLE_ID})`);
   if (info.CFBundleDisplayName !== APP_DISPLAY_NAME) failures.push(`CFBundleDisplayName is ${String(info.CFBundleDisplayName)} (want ${APP_DISPLAY_NAME})`);
   const schemes = urlSchemes(info);
   if (!schemes.includes(SCHEME)) failures.push(`Info.plist URL schemes ${JSON.stringify(schemes)} miss ${SCHEME}`);
-  const devSchemes = schemes.filter((scheme) => scheme.startsWith('exp+') || scheme === 'expo-development-client');
-  if (devSchemes.length) failures.push(`Info.plist carries dev-client URL scheme(s): ${devSchemes.join(', ')}`);
+  const foreign = schemes.filter((scheme) => !LAB_URL_SCHEMES.includes(scheme));
+  if (foreign.length) failures.push(`Info.plist carries URL scheme(s) outside the lab identity: ${foreign.join(', ')}`);
   const bonjour = Array.isArray(info.NSBonjourServices) ? info.NSBonjourServices : [];
   if (bonjour.some((service) => String(service).replace(/\.$/, '') === '_expo._tcp')) {
     failures.push('Info.plist advertises the _expo._tcp dev-server Bonjour service');
@@ -118,7 +153,7 @@ function verifyInfoPlist(app, failures, passed) {
     if (info[key] !== undefined) failures.push(`Info.plist carries dev-client key ${key}`);
   }
   if (failures.length === before) {
-    passed.push(`Info.plist identity ${info.CFBundleIdentifier} with scheme ${SCHEME} and no dev-client surface`);
+    passed.push(`Info.plist identity ${info.CFBundleIdentifier} with lab-only URL schemes and no dev-client surface`);
   }
 }
 
@@ -129,7 +164,7 @@ function verifyExpoPlist(app, failures, passed) {
     return;
   }
   const before = failures.length;
-  const expo = plistToJson(expoPlist);
+  const expo = readPlist(expoPlist);
   if (expo.EXUpdatesEnabled !== false) failures.push(`Expo.plist EXUpdatesEnabled is ${String(expo.EXUpdatesEnabled)} (want false)`);
   if (expo.EXUpdatesURL !== undefined) failures.push('Expo.plist carries an OTA update URL');
   if (failures.length === before) passed.push('Expo.plist disables OTA updates and carries no update URL');
@@ -142,7 +177,9 @@ function verifyEntitlements(options, failures, passed) {
   if (applicationId !== `${TEAM}.${APP_BUNDLE_ID}`) failures.push(`application-identifier is ${String(applicationId)} (want ${TEAM}.${APP_BUNDLE_ID})`);
   const groups = entitlements['com.apple.security.application-groups'];
   if (JSON.stringify(groups) !== JSON.stringify([APP_GROUP])) failures.push(`App Groups are ${JSON.stringify(groups)} (want exactly ${APP_GROUP})`);
-  if (failures.length === before) passed.push('signature carries the isolated lab identity and App Group only');
+  const domains = entitlements['com.apple.developer.associated-domains'];
+  if (domains !== undefined) failures.push(`signature claims associated domains ${JSON.stringify(domains)} (universal links must stay with production ExcerLock)`);
+  if (failures.length === before) passed.push('signature carries the isolated lab identity and App Group only, with no associated domains');
 }
 
 function scanMarkers(root, failures, passed) {
@@ -171,11 +208,10 @@ function scanMarkers(root, failures, passed) {
 
 function main() {
   const args = process.argv.slice(2);
-  const options = { app: null, bundle: null, entitlements: null, skipCodesign: false, minBundleBytes: 1_000_000 };
+  const options = { app: null, entitlements: null, skipCodesign: false, minBundleBytes: 1_000_000 };
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
-    if (arg === '--bundle') options.bundle = args[++i];
-    else if (arg === '--entitlements') options.entitlements = args[++i];
+    if (arg === '--entitlements') options.entitlements = args[++i];
     else if (arg === '--skip-codesign') options.skipCodesign = true;
     else if (arg === '--min-bundle-bytes') options.minBundleBytes = Number(args[++i]);
     else if (!options.app) options.app = arg;
@@ -185,7 +221,7 @@ function main() {
     }
   }
   if (!options.app) {
-    console.error('usage: verify-standalone-research.cjs <ExcerLock.app> [--bundle <file>] [--entitlements <file>] [--skip-codesign] [--min-bundle-bytes <n>]');
+    console.error('usage: verify-standalone-research.cjs <ExcerLock.app> [--entitlements <file>] [--skip-codesign] [--min-bundle-bytes <n>]');
     process.exit(2);
   }
   const app = path.resolve(options.app);
@@ -196,7 +232,8 @@ function main() {
 
   const failures = [];
   const passed = [];
-  verifyBundle(options.bundle ? path.resolve(options.bundle) : path.join(app, 'main.jsbundle'), options.minBundleBytes, failures, passed);
+  verifyBundle(path.join(app, 'main.jsbundle'), options.minBundleBytes, failures, passed);
+  verifyEmbeddedConfig(app, failures, passed);
   verifyInfoPlist(app, failures, passed);
   verifyExpoPlist(app, failures, passed);
   if (!options.skipCodesign) verifyEntitlements(options, failures, passed);

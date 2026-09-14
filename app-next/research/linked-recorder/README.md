@@ -16,7 +16,7 @@ EXCERLOCK_ENV=lab EXCERLOCK_LINKED_RECORDER_TRACE=1 npx expo prebuild --clean
 
 When the flag is present, Expo config:
 
-- uses `ExcerLock Trace Lab` and the `excerlock-linked-trace` scheme;
+- uses `ExcerLock Trace Lab` and registers only the `excerlock-linked-trace` scheme (Expo adds the lab bundle identifier as a scheme): no production Google OAuth redirect scheme and no `applinks:excerlock.com` universal links, so a production sign-in redirect or link can never open Trace Lab. The embedded client config names a lab-only placeholder Google client, so Trace Lab signs in with Apple or email;
 - uses `com.johansardar.excerlock.lab.linkedtrace` plus distinct `.monitor`, `.shield`, `.shieldaction`, and `.report` extension identifiers;
 - uses the distinct `group.com.johansardar.excerlock.lab.linkedtrace` App Group for the research app and every research extension, never the production group;
 - sets runtime `2-linked-recorder-1`;
@@ -26,7 +26,7 @@ When the flag is present, Expo config:
 
 The config refuses the flag when `EAS_BUILD=true`, any `EAS_BUILD_PROFILE` is set, or `EXCERLOCK_ENV` is neither `dev` (Metro) nor `lab` (standalone). `lab` without the flag is also refused, so no ordinary build can acquire lab semantics. There is no EAS research profile. The CommonJS research configuration is the single executable owner of the opt-in, app/extension bundle identifiers, App Group, URL scheme, and runtime version used by Expo config, target configs, Babel, and Metro.
 
-The standalone (`lab`) prebuild additionally: excludes `expo-dev-client`, `expo-dev-launcher`, and `expo-dev-menu` from the generated Podfile; strips the dev-launcher URL scheme, Bonjour service, and local-network keys from the built `Info.plist`; and pins the already-installed lab Device/Development provisioning profiles per target (`EXCERLOCK_LAB_PROFILE_{APP,MONITOR,SHIELD,SHIELD_ACTION,REPORT}` override the default profile names).
+The standalone (`lab`) prebuild additionally: excludes `expo-dev-client`, `expo-dev-launcher`, and `expo-dev-menu` from the generated Podfile; strips the dev-launcher URL scheme, Bonjour service, and local-network keys from the built `Info.plist`; and pins the already-installed lab Device/Development provisioning profiles per target by their installed names (`ExcerLock Trace Lab … Development`).
 
 Build it end to end and verify the artifact:
 
@@ -35,7 +35,7 @@ app-next/scripts/build-linked-recorder-standalone.sh
 # -> .scratch/standalone-research/DerivedData/Build/Products/Release-iphoneos/ExcerLock.app
 ```
 
-The script exports the double opt-in for both `expo prebuild` and the Xcode bundling phase, then runs `scripts/verify-standalone-research.cjs`: embedded `main.jsbundle` with the research screen, lab identity/App Group only, updates off, and no dev-client or LAN/OTA marker. Never pass the flag only to prebuild, or the artifact embeds the ordinary Expo config while the native project is research-configured.
+The script always runs a clean prebuild, exports the double opt-in for both `expo prebuild` and the Xcode bundling phase, then runs `scripts/verify-standalone-research.cjs`: embedded `main.jsbundle` with the research screen, embedded `EXConstants.bundle/app.config` booting `extra.environment` `lab` with updates off, lab identity/App Group only, lab-only URL schemes, no associated domains, and no dev-client or LAN/OTA marker. Never pass the flag only to prebuild, or the artifact embeds the ordinary Expo config while the native project is research-configured; the verifier rejects that artifact.
 
 A later authorized signing step requires already-authorized App IDs/profiles with Family Controls and `group.com.johansardar.excerlock.lab.linkedtrace` access. This source work does not create App IDs, groups, profiles, certificates, or portal records. If that isolated lab group is not already authorized, stop at this prerequisite; never share the production App Group or uninstall/replace production ExcerLock.
 
@@ -49,7 +49,7 @@ After any trace prebuild, delete the generated `ios/` tree and run an unflagged 
 
 ## Minimal test protocol
 
-1. Complete Trace Lab setup locally: use a signed build whose profile grants the isolated lab App Group, sign in to the development environment with a pre-existing trial/active lab entitlement, authorize Screen Time, select exactly one benign nonessential canary app (no categories or websites), and authorize Motion & Fitness. **Never select Walking Recorder.** Trace Lab's visible preflight blocks Start and names any missing step. It never uses production Adapty, auto-grants access, or fabricates a subscription entitlement; if authorized development access is unavailable, stop.
+1. Complete Trace Lab setup locally: use a signed build whose profile grants the isolated lab App Group, sign in to the development environment with Apple or email using a pre-existing trial/active lab entitlement (Trace Lab carries no production Google OAuth client), authorize Screen Time, select exactly one benign nonessential canary app (no categories or websites), and authorize Motion & Fitness. **Never select Walking Recorder.** Trace Lab's visible preflight blocks Start and names any missing step. It never uses production Adapty, auto-grants access, or fabricates a subscription entitlement; if authorized development access is unavailable, stop.
 2. In Walking Recorder, explicitly opt into a linked local session and start the desired label. The recorder creates a UUID and a 256-bit one-time nonce. The nonce is transactionally retained only in the recorder session's protected recovery file, excluded from every export, and removed after the operator confirms Trace Lab was finalized or explicitly abandoned.
 3. Tap **Open ExcerLock Trace Lab**. Review the second consent surface, confirm the harmless canary prerequisite, and start the production trace.
 4. Return to Walking Recorder. Keep its foreground labels honest while ExcerLock moves through the real production/background path.
@@ -79,7 +79,7 @@ The joiner validates protocol/session identity, sequence continuity, `mach_conti
 
 The trace covers native motion callback receipt, JS input/fusion, durable detector transitions, runtime/headless opportunities, policy publication, watchdog operations, extension callback receipt/guard result, and shield setter attempt/return/readback. It rejects arbitrary keys/nested payloads, selection tokens, bundle/account/device identifiers, coordinates, and free-form errors.
 
-Raw inertial vectors and all human labels remain only in Walking Recorder. ExcerLock retains callback stream/receipt/source timing, activity/cadence fields already consumed by production, and derived causal evidence, but no gravity or rotation vectors. The ExcerLock trace has a 25 MiB session cap, 100 MiB retained cap, bounded in-memory queue with drop summaries, two-hour active TTL, seven-day next-access retention pruning, complete-until-first-authentication file protection, explicit finalization/export, and manual deletion. A nonce-less abandon is available only after the active descriptor has expired and requires explicit local confirmation; it deletes rather than exports the expired trace.
+Raw inertial vectors and all human labels remain only in Walking Recorder. ExcerLock retains callback stream/receipt/source timing, activity/cadence fields already consumed by production, and derived causal evidence, but no gravity or rotation vectors. The ExcerLock trace has a 25 MiB session cap, 100 MiB retained cap, bounded in-memory queue with drop summaries, two-hour active TTL, seven-day next-access retention pruning, complete-until-first-authentication file protection, explicit finalization/export, and manual deletion. A nonce-less abandon is available only after the active descriptor has expired and requires explicit local confirmation; it deletes rather than exports the expired trace, and when a new Recorder link is already open the screen returns to Start for that new session. Starting a session whose trace directory already exists (finalized, or expired but not abandoned) is refused; a stale "needs finalization" card in Walking Recorder can never delete an exported trace.
 
 ## Local checks
 

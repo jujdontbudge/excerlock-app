@@ -74,6 +74,15 @@ struct LinkedTraceWriterHarness {
     precondition(rows.filter { $0["eventType"] as? String == "trace_start" }.count == 1)
     precondition(rows.filter { $0["eventType"] as? String == "trace_stop" }.count == 1)
     precondition(!writer.status().active)
+    let finalizedTrace = root.appendingPathComponent("linked-trace/v1/\(sessionId)/production.ndjson")
+    let finalizedBytes = try Data(contentsOf: finalizedTrace).count
+    do {
+      _ = try writer.startSession(sessionId: sessionId, nonce: nonce)
+      preconditionFailure("restarting a finalized session overwrote its trace")
+    } catch LinkedTraceError.sessionExists {}
+    let retainedBytes = try Data(contentsOf: finalizedTrace).count
+    precondition(retainedBytes == finalizedBytes)
+    precondition(writer.status().sessionId == nil)
 
     let limitedRoot = root.appendingPathComponent("limited", isDirectory: true)
     try FileManager.default.createDirectory(at: limitedRoot, withIntermediateDirectories: true)
@@ -87,9 +96,14 @@ struct LinkedTraceWriterHarness {
     }
     precondition(limited.status().truncated)
     let limitedExport = try limited.stopSession(sessionId: limitedId, nonce: nonce)
-    let limitedText = try String(contentsOf: limitedExport, encoding: .utf8)
-    precondition(limitedText.contains("trace_truncated"))
-    precondition(limitedText.contains("trace_stop"))
+    let limitedRows = try String(contentsOf: limitedExport, encoding: .utf8).split(separator: "\n").map {
+      try JSONSerialization.jsonObject(with: Data($0.utf8)) as! [String: Any]
+    }
+    let limitedTypes = limitedRows.compactMap { $0["eventType"] as? String }
+    precondition(limitedTypes.contains("trace_truncated"))
+    precondition(limitedTypes.last == "trace_stop")
+    let limitedSequences = limitedRows.compactMap { ($0["sequence"] as? NSNumber)?.uint64Value }
+    precondition(limitedSequences == Array(1...UInt64(limitedRows.count)), "truncation burned a sequence: \(limitedSequences)")
 
     let stamp = MutableStamp(10_000)
     let expiryRoot = root.appendingPathComponent("expiry", isDirectory: true)

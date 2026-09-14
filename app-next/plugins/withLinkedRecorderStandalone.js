@@ -17,13 +17,13 @@ const EXCLUDED_CALL = `use_expo_modules!({ exclude: [${EXCLUDED_MODULES.map((nam
 // Signing: this Mac has no Xcode account signed in, so automatic signing falls
 // back to the wildcard team profile and fails the Family Controls/App Group
 // entitlements. The lab Device/Development profiles are already installed;
-// pin them per target. Overridable for another Mac with different profile names.
-const LAB_PROFILE_ENV = {
-  ExcerLock: ["EXCERLOCK_LAB_PROFILE_APP", "ExcerLock Trace Lab Development"],
-  DeviceActivityMonitorExtension: ["EXCERLOCK_LAB_PROFILE_MONITOR", "ExcerLock Trace Lab Monitor Development"],
-  ShieldConfiguration: ["EXCERLOCK_LAB_PROFILE_SHIELD", "ExcerLock Trace Lab Shield Development"],
-  ShieldAction: ["EXCERLOCK_LAB_PROFILE_SHIELD_ACTION", "ExcerLock Trace Lab Shield Action Development"],
-  DeviceActivityReportExtension: ["EXCERLOCK_LAB_PROFILE_REPORT", "ExcerLock Trace Lab Report Development"],
+// pin them per target by their installed names.
+const LAB_PROFILES = {
+  ExcerLock: "ExcerLock Trace Lab Development",
+  DeviceActivityMonitorExtension: "ExcerLock Trace Lab Monitor Development",
+  ShieldConfiguration: "ExcerLock Trace Lab Shield Development",
+  ShieldAction: "ExcerLock Trace Lab Shield Action Development",
+  DeviceActivityReportExtension: "ExcerLock Trace Lab Report Development",
 };
 
 function patchPodfile(contents) {
@@ -74,12 +74,6 @@ function betaTargets(betaProject) {
   );
 }
 
-function labProfileSpecifier(targetName, env = process.env) {
-  const entry = LAB_PROFILE_ENV[targetName];
-  if (!entry) return null;
-  return env[entry[0]] || entry[1];
-}
-
 /**
  * `@kingstinct/expo-apple-targets` writes the Beta project file during the
  * base-mod phase, before finalized mods run, so signing must be applied to the
@@ -93,8 +87,7 @@ function pinLabSigningTargets(projectPath) {
       "Linked Recorder standalone prebuild requires the @bacons/xcode project; refusing to sign with wildcard profiles",
     );
   }
-  for (const targetName of Object.keys(LAB_PROFILE_ENV)) {
-    const specifier = labProfileSpecifier(targetName);
+  for (const [targetName, specifier] of Object.entries(LAB_PROFILES)) {
     const target = targets.find((candidate) => candidate.props.productName === targetName);
     if (!target) throw new Error(`Linked Recorder standalone prebuild found no ${targetName} target`);
     target.setBuildSetting("CODE_SIGN_STYLE", "Manual");
@@ -104,8 +97,7 @@ function pinLabSigningTargets(projectPath) {
   fs.writeFileSync(projectPath, buildXcodeProject(project.toJSON()));
   // Re-read: a later writer must not silently drop the standalone signing.
   const written = XcodeProject.open(projectPath);
-  for (const targetName of Object.keys(LAB_PROFILE_ENV)) {
-    const specifier = labProfileSpecifier(targetName);
+  for (const [targetName, specifier] of Object.entries(LAB_PROFILES)) {
     const target = betaTargets(written).find((candidate) => candidate.props.productName === targetName);
     if (target?.getDefaultBuildSetting("PROVISIONING_PROFILE_SPECIFIER") !== specifier) {
       throw new Error(`Linked Recorder standalone prebuild lost the ${targetName} signing profile`);

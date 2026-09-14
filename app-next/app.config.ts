@@ -1,5 +1,6 @@
 import 'tsx/cjs'; // Expo transpiles only the entry; register external TS config imports.
 import type { ConfigContext, ExpoConfig } from 'expo/config';
+import type { LinkedRecorderIdentifiers } from './plugins/linkedRecorderResearchConfig';
 import { buildClientExtra, resolveBuildEnvironment, updateChannel } from './config/environment';
 import { loadBuildEnvironment } from './config/loadEnvironment';
 import { nativeConfig } from './config/native';
@@ -8,6 +9,20 @@ import { googleOAuthRedirect } from './config/googleOAuth';
 // Babel, and Metro so research identifiers and opt-in parsing cannot drift.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const linkedRecorderConfig = require('./plugins/linkedRecorderResearchConfig') as typeof import('./plugins/linkedRecorderResearchConfig');
+
+// Trace Lab carries only its own identity: the lab bundle identifier and App
+// Group, with no universal links. A production universal link or OAuth
+// redirect must never open the co-installed research app.
+function researchIos(ios: ExpoConfig['ios'], identifiers: LinkedRecorderIdentifiers): ExpoConfig['ios'] {
+  const lab = {
+    ...ios,
+    bundleIdentifier: identifiers.bundleIds.app,
+    entitlements: { ...ios?.entitlements, 'com.apple.security.application-groups': [identifiers.appGroup] },
+  };
+  delete lab.associatedDomains;
+  delete lab.entitlements['com.apple.developer.associated-domains'];
+  return lab;
+}
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   if (!config.name || !config.slug) throw new Error('app.json must define name and slug');
@@ -21,7 +36,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   if (!linkedRecorderResearch && process.env.NODE_ENV !== 'test' && values.SENTRY_AUTH_TOKEN && !process.env.SENTRY_AUTH_TOKEN) {
     process.env.SENTRY_AUTH_TOKEN = values.SENTRY_AUTH_TOKEN;
   }
-  const google = values.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ? googleOAuthRedirect(values.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID) : null;
+  const googleIosClientId = linkedRecorderResearch ? linkedRecorderConfig.LAB_GOOGLE_IOS_CLIENT_ID : values.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const google = googleIosClientId ? googleOAuthRedirect(googleIosClientId) : null;
   const plugins = linkedRecorderResearch
     ? [
         ...nativeConfig.plugins
@@ -42,27 +58,17 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     : nativeConfig.plugins;
   return {
     ...config,
-    scheme: [linkedRecorderResearch ? linkedRecorderConfig.URL_SCHEME : 'excerlock', ...(google ? [google.scheme] : [])],
+    scheme: linkedRecorderResearch ? [linkedRecorderConfig.URL_SCHEME] : ['excerlock', ...(google ? [google.scheme] : [])],
     name: config.name,
     slug: config.slug,
     runtimeVersion: linkedRecorderResearch ? linkedRecorderConfig.RUNTIME_VERSION : '2',
     ios: {
       ...config.ios,
-      ...nativeConfig.ios,
-      ...(linkedRecorderResearch ? {
-        bundleIdentifier: linkedIdentifiers.bundleIds.app,
-        entitlements: {
-          ...nativeConfig.ios?.entitlements,
-          'com.apple.security.application-groups': [linkedIdentifiers.appGroup],
-        },
-      } : {}),
+      ...(linkedRecorderResearch ? researchIos(nativeConfig.ios, linkedIdentifiers) : nativeConfig.ios),
       infoPlist: {
         ...config.ios?.infoPlist,
         ...nativeConfig.ios?.infoPlist,
-        ...(linkedRecorderResearch ? {
-          CFBundleDisplayName: 'ExcerLock Trace Lab',
-          EXCERLOCK_LINKED_RECORDER_TRACE: true,
-        } : {}),
+        ...(linkedRecorderResearch ? { CFBundleDisplayName: 'ExcerLock Trace Lab' } : {}),
       },
     },
     plugins: [...plugins],
@@ -76,7 +82,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           sentryDsn: 'https://localhost',
         },
       } : {}),
-      clientAuth: { ...extra.clientAuth, googleRedirectUri: google?.redirectUri },
+      clientAuth: { ...extra.clientAuth, googleIosClientId, googleRedirectUri: google?.redirectUri },
     },
     updates: linkedRecorderResearch ? linkedRecorderConfig.updatesConfig() : {
       url: 'https://u.expo.dev/9a358379-d939-4c56-bcea-de3ac5699be2',
