@@ -1,5 +1,5 @@
 import { loadBuildEnvironment } from '../../../config/loadEnvironment';
-import { CLIENT_ENV_NAMES, buildClientExtra, parseEnvFile, resolveBuildEnvironment, resolveClientEnvironment } from '../../../config/environment';
+import { CLIENT_ENV_NAMES, buildClientExtra, parseEnvFile, resolveBuildEnvironment, resolveClientEnvironment, updateChannel } from '../../../config/environment';
 
 const clientValues = Object.fromEntries(CLIENT_ENV_NAMES.map((key) => [key, `test-${key}`]));
 Object.assign(clientValues, {
@@ -73,4 +73,11 @@ test('OTA environment selects production without a build profile; conflicting in
   expect(() => resolveBuildEnvironment({ EAS_BUILD_PROFILE: 'preview', EXCERLOCK_ENV: 'prod' })).toThrow('conflict');
   expect(() => resolveBuildEnvironment({ NODE_ENV: 'production' })).toThrow('explicit');
   expect(() => resolveBuildEnvironment({ EXCERLOCK_ENV: 'prd' })).toThrow('EXCERLOCK_ENV');
+});
+
+test('the standalone lab environment is a double opt-in with no OTA channel', () => {
+  expect(resolveBuildEnvironment({ EXCERLOCK_ENV: 'lab', EXCERLOCK_LINKED_RECORDER_TRACE: '1' })).toBe('lab');
+  expect(() => resolveBuildEnvironment({ EXCERLOCK_ENV: 'lab' })).toThrow('EXCERLOCK_LINKED_RECORDER_TRACE=1');
+  expect(() => resolveBuildEnvironment({ EAS_BUILD_PROFILE: 'preview', EXCERLOCK_ENV: 'lab', EXCERLOCK_LINKED_RECORDER_TRACE: '1' })).toThrow('conflict');
+  expect(() => updateChannel('lab')).toThrow('no OTA update channel');
 });

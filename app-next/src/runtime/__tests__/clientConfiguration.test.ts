@@ -14,3 +14,7 @@ test('missing configuration and mismatched redirect fail before native construct
   expect(() => readClientConfiguration({ ...extra, clientAuth: { ...extra.clientAuth, googleRedirectUri: 'excerlock://auth' } })).toThrow('redirect');
   expect(() => readClientConfiguration({ ...extra, clientApi: { url: 'http://api.example.com' } })).toThrow('URL');
 });
+test('accepts the standalone lab research environment and rejects unknown ones', () => {
+  expect(readClientConfiguration({ ...extra, environment: 'lab' }).environment).toBe('lab');
+  expect(() => readClientConfiguration({ ...extra, environment: 'research' })).toThrow('Invalid client environment');
+});

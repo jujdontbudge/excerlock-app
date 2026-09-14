@@ -1,9 +1,12 @@
 /** Build-only resolver. Do not import this module from the application bundle. */
-export type BuildEnvironment = 'dev' | 'preview' | 'prod';
+export type BuildEnvironment = 'dev' | 'preview' | 'prod' | 'lab';
 export type EnvironmentValues = Readonly<Record<string, string | undefined>>;
 /** Direct prebuild/xcodebuild must embed the same channel as EAS Build. */
 export function updateChannel(environment: BuildEnvironment): string {
-  return { dev: 'development', preview: 'preview', prod: 'production' }[environment];
+  const channel = { dev: 'development', preview: 'preview', prod: 'production' }[environment as 'dev' | 'preview' | 'prod'];
+  // Lab research builds disable OTA entirely; an update channel is a bug.
+  if (!channel) throw new Error('Lab research builds have no OTA update channel');
+  return channel;
 }
 export const CLIENT_ENV_NAMES = [
   'EXPO_PUBLIC_ADAPTY_KEY',
@@ -41,8 +44,14 @@ export function parseEnvFile(contents: string): Record<string, string> {
 export function resolveBuildEnvironment(env: EnvironmentValues): BuildEnvironment {
   const profile = env.EAS_BUILD_PROFILE;
   const explicit = env.EXCERLOCK_ENV;
-  if (explicit !== undefined && !['dev', 'preview', 'prod'].includes(explicit)) {
-    throw new Error('EXCERLOCK_ENV must be dev, preview or prod');
+  if (explicit !== undefined && !['dev', 'preview', 'prod', 'lab'].includes(explicit)) {
+    throw new Error('EXCERLOCK_ENV must be dev, preview, prod or lab');
+  }
+  // The standalone research environment is opt-in twice, exactly like EAS.
+  // Without the trace flag it would build an ordinary app with lab identity
+  // semantics, so refuse it before anything else can consume it.
+  if (explicit === 'lab' && env.EXCERLOCK_LINKED_RECORDER_TRACE !== '1') {
+    throw new Error('EXCERLOCK_ENV=lab requires EXCERLOCK_LINKED_RECORDER_TRACE=1');
   }
   const profiles: Record<string, BuildEnvironment> = { development: 'dev', dev: 'dev', preview: 'preview', production: 'prod', prod: 'prod' };
   const fromProfile = profile ? profiles[profile] : undefined;

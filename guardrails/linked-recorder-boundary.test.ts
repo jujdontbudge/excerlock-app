@@ -29,11 +29,12 @@ describe('linked recorder research boundary', () => {
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   }, 30_000);
 
-  it('executes all target factories and the Metro resolver in both modes', () => {
+  it('executes all target factories, the Metro resolver, and the standalone artifact rules', () => {
     const result = spawnSync(process.execPath, [
       '--test',
       'scripts/linked-recorder-config.test.cjs',
       'scripts/metro.test.cjs',
+      'scripts/standalone-research.test.cjs',
     ], {
       cwd: app(),
       encoding: 'utf8',

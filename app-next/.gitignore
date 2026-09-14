@@ -40,6 +40,9 @@ yarn-error.*
 /ios
 /android
 
+# local standalone/device build output (scripts/build-linked-recorder-standalone.sh)
+.scratch/
+
 coverage/
 evidence/**/*
 !evidence/**/

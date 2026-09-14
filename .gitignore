@@ -9,6 +9,7 @@ build/
 .env.*
 plans/sessions/
 .expo/
+__pycache__/
 
 # Expo generated state and native projects (Continuous Native Generation).
 app/.expo/

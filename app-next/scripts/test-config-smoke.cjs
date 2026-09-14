@@ -73,6 +73,53 @@ test('actual Expo loader creates an isolated local-only Linked Recorder research
   assert.ok(!result.stdout.includes(researchEnv.SENTRY_AUTH_TOKEN));
 });
 
+test('actual Expo loader creates the standalone lab research config with an embedded-bundle runtime', () => {
+  const labEnv = {
+    ...env,
+    NODE_ENV: 'production',
+    EXCERLOCK_ENV: 'lab',
+    EXCERLOCK_LINKED_RECORDER_TRACE: '1',
+    EAS_BUILD: 'false',
+  };
+  delete labEnv.EAS_BUILD_PROFILE;
+  const result = spawnSync(process.execPath, [cli, 'config', '--type', 'public', '--json'], {
+    cwd, env: labEnv, encoding: 'utf8', timeout: 30_000,
+  });
+  assert.equal(result.status, 0, 'Linked Recorder lab Expo config loading failed (output withheld)');
+  const config = JSON.parse(result.stdout);
+  assert.equal(config.extra.environment, 'lab');
+  assert.equal(config.ios.infoPlist.CFBundleDisplayName, 'ExcerLock Trace Lab');
+  assert.equal(config.ios.bundleIdentifier, 'com.johansardar.excerlock.lab.linkedtrace');
+  assert.deepEqual(config.ios.entitlements['com.apple.security.application-groups'], ['group.com.johansardar.excerlock.lab.linkedtrace']);
+  assert.deepEqual(config.scheme.filter((value) => value.startsWith('excerlock')), ['excerlock-linked-trace']);
+  assert.equal(config.runtimeVersion, '2-linked-recorder-1');
+  assert.equal(config.updates.enabled, false);
+  assert.equal(config.updates.url, undefined);
+  assert.deepEqual(config.extra.clientObservability, {
+    posthogApiKey: 'linked-trace-local',
+    posthogHost: 'https://localhost',
+    sentryDsn: 'https://localhost',
+  });
+  assert.doesNotThrow(() => readClientConfiguration(config.extra));
+  // The standalone release build must not carry the dev client in any form;
+  // the exclusion plugin is what removes its pods from the generated Podfile.
+  assert.ok(!config.plugins.some((plugin) => (Array.isArray(plugin) ? plugin[0] : plugin) === 'expo-dev-client'));
+  assert.ok(config.plugins.includes('./plugins/withLinkedRecorderStandalone'));
+  assert.ok(!config.plugins.some((plugin) => (Array.isArray(plugin) ? plugin[0] : plugin) === '@sentry/react-native/expo'));
+  assert.ok(!result.stdout.includes(labEnv.SENTRY_AUTH_TOKEN));
+});
+
+test('actual Expo loader refuses the lab environment without the research opt-in', () => {
+  const result = spawnSync(process.execPath, [cli, 'config', '--type', 'public', '--json'], {
+    cwd,
+    env: { ...env, EXCERLOCK_ENV: 'lab', EAS_BUILD: 'false' },
+    encoding: 'utf8',
+    timeout: 30_000,
+  });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /EXCERLOCK_ENV=lab requires EXCERLOCK_LINKED_RECORDER_TRACE=1/);
+});
+
 test('actual Expo loader refuses malformed Linked Recorder opt-in values', () => {
   const result = spawnSync(process.execPath, [cli, 'config', '--type', 'public', '--json'], {
     cwd,

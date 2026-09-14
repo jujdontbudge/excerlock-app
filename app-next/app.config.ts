@@ -12,6 +12,7 @@ const linkedRecorderConfig = require('./plugins/linkedRecorderResearchConfig') a
 export default ({ config }: ConfigContext): ExpoConfig => {
   if (!config.name || !config.slug) throw new Error('app.json must define name and slug');
   const linkedRecorderResearch = linkedRecorderConfig.assertResearchBuildAllowed(process.env);
+  const linkedRecorderStandalone = linkedRecorderConfig.standaloneEnabled(process.env);
   const linkedIdentifiers = linkedRecorderConfig.identifiers(process.env);
   const environment = resolveBuildEnvironment(process.env);
   const values = loadBuildEnvironment();
@@ -22,12 +23,22 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   }
   const google = values.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ? googleOAuthRedirect(values.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID) : null;
   const plugins = linkedRecorderResearch
-    ? nativeConfig.plugins
-      .filter((plugin) => (Array.isArray(plugin) ? plugin[0] : plugin) !== '@sentry/react-native/expo')
-      .map((plugin) => {
-        if (!Array.isArray(plugin) || plugin[0] !== 'react-native-device-activity') return plugin;
-        return [plugin[0], { ...(plugin[1] as Record<string, unknown>), appGroup: linkedIdentifiers.appGroup }] as [string, Record<string, unknown>];
-      })
+    ? [
+        ...nativeConfig.plugins
+          .filter((plugin) => (Array.isArray(plugin) ? plugin[0] : plugin) !== '@sentry/react-native/expo')
+          // A standalone Release research build must not carry the dev client:
+          // no launcher, no dev menu, no expo-development-client URL scheme.
+          .filter((plugin) => {
+            if (!linkedRecorderStandalone) return true;
+            const name = Array.isArray(plugin) ? plugin[0] : plugin;
+            return typeof name !== 'string' || !linkedRecorderConfig.DEV_CLIENT_MODULES.includes(name);
+          })
+          .map((plugin) => {
+            if (!Array.isArray(plugin) || plugin[0] !== 'react-native-device-activity') return plugin;
+            return [plugin[0], { ...(plugin[1] as Record<string, unknown>), appGroup: linkedIdentifiers.appGroup }] as [string, Record<string, unknown>];
+          }),
+        ...(linkedRecorderStandalone ? ['./plugins/withLinkedRecorderStandalone'] : []),
+      ]
     : nativeConfig.plugins;
   return {
     ...config,

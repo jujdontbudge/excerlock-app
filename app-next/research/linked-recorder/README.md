@@ -4,10 +4,14 @@ This is a **local research build**, not a release profile. It links a foreground
 
 ## Build boundary
 
-The opt-in is exact:
+The opt-in is exact, and there are two research build shapes:
 
 ```sh
+# Metro-served development build (expo-dev-client, needs the Mac while it runs)
 EXCERLOCK_ENV=dev EXCERLOCK_LINKED_RECORDER_TRACE=1 npx expo prebuild --clean
+
+# Standalone Release artifact: embedded JS bundle, no Metro, no dev client
+EXCERLOCK_ENV=lab EXCERLOCK_LINKED_RECORDER_TRACE=1 npx expo prebuild --clean
 ```
 
 When the flag is present, Expo config:
@@ -20,7 +24,18 @@ When the flag is present, Expo config:
 - omits the Sentry config plugin and selects local no-network Sentry/PostHog implementations;
 - defines native trace compilation only for the research pod/monitor targets.
 
-The config refuses the flag when `EAS_BUILD=true`, any `EAS_BUILD_PROFILE` is set, or `EXCERLOCK_ENV` is not `dev`. There is no EAS research profile. The CommonJS research configuration is the single executable owner of the opt-in, app/extension bundle identifiers, App Group, URL scheme, and runtime version used by Expo config, target configs, Babel, and Metro.
+The config refuses the flag when `EAS_BUILD=true`, any `EAS_BUILD_PROFILE` is set, or `EXCERLOCK_ENV` is neither `dev` (Metro) nor `lab` (standalone). `lab` without the flag is also refused, so no ordinary build can acquire lab semantics. There is no EAS research profile. The CommonJS research configuration is the single executable owner of the opt-in, app/extension bundle identifiers, App Group, URL scheme, and runtime version used by Expo config, target configs, Babel, and Metro.
+
+The standalone (`lab`) prebuild additionally: excludes `expo-dev-client`, `expo-dev-launcher`, and `expo-dev-menu` from the generated Podfile; strips the dev-launcher URL scheme, Bonjour service, and local-network keys from the built `Info.plist`; and pins the already-installed lab Device/Development provisioning profiles per target (`EXCERLOCK_LAB_PROFILE_{APP,MONITOR,SHIELD,SHIELD_ACTION,REPORT}` override the default profile names).
+
+Build it end to end and verify the artifact:
+
+```sh
+app-next/scripts/build-linked-recorder-standalone.sh
+# -> .scratch/standalone-research/DerivedData/Build/Products/Release-iphoneos/ExcerLock.app
+```
+
+The script exports the double opt-in for both `expo prebuild` and the Xcode bundling phase, then runs `scripts/verify-standalone-research.cjs`: embedded `main.jsbundle` with the research screen, lab identity/App Group only, updates off, and no dev-client or LAN/OTA marker. Never pass the flag only to prebuild, or the artifact embeds the ordinary Expo config while the native project is research-configured.
 
 A later authorized signing step requires already-authorized App IDs/profiles with Family Controls and `group.com.johansardar.excerlock.lab.linkedtrace` access. This source work does not create App IDs, groups, profiles, certificates, or portal records. If that isolated lab group is not already authorized, stop at this prerequisite; never share the production App Group or uninstall/replace production ExcerLock.
 
@@ -72,4 +87,7 @@ Raw inertial vectors and all human labels remain only in Walking Recorder. Excer
 python3 -m unittest tools/linked-recorder/test_join.py
 app-next/scripts/test-linked-trace-writer.sh
 npx vitest run --config guardrails/vitest.config.ts guardrails/linked-recorder-boundary.test.ts guardrails/phone-walking-recorder-boundary.test.ts
+# Standalone artifact rules and Expo-loader config, real loaders:
+node --test app-next/scripts/standalone-research.test.cjs
+node --test app-next/scripts/test-config-smoke.cjs
 ```
