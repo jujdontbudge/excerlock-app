@@ -33,7 +33,7 @@ A linked test starts in the separately provisioned **ExcerLock Trace Lab** build
 
 1. In Trace Lab tap **Start test**. Walking Recorder opens and starts recording that test immediately, with no activity label yet.
 2. Tap the card for what you are doing. Labels stay the honest foreground ground truth and live only in this app; the two apps exchange no live labels.
-3. Answer the **Canary check** card inline: while walking, then after standing still for about 10 seconds. Each answer is one tap and is recorded as the operator-observed outcome.
+3. Answer the **Canary check** card inline: while walking (ExcerLock releases the shield while the walk is live, so the canary should open), then after standing still for a full minute past the stop grace (the shield should be back). Each answer is one tap and is recorded as the operator-observed outcome.
 4. Tap **Finish test**. The archive is saved locally and this app returns to Trace Lab with the one-time link so Trace Lab can save its own trace file.
 
 The nonce is written transactionally only to the session's protected `recovery.json`, which is excluded from every archive export. Completion, interruption, storage-limit, sensor-error and process-termination paths keep that link, so the **Linked test needs finishing** card can always return to Trace Lab until the operator clears it. Trace Lab may also re-open this app with `excerlock-walkingrecorder://share-archive?sessionId=…` to share a finished archive from its results screen. Both exports use `mach_continuous_time` receipt timestamps for offline ordering.

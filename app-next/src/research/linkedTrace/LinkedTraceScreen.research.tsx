@@ -29,12 +29,14 @@ import {
   walkingRecorderSessionLink,
   type LinkedHandshake,
 } from './linkedRecorderLink';
+import { ensureLabWalkingRule, removeLabWalkingRule } from './labWalkingRule.research';
 
 type Phase = 'ready' | 'running' | 'review' | 'exported' | 'expired';
 
 const NOTHING_COLLECTED = 'No GPS, microphone, camera, raw vectors, or Health history is collected.';
 const ALREADY_SAVED = 'That test was already saved on this phone, so there is nothing left to finalize.';
 const SAVED_NOTE = 'The trace is saved on this phone. Share it now, or reconnect later — nothing was uploaded.';
+const RETURNED_NOT_SAVED = 'That test link is not an active or saved test on this phone, so there was nothing to finalize. Start test begins a clean run.';
 
 /**
  * The one guided research path: start here, record the ground truth in Walking
@@ -93,12 +95,17 @@ export function LinkedTraceScreen() {
       setPhase('expired');
       return;
     }
+    // Only a returned test that is actually in the saved list was saved. A
+    // deleted, abandoned, or already-cleaned session gets truthful recovery
+    // wording instead of a false "already saved" claim.
+    const returnedIsSaved = returned !== null && saved.some((session) => session.sessionId === returned.sessionId);
     if (saved.length) {
       setPhase('exported');
-      if (returned) setNote(ALREADY_SAVED);
+      if (returnedIsSaved) setNote(ALREADY_SAVED);
+      else if (returned) setNote(RETURNED_NOT_SAVED);
       return;
     }
-    if (returned) setNote(ALREADY_SAVED);
+    if (returned) setNote(RETURNED_NOT_SAVED);
     setPhase('ready');
   }, []);
 
@@ -133,6 +140,15 @@ export function LinkedTraceScreen() {
       .catch(() => { if (!cancelled) setError('Trace Lab could not read the local trace. Try again.'); });
     return () => { cancelled = true; };
   }, [handshake, settle]);
+
+  // The lab walking rule is part of the running test, not a setup step: it is
+  // installed with the trace and removed as soon as no trace is running, so the
+  // canary shows ExcerLock's real block/release behavior only during a test.
+  useEffect(() => {
+    if (!status) return;
+    if (status.sessionId && status.active) ensureLabWalkingRule();
+    else removeLabWalkingRule();
+  }, [status]);
 
   // A running test must notice its own two-hour expiry and the return to
   // foreground. Neither check can turn a running test into "save it"; that only
@@ -175,13 +191,18 @@ export function LinkedTraceScreen() {
     setBusy(true);
     setError(null);
     setNote(null);
+    let link: LinkedHandshake | null = null;
     try {
       const latest = await refreshPreflight();
       if (!latest || readinessStep({ entitlementStatus, preflight: latest, labAccess, runtime })) {
         setError('The test did not start. Finish the step named above first.');
         return;
       }
-      const link = newLinkedSession();
+      link = newLinkedSession();
+      // Readiness guarantee: the real ExcerLock walking rule is in place before
+      // the trace starts, so the canary can produce block/release evidence. The
+      // status effect removes it as soon as no trace is running.
+      ensureLabWalkingRule();
       const active = await linkedTrace.start(link.sessionId, link.nonce);
       setStartedLink(link);
       setStatus(active);
@@ -191,7 +212,21 @@ export function LinkedTraceScreen() {
       } catch {
         setError('The trace is running, but Walking Recorder could not be opened. Open Walking Recorder from the Home Screen to record this test.');
       }
-    } catch {
+    } catch (error) {
+      if (link && isSessionExistsFailure(error)) {
+        const failedSessionId = link.sessionId;
+        const [current, saved] = await Promise.all([linkedTrace.status(), linkedTrace.finalized()]);
+        setStatus(current);
+        setFinalized(saved);
+        settle(current, null, saved);
+        if (!current.active) removeLabWalkingRule();
+        setNote(saved.some((session) => session.sessionId === failedSessionId)
+          ? ALREADY_SAVED
+          : 'That test link was already used on this phone, so no new trace started. Start test begins a fresh run.');
+        return;
+      }
+      const current = await linkedTrace.status().catch(() => null);
+      if (!current?.active) removeLabWalkingRule();
       setError('The trace did not start. Nothing was recorded; try again.');
     } finally { setBusy(false); }
   };
@@ -205,11 +240,27 @@ export function LinkedTraceScreen() {
       await linkedTrace.stop(link.sessionId, link.nonce);
       returnedLinkRef.current = null;
       setStartedLink(null);
-      setStatus(await linkedTrace.status());
-      setFinalized(await linkedTrace.finalized());
+      const [current, saved] = await Promise.all([linkedTrace.status(), linkedTrace.finalized()]);
+      setStatus(current);
+      setFinalized(saved);
+      if (current.sessionId && !current.active) {
+        // The native writer refuses to finalize a trace past its two-hour TTL,
+        // so a review screen that outlived the limit resettles to expired.
+        setPhase('expired');
+        setNote(null);
+        return;
+      }
       setPhase('exported');
       setNote(SAVED_NOTE);
     } catch {
+      const current = await linkedTrace.status().catch(() => null);
+      if (current?.sessionId && !current.active) {
+        setStatus(current);
+        setFinalized(await linkedTrace.finalized().catch(() => []));
+        setPhase('expired');
+        setNote(null);
+        return;
+      }
       setError('The trace could not be saved. Keep Trace Lab installed and try again from this screen.');
     } finally { setBusy(false); }
   };
@@ -243,6 +294,9 @@ export function LinkedTraceScreen() {
     setError(null);
     try {
       await linkedTrace.deleteSession(sessionId);
+      const current = await linkedTrace.status();
+      setStatus(current);
+      if (!current.active) removeLabWalkingRule();
       const saved = await linkedTrace.finalized();
       setFinalized(saved);
       setNote('The local trace was deleted.');
@@ -270,6 +324,7 @@ export function LinkedTraceScreen() {
       'The expired trace could not be deleted. Nothing was changed.',
     );
     if (!cleaned) return;
+    removeLabWalkingRule();
     setStatus(await linkedTrace.status());
     const saved = await linkedTrace.finalized();
     setFinalized(saved);
@@ -308,7 +363,7 @@ export function LinkedTraceScreen() {
         <View style={s.section}>
           <Label variant="section">How the test works</Label>
           <Step n={1} text="Tap Start test. Trace Lab begins the background trace and opens Walking Recorder." />
-          <Step n={2} text="Walk as usual in Walking Recorder. Tap what you are doing, then answer the canary check when the app asks." />
+          <Step n={2} text="Walk as usual in Walking Recorder and tap what you are doing. Answer the canary check inline: your canary app opens while you walk, and it is blocked again after you stand still past the stop grace." />
           <Step n={3} text="Tap Finish test in Walking Recorder. Trace Lab opens again so you can save the trace." />
           <Label tone="secondary">The two apps stay separate: Walking Recorder keeps the honest foreground labels, Trace Lab records what ExcerLock does in the background. Only this phone holds the data.</Label>
 
@@ -437,6 +492,17 @@ export function LinkedTraceScreen() {
   );
 }
 
+/**
+ * The native writer refuses to create a session whose directory already exists
+ * (a finalized, or expired-but-unabandoned, trace). Expo surfaces the Swift
+ * error message, so the screen can explain that specific case instead of a
+ * generic start failure, while never claiming the test was saved.
+ */
+function isSessionExistsFailure(error: unknown): boolean {
+  const record = typeof error === 'object' && error !== null ? (error as { message?: unknown }) : null;
+  return /sessionexists/i.test(String(record?.message ?? error));
+}
+
 function Step({ n, text }: { n: number; text: string }) {
   return (
     <View style={s.step}>
@@ -517,7 +583,7 @@ export function readinessStep({
   if (!preflight.canarySelectionValid) {
     return {
       title: 'Choose one canary app',
-      detail: `Pick exactly one app with no categories or websites: the harmless app you will try to open while walking, so the shield can show itself. Never pick Walking Recorder or ExcerLock Trace Lab. iOS does not tell Trace Lab which app you chose, so this one choice is yours (it currently holds ${preflight.canaryApplicationCount} app, ${preflight.canaryCategoryCount} categories, ${preflight.canaryWebDomainCount} websites).`,
+      detail: `Pick exactly one app with no categories or websites: the harmless app you will try to open while walking and again after standing still, so the shield can show its real release and return. Never pick Walking Recorder or ExcerLock Trace Lab. iOS does not tell Trace Lab which app you chose, so this one choice is yours (it currently holds ${preflight.canaryApplicationCount} app, ${preflight.canaryCategoryCount} categories, ${preflight.canaryWebDomainCount} websites).`,
       action: { kind: 'prompt', label: 'Choose canary app', failure: 'The canary app was not changed.', run: () => runtime.screenTime.presentAppPicker() },
     };
   }

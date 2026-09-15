@@ -65,6 +65,13 @@ enum RecorderLinkedLink {
         return (sessionId, nonce)
     }
 
+    /// Trace Lab's bare `excerlock-walkingrecorder://` link only opens this app
+    /// (its recovery action when it no longer holds a test link); it is a
+    /// harmless app-open, never a malformed linked test.
+    static func isAppOpen(_ url: URL) -> Bool {
+        url.scheme?.lowercased() == scheme && (url.host?.isEmpty ?? true)
+    }
+
     static func shareRequest(from url: URL) -> String? {
         guard url.scheme?.lowercased() == scheme,
               url.host?.lowercased() == shareArchiveHost,
@@ -85,11 +92,12 @@ final class CaptureController: NSObject, ObservableObject {
         case failed(String)
     }
 
-    /// The canary check is two inline questions: while walking, then after
-    /// standing still. Both answers are operator-observed evidence.
+    /// The canary check is two inline questions in ExcerLock's real order: while
+    /// walking (shield released), then after standing still past the stop grace
+    /// (shield restored). Both answers are operator-observed evidence.
     enum CanaryStep: Equatable {
-        case lock
-        case unlock
+        case walking
+        case stationary
         case recorded
     }
 
@@ -134,9 +142,9 @@ final class CaptureController: NSObject, ObservableObject {
     @Published var exportingSessionID: String?
     @Published private(set) var linkedSessionID: String?
     @Published private(set) var pendingLinkedTraceRecovery: LinkedTraceRecovery?
-    @Published private(set) var canaryStep: CanaryStep = .lock
-    @Published private(set) var canaryLockOutcome: String?
-    @Published private(set) var canaryUnlockOutcome: String?
+    @Published private(set) var canaryStep: CanaryStep = .walking
+    @Published private(set) var canaryWalkingOutcome: String?
+    @Published private(set) var canaryStationaryOutcome: String?
 
     let repository: SessionRepository
 
@@ -255,6 +263,9 @@ final class CaptureController: NSObject, ObservableObject {
             prepareExport(session)
             return
         }
+        // Trace Lab's bare `excerlock-walkingrecorder://` link is its intentional
+        // "open the recorder" recovery action, not a malformed test link.
+        if RecorderLinkedLink.isAppOpen(url) { return }
         guard let link = RecorderLinkedLink.handshake(from: url) else {
             notice = "That link is not a valid linked test. Nothing was started."
             return
@@ -307,48 +318,40 @@ final class CaptureController: NSObject, ObservableObject {
         }
     }
 
-    func markLinkedTestPhase(_ phase: String) {
-        guard ["lock", "unlock"].contains(phase) else { return }
-        appendLinkedTestEvent(type: "test_marker", payload: ["kind": "canary_check", "phase": phase, "label": "observation_started"])
+    func markLinkedTestPhase(_ phase: RecorderCanaryPhase) {
+        appendLinkedTestEvent(type: "test_marker", payload: ["kind": "canary_check", "phase": phase.rawValue, "label": "observation_started"])
     }
 
     /// Records one operator-observed canary result and advances to the next
     /// check. Both checks stay inline in the recording state: no extra screens.
-    func recordCanaryObservation(phase: String, outcome: String) {
+    func recordCanaryObservation(phase: RecorderCanaryPhase, outcome: String) {
         guard isRecording, linkedSessionID != nil,
               ["shield_visible", "app_opened", "uncertain"].contains(outcome) else { return }
-        if phase == "lock" {
-            guard canaryStep == .lock else { return }
-            canaryLockOutcome = outcome
-            markCanaryOutcome(phase: "lock", outcome: outcome)
-            canaryStep = .unlock
-            markLinkedTestPhase("unlock")
-        } else if phase == "unlock" {
-            guard canaryStep == .unlock else { return }
-            canaryUnlockOutcome = outcome
-            markCanaryOutcome(phase: "unlock", outcome: outcome)
+        switch phase {
+        case .walking:
+            guard canaryStep == .walking else { return }
+            canaryWalkingOutcome = outcome
+            markCanaryOutcome(phase: .walking, outcome: outcome)
+            canaryStep = .stationary
+            markLinkedTestPhase(.stationary)
+        case .stationary:
+            guard canaryStep == .stationary else { return }
+            canaryStationaryOutcome = outcome
+            markCanaryOutcome(phase: .stationary, outcome: outcome)
             canaryStep = .recorded
         }
     }
 
     var canarySummary: String? {
         guard canaryStep == .recorded else { return nil }
-        func words(_ outcome: String?, expected: String) -> String {
-            switch outcome {
-            case "shield_visible": return "the app was blocked"
-            case "app_opened": return "the app opened"
-            default: return outcome == nil ? "not recorded" : "unsure"
-            }
-        }
-        return "While walking: \(words(canaryLockOutcome, expected: "shield_visible")). After standing still: \(words(canaryUnlockOutcome, expected: "app_opened"))."
+        return RecorderCanaryPhase.summary(walking: canaryWalkingOutcome, stationary: canaryStationaryOutcome)
     }
 
-    func markCanaryOutcome(phase: String, outcome: String) {
-        guard ["lock", "unlock"].contains(phase),
-              ["shield_visible", "app_opened", "uncertain"].contains(outcome) else { return }
+    func markCanaryOutcome(phase: RecorderCanaryPhase, outcome: String) {
+        guard ["shield_visible", "app_opened", "uncertain"].contains(outcome) else { return }
         appendLinkedTestEvent(
             type: "canary_outcome",
-            payload: ["phase": phase, "outcome": outcome, "expected": phase == "lock" ? "shield_visible" : "app_opened"]
+            payload: ["phase": phase.rawValue, "outcome": outcome, "expected": phase.expectedOutcome]
         )
     }
 
@@ -589,7 +592,7 @@ final class CaptureController: NSObject, ObservableObject {
             UIApplication.shared.isIdleTimerDisabled = true
             startTicker()
             transition(to: scenario, reason: "user_started_session")
-            if linkedNonce != nil { markLinkedTestPhase("lock") }
+            if linkedNonce != nil { markLinkedTestPhase(.walking) }
         } catch {
             motionService.stop()
             UIApplication.shared.isIdleTimerDisabled = false
@@ -811,9 +814,9 @@ final class CaptureController: NSObject, ObservableObject {
         linkedSessionID = nil
         linkedSessionNonce = nil
         pendingLinkedLink = nil
-        canaryStep = .lock
-        canaryLockOutcome = nil
-        canaryUnlockOutcome = nil
+        canaryStep = .walking
+        canaryWalkingOutcome = nil
+        canaryStationaryOutcome = nil
         mode = .idle
     }
 

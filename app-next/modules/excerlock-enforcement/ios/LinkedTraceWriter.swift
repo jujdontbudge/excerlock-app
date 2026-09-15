@@ -411,6 +411,9 @@ public final class LinkedTraceWriter: @unchecked Sendable {
         guard let descriptor = try readDescriptorLocked() else { throw LinkedTraceError.inactive }
         guard descriptor.sessionId == normalized else { throw LinkedTraceError.sessionMismatch }
         guard descriptor.nonceDigest == Self.digest(nonce) else { throw LinkedTraceError.invalidNonce }
+        // The two-hour TTL is enforced here, not only in the UI: an expired
+        // trace can never be finalized or exported, even from a review screen.
+        guard descriptor.expiresAtWallTimeMs > stopped.wallTimeMs else { throw LinkedTraceError.expired }
         // The marker goes first: if it cannot be written nothing else changes and
         // the operator can retry the same save without a duplicate stop event.
         try writeFinalizedMarkerLocked(sessionId: normalized, finalizedAtWallTimeMs: stopped.wallTimeMs)

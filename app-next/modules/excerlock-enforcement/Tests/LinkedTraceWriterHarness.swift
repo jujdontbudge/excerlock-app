@@ -133,6 +133,11 @@ struct LinkedTraceWriterHarness {
     precondition(!expiryWriter.record(producer: .hostJS, eventType: .clockAnchor,
                                       payload: ["label": "session_started"]))
     do {
+      _ = try expiryWriter.stopSession(sessionId: expiryId, nonce: nonce)
+      preconditionFailure("an expired session was finalized after the two-hour TTL")
+    } catch LinkedTraceError.expired {}
+    precondition(expiryWriter.finalizedSessions().isEmpty)
+    do {
       try expiryWriter.deleteSession(sessionId: expiryId)
       preconditionFailure("generic deletion bypassed explicit expired-session abandon")
     } catch LinkedTraceError.sessionMismatch {}

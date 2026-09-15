@@ -3,6 +3,8 @@ import * as Sharing from 'expo-sharing';
 import React from 'react';
 import { Alert, AppState, Linking } from 'react-native';
 
+import { rulesStore } from '../../../state/rulesStore';
+import { ensureLabWalkingRule, LAB_WALKING_RULE_ID } from '../labWalkingRule.research';
 import { LinkedTraceScreen } from '../LinkedTraceScreen.research';
 
 const SESSION = '123e4567-e89b-42d3-a456-426614174000';
@@ -71,6 +73,7 @@ const savedSession = { sessionId: SESSION, byteCount: 2_048_000, finalizedAtWall
 
 beforeEach(() => {
   jest.clearAllMocks();
+  rulesStore.getState().reset();
   jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
   jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
   mockParams = {};
@@ -91,6 +94,8 @@ test('offers one guided path: instructions, a single Start test, and a single re
 
   expect(await screen.findByText('How the test works')).toBeTruthy();
   expect(screen.queryByText(/consent/i)).toBeNull();
+  expect(screen.getByText(/your canary app opens while you walk/)).toBeTruthy();
+  expect(screen.getByText(/blocked again after you stand still past the stop grace/)).toBeTruthy();
   const start = screen.getByRole('button', { name: 'Start test' });
   expect(start).toBeEnabled();
 
@@ -237,19 +242,85 @@ test('offers only cleanup for an expired trace and returns to Start afterwards',
   expect(await screen.findByRole('button', { name: 'Start test' })).toBeEnabled();
 });
 
-test('treats a stale link as an already saved test instead of starting it again', async () => {
+test('tells the truth when a return link points at a test this phone no longer holds', async () => {
   mockParams = { sessionId: SESSION, nonce: NONCE, protocolVersion: '1' };
+  await render(<LinkedTraceScreen />);
+
+  expect(await screen.findByText(/nothing to finalize/)).toBeTruthy();
+  expect(screen.queryByText(/already saved on this phone/)).toBeNull();
+  expect(mockLinkedTrace.start).not.toHaveBeenCalled();
+});
+
+test('names a returned link as already saved only when that session is in the saved list', async () => {
+  mockParams = { sessionId: SESSION, nonce: NONCE, protocolVersion: '1' };
+  mockLinkedTrace.finalized.mockResolvedValue([savedSession]);
   await render(<LinkedTraceScreen />);
 
   expect(await screen.findByText(/already saved on this phone/)).toBeTruthy();
   expect(mockLinkedTrace.start).not.toHaveBeenCalled();
 });
 
-test('explains a finalized session instead of restarting it', async () => {
+test('installs the isolated walking rule with the trace, before Start begins it', async () => {
+  const user = userEvent.setup();
+  mockLinkedTrace.start.mockImplementation(async () => {
+    expect(rulesStore.getState().data.rules.some((rule) => rule.id === LAB_WALKING_RULE_ID)).toBe(true);
+    return activeStatus;
+  });
+  await render(<LinkedTraceScreen />);
+
+  await user.press(await screen.findByRole('button', { name: 'Start test' }));
+  await waitFor(() => expect(mockLinkedTrace.start).toHaveBeenCalledWith(SESSION, NONCE));
+  expect(rulesStore.getState().data.rules.some((rule) => rule.id === LAB_WALKING_RULE_ID)).toBe(true);
+});
+
+test('removes the isolated walking rule when the test is saved', async () => {
+  const user = userEvent.setup();
+  mockParams = { sessionId: SESSION, nonce: NONCE, protocolVersion: '1' };
+  mockLinkedTrace.status.mockResolvedValue(activeStatus);
+  mockLinkedTrace.finalized.mockResolvedValue([savedSession]);
+  await render(<LinkedTraceScreen />);
+  expect(await screen.findByText('Test finished — save it')).toBeTruthy();
+  expect(rulesStore.getState().data.rules.some((rule) => rule.id === LAB_WALKING_RULE_ID)).toBe(true);
+
+  mockLinkedTrace.status.mockResolvedValue(idleStatus);
+  await user.press(screen.getByRole('button', { name: 'Save trace file' }));
+
+  await waitFor(() => expect(mockLinkedTrace.stop).toHaveBeenCalledWith(SESSION, NONCE));
+  await waitFor(() => expect(rulesStore.getState().data.rules.some((rule) => rule.id === LAB_WALKING_RULE_ID)).toBe(false));
+});
+
+test('removes a leftover isolated walking rule as soon as no trace is running', async () => {
+  ensureLabWalkingRule();
+  expect(rulesStore.getState().data.rules.some((rule) => rule.id === LAB_WALKING_RULE_ID)).toBe(true);
+
+  await render(<LinkedTraceScreen />);
+
+  await waitFor(() => expect(rulesStore.getState().data.rules.some((rule) => rule.id === LAB_WALKING_RULE_ID)).toBe(false));
+});
+
+test('resettles an expired review to the expired step when native refuses to finalize', async () => {
+  const user = userEvent.setup();
+  mockParams = { sessionId: SESSION, nonce: NONCE, protocolVersion: '1' };
+  mockLinkedTrace.status.mockResolvedValue(activeStatus);
+  await render(<LinkedTraceScreen />);
+  expect(await screen.findByText('Test finished — save it')).toBeTruthy();
+
+  mockLinkedTrace.stop.mockRejectedValue(new Error('expired'));
+  mockLinkedTrace.status.mockResolvedValue({ ...activeStatus, active: false, expiresAtWallTimeMs: Date.now() - 1 });
+  await user.press(screen.getByRole('button', { name: 'Save trace file' }));
+
+  expect(await screen.findByText('This test expired')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Delete expired test' })).toBeTruthy();
+  expect(screen.queryByText('The trace could not be saved. Keep Trace Lab installed and try again from this screen.')).toBeNull();
+});
+
+test('explains an already-used test link instead of claiming a new trace started', async () => {
   const user = userEvent.setup();
   mockLinkedTrace.start.mockRejectedValue(new Error('UnexpectedException: sessionExists at LinkedTraceWriter.swift:304'));
   await render(<LinkedTraceScreen />);
 
   await user.press(await screen.findByRole('button', { name: 'Start test' }));
-  expect(await screen.findByText('The trace did not start. Nothing was recorded; try again.')).toBeTruthy();
+  expect(await screen.findByText(/already used on this phone/)).toBeTruthy();
+  expect(screen.queryByText('The trace did not start. Nothing was recorded; try again.')).toBeNull();
+  expect(rulesStore.getState().data.rules.some((rule) => rule.id === LAB_WALKING_RULE_ID)).toBe(false);
 });

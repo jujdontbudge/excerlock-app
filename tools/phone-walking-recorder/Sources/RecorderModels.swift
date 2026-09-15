@@ -208,6 +208,32 @@ struct LinkedTraceRecovery: Codable, Equatable, Identifiable {
     }
 }
 
+/// The corrected ExcerLock canary order: a verified walk releases the shield, so
+/// the canary opens while walking, and the shield returns only after standing
+/// still past the configured stop grace. The recorder asks in that order, emits
+/// the expected outcome with each answer, and the offline joiner rejects an
+/// inverted protocol.
+enum RecorderCanaryPhase: String, CaseIterable {
+    case walking
+    case stationary
+
+    /// The ExcerLock outcome this phase expects from the canary app.
+    var expectedOutcome: String { self == .walking ? "app_opened" : "shield_visible" }
+
+    /// Plain-language rendering of one recorded answer for the summary line.
+    static func words(_ outcome: String?) -> String {
+        switch outcome {
+        case "shield_visible": return "the app was blocked"
+        case "app_opened": return "the app opened"
+        default: return outcome == nil ? "not recorded" : "unsure"
+        }
+    }
+
+    static func summary(walking: String?, stationary: String?) -> String {
+        "While walking: \(words(walking)). After standing still: \(words(stationary))."
+    }
+}
+
 enum SessionCompletionStatus: String, Codable, Hashable {
     case completed
     case interrupted

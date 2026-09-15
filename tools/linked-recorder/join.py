@@ -24,7 +24,9 @@ PRODUCTION_EVENT_TYPES = {
     "app_lifecycle", "execution_opportunity", "motion_callback_native", "motion_input_js", "motion_evidence",
     "detector_persist", "policy_publish", "watchdog_operation", "extension_callback", "shield_write",
 }
-CANARY_PHASES = {"lock", "unlock"}
+# ExcerLock releases the shield while a verified walk is live, then restores it
+# only after standing still past the configured stop grace.
+CANARY_PHASES = {"walking": "app_opened", "stationary": "shield_visible"}
 CANARY_OUTCOMES = {"shield_visible", "app_opened", "uncertain"}
 CAUSAL_TYPES = {
     "motionCallbackNative": "motion_callback_native",
@@ -229,7 +231,7 @@ def canary_issues(outcomes: list[dict[str, Any]]) -> list[str]:
         expected = payload.get("expected")
         if phase not in CANARY_PHASES or outcome not in CANARY_OUTCOMES:
             issues.append(f"canary outcome {index} has an invalid phase or outcome")
-        if expected != ("shield_visible" if phase == "lock" else "app_opened"):
+        if expected != CANARY_PHASES.get(phase):
             issues.append(f"canary outcome {index} has an invalid expected result")
     return issues
 

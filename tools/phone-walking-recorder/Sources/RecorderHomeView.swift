@@ -254,24 +254,24 @@ struct RecorderHomeView: View {
                 .font(.headline)
                 .foregroundStyle(RecorderTheme.primaryText)
             switch controller.canaryStep {
-            case .lock:
-                Text("1. While you are walking, open your canary app. What did you see?")
+            case .walking:
+                Text("1. While you are walking, open your canary app. ExcerLock releases the shield while you walk, so it should open. What did you see?")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(RecorderTheme.primaryText)
                     .fixedSize(horizontal: false, vertical: true)
-                canaryChoices(phase: "lock", options: [
-                    ("Blocked (shield shown)", "shield_visible"),
+                canaryChoices(phase: .walking, options: [
                     ("It opened normally", "app_opened"),
+                    ("Blocked (shield shown)", "shield_visible"),
                     ("Did not try / not sure", "uncertain")
                 ])
-            case .unlock:
-                Text("2. Stop walking, stand still for about 10 seconds, then open the canary app again. What did you see?")
+            case .stationary:
+                Text("2. Stop walking and stand still for a full minute (longer than Trace Lab's stop grace), then open the canary app again. The shield should be back. What did you see?")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(RecorderTheme.primaryText)
                     .fixedSize(horizontal: false, vertical: true)
-                canaryChoices(phase: "unlock", options: [
+                canaryChoices(phase: .stationary, options: [
+                    ("Blocked (shield shown)", "shield_visible"),
                     ("It opened normally", "app_opened"),
-                    ("Still blocked", "shield_visible"),
                     ("Did not try / not sure", "uncertain")
                 ])
             case .recorded:
@@ -290,7 +290,7 @@ struct RecorderHomeView: View {
         .recorderCard()
     }
 
-    private func canaryChoices(phase: String, options: [(String, String)]) -> some View {
+    private func canaryChoices(phase: RecorderCanaryPhase, options: [(String, String)]) -> some View {
         VStack(spacing: 8) {
             ForEach(options, id: \.1) { option in
                 Button(option.0) { controller.recordCanaryObservation(phase: phase, outcome: option.1) }

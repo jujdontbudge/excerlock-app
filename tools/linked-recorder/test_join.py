@@ -46,11 +46,12 @@ class JoinTests(unittest.TestCase):
                 "linkedSessionId": SESSION,
                 "linkedProtocolVersion": 1,
             }),
-            event(2, "canary_outcome", {"phase": "lock", "outcome": "shield_visible", "expected": "shield_visible"}),
-            event(3, "session_end", {"status": "completed"}),
+            event(2, "canary_outcome", {"phase": "walking", "outcome": "app_opened", "expected": "app_opened"}),
+            event(3, "canary_outcome", {"phase": "stationary", "outcome": "shield_visible", "expected": "shield_visible"}),
+            event(4, "session_end", {"status": "completed"}),
         ]
         for index, name in enumerate(("system.ndjson", "labels.ndjson", "decisions.ndjson", "raw-motion.ndjson")):
-            rows = system if name == "system.ndjson" else [event(index + 3, "fixture")]
+            rows = system if name == "system.ndjson" else [event(index + 4, "fixture")]
             (recorder / name).write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
         (recorder / "metadata.json").write_text(json.dumps({
             "linkedTrace": {
@@ -90,8 +91,38 @@ class JoinTests(unittest.TestCase):
             self.assertTrue(validation["valid"])
             self.assertEqual(validation["sessionId"], SESSION)
             self.assertEqual(validation["productionCoverage"]["shieldWrite"], 1)
-            self.assertEqual(len(validation["canaryObservations"]), 1)
+            self.assertEqual(len(validation["canaryObservations"]), 2)
             self.assertFalse(validation["claims"]["managedSettingsReturnedMeansVisibleShield"])
+
+    def test_inverted_canary_expectation_fails_closed(self):
+        # The old, wrong protocol expected the shield while walking and release
+        # after standing still. The joiner must reject that inverted evidence.
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            recorder, production = self.fixture(root)
+            system = [
+                event(1, "session_start", {
+                    "linkedTraceRequested": True,
+                    "linkedSessionId": SESSION,
+                    "linkedProtocolVersion": 1,
+                }),
+                event(2, "canary_outcome", {"phase": "walking", "outcome": "shield_visible", "expected": "shield_visible"}),
+                event(3, "session_end", {"status": "completed"}),
+            ]
+            (recorder / "system.ndjson").write_text(
+                "".join(json.dumps(row) + "\n" for row in system), encoding="utf-8"
+            )
+            output = root / "joined"
+            result = subprocess.run(
+                ["python3", str(SCRIPT), "--recorder", str(recorder), "--production", str(production), "--output", str(output)],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 2)
+            validation = json.loads((output / "validation.json").read_text(encoding="utf-8"))
+            self.assertFalse(validation["valid"])
+            self.assertTrue(any("invalid expected result" in error for error in validation["errors"]))
 
     def test_production_trace_rejects_human_canary_labels(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -100,7 +131,7 @@ class JoinTests(unittest.TestCase):
             rows = [json.loads(line) for line in production.read_text(encoding="utf-8").splitlines()]
             rows[-1]["sequence"] = 7
             rows.insert(-1, production_event(6, "canary_outcome", {
-                "phase": "lock", "outcome": "shield_visible", "expected": "shield_visible",
+                "phase": "walking", "outcome": "app_opened", "expected": "app_opened",
             }))
             production.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
             output = root / "joined"

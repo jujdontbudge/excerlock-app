@@ -74,11 +74,3 @@ export function walkingRecorderArchiveLink(sessionId: string): string {
 export function walkingRecorderAppLink(): string {
   return `${links.WALKING_RECORDER_SCHEME}://`;
 }
-
-export function linkedRecorderScheme(): string {
-  return links.WALKING_RECORDER_SCHEME;
-}
-
-export function traceLabScheme(): string {
-  return links.URL_SCHEME;
-}
