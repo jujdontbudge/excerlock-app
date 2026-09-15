@@ -83,6 +83,27 @@ private struct LinkedTraceSessionDescriptor: Codable, Equatable {
   let expiresAtWallTimeMs: Int64
 }
 
+/// Written when a session is finalized. Its presence is what makes a session
+/// re-exportable after Trace Lab relaunches or iOS purges the temporary export
+/// copy: the App Group trace itself is the durable artifact.
+private struct LinkedTraceFinalizedMarker: Codable, Equatable {
+  let protocolVersion: Int
+  let sessionId: String
+  let finalizedAtWallTimeMs: Int64
+}
+
+public struct LinkedTraceFinalizedSession: Codable, Equatable, Sendable {
+  public let sessionId: String
+  public let byteCount: Int64
+  public let finalizedAtWallTimeMs: Int64
+
+  public init(sessionId: String, byteCount: Int64, finalizedAtWallTimeMs: Int64) {
+    self.sessionId = sessionId
+    self.byteCount = byteCount
+    self.finalizedAtWallTimeMs = finalizedAtWallTimeMs
+  }
+}
+
 private struct LinkedTraceEnvelope: Encodable {
   let schemaVersion: Int
   let sessionId: String
@@ -390,12 +411,67 @@ public final class LinkedTraceWriter: @unchecked Sendable {
         guard let descriptor = try readDescriptorLocked() else { throw LinkedTraceError.inactive }
         guard descriptor.sessionId == normalized else { throw LinkedTraceError.sessionMismatch }
         guard descriptor.nonceDigest == Self.digest(nonce) else { throw LinkedTraceError.invalidNonce }
+        // The marker goes first: if it cannot be written nothing else changes and
+        // the operator can retry the same save without a duplicate stop event.
+        try writeFinalizedMarkerLocked(sessionId: normalized, finalizedAtWallTimeMs: stopped.wallTimeMs)
         try appendLocked(descriptor: descriptor, producer: .hostNative, eventType: .traceStop,
                          operationId: nil, payload: ["status": "completed"], stamp: stopped, bypassLimit: true)
         try removeDescriptorLocked()
       }
       announcedSessionId = nil
       return try exportURLLocked(sessionId: normalized)
+    }
+  }
+
+  /// Finalized sessions stay in the App Group until the retention window ends,
+  /// so the operator can come back later (even after a relaunch, a reconnect,
+  /// or iOS purging the temporary export copy) and still share both files.
+  public func finalizedSessions() -> [LinkedTraceFinalizedSession] {
+    (try? onQueue {
+      try withTraceLock {
+        let now = stampProvider().wallTimeMs
+        try prepareRoot()
+        try pruneLocked(nowWallTimeMs: now)
+        // A session the current descriptor still owns is running or expired, never
+        // finalized, so it is never listed here even if a marker survived an
+        // interrupted finalization.
+        let descriptorSessionId = try readDescriptorLocked()?.sessionId
+        let directories = (try? fileManager.contentsOfDirectory(
+          at: try rootURL(),
+          includingPropertiesForKeys: [.isDirectoryKey],
+          options: [.skipsHiddenFiles]
+        )) ?? []
+        return directories.compactMap { url -> LinkedTraceFinalizedSession? in
+          guard (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true,
+                Self.validSessionId(url.lastPathComponent),
+                url.lastPathComponent != descriptorSessionId,
+                let marker = try? readFinalizedMarkerLocked(sessionId: url.lastPathComponent) else { return nil }
+          let trace = try? traceURL(marker.sessionId)
+          let size = trace.flatMap { try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize }
+          return LinkedTraceFinalizedSession(
+            sessionId: marker.sessionId,
+            byteCount: Int64(size ?? 0),
+            finalizedAtWallTimeMs: marker.finalizedAtWallTimeMs
+          )
+        }.sorted { $0.finalizedAtWallTimeMs > $1.finalizedAtWallTimeMs }
+      }
+    }) ?? []
+  }
+
+  /// Rebuilds the shareable copy from the durable App Group trace. Exporting an
+  /// active session is refused so a running test can never be shipped early.
+  public func exportFinalizedSession(sessionId: String) throws -> URL {
+    try onQueue {
+      let normalized = sessionId.lowercased()
+      guard Self.validSessionId(normalized) else { throw LinkedTraceError.invalidSession }
+      return try withTraceLock {
+        try prepareRoot()
+        if let descriptor = try readDescriptorLocked(), descriptor.sessionId == normalized {
+          throw LinkedTraceError.sessionMismatch
+        }
+        guard (try? readFinalizedMarkerLocked(sessionId: normalized)) != nil else { throw LinkedTraceError.inactive }
+        return try exportURLLocked(sessionId: normalized)
+      }
     }
   }
 
@@ -609,6 +685,32 @@ public final class LinkedTraceWriter: @unchecked Sendable {
 
   private func truncatedURL(_ sessionId: String) throws -> URL {
     try sessionDirectory(sessionId).appendingPathComponent("truncated-v1")
+  }
+
+  private func finalizedMarkerURL(_ sessionId: String) throws -> URL {
+    try sessionDirectory(sessionId).appendingPathComponent("finalized-v1.json")
+  }
+
+  private func readFinalizedMarkerLocked(sessionId: String) throws -> LinkedTraceFinalizedMarker {
+    let marker = try JSONDecoder().decode(
+      LinkedTraceFinalizedMarker.self,
+      from: Data(contentsOf: try finalizedMarkerURL(sessionId))
+    )
+    guard marker.protocolVersion == linkedTraceProtocolVersion, marker.sessionId == sessionId.lowercased() else {
+      throw LinkedTraceError.io
+    }
+    return marker
+  }
+
+  private func writeFinalizedMarkerLocked(sessionId: String, finalizedAtWallTimeMs: Int64) throws {
+    let marker = LinkedTraceFinalizedMarker(
+      protocolVersion: linkedTraceProtocolVersion,
+      sessionId: sessionId,
+      finalizedAtWallTimeMs: finalizedAtWallTimeMs
+    )
+    let data = try JSONEncoder().encode(marker)
+    try data.write(to: try finalizedMarkerURL(sessionId), options: [.atomic])
+    try applyProtection(to: try finalizedMarkerURL(sessionId))
   }
 
   private func readDescriptorLocked() throws -> LinkedTraceSessionDescriptor? {

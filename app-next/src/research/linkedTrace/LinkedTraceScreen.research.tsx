@@ -1,9 +1,14 @@
 import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Linking, StyleSheet, View } from 'react-native';
+import { Alert, AppState, Linking, Pressable, StyleSheet, View } from 'react-native';
 
-import { linkedTrace, type LinkedTracePreflight, type LinkedTraceStatus } from '@linked-trace';
+import {
+  linkedTrace,
+  type LinkedTraceFinalizedSession,
+  type LinkedTracePreflight,
+  type LinkedTraceStatus,
+} from '@linked-trace';
 import {
   Heading,
   Label,
@@ -28,11 +33,14 @@ import {
 type Phase = 'ready' | 'running' | 'review' | 'exported' | 'expired';
 
 const NOTHING_COLLECTED = 'No GPS, microphone, camera, raw vectors, or Health history is collected.';
+const ALREADY_SAVED = 'That test was already saved on this phone, so there is nothing left to finalize.';
+const SAVED_NOTE = 'The trace is saved on this phone. Share it now, or reconnect later — nothing was uploaded.';
 
 /**
  * The one guided research path: start here, record the ground truth in Walking
- * Recorder, finish there, then save both files here. Everything runs and stays
- * on this phone; a Mac is never needed while a test runs.
+ * Recorder, finish there, then save and share both files here. Everything runs
+ * and stays on this phone; a Mac is never needed while a test runs, and a
+ * finished trace can still be shared after a relaunch.
  */
 export function LinkedTraceScreen() {
   const runtime = useRuntime();
@@ -49,13 +57,15 @@ export function LinkedTraceScreen() {
   const [phase, setPhase] = useState<Phase>('ready');
   const [status, setStatus] = useState<LinkedTraceStatus | null>(null);
   const [preflight, setPreflight] = useState<LinkedTracePreflight | null>(null);
-  const [activeLink, setActiveLink] = useState<LinkedHandshake | null>(null);
-  const [savedSessionId, setSavedSessionId] = useState<string | null>(null);
-  const [exportUri, setExportUri] = useState<string | null>(null);
+  const [finalized, setFinalized] = useState<LinkedTraceFinalizedSession[]>([]);
+  const [startedLink, setStartedLink] = useState<LinkedHandshake | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
-  const linkRef = useRef<LinkedHandshake | null>(null);
+  // Only a link that Walking Recorder actually sent back means the ground truth
+  // is finished. The link this screen mints for a new test is never evidence of
+  // a return, so a fresh running test can never settle into "save it".
+  const returnedLinkRef = useRef<LinkedHandshake | null>(null);
 
   const refreshPreflight = useCallback(async () => {
     try {
@@ -70,27 +80,37 @@ export function LinkedTraceScreen() {
 
   // One live session can only be in one of four states, so the screen always
   // lands on the current step: running, waiting to be saved, or needing cleanup.
-  const settle = useCallback((current: LinkedTraceStatus, link: LinkedHandshake | null) => {
+  const settle = useCallback((
+    current: LinkedTraceStatus,
+    returned: LinkedHandshake | null,
+    saved: LinkedTraceFinalizedSession[],
+  ) => {
     if (current.sessionId && current.active) {
-      setPhase(link?.sessionId === current.sessionId ? 'review' : 'running');
+      setPhase(returned?.sessionId === current.sessionId ? 'review' : 'running');
       return;
     }
     if (current.sessionId) {
       setPhase('expired');
       return;
     }
-    if (link) setNote('That test was already saved on this phone, so there is nothing left to finalize.');
-    setPhase((previous) => (previous === 'exported' ? previous : 'ready'));
+    if (saved.length) {
+      setPhase('exported');
+      if (returned) setNote(ALREADY_SAVED);
+      return;
+    }
+    if (returned) setNote(ALREADY_SAVED);
+    setPhase('ready');
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([linkedTrace.status(), linkedTrace.preflight()])
-      .then(([current, readiness]) => {
+    void Promise.all([linkedTrace.status(), linkedTrace.preflight(), linkedTrace.finalized()])
+      .then(([current, readiness, saved]) => {
         if (cancelled) return;
         setStatus(current);
         setPreflight(readiness);
-        settle(current, linkRef.current);
+        setFinalized(saved);
+        settle(current, returnedLinkRef.current, saved);
       })
       .catch(() => {
         if (!cancelled) setError('The local readiness check could not run. Reopen Trace Lab and try again.');
@@ -101,16 +121,33 @@ export function LinkedTraceScreen() {
   // Walking Recorder returns here with the one-time link when a test is done.
   useEffect(() => {
     if (!handshake) return;
-    linkRef.current = handshake;
-    void linkedTrace.status()
-      .then((current) => { setStatus(current); settle(current, handshake); })
-      .catch(() => setError('Trace Lab could not read the local trace. Try again.'));
+    returnedLinkRef.current = handshake;
+    let cancelled = false;
+    void Promise.all([linkedTrace.status(), linkedTrace.finalized()])
+      .then(([current, saved]) => {
+        if (cancelled) return;
+        setStatus(current);
+        setFinalized(saved);
+        settle(current, handshake, saved);
+      })
+      .catch(() => { if (!cancelled) setError('Trace Lab could not read the local trace. Try again.'); });
+    return () => { cancelled = true; };
   }, [handshake, settle]);
 
-  // A running test must notice its own two-hour expiry and the return to foreground.
+  // A running test must notice its own two-hour expiry and the return to
+  // foreground. Neither check can turn a running test into "save it"; that only
+  // happens when the recorder's own return link arrives above.
   useEffect(() => {
     if (phase !== 'running') return;
-    const sync = () => { void linkedTrace.status().then((current) => { setStatus(current); settle(current, linkRef.current); }); };
+    const sync = () => {
+      void Promise.all([linkedTrace.status(), linkedTrace.finalized()])
+        .then(([current, saved]) => {
+          setStatus(current);
+          setFinalized(saved);
+          settle(current, returnedLinkRef.current, saved);
+        })
+        .catch(() => undefined);
+    };
     const interval = setInterval(sync, 10_000);
     const subscription = AppState.addEventListener('change', (next) => { if (next === 'active') sync(); });
     return () => { clearInterval(interval); subscription.remove(); };
@@ -146,8 +183,7 @@ export function LinkedTraceScreen() {
       }
       const link = newLinkedSession();
       const active = await linkedTrace.start(link.sessionId, link.nonce);
-      setActiveLink(link);
-      linkRef.current = link;
+      setStartedLink(link);
       setStatus(active);
       setPhase('running');
       try {
@@ -161,18 +197,35 @@ export function LinkedTraceScreen() {
   };
 
   const saveTrace = async () => {
-    const link = activeLink ?? handshake;
+    const link = startedLink ?? returnedLinkRef.current;
     if (!link || busy) return;
     setBusy(true);
     setError(null);
     try {
-      const uri = await linkedTrace.stop(link.sessionId, link.nonce);
-      setExportUri(uri);
-      setSavedSessionId(link.sessionId);
+      await linkedTrace.stop(link.sessionId, link.nonce);
+      returnedLinkRef.current = null;
+      setStartedLink(null);
       setStatus(await linkedTrace.status());
+      setFinalized(await linkedTrace.finalized());
       setPhase('exported');
+      setNote(SAVED_NOTE);
     } catch {
       setError('The trace could not be saved. Keep Trace Lab installed and try again from this screen.');
+    } finally { setBusy(false); }
+  };
+
+  const shareTrace = async (sessionId: string) => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      // The durable copy lives in the lab App Group, so this still works after
+      // a relaunch or after iOS purged the temporary export file.
+      const uri = await linkedTrace.exportSession(sessionId);
+      await Sharing.shareAsync(uri, { mimeType: 'application/x-ndjson' });
+    } catch {
+      setError('The trace file could not be shared. Reopen Trace Lab to refresh the saved list, then try again.');
+      void linkedTrace.finalized().then(setFinalized).catch(() => undefined);
     } finally { setBusy(false); }
   };
 
@@ -184,11 +237,52 @@ export function LinkedTraceScreen() {
     }
   };
 
+  const deleteSaved = async (sessionId: string) => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await linkedTrace.deleteSession(sessionId);
+      const saved = await linkedTrace.finalized();
+      setFinalized(saved);
+      setNote('The local trace was deleted.');
+      if (!saved.length) setPhase('ready');
+    } catch {
+      setError('The local trace could not be deleted. Nothing was changed.');
+    } finally { setBusy(false); }
+  };
+
+  const confirmDeleteSaved = (sessionId: string) => {
+    Alert.alert(
+      'Delete this trace from Trace Lab?',
+      'This removes the local trace file from this phone. The Walking Recorder archive is separate and is not touched.',
+      [
+        { text: 'Keep it', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => void deleteSaved(sessionId) },
+      ],
+    );
+  };
+
+  const discardExpired = async () => {
+    const expiredId = status?.sessionId ?? '';
+    const cleaned = await run(
+      () => linkedTrace.abandonExpiredSession(expiredId),
+      'The expired trace could not be deleted. Nothing was changed.',
+    );
+    if (!cleaned) return;
+    setStatus(await linkedTrace.status());
+    const saved = await linkedTrace.finalized();
+    setFinalized(saved);
+    setPhase(saved.length ? 'exported' : 'ready');
+    setNote('The expired test was deleted. Start test begins a clean run.');
+  };
+
   const title = phase === 'running' ? 'Test running'
     : phase === 'review' ? 'Test finished — save it'
-      : phase === 'exported' ? 'Both files are saved'
-        : phase === 'expired' ? 'This test expired'
-          : 'Linked walking test';
+      : phase === 'expired' ? 'This test expired'
+        : 'Linked walking test';
+  const showStartSection = phase === 'ready' || phase === 'exported';
+  const showSavedSection = finalized.length > 0 && phase !== 'running' && phase !== 'review' && phase !== 'expired';
 
   return (
     <ScreenShell orangeBackground={false} contentStyle={s.content}>
@@ -197,10 +291,12 @@ export function LinkedTraceScreen() {
       <StatusCard
         title={phase === 'running' ? 'Trace Lab is recording in the background'
           : phase === 'review' ? 'Walking Recorder finished the ground truth'
-            : phase === 'exported' ? 'Saved on this phone'
-              : phase === 'expired' ? 'No longer exportable'
+            : phase === 'expired' ? 'No longer exportable'
+              : finalized.length ? 'Saved on this phone'
                 : 'Not recording yet'}
-        subtitle={phase === 'exported' && savedSessionId ? `Test ${savedSessionId.slice(0, 8)}…` : NOTHING_COLLECTED}
+        subtitle={finalized.length && phase !== 'running' && phase !== 'review' && phase !== 'expired'
+          ? `${finalized.length} saved test${finalized.length === 1 ? '' : 's'} on this phone`
+          : NOTHING_COLLECTED}
         nextChange={phase === 'running' ? 'The two-hour limit ends this test automatically.'
           : phase === 'review' ? 'The trace stays on this phone until you delete it.'
             : phase === 'expired' ? 'Deleting it starts the next test clean.'
@@ -208,7 +304,7 @@ export function LinkedTraceScreen() {
         unlocked={phase !== 'running'}
       />
 
-      {phase === 'ready' ? (
+      {showStartSection ? (
         <View style={s.section}>
           <Label variant="section">How the test works</Label>
           <Step n={1} text="Tap Start test. Trace Lab begins the background trace and opens Walking Recorder." />
@@ -252,7 +348,7 @@ export function LinkedTraceScreen() {
           <PrimaryButton
             label="Open Walking Recorder"
             disabled={busy}
-            onPress={() => void openRecorder(activeLink ? walkingRecorderSessionLink(activeLink) : walkingRecorderAppLink())}
+            onPress={() => void openRecorder(startedLink ? walkingRecorderSessionLink(startedLink) : walkingRecorderAppLink())}
           />
           <Label tone="secondary">
             If Trace Lab was closed, open Walking Recorder from the Home Screen and tap Finish test there. Its recovery card brings this screen back.
@@ -271,25 +367,47 @@ export function LinkedTraceScreen() {
         </View>
       ) : null}
 
-      {phase === 'exported' ? (
+      {showSavedSection ? (
         <View style={s.section}>
-          <Label variant="section">Your two files</Label>
-          <Label>1. Trace file — saved on this phone, ready to share.</Label>
-          <SecondaryButton label="Share trace file" onPress={() => void (exportUri ? Sharing.shareAsync(exportUri, { mimeType: 'application/x-ndjson' }) : undefined)} disabled={!exportUri} />
-          <Label>2. Walking Recorder archive — saved in Walking Recorder.</Label>
-          <PrimaryButton
-            label="Share Walking Recorder archive"
-            onPress={() => void openRecorder(savedSessionId ? walkingRecorderArchiveLink(savedSessionId) : walkingRecorderAppLink())}
-          />
+          <Label variant="section">Saved tests on this phone</Label>
           <Label tone="secondary">
-            Both files stay on the phone: share them now or later after the phone is back on a computer. Nothing was uploaded.
+            Each saved test keeps both local files: the Trace Lab trace and the Walking Recorder archive. Share them now, or later
+            after this phone is back on a computer. Nothing was uploaded.
           </Label>
-          <SecondaryButton
-            label="Delete this test from Trace Lab"
-            onPress={() => void linkedTrace.deleteSession(savedSessionId ?? '')
-              .then(() => { setExportUri(null); setSavedSessionId(null); setPhase('ready'); setNote('The local trace was deleted.'); })
-              .catch(() => setError('The local trace could not be deleted.'))}
-          />
+          {finalized.map((session, index) => {
+            const newest = index === 0;
+            return (
+              <View key={session.sessionId} style={s.savedCard}>
+                <Label>{newest ? 'Latest test' : 'Earlier test'} {session.sessionId.slice(0, 8)}…</Label>
+                <Label tone="secondary" variant="support">
+                  {formatBytes(session.byteCount)} · finished {formatWhen(session.finalizedAtWallTimeMs)}
+                </Label>
+                {newest ? (
+                  <PrimaryButton
+                    label={busy ? 'Preparing…' : 'Share trace file'}
+                    disabled={busy}
+                    onPress={() => void shareTrace(session.sessionId)}
+                  />
+                ) : (
+                  <SecondaryButton
+                    label={busy ? 'Preparing…' : 'Share trace file'}
+                    disabled={busy}
+                    onPress={() => void shareTrace(session.sessionId)}
+                  />
+                )}
+                <SecondaryButton
+                  label="Share Walking Recorder archive"
+                  disabled={busy}
+                  onPress={() => void openRecorder(walkingRecorderArchiveLink(session.sessionId))}
+                />
+                <SubordinateButton
+                  label="Delete this trace from Trace Lab"
+                  disabled={busy}
+                  onPress={() => confirmDeleteSaved(session.sessionId)}
+                />
+              </View>
+            );
+          })}
         </View>
       ) : null}
 
@@ -303,14 +421,7 @@ export function LinkedTraceScreen() {
           <PrimaryButton
             label={busy ? 'Deleting…' : 'Delete expired test'}
             disabled={busy}
-            onPress={() => void run(
-              () => linkedTrace.abandonExpiredSession(status?.sessionId ?? ''),
-              'The expired trace could not be deleted. Nothing was changed.',
-            ).then((cleaned) => {
-              if (!cleaned) return;
-              setStatus({ active: false, sessionId: null, expiresAtWallTimeMs: null, truncated: false });
-              setPhase('ready');
-            })}
+            onPress={() => void discardExpired()}
           />
           {handshake && handshake.sessionId !== status?.sessionId ? (
             <Label tone="secondary">A newer test link is open: after this cleanup, tap Start test for that new test.</Label>
@@ -333,6 +444,35 @@ function Step({ n, text }: { n: number; text: string }) {
       <Label style={s.stepText}>{text}</Label>
     </View>
   );
+}
+
+/** A deliberately quiet text action for the one destructive choice on the screen. */
+function SubordinateButton({ label, onPress, disabled }: { label: string; onPress: () => void; disabled: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={s.subordinate}
+    >
+      <Label tone="secondary" style={s.subordinateText}>{label}</Label>
+    </Pressable>
+  );
+}
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return 'Trace file saved';
+  if (bytes < 1_024) return `${bytes} B`;
+  if (bytes < 1_024 * 1_024) return `${(bytes / 1_024).toFixed(1)} KB`;
+  return `${(bytes / (1_024 * 1_024)).toFixed(1)} MB`;
+}
+
+function formatWhen(wallTimeMs: number): string {
+  const date = new Date(wallTimeMs);
+  if (Number.isNaN(date.getTime())) return 'earlier';
+  return date.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 type Readiness = {
@@ -376,10 +516,8 @@ export function readinessStep({
   }
   if (!preflight.canarySelectionValid) {
     return {
-      title: preflight.canaryIncludesTestApps ? 'Pick a different canary app' : 'Choose one canary app',
-      detail: preflight.canaryIncludesTestApps
-        ? 'Walking Recorder and Trace Lab can never be the app you try to open while walking. Pick one harmless app you can open during the walk.'
-        : 'The canary is the harmless app you will try to open while walking; it is the app the shield may block. Choose exactly one app, with no categories or websites, and never Walking Recorder or Trace Lab.',
+      title: 'Choose one canary app',
+      detail: `Pick exactly one app with no categories or websites: the harmless app you will try to open while walking, so the shield can show itself. Never pick Walking Recorder or ExcerLock Trace Lab. iOS does not tell Trace Lab which app you chose, so this one choice is yours (it currently holds ${preflight.canaryApplicationCount} app, ${preflight.canaryCategoryCount} categories, ${preflight.canaryWebDomainCount} websites).`,
       action: { kind: 'prompt', label: 'Choose canary app', failure: 'The canary app was not changed.', run: () => runtime.screenTime.presentAppPicker() },
     };
   }
@@ -398,5 +536,8 @@ const s = StyleSheet.create({
   section: { gap: t.space.lg },
   step: { flexDirection: 'row', gap: t.space.lg, alignItems: 'flex-start' },
   stepText: { flex: 1 },
+  savedCard: { gap: t.space.md, padding: t.space.lg, borderWidth: 1, borderColor: t.border.outline, borderRadius: t.radius.card, backgroundColor: t.surface.card },
+  subordinate: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  subordinateText: { textDecorationLine: 'underline' },
   error: { color: t.state.error },
 });

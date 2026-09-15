@@ -3,6 +3,7 @@ import { requireNativeModule } from 'expo-modules-core';
 import type {
   LinkedTraceClient,
   LinkedTraceEventType,
+  LinkedTraceFinalizedSession,
   LinkedTracePayload,
   LinkedTracePreflight,
   LinkedTraceStatus,
@@ -14,6 +15,8 @@ type NativeLinkedTraceModule = {
   linkedTracePreflight(): LinkedTracePreflight;
   recordLinkedTrace(eventType: LinkedTraceEventType, operationId: string | null, payload: Record<string, unknown>): boolean;
   stopLinkedTrace(sessionId: string, nonce: string): string;
+  linkedTraceFinalizedSessions(): LinkedTraceFinalizedSession[];
+  exportLinkedTrace(sessionId: string): string;
   deleteLinkedTrace(sessionId: string): void;
   abandonExpiredLinkedTrace(sessionId: string): void;
 };
@@ -33,8 +36,10 @@ export const linkedTrace: LinkedTraceClient = {
     native.recordLinkedTrace(eventType, operationId ?? null, compact(payload));
   },
   async stop(sessionId, nonce) { return native.stopLinkedTrace(sessionId, nonce); },
+  async finalized() { return native.linkedTraceFinalizedSessions(); },
+  async exportSession(sessionId) { return native.exportLinkedTrace(sessionId); },
   async deleteSession(sessionId) { native.deleteLinkedTrace(sessionId); },
   async abandonExpiredSession(sessionId) { native.abandonExpiredLinkedTrace(sessionId); },
 };
 
-export type { LinkedTraceClient, LinkedTraceEventType, LinkedTracePayload, LinkedTracePreflight, LinkedTraceStatus } from './types';
+export type { LinkedTraceClient, LinkedTraceEventType, LinkedTraceFinalizedSession, LinkedTracePayload, LinkedTracePreflight, LinkedTraceStatus } from './types';

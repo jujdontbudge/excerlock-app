@@ -51,13 +51,13 @@ After any trace prebuild, delete the generated `ios/` tree and run an unflagged 
 
 One guided path, both apps on the phone. Trace Lab boots into its research screen, not the production onboarding or paywall. Nothing is uploaded and no Mac service is needed at any point.
 
-1. Open **ExcerLock Trace Lab** and read the three lines under **How the test works**. Only what this phone is actually missing is shown, with one action for it: **Allow Screen Time** (the only way iOS lets the lab record the real shield), **Choose canary app** (exactly one harmless app, never Walking Recorder or Trace Lab — the native preflight refuses those two), **Allow Motion & Fitness**, or **Sign in** with pre-existing lab access (this build never grants or fabricates an entitlement; unavailable development access is a stop condition).
+1. Open **ExcerLock Trace Lab** and read the three lines under **How the test works**. Only what this phone is actually missing is shown, with one action for it: **Allow Screen Time** (the only way iOS lets the lab record the real shield), **Choose canary app** (exactly one harmless app — never Walking Recorder or ExcerLock Trace Lab — because the shield must block something you can safely try to open; iOS does not disclose the selected bundle identifiers to the host app, so the screen states the rule and cannot verify the choice), **Allow Motion & Fitness**, or **Sign in** with pre-existing lab access (this build never grants or fabricates an entitlement; unavailable development access is a stop condition).
 2. Tap **Start test**. Trace Lab mints the session UUID and the 256-bit one-time nonce, starts the linked background trace, and opens Walking Recorder through the lab-only `excerlock-walkingrecorder://linked-session` link. Keep Trace Lab in the background from here on, exactly like ExcerLock during a normal walk.
 3. In **Walking Recorder**, tap the card for what you are doing (walking, treadmill, shaking the phone, sitting). Recording already started; labels and their boundaries stay the operator's honest input and live only in the recorder.
 4. Answer the one **Canary check** card inline as it asks: first while walking ("Blocked (shield shown)" / "It opened normally" / "Did not try / not sure"), then after standing still for about 10 seconds. These two operator observations are the visible-outcome evidence the offline joiner needs; a Managed Settings call returning is not a visible outcome.
 5. Tap **Finish test**. The recorder finalizes its archive and returns to Trace Lab with the one-time link.
-6. In **Trace Lab**, tap **Save trace file**, then **Share Walking Recorder archive** (or share the trace file first) and save both files to Files/On My Phone. **Delete this test from Trace Lab** removes the local trace when you are done; the recorder archive is separate.
-7. If a test is interrupted, relaunch either app: Walking Recorder shows **Linked test needs finishing** and returns to Trace Lab, and a Trace Lab that was closed mid-test re-opens the recorder's recovery link. A trace past its two-hour limit can only be deleted, never exported, and the screen returns to **Start test** for the next run.
+6. In **Trace Lab**, the newest saved test shows one primary **Share trace file** action with the Walking Recorder archive export beside it, both grouped in the saved-test card. Save both files to Files/On My Phone. Deletion stays a quiet text action with a confirmation, and it removes only the trace; the recorder archive is separate. Finished traces stay in the lab App Group, so the share actions still work after a Trace Lab relaunch or after iOS purges the temporary export copy.
+7. If a test is interrupted, relaunch either app: Walking Recorder shows **Linked test needs finishing** and returns to Trace Lab, and a Trace Lab that was closed mid-test re-opens the recorder's recovery link. Only the recorder's own return link moves a test to **Test finished — save it**; reopening Trace Lab or its periodic check never marks a running test finished. A trace past its two-hour limit can only be deleted, never exported, and the screen returns to **Start test** for the next run.
 8. Join them offline:
 
 ```sh
@@ -79,7 +79,7 @@ It refuses to run while Metro listens on 8081, installs the signed Trace Lab ove
 
 ## Trace contract
 
-`LinkedTraceWriter` writes one JSON object per line under the isolated Trace Lab App Group. The host and Device Activity monitor extension resolve that group from the generated native configuration and serialize through `flock` and a shared sequence file. Each event has:
+`LinkedTraceWriter` writes one JSON object per line under the isolated Trace Lab App Group. The host and Device Activity monitor extension resolve that group from the generated native configuration and serialize through `flock` and a shared sequence file. Finalization writes a `finalized-v1.json` marker beside the trace, so a finished test is listed and its shareable copy is rebuilt from the App Group on demand after a relaunch or a temporary-directory purge. Each event has:
 
 - schema/session/sequence;
 - producer and process-instance UUID;

@@ -54,10 +54,6 @@ final class ExcerlockPolicyStore {
   func currentSelectionPayload() -> String? { UserDefaults(suiteName: appGroup)?.dictionary(forKey: excerlockSelectionDefaultsKey)?[excerlockSelectionHandle] as? String }
   /** Decoded operator selection. Callers must not persist or log the tokens. */
   func currentSelection() -> FamilyActivitySelection? { try? selection(currentSelectionPayload()) }
-  func currentSelectionCounts() -> (applications: Int, categories: Int, webDomains: Int)? {
-    guard let value = try? selection(currentSelectionPayload()) else { return nil }
-    return (value.applicationTokens.count, value.categoryTokens.count, value.webDomainTokens.count)
-  }
   private func selection(_ payload: String?) throws -> FamilyActivitySelection { guard let payload, let data = payload.data(using: .utf8), let value = try? JSONDecoder().decode(FamilyActivitySelection.self, from: data) else { throw ExcerlockPolicyError.missingSelection }; return value }
 
   private func apply(_ shield: Bool, record: inout ExcerlockPolicyRecord, initiator: String) throws {

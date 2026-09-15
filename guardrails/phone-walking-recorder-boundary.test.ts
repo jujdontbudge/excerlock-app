@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import plist from "@expo/plist";
 
 import { fromRoot, readJson, readUtf8, walkFiles } from "./repo-files";
 
@@ -44,17 +45,14 @@ describe("phone walking recorder isolation", () => {
   });
 
   it("registers only the lab-only link Trace Lab uses to start and re-open a test", () => {
-    const info = readUtf8(fromRoot("tools", "phone-walking-recorder", "Support", "Info.plist"));
-    expect(info).toContain("<string>excerlock-walkingrecorder</string>");
-    expect(info).not.toMatch(/<string>(excerlock|excerlock-linked-trace)<\/string>/);
-    expect(info).not.toContain("applinks");
-
-    // Trace Lab starts the test; this app only returns through Trace Lab's own
-    // scheme. Every URL builder in the recorder must stay lab-only.
-    const controller = readUtf8(fromRoot("tools", "phone-walking-recorder", "Sources", "CaptureController.swift"));
-    expect(controller).toContain('static let scheme = "excerlock-walkingrecorder"');
-    expect(controller).toContain('static let traceLabScheme = "excerlock-linked-trace"');
-    expect(controller).not.toMatch(/scheme = "excerlock"/);
-    expect(controller).not.toMatch(/https?:\/\//);
+    // The registered URL schemes are the contract iOS enforces, so parse the
+    // plist instead of grepping it. The recorder's own XCTest suite
+    // (Tests/LinkedLinkTests.swift, run by the recorder test scheme) executes the
+    // matching URL builders and parsers, including the Trace Lab return scheme.
+    const info = plist.parse(readUtf8(fromRoot("tools", "phone-walking-recorder", "Support", "Info.plist"))) as {
+      CFBundleURLTypes?: { CFBundleURLSchemes?: string[] }[];
+    };
+    const schemes = (info.CFBundleURLTypes ?? []).flatMap((type) => type.CFBundleURLSchemes ?? []);
+    expect(schemes).toEqual(["excerlock-walkingrecorder"]);
   });
 });

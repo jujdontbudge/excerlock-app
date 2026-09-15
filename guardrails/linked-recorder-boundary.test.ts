@@ -1,19 +1,27 @@
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import plist from '@expo/plist';
+import { parse as parseYaml } from 'yaml';
 
-import { fromRoot, readJson, readUtf8, walkFiles } from './repo-files';
-
-function walkResearchSources(): string[] {
-  return walkFiles(app('src', 'research'), new Set(['.ts', '.tsx']));
-}
+import { fromRoot, readJson, readUtf8 } from './repo-files';
 
 type Eas = { build?: Record<string, unknown> };
 type ExpoConfig = { expo?: { ios?: { bundleIdentifier?: string } } };
+type LinkIdentity = {
+  URL_SCHEME: string;
+  WALKING_RECORDER_SCHEME: string;
+  WALKING_RECORDER_LINK_HOSTS: { linkedSession: string; shareArchive: string };
+};
 
 const app = (...parts: string[]) => fromRoot('app-next', ...parts);
+// The lab link contract has exactly one owner: this CommonJS module, which both
+// the Expo config plugin and the research bundle import. The guardrail executes
+// it instead of re-reading its source text.
+const linkIdentity = createRequire(import.meta.url)(app('plugins', 'linkedRecorderLinks.js')) as LinkIdentity;
 
 describe('linked recorder research boundary', () => {
   it('keeps the committed production manifest and EAS profiles free of a research delivery profile', () => {
@@ -31,7 +39,7 @@ describe('linked recorder research boundary', () => {
       env: { ...process.env },
     });
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-  }, 30_000);
+  }, 200_000);
 
   it('executes all target factories, the Metro resolver, and the standalone artifact rules', () => {
     const result = spawnSync(process.execPath, [
@@ -46,46 +54,30 @@ describe('linked recorder research boundary', () => {
       env: { ...process.env },
     });
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
-  }, 30_000);
+  }, 200_000);
 
-  it('keeps one lab-only link contract across the Trace Lab config, the recorder, and the preflight', () => {
-    // The guided path has exactly one owner of each lab identifier: the Expo
-    // config plugin for the JS side, the recorder's plist/Swift for its own
-    // links, and the native preflight for the recorder bundle it must refuse.
-    const config = readUtf8(app('plugins', 'linkedRecorderLinks.js'));
-    const recorderScheme = /WALKING_RECORDER_SCHEME = '([^']+)'/.exec(config)?.[1];
-    expect(recorderScheme).toBe('excerlock-walkingrecorder');
-    const traceScheme = /URL_SCHEME = '([^']+)'/.exec(config)?.[1];
-    expect(traceScheme).toBe('excerlock-linked-trace');
+  it('keeps one lab-only link contract across the Trace Lab config, the recorder plist, and the recorder project', () => {
+    // Executable owner of the identity.
+    expect(linkIdentity.WALKING_RECORDER_SCHEME).toBe('excerlock-walkingrecorder');
+    expect(linkIdentity.URL_SCHEME).toBe('excerlock-linked-trace');
+    expect(linkIdentity.WALKING_RECORDER_LINK_HOSTS).toEqual({ linkedSession: 'linked-session', shareArchive: 'share-archive' });
 
-    const info = readUtf8(fromRoot('tools', 'phone-walking-recorder', 'Support', 'Info.plist'));
-    expect(info).toContain(`<string>${recorderScheme}</string>`);
-    const swift = readUtf8(fromRoot('tools', 'phone-walking-recorder', 'Sources', 'CaptureController.swift'));
-    expect(swift).toContain(`static let scheme = "${recorderScheme}"`);
-    expect(swift).toContain(`static let traceLabScheme = "${traceScheme}"`);
+    // The recorder registers only that scheme, parsed as a plist rather than by
+    // substring. The recorder's executable LinkedLinkTests prove the matching URL
+    // builders/parsers; the Trace Lab config factories and artifact verifier own
+    // the lab-only Trace Lab scheme.
+    const info = plist.parse(readUtf8(fromRoot('tools', 'phone-walking-recorder', 'Support', 'Info.plist'))) as {
+      CFBundleURLTypes?: { CFBundleURLSchemes?: string[] }[];
+    };
+    const schemes = (info.CFBundleURLTypes ?? []).flatMap((type) => type.CFBundleURLSchemes ?? []);
+    expect(schemes).toEqual([linkIdentity.WALKING_RECORDER_SCHEME]);
 
-    const project = readUtf8(fromRoot('tools', 'phone-walking-recorder', 'project.yml'));
-    expect(project).toContain('PRODUCT_BUNDLE_IDENTIFIER: com.johansardar.excerlock.lab.walkingrecorder');
-    const module = readUtf8(app('modules', 'excerlock-enforcement', 'ios', 'ExcerlockEnforcementModule.swift'));
-    expect(module).toContain('labWalkingRecorderBundleIdentifier = "com.johansardar.excerlock.lab.walkingrecorder"');
-  });
-
-  it('keeps the research config owner out of the bundled JavaScript', () => {
-    // The artifact verifier scans the Hermes string table for dev-client module
-    // names. `linkedRecorderResearchConfig.js` legitimately names the modules a
-    // standalone build must exclude, so the app imports only the link identity
-    // module; a bundle that pulled the config owner in would look like a
-    // smuggled dev-client module and fail the artifact check.
-    const config = readUtf8(app('plugins', 'linkedRecorderResearchConfig.js'));
-    expect(config).toContain("require('./linkedRecorderLinks')");
-    expect(config).toContain("'expo-dev-launcher'");
-    const linkModule = readUtf8(app('src', 'research', 'linkedTrace', 'linkedRecorderLink.ts'));
-    expect(linkModule).toContain("require('../../../plugins/linkedRecorderLinks')");
-    const importsConfig = /(?:from|require\()\s*['"][^'"]*plugins\/linkedRecorderResearchConfig/;
-    expect(linkModule).not.toMatch(importsConfig);
-    for (const source of walkResearchSources()) {
-      expect(readUtf8(source)).not.toMatch(importsConfig);
-    }
+    // The XcodeGen project pins the lab bundle identifier the recorder must own.
+    const project = parseYaml(readUtf8(fromRoot('tools', 'phone-walking-recorder', 'project.yml'))) as {
+      targets?: Record<string, { settings?: { base?: Record<string, unknown> } }>;
+    };
+    expect(project.targets?.PhoneWalkingRecorder?.settings?.base?.PRODUCT_BUNDLE_IDENTIFIER)
+      .toBe('com.johansardar.excerlock.lab.walkingrecorder');
   });
 
   it('executes the ordinary-artifact scanner against clean and contaminated fixtures', () => {

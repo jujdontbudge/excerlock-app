@@ -10,7 +10,6 @@ export const linkedTrace: LinkedTraceClient = {
       screenTimeAuthorized: false,
       motionReady: false,
       canarySelectionValid: false,
-      canaryIncludesTestApps: false,
       canaryApplicationCount: 0,
       canaryCategoryCount: 0,
       canaryWebDomainCount: 0,
@@ -18,8 +17,10 @@ export const linkedTrace: LinkedTraceClient = {
   },
   record() {},
   async stop() { throw new Error('Unavailable'); },
+  async finalized() { return []; },
+  async exportSession() { throw new Error('Unavailable'); },
   async deleteSession() {},
   async abandonExpiredSession() {},
 };
 
-export type { LinkedTraceClient, LinkedTraceEventType, LinkedTracePayload, LinkedTracePreflight, LinkedTraceStatus } from './types';
+export type { LinkedTraceClient, LinkedTraceEventType, LinkedTraceFinalizedSession, LinkedTracePayload, LinkedTracePreflight, LinkedTraceStatus } from './types';

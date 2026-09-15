@@ -19,12 +19,22 @@ export type LinkedTracePreflight = {
   labStorageIsolated: boolean;
   screenTimeAuthorized: boolean;
   motionReady: boolean;
+  /**
+   * iOS never reveals which apps a FamilyActivitySelection holds, so this only
+   * proves the shape: exactly one application, no categories, no web domains.
+   * The one-path UI tells the operator to pick one harmless canary and never a
+   * research app, because no native check can prove that choice.
+   */
   canarySelectionValid: boolean;
-  /** True when the selected canary is Walking Recorder or Trace Lab itself. */
-  canaryIncludesTestApps: boolean;
   canaryApplicationCount: number;
   canaryCategoryCount: number;
   canaryWebDomainCount: number;
+};
+
+export type LinkedTraceFinalizedSession = {
+  sessionId: string;
+  byteCount: number;
+  finalizedAtWallTimeMs: number;
 };
 
 export type LinkedTraceScalar = string | number | boolean | null | string[];
@@ -37,6 +47,10 @@ export type LinkedTraceClient = {
   preflight(): Promise<LinkedTracePreflight>;
   record(eventType: LinkedTraceEventType, payload: LinkedTracePayload, operationId?: string): void;
   stop(sessionId: string, nonce: string): Promise<string>;
+  /** Finalized local traces that can still be shared, newest first. */
+  finalized(): Promise<LinkedTraceFinalizedSession[]>;
+  /** Rebuilds the shareable copy from the durable App Group trace. */
+  exportSession(sessionId: string): Promise<string>;
   deleteSession(sessionId: string): Promise<void>;
   abandonExpiredSession(sessionId: string): Promise<void>;
 };

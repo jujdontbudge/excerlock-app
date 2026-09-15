@@ -54,6 +54,18 @@ public final class ExcerlockEnforcementModule: Module {
     Function("deleteLinkedTrace") { (sessionId: String) throws -> Void in
       try LinkedTraceWriter.shared.deleteSession(sessionId: sessionId)
     }
+    Function("linkedTraceFinalizedSessions") { () -> [[String: Any]] in
+      LinkedTraceWriter.shared.finalizedSessions().map { session in
+        [
+          "sessionId": session.sessionId,
+          "byteCount": session.byteCount,
+          "finalizedAtWallTimeMs": session.finalizedAtWallTimeMs
+        ]
+      }
+    }
+    Function("exportLinkedTrace") { (sessionId: String) throws -> String in
+      try LinkedTraceWriter.shared.exportFinalizedSession(sessionId: sessionId).absoluteString
+    }
     Function("abandonExpiredLinkedTrace") { (sessionId: String) throws -> Void in
       try LinkedTraceWriter.shared.abandonExpiredSession(sessionId: sessionId)
     }
@@ -66,10 +78,14 @@ public final class ExcerlockEnforcementModule: Module {
 
   #if EXCERLOCK_LINKED_RECORDER_TRACE
   // The co-installed Walking Recorder bundle identifier. Selecting it (or Trace
-  // Lab itself) as the shield target would deadlock the test, so the preflight
-  // refuses it instead of asking the operator to confirm a harmless canary.
-  static let labWalkingRecorderBundleIdentifier = "com.johansardar.excerlock.lab.walkingrecorder"
-
+  // Lab itself) as the shield target would deadlock the test, so the operator is
+  // told at the point of need never to pick either research app.
+  //
+  // iOS never hands the host app the bundle identifiers behind a
+  // FamilyActivitySelection: `applications` carries opaque tokens, so this
+  // preflight can prove the shape of the selection (one app, no categories, no
+  // websites) but can never prove which app was picked. The one-path UI says so
+  // plainly instead of pretending a native check covers it.
   private func linkedTraceStatusPayload(_ status: LinkedTraceStatus) -> [String: Any] {
     [
       "active": status.active,
@@ -81,14 +97,8 @@ public final class ExcerlockEnforcementModule: Module {
 
   private func linkedTracePreflightPayload() -> [String: Any] {
     let selection = ExcerlockPolicyStore.shared.currentSelection()
-    let canaryIncludesTestApps = selection.map { selected in
-      let own = Bundle.main.bundleIdentifier
-      return selected.applications.contains {
-        $0.bundleIdentifier == Self.labWalkingRecorderBundleIdentifier || $0.bundleIdentifier == own
-      }
-    } ?? false
     let canarySelectionValid = selection?.applications.count == 1 && selection?.categories.count == 0
-      && selection?.webDomains.count == 0 && !canaryIncludesTestApps
+      && selection?.webDomains.count == 0
     let screenTimeAuthorized = AuthorizationCenter.shared.authorizationStatus == .approved
     let motionAuthorized = CMMotionActivityManager.authorizationStatus() == .authorized
     let motionAvailable = CMMotionActivityManager.isActivityAvailable() &&
@@ -105,7 +115,6 @@ public final class ExcerlockEnforcementModule: Module {
       "screenTimeAuthorized": screenTimeAuthorized,
       "motionReady": motionAuthorized && motionAvailable,
       "canarySelectionValid": canarySelectionValid,
-      "canaryIncludesTestApps": canaryIncludesTestApps,
       "canaryApplicationCount": selection?.applications.count ?? 0,
       "canaryCategoryCount": selection?.categories.count ?? 0,
       "canaryWebDomainCount": selection?.webDomains.count ?? 0

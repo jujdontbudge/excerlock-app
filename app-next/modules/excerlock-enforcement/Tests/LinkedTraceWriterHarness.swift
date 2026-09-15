@@ -84,6 +84,19 @@ struct LinkedTraceWriterHarness {
     precondition(retainedBytes == finalizedBytes)
     precondition(writer.status().sessionId == nil)
 
+    // A finalized trace stays listable and re-exportable from the App Group, so
+    // the operator can share it after a relaunch or after iOS purges the
+    // temporary export copy. Deleting it is the only thing that removes it.
+    let finalizedSessions = writer.finalizedSessions()
+    precondition(finalizedSessions.contains { $0.sessionId == sessionId })
+    precondition(finalizedSessions.first { $0.sessionId == sessionId }?.byteCount == Int64(finalizedBytes))
+    try? FileManager.default.removeItem(at: export)
+    let reExported = try writer.exportFinalizedSession(sessionId: sessionId)
+    let reExportedBytes = try Data(contentsOf: reExported).count
+    precondition(reExportedBytes == finalizedBytes)
+    try writer.deleteSession(sessionId: sessionId)
+    precondition(!writer.finalizedSessions().contains { $0.sessionId == sessionId })
+
     let limitedRoot = root.appendingPathComponent("limited", isDirectory: true)
     try FileManager.default.createDirectory(at: limitedRoot, withIntermediateDirectories: true)
     let limitedId = UUID().uuidString.lowercased()
@@ -95,6 +108,10 @@ struct LinkedTraceWriterHarness {
                          payload: ["label": "session_started"])
     }
     precondition(limited.status().truncated)
+    do {
+      _ = try limited.exportFinalizedSession(sessionId: limitedId)
+      preconditionFailure("an active session was exported before it was finalized")
+    } catch LinkedTraceError.sessionMismatch {}
     let limitedExport = try limited.stopSession(sessionId: limitedId, nonce: nonce)
     let limitedRows = try String(contentsOf: limitedExport, encoding: .utf8).split(separator: "\n").map {
       try JSONSerialization.jsonObject(with: Data($0.utf8)) as! [String: Any]
