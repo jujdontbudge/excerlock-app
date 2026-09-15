@@ -22,6 +22,7 @@ APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 APP="${1:-$APP_DIR/.scratch/standalone-research/DerivedData/Build/Products/Release-iphoneos/ExcerLock.app}"
 OUT="${PROVE_OUT:-$APP_DIR/.scratch/prove-phone}"
 OCR="/usr/bin/python3"
+source "$SCRIPT_DIR/observe-launch-evidence.sh"
 
 mkdir -p "$OUT"
 step() { printf '\n== %s\n' "$*"; }
@@ -69,27 +70,16 @@ xcrun devicectl device install app --device "$IL" "$APP" 2>&1 | tee "$OUT/instal
 step "4. launch with no payload URL, no dev-client URL and no network service"
 launch_started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 xcrun devicectl device process launch --device "$IL" --terminate-existing "$LAB" 2>&1 | tee "$OUT/launch.log"
-sleep 8
 
-step "5. screenshot + OCR of the real research screen"
-for i in 1 2 3; do
-  pymobiledevice3 developer dvt screenshot "$OUT/launch-$i.png" >/dev/null 2>&1 || true
-  sleep 2
-done
-ls -la "$OUT"/launch-*.png 2>/dev/null || true
-"$OCR" "$SCRIPT_DIR/device-ocr.py" "$OUT"/launch-*.png 2>/dev/null | tee "$OUT/launch-ocr.txt" || true
+step "5. observe the real research screen with bounded screenshot/OCR retries"
+# observe_launch_evidence retries the exact on-device evidence (screenshot ->
+# OCR -> positive screen check), stops the moment the research screen is
+# observed, fails immediately on the terminal dev-client prompt, and otherwise
+# fails after its bound with every attempt's screenshot and transcript kept as
+# diagnostics. See scripts/observe-launch-evidence.sh.
+observe_launch_evidence "$OUT" "$SCRIPT_DIR" "$OCR"
 
-step "6. the launched binary runs the research screen, not a launch prompt"
-if grep -q "How the test works" "$OUT/launch-ocr.txt" 2>/dev/null; then
-  echo "VERIFY PASS: Trace Lab rendered its guided research screen on the phone"
-elif grep -q "Metro\|dev server\|Development build\|expo-development-client" "$OUT/launch-ocr.txt" 2>/dev/null; then
-  echo "VERIFY FAIL: Trace Lab asked for a development server" >&2
-  exit 1
-else
-  echo "VERIFY WARN: OCR did not see the research screen; inspect $OUT/launch-*.png by hand" >&2
-fi
-
-step "7. production ExcerLock was not replaced"
+step "6. production ExcerLock was not replaced"
 xcrun devicectl device info apps --device "$IL" > "$OUT/apps-after.log" 2>&1
 node "$SCRIPT_DIR/$PRODUCTION_RECORD" "$OUT/apps-after.log" > "$OUT/production-after.log"
 if diff -u "$OUT/production-before.log" "$OUT/production-after.log" > "$OUT/production-diff.log"; then
@@ -101,7 +91,7 @@ else
 fi
 grep -E "$LAB|$WALK" "$OUT/apps-after.log" || true
 
-step "8. no dev-server traffic during and after the launch"
+step "7. no dev-server traffic during and after the launch"
 lsof -nP -iTCP:8081 > "$OUT/port8081-after.log" 2>&1 || true
 cat "$OUT/port8081-after.log"
 echo "launch window: $launch_started .. $(date -u +%Y-%m-%dT%H:%M:%SZ)"

@@ -76,7 +76,7 @@ The device proof of the standalone artifact is executable:
 app-next/scripts/prove-linked-recorder-on-phone.sh [path/to/ExcerLock.app]
 ```
 
-It refuses to run while Metro listens on 8081, installs the signed Trace Lab over the current one, launches it with no payload URL, OCRs the real research screen, and checks that production ExcerLock's install record is unchanged.
+It refuses to run while Metro listens on 8081, installs the signed Trace Lab over the current one, and launches it with no payload URL. The proof then requires positive OCR evidence that the installed binary rendered the real research screen: a blank screen, a crash back to the Home Screen, an unexpected screen, the expo-dev-client prompt, or an OCR miss fails the proof, while the screenshots and OCR transcript stay behind as diagnostics. It finally checks that production ExcerLock's install record is unchanged.
 
 ## Trace contract
 
