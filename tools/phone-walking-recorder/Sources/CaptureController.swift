@@ -132,6 +132,10 @@ final class CaptureController: NSObject, ObservableObject {
     @Published var exportingSessionID: String?
     @Published private(set) var linkedSessionID: String?
     @Published private(set) var pendingLinkedTraceRecovery: LinkedTraceRecovery?
+    /// True while the recorder shows the inline confirmation that removes the
+    /// protected Trace Lab reminder. The reminder is dropped only through that
+    /// confirmation, never from a single tap.
+    @Published private(set) var linkedReminderRemovalRequested = false
     @Published private(set) var canaryStep: CanaryStep = .walking
     @Published private(set) var canaryWalkingOutcome: String?
     @Published private(set) var canaryStationaryOutcome: String?
@@ -308,10 +312,25 @@ final class CaptureController: NSObject, ObservableObject {
         }
     }
 
-    func clearPendingLinkedTraceRecovery() {
-        guard let pendingLinkedTraceRecovery else { return }
+    /// First step of the one reminder-removal path: ask inline before dropping
+    /// the protected one-time link, because Trace Lab still needs it while the
+    /// test can be saved or cancelled there.
+    func requestLinkedReminderRemoval() {
+        guard pendingLinkedTraceRecovery != nil else { return }
+        linkedReminderRemovalRequested = true
+    }
+
+    func cancelLinkedReminderRemoval() {
+        linkedReminderRemovalRequested = false
+    }
+
+    /// Second step: after the inline confirmation, remove only the recorder's
+    /// protected reminder. The recording archive is never touched.
+    func confirmLinkedReminderRemoval() {
+        guard let pendingLinkedTraceRecovery, linkedReminderRemovalRequested else { return }
         do {
             try repository.clearLinkedTraceRecovery(sessionId: pendingLinkedTraceRecovery.sessionId)
+            linkedReminderRemovalRequested = false
             refreshPendingLinkedTraceRecovery()
         } catch {
             notice = "Could not clear the protected recovery link: \(error.localizedDescription)"
@@ -806,9 +825,15 @@ final class CaptureController: NSObject, ObservableObject {
     }
 
     /// The store orders recoveries (unfinished first, then newest started test),
-    /// so `.first` is the test the operator is most likely finishing now.
+    /// so `.first` is the test the operator is most likely finishing now. A
+    /// different (or gone) reminder always resets the inline confirmation so it
+    /// can never apply to a test it was not shown for.
     private func refreshPendingLinkedTraceRecovery() {
-        pendingLinkedTraceRecovery = repository.pendingLinkedTraceRecoveries.first
+        let next = repository.pendingLinkedTraceRecoveries.first
+        if next?.sessionId != pendingLinkedTraceRecovery?.sessionId {
+            linkedReminderRemovalRequested = false
+        }
+        pendingLinkedTraceRecovery = next
     }
 
     /// Truthful continuation for a repeated linked-session delivery: the

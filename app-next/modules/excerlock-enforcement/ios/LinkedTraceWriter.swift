@@ -337,7 +337,7 @@ public final class LinkedTraceWriter: @unchecked Sendable {
       try withTraceLock {
         try prepareRoot()
         try pruneLocked(nowWallTimeMs: started.wallTimeMs)
-        if let existing = try readDescriptorLocked(), existing.expiresAtWallTimeMs > started.wallTimeMs {
+        if let existing = try liveDescriptorLocked(), existing.expiresAtWallTimeMs > started.wallTimeMs {
           guard existing.sessionId == descriptor.sessionId else { throw LinkedTraceError.sessionMismatch }
           guard existing.nonceDigest == descriptor.nonceDigest else { throw LinkedTraceError.invalidNonce }
           resultDescriptor = existing
@@ -376,7 +376,7 @@ public final class LinkedTraceWriter: @unchecked Sendable {
         let now = stampProvider().wallTimeMs
         try prepareRoot()
         try pruneLocked(nowWallTimeMs: now)
-        guard let descriptor = try readDescriptorLocked() else {
+        guard let descriptor = try liveDescriptorLocked() else {
           return LinkedTraceStatus(active: false, sessionId: nil, expiresAtWallTimeMs: nil, truncated: false)
         }
         let active = descriptor.expiresAtWallTimeMs > now
@@ -430,7 +430,7 @@ public final class LinkedTraceWriter: @unchecked Sendable {
       let normalized = sessionId.lowercased()
       let stopped = stampProvider()
       try withTraceLock {
-        guard let descriptor = try readDescriptorLocked() else { throw LinkedTraceError.inactive }
+        guard let descriptor = try liveDescriptorLocked() else { throw LinkedTraceError.inactive }
         guard descriptor.sessionId == normalized else { throw LinkedTraceError.sessionMismatch }
         guard descriptor.nonceDigest == Self.digest(nonce) else { throw LinkedTraceError.invalidNonce }
         // The two-hour TTL is enforced here, not only in the UI: an expired
@@ -459,8 +459,9 @@ public final class LinkedTraceWriter: @unchecked Sendable {
         try pruneLocked(nowWallTimeMs: now)
         // A session the current descriptor still owns is running or expired, never
         // finalized, so it is never listed here even if a marker survived an
-        // interrupted finalization.
-        let descriptorSessionId = try readDescriptorLocked()?.sessionId
+        // interrupted finalization. An interrupted abandonment is completed
+        // first, so its descriptor can never hide a genuinely saved session.
+        let descriptorSessionId = try liveDescriptorLocked()?.sessionId
         let directories = (try? fileManager.contentsOfDirectory(
           at: try rootURL(),
           includingPropertiesForKeys: [.isDirectoryKey],
@@ -491,7 +492,7 @@ public final class LinkedTraceWriter: @unchecked Sendable {
       guard Self.validSessionId(normalized) else { throw LinkedTraceError.invalidSession }
       return try withTraceLock {
         try prepareRoot()
-        if let descriptor = try readDescriptorLocked(), descriptor.sessionId == normalized {
+        if let descriptor = try liveDescriptorLocked(), descriptor.sessionId == normalized {
           throw LinkedTraceError.sessionMismatch
         }
         guard (try? readFinalizedMarkerLocked(sessionId: normalized)) != nil else { throw LinkedTraceError.inactive }
@@ -505,7 +506,7 @@ public final class LinkedTraceWriter: @unchecked Sendable {
       try withTraceLock {
         let normalized = sessionId.lowercased()
         guard Self.validSessionId(normalized) else { throw LinkedTraceError.invalidSession }
-        if let descriptor = try readDescriptorLocked(), descriptor.sessionId == normalized {
+        if let descriptor = try liveDescriptorLocked(), descriptor.sessionId == normalized {
           throw LinkedTraceError.sessionMismatch
         }
         try deleteSessionFilesLocked(sessionId: normalized)
@@ -519,6 +520,13 @@ public final class LinkedTraceWriter: @unchecked Sendable {
   /// marker is written instead of a finalized marker, so nothing can list or
   /// export this session. The marker is cleared with every other old session by
   /// retention pruning.
+  ///
+  /// The marker is the one durable authoritative transition and is written
+  /// first, under the session lock. A process that dies at any later cleanup
+  /// step leaves that marker behind, and every later writer call finishes the
+  /// same abandonment idempotently before it can observe a live session, so a
+  /// cancelled test can never be resumed, appended to, finalized, listed, or
+  /// exported again.
   public func cancelActiveSession(sessionId: String) throws {
     try abandonSession(sessionId: sessionId, reason: .cancelled)
   }
@@ -532,6 +540,13 @@ public final class LinkedTraceWriter: @unchecked Sendable {
       try withTraceLock {
         let normalized = sessionId.lowercased()
         guard Self.validSessionId(normalized) else { throw LinkedTraceError.invalidSession }
+        // An interrupted abandonment already recorded its authoritative
+        // transition. Finishing that cleanup again is idempotent success, not
+        // an error, whether or not the descriptor survived the crash.
+        if fileManager.fileExists(atPath: try abandonedMarkerURL(normalized).path) {
+          try completeAbandonmentLocked(sessionId: normalized)
+          return
+        }
         guard let descriptor = try readDescriptorLocked() else { throw LinkedTraceError.inactive }
         guard descriptor.sessionId == normalized else { throw LinkedTraceError.sessionMismatch }
         if reason == .expired {
@@ -542,16 +557,40 @@ public final class LinkedTraceWriter: @unchecked Sendable {
         // finalizedSessions() and exportFinalizedSession() still refuse it, and
         // the recorded trace payload is deleted so a void test keeps no data.
         try writeAbandonedMarkerLocked(sessionId: normalized, reason: reason, abandonedAtWallTimeMs: stampProvider().wallTimeMs)
-        try removeAbandonedTraceFilesLocked(sessionId: normalized)
-        try removeDescriptorLocked()
+        try completeAbandonmentLocked(sessionId: normalized)
       }
-      announcedSessionId = nil
     }
+  }
+
+  /// Idempotent cleanup of the steps after the authoritative abandonment
+  /// marker: drop the recorded payload and remove the descriptor, but only
+  /// when it still describes the abandoned session. A newer session that
+  /// started after an interrupted abandonment must never lose its descriptor
+  /// to an old retry.
+  private func completeAbandonmentLocked(sessionId: String) throws {
+    try removeAbandonedTraceFilesLocked(sessionId: sessionId)
+    if let descriptor = try readDescriptorLocked(), descriptor.sessionId == sessionId {
+      try removeDescriptorLocked()
+    }
+    announcedSessionId = nil
+  }
+
+  /// The descriptor for a session that is actually live. An abandoned marker
+  /// always wins over it: if a crash left the marker behind, this call finishes
+  /// the abandonment first and reports no live session, so the session can
+  /// never look active, resumable, appendable, or finalizable again.
+  private func liveDescriptorLocked() throws -> LinkedTraceSessionDescriptor? {
+    guard let descriptor = try readDescriptorLocked() else { return nil }
+    guard fileManager.fileExists(atPath: try abandonedMarkerURL(descriptor.sessionId).path) else {
+      return descriptor
+    }
+    try completeAbandonmentLocked(sessionId: descriptor.sessionId)
+    return nil
   }
 
   public func hashIdentifier(_ value: String) -> String {
     let salt = (try? onQueue {
-      try withTraceLock { try readDescriptorLocked().map { "\($0.sessionId):\($0.nonceDigest)" } }
+      try withTraceLock { try liveDescriptorLocked().map { "\($0.sessionId):\($0.nonceDigest)" } }
     }) ?? nil
     return String(Self.digest("\(salt ?? processInstanceId):\(value)").prefix(16))
   }
@@ -564,7 +603,7 @@ public final class LinkedTraceWriter: @unchecked Sendable {
     stamp: LinkedTraceStamp
   ) throws -> Bool {
     try withTraceLock {
-      guard let descriptor = try readDescriptorLocked() else { return false }
+      guard let descriptor = try liveDescriptorLocked() else { return false }
       guard descriptor.expiresAtWallTimeMs > stamp.wallTimeMs else { return false }
       pendingLock.lock()
       let dropped = droppedEvents
@@ -849,7 +888,7 @@ public final class LinkedTraceWriter: @unchecked Sendable {
 
   private func pruneLocked(nowWallTimeMs: Int64) throws {
     let root = try rootURL()
-    let descriptor = try readDescriptorLocked()
+    let descriptor = try liveDescriptorLocked()
     let active: String?
     if let descriptor, descriptor.expiresAtWallTimeMs <= nowWallTimeMs {
       if nowWallTimeMs - descriptor.expiresAtWallTimeMs > retentionMilliseconds {

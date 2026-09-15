@@ -239,8 +239,20 @@ struct RecorderHomeView: View {
                     .foregroundStyle(RecorderTheme.secondaryText)
                 Button("Open Trace Lab to finish") { controller.openPendingLinkedTrace() }
                     .buttonStyle(PrimaryButtonStyle())
-                Button("I already saved it in Trace Lab") { controller.clearPendingLinkedTraceRecovery() }
-                    .buttonStyle(SecondaryButtonStyle())
+                if controller.linkedReminderRemovalRequested {
+                    Text(RecorderLinkedReminderCopy.removeConfirmation)
+                        .font(.caption)
+                        .foregroundStyle(RecorderTheme.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button(RecorderLinkedReminderCopy.confirmAction) { controller.confirmLinkedReminderRemoval() }
+                        .buttonStyle(SecondaryButtonStyle())
+                    Button(RecorderLinkedReminderCopy.cancelAction) { controller.cancelLinkedReminderRemoval() }
+                        .buttonStyle(SecondaryButtonStyle())
+                } else {
+                    Button(RecorderLinkedReminderCopy.removeAction) { controller.requestLinkedReminderRemoval() }
+                        .buttonStyle(SecondaryButtonStyle())
+                        .accessibilityHint("Shows a confirmation before the protected one-time link to Trace Lab is removed.")
+                }
             }
             .recorderCard()
         }

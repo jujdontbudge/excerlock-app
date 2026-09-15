@@ -175,8 +175,152 @@ struct LinkedTraceWriterHarness {
     // The void test keeps no measurement data: only the abandonment record
     // survives until retention pruning removes the directory.
     precondition(!FileManager.default.fileExists(atPath: cancelledDirectory.appendingPathComponent("production.ndjson").path))
+    // A retried cancel after the durable transition is idempotent success, and
+    // it never claims a session that was never abandoned.
+    try cancelWriter.cancelActiveSession(sessionId: cancelId)
+    do {
+      try cancelWriter.cancelActiveSession(sessionId: UUID().uuidString.lowercased())
+      preconditionFailure("an unknown session was reported as abandoned")
+    } catch LinkedTraceError.inactive {}
     try cancelWriter.deleteSession(sessionId: cancelId)
     precondition(!FileManager.default.fileExists(atPath: cancelledDirectory.path))
+
+    // Abandonment crash points. The durable marker is the authoritative
+    // transition; the payload deletion and descriptor removal after it are
+    // idempotent cleanup. Each case recreates exactly what a process that died
+    // at that step leaves behind, then proves the next writer call finishes the
+    // same transition: the session can never look active, resumable,
+    // appendable, listable, or exportable again.
+    enum AbandonCrashPoint: String, CaseIterable {
+      case markerWritten
+      case payloadRemoved
+      case descriptorRemoved
+    }
+    func seedCrashPoint(_ crashPoint: AbandonCrashPoint) throws -> (root: URL, sessionId: String) {
+      let crashRoot = root.appendingPathComponent("abandon-crash-\(crashPoint.rawValue)", isDirectory: true)
+      try FileManager.default.createDirectory(at: crashRoot, withIntermediateDirectories: true)
+      let crashId = UUID().uuidString.lowercased()
+      let crashWriter = LinkedTraceWriter(containerURL: crashRoot)
+      _ = try crashWriter.startSession(sessionId: crashId, nonce: nonce)
+      precondition(crashWriter.record(producer: .hostJS, eventType: .clockAnchor, payload: ["label": "session_started"]))
+      let directory = crashRoot.appendingPathComponent("linked-trace/v1/\(crashId)", isDirectory: true)
+      try Data("{}".utf8).write(to: directory.appendingPathComponent("abandoned-v1.json"))
+      if crashPoint != .markerWritten {
+        try FileManager.default.removeItem(at: directory.appendingPathComponent("production.ndjson"))
+        try FileManager.default.removeItem(at: directory.appendingPathComponent("sequence-v1.txt"))
+      }
+      if crashPoint == .descriptorRemoved {
+        try FileManager.default.removeItem(at: crashRoot.appendingPathComponent("linked-trace-active-v1.json"))
+      }
+      return (crashRoot, crashId)
+    }
+    for crashPoint in AbandonCrashPoint.allCases {
+      let seeded = try seedCrashPoint(crashPoint)
+      let crashWriter = LinkedTraceWriter(containerURL: seeded.root)
+      let directory = seeded.root.appendingPathComponent("linked-trace/v1/\(seeded.sessionId)", isDirectory: true)
+      let trace = directory.appendingPathComponent("production.ndjson")
+      let descriptor = seeded.root.appendingPathComponent("linked-trace-active-v1.json")
+
+      // A later append must never recreate the payload of an abandoned session.
+      precondition(!crashWriter.record(producer: .hostJS, eventType: .clockAnchor, payload: ["label": "session_started"]))
+      precondition(!FileManager.default.fileExists(atPath: trace.path))
+
+      // Status reports the session as inactive and abandoned, never running.
+      let crashStatus = crashWriter.status()
+      precondition(!crashStatus.active && crashStatus.sessionId == nil)
+      precondition(!FileManager.default.fileExists(atPath: descriptor.path))
+
+      // A relaunch cannot resume it, finalize it, list it, or export it.
+      do {
+        _ = try crashWriter.startSession(sessionId: seeded.sessionId, nonce: nonce)
+        preconditionFailure("an abandoned session was resumed")
+      } catch LinkedTraceError.sessionExists {}
+      do {
+        _ = try crashWriter.stopSession(sessionId: seeded.sessionId, nonce: nonce)
+        preconditionFailure("an abandoned session was finalized")
+      } catch LinkedTraceError.inactive {}
+      precondition(!FileManager.default.fileExists(atPath: directory.appendingPathComponent("finalized-v1.json").path))
+      precondition(crashWriter.finalizedSessions().isEmpty)
+      do {
+        _ = try crashWriter.exportFinalizedSession(sessionId: seeded.sessionId)
+        preconditionFailure("an abandoned session was exported")
+      } catch LinkedTraceError.inactive {}
+
+      // A retried cancel at any crash point is idempotent success, and the
+      // abandonment record itself survives as the truthful local state.
+      try crashWriter.cancelActiveSession(sessionId: seeded.sessionId)
+      try crashWriter.cancelActiveSession(sessionId: seeded.sessionId)
+      precondition(crashWriter.status().sessionId == nil)
+      precondition(FileManager.default.fileExists(atPath: directory.appendingPathComponent("abandoned-v1.json").path))
+
+      // A clean session still starts afterwards, and a stale retry of the old
+      // abandonment must never delete the new session's descriptor.
+      let successorId = UUID().uuidString.lowercased()
+      let successor = try crashWriter.startSession(sessionId: successorId, nonce: nonce)
+      precondition(successor.active && successor.sessionId == successorId)
+      precondition(crashWriter.record(producer: .hostJS, eventType: .clockAnchor, payload: ["label": "session_started"]))
+      try crashWriter.cancelActiveSession(sessionId: seeded.sessionId)
+      precondition(crashWriter.status().active && crashWriter.status().sessionId == successorId)
+      _ = try crashWriter.stopSession(sessionId: successorId, nonce: nonce)
+      let savedIds = crashWriter.finalizedSessions().map(\.sessionId)
+      precondition(savedIds.contains(successorId) && !savedIds.contains(seeded.sessionId))
+    }
+
+    // A real partial abandonment produced by the writer itself, not a
+    // hand-built state: with the container directory unwritable, the payload
+    // cleanup succeeds and removing the descriptor fails, which is exactly
+    // what a crash between those two steps leaves behind. Restoring the
+    // container and consulting the writer must finish the same abandonment and
+    // still refuse to resurrect, resume, or export the session.
+    let faultRoot = root.appendingPathComponent("abandon-unwritable", isDirectory: true)
+    try FileManager.default.createDirectory(at: faultRoot, withIntermediateDirectories: true)
+    let faultId = UUID().uuidString.lowercased()
+    let faultWriter = LinkedTraceWriter(containerURL: faultRoot)
+    _ = try faultWriter.startSession(sessionId: faultId, nonce: nonce)
+    precondition(faultWriter.record(producer: .hostJS, eventType: .clockAnchor, payload: ["label": "session_started"]))
+    let faultDirectory = faultRoot.appendingPathComponent("linked-trace/v1/\(faultId)", isDirectory: true)
+    let faultDescriptor = faultRoot.appendingPathComponent("linked-trace-active-v1.json")
+    try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: faultRoot.path)
+    var faultFailed = false
+    do { try faultWriter.cancelActiveSession(sessionId: faultId) } catch { faultFailed = true }
+    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: faultRoot.path)
+    precondition(faultFailed, "descriptor removal unexpectedly succeeded on an unwritable container")
+    precondition(FileManager.default.fileExists(atPath: faultDirectory.appendingPathComponent("abandoned-v1.json").path))
+    precondition(FileManager.default.fileExists(atPath: faultDescriptor.path))
+    precondition(!FileManager.default.fileExists(atPath: faultDirectory.appendingPathComponent("production.ndjson").path))
+    // The next writer call finishes the interrupted transition: no payload is
+    // recreated and the session is inactive, unlistable, and unexportable.
+    precondition(!faultWriter.record(producer: .hostJS, eventType: .clockAnchor, payload: ["label": "session_started"]))
+    precondition(!FileManager.default.fileExists(atPath: faultDirectory.appendingPathComponent("production.ndjson").path))
+    let faultStatus = faultWriter.status()
+    precondition(!faultStatus.active && faultStatus.sessionId == nil)
+    precondition(!FileManager.default.fileExists(atPath: faultDescriptor.path))
+    precondition(faultWriter.finalizedSessions().isEmpty)
+    do {
+      _ = try faultWriter.exportFinalizedSession(sessionId: faultId)
+      preconditionFailure("an interrupted abandonment was exported")
+    } catch LinkedTraceError.inactive {}
+    try faultWriter.cancelActiveSession(sessionId: faultId)
+
+    // The same recovery must happen when a fresh start is the first thing a
+    // relaunched Trace Lab does, with no status read before it.
+    let relaunchRoot = root.appendingPathComponent("abandon-relaunch", isDirectory: true)
+    try FileManager.default.createDirectory(at: relaunchRoot, withIntermediateDirectories: true)
+    let abandonedId = UUID().uuidString.lowercased()
+    let abandonedWriter = LinkedTraceWriter(containerURL: relaunchRoot)
+    _ = try abandonedWriter.startSession(sessionId: abandonedId, nonce: nonce)
+    precondition(abandonedWriter.record(producer: .hostJS, eventType: .clockAnchor, payload: ["label": "session_started"]))
+    let abandonedDirectory = relaunchRoot.appendingPathComponent("linked-trace/v1/\(abandonedId)", isDirectory: true)
+    try Data("{}".utf8).write(to: abandonedDirectory.appendingPathComponent("abandoned-v1.json"))
+    let freshId = UUID().uuidString.lowercased()
+    let freshWriter = LinkedTraceWriter(containerURL: relaunchRoot)
+    _ = try freshWriter.startSession(sessionId: freshId, nonce: nonce)
+    precondition(freshWriter.status().sessionId == freshId)
+    precondition(!FileManager.default.fileExists(atPath: abandonedDirectory.appendingPathComponent("production.ndjson").path))
+    precondition(FileManager.default.fileExists(atPath: relaunchRoot.appendingPathComponent("linked-trace-active-v1.json").path))
+    _ = try freshWriter.stopSession(sessionId: freshId, nonce: nonce)
+    let relaunchSaved = freshWriter.finalizedSessions().map(\.sessionId)
+    precondition(relaunchSaved.contains(freshId) && !relaunchSaved.contains(abandonedId))
 
     let limitedRoot = root.appendingPathComponent("limited", isDirectory: true)
     try FileManager.default.createDirectory(at: limitedRoot, withIntermediateDirectories: true)

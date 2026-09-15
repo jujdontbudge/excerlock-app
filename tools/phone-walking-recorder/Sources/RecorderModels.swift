@@ -208,6 +208,18 @@ struct LinkedTraceRecovery: Codable, Equatable, Identifiable {
     }
 }
 
+/// The recorder's one reminder-removal path. The protected one-time link is
+/// not a "saved" record: Trace Lab may have saved the trace, or the operator
+/// may have cancelled the test there, and in both cases the recorder only
+/// drops its reminder after an explicit confirmation that Trace Lab no longer
+/// needs the test. The recording archive itself always stays on this phone.
+enum RecorderLinkedReminderCopy {
+    static let removeAction = "Remove this reminder"
+    static let removeConfirmation = "Remove this reminder only after Trace Lab has saved or cancelled the test. Your recording stays on this phone."
+    static let confirmAction = "Remove reminder"
+    static let cancelAction = "Keep it"
+}
+
 /// One durable linked recovery with the fields the card needs to pick the
 /// current test: when it started, and whether the Recorder archive is already
 /// finalized (that archive only waits for Trace Lab, so it is deprioritized).
