@@ -497,18 +497,12 @@ final class CaptureController: NSObject, ObservableObject {
     }
 
     func delete(_ session: SessionSummary) {
-        // Every pending linked recovery protects its own archive, not only the
-        // one the reminder card currently surfaces: older unfinished tests keep
-        // their protected one-time link and must stay undeletable until that
-        // test's own recovery is explicitly cleared.
-        guard !repository.pendingLinkedTraceRecoveries.contains(where: { $0.sessionId == session.id }) else {
-            notice = SessionRepositoryError.protectedLinkedRecovery(sessionId: session.id).errorDescription
-            return
-        }
+        // The archive store is the single authority for the protected-archive
+        // refusal: it re-reads every pending linked recovery from disk, so no
+        // in-memory list - fresh or stale - can be bypassed or wrongly trusted.
         do {
             try repository.delete(session)
         } catch let error as SessionRepositoryError {
-            // The durable state changed between the check and the removal.
             notice = error.errorDescription
         } catch {
             notice = "Could not delete that session: \(error.localizedDescription)"

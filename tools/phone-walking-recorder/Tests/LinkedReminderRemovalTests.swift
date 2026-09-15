@@ -201,6 +201,46 @@ final class LinkedReminderRemovalTests: XCTestCase {
         XCTAssertFalse(try snapshot(root).keys.contains("\(newerId).walkingcapture/manifest.json"))
     }
 
+    /// The store is the single authority for the protected-archive refusal: the
+    /// controller keeps no duplicate pre-check, so a protected one-time link
+    /// that arrived after its last read (another process finalized the test)
+    /// is still refused, through the repository's typed error, and the archive
+    /// survives untouched.
+    @MainActor
+    func testControllerSurfacesTheRepositoryRefusalForARecoveryItHasNotReadYet() throws {
+        let root = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let id = "55555555-5555-4555-8555-555555555555"
+        // The controller reads its pending recoveries before this archive and
+        // its protected link exist on disk.
+        let controller = CaptureController(repository: SessionRepository(baseURL: root), clock: SystemCaptureClock())
+        XCTAssertTrue(controller.repository.pendingLinkedTraceRecoveries.isEmpty)
+        let clock = SystemCaptureClock()
+        let writer = try SessionWriter(
+            baseURL: root,
+            id: id,
+            startedAt: clock.now(),
+            metadata: ["schemaVersion": 1],
+            clock: clock,
+            linkedTraceRecovery: LinkedTraceRecovery(sessionId: id, nonce: nonce)
+        )
+        try writer.append(channel: .system, type: "session_start", payload: ["test": true], critical: true)
+        let session = try writer.finalize(status: .completed, timeline: LabelTimeline(), gapCount: 0)
+        // The in-memory list is stale by construction; the durable file is not.
+        XCTAssertTrue(controller.repository.pendingLinkedTraceRecoveries.isEmpty)
+        let before = try snapshot(root)
+
+        controller.delete(session)
+
+        XCTAssertEqual(controller.notice, protectedNotice(id))
+        XCTAssertEqual(try snapshot(root), before)
+        // Nothing was removed: a fresh read still sees both the archive and the
+        // protected one-time link that refused the deletion.
+        controller.refreshEnvironment()
+        XCTAssertTrue(controller.repository.sessions.contains { $0.id == id })
+        XCTAssertEqual(controller.pendingLinkedTraceRecovery?.sessionId, id)
+    }
+
     /// The archive store refuses a protected deletion itself, naming the
     /// specific test, so no caller can bypass the controller guard.
     @MainActor

@@ -42,7 +42,7 @@ case "${mode}" in
   review) echo "Walking Recorder finished the ground truth"; echo "Save trace file";;
   expired) echo "Two-hour limit reached"; echo "No longer exportable";;
   exported) echo "Saved tests on this phone"; echo "Share trace file";;
-  recorder) echo "Walking Recorder"; echo "Recording on this phone"; echo "Notice: Test running late — the recorder keeps this session on this phone."; echo "Finish test";;
+  recorder) echo "Walking Recorder"; echo "Recording on this phone"; echo "A recording is already running on this phone. Finish and save it, then start the linked test from Trace Lab."; echo "Finish test";;
   notice) echo "Walking Recorder"; echo "Motion & Fitness was not allowed. No recording was started.";;
   late-screen)
     dir="$(dirname "$2")"

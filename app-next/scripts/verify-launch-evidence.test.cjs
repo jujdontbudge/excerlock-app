@@ -98,12 +98,14 @@ const HOME_SCREEN = ['9:41', 'ExcerLock Trace Lab', 'Walking Recorder', 'Camera'
 
 // Walking Recorder's own screen while it records: it is the app the operator
 // switches to, so its text must never count as Trace Lab launch evidence. The
-// notice deliberately repeats generic phrases Trace Lab also renders.
+// notice is the recorder's exact neutral refusal for a link that arrives while
+// it already records, and it deliberately repeats generic phrases Trace Lab
+// also renders.
 const WALKING_RECORDER_SCREEN = [
   '9:41',
   'Walking Recorder',
   'Recording on this phone',
-  'Notice: Test running late — the recorder keeps this session on this phone.',
+  'A recording is already running on this phone. Finish and save it, then start the linked test from Trace Lab.',
   'What are you doing now?',
   'Walking',
   'Sitting',
@@ -111,17 +113,63 @@ const WALKING_RECORDER_SCREEN = [
   'Finish test',
 ].join('\n');
 
-// The recorder's real notices, verbatim from CaptureController. A notice must
-// never look like a Trace Lab phase, however generic its wording.
+// The recorder's real notices, verbatim from CaptureController and the archive
+// error descriptions. `value` stands for a Swift string interpolation, which is
+// always a stream name, an error description, or an 8-character test id: the
+// launch gate must reject every rendered notice, however generic its wording.
+// The derivation test below re-reads these from the Swift copy owners, so a
+// stale or invented entry fails instead of silently testing older copy.
 const WALKING_RECORDER_NOTICES = [
   'Motion & Fitness was not allowed. No recording was started.',
   'That recording is not on this phone any more. Export it before deleting it next time.',
   'That link is not a valid linked test. Nothing was started.',
-  'Another linked test is already recording. Finish it before starting a new one.',
+  'A recording is already running on this phone. Finish and save it, then start the linked test from Trace Lab.',
+  'This linked test is already recorded on this phone. Use the linked-test card above to finish it in Trace Lab.',
+  'This linked test is already recorded on this phone. Finish the newest unfinished test in Trace Lab first; nothing new was started.',
+  'This linked test already has a saved recording on this phone. Nothing new was started.',
+  'A previous attempt to record this test did not finish. Nothing was overwritten; start the test again in Trace Lab.',
   'Could not reopen the linked trace.',
   'ExcerLock Trace Lab is not installed. The protected recovery link remains on this phone.',
-  'Finalize or explicitly abandon the linked Trace Lab session before deleting this Recorder archive.',
-].map((notice) => ['9:41', 'Walking Recorder', 'Ready to record', notice, 'Finish test'].join('\n'));
+  'ExcerLock Trace Lab is not installed. This recording is still saved locally.',
+  'Could not clear the protected recovery link: value',
+  'Export failed: value',
+  'Could not delete that session: value',
+  'Allow Motion & Fitness, then tap the activity again.',
+  'Allow Motion & Fitness and this linked test starts on its own.',
+  'Motion & Fitness is off. Open Settings to allow it; no recording was started.',
+  'Motion & Fitness is restricted on this phone, so recording cannot start.',
+  'Required sensors are unavailable: value. No recording was started.',
+  'Not enough free space for a safe recording. Delete a saved session first.',
+  'Recorder storage is full. Export and delete a saved session before starting.',
+  'Recording did not start: value',
+  'A recording with this session already exists on this phone. Nothing was overwritten.',
+  'The final boundary could not be written: value',
+  'Session saved on this phone.',
+  'The session stopped, but final saving needs attention: value',
+  'value reported an error. The gap was saved.',
+  'This recording reached its 250 MB safety limit. It was stopped and kept.',
+  'The recording file is already closed.',
+  'A sensor event could not be encoded.',
+  'This archive still backs linked Trace Lab test value…. Finish that test in Trace Lab, then remove its protected reminder before deleting the archive.',
+];
+
+// The reminder card and its confirmed removal path, verbatim from
+// RecorderLinkedReminderCopy. None of it may read as a Trace Lab phase either.
+const WALKING_RECORDER_REMINDER_COPY = [
+  'Linked test recorded here',
+  'Test value… was recorded here. Trace Lab does not report back whether it saved or cancelled that test, so this protected one-time link stays on this phone until you remove it.',
+  'Open Trace Lab to save it or check it. The one-time link stays in a protected file, stays out of every export, and survives a relaunch until you clear it.',
+  'Open Trace Lab',
+  'Remove this reminder',
+  'Remove this reminder only after Trace Lab has saved or cancelled the test. Your recording stays on this phone.',
+  'Remove reminder',
+  'Keep it',
+];
+
+// Every string the recorder can render, as a full screen transcript.
+const WALKING_RECORDER_COPY = [...WALKING_RECORDER_NOTICES, ...WALKING_RECORDER_REMINDER_COPY].map(
+  (text) => ['9:41', 'Walking Recorder', 'Ready to record', text, 'Finish test'].join('\n'),
+);
 
 // Walking Recorder's saved-sessions screen deliberately reuses the phrase
 // "Saved on this phone", so marker matching must not treat that phrase alone
@@ -155,6 +203,65 @@ const UNRELATED_METRO_TEXT = [
   'Start metronome',
 ].join('\n');
 const UNRELATED_METRO_STATION_TEXT = ['9:41', 'Maps', 'Metro station', 'King\u2019s Cross', 'Kilometro 12'].join('\n');
+
+// The recorder copy lives in Swift, which no JavaScript test can import, so the
+// fixtures above are duplicates of the declared strings. They are not taken on
+// trust: these helpers read the copy owners and derive every double-quoted
+// literal they declare, with `\(interpolation)` folded to one `value` word, so
+// the tests below exercise the current copy and fail on a stale fixture.
+// Deriving strings never claims Swift behavior; the assertions stay about this
+// executable classifier's answer for text the recorder can actually render.
+const RECORDER_COPY_SOURCES = ['RecorderModels.swift', 'CaptureController.swift', 'SessionArchive.swift'].map((name) =>
+  path.join(__dirname, '..', '..', 'tools', 'phone-walking-recorder', 'Sources', name),
+);
+
+/** Every double-quoted Swift literal in `source`, interpolation values folded. */
+function swiftStringLiterals(source) {
+  const literals = [];
+  for (let index = 0; index < source.length; index += 1) {
+    if (source[index] !== '"') continue;
+    let value = '';
+    index += 1;
+    while (index < source.length && source[index] !== '"') {
+      if (source[index] === '\\') {
+        const next = source[index + 1];
+        if (next === '(') {
+          // `\( ... )` interpolation: skip to its matching close paren.
+          let depth = 0;
+          index += 1;
+          do {
+            if (source[index] === '(') depth += 1;
+            else if (source[index] === ')') depth -= 1;
+            index += 1;
+          } while (index < source.length && depth > 0);
+          value += 'value';
+          continue;
+        }
+        value += next === 'n' ? ' ' : next;
+        index += 2;
+        continue;
+      }
+      value += source[index];
+      index += 1;
+    }
+    literals.push(value);
+  }
+  return literals;
+}
+
+/** Every distinct string literal the recorder's copy owners declare. */
+function deriveRecorderCopy() {
+  const copy = new Set();
+  for (const file of RECORDER_COPY_SOURCES) {
+    for (const literal of swiftStringLiterals(fs.readFileSync(file, 'utf8'))) copy.add(literal);
+  }
+  return [...copy];
+}
+
+/** One fresh recorder screen that shows only `text` as its notice. */
+function recorderScreenFor(text) {
+  return ['9:41', 'Walking Recorder', 'Ready to record', text, 'Finish test'].join('\n');
+}
 
 const STATUS_BAR_ONLY = '9:41\n';
 const EMPTY = '';
@@ -210,10 +317,10 @@ test('a single generic line is never launch evidence', () => {
   }
 });
 
-test('every real Walking Recorder notice is unobserved launch evidence', () => {
-  for (const transcript of WALKING_RECORDER_NOTICES) {
-    assert.equal(detectResearchPhase(transcript), null, `notice passed: ${transcript}`);
-    assert.equal(classifyLaunchEvidence(transcript), 'unobserved', `notice passed: ${transcript}`);
+test('every real Walking Recorder notice and reminder string is unobserved launch evidence', () => {
+  for (const transcript of WALKING_RECORDER_COPY) {
+    assert.equal(detectResearchPhase(transcript), null, `recorder copy passed: ${transcript}`);
+    assert.equal(classifyLaunchEvidence(transcript), 'unobserved', `recorder copy passed: ${transcript}`);
   }
 });
 
@@ -224,6 +331,25 @@ test('the observation is case-insensitive and survives OCR noise around it', () 
   // OCR often renders the heading's middle dot and smart dashes differently.
   const noisy = text.replace(/·/g, '*').replace(/—/g, '-');
   assert.equal(classifyLaunchEvidence(noisy), 'observed');
+});
+
+test('the recorder copy fixtures are the exact strings the Swift sources declare', () => {
+  const declared = new Set(deriveRecorderCopy());
+  for (const text of [...WALKING_RECORDER_NOTICES, ...WALKING_RECORDER_REMINDER_COPY]) {
+    assert.ok(declared.has(text), `stale recorder fixture, not declared by the copy owners: ${JSON.stringify(text)}`);
+  }
+});
+
+test('every string the recorder can render is rejected as Trace Lab evidence', () => {
+  const copy = deriveRecorderCopy();
+  // The owners declare far more than the hand-written fixtures; the derived set
+  // is the recorder's whole screen vocabulary, not a second fixture list.
+  assert.ok(copy.length >= 100, `expected the copy owners to declare many strings, got ${copy.length}`);
+  for (const text of copy) {
+    const screen = recorderScreenFor(text);
+    assert.equal(detectResearchPhase(screen), null, `recorder copy passed: ${JSON.stringify(text)}`);
+    assert.equal(classifyLaunchEvidence(screen), 'unobserved', `recorder copy passed: ${JSON.stringify(text)}`);
+  }
 });
 
 test('blank, crashed-to-Home, Walking Recorder, and empty OCR reads are unobserved', () => {
@@ -303,7 +429,7 @@ test('every unobserved launch outcome exits 1 and keeps its reason on stderr', (
     [HOME_SCREEN, /no Trace Lab research screen/],
     [WALKING_RECORDER_SCREEN, /no Trace Lab research screen/],
     [WALKING_RECORDER_SAVED_SCREEN, /no Trace Lab research screen/],
-    [WALKING_RECORDER_NOTICES[0], /no Trace Lab research screen/],
+    [WALKING_RECORDER_COPY[0], /no Trace Lab research screen/],
     [UNRELATED_METRO_TEXT, /no Trace Lab research screen/],
     [EMPTY, /is empty/],
   ];
