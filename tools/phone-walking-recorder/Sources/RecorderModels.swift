@@ -230,6 +230,20 @@ enum RecorderLinkedReminderCopy {
     static let cancelAction = "Keep it"
 }
 
+/// Why a delivered linked test cannot start on this phone right now.
+///
+/// The refusal must be true for every kind of recording the phone may already
+/// be running: an ordinary labeled session or a different linked test. It never
+/// claims the running recording is linked, and it names the one action that
+/// clears the refusal.
+enum RecorderLinkedStartRefusal {
+    static let activeRecording = "A recording is already running on this phone. Finish and save it, then start the linked test from Trace Lab."
+
+    static func shouldRefuse(isRecording: Bool, linkedSessionIdMatches: Bool) -> Bool {
+        isRecording && !linkedSessionIdMatches
+    }
+}
+
 /// One durable linked recovery with the fields the card needs to pick the
 /// current test: when it started, and whether the Recorder archive is already
 /// finalized (that archive only waits for Trace Lab, so it is deprioritized).

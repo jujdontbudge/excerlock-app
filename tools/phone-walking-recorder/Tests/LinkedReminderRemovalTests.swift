@@ -45,6 +45,30 @@ final class LinkedReminderRemovalTests: XCTestCase {
         return CaptureController(repository: SessionRepository(baseURL: root), clock: SystemCaptureClock())
     }
 
+    /// A finalized linked archive with its own protected recovery still waiting,
+    /// so a deletion attempt against it must be refused.
+    private func writeRecoverableArchive(root: URL, id: String, startedAtWallTimeMs: Int64) throws {
+        let clock = SystemCaptureClock()
+        let writer = try SessionWriter(
+            baseURL: root,
+            id: id,
+            startedAt: CaptureStamp(
+                monotonicNs: UInt64(max(0, startedAtWallTimeMs)),
+                wallTimeMs: startedAtWallTimeMs,
+                wallTimeISO8601: "2023-11-14T22:13:20Z"
+            ),
+            metadata: ["schemaVersion": 1],
+            clock: clock,
+            linkedTraceRecovery: LinkedTraceRecovery(sessionId: id, nonce: nonce)
+        )
+        try writer.append(channel: .system, type: "session_start", payload: ["test": true], critical: true)
+        _ = try writer.finalize(status: .completed, timeline: LabelTimeline(), gapCount: 0)
+    }
+
+    private func protectedNotice(_ id: String) -> String {
+        "This archive still backs linked Trace Lab test \(String(id.prefix(8)))…. Finish that test in Trace Lab, then remove its protected reminder before deleting the archive."
+    }
+
     func testRemovalCopyIsNeutralAndExplainsTheInlineConfirmation() {
         // The old "I already saved it in Trace Lab" dismissal was false after a
         // Trace Lab cancellation. The action is now a neutral reminder removal,
@@ -125,6 +149,96 @@ final class LinkedReminderRemovalTests: XCTestCase {
         // streams, and the card can no longer offer removal.
         XCTAssertTrue(controller.repository.sessions.contains { $0.id == sessionId })
         XCTAssertNotNil(after["\(sessionId).walkingcapture/manifest.json"])
+    }
+
+    /// Every pending linked recovery protects its own archived recording, not
+    /// only the one reminder the card can display at a time. An older
+    /// undisplayed protection must survive a delete attempt, and each archive
+    /// becomes deletable only after its own recovery is explicitly cleared.
+    @MainActor
+    func testEveryPendingRecoveryProtectsItsOwnArchiveNotOnlyTheDisplayedReminder() throws {
+        let root = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let olderId = "11111111-1111-4111-8111-111111111111"
+        let newerId = "22222222-2222-4222-8222-222222222222"
+        try writeRecoverableArchive(root: root, id: olderId, startedAtWallTimeMs: 1_700_000_000_000)
+        try writeRecoverableArchive(root: root, id: newerId, startedAtWallTimeMs: 1_700_000_600_000)
+        let repository = SessionRepository(baseURL: root)
+        let controller = CaptureController(repository: repository, clock: SystemCaptureClock())
+
+        // The card can only show one reminder, and the newest test leads it.
+        XCTAssertEqual(controller.pendingLinkedTraceRecovery?.sessionId, newerId)
+        let older = try XCTUnwrap(repository.sessions.first { $0.id == olderId })
+        let newer = try XCTUnwrap(repository.sessions.first { $0.id == newerId })
+        let before = try snapshot(root)
+
+        // The older, undisplayed recovery still protects its own archive.
+        controller.delete(older)
+        XCTAssertEqual(controller.notice, protectedNotice(olderId))
+        XCTAssertEqual(try snapshot(root), before)
+        XCTAssertTrue(controller.repository.sessions.contains { $0.id == olderId })
+
+        // The displayed reminder's archive is protected the same way.
+        controller.delete(newer)
+        XCTAssertEqual(controller.notice, protectedNotice(newerId))
+        XCTAssertEqual(try snapshot(root), before)
+
+        // Clearing only the older test's own recovery makes only the older
+        // archive deletable; the newer one stays protected.
+        try repository.clearLinkedTraceRecovery(sessionId: olderId)
+        controller.delete(older)
+        let afterOlderDelete = try snapshot(root)
+        XCTAssertFalse(afterOlderDelete.keys.contains("\(olderId).walkingcapture/manifest.json"))
+        XCTAssertTrue(afterOlderDelete.keys.contains("\(newerId).walkingcapture/manifest.json"))
+        XCTAssertEqual(repository.pendingLinkedTraceRecoveries.map(\.sessionId), [newerId])
+
+        // The newer archive becomes deletable only after its own reminder is
+        // explicitly cleared through the confirmation path.
+        controller.requestLinkedReminderRemoval()
+        controller.confirmLinkedReminderRemoval()
+        XCTAssertNil(controller.pendingLinkedTraceRecovery)
+        controller.delete(newer)
+        XCTAssertFalse(try snapshot(root).keys.contains("\(newerId).walkingcapture/manifest.json"))
+    }
+
+    /// The archive store refuses a protected deletion itself, naming the
+    /// specific test, so no caller can bypass the controller guard.
+    @MainActor
+    func testRepositoryRefusesToDeleteAnArchiveWithItsOwnPendingRecovery() throws {
+        let root = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let protectedId = "33333333-3333-4333-8333-333333333333"
+        let freeId = "44444444-4444-4444-8444-444444444444"
+        try writeRecoverableArchive(root: root, id: protectedId, startedAtWallTimeMs: 1_700_000_000_000)
+        // A second finalized archive without a linked recovery must stay
+        // deletable, so the guard is specific and not a blanket refusal.
+        let clock = SystemCaptureClock()
+        let plain = try SessionWriter(
+            baseURL: root,
+            id: freeId,
+            startedAt: clock.now(),
+            metadata: ["schemaVersion": 1],
+            clock: clock
+        )
+        try plain.append(channel: .system, type: "session_start", payload: ["test": true], critical: true)
+        _ = try plain.finalize(status: .completed, timeline: LabelTimeline(), gapCount: 0)
+        let repository = SessionRepository(baseURL: root)
+        let protectedSession = try XCTUnwrap(repository.sessions.first { $0.id == protectedId })
+        let freeSession = try XCTUnwrap(repository.sessions.first { $0.id == freeId })
+        let before = try snapshot(root)
+
+        XCTAssertThrowsError(try repository.delete(protectedSession)) { error in
+            XCTAssertEqual(error as? SessionRepositoryError, .protectedLinkedRecovery(sessionId: protectedId))
+            XCTAssertEqual(error.localizedDescription, protectedNotice(protectedId))
+        }
+        XCTAssertEqual(try snapshot(root), before)
+
+        XCTAssertNoThrow(try repository.delete(freeSession))
+        XCTAssertFalse(try snapshot(root).keys.contains("\(freeId).walkingcapture/manifest.json"))
+        XCTAssertTrue(try snapshot(root).keys.contains("\(protectedId).walkingcapture/manifest.json"))
+
+        try repository.clearLinkedTraceRecovery(sessionId: protectedId)
+        XCTAssertNoThrow(try repository.delete(protectedSession))
     }
 
     func testRemovalAfterTheReminderIsGoneIsAnIdempotentNoOp() throws {

@@ -225,6 +225,19 @@ test('confirms before deleting a saved trace and keeps the next test startable',
   expect(await screen.findByRole('button', { name: 'Start test' })).toBeEnabled();
 });
 
+test('explains the recorder recovery for a still-recording and an already-finished recorder', async () => {
+  mockLinkedTrace.status.mockResolvedValue(activeStatus);
+  await render(<LinkedTraceScreen />);
+
+  expect(await screen.findByText('Recording on this phone')).toBeTruthy();
+  // Both interruption cases are named: finish in the recorder while it still
+  // records, or use its neutral reminder card once it already finished.
+  expect(screen.getByText(/Still recording\? Tap Finish test there\./)).toBeTruthy();
+  expect(screen.getByText(/Already finished\? Tap Open Trace Lab on its “Linked test recorded here” card\./)).toBeTruthy();
+  expect(screen.getByText(/Either way this screen comes back so you can save the trace\./)).toBeTruthy();
+  expect(screen.queryByText(/Its recovery card brings this screen back/)).toBeNull();
+});
+
 test('keeps a running test recoverable while Trace Lab has no link', async () => {
   const user = userEvent.setup();
   mockLinkedTrace.status.mockResolvedValue(activeStatus);

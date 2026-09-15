@@ -27,6 +27,47 @@ struct LinkedTraceWriterHarness {
     precondition(!LinkedTraceLifecyclePolicy.shouldInstallObservers(observerCount: 0, sessionActive: false))
     precondition(!LinkedTraceLifecyclePolicy.shouldInstallObservers(observerCount: 4, sessionActive: true))
 
+    // One status read feeds reconciliation: the same active value that decides
+    // whether observers install also builds the screen payload, so a status
+    // poll never performs a second writer lock/prune read.
+    var statusReads = 0
+    var observerInstalls = 0
+    let reconciledActive = LinkedTraceLifecyclePolicy.readStatusAndReconcile(
+      observerCount: 0,
+      readStatus: { () -> LinkedTraceStatus in
+        statusReads += 1
+        return LinkedTraceStatus(active: true, sessionId: "reconciled", expiresAtWallTimeMs: 1, truncated: false)
+      },
+      isActive: { $0.active },
+      installObservers: { observerInstalls += 1 }
+    )
+    precondition(statusReads == 1, "an active status was read \(statusReads) times, not once")
+    precondition(observerInstalls == 1, "an active status with no observers did not reconcile")
+    precondition(reconciledActive.active)
+
+    var inactiveReads = 0
+    let reconciledInactive = LinkedTraceLifecyclePolicy.readStatusAndReconcile(
+      observerCount: 0,
+      readStatus: { () -> LinkedTraceStatus in
+        inactiveReads += 1
+        return LinkedTraceStatus(active: false, sessionId: nil, expiresAtWallTimeMs: nil, truncated: false)
+      },
+      isActive: { $0.active },
+      installObservers: { observerInstalls += 1 }
+    )
+    precondition(inactiveReads == 1, "an inactive status was read \(inactiveReads) times, not once")
+    precondition(observerInstalls == 1, "an inactive status installed observers")
+    precondition(!reconciledInactive.active)
+
+    let reconciledObserved = LinkedTraceLifecyclePolicy.readStatusAndReconcile(
+      observerCount: 4,
+      readStatus: { LinkedTraceStatus(active: true, sessionId: "reconciled", expiresAtWallTimeMs: 1, truncated: false) },
+      isActive: { $0.active },
+      installObservers: { observerInstalls += 1 }
+    )
+    precondition(observerInstalls == 1, "an already-observed active status reinstalled observers")
+    precondition(reconciledObserved.active)
+
     let sessionId = UUID().uuidString.lowercased()
     let nonce = String(repeating: "ab", count: 32)
     let writer = LinkedTraceWriter(containerURL: root, sessionLimitBytes: 1_000_000, totalLimitBytes: 2_000_000)

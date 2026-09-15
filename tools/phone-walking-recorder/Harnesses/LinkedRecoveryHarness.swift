@@ -56,8 +56,29 @@ struct LinkedRecoveryHarness {
         }
         repository.reload()
         precondition(repository.pendingLinkedTraceRecoveries.count == 3)
+
+        // Every pending recovery protects its own archive at the repository
+        // level, so a caller that goes around the controller still cannot
+        // delete the saved ground truth out from under its protected link.
+        do {
+            try repository.delete(interrupted)
+            preconditionFailure("a protected linked archive was deleted")
+        } catch SessionRepositoryError.protectedLinkedRecovery(let sessionId) {
+            precondition(sessionId == interruptedId)
+            precondition(
+                (SessionRepositoryError.protectedLinkedRecovery(sessionId: interruptedId).errorDescription ?? "")
+                    .contains(String(interruptedId.prefix(8))),
+                "the refusal must name the specific protected test"
+            )
+        }
+        precondition(repository.sessions.contains { $0.id == interruptedId })
+
         try repository.clearLinkedTraceRecovery(sessionId: interruptedId)
         precondition(!repository.pendingLinkedTraceRecoveries.contains(where: { $0.sessionId == interruptedId }))
+        // Clearing that test's own recovery, and only that one, makes its
+        // archive deletable while the other protected archives stay refused.
+        try repository.delete(interrupted)
+        precondition(!repository.sessions.contains { $0.id == interruptedId })
 
         // Actionable ordering: the newest unfinished test is surfaced first, an
         // already-finalized archive that only waits for Trace Lab follows, and

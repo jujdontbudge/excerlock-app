@@ -271,8 +271,9 @@ final class CaptureController: NSObject, ObservableObject {
     /// with no activity label. Labels stay the operator's honest input.
     func startLinkedSession(sessionId: String, nonce: String) {
         if isRecording {
-            if linkedSessionID == sessionId { notice = nil }
-            else { notice = "Another linked test is already recording. Finish it before starting a new one." }
+            notice = RecorderLinkedStartRefusal.shouldRefuse(isRecording: true, linkedSessionIdMatches: linkedSessionID == sessionId)
+                ? RecorderLinkedStartRefusal.activeRecording
+                : nil
             return
         }
         guard mode != .preparing, mode != .saving else { return }
@@ -496,12 +497,19 @@ final class CaptureController: NSObject, ObservableObject {
     }
 
     func delete(_ session: SessionSummary) {
-        guard pendingLinkedTraceRecovery?.sessionId != session.id else {
-            notice = "Finalize or explicitly abandon the linked Trace Lab session before deleting this Recorder archive."
+        // Every pending linked recovery protects its own archive, not only the
+        // one the reminder card currently surfaces: older unfinished tests keep
+        // their protected one-time link and must stay undeletable until that
+        // test's own recovery is explicitly cleared.
+        guard !repository.pendingLinkedTraceRecoveries.contains(where: { $0.sessionId == session.id }) else {
+            notice = SessionRepositoryError.protectedLinkedRecovery(sessionId: session.id).errorDescription
             return
         }
         do {
             try repository.delete(session)
+        } catch let error as SessionRepositoryError {
+            // The durable state changed between the check and the removal.
+            notice = error.errorDescription
         } catch {
             notice = "Could not delete that session: \(error.localizedDescription)"
         }

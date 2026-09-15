@@ -26,6 +26,19 @@ enum SessionWriterError: LocalizedError, Equatable {
     }
 }
 
+/// Refusals from the archive store itself, so a caller cannot bypass a guard by
+/// deleting through the repository instead of the controller.
+enum SessionRepositoryError: LocalizedError, Equatable {
+    case protectedLinkedRecovery(sessionId: String)
+
+    var errorDescription: String? {
+        switch self {
+        case .protectedLinkedRecovery(let sessionId):
+            return "This archive still backs linked Trace Lab test \(String(sessionId.prefix(8)))…. Finish that test in Trace Lab, then remove its protected reminder before deleting the archive."
+        }
+    }
+}
+
 final class SessionWriter {
     let id: String
     let directoryURL: URL
@@ -531,7 +544,15 @@ final class SessionRepository: ObservableObject {
         return values?.volumeAvailableCapacityForImportantUsage
     }
 
+    /// Deleting a saved archive is refused while any of its own pending linked
+    /// recoveries is still protected, not only the recovery the card currently
+    /// displays. The pending set is read from durable files here, so a stale
+    /// in-memory list can never drop the protected one-time link.
     func delete(_ session: SessionSummary) throws {
+        let protectedIds = Set(SessionWriter.pendingLinkedTraceRecoveries(baseURL: baseURL).map(\.sessionId))
+        guard !protectedIds.contains(session.id) else {
+            throw SessionRepositoryError.protectedLinkedRecovery(sessionId: session.id)
+        }
         let url = baseURL.appendingPathComponent(session.directoryName, isDirectory: true)
         guard url.deletingLastPathComponent().standardizedFileURL == baseURL.standardizedFileURL else { return }
         try FileManager.default.removeItem(at: url)

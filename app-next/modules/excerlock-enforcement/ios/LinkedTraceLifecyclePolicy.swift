@@ -17,4 +17,24 @@ enum LinkedTraceLifecyclePolicy {
   static func shouldInstallObservers(observerCount: Int, sessionActive: Bool) -> Bool {
     observerCount == 0 && sessionActive
   }
+
+  /// One status read feeds both the screen payload and the observer
+  /// reconciliation. Reading the writer again just to decide whether observers
+  /// must be installed would repeat the same lock/prune work, and the two reads
+  /// could disagree; this composition reads exactly once and passes that same
+  /// status into the decision. The caller receives the identical value it just
+  /// read, so the payload can never be built from a different snapshot than the
+  /// one used for reconciliation.
+  static func readStatusAndReconcile<Status>(
+    observerCount: Int,
+    readStatus: () -> Status,
+    isActive: (Status) -> Bool,
+    installObservers: () -> Void
+  ) -> Status {
+    let status = readStatus()
+    if shouldInstallObservers(observerCount: observerCount, sessionActive: isActive(status)) {
+      installObservers()
+    }
+    return status
+  }
 }

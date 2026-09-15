@@ -474,7 +474,9 @@ export function LinkedTraceScreen() {
             onPress={() => void openRecorder(startedLink ? walkingRecorderSessionLink(startedLink) : walkingRecorderAppLink())}
           />
           <Label tone="secondary">
-            If Trace Lab was closed, open Walking Recorder from the Home Screen and tap Finish test there. Its recovery card brings this screen back.
+            If you left Trace Lab, open Walking Recorder from the Home Screen. Still recording? Tap Finish test there. Already
+            finished? Tap Open Trace Lab on its “Linked test recorded here” card. Either way this screen comes back so you can save
+            the trace.
           </Label>
           <Label tone="secondary">
             If Walking Recorder never started this test, or it cannot be finished, cancel it below and start clean. Cancelling saves nothing.

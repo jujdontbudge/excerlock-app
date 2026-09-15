@@ -30,6 +30,23 @@ final class LinkedDeliveryIdempotenceTests: XCTestCase {
         return result
     }
 
+    /// The refusal for a delivery that arrives while this phone is already
+    /// recording must be true for an ordinary labeled session and for a
+    /// different linked test alike. It may not claim the running recording is
+    /// itself a linked test, and it names the one action that clears it.
+    func testActiveRecordingRefusalIsNeutralAboutOrdinaryAndLinkedRecordings() {
+        XCTAssertTrue(RecorderLinkedStartRefusal.shouldRefuse(isRecording: true, linkedSessionIdMatches: false))
+        XCTAssertFalse(RecorderLinkedStartRefusal.shouldRefuse(isRecording: true, linkedSessionIdMatches: true))
+        XCTAssertFalse(RecorderLinkedStartRefusal.shouldRefuse(isRecording: false, linkedSessionIdMatches: false))
+
+        let copy = RecorderLinkedStartRefusal.activeRecording
+        XCTAssertFalse(copy.localizedCaseInsensitiveContains("linked test is already recording"))
+        XCTAssertFalse(copy.localizedCaseInsensitiveContains("another linked"))
+        XCTAssertTrue(copy.localizedCaseInsensitiveContains("a recording is already running on this phone"))
+        XCTAssertTrue(copy.localizedCaseInsensitiveContains("finish and save it"))
+        XCTAssertTrue(copy.localizedCaseInsensitiveContains("start the linked test from trace lab"))
+    }
+
     func testSessionWriterRefusesToTruncateAnExistingArchive() throws {
         let root = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
