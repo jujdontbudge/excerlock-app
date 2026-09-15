@@ -1,8 +1,11 @@
 // The standalone phone proof must positively observe Trace Lab's research
-// screen after launch. These fixtures are the launch outcomes the executable
-// gate has to classify: the rendered screen passes; a blank screen, a crash
-// back to the Home Screen, an unrelated app screen, the expo-dev-client prompt,
-// an empty OCR pass, and a missing OCR file all fail instead of warning.
+// screen after launch. Installing the standalone build over the existing Trace
+// Lab can legitimately land on any persisted phase, so these fixtures are the
+// launch outcomes the executable gate has to classify: ready, running
+// (active/recovered), review (finished awaiting save), expired, and exported
+// all pass; a blank screen, a crash back to the Home Screen, Walking
+// Recorder's own screen, the expo-dev-client prompt, an empty OCR pass, and a
+// missing OCR file all fail instead of warning.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
@@ -10,31 +13,112 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { classifyLaunchEvidence } = require('./verify-launch-evidence.cjs');
+const { RESEARCH_SCREEN_PHASES, detectResearchPhase, classifyLaunchEvidence } = require('./verify-launch-evidence.cjs');
 
 const SCRIPT = path.join(__dirname, 'verify-launch-evidence.cjs');
 
 // Real copy from LinkedTraceScreen.research.tsx as macOS Vision OCR reads it
-// from a device screenshot.
-const RESEARCH_SCREEN = [
-  '9:41',
-  'ExcerLock Trace Lab',
-  'Linked walking test',
-  'Research build · everything stays on this phone · two-hour limit',
-  'Not recording yet',
-  'No GPS, microphone, camera, raw vectors, or Health history is collected.',
-  'How the test works',
-  '1 Tap Start test. Trace Lab begins the background trace and opens Walking Recorder.',
-  'Ready to start',
-  'Start test',
-].join('\n');
+// from a device screenshot. One fixture per phase the persisted screen can
+// legitimately render after an install-over-existing-data.
+const PHASE_SCREENS = [
+  {
+    phase: 'ready',
+    text: [
+      '9:41',
+      'ExcerLock Trace Lab',
+      'Linked walking test',
+      'Research build · everything stays on this phone · two-hour limit',
+      'Not recording yet',
+      'No GPS, microphone, camera, raw vectors, or Health history is collected.',
+      'How the test works',
+      '1 Tap Start test. Trace Lab begins the background trace and opens Walking Recorder.',
+      'Ready to start',
+      'Start test',
+    ].join('\n'),
+  },
+  {
+    phase: 'running',
+    text: [
+      '9:41',
+      'ExcerLock Trace Lab',
+      'Test running',
+      'Research build · everything stays on this phone · two-hour limit',
+      'Trace Lab is recording in the background',
+      'Recording on this phone',
+      'Trace Lab is in the background, exactly like ExcerLock during a normal walk.',
+      'Open Walking Recorder',
+    ].join('\n'),
+  },
+  {
+    phase: 'review',
+    text: [
+      '9:41',
+      'ExcerLock Trace Lab',
+      'Test finished — save it',
+      'Research build · everything stays on this phone · two-hour limit',
+      'Walking Recorder finished the ground truth',
+      'Save the trace',
+      'Save trace file',
+    ].join('\n'),
+  },
+  {
+    phase: 'expired',
+    text: [
+      '9:41',
+      'ExcerLock Trace Lab',
+      'This test expired',
+      'Research build · everything stays on this phone · two-hour limit',
+      'No longer exportable',
+      'Two-hour limit reached',
+      'Delete expired test',
+    ].join('\n'),
+  },
+  {
+    phase: 'exported',
+    text: [
+      '9:41',
+      'ExcerLock Trace Lab',
+      'Linked walking test',
+      'Research build · everything stays on this phone · two-hour limit',
+      'Saved on this phone',
+      '1 saved test on this phone',
+      'How the test works',
+      'Start test',
+      'Saved tests on this phone',
+      'Latest test 3f9c21ab…',
+      'Share trace file',
+      'Share Walking Recorder archive',
+    ].join('\n'),
+  },
+];
 
-// A crash back to the Home Screen: the launcher label carries the app name but
+// A crash back to the Home Screen: the launcher labels carry the app names but
 // none of the research screen.
 const HOME_SCREEN = ['9:41', 'ExcerLock Trace Lab', 'Walking Recorder', 'Camera', 'Photos', 'Maps', 'Settings'].join('\n');
 
-// A different app is in front when the screenshot lands.
-const WRONG_APP_SCREEN = ['9:41', 'Walking Recorder', 'Recording', 'Walking', 'Finish test'].join('\n');
+// Walking Recorder's own screen while it records: it is the app the operator
+// switches to, so its text must never count as Trace Lab launch evidence.
+const WALKING_RECORDER_SCREEN = [
+  '9:41',
+  'Walking Recorder',
+  'Recording',
+  'What are you doing now?',
+  'Walking',
+  'Sitting',
+  'Standing',
+  'Finish test',
+].join('\n');
+
+// Walking Recorder's saved-sessions screen deliberately reuses the phrase
+// "Saved on this phone", so marker matching must not treat that phrase alone
+// as Trace Lab's exported phase.
+const WALKING_RECORDER_SAVED_SCREEN = [
+  '9:41',
+  'Walking Recorder',
+  'Saved on this phone',
+  'Your finished sessions will appear here, ready to share.',
+  'Finish & Save',
+].join('\n');
 
 // The dev-client prompt means the binary booted but asked the Mac for a bundle.
 const DEV_CLIENT_PROMPT = [
@@ -68,17 +152,41 @@ function runCli(...files) {
   }
 }
 
-test('the research screen is the only observed launch evidence', () => {
-  assert.equal(classifyLaunchEvidence(RESEARCH_SCREEN), 'observed');
-  assert.equal(classifyLaunchEvidence(RESEARCH_SCREEN.toUpperCase()), 'observed');
-  assert.equal(classifyLaunchEvidence(`===== launch-1.png\n${RESEARCH_SCREEN}\n`), 'observed');
+test('every legitimate persisted research phase is observed launch evidence', () => {
+  for (const { phase, text } of PHASE_SCREENS) {
+    const detected = detectResearchPhase(text);
+    assert.equal(detected?.phase, phase, `classifier rejected the ${phase} phase`);
+    assert.equal(classifyLaunchEvidence(text), 'observed', `classifier rejected the ${phase} phase`);
+    withFile(text, (file) => {
+      const result = runCli(file);
+      assert.equal(result.status, 0, `${phase}: ${result.stderr}`);
+      assert.match(result.stdout, /VERIFY PASS/);
+      assert.match(result.stdout, new RegExp(`phase "${phase}"`));
+    });
+  }
 });
 
-test('blank, crashed-to-Home, wrong-app, and empty OCR reads are unobserved', () => {
+test('the phase markers are unique and cover every persisted phase', () => {
+  const markers = RESEARCH_SCREEN_PHASES.map((entry) => entry.marker);
+  assert.equal(new Set(markers).size, markers.length);
+  for (const phase of ['running', 'review', 'expired', 'exported', 'ready']) {
+    assert.ok(RESEARCH_SCREEN_PHASES.some((entry) => entry.phase === phase), `no marker for ${phase}`);
+  }
+});
+
+test('the observation is case-insensitive and survives OCR noise around it', () => {
+  const { text } = PHASE_SCREENS[0];
+  assert.equal(classifyLaunchEvidence(text.toUpperCase()), 'observed');
+  assert.equal(classifyLaunchEvidence(`===== launch-1.png\n${text}\n`), 'observed');
+});
+
+test('blank, crashed-to-Home, Walking Recorder, and empty OCR reads are unobserved', () => {
   assert.equal(classifyLaunchEvidence(STATUS_BAR_ONLY), 'unobserved');
   assert.equal(classifyLaunchEvidence(HOME_SCREEN), 'unobserved');
-  assert.equal(classifyLaunchEvidence(WRONG_APP_SCREEN), 'unobserved');
+  assert.equal(classifyLaunchEvidence(WALKING_RECORDER_SCREEN), 'unobserved');
+  assert.equal(classifyLaunchEvidence(WALKING_RECORDER_SAVED_SCREEN), 'unobserved');
   assert.equal(classifyLaunchEvidence(EMPTY), 'unobserved');
+  assert.equal(detectResearchPhase(WALKING_RECORDER_SAVED_SCREEN), null);
 });
 
 test('the dev-client prompt is a terminal failure with its own diagnostic', () => {
@@ -93,19 +201,21 @@ test('the dev-client prompt is a terminal failure with its own diagnostic', () =
 });
 
 test('the command line passes only on positive research-screen evidence', () => {
-  withFile(RESEARCH_SCREEN, (file) => {
+  withFile(PHASE_SCREENS[0].text, (file) => {
     const result = runCli(file);
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /VERIFY PASS/);
+    assert.match(result.stdout, /phase "ready"/);
     assert.match(result.stdout, /How the test works/);
   });
 });
 
 test('every unobserved launch outcome exits 1 and keeps its reason on stderr', () => {
   const cases = [
-    [STATUS_BAR_ONLY, /not on screen/],
-    [HOME_SCREEN, /not on screen/],
-    [WRONG_APP_SCREEN, /not on screen/],
+    [STATUS_BAR_ONLY, /no Trace Lab research screen/],
+    [HOME_SCREEN, /no Trace Lab research screen/],
+    [WALKING_RECORDER_SCREEN, /no Trace Lab research screen/],
+    [WALKING_RECORDER_SAVED_SCREEN, /no Trace Lab research screen/],
     [EMPTY, /is empty/],
   ];
   for (const [text, expected] of cases) {

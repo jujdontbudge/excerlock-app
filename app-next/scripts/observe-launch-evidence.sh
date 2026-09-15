@@ -3,7 +3,9 @@
 #
 # observe_launch_evidence <out-dir> <script-dir> <ocr-python>
 #   Captures a device screenshot, OCRs it with device-ocr.py, and asks
-#   verify-launch-evidence.cjs whether the real research screen was observed.
+#   verify-launch-evidence.cjs whether a real Trace Lab research-screen phase
+#   (ready, running, finished-awaiting-save, expired, or saved list) was
+#   observed.
 #   Retries up to OBSERVE_ATTEMPTS times (default 8) with OBSERVE_INTERVAL
 #   seconds (default 2) between attempts; the first attempt starts immediately,
 #   with no blind pre-wait. Returns 0 as soon as positive evidence is observed,

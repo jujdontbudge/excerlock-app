@@ -2,8 +2,10 @@
 // observe-launch-evidence.sh. A stubbed screenshot command and OCR binary drive
 // the real sourced function on any machine; verify-launch-evidence.cjs stays
 // the real evidence gate. The cases are the outcomes the phone proof must
-// handle: positive evidence, retried unknown screens, a late success, repeated
-// OCR failure, repeated screenshot failure, and the terminal dev-client prompt.
+// handle: a positive read for every legitimate persisted research phase,
+// retried unknown screens, a late success, repeated OCR failure, repeated
+// screenshot failure, Walking Recorder text that must never pass, and the
+// terminal dev-client prompt.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
@@ -35,6 +37,11 @@ function ocrStub(mode) {
 set -euo pipefail
 case "${mode}" in
   screen) echo "ExcerLock Trace Lab"; echo "How the test works";;
+  running) echo "Test running"; echo "Recording on this phone";;
+  review) echo "Test finished — save it"; echo "Save the trace";;
+  expired) echo "This test expired"; echo "Two-hour limit reached";;
+  exported) echo "Saved on this phone"; echo "Saved tests on this phone";;
+  recorder) echo "Walking Recorder"; echo "Saved on this phone"; echo "Finish test";;
   late-screen)
     dir="$(dirname "$2")"
     count_file="$dir/ocr-count"
@@ -96,11 +103,28 @@ function filesOf(out) {
 test('the first positive observation passes immediately with its evidence', () => {
   const result = runScenario({ ocr: 'screen' });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /VERIFY PASS: OCR observed the research screen marker/);
+  assert.match(result.stdout, /VERIFY PASS: OCR observed the Trace Lab research screen \(phase "ready"\)/);
   assert.match(result.stdout, /on attempt 1 of 3/);
   assert.match(result.files['launch-evidence-1.log'], /VERIFY PASS/);
   assert.equal(result.files['launch-2.png'], undefined);
   assert.equal(result.files['launch-evidence-2.log'], undefined);
+});
+
+test('every legitimate persisted research phase passes the production loop', () => {
+  const phases = [['screen', 'ready'], ['running', 'running'], ['review', 'review'], ['expired', 'expired'], ['exported', 'exported']];
+  for (const [mode, phase] of phases) {
+    const result = runScenario({ ocr: mode, attempts: 3 });
+    assert.equal(result.status, 0, `${phase}: ${result.stderr}`);
+    assert.match(result.stdout, new RegExp(`phase "${phase}"`), phase);
+    assert.match(result.stdout, /on attempt 1 of 3/, phase);
+  }
+});
+
+test('Walking Recorder text never counts as Trace Lab launch evidence', () => {
+  const result = runScenario({ ocr: 'recorder', attempts: 2 });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /no positive research-screen evidence in 2 bounded attempts/);
+  assert.match(result.files['launch-evidence-1.log'], /VERIFY FAIL: no Trace Lab research screen/);
 });
 
 test('a late positive observation exits early instead of finishing the bound', () => {
@@ -115,7 +139,7 @@ test('repeated unknown screens exhaust the bound with per-attempt diagnostics', 
   const result = runScenario({ ocr: 'blank' });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /no positive research-screen evidence in 3 bounded attempts \(screenshots failed: 0, OCR failed: 0\)/);
-  assert.match(result.stderr, /last observation: VERIFY FAIL: the guided research screen was not on screen/);
+  assert.match(result.stderr, /last observation: VERIFY FAIL: no Trace Lab research screen was on screen/);
   for (const attempt of [1, 2, 3]) {
     assert.ok(result.files[`launch-${attempt}.png`] !== undefined);
     assert.ok(result.files[`launch-ocr-${attempt}.txt`] !== undefined);
