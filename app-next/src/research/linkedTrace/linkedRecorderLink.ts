@@ -4,8 +4,11 @@ import { getRandomBytes, randomUUID } from 'expo-crypto';
 // a single lab-only link. The recorder keeps the one-time nonce in its own
 // protected recovery file and returns through the Trace Lab scheme, so the
 // nonce never enters an export and never reaches production ExcerLock.
+// Link identity lives in a module the research bundle may import; the build
+// opt-in owner (`linkedRecorderResearchConfig.js`) re-exports these values and
+// keeps the dev-client module names out of this bundle.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const research = require('../../../plugins/linkedRecorderResearchConfig') as typeof import('../../../plugins/linkedRecorderResearchConfig');
+const links = require('../../../plugins/linkedRecorderLinks') as typeof import('../../../plugins/linkedRecorderLinks');
 
 export const LINK_PROTOCOL_VERSION = '1';
 
@@ -47,12 +50,12 @@ export function newLinkedSession(): LinkedHandshake {
 
 function labURL(host: string, query: readonly (readonly [string, string])[]): string {
   const search = query.map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
-  return `${research.WALKING_RECORDER_SCHEME}://${host}?${search}`;
+  return `${links.WALKING_RECORDER_SCHEME}://${host}?${search}`;
 }
 
 /** Opens Walking Recorder for exactly this test. */
 export function walkingRecorderSessionLink(handshake: LinkedHandshake): string {
-  return labURL(research.WALKING_RECORDER_LINK_HOSTS.linkedSession, [
+  return labURL(links.WALKING_RECORDER_LINK_HOSTS.linkedSession, [
     ['sessionId', handshake.sessionId],
     ['nonce', handshake.nonce],
     ['protocolVersion', handshake.protocolVersion],
@@ -61,7 +64,7 @@ export function walkingRecorderSessionLink(handshake: LinkedHandshake): string {
 
 /** Opens Walking Recorder so it can share the archive for this test. */
 export function walkingRecorderArchiveLink(sessionId: string): string {
-  return labURL(research.WALKING_RECORDER_LINK_HOSTS.shareArchive, [['sessionId', sessionId]]);
+  return labURL(links.WALKING_RECORDER_LINK_HOSTS.shareArchive, [['sessionId', sessionId]]);
 }
 
 /**
@@ -69,13 +72,13 @@ export function walkingRecorderArchiveLink(sessionId: string): string {
  * the link: the recorder's own recovery card returns it to this screen.
  */
 export function walkingRecorderAppLink(): string {
-  return `${research.WALKING_RECORDER_SCHEME}://`;
+  return `${links.WALKING_RECORDER_SCHEME}://`;
 }
 
 export function linkedRecorderScheme(): string {
-  return research.WALKING_RECORDER_SCHEME;
+  return links.WALKING_RECORDER_SCHEME;
 }
 
 export function traceLabScheme(): string {
-  return research.URL_SCHEME;
+  return links.URL_SCHEME;
 }

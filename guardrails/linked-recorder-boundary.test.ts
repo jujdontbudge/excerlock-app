@@ -4,7 +4,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { fromRoot, readJson, readUtf8 } from './repo-files';
+import { fromRoot, readJson, readUtf8, walkFiles } from './repo-files';
+
+function walkResearchSources(): string[] {
+  return walkFiles(app('src', 'research'), new Set(['.ts', '.tsx']));
+}
 
 type Eas = { build?: Record<string, unknown> };
 type ExpoConfig = { expo?: { ios?: { bundleIdentifier?: string } } };
@@ -48,7 +52,7 @@ describe('linked recorder research boundary', () => {
     // The guided path has exactly one owner of each lab identifier: the Expo
     // config plugin for the JS side, the recorder's plist/Swift for its own
     // links, and the native preflight for the recorder bundle it must refuse.
-    const config = readUtf8(app('plugins', 'linkedRecorderResearchConfig.js'));
+    const config = readUtf8(app('plugins', 'linkedRecorderLinks.js'));
     const recorderScheme = /WALKING_RECORDER_SCHEME = '([^']+)'/.exec(config)?.[1];
     expect(recorderScheme).toBe('excerlock-walkingrecorder');
     const traceScheme = /URL_SCHEME = '([^']+)'/.exec(config)?.[1];
@@ -64,6 +68,24 @@ describe('linked recorder research boundary', () => {
     expect(project).toContain('PRODUCT_BUNDLE_IDENTIFIER: com.johansardar.excerlock.lab.walkingrecorder');
     const module = readUtf8(app('modules', 'excerlock-enforcement', 'ios', 'ExcerlockEnforcementModule.swift'));
     expect(module).toContain('labWalkingRecorderBundleIdentifier = "com.johansardar.excerlock.lab.walkingrecorder"');
+  });
+
+  it('keeps the research config owner out of the bundled JavaScript', () => {
+    // The artifact verifier scans the Hermes string table for dev-client module
+    // names. `linkedRecorderResearchConfig.js` legitimately names the modules a
+    // standalone build must exclude, so the app imports only the link identity
+    // module; a bundle that pulled the config owner in would look like a
+    // smuggled dev-client module and fail the artifact check.
+    const config = readUtf8(app('plugins', 'linkedRecorderResearchConfig.js'));
+    expect(config).toContain("require('./linkedRecorderLinks')");
+    expect(config).toContain("'expo-dev-launcher'");
+    const linkModule = readUtf8(app('src', 'research', 'linkedTrace', 'linkedRecorderLink.ts'));
+    expect(linkModule).toContain("require('../../../plugins/linkedRecorderLinks')");
+    const importsConfig = /(?:from|require\()\s*['"][^'"]*plugins\/linkedRecorderResearchConfig/;
+    expect(linkModule).not.toMatch(importsConfig);
+    for (const source of walkResearchSources()) {
+      expect(readUtf8(source)).not.toMatch(importsConfig);
+    }
   });
 
   it('executes the ordinary-artifact scanner against clean and contaminated fixtures', () => {

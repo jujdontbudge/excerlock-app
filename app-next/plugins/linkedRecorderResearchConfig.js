@@ -1,20 +1,13 @@
+const { URL_SCHEME, WALKING_RECORDER_SCHEME, WALKING_RECORDER_LINK_HOSTS } = require('./linkedRecorderLinks');
+
 const TRACE_FLAG = 'EXCERLOCK_LINKED_RECORDER_TRACE';
 const RUNTIME_VERSION = '2-linked-recorder-1';
-const URL_SCHEME = 'excerlock-linked-trace';
 // Trace Lab registers only its own URL scheme: no production Google OAuth
 // redirect scheme and no `applinks:excerlock.com`, so a production sign-in
 // redirect or universal link can never open the co-installed research app.
 // This placeholder client satisfies the runtime redirect contract without
 // naming the production client; Trace Lab signs in with Apple or email.
 const LAB_GOOGLE_IOS_CLIENT_ID = 'linked-trace-local.apps.googleusercontent.com';
-// Trace Lab starts a test and opens the co-installed Walking Recorder through
-// this lab-only scheme. The recorder registers it and nothing else, so no
-// production link can drive it. The recorder returns through URL_SCHEME.
-const WALKING_RECORDER_SCHEME = 'excerlock-walkingrecorder';
-const WALKING_RECORDER_LINK_HOSTS = Object.freeze({
-  linkedSession: 'linked-session',
-  shareArchive: 'share-archive',
-});
 // `dev` research builds are served by Metro (expo-dev-client). `lab` research
 // builds are standalone Release artifacts with an embedded JS bundle: no
 // Metro, no dev-client, no LAN, no OTA. Only these two environments may carry
