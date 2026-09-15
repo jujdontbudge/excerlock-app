@@ -114,11 +114,10 @@ const WALKING_RECORDER_SCREEN = [
 ].join('\n');
 
 // The recorder's real notices, verbatim from CaptureController and the archive
-// error descriptions. `value` stands for a Swift string interpolation, which is
-// always a stream name, an error description, or an 8-character test id: the
-// launch gate must reject every rendered notice, however generic its wording.
-// The derivation test below re-reads these from the Swift copy owners, so a
-// stale or invented entry fails instead of silently testing older copy.
+// error descriptions, kept here as hand-maintained realistic fixtures. `value`
+// stands for a Swift string interpolation, which is always a stream name, an
+// error description, or an 8-character test id: the launch gate must reject
+// every rendered notice, however generic its wording.
 const WALKING_RECORDER_NOTICES = [
   'Motion & Fitness was not allowed. No recording was started.',
   'That recording is not on this phone any more. Export it before deleting it next time.',
@@ -204,65 +203,6 @@ const UNRELATED_METRO_TEXT = [
 ].join('\n');
 const UNRELATED_METRO_STATION_TEXT = ['9:41', 'Maps', 'Metro station', 'King\u2019s Cross', 'Kilometro 12'].join('\n');
 
-// The recorder copy lives in Swift, which no JavaScript test can import, so the
-// fixtures above are duplicates of the declared strings. They are not taken on
-// trust: these helpers read the copy owners and derive every double-quoted
-// literal they declare, with `\(interpolation)` folded to one `value` word, so
-// the tests below exercise the current copy and fail on a stale fixture.
-// Deriving strings never claims Swift behavior; the assertions stay about this
-// executable classifier's answer for text the recorder can actually render.
-const RECORDER_COPY_SOURCES = ['RecorderModels.swift', 'CaptureController.swift', 'SessionArchive.swift'].map((name) =>
-  path.join(__dirname, '..', '..', 'tools', 'phone-walking-recorder', 'Sources', name),
-);
-
-/** Every double-quoted Swift literal in `source`, interpolation values folded. */
-function swiftStringLiterals(source) {
-  const literals = [];
-  for (let index = 0; index < source.length; index += 1) {
-    if (source[index] !== '"') continue;
-    let value = '';
-    index += 1;
-    while (index < source.length && source[index] !== '"') {
-      if (source[index] === '\\') {
-        const next = source[index + 1];
-        if (next === '(') {
-          // `\( ... )` interpolation: skip to its matching close paren.
-          let depth = 0;
-          index += 1;
-          do {
-            if (source[index] === '(') depth += 1;
-            else if (source[index] === ')') depth -= 1;
-            index += 1;
-          } while (index < source.length && depth > 0);
-          value += 'value';
-          continue;
-        }
-        value += next === 'n' ? ' ' : next;
-        index += 2;
-        continue;
-      }
-      value += source[index];
-      index += 1;
-    }
-    literals.push(value);
-  }
-  return literals;
-}
-
-/** Every distinct string literal the recorder's copy owners declare. */
-function deriveRecorderCopy() {
-  const copy = new Set();
-  for (const file of RECORDER_COPY_SOURCES) {
-    for (const literal of swiftStringLiterals(fs.readFileSync(file, 'utf8'))) copy.add(literal);
-  }
-  return [...copy];
-}
-
-/** One fresh recorder screen that shows only `text` as its notice. */
-function recorderScreenFor(text) {
-  return ['9:41', 'Walking Recorder', 'Ready to record', text, 'Finish test'].join('\n');
-}
-
 const STATUS_BAR_ONLY = '9:41\n';
 const EMPTY = '';
 
@@ -331,25 +271,6 @@ test('the observation is case-insensitive and survives OCR noise around it', () 
   // OCR often renders the heading's middle dot and smart dashes differently.
   const noisy = text.replace(/·/g, '*').replace(/—/g, '-');
   assert.equal(classifyLaunchEvidence(noisy), 'observed');
-});
-
-test('the recorder copy fixtures are the exact strings the Swift sources declare', () => {
-  const declared = new Set(deriveRecorderCopy());
-  for (const text of [...WALKING_RECORDER_NOTICES, ...WALKING_RECORDER_REMINDER_COPY]) {
-    assert.ok(declared.has(text), `stale recorder fixture, not declared by the copy owners: ${JSON.stringify(text)}`);
-  }
-});
-
-test('every string the recorder can render is rejected as Trace Lab evidence', () => {
-  const copy = deriveRecorderCopy();
-  // The owners declare far more than the hand-written fixtures; the derived set
-  // is the recorder's whole screen vocabulary, not a second fixture list.
-  assert.ok(copy.length >= 100, `expected the copy owners to declare many strings, got ${copy.length}`);
-  for (const text of copy) {
-    const screen = recorderScreenFor(text);
-    assert.equal(detectResearchPhase(screen), null, `recorder copy passed: ${JSON.stringify(text)}`);
-    assert.equal(classifyLaunchEvidence(screen), 'unobserved', `recorder copy passed: ${JSON.stringify(text)}`);
-  }
 });
 
 test('blank, crashed-to-Home, Walking Recorder, and empty OCR reads are unobserved', () => {

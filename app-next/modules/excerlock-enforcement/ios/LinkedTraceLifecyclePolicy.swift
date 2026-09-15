@@ -1,3 +1,4 @@
+#if EXCERLOCK_LINKED_RECORDER_TRACE
 import Foundation
 
 /// When the native Trace Lab module must (re)install its UIApplication lifecycle
@@ -38,3 +39,4 @@ enum LinkedTraceLifecyclePolicy {
     return status
   }
 }
+#endif

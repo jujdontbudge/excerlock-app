@@ -20,5 +20,8 @@ Pod::Spec.new do |s|
     'SWIFT_ACTIVE_COMPILATION_CONDITIONS' => '$(inherited)' + trace_condition
   }
   s.source_files = '**/*.{h,m,mm,swift,hpp,cpp}'
-  s.exclude_files = 'LinkedTraceWriter.swift' unless trace_enabled
+  # Both policy/writer Swift bodies are research-only: the ordinary pod must not
+  # compile them at all, and each file is additionally #if-compiled so an
+  # unflagged build that ever sees it contributes no symbols.
+  s.exclude_files = ['LinkedTraceWriter.swift', 'LinkedTraceLifecyclePolicy.swift'] unless trace_enabled
 end

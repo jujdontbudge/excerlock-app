@@ -304,15 +304,6 @@ final class CaptureController: NSObject, ObservableObject {
         }
     }
 
-    /// Returns to Trace Lab with the link it needs to finalize and export.
-    func returnToTraceLab() {
-        guard let linkedSessionID, let linkedSessionNonce,
-              let url = RecorderLinkedLink.traceLab(sessionId: linkedSessionID, nonce: linkedSessionNonce) else { return }
-        UIApplication.shared.open(url) { [weak self] opened in
-            if !opened { self?.notice = "ExcerLock Trace Lab is not installed. This recording is still saved locally." }
-        }
-    }
-
     /// First step of the one reminder-removal path: ask inline before dropping
     /// the protected one-time link, because Trace Lab still needs it while the
     /// test can be saved or cancelled there.

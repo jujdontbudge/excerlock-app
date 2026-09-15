@@ -114,15 +114,20 @@ describe('linked recorder research boundary', () => {
     const root = mkdtempSync(join(tmpdir(), 'linked-recorder-boundary-'));
     try {
       const clean = join(root, 'clean.bin');
-      const contaminated = join(root, 'contaminated.bin');
       writeFileSync(clean, Buffer.from([0x00, 0x01, 0x02, 0x03]));
-      writeFileSync(contaminated, Buffer.from('ordinary-prefix\0LinkedTraceWriter\0ordinary-suffix'));
       const scanner = app('scripts', 'verify-no-linked-trace.cjs');
       const cleanResult = spawnSync(process.execPath, [scanner, clean], { encoding: 'utf8' });
-      const contaminatedResult = spawnSync(process.execPath, [scanner, contaminated], { encoding: 'utf8' });
       expect(cleanResult.status, cleanResult.stderr).toBe(0);
-      expect(contaminatedResult.status).toBe(1);
-      expect(contaminatedResult.stderr).toContain('Linked Recorder research marker(s) found');
+      // Every research-only Swift body the ordinary pod must not compile is a
+      // scanner marker, so an artifact that carries one fails the shipping scan.
+      for (const marker of ['LinkedTraceWriter', 'LinkedTraceLifecyclePolicy']) {
+        const contaminated = join(root, `contaminated-${marker}.bin`);
+        writeFileSync(contaminated, Buffer.from(`ordinary-prefix\0${marker}\0ordinary-suffix`));
+        const contaminatedResult = spawnSync(process.execPath, [scanner, contaminated], { encoding: 'utf8' });
+        expect(contaminatedResult.status, `${marker}: ${contaminatedResult.stderr}`).toBe(1);
+        expect(contaminatedResult.stderr).toContain('Linked Recorder research marker(s) found');
+        expect(contaminatedResult.stderr).toContain(marker);
+      }
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

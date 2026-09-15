@@ -11,6 +11,7 @@ const markers = [
   'com.johansardar.excerlock.lab.linkedtrace',
   'excerlock-linked-trace',
   'LinkedTraceWriter',
+  'LinkedTraceLifecyclePolicy',
   'linked-trace-active-v1.json',
   'motion_callback_native',
   'detector_persist',
