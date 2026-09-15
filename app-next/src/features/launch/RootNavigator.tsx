@@ -58,7 +58,7 @@ export function RootNavigator() {
         <Stack.Protected guard={loading || (entitled && !onboarding.setupComplete)}>
           <Stack.Screen name="setup/[step]" />
         </Stack.Protected>
-        <Stack.Protected guard={loading || onboarding.setupComplete}>
+        <Stack.Protected guard={loading || onboarding.setupComplete || (__LINKED_RECORDER_TRACE__ && linkedTrace.enabled)}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="settings" />
           <Stack.Screen name="sign-in" options={{ presentation: 'fullScreenModal' }} />

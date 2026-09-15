@@ -49,13 +49,16 @@ After any trace prebuild, delete the generated `ios/` tree and run an unflagged 
 
 ## Minimal test protocol
 
-1. Complete Trace Lab setup locally: use a signed build whose profile grants the isolated lab App Group, sign in to the development environment with Apple or email using a pre-existing trial/active lab entitlement (Trace Lab carries no production Google OAuth client), authorize Screen Time, select exactly one benign nonessential canary app (no categories or websites), and authorize Motion & Fitness. **Never select Walking Recorder.** Trace Lab's visible preflight blocks Start and names any missing step. It never uses production Adapty, auto-grants access, or fabricates a subscription entitlement; if authorized development access is unavailable, stop.
-2. In Walking Recorder, explicitly opt into a linked local session and start the desired label. The recorder creates a UUID and a 256-bit one-time nonce. The nonce is transactionally retained only in the recorder session's protected recovery file, excluded from every export, and removed after the operator confirms Trace Lab was finalized or explicitly abandoned.
-3. Tap **Open ExcerLock Trace Lab**. Review the second consent surface, confirm the harmless canary prerequisite, and start the production trace.
-4. Return to Walking Recorder. Keep its foreground labels honest while ExcerLock moves through the real production/background path.
-5. Mark lock/unlock test phases and the canary outcome you actually observed in Walking Recorder, the sole human-label owner. Trace Lab has no duplicate phase/outcome controls. A Managed Settings call returning is not a visible outcome.
-6. Finish Walking Recorder; completion, interruption, storage-limit, and sensor-error paths preserve and reopen the protected Trace Lab link. End/export the production trace, then export the saved Recorder archive. If the recorder was terminated, relaunch it and use the visible recovery card. No file is uploaded automatically.
-7. Join them offline:
+One guided path, both apps on the phone. Trace Lab boots into its research screen, not the production onboarding or paywall. Nothing is uploaded and no Mac service is needed at any point.
+
+1. Open **ExcerLock Trace Lab** and read the three lines under **How the test works**. Only what this phone is actually missing is shown, with one action for it: **Allow Screen Time** (the only way iOS lets the lab record the real shield), **Choose canary app** (exactly one harmless app, never Walking Recorder or Trace Lab — the native preflight refuses those two), **Allow Motion & Fitness**, or **Sign in** with pre-existing lab access (this build never grants or fabricates an entitlement; unavailable development access is a stop condition).
+2. Tap **Start test**. Trace Lab mints the session UUID and the 256-bit one-time nonce, starts the linked background trace, and opens Walking Recorder through the lab-only `excerlock-walkingrecorder://linked-session` link. Keep Trace Lab in the background from here on, exactly like ExcerLock during a normal walk.
+3. In **Walking Recorder**, tap the card for what you are doing (walking, treadmill, shaking the phone, sitting). Recording already started; labels and their boundaries stay the operator's honest input and live only in the recorder.
+4. Answer the one **Canary check** card inline as it asks: first while walking ("Blocked (shield shown)" / "It opened normally" / "Did not try / not sure"), then after standing still for about 10 seconds. These two operator observations are the visible-outcome evidence the offline joiner needs; a Managed Settings call returning is not a visible outcome.
+5. Tap **Finish test**. The recorder finalizes its archive and returns to Trace Lab with the one-time link.
+6. In **Trace Lab**, tap **Save trace file**, then **Share Walking Recorder archive** (or share the trace file first) and save both files to Files/On My Phone. **Delete this test from Trace Lab** removes the local trace when you are done; the recorder archive is separate.
+7. If a test is interrupted, relaunch either app: Walking Recorder shows **Linked test needs finishing** and returns to Trace Lab, and a Trace Lab that was closed mid-test re-opens the recorder's recovery link. A trace past its two-hour limit can only be deleted, never exported, and the screen returns to **Start test** for the next run.
+8. Join them offline:
 
 ```sh
 python3 tools/linked-recorder/join.py \
@@ -65,6 +68,14 @@ python3 tools/linked-recorder/join.py \
 ```
 
 The joiner validates protocol/session identity, sequence continuity, `mach_continuous_time`/wall anchors, truncation/drop markers, causal-path coverage, and explicit canary observations. It emits `joined.ndjson`, `validation.json`, and a caveat README. Temporal ordering does not itself prove causation.
+
+The device proof of the standalone artifact is executable:
+
+```sh
+app-next/scripts/prove-linked-recorder-on-phone.sh [path/to/ExcerLock.app]
+```
+
+It refuses to run while Metro listens on 8081, installs the signed Trace Lab over the current one, launches it with no payload URL, OCRs the real research screen, and checks that production ExcerLock's install record is unchanged.
 
 ## Trace contract
 
@@ -79,7 +90,7 @@ The joiner validates protocol/session identity, sequence continuity, `mach_conti
 
 The trace covers native motion callback receipt, JS input/fusion, durable detector transitions, runtime/headless opportunities, policy publication, watchdog operations, extension callback receipt/guard result, and shield setter attempt/return/readback. It rejects arbitrary keys/nested payloads, selection tokens, bundle/account/device identifiers, coordinates, and free-form errors.
 
-Raw inertial vectors and all human labels remain only in Walking Recorder. ExcerLock retains callback stream/receipt/source timing, activity/cadence fields already consumed by production, and derived causal evidence, but no gravity or rotation vectors. The ExcerLock trace has a 25 MiB session cap, 100 MiB retained cap, bounded in-memory queue with drop summaries, two-hour active TTL, seven-day next-access retention pruning, complete-until-first-authentication file protection, explicit finalization/export, and manual deletion. A nonce-less abandon is available only after the active descriptor has expired and requires explicit local confirmation; it deletes rather than exports the expired trace, and when a new Recorder link is already open the screen returns to Start for that new session. Starting a session whose trace directory already exists (finalized, or expired but not abandoned) is refused; a stale "needs finalization" card in Walking Recorder can never delete an exported trace.
+Raw inertial vectors and all human labels remain only in Walking Recorder. ExcerLock retains callback stream/receipt/source timing, activity/cadence fields already consumed by production, and derived causal evidence, but no gravity or rotation vectors. The ExcerLock trace has a 25 MiB session cap, 100 MiB retained cap, bounded in-memory queue with drop summaries, two-hour active TTL, seven-day next-access retention pruning, complete-until-first-authentication file protection, explicit finalization/export, and manual deletion. A trace past its two-hour limit can only be deleted — never exported — and the screen then returns to **Start test**, which always mints a fresh session, so a stale link can never restart or delete an already-saved trace. Starting a session whose trace directory already exists (finalized, or expired but not abandoned) is refused; a stale "needs finishing" card in Walking Recorder can never delete an exported trace.
 
 ## Local checks
 
@@ -90,4 +101,12 @@ npx vitest run --config guardrails/vitest.config.ts guardrails/linked-recorder-b
 # Standalone artifact rules and Expo-loader config, real loaders:
 node --test app-next/scripts/standalone-research.test.cjs
 node --test app-next/scripts/test-config-smoke.cjs
+# Guided flow: one lab-only link contract, screen state machine, link parsing:
+npx jest src/research/linkedTrace --runInBand
+# Walking Recorder link contract and archive (simulator):
+cd tools/phone-walking-recorder && xcodegen generate && xcodebuild -project PhoneWalkingRecorder.xcodeproj \
+  -scheme PhoneWalkingRecorder -destination 'platform=iOS Simulator,id=<simulator-id>' \
+  -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO test
+# On the phone, with no Metro server running:
+app-next/scripts/prove-linked-recorder-on-phone.sh
 ```

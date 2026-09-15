@@ -42,4 +42,19 @@ describe("phone walking recorder isolation", () => {
     expect(source).not.toMatch(/URLSession|NWConnection|uploadTask|dataTask/);
     expect(source).not.toMatch(/identifierForVendor|advertisingIdentifier/);
   });
+
+  it("registers only the lab-only link Trace Lab uses to start and re-open a test", () => {
+    const info = readUtf8(fromRoot("tools", "phone-walking-recorder", "Support", "Info.plist"));
+    expect(info).toContain("<string>excerlock-walkingrecorder</string>");
+    expect(info).not.toMatch(/<string>(excerlock|excerlock-linked-trace)<\/string>/);
+    expect(info).not.toContain("applinks");
+
+    // Trace Lab starts the test; this app only returns through Trace Lab's own
+    // scheme. Every URL builder in the recorder must stay lab-only.
+    const controller = readUtf8(fromRoot("tools", "phone-walking-recorder", "Sources", "CaptureController.swift"));
+    expect(controller).toContain('static let scheme = "excerlock-walkingrecorder"');
+    expect(controller).toContain('static let traceLabScheme = "excerlock-linked-trace"');
+    expect(controller).not.toMatch(/scheme = "excerlock"/);
+    expect(controller).not.toMatch(/https?:\/\//);
+  });
 });

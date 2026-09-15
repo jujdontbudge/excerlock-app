@@ -20,6 +20,8 @@ export type LinkedTracePreflight = {
   screenTimeAuthorized: boolean;
   motionReady: boolean;
   canarySelectionValid: boolean;
+  /** True when the selected canary is Walking Recorder or Trace Lab itself. */
+  canaryIncludesTestApps: boolean;
   canaryApplicationCount: number;
   canaryCategoryCount: number;
   canaryWebDomainCount: number;

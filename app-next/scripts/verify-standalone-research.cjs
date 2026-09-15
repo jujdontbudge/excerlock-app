@@ -32,7 +32,7 @@ const MAX_SCAN_BYTES = 200 * 1024 * 1024;
 const LAB_URL_SCHEMES = [SCHEME, APP_BUNDLE_ID];
 // The research screen strings prove the research JS selection reached the
 // embedded bundle; they are literals in LinkedTraceScreen.research.tsx.
-const REQUIRED_BUNDLE_MARKERS = ['Recorder link required', 'Start linked trace'];
+const REQUIRED_BUNDLE_MARKERS = ['How the test works', 'Share Walking Recorder archive'];
 // Hermes bytecode concatenates string-table entries, so short markers like
 // `EXDevLauncher` can appear as accidental substrings. The bundle scan uses
 // full module/symbol names; the native scan below stays strict because those

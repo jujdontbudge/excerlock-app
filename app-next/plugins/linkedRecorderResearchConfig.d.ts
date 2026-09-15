@@ -7,6 +7,11 @@ export const TRACE_FLAG: string;
 export const RUNTIME_VERSION: string;
 export const URL_SCHEME: string;
 export const LAB_GOOGLE_IOS_CLIENT_ID: string;
+export const WALKING_RECORDER_SCHEME: string;
+export const WALKING_RECORDER_LINK_HOSTS: {
+  readonly linkedSession: string;
+  readonly shareArchive: string;
+};
 export const STANDALONE_ENV: string;
 export const RESEARCH_ENVS: readonly string[];
 export const DEV_CLIENT_MODULES: readonly string[];

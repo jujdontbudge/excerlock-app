@@ -62,7 +62,7 @@ function makeApp(root, overrides = {}) {
       ...(overrides.config ?? {}),
     }),
   );
-  fs.writeFileSync(path.join(app, 'main.jsbundle'), `hermes-placeholder\nRecorder link required\nStart linked trace\n${overrides.bundle ?? ''}`);
+  fs.writeFileSync(path.join(app, 'main.jsbundle'), `hermes-placeholder\nHow the test works\nShare Walking Recorder archive\n${overrides.bundle ?? ''}`);
   fs.writeFileSync(path.join(app, 'ExcerLock'), Buffer.from(`binary ${overrides.binary ?? 'LinkedTraceWriter'}`));
   fs.writeFileSync(
     path.join(app, 'entitlements.json'),
@@ -208,7 +208,7 @@ test('rejects a bundle that did not select the research screen', () => inTemp((r
   fs.writeFileSync(path.join(app, 'main.jsbundle'), 'ordinary release bundle without the research route');
   const result = runVerifier(app);
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /Recorder link required/);
+  assert.match(result.stderr, /missing research screen marker: How the test works/);
 }));
 
 test('rejects a bundle that smuggled the dev-client JS modules', () => inTemp((root) => {

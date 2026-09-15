@@ -1,11 +1,10 @@
 import * as Sharing from 'expo-sharing';
-import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { AppState, StyleSheet, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, Linking, StyleSheet, View } from 'react-native';
 
 import { linkedTrace, type LinkedTracePreflight, type LinkedTraceStatus } from '@linked-trace';
 import {
-  ChoiceRow,
   Heading,
   Label,
   PrimaryButton,
@@ -16,39 +15,73 @@ import {
 import { tokens as t } from '../../design-system/tokens';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
+import {
+  LINK_PROTOCOL_VERSION,
+  newLinkedSession,
+  parseHandshake,
+  walkingRecorderAppLink,
+  walkingRecorderArchiveLink,
+  walkingRecorderSessionLink,
+  type LinkedHandshake,
+} from './linkedRecorderLink';
 
-type Phase = 'idle' | 'active' | 'expired' | 'exported' | 'deleted';
+type Phase = 'ready' | 'running' | 'review' | 'exported' | 'expired';
 
-function first(value: string | string[] | undefined): string { return Array.isArray(value) ? value[0] ?? '' : value ?? ''; }
+const NOTHING_COLLECTED = 'No GPS, microphone, camera, raw vectors, or Health history is collected.';
 
+/**
+ * The one guided research path: start here, record the ground truth in Walking
+ * Recorder, finish there, then save both files here. Everything runs and stays
+ * on this phone; a Mac is never needed while a test runs.
+ */
 export function LinkedTraceScreen() {
   const runtime = useRuntime();
+  const router = useRouter();
   const entitlementStatus = useEntitlementStore((state) => state.data.entitlement.status);
   const params = useLocalSearchParams<{ sessionId?: string | string[]; nonce?: string | string[]; protocolVersion?: string | string[] }>();
-  const sessionId = first(params.sessionId).toLowerCase();
-  const nonce = first(params.nonce);
-  const protocolVersion = first(params.protocolVersion);
-  const validHandshake = sessionId !== '' && nonce !== '' && protocolVersion === '1';
-  const [consented, setConsented] = useState(false);
-  const [canaryConfirmed, setCanaryConfirmed] = useState(false);
-  const [abandonConfirmed, setAbandonConfirmed] = useState(false);
-  const [phase, setPhase] = useState<Phase>('idle');
+  const paramSessionId = Array.isArray(params.sessionId) ? params.sessionId[0] : params.sessionId;
+  const paramNonce = Array.isArray(params.nonce) ? params.nonce[0] : params.nonce;
+  const paramProtocol = Array.isArray(params.protocolVersion) ? params.protocolVersion[0] : params.protocolVersion;
+  const handshake = useMemo(
+    () => parseHandshake({ sessionId: paramSessionId, nonce: paramNonce, protocolVersion: paramProtocol }),
+    [paramSessionId, paramNonce, paramProtocol],
+  );
+  const [phase, setPhase] = useState<Phase>('ready');
   const [status, setStatus] = useState<LinkedTraceStatus | null>(null);
   const [preflight, setPreflight] = useState<LinkedTracePreflight | null>(null);
+  const [activeLink, setActiveLink] = useState<LinkedHandshake | null>(null);
+  const [savedSessionId, setSavedSessionId] = useState<string | null>(null);
+  const [exportUri, setExportUri] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [exportUri, setExportUri] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const linkRef = useRef<LinkedHandshake | null>(null);
 
-  const refreshPreflight = async () => {
+  const refreshPreflight = useCallback(async () => {
     try {
       const current = await linkedTrace.preflight();
       setPreflight(current);
       return current;
     } catch {
-      setError('Preflight could not read the local requirements. Reopen Trace Lab and try again.');
+      setError('The local readiness check could not run. Reopen Trace Lab and try again.');
       return null;
     }
-  };
+  }, []);
+
+  // One live session can only be in one of four states, so the screen always
+  // lands on the current step: running, waiting to be saved, or needing cleanup.
+  const settle = useCallback((current: LinkedTraceStatus, link: LinkedHandshake | null) => {
+    if (current.sessionId && current.active) {
+      setPhase(link?.sessionId === current.sessionId ? 'review' : 'running');
+      return;
+    }
+    if (current.sessionId) {
+      setPhase('expired');
+      return;
+    }
+    if (link) setNote('That test was already saved on this phone, so there is nothing left to finalize.');
+    setPhase((previous) => (previous === 'exported' ? previous : 'ready'));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,235 +90,313 @@ export function LinkedTraceScreen() {
         if (cancelled) return;
         setStatus(current);
         setPreflight(readiness);
-        if (current.sessionId === sessionId && validHandshake) setPhase('active');
-        else if (current.sessionId && current.active === false) setPhase('expired');
+        settle(current, linkRef.current);
       })
       .catch(() => {
-        if (!cancelled) setError('Preflight could not read the local requirements. Reopen Trace Lab and try again.');
+        if (!cancelled) setError('The local readiness check could not run. Reopen Trace Lab and try again.');
       });
     return () => { cancelled = true; };
-  }, [sessionId, validHandshake]);
+  }, [settle]);
 
+  // Walking Recorder returns here with the one-time link when a test is done.
   useEffect(() => {
-    if (phase !== 'active') return;
-    const interval = setInterval(() => { void linkedTrace.status().then(setStatus); }, 15_000);
-    return () => clearInterval(interval);
-  }, [phase]);
+    if (!handshake) return;
+    linkRef.current = handshake;
+    void linkedTrace.status()
+      .then((current) => { setStatus(current); settle(current, handshake); })
+      .catch(() => setError('Trace Lab could not read the local trace. Try again.'));
+  }, [handshake, settle]);
 
+  // A running test must notice its own two-hour expiry and the return to foreground.
   useEffect(() => {
-    if (phase !== 'active') return;
-    let previous = AppState.currentState;
-    const subscription = AppState.addEventListener('change', (next) => {
-      linkedTrace.record('app_lifecycle', { layer: 'js', state: next, previous });
-      previous = next;
-    });
-    return () => subscription.remove();
-  }, [phase]);
+    if (phase !== 'running') return;
+    const sync = () => { void linkedTrace.status().then((current) => { setStatus(current); settle(current, linkRef.current); }); };
+    const interval = setInterval(sync, 10_000);
+    const subscription = AppState.addEventListener('change', (next) => { if (next === 'active') sync(); });
+    return () => { clearInterval(interval); subscription.remove(); };
+  }, [phase, settle]);
 
-  const missingStep = useMemo(() => {
-    if (!preflight) return 'Wait for the local preflight check.';
-    if (!preflight.labStorageIsolated) return 'Use a signed Trace Lab build with its isolated lab App Group entitlement.';
-    if (entitlementStatus !== 'active' && entitlementStatus !== 'trial') return 'Sign in to the development environment with existing lab access.';
-    if (!preflight.screenTimeAuthorized) return 'Allow Screen Time in Trace Lab setup.';
-    if (!preflight.canarySelectionValid) return 'Select exactly one harmless canary app, with no category or website selection.';
-    if (!canaryConfirmed) return 'Confirm the canary is harmless and is not Walking Recorder.';
-    if (!preflight.motionReady) return 'Allow Motion & Fitness and confirm required motion services are available.';
-    return null;
-  }, [canaryConfirmed, entitlementStatus, preflight]);
-  const preflightReady = missingStep === null;
+  const labAccess = entitlementStatus === 'active' || entitlementStatus === 'trial';
+  const step = readinessStep({ entitlementStatus, preflight, labAccess, runtime });
 
-  const completePrerequisite = async (operation: () => Promise<unknown>) => {
-    if (busy) return;
+  const run = async (operation: () => Promise<unknown>, message: string): Promise<boolean> => {
+    if (busy) return false;
     setBusy(true);
     setError(null);
     try {
       await operation();
       await refreshPreflight();
+      return true;
     } catch {
-      setError('That prerequisite was not completed. Your current system choice was preserved.');
+      setError(message);
+      return false;
     } finally { setBusy(false); }
   };
 
-  const title = phase === 'active'
-    ? 'Trace in progress'
-    : phase === 'expired'
-      ? 'Expired trace found'
-      : phase === 'exported'
-        ? 'Trace ready to share'
-        : phase === 'deleted'
-          ? 'Local trace deleted'
-          : validHandshake ? 'Linked background test' : 'Recorder link required';
-
-  const begin = async () => {
-    if (!validHandshake || !consented || busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const latest = await refreshPreflight();
-      if (!latest?.labStorageIsolated || (entitlementStatus !== 'active' && entitlementStatus !== 'trial') ||
-          !latest.screenTimeAuthorized || !latest.motionReady || !latest.canarySelectionValid || !canaryConfirmed) {
-        setError('The trace did not start. Complete the named preflight step first.');
-        return;
-      }
-      const active = await linkedTrace.start(sessionId, nonce);
-      setStatus(active);
-      setPhase('active');
-    } catch (cause) {
-      setError(String(cause).includes('sessionExists')
-        ? 'This session was already finalized on this phone; its trace was kept. Start a new linked session from Walking Recorder.'
-        : 'The local trace could not start. Reopen this screen from Walking Recorder.');
-    } finally { setBusy(false); }
-  };
-
-  const stopAndExport = async () => {
+  const start = async () => {
     if (busy) return;
     setBusy(true);
     setError(null);
+    setNote(null);
     try {
-      const uri = await linkedTrace.stop(sessionId, nonce);
-      setExportUri(uri);
-      setStatus(await linkedTrace.status());
-      setPhase('exported');
-      if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(uri, { mimeType: 'application/x-ndjson' });
+      const latest = await refreshPreflight();
+      if (!latest || readinessStep({ entitlementStatus, preflight: latest, labAccess, runtime })) {
+        setError('The test did not start. Finish the step named above first.');
+        return;
+      }
+      const link = newLinkedSession();
+      const active = await linkedTrace.start(link.sessionId, link.nonce);
+      setActiveLink(link);
+      linkRef.current = link;
+      setStatus(active);
+      setPhase('running');
+      try {
+        await Linking.openURL(walkingRecorderSessionLink(link));
+      } catch {
+        setError('The trace is running, but Walking Recorder could not be opened. Open Walking Recorder from the Home Screen to record this test.');
+      }
     } catch {
-      setError('The trace could not be finalized. Keep the app installed and try again.');
+      setError('The trace did not start. Nothing was recorded; try again.');
     } finally { setBusy(false); }
   };
 
-  const abandonExpired = async () => {
-    const expiredSessionId = status?.sessionId;
-    if (!expiredSessionId || status.active || !abandonConfirmed || busy) return;
+  const saveTrace = async () => {
+    const link = activeLink ?? handshake;
+    if (!link || busy) return;
     setBusy(true);
     setError(null);
     try {
-      await linkedTrace.abandonExpiredSession(expiredSessionId);
+      const uri = await linkedTrace.stop(link.sessionId, link.nonce);
+      setExportUri(uri);
+      setSavedSessionId(link.sessionId);
       setStatus(await linkedTrace.status());
-      setPhase(validHandshake ? 'idle' : 'deleted');
+      setPhase('exported');
     } catch {
-      setError('The expired trace could not be abandoned. No active trace was changed.');
+      setError('The trace could not be saved. Keep Trace Lab installed and try again from this screen.');
     } finally { setBusy(false); }
   };
 
+  const openRecorder = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      setError('Walking Recorder is not installed on this phone.');
+    }
+  };
+
+  const title = phase === 'running' ? 'Test running'
+    : phase === 'review' ? 'Test finished — save it'
+      : phase === 'exported' ? 'Both files are saved'
+        : phase === 'expired' ? 'This test expired'
+          : 'Linked walking test';
+
   return (
     <ScreenShell orangeBackground={false} contentStyle={s.content}>
-      <Heading title={title} support="Research-only build · local export · two-hour session limit" />
+      <Heading title={title} support="Research build · everything stays on this phone · two-hour limit" />
+
       <StatusCard
-        title={phase === 'active'
-          ? status?.active === false ? 'Two-hour recording limit reached' : 'Local diagnostic recording active'
-          : phase === 'expired' ? 'Expired local trace is blocking a clean start'
-            : phase === 'exported' ? 'Recording stopped' : phase === 'deleted' ? 'Files removed' : 'Not recording'}
-        subtitle={validHandshake ? `Session ${sessionId.slice(0, 8)}…` : 'Open the one-time link from Walking Recorder.'}
-        nextChange={status?.truncated ? 'Trace reached its size limit.' : 'No GPS, microphone, camera, raw vectors, or Health history is collected.'}
-        unlocked={phase !== 'active'}
+        title={phase === 'running' ? 'Trace Lab is recording in the background'
+          : phase === 'review' ? 'Walking Recorder finished the ground truth'
+            : phase === 'exported' ? 'Saved on this phone'
+              : phase === 'expired' ? 'No longer exportable'
+                : 'Not recording yet'}
+        subtitle={phase === 'exported' && savedSessionId ? `Test ${savedSessionId.slice(0, 8)}…` : NOTHING_COLLECTED}
+        nextChange={phase === 'running' ? 'The two-hour limit ends this test automatically.'
+          : phase === 'review' ? 'The trace stays on this phone until you delete it.'
+            : phase === 'expired' ? 'Deleting it starts the next test clean.'
+              : 'Nothing is uploaded; you choose when to share the two files.'}
+        unlocked={phase !== 'running'}
       />
 
-      {phase === 'idle' ? (
+      {phase === 'ready' ? (
         <View style={s.section}>
-          <Label variant="section">Preflight</Label>
-          <Label tone="secondary">Trace Lab checks real local prerequisites before it can record. Access must come from the development environment; this screen never grants or overrides it.</Label>
-          <PreflightRow label="Isolated lab App Group entitlement" ready={preflight?.labStorageIsolated === true} />
-          <PreflightRow label="Existing development access" ready={entitlementStatus === 'active' || entitlementStatus === 'trial'} />
-          <PreflightRow label="Screen Time authorized" ready={preflight?.screenTimeAuthorized === true} />
-          {preflight?.screenTimeAuthorized === false ? (
-            <SecondaryButton label="Allow Screen Time" onPress={() => void completePrerequisite(() => runtime.screenTime.requestAuthorization())} />
-          ) : null}
-          <PreflightRow label="Exactly one app selected as canary" ready={preflight?.canarySelectionValid === true} />
-          {preflight?.screenTimeAuthorized === true && preflight.canarySelectionValid === false ? (
-            <SecondaryButton label="Select one canary app" onPress={() => void completePrerequisite(() => runtime.screenTime.presentAppPicker())} />
-          ) : null}
-          <PreflightRow label="Motion & Fitness ready" ready={preflight?.motionReady === true} />
-          {preflight?.motionReady === false ? (
-            <SecondaryButton label="Allow Motion & Fitness" onPress={() => void completePrerequisite(() => runtime.steps.request())} />
-          ) : null}
-          <ChoiceRow
-            title="My selected app is a harmless canary"
-            support="Walking Recorder is not selected. Categories and websites are not selected."
-            selected={canaryConfirmed}
-            multiple
-            onPress={() => setCanaryConfirmed((value) => !value)}
-          />
-          <SecondaryButton label="Refresh preflight" onPress={() => void refreshPreflight()} />
-          {missingStep ? <Label accessibilityRole="alert">Next: {missingStep}</Label> : null}
+          <Label variant="section">How the test works</Label>
+          <Step n={1} text="Tap Start test. Trace Lab begins the background trace and opens Walking Recorder." />
+          <Step n={2} text="Walk as usual in Walking Recorder. Tap what you are doing, then answer the canary check when the app asks." />
+          <Step n={3} text="Tap Finish test in Walking Recorder. Trace Lab opens again so you can save the trace." />
+          <Label tone="secondary">The two apps stay separate: Walking Recorder keeps the honest foreground labels, Trace Lab records what ExcerLock does in the background. Only this phone holds the data.</Label>
 
-          <Label variant="section">Consent</Label>
-          <Label tone="secondary">
-            This records local motion callback receipts, detector transitions, policy and watchdog operations, extension callbacks,
-            and shield-write return values. Visible canary outcomes and all human labels stay in Walking Recorder.
-          </Label>
-          <ChoiceRow
-            title="I consent to this local research trace"
-            support="Nothing is uploaded automatically. You choose whether to share the exported files."
-            selected={consented}
-            multiple
-            onPress={() => setConsented((value) => !value)}
-          />
-          <PrimaryButton label={busy ? 'Starting…' : 'Start linked trace'} disabled={!validHandshake || !consented || !preflightReady || busy} onPress={() => void begin()} />
+          <Label variant="section">Ready to start</Label>
+          {step ? (
+            <>
+              <Label>{step.title}</Label>
+              <Label tone="secondary">{step.detail}</Label>
+              {step.action ? (
+                <PrimaryButton
+                  label={busy ? 'Waiting…' : step.action.label}
+                  disabled={busy}
+                  onPress={() => {
+                    const action = step.action;
+                    if (!action) return;
+                    if (action.kind === 'sign-in') router.push('/sign-in');
+                    else void run(action.run, action.failure);
+                  }}
+                />
+              ) : null}
+            </>
+          ) : (
+            <Label>Everything is ready: Screen Time, canary app, Motion &amp; Fitness, and the isolated lab storage.</Label>
+          )}
+          <PrimaryButton label={busy ? 'Starting…' : 'Start test'} disabled={!preflight || !!step || busy} onPress={() => void start()} />
+          {note ? <Label tone="secondary">{note}</Label> : null}
         </View>
       ) : null}
 
-      {phase === 'active' ? (
+      {phase === 'running' ? (
         <View style={s.section}>
-          <Label variant="section">Continue in Walking Recorder</Label>
+          <Label variant="section">Recording on this phone</Label>
           <Label tone="secondary">
-            Walking Recorder owns test phases and visible canary outcomes. Return here only to finalize and export this separate production-path trace.
+            Trace Lab is in the background, exactly like ExcerLock during a normal walk. Walking Recorder is the only place that
+            labels what you are doing and what you saw; nothing is typed here.
           </Label>
-          <PrimaryButton label={busy ? 'Finalizing…' : status?.active === false ? 'Finalize expired trace' : 'End trace and export'} disabled={busy} onPress={() => void stopAndExport()} />
-        </View>
-      ) : null}
-
-      {phase === 'expired' && status?.sessionId ? (
-        <View style={s.section}>
-          <Label variant="section">Explicit local cleanup</Label>
-          <Label tone="secondary">
-            The two-hour limit has passed and the one-time Recorder link is unavailable. Abandon deletes this expired local trace without exporting it. An unexpired trace can never use this path.
-          </Label>
-          <ChoiceRow
-            title="I understand this expired trace will be deleted"
-            selected={abandonConfirmed}
-            multiple
-            onPress={() => setAbandonConfirmed((value) => !value)}
-          />
-          <PrimaryButton label={busy ? 'Deleting…' : 'Abandon expired trace'} disabled={!abandonConfirmed || busy} onPress={() => void abandonExpired()} />
-        </View>
-      ) : null}
-
-      {phase === 'exported' && exportUri ? (
-        <View style={s.section}>
-          <Label tone="secondary" selectable>{exportUri}</Label>
           <PrimaryButton
-            label="Share export again"
-            onPress={() => void Sharing.shareAsync(exportUri, { mimeType: 'application/x-ndjson' })}
+            label="Open Walking Recorder"
+            disabled={busy}
+            onPress={() => void openRecorder(activeLink ? walkingRecorderSessionLink(activeLink) : walkingRecorderAppLink())}
           />
+          <Label tone="secondary">
+            If Trace Lab was closed, open Walking Recorder from the Home Screen and tap Finish test there. Its recovery card brings this screen back.
+          </Label>
+        </View>
+      ) : null}
+
+      {phase === 'review' ? (
+        <View style={s.section}>
+          <Label variant="section">Save the trace</Label>
+          <Label tone="secondary">
+            Walking Recorder saved its own archive. Trace Lab now needs the one-time link back from Walking Recorder to write its trace
+            file; that link reached this screen, so the test can be saved.
+          </Label>
+          <PrimaryButton label={busy ? 'Saving…' : 'Save trace file'} disabled={busy} onPress={() => void saveTrace()} />
+        </View>
+      ) : null}
+
+      {phase === 'exported' ? (
+        <View style={s.section}>
+          <Label variant="section">Your two files</Label>
+          <Label>1. Trace file — saved on this phone, ready to share.</Label>
+          <SecondaryButton label="Share trace file" onPress={() => void (exportUri ? Sharing.shareAsync(exportUri, { mimeType: 'application/x-ndjson' }) : undefined)} disabled={!exportUri} />
+          <Label>2. Walking Recorder archive — saved in Walking Recorder.</Label>
+          <PrimaryButton
+            label="Share Walking Recorder archive"
+            onPress={() => void openRecorder(savedSessionId ? walkingRecorderArchiveLink(savedSessionId) : walkingRecorderAppLink())}
+          />
+          <Label tone="secondary">
+            Both files stay on the phone: share them now or later after the phone is back on a computer. Nothing was uploaded.
+          </Label>
           <SecondaryButton
-            label="Delete local trace"
-            onPress={() => void linkedTrace.deleteSession(sessionId).then(() => {
-              setExportUri(null);
-              setPhase('deleted');
-            }).catch(() => setError('The local trace could not be deleted.'))}
+            label="Delete this test from Trace Lab"
+            onPress={() => void linkedTrace.deleteSession(savedSessionId ?? '')
+              .then(() => { setExportUri(null); setSavedSessionId(null); setPhase('ready'); setNote('The local trace was deleted.'); })
+              .catch(() => setError('The local trace could not be deleted.'))}
           />
+        </View>
+      ) : null}
+
+      {phase === 'expired' ? (
+        <View style={s.section}>
+          <Label variant="section">Two-hour limit reached</Label>
+          <Label tone="secondary">
+            The one-time link is gone, so this expired trace can no longer be finalized or exported. Deleting it removes the local
+            files and lets you start a clean test; the Walking Recorder archive is untouched.
+          </Label>
+          <PrimaryButton
+            label={busy ? 'Deleting…' : 'Delete expired test'}
+            disabled={busy}
+            onPress={() => void run(
+              () => linkedTrace.abandonExpiredSession(status?.sessionId ?? ''),
+              'The expired trace could not be deleted. Nothing was changed.',
+            ).then((cleaned) => {
+              if (!cleaned) return;
+              setStatus({ active: false, sessionId: null, expiresAtWallTimeMs: null, truncated: false });
+              setPhase('ready');
+            })}
+          />
+          {handshake && handshake.sessionId !== status?.sessionId ? (
+            <Label tone="secondary">A newer test link is open: after this cleanup, tap Start test for that new test.</Label>
+          ) : null}
         </View>
       ) : null}
 
       {error ? <Label accessibilityRole="alert" style={s.error}>{error}</Label> : null}
       <Label tone="secondary" variant="support">
-        “Returned” means the Managed Settings setter returned and a readback was taken. It does not prove a shield was visible.
+        Protocol {LINK_PROTOCOL_VERSION} · “returned” means the Managed Settings call came back; it does not prove a shield was visible.
       </Label>
     </ScreenShell>
   );
 }
 
-function PreflightRow({ label, ready }: { label: string; ready: boolean }) {
+function Step({ n, text }: { n: number; text: string }) {
   return (
-    <View style={s.preflightRow} accessibilityLabel={`${label}: ${ready ? 'ready' : 'missing'}`}>
-      <Label>{ready ? 'Ready' : 'Missing'}</Label>
-      <Label tone="secondary">{label}</Label>
+    <View style={s.step}>
+      <Label variant="section">{n}</Label>
+      <Label style={s.stepText}>{text}</Label>
     </View>
   );
+}
+
+type Readiness = {
+  title: string;
+  detail: string;
+  action?: { kind: 'prompt'; label: string; failure: string; run: () => Promise<unknown> } | { kind: 'sign-in'; label: string };
+};
+
+/** The single next thing standing between the operator and a real test. */
+export function readinessStep({
+  entitlementStatus,
+  preflight,
+  labAccess,
+  runtime,
+}: {
+  entitlementStatus: string;
+  preflight: LinkedTracePreflight | null;
+  labAccess: boolean;
+  runtime: ReturnType<typeof useRuntime>;
+}): Readiness | null {
+  if (!preflight) return { title: 'Checking this phone…', detail: 'Reading the local Screen Time, motion, and lab storage state.' };
+  if (!preflight.labStorageIsolated) {
+    return {
+      title: 'This build has no isolated lab storage',
+      detail: 'Trace Lab must be a signed research build with its own lab App Group. This build cannot record a test.',
+    };
+  }
+  if (!labAccess) {
+    return {
+      title: 'Sign in once with your lab account',
+      detail: `Trace Lab records the real shield path, which only runs for an existing trial or active development account (this phone reports “${entitlementStatus}”). It never grants or invents access.`,
+      action: { kind: 'sign-in', label: 'Sign in' },
+    };
+  }
+  if (!preflight.screenTimeAuthorized) {
+    return {
+      title: 'Allow Screen Time',
+      detail: 'Screen Time is the only way iOS lets Trace Lab record the real background lock. iOS asks, so only the system prompt can grant it.',
+      action: { kind: 'prompt', label: 'Allow Screen Time', failure: 'Screen Time was not allowed. Your existing choices were kept.', run: () => runtime.screenTime.requestAuthorization() },
+    };
+  }
+  if (!preflight.canarySelectionValid) {
+    return {
+      title: preflight.canaryIncludesTestApps ? 'Pick a different canary app' : 'Choose one canary app',
+      detail: preflight.canaryIncludesTestApps
+        ? 'Walking Recorder and Trace Lab can never be the app you try to open while walking. Pick one harmless app you can open during the walk.'
+        : 'The canary is the harmless app you will try to open while walking; it is the app the shield may block. Choose exactly one app, with no categories or websites, and never Walking Recorder or Trace Lab.',
+      action: { kind: 'prompt', label: 'Choose canary app', failure: 'The canary app was not changed.', run: () => runtime.screenTime.presentAppPicker() },
+    };
+  }
+  if (!preflight.motionReady) {
+    return {
+      title: 'Allow Motion & Fitness',
+      detail: 'Trace Lab records its own motion evidence for the background detector. Walking Recorder asks for the same permission separately when it starts.',
+      action: { kind: 'prompt', label: 'Allow Motion & Fitness', failure: 'Motion & Fitness was not allowed. No test was started.', run: () => runtime.steps.request() },
+    };
+  }
+  return null;
 }
 
 const s = StyleSheet.create({
   content: { gap: t.space.xl, paddingBottom: t.space.xxxl },
   section: { gap: t.space.lg },
-  preflightRow: { gap: t.space.xs },
+  step: { flexDirection: 'row', gap: t.space.lg, alignItems: 'flex-start' },
+  stepText: { flex: 1 },
   error: { color: t.state.error },
 });

@@ -52,6 +52,8 @@ final class ExcerlockPolicyStore {
   func readIfPresentLocked() throws -> ExcerlockPolicyRecord? { let url = try policyURL(); guard FileManager.default.fileExists(atPath: url.path) else { return nil }; return try JSONDecoder().decode(ExcerlockPolicyRecord.self, from: Data(contentsOf: url)) }
   func writeLocked(_ value: ExcerlockPolicyRecord) throws { try JSONEncoder().encode(value).write(to: policyURL(), options: [.atomic]) }
   func currentSelectionPayload() -> String? { UserDefaults(suiteName: appGroup)?.dictionary(forKey: excerlockSelectionDefaultsKey)?[excerlockSelectionHandle] as? String }
+  /** Decoded operator selection. Callers must not persist or log the tokens. */
+  func currentSelection() -> FamilyActivitySelection? { try? selection(currentSelectionPayload()) }
   func currentSelectionCounts() -> (applications: Int, categories: Int, webDomains: Int)? {
     guard let value = try? selection(currentSelectionPayload()) else { return nil }
     return (value.applicationTokens.count, value.categoryTokens.count, value.webDomainTokens.count)

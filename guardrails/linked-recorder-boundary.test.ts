@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { fromRoot, readJson } from './repo-files';
+import { fromRoot, readJson, readUtf8 } from './repo-files';
 
 type Eas = { build?: Record<string, unknown> };
 type ExpoConfig = { expo?: { ios?: { bundleIdentifier?: string } } };
@@ -43,6 +43,28 @@ describe('linked recorder research boundary', () => {
     });
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   }, 30_000);
+
+  it('keeps one lab-only link contract across the Trace Lab config, the recorder, and the preflight', () => {
+    // The guided path has exactly one owner of each lab identifier: the Expo
+    // config plugin for the JS side, the recorder's plist/Swift for its own
+    // links, and the native preflight for the recorder bundle it must refuse.
+    const config = readUtf8(app('plugins', 'linkedRecorderResearchConfig.js'));
+    const recorderScheme = /WALKING_RECORDER_SCHEME = '([^']+)'/.exec(config)?.[1];
+    expect(recorderScheme).toBe('excerlock-walkingrecorder');
+    const traceScheme = /URL_SCHEME = '([^']+)'/.exec(config)?.[1];
+    expect(traceScheme).toBe('excerlock-linked-trace');
+
+    const info = readUtf8(fromRoot('tools', 'phone-walking-recorder', 'Support', 'Info.plist'));
+    expect(info).toContain(`<string>${recorderScheme}</string>`);
+    const swift = readUtf8(fromRoot('tools', 'phone-walking-recorder', 'Sources', 'CaptureController.swift'));
+    expect(swift).toContain(`static let scheme = "${recorderScheme}"`);
+    expect(swift).toContain(`static let traceLabScheme = "${traceScheme}"`);
+
+    const project = readUtf8(fromRoot('tools', 'phone-walking-recorder', 'project.yml'));
+    expect(project).toContain('PRODUCT_BUNDLE_IDENTIFIER: com.johansardar.excerlock.lab.walkingrecorder');
+    const module = readUtf8(app('modules', 'excerlock-enforcement', 'ios', 'ExcerlockEnforcementModule.swift'));
+    expect(module).toContain('labWalkingRecorderBundleIdentifier = "com.johansardar.excerlock.lab.walkingrecorder"');
+  });
 
   it('executes the ordinary-artifact scanner against clean and contaminated fixtures', () => {
     const root = mkdtempSync(join(tmpdir(), 'linked-recorder-boundary-'));

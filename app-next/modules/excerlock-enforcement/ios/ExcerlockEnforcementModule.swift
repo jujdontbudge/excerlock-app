@@ -65,6 +65,11 @@ public final class ExcerlockEnforcementModule: Module {
   }
 
   #if EXCERLOCK_LINKED_RECORDER_TRACE
+  // The co-installed Walking Recorder bundle identifier. Selecting it (or Trace
+  // Lab itself) as the shield target would deadlock the test, so the preflight
+  // refuses it instead of asking the operator to confirm a harmless canary.
+  static let labWalkingRecorderBundleIdentifier = "com.johansardar.excerlock.lab.walkingrecorder"
+
   private func linkedTraceStatusPayload(_ status: LinkedTraceStatus) -> [String: Any] {
     [
       "active": status.active,
@@ -75,8 +80,15 @@ public final class ExcerlockEnforcementModule: Module {
   }
 
   private func linkedTracePreflightPayload() -> [String: Any] {
-    let selection = ExcerlockPolicyStore.shared.currentSelectionCounts()
-    let canarySelectionValid = selection?.applications == 1 && selection?.categories == 0 && selection?.webDomains == 0
+    let selection = ExcerlockPolicyStore.shared.currentSelection()
+    let canaryIncludesTestApps = selection.map { selected in
+      let own = Bundle.main.bundleIdentifier
+      return selected.applications.contains {
+        $0.bundleIdentifier == Self.labWalkingRecorderBundleIdentifier || $0.bundleIdentifier == own
+      }
+    } ?? false
+    let canarySelectionValid = selection?.applications.count == 1 && selection?.categories.count == 0
+      && selection?.webDomains.count == 0 && !canaryIncludesTestApps
     let screenTimeAuthorized = AuthorizationCenter.shared.authorizationStatus == .approved
     let motionAuthorized = CMMotionActivityManager.authorizationStatus() == .authorized
     let motionAvailable = CMMotionActivityManager.isActivityAvailable() &&
@@ -93,9 +105,10 @@ public final class ExcerlockEnforcementModule: Module {
       "screenTimeAuthorized": screenTimeAuthorized,
       "motionReady": motionAuthorized && motionAvailable,
       "canarySelectionValid": canarySelectionValid,
-      "canaryApplicationCount": selection?.applications ?? 0,
-      "canaryCategoryCount": selection?.categories ?? 0,
-      "canaryWebDomainCount": selection?.webDomains ?? 0
+      "canaryIncludesTestApps": canaryIncludesTestApps,
+      "canaryApplicationCount": selection?.applications.count ?? 0,
+      "canaryCategoryCount": selection?.categories.count ?? 0,
+      "canaryWebDomainCount": selection?.webDomains.count ?? 0
     ]
   }
 

@@ -27,17 +27,16 @@ Keep the recorder screen open. The display stays awake during a recording. The c
 
 Recording health, unavailable streams, denied permission, sensor errors, the 250 MB per-session limit, the 750 MB local-retention limit, and low disk space are visible. The app never reports a successful capture when the production-path motion inputs are unavailable.
 
-## Optional linked ExcerLock research session
+## Linked ExcerLock research session (started from Trace Lab)
 
-The recorder can create a post-hoc correlation session for the separately provisioned **ExcerLock Trace Lab** build. This does not give the recorder App Group, Family Controls, Managed Settings, background modes, OTA, or network access.
+A linked test starts in the separately provisioned **ExcerLock Trace Lab** build, which mints the session UUID and the 256-bit one-time nonce and opens this app with `excerlock-walkingrecorder://linked-session`. This app registers that one lab-only scheme and no production link, remains unentitled, and has no App Group, Family Controls, Managed Settings, background mode, OTA or network access.
 
-1. Explicitly select **I consent to create a linked local session** before starting a recording.
-2. Start the desired activity label, then tap **Open ExcerLock Trace Lab**.
-3. In Trace Lab, complete its visible isolated-App-Group, existing development access, Screen Time, one-app canary, and Motion preflight; consent and start its trace, then return to the recorder. Access must already be trial/active in the development environment; this setup never uses production Adapty or auto-grants an entitlement.
-4. Mark lock/unlock checks and the outcome actually observed in a benign canary app. Never select this recorder as the Screen Time shield target.
-5. Tap **Finish & Save**; the recorder reopens Trace Lab so you can end/export its trace. Export the saved recorder archive separately, then use `tools/linked-recorder/join.py` locally.
+1. In Trace Lab tap **Start test**. Walking Recorder opens and starts recording that test immediately, with no activity label yet.
+2. Tap the card for what you are doing. Labels stay the honest foreground ground truth and live only in this app; the two apps exchange no live labels.
+3. Answer the **Canary check** card inline: while walking, then after standing still for about 10 seconds. Each answer is one tap and is recorded as the operator-observed outcome.
+4. Tap **Finish test**. The archive is saved locally and this app returns to Trace Lab with the one-time link so Trace Lab can save its own trace file.
 
-The two apps exchange only a random session UUID, protocol version, and 256-bit one-time nonce in a deep link. There is no live label IPC. Walking Recorder is the sole owner of test-phase, visible-canary, and activity labels. The nonce is written transactionally only to the session's protected `recovery.json`, which is excluded from every archive export; this lets completion, storage-limit, sensor-error, and process-termination paths reopen Trace Lab until you confirm it was finalized or explicitly abandoned. Both exports use `mach_continuous_time` receipt timestamps for offline ordering.
+The nonce is written transactionally only to the session's protected `recovery.json`, which is excluded from every archive export. Completion, interruption, storage-limit, sensor-error and process-termination paths keep that link, so the **Linked test needs finishing** card can always return to Trace Lab until the operator clears it. Trace Lab may also re-open this app with `excerlock-walkingrecorder://share-archive?sessionId=…` to share a finished archive from its results screen. Both exports use `mach_continuous_time` receipt timestamps for offline ordering.
 
 ## Capture archive
 

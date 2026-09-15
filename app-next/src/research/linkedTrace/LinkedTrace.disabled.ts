@@ -10,6 +10,7 @@ export const linkedTrace: LinkedTraceClient = {
       screenTimeAuthorized: false,
       motionReady: false,
       canarySelectionValid: false,
+      canaryIncludesTestApps: false,
       canaryApplicationCount: 0,
       canaryCategoryCount: 0,
       canaryWebDomainCount: 0,

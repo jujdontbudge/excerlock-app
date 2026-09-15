@@ -49,6 +49,7 @@ struct RecorderHomeView: View {
         .tint(RecorderTheme.orange)
         .onAppear { controller.refreshEnvironment() }
         .onChange(of: scenePhase) { _, phase in controller.handleScenePhase(phase) }
+        .onOpenURL { url in controller.handleIncomingLink(url) }
         .sheet(
             isPresented: Binding(
                 get: { controller.shareURL != nil },
@@ -91,6 +92,7 @@ struct RecorderHomeView: View {
                 .font(.body)
                 .foregroundStyle(RecorderTheme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
+            Text("Linked background tests start in ExcerLock Trace Lab; this app records the honest foreground labels for them.")
         }
         .accessibilityElement(children: .combine)
     }
@@ -223,95 +225,78 @@ struct RecorderHomeView: View {
     @ViewBuilder
     private var linkedTestSection: some View {
         if controller.isRecording, controller.linkedSessionID != nil {
-            VStack(alignment: .leading, spacing: 12) {
-                Label("Local diagnostic recording active", systemImage: "link.circle.fill")
-                    .font(.headline)
-                    .foregroundStyle(RecorderTheme.primaryText)
-                Text("Linked background test")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(RecorderTheme.secondaryText)
-                Text("Open ExcerLock Trace Lab once to consent and start its production-path trace, then return here. Labels stay in Walking Recorder; the apps do not exchange live labels.")
-                    .font(.subheadline)
-                    .foregroundStyle(RecorderTheme.secondaryText)
-                Button("Open ExcerLock Trace Lab") { controller.openLinkedTraceLab() }
-                    .buttonStyle(SecondaryButtonStyle())
-                Divider().overlay(RecorderTheme.divider)
-                Text("Canary observations")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(RecorderTheme.primaryText)
-                Text("Use only a benign canary app. Never select Walking Recorder as a shield target.")
-                    .font(.caption)
-                    .foregroundStyle(RecorderTheme.secondaryText)
-                VStack(spacing: 8) {
-                    Button("Begin lock check") { controller.markLinkedTestPhase("lock") }
-                    HStack(spacing: 8) {
-                        Button("Shield visible") { controller.markCanaryOutcome(phase: "lock", outcome: "shield_visible") }
-                        Button("App opened") { controller.markCanaryOutcome(phase: "lock", outcome: "app_opened") }
-                        Button("Unsure") { controller.markCanaryOutcome(phase: "lock", outcome: "uncertain") }
-                    }
-                }
-                .buttonStyle(CompactTestButtonStyle())
-                VStack(spacing: 8) {
-                    Button("Begin unlock check") { controller.markLinkedTestPhase("unlock") }
-                    HStack(spacing: 8) {
-                        Button("App opened") { controller.markCanaryOutcome(phase: "unlock", outcome: "app_opened") }
-                        Button("Still shielded") { controller.markCanaryOutcome(phase: "unlock", outcome: "shield_visible") }
-                        Button("Unsure") { controller.markCanaryOutcome(phase: "unlock", outcome: "uncertain") }
-                    }
-                }
-                .buttonStyle(CompactTestButtonStyle())
-            }
-            .recorderCard()
+            canaryCheckCard
         } else if let recovery = controller.pendingLinkedTraceRecovery {
             VStack(alignment: .leading, spacing: 12) {
-                Label("Linked trace needs finalization", systemImage: "arrow.clockwise.circle.fill")
+                Label("Linked test needs finishing", systemImage: "arrow.clockwise.circle.fill")
                     .font(.headline)
                     .foregroundStyle(RecorderTheme.primaryText)
-                Text("Session \(recovery.sessionId.prefix(8))… kept a protected one-time recovery link after completion, interruption, storage limit, or sensor failure.")
+                Text("Test \(recovery.sessionId.prefix(8))… finished here, but ExcerLock Trace Lab has not saved its trace yet.")
                     .font(.subheadline)
                     .foregroundStyle(RecorderTheme.secondaryText)
-                Text("Open Trace Lab to stop and export the production trace. The nonce stays outside every Recorder export and survives another app relaunch until you clear it.")
+                Text("Open Trace Lab to save it. The one-time link stays in a protected file, stays out of every export, and survives a relaunch until you clear it.")
                     .font(.caption)
                     .foregroundStyle(RecorderTheme.secondaryText)
-                Button("Open Trace Lab to finalize") { controller.openPendingLinkedTrace() }
+                Button("Open Trace Lab to finish") { controller.openPendingLinkedTrace() }
                     .buttonStyle(PrimaryButtonStyle())
-                Button("I already exported or abandoned this trace") { controller.clearPendingLinkedTraceRecovery() }
+                Button("I already saved it in Trace Lab") { controller.clearPendingLinkedTraceRecovery() }
                     .buttonStyle(SecondaryButtonStyle())
-            }
-            .recorderCard()
-        } else if !controller.isRecording {
-            VStack(alignment: .leading, spacing: 12) {
-                Label("Optional linked background test", systemImage: "link")
-                    .font(.headline)
-                    .foregroundStyle(RecorderTheme.primaryText)
-                Text("Creates a random one-time session link so this recorder export can be joined later with a separate ExcerLock Trace Lab export. No App Group access and no live label sharing.")
-                    .font(.subheadline)
-                    .foregroundStyle(RecorderTheme.secondaryText)
-                Button {
-                    controller.setLinkedRecorderConsent(!controller.linkedRecorderConsent)
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: controller.linkedRecorderConsent ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(controller.linkedRecorderConsent ? RecorderTheme.orange : RecorderTheme.secondaryText)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("I consent to create a linked local session")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(RecorderTheme.primaryText)
-                            Text("The nonce is kept only in a protected recovery file excluded from every export, then removed after finalization.")
-                                .font(.caption)
-                                .foregroundStyle(RecorderTheme.secondaryText)
-                        }
-                        Spacer()
-                    }
-                    .padding(14)
-                    .background(controller.linkedRecorderConsent ? RecorderTheme.selected : RecorderTheme.solid, in: RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(RecorderTheme.outline, lineWidth: 1))
-                }
-                .buttonStyle(ScalePressStyle())
-                .accessibilityValue(controller.linkedRecorderConsent ? "Selected" : "Not selected")
             }
             .recorderCard()
         }
+    }
+
+    /// One card, two inline questions, one obvious choice each: the only human
+    /// observation the test needs, asked at the moment it happens.
+    private var canaryCheckCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Canary check", systemImage: "shield.lefthalf.filled")
+                .font(.headline)
+                .foregroundStyle(RecorderTheme.primaryText)
+            switch controller.canaryStep {
+            case .lock:
+                Text("1. While you are walking, open your canary app. What did you see?")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RecorderTheme.primaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+                canaryChoices(phase: "lock", options: [
+                    ("Blocked (shield shown)", "shield_visible"),
+                    ("It opened normally", "app_opened"),
+                    ("Did not try / not sure", "uncertain")
+                ])
+            case .unlock:
+                Text("2. Stop walking, stand still for about 10 seconds, then open the canary app again. What did you see?")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RecorderTheme.primaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+                canaryChoices(phase: "unlock", options: [
+                    ("It opened normally", "app_opened"),
+                    ("Still blocked", "shield_visible"),
+                    ("Did not try / not sure", "uncertain")
+                ])
+            case .recorded:
+                Label("Both checks recorded", systemImage: "checkmark.circle.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RecorderTheme.primaryText)
+                Text(controller.canarySummary ?? "")
+                    .font(.caption)
+                    .foregroundStyle(RecorderTheme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Text("Answer with what your eyes saw. Never select Walking Recorder or ExcerLock as the canary app.")
+                .font(.caption)
+                .foregroundStyle(RecorderTheme.secondaryText)
+        }
+        .recorderCard()
+    }
+
+    private func canaryChoices(phase: String, options: [(String, String)]) -> some View {
+        VStack(spacing: 8) {
+            ForEach(options, id: \.1) { option in
+                Button(option.0) { controller.recordCanaryObservation(phase: phase, outcome: option.1) }
+            }
+        }
+        .buttonStyle(CompactTestButtonStyle())
     }
 
     private var scenarioSection: some View {
@@ -319,7 +304,16 @@ struct RecorderHomeView: View {
             Text(controller.isRecording ? "What are you doing now?" : "Choose your activity")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(RecorderTheme.primaryText)
-            if controller.isRecording && controller.activeScenario == nil {
+            if controller.isRecording, controller.linkedSessionID != nil, controller.activeScenario == nil {
+                Text("Linked test recording. Tap what you are doing now — the background trace is already running.")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(RecorderTheme.primaryText)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(12)
+                    .background(RecorderTheme.selected, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(RecorderTheme.outline, lineWidth: 1))
+            } else if controller.isRecording && controller.activeScenario == nil {
                 Text("Still recording the transition. No stationary label is assumed. Choose the next activity or finish and save.")
                     .font(.subheadline)
                     .foregroundStyle(RecorderTheme.primaryText)
@@ -387,7 +381,7 @@ struct RecorderHomeView: View {
                 endPoint: .bottom
             )
             .frame(height: 20)
-            Button("Finish & Save") { controller.finishAndSave() }
+            Button(controller.isRecording && controller.linkedSessionID != nil ? "Finish test" : "Finish & Save") { controller.finishAndSave() }
                 .buttonStyle(PrimaryButtonStyle())
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)

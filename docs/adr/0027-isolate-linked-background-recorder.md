@@ -15,6 +15,8 @@ A recorder-created UUID and cryptographically random nonce authorize a two-hour 
 
 Managed Settings setter return and readback are recorded as operation evidence, never as proof of visible shielding. A benign third canary app and an explicit operator outcome recorded only in Walking Recorder provide the visible result. Trace Lab owns consent, prerequisite checks, trace start/stop, export, and deletion; it has no duplicate human-label surface. Walking Recorder must never be selected as the shield target.
 
+**Flow revised by [ADR 0029](./0029-guided-linked-test-flow.md):** Trace Lab now mints the one-time link, starts the trace, and opens Walking Recorder; the recorder keeps its labels and both canary observations inline in one recording state, and app-created consent/confirmation surfaces are gone. The isolation boundaries, App Group split, trace contract, and joiner semantics in this record are unchanged.
+
 ## Context
 
 ADR 0026 isolated the installed foreground Walking Recorder specifically so it could not alter or imply production enforcement. That binary can compare its local Swift detector port with labeled foreground motion, but it has no App Group, Family Controls, background mode, Device Activity callback, Managed Settings write, or shield-outcome visibility. It therefore cannot test ExcerLock's real background lock/unlock chain.

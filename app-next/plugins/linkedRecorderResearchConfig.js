@@ -7,6 +7,14 @@ const URL_SCHEME = 'excerlock-linked-trace';
 // This placeholder client satisfies the runtime redirect contract without
 // naming the production client; Trace Lab signs in with Apple or email.
 const LAB_GOOGLE_IOS_CLIENT_ID = 'linked-trace-local.apps.googleusercontent.com';
+// Trace Lab starts a test and opens the co-installed Walking Recorder through
+// this lab-only scheme. The recorder registers it and nothing else, so no
+// production link can drive it. The recorder returns through URL_SCHEME.
+const WALKING_RECORDER_SCHEME = 'excerlock-walkingrecorder';
+const WALKING_RECORDER_LINK_HOSTS = Object.freeze({
+  linkedSession: 'linked-session',
+  shareArchive: 'share-archive',
+});
 // `dev` research builds are served by Metro (expo-dev-client). `lab` research
 // builds are standalone Release artifacts with an embedded JS bundle: no
 // Metro, no dev-client, no LAN, no OTA. Only these two environments may carry
@@ -102,6 +110,8 @@ module.exports = {
   RUNTIME_VERSION,
   URL_SCHEME,
   LAB_GOOGLE_IOS_CLIENT_ID,
+  WALKING_RECORDER_SCHEME,
+  WALKING_RECORDER_LINK_HOSTS,
   STANDALONE_ENV,
   RESEARCH_ENVS,
   DEV_CLIENT_MODULES,

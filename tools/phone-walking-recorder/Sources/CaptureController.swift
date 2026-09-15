@@ -1,19 +1,77 @@
 import Combine
 import CoreMotion
 import Foundation
-import Security
 import SwiftUI
 import UIKit
 
 enum RecorderLinkedTraceError: LocalizedError {
     case invalidLink
-    case randomUnavailable
 
     var errorDescription: String? {
         switch self {
         case .invalidLink: return "The linked trace URL could not be created."
-        case .randomUnavailable: return "A secure one-time link could not be created."
         }
+    }
+}
+
+/// The one lab-only link contract shared with the Trace Lab research build.
+/// Trace Lab starts the test and opens this app with `linked-session`; it opens
+/// this app with `share-archive` from its results screen; the recorder returns
+/// through Trace Lab's own scheme. No production link uses these URLs.
+enum RecorderLinkedLink {
+    static let scheme = "excerlock-walkingrecorder"
+    static let traceLabScheme = "excerlock-linked-trace"
+    static let sessionHost = "linked-session"
+    static let shareArchiveHost = "share-archive"
+
+    static func session(sessionId: String, nonce: String) -> URL? {
+        var components = URLComponents()
+        components.scheme = scheme
+        components.host = sessionHost
+        components.queryItems = [
+            URLQueryItem(name: "sessionId", value: sessionId),
+            URLQueryItem(name: "nonce", value: nonce),
+            URLQueryItem(name: "protocolVersion", value: "1")
+        ]
+        return components.url
+    }
+
+    static func traceLab(sessionId: String, nonce: String) -> URL? {
+        var components = URLComponents()
+        components.scheme = traceLabScheme
+        components.host = "linked-trace"
+        components.queryItems = [
+            URLQueryItem(name: "sessionId", value: sessionId),
+            URLQueryItem(name: "nonce", value: nonce),
+            URLQueryItem(name: "protocolVersion", value: "1")
+        ]
+        return components.url
+    }
+
+    /// Trace Lab mints the session id and the 256-bit nonce and keeps both out
+    /// of every export; the recorder only carries them through its protected
+    /// recovery file.
+    static func handshake(from url: URL) -> (sessionId: String, nonce: String)? {
+        guard url.scheme?.lowercased() == scheme,
+              url.host?.lowercased() == sessionHost,
+              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems else { return nil }
+        func value(_ name: String) -> String? { items.first { $0.name == name }?.value }
+        guard let sessionId = value("sessionId")?.lowercased(),
+              let nonce = value("nonce")?.lowercased(),
+              value("protocolVersion") == "1",
+              UUID(uuidString: sessionId)?.uuidString.lowercased() == sessionId,
+              nonce.count >= 64, nonce.count <= 160,
+              nonce.allSatisfy({ $0.isHexDigit || $0 == "-" }) else { return nil }
+        return (sessionId, nonce)
+    }
+
+    static func shareRequest(from url: URL) -> String? {
+        guard url.scheme?.lowercased() == scheme,
+              url.host?.lowercased() == shareArchiveHost,
+              let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems,
+              let sessionId = items.first(where: { $0.name == "sessionId" })?.value?.lowercased(),
+              UUID(uuidString: sessionId)?.uuidString.lowercased() == sessionId else { return nil }
+        return sessionId
     }
 }
 
@@ -25,6 +83,14 @@ final class CaptureController: NSObject, ObservableObject {
         case recording
         case saving
         case failed(String)
+    }
+
+    /// The canary check is two inline questions: while walking, then after
+    /// standing still. Both answers are operator-observed evidence.
+    enum CanaryStep: Equatable {
+        case lock
+        case unlock
+        case recorded
     }
 
     struct StreamStats {
@@ -66,9 +132,11 @@ final class CaptureController: NSObject, ObservableObject {
     @Published var notice: String?
     @Published var shareURL: URL?
     @Published var exportingSessionID: String?
-    @Published var linkedRecorderConsent = false
     @Published private(set) var linkedSessionID: String?
     @Published private(set) var pendingLinkedTraceRecovery: LinkedTraceRecovery?
+    @Published private(set) var canaryStep: CanaryStep = .lock
+    @Published private(set) var canaryLockOutcome: String?
+    @Published private(set) var canaryUnlockOutcome: String?
 
     let repository: SessionRepository
 
@@ -84,6 +152,7 @@ final class CaptureController: NSObject, ObservableObject {
     private var streamStats: [String: StreamStats] = [:]
     private var finishingAfterError = false
     private var linkedSessionNonce: String?
+    private var pendingLinkedLink: (sessionId: String, nonce: String)?
 
     #if DEBUG
     let isUIPreview = ProcessInfo.processInfo.arguments.contains("--ui-preview")
@@ -160,6 +229,12 @@ final class CaptureController: NSObject, ObservableObject {
             self.availability = self.motionService.availability
             if status != .authorized {
                 self.notice = "Motion & Fitness was not allowed. No recording was started."
+                self.pendingLinkedLink = nil
+                return
+            }
+            if let pending = self.pendingLinkedLink {
+                self.pendingLinkedLink = nil
+                self.beginSession(with: nil, link: pending)
             }
         }
     }
@@ -169,48 +244,56 @@ final class CaptureController: NSObject, ObservableObject {
         UIApplication.shared.open(url)
     }
 
-    func setLinkedRecorderConsent(_ consent: Bool) {
-        guard !isRecording else { return }
-        linkedRecorderConsent = consent
+    /// Entry point for the lab-only links Trace Lab sends this app: it starts a
+    /// linked test or shares the archive for one. A bare link only opens the app.
+    func handleIncomingLink(_ url: URL) {
+        if let request = RecorderLinkedLink.shareRequest(from: url) {
+            guard let session = repository.sessions.first(where: { $0.id == request }) else {
+                notice = "That recording is not on this phone any more. Export it before deleting it next time."
+                return
+            }
+            prepareExport(session)
+            return
+        }
+        guard let link = RecorderLinkedLink.handshake(from: url) else {
+            notice = "That link is not a valid linked test. Nothing was started."
+            return
+        }
+        startLinkedSession(sessionId: link.sessionId, nonce: link.nonce)
     }
 
-    func openLinkedTraceLab() {
-        guard isRecording, let writer, let linkedSessionID, let linkedSessionNonce else { return }
-        let stamp = clock.now()
-        do {
-            try writer.append(
-                channel: .system,
-                type: "linked_trace_launch_requested",
-                payload: [
-                    "linkedProtocolVersion": 1,
-                    "linkedSessionId": linkedSessionID,
-                    "clockDomain": "mach_continuous_time",
-                    "nonceExported": false
-                ],
-                stamp: stamp,
-                critical: true
-            )
-            let url = try Self.linkedTraceURL(sessionID: linkedSessionID, nonce: linkedSessionNonce)
-            UIApplication.shared.open(url) { [weak self] opened in
-                if !opened { self?.notice = "ExcerLock Trace Lab is not installed. The Walking Recorder session is still local and valid." }
-            }
-        } catch {
-            notice = "Could not open the linked trace: \(error.localizedDescription)"
+    /// Trace Lab owns the one-time link, so a valid link starts recording at once
+    /// with no activity label. Labels stay the operator's honest input.
+    func startLinkedSession(sessionId: String, nonce: String) {
+        if isRecording {
+            if linkedSessionID == sessionId { notice = nil }
+            else { notice = "Another linked test is already recording. Finish it before starting a new one." }
+            return
         }
+        guard mode != .preparing, mode != .saving else { return }
+        beginSession(with: nil, link: (sessionId, nonce))
     }
 
     func openPendingLinkedTrace() {
         guard let pendingLinkedTraceRecovery else { return }
-        do {
-            let url = try Self.linkedTraceURL(
-                sessionID: pendingLinkedTraceRecovery.sessionId,
-                nonce: pendingLinkedTraceRecovery.nonce
-            )
-            UIApplication.shared.open(url) { [weak self] opened in
-                if !opened { self?.notice = "ExcerLock Trace Lab is not installed. The protected recovery link remains on this phone." }
-            }
-        } catch {
-            notice = "Could not reopen the linked trace: \(error.localizedDescription)"
+        guard let url = RecorderLinkedLink.traceLab(
+            sessionId: pendingLinkedTraceRecovery.sessionId,
+            nonce: pendingLinkedTraceRecovery.nonce
+        ) else {
+            notice = "Could not reopen the linked trace."
+            return
+        }
+        UIApplication.shared.open(url) { [weak self] opened in
+            if !opened { self?.notice = "ExcerLock Trace Lab is not installed. The protected recovery link remains on this phone." }
+        }
+    }
+
+    /// Returns to Trace Lab with the link it needs to finalize and export.
+    func returnToTraceLab() {
+        guard let linkedSessionID, let linkedSessionNonce,
+              let url = RecorderLinkedLink.traceLab(sessionId: linkedSessionID, nonce: linkedSessionNonce) else { return }
+        UIApplication.shared.open(url) { [weak self] opened in
+            if !opened { self?.notice = "ExcerLock Trace Lab is not installed. This recording is still saved locally." }
         }
     }
 
@@ -227,6 +310,37 @@ final class CaptureController: NSObject, ObservableObject {
     func markLinkedTestPhase(_ phase: String) {
         guard ["lock", "unlock"].contains(phase) else { return }
         appendLinkedTestEvent(type: "test_marker", payload: ["kind": "canary_check", "phase": phase, "label": "observation_started"])
+    }
+
+    /// Records one operator-observed canary result and advances to the next
+    /// check. Both checks stay inline in the recording state: no extra screens.
+    func recordCanaryObservation(phase: String, outcome: String) {
+        guard isRecording, linkedSessionID != nil,
+              ["shield_visible", "app_opened", "uncertain"].contains(outcome) else { return }
+        if phase == "lock" {
+            guard canaryStep == .lock else { return }
+            canaryLockOutcome = outcome
+            markCanaryOutcome(phase: "lock", outcome: outcome)
+            canaryStep = .unlock
+            markLinkedTestPhase("unlock")
+        } else if phase == "unlock" {
+            guard canaryStep == .unlock else { return }
+            canaryUnlockOutcome = outcome
+            markCanaryOutcome(phase: "unlock", outcome: outcome)
+            canaryStep = .recorded
+        }
+    }
+
+    var canarySummary: String? {
+        guard canaryStep == .recorded else { return nil }
+        func words(_ outcome: String?, expected: String) -> String {
+            switch outcome {
+            case "shield_visible": return "the app was blocked"
+            case "app_opened": return "the app opened"
+            default: return outcome == nil ? "not recorded" : "unsure"
+            }
+        }
+        return "While walking: \(words(canaryLockOutcome, expected: "shield_visible")). After standing still: \(words(canaryUnlockOutcome, expected: "app_opened"))."
     }
 
     func markCanaryOutcome(phase: String, outcome: String) {
@@ -247,7 +361,7 @@ final class CaptureController: NSObject, ObservableObject {
     func tapScenario(_ scenario: GroundTruthScenario) {
         switch mode {
         case .idle, .failed:
-            beginSession(with: scenario)
+            beginSession(with: scenario, link: nil)
         case .recording:
             if activeScenario == scenario {
                 transition(to: nil, reason: "user_tapped_not_doing_anymore")
@@ -371,39 +485,46 @@ final class CaptureController: NSObject, ObservableObject {
         }
     }
 
-    private func beginSession(with scenario: GroundTruthScenario) {
+    private func beginSession(with scenario: GroundTruthScenario?, link: (sessionId: String, nonce: String)? = nil) {
         notice = nil
         refreshEnvironment()
         switch readiness {
         case .ready: break
         case .needsPermission:
+            pendingLinkedLink = link
             requestPermission()
-            notice = "Allow Motion & Fitness, then tap the activity again."
+            notice = link == nil
+                ? "Allow Motion & Fitness, then tap the activity again."
+                : "Allow Motion & Fitness and this linked test starts on its own."
             return
         case .permissionDenied:
+            pendingLinkedLink = nil
             notice = "Motion & Fitness is off. Open Settings to allow it; no recording was started."
             return
         case .permissionRestricted:
+            pendingLinkedLink = nil
             notice = "Motion & Fitness is restricted on this phone, so recording cannot start."
             return
         case .unsupported(let names):
+            pendingLinkedLink = nil
             notice = "Required sensors are unavailable: \(names.joined(separator: ", ")). No recording was started."
             return
         case .lowStorage:
+            pendingLinkedLink = nil
             notice = "Not enough free space for a safe recording. Delete a saved session first."
             return
         }
         guard StoragePolicy.canStartSession(totalStoredBytes: repository.totalStoredBytes, freeBytes: repository.freeBytes()) else {
+            pendingLinkedLink = nil
             notice = "Recorder storage is full. Export and delete a saved session before starting."
             return
         }
 
         mode = .preparing
         let started = clock.now()
-        let sessionID = UUID().uuidString.lowercased()
-        var linkedNonce: String?
+        let sessionID = link?.sessionId ?? UUID().uuidString.lowercased()
+        let linkedNonce = link?.nonce
         do {
-            linkedNonce = linkedRecorderConsent ? try Self.makeLinkedNonce() : nil
             let writer = try SessionWriter(
                 baseURL: repository.baseURL,
                 id: sessionID,
@@ -415,6 +536,7 @@ final class CaptureController: NSObject, ObservableObject {
             self.writer = writer
             linkedSessionID = linkedNonce == nil ? nil : sessionID
             linkedSessionNonce = linkedNonce
+            pendingLinkedLink = nil
             sessionStartedAt = started
             detector = ProductionWalkingDetectorPort(startMonotonicMs: started.monotonicMs)
             timeline = LabelTimeline()
@@ -437,7 +559,8 @@ final class CaptureController: NSObject, ObservableObject {
                     "linkedProtocolVersion": linkedNonce == nil ? NSNull() : 1,
                     "linkedSessionId": linkedNonce == nil ? NSNull() : sessionID,
                     "linkedClockDomain": linkedNonce == nil ? NSNull() : "mach_continuous_time",
-                    "linkedNonceExported": false
+                    "linkedNonceExported": false,
+                    "linkSource": linkedNonce == nil ? NSNull() : "trace_lab"
                 ],
                 stamp: started,
                 critical: true
@@ -466,6 +589,7 @@ final class CaptureController: NSObject, ObservableObject {
             UIApplication.shared.isIdleTimerDisabled = true
             startTicker()
             transition(to: scenario, reason: "user_started_session")
+            if linkedNonce != nil { markLinkedTestPhase("lock") }
         } catch {
             motionService.stop()
             UIApplication.shared.isIdleTimerDisabled = false
@@ -605,7 +729,7 @@ final class CaptureController: NSObject, ObservableObject {
         let end = clock.now()
         let linkedStopURL: URL?
         if let linkedSessionID, let linkedSessionNonce {
-            linkedStopURL = try? Self.linkedTraceURL(sessionID: linkedSessionID, nonce: linkedSessionNonce)
+            linkedStopURL = RecorderLinkedLink.traceLab(sessionId: linkedSessionID, nonce: linkedSessionNonce)
         } else {
             linkedStopURL = nil
         }
@@ -684,34 +808,13 @@ final class CaptureController: NSObject, ObservableObject {
         rawSampleCount = 0
         isAppActive = true
         finishingAfterError = false
-        linkedRecorderConsent = false
         linkedSessionID = nil
         linkedSessionNonce = nil
+        pendingLinkedLink = nil
+        canaryStep = .lock
+        canaryLockOutcome = nil
+        canaryUnlockOutcome = nil
         mode = .idle
-    }
-
-    private static func linkedTraceURL(sessionID: String, nonce: String) throws -> URL {
-        var components = URLComponents()
-        components.scheme = "excerlock-linked-trace"
-        components.host = "linked-trace"
-        components.queryItems = [
-            URLQueryItem(name: "sessionId", value: sessionID),
-            URLQueryItem(name: "nonce", value: nonce),
-            URLQueryItem(name: "protocolVersion", value: "1")
-        ]
-        guard let url = components.url else { throw RecorderLinkedTraceError.invalidLink }
-        return url
-    }
-
-    private static func makeLinkedNonce() throws -> String {
-        var bytes = [UInt8](repeating: 0, count: 32)
-        let status = bytes.withUnsafeMutableBytes { buffer in
-            SecRandomCopyBytes(kSecRandomDefault, buffer.count, buffer.baseAddress!)
-        }
-        guard status == errSecSuccess else {
-            throw RecorderLinkedTraceError.randomUnavailable
-        }
-        return bytes.map { String(format: "%02x", $0) }.joined()
     }
 
     private func stopAfterWriteFailure(_ error: Error) {
@@ -789,6 +892,7 @@ final class CaptureController: NSObject, ObservableObject {
                 "protocolVersion": linkedSessionID == nil ? NSNull() : 1,
                 "sessionId": linkedSessionID.map { $0 as Any } ?? NSNull(),
                 "clockDomain": linkedSessionID == nil ? NSNull() : "mach_continuous_time",
+                "linkSource": linkedSessionID == nil ? NSNull() : "trace_lab",
                 "productionStartWasAssumed": false,
                 "nonceExported": false
             ],

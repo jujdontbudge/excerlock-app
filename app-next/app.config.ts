@@ -14,13 +14,13 @@ const linkedRecorderConfig = require('./plugins/linkedRecorderResearchConfig') a
 // Group, with no universal links. A production universal link or OAuth
 // redirect must never open the co-installed research app.
 function researchIos(ios: ExpoConfig['ios'], identifiers: LinkedRecorderIdentifiers): ExpoConfig['ios'] {
-  const lab = {
-    ...ios,
-    bundleIdentifier: identifiers.bundleIds.app,
-    entitlements: { ...ios?.entitlements, 'com.apple.security.application-groups': [identifiers.appGroup] },
+  const entitlements: Record<string, unknown> = {
+    ...ios?.entitlements,
+    'com.apple.security.application-groups': [identifiers.appGroup],
   };
+  delete entitlements['com.apple.developer.associated-domains'];
+  const lab = { ...ios, bundleIdentifier: identifiers.bundleIds.app, entitlements };
   delete lab.associatedDomains;
-  delete lab.entitlements['com.apple.developer.associated-domains'];
   return lab;
 }
 
