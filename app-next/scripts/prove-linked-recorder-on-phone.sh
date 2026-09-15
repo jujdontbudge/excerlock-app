@@ -15,6 +15,7 @@ IL="${IL_UDID:-F4E839C0-3F05-5BF8-BA31-12949B2B83AB}"
 LAB="com.johansardar.excerlock.lab.linkedtrace"
 PROD="com.johansardar.excerlock"
 WALK="com.johansardar.excerlock.lab.walkingrecorder"
+PRODUCTION_RECORD="production-install-record.cjs"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -51,6 +52,14 @@ xcrun devicectl list devices > "$OUT/device-list-before.log" 2>&1
 grep -E "^ *Il " "$OUT/device-list-before.log" | tail -1 || true
 xcrun devicectl device info apps --device "$IL" > "$OUT/apps-before.log" 2>&1
 grep -E "$PROD|$LAB|$WALK" "$OUT/apps-before.log" || true
+# Exact identity only: the research apps share production's bundle-id prefix, so
+# the before/after comparison must never treat a lab install as production.
+node "$SCRIPT_DIR/$PRODUCTION_RECORD" "$OUT/apps-before.log" > "$OUT/production-before.log"
+cat "$OUT/production-before.log"
+if [[ ! -s "$OUT/production-before.log" ]]; then
+  echo "VERIFY FAIL: no production ExcerLock (${PROD}) install record in the before list; unlock Il, confirm production ExcerLock is installed, and rerun so the comparison has a baseline" >&2
+  exit 2
+fi
 xcrun devicectl device info processes --device "$IL" > "$OUT/processes-before.log" 2>&1
 grep -E "ExcerLock|PhoneWalkingRecorder" "$OUT/processes-before.log" || true
 
@@ -82,7 +91,8 @@ fi
 
 step "7. production ExcerLock was not replaced"
 xcrun devicectl device info apps --device "$IL" > "$OUT/apps-after.log" 2>&1
-if diff -u <(grep -F "$PROD" "$OUT/apps-before.log") <(grep -F "$PROD" "$OUT/apps-after.log") > "$OUT/production-diff.log"; then
+node "$SCRIPT_DIR/$PRODUCTION_RECORD" "$OUT/apps-after.log" > "$OUT/production-after.log"
+if diff -u "$OUT/production-before.log" "$OUT/production-after.log" > "$OUT/production-diff.log"; then
   echo "VERIFY PASS: production ExcerLock install record unchanged"
 else
   echo "VERIFY FAIL: production ExcerLock install record changed" >&2

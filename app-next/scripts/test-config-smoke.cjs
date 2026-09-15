@@ -5,7 +5,6 @@ const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const { resolve, dirname } = require('node:path');
 require('tsx/cjs');
-const { readClientConfiguration } = require('../src/runtime/clientConfiguration');
 const cwd = resolve(__dirname, '..');
 const cli = resolve(dirname(require.resolve('expo/package.json')), 'bin/cli');
 const env = {
@@ -63,23 +62,22 @@ test('actual Expo loader creates an isolated local-only Linked Recorder research
   assert.equal(config.ios.associatedDomains, undefined);
   assert.equal(config.ios.entitlements['com.apple.developer.associated-domains'], undefined);
   assert.equal(config.ios.infoPlist.EXCERLOCK_LINKED_RECORDER_TRACE, undefined);
-  assert.equal(config.extra.clientAuth.googleIosClientId, 'linked-trace-local.apps.googleusercontent.com');
-  assert.equal(config.extra.clientAuth.googleRedirectUri, 'com.googleusercontent.apps.linked-trace-local:/oauthredirect');
+  // A research build embeds no client identity group: no production value, no
+  // lab placeholder and no Google OAuth client.
+  assert.equal(config.extra.clientAuth, undefined);
+  assert.equal(config.extra.clientSubscription, undefined);
+  assert.equal(config.extra.clientObservability, undefined);
+  assert.equal(config.extra.clientApi, undefined);
   assert.ok(!result.stdout.includes('fixture.apps.googleusercontent.com'));
   assert.ok(!result.stdout.includes('com.googleusercontent.apps.fixture'));
+  assert.ok(!result.stdout.includes('linked-trace-local'));
   assert.ok(!result.stdout.includes('applinks:excerlock.com'));
   assert.equal(config.runtimeVersion, '2-linked-recorder-1');
   assert.equal(config.updates.enabled, false);
   assert.equal(config.updates.checkAutomatically, 'NEVER');
   assert.equal(config.updates.url, undefined);
   assert.equal(config.updates.requestHeaders, undefined);
-  assert.deepEqual(config.extra.clientObservability, {
-    posthogApiKey: 'linked-trace-local',
-    posthogHost: 'https://localhost',
-    sentryDsn: 'https://localhost',
-  });
   assert.equal(config.extra.linkedRecorderResearch, undefined);
-  assert.doesNotThrow(() => readClientConfiguration(config.extra));
   assert.ok(!config.plugins.some((plugin) => (Array.isArray(plugin) ? plugin[0] : plugin) === '@sentry/react-native/expo'));
   assert.ok(!result.stdout.includes(researchEnv.SENTRY_AUTH_TOKEN));
 });
@@ -116,11 +114,12 @@ test('actual Expo loader creates the standalone lab research config with an embe
   assert.deepEqual(config.scheme, ['excerlock-linked-trace']);
   assert.equal(config.ios.associatedDomains, undefined);
   assert.equal(config.ios.entitlements['com.apple.developer.associated-domains'], undefined);
-  assert.equal(config.extra.clientAuth.googleIosClientId, 'linked-trace-local.apps.googleusercontent.com');
-  assert.equal(config.extra.clientAuth.supabaseUrl, 'https://lab.invalid');
-  assert.equal(config.extra.clientAuth.supabaseAnonKey, 'lab-local-no-supabase');
-  assert.equal(config.extra.clientSubscription.adaptyKey, 'lab-local-no-adapty');
-  assert.equal(config.extra.clientApi.url, 'https://lab.invalid');
+  // The standalone lab omits every client identity group rather than embedding
+  // placeholders: there is no Supabase, Adapty, API, PostHog, Sentry, or Google
+  // OAuth value to find, and the artifact proof rejects any that appear.
+  for (const group of ['clientAuth', 'clientSubscription', 'clientObservability', 'clientApi']) {
+    assert.equal(config.extra[group], undefined, `lab extra must omit ${group}`);
+  }
   assert.ok(!result.stdout.includes('fixture.apps.googleusercontent.com'));
   assert.ok(!result.stdout.includes('com.googleusercontent.apps.fixture'));
   assert.ok(!result.stdout.includes('fixture.supabase.co'));
@@ -129,16 +128,12 @@ test('actual Expo loader creates the standalone lab research config with an embe
   assert.ok(!result.stdout.includes('fixture-posthog'));
   assert.ok(!result.stdout.includes('public@example.com'));
   assert.ok(!result.stdout.includes('api.example.com'));
+  assert.ok(!result.stdout.includes('linked-trace-local'));
+  assert.ok(!result.stdout.includes('lab.invalid'));
   assert.ok(!result.stdout.includes('applinks:excerlock.com'));
   assert.equal(config.runtimeVersion, '2-linked-recorder-1');
   assert.equal(config.updates.enabled, false);
   assert.equal(config.updates.url, undefined);
-  assert.deepEqual(config.extra.clientObservability, {
-    posthogApiKey: 'linked-trace-local',
-    posthogHost: 'https://localhost',
-    sentryDsn: 'https://localhost',
-  });
-  assert.doesNotThrow(() => readClientConfiguration(config.extra));
   // The standalone release build must not carry the dev client in any form;
   // the exclusion plugin is what removes its pods from the generated Podfile.
   assert.ok(!config.plugins.some((plugin) => (Array.isArray(plugin) ? plugin[0] : plugin) === 'expo-dev-client'));

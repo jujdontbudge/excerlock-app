@@ -172,6 +172,39 @@ final class SessionArchiveTests: XCTestCase {
         XCTAssertEqual(Set(repository.sessions.map(\.status)), Set([.storageLimit, .sensorError]))
     }
 
+    func testPendingLinkedRecoveriesSurfaceTheNewestUnfinishedTestFirst() throws {
+        let root = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let nonce = String(repeating: "ef", count: 32)
+        let clock = TestCaptureClock()
+        func writer(_ id: String, startedAtMs: Int64) throws -> SessionWriter {
+            try SessionWriter(
+                baseURL: root,
+                id: id,
+                startedAt: CaptureStamp(monotonicNs: UInt64(startedAtMs), wallTimeMs: startedAtMs, wallTimeISO8601: "2023-11-14T22:13:20Z"),
+                metadata: ["schemaVersion": 1],
+                clock: clock,
+                linkedTraceRecovery: LinkedTraceRecovery(sessionId: id, nonce: nonce)
+            )
+        }
+        let older = "11111111-1111-4111-8111-111111111111"
+        let unfinished = "22222222-2222-4222-8222-222222222222"
+        let newest = "33333333-3333-4333-8333-333333333333"
+        _ = try writer(older, startedAtMs: 1_700_000_000_000).finalize(status: .completed, timeline: LabelTimeline(), gapCount: 0)
+        try writer(unfinished, startedAtMs: 1_700_000_400_000).checkpoint(timeline: LabelTimeline(), gapCount: 0)
+        _ = try writer(newest, startedAtMs: 1_700_000_800_000).finalize(status: .completed, timeline: LabelTimeline(), gapCount: 0)
+
+        // An unfinished recording outranks already-finalized archives, and the
+        // remaining finalized archives are newest first.
+        XCTAssertEqual(SessionWriter.pendingLinkedTraceRecoveries(baseURL: root).map(\.sessionId), [unfinished, newest, older])
+
+        // After the relaunch recovery pass everything is finalized, so the newest
+        // started test is the one the "needs finishing" card must surface.
+        let repository = SessionRepository(baseURL: root)
+        XCTAssertEqual(repository.pendingLinkedTraceRecoveries.map(\.sessionId), [newest, unfinished, older])
+        XCTAssertEqual(repository.pendingLinkedTraceRecoveries.first?.sessionId, newest)
+    }
+
     func testStorageLimitStopsBeforeUnboundedBufferGrowth() throws {
         let root = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: root) }

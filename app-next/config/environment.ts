@@ -1,11 +1,6 @@
 /** Build-only resolver. Do not import this module from the application bundle. */
 export type BuildEnvironment = 'dev' | 'preview' | 'prod' | 'lab';
 export type EnvironmentValues = Readonly<Record<string, string | undefined>>;
-// The lab identity values are owned by the same CommonJS module as the lab
-// bundle identifier, App Group, and URL scheme, so build-time config, runtime
-// config, and artifact verification cannot drift.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const linkedRecorderConfig = require('../plugins/linkedRecorderResearchConfig') as typeof import('../plugins/linkedRecorderResearchConfig');
 /** Direct prebuild/xcodebuild must embed the same channel as EAS Build. */
 export function updateChannel(environment: BuildEnvironment): string {
   const channel = { dev: 'development', preview: 'preview', prod: 'production' }[environment as 'dev' | 'preview' | 'prod'];
@@ -79,20 +74,21 @@ export function resolveClientEnvironment(processValues: EnvironmentValues, local
   }));
 }
 
-export function buildClientExtra(values: EnvironmentValues, environment: BuildEnvironment, options: { requireUploadToken?: boolean } = {}) {
-  // Standalone research builds carry no production identity: they need no
-  // production keys, and only lab-local inert values are embedded, so the
-  // installed Trace Lab cannot name production Supabase, Adapty, PostHog, or
-  // Sentry even if the build host has those credentials.
+export type ClientExtra = {
+  environment: BuildEnvironment;
+  clientSubscription?: { adaptyKey: string | undefined };
+  clientObservability?: { posthogApiKey: string | undefined; posthogHost: string | undefined; sentryDsn: string | undefined };
+  clientAuth?: { supabaseUrl: string | undefined; supabaseAnonKey: string | undefined; googleIosClientId: string | undefined };
+  clientApi?: { url: string | undefined };
+};
+
+export function buildClientExtra(values: EnvironmentValues, environment: BuildEnvironment, options: { requireUploadToken?: boolean } = {}): ClientExtra {
+  // The standalone research lab embeds no client identity group at all: the lab
+  // identity graph is local, so there is nothing for a Supabase/Adapty/API
+  // placeholder to satisfy. Omitted fields cannot be mistaken for production
+  // credentials and cannot drift from the production values they resemble.
   if (environment === 'lab') {
-    const lab = linkedRecorderConfig.LAB_CLIENT_EXTRA;
-    return {
-      environment,
-      clientSubscription: { ...lab.clientSubscription },
-      clientObservability: { ...lab.clientObservability },
-      clientAuth: { ...lab.clientAuth, googleIosClientId: '', googleRedirectUri: '' },
-      clientApi: { ...lab.clientApi },
-    };
+    return { environment };
   }
   if (environment !== 'dev') {
     const required: readonly string[] = options.requireUploadToken ? [...CLIENT_ENV_NAMES, 'SENTRY_AUTH_TOKEN'] : CLIENT_ENV_NAMES;

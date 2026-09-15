@@ -231,7 +231,7 @@ struct RecorderHomeView: View {
                 Label("Linked test needs finishing", systemImage: "arrow.clockwise.circle.fill")
                     .font(.headline)
                     .foregroundStyle(RecorderTheme.primaryText)
-                Text("Test \(recovery.sessionId.prefix(8))… finished here, but ExcerLock Trace Lab has not saved its trace yet.")
+                Text("Test \(recovery.sessionId.prefix(8))… was recorded here, but ExcerLock Trace Lab has not saved its trace yet.")
                     .font(.subheadline)
                     .foregroundStyle(RecorderTheme.secondaryText)
                 Text("Open Trace Lab to save it. The one-time link stays in a protected file, stays out of every export, and survives a relaunch until you clear it.")

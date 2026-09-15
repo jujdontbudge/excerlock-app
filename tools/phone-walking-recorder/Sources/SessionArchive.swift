@@ -328,21 +328,45 @@ final class SessionWriter {
         }
     }
 
+    /// Pending linked recoveries in actionable order, newest unfinished test first.
+    ///
+    /// Directory enumeration order is not an order: without this, the
+    /// "Linked test needs finishing" card could surface an arbitrary stale
+    /// recovery. An unfinished recording (no manifest yet, or an archive the
+    /// recovery pass has not finalized) outranks an already-finalized archive
+    /// that only waits for Trace Lab, and within each group the most recently
+    /// started test wins. The session id is the stable tie-break so two
+    /// recoveries with equal start stamps can never swap places.
     static func pendingLinkedTraceRecoveries(baseURL: URL) -> [LinkedTraceRecovery] {
         guard let directories = try? FileManager.default.contentsOfDirectory(
             at: baseURL,
             includingPropertiesForKeys: nil,
             options: [.skipsHiddenFiles]
         ) else { return [] }
-        return directories.compactMap { directory in
+        let candidates: [PendingLinkedTraceRecovery] = directories.compactMap { directory in
             let recoveryURL = directory.appendingPathComponent("recovery.json")
             let manifestURL = directory.appendingPathComponent("manifest.json")
-            guard FileManager.default.fileExists(atPath: manifestURL.path),
-                  let data = try? Data(contentsOf: recoveryURL),
-                  let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            guard let data = try? Data(contentsOf: recoveryURL),
+                  let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let recovery = linkedTraceRecovery(from: object)
             else { return nil }
-            return linkedTraceRecovery(from: object)
+            let recorderFinalized = object["recorderFinalized"] as? Bool ?? false
+            // A finalized archive is the card's normal case. An unfinished
+            // recording has no manifest yet, and it is the most actionable
+            // recovery of all, so it is surfaced instead of hidden. A finalized
+            // stamp whose archive is missing is a partial attempt that never
+            // wrote a manifest, and it cannot claim a recording that is not there.
+            if recorderFinalized && !FileManager.default.fileExists(atPath: manifestURL.path) { return nil }
+            let started = (object["startedAt"] as? [String: Any]).flatMap(stamp(from:))
+            return PendingLinkedTraceRecovery(
+                recovery: recovery,
+                // An unreadable start stamp sorts last inside its group instead of
+                // hiding a recovery the operator may still need.
+                startedAtWallTimeMs: started?.wallTimeMs ?? Int64.min,
+                recorderFinalized: recorderFinalized
+            )
         }
+        return candidates.sorted(by: PendingLinkedTraceRecovery.actionableOrder).map(\.recovery)
     }
 
     static func clearLinkedTraceRecovery(sessionId: String, baseURL: URL) throws {

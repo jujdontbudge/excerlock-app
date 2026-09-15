@@ -190,14 +190,16 @@ export function LinkedTraceScreen() {
     setBusy(true);
     setError(null);
     setNote(null);
-    let link: LinkedHandshake | null = null;
     try {
       const latest = await refreshPreflight();
       if (!latest || readinessStep({ entitlementStatus, preflight: latest, labAccess, runtime })) {
         setError('The test did not start. Finish the step named above first.');
         return;
       }
-      link = newLinkedSession();
+      // Every start mints a fresh phone-local session id, so the native writer's
+      // durable collision refusal can only be reached by a repeated delivery of
+      // a link this screen never minted twice.
+      const link = newLinkedSession();
       // Readiness guarantee: the real ExcerLock walking rule is in place before
       // the trace starts, so the canary can produce block/release evidence. The
       // status effect removes it as soon as no trace is running.
@@ -211,19 +213,7 @@ export function LinkedTraceScreen() {
       } catch {
         setError('The trace is running, but Walking Recorder could not be opened. Open Walking Recorder from the Home Screen to record this test.');
       }
-    } catch (error) {
-      if (link && isSessionExistsFailure(error)) {
-        const failedSessionId = link.sessionId;
-        const [current, saved] = await Promise.all([linkedTrace.status(), linkedTrace.finalized()]);
-        setStatus(current);
-        setFinalized(saved);
-        settle(current, null, saved);
-        if (!current.active) removeLabWalkingRule();
-        setNote(saved.some((session) => session.sessionId === failedSessionId)
-          ? ALREADY_SAVED
-          : 'That test link was already used on this phone, so no new trace started. Start test begins a fresh run.');
-        return;
-      }
+    } catch {
       const current = await linkedTrace.status().catch(() => null);
       if (!current?.active) removeLabWalkingRule();
       setError('The trace did not start. Nothing was recorded; try again.');
@@ -485,17 +475,6 @@ export function LinkedTraceScreen() {
       </Label>
     </ScreenShell>
   );
-}
-
-/**
- * The native writer refuses to create a session whose directory already exists
- * (a finalized, or expired-but-unabandoned, trace). Expo surfaces the Swift
- * error message, so the screen can explain that specific case instead of a
- * generic start failure, while never claiming the test was saved.
- */
-function isSessionExistsFailure(error: unknown): boolean {
-  const record = typeof error === 'object' && error !== null ? (error as { message?: unknown }) : null;
-  return /sessionexists/i.test(String(record?.message ?? error));
 }
 
 function Step({ n, text }: { n: number; text: string }) {

@@ -313,14 +313,3 @@ test('resettles an expired review to the expired step when native refuses to fin
   expect(screen.getByRole('button', { name: 'Delete expired test' })).toBeTruthy();
   expect(screen.queryByText('The trace could not be saved. Keep Trace Lab installed and try again from this screen.')).toBeNull();
 });
-
-test('explains an already-used test link instead of claiming a new trace started', async () => {
-  const user = userEvent.setup();
-  mockLinkedTrace.start.mockRejectedValue(new Error('UnexpectedException: sessionExists at LinkedTraceWriter.swift:304'));
-  await render(<LinkedTraceScreen />);
-
-  await user.press(await screen.findByRole('button', { name: 'Start test' }));
-  expect(await screen.findByText(/already used on this phone/)).toBeTruthy();
-  expect(screen.queryByText('The trace did not start. Nothing was recorded; try again.')).toBeNull();
-  expect(rulesStore.getState().data.rules.some((rule) => rule.id === LAB_WALKING_RULE_ID)).toBe(false);
-});

@@ -14,11 +14,11 @@ const verifier = path.join(__dirname, 'verify-standalone-research.cjs');
 
 const APP_BUNDLE_ID = 'com.johansardar.excerlock.lab.linkedtrace';
 const APP_GROUP = 'group.com.johansardar.excerlock.lab.linkedtrace';
-const LAB_GOOGLE_IOS_CLIENT_ID = 'linked-trace-local.apps.googleusercontent.com';
-const LAB_LOCAL_ADAPTY_KEY = 'lab-local-no-adapty';
-const LAB_LOCAL_SUPABASE_URL = 'https://lab.invalid';
-const LAB_LOCAL_SUPABASE_ANON_KEY = 'lab-local-no-supabase';
-const LAB_LOCAL_API_URL = 'https://lab.invalid';
+// The lab embeds no client identity group at all; these are production shapes the
+// artifact proof must reject, not values it must satisfy.
+const PRODUCTION_SUPABASE_URL = 'https://production.supabase.co';
+const PRODUCTION_ADAPTY_KEY = 'production-adapty-key';
+const PRODUCTION_API_URL = 'https://api.excerlock.com';
 
 function plistValue(value, indent) {
   const pad = '  '.repeat(indent);
@@ -64,13 +64,6 @@ function makeApp(root, overrides = {}) {
       updates: { enabled: false, checkAutomatically: 'NEVER' },
       extra: {
         environment: 'lab',
-        clientAuth: {
-          googleIosClientId: LAB_GOOGLE_IOS_CLIENT_ID,
-          supabaseUrl: LAB_LOCAL_SUPABASE_URL,
-          supabaseAnonKey: LAB_LOCAL_SUPABASE_ANON_KEY,
-        },
-        clientSubscription: { adaptyKey: LAB_LOCAL_ADAPTY_KEY },
-        clientApi: { url: LAB_LOCAL_API_URL },
       },
       ...(overrides.config ?? {}),
     }),
@@ -164,7 +157,7 @@ test('rejects production Google OAuth or universal-link routing into Trace Lab',
   assert.match(result.stderr, /associated domains \["applinks:excerlock\.com"\]/);
   assert.match(result.stderr, /embedded Expo config scheme is/);
   assert.match(result.stderr, /embedded Expo config carries associated domains/);
-  assert.match(result.stderr, /clientAuth\.googleIosClientId is 174877771548-production/);
+  assert.match(result.stderr, /carries client identity group clientAuth/);
 }));
 
 test('rejects an embedded Expo config that would boot outside the lab environment', () => inTemp((root) => {
@@ -174,7 +167,7 @@ test('rejects an embedded Expo config that would boot outside the lab environmen
         scheme: ['excerlock-linked-trace'],
         ios: { bundleIdentifier: 'com.johansardar.excerlock' },
         updates: { enabled: true, url: 'https://u.expo.dev/9a358379-d939-4c56-bcea-de3ac5699be2' },
-        extra: { environment: 'dev', clientAuth: { googleIosClientId: LAB_GOOGLE_IOS_CLIENT_ID } },
+        extra: { environment: 'dev', clientAuth: { googleIosClientId: 'fixture.apps.googleusercontent.com' } },
       },
     }),
   );
@@ -239,22 +232,17 @@ test('rejects production identity values embedded in the lab Expo config', () =>
         updates: { enabled: false, checkAutomatically: 'NEVER' },
         extra: {
           environment: 'lab',
-          clientAuth: {
-            googleIosClientId: LAB_GOOGLE_IOS_CLIENT_ID,
-            supabaseUrl: 'https://production.supabase.co',
-            supabaseAnonKey: 'production-anon',
-          },
-          clientSubscription: { adaptyKey: 'production-adapty-key' },
-          clientApi: { url: 'https://api.excerlock.com' },
+          clientAuth: { supabaseUrl: PRODUCTION_SUPABASE_URL, supabaseAnonKey: 'production-anon' },
+          clientSubscription: { adaptyKey: PRODUCTION_ADAPTY_KEY },
+          clientApi: { url: PRODUCTION_API_URL },
         },
       },
     }),
   );
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /clientAuth\.supabaseUrl is https:\/\/production\.supabase\.co/);
-  assert.match(result.stderr, /clientAuth\.supabaseAnonKey is not the lab-local value/);
-  assert.match(result.stderr, /clientSubscription\.adaptyKey is production-adapty-key/);
-  assert.match(result.stderr, /clientApi\.url is https:\/\/api\.excerlock\.com/);
+  assert.match(result.stderr, /carries client identity group clientAuth/);
+  assert.match(result.stderr, /carries client identity group clientSubscription/);
+  assert.match(result.stderr, /carries client identity group clientApi/);
 }));
 
 test('rejects a bundle that smuggled the production identity graph', () => inTemp((root) => {

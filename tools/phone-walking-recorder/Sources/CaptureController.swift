@@ -24,18 +24,6 @@ enum RecorderLinkedLink {
     static let sessionHost = "linked-session"
     static let shareArchiveHost = "share-archive"
 
-    static func session(sessionId: String, nonce: String) -> URL? {
-        var components = URLComponents()
-        components.scheme = scheme
-        components.host = sessionHost
-        components.queryItems = [
-            URLQueryItem(name: "sessionId", value: sessionId),
-            URLQueryItem(name: "nonce", value: nonce),
-            URLQueryItem(name: "protocolVersion", value: "1")
-        ]
-        return components.url
-    }
-
     static func traceLab(sessionId: String, nonce: String) -> URL? {
         var components = URLComponents()
         components.scheme = traceLabScheme
@@ -50,7 +38,9 @@ enum RecorderLinkedLink {
 
     /// Trace Lab mints the session id and the 256-bit nonce and keeps both out
     /// of every export; the recorder only carries them through its protected
-    /// recovery file.
+    /// recovery file. The recorder parses that link here and never builds one —
+    /// the research bundle's `walkingRecorderSessionLink` is the single owner of
+    /// the session-link contract.
     static func handshake(from url: URL) -> (sessionId: String, nonce: String)? {
         guard url.scheme?.lowercased() == scheme,
               url.host?.lowercased() == sessionHost,
@@ -815,6 +805,8 @@ final class CaptureController: NSObject, ObservableObject {
         }
     }
 
+    /// The store orders recoveries (unfinished first, then newest started test),
+    /// so `.first` is the test the operator is most likely finishing now.
     private func refreshPendingLinkedTraceRecovery() {
         pendingLinkedTraceRecovery = repository.pendingLinkedTraceRecoveries.first
     }
@@ -822,9 +814,12 @@ final class CaptureController: NSObject, ObservableObject {
     /// Truthful continuation for a repeated linked-session delivery: the
     /// recovery card is the one path to finish an unfinished test in Trace Lab.
     private func linkedDeliveryNotice(forExisting sessionId: String) -> String {
+        repository.reload()
         refreshPendingLinkedTraceRecovery()
-        if pendingLinkedTraceRecovery?.sessionId == sessionId {
-            return "This linked test is already recorded on this phone. Use the linked-test card above to finish it in Trace Lab."
+        if repository.pendingLinkedTraceRecoveries.contains(where: { $0.sessionId == sessionId }) {
+            return pendingLinkedTraceRecovery?.sessionId == sessionId
+                ? "This linked test is already recorded on this phone. Use the linked-test card above to finish it in Trace Lab."
+                : "This linked test is already recorded on this phone. Finish the newest unfinished test in Trace Lab first; nothing new was started."
         }
         if repository.sessions.contains(where: { $0.id == sessionId }) {
             return "This linked test already has a saved recording on this phone. Nothing new was started."

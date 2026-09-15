@@ -20,6 +20,12 @@ struct LinkedTraceWriterHarness {
     defer { try? FileManager.default.removeItem(at: root) }
     try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
     precondition(linkedTraceAppGroup != excerlockProductionAppGroup, "research config must never fall back to production storage")
+    // A Trace Lab relaunch recovers an active trace with no lifecycle observers:
+    // the first status read must reinstall them exactly once, and never for an
+    // inactive or already-observed trace.
+    precondition(LinkedTraceLifecyclePolicy.shouldInstallObservers(observerCount: 0, sessionActive: true))
+    precondition(!LinkedTraceLifecyclePolicy.shouldInstallObservers(observerCount: 0, sessionActive: false))
+    precondition(!LinkedTraceLifecyclePolicy.shouldInstallObservers(observerCount: 4, sessionActive: true))
 
     let sessionId = UUID().uuidString.lowercased()
     let nonce = String(repeating: "ab", count: 32)

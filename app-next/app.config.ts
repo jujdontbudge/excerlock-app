@@ -32,11 +32,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const environment = resolveBuildEnvironment(process.env);
   const values = loadBuildEnvironment();
   const extra = buildClientExtra(values, environment, { requireUploadToken: process.env.EAS_BUILD === 'true' });
+  // A research bundle (Metro dev or standalone lab) runs the lab-local identity
+  // graph, which reads no client identity group. It embeds only the environment
+  // marker, so neither a production value nor a placeholder can reach it.
+  const clientExtra = linkedRecorderResearch ? { environment } : extra;
   // Upload tooling reads this at build time. Never include the token in Expo config.
   if (!linkedRecorderResearch && process.env.NODE_ENV !== 'test' && values.SENTRY_AUTH_TOKEN && !process.env.SENTRY_AUTH_TOKEN) {
     process.env.SENTRY_AUTH_TOKEN = values.SENTRY_AUTH_TOKEN;
   }
-  const googleIosClientId = linkedRecorderResearch ? linkedRecorderConfig.LAB_GOOGLE_IOS_CLIENT_ID : values.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const googleIosClientId = linkedRecorderResearch ? undefined : values.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   const google = googleIosClientId ? googleOAuthRedirect(googleIosClientId) : null;
   const plugins = linkedRecorderResearch
     ? [
@@ -74,15 +78,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     plugins: [...plugins],
     extra: {
       ...config.extra,
-      ...extra,
-      ...(linkedRecorderResearch ? {
-        clientObservability: {
-          posthogApiKey: 'linked-trace-local',
-          posthogHost: 'https://localhost',
-          sentryDsn: 'https://localhost',
-        },
-      } : {}),
-      clientAuth: { ...extra.clientAuth, googleIosClientId, googleRedirectUri: google?.redirectUri },
+      ...clientExtra,
+      // Trace Lab omits every client identity group: no Supabase/Adapty/API
+      // placeholder and no Google OAuth client or redirect scheme. The lab
+      // identity graph is local, and the artifact proof rejects the presence of
+      // any production identity field.
+      ...(!linkedRecorderResearch && extra.clientAuth
+        ? { clientAuth: { ...extra.clientAuth, googleIosClientId, googleRedirectUri: google?.redirectUri } }
+        : {}),
     },
     updates: linkedRecorderResearch ? linkedRecorderConfig.updatesConfig() : {
       url: 'https://u.expo.dev/9a358379-d939-4c56-bcea-de3ac5699be2',

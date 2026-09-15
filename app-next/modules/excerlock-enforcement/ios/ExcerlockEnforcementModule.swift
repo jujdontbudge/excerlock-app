@@ -36,7 +36,10 @@ public final class ExcerlockEnforcementModule: Module {
       return self.linkedTraceStatusPayload(status)
     }
     Function("linkedTraceStatus") { () -> [String: Any] in
-      self.linkedTraceStatusPayload(LinkedTraceWriter.shared.status())
+      // The screen reads status on boot, which is exactly when a relaunch has to
+      // recover the lifecycle observers for a session that survived it.
+      self.ensureLinkedTraceLifecycleObserversOnMain()
+      return self.linkedTraceStatusPayload(LinkedTraceWriter.shared.status())
     }
     Function("linkedTracePreflight") { () -> [String: Any] in
       self.linkedTracePreflightPayload()
@@ -127,6 +130,17 @@ public final class ExcerlockEnforcementModule: Module {
     } else {
       DispatchQueue.main.sync { self.installLinkedTraceLifecycleObservers() }
     }
+  }
+
+  /// Recovery path: Trace Lab relaunch recreates this module while the durable
+  /// session is still active, so the first status read reinstalls the observers.
+  /// Idempotent: an existing observer set is never rebuilt or re-announced.
+  private func ensureLinkedTraceLifecycleObserversOnMain() {
+    guard LinkedTraceLifecyclePolicy.shouldInstallObservers(
+      observerCount: linkedTraceLifecycleObservers.count,
+      sessionActive: LinkedTraceWriter.shared.status().active
+    ) else { return }
+    installLinkedTraceLifecycleObserversOnMain()
   }
 
   private func installLinkedTraceLifecycleObservers() {

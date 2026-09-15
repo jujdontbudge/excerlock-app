@@ -9,12 +9,10 @@ final class RecorderLinkedLinkTests: XCTestCase {
     private let sessionId = "123e4567-e89b-42d3-a456-426614174000"
     private let nonce = String(repeating: "ab", count: 32)
 
-    func testBuildsTheLabOnlySessionLink() throws {
-        let url = try XCTUnwrap(RecorderLinkedLink.session(sessionId: sessionId, nonce: nonce))
-        let components = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
-        XCTAssertEqual(components.scheme, "excerlock-walkingrecorder")
-        XCTAssertEqual(components.host, "linked-session")
-        XCTAssertEqual(components.queryItems?.first { $0.name == "protocolVersion" }?.value, "1")
+    func testParsesTheLabOnlySessionLink() throws {
+        // Trace Lab owns the builder; this app proves it parses what Trace Lab
+        // sends, from the literal link shape, without a second builder.
+        let url = try XCTUnwrap(URL(string: "excerlock-walkingrecorder://linked-session?sessionId=\(sessionId)&nonce=\(nonce)&protocolVersion=1"))
         XCTAssertEqual(RecorderLinkedLink.handshake(from: url)?.sessionId, sessionId)
         XCTAssertEqual(RecorderLinkedLink.handshake(from: url)?.nonce, nonce)
     }

@@ -208,6 +208,23 @@ struct LinkedTraceRecovery: Codable, Equatable, Identifiable {
     }
 }
 
+/// One durable linked recovery with the fields the card needs to pick the
+/// current test: when it started, and whether the Recorder archive is already
+/// finalized (that archive only waits for Trace Lab, so it is deprioritized).
+struct PendingLinkedTraceRecovery: Equatable {
+    let recovery: LinkedTraceRecovery
+    let startedAtWallTimeMs: Int64
+    let recorderFinalized: Bool
+
+    /// Unfinished recordings first, then newest started test, then a stable
+    /// session-id tie-break: the newest unfinished test is always surfaced first.
+    static func actionableOrder(_ lhs: PendingLinkedTraceRecovery, _ rhs: PendingLinkedTraceRecovery) -> Bool {
+        if lhs.recorderFinalized != rhs.recorderFinalized { return !lhs.recorderFinalized }
+        if lhs.startedAtWallTimeMs != rhs.startedAtWallTimeMs { return lhs.startedAtWallTimeMs > rhs.startedAtWallTimeMs }
+        return lhs.recovery.sessionId > rhs.recovery.sessionId
+    }
+}
+
 /// The corrected ExcerLock canary order: a verified walk releases the shield, so
 /// the canary opens while walking, and the shield returns only after standing
 /// still past the configured stop grace. The recorder asks in that order, emits

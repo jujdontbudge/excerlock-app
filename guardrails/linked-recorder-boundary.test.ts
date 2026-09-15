@@ -47,6 +47,7 @@ describe('linked recorder research boundary', () => {
       'scripts/linked-recorder-config.test.cjs',
       'scripts/metro.test.cjs',
       'scripts/standalone-research.test.cjs',
+      'scripts/production-install-record.test.cjs',
     ], {
       cwd: app(),
       encoding: 'utf8',

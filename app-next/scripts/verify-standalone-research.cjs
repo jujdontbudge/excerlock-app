@@ -23,13 +23,19 @@ const APP_DISPLAY_NAME = 'ExcerLock Trace Lab';
 const APP_GROUP = 'group.com.johansardar.excerlock.lab.linkedtrace';
 const TEAM = 'AX3C2B78YD';
 const SCHEME = 'excerlock-linked-trace';
-const LAB_GOOGLE_IOS_CLIENT_ID = 'linked-trace-local.apps.googleusercontent.com';
-// The embedded lab client config must name only the lab-local identity; a
-// production Supabase/Adapty/API value must never reach the installed artifact.
-const LAB_LOCAL_ADAPTY_KEY = 'lab-local-no-adapty';
-const LAB_LOCAL_SUPABASE_URL = 'https://lab.invalid';
-const LAB_LOCAL_SUPABASE_ANON_KEY = 'lab-local-no-supabase';
-const LAB_LOCAL_API_URL = 'https://lab.invalid';
+// The lab embeds no client identity group at all. These are the production
+// shapes the artifact must never carry, not values to satisfy with placeholders.
+const PRODUCTION_IDENTITY_GROUPS = ['clientAuth', 'clientSubscription', 'clientObservability', 'clientApi'];
+const PRODUCTION_IDENTITY_MARKERS = [
+  'EXPO_PUBLIC_SUPABASE_URL',
+  'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+  'EXPO_PUBLIC_ADAPTY_KEY',
+  'EXPO_PUBLIC_API_URL',
+  'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
+  'apps.googleusercontent.com',
+  'supabase.co',
+  'adapty',
+];
 const OTA_PROJECT_URL = 'u.expo.dev/9a358379';
 const MAX_SCAN_BYTES = 200 * 1024 * 1024;
 // Expo registers the bundle identifier as a URL scheme next to the configured
@@ -140,22 +146,19 @@ function verifyEmbeddedConfig(app, failures, passed) {
   if (config.ios?.bundleIdentifier !== APP_BUNDLE_ID) failures.push(`embedded Expo config ios.bundleIdentifier is ${String(config.ios?.bundleIdentifier)} (want ${APP_BUNDLE_ID})`);
   if (JSON.stringify(config.scheme) !== JSON.stringify([SCHEME])) failures.push(`embedded Expo config scheme is ${JSON.stringify(config.scheme)} (want exactly ${JSON.stringify([SCHEME])})`);
   if (config.ios?.associatedDomains !== undefined) failures.push('embedded Expo config carries associated domains');
-  if (config.extra?.clientAuth?.googleIosClientId !== LAB_GOOGLE_IOS_CLIENT_ID) {
-    failures.push(`embedded Expo config clientAuth.googleIosClientId is ${String(config.extra?.clientAuth?.googleIosClientId)} (want ${LAB_GOOGLE_IOS_CLIENT_ID})`);
+  // The lab must omit client identity groups rather than carry placeholders: an
+  // empty `clientAuth: {}` still looks like an identity contract to a reader and
+  // to any future code that reuses this extra, so require the keys to be absent.
+  const presentGroups = PRODUCTION_IDENTITY_GROUPS.filter((group) => config.extra?.[group] !== undefined);
+  for (const group of presentGroups) {
+    failures.push(`embedded Expo config carries client identity group ${group} (the lab must omit it)`);
   }
-  if (config.extra?.clientAuth?.supabaseUrl !== LAB_LOCAL_SUPABASE_URL) {
-    failures.push(`embedded Expo config clientAuth.supabaseUrl is ${String(config.extra?.clientAuth?.supabaseUrl)} (want the lab-local value ${LAB_LOCAL_SUPABASE_URL})`);
+  for (const marker of PRODUCTION_IDENTITY_MARKERS) {
+    if (JSON.stringify(config.extra ?? {}).toLowerCase().includes(marker.toLowerCase())) {
+      failures.push(`embedded Expo config mentions ${marker} in its extra payload`);
+    }
   }
-  if (config.extra?.clientAuth?.supabaseAnonKey !== LAB_LOCAL_SUPABASE_ANON_KEY) {
-    failures.push('embedded Expo config clientAuth.supabaseAnonKey is not the lab-local value');
-  }
-  if (config.extra?.clientSubscription?.adaptyKey !== LAB_LOCAL_ADAPTY_KEY) {
-    failures.push(`embedded Expo config clientSubscription.adaptyKey is ${String(config.extra?.clientSubscription?.adaptyKey)} (want the lab-local value ${LAB_LOCAL_ADAPTY_KEY})`);
-  }
-  if (config.extra?.clientApi?.url !== LAB_LOCAL_API_URL) {
-    failures.push(`embedded Expo config clientApi.url is ${String(config.extra?.clientApi?.url)} (want the lab-local value ${LAB_LOCAL_API_URL})`);
-  }
-  if (failures.length === before) passed.push('embedded Expo config boots the lab environment with updates off and lab-only identifiers');
+  if (failures.length === before) passed.push('embedded Expo config boots the lab environment with updates off, lab-only identifiers, and no client identity group');
 }
 
 function verifyInfoPlist(app, failures, passed) {
