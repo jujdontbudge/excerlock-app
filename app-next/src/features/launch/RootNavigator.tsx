@@ -42,31 +42,40 @@ export function RootNavigator() {
         <Stack.Protected guard={__LINKED_RECORDER_TRACE__ && linkedTrace.enabled}>
           <Stack.Screen name="linked-trace" />
         </Stack.Protected>
-        <Stack.Screen name="gym-picker" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Protected guard={loading || (!onboarding.complete && onboarding.step !== 'P' && !entitled)}>
-          <Stack.Screen name="onboarding/[step]" />
-        </Stack.Protected>
-        <Stack.Protected guard={loading || !entitled || onboarding.setupComplete}>
-          <Stack.Screen
-            name="paywall"
-            options={{
-              presentation: onboarding.setupComplete ? 'modal' : 'card',
-              gestureEnabled: onboarding.setupComplete,
-            }}
-          />
-        </Stack.Protected>
-        <Stack.Protected guard={loading || (entitled && !onboarding.setupComplete)}>
-          <Stack.Screen name="setup/[step]" />
-        </Stack.Protected>
-        <Stack.Protected guard={loading || onboarding.setupComplete || (__LINKED_RECORDER_TRACE__ && linkedTrace.enabled)}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="settings" />
-          <Stack.Screen name="sign-in" options={{ presentation: 'fullScreenModal' }} />
-        </Stack.Protected>
-        <Stack.Protected guard={loading || (entitled && onboarding.setupComplete)}>
-          <Stack.Screen name="builder" options={{ presentation: 'fullScreenModal' }} />
-          <Stack.Screen name="unlock/gym" options={{ presentation: 'fullScreenModal' }} />
-          <Stack.Screen name="unlock/treadmill" options={{ presentation: 'fullScreenModal' }} />
+        {/* One lab-off guard owns the whole production surface. When the
+            research flag is compiled in, expo-router collects every production
+            screen name below as protected and removes it from the lab
+            navigator, so onboarding, paywall, setup, the gym picker, tabs,
+            settings and sign-in cannot be reached by navigation or deep link.
+            In an ordinary build the guard is true and the routes behave
+            exactly as before. */}
+        <Stack.Protected guard={!__LINKED_RECORDER_TRACE__}>
+          <Stack.Screen name="gym-picker" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Protected guard={loading || (!onboarding.complete && onboarding.step !== 'P' && !entitled)}>
+            <Stack.Screen name="onboarding/[step]" />
+          </Stack.Protected>
+          <Stack.Protected guard={loading || !entitled || onboarding.setupComplete}>
+            <Stack.Screen
+              name="paywall"
+              options={{
+                presentation: onboarding.setupComplete ? 'modal' : 'card',
+                gestureEnabled: onboarding.setupComplete,
+              }}
+            />
+          </Stack.Protected>
+          <Stack.Protected guard={loading || (entitled && !onboarding.setupComplete)}>
+            <Stack.Screen name="setup/[step]" />
+          </Stack.Protected>
+          <Stack.Protected guard={loading || onboarding.setupComplete}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="settings" />
+            <Stack.Screen name="sign-in" options={{ presentation: 'fullScreenModal' }} />
+          </Stack.Protected>
+          <Stack.Protected guard={loading || (entitled && onboarding.setupComplete)}>
+            <Stack.Screen name="builder" options={{ presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="unlock/gym" options={{ presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="unlock/treadmill" options={{ presentation: 'fullScreenModal' }} />
+          </Stack.Protected>
         </Stack.Protected>
       </Stack>
       {__DEV__ && runtime.kind === 'fake' ? <FakePromptHost /> : null}

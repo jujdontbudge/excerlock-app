@@ -5,11 +5,18 @@
 # ExcerLock mutation. This is the executable form of the regression that made
 # the previous research build unusable: a Trace Lab that needs a running Mac.
 #
-# Usage: app-next/scripts/prove-linked-recorder-on-phone.sh [path/to/ExcerLock.app]
+# Usage: app-next/scripts/prove-linked-recorder-on-phone.sh
 #        app-next/scripts/prove-linked-recorder-on-phone.sh --print-identities
+#        app-next/scripts/prove-linked-recorder-on-phone.sh --print-artifact
 #   IL_UDID  device identifier (default: the paired lab phone Il)
 #   --print-identities resolves and prints the three identities from the research
 #   config owner and exits, so a drift check can run without a device.
+#   --print-artifact prints the one canonical standalone artifact path this
+#   proof verifies and installs.
+# There is exactly one artifact location end to end: the canonical path below,
+# which is also what scripts/build-linked-recorder-standalone.sh writes. Any
+# artifact argument fails closed, so the proof can never verify or install a
+# second copy that the build did not produce.
 # The independence gate below is unconditional: this proof must never pass
 # while Metro or port 8081 is available.
 set -euo pipefail
@@ -30,11 +37,29 @@ owner_identity() {
 LAB="$(owner_identity '.research.bundleIds.app')"
 PROD="$(owner_identity '.production.bundleIds.app')"
 WALK="$(owner_identity '.WALKING_RECORDER_BUNDLE_ID')"
-if [[ "${1:-}" == "--print-identities" ]]; then
-  printf 'lab=%s\nproduction=%s\nwalkingRecorder=%s\n' "$LAB" "$PROD" "$WALK"
-  exit 0
+# The build script's one canonical scratch location, in the exact shape the
+# proof verifies and installs.
+APP="$APP_DIR/.scratch/standalone-research/DerivedData/Build/Products/Release-iphoneos/ExcerLock.app"
+if [[ $# -gt 1 ]]; then
+  echo "unknown argument: $2 (the phone proof always installs $APP)" >&2
+  exit 2
 fi
-APP="${1:-$APP_DIR/.scratch/standalone-research/DerivedData/Build/Products/Release-iphoneos/ExcerLock.app}"
+case "${1:-}" in
+  --print-identities)
+    printf 'lab=%s\nproduction=%s\nwalkingRecorder=%s\n' "$LAB" "$PROD" "$WALK"
+    exit 0
+    ;;
+  --print-artifact)
+    printf '%s\n' "$APP"
+    exit 0
+    ;;
+  '')
+    ;;
+  *)
+    echo "unknown argument: $1 (the phone proof always installs $APP)" >&2
+    exit 2
+    ;;
+esac
 OUT="${PROVE_OUT:-$APP_DIR/.scratch/prove-phone}"
 OCR="/usr/bin/python3"
 source "$SCRIPT_DIR/observe-launch-evidence.sh"

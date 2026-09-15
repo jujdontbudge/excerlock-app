@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import plist from '@expo/plist';
 import { parse as parseYaml } from 'yaml';
 
-import { fromRoot, readJson, readUtf8 } from './repo-files';
+import { fromRoot, readJson, readUtf8, repoRoot } from './repo-files';
 
 type Eas = { build?: Record<string, unknown> };
 type ExpoConfig = { expo?: { ios?: { bundleIdentifier?: string } } };
@@ -63,6 +63,45 @@ describe('linked recorder research boundary', () => {
       'scripts/production-install-record.test.cjs',
     ], {
       cwd: app(),
+      encoding: 'utf8',
+      timeout: 180_000,
+      env: { ...process.env },
+    });
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  }, 200_000);
+
+  it('executes the lab-mode route suite with the research flag actually compiled in', () => {
+    // The lab route-access contract only proves anything when Babel inlines
+    // `__LINKED_RECORDER_TRACE__` as true, exactly as the standalone artifact
+    // compiles it. `--no-cache` prevents a cached ordinary transform from
+    // passing the suite without the lab branch.
+    const result = spawnSync(
+      process.execPath,
+      [
+        fromRoot('node_modules', 'jest', 'bin', 'jest.js'),
+        '--config',
+        'jest.config.js',
+        '--runInBand',
+        '--no-cache',
+        '--testMatch',
+        '**/src/features/launch/__tests__/*.research.tsx',
+      ],
+      {
+        cwd: app(),
+        encoding: 'utf8',
+        timeout: 180_000,
+        env: { ...process.env, EXCERLOCK_LINKED_RECORDER_TRACE: '1', EXCERLOCK_ENV: 'lab' },
+      },
+    );
+    expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
+  }, 200_000);
+
+  it('executes the offline joiner evidence-contract suite', () => {
+    // The joiner is the contract the recorder archive and the ExcerLock trace
+    // must still satisfy offline; running its unittest fixtures here keeps an
+    // evidence-format regression from surviving to a manual device run.
+    const result = spawnSync('python3', ['-m', 'unittest', 'tools/linked-recorder/test_join.py'], {
+      cwd: repoRoot,
       encoding: 'utf8',
       timeout: 180_000,
       env: { ...process.env },

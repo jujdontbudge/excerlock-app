@@ -305,6 +305,41 @@ test('the standalone build script pins one canonical artifact path and refuses e
   }
 });
 
+test('the phone proof pins the same canonical artifact path and refuses any artifact argument', () => {
+  const script = path.join(__dirname, 'prove-linked-recorder-on-phone.sh');
+  const canonical = path.join(
+    __dirname,
+    '..',
+    '.scratch',
+    'standalone-research',
+    'DerivedData',
+    'Build',
+    'Products',
+    'Release-iphoneos',
+    'ExcerLock.app',
+  );
+  execFileSync('bash', ['-n', script], { encoding: 'utf8' });
+  // `--print-artifact` is the executable statement of the pin: the proof has
+  // exactly one artifact location, and it is the one the build script writes.
+  assert.equal(execFileSync('bash', [script, '--print-artifact'], { encoding: 'utf8' }), `${canonical}\n`);
+  // Any artifact argument must fail closed before device work starts, and the
+  // refusal names the one canonical location so a caller cannot install or
+  // verify a second copy the build never produced.
+  for (const args of [['/tmp/elsewhere/ExcerLock.app'], ['--derivedData', '/tmp/elsewhere']]) {
+    let status = 0;
+    let stderr = '';
+    try {
+      execFileSync('bash', [script, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (error) {
+      status = error.status;
+      stderr = error.stderr ?? '';
+    }
+    assert.equal(status, 2, stderr);
+    assert.match(stderr, /unknown argument/);
+    assert.ok(stderr.includes(canonical), `${stderr} must name the canonical artifact ${canonical}`);
+  }
+});
+
 test('the standalone environment is double opt-in and can never select production identity', () => {
   const flag = linked.TRACE_FLAG;
   assert.equal(linked.standaloneEnabled({ EXCERLOCK_ENV: 'lab', [flag]: '1' }), true);
