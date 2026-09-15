@@ -19,6 +19,7 @@ type NativeLinkedTraceModule = {
   exportLinkedTrace(sessionId: string): string;
   deleteLinkedTrace(sessionId: string): void;
   abandonExpiredLinkedTrace(sessionId: string): void;
+  cancelActiveLinkedTrace(sessionId: string): void;
 };
 
 const native = requireNativeModule<NativeLinkedTraceModule>('ExcerlockEnforcement');
@@ -40,6 +41,7 @@ export const linkedTrace: LinkedTraceClient = {
   async exportSession(sessionId) { return native.exportLinkedTrace(sessionId); },
   async deleteSession(sessionId) { native.deleteLinkedTrace(sessionId); },
   async abandonExpiredSession(sessionId) { native.abandonExpiredLinkedTrace(sessionId); },
+  async cancelActiveSession(sessionId) { native.cancelActiveLinkedTrace(sessionId); },
 };
 
 export type { LinkedTraceClient, LinkedTraceEventType, LinkedTraceFinalizedSession, LinkedTracePayload, LinkedTracePreflight, LinkedTraceStatus } from './types';

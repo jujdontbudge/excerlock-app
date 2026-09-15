@@ -29,6 +29,7 @@ import {
   walkingRecorderSessionLink,
   type LinkedHandshake,
 } from './linkedRecorderLink';
+import { clearActiveHandshake, loadActiveHandshake, saveActiveHandshake } from './linkedHandshakeStore.research';
 import { ensureLabWalkingRule, removeLabWalkingRule } from './labWalkingRule.research';
 
 type Phase = 'ready' | 'running' | 'review' | 'exported' | 'expired';
@@ -67,6 +68,18 @@ export function LinkedTraceScreen() {
   // is finished. The link this screen mints for a new test is never evidence of
   // a return, so a fresh running test can never settle into "save it".
   const returnedLinkRef = useRef<LinkedHandshake | null>(null);
+
+  // A test that survives a Trace Lab relaunch has no in-memory handshake left,
+  // so the persisted lab copy is the only way to reopen the intended Walking
+  // Recorder session. Loading it never marks a test finished.
+  const hydrateActiveLink = useCallback(async (current: LinkedTraceStatus) => {
+    if (!current.sessionId || !current.active) {
+      await clearActiveHandshake();
+      return;
+    }
+    const stored = await loadActiveHandshake(current.sessionId);
+    if (stored) setStartedLink((existing) => existing ?? stored);
+  }, []);
 
   const refreshPreflight = useCallback(async () => {
     try {
@@ -117,12 +130,13 @@ export function LinkedTraceScreen() {
         setPreflight(readiness);
         setFinalized(saved);
         settle(current, returnedLinkRef.current, saved);
+        void hydrateActiveLink(current);
       })
       .catch(() => {
         if (!cancelled) setError('The local readiness check could not run. Reopen Trace Lab and try again.');
       });
     return () => { cancelled = true; };
-  }, [settle]);
+  }, [settle, hydrateActiveLink]);
 
   // Walking Recorder returns here with the one-time link when a test is done.
   useEffect(() => {
@@ -160,13 +174,14 @@ export function LinkedTraceScreen() {
           setStatus(current);
           setFinalized(saved);
           settle(current, returnedLinkRef.current, saved);
+          void hydrateActiveLink(current);
         })
         .catch(() => undefined);
     };
     const interval = setInterval(sync, 10_000);
     const subscription = AppState.addEventListener('change', (next) => { if (next === 'active') sync(); });
     return () => { clearInterval(interval); subscription.remove(); };
-  }, [phase, settle]);
+  }, [phase, settle, hydrateActiveLink]);
 
   const labAccess = entitlementStatus === 'active' || entitlementStatus === 'trial';
   const step = readinessStep({ entitlementStatus, preflight, labAccess, runtime });
@@ -209,6 +224,13 @@ export function LinkedTraceScreen() {
       setStatus(active);
       setPhase('running');
       try {
+        // Best effort: a test that is already recording must keep going even if
+        // the lab-local recovery copy cannot be written.
+        await saveActiveHandshake(link);
+      } catch {
+        // Recovery after a relaunch is the only thing this costs.
+      }
+      try {
         await Linking.openURL(walkingRecorderSessionLink(link));
       } catch {
         setError('The trace is running, but Walking Recorder could not be opened. Open Walking Recorder from the Home Screen to record this test.');
@@ -229,6 +251,7 @@ export function LinkedTraceScreen() {
       await linkedTrace.stop(link.sessionId, link.nonce);
       returnedLinkRef.current = null;
       setStartedLink(null);
+      await clearActiveHandshake();
       const [current, saved] = await Promise.all([linkedTrace.status(), linkedTrace.finalized()]);
       setStatus(current);
       setFinalized(saved);
@@ -314,11 +337,47 @@ export function LinkedTraceScreen() {
     );
     if (!cleaned) return;
     removeLabWalkingRule();
+    await clearActiveHandshake();
     setStatus(await linkedTrace.status());
     const saved = await linkedTrace.finalized();
     setFinalized(saved);
     setPhase(saved.length ? 'exported' : 'ready');
-    setNote('The expired test was deleted. Start test begins a clean run.');
+    setNote('The expired test was cleared. Start test begins a clean run.');
+  };
+
+  // The bounded escape for a test whose Walking Recorder never started (for
+  // example the hand-off link could not open) or cannot be finished. It is a
+  // quiet, confirmed action beside the primary hand-off, never the main path.
+  const cancelActive = async () => {
+    const sessionId = status?.sessionId;
+    if (!sessionId || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await linkedTrace.cancelActiveSession(sessionId);
+      returnedLinkRef.current = null;
+      setStartedLink(null);
+      await clearActiveHandshake();
+      removeLabWalkingRule();
+      const [current, saved] = await Promise.all([linkedTrace.status(), linkedTrace.finalized()]);
+      setStatus(current);
+      setFinalized(saved);
+      setPhase(saved.length ? 'exported' : 'ready');
+      setNote('The test was cancelled and its unfinished trace was removed from this phone. Nothing was saved or exported.');
+    } catch {
+      setError('The test could not be cancelled, so it may still be running. Try again from this screen.');
+    } finally { setBusy(false); }
+  };
+
+  const confirmCancelActive = () => {
+    Alert.alert(
+      'Cancel this test?',
+      'This stops the background trace and records the test as abandoned instead of saved. Nothing is exported, and Walking Recorder keeps its own archive.',
+      [
+        { text: 'Keep test', style: 'cancel' },
+        { text: 'Cancel test', style: 'destructive', onPress: () => void cancelActive() },
+      ],
+    );
   };
 
   const title = phase === 'running' ? 'Test running'
@@ -343,7 +402,7 @@ export function LinkedTraceScreen() {
           : NOTHING_COLLECTED}
         nextChange={phase === 'running' ? 'The two-hour limit ends this test automatically.'
           : phase === 'review' ? 'The trace stays on this phone until you delete it.'
-            : phase === 'expired' ? 'Deleting it starts the next test clean.'
+            : phase === 'expired' ? 'Clearing it starts the next test clean.'
               : 'Nothing is uploaded; you choose when to share the two files.'}
         unlocked={phase !== 'running'}
       />
@@ -396,6 +455,10 @@ export function LinkedTraceScreen() {
           <Label tone="secondary">
             If Trace Lab was closed, open Walking Recorder from the Home Screen and tap Finish test there. Its recovery card brings this screen back.
           </Label>
+          <Label tone="secondary">
+            If Walking Recorder never started this test, or it cannot be finished, cancel it below and start clean. Cancelling saves nothing.
+          </Label>
+          <SubordinateButton label={busy ? 'Cancelling…' : 'Cancel test'} disabled={busy} onPress={confirmCancelActive} />
         </View>
       ) : null}
 
@@ -458,8 +521,8 @@ export function LinkedTraceScreen() {
         <View style={s.section}>
           <Label variant="section">Two-hour limit reached</Label>
           <Label tone="secondary">
-            The one-time link is gone, so this expired trace can no longer be finalized or exported. Deleting it removes the local
-            files and lets you start a clean test; the Walking Recorder archive is untouched.
+            The one-time link is gone, so this expired trace can no longer be finalized or exported. Clearing it removes the recorded
+            trace from this phone and lets you start a clean test; the Walking Recorder archive is untouched.
           </Label>
           <PrimaryButton
             label={busy ? 'Deleting…' : 'Delete expired test'}

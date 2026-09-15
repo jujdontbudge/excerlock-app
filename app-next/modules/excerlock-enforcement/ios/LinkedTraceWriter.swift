@@ -92,6 +92,24 @@ private struct LinkedTraceFinalizedMarker: Codable, Equatable {
   let finalizedAtWallTimeMs: Int64
 }
 
+enum LinkedTraceAbandonReason: String, Codable {
+  case cancelled
+  case expired
+}
+
+/// Written when the operator cancels an active test (or an expired test is
+/// cleaned up). It is deliberately not a finalized marker, so an abandoned
+/// session can never be listed or exported; the recorded trace payload is
+/// deleted with it, and only this tiny record stays in the lab App Group until
+/// retention pruning removes it, as truthful local evidence that the test was
+/// abandoned rather than completed.
+private struct LinkedTraceAbandonedMarker: Codable, Equatable {
+  let protocolVersion: Int
+  let sessionId: String
+  let reason: LinkedTraceAbandonReason
+  let abandonedAtWallTimeMs: Int64
+}
+
 public struct LinkedTraceFinalizedSession: Codable, Equatable, Sendable {
   public let sessionId: String
   public let byteCount: Int64
@@ -130,10 +148,10 @@ private enum LinkedTraceScalar: Encodable {
 
   init(any value: Any) throws {
     if value is NSNull { self = .null; return }
-    if let value = value as? Bool { self = .boolean(value); return }
-    if let value = value as? String, value.utf8.count <= 160 { self = .string(value); return }
-    if let value = value as? [String], value.count <= 16,
-       value.allSatisfy({ $0.utf8.count <= 64 }) { self = .strings(value); return }
+    // Foundation bridges every Swift Bool to NSNumber, and `as? Bool` also
+    // accepts NSNumber 0/1, so a JavaScript number that arrives as an NSNumber
+    // must be classified by CF type identity before any Bool cast can coerce
+    // it. Otherwise a real `0`/`1` payload is written as `false`/`true`.
     if let value = value as? NSNumber {
       if CFGetTypeID(value) == CFBooleanGetTypeID() { self = .boolean(value.boolValue); return }
       let number = value.doubleValue
@@ -145,6 +163,10 @@ private enum LinkedTraceScalar: Encodable {
       }
       return
     }
+    if let value = value as? Bool { self = .boolean(value); return }
+    if let value = value as? String, value.utf8.count <= 160 { self = .string(value); return }
+    if let value = value as? [String], value.count <= 16,
+       value.allSatisfy({ $0.utf8.count <= 64 }) { self = .strings(value); return }
     if let value = value as? Int { self = .integer(Int64(value)); return }
     if let value = value as? Int64 { self = .integer(value); return }
     if let value = value as? UInt64 { self = .unsigned(value); return }
@@ -491,16 +513,37 @@ public final class LinkedTraceWriter: @unchecked Sendable {
     }
   }
 
+  /// Operator escape from an active test whose recorder never started or cannot
+  /// finish: the trace stops, the walking evidence rule is removed by the call
+  /// site, the recorded trace payload is deleted, and a durable abandonment
+  /// marker is written instead of a finalized marker, so nothing can list or
+  /// export this session. The marker is cleared with every other old session by
+  /// retention pruning.
+  public func cancelActiveSession(sessionId: String) throws {
+    try abandonSession(sessionId: sessionId, reason: .cancelled)
+  }
+
   public func abandonExpiredSession(sessionId: String) throws {
+    try abandonSession(sessionId: sessionId, reason: .expired)
+  }
+
+  private func abandonSession(sessionId: String, reason: LinkedTraceAbandonReason) throws {
     try onQueue {
       try withTraceLock {
         let normalized = sessionId.lowercased()
         guard Self.validSessionId(normalized) else { throw LinkedTraceError.invalidSession }
         guard let descriptor = try readDescriptorLocked() else { throw LinkedTraceError.inactive }
         guard descriptor.sessionId == normalized else { throw LinkedTraceError.sessionMismatch }
-        guard descriptor.expiresAtWallTimeMs <= stampProvider().wallTimeMs else { throw LinkedTraceError.sessionMismatch }
+        if reason == .expired {
+          guard descriptor.expiresAtWallTimeMs <= stampProvider().wallTimeMs else { throw LinkedTraceError.sessionMismatch }
+        }
+        // Truthful local evidence before anything else changes: the session was
+        // abandoned, not completed. The marker is not a finalized marker, so
+        // finalizedSessions() and exportFinalizedSession() still refuse it, and
+        // the recorded trace payload is deleted so a void test keeps no data.
+        try writeAbandonedMarkerLocked(sessionId: normalized, reason: reason, abandonedAtWallTimeMs: stampProvider().wallTimeMs)
+        try removeAbandonedTraceFilesLocked(sessionId: normalized)
         try removeDescriptorLocked()
-        try deleteSessionFilesLocked(sessionId: normalized)
       }
       announcedSessionId = nil
     }
@@ -694,6 +737,27 @@ public final class LinkedTraceWriter: @unchecked Sendable {
     try sessionDirectory(sessionId).appendingPathComponent("finalized-v1.json")
   }
 
+  private func abandonedMarkerURL(_ sessionId: String) throws -> URL {
+    try sessionDirectory(sessionId).appendingPathComponent("abandoned-v1.json")
+  }
+
+  private func writeAbandonedMarkerLocked(
+    sessionId: String,
+    reason: LinkedTraceAbandonReason,
+    abandonedAtWallTimeMs: Int64
+  ) throws {
+    let marker = LinkedTraceAbandonedMarker(
+      protocolVersion: linkedTraceProtocolVersion,
+      sessionId: sessionId,
+      reason: reason,
+      abandonedAtWallTimeMs: abandonedAtWallTimeMs
+    )
+    let data = try JSONEncoder().encode(marker)
+    try fileManager.createDirectory(at: try sessionDirectory(sessionId), withIntermediateDirectories: true)
+    try data.write(to: try abandonedMarkerURL(sessionId), options: [.atomic])
+    try applyProtection(to: try abandonedMarkerURL(sessionId))
+  }
+
   private func readFinalizedMarkerLocked(sessionId: String) throws -> LinkedTraceFinalizedMarker {
     let marker = try JSONDecoder().decode(
       LinkedTraceFinalizedMarker.self,
@@ -747,6 +811,23 @@ public final class LinkedTraceWriter: @unchecked Sendable {
   private func deleteSessionFilesLocked(sessionId: String) throws {
     let directory = try sessionDirectory(sessionId)
     if fileManager.fileExists(atPath: directory.path) { try fileManager.removeItem(at: directory) }
+    removeTemporaryExport(sessionId: sessionId)
+  }
+
+  /// Removes the recorded payload of an abandoned session but keeps its tiny
+  /// abandonment marker: the test is void, so no measurement data survives,
+  /// while the local record that it was abandoned (never completed) remains
+  /// until retention pruning clears the whole directory.
+  private func removeAbandonedTraceFilesLocked(sessionId: String) throws {
+    let directory = try sessionDirectory(sessionId)
+    for name in ["production.ndjson", "sequence-v1.txt", "truncated-v1"] {
+      let url = directory.appendingPathComponent(name)
+      if fileManager.fileExists(atPath: url.path) { try? fileManager.removeItem(at: url) }
+    }
+    removeTemporaryExport(sessionId: sessionId)
+  }
+
+  private func removeTemporaryExport(sessionId: String) {
     let export = fileManager.temporaryDirectory
       .appendingPathComponent("ExcerLockLinkedTraceExports", isDirectory: true)
       .appendingPathComponent("excerlock-linked-trace-\(sessionId).ndjson")

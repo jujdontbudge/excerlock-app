@@ -72,6 +72,10 @@ public final class ExcerlockEnforcementModule: Module {
     Function("abandonExpiredLinkedTrace") { (sessionId: String) throws -> Void in
       try LinkedTraceWriter.shared.abandonExpiredSession(sessionId: sessionId)
     }
+    Function("cancelActiveLinkedTrace") { (sessionId: String) throws -> Void in
+      try LinkedTraceWriter.shared.cancelActiveSession(sessionId: sessionId)
+      self.removeLinkedTraceLifecycleObservers()
+    }
     OnDestroy {
       self.removeLinkedTraceLifecycleObservers()
       LinkedTraceWriter.shared.flush()

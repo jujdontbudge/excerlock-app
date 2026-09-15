@@ -21,6 +21,7 @@ export const linkedTrace: LinkedTraceClient = {
   async exportSession() { throw new Error('Unavailable'); },
   async deleteSession() {},
   async abandonExpiredSession() {},
+  async cancelActiveSession() {},
 };
 
 export type { LinkedTraceClient, LinkedTraceEventType, LinkedTraceFinalizedSession, LinkedTracePayload, LinkedTracePreflight, LinkedTraceStatus } from './types';

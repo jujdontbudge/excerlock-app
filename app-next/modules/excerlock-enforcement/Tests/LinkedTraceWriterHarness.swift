@@ -103,6 +103,81 @@ struct LinkedTraceWriterHarness {
     try writer.deleteSession(sessionId: sessionId)
     precondition(!writer.finalizedSessions().contains { $0.sessionId == sessionId })
 
+    // JavaScript numbers 0/1 arrive as NSNumber, and Foundation's bridging would
+    // let `as? Bool` coerce them into false/true. The scalar decoder must
+    // discriminate booleans by CF type identity first, so a real number is
+    // always written as a number and a real boolean as a boolean.
+    let bridgingRoot = root.appendingPathComponent("bridging", isDirectory: true)
+    try FileManager.default.createDirectory(at: bridgingRoot, withIntermediateDirectories: true)
+    let bridgingId = UUID().uuidString.lowercased()
+    let bridgingWriter = LinkedTraceWriter(containerURL: bridgingRoot)
+    _ = try bridgingWriter.startSession(sessionId: bridgingId, nonce: nonce)
+    precondition(bridgingWriter.record(producer: .hostJS, eventType: .policyPublish, payload: [
+      "layer": "js",
+      "status": "attempt",
+      "revision": NSNumber(value: 1),
+      "policyGeneration": NSNumber(value: 0),
+      "futureEnforcementEligible": false,
+    ]))
+    precondition(bridgingWriter.record(producer: .hostJS, eventType: .policyPublish, payload: [
+      "layer": "js",
+      "status": "attempt",
+      "revision": 1,
+      "eligibleUntilWallMs": NSNumber(value: 1.5),
+      "futureEnforcementEligible": true,
+    ]))
+    let bridgingExport = try bridgingWriter.stopSession(sessionId: bridgingId, nonce: nonce)
+    let bridgingRows = try String(contentsOf: bridgingExport, encoding: .utf8).split(separator: "\n").map {
+      try JSONSerialization.jsonObject(with: Data($0.utf8)) as! [String: Any]
+    }
+    let policyRows = bridgingRows.filter { $0["eventType"] as? String == "policy_publish" }
+    precondition(policyRows.count == 2)
+    let firstPayload = policyRows[0]["payload"] as! [String: Any]
+    let secondPayload = policyRows[1]["payload"] as! [String: Any]
+    func isFoundationNumber(_ value: Any?) -> Bool {
+      guard let value else { return false }
+      return CFGetTypeID(value as CFTypeRef) == CFNumberGetTypeID()
+    }
+    func isFoundationBoolean(_ value: Any?) -> Bool {
+      guard let value else { return false }
+      return CFGetTypeID(value as CFTypeRef) == CFBooleanGetTypeID()
+    }
+    precondition(isFoundationNumber(firstPayload["revision"]) && (firstPayload["revision"] as? NSNumber)?.int64Value == 1)
+    precondition(isFoundationNumber(firstPayload["policyGeneration"]) && (firstPayload["policyGeneration"] as? NSNumber)?.int64Value == 0)
+    precondition(isFoundationBoolean(firstPayload["futureEnforcementEligible"])
+      && (firstPayload["futureEnforcementEligible"] as? NSNumber)?.boolValue == false)
+    precondition(isFoundationNumber(secondPayload["revision"]) && (secondPayload["revision"] as? NSNumber)?.int64Value == 1)
+    precondition(isFoundationNumber(secondPayload["eligibleUntilWallMs"])
+      && (secondPayload["eligibleUntilWallMs"] as? NSNumber)?.doubleValue == 1.5)
+    precondition(isFoundationBoolean(secondPayload["futureEnforcementEligible"])
+      && (secondPayload["futureEnforcementEligible"] as? NSNumber)?.boolValue == true)
+
+    // Cancelling an active test stops tracing and records abandonment, never
+    // finalization: the trace can never be listed or exported afterwards.
+    let cancelRoot = root.appendingPathComponent("cancel", isDirectory: true)
+    try FileManager.default.createDirectory(at: cancelRoot, withIntermediateDirectories: true)
+    let cancelId = UUID().uuidString.lowercased()
+    let cancelWriter = LinkedTraceWriter(containerURL: cancelRoot)
+    _ = try cancelWriter.startSession(sessionId: cancelId, nonce: nonce)
+    precondition(cancelWriter.record(producer: .hostJS, eventType: .clockAnchor, payload: ["label": "session_started"]))
+    try cancelWriter.cancelActiveSession(sessionId: cancelId)
+    precondition(!cancelWriter.status().active && cancelWriter.status().sessionId == nil)
+    precondition(cancelWriter.finalizedSessions().isEmpty)
+    do {
+      _ = try cancelWriter.exportFinalizedSession(sessionId: cancelId)
+      preconditionFailure("a cancelled session was exported")
+    } catch LinkedTraceError.inactive {}
+    let cancelledDirectory = cancelRoot.appendingPathComponent("linked-trace/v1/\(cancelId)", isDirectory: true)
+    let abandonedData = try Data(contentsOf: cancelledDirectory.appendingPathComponent("abandoned-v1.json"))
+    let abandonedJSON = try JSONSerialization.jsonObject(with: abandonedData) as! [String: Any]
+    precondition(abandonedJSON["reason"] as? String == "cancelled")
+    precondition(abandonedJSON["sessionId"] as? String == cancelId)
+    // The void test keeps no measurement data: only the abandonment record
+    // survives until retention pruning removes the directory.
+    precondition(!FileManager.default.fileExists(atPath: cancelledDirectory.appendingPathComponent("production.ndjson").path))
+    try cancelWriter.deleteSession(sessionId: cancelId)
+    precondition(!FileManager.default.fileExists(atPath: cancelledDirectory.path))
+
     let limitedRoot = root.appendingPathComponent("limited", isDirectory: true)
     try FileManager.default.createDirectory(at: limitedRoot, withIntermediateDirectories: true)
     let limitedId = UUID().uuidString.lowercased()
@@ -149,6 +224,10 @@ struct LinkedTraceWriterHarness {
     } catch LinkedTraceError.sessionMismatch {}
     try expiryWriter.abandonExpiredSession(sessionId: expiryId)
     precondition(expiryWriter.status().sessionId == nil)
+    let expiredMarkerData = try Data(contentsOf: expiryRoot.appendingPathComponent("linked-trace/v1/\(expiryId)/abandoned-v1.json"))
+    let expiredMarker = try JSONSerialization.jsonObject(with: expiredMarkerData) as! [String: Any]
+    precondition(expiredMarker["reason"] as? String == "expired")
+    precondition(!FileManager.default.fileExists(atPath: expiryRoot.appendingPathComponent("linked-trace/v1/\(expiryId)/production.ndjson").path))
     let afterExpiryId = UUID().uuidString.lowercased()
     let afterExpiry = try expiryWriter.startSession(sessionId: afterExpiryId, nonce: nonce)
     precondition(afterExpiry.active)

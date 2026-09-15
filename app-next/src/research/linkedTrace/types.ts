@@ -53,6 +53,12 @@ export type LinkedTraceClient = {
   exportSession(sessionId: string): Promise<string>;
   deleteSession(sessionId: string): Promise<void>;
   abandonExpiredSession(sessionId: string): Promise<void>;
+  /**
+   * Stops an active test whose recorder never started or cannot finish. Writes
+   * a durable abandonment record instead of a finalized one, so the unfinished
+   * trace can never be listed or exported.
+   */
+  cancelActiveSession(sessionId: string): Promise<void>;
 };
 
 export const INACTIVE_LINKED_TRACE_STATUS: LinkedTraceStatus = {

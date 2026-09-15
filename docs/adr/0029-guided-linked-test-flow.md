@@ -5,6 +5,8 @@ date: 2026-09-15
 
 # 0029: One guided two-app linked test flow
 
+- Status: Amended by [0030](0030-recoverable-cancellable-linked-test.md): the guided flow and finish-only-by-return-link rule remain, while the running-test recovery and cancellation behavior and the rejected nonce-persistence alternative change there.
+
 ## Decision
 
 Replace the recorder-initiated, multi-surface linked test with one guided path across the two research apps. The operator taps **Start test** in Trace Lab; Trace Lab mints the session UUID and the 256-bit one-time nonce, starts the linked background trace, and opens Walking Recorder through the lab-only `excerlock-walkingrecorder://linked-session` link. Walking Recorder records that link at once with no activity label, keeps the honest foreground labels and the two operator-observed canary answers inline in its single recording state, and **Finish test** finalizes its archive and returns to Trace Lab through `excerlock-linked-trace://linked-trace`. Trace Lab then saves the trace file and shows both export surfaces (trace file, Walking Recorder archive) plus local deletion.

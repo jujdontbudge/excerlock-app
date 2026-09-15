@@ -31,17 +31,19 @@ printf 'png' > "$4"
 
 // The OCR stub receives `<device-ocr.py> <screenshot>`. `late-screen` counts
 // attempts beside the screenshots so the test can prove the loop exits on the
-// first positive read rather than after the full bound.
+// first positive read rather than after the full bound. Each research phase
+// emits the full Trace-Lab-only marker combination the real screen renders.
 function ocrStub(mode) {
   return `#!/bin/bash
 set -euo pipefail
 case "${mode}" in
-  screen) echo "ExcerLock Trace Lab"; echo "How the test works";;
-  running) echo "Test running"; echo "Recording on this phone";;
-  review) echo "Test finished — save it"; echo "Save the trace";;
-  expired) echo "This test expired"; echo "Two-hour limit reached";;
-  exported) echo "Saved on this phone"; echo "Saved tests on this phone";;
-  recorder) echo "Walking Recorder"; echo "Saved on this phone"; echo "Finish test";;
+  screen) echo "ExcerLock Trace Lab"; echo "How the test works"; echo "Trace Lab begins the background trace";;
+  running) echo "Trace Lab is recording in the background"; echo "Recording on this phone";;
+  review) echo "Walking Recorder finished the ground truth"; echo "Save trace file";;
+  expired) echo "Two-hour limit reached"; echo "No longer exportable";;
+  exported) echo "Saved tests on this phone"; echo "Share trace file";;
+  recorder) echo "Walking Recorder"; echo "Recording on this phone"; echo "Notice: Test running late — the recorder keeps this session on this phone."; echo "Finish test";;
+  notice) echo "Walking Recorder"; echo "Motion & Fitness was not allowed. No recording was started.";;
   late-screen)
     dir="$(dirname "$2")"
     count_file="$dir/ocr-count"
@@ -49,7 +51,7 @@ case "${mode}" in
     [[ -f "$count_file" ]] && n="$(cat "$count_file")"
     n=$((n + 1))
     echo "$n" > "$count_file"
-    if [[ "$n" -ge 2 ]]; then echo "How the test works"; else echo "9:41"; fi
+    if [[ "$n" -ge 2 ]]; then echo "How the test works"; echo "Trace Lab begins the background trace"; else echo "9:41"; fi
     ;;
   dev-client) echo "Development servers"; echo "http://10.0.1.20:8081";;
   fail) echo "stub: Vision unavailable" >&2; exit 1;;
@@ -124,6 +126,12 @@ test('Walking Recorder text never counts as Trace Lab launch evidence', () => {
   const result = runScenario({ ocr: 'recorder', attempts: 2 });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /no positive research-screen evidence in 2 bounded attempts/);
+  assert.match(result.files['launch-evidence-1.log'], /VERIFY FAIL: no Trace Lab research screen/);
+});
+
+test('a real Walking Recorder notice never counts as Trace Lab launch evidence', () => {
+  const result = runScenario({ ocr: 'notice', attempts: 1 });
+  assert.equal(result.status, 1);
   assert.match(result.files['launch-evidence-1.log'], /VERIFY FAIL: no Trace Lab research screen/);
 });
 

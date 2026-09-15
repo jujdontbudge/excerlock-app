@@ -97,17 +97,31 @@ const PHASE_SCREENS = [
 const HOME_SCREEN = ['9:41', 'ExcerLock Trace Lab', 'Walking Recorder', 'Camera', 'Photos', 'Maps', 'Settings'].join('\n');
 
 // Walking Recorder's own screen while it records: it is the app the operator
-// switches to, so its text must never count as Trace Lab launch evidence.
+// switches to, so its text must never count as Trace Lab launch evidence. The
+// notice deliberately repeats generic phrases Trace Lab also renders.
 const WALKING_RECORDER_SCREEN = [
   '9:41',
   'Walking Recorder',
-  'Recording',
+  'Recording on this phone',
+  'Notice: Test running late — the recorder keeps this session on this phone.',
   'What are you doing now?',
   'Walking',
   'Sitting',
   'Standing',
   'Finish test',
 ].join('\n');
+
+// The recorder's real notices, verbatim from CaptureController. A notice must
+// never look like a Trace Lab phase, however generic its wording.
+const WALKING_RECORDER_NOTICES = [
+  'Motion & Fitness was not allowed. No recording was started.',
+  'That recording is not on this phone any more. Export it before deleting it next time.',
+  'That link is not a valid linked test. Nothing was started.',
+  'Another linked test is already recording. Finish it before starting a new one.',
+  'Could not reopen the linked trace.',
+  'ExcerLock Trace Lab is not installed. The protected recovery link remains on this phone.',
+  'Finalize or explicitly abandon the linked Trace Lab session before deleting this Recorder archive.',
+].map((notice) => ['9:41', 'Walking Recorder', 'Ready to record', notice, 'Finish test'].join('\n'));
 
 // Walking Recorder's saved-sessions screen deliberately reuses the phrase
 // "Saved on this phone", so marker matching must not treat that phrase alone
@@ -167,10 +181,26 @@ test('every legitimate persisted research phase is observed launch evidence', ()
 });
 
 test('the phase markers are unique and cover every persisted phase', () => {
-  const markers = RESEARCH_SCREEN_PHASES.map((entry) => entry.marker);
+  const markers = RESEARCH_SCREEN_PHASES.flatMap((entry) => entry.markers);
   assert.equal(new Set(markers).size, markers.length);
   for (const phase of ['running', 'review', 'expired', 'exported', 'ready']) {
     assert.ok(RESEARCH_SCREEN_PHASES.some((entry) => entry.phase === phase), `no marker for ${phase}`);
+  }
+});
+
+test('a single generic line is never launch evidence', () => {
+  // Each of these appears on the research screen in some phase, but not alone:
+  // the classifier requires the phase's whole Trace-Lab-specific combination.
+  for (const lone of ['Recording on this phone', 'Start test', 'Saved on this phone', 'Test running', 'Save the trace']) {
+    assert.equal(detectResearchPhase(lone), null, `a lone "${lone}" passed`);
+    assert.equal(classifyLaunchEvidence(lone), 'unobserved', `a lone "${lone}" passed`);
+  }
+});
+
+test('every real Walking Recorder notice is unobserved launch evidence', () => {
+  for (const transcript of WALKING_RECORDER_NOTICES) {
+    assert.equal(detectResearchPhase(transcript), null, `notice passed: ${transcript}`);
+    assert.equal(classifyLaunchEvidence(transcript), 'unobserved', `notice passed: ${transcript}`);
   }
 });
 
@@ -178,6 +208,9 @@ test('the observation is case-insensitive and survives OCR noise around it', () 
   const { text } = PHASE_SCREENS[0];
   assert.equal(classifyLaunchEvidence(text.toUpperCase()), 'observed');
   assert.equal(classifyLaunchEvidence(`===== launch-1.png\n${text}\n`), 'observed');
+  // OCR often renders the heading's middle dot and smart dashes differently.
+  const noisy = text.replace(/·/g, '*').replace(/—/g, '-');
+  assert.equal(classifyLaunchEvidence(noisy), 'observed');
 });
 
 test('blank, crashed-to-Home, Walking Recorder, and empty OCR reads are unobserved', () => {
@@ -187,6 +220,7 @@ test('blank, crashed-to-Home, Walking Recorder, and empty OCR reads are unobserv
   assert.equal(classifyLaunchEvidence(WALKING_RECORDER_SAVED_SCREEN), 'unobserved');
   assert.equal(classifyLaunchEvidence(EMPTY), 'unobserved');
   assert.equal(detectResearchPhase(WALKING_RECORDER_SAVED_SCREEN), null);
+  assert.equal(detectResearchPhase(WALKING_RECORDER_SCREEN), null);
 });
 
 test('the dev-client prompt is a terminal failure with its own diagnostic', () => {
@@ -210,12 +244,22 @@ test('the command line passes only on positive research-screen evidence', () => 
   });
 });
 
+test('the command line fails for a Walking Recorder notice that copies a marker phrase', () => {
+  withFile(WALKING_RECORDER_SCREEN, (file) => {
+    const result = runCli(file);
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /no Trace Lab research screen/);
+  });
+});
+
 test('every unobserved launch outcome exits 1 and keeps its reason on stderr', () => {
   const cases = [
     [STATUS_BAR_ONLY, /no Trace Lab research screen/],
     [HOME_SCREEN, /no Trace Lab research screen/],
     [WALKING_RECORDER_SCREEN, /no Trace Lab research screen/],
     [WALKING_RECORDER_SAVED_SCREEN, /no Trace Lab research screen/],
+    [WALKING_RECORDER_NOTICES[0], /no Trace Lab research screen/],
     [EMPTY, /is empty/],
   ];
   for (const [text, expected] of cases) {

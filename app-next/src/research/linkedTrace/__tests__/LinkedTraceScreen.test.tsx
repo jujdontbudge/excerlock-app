@@ -1,10 +1,12 @@
 import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sharing from 'expo-sharing';
 import React from 'react';
 import { Alert, AppState, Linking } from 'react-native';
 
 import { rulesStore } from '../../../state/rulesStore';
 import { ensureLabWalkingRule, LAB_WALKING_RULE_ID } from '../labWalkingRule.research';
+import { ACTIVE_HANDSHAKE_KEY } from '../linkedHandshakeStore.research';
 import { LinkedTraceScreen } from '../LinkedTraceScreen.research';
 
 const SESSION = '123e4567-e89b-42d3-a456-426614174000';
@@ -35,6 +37,7 @@ jest.mock('@linked-trace', () => ({
     exportSession: jest.fn(),
     deleteSession: jest.fn(),
     abandonExpiredSession: jest.fn(),
+    cancelActiveSession: jest.fn(),
   },
 }));
 const mockScreenTimeRequest = jest.fn();
@@ -52,7 +55,7 @@ jest.mock('../../../state/entitlementStore', () => ({
 
 const { linkedTrace: mockLinkedTrace } = jest.requireMock('@linked-trace') as {
   linkedTrace: Record<
-    'start' | 'status' | 'preflight' | 'record' | 'stop' | 'finalized' | 'exportSession' | 'deleteSession' | 'abandonExpiredSession',
+    'start' | 'status' | 'preflight' | 'record' | 'stop' | 'finalized' | 'exportSession' | 'deleteSession' | 'abandonExpiredSession' | 'cancelActiveSession',
     jest.Mock
   >;
 };
@@ -71,8 +74,9 @@ const idleStatus = { active: false, sessionId: null, expiresAtWallTimeMs: null, 
 const activeStatus = { active: true, sessionId: SESSION, expiresAtWallTimeMs: Date.now() + 7_200_000, truncated: false };
 const savedSession = { sessionId: SESSION, byteCount: 2_048_000, finalizedAtWallTimeMs: Date.now() };
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  await AsyncStorage.clear();
   rulesStore.getState().reset();
   jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
   jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
@@ -86,6 +90,7 @@ beforeEach(() => {
   mockLinkedTrace.exportSession.mockResolvedValue('file:///tmp/excerlock-linked-trace.ndjson');
   mockLinkedTrace.deleteSession.mockResolvedValue(undefined);
   mockLinkedTrace.abandonExpiredSession.mockResolvedValue(undefined);
+  mockLinkedTrace.cancelActiveSession.mockResolvedValue(undefined);
 });
 
 test('offers one guided path: instructions, a single Start test, and a single recorder hand-off', async () => {
@@ -228,6 +233,67 @@ test('keeps a running test recoverable while Trace Lab has no link', async () =>
   expect(await screen.findByText('Recording on this phone')).toBeTruthy();
   await user.press(screen.getByRole('button', { name: 'Open Walking Recorder' }));
   expect(Linking.openURL).toHaveBeenCalledWith('excerlock-walkingrecorder://');
+});
+
+test('recovers the intended recorder session from the lab-local handshake copy', async () => {
+  const user = userEvent.setup();
+  mockLinkedTrace.status.mockResolvedValue(activeStatus);
+  await AsyncStorage.setItem(ACTIVE_HANDSHAKE_KEY, JSON.stringify({ sessionId: SESSION, nonce: NONCE, protocolVersion: '1' }));
+  await render(<LinkedTraceScreen />);
+
+  expect(await screen.findByText('Recording on this phone')).toBeTruthy();
+  await user.press(await screen.findByRole('button', { name: 'Open Walking Recorder' }));
+  await waitFor(() => expect(Linking.openURL).toHaveBeenCalledWith(
+    `excerlock-walkingrecorder://linked-session?sessionId=${SESSION}&nonce=${NONCE}&protocolVersion=1`,
+  ));
+});
+
+test('starts a test with the handshake kept on this phone', async () => {
+  const user = userEvent.setup();
+  await render(<LinkedTraceScreen />);
+
+  await user.press(await screen.findByRole('button', { name: 'Start test' }));
+  await waitFor(() => expect(AsyncStorage.setItem).toHaveBeenCalledWith(
+    ACTIVE_HANDSHAKE_KEY,
+    JSON.stringify({ sessionId: SESSION, nonce: NONCE, protocolVersion: '1' }),
+  ));
+});
+
+test('clears the kept handshake when a finished test is saved', async () => {
+  const user = userEvent.setup();
+  mockParams = { sessionId: SESSION, nonce: NONCE, protocolVersion: '1' };
+  mockLinkedTrace.status.mockResolvedValue(activeStatus);
+  mockLinkedTrace.finalized.mockResolvedValue([savedSession]);
+  await AsyncStorage.setItem(ACTIVE_HANDSHAKE_KEY, JSON.stringify({ sessionId: SESSION, nonce: NONCE, protocolVersion: '1' }));
+  await render(<LinkedTraceScreen />);
+  expect(await screen.findByText('Test finished — save it')).toBeTruthy();
+
+  mockLinkedTrace.status.mockResolvedValue(idleStatus);
+  await user.press(screen.getByRole('button', { name: 'Save trace file' }));
+  await waitFor(() => expect(AsyncStorage.removeItem).toHaveBeenCalledWith(ACTIVE_HANDSHAKE_KEY));
+});
+
+test('offers one confirmed cancel escape from a running test and returns to a clean start', async () => {
+  const user = userEvent.setup();
+  mockLinkedTrace.status.mockResolvedValue(activeStatus);
+  await render(<LinkedTraceScreen />);
+
+  expect(await screen.findByText('Recording on this phone')).toBeTruthy();
+  expect(rulesStore.getState().data.rules.some((rule) => rule.id === LAB_WALKING_RULE_ID)).toBe(true);
+  await user.press(screen.getByRole('button', { name: 'Cancel test' }));
+
+  const calls = (Alert.alert as jest.Mock).mock.calls;
+  const buttons = calls[calls.length - 1]?.[2] as { text: string; onPress?: () => void }[];
+  expect(buttons.some((button) => button.text === 'Keep test')).toBe(true);
+  mockLinkedTrace.status.mockResolvedValue(idleStatus);
+  await act(async () => { buttons.find((button) => button.text === 'Cancel test')?.onPress?.(); });
+
+  await waitFor(() => expect(mockLinkedTrace.cancelActiveSession).toHaveBeenCalledWith(SESSION));
+  expect(mockLinkedTrace.stop).not.toHaveBeenCalled();
+  expect(AsyncStorage.removeItem).toHaveBeenCalledWith(ACTIVE_HANDSHAKE_KEY);
+  expect(rulesStore.getState().data.rules.some((rule) => rule.id === LAB_WALKING_RULE_ID)).toBe(false);
+  expect(await screen.findByText(/cancelled and its unfinished trace was removed/)).toBeTruthy();
+  expect(await screen.findByRole('button', { name: 'Start test' })).toBeEnabled();
 });
 
 test('offers only cleanup for an expired trace and returns to Start afterwards', async () => {
