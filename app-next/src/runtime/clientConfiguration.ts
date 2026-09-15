@@ -1,5 +1,9 @@
 export type ClientConfiguration = {
-  environment: 'dev' | 'preview' | 'prod' | 'lab';
+  // The standalone lab never reaches this parser: research bundles resolve the
+  // lab-local `@client-services` module at bundle time and embed no client
+  // identity group at all. Accepting `lab` here would only let a production
+  // bundle construct production identity services under a research label.
+  environment: 'dev' | 'preview' | 'prod';
   auth: { supabaseUrl: string; supabaseAnonKey: string; apiBaseUrl: string; googleIosClientId: string; googleRedirectUri: string };
   adaptyPublicKey: string;
   posthog: { apiKey: string; host: string };
@@ -15,7 +19,7 @@ export function readClientConfiguration(extra: unknown): ClientConfiguration {
     if (typeof value !== 'string' || !value.trim()) throw new Error(`Missing client configuration: ${group}.${key}`);
     return value;
   };
-  if (!['dev', 'preview', 'prod', 'lab'].includes(String(root.environment))) throw new Error('Invalid client environment');
+  if (!['dev', 'preview', 'prod'].includes(String(root.environment))) throw new Error('Invalid client environment');
   const config: ClientConfiguration = {
     environment: root.environment as ClientConfiguration['environment'],
     auth: {

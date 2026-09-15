@@ -283,6 +283,28 @@ test('standalone pod exclusion patches only the generated bare call and fails cl
   );
 });
 
+test('the standalone build script pins one canonical artifact path and refuses every option', () => {
+  const script = path.join(__dirname, 'build-linked-recorder-standalone.sh');
+  const canonical = path.join(__dirname, '..', '.scratch', 'standalone-research', 'DerivedData');
+  execFileSync('bash', ['-n', script], { encoding: 'utf8' });
+  // Any argument must fail closed before prebuild or xcodebuild runs, and the
+  // refusal names the one canonical location so a caller cannot drift onto a
+  // second artifact path that the phone proof would never verify or install.
+  for (const args of [['--derivedData', '/tmp/elsewhere'], ['--derived-data=/tmp/elsewhere']]) {
+    let status = 0;
+    let stderr = '';
+    try {
+      execFileSync('bash', [script, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (error) {
+      status = error.status;
+      stderr = error.stderr ?? '';
+    }
+    assert.equal(status, 2, stderr);
+    assert.match(stderr, /unknown argument/);
+    assert.ok(stderr.includes(canonical), `${stderr} must name the canonical artifact location ${canonical}`);
+  }
+});
+
 test('the standalone environment is double opt-in and can never select production identity', () => {
   const flag = linked.TRACE_FLAG;
   assert.equal(linked.standaloneEnabled({ EXCERLOCK_ENV: 'lab', [flag]: '1' }), true);

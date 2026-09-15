@@ -10,7 +10,12 @@
 # is always a clean one so the native project and the embedded config can never
 # come from different environments.
 #
-# Usage: scripts/build-linked-recorder-standalone.sh [--derivedData <path>]
+# Usage: scripts/build-linked-recorder-standalone.sh
+#
+# No options: the build always writes to the one canonical scratch location
+# below, which is also what scripts/prove-linked-recorder-on-phone.sh verifies
+# and installs. Passing any argument fails closed so a second artifact path can
+# never drift from the documented proof.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,12 +23,10 @@ APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$APP_DIR"
 
 DERIVED_DATA="$APP_DIR/.scratch/standalone-research/DerivedData"
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --derivedData) DERIVED_DATA="$2"; shift 2 ;;
-    *) echo "unknown argument: $1" >&2; exit 2 ;;
-  esac
-done
+if [[ $# -gt 0 ]]; then
+  echo "unknown argument: $1 (the standalone build always uses $DERIVED_DATA)" >&2
+  exit 2
+fi
 
 export EXCERLOCK_ENV=lab
 export EXCERLOCK_LINKED_RECORDER_TRACE=1

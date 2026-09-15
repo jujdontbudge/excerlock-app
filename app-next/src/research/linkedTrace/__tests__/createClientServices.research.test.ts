@@ -60,3 +60,34 @@ test('the lab identity graph is local and never touches production Supabase or A
   expect(mockAdaptyEvaluated).toBe(false);
   await services.dispose();
 });
+
+test('a production-shaped client extra cannot make the lab graph construct production identity', async () => {
+  // The lab entry point resolves this module at bundle time and has no `extra`
+  // parameter: it never reads the production client-configuration parser. A
+  // production-shaped extra passed anyway must leave the lab-local identity
+  // graph intact and must not evaluate a production identity SDK.
+  const withProductionExtra = {
+    ...options,
+    extra: {
+      environment: 'prod',
+      clientAuth: {
+        supabaseUrl: 'https://production.supabase.co',
+        supabaseAnonKey: 'production-anon',
+        googleIosClientId: 'production.apps.googleusercontent.com',
+        googleRedirectUri: 'com.googleusercontent.apps.production:/oauthredirect',
+      },
+      clientApi: { url: 'https://api.excerlock.com' },
+      clientSubscription: { adaptyKey: 'production-adapty-key' },
+      clientObservability: { posthogApiKey: 'production-posthog-key', posthogHost: 'https://us.i.posthog.com', sentryDsn: 'https://production@sentry.example.com/1' },
+    },
+  };
+  const services = await createClientServices(withProductionExtra);
+
+  expect(services.auth.identity()).toMatchObject({ kind: 'canonical', userId: LAB_RESEARCH_USER_ID });
+  expect(services.subscription.entitlement()).toMatchObject({ status: 'active', offer: { label: 'Isolated research build' } });
+  expect(entitlementStore.getState().data.entitlement.status).toBe('active');
+  await expect(services.subscription.purchase('any')).rejects.toThrow(/isolated research build/);
+  expect(mockSupabaseEvaluated).toBe(false);
+  expect(mockAdaptyEvaluated).toBe(false);
+  await services.dispose();
+});

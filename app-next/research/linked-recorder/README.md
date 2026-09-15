@@ -36,6 +36,8 @@ app-next/scripts/build-linked-recorder-standalone.sh
 # -> .scratch/standalone-research/DerivedData/Build/Products/Release-iphoneos/ExcerLock.app
 ```
 
+The script accepts no options: passing any argument fails closed, and the artifact always lands in the one canonical scratch path shown above, which is exactly what `scripts/prove-linked-recorder-on-phone.sh` verifies and installs.
+
 The script always runs a clean prebuild, exports the double opt-in for both `expo prebuild` and the Xcode bundling phase, then runs `scripts/verify-standalone-research.cjs`: embedded `main.jsbundle` with the research screen, embedded `EXConstants.bundle/app.config` booting `extra.environment` `lab` with updates off, lab identity/App Group only, no client identity group (no production or placeholder Supabase/Adapty/API/PostHog/Sentry/Google OAuth field), lab-only URL schemes, no associated domains, and no dev-client/LAN/OTA or production-identity-graph marker. Never pass the flag only to prebuild, or the artifact embeds the ordinary Expo config while the native project is research-configured; the verifier rejects that artifact.
 
 A later authorized signing step requires already-authorized App IDs/profiles with Family Controls and `group.com.johansardar.excerlock.lab.linkedtrace` access. This source work does not create App IDs, groups, profiles, certificates, or portal records. If that isolated lab group is not already authorized, stop at this prerequisite; never share the production App Group or uninstall/replace production ExcerLock.
