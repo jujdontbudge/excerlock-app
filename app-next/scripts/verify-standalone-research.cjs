@@ -17,12 +17,18 @@ const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const plist = require('@expo/plist').default;
+// Every identity this verifier compares against comes from the research config
+// owner, so a re-typed literal cannot drift from what the build actually
+// produced. The observed values still come from the artifact itself (Info.plist,
+// entitlements, embedded Expo config), never from config source.
+const linked = require('../plugins/linkedRecorderResearchConfig');
 
-const APP_BUNDLE_ID = 'com.johansardar.excerlock.lab.linkedtrace';
+const APP_BUNDLE_ID = linked.research.bundleIds.app;
 const APP_DISPLAY_NAME = 'ExcerLock Trace Lab';
-const APP_GROUP = 'group.com.johansardar.excerlock.lab.linkedtrace';
+const APP_GROUP = linked.research.appGroup;
+const RUNTIME_VERSION = linked.RUNTIME_VERSION;
 const TEAM = 'AX3C2B78YD';
-const SCHEME = 'excerlock-linked-trace';
+const SCHEME = linked.URL_SCHEME;
 // The lab embeds no client identity group at all. These are the production
 // shapes the artifact must never carry, not values to satisfy with placeholders.
 const PRODUCTION_IDENTITY_GROUPS = ['clientAuth', 'clientSubscription', 'clientObservability', 'clientApi'];
@@ -141,6 +147,7 @@ function verifyEmbeddedConfig(app, failures, passed) {
   }
   const environment = config.extra?.environment;
   if (environment !== 'lab') failures.push(`embedded Expo config extra.environment is ${String(environment)} (want lab)`);
+  if (config.runtimeVersion !== RUNTIME_VERSION) failures.push(`embedded Expo config runtimeVersion is ${String(config.runtimeVersion)} (want ${RUNTIME_VERSION})`);
   if (config.updates?.enabled !== false) failures.push(`embedded Expo config updates.enabled is ${String(config.updates?.enabled)} (want false)`);
   if (config.updates?.url !== undefined) failures.push('embedded Expo config carries an OTA update URL');
   if (config.ios?.bundleIdentifier !== APP_BUNDLE_ID) failures.push(`embedded Expo config ios.bundleIdentifier is ${String(config.ios?.bundleIdentifier)} (want ${APP_BUNDLE_ID})`);
@@ -197,7 +204,10 @@ function verifyExpoPlist(app, failures, passed) {
   const expo = readPlist(expoPlist);
   if (expo.EXUpdatesEnabled !== false) failures.push(`Expo.plist EXUpdatesEnabled is ${String(expo.EXUpdatesEnabled)} (want false)`);
   if (expo.EXUpdatesURL !== undefined) failures.push('Expo.plist carries an OTA update URL');
-  if (failures.length === before) passed.push('Expo.plist disables OTA updates and carries no update URL');
+  if (expo.EXUpdatesRuntimeVersion !== RUNTIME_VERSION) {
+    failures.push(`Expo.plist EXUpdatesRuntimeVersion is ${String(expo.EXUpdatesRuntimeVersion)} (want ${RUNTIME_VERSION})`);
+  }
+  if (failures.length === before) passed.push('Expo.plist disables OTA updates, carries no update URL, and pins the research runtime version');
 }
 
 function verifyEntitlements(options, failures, passed) {

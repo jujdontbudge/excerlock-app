@@ -1,5 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { execFileSync } = require('node:child_process');
+const path = require('node:path');
 const linked = require('../plugins/linkedRecorderResearchConfig');
 
 const targetModules = {
@@ -52,4 +54,31 @@ test('the shared opt-in parser rejects every nonempty value except exact 1', () 
   for (const value of ['0', 'true', 'yes', ' 1']) {
     assert.throws(() => linked.researchEnabled({ EXCERLOCK_LINKED_RECORDER_TRACE: value }), /must be exactly 1 or unset/);
   }
+});
+
+test('one owner pins every identity the artifact proof and the device proof compare against', () => {
+  // These are independent expectations, not a re-read of the owner: a changed
+  // lab identity has to be a deliberate edit here and in the owner.
+  assert.equal(linked.research.bundleIds.app, 'com.johansardar.excerlock.lab.linkedtrace');
+  assert.equal(linked.research.appGroup, 'group.com.johansardar.excerlock.lab.linkedtrace');
+  assert.equal(linked.production.bundleIds.app, 'com.johansardar.excerlock');
+  assert.equal(linked.PRODUCTION_COMPARISON_BUNDLE_ID, linked.production.bundleIds.app);
+  assert.equal(linked.WALKING_RECORDER_BUNDLE_ID, 'com.johansardar.excerlock.lab.walkingrecorder');
+  assert.equal(linked.URL_SCHEME, 'excerlock-linked-trace');
+  assert.equal(linked.WALKING_RECORDER_SCHEME, 'excerlock-walkingrecorder');
+  assert.equal(linked.RUNTIME_VERSION, '2-linked-recorder-1');
+  assert.notEqual(linked.research.appGroup, linked.production.appGroup);
+  assert.notEqual(linked.WALKING_RECORDER_BUNDLE_ID, linked.research.bundleIds.app);
+  assert.notEqual(linked.WALKING_RECORDER_BUNDLE_ID, linked.production.bundleIds.app);
+});
+
+test('the device proof resolves every identity from the config owner instead of a literal', () => {
+  const proof = path.join(__dirname, 'prove-linked-recorder-on-phone.sh');
+  const stdout = execFileSync('bash', [proof, '--print-identities'], { encoding: 'utf8' });
+  assert.equal(stdout, [
+    `lab=${linked.research.bundleIds.app}`,
+    `production=${linked.production.bundleIds.app}`,
+    `walkingRecorder=${linked.WALKING_RECORDER_BUNDLE_ID}`,
+    '',
+  ].join('\n'));
 });

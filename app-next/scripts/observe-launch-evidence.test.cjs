@@ -54,6 +54,7 @@ case "${mode}" in
     if [[ "$n" -ge 2 ]]; then echo "How the test works"; echo "Trace Lab begins the background trace"; else echo "9:41"; fi
     ;;
   dev-client) echo "Development servers"; echo "http://10.0.1.20:8081";;
+  metro-word) echo "Metronome"; echo "Practice tempo"; echo "BPM 120";;
   fail) echo "stub: Vision unavailable" >&2; exit 1;;
   blank) echo "9:41";;
 esac
@@ -178,4 +179,16 @@ test('the terminal dev-client prompt fails on the first attempt without retrying
   assert.match(result.files['launch-evidence-1.log'], /VERIFY FAIL/);
   assert.equal(result.files['launch-2.png'], undefined);
   assert.equal(result.files['launch-evidence-2.log'], undefined);
+});
+
+test('a screen that merely contains "metro" retries instead of a false dev-server diagnosis', () => {
+  const result = runScenario({ ocr: 'metro-word' });
+  assert.equal(result.status, 1);
+  // All three attempts ran: the word "metro" inside "Metronome" is unresolved
+  // evidence, so the loop retries rather than ending the proof early.
+  assert.match(result.stderr, /no positive research-screen evidence in 3 bounded attempts/);
+  assert.doesNotMatch(result.stderr, /asked for a development server/);
+  for (const attempt of [1, 2, 3]) {
+    assert.match(result.files[`launch-evidence-${attempt}.log`], /VERIFY FAIL: no Trace Lab research screen/);
+  }
 });

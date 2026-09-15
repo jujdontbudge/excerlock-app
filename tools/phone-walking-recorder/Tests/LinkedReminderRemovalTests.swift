@@ -59,6 +59,33 @@ final class LinkedReminderRemovalTests: XCTestCase {
         XCTAssertEqual(RecorderLinkedReminderCopy.cancelAction, "Keep it")
     }
 
+    /// The card may not claim an outcome the recorder cannot observe: Trace Lab
+    /// never reports whether it saved or cancelled, so the text must be usable
+    /// after either and must never say the trace is still unsaved.
+    func testReminderCardCopyNeverClaimsWhatTraceLabDid() {
+        XCTAssertEqual(RecorderLinkedReminderCopy.cardTitle, "Linked test recorded here")
+        XCTAssertEqual(RecorderLinkedReminderCopy.openAction, "Open Trace Lab")
+
+        let headline = RecorderLinkedReminderCopy.headline(sessionIdPrefix: "123e4567")
+        XCTAssertTrue(headline.hasPrefix("Test 123e4567… was recorded here."))
+        XCTAssertTrue(headline.localizedCaseInsensitiveContains("does not report back"))
+        XCTAssertTrue(headline.localizedCaseInsensitiveContains("saved or cancelled"))
+
+        let cardCopy = [
+            RecorderLinkedReminderCopy.cardTitle,
+            headline,
+            RecorderLinkedReminderCopy.detail,
+            RecorderLinkedReminderCopy.openAction,
+        ]
+        for text in cardCopy {
+            XCTAssertFalse(text.localizedCaseInsensitiveContains("has not saved"), text)
+            XCTAssertFalse(text.localizedCaseInsensitiveContains("not saved"), text)
+            XCTAssertFalse(text.localizedCaseInsensitiveContains("needs finishing"), text)
+        }
+        // The detail line still offers both truthful reasons to open Trace Lab.
+        XCTAssertTrue(RecorderLinkedReminderCopy.detail.localizedCaseInsensitiveContains("save it or check it"))
+    }
+
     func testRemovalRequiresConfirmationAndNeverTouchesTheArchive() throws {
         let root = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: root) }

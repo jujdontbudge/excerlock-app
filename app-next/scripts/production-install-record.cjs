@@ -14,8 +14,11 @@
 /* global module, process, require */
 const fs = require('node:fs');
 const path = require('node:path');
+// The production identifier is owned by the research config owner; this script
+// must compare the device's exact production record against that one value.
+const linked = require('../plugins/linkedRecorderResearchConfig');
 
-const PRODUCTION_BUNDLE_ID = 'com.johansardar.excerlock';
+const PRODUCTION_BUNDLE_ID = linked.production.bundleIds.app;
 // An identifier in devicectl's table is followed by whitespace or the end of the
 // line (`com.johansardar.excerlock | ExcerLock | 1.0.0`); a research app continues
 // with `.lab`. `-` and `_` are valid identifier characters too, so they cannot

@@ -50,6 +50,14 @@ const research = Object.freeze({
   }),
 });
 
+// The independent foreground ground-truth recorder. It is research-only with no
+// production counterpart, and it registers only the lab URL scheme.
+const WALKING_RECORDER_BUNDLE_ID = 'com.johansardar.excerlock.lab.walkingrecorder';
+// The production app a device proof compares against: its install record must be
+// identical before and after a lab install, so nothing may compare against a
+// re-typed copy of this identifier.
+const PRODUCTION_COMPARISON_BUNDLE_ID = production.bundleIds.app;
+
 function researchEnabled(env = process.env) {
   const value = env[TRACE_FLAG];
   if (value !== undefined && value !== '1') {
@@ -108,6 +116,8 @@ module.exports = {
   URL_SCHEME,
   WALKING_RECORDER_SCHEME,
   WALKING_RECORDER_LINK_HOSTS,
+  WALKING_RECORDER_BUNDLE_ID,
+  PRODUCTION_COMPARISON_BUNDLE_ID,
   STANDALONE_ENV,
   RESEARCH_ENVS,
   DEV_CLIENT_MODULES,

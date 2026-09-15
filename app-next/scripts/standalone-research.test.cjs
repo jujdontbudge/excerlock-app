@@ -60,6 +60,7 @@ function makeApp(root, overrides = {}) {
     path.join(app, 'EXConstants.bundle', 'app.config'),
     JSON.stringify({
       scheme: ['excerlock-linked-trace'],
+      runtimeVersion: '2-linked-recorder-1',
       ios: { bundleIdentifier: APP_BUNDLE_ID },
       updates: { enabled: false, checkAutomatically: 'NEVER' },
       extra: {
@@ -112,6 +113,24 @@ test('accepts a clean standalone research artifact', () => inTemp((root) => {
   const result = runVerifier(makeApp(root));
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   assert.match(result.stdout, /Standalone Linked Recorder research artifact verified/);
+}));
+
+test('rejects an artifact built for a different research runtime version', () => inTemp((root) => {
+  const result = runVerifier(
+    makeApp(root, {
+      expo: { EXUpdatesEnabled: false, EXUpdatesRuntimeVersion: '2-stale-runtime' },
+      config: {
+        scheme: ['excerlock-linked-trace'],
+        runtimeVersion: '2-stale-runtime',
+        ios: { bundleIdentifier: APP_BUNDLE_ID },
+        updates: { enabled: false, checkAutomatically: 'NEVER' },
+        extra: { environment: 'lab' },
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /embedded Expo config runtimeVersion is 2-stale-runtime/);
+  assert.match(result.stderr, /EXUpdatesRuntimeVersion is 2-stale-runtime/);
 }));
 
 test('rejects an artifact that carries the native dev client', () => inTemp((root) => {

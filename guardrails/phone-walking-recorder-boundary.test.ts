@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
 import plist from "@expo/plist";
+import { createRequire } from "node:module";
 
 import { fromRoot, readJson, readUtf8, walkFiles } from "./repo-files";
 
 type RootPackage = { workspaces?: string[] };
 type ExpoConfig = { expo?: { ios?: { bundleIdentifier?: string } } };
+type ResearchConfig = { WALKING_RECORDER_BUNDLE_ID: string };
 
 const recorderRoot = fromRoot("tools", "phone-walking-recorder");
-const recorderBundle = "com.johansardar.excerlock.lab.walkingrecorder";
+// The recorder identity comes from the one research config owner that the
+// build and the device proof also resolve it from.
+const config = createRequire(import.meta.url)(
+  fromRoot("app-next", "plugins", "linkedRecorderResearchConfig.js"),
+) as ResearchConfig;
+const recorderBundle = config.WALKING_RECORDER_BUNDLE_ID;
 
 describe("phone walking recorder isolation", () => {
   it("keeps the recorder outside every production Expo build and workspace root", () => {

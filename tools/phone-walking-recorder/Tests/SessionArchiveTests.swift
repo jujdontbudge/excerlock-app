@@ -199,7 +199,7 @@ final class SessionArchiveTests: XCTestCase {
         XCTAssertEqual(SessionWriter.pendingLinkedTraceRecoveries(baseURL: root).map(\.sessionId), [unfinished, newest, older])
 
         // After the relaunch recovery pass everything is finalized, so the newest
-        // started test is the one the "needs finishing" card must surface.
+        // started test is the one the recorder's recovery card must surface.
         let repository = SessionRepository(baseURL: root)
         XCTAssertEqual(repository.pendingLinkedTraceRecoveries.map(\.sessionId), [newest, unfinished, older])
         XCTAssertEqual(repository.pendingLinkedTraceRecoveries.first?.sessionId, newest)

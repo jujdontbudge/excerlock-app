@@ -16,12 +16,25 @@ type LinkIdentity = {
   WALKING_RECORDER_SCHEME: string;
   WALKING_RECORDER_LINK_HOSTS: { linkedSession: string; shareArchive: string };
 };
+type ResearchConfig = LinkIdentity & {
+  RUNTIME_VERSION: string;
+  WALKING_RECORDER_BUNDLE_ID: string;
+  PRODUCTION_COMPARISON_BUNDLE_ID: string;
+  production: { appGroup: string; bundleIds: { app: string } };
+  research: { appGroup: string; bundleIds: { app: string } };
+};
 
 const app = (...parts: string[]) => fromRoot('app-next', ...parts);
 // The lab link contract has exactly one owner: this CommonJS module, which both
 // the Expo config plugin and the research bundle import. The guardrail executes
 // it instead of re-reading its source text.
 const linkIdentity = createRequire(import.meta.url)(app('plugins', 'linkedRecorderLinks.js')) as LinkIdentity;
+// The research config owner is the single source for the lab identity, the
+// production comparison identity, the recorder identity and the runtime version.
+// Reading it here lets this guardrail compare the committed manifests and the
+// generated recorder project against the values the build actually uses.
+const config = createRequire(import.meta.url)(app('plugins', 'linkedRecorderResearchConfig.js')) as ResearchConfig;
+if (!config) throw new Error('the research config owner must be loadable');
 
 describe('linked recorder research boundary', () => {
   it('keeps the committed production manifest and EAS profiles free of a research delivery profile', () => {
@@ -78,7 +91,23 @@ describe('linked recorder research boundary', () => {
       targets?: Record<string, { settings?: { base?: Record<string, unknown> } }>;
     };
     expect(project.targets?.PhoneWalkingRecorder?.settings?.base?.PRODUCT_BUNDLE_IDENTIFIER)
-      .toBe('com.johansardar.excerlock.lab.walkingrecorder');
+      .toBe(config.WALKING_RECORDER_BUNDLE_ID);
+  });
+
+  it('keeps the lab, production-comparison, recorder and runtime identities in the one config owner', () => {
+    // The artifact verifier, the production install-record comparator and the
+    // phone proof all resolve these through the owner instead of re-typing them,
+    // so these independent expectations pin what that owner must say.
+    expect(config.research.bundleIds.app).toBe('com.johansardar.excerlock.lab.linkedtrace');
+    expect(config.research.appGroup).toBe('group.com.johansardar.excerlock.lab.linkedtrace');
+    expect(config.production.bundleIds.app).toBe('com.johansardar.excerlock');
+    expect(config.PRODUCTION_COMPARISON_BUNDLE_ID).toBe(config.production.bundleIds.app);
+    expect(config.WALKING_RECORDER_BUNDLE_ID).toBe('com.johansardar.excerlock.lab.walkingrecorder');
+    expect(config.WALKING_RECORDER_BUNDLE_ID).toContain('.lab.');
+    expect(config.WALKING_RECORDER_BUNDLE_ID).not.toBe(config.research.bundleIds.app);
+    expect(config.RUNTIME_VERSION).toBe('2-linked-recorder-1');
+    expect(config.URL_SCHEME).toBe(linkIdentity.URL_SCHEME);
+    expect(config.research.appGroup).not.toBe(config.production.appGroup);
   });
 
   it('executes the ordinary-artifact scanner against clean and contaminated fixtures', () => {

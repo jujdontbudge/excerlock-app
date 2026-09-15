@@ -428,8 +428,21 @@ public final class LinkedTraceWriter: @unchecked Sendable {
   public func stopSession(sessionId: String, nonce: String) throws -> URL {
     try onQueue {
       let normalized = sessionId.lowercased()
-      let stopped = stampProvider()
       try withTraceLock {
+        guard Self.validSessionId(normalized) else { throw LinkedTraceError.invalidSession }
+        guard Self.validNonce(nonce) else { throw LinkedTraceError.invalidNonce }
+        // A finalization that was interrupted after its authoritative marker is
+        // completed here, and the same call still returns the export URL: a
+        // retried save is idempotent success, never a duplicate stop event and
+        // never a lost trace.
+        if fileManager.fileExists(atPath: try finalizedMarkerURL(normalized).path) {
+          if let descriptor = try readDescriptorLocked(), descriptor.sessionId == normalized {
+            guard descriptor.nonceDigest == Self.digest(nonce) else { throw LinkedTraceError.invalidNonce }
+          }
+          try completeFinalizationLocked(sessionId: normalized)
+          return
+        }
+        let stopped = stampProvider()
         guard let descriptor = try liveDescriptorLocked() else { throw LinkedTraceError.inactive }
         guard descriptor.sessionId == normalized else { throw LinkedTraceError.sessionMismatch }
         guard descriptor.nonceDigest == Self.digest(nonce) else { throw LinkedTraceError.invalidNonce }
@@ -457,10 +470,12 @@ public final class LinkedTraceWriter: @unchecked Sendable {
         let now = stampProvider().wallTimeMs
         try prepareRoot()
         try pruneLocked(nowWallTimeMs: now)
-        // A session the current descriptor still owns is running or expired, never
-        // finalized, so it is never listed here even if a marker survived an
-        // interrupted finalization. An interrupted abandonment is completed
-        // first, so its descriptor can never hide a genuinely saved session.
+        // The finalized marker, when it exists, is authoritative: liveDescriptorLocked()
+        // already finished the interrupted finalization and dropped the stale
+        // descriptor, so a session the current descriptor still owns is genuinely
+        // running or expired and is never listed here. An interrupted
+        // abandonment is completed first too, so its descriptor can never hide a
+        // genuinely saved session either.
         let descriptorSessionId = try liveDescriptorLocked()?.sessionId
         let directories = (try? fileManager.contentsOfDirectory(
           at: try rootURL(),
@@ -540,6 +555,14 @@ public final class LinkedTraceWriter: @unchecked Sendable {
       try withTraceLock {
         let normalized = sessionId.lowercased()
         guard Self.validSessionId(normalized) else { throw LinkedTraceError.invalidSession }
+        // The finalized marker wins over every later cancel: a save that began
+        // and was interrupted must be finished, never deleted as abandoned. The
+        // interrupted finalization is completed first, then the cancel is
+        // refused truthfully because there is no active test left to abandon.
+        if fileManager.fileExists(atPath: try finalizedMarkerURL(normalized).path) {
+          try completeFinalizationLocked(sessionId: normalized)
+          throw LinkedTraceError.inactive
+        }
         // An interrupted abandonment already recorded its authoritative
         // transition. Finishing that cleanup again is idempotent success, not
         // an error, whether or not the descriptor survived the crash.
@@ -575,17 +598,76 @@ public final class LinkedTraceWriter: @unchecked Sendable {
     announcedSessionId = nil
   }
 
-  /// The descriptor for a session that is actually live. An abandoned marker
-  /// always wins over it: if a crash left the marker behind, this call finishes
-  /// the abandonment first and reports no live session, so the session can
-  /// never look active, resumable, appendable, or finalizable again.
+  /// Idempotent completion of the steps after the authoritative finalized
+  /// marker: append the missing stop event when the process died between the
+  /// marker and that event, then remove the descriptor, but only when it still
+  /// describes the finalized session. A newer session that started after an
+  /// interrupted save must never lose its descriptor to an old retry. Unlike
+  /// abandonment, the trace payload is kept: it is exactly what the operator
+  /// can still list and export after a relaunch.
+  private func completeFinalizationLocked(sessionId: String) throws {
+    if let descriptor = try readDescriptorLocked(), descriptor.sessionId == sessionId {
+      if !traceEndsWithStopLocked(sessionId: sessionId) {
+        // Best effort: a trace that cannot take the repair event is still
+        // finalized and exportable, exactly like one written before this bug fix.
+        _ = try? appendLocked(
+          descriptor: descriptor,
+          producer: .hostNative,
+          eventType: .traceStop,
+          operationId: nil,
+          payload: ["status": "completed"],
+          stamp: stampProvider(),
+          bypassLimit: true
+        )
+      }
+      try removeDescriptorLocked()
+    }
+    announcedSessionId = nil
+  }
+
+  /// True when the trace's last complete line is already the stop event, so a
+  /// finalization recovery never appends a second one. Only a bounded tail is
+  /// read: the marker, not this scan, is what proves the session is finalized.
+  private func traceEndsWithStopLocked(sessionId: String) -> Bool {
+    let url: URL
+    let handle: FileHandle
+    do {
+      url = try traceURL(sessionId)
+      handle = try FileHandle(forReadingFrom: url)
+    } catch { return false }
+    defer { try? handle.close() }
+    guard let size = try? handle.seekToEnd() else { return false }
+    let window: UInt64 = 64 * 1_024
+    let start = size > window ? size - window : 0
+    do { try handle.seek(toOffset: start) } catch { return false }
+    guard let data = try? handle.readToEnd(), !data.isEmpty else { return false }
+    var tail = String(decoding: data, as: UTF8.self)
+    // The window may open in the middle of a line; drop that partial line.
+    if start > 0, let newline = tail.firstIndex(of: "\n") { tail = String(tail[tail.index(after: newline)...]) }
+    guard let lastLine = tail.split(separator: "\n").last,
+          let row = try? JSONSerialization.jsonObject(with: Data(lastLine.utf8)) as? [String: Any] else {
+      return false
+    }
+    return row["eventType"] as? String == LinkedTraceEventType.traceStop.rawValue
+  }
+
+  /// The descriptor for a session that is actually live. A finalized marker and
+  /// an abandoned marker both win over it: if a crash left one behind, this call
+  /// finishes that transition first and reports no live session, so the session
+  /// can never look active, resumable, appendable, cancellable, or finalizable
+  /// again. The two markers are written for different outcomes — a finalized
+  /// session stays listable and exportable, an abandoned one never is.
   private func liveDescriptorLocked() throws -> LinkedTraceSessionDescriptor? {
     guard let descriptor = try readDescriptorLocked() else { return nil }
-    guard fileManager.fileExists(atPath: try abandonedMarkerURL(descriptor.sessionId).path) else {
-      return descriptor
+    if fileManager.fileExists(atPath: try abandonedMarkerURL(descriptor.sessionId).path) {
+      try completeAbandonmentLocked(sessionId: descriptor.sessionId)
+      return nil
     }
-    try completeAbandonmentLocked(sessionId: descriptor.sessionId)
-    return nil
+    if fileManager.fileExists(atPath: try finalizedMarkerURL(descriptor.sessionId).path) {
+      try completeFinalizationLocked(sessionId: descriptor.sessionId)
+      return nil
+    }
+    return descriptor
   }
 
   public func hashIdentifier(_ value: String) -> String {

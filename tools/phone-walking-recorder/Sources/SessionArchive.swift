@@ -331,7 +331,7 @@ final class SessionWriter {
     /// Pending linked recoveries in actionable order, newest unfinished test first.
     ///
     /// Directory enumeration order is not an order: without this, the
-    /// "Linked test needs finishing" card could surface an arbitrary stale
+    /// "Linked test recorded here" card could surface an arbitrary stale
     /// recovery. An unfinished recording (no manifest yet, or an archive the
     /// recovery pass has not finalized) outranks an already-finalized archive
     /// that only waits for Trace Lab, and within each group the most recently

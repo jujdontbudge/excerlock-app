@@ -228,16 +228,16 @@ struct RecorderHomeView: View {
             canaryCheckCard
         } else if let recovery = controller.pendingLinkedTraceRecovery {
             VStack(alignment: .leading, spacing: 12) {
-                Label("Linked test needs finishing", systemImage: "arrow.clockwise.circle.fill")
+                Label(RecorderLinkedReminderCopy.cardTitle, systemImage: "arrow.clockwise.circle.fill")
                     .font(.headline)
                     .foregroundStyle(RecorderTheme.primaryText)
-                Text("Test \(recovery.sessionId.prefix(8))… was recorded here, but ExcerLock Trace Lab has not saved its trace yet.")
+                Text(RecorderLinkedReminderCopy.headline(sessionIdPrefix: String(recovery.sessionId.prefix(8))))
                     .font(.subheadline)
                     .foregroundStyle(RecorderTheme.secondaryText)
-                Text("Open Trace Lab to save it. The one-time link stays in a protected file, stays out of every export, and survives a relaunch until you clear it.")
+                Text(RecorderLinkedReminderCopy.detail)
                     .font(.caption)
                     .foregroundStyle(RecorderTheme.secondaryText)
-                Button("Open Trace Lab to finish") { controller.openPendingLinkedTrace() }
+                Button(RecorderLinkedReminderCopy.openAction) { controller.openPendingLinkedTrace() }
                     .buttonStyle(PrimaryButtonStyle())
                 if controller.linkedReminderRemovalRequested {
                     Text(RecorderLinkedReminderCopy.removeConfirmation)

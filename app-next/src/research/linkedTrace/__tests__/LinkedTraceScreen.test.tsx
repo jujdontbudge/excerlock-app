@@ -296,6 +296,45 @@ test('offers one confirmed cancel escape from a running test and returns to a cl
   expect(await screen.findByRole('button', { name: 'Start test' })).toBeEnabled();
 });
 
+test('lands on the saved step when a cancel is refused because the save already began', async () => {
+  const user = userEvent.setup();
+  mockLinkedTrace.status.mockResolvedValue(activeStatus);
+  await render(<LinkedTraceScreen />);
+  expect(await screen.findByText('Recording on this phone')).toBeTruthy();
+
+  // The finalization marker is authoritative: a save interrupted after its
+  // marker is finished as saved, so the recorder-side cancel is refused.
+  mockLinkedTrace.cancelActiveSession.mockRejectedValue(new Error('inactive'));
+  mockLinkedTrace.status.mockResolvedValue(idleStatus);
+  mockLinkedTrace.finalized.mockResolvedValue([savedSession]);
+  await user.press(screen.getByRole('button', { name: 'Cancel test' }));
+  const calls = (Alert.alert as jest.Mock).mock.calls;
+  const buttons = calls[calls.length - 1]?.[2] as { text: string; onPress?: () => void }[];
+  await act(async () => { buttons.find((button) => button.text === 'Cancel test')?.onPress?.(); });
+
+  expect(await screen.findByText('Saved tests on this phone')).toBeTruthy();
+  expect(await screen.findByText(/already saved on this phone/)).toBeTruthy();
+  expect(screen.queryByText(/may still be running/)).toBeNull();
+  expect(rulesStore.getState().data.rules.some((rule) => rule.id === LAB_WALKING_RULE_ID)).toBe(false);
+});
+
+test('keeps the running recovery step when a cancel fails while the trace is still active', async () => {
+  const user = userEvent.setup();
+  mockLinkedTrace.status.mockResolvedValue(activeStatus);
+  await render(<LinkedTraceScreen />);
+  expect(await screen.findByText('Recording on this phone')).toBeTruthy();
+
+  mockLinkedTrace.cancelActiveSession.mockRejectedValue(new Error('io'));
+  await user.press(screen.getByRole('button', { name: 'Cancel test' }));
+  const calls = (Alert.alert as jest.Mock).mock.calls;
+  const buttons = calls[calls.length - 1]?.[2] as { text: string; onPress?: () => void }[];
+  await act(async () => { buttons.find((button) => button.text === 'Cancel test')?.onPress?.(); });
+
+  expect(await screen.findByText(/may still be running/)).toBeTruthy();
+  expect(screen.getByText('Recording on this phone')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Open Walking Recorder' })).toBeTruthy();
+});
+
 test('offers only cleanup for an expired trace and returns to Start afterwards', async () => {
   const user = userEvent.setup();
   mockLinkedTrace.status.mockResolvedValue({ active: false, sessionId: OTHER_SESSION, expiresAtWallTimeMs: Date.now() - 1, truncated: false });

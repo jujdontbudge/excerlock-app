@@ -365,7 +365,28 @@ export function LinkedTraceScreen() {
       setPhase(saved.length ? 'exported' : 'ready');
       setNote('The test was cancelled and its unfinished trace was removed from this phone. Nothing was saved or exported.');
     } catch {
-      setError('The test could not be cancelled, so it may still be running. Try again from this screen.');
+      // A save that began before an interruption is finished as saved, so a
+      // later cancel is refused. Re-read the phone's own state and land on the
+      // truthful step instead of claiming the test may still be running.
+      const [current, saved] = await Promise.all([
+        linkedTrace.status().catch(() => null),
+        linkedTrace.finalized().catch(() => []),
+      ]);
+      if (!current || current.active) {
+        setError('The test could not be cancelled, so it may still be running. Try again from this screen.');
+        return;
+      }
+      removeLabWalkingRule();
+      await clearActiveHandshake().catch(() => undefined);
+      setStartedLink(null);
+      setStatus(current);
+      setFinalized(saved);
+      settle(current, returnedLinkRef.current, saved);
+      if (saved.some((session) => session.sessionId === sessionId)) {
+        setNote(ALREADY_SAVED);
+      } else {
+        setNote('That test is no longer active on this phone, so there was nothing left to cancel.');
+      }
     } finally { setBusy(false); }
   };
 

@@ -213,7 +213,17 @@ struct LinkedTraceRecovery: Codable, Equatable, Identifiable {
 /// may have cancelled the test there, and in both cases the recorder only
 /// drops its reminder after an explicit confirmation that Trace Lab no longer
 /// needs the test. The recording archive itself always stays on this phone.
+///
+/// The card copy is deliberately neutral for the same reason: the recorder
+/// cannot know whether Trace Lab saved or cancelled, so it never says either
+/// way and never claims the trace is still unsaved.
 enum RecorderLinkedReminderCopy {
+    static let cardTitle = "Linked test recorded here"
+    static func headline(sessionIdPrefix: String) -> String {
+        "Test \(sessionIdPrefix)… was recorded here. Trace Lab does not report back whether it saved or cancelled that test, so this protected one-time link stays on this phone until you remove it."
+    }
+    static let detail = "Open Trace Lab to save it or check it. The one-time link stays in a protected file, stays out of every export, and survives a relaunch until you clear it."
+    static let openAction = "Open Trace Lab"
     static let removeAction = "Remove this reminder"
     static let removeConfirmation = "Remove this reminder only after Trace Lab has saved or cancelled the test. Your recording stays on this phone."
     static let confirmAction = "Remove reminder"

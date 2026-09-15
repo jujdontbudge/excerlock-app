@@ -11,6 +11,8 @@ export const WALKING_RECORDER_LINK_HOSTS: {
   readonly linkedSession: string;
   readonly shareArchive: string;
 };
+export const WALKING_RECORDER_BUNDLE_ID: string;
+export const PRODUCTION_COMPARISON_BUNDLE_ID: string;
 export const STANDALONE_ENV: string;
 export const RESEARCH_ENVS: readonly string[];
 export const DEV_CLIENT_MODULES: readonly string[];

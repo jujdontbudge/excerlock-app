@@ -322,6 +322,159 @@ struct LinkedTraceWriterHarness {
     let relaunchSaved = freshWriter.finalizedSessions().map(\.sessionId)
     precondition(relaunchSaved.contains(freshId) && !relaunchSaved.contains(abandonedId))
 
+    // Finalization crash points. The finalized marker is the authoritative
+    // transition exactly like the abandonment marker: whatever step the process
+    // died at, every later writer call finishes the same finalization and
+    // reports a saved test that can never be resumed, appended to, or cancelled.
+    // `.markerWritten` recreates a death between the marker and the stop event;
+    // `.completed` is a real completed finalization (marker + stop, descriptor
+    // already gone); the fault-injection case below covers marker + stop with
+    // the descriptor still present.
+    enum FinalizeCrashPoint: String, CaseIterable {
+      case markerWritten
+      case completed
+    }
+    func seedFinalizeCrashPoint(_ crashPoint: FinalizeCrashPoint) throws -> (root: URL, sessionId: String) {
+      let crashRoot = root.appendingPathComponent("finalize-crash-\(crashPoint.rawValue)", isDirectory: true)
+      try FileManager.default.createDirectory(at: crashRoot, withIntermediateDirectories: true)
+      let crashId = UUID().uuidString.lowercased()
+      let crashWriter = LinkedTraceWriter(containerURL: crashRoot)
+      _ = try crashWriter.startSession(sessionId: crashId, nonce: nonce)
+      precondition(crashWriter.record(producer: .hostJS, eventType: .clockAnchor, payload: ["label": "session_started"]))
+      if crashPoint == .completed {
+        _ = try crashWriter.stopSession(sessionId: crashId, nonce: nonce)
+        return (crashRoot, crashId)
+      }
+      let directory = crashRoot.appendingPathComponent("linked-trace/v1/\(crashId)", isDirectory: true)
+      let marker: [String: Any] = [
+        "protocolVersion": linkedTraceProtocolVersion,
+        "sessionId": crashId,
+        "finalizedAtWallTimeMs": 1_000,
+      ]
+      try JSONSerialization.data(withJSONObject: marker)
+        .write(to: directory.appendingPathComponent("finalized-v1.json"))
+      return (crashRoot, crashId)
+    }
+    for crashPoint in FinalizeCrashPoint.allCases {
+      let seeded = try seedFinalizeCrashPoint(crashPoint)
+      let crashWriter = LinkedTraceWriter(containerURL: seeded.root)
+      let directory = seeded.root.appendingPathComponent("linked-trace/v1/\(seeded.sessionId)", isDirectory: true)
+      let trace = directory.appendingPathComponent("production.ndjson")
+      let descriptor = seeded.root.appendingPathComponent("linked-trace-active-v1.json")
+      let preRecoveryBytes = try Data(contentsOf: trace).count
+
+      // The next writer call completes the interrupted finalization: the session
+      // is reported saved, the stale descriptor is gone, and the payload is kept.
+      let crashStatus = crashWriter.status()
+      precondition(!crashStatus.active && crashStatus.sessionId == nil)
+      precondition(!FileManager.default.fileExists(atPath: descriptor.path))
+      precondition(FileManager.default.fileExists(atPath: trace.path))
+
+      // A later append must never extend a finalized trace.
+      let recoveredBytes = try Data(contentsOf: trace).count
+      precondition(!crashWriter.record(producer: .hostJS, eventType: .clockAnchor, payload: ["label": "session_started"]))
+      let afterAppendRefusalBytes = try Data(contentsOf: trace).count
+      precondition(afterAppendRefusalBytes == recoveredBytes)
+
+      // A relaunch cannot resume it, and cancelling it is refused without
+      // deleting the saved trace: the finalized marker wins over every cancel.
+      do {
+        _ = try crashWriter.startSession(sessionId: seeded.sessionId, nonce: nonce)
+        preconditionFailure("a finalized session was resumed")
+      } catch LinkedTraceError.sessionExists {}
+      do {
+        try crashWriter.cancelActiveSession(sessionId: seeded.sessionId)
+        preconditionFailure("a finalized session was cancelled")
+      } catch LinkedTraceError.inactive {}
+      do {
+        try crashWriter.abandonExpiredSession(sessionId: seeded.sessionId)
+        preconditionFailure("a finalized session was abandoned as expired")
+      } catch LinkedTraceError.inactive {}
+      precondition(FileManager.default.fileExists(atPath: trace.path))
+      precondition(!FileManager.default.fileExists(atPath: directory.appendingPathComponent("abandoned-v1.json").path))
+      precondition(crashWriter.finalizedSessions().map(\.sessionId) == [seeded.sessionId])
+
+      // The saved trace stays listable, re-exportable, and self-describing:
+      // exactly one stop event, and it is the last line even when the crash
+      // landed before the stop event was written.
+      let savedSession = crashWriter.finalizedSessions().first { $0.sessionId == seeded.sessionId }
+      precondition(savedSession?.byteCount == Int64(recoveredBytes))
+      let exportURL = try crashWriter.exportFinalizedSession(sessionId: seeded.sessionId)
+      let exportedRows = try String(contentsOf: exportURL, encoding: .utf8).split(separator: "\n").map {
+        try JSONSerialization.jsonObject(with: Data($0.utf8)) as! [String: Any]
+      }
+      precondition(exportedRows.filter { $0["eventType"] as? String == "trace_stop" }.count == 1)
+      precondition(exportedRows.last?["eventType"] as? String == "trace_stop")
+      precondition(preRecoveryBytes <= recoveredBytes)
+
+      // A retried save of the same finalized session is idempotent: it returns
+      // the same truth instead of a duplicate stop event.
+      let exportedBytes = try Data(contentsOf: exportURL)
+      let retriedExport = try crashWriter.stopSession(sessionId: seeded.sessionId, nonce: nonce)
+      let retriedBytes = try Data(contentsOf: retriedExport)
+      precondition(retriedBytes == exportedBytes)
+      let retriedRows = try String(contentsOf: retriedExport, encoding: .utf8).split(separator: "\n").filter {
+        $0.contains("trace_stop")
+      }
+      precondition(retriedRows.count == 1)
+
+      // Deleting the saved trace is still the operator's explicit action.
+      try crashWriter.deleteSession(sessionId: seeded.sessionId)
+      precondition(!FileManager.default.fileExists(atPath: directory.path))
+      precondition(crashWriter.finalizedSessions().isEmpty)
+    }
+
+    // A real partial finalization produced by the writer itself, not a
+    // hand-built state: with the container directory unwritable, the marker and
+    // the stop event are written and removing the descriptor fails, which is
+    // exactly what a crash between those two steps leaves behind. Restoring the
+    // container and consulting the writer must finish the same finalization,
+    // keep every byte of the trace, never append a second stop event, refuse a
+    // cancel, and still export the saved trace.
+    let finalizeFaultRoot = root.appendingPathComponent("finalize-unwritable", isDirectory: true)
+    try FileManager.default.createDirectory(at: finalizeFaultRoot, withIntermediateDirectories: true)
+    let finalizeFaultId = UUID().uuidString.lowercased()
+    let finalizeFaultWriter = LinkedTraceWriter(containerURL: finalizeFaultRoot)
+    _ = try finalizeFaultWriter.startSession(sessionId: finalizeFaultId, nonce: nonce)
+    precondition(finalizeFaultWriter.record(producer: .hostJS, eventType: .clockAnchor, payload: ["label": "session_started"]))
+    let finalizeFaultDirectory = finalizeFaultRoot.appendingPathComponent("linked-trace/v1/\(finalizeFaultId)", isDirectory: true)
+    let finalizeFaultDescriptor = finalizeFaultRoot.appendingPathComponent("linked-trace-active-v1.json")
+    try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: finalizeFaultRoot.path)
+    var finalizeFaultFailed = false
+    do { _ = try finalizeFaultWriter.stopSession(sessionId: finalizeFaultId, nonce: nonce) } catch { finalizeFaultFailed = true }
+    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: finalizeFaultRoot.path)
+    precondition(finalizeFaultFailed, "descriptor removal unexpectedly succeeded on an unwritable container")
+    precondition(FileManager.default.fileExists(atPath: finalizeFaultDescriptor.path))
+    precondition(FileManager.default.fileExists(atPath: finalizeFaultDirectory.appendingPathComponent("finalized-v1.json").path))
+    let interruptedBytes = try Data(contentsOf: finalizeFaultDirectory.appendingPathComponent("production.ndjson")).count
+    // A wrong nonce still cannot finalize the session the descriptor owns.
+    do {
+      _ = try finalizeFaultWriter.stopSession(sessionId: finalizeFaultId, nonce: String(repeating: "cd", count: 32))
+      preconditionFailure("an interrupted finalization accepted a different nonce")
+    } catch LinkedTraceError.invalidNonce {}
+    // The next writer call finishes it: the recorded bytes never shrink and the
+    // stop event is not appended twice.
+    let finalizeFaultStatus = finalizeFaultWriter.status()
+    precondition(!finalizeFaultStatus.active && finalizeFaultStatus.sessionId == nil)
+    precondition(!FileManager.default.fileExists(atPath: finalizeFaultDescriptor.path))
+    let afterRecoveryBytes = try Data(contentsOf: finalizeFaultDirectory.appendingPathComponent("production.ndjson")).count
+    precondition(afterRecoveryBytes == interruptedBytes)
+    do {
+      try finalizeFaultWriter.cancelActiveSession(sessionId: finalizeFaultId)
+      preconditionFailure("an interrupted finalization was cancelled")
+    } catch LinkedTraceError.inactive {}
+    precondition(!FileManager.default.fileExists(atPath: finalizeFaultDirectory.appendingPathComponent("abandoned-v1.json").path))
+    let finalizeFaultExport = try finalizeFaultWriter.exportFinalizedSession(sessionId: finalizeFaultId)
+    let finalizeFaultRows = try String(contentsOf: finalizeFaultExport, encoding: .utf8).split(separator: "\n").map {
+      try JSONSerialization.jsonObject(with: Data($0.utf8)) as! [String: Any]
+    }
+    precondition(finalizeFaultRows.filter { $0["eventType"] as? String == "trace_stop" }.count == 1)
+    let retriedFaultExport = try finalizeFaultWriter.stopSession(sessionId: finalizeFaultId, nonce: nonce)
+    let retriedFaultBytes = try Data(contentsOf: retriedFaultExport)
+    let finalizedFaultBytes = try Data(contentsOf: finalizeFaultExport)
+    precondition(retriedFaultBytes == finalizedFaultBytes)
+    try finalizeFaultWriter.deleteSession(sessionId: finalizeFaultId)
+
     let limitedRoot = root.appendingPathComponent("limited", isDirectory: true)
     try FileManager.default.createDirectory(at: limitedRoot, withIntermediateDirectories: true)
     let limitedId = UUID().uuidString.lowercased()

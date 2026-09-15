@@ -6,19 +6,34 @@
 # the previous research build unusable: a Trace Lab that needs a running Mac.
 #
 # Usage: app-next/scripts/prove-linked-recorder-on-phone.sh [path/to/ExcerLock.app]
+#        app-next/scripts/prove-linked-recorder-on-phone.sh --print-identities
 #   IL_UDID  device identifier (default: the paired lab phone Il)
+#   --print-identities resolves and prints the three identities from the research
+#   config owner and exits, so a drift check can run without a device.
 # The independence gate below is unconditional: this proof must never pass
 # while Metro or port 8081 is available.
 set -euo pipefail
 
 IL="${IL_UDID:-F4E839C0-3F05-5BF8-BA31-12949B2B83AB}"
-LAB="com.johansardar.excerlock.lab.linkedtrace"
-PROD="com.johansardar.excerlock"
-WALK="com.johansardar.excerlock.lab.walkingrecorder"
 PRODUCTION_RECORD="production-install-record.cjs"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CONFIG_OWNER="$APP_DIR/plugins/linkedRecorderResearchConfig.js"
+
+# Nothing here is re-typed: every identity the proof installs, launches and
+# compares comes from the one research config owner, so the proof can never
+# drift from the build configuration it is meant to test.
+owner_identity() {
+  node -e "process.stdout.write(String(require(process.argv[1])$1))" "$CONFIG_OWNER"
+}
+LAB="$(owner_identity '.research.bundleIds.app')"
+PROD="$(owner_identity '.production.bundleIds.app')"
+WALK="$(owner_identity '.WALKING_RECORDER_BUNDLE_ID')"
+if [[ "${1:-}" == "--print-identities" ]]; then
+  printf 'lab=%s\nproduction=%s\nwalkingRecorder=%s\n' "$LAB" "$PROD" "$WALK"
+  exit 0
+fi
 APP="${1:-$APP_DIR/.scratch/standalone-research/DerivedData/Build/Products/Release-iphoneos/ExcerLock.app}"
 OUT="${PROVE_OUT:-$APP_DIR/.scratch/prove-phone}"
 OCR="/usr/bin/python3"

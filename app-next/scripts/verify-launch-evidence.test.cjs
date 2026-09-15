@@ -143,6 +143,19 @@ const DEV_CLIENT_PROMPT = [
   'http://10.0.1.20:8081',
 ].join('\n');
 
+// Unrelated screens whose words merely contain a development-server word. The
+// bare word "metro" is not, by itself, evidence of anything: matching it as a
+// substring would diagnose a development server from an app named "Metronome"
+// and end the proof instead of retrying a screen that may still be loading.
+const UNRELATED_METRO_TEXT = [
+  '9:41',
+  'Metronome',
+  'Practice tempo',
+  'BPM 120',
+  'Start metronome',
+].join('\n');
+const UNRELATED_METRO_STATION_TEXT = ['9:41', 'Maps', 'Metro station', 'King\u2019s Cross', 'Kilometro 12'].join('\n');
+
 const STATUS_BAR_ONLY = '9:41\n';
 const EMPTY = '';
 
@@ -234,6 +247,37 @@ test('the dev-client prompt is a terminal failure with its own diagnostic', () =
   });
 });
 
+test('every development-server marker is a distinctive multi-word phrase', () => {
+  const { DEV_CLIENT_MARKERS } = require('./verify-launch-evidence.cjs');
+  assert.ok(DEV_CLIENT_MARKERS.length > 0);
+  assert.equal(new Set(DEV_CLIENT_MARKERS).size, DEV_CLIENT_MARKERS.length);
+  for (const marker of DEV_CLIENT_MARKERS) {
+    assert.ok(marker.trim().split(/[^a-z0-9]+/i).filter(Boolean).length >= 2, `marker is a lone word: ${marker}`);
+  }
+});
+
+test('a word that merely contains "metro" is unresolved evidence, never a dev-server diagnosis', () => {
+  for (const text of [UNRELATED_METRO_TEXT, UNRELATED_METRO_STATION_TEXT]) {
+    assert.equal(detectResearchPhase(text), null);
+    assert.equal(classifyLaunchEvidence(text), 'unobserved');
+    withFile(text, (file) => {
+      const result = runCli(file);
+      assert.equal(result.status, 1, `expected retryable failure for ${JSON.stringify(text.slice(0, 24))}`);
+      assert.equal(result.stdout, '');
+      assert.match(result.stderr, /no Trace Lab research screen/);
+      assert.doesNotMatch(result.stderr, /development server/);
+    });
+  }
+});
+
+test('markers match whole normalized words, not substrings of longer words', () => {
+  const { containsPhrase } = require('./verify-launch-evidence.cjs');
+  assert.equal(containsPhrase('a metronome keeps time', 'metro bundler'), false);
+  assert.equal(containsPhrase('metro bundler ready', 'metro bundler'), true);
+  assert.equal(containsPhrase('fetch development servers', 'development server'), false);
+  assert.equal(containsPhrase('fetch development servers', 'fetch development servers'), true);
+});
+
 test('the command line passes only on positive research-screen evidence', () => {
   withFile(PHASE_SCREENS[0].text, (file) => {
     const result = runCli(file);
@@ -260,6 +304,7 @@ test('every unobserved launch outcome exits 1 and keeps its reason on stderr', (
     [WALKING_RECORDER_SCREEN, /no Trace Lab research screen/],
     [WALKING_RECORDER_SAVED_SCREEN, /no Trace Lab research screen/],
     [WALKING_RECORDER_NOTICES[0], /no Trace Lab research screen/],
+    [UNRELATED_METRO_TEXT, /no Trace Lab research screen/],
     [EMPTY, /is empty/],
   ];
   for (const [text, expected] of cases) {

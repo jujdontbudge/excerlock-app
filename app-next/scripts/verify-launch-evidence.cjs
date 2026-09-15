@@ -13,18 +13,19 @@
 // A single generic phrase is not evidence. Walking Recorder renders its own
 // notices and section labels on the same phone, so the classifier requires a
 // combination of literally Trace-Lab-only lines for a phase, matched against
-// whitespace/punctuation-normalized OCR text. That makes a substring such as
-// "Recording on this phone" in a Walking Recorder notice harmless: the running
-// phase additionally requires Trace Lab's own status line, which the recorder
-// never renders.
+// whitespace/punctuation-normalized OCR text on whole-word boundaries. That
+// makes a substring such as "Recording on this phone" in a Walking Recorder
+// notice harmless: the running phase additionally requires Trace Lab's own
+// status line, which the recorder never renders.
 //
 // Usage: verify-launch-evidence.cjs <device-ocr-text> [more-ocr-texts...]
 //   Exits 0 and prints one PASS line when a research-screen phase was observed
-//   in any OCR input. Exits 1 when no research-screen evidence was observed
-//   and 3 when the expo-dev-client prompt was observed instead (a terminal
-//   build failure a caller may exit on immediately). Exits 2 with no
-//   arguments. The caller keeps the screenshots and OCR transcript as
-//   diagnostics either way.
+//   in any OCR input. Exits 1 when no research-screen evidence was observed,
+//   which includes unresolved text: the caller retries instead of diagnosing a
+//   development server from a weak match. Exits 3 only for a distinctive
+//   expo-dev-client/Metro prompt (a terminal build failure a caller may exit on
+//   immediately). Exits 2 with no arguments. The caller keeps the screenshots
+//   and OCR transcript as diagnostics either way.
 /* global module, process, require */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -51,8 +52,24 @@ const RESEARCH_SCREEN_PHASES = Object.freeze([
   { phase: 'ready', markers: ['How the test works', 'Trace Lab begins the background trace'] },
 ]);
 // The expo-dev-client prompt is not the research screen, so it fails like any
-// other unobserved screen; naming it only makes the diagnostic explicit.
-const DEV_CLIENT_MARKERS = ['expo-development-client', 'development build', 'development server', 'metro'];
+// other unobserved screen; naming it only makes the diagnostic explicit. Every
+// marker is a distinctive multi-word phrase, matched on whole normalized words:
+// the bare word "metro" must never match inside unrelated OCR text such as an
+// app named "Metronome", and unresolved evidence must fall back to unobserved
+// so the caller retries instead of reporting a false development-server
+// diagnosis.
+const DEV_CLIENT_MARKERS = [
+  'expo development client',
+  'expo dev client',
+  'development build',
+  'development server',
+  'development servers',
+  'fetch development servers',
+  'enter url manually',
+  'no bundle url',
+  'metro bundler',
+  'metro server',
+];
 
 const EXPLANATION = {
   'dev-client': 'Trace Lab asked for a development server instead of rendering its research screen',
@@ -68,13 +85,25 @@ function normalizeEvidence(value) {
   return String(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+/**
+ * True when `phrase` appears in already-normalized `text` as whole words only.
+ * Normalization folds punctuation to single spaces, so a phrase can only match
+ * on exact word boundaries; a substring such as `metronome` cannot satisfy
+ * `metro`.
+ */
+function containsPhrase(text, phrase) {
+  const normalized = normalizeEvidence(phrase);
+  if (!normalized) return false;
+  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^| )${escaped}($| )`).test(text);
+}
+
 /** Return `{ phase, markers }` for the first research-screen phase in the OCR text, or null. */
 function detectResearchPhase(ocrText) {
   const text = normalizeEvidence(ocrText);
   if (!text) return null;
   for (const entry of RESEARCH_SCREEN_PHASES) {
-    const normalized = entry.markers.map(normalizeEvidence);
-    if (normalized.every((marker) => text.includes(marker))) return { phase: entry.phase, markers: [...entry.markers] };
+    if (entry.markers.every((marker) => containsPhrase(text, marker))) return { phase: entry.phase, markers: [...entry.markers] };
   }
   return null;
 }
@@ -83,7 +112,7 @@ function detectResearchPhase(ocrText) {
 function classifyLaunchEvidence(ocrText) {
   if (detectResearchPhase(ocrText)) return 'observed';
   const text = normalizeEvidence(ocrText);
-  if (DEV_CLIENT_MARKERS.some((marker) => text.includes(normalizeEvidence(marker)))) return 'dev-client';
+  if (DEV_CLIENT_MARKERS.some((marker) => containsPhrase(text, marker))) return 'dev-client';
   return 'unobserved';
 }
 
@@ -129,4 +158,4 @@ function main(argv) {
 
 if (require.main === module) process.exit(main(process.argv));
 
-module.exports = { RESEARCH_SCREEN_PHASES, DEV_CLIENT_MARKERS, detectResearchPhase, classifyLaunchEvidence, normalizeEvidence };
+module.exports = { RESEARCH_SCREEN_PHASES, DEV_CLIENT_MARKERS, detectResearchPhase, classifyLaunchEvidence, normalizeEvidence, containsPhrase };
