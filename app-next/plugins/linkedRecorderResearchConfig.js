@@ -2,12 +2,30 @@ const { URL_SCHEME, WALKING_RECORDER_SCHEME, WALKING_RECORDER_LINK_HOSTS } = req
 
 const TRACE_FLAG = 'EXCERLOCK_LINKED_RECORDER_TRACE';
 const RUNTIME_VERSION = '2-linked-recorder-1';
-// Trace Lab registers only its own URL scheme: no production Google OAuth
-// redirect scheme and no `applinks:excerlock.com`, so a production sign-in
-// redirect or universal link can never open the co-installed research app.
+// Trace Lab carries only its own identity: the lab bundle identifier and App
+// Group, with no universal links. A production universal link or OAuth
+// redirect must never open the co-installed research app.
 // This placeholder client satisfies the runtime redirect contract without
 // naming the production client; Trace Lab signs in with Apple or email.
 const LAB_GOOGLE_IOS_CLIENT_ID = 'linked-trace-local.apps.googleusercontent.com';
+// Lab-local client identity. The standalone Trace Lab never initializes or
+// authenticates against production Supabase or production Adapty, so the lab
+// build requires no production keys and embeds only these inert placeholders.
+// `app.config.ts` fills clientAuth.googleIosClientId/googleRedirectUri from the
+// lab link identity above before the extra reaches the app.
+const LAB_CLIENT_EXTRA = Object.freeze({
+  clientSubscription: Object.freeze({ adaptyKey: 'lab-local-no-adapty' }),
+  clientObservability: Object.freeze({
+    posthogApiKey: 'linked-trace-local',
+    posthogHost: 'https://localhost',
+    sentryDsn: 'https://localhost',
+  }),
+  clientAuth: Object.freeze({
+    supabaseUrl: 'https://lab.invalid',
+    supabaseAnonKey: 'lab-local-no-supabase',
+  }),
+  clientApi: Object.freeze({ url: 'https://lab.invalid' }),
+});
 // `dev` research builds are served by Metro (expo-dev-client). `lab` research
 // builds are standalone Release artifacts with an embedded JS bundle: no
 // Metro, no dev-client, no LAN, no OTA. Only these two environments may carry
@@ -103,6 +121,7 @@ module.exports = {
   RUNTIME_VERSION,
   URL_SCHEME,
   LAB_GOOGLE_IOS_CLIENT_ID,
+  LAB_CLIENT_EXTRA,
   WALKING_RECORDER_SCHEME,
   WALKING_RECORDER_LINK_HOSTS,
   STANDALONE_ENV,

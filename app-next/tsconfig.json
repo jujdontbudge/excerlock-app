@@ -3,6 +3,7 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
+      "@client-services": ["./src/runtime/createClientServices"],
       "@linked-trace": ["./src/research/linkedTrace/LinkedTrace.disabled"],
       "@linked-trace-screen": ["./src/research/linkedTrace/LinkedTraceScreen.disabled"],
       "@posthog-runtime": ["./src/runtime/analytics/createPostHogRuntime"],

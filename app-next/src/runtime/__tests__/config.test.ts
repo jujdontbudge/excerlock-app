@@ -81,3 +81,24 @@ test('the standalone lab environment is a double opt-in with no OTA channel', ()
   expect(() => resolveBuildEnvironment({ EAS_BUILD_PROFILE: 'preview', EXCERLOCK_ENV: 'lab', EXCERLOCK_LINKED_RECORDER_TRACE: '1' })).toThrow('conflict');
   expect(() => updateChannel('lab')).toThrow('no OTA update channel');
 });
+
+test('the standalone lab build needs no production keys and embeds only lab-local identity', () => {
+  // An empty environment is a build host with no production credentials.
+  const extra = buildClientExtra({}, 'lab');
+  expect(extra.environment).toBe('lab');
+  expect(extra.clientSubscription.adaptyKey).toBe('lab-local-no-adapty');
+  expect(extra.clientAuth.supabaseUrl).toBe('https://lab.invalid');
+  expect(extra.clientAuth.supabaseAnonKey).toBe('lab-local-no-supabase');
+  expect(extra.clientApi.url).toBe('https://lab.invalid');
+  expect(extra.clientObservability).toEqual({
+    posthogApiKey: 'linked-trace-local',
+    posthogHost: 'https://localhost',
+    sentryDsn: 'https://localhost',
+  });
+  // A build host that does have production credentials must not leak them into
+  // the lab extra: the values are fixed, never read from the environment.
+  const withProduction = buildClientExtra({ ...clientValues, SENTRY_AUTH_TOKEN: 'private-upload-token' }, 'lab');
+  expect(JSON.stringify(withProduction)).not.toContain(clientValues.EXPO_PUBLIC_SUPABASE_URL);
+  expect(JSON.stringify(withProduction)).not.toContain(clientValues.EXPO_PUBLIC_ADAPTY_KEY);
+  expect(JSON.stringify(withProduction)).not.toContain('private-upload-token');
+});

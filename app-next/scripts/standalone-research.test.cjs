@@ -15,6 +15,10 @@ const verifier = path.join(__dirname, 'verify-standalone-research.cjs');
 const APP_BUNDLE_ID = 'com.johansardar.excerlock.lab.linkedtrace';
 const APP_GROUP = 'group.com.johansardar.excerlock.lab.linkedtrace';
 const LAB_GOOGLE_IOS_CLIENT_ID = 'linked-trace-local.apps.googleusercontent.com';
+const LAB_LOCAL_ADAPTY_KEY = 'lab-local-no-adapty';
+const LAB_LOCAL_SUPABASE_URL = 'https://lab.invalid';
+const LAB_LOCAL_SUPABASE_ANON_KEY = 'lab-local-no-supabase';
+const LAB_LOCAL_API_URL = 'https://lab.invalid';
 
 function plistValue(value, indent) {
   const pad = '  '.repeat(indent);
@@ -58,7 +62,16 @@ function makeApp(root, overrides = {}) {
       scheme: ['excerlock-linked-trace'],
       ios: { bundleIdentifier: APP_BUNDLE_ID },
       updates: { enabled: false, checkAutomatically: 'NEVER' },
-      extra: { environment: 'lab', clientAuth: { googleIosClientId: LAB_GOOGLE_IOS_CLIENT_ID } },
+      extra: {
+        environment: 'lab',
+        clientAuth: {
+          googleIosClientId: LAB_GOOGLE_IOS_CLIENT_ID,
+          supabaseUrl: LAB_LOCAL_SUPABASE_URL,
+          supabaseAnonKey: LAB_LOCAL_SUPABASE_ANON_KEY,
+        },
+        clientSubscription: { adaptyKey: LAB_LOCAL_ADAPTY_KEY },
+        clientApi: { url: LAB_LOCAL_API_URL },
+      },
       ...(overrides.config ?? {}),
     }),
   );
@@ -214,7 +227,42 @@ test('rejects a bundle that did not select the research screen', () => inTemp((r
 test('rejects a bundle that smuggled the dev-client JS modules', () => inTemp((root) => {
   const result = runVerifier(makeApp(root, { bundle: 'require("expo-dev-launcher")' }));
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /contains dev-client module marker: expo-dev-launcher/);
+  assert.match(result.stderr, /contains forbidden module marker: expo-dev-launcher/);
+}));
+
+test('rejects production identity values embedded in the lab Expo config', () => inTemp((root) => {
+  const result = runVerifier(
+    makeApp(root, {
+      config: {
+        scheme: ['excerlock-linked-trace'],
+        ios: { bundleIdentifier: APP_BUNDLE_ID },
+        updates: { enabled: false, checkAutomatically: 'NEVER' },
+        extra: {
+          environment: 'lab',
+          clientAuth: {
+            googleIosClientId: LAB_GOOGLE_IOS_CLIENT_ID,
+            supabaseUrl: 'https://production.supabase.co',
+            supabaseAnonKey: 'production-anon',
+          },
+          clientSubscription: { adaptyKey: 'production-adapty-key' },
+          clientApi: { url: 'https://api.excerlock.com' },
+        },
+      },
+    }),
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /clientAuth\.supabaseUrl is https:\/\/production\.supabase\.co/);
+  assert.match(result.stderr, /clientAuth\.supabaseAnonKey is not the lab-local value/);
+  assert.match(result.stderr, /clientSubscription\.adaptyKey is production-adapty-key/);
+  assert.match(result.stderr, /clientApi\.url is https:\/\/api\.excerlock\.com/);
+}));
+
+test('rejects a bundle that smuggled the production identity graph', () => inTemp((root) => {
+  const result = runVerifier(makeApp(root, { bundle: 'SupabaseAuthAdapter AdaptySubscriptionAdapter createIdentityServices' }));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /contains forbidden module marker: SupabaseAuthAdapter/);
+  assert.match(result.stderr, /contains forbidden module marker: AdaptySubscriptionAdapter/);
+  assert.match(result.stderr, /contains forbidden module marker: createIdentityServices/);
 }));
 
 test('standalone pod exclusion patches only the generated bare call and fails closed otherwise', () => {

@@ -7,7 +7,10 @@ import { suspendGymVisitLogWritesAndReset } from '../engine/signals/location/Asy
 import { RuntimeSafety } from './RuntimeSafety';
 import { eraseProductionData } from './eraseProductionData';
 import { hydrateProductionStores } from './hydrateProductionStores';
-import { createClientServices } from './createClientServices';
+// The identity graph is a compile boundary: research bundles use the
+// lab-local factory via the `@client-services` alias and never the
+// production Supabase/Adapty graph.
+import { createClientServices } from '@client-services';
 import { createNativeDetection } from './detection/createNativeDetection';
 import { NativeWalkingPort } from './detection/NativeWalkingPort';
 import { createNativeGymPort } from './detection/NativeGymPort';

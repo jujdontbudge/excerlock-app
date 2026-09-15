@@ -14,12 +14,14 @@ enum SessionWriterError: LocalizedError, Equatable {
     case storageLimit
     case closed
     case invalidPayload
+    case sessionExists
 
     var errorDescription: String? {
         switch self {
         case .storageLimit: return "This recording reached its 250 MB safety limit. It was stopped and kept."
         case .closed: return "The recording file is already closed."
         case .invalidPayload: return "A sensor event could not be encoded."
+        case .sessionExists: return "A recording with this session already exists on this phone. Nothing was overwritten."
         }
     }
 }
@@ -57,21 +59,38 @@ final class SessionWriter {
         self.linkedTraceRecovery = linkedTraceRecovery
         directoryURL = baseURL.appendingPathComponent("\(id)\(sessionDirectorySuffix)", isDirectory: true)
 
-        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-        for channel in CaptureEventChannel.allCases {
-            let url = directoryURL.appendingPathComponent(channel.rawValue)
-            FileManager.default.createFile(
-                atPath: url.path,
-                contents: nil,
-                attributes: Self.protectedFileAttributes
-            )
-            handles[channel] = try FileHandle(forWritingTo: url)
-            buffers[channel] = Data()
+        // A repeated linked-session delivery must never truncate an existing
+        // archive. Opening an existing session is handled by the controller as
+        // reject/resume based on durable state; a writer is only ever created
+        // for a session directory that does not exist yet.
+        guard !FileManager.default.fileExists(atPath: directoryURL.path) else { throw SessionWriterError.sessionExists }
+        do {
+            try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+            var created: [CaptureEventChannel: FileHandle] = [:]
+            for channel in CaptureEventChannel.allCases {
+                let url = directoryURL.appendingPathComponent(channel.rawValue)
+                FileManager.default.createFile(
+                    atPath: url.path,
+                    contents: nil,
+                    attributes: Self.protectedFileAttributes
+                )
+                created[channel] = try FileHandle(forWritingTo: url)
+                buffers[channel] = Data()
+            }
+            handles = created
+            try Self.writeJSONObject(metadata, to: directoryURL.appendingPathComponent("metadata.json"))
+            try Self.writeJSONObject(Self.schemaDocument, to: directoryURL.appendingPathComponent("schema.json"))
+            try Self.readme.write(to: directoryURL.appendingPathComponent("README.txt"), atomically: true, encoding: .utf8)
+            try writeRecovery(timeline: LabelTimeline(), gapCount: 0)
+        } catch {
+            // A thrown initialization is not a durable archive: close whatever
+            // was opened and remove the partial directory so the same session
+            // id is not permanently blocked by an unfinished attempt.
+            for handle in handles.values { try? handle.close() }
+            handles.removeAll()
+            try? FileManager.default.removeItem(at: directoryURL)
+            throw error
         }
-        try Self.writeJSONObject(metadata, to: directoryURL.appendingPathComponent("metadata.json"))
-        try Self.writeJSONObject(Self.schemaDocument, to: directoryURL.appendingPathComponent("schema.json"))
-        try Self.readme.write(to: directoryURL.appendingPathComponent("README.txt"), atomically: true, encoding: .utf8)
-        try writeRecovery(timeline: LabelTimeline(), gapCount: 0)
     }
 
     deinit {
@@ -331,6 +350,13 @@ final class SessionWriter {
         guard directory.deletingLastPathComponent().standardizedFileURL == baseURL.standardizedFileURL else { return }
         let recoveryURL = directory.appendingPathComponent("recovery.json")
         if FileManager.default.fileExists(atPath: recoveryURL.path) { try FileManager.default.removeItem(at: recoveryURL) }
+    }
+
+    /// Durable presence of an archive directory for a session id. A repeated
+    /// linked-session delivery must consult this before creating a writer.
+    static func archiveExists(id: String, baseURL: URL) -> Bool {
+        let directory = baseURL.appendingPathComponent("\(id)\(sessionDirectorySuffix)", isDirectory: true)
+        return FileManager.default.fileExists(atPath: directory.path)
     }
 
     private static func linkedTraceRecovery(from recovery: [String: Any]) -> LinkedTraceRecovery? {

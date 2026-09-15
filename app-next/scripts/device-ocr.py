@@ -19,7 +19,8 @@ def ocr(path):
         raise SystemExit(f"cannot read image: {path}")
     image = Quartz.CGImageSourceCreateImageAtIndex(source, 0, None)
     request = Vision.VNRecognizeTextRequest.alloc().init()
-    request.setRecognitionLevel_(1)  # accurate
+    # Named constant, not a raw enum value: VNRequestTextRecognitionLevelFast is 1.
+    request.setRecognitionLevel_(Vision.VNRequestTextRecognitionLevelAccurate)
     request.setUsesLanguageCorrection_(False)
     handler = Vision.VNImageRequestHandler.alloc().initWithCGImage_options_(image, None)
     handler.performRequests_error_([request], None)

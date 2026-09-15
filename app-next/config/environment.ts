@@ -1,6 +1,11 @@
 /** Build-only resolver. Do not import this module from the application bundle. */
 export type BuildEnvironment = 'dev' | 'preview' | 'prod' | 'lab';
 export type EnvironmentValues = Readonly<Record<string, string | undefined>>;
+// The lab identity values are owned by the same CommonJS module as the lab
+// bundle identifier, App Group, and URL scheme, so build-time config, runtime
+// config, and artifact verification cannot drift.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const linkedRecorderConfig = require('../plugins/linkedRecorderResearchConfig') as typeof import('../plugins/linkedRecorderResearchConfig');
 /** Direct prebuild/xcodebuild must embed the same channel as EAS Build. */
 export function updateChannel(environment: BuildEnvironment): string {
   const channel = { dev: 'development', preview: 'preview', prod: 'production' }[environment as 'dev' | 'preview' | 'prod'];
@@ -75,6 +80,20 @@ export function resolveClientEnvironment(processValues: EnvironmentValues, local
 }
 
 export function buildClientExtra(values: EnvironmentValues, environment: BuildEnvironment, options: { requireUploadToken?: boolean } = {}) {
+  // Standalone research builds carry no production identity: they need no
+  // production keys, and only lab-local inert values are embedded, so the
+  // installed Trace Lab cannot name production Supabase, Adapty, PostHog, or
+  // Sentry even if the build host has those credentials.
+  if (environment === 'lab') {
+    const lab = linkedRecorderConfig.LAB_CLIENT_EXTRA;
+    return {
+      environment,
+      clientSubscription: { ...lab.clientSubscription },
+      clientObservability: { ...lab.clientObservability },
+      clientAuth: { ...lab.clientAuth, googleIosClientId: '', googleRedirectUri: '' },
+      clientApi: { ...lab.clientApi },
+    };
+  }
   if (environment !== 'dev') {
     const required: readonly string[] = options.requireUploadToken ? [...CLIENT_ENV_NAMES, 'SENTRY_AUTH_TOKEN'] : CLIENT_ENV_NAMES;
     const missing = required.filter((key) => !values[key]?.trim());

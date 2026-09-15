@@ -7,6 +7,12 @@ export const TRACE_FLAG: string;
 export const RUNTIME_VERSION: string;
 export const URL_SCHEME: string;
 export const LAB_GOOGLE_IOS_CLIENT_ID: string;
+export const LAB_CLIENT_EXTRA: {
+  readonly clientSubscription: { readonly adaptyKey: string };
+  readonly clientObservability: { readonly posthogApiKey: string; readonly posthogHost: string; readonly sentryDsn: string };
+  readonly clientAuth: { readonly supabaseUrl: string; readonly supabaseAnonKey: string };
+  readonly clientApi: { readonly url: string };
+};
 export const WALKING_RECORDER_SCHEME: string;
 export const WALKING_RECORDER_LINK_HOSTS: {
   readonly linkedSession: string;

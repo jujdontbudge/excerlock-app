@@ -1,5 +1,5 @@
 import * as Sharing from 'expo-sharing';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppState, Linking, Pressable, StyleSheet, View } from 'react-native';
 
@@ -46,7 +46,6 @@ const RETURNED_NOT_SAVED = 'That test link is not an active or saved test on thi
  */
 export function LinkedTraceScreen() {
   const runtime = useRuntime();
-  const router = useRouter();
   const entitlementStatus = useEntitlementStore((state) => state.data.entitlement.status);
   const params = useLocalSearchParams<{ sessionId?: string | string[]; nonce?: string | string[]; protocolVersion?: string | string[] }>();
   const paramSessionId = Array.isArray(params.sessionId) ? params.sessionId[0] : params.sessionId;
@@ -379,8 +378,7 @@ export function LinkedTraceScreen() {
                   onPress={() => {
                     const action = step.action;
                     if (!action) return;
-                    if (action.kind === 'sign-in') router.push('/sign-in');
-                    else void run(action.run, action.failure);
+                    void run(action.run, action.failure);
                   }}
                 />
               ) : null}
@@ -478,9 +476,6 @@ export function LinkedTraceScreen() {
             disabled={busy}
             onPress={() => void discardExpired()}
           />
-          {handshake && handshake.sessionId !== status?.sessionId ? (
-            <Label tone="secondary">A newer test link is open: after this cleanup, tap Start test for that new test.</Label>
-          ) : null}
         </View>
       ) : null}
 
@@ -544,7 +539,7 @@ function formatWhen(wallTimeMs: number): string {
 type Readiness = {
   title: string;
   detail: string;
-  action?: { kind: 'prompt'; label: string; failure: string; run: () => Promise<unknown> } | { kind: 'sign-in'; label: string };
+  action?: { label: string; failure: string; run: () => Promise<unknown> };
 };
 
 /** The single next thing standing between the operator and a real test. */
@@ -567,31 +562,34 @@ export function readinessStep({
     };
   }
   if (!labAccess) {
+    // The standalone lab carries its own local research identity and
+    // entitlement; it never signs in to a production account. A missing local
+    // entitlement means the lab graph did not finish starting, not that the
+    // operator must authenticate.
     return {
-      title: 'Sign in once with your lab account',
-      detail: `Trace Lab records the real shield path, which only runs for an existing trial or active development account (this phone reports “${entitlementStatus}”). It never grants or invents access.`,
-      action: { kind: 'sign-in', label: 'Sign in' },
+      title: 'The isolated lab identity did not start',
+      detail: `Trace Lab runs entirely on a lab-local identity and entitlement. Open Trace Lab again before starting the test; production sign-in is not part of this research build (this phone reports “${entitlementStatus}”).`,
     };
   }
   if (!preflight.screenTimeAuthorized) {
     return {
       title: 'Allow Screen Time',
       detail: 'Screen Time is the only way iOS lets Trace Lab record the real background lock. iOS asks, so only the system prompt can grant it.',
-      action: { kind: 'prompt', label: 'Allow Screen Time', failure: 'Screen Time was not allowed. Your existing choices were kept.', run: () => runtime.screenTime.requestAuthorization() },
+      action: { label: 'Allow Screen Time', failure: 'Screen Time was not allowed. Your existing choices were kept.', run: () => runtime.screenTime.requestAuthorization() },
     };
   }
   if (!preflight.canarySelectionValid) {
     return {
       title: 'Choose one canary app',
       detail: `Pick exactly one app with no categories or websites: the harmless app you will try to open while walking and again after standing still, so the shield can show its real release and return. Never pick Walking Recorder or ExcerLock Trace Lab. iOS does not tell Trace Lab which app you chose, so this one choice is yours (it currently holds ${preflight.canaryApplicationCount} app, ${preflight.canaryCategoryCount} categories, ${preflight.canaryWebDomainCount} websites).`,
-      action: { kind: 'prompt', label: 'Choose canary app', failure: 'The canary app was not changed.', run: () => runtime.screenTime.presentAppPicker() },
+      action: { label: 'Choose canary app', failure: 'The canary app was not changed.', run: () => runtime.screenTime.presentAppPicker() },
     };
   }
   if (!preflight.motionReady) {
     return {
       title: 'Allow Motion & Fitness',
       detail: 'Trace Lab records its own motion evidence for the background detector. Walking Recorder asks for the same permission separately when it starts.',
-      action: { kind: 'prompt', label: 'Allow Motion & Fitness', failure: 'Motion & Fitness was not allowed. No test was started.', run: () => runtime.steps.request() },
+      action: { label: 'Allow Motion & Fitness', failure: 'Motion & Fitness was not allowed. No test was started.', run: () => runtime.steps.request() },
     };
   }
   return null;

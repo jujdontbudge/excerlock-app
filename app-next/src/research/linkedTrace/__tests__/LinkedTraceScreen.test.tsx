@@ -141,15 +141,15 @@ test('asks for Screen Time and motion through the system prompt at the point of 
   await waitFor(() => expect(mockMotionRequest).toHaveBeenCalled());
 });
 
-test('routes to sign-in once when the phone has no lab access instead of inventing one', async () => {
-  const user = userEvent.setup();
+test('reports a missing lab-local identity instead of a production sign-in', async () => {
   mockEntitlementStatus = 'none';
   await render(<LinkedTraceScreen />);
 
-  expect(await screen.findByText('Sign in once with your lab account')).toBeTruthy();
+  expect(await screen.findByText('The isolated lab identity did not start')).toBeTruthy();
+  expect(screen.getByText(/production sign-in is not part of this research build/i)).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Sign in' })).toBeNull();
   expect(screen.getByRole('button', { name: 'Start test' })).toBeDisabled();
-  await user.press(screen.getByRole('button', { name: 'Sign in' }));
-  expect(mockPush).toHaveBeenCalledWith('/sign-in');
+  expect(mockPush).not.toHaveBeenCalled();
 });
 
 test('keeps a freshly started test running when Trace Lab comes back to the foreground', async () => {

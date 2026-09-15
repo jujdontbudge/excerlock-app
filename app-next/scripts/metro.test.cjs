@@ -30,6 +30,7 @@ test('linked-recorder virtual modules resolve to the selected compile boundary',
   const context = { resolveRequest: (_context, moduleName) => ({ type: 'sourceFile', filePath: moduleName }) };
   return {
    filePath: config.resolver.resolveRequest(context, '@linked-trace', 'ios').filePath,
+   clientServices: config.resolver.resolveRequest(context, '@client-services', 'ios').filePath,
    cacheVersion: config.cacheVersion,
   };
  };
@@ -38,6 +39,8 @@ test('linked-recorder virtual modules resolve to the selected compile boundary',
   const research = resolve(true);
   assert.match(ordinary.filePath, /LinkedTrace\.disabled\.ts$/);
   assert.match(research.filePath, /LinkedTrace\.research\.ts$/);
+  assert.match(ordinary.clientServices, /runtime\/createClientServices\.ts$/);
+  assert.match(research.clientServices, /linkedTrace\/createClientServices\.research\.ts$/);
   assert.notEqual(ordinary.cacheVersion, research.cacheVersion);
  } finally {
   if (original === undefined) delete process.env.EXCERLOCK_LINKED_RECORDER_TRACE;

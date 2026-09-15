@@ -171,10 +171,12 @@ public final class ExcerlockEnforcementModule: Module {
     linkedTraceLifecycleObservers = []
   }
 
-  private func tracePolicy(_ input: EnforcementSnapshotInput, status: String, revision: Int?, reason: String? = nil) {
+  private func tracePolicy(_ input: EnforcementSnapshotInput, status: String, revision: Int?) {
     var payload: [String: Any] = [
       "layer": "native",
-      "status": reason.map { status + "_" + $0 } ?? status,
+      // Only the writer's allowlisted policy_publish statuses; a suffixed
+      // status would be rejected and silently drop the evidence.
+      "status": status,
       "revision": revision ?? input.revision,
       "state": input.state,
       "eligibleUntilWallMs": input.eligibleUntil,

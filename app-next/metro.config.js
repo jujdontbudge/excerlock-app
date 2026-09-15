@@ -31,6 +31,15 @@ sentryConfig.cacheVersion = cacheVersion;
 sentryConfig.resolver.blockList = blockList;
 const aliases = {
   ...(sentryConfig.resolver.alias ?? {}),
+  // The identity graph is a compile boundary: a research bundle must not
+  // construct production Supabase/Adapty services at all. Research builds
+  // resolve the lab-local factory instead of runtime/createClientServices.
+  '@client-services': path.resolve(
+    __dirname,
+    linkedRecorderResearch
+      ? 'src/research/linkedTrace/createClientServices.research.ts'
+      : 'src/runtime/createClientServices.ts',
+  ),
   '@linked-trace': path.resolve(
     __dirname,
     linkedRecorderResearch

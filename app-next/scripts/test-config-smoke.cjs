@@ -93,6 +93,17 @@ test('actual Expo loader creates the standalone lab research config with an embe
     EAS_BUILD: 'false',
   };
   delete labEnv.EAS_BUILD_PROFILE;
+  // The lab path must build on a host with no production credentials at all.
+  for (const key of [
+    'EXPO_PUBLIC_ADAPTY_KEY',
+    'EXPO_PUBLIC_POSTHOG_KEY',
+    'EXPO_PUBLIC_POSTHOG_HOST',
+    'SENTRY_DSN',
+    'EXPO_PUBLIC_SUPABASE_URL',
+    'EXPO_PUBLIC_SUPABASE_ANON_KEY',
+    'EXPO_PUBLIC_API_URL',
+    'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID',
+  ]) delete labEnv[key];
   const result = spawnSync(process.execPath, [cli, 'config', '--type', 'public', '--json'], {
     cwd, env: labEnv, encoding: 'utf8', timeout: 30_000,
   });
@@ -106,8 +117,18 @@ test('actual Expo loader creates the standalone lab research config with an embe
   assert.equal(config.ios.associatedDomains, undefined);
   assert.equal(config.ios.entitlements['com.apple.developer.associated-domains'], undefined);
   assert.equal(config.extra.clientAuth.googleIosClientId, 'linked-trace-local.apps.googleusercontent.com');
+  assert.equal(config.extra.clientAuth.supabaseUrl, 'https://lab.invalid');
+  assert.equal(config.extra.clientAuth.supabaseAnonKey, 'lab-local-no-supabase');
+  assert.equal(config.extra.clientSubscription.adaptyKey, 'lab-local-no-adapty');
+  assert.equal(config.extra.clientApi.url, 'https://lab.invalid');
   assert.ok(!result.stdout.includes('fixture.apps.googleusercontent.com'));
   assert.ok(!result.stdout.includes('com.googleusercontent.apps.fixture'));
+  assert.ok(!result.stdout.includes('fixture.supabase.co'));
+  assert.ok(!result.stdout.includes('fixture-anon'));
+  assert.ok(!result.stdout.includes('fixture-adapty'));
+  assert.ok(!result.stdout.includes('fixture-posthog'));
+  assert.ok(!result.stdout.includes('public@example.com'));
+  assert.ok(!result.stdout.includes('api.example.com'));
   assert.ok(!result.stdout.includes('applinks:excerlock.com'));
   assert.equal(config.runtimeVersion, '2-linked-recorder-1');
   assert.equal(config.updates.enabled, false);

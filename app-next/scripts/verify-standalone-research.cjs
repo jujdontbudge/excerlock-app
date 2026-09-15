@@ -24,6 +24,12 @@ const APP_GROUP = 'group.com.johansardar.excerlock.lab.linkedtrace';
 const TEAM = 'AX3C2B78YD';
 const SCHEME = 'excerlock-linked-trace';
 const LAB_GOOGLE_IOS_CLIENT_ID = 'linked-trace-local.apps.googleusercontent.com';
+// The embedded lab client config must name only the lab-local identity; a
+// production Supabase/Adapty/API value must never reach the installed artifact.
+const LAB_LOCAL_ADAPTY_KEY = 'lab-local-no-adapty';
+const LAB_LOCAL_SUPABASE_URL = 'https://lab.invalid';
+const LAB_LOCAL_SUPABASE_ANON_KEY = 'lab-local-no-supabase';
+const LAB_LOCAL_API_URL = 'https://lab.invalid';
 const OTA_PROJECT_URL = 'u.expo.dev/9a358379';
 const MAX_SCAN_BYTES = 200 * 1024 * 1024;
 // Expo registers the bundle identifier as a URL scheme next to the configured
@@ -37,7 +43,16 @@ const REQUIRED_BUNDLE_MARKERS = ['How the test works', 'Share Walking Recorder a
 // `EXDevLauncher` can appear as accidental substrings. The bundle scan uses
 // full module/symbol names; the native scan below stays strict because those
 // symbols only exist when the dev-client pods are actually linked.
-const FORBIDDEN_BUNDLE_MARKERS = ['EXDevLauncherController', 'expo-dev-launcher', 'expo-dev-menu'];
+const FORBIDDEN_BUNDLE_MARKERS = [
+  'EXDevLauncherController',
+  'expo-dev-launcher',
+  'expo-dev-menu',
+  // Production identity graphs are a compile boundary: the lab resolves the
+  // lab-local client-services factory, so these modules must not be bundled.
+  'SupabaseAuthAdapter',
+  'AdaptySubscriptionAdapter',
+  'createIdentityServices',
+];
 // Native dev-client symbols and its LAN/deep-link surface must be absent.
 const FORBIDDEN_MARKERS = [
   'EXDevLauncher',
@@ -95,9 +110,9 @@ function verifyBundle(bundlePath, minBytes, failures, passed) {
   const missing = REQUIRED_BUNDLE_MARKERS.filter((marker) => !text.includes(marker));
   for (const marker of missing) failures.push(`embedded JS bundle is missing research screen marker: ${marker}`);
   const smuggled = FORBIDDEN_BUNDLE_MARKERS.filter((marker) => text.includes(marker));
-  for (const marker of smuggled) failures.push(`embedded JS bundle contains dev-client module marker: ${marker}`);
+  for (const marker of smuggled) failures.push(`embedded JS bundle contains forbidden module marker: ${marker}`);
   if (!missing.length && !smuggled.length && size >= minBytes) {
-    passed.push(`embedded JS bundle present (${size} bytes) with research screen markers and no dev-client modules`);
+    passed.push(`embedded JS bundle present (${size} bytes) with research screen markers and no dev-client or production-identity modules`);
   }
 }
 
@@ -127,6 +142,18 @@ function verifyEmbeddedConfig(app, failures, passed) {
   if (config.ios?.associatedDomains !== undefined) failures.push('embedded Expo config carries associated domains');
   if (config.extra?.clientAuth?.googleIosClientId !== LAB_GOOGLE_IOS_CLIENT_ID) {
     failures.push(`embedded Expo config clientAuth.googleIosClientId is ${String(config.extra?.clientAuth?.googleIosClientId)} (want ${LAB_GOOGLE_IOS_CLIENT_ID})`);
+  }
+  if (config.extra?.clientAuth?.supabaseUrl !== LAB_LOCAL_SUPABASE_URL) {
+    failures.push(`embedded Expo config clientAuth.supabaseUrl is ${String(config.extra?.clientAuth?.supabaseUrl)} (want the lab-local value ${LAB_LOCAL_SUPABASE_URL})`);
+  }
+  if (config.extra?.clientAuth?.supabaseAnonKey !== LAB_LOCAL_SUPABASE_ANON_KEY) {
+    failures.push('embedded Expo config clientAuth.supabaseAnonKey is not the lab-local value');
+  }
+  if (config.extra?.clientSubscription?.adaptyKey !== LAB_LOCAL_ADAPTY_KEY) {
+    failures.push(`embedded Expo config clientSubscription.adaptyKey is ${String(config.extra?.clientSubscription?.adaptyKey)} (want the lab-local value ${LAB_LOCAL_ADAPTY_KEY})`);
+  }
+  if (config.extra?.clientApi?.url !== LAB_LOCAL_API_URL) {
+    failures.push(`embedded Expo config clientApi.url is ${String(config.extra?.clientApi?.url)} (want the lab-local value ${LAB_LOCAL_API_URL})`);
   }
   if (failures.length === before) passed.push('embedded Expo config boots the lab environment with updates off and lab-only identifiers');
 }

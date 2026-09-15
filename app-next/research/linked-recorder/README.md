@@ -16,7 +16,8 @@ EXCERLOCK_ENV=lab EXCERLOCK_LINKED_RECORDER_TRACE=1 npx expo prebuild --clean
 
 When the flag is present, Expo config:
 
-- uses `ExcerLock Trace Lab` and registers only the `excerlock-linked-trace` scheme (Expo adds the lab bundle identifier as a scheme): no production Google OAuth redirect scheme and no `applinks:excerlock.com` universal links, so a production sign-in redirect or link can never open Trace Lab. The embedded client config names a lab-only placeholder Google client, so Trace Lab signs in with Apple or email;
+- uses `ExcerLock Trace Lab` and registers only the `excerlock-linked-trace` scheme (Expo adds the lab bundle identifier as a scheme): no production Google OAuth redirect scheme and no `applinks:excerlock.com` universal links, so a production sign-in redirect or link can never open Trace Lab. The embedded client config names a lab-only placeholder Google client that satisfies the redirect contract; the lab never signs in to a production account;
+- embeds lab-local client identity only: fixed inert Supabase/Adapty/API/PostHog/Sentry placeholders instead of production values, so the lab builds with no production keys and cannot name them;
 - uses `com.johansardar.excerlock.lab.linkedtrace` plus distinct `.monitor`, `.shield`, `.shieldaction`, and `.report` extension identifiers;
 - uses the distinct `group.com.johansardar.excerlock.lab.linkedtrace` App Group for the research app and every research extension, never the production group;
 - sets runtime `2-linked-recorder-1`;
@@ -35,7 +36,7 @@ app-next/scripts/build-linked-recorder-standalone.sh
 # -> .scratch/standalone-research/DerivedData/Build/Products/Release-iphoneos/ExcerLock.app
 ```
 
-The script always runs a clean prebuild, exports the double opt-in for both `expo prebuild` and the Xcode bundling phase, then runs `scripts/verify-standalone-research.cjs`: embedded `main.jsbundle` with the research screen, embedded `EXConstants.bundle/app.config` booting `extra.environment` `lab` with updates off, lab identity/App Group only, lab-only URL schemes, no associated domains, and no dev-client or LAN/OTA marker. Never pass the flag only to prebuild, or the artifact embeds the ordinary Expo config while the native project is research-configured; the verifier rejects that artifact.
+The script always runs a clean prebuild, exports the double opt-in for both `expo prebuild` and the Xcode bundling phase, then runs `scripts/verify-standalone-research.cjs`: embedded `main.jsbundle` with the research screen, embedded `EXConstants.bundle/app.config` booting `extra.environment` `lab` with updates off, lab identity/App Group only, lab-local identity values (no production Supabase/Adapty/API key), lab-only URL schemes, no associated domains, and no dev-client/LAN/OTA or production-identity-graph marker. Never pass the flag only to prebuild, or the artifact embeds the ordinary Expo config while the native project is research-configured; the verifier rejects that artifact.
 
 A later authorized signing step requires already-authorized App IDs/profiles with Family Controls and `group.com.johansardar.excerlock.lab.linkedtrace` access. This source work does not create App IDs, groups, profiles, certificates, or portal records. If that isolated lab group is not already authorized, stop at this prerequisite; never share the production App Group or uninstall/replace production ExcerLock.
 
@@ -51,7 +52,7 @@ After any trace prebuild, delete the generated `ios/` tree and run an unflagged 
 
 One guided path, both apps on the phone. Trace Lab boots into its research screen, not the production onboarding or paywall. Nothing is uploaded and no Mac service is needed at any point.
 
-1. Open **ExcerLock Trace Lab** and read the three lines under **How the test works**. Only what this phone is actually missing is shown, with one action for it: **Allow Screen Time** (the only way iOS lets the lab record the real shield), **Choose canary app** (exactly one harmless app — never Walking Recorder or ExcerLock Trace Lab — because the shield must block something you can safely try to open; iOS does not disclose the selected bundle identifiers to the host app, so the screen states the rule and cannot verify the choice), **Allow Motion & Fitness**, or **Sign in** with pre-existing lab access (this build never grants or fabricates an entitlement; unavailable development access is a stop condition).
+1. Open **ExcerLock Trace Lab** and read the three lines under **How the test works**. Only what this phone is actually missing is shown, with one action for it: **Allow Screen Time** (the only way iOS lets the lab record the real shield), **Choose canary app** (exactly one harmless app — never Walking Recorder or ExcerLock Trace Lab — because the shield must block something you can safely try to open; iOS does not disclose the selected bundle identifiers to the host app, so the screen states the rule and cannot verify the choice), or **Allow Motion & Fitness**. The lab runs on a lab-local identity and research entitlement instead of a production account: it never signs in, never contacts Supabase or Adapty, and needs no production keys.
 2. Tap **Start test**. Trace Lab mints the session UUID and the 256-bit one-time nonce, installs its isolated always-active walking rule (removed again as soon as no trace is running), starts the linked background trace, and opens Walking Recorder through the lab-only `excerlock-walkingrecorder://linked-session` link. Keep Trace Lab in the background from here on, exactly like ExcerLock during a normal walk.
 3. In **Walking Recorder**, tap the card for what you are doing (walking, treadmill, shaking the phone, sitting). Recording already started; labels and their boundaries stay the operator's honest input and live only in the recorder.
 4. Answer the one **Canary check** card inline as it asks: first while walking — ExcerLock releases the shield while a verified walk is live, so the canary app should open ("It opened normally" / "Blocked (shield shown)" / "Did not try / not sure"); then after standing still for a full minute, longer than the stop grace — the shield should be back ("Blocked (shield shown)" / "It opened normally" / "Did not try / not sure"). These two operator observations are the visible-outcome evidence the offline joiner needs; a Managed Settings call returning is not a visible outcome.
@@ -101,9 +102,10 @@ npx vitest run --config guardrails/vitest.config.ts guardrails/linked-recorder-b
 # Standalone artifact rules and Expo-loader config, real loaders:
 node --test app-next/scripts/standalone-research.test.cjs
 node --test app-next/scripts/test-config-smoke.cjs
-# Guided flow: one lab-only link contract, screen state machine, link parsing:
+# Guided flow: one lab-only link contract, screen state machine, link parsing,
+# and the lab-local identity graph (no production Supabase/Adapty construction):
 npx jest src/research/linkedTrace --runInBand
-# Walking Recorder link contract and archive (simulator):
+# Walking Recorder link contract, durable linked-delivery idempotence, archive (simulator):
 cd tools/phone-walking-recorder && xcodegen generate && xcodebuild -project PhoneWalkingRecorder.xcodeproj \
   -scheme PhoneWalkingRecorder -destination 'platform=iOS Simulator,id=<simulator-id>' \
   -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO test

@@ -6,6 +6,7 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/__tests__/**', '!src/**/__previews__/**', '!src/domain/types.ts'],
   coverageThreshold: { './src/domain/': { branches: 100 } },
   moduleNameMapper: {
+    '^@client-services$': '<rootDir>/src/runtime/createClientServices.ts',
     '^@linked-trace$': '<rootDir>/src/research/linkedTrace/LinkedTrace.disabled.ts',
     '^@linked-trace-screen$': '<rootDir>/src/research/linkedTrace/LinkedTraceScreen.disabled.tsx',
     '^@posthog-runtime$': '<rootDir>/src/runtime/analytics/createPostHogRuntime.ts',

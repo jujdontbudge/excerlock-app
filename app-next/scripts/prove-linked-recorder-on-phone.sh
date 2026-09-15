@@ -6,8 +6,9 @@
 # the previous research build unusable: a Trace Lab that needs a running Mac.
 #
 # Usage: app-next/scripts/prove-linked-recorder-on-phone.sh [path/to/ExcerLock.app]
-#   IL_UDID             device identifier (default: the paired lab phone Il)
-#   ALLOW_DEV_SERVER=1  skip the "port 8081 must be closed" independence gate
+#   IL_UDID  device identifier (default: the paired lab phone Il)
+# The independence gate below is unconditional: this proof must never pass
+# while Metro or port 8081 is available.
 set -euo pipefail
 
 IL="${IL_UDID:-F4E839C0-3F05-5BF8-BA31-12949B2B83AB}"
@@ -33,19 +34,17 @@ echo "cdhash: $(codesign -dvvv "$APP" 2>&1 | sed -n 's/^CDHash=//p')"
 echo "sha256: $(shasum -a 256 "$APP/ExcerLock" | awk '{print $1}')"
 
 step "1. the Mac must not be serving this build"
-if [[ "${ALLOW_DEV_SERVER:-0}" != "1" ]]; then
-  if lsof -nP -iTCP:8081 -sTCP:LISTEN > "$OUT/port8081-before.log" 2>&1; then
-    cat "$OUT/port8081-before.log"
-    echo "VERIFY FAIL: something is listening on port 8081; stop Metro before the independence proof" >&2
-    exit 2
-  fi
-  if pgrep -fl "expo start" > "$OUT/metro-before.log" 2>&1; then
-    cat "$OUT/metro-before.log"
-    echo "VERIFY FAIL: a Metro process is running; the standalone build must not need it" >&2
-    exit 2
-  fi
-  echo "no Metro listener on 8081 and no expo start process"
+if lsof -nP -iTCP:8081 -sTCP:LISTEN > "$OUT/port8081-before.log" 2>&1; then
+  cat "$OUT/port8081-before.log"
+  echo "VERIFY FAIL: something is listening on port 8081; stop Metro before the independence proof" >&2
+  exit 2
 fi
+if pgrep -fl "expo start" > "$OUT/metro-before.log" 2>&1; then
+  cat "$OUT/metro-before.log"
+  echo "VERIFY FAIL: a Metro process is running; the standalone build must not need it" >&2
+  exit 2
+fi
+echo "no Metro listener on 8081 and no expo start process"
 
 step "2. device state + production baseline (before)"
 xcrun devicectl list devices > "$OUT/device-list-before.log" 2>&1

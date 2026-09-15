@@ -282,6 +282,16 @@ final class CaptureController: NSObject, ObservableObject {
             return
         }
         guard mode != .preparing, mode != .saving else { return }
+        // A repeated delivery of the same linked session must never truncate an
+        // existing archive. The durable state decides the truthful outcome:
+        // resume through the linked-test recovery card, or report that the
+        // recording is already saved. Never overwrite.
+        if SessionWriter.archiveExists(id: sessionId, baseURL: repository.baseURL) {
+            repository.reload()
+            refreshPendingLinkedTraceRecovery()
+            notice = linkedDeliveryNotice(forExisting: sessionId)
+            return
+        }
         beginSession(with: nil, link: (sessionId, nonce))
     }
 
@@ -596,6 +606,7 @@ final class CaptureController: NSObject, ObservableObject {
         } catch {
             motionService.stop()
             UIApplication.shared.isIdleTimerDisabled = false
+            let writerWasCreated = self.writer != nil
             if let writer = self.writer {
                 _ = try? writer.finalize(
                     status: .sensorError,
@@ -606,9 +617,18 @@ final class CaptureController: NSObject, ObservableObject {
             }
             self.writer = nil
             detector = nil
-            if linkedNonce != nil { try? repository.clearLinkedTraceRecovery(sessionId: sessionID) }
+            // Only a writer this attempt created may clear its own linked
+            // recovery. A refused existing session keeps its durable link.
+            if writerWasCreated, linkedNonce != nil { try? repository.clearLinkedTraceRecovery(sessionId: sessionID) }
             repository.reload()
             refreshPendingLinkedTraceRecovery()
+            if (error as? SessionWriterError) == .sessionExists {
+                mode = .idle
+                notice = linkedNonce == nil
+                    ? "A recording with this session already exists on this phone. Nothing was overwritten."
+                    : linkedDeliveryNotice(forExisting: sessionID)
+                return
+            }
             mode = .failed(error.localizedDescription)
             notice = "Recording did not start: \(error.localizedDescription)"
         }
@@ -797,6 +817,19 @@ final class CaptureController: NSObject, ObservableObject {
 
     private func refreshPendingLinkedTraceRecovery() {
         pendingLinkedTraceRecovery = repository.pendingLinkedTraceRecoveries.first
+    }
+
+    /// Truthful continuation for a repeated linked-session delivery: the
+    /// recovery card is the one path to finish an unfinished test in Trace Lab.
+    private func linkedDeliveryNotice(forExisting sessionId: String) -> String {
+        refreshPendingLinkedTraceRecovery()
+        if pendingLinkedTraceRecovery?.sessionId == sessionId {
+            return "This linked test is already recorded on this phone. Use the linked-test card above to finish it in Trace Lab."
+        }
+        if repository.sessions.contains(where: { $0.id == sessionId }) {
+            return "This linked test already has a saved recording on this phone. Nothing new was started."
+        }
+        return "A previous attempt to record this test did not finish. Nothing was overwritten; start the test again in Trace Lab."
     }
 
     private func resetAfterFinish() {

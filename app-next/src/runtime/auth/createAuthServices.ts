@@ -235,10 +235,7 @@ export async function createAuthServices(config: AuthServiceConfig): Promise<Aut
   }
 }
 
-/** Root hook requirements (no second PostHog client here). See README. */
-export type SignInRequiredSource = boolean | (() => boolean) | (() => Promise<boolean>);
-export function resolveSignInRequired(source: SignInRequiredSource | undefined, fallback = false): boolean | Promise<boolean> {
-  if (source === undefined) return fallback;
-  if (typeof source === 'boolean') return source;
-  return source();
-}
+/** Re-exported for existing callers; the implementation lives in the
+ * dependency-free `signInRequired` module so a research bundle never pulls in
+ * the production identity graph through the sign-in route. */
+export { resolveSignInRequired, type SignInRequiredSource } from './signInRequired';

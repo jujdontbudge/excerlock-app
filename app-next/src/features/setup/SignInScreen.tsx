@@ -14,7 +14,7 @@ import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { sessionStore as useSessionStore } from '../../state/sessionStore';
 import { EmailCodeScreen } from './EmailCodeScreen';
 import { isAuthCancelled, isAuthRecoveryRequired } from '../../ports/AuthPort';
-import { resolveSignInRequired, type SignInRequiredSource } from '../../runtime/auth/createAuthServices';
+import { resolveSignInRequired, type SignInRequiredSource } from '../../runtime/auth/signInRequired';
 
 export function SignInScreen({
   onContinue,
