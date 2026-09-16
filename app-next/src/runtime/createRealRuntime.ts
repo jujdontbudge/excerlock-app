@@ -233,10 +233,12 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         .then(async () => {
           if (disposed) throw new Error('Runtime disposed');
           const opportunitySource = __LINKED_RECORDER_TRACE__ ? `runtime_${wakeSource}_${mode}` : '';
-          if (__LINKED_RECORDER_TRACE__) linkedTrace.record('execution_opportunity', { source: opportunitySource, status: 'received' });
+          if (__LINKED_RECORDER_TRACE__)
+            linkedTrace.record('execution_opportunity', { source: opportunitySource, status: 'received' });
           if (deletionSuspended) {
             await host.reconcile(true);
-            if (__LINKED_RECORDER_TRACE__) linkedTrace.record('execution_opportunity', { source: opportunitySource, status: 'completed' });
+            if (__LINKED_RECORDER_TRACE__)
+              linkedTrace.record('execution_opportunity', { source: opportunitySource, status: 'completed' });
             return;
           }
           const now = Date.now();
@@ -246,6 +248,8 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             const motion = detection.steps.authorizationStatus();
             const deleting = client.auth.identity().kind === 'deleting';
             if (mode === 'full') {
+              // Grants changed in iOS Settings only show up if we re-read them on the way back in.
+              if (wakeSource === 'foreground') await detection.location.refreshAuthorization().catch(() => undefined);
               await ruleDaysStore.retryPersistence();
               await historyStore.retryPersistence();
               if (!deleting && motion === 'granted') await detection.start(wakeContext().walkingGraceMs);
@@ -429,7 +433,10 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
                 void client.notifications.scheduleOpenToUnlock().catch(options.reportError);
             }
             const snapshot = source.read();
-            if (snapshot.scheduleIssue && JSON.stringify(status.scheduleIssue) !== JSON.stringify(snapshot.scheduleIssue)) {
+            if (
+              snapshot.scheduleIssue &&
+              JSON.stringify(status.scheduleIssue) !== JSON.stringify(snapshot.scheduleIssue)
+            ) {
               status = { ...status, scheduleIssue: snapshot.scheduleIssue };
               listeners.forEach((listener) => listener());
             }
@@ -440,14 +447,19 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             const applied = await host.reconcile(wakeSource !== 'manual');
             // A repaired plan is not proof of native activation. Keep the recovery
             // notice until apply succeeds and this source revision is still current.
-            if (applied === 'applied' && !snapshot.scheduleIssue && status.scheduleIssue &&
-                source.read().revision === snapshot.revision) {
+            if (
+              applied === 'applied' &&
+              !snapshot.scheduleIssue &&
+              status.scheduleIssue &&
+              source.read().revision === snapshot.revision
+            ) {
               status = { ...status, scheduleIssue: undefined };
               listeners.forEach((listener) => listener());
             }
             opportunityStatus = 'completed';
           } finally {
-            if (__LINKED_RECORDER_TRACE__) linkedTrace.record('execution_opportunity', { source: opportunitySource, status: opportunityStatus });
+            if (__LINKED_RECORDER_TRACE__)
+              linkedTrace.record('execution_opportunity', { source: opportunitySource, status: opportunityStatus });
             insideReconcile = false;
           }
         });

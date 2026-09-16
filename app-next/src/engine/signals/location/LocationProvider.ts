@@ -30,6 +30,8 @@ export type LocationUnsubscribe = () => void;
 export interface LocationProvider {
   requestAuthorization(): Promise<LocationAuthorizationStatus>;
   getAuthorizationStatus(): LocationAuthorizationStatus;
+  /** Re-reads the OS grant without prompting; iOS Settings can change it while the app is backgrounded. */
+  refreshAuthorization(): Promise<LocationAuthorizationStatus>;
   startMonitoringRegions(regions: readonly GeofenceRegion[]): Promise<void>;
   stopMonitoringRegions(regionIds?: readonly string[]): Promise<void>;
   isInsideRegion(regionId: string): boolean | null;

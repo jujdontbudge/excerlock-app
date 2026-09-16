@@ -54,7 +54,7 @@ function graph(options?: { gait?: object | null; boot?: () => Promise<void>; aut
     }, motion: {}, placement: {},
     steps: { authorizationStatus: () => options?.authorization ?? 'denied' },
     awake: { reconcile: jest.fn(async () => ({ requested: false, running: false, error: null })) },
-    location: { stopMonitoringRegions: jest.fn(async () => {}) },
+    location: { stopMonitoringRegions: jest.fn(async () => {}), refreshAuthorization: jest.fn(async () => 'notDetermined') },
     start: jest.fn(async () => {}), stop: jest.fn(async () => {}), registerGyms: jest.fn(async () => {}),
     reconcileWake: jest.fn(async () => {}), walkingDurationLedger: { pruneBeforeDay: jest.fn(async () => {}), read: jest.fn(async () => ({ generation: 0, millisecondsByDay: {}, pending: [], segments: [] })), reset: jest.fn(async () => {}), acknowledge: jest.fn(async () => {}) },
     historyLedger: { pruneBeforeDay: jest.fn(async () => {}), read: jest.fn(async () => ({ stepsByDay: {}, instanceMeasurements: {} })) },

@@ -62,6 +62,12 @@ export class NativeLocationProvider implements LocationProvider {
     return this.authorizationStatus;
   }
 
+  public async refreshAuthorization(): Promise<LocationAuthorizationStatus> {
+    await this.ready;
+    await this.client.hydrateState();
+    return this.updateAuthorization(this.client.getAuthorizationStatus());
+  }
+
   public async startMonitoringRegions(
     regions: readonly GeofenceRegion[],
   ): Promise<void> {

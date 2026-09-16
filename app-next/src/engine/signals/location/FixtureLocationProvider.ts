@@ -69,6 +69,10 @@ export class FixtureLocationProvider implements LocationProvider, ManualGymCheck
     return this.authorizationStatus;
   }
 
+  public async refreshAuthorization(): Promise<LocationAuthorizationStatus> {
+    return this.authorizationStatus;
+  }
+
   public async startMonitoringRegions(regions: readonly GeofenceRegion[]): Promise<void> {
     regions.forEach((region) => this.monitoredRegions.set(region.id, region));
   }
