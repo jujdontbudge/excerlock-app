@@ -86,6 +86,13 @@ xcodebuild -project PhoneWalkingRecorder.xcodeproj \
   CODE_SIGNING_ALLOWED=NO test
 ```
 
+The linked-session recovery contract also has a host-side harness that compiles the recorder's models and archive writer for macOS, so it needs no simulator:
+
+```sh
+cd tools/phone-walking-recorder
+./scripts/test-linked-recovery.sh
+```
+
 For a UI-only simulator screenshot, launch a Debug build with `--ui-preview`. The screen displays **SIMULATED UI • NOT SENSOR EVIDENCE**, and this flag is compiled out of Release. Simulator checks validate software and layout only, never walking/shaking detection.
 
 ### What a simulator run proves, and what needs the phone

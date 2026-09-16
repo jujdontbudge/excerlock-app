@@ -5,6 +5,7 @@ BINARY="$(mktemp -t walking-recorder-linked-recovery.XXXXXX)"
 trap 'rm -f "$BINARY"' EXIT
 xcrun swiftc \
   -parse-as-library \
+  "$ROOT/Sources/RawStreamCoverage.swift" \
   "$ROOT/Sources/RecorderModels.swift" \
   "$ROOT/Sources/SessionArchive.swift" \
   "$ROOT/Harnesses/LinkedRecoveryHarness.swift" \
