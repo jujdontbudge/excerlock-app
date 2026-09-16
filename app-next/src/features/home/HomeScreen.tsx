@@ -155,7 +155,7 @@ export function HomeScreen() {
         </View>
       ) : (
         <Animated.View style={glyph}>
-          <HomeLockStatus unlocked={status.unlocked} subtitle={status.unlocked ? `${status.title}. ${status.subtitle}` : 'Complete a condition to unlock'} />
+          <HomeLockStatus unlocked={status.unlocked} />
         </Animated.View>
       )}
       {status.state === 'allPaused' ? (
