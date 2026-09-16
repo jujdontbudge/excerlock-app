@@ -39,9 +39,8 @@ test('entitled boot opens Home, tabs navigate and selected apps open the shared 
   expect(screen.getByRole('header', { name: 'Locked' })).toBeTruthy();
   expect(screen.getByText('Complete a condition to unlock')).toBeTruthy();
   expect(screen.getByText(/Mon.*9.AM.*9.PM/)).toBeTruthy();
-  await userEvent.press(screen.getByRole('button', { name: 'Edit / Add' }));
-  expect(r.getPathname()).toBe('/conditions');
-  await userEvent.press(screen.getByRole('tab', { name: 'Home' }));
+  expect(screen.queryByRole('button', { name: 'Edit / Add' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Choose apps' })).toBeNull();
   await userEvent.press(screen.getByRole('button', { name: 'Lock list' }));
   expect(screen.getByRole('header', { name: 'Choose apps to block' })).toBeTruthy();
   await act(() => runtime.dev.resolvePrompt(false));

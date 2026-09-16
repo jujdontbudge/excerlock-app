@@ -1,6 +1,7 @@
 import { HomeLockStatus } from './HomeLockStatus';
 import { ProgressBar } from '../../design-system/ProgressBar';
 import { scheduleLabel } from '../../domain/scheduleLabel';
+import { dayKey } from '../../domain/calendar';
 import { Icon } from '../../icons/Icon';
 import { useDemoProgress } from './useDemoProgress';
 import { useEffect } from 'react';
@@ -60,19 +61,18 @@ export function HomeScreen() {
     glyph = useUnlockMoment(status.state);
   const chooseApps = () => void runtime.screenTime.presentAppPicker();
   const add = () => router.push('/builder');
-  const action = () => {
-    if (status.action === 'permission') void runtime.screenTime.requestAuthorization();
-    if (status.action === 'apps') chooseApps();
-    if (status.action === 'add') add();
-    if (status.action === 'conditions') router.navigate('/conditions');
-  };
-  const actionLabel = status.action
-    ? { permission: c.fix, apps: c.chooseApps, add: c.add, conditions: c.conditions }[status.action]
-    : undefined;
   useEffect(() => {
     runtime.analytics.screen('Home');
   }, [runtime]);
-  const conditionCards = progress.map(({ rule, row }) => {
+  // Every enabled condition is listed, not only the ones scheduled today; an off-day
+  // condition shows as scheduled with no progress yet.
+  const conditions = rules
+    .filter((rule) => rule.enabled)
+    .map((rule) => progress.find((entry) => entry.rule.id === rule.id) ?? {
+      rule,
+      row: { ruleId: rule.id, day: dayKey(now, runtime.clock.timezone()), progress: 0, met: false, metAt: null },
+    });
+  const conditionCards = conditions.map(({ rule, row }) => {
     const model = progressContent(rule, row, permissions, session, auto);
     const kind = unlockKind(rule);
     const active = decision.state === 'locked' && decision.activeRuleIds.includes(rule.id);
@@ -163,12 +163,8 @@ export function HomeScreen() {
           {c.paused}
         </Label>
       ) : null}
-      {!scheduleIssue && actionLabel ? <SecondaryButton label={actionLabel} onPress={action} /> : null}
       <View style={{ gap: t.space.md }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Label variant="section" accessibilityRole="header">{c.today}</Label>
-          <SecondaryButton variant="tertiary" label={c.editAdd} onPress={() => router.navigate('/conditions')} />
-        </View>
+        <Label variant="section" accessibilityRole="header">{c.today}</Label>
         {conditionCards}
       </View>
       <Reveal>
@@ -181,7 +177,6 @@ export function HomeScreen() {
           }}>
           <SettingsRow
             title={c.lockedApps}
-            subtitle={lockedApps.isEmpty ? c.noApps : undefined}
             icon="lock"
             iconTint={t.brand.primary}
             onPress={chooseApps}
@@ -203,7 +198,7 @@ export function HomeScreen() {
             onPress={() => router.navigate('/analytics')}
           />
         </View>
-        {!progress.length ? <SecondaryButton label={c.add} onPress={add} /> : null}
+        {!conditions.length ? <SecondaryButton label={c.add} onPress={add} /> : null}
       </View>
     </ScreenShell>
   );

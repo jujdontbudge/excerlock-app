@@ -15,7 +15,8 @@ export function HomeLockStatus({ unlocked, subtitle }: { unlocked: boolean; subt
         style={unlocked ? { transform: [{ translateX: 12 }, { rotate: '-18deg' }], marginBottom: 6 } : undefined}>
         <LockShackle bodyWidth={width} />
       </View>
-      <LinearGradient colors={[w.card.start, w.card.end]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      {/* Solid brand orange, the same colour as the Screen Time shield lock. */}
+      <LinearGradient colors={[t.brand.primary, t.brand.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={{ borderRadius: width * 0.15, minHeight: width * 0.83, padding: t.space.md,
           alignItems: 'center', justifyContent: 'space-between', gap: t.space.sm, boxShadow: w.card.shadow }}>
         <View style={{ minHeight: 40, width: '100%', justifyContent: 'center' }}>
