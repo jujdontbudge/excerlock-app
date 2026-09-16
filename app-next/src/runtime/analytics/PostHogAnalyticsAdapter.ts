@@ -20,6 +20,7 @@ export interface PostHogClientBoundary {
   screen(name: string, properties?: Record<string, string | number | boolean>): Promise<void> | void;
   onFeatureFlags(callback: () => void): () => void;
   getFeatureFlag(key: string, options?: { sendEvent?: boolean }): boolean | string | undefined;
+  getFeatureFlagResult(key: string, options?: { sendEvent?: boolean }): { readonly payload?: unknown } | undefined;
 }
 export const POSTHOG_OPTIONS = {
   captureAppLifecycleEvents: false, enableSessionReplay: false, preloadFeatureFlags: false,
@@ -133,16 +134,22 @@ export function createPostHogAnalyticsAdapter(options: {
 }
 
 export type FlagName = 'paywall_variant' | 'signInRequired' | 'onboarding_variant' | 'review_preset';
+/** Payload flags carry remote configuration, never experiment exposure events. */
+const allowedPayloadFlags = { shield_copy: true } as const;
+export type PayloadFlagName = keyof typeof allowedPayloadFlags;
 export type PaywallVariant = 'control' | 'variant_b';
 const allowedFlags: Record<FlagName, readonly (string | boolean)[]> = { paywall_variant: ['control', 'variant_b'], signInRequired: [false, true], onboarding_variant: ['control', 'variant_b'], review_preset: [false, true] };
 type FlagValue = string | boolean;
 type FlagOrigin = { userId: string; generation: number };
 type PendingFlag = { promise: Promise<FlagValue>; resolve: (value: FlagValue) => void; off?: () => void; timeout?: ReturnType<typeof globalThis.setTimeout>; origin: FlagOrigin };
+type PendingPayload = { promise: Promise<void>; resolve: () => void; off?: () => void; timeout?: ReturnType<typeof globalThis.setTimeout> };
 export class PostHogFlagsController {
   private generation = -1;
   private settled = new Map<FlagName, FlagValue>();
   private exposures = new Set<string>();
   private pending = new Map<FlagName, PendingFlag>();
+  private settledPayloadFlags = new Set<PayloadFlagName>();
+  private pendingPayloadFlags = new Map<PayloadFlagName, PendingPayload>();
   constructor(
     private client: PostHogClientBoundary,
     private identity: () => CanonicalIdentity,
@@ -163,7 +170,13 @@ export class PostHogFlagsController {
       pending.off?.(); if (pending.timeout !== undefined) clearTimeout(pending.timeout);
       pending.resolve(this.fallback(name));
     }
-    this.pending.clear(); this.settled.clear(); this.exposures.clear(); this.generation = -1;
+    this.pending.clear(); this.settled.clear(); this.exposures.clear();
+    for (const pending of this.pendingPayloadFlags.values()) {
+      pending.off?.(); if (pending.timeout !== undefined) clearTimeout(pending.timeout);
+      pending.resolve();
+    }
+    this.pendingPayloadFlags.clear(); this.settledPayloadFlags.clear();
+    this.generation = -1;
   }
   async get(name: FlagName, timeoutMs = 2_000): Promise<FlagValue> {
     const live = this.identity();
@@ -191,6 +204,40 @@ export class PostHogFlagsController {
       if (this.pending.get(name) !== pending) pending.off();
       else pending.timeout = globalThis.setTimeout(() => finish(undefined), timeoutMs);
     }
+    return promise;
+  }
+  /**
+   * Reads a payload flag's object (currently the remote shield copy).
+   *
+   * Returns the live SDK payload when flags have already settled and only waits
+   * for the next settlement (or the timeout) when they have not. Exposure events
+   * stay off: this is configuration, not a mounted experiment surface.
+   */
+  async getPayload(name: PayloadFlagName, timeoutMs = 2_000): Promise<unknown> {
+    const live = this.identity();
+    const started = live.userId ? { userId: live.userId, generation: live.generation } : undefined;
+    if (!this.eligible(started)) return undefined;
+    const settled = this.client.getFeatureFlagResult(name, { sendEvent: false });
+    if (settled !== undefined) return settled.payload;
+    if (!this.settledPayloadFlags.has(name)) await this.awaitPayloadSettlement(name, timeoutMs);
+    if (!this.eligible(started)) return undefined;
+    return this.client.getFeatureFlagResult(name, { sendEvent: false })?.payload;
+  }
+  private awaitPayloadSettlement(name: PayloadFlagName, timeoutMs: number): Promise<void> {
+    const existing = this.pendingPayloadFlags.get(name);
+    if (existing) return existing.promise;
+    let resolve!: () => void;
+    const promise = new Promise<void>((done) => { resolve = done; });
+    const pending: PendingPayload = { promise, resolve };
+    const finish = () => {
+      if (this.pendingPayloadFlags.get(name) !== pending) return;
+      pending.off?.(); if (pending.timeout !== undefined) clearTimeout(pending.timeout);
+      this.pendingPayloadFlags.delete(name); this.settledPayloadFlags.add(name); resolve();
+    };
+    this.pendingPayloadFlags.set(name, pending);
+    pending.off = this.client.onFeatureFlags(finish);
+    if (this.pendingPayloadFlags.get(name) === pending) pending.timeout = globalThis.setTimeout(finish, timeoutMs);
+    else pending.off();
     return promise;
   }
   expose(name: FlagName, placement: string) {

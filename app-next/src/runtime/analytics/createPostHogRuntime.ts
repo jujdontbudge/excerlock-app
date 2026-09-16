@@ -14,6 +14,7 @@ class PersistablePostHog extends PostHog {
 type SdkClient = Pick<PersistablePostHog,
   'ready' | 'getDeviceId' | 'getDistinctId' | 'register' | 'identify' | 'reset' |
   'optIn' | 'optOut' | 'capture' | 'screen' | 'onFeatureFlags' | 'getFeatureFlag' |
+  'getFeatureFlagResult' |
   'setPersonProperties' | 'setPersistedProperty' | 'persistStorage' | 'shutdown'>;
 
 export function bindPostHogClient(client: SdkClient): PostHogClientBoundary {
@@ -39,6 +40,9 @@ export function bindPostHogClient(client: SdkClient): PostHogClientBoundary {
     screen: (name, properties) => client.screen(name, properties),
     onFeatureFlags: (callback) => client.onFeatureFlags(callback),
     getFeatureFlag: (key, options) => client.getFeatureFlag(key, options),
+    // The SDK's single-evaluation payload read; unused options stay forwarded
+    // so the adapter controls `sendEvent` (always false for configuration flags).
+    getFeatureFlagResult: (key, options) => client.getFeatureFlagResult(key, options),
   };
 }
 

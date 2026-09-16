@@ -41,6 +41,7 @@ import {
   type ExactStepMeasurement,
 } from '../domain/projectInstanceProgress';
 import { registerHeadlessDetectionHandler } from './detection/headlessRegistry';
+import { createShieldCopyWriter } from './shield/createShieldCopyWriter';
 import type { DetectionWake } from './detection/DetectionService';
 import { RuntimeCleanupError } from './RuntimeSingleton';
 
@@ -175,6 +176,15 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       },
     });
     cleanups.push(() => client.dispose());
+    // Remote shield copy: the PostHog payload is validated and written to the
+    // App Group on every foreground once flags settle. The writer owns the
+    // native call so a malformed payload can never reach the shared store.
+    const shieldCopy = createShieldCopyWriter({
+      readPayload: () => client.analytics.flags.getPayload('shield_copy'),
+      write: (json) => native.setShieldCopyOverrides(json),
+      isForeground: () => AppState.currentState === 'active',
+      reportError: options.reportError,
+    });
     const rawScreenTime = createNativeScreenTimePort({
       applyLock: async () => ({ applied: (await host.reconcile()) === 'applied' }),
       registerWatchdog: async () => {
@@ -519,6 +529,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       subscription: client.subscription,
       analytics: client.analytics,
       reviewPreset: client.reviewPreset,
+      shieldCopy,
       notifications: { ...client.notifications, request: () => safety.prompt(() => client.notifications.request()) },
       dataExport: { requestShare: (payload) => safety.prompt(() => client.dataExport.requestShare(payload)) },
       // No rules-sync endpoint exists yet. Never acknowledge imaginary cloud writes.

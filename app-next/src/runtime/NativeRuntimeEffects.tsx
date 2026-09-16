@@ -115,6 +115,19 @@ export function NativeRuntimeEffects() {
   }, [runtime]);
 
   useEffect(() => {
+    const sync = () => {
+      void runtime.shieldCopy?.sync();
+    };
+    // Cold start counts as a foreground pass; later passes re-read the flag
+    // rail once flags settle for the current app open.
+    sync();
+    const foreground = AppState.addEventListener('change', (state) => {
+      if (state === 'active') sync();
+    });
+    return () => foreground.remove();
+  }, [runtime]);
+
+  useEffect(() => {
     if (!navigation?.key) return;
     let mounted = true;
     const handled = new Set<string>();

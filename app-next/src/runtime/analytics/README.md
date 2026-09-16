@@ -33,3 +33,12 @@ The first mounted surface settles within two seconds and keeps that assignment
 for its identity generation. Unknown values use control/false. Client code
 never emits purchase/trial/subscription lifecycle events; Adapty is their sole
 emitter.
+
+`shield_copy` is the payload-only flag rail: `flags.getPayload('shield_copy')`
+returns the live SDK payload for the current generation, waiting only for the
+first flags settlement when none has happened yet, and reads with
+`sendEvent: false` so remote configuration never emits an experiment exposure.
+The payload crosses no trust boundary: `src/runtime/shield/` validates it
+strictly (unknown causes/fields, non-string or oversized copy are rejected) and
+only then hands canonical JSON to `ExcerlockEnforcementModule.setShieldCopyOverrides`,
+which writes the App Group key the shield extension reads.

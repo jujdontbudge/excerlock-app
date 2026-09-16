@@ -90,8 +90,11 @@ const response = (url: unknown, identifier = 'notification-1') => ({
   notification: { date: 100, request: { identifier, content: { data: { url } } } },
 });
 
+let mockAppStateListeners: ((state: string) => void)[] = [];
+
 beforeEach(() => {
   jest.clearAllMocks();
+  mockAppStateListeners = [];
   mockStatus = { hydrated: true, loading: false, history: [] };
   mockPathname = '/home';
   mockNavigation = { key: 'root' };
@@ -99,7 +102,10 @@ beforeEach(() => {
   mockGetLastResponse.mockResolvedValue(null);
   mockPermission.mockResolvedValue('granted');
   Object.defineProperty(AppState, 'currentState', { configurable: true, value: 'active' });
-  jest.spyOn(AppState, 'addEventListener').mockReturnValue({ remove: jest.fn() });
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((((event: string, listener: (state: string) => void) => {
+    if (event === 'change') mockAppStateListeners.push(listener);
+    return { remove: jest.fn() };
+  }) as unknown as typeof AppState.addEventListener));
   jest.spyOn(global, 'requestAnimationFrame').mockImplementation((callback) => { callback(0); return 1; });
   jest.spyOn(global, 'cancelAnimationFrame').mockImplementation(() => {});
 });
@@ -180,4 +186,24 @@ test('notification routing is allowlisted, deduplicated and listeners clean up',
   expect(setup.identityStop).toHaveBeenCalledTimes(1);
   await act(async () => mockResponseListener?.(response('excerlock://paywall', 'late')));
   expect(mockRouterPush).toHaveBeenCalledTimes(1);
+});
+
+test('applies remote shield copy on mount and every foreground, never on background', async () => {
+  const sync = jest.fn(async () => 'written' as const);
+  const setup = runtime({ shieldCopy: { sync } });
+  mockRuntime = setup.value;
+  await render(<NativeRuntimeEffects />);
+  expect(sync).toHaveBeenCalledTimes(1);
+  await act(async () => mockAppStateListeners.forEach((listener) => listener('background')));
+  expect(sync).toHaveBeenCalledTimes(1);
+  await act(async () => mockAppStateListeners.forEach((listener) => listener('active')));
+  expect(sync).toHaveBeenCalledTimes(2);
+});
+
+test('a missing shield copy port is inert', async () => {
+  const setup = runtime();
+  mockRuntime = setup.value;
+  await render(<NativeRuntimeEffects />);
+  await act(async () => mockAppStateListeners.forEach((listener) => listener('active')));
+  expect(mockReport).not.toHaveBeenCalled();
 });

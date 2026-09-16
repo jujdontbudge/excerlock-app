@@ -22,6 +22,7 @@ const client: PostHogClientBoundary = {
   screen() {},
   onFeatureFlags: () => () => {},
   getFeatureFlag: () => undefined,
+  getFeatureFlagResult: () => undefined,
 };
 
 export function createPostHogRuntime(

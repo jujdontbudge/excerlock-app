@@ -27,6 +27,16 @@ public final class ExcerlockEnforcementModule: Module {
     AsyncFunction("commitWatchdog") { (id: String, revision: Int) throws -> Bool in try self.commitWatchdog(id: id, revision: revision) }
     AsyncFunction("cancelWatchdogs") { (revision: Int) throws -> Void in try self.cancelWatchdogs(revision: revision) }
     AsyncFunction("replaceWindows") { (windows: [WindowInput], revision: Int) throws -> Void in try self.replaceWindows(windows: windows, revision: revision) }
+    // Remote shield copy rail (PRD §10.6): JS validates the PostHog payload and
+    // hands over canonical JSON; this writes the App Group key ShieldContent
+    // reads. Structural validation here keeps a hand-crafted JS string from
+    // storing a shape the extension cannot decode.
+    AsyncFunction("setShieldCopyOverrides") { (json: String) throws -> Void in
+      guard let defaults = UserDefaults(suiteName: excerlockAppGroup) else {
+        throw ShieldCopyOverridesError.appGroupUnavailable
+      }
+      try ShieldCopyOverrides.write(json, defaults: defaults)
+    }
     Function("getPolicyRevision") { () throws -> Int in try self.getPolicyRevision() }
     #if EXCERLOCK_LINKED_RECORDER_TRACE
     Function("startLinkedTrace") { (sessionId: String, nonce: String) throws -> [String: Any] in

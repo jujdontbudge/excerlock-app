@@ -1,7 +1,7 @@
 import { createPaywallExperimentPort, createPostHogAnalyticsAdapter, createReviewPresetPort, semanticScreenName, scrubAnalyticsProps, type CanonicalIdentity, type PostHogClientBoundary } from '../PostHogAnalyticsAdapter';
 
 function fixture() {
-  const calls: string[] = []; const captures: { event: string; props?: Record<string, unknown> }[] = []; let flag: string | boolean | undefined; const listeners = new Set<() => void>(); let registerGate: Promise<void> | undefined;
+  const calls: string[] = []; const captures: { event: string; props?: Record<string, unknown> }[] = []; let flag: string | boolean | undefined; let payload: unknown; const listeners = new Set<() => void>(); let registerGate: Promise<void> | undefined;
   const client: PostHogClientBoundary = {
     ready: async () => { calls.push('ready'); }, getDeviceId: () => (calls.push('device'), 'device-1'), getDistinctId: () => 'uid',
     register: async () => { calls.push('register'); await registerGate; }, identify: () => { calls.push('identify'); }, reset: () => { calls.push('reset'); },
@@ -9,10 +9,11 @@ function fixture() {
     setPersonProperties: async (props, reload) => { calls.push(`person:${String(props.walk_places)}:${String(reload)}`); },
     optIn: async () => { calls.push('optIn'); }, optOut: async () => { calls.push('optOut'); }, capture: (e, props) => { calls.push(`capture:${e}`); captures.push({ event: e, props }); }, screen: (s) => { calls.push(`screen:${s}`); },
     onFeatureFlags: (cb) => { listeners.add(cb); return () => { listeners.delete(cb); }; }, getFeatureFlag: (_k, o) => { if (o?.sendEvent) calls.push('exposure'); return flag; },
+    getFeatureFlagResult: (_k, o) => { if (o?.sendEvent) calls.push('exposure'); return payload === undefined ? undefined : { payload }; },
   };
   let identity: CanonicalIdentity = { userId: 'uid', generation: 1, ready: true }; let enabled = true;
   const adapter = createPostHogAnalyticsAdapter({ client, getIdentity: () => identity, analyticsEnabled: () => enabled, getContext: () => ({ environment: 'preview', runtime_version: '1', update_id: 'embedded', walk_places: 'outside' }) });
-  return { adapter, calls, captures, setFlag(v: typeof flag) { flag = v; [...listeners].forEach((cb) => cb()); }, setIdentity(v: CanonicalIdentity) { identity = v; }, disable() { enabled = false; }, enable() { enabled = true; }, deferRegisters() { let release!: () => void; registerGate = new Promise<void>((resolve) => { release = resolve; }); return release; } };
+  return { adapter, calls, captures, setFlag(v: typeof flag) { flag = v; [...listeners].forEach((cb) => cb()); }, setPayload(v: unknown) { payload = v; }, setIdentity(v: CanonicalIdentity) { identity = v; }, disable() { enabled = false; }, enable() { enabled = true; }, deferRegisters() { let release!: () => void; registerGate = new Promise<void>((resolve) => { release = resolve; }); return release; } };
 }
 
 test('primes device and registers before identify, then gates capture', async () => {
@@ -127,4 +128,47 @@ test('opt-out clears queued events and opt-in resumes only with the current pref
   expect(x.captures).toEqual([]);
   x.enable(); await x.adapter.setEnabled!(true);
   expect(x.calls.slice(-3)).toEqual(['optOut', 'clear', 'optIn']);
+});
+
+test('shield copy payload waits for flags to settle without an exposure event', async () => {
+  const x = fixture(); await x.adapter.identify('uid');
+  const pending = x.adapter.flags.getPayload('shield_copy');
+  x.setPayload({ fullLock: { title: 'Move first.' } }); x.setFlag(true);
+  await expect(pending).resolves.toEqual({ fullLock: { title: 'Move first.' } });
+  expect(x.calls).not.toContain('exposure');
+});
+
+test('shield copy payload settles to undefined after the timeout', async () => {
+  jest.useFakeTimers(); const x = fixture(); await x.adapter.identify('uid');
+  const pending = x.adapter.flags.getPayload('shield_copy'); await jest.advanceTimersByTimeAsync(2000);
+  await expect(pending).resolves.toBeUndefined(); jest.useRealTimers();
+});
+
+test('shield copy payload re-reads the live SDK value after settlement', async () => {
+  const x = fixture(); await x.adapter.identify('uid');
+  const first = x.adapter.flags.getPayload('shield_copy');
+  x.setPayload({ fullLock: { title: 'First.' } }); x.setFlag(true);
+  await expect(first).resolves.toEqual({ fullLock: { title: 'First.' } });
+  x.setPayload({ fullLock: { title: 'Second.' } });
+  await expect(x.adapter.flags.getPayload('shield_copy')).resolves.toEqual({ fullLock: { title: 'Second.' } });
+  x.setPayload(null);
+  await expect(x.adapter.flags.getPayload('shield_copy')).resolves.toBeNull();
+});
+
+test('shield copy payload fails closed when analytics is disabled or identity is not canonical', async () => {
+  const x = fixture(); await x.adapter.identify('uid'); x.setPayload({ fullLock: { title: 'Move first.' } });
+  x.disable();
+  await expect(x.adapter.flags.getPayload('shield_copy')).resolves.toBeUndefined();
+  x.enable(); x.setIdentity({ userId: 'uid', generation: 1, ready: false });
+  await expect(x.adapter.flags.getPayload('shield_copy')).resolves.toBeUndefined();
+  x.setIdentity({ userId: 'uid', generation: 1, ready: true }); await x.adapter.identify('uid');
+  await expect(x.adapter.flags.getPayload('shield_copy')).resolves.toEqual({ fullLock: { title: 'Move first.' } });
+});
+
+test('a payload settlement cannot leak across an identity generation', async () => {
+  const x = fixture(); await x.adapter.identify('uid');
+  const pending = x.adapter.flags.getPayload('shield_copy');
+  x.setIdentity({ userId: 'uid-2', generation: 2, ready: true });
+  await x.adapter.identify('uid-2');
+  await expect(pending).resolves.toBeUndefined();
 });

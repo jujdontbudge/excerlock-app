@@ -14,6 +14,7 @@ import { GaitPort } from '../ports/GaitPort';
 import { ExportPort } from '../ports/ExportPort';
 import { RuntimeStatusPort } from '../ports/RuntimeStatusPort';
 import { ReviewPresetPort } from '../ports/ReviewPresetPort';
+import { ShieldCopyPort } from '../ports/ShieldCopyPort';
 export type Runtime = {
   readonly kind: 'fake' | 'real';
   screenTime: ScreenTimePort;
@@ -31,6 +32,8 @@ export type Runtime = {
   clock: ClockPort;
   status: RuntimeStatusPort;
   reviewPreset?: ReviewPresetPort;
+  /** Remote shield copy rail; absent means no payload flag consumer is wired. */
+  shieldCopy?: ShieldCopyPort;
   /** Live production safety; absent means unknown, never safe by default. */
   safety?: () => { permissionPromptPending: boolean; cameraActive: boolean };
   /** Simulation-only surface. Real runtimes do not implement it. */
