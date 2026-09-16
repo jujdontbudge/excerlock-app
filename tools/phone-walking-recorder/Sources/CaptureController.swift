@@ -143,7 +143,11 @@ final class CaptureController: NSObject, ObservableObject {
     let repository: SessionRepository
 
     private let clock: CaptureClock
-    private let motionService: MotionCaptureService
+    private let motionService: MotionCaptureServicing
+    /// The one fire-and-forget link opener. Production opens Trace Lab's return
+    /// link through it; tests substitute an observer so a regression cannot
+    /// silently open (or skip) that link.
+    var openExternalLink: (URL) -> Void = { url in UIApplication.shared.open(url) }
     private var writer: SessionWriter?
     private var detector: ProductionWalkingDetectorPort?
     private var timeline = LabelTimeline()
@@ -162,24 +166,29 @@ final class CaptureController: NSObject, ObservableObject {
     let isUIPreview = false
     #endif
 
-    init(repository: SessionRepository = SessionRepository(), clock: CaptureClock = SystemCaptureClock()) {
+    init(
+        repository: SessionRepository = SessionRepository(),
+        clock: CaptureClock = SystemCaptureClock(),
+        motionService: MotionCaptureServicing? = nil
+    ) {
         self.repository = repository
         self.clock = clock
-        motionService = MotionCaptureService(clock: clock)
+        let resolvedService = motionService ?? MotionCaptureService(clock: clock)
+        self.motionService = resolvedService
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--ui-preview") {
             permission = .authorized
             availability = SensorAvailability(activity: true, cadence: true, stepCounting: true, accelerometer: true, gyroscope: true, deviceMotion: true)
         } else {
-            permission = motionService.permission
-            availability = motionService.availability
+            permission = resolvedService.permission
+            availability = resolvedService.availability
         }
         #else
-        permission = motionService.permission
-        availability = motionService.availability
+        permission = resolvedService.permission
+        availability = resolvedService.availability
         #endif
         super.init()
-        motionService.delegate = self
+        resolvedService.delegate = self
         refreshPendingLinkedTraceRecovery()
     }
 
@@ -752,8 +761,12 @@ final class CaptureController: NSObject, ObservableObject {
             return
         }
         let end = clock.now()
+        // Only the successful `finishAndSave` path may return to Trace Lab. An
+        // error or storage-limit stop finalizes and saves locally and leaves
+        // the protected recovery link untouched, so Trace Lab never shows a
+        // false "test finished — save it" screen after a failed recording.
         let linkedStopURL: URL?
-        if let linkedSessionID, let linkedSessionNonce {
+        if status == .completed, let linkedSessionID, let linkedSessionNonce {
             linkedStopURL = RecorderLinkedLink.traceLab(sessionId: linkedSessionID, nonce: linkedSessionNonce)
         } else {
             linkedStopURL = nil
@@ -807,7 +820,7 @@ final class CaptureController: NSObject, ObservableObject {
             refreshPendingLinkedTraceRecovery()
             notice = status == .completed ? "Session saved on this phone." : finalDetail
             resetAfterFinish()
-            if let linkedStopURL { UIApplication.shared.open(linkedStopURL) }
+            if let linkedStopURL { openExternalLink(linkedStopURL) }
         } catch {
             mode = .failed(error.localizedDescription)
             notice = "The session stopped, but final saving needs attention: \(error.localizedDescription)"

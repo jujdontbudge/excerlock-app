@@ -9,7 +9,18 @@ protocol MotionCaptureServiceDelegate: AnyObject {
     func motionCaptureDidFail(stream: String, error: Error, stamp: CaptureStamp)
 }
 
-final class MotionCaptureService {
+/// The capture surface the controller needs, so tests can drive linked-record
+/// lifecycles (including write failures) without touching real Core Motion.
+protocol MotionCaptureServicing: AnyObject {
+    var delegate: MotionCaptureServiceDelegate? { get set }
+    var availability: SensorAvailability { get }
+    var permission: MotionPermission { get }
+    func requestLiveAuthorization(completion: @escaping (MotionPermission) -> Void)
+    func start() throws -> SensorAvailability
+    func stop()
+}
+
+final class MotionCaptureService: MotionCaptureServicing {
     weak var delegate: MotionCaptureServiceDelegate?
 
     private let activityManager = CMMotionActivityManager()

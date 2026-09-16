@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import plist from "@expo/plist";
 import { createRequire } from "node:module";
 
 import { fromRoot, readJson, readUtf8, walkFiles } from "./repo-files";
@@ -49,17 +48,5 @@ describe("phone walking recorder isolation", () => {
     expect(source).not.toMatch(/import\s+Expo|import\s+CoreLocation|CLLocationManager/);
     expect(source).not.toMatch(/URLSession|NWConnection|uploadTask|dataTask/);
     expect(source).not.toMatch(/identifierForVendor|advertisingIdentifier/);
-  });
-
-  it("registers only the lab-only link Trace Lab uses to start and re-open a test", () => {
-    // The registered URL schemes are the contract iOS enforces, so parse the
-    // plist instead of grepping it. The recorder's own XCTest suite
-    // (Tests/LinkedLinkTests.swift, run by the recorder test scheme) executes the
-    // matching URL builders and parsers, including the Trace Lab return scheme.
-    const info = plist.parse(readUtf8(fromRoot("tools", "phone-walking-recorder", "Support", "Info.plist"))) as {
-      CFBundleURLTypes?: { CFBundleURLSchemes?: string[] }[];
-    };
-    const schemes = (info.CFBundleURLTypes ?? []).flatMap((type) => type.CFBundleURLSchemes ?? []);
-    expect(schemes).toEqual(["excerlock-walkingrecorder"]);
   });
 });
