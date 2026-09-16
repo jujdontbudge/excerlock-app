@@ -11,6 +11,19 @@ test('captured evidence cannot trigger Metro refreshes or enter a bundle', () =>
  assert.equal(blocked('src/features/launch/BootScreen.tsx'), false);
  assert.equal(blocked('app/linked-trace.tsx'), true);
 });
+test('the bundled Adapty fallback asset stays bundle-visible', () => {
+ const config = require('../metro.config');
+ const patterns = [].concat(config.resolver.blockList);
+ const blocked = relative => patterns.some(pattern => pattern.test(path.resolve(__dirname, '..', relative)));
+ // B3 ships the fallback file as a native iOS bundle resource through the
+ // react-native-adapty config plugin, so setFallback resolves it in Bundle.main
+ // and an EAS Update can never replace it. Metro must still not block the path:
+ // a JS-side reference keeps bundling, and no blockList entry may ever prune
+ // the asset from a build.
+ assert.equal(blocked('assets/adapty-fallback.json'), false);
+ // The evidence block still rejects captured output next to it.
+ assert.equal(blocked('evidence/T02/capture.png'), true);
+});
 test('native crash reporting excludes unused browser replay packages', () => {
  const config = require('../metro.config');
  const context = { resolveRequest: () => ({ type: 'sourceFile', filePath: '/kept.js' }) };

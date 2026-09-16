@@ -12,6 +12,7 @@ import type { Unsubscribe } from '../../ports/models';
 import { entitlementStore } from '../../state/entitlementStore';
 import type { RunIdentityOperation } from '../auth/identityBarrier';
 import { mapEntitlement, reduceEntitlement, type ProfileSource } from './entitlementMapping';
+import { ADAPTY_FALLBACK_FILE_NAME } from './fallbackPaywall';
 import { deviceLocale, pickRemoteConfig } from './remoteConfig';
 import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptySdkPort } from './adaptySdk';
 
@@ -40,6 +41,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       waitForIdentityReady(): Promise<AuthIdentity>;
       runIdentityOperation: RunIdentityOperation;
       getPosthogDistinctId(): string | null;
+      reportError(error: unknown): void;
       openSubscriptionManagement(): Promise<void>;
     },
   ) {}
@@ -49,6 +51,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     if (!this.activation) {
       this.activation = this.deps.sdk
         .activate(this.deps.publicSdkKey, { __ignoreActivationOnFastRefresh: true })
+        .then(() => this.registerFallback())
         .then(() => {
           if (!this.disposed && !this.listener)
             this.listener = this.deps.sdk.addEventListener(
@@ -58,6 +61,20 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
         });
     }
     return this.activation;
+  }
+  /**
+   * B3: the bundled fallback must be registered before the first placement load,
+   * so a first launch with no network still renders plans. Failing to register
+   * only ever removes that offline guarantee, so the failure is reported instead
+   * of failing activation — which would also take down every online purchase and
+   * the identity spine — and a paywall load error stays the visible path.
+   */
+  private async registerFallback(): Promise<void> {
+    try {
+      await this.deps.sdk.setFallback({ ios: { fileName: ADAPTY_FALLBACK_FILE_NAME } });
+    } catch (error) {
+      this.deps.reportError(error);
+    }
   }
   entitlement(): SubscriptionEntitlement {
     return {

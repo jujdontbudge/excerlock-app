@@ -3,7 +3,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
-const { resolve, dirname } = require('node:path');
+const { existsSync } = require('node:fs');
+const { resolve, dirname, basename } = require('node:path');
 require('tsx/cjs');
 const cwd = resolve(__dirname, '..');
 const cli = resolve(dirname(require.resolve('expo/package.json')), 'bin/cli');
@@ -34,6 +35,14 @@ test(`actual Expo loader preserves ${profile} native configuration and excludes 
   assert.ok(config.plugins.includes('./plugins/withScreenTimeExtensionValidation'));
   assert.ok(config.plugins.includes('./plugins/withMainAppIntent'));
   assert.ok(config.plugins.includes('./modules/excerlock-startup/app.plugin'));
+  // B3: the bundled Adapty fallback JSON enters the app binary as a native iOS
+  // bundle resource through this config plugin, never through Metro, and the
+  // adapter must name the same basename in setFallback.
+  const adaptyPlugin = config.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === 'react-native-adapty');
+  const { ADAPTY_FALLBACK_ASSET_PATH, ADAPTY_FALLBACK_FILE_NAME } = require('../src/runtime/subscription/fallbackPaywall.ts');
+  assert.equal(adaptyPlugin?.[1]?.fallbackFile?.ios, ADAPTY_FALLBACK_ASSET_PATH);
+  assert.equal(basename(adaptyPlugin[1].fallbackFile.ios), ADAPTY_FALLBACK_FILE_NAME);
+  assert.ok(existsSync(resolve(cwd, 'assets', ADAPTY_FALLBACK_FILE_NAME)), 'the fallback asset the plugin embeds must exist');
   assert.ok(!result.stdout.includes(env.SENTRY_AUTH_TOKEN));
   assert.ok(!result.stdout.includes('SENTRY_AUTH_TOKEN'));
 });

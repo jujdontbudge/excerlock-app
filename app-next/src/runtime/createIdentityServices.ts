@@ -16,6 +16,7 @@ type AnalyticsIdentityHooks = {
 export async function createIdentityServices(options: {
   config: Pick<AuthServiceConfig, 'supabaseUrl' | 'supabaseAnonKey' | 'apiBaseUrl' | 'googleIosClientId' | 'googleRedirectUri'>;
   adaptyPublicKey: string;
+  reportError(error: unknown): void;
   analyticsFactory(getIdentity: () => AuthIdentity): AnalyticsIdentityHooks;
   beforeDelete(): Promise<void>;
   afterDelete(): Promise<void>;
@@ -38,6 +39,7 @@ export async function createIdentityServices(options: {
       return authServices.runIdentityOperation(operation);
     },
     getPosthogDistinctId: () => analytics.getDistinctId(),
+    reportError: options.reportError,
     openSubscriptionManagement: () => Linking.openURL('https://apps.apple.com/account/subscriptions'),
   });
   try {

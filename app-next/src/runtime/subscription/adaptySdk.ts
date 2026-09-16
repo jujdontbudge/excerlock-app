@@ -1,6 +1,8 @@
 import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptyPurchaseResult, AdaptyRemoteConfig } from 'react-native-adapty';
 export interface AdaptySdkPort {
   activate(key: string, options: { __ignoreActivationOnFastRefresh: true }): Promise<void>;
+  /** iOS names a main-bundle resource, never a URI or a JS asset path. */
+  setFallback(location: { ios: { fileName: string } }): Promise<void>;
   addEventListener(event: 'onLatestProfileLoad', callback: (profile: AdaptyProfile) => void): { remove(): void };
   getProfile(): Promise<AdaptyProfile>;
   identify(userId: string): Promise<void>;

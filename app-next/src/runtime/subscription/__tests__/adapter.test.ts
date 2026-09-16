@@ -55,6 +55,7 @@ function setup(getIdentity = () => identity) {
     waitForIdentityReady: async () => getIdentity(),
     runIdentityOperation: async (operation) => operation(),
     getPosthogDistinctId: () => 'posthog-id',
+    reportError: jest.fn(),
     openSubscriptionManagement: jest.fn(async () => {}),
   });
   return {

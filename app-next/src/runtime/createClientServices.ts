@@ -24,7 +24,7 @@ export async function createClientServices(options: {
   initializeSentrySdk(config.sentryDsn, { version: options.version, build: options.build, environment: config.environment });
   let telemetry!: ReturnType<typeof createPostHogRuntime>;
   const identity = await createIdentityServices({
-    config: config.auth, adaptyPublicKey: config.adaptyPublicKey, beforeDelete: options.beforeDelete, afterDelete: options.afterDelete,
+    config: config.auth, adaptyPublicKey: config.adaptyPublicKey, reportError: options.reportError, beforeDelete: options.beforeDelete, afterDelete: options.afterDelete,
     analyticsFactory: (getIdentity) => {
       telemetry = createPostHogRuntime(config.posthog, {
         getIdentity,

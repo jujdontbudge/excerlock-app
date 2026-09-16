@@ -1,0 +1,164 @@
+{
+  "meta": {
+    "version": 10,
+    "developer_ids": ["onboarding", "in_app", "winback"],
+    "response_created_at": 1789600000000
+  },
+  "data": {
+    "onboarding": {
+      "meta": {
+        "placement": {
+          "developer_id": "onboarding",
+          "audience_name": "All Users",
+          "placement_audience_version_id": "6f2f0f5e-1f4c-4a1a-9a1e-2c5b7a9d0e11",
+          "revision": 1,
+          "ab_test_name": "",
+          "is_tracking_purchases": true
+        }
+      },
+      "data": [
+        {
+          "variation_id": "1a2b3c4d-5e6f-4708-9a0b-1c2d3e4f5061",
+          "weight": 100,
+          "cross_placement_info": null,
+          "flow_id": "0b1c2d3e-4f50-4a6b-8c7d-9e0f1a2b3c4d",
+          "flow_name": "Onboarding",
+          "flow_version_id": "2b3c4d5e-6f70-4819-a1b2-c3d4e5f60718",
+          "remote_configs": [
+            {
+              "lang": "en",
+              "data": "{\"title\":\"Choose your plan\",\"body\":\"Build a healthier relationship with your phone.\",\"recommendedProductId\":\"com.johansardar.excerlock.premium.a.annual\"}"
+            }
+          ],
+          "variations": [
+            {
+              "paywall_id": "3c4d5e6f-7081-492a-b2c3-d4e5f6071829",
+              "paywall_name": "Premium A",
+              "variation_id": "4d5e6f70-8192-4a3b-c3d4-e5f607182930",
+              "revision": 1,
+              "weight": 100,
+              "custom_payload": null,
+              "products": [
+                {
+                  "vendor_product_id": "com.johansardar.excerlock.premium.a.annual",
+                  "adapty_product_id": "00000000-0000-4000-8000-000000000001",
+                  "access_level_id": "premium",
+                  "product_type": "annual",
+                  "promotional_offer_eligibility": true
+                },
+                {
+                  "vendor_product_id": "com.johansardar.excerlock.premium.a.monthly",
+                  "adapty_product_id": "00000000-0000-4000-8000-000000000002",
+                  "access_level_id": "premium",
+                  "product_type": "monthly",
+                  "promotional_offer_eligibility": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "in_app": {
+      "meta": {
+        "placement": {
+          "developer_id": "in_app",
+          "audience_name": "All Users",
+          "placement_audience_version_id": "7a3b1c6d-2e5f-4b2c-8d9e-3f6a8b0c1d22",
+          "revision": 1,
+          "ab_test_name": "",
+          "is_tracking_purchases": true
+        }
+      },
+      "data": [
+        {
+          "variation_id": "6f708192-a3b4-4c5d-e5f6-071829304152",
+          "weight": 100,
+          "cross_placement_info": null,
+          "flow_id": "5e6f7081-92a3-4b4c-d4e5-f60718293041",
+          "flow_name": "In-app",
+          "flow_version_id": "708192a3-b4c5-4d6e-f607-182930415263",
+          "remote_configs": [
+            {
+              "lang": "en",
+              "data": "{\"title\":\"Choose your plan\",\"body\":\"Build a healthier relationship with your phone.\",\"recommendedProductId\":\"com.johansardar.excerlock.premium.a.annual\"}"
+            }
+          ],
+          "variations": [
+            {
+              "paywall_id": "8192a3b4-c5d6-4e7f-0718-293041526374",
+              "paywall_name": "Premium A",
+              "variation_id": "92a3b4c5-d6e7-4f80-1829-304152637485",
+              "revision": 1,
+              "weight": 100,
+              "custom_payload": null,
+              "products": [
+                {
+                  "vendor_product_id": "com.johansardar.excerlock.premium.a.annual",
+                  "adapty_product_id": "00000000-0000-4000-8000-000000000001",
+                  "access_level_id": "premium",
+                  "product_type": "annual",
+                  "promotional_offer_eligibility": true
+                },
+                {
+                  "vendor_product_id": "com.johansardar.excerlock.premium.a.monthly",
+                  "adapty_product_id": "00000000-0000-4000-8000-000000000002",
+                  "access_level_id": "premium",
+                  "product_type": "monthly",
+                  "promotional_offer_eligibility": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "winback": {
+      "meta": {
+        "placement": {
+          "developer_id": "winback",
+          "audience_name": "All Users",
+          "placement_audience_version_id": "8b4c2d7e-3f60-4c3d-9e0f-4a7b9c1d2e33",
+          "revision": 1,
+          "ab_test_name": "",
+          "is_tracking_purchases": true
+        }
+      },
+      "data": [
+        {
+          "variation_id": "b4c5d6e7-f809-4a12-3041-526374859607",
+          "weight": 100,
+          "cross_placement_info": null,
+          "flow_id": "a3b4c5d6-e7f8-4901-2930-415263748596",
+          "flow_name": "Win-back",
+          "flow_version_id": "c5d6e7f8-091a-4b23-4152-637485960718",
+          "remote_configs": [
+            {
+              "lang": "en",
+              "data": "{\"title\":\"Keep your access\",\"body\":\"Your trial has ended. Choose a plan to keep going.\",\"recommendedProductId\":\"com.johansardar.excerlock.premium.a.winback.annual\"}"
+            }
+          ],
+          "variations": [
+            {
+              "paywall_id": "d6e7f809-1a2b-4c34-5263-748596071829",
+              "paywall_name": "Win-back A",
+              "variation_id": "e7f8091a-2b3c-4d45-6374-85960718293a",
+              "revision": 1,
+              "weight": 100,
+              "custom_payload": null,
+              "products": [
+                {
+                  "vendor_product_id": "com.johansardar.excerlock.premium.a.winback.annual",
+                  "adapty_product_id": "00000000-0000-4000-8000-000000000003",
+                  "access_level_id": "premium",
+                  "product_type": "annual",
+                  "promotional_offer_eligibility": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

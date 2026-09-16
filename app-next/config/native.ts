@@ -106,7 +106,10 @@ export const nativePlugins: ExpoPlugin[] = [
     },
   ],
   "expo-font",
-  "react-native-adapty",
+  // The config plugin registers the bundled Adapty fallback JSON as an iOS
+  // bundle resource; the adapter names the same basename in `setFallback`
+  // before the first placement load. See src/runtime/subscription/fallbackPaywall.ts.
+  ["react-native-adapty", { fallbackFile: { ios: "./assets/adapty-fallback.json" } }],
   ["expo-build-properties", { ios: { deploymentTarget: NATIVE_DEPLOYMENT_TARGET } }],
   ["@sentry/react-native/expo", { organization: "edge-ix", project: "excerlock-mobile" }],
 ];
