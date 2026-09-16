@@ -115,8 +115,11 @@ public final class ExcerlockEnforcementModule: Module {
       && selection?.webDomains.count == 0
     let screenTimeAuthorized = AuthorizationCenter.shared.authorizationStatus == .approved
     let motionAuthorized = CMMotionActivityManager.authorizationStatus() == .authorized
-    let motionAvailable = CMMotionActivityManager.isActivityAvailable() &&
-      CMPedometer.isCadenceAvailable() && CMPedometer.isStepCountingAvailable()
+    // Preflight must not require cadence: some devices authorize Motion but
+    // report cadence unavailable, which greys out Start after the user already
+    // allowed Motion & Fitness. Step counting + activity is enough to run.
+    let motionHardwareReady = CMMotionActivityManager.isActivityAvailable() &&
+      CMPedometer.isStepCountingAvailable()
     let bundleIdentifier = Bundle.main.bundleIdentifier ?? ""
     let labContainerAvailable = FileManager.default.containerURL(
       forSecurityApplicationGroupIdentifier: linkedTraceAppGroup
@@ -127,7 +130,7 @@ public final class ExcerlockEnforcementModule: Module {
     return [
       "labStorageIsolated": labStorageIsolated,
       "screenTimeAuthorized": screenTimeAuthorized,
-      "motionReady": motionAuthorized && motionAvailable,
+      "motionReady": motionAuthorized && motionHardwareReady,
       "canarySelectionValid": canarySelectionValid,
       "canaryApplicationCount": selection?.applications.count ?? 0,
       "canaryCategoryCount": selection?.categories.count ?? 0,
