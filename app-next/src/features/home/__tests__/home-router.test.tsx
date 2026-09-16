@@ -37,7 +37,7 @@ test('entitled boot opens Home, tabs navigate and selected apps open the shared 
   expect(screen.getByRole('header', { name: 'Conditions' })).toBeTruthy();
   expect(screen.getByText('Walk 5,000 steps')).toBeTruthy();
   expect(screen.getByLabelText('Locked')).toBeTruthy();
-  expect(screen.getByRole('header', { name: 'Apps blocked until you complete exercise' })).toBeTruthy();
+  expect(screen.getByRole('header', { name: /APPS BLOCKED UNTIL/ })).toBeTruthy();
   expect(screen.getByText(/Mon.*9.AM.*9.PM/)).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Edit / Add' })).toBeNull();
   expect(screen.queryByRole('button', { name: 'Choose apps' })).toBeNull();
@@ -64,7 +64,7 @@ test('unsupported schedule replaces normal lock claims with a reachable repair a
   const rendered = await r;
   expect(screen.getByText('Your schedule needs attention')).toBeTruthy();
   expect(screen.queryByLabelText('Locked')).toBeNull();
-  expect(screen.queryByRole('header', { name: 'Apps blocked until you complete exercise' })).toBeNull();
+  expect(screen.queryByRole('header', { name: /APPS BLOCKED UNTIL/ })).toBeNull();
   await userEvent.press(screen.getByRole('button', { name: 'Review conditions' }));
   expect(r.getPathname()).toBe('/conditions');
   await rendered.unmount();

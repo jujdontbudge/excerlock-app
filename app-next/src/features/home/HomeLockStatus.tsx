@@ -17,7 +17,7 @@ export function HomeLockStatus({ unlocked }: { unlocked: boolean }) {
         accessibilityRole="image"
         accessibilityLabel={unlocked ? 'Unlocked' : 'Locked'}
         onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
-        style={{ width: '68.25%', alignSelf: 'center', paddingTop: unlocked ? 8 : 0 }}>
+        style={{ width: '58%', alignSelf: 'center', paddingTop: unlocked ? 8 : 0 }}>
         <View style={unlocked ? { transform: [{ translateX: 12 }, { rotate: '-18deg' }], marginBottom: 6 } : undefined}>
           <LockShackle bodyWidth={width} />
         </View>
@@ -31,17 +31,11 @@ export function HomeLockStatus({ unlocked }: { unlocked: boolean }) {
           </View>
         </LinearGradient>
       </View>
-      {/* Deliberate: Johan asked for the "EXER" in EXERCISE to carry the brand orange. */}
       <Label
-        variant="question"
+        variant="section"
         accessibilityRole="header"
-        accessibilityLabel={c.lockCaptionLabel}
         style={{ textAlign: 'center', paddingHorizontal: t.space.lg }}>
-        {c.lockCaption.before}
-        <Label variant="question" style={{ color: t.brand.primary }}>
-          {c.lockCaption.accent}
-        </Label>
-        {c.lockCaption.after}
+        {c.lockCaption}
       </Label>
     </View>
   );
