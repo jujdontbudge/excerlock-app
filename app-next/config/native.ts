@@ -136,6 +136,11 @@ export const nativeConfig: {
     },
     infoPlist: {
       UIBackgroundModes: ["location", "fetch"],
+      // Export compliance: every network path is HTTPS/TLS terminated by the OS
+      // and the app adds no custom crypto, so it qualifies for the exempt
+      // declaration. Declaring it up front stops App Store Connect from
+      // flagging the build with MISSING_EXPORT_COMPLIANCE.
+      ITSAppUsesNonExemptEncryption: false,
       // Single-place strings with no owning plugin (never duplicate a
       // plugin-owned NS*UsageDescription here). No NSUserTrackingUsageDescription:
       // v1 shows no ATT prompt and declares NSPrivacyTracking=false.

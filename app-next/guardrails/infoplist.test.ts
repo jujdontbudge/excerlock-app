@@ -28,9 +28,15 @@ describe("T01 Info.plist guardrail (generated ios/, not config source)", () => {
       "NSPhotoLibraryUsageDescription",
       "UIBackgroundModes",
       "CFBundleLocalizations",
+      "ITSAppUsesNonExemptEncryption",
     ]) {
       expect(count(key), `${key} must appear exactly once`).toBe(1);
     }
+    // Export compliance is declared, not left to App Store Connect: the app
+    // ships no non-exempt encryption, so the generated key must be false.
+    expect(text).toMatch(
+      /<key>ITSAppUsesNonExemptEncryption<\/key>\s*<false\/>/,
+    );
     // No NSUserTrackingUsageDescription: v1 shows no ATT prompt
     // (NSPrivacyTracking=false). No CFBundleAlternateIcons: v1 bundles no
     // alternate icon assets, so any declaration would be phantom.
