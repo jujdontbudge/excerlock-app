@@ -1,4 +1,4 @@
-import { userEvent } from '@testing-library/react-native';
+import { userEvent, fireEvent } from '@testing-library/react-native';
 import { Slot } from 'expo-router';
 import { renderRouter, screen } from 'expo-router/testing-library';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
@@ -13,8 +13,8 @@ const routes = {
   'onboarding/[step]': OnboardingRoute,
 };
 test.each([
-  ['Unlock while walking', 'S1'],
-  ['Reach a step goal (Recommended)', 'W3'],
+  ['Unlock while walking (Recommended)', 'S1'],
+  ['Reach a step goal', 'W3'],
 ])('%s follows the correct branch', async (label, next) => {
   onboardingStore.getState().reset();
   onboardingStore.getState().patch({ step: 'W1', answers: { activity: 'walking' } });
@@ -25,9 +25,9 @@ test.each([
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   expect(route.getPathname()).toBe('/onboarding/' + next);
   if (next === 'W3') {
-    await userEvent.press(screen.getByRole('button', { name: 'Add 500 steps' }));
+    fireEvent(screen.getByRole('adjustable'), 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
     await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(route.getPathname()).toBe('/onboarding/S1');
-    expect(onboardingStore.getState().data.answers.stepGoal).toBe('5500');
+    expect(onboardingStore.getState().data.answers.stepGoal).toBe('10500');
   }
 });

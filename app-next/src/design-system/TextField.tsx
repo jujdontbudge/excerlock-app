@@ -9,13 +9,24 @@ export function TextField({
   error,
   hideLabel = false,
   labelTone = 'secondary',
+  centered = false,
   ...props
-}: TextInputProps & { label: string; error?: string; hideLabel?: boolean; labelTone?: 'primary' | 'secondary' }) {
+}: TextInputProps & {
+  label: string;
+  error?: string;
+  hideLabel?: boolean;
+  labelTone?: 'primary' | 'secondary';
+  /** Centred caption, value and error for a field that is the screen's hero number. */
+  centered?: boolean;
+}) {
   const [focused, setFocused] = useState(false);
   return (
     <View style={{ gap: t.space.md }}>
       {!hideLabel ? (
-        <Label variant="support" tone={labelTone}>
+        <Label
+          variant={centered ? 'label' : 'support'}
+          tone={centered ? 'primary' : labelTone}
+          style={centered ? { textAlign: 'center' } : undefined}>
           {label}
         </Label>
       ) : null}
@@ -52,13 +63,17 @@ export function TextField({
               paddingHorizontal: t.space.lg,
               paddingVertical: t.space.lg,
             },
+            centered && { textAlign: 'center' },
             props.style,
           ]}
         />
       </Animated.View>
       {error ? (
         <Reveal>
-          <Label accessibilityRole="alert" variant="support" style={{ color: t.state.error }}>
+          <Label
+            accessibilityRole="alert"
+            variant="support"
+            style={{ color: t.state.error, textAlign: centered ? 'center' : undefined }}>
             {error}
           </Label>
         </Reveal>

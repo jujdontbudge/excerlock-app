@@ -42,15 +42,14 @@ export function conditionSentence(
 /** On the goal question itself the wheel already stands on a value, so it is no longer a blank. */
 function conditionClause(a: Answers, d: RuleDraft, goalChosen: boolean): string | null {
   const known = (value: unknown) => goalChosen || answered(value);
+  // Before the mode question the draft default stands in, so the card is on every step of the flow.
   if (d.activity === 'walking') {
-    if (a.walkingMode === undefined) return null;
     if (d.walkingMode === 'state') return c.unless(c.walking);
     if (d.walkingMode === 'minutes')
       return c.until(c.walkMinutes(known(a.walkMinutes) ? number(d.walkMinutes) : c.blank));
     return c.until(c.steps(known(a.stepGoal) ? number(d.stepGoal) : c.blank));
   }
   if (d.activity === 'gym') {
-    if (a.gymMode === undefined) return null;
     if (d.gymMode === 'arrival') return c.until(c.gymArrival);
     return c.until(c.spendAt(known(a.gymMinutes) ? c.minutes(number(d.gymMinutes)) : c.blank, c.gym));
   }

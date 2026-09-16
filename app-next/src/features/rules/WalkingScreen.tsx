@@ -1,5 +1,5 @@
 import { View } from 'react-native';
-import { Heading, ChoiceRow, NumberField, SecondaryButton } from '../../design-system';
+import { Heading, ChoiceRow, NumberField } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { walkingCopy as c } from '../../content/rules';
 import { LivingIcon } from '../../motion/LivingIcon';
@@ -45,25 +45,31 @@ export function WalkingScreen({
         </>
       ) : null}
       {step === 'W1'
-        ? c.places.map((p, index) => (
-            <Reveal key={p.id} index={index + 1}>
-              <ChoiceRow
-                title={p.title}
-                multiple
-                selected={walkPlaces.includes(p.id as 'outside' | 'treadmill')}
-                compact
-                onPress={() => {
-                  const place = p.id as 'outside' | 'treadmill';
-                  const next = walkPlaces.includes(place)
-                    ? walkPlaces.filter((value) => value !== place)
-                    : [...walkPlaces, place];
-                  if (next.length === 0) return;
-                  useProfileStore.getState().patch({ walkPlaces: next });
-                  runtime?.analytics.track('walk_places_updated', { walk_places: next });
-                }}
-              />
-            </Reveal>
-          ))
+        ? c.places.map((p, index) => {
+            const both = p.id === 'both';
+            const selected = both
+              ? walkPlaces.includes('outside') && walkPlaces.includes('treadmill')
+              : walkPlaces.includes(p.id as 'outside' | 'treadmill');
+            return (
+              <Reveal key={p.id} index={index + 1}>
+                <ChoiceRow
+                  title={p.title}
+                  multiple
+                  selected={selected}
+                  compact
+                  onPress={() => {
+                    // "Both" is the pair; picking a single place narrows back to it.
+                    const next: ('outside' | 'treadmill')[] = both
+                      ? ['outside', 'treadmill']
+                      : [p.id as 'outside' | 'treadmill'];
+                    if (next.length === 0) return;
+                    useProfileStore.getState().patch({ walkPlaces: next });
+                    runtime?.analytics.track('walk_places_updated', { walk_places: next });
+                  }}
+                />
+              </Reveal>
+            );
+          })
         : null}
       {step === 'W2'
         ? c.modes.map((m, index) => (
@@ -81,6 +87,7 @@ export function WalkingScreen({
       {step === 'W3' ? (
         <Reveal index={1} style={{ gap: t.space.lg }}>
           <NumberField
+            centered
             label={minutes ? c.minutesGoal : c.goal}
             step={minutes ? 5 : STEP_GOAL_INCREMENT}
             min={minutes ? 5 : REVIEW_STEP_GOAL}
@@ -95,27 +102,6 @@ export function WalkingScreen({
             }}
             error={valid ? undefined : minutes ? c.minutesRange : c.range}
           />
-          <View style={{ flexDirection: 'row', gap: t.space.md }}>
-            <View style={{ flex: 1 }}>
-              <SecondaryButton
-                label={minutes ? c.removeMinutesCompact : c.removeCompact}
-                accessibilityLabel={minutes ? c.removeMinutes : c.remove}
-                disabled={!valid || (minutes ? value <= 5 : value === REVIEW_STEP_GOAL || value <= MIN_STANDARD_STEP_GOAL)}
-                onPress={() => change(value - (minutes ? 5 : STEP_GOAL_INCREMENT))}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <SecondaryButton
-                label={minutes ? c.addMinutesCompact : c.addCompact}
-                accessibilityLabel={minutes ? c.addMinutes : c.add}
-                disabled={!valid || value >= (minutes ? 180 : MAX_STEP_GOAL)}
-                onPress={() => change(minutes ? value + 5 : value === REVIEW_STEP_GOAL
-                  ? MIN_STANDARD_STEP_GOAL
-                  : value + STEP_GOAL_INCREMENT)}
-              />
-            </View>
-          </View>
-
         </Reveal>
       ) : null}
     </>

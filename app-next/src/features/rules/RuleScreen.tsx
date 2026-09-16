@@ -34,7 +34,7 @@ export function RuleScreen({
     <>
       <View style={{ gap: t.space.md }}>
         <Reveal key={copy.title}>
-          <Heading title={copy.title} />
+          <Heading title={copy.title} centered={step === 'W3'} />
         </Reveal>
         <Reveal key={step} style={{ gap: t.space.md }}>
           {body}

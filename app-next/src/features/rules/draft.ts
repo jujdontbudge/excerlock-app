@@ -27,7 +27,7 @@ export function createDraft(activity: Activity, now = new Date().toISOString()):
     updatedAt: now,
     enabled: true,
     walkingMode: 'steps',
-    stepGoal: 5000,
+    stepGoal: 10000,
     walkMinutes: 20,
     gymMode: 'time',
     gymMinutes: 30,

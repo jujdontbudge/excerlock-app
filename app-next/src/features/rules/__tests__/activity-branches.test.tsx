@@ -46,7 +46,7 @@ test.each(gymPaths)(
 );
 const walkingPaths = [
   ['W1', 'Outside', 'How should walking unlock your apps?'],
-  ['W2', 'Reach a step goal (Recommended)', 'Set your walking goal'],
+  ['W2', 'Reach a step goal', 'Set your walking goal'],
 ] as const;
 test.each(walkingPaths)(
   'walking through %s / %s reaches the correct goal and a valid rule',

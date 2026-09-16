@@ -20,6 +20,7 @@ export function NumberField({
   max,
   labelTone = 'secondary',
   adjustValue,
+  centered = false,
 }: {
   label: string;
   value: string;
@@ -33,13 +34,21 @@ export function NumberField({
   max?: number;
   labelTone?: 'primary' | 'secondary';
   adjustValue?: (current: number, direction: 'increment' | 'decrement') => number;
+  /** Field and unit share one centred column, for a screen whose number is the hero. */
+  centered?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <View style={{ gap: t.space.lg }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
-        <View style={{ flex: 1 }}>
+      <View
+        style={
+          centered
+            ? { alignItems: 'center', gap: t.space.md }
+            : { flexDirection: 'row', alignItems: 'center', gap: t.space.md }
+        }>
+        <View style={centered ? { width: '100%', maxWidth: t.layout.fieldMax } : { flex: 1 }}>
           <TextField
+            centered={centered}
             label={label}
             labelTone={labelTone}
             accessibilityRole="adjustable"

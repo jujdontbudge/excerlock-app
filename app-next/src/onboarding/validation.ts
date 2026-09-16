@@ -19,7 +19,7 @@ export function canContinue(step: string, answers: Answers): boolean {
   if (step === 'S1') return scheduleIssues(scheduleDraft(answers)).length === 0;
   if (step === 'W3') {
     const minutes = answers.walkingMode === 'minutes';
-    const n = Number(minutes ? answers.walkMinutes ?? 20 : answers.stepGoal ?? 5000);
+    const n = Number(minutes ? answers.walkMinutes ?? 20 : answers.stepGoal ?? 10000);
     return minutes ? Number.isInteger(n) && n >= 5 && n <= 180 : isValidStepGoal(n);
   }
   if (step === 'G2') {

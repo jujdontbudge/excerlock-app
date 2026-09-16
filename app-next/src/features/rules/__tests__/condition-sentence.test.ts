@@ -4,9 +4,9 @@ import { Answers } from '../../../onboarding/types';
 import { toSchedule, scheduleDraft } from '../scheduleDraft';
 const say = (answers: Answers, schedule?: ReturnType<typeof toSchedule>) =>
   conditionSentence(answers, draftFromAnswers(answers), { schedule, goalChosen: false });
-test('the sentence stays silent until the first dependency is chosen', () => {
-  expect(say({ activity: 'gym' })).toBeNull();
-  expect(say({ activity: 'walking' })).toBeNull();
+test('the sentence reads from the draft default before the first dependency is chosen', () => {
+  expect(say({ activity: 'gym' })).toBe('Your apps are blocked until you spend _____ at the gym');
+  expect(say({ activity: 'walking' })).toBe('Your apps are blocked until you walk _____ steps');
 });
 test('a duration condition blanks the amount until the goal question is answered', () => {
   expect(say({ activity: 'gym', gymMode: 'time' })).toBe('Your apps are blocked until you spend _____ at the gym');

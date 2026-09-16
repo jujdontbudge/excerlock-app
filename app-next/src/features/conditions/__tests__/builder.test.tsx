@@ -46,8 +46,8 @@ async function mount(id?: string) {
   return runtime;
 }
 test.each([
-  ['Walking', 'Reach a step goal (Recommended)', 2],
-  ['Walking', 'Unlock while walking', 0],
+  ['Walking', 'Reach a step goal', 2],
+  ['Walking', 'Unlock while walking (Recommended)', 0],
   ['Gym', 'Spend time at the gym', 1],
   ['Gym', 'Arrive at the gym', 0],
 ])('creates valid %s / %s without onboarding', async (activity, mode, extra) => {
@@ -114,7 +114,7 @@ test('two mounted builders own independent draft transactions', async () => {
       <ConditionBuilder id="second" onClose={leave} />
     </AppRuntimeProvider>,
   );
-  expect(screen.getByText('Walk 5,000 steps')).toBeTruthy();
+  expect(screen.getByText('Walk 10,000 steps')).toBeTruthy();
   expect(screen.getByText('Spend 30 minutes at the gym')).toBeTruthy();
 });
 
@@ -132,7 +132,7 @@ test('builder keeps the summary open and explains an unsupported full schedule',
   await userEvent.press(screen.getByRole('radio', { name: 'Walking' }));
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
-  await userEvent.press(screen.getByRole('radio', { name: 'Reach a step goal (Recommended)' }));
+  await userEvent.press(screen.getByRole('radio', { name: 'Reach a step goal' }));
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));

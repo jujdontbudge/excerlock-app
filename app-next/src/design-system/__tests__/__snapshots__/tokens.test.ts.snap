@@ -41,6 +41,7 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
     "disc": 36,
     "dot": 8,
     "field": 56,
+    "fieldMax": 220,
     "glyph": 24,
     "grabber": 40,
     "heroHeight": 200,

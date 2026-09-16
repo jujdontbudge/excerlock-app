@@ -81,6 +81,7 @@ export const tokens = {
     disc: 36,
     button: 54,
     field: 56,
+    fieldMax: 220,
     row: 68,
     glyph: 24,
     icon: 48,

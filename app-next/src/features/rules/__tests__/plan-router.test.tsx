@@ -30,7 +30,8 @@ test.each([
   await route;
   await userEvent.press(screen.getByRole('button', { name: label }));
   expect(route.getPathname()).toBe('/onboarding/' + step);
-  if (step === 'W3') await userEvent.press(screen.getByRole('button', { name: 'Add 500 steps' }));
+  if (step === 'W3')
+    fireEvent(screen.getByRole('adjustable'), 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   expect(route.getPathname()).toBe('/onboarding/S3');
   expect(onboardingStore.getState().data.answers.name).toBe('Alex');
