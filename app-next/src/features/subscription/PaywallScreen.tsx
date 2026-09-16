@@ -40,6 +40,11 @@ export function PaywallScreen({
       const next = await runtime.subscription.loadPaywall(placement);
       setPaywall(next);
       setSelected(next.products[0]!.handle);
+      runtime.analytics.track('paywall_viewed', {
+        placement,
+        has_trial: next.products.some((item) => item.offerLabel !== null),
+        variation_id: next.flowVariationId || undefined,
+      });
     } catch (error) {
       reportError(error, 'load');
       setMessage("Plans couldn't load. Please retry.");
@@ -58,6 +63,7 @@ export function PaywallScreen({
   }, [paywall, runtime]);
   const purchase = async () => {
     if (!selected || busy) return;
+    if (product) runtime.analytics.track('purchase_started', { placement, plan_id: product.vendorProductId });
     setBusy('purchase');
     setMessage('');
     try {

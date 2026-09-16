@@ -7,12 +7,14 @@ import { tokens as t } from '../../design-system/tokens';
 import { FakePromptHost } from '../permissions/FakePromptHost';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { useRuntimeStatus } from '../../state/selectors';
+import { useScreenTracking } from '../../runtime/analytics/useScreenTracking';
 import { linkedTrace } from '@linked-trace';
 export function RootNavigator() {
   const motion = useMotion();
   const pathname = usePathname();
   const router = useRouter();
   const runtime = useRuntime();
+  useScreenTracking();
   const loading = useRuntimeStatus().loading;
   const status = useEntitlementStore((s) => s.data.entitlement.status),
     onboarding = useOnboardingStore((s) => s.data),

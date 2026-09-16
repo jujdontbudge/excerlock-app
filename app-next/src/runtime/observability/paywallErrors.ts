@@ -1,7 +1,9 @@
+import type { PaywallOperation } from '@excerlock/analytics-events';
 import type { Runtime } from '../Runtime';
 import { reportRuntimeError } from '../productionRuntime';
 
-export type PaywallErrorOperation = 'load' | 'purchase' | 'restore';
+/** The registry owns this vocabulary (`paywall_error.operation`); keep the app name as an alias. */
+export type PaywallErrorOperation = PaywallOperation;
 
 /**
  * B2: paywall failures must never be silent. Sentry owns the stack; one client

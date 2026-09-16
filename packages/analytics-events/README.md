@@ -9,7 +9,7 @@ The typed PostHog event registry — the single source of truth for **every even
 is allowed to emit**, its properties type, and its **owner** (`client | server | adapty`). Pure
 TypeScript data and types: no React, no React Native, no I/O, no PostHog SDK.
 
-**Contract.** The app's client emitter (`app/src/analytics`) and the server emitter
+**Contract.** The app's client emitter (`app-next/src/runtime/analytics`) and the server emitter
 (`server/src/analytics.ts`) both import from here, so an untyped or unregistered `capture()` does
 not compile. The fs-walking single-emitter guardrail test (ARCHITECTURE §5 #6) walks `EVENTS` /
 `eventsOwnedBy()` against the codebase's capture call sites and fails CI when an event is emitted
@@ -59,8 +59,12 @@ requires a migration note here.
 | `shield_screen_opened` | — |
 | `walk_session_started` | — |
 | `walk_session_ended` | — |
-| `paywall_viewed` | `placement`, `has_trial` |
+| `paywall_viewed` | `placement`, `has_trial`, `variation_id` |
 | `purchase_started` | `placement`, `plan_id` |
+| `purchase_failed` | `reason_class` |
+| `paywall_error` | `operation` |
+| `restore_started` / `restore_succeeded` | — |
+| `restore_failed` | `reason_class` |
 | `milestone_unlocked` | — |
 | `share_card_shared` | `card`, `format` |
 | `notification_toggled` | `type`, `is_enabled` |
@@ -68,6 +72,16 @@ requires a migration note here.
 | `rating_prompt_shown` | `source` |
 | `diagnostics_shared` | — |
 | `data_export_requested` | — |
+| `permission_resolved` | `permission`, `outcome` |
+| `unlock_completed` | `method` |
+| `review_preset_selected` | `preset` |
+| `walk_places_updated` | `walk_places` |
+| `gym_presence_auto_started` / `gym_presence_auto_confirmed` / `gym_presence_ended` | — |
+| `gym_unlock_checked` / `gym_unlock_tapped` / `gym_unlock_confirmed` / `gym_unlock_lost` | `preview` (distance stays on-device, D12) |
+| `unlock_screen_opened` / `unlock_ceremony_done` | `kind`, `preview` |
+| `treadmill_scan_started` | `preview` |
+| `treadmill_scan_verified` | `ms`, `preview` |
+| `treadmill_scan_failed` | `reason` |
 
 Plus `$screen` via the `trackScreen()` wrapper — PostHog-reserved, deliberately not in the registry.
 

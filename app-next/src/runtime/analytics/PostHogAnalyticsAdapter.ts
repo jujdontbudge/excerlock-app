@@ -1,3 +1,4 @@
+import { eventsOwnedBy } from '@excerlock/analytics-events';
 import type { AnalyticsPort } from '../../ports/AnalyticsPort';
 
 export type CanonicalIdentity = { userId: string | null; generation: number; ready: boolean };
@@ -30,15 +31,26 @@ export const POSTHOG_OPTIONS = {
   personProfiles: 'identified_only',
 } as const;
 const forbidden = /email|address|latitude|longitude|receipt|token|user_?id|message|error|url/i;
+// Bounded ids/enums only: no whitespace, no `@`, never longer than 64 chars. Dots are
+// allowed because Adapty product ids are dotted (`a.annual`, `annual.3999.t7`).
+const forbiddenValue = /^[a-z0-9._-]{1,64}$/i;
 export function scrubAnalyticsProps(props: Record<string, unknown> = {}): Record<string, string | number | boolean> {
   const clean: Record<string, string | number | boolean> = {};
   for (const [key, value] of Object.entries(props)) {
     if (forbidden.test(key)) continue;
     if (typeof value === 'boolean' || typeof value === 'number') clean[key] = value;
-    else if (typeof value === 'string' && /^[a-z0-9_-]{1,64}$/i.test(value)) clean[key] = value;
+    else if (typeof value === 'string' && forbiddenValue.test(value)) clean[key] = value;
   }
   return clean;
 }
+/**
+ * The one runtime allowlist for `track()`: exactly the registry's client-owned
+ * event names. Adapty owns every subscription/trial lifecycle name, so those
+ * stay blocked here even though the client emits the funnel's intent half
+ * (`paywall_viewed`, `purchase_started`, `purchase_failed`, `restore_*`).
+ */
+export const CLIENT_EVENT_ALLOWLIST: ReadonlySet<string> = new Set(eventsOwnedBy('client'));
+
 export function createPostHogAnalyticsAdapter(options: {
   client: PostHogClientBoundary; getIdentity: () => CanonicalIdentity;
   analyticsEnabled: () => boolean; getContext: () => AnalyticsContext;
@@ -73,6 +85,7 @@ export function createPostHogAnalyticsAdapter(options: {
     (started, properties) => emit(started, () => client.capture('$feature_flag_called', properties)),
   );
   let consentEpoch = 0;
+  let shownScreen: string | null = null;
   return {
     async setEnabled(enabled) {
       const epoch = ++consentEpoch;
@@ -107,7 +120,7 @@ export function createPostHogAnalyticsAdapter(options: {
     },
     track(event, props) {
       const started = origin();
-      if (!allowed(started) || /^(purchase_|trial_|subscription_)/.test(event)) return;
+      if (!allowed(started) || !CLIENT_EVENT_ALLOWLIST.has(event)) return;
       const walkPlaces = event === 'walk_places_updated' ? normalizeWalkPlaces(props?.walk_places) : null;
       if (event === 'walk_places_updated' && walkPlaces === null) return;
       void emit(started!, async () => {
@@ -118,8 +131,16 @@ export function createPostHogAnalyticsAdapter(options: {
     screen(name) {
       const started = origin();
       if (!allowed(started)) return;
-      const route = semanticScreenName(name); if (!route) return;
-      void emit(started!, () => client.screen(route));
+      const spec = semanticScreenName(name);
+      if (!spec) return;
+      // One navigation can report the same screen twice: the root pathname
+      // subscriber fires for every route, and the four step-level callers fire
+      // for their own screen. Deduplicate on the semantic result so a single
+      // navigation emits `$screen` once.
+      const key = JSON.stringify([spec.name, spec.props ?? null]);
+      if (key === shownScreen) return;
+      shownScreen = key;
+      void emit(started!, () => client.screen(spec.name, spec.props));
     },
     setWalkPlaces(value) {
       const started = origin(); if (!allowed(started)) return;
@@ -127,7 +148,7 @@ export function createPostHogAnalyticsAdapter(options: {
       // reload so an already-mounted surface cannot change underneath the user.
       void emit(started!, () => client.setPersonProperties({ walk_places: value }, false));
     },
-    async reset() { committed = null; flags.invalidate(); await client.optOut(); await client.clearPendingQueues(); client.reset(); await client.ready(); await register(); if (options.analyticsEnabled()) await client.optIn(); },
+    async reset() { committed = null; shownScreen = null; flags.invalidate(); await client.optOut(); await client.clearPendingQueues(); client.reset(); await client.ready(); await register(); if (options.analyticsEnabled()) await client.optIn(); },
     async discardPending() { committed = null; flags.invalidate(); await client.optOut(); await client.clearPendingQueues(); },
     flags,
   };
@@ -275,5 +296,73 @@ export function createReviewPresetPort(flags: PostHogFlagsController) {
   };
 }
 
-const routes: Record<string, string> = { '/home': 'home', '/conditions': 'conditions', '/analytics': 'analytics', '/settings': 'settings', '/setup': 'setup', '/paywall': 'paywall', '/sign-in': 'sign_in' };
-export function semanticScreenName(path: string): string | null { const clean = path.split('?')[0].split('#')[0].replace(/\/$/, '') || '/'; return routes[clean] ?? null; }
+/** A resolved `$screen`: the semantic route name plus its bounded qualifiers. */
+export type SemanticScreen = { name: string; props?: Record<string, string | number | boolean> };
+
+/** Bare ids the two step-level callers pass instead of a route path (HomeScreen, PaywallSlot). */
+const callerScreens: Record<string, string> = { Home: 'home', P: 'paywall' };
+
+/** Onboarding step ids (`O01…O20`, then the S/T/W/G branches) from `src/onboarding/flow.ts`. */
+const onboardingStepPattern = /^(?:O\d{2}|[STWG]\d)$/;
+/** Setup step ids `X1…X5` from `src/onboarding/setupFlow.ts`. */
+const setupStepPattern = /^X\d$/;
+
+/** Static production routes, keyed by exactly what `usePathname()` returns. */
+const routes: Record<string, string> = {
+  '/home': 'home',
+  '/conditions': 'conditions',
+  '/analytics': 'analytics',
+  '/settings': 'settings',
+  '/settings/account': 'settings_account',
+  '/settings/subscription': 'settings_subscription',
+  '/settings/preferences': 'settings_preferences',
+  '/settings/units': 'settings_units',
+  '/settings/gyms': 'settings_gyms',
+  '/settings/bug': 'settings_bug',
+  '/settings/feedback': 'settings_feedback',
+  '/settings/legal': 'settings_legal',
+  '/builder': 'builder',
+  '/gym-picker': 'gym_picker',
+  '/unlock/gym': 'unlock_gym',
+  '/unlock/treadmill': 'unlock_treadmill',
+  '/paywall': 'paywall',
+  '/sign-in': 'sign_in',
+};
+
+/**
+ * Dynamic routes. Each entry validates the `[param]` value against the app's
+ * own bounded vocabulary and carries it as a prop, so a junk deep link never
+ * reaches PostHog (D12). `screenCoverage.test.ts` walks `app/` and fails when a
+ * production route has no mapping here.
+ */
+const dynamicRoutes: readonly { prefix: string; param: string; name: string; test: RegExp }[] = [
+  { prefix: '/onboarding/', param: 'step', name: 'onboarding', test: onboardingStepPattern },
+  { prefix: '/setup/', param: 'step', name: 'setup', test: setupStepPattern },
+  { prefix: '/settings/legal/', param: 'doc', name: 'settings_legal', test: /^(?:terms|privacy)$/ },
+  { prefix: '/settings/permission/', param: 'permission', name: 'settings_permission', test: /^(?:screenTime|motion|location|camera|notifications)$/ },
+];
+
+/**
+ * Maps a route path from `usePathname()` — or a bare step id from the four
+ * step-level callers — to the semantic `$screen` result. Unmapped input (the
+ * launch gate, `/dev`, the lab-only recorder, unknown ids) returns null.
+ */
+export function semanticScreenName(path: string): SemanticScreen | null {
+  const clean = path.split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
+  const direct = routes[clean];
+  if (direct) return { name: direct };
+  if (!clean.startsWith('/')) {
+    const caller = callerScreens[clean];
+    if (caller) return { name: caller };
+    for (const [pattern, name] of [[onboardingStepPattern, 'onboarding'], [setupStepPattern, 'setup']] as const) {
+      if (pattern.test(clean)) return { name, props: { step: clean } };
+    }
+    return null;
+  }
+  for (const route of dynamicRoutes) {
+    if (!clean.startsWith(route.prefix)) continue;
+    const value = clean.slice(route.prefix.length);
+    return route.test.test(value) ? { name: route.name, props: { [route.param]: value } } : null;
+  }
+  return null;
+}

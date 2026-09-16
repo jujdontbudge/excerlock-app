@@ -19,10 +19,20 @@ describe('PropsOf', () => {
     expectTypeOf<PropsOf<'paywall_viewed'>>().toEqualTypeOf<{
       placement: 'onboarding' | 'in_app'
       has_trial: boolean
+      variation_id?: string
     }>()
     expectTypeOf<PropsOf<'purchase_started'>>().toEqualTypeOf<{
       placement: 'onboarding' | 'in_app'
       plan_id: string
+    }>()
+    expectTypeOf<PropsOf<'restore_started'>>().toEqualTypeOf<
+      Record<string, never>
+    >()
+    expectTypeOf<PropsOf<'paywall_error'>>().toEqualTypeOf<{
+      operation: 'load' | 'purchase' | 'restore'
+    }>()
+    expectTypeOf<PropsOf<'purchase_failed'>>().toEqualTypeOf<{
+      reason_class: 'cancelled' | 'declined' | 'network' | 'unavailable' | 'unknown'
     }>()
     expectTypeOf<PropsOf<'onboarding_screen_viewed'>>().toEqualTypeOf<{
       screen: FlowScreen

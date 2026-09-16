@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
+    "@excerlock/analytics-events": "0.1.0",
     "@kingstinct/expo-apple-targets": "0.1.19",
     "@kingstinct/react-native-healthkit": "14.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",

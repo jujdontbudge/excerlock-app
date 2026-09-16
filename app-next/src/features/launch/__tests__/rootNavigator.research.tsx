@@ -71,7 +71,7 @@ jest.mock('expo-router', () => {
   return { Stack, Redirect, useRouter: () => ({ push: jest.fn() }), usePathname: () => '/' };
 });
 jest.mock('../../../motion/useMotion', () => ({ useMotion: () => ({ reduced: true }) }));
-jest.mock('../../../runtime/AppRuntimeProvider', () => ({ useRuntime: () => ({ kind: 'real' }) }));
+jest.mock('../../../runtime/AppRuntimeProvider', () => ({ useRuntime: () => ({ kind: 'real', analytics: { screen: jest.fn() } }) }));
 jest.mock('../../../state/selectors', () => ({ useRuntimeStatus: () => ({ loading: false, hydrated: true }) }));
 jest.mock('../../../state/useHydrated', () => ({ useHydrated: () => true }));
 jest.mock('../../../state/entitlementStore', () => ({

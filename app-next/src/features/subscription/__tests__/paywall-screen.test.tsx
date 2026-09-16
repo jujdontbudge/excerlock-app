@@ -98,3 +98,24 @@ test('shows progress while a purchase is pending instead of a frozen call to act
   });
   await waitFor(() => expect(screen.queryByText('Starting your plan…')).toBeNull());
 });
+
+test('emits the client purchase-funnel events for the loaded placement and the CTA', async () => {
+  const runtime = createRuntime();
+  runtime.subscription.loadPaywall = jest.fn(async () => paywall);
+  runtime.subscription.purchase = jest.fn(async () => ({ type: 'user_cancelled' as const }));
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <PaywallScreen placement="onboarding" reportError={jest.fn()} />
+    </AppRuntimeProvider>,
+  );
+
+  await userEvent.press(await screen.findByRole('radio', { name: 'Committed' }));
+  await userEvent.press(screen.getByRole('button', { name: 'Start free trial' }));
+  await waitFor(() => expect(runtime.subscription.purchase).toHaveBeenCalledWith('9:best.annual'));
+
+  const funnel = runtime.dev.snapshot().events.filter((event) => event.event.startsWith('paywall_viewed') || event.event === 'purchase_started');
+  expect(funnel.map((event) => [event.event, event.props])).toEqual([
+    ['paywall_viewed', { placement: 'onboarding', has_trial: true, variation_id: 'variation-b' }],
+    ['purchase_started', { placement: 'onboarding', plan_id: 'best.annual' }],
+  ]);
+});

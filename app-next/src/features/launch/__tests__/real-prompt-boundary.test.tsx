@@ -9,7 +9,7 @@ jest.mock('expo-router', () => {
   return { Stack, useRouter: () => mockRouter, usePathname: () => '/home' };
 });
 jest.mock('../../../motion/useMotion', () => ({ useMotion: () => ({ reduced: true }) }));
-jest.mock('../../../runtime/AppRuntimeProvider', () => ({ useRuntime: () => ({ kind: 'real' }) }));
+jest.mock('../../../runtime/AppRuntimeProvider', () => ({ useRuntime: () => ({ kind: 'real', analytics: { screen: jest.fn() } }) }));
 jest.mock('../../../state/selectors', () => ({ useRuntimeStatus: () => ({ loading: false }) }));
 jest.mock('../../../state/entitlementStore', () => ({ entitlementStore: (selector: (state: unknown) => unknown) => selector({ data: { entitlement: { status: 'active' } } }) }));
 jest.mock('../../../state/onboardingStore', () => ({ onboardingStore: (selector: (state: unknown) => unknown) => selector({ data: { complete: true, setupComplete: true, step: 'P' } }) }));

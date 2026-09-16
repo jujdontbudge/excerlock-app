@@ -33,7 +33,7 @@ export type {
   WalkSessionEndReason,
   WalkSessionSource,
 } from './src/events/shield'
-export type { PaywallPlacement } from './src/events/paywall'
+export type { PaywallOperation, PaywallPlacement, PurchaseFailureClass } from './src/events/paywall'
 export type {
   MilestoneCategory,
   NotificationType,
@@ -43,3 +43,4 @@ export type {
 export type { SupportCategory } from './src/events/support'
 export type { Vendor } from './src/events/vendors'
 export type { AdaptyForwardedProps } from './src/events/subscription'
+export type { TreadmillScanFailure, UnlockKind } from './src/events/runtime'
