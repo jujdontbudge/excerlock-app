@@ -1,15 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
-import {
-  ChoiceRow,
-  CloseButton,
-  Heading,
-  Label,
-  PrimaryButton,
-  ScreenShell,
-  SecondaryButton,
-} from '../../design-system';
+import { ChoiceRow, CloseButton, Heading, Label, PrimaryButton, ScreenShell } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
+import { Icon } from '../../icons/Icon';
+import { Reveal } from '../../motion/Reveal';
+import { welcomeTokens as w } from '../../design-system/welcomeTokens';
 import type { SubscriptionPaywall } from '../../ports/SubscriptionPort';
 import type { PaywallErrorOperation } from '../../runtime/observability/paywallErrors';
 import type { PaywallVariant } from '../../runtime/analytics/PostHogAnalyticsAdapter';
@@ -127,24 +122,57 @@ export function PaywallScreen({
       }
       footer={
         <>
+          {product ? (
+            <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
+              {product.offerLabel ? `${product.offerLabel}, then ` : ''}
+              {product.localizedPrice} / {product.localizedPeriod}. Cancel anytime.
+            </Label>
+          ) : null}
           <PrimaryButton
             label={product?.offerLabel ? 'Start free trial' : 'Continue'}
             loading={busy === 'purchase'}
             disabled={!product || busy === 'restore' || busy === 'load'}
             onPress={() => void purchase()}
           />
-          <SecondaryButton
-            label="Restore purchases"
-            disabled={busy !== null}
-            variant="tertiary"
-            onPress={() => void restore()}
-          />
+          {/* One quiet row of legal links under the button, as every reference paywall does. */}
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: t.space.lg }}>
+            <Label
+              accessibilityRole="button"
+              accessibilityState={{ disabled: busy !== null }}
+              onPress={() => {
+                if (busy === null) void restore();
+              }}
+              style={{ ...w.type.legal, color: t.text.muted }}>
+              Restore purchases
+            </Label>
+            <Label style={{ ...w.type.legal, color: t.text.muted }}>·</Label>
+            <Label
+              accessibilityRole="button"
+              onPress={() => void Linking.openURL(TERMS_URL)}
+              style={{ ...w.type.legal, color: t.text.muted }}>
+              Terms of Use
+            </Label>
+            <Label style={{ ...w.type.legal, color: t.text.muted }}>·</Label>
+            <Label
+              accessibilityRole="button"
+              onPress={() => void Linking.openURL(PRIVACY_URL)}
+              style={{ ...w.type.legal, color: t.text.muted }}>
+              Privacy Policy
+            </Label>
+          </View>
         </>
       }>
-      <Heading
-        title={paywall?.title ?? 'Choose your plan'}
-        support={paywall?.body || 'Build a healthier relationship with your phone.'}
-      />
+      <Heading title={paywall?.title ?? 'Choose your plan'} variant="hero" centered />
+      <View style={{ gap: t.space.md }}>
+        {subscriptionCopy.benefits.map((b, index) => (
+          <Reveal key={b.text} index={index + 1} style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.lg }}>
+            <Icon name={b.icon} size={t.layout.glyph} tint={t.brand.primary} variant="utility" />
+            <Label variant="label" style={{ flex: 1 }}>
+              {b.text}
+            </Label>
+          </Reveal>
+        ))}
+      </View>
       {message || status === 'expired' || status === 'billingIssue' ? (
         <Label accessibilityRole="alert" style={{ color: t.state.error }}>
           {message || (status === 'expired' ? subscriptionCopy.expired : subscriptionCopy.billingIssue)}
@@ -156,6 +184,8 @@ export function PaywallScreen({
         </Label>
       ) : null}
       {!paywall && busy !== 'load' ? <PrimaryButton label="Retry loading plans" onPress={() => void load()} /> : null}
+      {/* Plans sit just above the button; the benefits keep the top. */}
+      <View style={{ flex: 1 }} />
       {paywall?.products.map((item) => (
         <ChoiceRow
           key={item.handle}
@@ -171,14 +201,6 @@ export function PaywallScreen({
           }}
         />
       ))}
-      {product ? (
-        <Label tone="secondary">
-          {product.offerLabel ? `${product.offerLabel}, then ` : ''}
-          {product.localizedPrice} per {product.localizedPeriod}. Subscription renews automatically until canceled.
-        </Label>
-      ) : null}
-      <SecondaryButton label="Terms of Use" variant="tertiary" onPress={() => void Linking.openURL(TERMS_URL)} />
-      <SecondaryButton label="Privacy Policy" variant="tertiary" onPress={() => void Linking.openURL(PRIVACY_URL)} />
     </ScreenShell>
   );
 }
