@@ -611,6 +611,11 @@ struct LinkedTraceWriterHarness {
     let dropSummary = dropRows.first { $0["eventType"] as? String == "trace_drop_summary" }
     precondition(((dropSummary?["payload"] as? [String: Any])?["count"] as? NSNumber)?.intValue == 3)
 
+    let persistedJSON = Data(#"{"includeEntireCategory":false}"#.utf8)
+    precondition(FamilyActivitySelectionCodec.jsonData(fromPersistedPayload: String(data: persistedJSON, encoding: .utf8)!) == persistedJSON)
+    precondition(FamilyActivitySelectionCodec.jsonData(fromPersistedPayload: persistedJSON.base64EncodedString()) == persistedJSON)
+    precondition(FamilyActivitySelectionCodec.jsonData(fromPersistedPayload: "")?.isEmpty == true)
+
     print("LinkedTraceWriter harness passed (\(rows.count) events)")
   }
 }

@@ -2,6 +2,7 @@ import ExpoModulesCore
 import DeviceActivity
 import Foundation
 #if EXCERLOCK_LINKED_RECORDER_TRACE
+import CoreLocation
 import CoreMotion
 import FamilyControls
 import UIKit
@@ -106,10 +107,12 @@ public final class ExcerlockEnforcementModule: Module {
   // told at the point of need never to pick either research app.
   //
   // iOS never hands the host app the bundle identifiers behind a
-  // FamilyActivitySelection: `applications` carries opaque tokens, so this
-  // preflight can prove the shape of the selection (one app, no categories, no
+  // FamilyActivitySelection: `applicationTokens` are opaque, so this preflight
+  // can prove the shape of the selection (one app token, no categories, no
   // websites) but can never prove which app was picked. The one-path UI says so
-  // plainly instead of pretending a native check covers it.
+  // plainly instead of pretending a native check covers it. Count the token
+  // sets, not `applications` / `categories` / `webDomains`: those computed
+  // Application wrappers are empty after a persisted selection is decoded.
   private func linkedTraceStatusPayload(_ status: LinkedTraceStatus) -> [String: Any] {
     [
       "active": status.active,
@@ -121,8 +124,10 @@ public final class ExcerlockEnforcementModule: Module {
 
   private func linkedTracePreflightPayload() -> [String: Any] {
     let selection = ExcerlockPolicyStore.shared.currentSelection()
-    let canarySelectionValid = selection?.applications.count == 1 && selection?.categories.count == 0
-      && selection?.webDomains.count == 0
+    let applicationCount = selection?.applicationTokens.count ?? 0
+    let categoryCount = selection?.categoryTokens.count ?? 0
+    let webDomainCount = selection?.webDomainTokens.count ?? 0
+    let canarySelectionValid = applicationCount == 1 && categoryCount == 0 && webDomainCount == 0
     let screenTimeAuthorized = AuthorizationCenter.shared.authorizationStatus == .approved
     let motionAuthorized = CMMotionActivityManager.authorizationStatus() == .authorized
     // Preflight must not require cadence: some devices authorize Motion but
@@ -130,6 +135,11 @@ public final class ExcerlockEnforcementModule: Module {
     // allowed Motion & Fitness. Step counting + activity is enough to run.
     let motionHardwareReady = CMMotionActivityManager.isActivityAvailable() &&
       CMPedometer.isStepCountingAvailable()
+    // Production keeps the background detector resident through its location
+    // keep-alive, which AwakeSession starts only under Always authorization.
+    // Without it Trace Lab suspends in the background and records nothing,
+    // so the lab treats the same authorization as part of readiness.
+    let locationAlwaysAuthorized = CLLocationManager().authorizationStatus == .authorizedAlways
     let bundleIdentifier = Bundle.main.bundleIdentifier ?? ""
     let labContainerAvailable = FileManager.default.containerURL(
       forSecurityApplicationGroupIdentifier: linkedTraceAppGroup
@@ -141,10 +151,11 @@ public final class ExcerlockEnforcementModule: Module {
       "labStorageIsolated": labStorageIsolated,
       "screenTimeAuthorized": screenTimeAuthorized,
       "motionReady": motionAuthorized && motionHardwareReady,
+      "locationAlwaysAuthorized": locationAlwaysAuthorized,
       "canarySelectionValid": canarySelectionValid,
-      "canaryApplicationCount": selection?.applications.count ?? 0,
-      "canaryCategoryCount": selection?.categories.count ?? 0,
-      "canaryWebDomainCount": selection?.webDomains.count ?? 0
+      "canaryApplicationCount": applicationCount,
+      "canaryCategoryCount": categoryCount,
+      "canaryWebDomainCount": webDomainCount
     ]
   }
 
@@ -275,6 +286,12 @@ public final class ExcerlockEnforcementModule: Module {
         var committedId: String? = nil
         if let id = prior?.committedId, state == "conditional", let registration = registrations[id], sameContext(registration), registration.end > now { committedId = id }
         if let old = prior?.committedId, committedId == nil { registrations.removeValue(forKey: old) }
+        // Windows from another policy/account/selection context leave the record
+        // here; their DeviceActivity monitors must leave the system with them, or
+        // every context change leaks a set and the app hits Apple's activity
+        // limit, after which no scheduled window can ever be registered again.
+        let keptWindows = prior?.windows.filter { $0.value.policyGeneration == policyGeneration && $0.value.accountGeneration == accountGeneration && $0.value.selectionVersion == selectionVersion } ?? [:]
+        stale.append(contentsOf: (prior?.windows ?? [:]).keys.filter { keptWindows[$0] == nil })
         let record = ExcerlockPolicyRecord(
           version: excerlockPolicyVersion, revision: revision, publishedAt: now, state: state,
           relief: input.relief, eligibleUntil: eligibleUntil,
@@ -283,7 +300,7 @@ public final class ExcerlockEnforcementModule: Module {
           policyGeneration: policyGeneration, accountGeneration: accountGeneration,
           selectionVersion: selectionVersion, selectionPayload: store.currentSelectionPayload(),
           registrations: registrations, committedId: committedId,
-          windows: prior?.windows.filter { $0.value.policyGeneration == policyGeneration && $0.value.accountGeneration == accountGeneration && $0.value.selectionVersion == selectionVersion } ?? [:],
+          windows: keptWindows,
           shielded: prior?.shielded ?? false)
         try store.writeLocked(record)
       }
@@ -403,13 +420,52 @@ public final class ExcerlockEnforcementModule: Module {
   }
 
   private func replaceWindows(windows: [WindowInput], revision: Int) throws -> Void {
+    #if EXCERLOCK_LINKED_RECORDER_TRACE
+    // The JS host only sees an opaque rejection; the classified native reason
+    // is what tells a trace reader whether Apple refused the schedule or the
+    // policy store did.
+    do { try replaceWindowsUntraced(windows: windows, revision: revision) } catch {
+      traceWatchdog(operationId: "replace_windows.\(revision).\(windows.count)", operation: "replace_windows",
+                    status: "failed", monitorId: nil, revision: revision, reason: Self.windowFailureReason(error))
+      throw error
+    }
+    #else
+    try replaceWindowsUntraced(windows: windows, revision: revision)
+    #endif
+  }
+
+  #if EXCERLOCK_LINKED_RECORDER_TRACE
+  private static func windowFailureReason(_ error: Error) -> String {
+    if error is ExcerlockPolicyError { return "policy_error" }
+    if let monitoring = error as? DeviceActivityCenter.MonitoringError {
+      switch monitoring {
+      case .excessiveActivities: return "excessive_activities"
+      case .intervalTooLong: return "interval_too_long"
+      case .intervalTooShort: return "interval_too_short"
+      case .invalidDateComponents: return "invalid_date_components"
+      case .unauthorized: return "unauthorized"
+      @unknown default: return "native_error"
+      }
+    }
+    return "native_error"
+  }
+  #endif
+
+  private func replaceWindowsUntraced(windows: [WindowInput], revision: Int) throws -> Void {
     guard windows.count <= 7 else { throw ExcerlockPolicyError.invalidSnapshot }
       var staged: [ExcerlockScheduledWindow] = []
-      let context = try ExcerlockPolicyStore.shared.locked { () -> (Int, Int, String) in
+      let context = try ExcerlockPolicyStore.shared.locked { () -> (Int, Int, String, Set<String>) in
         let record = try ExcerlockPolicyStore.shared.readLocked()
         guard record.revision == revision else { throw ExcerlockPolicyError.staleRevision }
-        return (record.policyGeneration, record.accountGeneration, record.selectionVersion)
+        return (record.policyGeneration, record.accountGeneration, record.selectionVersion, Set(record.windows.keys))
       }
+      // Window monitors the record no longer knows (a crash between start and
+      // write, or a build that leaked them) would otherwise count against the
+      // activity limit forever; the record is the only authority on which
+      // windows are live, so everything else under the window prefix stops.
+      let orphans = DeviceActivityCenter().activities.map(\.rawValue)
+        .filter { $0.hasPrefix(excerlockWindowPrefix) && !context.3.contains($0) }
+      if !orphans.isEmpty { DeviceActivityCenter().stopMonitoring(orphans.map { DeviceActivityName($0) }) }
       for window in windows {
         let domainId = window.id; let start = window.start; let end = window.end
         guard !domainId.isEmpty,

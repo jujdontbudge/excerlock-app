@@ -60,7 +60,8 @@ describe("NativeScreenTimePickerHost", () => {
       } as Parameters<NonNullable<PickerProps["onDismissRequest"]>>[0]);
     });
 
-    await expect(picked).resolves.toEqual({
+    const result = await act(async () => picked);
+    expect(result).toEqual({
       applicationCount: 4,
       categoryCount: 2,
     });

@@ -9,6 +9,7 @@ export const linkedTrace: LinkedTraceClient = {
       labStorageIsolated: false,
       screenTimeAuthorized: false,
       motionReady: false,
+      locationAlwaysAuthorized: false,
       canarySelectionValid: false,
       canaryApplicationCount: 0,
       canaryCategoryCount: 0,

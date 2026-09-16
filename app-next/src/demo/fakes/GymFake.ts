@@ -22,6 +22,10 @@ export function GymFake(ctx: FakeContext): GymPort & { dispose: () => void } {
       await ctx.request('location');
       return permissionsStore.getState().data.location;
     },
+    requestBackgroundLocation: async () => {
+      await ctx.request('location');
+      return permissionsStore.getState().data.location;
+    },
     searchPlaces: async (query) =>
       places.filter((p) => (p.name + ' ' + p.address).toLowerCase().includes(query.trim().toLowerCase())),
     suggest: async (query) => places.filter((p) => (p.name + ' ' + p.address).toLowerCase().includes(query.trim().toLowerCase()))

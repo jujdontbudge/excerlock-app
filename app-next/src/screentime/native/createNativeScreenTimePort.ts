@@ -45,10 +45,15 @@ export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcem
       pickerBusy = true;
       try {
         const contents = await nativeScreenTimePicker.pick(NATIVE_LOCKED_SELECTION);
-        if (!contents) return rulesStore.getState().data.lockedApps;
+        const selectedFromPicker = Boolean(
+          contents && (contents.applicationCount > 0 || contents.categoryCount > 0),
+        );
+        const persisted = deviceActivityApi.getFamilyActivitySelectionId(NATIVE_LOCKED_SELECTION);
+        const selected = selectedFromPicker || Boolean(persisted);
+        if (!selected) return rulesStore.getState().data.lockedApps;
         return {
-          handle: contents && (contents.applicationCount > 0 || contents.categoryCount > 0) ? { token: NATIVE_LOCKED_SELECTION } : null,
-          isEmpty: !contents || (contents.applicationCount === 0 && contents.categoryCount === 0),
+          handle: { token: NATIVE_LOCKED_SELECTION },
+          isEmpty: false,
         };
       } finally { pickerBusy = false; }
     },

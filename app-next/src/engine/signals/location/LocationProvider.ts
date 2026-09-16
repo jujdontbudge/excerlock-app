@@ -29,6 +29,8 @@ export type LocationUnsubscribe = () => void;
 
 export interface LocationProvider {
   requestAuthorization(): Promise<LocationAuthorizationStatus>;
+  /** Foreground first, then the Always prompt: the walk keep-alive needs Always. */
+  requestAlwaysAuthorization(): Promise<LocationAuthorizationStatus>;
   getAuthorizationStatus(): LocationAuthorizationStatus;
   /** Re-reads the OS grant without prompting; iOS Settings can change it while the app is backgrounded. */
   refreshAuthorization(): Promise<LocationAuthorizationStatus>;

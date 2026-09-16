@@ -1,4 +1,4 @@
-jest.mock('../deviceActivityApi',()=>({deviceActivityApi:{authorizationStatus:jest.fn(()=>0),requestAuthorization:jest.fn(async()=>undefined),removeFamilyActivitySelectionId:jest.fn()}}));
+jest.mock('../deviceActivityApi',()=>({deviceActivityApi:{authorizationStatus:jest.fn(()=>0),requestAuthorization:jest.fn(async()=>undefined),removeFamilyActivitySelectionId:jest.fn(),getFamilyActivitySelectionId:jest.fn()}}));
 jest.mock('../NativeScreenTimePickerHost',()=>({nativeScreenTimePicker:{pick:jest.fn()},NativeScreenTimePickerHost:()=>null}));
 const mockApi = require('../deviceActivityApi').deviceActivityApi;
 const mockPick = require('../NativeScreenTimePickerHost').nativeScreenTimePicker.pick;
@@ -17,5 +17,16 @@ it('cancelled picker preserves the previously persisted selection', async () => 
   const prior = { handle: { token: 'excerlock.selection.locked.v1' }, isEmpty: false };
   rulesStore.getState().patch({ lockedApps: prior });
   mockApi.authorizationStatus.mockReturnValue(2); mockPick.mockResolvedValue(null);
+  mockApi.getFamilyActivitySelectionId.mockReturnValue(undefined);
   expect(await createNativeScreenTimePort(handler).presentAppPicker()).toEqual(prior);
+});
+
+it('treats a persisted FamilyControls payload as a real pick when the sheet metadata is empty', async () => {
+  mockApi.authorizationStatus.mockReturnValue(2);
+  mockPick.mockResolvedValue({ applicationCount: 0, categoryCount: 0 });
+  mockApi.getFamilyActivitySelectionId.mockReturnValue('base64-family-activity-selection');
+  expect(await createNativeScreenTimePort(handler).presentAppPicker()).toEqual({
+    handle: { token: 'excerlock.selection.locked.v1' },
+    isEmpty: false,
+  });
 });

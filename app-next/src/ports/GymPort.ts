@@ -3,6 +3,8 @@ import { Unsubscribe, SavedPlace } from './models';
 import { PlaceSearch, Coordinates } from './PlaceSearch';
 export interface GymPort extends PlaceSearch {
   requestLocation(): Promise<Permissions['location']>;
+  /** Always location: the only authorization under which the background walk keep-alive runs. */
+  requestBackgroundLocation(): Promise<Permissions['location']>;
   searchPlaces(query: string): Promise<SavedPlace[]>;
   savePlace(place: SavedPlace): Promise<void>;
   listPlaces(): SavedPlace[];

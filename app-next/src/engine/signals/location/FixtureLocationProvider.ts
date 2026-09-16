@@ -65,6 +65,10 @@ export class FixtureLocationProvider implements LocationProvider, ManualGymCheck
     return this.authorizationStatus;
   }
 
+  public async requestAlwaysAuthorization(): Promise<LocationAuthorizationStatus> {
+    return this.authorizationStatus;
+  }
+
   public getAuthorizationStatus(): LocationAuthorizationStatus {
     return this.authorizationStatus;
   }

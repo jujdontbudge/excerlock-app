@@ -252,7 +252,10 @@ public final class LinkedTraceWriter: @unchecked Sendable {
     .watchdogOperation: [
       "operation": ["stage", "commit", "cancel", "replace_windows"],
       "status": ["attempt", "returned", "rejected", "failed"],
-      "reason": ["policy_error", "native_error"]
+      "reason": [
+        "policy_error", "native_error", "excessive_activities", "interval_too_long",
+        "interval_too_short", "invalid_date_components", "unauthorized"
+      ]
     ],
     .extensionCallback: [
       "callback": ["threshold_reached", "interval_started", "interval_ended"],

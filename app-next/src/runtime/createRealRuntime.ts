@@ -526,6 +526,12 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
           await reconcile();
           return permission;
         },
+        requestBackgroundLocation: async () => {
+          const permission = await safety.prompt(() => gym.requestBackgroundLocation());
+          permissionsStore.getState().patch({ location: permission });
+          await reconcile();
+          return permission;
+        },
       },
       walking,
       steps: {

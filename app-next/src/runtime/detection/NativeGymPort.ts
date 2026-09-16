@@ -30,6 +30,7 @@ export function createNativeGymPort(owner: NativeGymOwner): NativeGymPort {
     },
     authorizationStatus: () => location.getAuthorizationStatus(),
     requestLocation: async () => permission(await location.requestAuthorization()),
+    requestBackgroundLocation: async () => permission(await location.requestAlwaysAuthorization()),
     savePlace: place => serialize(async () => {
       const old = places();
       const next = [...places().filter(p => p.id !== place.id), place];

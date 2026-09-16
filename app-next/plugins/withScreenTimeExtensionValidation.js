@@ -47,6 +47,10 @@ const MONITOR_PACKAGE_SOURCES = [
     localSource: path.join("modules", "excerlock-enforcement", "ios", "ExcerlockAppGroup.swift"),
   },
   {
+    destination: "FamilyActivitySelectionCodec.generated.swift",
+    localSource: path.join("modules", "excerlock-enforcement", "ios", "FamilyActivitySelectionCodec.swift"),
+  },
+  {
     destination: "EnforcementPolicy.generated.swift",
     localSource: path.join("modules", "excerlock-enforcement", "ios", "EnforcementPolicy.swift"),
   },

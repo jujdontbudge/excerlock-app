@@ -29,6 +29,8 @@ import {
   walkingRecorderSessionLink,
   type LinkedHandshake,
 } from './linkedRecorderLink';
+import { NATIVE_LOCKED_SELECTION } from '../../screentime/native/nativeSelection';
+import { rulesStore } from '../../state/rulesStore';
 import { clearActiveHandshake, loadActiveHandshake, saveActiveHandshake } from './linkedHandshakeStore.research';
 import { ensureLabWalkingRule, removeLabWalkingRule } from './labWalkingRule.research';
 
@@ -186,18 +188,42 @@ export function LinkedTraceScreen() {
   const labAccess = entitlementStatus === 'active' || entitlementStatus === 'trial';
   const step = readinessStep({ entitlementStatus, preflight, labAccess, runtime });
 
+  // A system permission sheet takes the app inactive and can settle after the
+  // request call has already returned. The return to active is the moment the
+  // readiness step and its failure line can be re-read from the phone itself.
+  useEffect(() => {
+    if (phase !== 'ready' && phase !== 'exported') return;
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next !== 'active') return;
+      void refreshPreflight().then((latest) => {
+        if (latest && !readinessStep({ entitlementStatus, preflight: latest, labAccess, runtime })) setError(null);
+      });
+    });
+    return () => subscription.remove();
+  }, [phase, refreshPreflight, entitlementStatus, labAccess, runtime]);
+
   const run = async (operation: () => Promise<unknown>, message: string): Promise<boolean> => {
     if (busy) return false;
     setBusy(true);
     setError(null);
+    let failed = false;
     try {
       await operation();
-      await refreshPreflight();
       return true;
     } catch {
+      failed = true;
       setError(message);
       return false;
-    } finally { setBusy(false); }
+    } finally {
+      const latest = await refreshPreflight();
+      // A system prompt can resolve after the request call already rejected;
+      // the refreshed preflight, not the rejection, says whether the step is
+      // still missing.
+      if (failed && latest && readinessStep({ entitlementStatus, preflight: latest, labAccess, runtime })?.action?.failure !== message) {
+        setError(null);
+      }
+      setBusy(false);
+    }
   };
 
   const start = async () => {
@@ -210,6 +236,15 @@ export function LinkedTraceScreen() {
       if (!latest || readinessStep({ entitlementStatus, preflight: latest, labAccess, runtime })) {
         setError('The test did not start. Finish the step named above first.');
         return;
+      }
+      // Native preflight is the source of truth for the FamilyControls tokens.
+      // JS lockedApps can still be empty after a picker/reconcile race; without
+      // this handle, enforcement publishes an open "disabled" policy and the
+      // canary is never shielded.
+      if (latest.canarySelectionValid) {
+        rulesStore.getState().patch({
+          lockedApps: { handle: { token: NATIVE_LOCKED_SELECTION }, isEmpty: false },
+        });
       }
       // Every start mints a fresh phone-local session id, so the native writer's
       // durable collision refusal can only be reached by a repeated delivery of
@@ -454,7 +489,7 @@ export function LinkedTraceScreen() {
               ) : null}
             </>
           ) : (
-            <Label>Everything is ready: Screen Time, canary app, Motion &amp; Fitness, and the isolated lab storage.</Label>
+            <Label>Everything is ready: Screen Time, canary app, Motion &amp; Fitness, Always location, and the isolated lab storage.</Label>
           )}
           <PrimaryButton label={busy ? 'Starting…' : 'Start test'} disabled={!preflight || !!step || busy} onPress={() => void start()} />
           {note ? <Label tone="secondary">{note}</Label> : null}
@@ -655,6 +690,13 @@ export function readinessStep({
       title: 'Allow Motion & Fitness',
       detail: 'Trace Lab records its own motion evidence for the background detector. Walking Recorder asks for the same permission separately when it starts.',
       action: { label: 'Allow Motion & Fitness', failure: 'Motion & Fitness was not allowed. No test was started.', run: () => runtime.steps.request() },
+    };
+  }
+  if (!preflight.locationAlwaysAuthorized) {
+    return {
+      title: 'Allow Location (Always)',
+      detail: 'ExcerLock stays awake in the background through its location keep-alive, and iOS only runs that under Always. Without it Trace Lab is suspended as soon as Walking Recorder is in front and records nothing. Choose Always (Allow While Using first, then Change to Always Allow). No location is written to the trace.',
+      action: { label: 'Allow Location (Always)', failure: 'Location was not set to Always. No test was started.', run: () => runtime.gym.requestBackgroundLocation() },
     };
   }
   return null;

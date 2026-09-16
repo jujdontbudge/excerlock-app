@@ -64,6 +64,7 @@ const ready = {
   labStorageIsolated: true,
   screenTimeAuthorized: true,
   motionReady: true,
+  locationAlwaysAuthorized: true,
   canarySelectionValid: true,
   canaryApplicationCount: 1,
   canaryCategoryCount: 0,

@@ -20,6 +20,12 @@ export type LinkedTracePreflight = {
   screenTimeAuthorized: boolean;
   motionReady: boolean;
   /**
+   * Production's background residency is the location keep-alive, which only
+   * starts under Always authorization; without it the lab suspends and traces
+   * nothing once Walking Recorder is in front.
+   */
+  locationAlwaysAuthorized: boolean;
+  /**
    * iOS never reveals which apps a FamilyActivitySelection holds, so this only
    * proves the shape: exactly one application, no categories, no web domains.
    * The one-path UI tells the operator to pick one harmless canary and never a

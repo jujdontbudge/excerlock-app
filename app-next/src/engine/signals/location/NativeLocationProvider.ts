@@ -58,6 +58,21 @@ export class NativeLocationProvider implements LocationProvider {
     );
   }
 
+  public async requestAlwaysAuthorization(): Promise<LocationAuthorizationStatus> {
+    await this.ready;
+    const foreground =
+      this.authorizationStatus === "authorizedWhenInUse" ||
+      this.authorizationStatus === "authorizedAlways"
+        ? this.authorizationStatus
+        : await this.requestAuthorization();
+    if (foreground !== "authorizedWhenInUse") {
+      return foreground;
+    }
+    return this.updateAuthorization(
+      await this.client.requestBackgroundAuthorization(),
+    );
+  }
+
   public getAuthorizationStatus(): LocationAuthorizationStatus {
     return this.authorizationStatus;
   }
