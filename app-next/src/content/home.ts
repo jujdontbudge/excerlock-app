@@ -10,7 +10,7 @@ export const homeCopy = {
   complete: 'Completed',
   inProgress: 'In progress',
   scheduled: 'Scheduled',
-  lockCaption: 'APPS BLOCKED UNTIL\nYOU COMPLETE EXERCISE',
+  lockCaption: 'Apps blocked until\nyou complete exercise',
   greeting: (name: string) => (name ? `Hi, ${name}` : 'Your day, with more movement'),
   today: 'Conditions',
   locked: 'Apps are blocked',
