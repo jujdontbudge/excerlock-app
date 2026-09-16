@@ -12,6 +12,7 @@ import type { Unsubscribe } from '../../ports/models';
 import { entitlementStore } from '../../state/entitlementStore';
 import type { RunIdentityOperation } from '../auth/identityBarrier';
 import { mapEntitlement, reduceEntitlement, type ProfileSource } from './entitlementMapping';
+import { deviceLocale, pickRemoteConfig } from './remoteConfig';
 import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptySdkPort } from './adaptySdk';
 
 const INTEGRATION_KEY = 'posthog_distinct_user_id';
@@ -129,7 +130,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       placement,
       title,
       body: remote.body ?? '',
-      flowVariationId: String((flow as { variationId?: string }).variationId ?? ''),
+      flowVariationId: String(flow.variationId ?? ''),
       products: mapped,
       generation,
     } as const;
@@ -263,7 +264,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     };
   }
   private remoteCopy(flow: AdaptyFlow): { title?: string; body?: string; recommendedProductId?: string } {
-    const data = (flow as { remoteConfig?: { data?: unknown } }).remoteConfig?.data;
+    const data = pickRemoteConfig(flow.remoteConfigs, deviceLocale())?.data;
     if (!data || typeof data !== 'object') return {};
     const value = data as Record<string, unknown>;
     return {

@@ -82,7 +82,7 @@ test('dashboard flow name is never exposed as customer-facing paywall copy', asy
   const { adapter } = setup();
   await adapter.identify('uid');
   await expect(adapter.loadPaywall('onboarding')).resolves.toEqual(
-    expect.objectContaining({ title: 'Choose your plan' }),
+    expect.objectContaining({ title: 'Choose your plan', body: '' }),
   );
 });
 
@@ -126,14 +126,14 @@ test('activation and profile listener are singletons and disposal removes the li
   expect(remove).toHaveBeenCalledTimes(1);
 });
 
-test('remote copy marks a recommended vendor ID without changing product order', async () => {
+test('remote copy comes from flow.remoteConfigs and marks a recommended vendor ID without changing product order', async () => {
   const { adapter, sdk } = setup();
   sdk.getFlow.mockResolvedValueOnce({
     name: 'Fallback',
     variationId: 'variation',
-    remoteConfig: {
-      data: { title: 'Remote title', body: 'Remote body', recommendedProductId: 'a.annual' },
-    },
+    remoteConfigs: [
+      { lang: 'en', data: { title: 'Remote title', body: 'Remote body', recommendedProductId: 'a.annual' }, dataString: '' },
+    ],
   } as never);
   await adapter.identify('uid');
   const paywall = await adapter.loadPaywall('onboarding');
@@ -143,6 +143,22 @@ test('remote copy marks a recommended vendor ID without changing product order',
     ['z.monthly', false],
     ['a.annual', true],
   ]);
+});
+
+test('a config list without a device-locale match still serves its first entry', async () => {
+  const { adapter, sdk } = setup();
+  sdk.getFlow.mockResolvedValueOnce({
+    name: 'flow',
+    variationId: 'variation',
+    remoteConfigs: [
+      { lang: 'xx', data: { title: 'First locale title', body: 'First locale body' }, dataString: '' },
+      { lang: 'zz', data: { title: 'Second locale title', body: 'Second locale body' }, dataString: '' },
+    ],
+  } as never);
+  await adapter.identify('uid');
+  const paywall = await adapter.loadPaywall('onboarding');
+  expect(paywall.title).toBe('First locale title');
+  expect(paywall.body).toBe('First locale body');
 });
 
 test.each(['pending', 'user_cancelled'] as const)('%s purchase always clears busy state', async (type) => {

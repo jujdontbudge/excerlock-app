@@ -11,19 +11,19 @@ import {
 } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import type { SubscriptionPaywall } from '../../ports/SubscriptionPort';
+import type { PaywallErrorOperation } from '../../runtime/observability/paywallErrors';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 import { subscriptionCopy } from '../../content/subscription';
 const TERMS_URL = 'https://excerlock.com/terms';
 const PRIVACY_URL = 'https://excerlock.com/privacy';
-const ignoreError = () => undefined;
 export function PaywallScreen({
   placement,
-  reportError = ignoreError,
+  reportError,
   onClose,
 }: {
   placement: SubscriptionPaywall['placement'];
-  reportError?: (error: unknown, operation: 'load' | 'purchase' | 'restore') => void;
+  reportError: (error: unknown, operation: PaywallErrorOperation) => void;
   onClose?: () => void;
 }) {
   const runtime = useRuntime(),
@@ -118,6 +118,11 @@ export function PaywallScreen({
       {message || status === 'expired' || status === 'billingIssue' ? (
         <Label accessibilityRole="alert" style={{ color: t.state.error }}>
           {message || (status === 'expired' ? subscriptionCopy.expired : subscriptionCopy.billingIssue)}
+        </Label>
+      ) : null}
+      {busy === 'purchase' || busy === 'restore' ? (
+        <Label accessibilityRole="alert" tone="secondary">
+          {busy === 'purchase' ? subscriptionCopy.purchasing : subscriptionCopy.restoring}
         </Label>
       ) : null}
       {!paywall && busy !== 'load' ? <PrimaryButton label="Retry loading plans" onPress={() => void load()} /> : null}

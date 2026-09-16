@@ -1,4 +1,4 @@
-import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptyPurchaseResult } from 'react-native-adapty';
+import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptyPurchaseResult, AdaptyRemoteConfig } from 'react-native-adapty';
 export interface AdaptySdkPort {
   activate(key: string, options: { __ignoreActivationOnFastRefresh: true }): Promise<void>;
   addEventListener(event: 'onLatestProfileLoad', callback: (profile: AdaptyProfile) => void): { remove(): void };
@@ -12,4 +12,4 @@ export interface AdaptySdkPort {
   restorePurchases(): Promise<AdaptyProfile>;
   setIntegrationIdentifier(key: string, value: string): Promise<void>;
 }
-export type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptyPurchaseResult };
+export type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptyPurchaseResult, AdaptyRemoteConfig };

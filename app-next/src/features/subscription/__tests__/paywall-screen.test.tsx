@@ -1,8 +1,8 @@
 import { Linking } from 'react-native';
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { createRuntime } from '../../../runtime/createRuntime';
-import type { SubscriptionPaywall } from '../../../ports/SubscriptionPort';
+import type { PurchaseResult, SubscriptionPaywall } from '../../../ports/SubscriptionPort';
 import { PaywallScreen } from '../PaywallScreen';
 
 const paywall: SubscriptionPaywall = {
@@ -41,7 +41,7 @@ test('renders fetched product order and localized offer copy and opens legal lin
   const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   await render(
     <AppRuntimeProvider runtime={runtime}>
-      <PaywallScreen placement="onboarding" />
+      <PaywallScreen placement="onboarding" reportError={jest.fn()} />
     </AppRuntimeProvider>,
   );
 
@@ -72,4 +72,29 @@ test('shows, reports, and retries a paywall load failure', async () => {
   expect(reportError).toHaveBeenCalledWith(failure, 'load');
   await userEvent.press(screen.getByRole('button', { name: 'Retry loading plans' }));
   await waitFor(() => expect(screen.getAllByRole('radio')).toHaveLength(2));
+});
+
+test('shows progress while a purchase is pending instead of a frozen call to action', async () => {
+  const runtime = createRuntime();
+  runtime.subscription.loadPaywall = jest.fn(async () => paywall);
+  let finish!: (value: PurchaseResult) => void;
+  runtime.subscription.purchase = jest.fn(
+    () => new Promise<PurchaseResult>((resolve) => { finish = resolve; }),
+  );
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <PaywallScreen placement="onboarding" reportError={jest.fn()} />
+    </AppRuntimeProvider>,
+  );
+
+  await screen.findAllByRole('radio');
+  const start = screen.getByRole('button', { name: 'Continue' });
+  expect(start).toBeEnabled();
+  await userEvent.press(start);
+  expect(await screen.findByText('Starting your plan…')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+  await act(async () => {
+    finish({ type: 'success', entitlement: { status: 'active', renewsAt: null } });
+  });
+  await waitFor(() => expect(screen.queryByText('Starting your plan…')).toBeNull());
 });
