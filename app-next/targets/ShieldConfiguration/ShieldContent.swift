@@ -149,29 +149,29 @@ struct ShieldContentCatalog {
       deepLink: "excerlock://",
       primaryActionLabel: "Open ExcerLock",
       secondaryActionLabel: "Close",
-      subtitle: "A 20-min walk gets you 30 more minutes.",
-      title: "Time’s up — for now."
+      subtitle: "Open ExcerLock to manually trigger a detection.",
+      title: "Apps locked. Complete your exercise condition to unlock."
     ),
     ShieldCause.fullLock.rawValue: ShieldVariant(
       deepLink: "excerlock://locked-apps",
       primaryActionLabel: "Open ExcerLock",
       secondaryActionLabel: "Close",
-      subtitle: "A 20-min walk gets you 30 more minutes.",
-      title: "Move first, scroll after."
+      subtitle: "Open ExcerLock to manually trigger a detection.",
+      title: "Apps locked. Complete your exercise condition to unlock."
     ),
     ShieldCause.lockWindow.rawValue: ShieldVariant(
       deepLink: "excerlock://locked-apps",
-      primaryActionLabel: "OK",
-      secondaryActionLabel: "",
-      subtitle: "Back at 7:00 AM.",
-      title: "Apps are asleep."
+      primaryActionLabel: "Open ExcerLock",
+      secondaryActionLabel: "Close",
+      subtitle: "Open ExcerLock to manually trigger a detection.",
+      title: "Apps locked. Complete your exercise condition to unlock."
     ),
     ShieldCause.walkAndScrollEnded.rawValue: ShieldVariant(
       deepLink: "excerlock://",
-      primaryActionLabel: "Keep walking",
+      primaryActionLabel: "Open ExcerLock",
       secondaryActionLabel: "Close",
-      subtitle: "Start walking again to pick up where you left off.",
-      title: "You stopped walking."
+      subtitle: "Open ExcerLock to manually trigger a detection.",
+      title: "Apps locked. Complete your exercise condition to unlock."
     ),
   ]
 }

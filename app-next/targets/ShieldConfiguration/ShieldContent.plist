@@ -11,9 +11,9 @@
 		<key>secondaryActionLabel</key>
 		<string>Close</string>
 		<key>subtitle</key>
-		<string>A 20-min walk gets you 30 more minutes.</string>
+		<string>Open ExcerLock to manually trigger a detection.</string>
 		<key>title</key>
-		<string>Time’s up — for now.</string>
+		<string>Apps locked. Complete your exercise condition to unlock.</string>
 	</dict>
 	<key>fullLock</key>
 	<dict>
@@ -24,35 +24,35 @@
 		<key>secondaryActionLabel</key>
 		<string>Close</string>
 		<key>subtitle</key>
-		<string>A 20-min walk gets you 30 more minutes.</string>
+		<string>Open ExcerLock to manually trigger a detection.</string>
 		<key>title</key>
-		<string>Move first, scroll after.</string>
+		<string>Apps locked. Complete your exercise condition to unlock.</string>
 	</dict>
 	<key>lockWindow</key>
 	<dict>
 		<key>deepLink</key>
 		<string>excerlock://locked-apps</string>
 		<key>primaryActionLabel</key>
-		<string>OK</string>
+		<string>Open ExcerLock</string>
 		<key>secondaryActionLabel</key>
-		<string></string>
+		<string>Close</string>
 		<key>subtitle</key>
-		<string>Back at 7:00 AM.</string>
+		<string>Open ExcerLock to manually trigger a detection.</string>
 		<key>title</key>
-		<string>Apps are asleep.</string>
+		<string>Apps locked. Complete your exercise condition to unlock.</string>
 	</dict>
 	<key>walkAndScrollEnded</key>
 	<dict>
 		<key>deepLink</key>
 		<string>excerlock://</string>
 		<key>primaryActionLabel</key>
-		<string>Keep walking</string>
+		<string>Open ExcerLock</string>
 		<key>secondaryActionLabel</key>
 		<string>Close</string>
 		<key>subtitle</key>
-		<string>Start walking again to pick up where you left off.</string>
+		<string>Open ExcerLock to manually trigger a detection.</string>
 		<key>title</key>
-		<string>You stopped walking.</string>
+		<string>Apps locked. Complete your exercise condition to unlock.</string>
 	</dict>
 </dict>
 </plist>

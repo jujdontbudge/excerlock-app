@@ -1,11 +1,5 @@
-# Shield configuration visual inputs
+# ShieldConfiguration assets
 
-The shield reuses the approved Family A clay lock pieces from
-`prototype/assets/icons/` byte-for-byte. No new visual was generated:
-
-- `ClayLockBody.png` = `prototype/assets/icons/lock-body.png`
-- `ClayLockShackle.png` = `prototype/assets/icons/lock-shackle.png`
-
-`ClayLockIcon.swift` layers the shackle behind the body at runtime. Both inputs
-already passed the RGBA, transparent-corner, residual-chroma, and coverage gates
-recorded in `prototype/assets/icons/FOUNDRY.md`.
+The shield icon is drawn at runtime by `ClayLockIcon.swift`: SF Symbol `lock.fill`
+(bold) tinted `brand.primary` (#C94710) on a 256pt transparent canvas. There are
+no image inputs; change the tint or symbol there.

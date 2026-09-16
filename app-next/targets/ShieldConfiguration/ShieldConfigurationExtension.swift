@@ -2,11 +2,11 @@ import ManagedSettings
 import ManagedSettingsUI
 import UIKit
 
+/// Mirrors app-next/src/design-system/tokens.ts: brand.primary, surface.topTint, text.primary/secondary.
 private enum ShieldPalette {
-  static let ivory = UIColor(hex: 0xF4F1F5, alpha: 0.94)
-  static let clayGray = UIColor(hex: 0xC9C4CC)
-  static let orange = UIColor(hex: 0xF98529)
-  static let text = UIColor(hex: 0x2F2932)
+  static let tintedWhite = UIColor(hex: 0xFFF0E5, alpha: 0.96)
+  static let orange = UIColor(hex: 0xC94710)
+  static let text = UIColor(hex: 0x1D1D22)
   static let secondaryText = UIColor(hex: 0x6E6871)
 }
 
@@ -30,9 +30,9 @@ private func makeShieldConfiguration() -> ShieldConfiguration {
   let content = ShieldContentCatalog().current()
   let actions = shieldActions(for: content)
   return ShieldConfiguration(
-    backgroundBlurStyle: .systemUltraThinMaterialLight,
-    backgroundColor: ShieldPalette.ivory,
-    icon: ClayLockIcon.make(),
+    backgroundBlurStyle: .systemThickMaterialLight,
+    backgroundColor: ShieldPalette.tintedWhite,
+    icon: ClayLockIcon.make(tint: ShieldPalette.orange),
     title: .init(text: content.variant.title, color: ShieldPalette.text),
     subtitle: .init(text: content.variant.subtitle, color: ShieldPalette.secondaryText),
     primaryButtonLabel: .init(text: actions.primaryActionLabel, color: .white),
@@ -44,12 +44,6 @@ private func makeShieldConfiguration() -> ShieldConfiguration {
 }
 
 private func shieldActions(for content: ResolvedShieldContent) -> ShieldActions {
-  if content.cause == .lockWindow {
-    return ShieldActions(
-      primaryActionLabel: content.variant.primaryActionLabel,
-      secondaryActionLabel: nil
-    )
-  }
   if content.routeHomeAvailable {
     return ShieldActions(
       primaryActionLabel: content.variant.primaryActionLabel,

@@ -6,7 +6,7 @@ private func completeShieldAction(
 ) {
   if action == .primaryButtonPressed {
     let route = ShieldActionRoute.current()
-    if route.routeHomeAvailable && route.cause != "lockWindow" {
+    if route.routeHomeAvailable {
       ShieldDeepLinkNotification.enqueue(cause: route.cause, deepLink: route.deepLink)
     }
   }
