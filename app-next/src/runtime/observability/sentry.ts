@@ -18,12 +18,23 @@ function scrubStacktrace(stacktrace: any) {
     in_app: typeof frame.in_app === 'boolean' ? frame.in_app : undefined,
   })) };
 }
+/**
+ * Thrown Errors keep their message: the audit found this codebase's thrown
+ * messages free of PII (§3.7), and a redacted message destroys crash triage.
+ * The SDK marks exceptions synthesized from non-Error captures as `synthetic`;
+ * their text is derived from arbitrary captured values, so it stays redacted.
+ */
+function scrubExceptionValue(exception: Record<string, unknown>): string {
+  const mechanism = exception.mechanism as { synthetic?: unknown } | undefined;
+  if (typeof exception.value === 'string' && mechanism?.synthetic !== true) return exception.value;
+  return '[redacted]';
+}
 export function scrubSentryEvent<T extends Record<string, any>>(event: T): T {
   const ota = getOtaObservabilityContext();
   const extra = Object.fromEntries(Object.entries(event.extra ?? {}).filter(([key, value]) => safeExtra.has(key) && safeDiagnosticValue(value)));
   const exception = event.exception?.values ? { values: event.exception.values.map((value: Record<string, unknown>) => ({
     type: typeof value.type === 'string' && /^[a-z0-9_.:$-]{1,128}$/i.test(value.type) ? value.type : 'Error',
-    value: '[redacted]',
+    value: scrubExceptionValue(value),
     stacktrace: scrubStacktrace(value.stacktrace),
   })) } : undefined;
   const threads = event.threads?.values ? { values: event.threads.values.map((thread: Record<string, unknown>) => ({

@@ -3,8 +3,9 @@ import type { RealRuntime } from './createRealRuntime';
 import { registerHeadlessDetectionBootstrap } from './detection/headlessRegistry';
 
 export function reportRuntimeError(error: unknown): void {
-  // Keep SDK evaluation behind the runtime error path while exposing only the
-  // local capture binding to Metro's static dependency graph.
+  // The capture binding stays behind the runtime error path while exposing only
+  // the local binding to Metro's static dependency graph; the entry owns the
+  // earliest SDK install (observability/SentryStartup).
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { reportSentryError } = require('@sentry-capture') as typeof import('@sentry-capture');
   reportSentryError(error);

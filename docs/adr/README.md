@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0031: Install Sentry at the entry and keep thrown Error messages](0031-entry-sentry-install-and-error-messages.md) — **accepted**.
 - [0026: Isolate the phone motion recorder from the shipping app](0026-isolate-phone-motion-recorder.md) — **accepted**.
 - [0025: Main is the release source](0025-main-is-the-release-source.md) — **accepted**.
 
