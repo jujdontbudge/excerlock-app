@@ -85,7 +85,6 @@ test.each(['expired', 'billingIssue', 'unknown'] as const)(
     await act(async () => router.push('/settings'));
     await waitFor(() => expect(routed.getPathname()).toBe('/settings'));
     expect(screen.getByRole('button', { name: settingsCopy.supportRow })).toBeTruthy();
-    expect(screen.getByRole('button', { name: settingsCopy.exportData })).toBeTruthy();
     await userEvent.press(screen.getByRole('button', { name: 'Alex' }));
     await waitFor(() => expect(routed.getPathname()).toBe('/settings/account'));
     await userEvent.press(screen.getByRole('button', { name: settingsCopy.delete }));

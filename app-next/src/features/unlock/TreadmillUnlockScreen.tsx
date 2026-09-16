@@ -12,7 +12,9 @@ import { UnlockLayout, Detected } from './UnlockLayout';
 export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: string; preview?: boolean }) {
   const runtime = useRuntime(),
     router = useRouter();
-  const [provider] = useState(() => (preview && __DEV__ && runtime.dev ? runtime.dev.createGaitPreview() : runtime.gait));
+  const [provider] = useState(() =>
+    preview && __DEV__ && runtime.dev ? runtime.dev.createGaitPreview() : runtime.gait,
+  );
   const [snapshot, setSnapshot] = useState<TreadmillScanSnapshot>({ phase: 'idle', confidence: 0 });
   const verified = useRef(false),
     rule = useRulesStore((s) => s.data.rules.find((r) => r.id === ruleId));
@@ -96,6 +98,13 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
       : scanning
         ? c.treadmill.scanningBody
         : c.treadmill.propBody;
+  const walkInHand = async () => {
+    if (rule && !preview) {
+      await runtime.walking.start(rule);
+      verified.current = true;
+    }
+    router.back();
+  };
   const Preview = provider.Preview;
   return (
     <UnlockLayout
@@ -104,18 +113,12 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
       footer={
         ceremony.done ? (
           <PrimaryButton label={c.done} onPress={close} />
-        ) : denied ? (
+        ) : (
           <PrimaryButton
-            label={c.treadmill.handheld}
-            onPress={async () => {
-              if (rule && !preview) {
-                await runtime.walking.start(rule);
-                verified.current = true;
-              }
-              router.back();
-            }}
+            label={denied ? c.treadmill.handheld : c.treadmill.walking}
+            onPress={() => void walkInHand()}
           />
-        ) : undefined
+        )
       }>
       <View
         accessibilityRole="progressbar"
@@ -131,9 +134,6 @@ export function TreadmillUnlockScreen({ ruleId, preview = false }: { ruleId?: st
         />
       </View>
       {!ceremony.showMessage ? <Heading title={title} support={body} /> : null}
-      <Label variant="support" tone="secondary">
-        {c.treadmill.privacy}
-      </Label>
       {error ? <Label accessibilityRole="alert">{error}</Label> : null}
     </UnlockLayout>
   );

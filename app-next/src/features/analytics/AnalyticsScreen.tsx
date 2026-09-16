@@ -123,9 +123,6 @@ export function AnalyticsScreen() {
             {duration(model.reclaimed.minutes)}
           </Label>
           <Label variant="section">{c.replaced}</Label>
-          <Label variant="support" tone="secondary">
-            {c.replacedSupport(baseline, period)}
-          </Label>
         </View>
       ) : (
         <View style={s.empty}>
@@ -134,9 +131,6 @@ export function AnalyticsScreen() {
             title={model.dayZero ? c.dayZero : c.noData}
             body={model.dayZero ? c.dayZeroBody : c.noDataBody}
           />
-          <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
-            {c.gaps}
-          </Label>
         </View>
       )}
       <StatGrid stats={statsFor(model)} />
@@ -167,11 +161,6 @@ export function AnalyticsScreen() {
             />
           ))}
         </CompactGroup>
-      ) : null}
-      {model.reclaimed.measuredDays ? (
-        <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
-          {c.measured(model.reclaimed.measuredDays, model.elapsedDays)} · {c.daysMet(model.met, model.scheduled)}
-        </Label>
       ) : null}
     </ScreenShell>
   );

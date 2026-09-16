@@ -14,7 +14,6 @@ test.each([
     </AppRuntimeProvider>,
   );
   expect(screen.getByRole('header', { name: title })).toBeTruthy();
-  expect(screen.getByText('Gaps mean no measurement. They are excluded from time reclaimed.')).toBeTruthy();
   await userEvent.press(screen.getByRole('tab', { name: 'All time' }));
   expect(screen.getByText(/^Since /)).toBeTruthy();
   await userEvent.press(screen.getByRole('tab', { name: 'Day' }));

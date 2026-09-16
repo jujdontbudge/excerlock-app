@@ -11,5 +11,4 @@ test('analytics switch persists opt-out and awaits SDK consent without disabling
   await fireEvent(screen.getByRole('switch', { name: 'Usage analytics' }), 'valueChange', false);
   expect(settingsStore.getState().data.analyticsEnabled).toBe(false);
   expect(setEnabled).toHaveBeenCalledWith(false);
-  expect(screen.getByText('Help improve ExcerLock. Crash diagnostics remain enabled.')).toBeTruthy();
 });

@@ -41,11 +41,6 @@ export function DotGridReveal({ step, answers }: AnswerProps & { step: 'O12' | '
           {step === 'O14' ? (
             <Label style={{ textAlign: 'center' }}>{summary.days > summary.freeDays ? c.overflow : c.conclusion}</Label>
           ) : null}
-          {step !== 'O12' ? (
-            <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
-              {c.assumption}
-            </Label>
-          ) : null}
         </Animated.View>
       </View>
     </>

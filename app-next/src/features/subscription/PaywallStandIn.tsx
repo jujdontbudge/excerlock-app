@@ -62,11 +62,6 @@ export function PaywallStandIn({
           </Label>
         </Reveal>
       ) : null}
-      <Reveal index={4}>
-        <Label variant="support" tone="secondary">
-          {c.terms}
-        </Label>
-      </Reveal>
     </ScreenShell>
   );
 }

@@ -26,7 +26,8 @@ export function UnlockLayout({
           {preview ? <Label tone="secondary">{c.preview}</Label> : null}
         </View>
       }
-      footer={footer}>
+      footer={footer}
+      contentStyle={{ paddingTop: 0 }}>
       <View style={{ gap: t.space.md }}>{children}</View>
     </ScreenShell>
   );
@@ -34,7 +35,8 @@ export function UnlockLayout({
 export function Detected({ title, body }: { title: string; body: string }) {
   const { reduced } = useUnlockMotion();
   return (
-    <Animated.View entering={popIn(reduced)}
+    <Animated.View
+      entering={popIn(reduced)}
       style={{
         position: 'absolute',
         inset: 0,

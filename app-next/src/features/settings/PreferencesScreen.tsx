@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import {
-  Heading,
-  SettingsGroup,
-  SettingsRow,
-  BottomSheet,
-  ChoiceRow,
-  Label,
-} from '../../design-system';
+import { Heading, SettingsGroup, SettingsRow, BottomSheet, ChoiceRow, Label } from '../../design-system';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { profileStore as useProfileStore } from '../../state/profileStore';
 import { settingsCopy as c } from '../../content/settings';
@@ -40,21 +33,31 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
       }>
       <Heading title={c.preferences} />
       <SettingsGroup>
-        <SettingsRow title="Usage analytics" subtitle="Help improve ExcerLock. Crash diagnostics remain enabled."
-          toggle={s.analyticsEnabled} onToggle={async (enabled) => {
+        <SettingsRow
+          title="Usage analytics"
+          toggle={s.analyticsEnabled}
+          onToggle={async (enabled) => {
             useSettingsStore.getState().patch({ analyticsEnabled: enabled });
             setAnalyticsError(false);
-            try { await runtime.analytics.setEnabled?.(enabled); }
-            catch { setAnalyticsError(true); }
-          }} />
-        {analyticsError ? <Label accessibilityRole="alert">Analytics preference saved. Restart ExcerLock to finish applying it.</Label> : null}
+            try {
+              await runtime.analytics.setEnabled?.(enabled);
+            } catch {
+              setAnalyticsError(true);
+            }
+          }}
+        />
+        {analyticsError ? (
+          <Label accessibilityRole="alert">Analytics preference saved. Restart ExcerLock to finish applying it.</Label>
+        ) : null}
       </SettingsGroup>
       <SettingsGroup>
         <Label variant="section">{c.walkPlaces}</Label>
-        {([
-          ['outside', c.walkOutside],
-          ['treadmill', c.walkTreadmill],
-        ] as const).map(([place, title]) => (
+        {(
+          [
+            ['outside', c.walkOutside],
+            ['treadmill', c.walkTreadmill],
+          ] as const
+        ).map(([place, title]) => (
           <ChoiceRow
             key={place}
             title={title}
@@ -79,7 +82,6 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
         />
         <SettingsRow
           title={c.auto}
-          subtitle={c.autoBody}
           toggle={s.gymAutoDetect}
           onToggle={async (v) => {
             if (!v) {
@@ -93,7 +95,11 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
             setAutoDenied(!enabled);
           }}
         />
-        {autoDenied ? <Label accessibilityRole="alert" tone="secondary">{c.autoDenied}</Label> : null}
+        {autoDenied ? (
+          <Label accessibilityRole="alert" tone="secondary">
+            {c.autoDenied}
+          </Label>
+        ) : null}
       </SettingsGroup>
       <SettingsGroup>
         <SettingsRow title={c.gyms} icon="gym" onPress={() => navigate('gyms')} />

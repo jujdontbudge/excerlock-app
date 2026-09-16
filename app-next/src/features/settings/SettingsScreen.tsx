@@ -35,12 +35,7 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
         {c.title}
       </Label>
       <CompactGroup>
-        <CompactRow
-          title={name || c.account}
-          subtitle={c.accountPrivacy}
-          icon="person"
-          onPress={() => navigate('account')}
-        />
+        <CompactRow title={name || c.account} icon="person" onPress={() => navigate('account')} />
       </CompactGroup>
       <CompactGroup>
         <CompactRow
@@ -52,34 +47,22 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
         <CompactRow title={c.preferences} icon="gear" onPress={() => navigate('preferences')} />
         <CompactRow
           title={c.notificationsToggle}
-          subtitle={c.notificationsToggleBody}
           icon="bell"
           toggle={notificationsOn}
           onToggle={(on) => void toggleNotifications(on)}
         />
       </CompactGroup>
       <CompactGroup>
-        <CompactRow
-          title={c.reportBug}
-          subtitle={c.reportBugBody}
-          icon="info"
-          onPress={() => navigate('bug')}
-        />
-        <CompactRow
-          title={c.giveFeedback}
-          subtitle={c.giveFeedbackBody}
-          icon="star"
-          onPress={() => navigate('feedback')}
-        />
+        <CompactRow title={c.reportBug} icon="info" onPress={() => navigate('bug')} />
+        <CompactRow title={c.giveFeedback} icon="star" onPress={() => navigate('feedback')} />
         <CompactRow
           title={c.supportRow}
-          subtitle={c.supportRowBody}
           icon="mail"
           onPress={() => {
             void openSupportEmail().catch(() => setMailNote(true));
           }}
         />
-        <CompactRow title={c.legal} subtitle={c.legalBody} icon="list" onPress={() => navigate('legal')} />
+        <CompactRow title={c.legal} icon="list" onPress={() => navigate('legal')} />
       </CompactGroup>
       {mailNote ? (
         <Label accessibilityRole="alert" selectable>

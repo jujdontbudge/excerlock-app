@@ -77,9 +77,6 @@ export function GymSetup({ onContinue, onChoose }: { onContinue: () => void; onC
               trackColor={{ true: t.brand.primary, false: t.border.divider }}
             />
           </View>
-          <Label variant="support" tone="secondary">
-            {c.autoDetectBody}
-          </Label>
         </Reveal>
       ) : null}
       <View style={{ flexGrow: 1 }} />
