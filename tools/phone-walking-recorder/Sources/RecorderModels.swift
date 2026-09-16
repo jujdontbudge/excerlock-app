@@ -305,6 +305,10 @@ struct SessionSummary: Codable, Identifiable, Equatable {
     let byteCount: Int64
     let scenarioCounts: [String: Int]
     let directoryName: String
+    /// Explicit raw-inertial coverage and suspension evidence. Optional so an
+    /// archive finalized before the field existed still decodes and lists; a
+    /// legacy manifest simply carries no declared coverage.
+    var rawStream: RawStreamManifest? = nil
 
     var durationSeconds: TimeInterval {
         Double(endedAt.monotonicNs - startedAt.monotonicNs) / 1_000_000_000
@@ -318,22 +322,112 @@ struct LabelTransition: Equatable {
     let reason: String
 }
 
+/// One labeled ground-truth window with the raw-inertial samples observed while
+/// it was open. Kept beside the label boundaries so the manifest can report
+/// coverage per window, including the final window that a process death leaves
+/// open.
+struct LabelSegment: Equatable {
+    let scenario: GroundTruthScenario
+    let from: CaptureStamp
+    fileprivate(set) var to: CaptureStamp?
+    fileprivate(set) var rawSampleCount = 0
+    fileprivate(set) var rawStreamsObserved: Set<String> = []
+    fileprivate(set) var firstRawSample: CaptureStamp?
+    fileprivate(set) var lastRawSample: CaptureStamp?
+}
+
 struct LabelTimeline {
     private(set) var active: GroundTruthScenario?
     private(set) var activeSince: CaptureStamp?
     private(set) var segmentCount = 0
     private(set) var scenarioCounts: [String: Int] = [:]
+    private(set) var segments: [LabelSegment] = []
 
     mutating func transition(to next: GroundTruthScenario?, at stamp: CaptureStamp, reason: String) -> LabelTransition? {
         guard next != active else { return nil }
         let previous = active
+        if previous != nil, let index = segments.indices.last, segments[index].to == nil {
+            segments[index].to = stamp
+        }
         active = next
         activeSince = next == nil ? nil : stamp
         if let next {
             segmentCount += 1
             scenarioCounts[next.rawValue, default: 0] += 1
+            segments.append(LabelSegment(scenario: next, from: stamp))
         }
         return LabelTransition(from: previous, to: next, boundary: stamp, reason: reason)
+    }
+
+    /// Raw-inertial samples count only toward the labeled window that was open
+    /// when they arrived. Samples outside every label are baseline/transition
+    /// evidence and belong to no window.
+    mutating func recordRawSample(stream: String, at stamp: CaptureStamp) {
+        guard let index = segments.indices.last, segments[index].to == nil else { return }
+        segments[index].rawSampleCount += 1
+        segments[index].rawStreamsObserved.insert(stream)
+        if segments[index].firstRawSample == nil { segments[index].firstRawSample = stamp }
+        segments[index].lastRawSample = stamp
+    }
+
+    /// Closes the window that was still open when the session ended or failed,
+    /// so the manifest can account for its whole labeled span.
+    mutating func closeOpenSegment(at stamp: CaptureStamp) {
+        guard let index = segments.indices.last, segments[index].to == nil else { return }
+        segments[index].to = stamp.monotonicNs >= segments[index].from.monotonicNs ? stamp : segments[index].from
+    }
+
+    /// Per-window raw coverage. Uncovered time is the union of every declared
+    /// suspension inside the window plus the gaps before the first and after
+    /// the last raw sample, so a window that was suspended can never be read as
+    /// a still phone.
+    func rawLabelWindows(
+        endedAt: CaptureStamp,
+        suspensions: [RawSuspensionInterval],
+        suspensionThresholdSeconds: Double
+    ) -> [RawLabelWindow] {
+        segments.map { segment in
+            let end = segment.to ?? endedAt
+            let duration = max(0, Double(end.monotonicNs - segment.from.monotonicNs) / 1_000_000_000)
+            var uncovered: [(UInt64, UInt64)] = []
+            for suspension in suspensions {
+                let low = max(suspension.fromReceiptMonotonicNs, segment.from.monotonicNs)
+                let high = min(suspension.toReceiptMonotonicNs, end.monotonicNs)
+                if high > low { uncovered.append((low, high)) }
+            }
+            if let first = segment.firstRawSample {
+                if first.monotonicNs > segment.from.monotonicNs {
+                    uncovered.append((segment.from.monotonicNs, min(first.monotonicNs, end.monotonicNs)))
+                }
+            } else {
+                uncovered.append((segment.from.monotonicNs, end.monotonicNs))
+            }
+            if let last = segment.lastRawSample, last.monotonicNs < end.monotonicNs {
+                uncovered.append((last.monotonicNs, end.monotonicNs))
+            }
+            let uncoveredSeconds = min(duration, MonotonicIntervalUnion.lengthSeconds(uncovered))
+            let coverage: RawLabelWindowCoverage
+            if segment.rawSampleCount == 0 {
+                coverage = .none
+            } else if uncoveredSeconds <= suspensionThresholdSeconds {
+                coverage = .covered
+            } else {
+                coverage = .partial
+            }
+            return RawLabelWindow(
+                scenario: segment.scenario.rawValue,
+                fromReceiptMonotonicNs: segment.from.monotonicNs,
+                toReceiptMonotonicNs: end.monotonicNs,
+                fromReceiptWallTimeMs: segment.from.wallTimeMs,
+                toReceiptWallTimeMs: (segment.to ?? endedAt).wallTimeMs,
+                durationSeconds: duration,
+                rawSampleCount: segment.rawSampleCount,
+                rawStreamsObserved: segment.rawStreamsObserved.sorted(),
+                uncoveredSeconds: uncoveredSeconds,
+                coverageRatio: duration > 0 ? max(0, min(1, 1 - uncoveredSeconds / duration)) : 1,
+                coverage: coverage
+            )
+        }
     }
 }
 

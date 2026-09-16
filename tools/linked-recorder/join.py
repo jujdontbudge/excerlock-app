@@ -18,6 +18,19 @@ from typing import Any, Iterable
 PROTOCOL_VERSION = 1
 MAX_ARCHIVE_BYTES = 350 * 1024 * 1024
 REQUIRED_RECORDER_STREAMS = ("system.ndjson", "labels.ndjson", "decisions.ndjson", "raw-motion.ndjson")
+# The three raw inertial streams the recorder must write in every label mode,
+# the suspension bases the manifest may declare, and how much ordinary delivery
+# jitter is not a suspension. These mirror the recorder's RawStreamCoverage.swift.
+RAW_INERTIAL_TYPES = {"accelerometer_sample", "gyroscope_sample", "device_motion_sample"}
+RAW_SUSPENSION_BASES = {
+    "app_lifecycle_raw_gap",
+    "raw_delivery_gap",
+    "session_ended_without_raw_resume",
+    "no_raw_samples_observed",
+    "process_termination_recovered_on_launch",
+}
+RAW_SAMPLE_COUNT_BASES = {"exact", "as_of_last_checkpoint", "unavailable"}
+RAW_GAP_TOLERANCE_NS = 50_000_000
 PRODUCTION_PRODUCERS = {"host_native", "host_js", "monitor_extension"}
 PRODUCTION_EVENT_TYPES = {
     "trace_start", "trace_stop", "trace_truncated", "trace_drop_summary", "process", "clock_anchor",
@@ -67,14 +80,18 @@ def parse_json_object(contents: str, source: str) -> dict[str, Any]:
     return value
 
 
-def recorder_export(path: Path) -> tuple[dict[str, list[dict[str, Any]]], dict[str, Any]]:
+def recorder_export(path: Path) -> tuple[dict[str, list[dict[str, Any]]], dict[str, Any], dict[str, Any] | None]:
     if path.is_dir():
         matches = {name: list(path.rglob(name)) for name in (*REQUIRED_RECORDER_STREAMS, "metadata.json")}
         if any(len(items) != 1 for items in matches.values()):
             raise ValueError("recorder directory must contain exactly one metadata file and each required NDJSON stream")
         streams = {name: parse_ndjson(matches[name][0].read_text(encoding="utf-8").splitlines(), name) for name in REQUIRED_RECORDER_STREAMS}
         metadata = parse_json_object(matches["metadata.json"][0].read_text(encoding="utf-8"), "metadata.json")
-        return streams, metadata
+        manifest_files = list(path.rglob("manifest.json"))
+        if len(manifest_files) > 1:
+            raise ValueError("recorder directory must not contain more than one manifest.json")
+        manifest = parse_json_object(manifest_files[0].read_text(encoding="utf-8"), "manifest.json") if manifest_files else None
+        return streams, metadata, manifest
     if not zipfile.is_zipfile(path):
         raise ValueError("recorder input must be a Walking Recorder directory or ZIP archive")
     with zipfile.ZipFile(path) as archive:
@@ -97,7 +114,14 @@ def recorder_export(path: Path) -> tuple[dict[str, list[dict[str, Any]]], dict[s
             raise ValueError("recorder archive must contain exactly one metadata.json")
         with archive.open(metadata_files[0]) as handle:
             metadata = parse_json_object(handle.read().decode("utf-8"), "metadata.json")
-        return result, metadata
+        manifest_files = [item for item in members if Path(item.filename).name == "manifest.json"]
+        if len(manifest_files) > 1:
+            raise ValueError("recorder archive must not contain more than one manifest.json")
+        manifest = None
+        if manifest_files:
+            with archive.open(manifest_files[0]) as handle:
+                manifest = parse_json_object(handle.read().decode("utf-8"), "manifest.json")
+        return result, metadata, manifest
 
 
 def field(event: dict[str, Any], name: str) -> Any:
@@ -136,6 +160,257 @@ def validate_recorder_metadata(metadata: dict[str, Any], session_id: str, protoc
         raise ValueError("recorder metadata has an invalid linked clock or start claim")
     if linked.get("nonceExported") is not False:
         raise ValueError("recorder metadata does not confirm nonce exclusion")
+
+
+def interval_union_length(intervals: list[tuple[int, int]]) -> int:
+    items = sorted((low, high) for low, high in intervals if high > low)
+    if not items:
+        return 0
+    total = 0
+    start, end = items[0]
+    for low, high in items[1:]:
+        if low > end:
+            total += end - start
+            start, end = low, high
+        else:
+            end = max(end, high)
+    return total + (end - start)
+
+
+def recorder_raw_receipts(streams: dict[str, list[dict[str, Any]]]) -> list[int]:
+    return sorted(
+        event["receiptMonotonicNs"]
+        for event in streams["raw-motion.ndjson"]
+        if event.get("type") in RAW_INERTIAL_TYPES and valid_int(event.get("receiptMonotonicNs"))
+    )
+
+
+def recorder_session_bounds(streams: dict[str, list[dict[str, Any]]]) -> tuple[int | None, int | None]:
+    system = streams["system.ndjson"]
+    start = next(
+        (event["receiptMonotonicNs"] for event in system if event.get("type") == "session_start" and valid_int(event.get("receiptMonotonicNs"))),
+        None,
+    )
+    end = next(
+        (event["receiptMonotonicNs"] for event in reversed(system) if event.get("type") == "session_end" and valid_int(event.get("receiptMonotonicNs"))),
+        None,
+    )
+    if end is None:
+        end = next(
+            (event["receiptMonotonicNs"] for event in reversed(system) if event.get("type") == "interruption_recovered_on_launch" and valid_int(event.get("receiptMonotonicNs"))),
+            None,
+        )
+    return start, end
+
+
+def recorder_label_windows(streams: dict[str, list[dict[str, Any]]], session_end_ns: int | None) -> list[dict[str, Any]]:
+    windows: list[dict[str, Any]] = []
+    open_window: dict[str, Any] | None = None
+    for event in streams["labels.ndjson"]:
+        if event.get("type") != "label_transition" or not valid_int(event.get("receiptMonotonicNs")):
+            continue
+        at = event["receiptMonotonicNs"]
+        if open_window is not None:
+            windows.append({**open_window, "to": at})
+        payload = event.get("payload")
+        to_label = payload.get("toLabel") if isinstance(payload, dict) else None
+        open_window = {"scenario": to_label, "from": at} if isinstance(to_label, str) and to_label else None
+    if open_window is not None:
+        end = session_end_ns if session_end_ns is not None and session_end_ns > open_window["from"] else open_window["from"]
+        windows.append({**open_window, "to": end})
+    return windows
+
+
+def validate_recorder_manifest(
+    manifest: dict[str, Any] | None,
+    streams: dict[str, list[dict[str, Any]]],
+    errors: list[str],
+    warnings: list[str],
+) -> dict[str, Any]:
+    """Cross-checks the recorder manifest's raw-stream coverage evidence.
+
+    The point is the silent-gap rule: every span with no delivered raw inertial
+    sample must be declared as a suspension, and a labeled window that is not
+    fully covered must say so. A legacy manifest without the block is accepted
+    with a warning so archives recorded before the evidence format existed still
+    join; a manifest that declares coverage the streams contradict fails closed.
+    """
+    if manifest is None:
+        warnings.append("recorder archive has no manifest.json; raw-stream suspension evidence cannot be checked")
+        return {"declared": False, "reason": "manifest.json missing"}
+    raw = manifest.get("rawStream")
+    if not isinstance(raw, dict):
+        warnings.append("recorder manifest declares no rawStream block (legacy archive); raw coverage cannot be checked")
+        return {"declared": False, "reason": "legacy manifest without rawStream"}
+
+    report: dict[str, Any] = {"declared": True}
+    if raw.get("schemaVersion") != 1:
+        errors.append(f"rawStream schemaVersion {raw.get('schemaVersion')!r} is not supported")
+    basis = raw.get("sampleCountBasis")
+    if basis not in RAW_SAMPLE_COUNT_BASES:
+        errors.append(f"rawStream sampleCountBasis {basis!r} is invalid")
+    threshold_seconds = raw.get("suspensionThresholdSeconds")
+    if not isinstance(threshold_seconds, (int, float)) or isinstance(threshold_seconds, bool) or threshold_seconds <= 0:
+        errors.append("rawStream suspensionThresholdSeconds must be a positive number")
+        threshold_seconds = 2.0
+    threshold_ns = int(float(threshold_seconds) * 1_000_000_000)
+
+    declarations: list[dict[str, int]] = []
+    suspensions_raw = raw.get("suspensions")
+    if not isinstance(suspensions_raw, list):
+        errors.append("rawStream suspensions must be a list")
+        suspensions_raw = []
+    for index, item in enumerate(suspensions_raw, 1):
+        if not isinstance(item, dict):
+            errors.append(f"rawStream suspension {index} must be an object")
+            continue
+        low = item.get("fromReceiptMonotonicNs")
+        high = item.get("toReceiptMonotonicNs")
+        if not valid_int(low) or not valid_int(high) or high <= low:
+            errors.append(f"rawStream suspension {index} has an invalid monotonic range")
+            continue
+        if item.get("basis") not in RAW_SUSPENSION_BASES:
+            errors.append(f"rawStream suspension {index} has an invalid basis")
+        if item.get("exactSuspensionTimeKnown") is not False:
+            errors.append(f"rawStream suspension {index} must not claim an exact suspension time")
+        if not valid_int(item.get("fromReceiptWallTimeMs")) or not valid_int(item.get("toReceiptWallTimeMs")):
+            errors.append(f"rawStream suspension {index} has invalid wall-clock bounds")
+        if not isinstance(item.get("fromWallTimeISO8601"), str) or not isinstance(item.get("toWallTimeISO8601"), str):
+            errors.append(f"rawStream suspension {index} is missing its wall-clock range")
+        declarations.append({"from": low, "to": high, "basis": item.get("basis")})
+    declared_ranges = [(declaration["from"], declaration["to"]) for declaration in declarations]
+
+    receipts = recorder_raw_receipts(streams)
+    session_start, session_end = recorder_session_bounds(streams)
+
+    declared_first = raw.get("firstSampleMonotonicNs")
+    declared_last = raw.get("lastSampleMonotonicNs")
+    if receipts:
+        if declared_first != receipts[0]:
+            errors.append("rawStream firstSampleMonotonicNs does not match the first delivered raw inertial sample")
+        if declared_last != receipts[-1]:
+            errors.append("rawStream lastSampleMonotonicNs does not match the last delivered raw inertial sample")
+    elif declared_first is not None or declared_last is not None:
+        errors.append("rawStream declares raw samples that raw-motion.ndjson does not contain")
+
+    for index, interval in enumerate(declarations, 1):
+        inside = [value for value in receipts if interval["from"] < value < interval["to"]]
+        if inside:
+            errors.append(f"rawStream suspension {index} overlaps {len(inside)} delivered raw sample(s)")
+
+    def declared_gap(low: int, high: int) -> bool:
+        return any(
+            start - RAW_GAP_TOLERANCE_NS <= low and end + RAW_GAP_TOLERANCE_NS >= high
+            for start, end in declared_ranges
+        )
+
+    for previous, current in zip(receipts, receipts[1:]):
+        if current - previous > threshold_ns + RAW_GAP_TOLERANCE_NS and not declared_gap(previous, current):
+            errors.append(
+                f"raw stream gap of {(current - previous) / 1e9:.2f}s after {previous} is not declared as a suspension"
+            )
+
+    ended_before = raw.get("endedBeforeSessionEnd")
+    if not receipts:
+        if not declarations:
+            errors.append("raw-motion.ndjson has no raw inertial samples and the manifest declares no suspension")
+        elif session_start is not None and session_end is not None and not declared_gap(session_start, session_end):
+            errors.append("a session without any raw inertial sample is not covered by a declared suspension")
+    elif session_end is not None and session_end - receipts[-1] > threshold_ns + RAW_GAP_TOLERANCE_NS:
+        if ended_before is not True:
+            errors.append("rawStream does not declare that the raw stream stopped before the session ended")
+        if not declared_gap(receipts[-1], session_end):
+            errors.append("the raw-stream tail after the last sample is not covered by a declared suspension")
+    elif ended_before is True:
+        warnings.append("rawStream declares endedBeforeSessionEnd although the last raw sample is within the suspension threshold of the session end")
+
+    declared_windows = raw.get("labelWindows")
+    if not isinstance(declared_windows, list):
+        errors.append("rawStream labelWindows must be a list")
+        declared_windows = []
+    actual_windows = recorder_label_windows(streams, session_end)
+    if len(declared_windows) != len(actual_windows):
+        errors.append(
+            f"rawStream declares {len(declared_windows)} label window(s) but labels.ndjson opens {len(actual_windows)}"
+        )
+    report_windows: list[dict[str, Any]] = []
+    uncovered_windows: list[dict[str, Any]] = []
+    for index, (declared_window, actual) in enumerate(zip(declared_windows, actual_windows), 1):
+        if not isinstance(declared_window, dict):
+            errors.append(f"rawStream label window {index} must be an object")
+            continue
+        if declared_window.get("scenario") != actual["scenario"]:
+            errors.append(f"rawStream label window {index} does not match the labels.ndjson scenario")
+        declared_from = declared_window.get("fromReceiptMonotonicNs")
+        declared_to = declared_window.get("toReceiptMonotonicNs")
+        if not valid_int(declared_from) or not valid_int(declared_to) or declared_to < declared_from:
+            errors.append(f"rawStream label window {index} has an invalid range")
+            continue
+        if declared_from != actual["from"]:
+            errors.append(f"rawStream label window {index} does not start at the labels.ndjson boundary")
+        if index < len(actual_windows) and declared_to != actual["to"]:
+            errors.append(f"rawStream label window {index} does not end at the next labels.ndjson boundary")
+        if index == len(actual_windows) and declared_to < actual["to"]:
+            errors.append(f"rawStream label window {index} ends before the last labels.ndjson boundary")
+        coverage = declared_window.get("coverage")
+        if coverage not in ("covered", "partial", "none"):
+            errors.append(f"rawStream label window {index} has an invalid coverage state")
+            continue
+        declared_count = declared_window.get("rawSampleCount")
+        if not isinstance(declared_count, int) or isinstance(declared_count, bool) or declared_count < 0:
+            errors.append(f"rawStream label window {index} has an invalid rawSampleCount")
+            continue
+        window_samples = [value for value in receipts if declared_from <= value < declared_to]
+        actual_count = len(window_samples)
+        if abs(declared_count - actual_count) > 1:
+            errors.append(
+                f"rawStream label window {index} declares {declared_count} raw sample(s) but the streams hold {actual_count}"
+            )
+        overlap = interval_union_length([
+            (max(low, declared_from), min(high, declared_to)) for low, high in declared_ranges
+        ])
+        head = (window_samples[0] - declared_from) if window_samples else (declared_to - declared_from)
+        tail = (declared_to - window_samples[-1]) if window_samples else (declared_to - declared_from)
+        if coverage == "none" and actual_count != 0:
+            errors.append(f"rawStream label window {index} claims no raw coverage but raw samples exist inside it")
+        if coverage != "none" and actual_count == 0:
+            errors.append(f"rawStream label window {index} claims raw coverage but contains no raw inertial sample")
+        if coverage == "covered" and (
+            overlap > threshold_ns + RAW_GAP_TOLERANCE_NS
+            or head > threshold_ns + RAW_GAP_TOLERANCE_NS
+            or tail > threshold_ns + RAW_GAP_TOLERANCE_NS
+        ):
+            errors.append(f"rawStream label window {index} claims covered coverage but has an undeclared uncovered span")
+        if coverage == "partial" and window_samples and overlap <= threshold_ns and head <= threshold_ns and tail <= threshold_ns:
+            errors.append(f"rawStream label window {index} claims partial coverage but every span is covered")
+        summary = {
+            "scenario": actual["scenario"],
+            "coverage": coverage,
+            "rawSampleCount": declared_count,
+            "actualRawSampleCount": actual_count,
+            "uncoveredSeconds": declared_window.get("uncoveredSeconds"),
+        }
+        report_windows.append(summary)
+        if coverage != "covered":
+            uncovered_windows.append(summary)
+
+    report.update({
+        "schemaVersion": raw.get("schemaVersion"),
+        "sampleCountBasis": basis,
+        "sampleCounts": raw.get("sampleCounts") if isinstance(raw.get("sampleCounts"), dict) else {},
+        "rawInertialSampleCount": len(receipts),
+        "suspensionCount": len(declarations),
+        "suspendedSeconds": round(sum(end - start for start, end in declared_ranges) / 1e9, 3),
+        "endedBeforeSessionEnd": ended_before is True,
+        "suspensions": declarations,
+        "labelWindows": report_windows,
+        "uncoveredLabelWindows": uncovered_windows,
+    })
+    if uncovered_windows:
+        warnings.append(
+            f"{len(uncovered_windows)} labeled window(s) have incomplete raw coverage; the manifest declares the uncovered time"
+        )
+    return report
 
 
 def normalized_recorder(streams: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
@@ -273,13 +548,15 @@ def main() -> int:
     errors: list[str] = []
     warnings: list[str] = []
     try:
-        streams, metadata = recorder_export(args.recorder)
+        streams, metadata, manifest = recorder_export(args.recorder)
         session_id, protocol = find_recorder_handshake(streams["system.ndjson"])
         validate_recorder_metadata(metadata, session_id, protocol)
         production = parse_ndjson(args.production.read_text(encoding="utf-8").splitlines(), args.production.name)
     except (OSError, ValueError) as error:
         print(f"linked-recorder join failed: {error}", file=sys.stderr)
         return 2
+
+    raw_stream_report = validate_recorder_manifest(manifest, streams, errors, warnings)
 
     if not production:
         errors.append("production trace is empty")
@@ -358,6 +635,7 @@ def main() -> int:
         "warnings": warnings,
         "eventCounts": dict(sorted(count_by_source.items())),
         "productionCoverage": coverage,
+        "rawStream": raw_stream_report,
         "clock": {
             "domain": "mach_continuous_time",
             "recorderAnchorCount": len(recorder_offsets),
@@ -376,6 +654,7 @@ def main() -> int:
         "Local linked-recorder join\n\n"
         "joined.ndjson is ordered by mach_continuous_time receipt timestamps.\n"
         "validation.json checks session/protocol identity, clock anchors, sequence continuity, loss markers, causal-path coverage, and explicit canary observations.\n"
+        "It also checks the recorder manifest's rawStream block: every label window must have raw coverage or an explicitly declared suspension with its observed wall-clock range, so missing raw motion is never read as a still phone.\n"
         "A returned ManagedSettings write is not proof that iOS visibly presented a shield. No file is uploaded by this tool.\n",
         encoding="utf-8",
     )

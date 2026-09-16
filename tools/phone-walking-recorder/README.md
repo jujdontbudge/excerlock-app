@@ -23,7 +23,7 @@ A standalone, local-only iPhone companion for collecting labeled walking and pho
 5. Tap **Finish & Save**. The session appears under **Saved on this phone**.
 6. Tap **Share archive** to use the normal iOS share sheet. Export before using the trash button if the session matters.
 
-Keep the recorder screen open. The display stays awake during a recording. The companion intentionally has no location/background keep-alive, so iOS may suspend live callbacks if another app opens or the phone locks. On return, the interface and archive report observed lifecycle/sample gaps; they do not invent an exact suspension timestamp.
+Keep the recorder screen open. The display stays awake during a recording. The companion intentionally has no location/background keep-alive, so iOS may suspend live callbacks if another app opens or the phone locks. When that happens the raw stream stops while the label clock keeps running. The archive never hides it: every span with no delivered raw inertial sample longer than 2 s is written as a suspension with its observed wall-clock range (`raw_stream_suspended` in `system.ndjson`, `rawStream.suspensions` in `manifest.json`), and each labeled window reports its own raw coverage (`covered`, `partial` or `none`). A label window with missing raw motion therefore reads as suspended, never as a still phone. The archive does not invent an exact suspension timestamp.
 
 Recording health, unavailable streams, denied permission, sensor errors, the 250 MB per-session limit, the 750 MB local-retention limit, and low disk space are visible. The app never reports a successful capture when the production-path motion inputs are unavailable.
 
@@ -50,10 +50,10 @@ Each share action creates one `walking-capture-<session-id>.zip` containing:
 | `system.ndjson` | Permission/subscription state, configured and observed rates, lifecycle callbacks, sensor errors, recording gaps, clock mapping, flush/recovery events, and optional linked-session/canary markers owned by Walking Recorder. |
 | `metadata.json` | Build/source commit, non-unique device model and OS, permission/availability, production parity constants, lab-only fields. |
 | `schema.json` | Field/timebase/unit guide. |
-| `manifest.json` | Completion status, duration, event/segment/gap counts, size and per-scenario counts. |
+| `manifest.json` | Completion status, duration, event/segment/gap counts, size and per-scenario counts, plus the explicit raw-stream evidence: per-stream sample counts and first/last receipts, every observed suspension interval with its wall-clock range and basis, and one coverage entry per labeled window (`covered`, `partial` or `none`). |
 | `README.txt` | Archive interpretation cautions. |
 
-All event streams use one monotonically increasing `sequence`. Every event includes receipt-time `mach_continuous_time` converted to nanoseconds plus a wall-clock pair. Core Motion source timestamps remain separately named with their native clock domain. Writes are incrementally buffered to 64 KB and critical label/lifecycle boundaries are synchronized immediately. A protected `recovery.json` checkpoint makes an unfinished session recover as `interrupted` on next launch. For linked sessions it also retains the non-exported one-time link until the operator removes the reminder after Trace Lab has saved or cancelled the test.
+All event streams use one monotonically increasing `sequence`. Every event includes receipt-time `mach_continuous_time` converted to nanoseconds plus a wall-clock pair. Core Motion source timestamps remain separately named with their native clock domain. Writes are incrementally buffered to 64 KB and critical label/lifecycle boundaries are synchronized immediately. A protected `recovery.json` checkpoint makes an unfinished session recover as `interrupted` on next launch, carrying the raw-coverage snapshot so a process that died still reports its suspensions and label-window coverage. For linked sessions it also retains the non-exported one-time link until the operator removes the reminder after Trace Lab has saved or cancelled the test.
 
 ## Production-path parity
 
@@ -87,6 +87,10 @@ xcodebuild -project PhoneWalkingRecorder.xcodeproj \
 ```
 
 For a UI-only simulator screenshot, launch a Debug build with `--ui-preview`. The screen displays **SIMULATED UI • NOT SENSOR EVIDENCE**, and this flag is compiled out of Release. Simulator checks validate software and layout only, never walking/shaking detection.
+
+### What a simulator run proves, and what needs the phone
+
+The simulator suite proves the archive contract end to end: every inertial stream reaches the archive at the requested rate in every label mode, a suspension is marked exactly over the undelivered range and nowhere else, labeled windows carry their own coverage state, an interrupted archive recovers with its suspensions, and the offline joiner accepts a manifest the recorder actually wrote. It cannot prove live Core Motion delivery, real screen-lock timing (this app intentionally has no keep-alive, so iOS suspends it) or gait-band signal energy: those exist only on the phone. The Step 1 capture protocol on the phone is the remaining proof, and `join.py` fails closed if a capture silently lost raw coverage.
 
 The repository guardrail:
 

@@ -134,12 +134,12 @@ final class SessionWriter {
         try flushLocked(synchronize: true)
     }
 
-    func checkpoint(timeline: LabelTimeline, gapCount: Int) throws {
+    func checkpoint(timeline: LabelTimeline, gapCount: Int, rawStream: RawStreamManifest? = nil) throws {
         lock.lock()
         defer { lock.unlock() }
         guard !finalized else { return }
         try flushLocked(synchronize: true)
-        try writeRecovery(timeline: timeline, gapCount: gapCount)
+        try writeRecovery(timeline: timeline, gapCount: gapCount, rawStream: rawStream)
     }
 
     func finalize(
@@ -147,7 +147,8 @@ final class SessionWriter {
         timeline: LabelTimeline,
         gapCount: Int,
         endedAt: CaptureStamp? = nil,
-        detail: String? = nil
+        detail: String? = nil,
+        rawStream: RawStreamManifest? = nil
     ) throws -> SessionSummary {
         lock.lock()
         defer { lock.unlock() }
@@ -171,7 +172,8 @@ final class SessionWriter {
             gapCount: gapCount,
             byteCount: bytesWritten,
             scenarioCounts: timeline.scenarioCounts,
-            directoryName: directoryURL.lastPathComponent
+            directoryName: directoryURL.lastPathComponent,
+            rawStream: rawStream
         )
         let manifestURL = directoryURL.appendingPathComponent("manifest.json")
         try Self.writeEncodable(provisional, to: manifestURL)
@@ -186,13 +188,14 @@ final class SessionWriter {
             gapCount: provisional.gapCount,
             byteCount: finalSize,
             scenarioCounts: provisional.scenarioCounts,
-            directoryName: provisional.directoryName
+            directoryName: provisional.directoryName,
+            rawStream: provisional.rawStream
         )
         try Self.writeEncodable(summary, to: manifestURL)
         if linkedTraceRecovery == nil {
             try? FileManager.default.removeItem(at: directoryURL.appendingPathComponent("recovery.json"))
         } else {
-            try writeRecovery(timeline: timeline, gapCount: gapCount, recorderFinalized: true)
+            try writeRecovery(timeline: timeline, gapCount: gapCount, recorderFinalized: true, rawStream: rawStream)
         }
         return summary
     }
@@ -249,7 +252,7 @@ final class SessionWriter {
         if synchronize { try handle.synchronize() }
     }
 
-    private func writeRecovery(timeline: LabelTimeline, gapCount: Int, recorderFinalized: Bool = false) throws {
+    private func writeRecovery(timeline: LabelTimeline, gapCount: Int, recorderFinalized: Bool = false, rawStream: RawStreamManifest? = nil) throws {
         var recovery: [String: Any] = [
             "schemaVersion": recorderSchemaVersion,
             "sessionId": id,
@@ -273,6 +276,11 @@ final class SessionWriter {
                 "excludedFromExport": true
             ]
         }
+        // The checkpoint snapshot lets the relaunch recovery pass rebuild label
+        // coverage and every suspension observed before the process died.
+        if let rawStream, let object = Self.jsonObject(rawStream) {
+            recovery["rawStream"] = object
+        }
         try Self.writeJSONObject(recovery, to: directoryURL.appendingPathComponent("recovery.json"))
     }
 
@@ -295,26 +303,51 @@ final class SessionWriter {
             else { continue }
 
             let recoveredAt = clock.now()
-            let sequence = (recovery["lastSequence"] as? Int ?? 0) + 1
+            // A checkpoint is not written for every raw sample, so the highest
+            // sequence on disk can exceed the one the recovery file carries.
+            // Recovered events must continue after it or the archive would
+            // contain duplicate sequence numbers.
+            let sequence = max(recovery["lastSequence"] as? Int ?? 0, Self.lastSequenceOnDisk(in: directory)) + 1
             let systemURL = directory.appendingPathComponent(CaptureEventChannel.system.rawValue)
+            let rawStream = RawStreamManifest.recovered(
+                snapshot: Self.rawStreamSnapshot(from: recovery),
+                startedAt: started,
+                recoveredAt: recoveredAt,
+                lastDeliveredRawSample: lastRawInertialSampleStamp(in: directory)
+            )
             if let handle = try? FileHandle(forWritingTo: systemURL) {
                 _ = try? handle.seekToEnd()
-                let event: [String: Any] = [
-                    "schemaVersion": recorderSchemaVersion,
-                    "sequence": sequence,
-                    "type": "interruption_recovered_on_launch",
-                    "receiptMonotonicNs": recoveredAt.monotonicNs,
-                    "receiptWallTimeMs": recoveredAt.wallTimeMs,
-                    "receiptWallTimeISO8601": recoveredAt.wallTimeISO8601,
-                    "payload": [
-                        "meaning": "The prior process did not finalize. This timestamp is recovery observation time; it is not the exact suspension, crash, or termination time."
+                let interval = rawStream.suspensions.last
+                let events: [[String: Any]] = [
+                    [
+                        "schemaVersion": recorderSchemaVersion,
+                        "sequence": sequence,
+                        "type": "raw_stream_suspended",
+                        "receiptMonotonicNs": interval?.toReceiptMonotonicNs ?? recoveredAt.monotonicNs,
+                        "receiptWallTimeMs": interval?.toReceiptWallTimeMs ?? recoveredAt.wallTimeMs,
+                        "receiptWallTimeISO8601": interval?.toWallTimeISO8601 ?? recoveredAt.wallTimeISO8601,
+                        "payload": interval?.dictionary ?? ["meaning": "No raw inertial sample was delivered before this archive was recovered."]
+                    ],
+                    [
+                        "schemaVersion": recorderSchemaVersion,
+                        "sequence": sequence + 1,
+                        "type": "interruption_recovered_on_launch",
+                        "receiptMonotonicNs": recoveredAt.monotonicNs,
+                        "receiptWallTimeMs": recoveredAt.wallTimeMs,
+                        "receiptWallTimeISO8601": recoveredAt.wallTimeISO8601,
+                        "payload": [
+                            "meaning": "The prior process did not finalize. This timestamp is recovery observation time; it is not the exact suspension, crash, or termination time.",
+                            "rawStreamRecovered": true
+                        ]
                     ]
                 ]
-                if var line = try? JSONSerialization.data(withJSONObject: event, options: [.sortedKeys, .withoutEscapingSlashes]) {
-                    line.append(0x0A)
-                    try? handle.write(contentsOf: line)
-                    try? handle.synchronize()
+                for event in events {
+                    if var line = try? JSONSerialization.data(withJSONObject: event, options: [.sortedKeys, .withoutEscapingSlashes]) {
+                        line.append(0x0A)
+                        try? handle.write(contentsOf: line)
+                    }
                 }
+                try? handle.synchronize()
                 try? handle.close()
             }
             let summary = SessionSummary(
@@ -322,12 +355,13 @@ final class SessionWriter {
                 startedAt: started,
                 endedAt: recoveredAt,
                 status: .interrupted,
-                eventCount: (recovery["eventCount"] as? Int ?? 0) + 1,
+                eventCount: (recovery["eventCount"] as? Int ?? 0) + 2,
                 segmentCount: recovery["segmentCount"] as? Int ?? 0,
                 gapCount: recovery["gapCount"] as? Int ?? 0,
                 byteCount: directorySize(directory),
                 scenarioCounts: recovery["scenarioCounts"] as? [String: Int] ?? [:],
-                directoryName: directory.lastPathComponent
+                directoryName: directory.lastPathComponent,
+                rawStream: rawStream
             )
             try? writeEncodable(summary, to: manifestURL)
             if linkedTraceRecovery(from: recovery) == nil {
@@ -394,6 +428,63 @@ final class SessionWriter {
     static func archiveExists(id: String, baseURL: URL) -> Bool {
         let directory = baseURL.appendingPathComponent("\(id)\(sessionDirectorySuffix)", isDirectory: true)
         return FileManager.default.fileExists(atPath: directory.path)
+    }
+
+    /// The raw-coverage snapshot a checkpoint wrote, if this archive predates it.
+    private static func rawStreamSnapshot(from recovery: [String: Any]) -> RawStreamManifest? {
+        guard let object = recovery["rawStream"] as? [String: Any],
+              let data = try? JSONSerialization.data(withJSONObject: object) else { return nil }
+        return try? JSONDecoder().decode(RawStreamManifest.self, from: data)
+    }
+
+    private static func jsonObject<T: Encodable>(_ value: T) -> Any? {
+        guard let data = try? JSONEncoder().encode(value) else { return nil }
+        return try? JSONSerialization.jsonObject(with: data)
+    }
+
+    /// Last inertial sample receipt recorded on disk, used when a process died
+    /// before finalizing. Reads only the file tail: an interrupted archive can
+    /// hold tens of megabytes and this runs on the launch path.
+    static func lastRawInertialSampleStamp(in directory: URL) -> CaptureStamp? {
+        let objects = tailObjects(of: directory.appendingPathComponent(CaptureEventChannel.raw.rawValue))
+        for object in objects.reversed() {
+            guard let type = object["type"] as? String,
+                  RawStreamManifest.inertialStreams.contains(where: { type == "\($0)_sample" }),
+                  let monotonic = (object["receiptMonotonicNs"] as? NSNumber)?.uint64Value,
+                  let wall = (object["receiptWallTimeMs"] as? NSNumber)?.int64Value,
+                  let iso = object["receiptWallTimeISO8601"] as? String else { continue }
+            return CaptureStamp(monotonicNs: monotonic, wallTimeMs: wall, wallTimeISO8601: iso)
+        }
+        return nil
+    }
+
+    /// Highest sequence present in any channel file, so a recovered archive
+    /// never repeats a sequence that was written after the last checkpoint.
+    static func lastSequenceOnDisk(in directory: URL) -> Int {
+        var maximum = 0
+        for channel in CaptureEventChannel.allCases {
+            let objects = tailObjects(of: directory.appendingPathComponent(channel.rawValue))
+            guard let last = objects.last, let sequence = (last["sequence"] as? NSNumber)?.intValue else { continue }
+            maximum = max(maximum, sequence)
+        }
+        return maximum
+    }
+
+    /// Parses the last few hundred kilobytes of an NDJSON channel.
+    private static func tailObjects(of url: URL) -> [[String: Any]] {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return [] }
+        defer { try? handle.close() }
+        let size = (try? handle.seekToEnd()) ?? 0
+        let chunkSize: UInt64 = 256 * 1_024
+        let start = size > chunkSize ? size - chunkSize : 0
+        try? handle.seek(toOffset: start)
+        guard var data = try? handle.read(upToCount: Int(size - start)), !data.isEmpty else { return [] }
+        if start > 0, let newline = data.firstIndex(of: 0x0A) {
+            data = data[data.index(after: newline)...]
+        }
+        return data.split(separator: 0x0A).compactMap {
+            (try? JSONSerialization.jsonObject(with: Data($0))) as? [String: Any]
+        }
     }
 
     private static func linkedTraceRecovery(from recovery: [String: Any]) -> LinkedTraceRecovery? {
@@ -478,10 +569,16 @@ final class SessionWriter {
             "source timestamps": "Raw Core Motion source timestamps remain in payloads with explicit units and clock domains."
         ],
         "streams": [
-            "raw-motion.ndjson": "Unmodified numeric observations from live activity, pedometer, and device-motion callbacks, plus explicit invalid samples/errors.",
+            "raw-motion.ndjson": "Unmodified numeric observations from live activity, pedometer, and device-motion callbacks, plus explicit invalid samples/errors. The three inertial streams are written for the whole session in every label mode.",
             "labels.ndjson": "User-declared boundaries. A null toLabel is an unlabeled transition/baseline, never assumed stationary.",
             "decisions.ndjson": "Equivalent Swift port of the current production MotionAdapter and walking reducer. These are intended classifier decisions, not proof of OS shielding.",
-            "system.ndjson": "Session, permission, subscription, lifecycle, write-health, gap, and recovery events."
+            "system.ndjson": "Session, permission, subscription, lifecycle, write-health, gap, raw_stream_suspended, raw_stream_coverage, and recovery events."
+        ],
+        "manifest": [
+            "status: completion status, duration, event/segment/gap counts, byte size, and per-scenario counts.",
+            "rawStream: raw inertial coverage evidence. Per-stream sample counts and first/last receipt stamps, every observed suspension interval (fromReceiptMonotonicNs..toReceiptMonotonicNs plus wall-clock range, basis and source), endedBeforeSessionEnd, and one entry per labeled window with rawSampleCount, uncoveredSeconds, coverageRatio and coverage (covered/partial/none).",
+            "suspension: a period longer than suspensionThresholdSeconds with no delivered raw inertial sample. Its exact iOS suspension instant is not observable, so exactSuspensionTimeKnown is always false and the interval is an observed receipt range.",
+            "sampleCountBasis: exact for a finalized live session; as_of_last_checkpoint or unavailable when the archive was recovered after the process did not finalize."
         ],
         "units": [
             "acceleration": "g",
@@ -501,7 +598,7 @@ final class SessionWriter {
 
     This archive contains only local, user-labeled live motion data. It has four NDJSON streams so raw sensor observations, user labels, inferred production-path decisions, and lifecycle/system events remain separate. See schema.json for fields and units, metadata.json for build/device/permission context, and manifest.json for completion status.
 
-    Label transition time is intentionally unlabeled until another scenario starts or the session is finished. Gaps report observed callback/lifecycle gaps and never claim an exact iOS suspension timestamp. The decisions stream describes intended ExcerLock walking-reducer state only; this lab app does not apply or measure Managed Settings shields.
+    Label transition time is intentionally unlabeled until another scenario starts or the session is finished. Gaps report observed callback/lifecycle gaps and never claim an exact iOS suspension timestamp. A label window that received no raw inertial sample (or only part of one) is declared in manifest.json rawStream.labelWindows and in system.ndjson raw_stream_suspended events with its observed wall-clock range: it is never presented as a still phone. The decisions stream describes intended ExcerLock walking-reducer state only; this lab app does not apply or measure Managed Settings shields.
     """
 }
 

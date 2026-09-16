@@ -70,7 +70,7 @@ python3 tools/linked-recorder/join.py \
   --output /local/joined-result
 ```
 
-The joiner validates protocol/session identity, sequence continuity, `mach_continuous_time`/wall anchors, truncation/drop markers, causal-path coverage, and explicit canary observations. It emits `joined.ndjson`, `validation.json`, and a caveat README. Temporal ordering does not itself prove causation.
+The joiner validates protocol/session identity, sequence continuity, `mach_continuous_time`/wall anchors, truncation/drop markers, causal-path coverage, explicit canary observations, and the recorder manifest's raw-stream evidence. Every undeclared span longer than the 2 s suspension threshold with no delivered raw inertial sample fails closed, a suspension that overlaps delivered samples fails closed, and every labeled window must declare its actual `covered`/`partial`/`none` coverage, so a label window that received no raw motion is never read as a still phone. Archives recorded before the evidence format existed still join with a warning. It emits `joined.ndjson`, `validation.json`, and a caveat README. Temporal ordering does not itself prove causation.
 
 The device proof of the standalone artifact is executable:
 

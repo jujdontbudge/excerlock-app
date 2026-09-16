@@ -125,6 +125,8 @@ final class CaptureController: NSObject, ObservableObject {
     @Published private(set) var walkingPhase: WalkingPhase = .inactive
     @Published private(set) var rawSampleCount = 0
     @Published private(set) var gapCount = 0
+    @Published private(set) var isRawStreamSuspended = false
+    @Published private(set) var rawStreamSuspendedSeconds: Double = 0
     @Published private(set) var isAppActive = true
     @Published private(set) var permissionRequestInFlight = false
     @Published var notice: String?
@@ -151,6 +153,7 @@ final class CaptureController: NSObject, ObservableObject {
     private var writer: SessionWriter?
     private var detector: ProductionWalkingDetectorPort?
     private var timeline = LabelTimeline()
+    private var rawCoverage = RawCoverageTracker()
     private var sessionStartedAt: CaptureStamp?
     private var ticker: Timer?
     private var backgroundObservedAt: CaptureStamp?
@@ -204,6 +207,7 @@ final class CaptureController: NSObject, ObservableObject {
     var recordingHealthTitle: String {
         if isUIPreview { return "Simulated UI preview" }
         if !isAppActive { return "Capture may be paused" }
+        if isRawStreamSuspended { return "Raw motion stream suspended" }
         if !availability.isComplete { return "Limited capture" }
         if rawSampleCount == 0 { return "Waiting for sensor data" }
         return "Recording looks healthy"
@@ -213,6 +217,10 @@ final class CaptureController: NSObject, ObservableObject {
         if isUIPreview { return "Buttons and files are test-only here; no gait claim is made."
         }
         if !isAppActive { return "Return to this screen. iOS may suspend live sensors while the app is away or the phone is locked."
+        }
+        if isRawStreamSuspended {
+            let seconds = Int(rawStreamSuspendedSeconds.rounded())
+            return "No raw motion for \(seconds) s. The archive marks this exact range as suspended; unlock or return to this screen to resume."
         }
         if !availability.isComplete { return "Unavailable: \(availability.unavailableNames.joined(separator: ", ")). The archive marks these streams missing."
         }
@@ -439,9 +447,11 @@ final class CaptureController: NSObject, ObservableObject {
                     self.backgroundObservedAt = nil
                 }
                 try writer.append(channel: .system, type: "app_lifecycle", payload: payload, stamp: stamp, critical: true)
+                refreshRawStreamSuspensionState()
                 tick(at: stamp)
             case .inactive:
                 isAppActive = false
+                rawCoverage.noteLifecycleDeparture(state: "inactive", stamp: stamp)
                 UIApplication.shared.isIdleTimerDisabled = false
                 try writer.append(
                     channel: .system,
@@ -450,9 +460,11 @@ final class CaptureController: NSObject, ObservableObject {
                     stamp: stamp,
                     critical: true
                 )
-                try writer.checkpoint(timeline: timeline, gapCount: gapCount)
+                refreshRawStreamSuspensionState()
+                try writer.checkpoint(timeline: timeline, gapCount: gapCount, rawStream: rawStreamSnapshot(at: stamp))
             case .background:
                 isAppActive = false
+                rawCoverage.noteLifecycleDeparture(state: "background", stamp: stamp)
                 UIApplication.shared.isIdleTimerDisabled = false
                 backgroundObservedAt = stamp
                 try writer.append(
@@ -466,7 +478,8 @@ final class CaptureController: NSObject, ObservableObject {
                     stamp: stamp,
                     critical: true
                 )
-                try writer.checkpoint(timeline: timeline, gapCount: gapCount)
+                refreshRawStreamSuspensionState()
+                try writer.checkpoint(timeline: timeline, gapCount: gapCount, rawStream: rawStreamSnapshot(at: stamp))
             @unknown default:
                 break
             }
@@ -567,6 +580,9 @@ final class CaptureController: NSObject, ObservableObject {
             streamStats = [:]
             rawSampleCount = 0
             gapCount = 0
+            rawCoverage = RawCoverageTracker()
+            isRawStreamSuspended = false
+            rawStreamSuspendedSeconds = 0
             lastInertialSourceSeconds = [:]
             try writer.append(
                 channel: .system,
@@ -619,11 +635,24 @@ final class CaptureController: NSObject, ObservableObject {
             UIApplication.shared.isIdleTimerDisabled = false
             let writerWasCreated = self.writer != nil
             if let writer = self.writer {
+                // A failed start still states its raw coverage explicitly,
+                // instead of leaving a manifest that implies a clean capture.
+                let failedAt = clock.now()
+                let failureRawStream = rawCoverage.manifest(
+                    startedAt: sessionStartedAt ?? started,
+                    endedAt: failedAt,
+                    labelWindows: timeline.rawLabelWindows(
+                        endedAt: failedAt,
+                        suspensions: rawCoverage.suspensions,
+                        suspensionThresholdSeconds: rawCoverage.thresholdSeconds
+                    )
+                )
                 _ = try? writer.finalize(
                     status: .sensorError,
                     timeline: timeline,
                     gapCount: gapCount,
-                    detail: error.localizedDescription
+                    detail: error.localizedDescription,
+                    rawStream: failureRawStream
                 )
             }
             self.writer = nil
@@ -654,7 +683,7 @@ final class CaptureController: NSObject, ObservableObject {
             try writeLabelBoundary(boundary, writer: writer)
             timeline = candidate
             activeScenario = timeline.active
-            try writer.checkpoint(timeline: timeline, gapCount: gapCount)
+            try writer.checkpoint(timeline: timeline, gapCount: gapCount, rawStream: rawStreamSnapshot(at: stamp))
         } catch {
             stopAfterWriteFailure(error)
         }
@@ -761,6 +790,23 @@ final class CaptureController: NSObject, ObservableObject {
             return
         }
         let end = clock.now()
+        // Close the raw-coverage story before finalizing: the last labeled
+        // window (including one left open by an error stop), every suspension
+        // observed while the session lived, and an explicit tail when the raw
+        // stream never resumed. A label window with no raw coverage is then
+        // visible in the manifest instead of looking like a still phone.
+        timeline.closeOpenSegment(at: end)
+        let tailSuspension = rawCoverage.closeAtSessionEnd(startedAt: sessionStartedAt ?? end, endedAt: end)
+        let rawStreamManifest = rawCoverage.manifest(
+            startedAt: sessionStartedAt ?? end,
+            endedAt: end,
+            labelWindows: timeline.rawLabelWindows(
+                endedAt: end,
+                suspensions: rawCoverage.suspensions,
+                suspensionThresholdSeconds: rawCoverage.thresholdSeconds
+            )
+        )
+        refreshRawStreamSuspensionState()
         // Only the successful `finishAndSave` path may return to Trace Lab. An
         // error or storage-limit stop finalizes and saves locally and leaves
         // the protected recovery link untouched, so Trace Lab never shows a
@@ -774,6 +820,22 @@ final class CaptureController: NSObject, ObservableObject {
         var finalDetail = detail
         if status != .storageLimit {
             do {
+                if let tailSuspension {
+                    try writer.append(
+                        channel: .system,
+                        type: "raw_stream_suspended",
+                        payload: tailSuspension.dictionary,
+                        stamp: end,
+                        critical: true
+                    )
+                }
+                try writer.append(
+                    channel: .system,
+                    type: "raw_stream_coverage",
+                    payload: rawStreamManifest.summaryDictionary,
+                    stamp: end,
+                    critical: true
+                )
                 for (stream, stats) in streamStats.sorted(by: { $0.key < $1.key }) {
                     try writer.append(
                         channel: .system,
@@ -815,10 +877,17 @@ final class CaptureController: NSObject, ObservableObject {
             }
         }
         do {
-            _ = try writer.finalize(status: status, timeline: timeline, gapCount: gapCount, endedAt: end, detail: finalDetail)
+            _ = try writer.finalize(
+                status: status,
+                timeline: timeline,
+                gapCount: gapCount,
+                endedAt: end,
+                detail: finalDetail,
+                rawStream: rawStreamManifest
+            )
             repository.reload()
             refreshPendingLinkedTraceRecovery()
-            notice = status == .completed ? "Session saved on this phone." : finalDetail
+            notice = status == .completed ? savedNotice(for: rawStreamManifest) : finalDetail
             resetAfterFinish()
             if let linkedStopURL { openExternalLink(linkedStopURL) }
         } catch {
@@ -868,6 +937,8 @@ final class CaptureController: NSObject, ObservableObject {
         segmentElapsedSeconds = 0
         walkingPhase = .inactive
         rawSampleCount = 0
+        isRawStreamSuspended = false
+        rawStreamSuspendedSeconds = 0
         isAppActive = true
         finishingAfterError = false
         linkedSessionID = nil
@@ -893,6 +964,35 @@ final class CaptureController: NSObject, ObservableObject {
         stats.observe(stamp)
         streamStats[stream] = stats
         rawSampleCount += 1
+    }
+
+    /// Snapshot written with every checkpoint so a process that dies before
+    /// finalizing still carries its label windows and observed suspensions into
+    /// the recovered manifest.
+    private func rawStreamSnapshot(at stamp: CaptureStamp) -> RawStreamManifest {
+        rawCoverage.manifest(
+            startedAt: sessionStartedAt ?? stamp,
+            endedAt: stamp,
+            labelWindows: timeline.rawLabelWindows(
+                endedAt: stamp,
+                suspensions: rawCoverage.suspensions,
+                suspensionThresholdSeconds: rawCoverage.thresholdSeconds
+            )
+        )
+    }
+
+    private func refreshRawStreamSuspensionState() {
+        let stamp = clock.now()
+        rawStreamSuspendedSeconds = rawCoverage.suspendedSeconds(through: stamp)
+        isRawStreamSuspended = isRecording && rawCoverage.isSuspended(at: stamp)
+    }
+
+    private func savedNotice(for manifest: RawStreamManifest) -> String {
+        let suspendedSeconds = Int(manifest.suspendedSeconds.rounded())
+        guard manifest.suspensionCount > 0 || manifest.endedBeforeSessionEnd else {
+            return "Session saved on this phone."
+        }
+        return "Session saved on this phone. Raw motion was suspended for \(suspendedSeconds) s; every suspended range is marked in the archive."
     }
 
     private func recordInertial(
@@ -925,6 +1025,17 @@ final class CaptureController: NSObject, ObservableObject {
         lastInertialSourceSeconds[stream] = sourceTimestampSeconds
         try writer.append(channel: .raw, type: eventType, payload: raw, stamp: stamp)
         observeStream(stream, stamp: stamp)
+        timeline.recordRawSample(stream: stream, at: stamp)
+        if let suspension = rawCoverage.observe(stream: stream, stamp: stamp) {
+            try writer.append(
+                channel: .system,
+                type: "raw_stream_suspended",
+                payload: suspension.dictionary,
+                stamp: stamp,
+                critical: true
+            )
+        }
+        refreshRawStreamSuspensionState()
     }
 
     private func buildMetadata(startedAt: CaptureStamp, linkedSessionID: String?) -> [String: Any] {
