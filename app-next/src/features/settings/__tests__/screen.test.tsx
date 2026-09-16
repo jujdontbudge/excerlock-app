@@ -1,4 +1,4 @@
-import { render, screen, userEvent, fireEvent } from '@testing-library/react-native';
+import { render, screen, userEvent, fireEvent, act } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 import { SettingsScreen } from '../SettingsScreen';
 import { UnitsScreen } from '../UnitsScreen';
@@ -31,27 +31,18 @@ test('root rows navigate to destinations and seven taps open developer', async (
     profile,
     c.manage,
     c.preferences,
-    c.unitsRow,
-    c.permissionNames.screenTime,
-    c.permissionNames.motion,
-    c.permissionNames.location,
-    c.permissionNames.camera,
-    c.permissionNames.notifications,
     c.reportBug,
     c.giveFeedback,
     c.supportRow,
     c.legal,
-    c.exportData,
     c.version('1.0.0', '1'),
   ]);
-  expect(screen.getByRole('button', { name: c.unitsRow })).toBeTruthy();
-  expect(screen.getByRole('button', { name: c.permissionNames.notifications })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: c.unitsRow })).toBeNull();
+  expect(screen.queryByRole('button', { name: c.exportData })).toBeNull();
+  expect(screen.queryByRole('button', { name: c.permissionNames.screenTime })).toBeNull();
+  expect(screen.getByRole('switch', { name: c.notificationsToggle })).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: c.manage }));
   expect(navigate).toHaveBeenCalledWith('subscription');
-  await userEvent.press(screen.getByRole('button', { name: c.permissionNames.notifications }));
-  expect(navigate).toHaveBeenCalledWith('permission/notifications');
-  await userEvent.press(screen.getByRole('button', { name: c.unitsRow }));
-  expect(navigate).toHaveBeenCalledWith('units');
   await userEvent.press(screen.getByRole('button', { name: c.preferences }));
   expect(navigate).toHaveBeenCalledWith('preferences');
   await userEvent.press(screen.getByRole('button', { name: c.reportBug }));
@@ -73,19 +64,21 @@ test('root rows navigate to destinations and seven taps open developer', async (
   openURL.mockRestore();
 });
 
-test('Notifications row navigates to its live permission detail', async () => {
+test('Notifications is a single switch backed by the app preference and the OS grant', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('multi-rule-overlap');
-  const navigate = jest.fn();
   await render(
     <AppRuntimeProvider runtime={runtime}>
-      <SettingsScreen navigate={navigate} onDev={jest.fn()} />
+      <SettingsScreen navigate={jest.fn()} onDev={jest.fn()} />
     </AppRuntimeProvider>,
   );
   expect(permissionsStore.getState().data.notifications).toBe('granted');
-  await userEvent.press(screen.getByRole('button', { name: c.permissionNames.notifications }));
-  expect(navigate).toHaveBeenCalledWith('permission/notifications');
-  expect(permissionsStore.getState().data.notifications).toBe('granted');
+  const toggle = screen.getByRole('switch', { name: c.notificationsToggle });
+  expect(toggle.props.value).toBe(true);
+  await act(async () => fireEvent(toggle, 'valueChange', false));
+  expect(settingsStore.getState().data.notificationsEnabled).toBe(false);
+  await act(async () => fireEvent(toggle, 'valueChange', true));
+  expect(settingsStore.getState().data.notificationsEnabled).toBe(true);
 });
 
 test('UnitsScreen writes kilometers', async () => {
@@ -128,9 +121,8 @@ test('PreferencesScreen lists permissions, walking places, grace and gyms', asyn
       <PreferencesScreen navigate={navigate} onBack={() => {}} />
     </AppRuntimeProvider>,
   );
-  expect(screen.getByRole('header', { name: c.privacyPermissions })).toBeTruthy();
-  expect(screen.getAllByRole('button', { name: /, (Granted|Needed|Off)$/ })).toHaveLength(5);
-  expect(screen.queryByRole('button', { name: /Health/ })).toBeNull();
+  expect(screen.getByRole('header', { name: c.preferences })).toBeTruthy();
+  expect(screen.queryAllByRole('button', { name: /, (Granted|Needed|Off)$/ })).toHaveLength(0);
   await userEvent.press(screen.getByRole('button', { name: /Walk & Scroll stop grace/ }));
   await userEvent.press(screen.getByRole('radio', { name: '2 minutes' }));
   expect(settingsStore.getState().data.stopGrace).toBe(120);

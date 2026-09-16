@@ -1,27 +1,20 @@
 import { useState } from 'react';
-import { View } from 'react-native';
 import {
   Heading,
   SettingsGroup,
   SettingsRow,
-  PermissionRow,
   BottomSheet,
   ChoiceRow,
   Label,
 } from '../../design-system';
-import { tokens as t } from '../../design-system/tokens';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { profileStore as useProfileStore } from '../../state/profileStore';
-import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
 import { settingsCopy as c } from '../../content/settings';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
-import { Permissions } from '../../domain/types';
 import { SettingsPage } from './SettingsPage';
-import { permissionIcons } from './PermissionDetail';
 const graceSeconds = [30, 60, 120, 180, 300];
 export function PreferencesScreen({ navigate, onBack }: { navigate: (path: string) => void; onBack: () => void }) {
-  const permissions = usePermissionsStore((s) => s.data),
-    s = useSettingsStore((s) => s.data),
+  const s = useSettingsStore((s) => s.data),
     walkPlaces = useProfileStore((state) => state.data.walkPlaces),
     runtime = useRuntime(),
     [grace, setGrace] = useState(false),
@@ -45,7 +38,7 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
           ))}
         </BottomSheet>
       }>
-      <Heading title={c.privacyPermissions} />
+      <Heading title={c.preferences} />
       <SettingsGroup>
         <SettingsRow title="Usage analytics" subtitle="Help improve ExcerLock. Crash diagnostics remain enabled."
           toggle={s.analyticsEnabled} onToggle={async (enabled) => {
@@ -55,25 +48,6 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
             catch { setAnalyticsError(true); }
           }} />
         {analyticsError ? <Label accessibilityRole="alert">Analytics preference saved. Restart ExcerLock to finish applying it.</Label> : null}
-      </SettingsGroup>
-      <SettingsGroup title={c.permissions}>
-        <View style={{ paddingHorizontal: t.space.lg }}>
-          {(Object.keys(c.permissionNames) as (keyof Permissions)[]).map((name) => (
-            <PermissionRow
-              key={name}
-              title={c.permissionNames[name]}
-              icon={permissionIcons[name]}
-              status={
-                ['granted', 'always', 'whenInUse'].includes(permissions[name])
-                  ? 'Granted'
-                  : permissions[name] === 'notDetermined'
-                    ? 'Needed'
-                    : 'Off'
-              }
-              onPress={() => navigate('permission/' + name)}
-            />
-          ))}
-        </View>
       </SettingsGroup>
       <SettingsGroup>
         <Label variant="section">{c.walkPlaces}</Label>

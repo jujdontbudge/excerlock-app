@@ -425,7 +425,8 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
                     ),
               )
             ) {
-              void client.notifications.scheduleOpenToUnlock().catch(options.reportError);
+              if (settingsStore.getState().data.notificationsEnabled)
+                void client.notifications.scheduleOpenToUnlock().catch(options.reportError);
             }
             const snapshot = source.read();
             if (snapshot.scheduleIssue && JSON.stringify(status.scheduleIssue) !== JSON.stringify(snapshot.scheduleIssue)) {

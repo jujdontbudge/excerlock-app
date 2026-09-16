@@ -51,6 +51,8 @@ export const settingsCopy = {
   error: 'Something went wrong. Please try again.',
   units: 'Distance units',
   unitsRow: 'Units',
+  notificationsToggle: 'Notifications',
+  notificationsToggleBody: 'Reminders when a condition needs you',
   miles: 'Miles',
   kilometers: 'Kilometers',
   grace: 'Walk & Scroll stop grace',
