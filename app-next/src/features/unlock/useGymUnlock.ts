@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { Coordinates } from '../../ports/PlaceSearch';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
@@ -44,8 +45,15 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
       }
     };
     void sample();
+    // Coming back from Settings after granting location re-samples so "access is off" clears on its own.
+    const app = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void sample();
+    });
     const stopLocation = runtime.gym.observeLocation((p) => {
-      if (active && p) setLocation(p);
+      if (active && p) {
+        setLocation(p);
+        setDenied(false);
+      }
     });
     const stop = runtime.gym.observePresence((p) => {
       if (active) {
@@ -60,6 +68,7 @@ export function useGymUnlock(preview: boolean, alreadyCredited = false) {
     });
     return () => {
       active = false;
+      app.remove();
       stopLocation();
       stop();
       request.current?.abort();

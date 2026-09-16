@@ -23,7 +23,7 @@ export const unlockCopy = {
     checking: 'Checking your location…',
     confirming: "Confirming you're here",
     confirmingBody: 'Stay put for a moment.',
-    unlock: 'Unlock',
+    unlock: "I'm at the gym",
     centerMe: 'Center on me',
     centerGym: 'Center on gym',
     detected: 'Location detected at the gym',
