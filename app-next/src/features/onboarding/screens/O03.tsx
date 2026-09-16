@@ -3,6 +3,8 @@ import { Heading, Label, PressableScale } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
 import { Reveal } from '../../../motion/Reveal';
 import { ControlArtwork } from '../control/ControlArtwork';
+import { LockedAppsRow } from '../control/LockedAppsRow';
+import { Icon } from '../../../icons/Icon';
 import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
 import { welcomeCopy } from '../../../content/welcome';
 import { onboardingCopy as c } from '../../../content/onboarding';
@@ -26,16 +28,29 @@ export function O03({ onBack }: { onBack?: () => void }) {
   return (
     <View style={{ flexGrow: 1, paddingTop: w.headingTop / Math.max(1, fontScale) }}>
       <Heading title={c.O03.title.replace('. ', '.\n')} centered variant="hero" />
-      {/* Artwork centres in the space under the heading; caption and dots ride just above the button. */}
-      <View style={{ flex: 1, justifyContent: 'center', paddingTop: w.control.gap }}>
+      {/* Locked apps, an arrow down, then the activities that unlock them; caption and dots ride just above the button. */}
+      <View style={{ flex: 1, justifyContent: 'center', paddingTop: w.control.gap, gap: w.control.arrow.gap }}>
+        <LockedAppsRow />
+        <Reveal index={1} style={{ alignItems: 'center' }}>
+          <View style={{ transform: [{ rotate: '90deg' }] }}>
+            <Icon name="arrow" size={w.control.arrow.size} tint={w.control.orange} label={welcomeCopy.unlockArrow} />
+          </View>
+        </Reveal>
         <ControlArtwork />
       </View>
-      <Reveal index={3} style={{ marginTop: w.control.captionGap, paddingHorizontal: t.space.xxl }}>
-        <Label variant="support" style={{ textAlign: 'center', maxWidth: w.control.captionWidth, alignSelf: 'center' }}>
+      <Reveal index={3} style={{ marginTop: w.control.captionGap, paddingHorizontal: t.space.lg }}>
+        <Label
+          style={{
+            ...w.control.caption,
+            color: t.text.primary,
+            textAlign: 'center',
+            maxWidth: w.control.captionWidth,
+            alignSelf: 'center',
+          }}>
           {c.O03.body}
         </Label>
       </Reveal>
-      <Reveal index={4} style={{ marginTop: w.dotsGap - t.space.lg, alignItems: 'center' }}>
+      <Reveal index={4} style={{ marginTop: w.dotsGap, alignItems: 'center' }}>
         {onBack ? (
           <PressableScale
             label={welcomeCopy.back}

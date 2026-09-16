@@ -5,6 +5,8 @@ export const welcomeCopy = {
   back: 'Back',
   controlPagination: 'Introduction, page 3 of 3',
   activities: ['Walking', 'Gym'],
+  lockedApps: 'Instagram, YouTube, WhatsApp and TikTok, locked',
+  unlockArrow: 'unlock by',
   schedule: 'Block from 12 PM to 8 PM\nuntil you arrive\nat the gym',
   scheduleLabel: 'Block from 12 PM to 8 PM until you arrive at the gym',
   existing: 'Already have an account? ',

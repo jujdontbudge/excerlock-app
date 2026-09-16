@@ -54,6 +54,7 @@ export function OnboardingShell({
       <ScreenShell
         scrollResetKey={step}
         overlay={overlay}
+        contentStyle={['O01', 'O02', 'O03'].includes(step) ? { paddingBottom: t.space.sm } : undefined}
         header={
           ['O01', 'O02', 'O03'].includes(step) ? undefined : (
             <OnboardingHeader progress={progress} onBack={hideBack ? undefined : onBack} />

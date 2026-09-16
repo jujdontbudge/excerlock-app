@@ -106,7 +106,8 @@ const s = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: t.layout.page,
-    paddingVertical: t.space.md,
+    paddingTop: t.space.sm,
+    paddingBottom: t.space.xs,
     gap: t.space.sm,
     backgroundColor: t.surface.transparent,
   },
