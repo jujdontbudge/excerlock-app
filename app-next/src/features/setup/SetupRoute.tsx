@@ -5,10 +5,8 @@ import { OnboardingShell } from '../onboarding/OnboardingShell';
 import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
 import { Activity } from '../../domain/types';
-import { branchPermission, nextSetup, setupSteps, resumeSetup } from '../../onboarding/setupFlow';
+import { nextSetup, setupSteps, resumeSetup } from '../../onboarding/setupFlow';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
-import { PermissionPrimer } from './PermissionPrimer';
-import { AppsSetup } from './AppsSetup';
 import { GymPickerScreen } from '../gym-picker/GymPickerScreen';
 import { SignInScreen } from './SignInScreen';
 import { useSignInRequiredSource } from './useSignInRequiredSource';
@@ -22,12 +20,14 @@ export function SetupRoute() {
     state = useOnboardingStore((s) => s.data),
     rules = useRulesStore((s) => s.data.rules),
     [direction, setDirection] = useState<'forward' | 'back'>('forward');
-  const step = resumeSetup({ setupStep: params.step ?? state.setupStep, setupComplete: false }),
-    activity = (state.answers.activity ?? rules[0]?.activity ?? 'walking') as Activity;
+  const activity = (state.answers.activity ?? rules[0]?.activity ?? 'walking') as Activity,
+    step = resumeSetup({ setupStep: params.step ?? state.setupStep, setupComplete: false }, activity);
   useEffect(() => {
     useOnboardingStore.getState().patch({ setupStep: step });
     runtime.analytics.screen(step);
-  }, [step, runtime]);
+    // A persisted step that no longer exists (X1, X2, walking X3) lands on the first real one.
+    if (params.step !== step) router.setParams({ step });
+  }, [step, runtime, params.step, router]);
   const advance = () => {
     Keyboard.dismiss();
     setDirection('forward');
@@ -41,11 +41,8 @@ export function SetupRoute() {
     setDirection('back');
     router.setParams({ step: setupSteps[Math.max(0, setupSteps.indexOf(step as (typeof setupSteps)[number]) - 1)] });
   };
-  let body = <PermissionPrimer name="screenTime" onContinue={advance} />;
-  if (step === 'X2') body = <AppsSetup onContinue={advance} />;
-  if (step === 'X3' && activity === 'gym') return <GymPickerScreen onSaved={advance} />;
-  if (step === 'X3') body = <PermissionPrimer name={branchPermission(activity)} onContinue={advance} />;
-  if (step === 'X4') body = <SignInScreen onContinue={advance} signInRequired={signInRequired} />;
+  if (step === 'X3') return <GymPickerScreen onSaved={advance} />;
+  let body = <SignInScreen onContinue={advance} signInRequired={signInRequired} />;
   if (step === 'X5') body = <SetupComplete activity={activity} />;
   return (
     <OnboardingShell
@@ -53,7 +50,7 @@ export function SetupRoute() {
       progress={(setupSteps.indexOf(step as (typeof setupSteps)[number]) + 1) / setupSteps.length}
       direction={direction}
       onBack={back}
-      hideBack={step === 'X1'}
+      hideBack={step === setupSteps[0] || (activity !== 'gym' && step === 'X4')}
       onContinue={advance}
       hideContinue={step !== 'X5'}
       continueLabel={c.home}>

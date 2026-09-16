@@ -10,10 +10,10 @@ import { createRuntime } from '../../../runtime/createRuntime';
 import { onboardingStore } from '../../../state/onboardingStore';
 import { permissionsStore } from '../../../state/permissionsStore';
 test.each([
-  ['home-locked-walking', 'Let ExcerLock count your steps'],
-  ['gym-arrival-user', 'Pick your gym'],
-  ['gym-time-user', 'Pick your gym'],
-] as const)('%s resumes the correct X3', async (scenario, title) => {
+  ['home-locked-walking', 'X4', 'Save your progress'],
+  ['gym-arrival-user', 'X3', 'Pick your gym'],
+  ['gym-time-user', 'X3', 'Pick your gym'],
+] as const)('%s resumes at %s without the permission primers', async (scenario, expected, title) => {
   const runtime = createRuntime();
   await runtime.dev.load(scenario);
   onboardingStore.getState().patch({ setupComplete: false, setupStep: 'X3' });
@@ -34,7 +34,7 @@ test.each([
   };
   const result = renderRouter(routes, { initialUrl: '/' });
   await result;
-  expect(result.getPathname()).toBe('/setup/X3');
+  expect(result.getPathname()).toBe('/setup/' + expected);
   expect(screen.getByRole('header', { name: title })).toBeTruthy();
 });
 test('skips preserve missing grants and X5 reports them before completing', async () => {
