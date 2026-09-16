@@ -149,3 +149,32 @@ test('continuous verified travel keeps its origin timezone across restart, then 
     from: start + 8_000, to: start + 10_000, day: '2026-09-10', timezone: 'America/New_York',
   });
 });
+
+test('fractional CoreMotion wall clocks are floored instead of poisoning the ledger', async () => {
+  const { ledger, restart } = setup();
+  await ledger.observe(sample(1789574561230.1234));
+  await ledger.observe(sample(1789574563800.5678));
+  await ledger.observe(sample(1789574566372.9));
+  await ledger.observe(sample(1789574570000.25, false));
+  const state = await restart().read();
+  expect(state.cursor).toEqual(sample(1789574570000, false));
+  expect(state.segments).toEqual([{ from: 1789574561230, to: 1789574566372, day: '2026-09-16', timezone: 'UTC' }]);
+  expect(state.millisecondsByDay['2026-09-16']).toBe(5_142);
+  expect(state.pending.every((p) => Number.isSafeInteger(p.milliseconds) && Number.isSafeInteger(p.endedAt))).toBe(true);
+});
+
+test('a ledger already written with fractional bounds is repaired on load rather than rejected forever', async () => {
+  const { ledger, setRaw } = setup();
+  setRaw({
+    version: 1, generation: 1,
+    cursor: { generation: 1, at: 1789574563800.5678, verified: true, timezone: 'UTC' },
+    millisecondsByDay: { '2026-09-16': 2570.4444 },
+    pending: [{ idempotencyKey: 'walking:1:1789574561230.1234:1789574563800.5678', generation: 1, day: '2026-09-16', milliseconds: 2570.4444, endedAt: 1789574563800.5678 }],
+    segments: [{ from: 1789574561230.1234, to: 1789574563800.5678, day: '2026-09-16', timezone: 'UTC' }],
+  });
+  const repaired = await ledger.read();
+  expect(repaired.segments).toEqual([{ from: 1789574561230, to: 1789574563800, day: '2026-09-16', timezone: 'UTC' }]);
+  expect(repaired.cursor?.at).toBe(1789574563800);
+  await expect(ledger.observe(sample(1789574566372.9))).resolves.toBeTruthy();
+  expect((await ledger.read()).millisecondsByDay['2026-09-16']).toBe(2570 + 2572);
+});

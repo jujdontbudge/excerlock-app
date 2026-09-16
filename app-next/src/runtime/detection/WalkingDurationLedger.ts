@@ -51,9 +51,12 @@ export class WalkingDurationLedger {
 
   read(): Promise<WalkingDurationState> { return this.serialize(() => this.load()); }
 
-  observe(observation: WalkingDurationObservation): Promise<WalkingDurationState> {
+  observe(input: WalkingDurationObservation): Promise<WalkingDurationState> {
     return this.serialize(async () => {
-      validateObservation(observation);
+      validateObservation(input);
+      // CoreMotion wall clocks carry sub-millisecond fractions. Segment bounds
+      // and totals are integer milliseconds, so the cursor is floored here.
+      const observation = { ...input, at: Math.floor(input.at) };
       let state = await this.load();
       if (state.generation !== observation.generation) {
         if (state.generation !== null && observation.generation < state.generation)
@@ -125,6 +128,10 @@ export class WalkingDurationLedger {
     if (raw === null) return empty();
     let value: unknown;
     try { value = JSON.parse(raw); } catch { throw new Error('Invalid walking duration ledger'); }
+    // Ledgers written before observations were floored hold fractional bounds.
+    // Flooring them is lossless to within one millisecond and reopens a ledger
+    // that would otherwise reject every later commit.
+    if (!validState(value)) value = floorFractions(value);
     if (!validState(value)) throw new Error('Invalid walking duration ledger');
     // v1 aggregates predate exact evidence. Never fabricate segments from totals.
     return { ...value, segments: Array.isArray((value as Partial<WalkingDurationState>).segments) ?
@@ -136,6 +143,21 @@ export class WalkingDurationLedger {
     this.queue = next.catch(() => undefined);
     return next;
   }
+}
+function floorFractions(value: unknown): unknown {
+  if (!value || typeof value !== 'object') return value;
+  const state = value as WalkingDurationState;
+  const floor = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? Math.floor(n) : n);
+  return {
+    ...state,
+    cursor: state.cursor && typeof state.cursor === 'object' ? { ...state.cursor, at: floor(state.cursor.at) } : state.cursor,
+    millisecondsByDay: state.millisecondsByDay && typeof state.millisecondsByDay === 'object'
+      ? Object.fromEntries(Object.entries(state.millisecondsByDay).map(([day, ms]) => [day, floor(ms)])) : state.millisecondsByDay,
+    pending: Array.isArray(state.pending)
+      ? state.pending.map((p) => (p && typeof p === 'object' ? { ...p, milliseconds: floor(p.milliseconds), endedAt: floor(p.endedAt) } : p)) : state.pending,
+    segments: Array.isArray(state.segments)
+      ? state.segments.map((s) => (s && typeof s === 'object' ? { ...s, from: floor(s.from), to: floor(s.to) } : s)) : state.segments,
+  };
 }
 function validateRetentionDay(day: string): void {
   const parsed = Date.parse(`${day}T00:00:00Z`);
