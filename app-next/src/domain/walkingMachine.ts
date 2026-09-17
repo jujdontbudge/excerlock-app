@@ -1,6 +1,22 @@
 /** Persist timestamps, never timer handles. Raw motion/cadence OR/freshness fusion belongs to the adapter. */
 export const WALK_QUALIFY_MS = 3000;
 export const WALK_SILENCE_MS = 5000;
+/**
+ * Freshness contract between the adapter and this reducer. The adapter only
+ * publishes a source observation while it is younger than its own 5 s
+ * horizon; the reducer accepts such an observation even when the 1 s tick has
+ * already advanced the watermark past the observation's source time (Apple's
+ * pedometer batches carry an endDate ~2.6 s behind the callback, so every
+ * cadence sample used to arrive "late" and was dropped, which re-blocked
+ * walkers mid-walk: gate-proof-s1 §5.2). Each accepted observation is anchored
+ * at its own source time, so late deliveries can never extend relief past
+ * sourceTime + silence + grace; only its acceptance changes.
+ *
+ * Rejected alternative (measured in gate-proof-s1 §6): re-anchoring late
+ * evidence at the watermark recovered the same walk but added still-window
+ * false positives, because stale evidence was moved to "now".
+ */
+export const WALK_EVIDENCE_FRESHNESS_MS = 5000;
 export type WalkingState = {
   version: 1;
   phase: 'inactive' | 'verifying' | 'active' | 'grace';
@@ -11,7 +27,9 @@ export type WalkingState = {
   lastQualifying: boolean | null;
   graceEndsAt: number | null;
 };
-export type WalkingEvent = { kind: 'tick' } | { kind: 'evidence'; at: number; qualifying: boolean | 'unknown' };
+export type WalkingEvent =
+  | { kind: 'tick' }
+  | { kind: 'evidence'; at: number; qualifying: boolean | 'unknown' };
 function validTime(time: number): void {
   if (!Number.isFinite(time) || !Number.isFinite(new Date(time).getTime())) throw new Error('Invalid walking timestamp');
 }
@@ -51,9 +69,9 @@ function advance(state: WalkingState, now: number, graceMs: number): void {
   state.watermark = Math.max(state.watermark, now);
 }
 /**
- * Observations older than the reconciliation watermark cannot recreate current
- * relief. Historical step/minute credit is a DIFFERENT idempotent history path;
- * neither grace time nor this verdict may be multiplied into fabricated steps.
+ * Observations the adapter has already aged out cannot recreate current relief.
+ * Historical step/minute credit is a DIFFERENT idempotent history path; neither
+ * grace time nor this verdict may be multiplied into fabricated steps.
  */
 export function reduceWalking(previous: WalkingState, event: WalkingEvent, now: number, graceMs: number): WalkingState {
   validTime(now); validTime(previous.watermark); validateState(previous);
@@ -66,7 +84,7 @@ export function reduceWalking(previous: WalkingState, event: WalkingEvent, now: 
     const positive = event.qualifying === true;
     // Negative dominates contradictory observations at one timestamp. Duplicates
     // never reset verification/grace. Late history cannot revive live relief.
-    const fresh = event.at >= previous.watermark && (state.lastEvidenceAt === null || event.at > state.lastEvidenceAt ||
+    const fresh = current - event.at <= WALK_EVIDENCE_FRESHNESS_MS && (state.lastEvidenceAt === null || event.at > state.lastEvidenceAt ||
       (event.at === state.lastEvidenceAt && state.lastQualifying === true && !positive));
     if (fresh) {
       advance(state, event.at, graceMs);

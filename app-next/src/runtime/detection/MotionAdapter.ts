@@ -10,6 +10,13 @@ import { linkedTrace } from '@linked-trace';
 
 export const MOTION_FRESHNESS_MS = 5_000;
 export const MIN_WALKING_CADENCE_PER_MINUTE = 80;
+/**
+ * Mapped Core Motion wall clocks can land a few ms after the callback receipt
+ * (measured +15 ms and +27 ms on real walking classifications, +20 ms on two
+ * pedometer samples): a mapping artifact, not invalid evidence. Anything
+ * beyond this is a broken sample.
+ */
+export const MOTION_CLOCK_SKEW_MS = 250;
 
 export type MotionEvidence = {
   qualifying: boolean | 'unknown';
@@ -117,7 +124,12 @@ export class MotionAdapter {
   }
 
   private acceptActivity(sample: ActivitySample): void {
-    const invalid = !Number.isFinite(sample.receivedAt) || sample.receivedAt < sample.startedAt || sample.receivedAt > this.now();
+    const skew = sample.startedAt - sample.receivedAt;
+    const invalid =
+      !Number.isFinite(sample.receivedAt) ||
+      !Number.isFinite(sample.startedAt) ||
+      skew > MOTION_CLOCK_SKEW_MS ||
+      sample.receivedAt > this.now();
     if (invalid) {
       if (__LINKED_RECORDER_TRACE__) linkedTrace.record('motion_input_js', { stream: 'activity', status: 'rejected', reason: 'invalid_time', sourceAtWallMs: sample.receivedAt });
       return;
@@ -127,19 +139,25 @@ export class MotionAdapter {
       return;
     }
     if (__LINKED_RECORDER_TRACE__) linkedTrace.record('motion_input_js', { stream: 'activity', status: 'accepted', sourceAtWallMs: sample.receivedAt });
-    this.activity = sample;
+    // A classification cannot have started after it was delivered; clamp the
+    // mapping artifact instead of discarding a real walking sample.
+    this.activity = skew > 0 ? { ...sample, startedAt: sample.receivedAt } : sample;
     this.publish(sample.receivedAt);
   }
 
-  private acceptCadence(sample: CadenceSample): void {
+  private acceptCadence(received: CadenceSample): void {
+    const now = this.now();
+    const skew = received.asOf - now;
     const invalid =
-      !Number.isFinite(sample.asOf) ||
-      sample.asOf > this.now() ||
-      (sample.stepsPerSecond !== null && (!Number.isFinite(sample.stepsPerSecond) || sample.stepsPerSecond < 0));
+      !Number.isFinite(received.asOf) ||
+      skew > MOTION_CLOCK_SKEW_MS ||
+      (received.stepsPerSecond !== null && (!Number.isFinite(received.stepsPerSecond) || received.stepsPerSecond < 0));
     if (invalid) {
-      if (__LINKED_RECORDER_TRACE__) linkedTrace.record('motion_input_js', { stream: 'cadence', status: 'rejected', reason: 'invalid_value', sourceAtWallMs: sample.asOf });
+      if (__LINKED_RECORDER_TRACE__) linkedTrace.record('motion_input_js', { stream: 'cadence', status: 'rejected', reason: 'invalid_value', sourceAtWallMs: received.asOf });
       return;
     }
+    // The pedometer's `endDate` cannot be after its delivery; clamp the mapping artifact.
+    const sample = skew > 0 ? { ...received, asOf: now } : received;
     if (this.cadence !== null && sample.asOf <= this.cadence.asOf) {
       if (__LINKED_RECORDER_TRACE__) linkedTrace.record('motion_input_js', { stream: 'cadence', status: 'rejected', reason: 'stale', sourceAtWallMs: sample.asOf });
       return;
@@ -148,4 +166,5 @@ export class MotionAdapter {
     this.cadence = sample;
     this.publish(sample.asOf);
   }
+
 }
