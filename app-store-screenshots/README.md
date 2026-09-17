@@ -18,3 +18,9 @@ are known limits). Brand is ExcerLock only. UI style: `design/UI-STYLE.md` (oran
 black outlines, light mode, no orange body text).
 
 Default screen set (captain may change): problem → promise → how walking works → proof → CTA.
+
+## Approved set (2026-09-17, captain sign-off)
+`finals/01-hero.png` … `finals/06-reviews.png` — the six frames to publish to App Store Connect
+(1290×2796, 6.9" iPhone). Source round: `rounds/r2-unrot/` (GPT Image 2.5 Sunburst, quality low,
+edits of the `html/outline-r1.html` frames; style spec in `STYLE-R2.md`; prompts in `prompts/*-r2.txt`).
+Order: hero → block apps → exercise to unlock → choose your rules → screen time down → reviews.
