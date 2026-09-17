@@ -1,9 +1,17 @@
 #!/usr/bin/env node
 // Numeric stage medians for `scripts/measure-startup.sh`.
 //
-// Input is one `xcrun xctrace export --xpath ...` XML document (the
-// `os-signpost` table) produced by that script. The parser is deliberately
-// schema-tolerant because no real export is committed as a fixture yet:
+// Two input shapes are accepted, auto-detected from the content:
+//
+//   * `xcrun xctrace export --xpath ...` XML (the `os-signpost` table) — the
+//     trace path `measure-startup.sh --trace/--xpath` uses.
+//   * `xcrun simctl spawn <udid> log show --signpost --style ndjson` rows — the
+//     simulator path `measure-startup.sh --sim-log` uses. Stage rows are matched
+//     on `signpostName`, timed by `machTimestamp` (nanoseconds since boot) and
+//     keyed per launch by `processID`.
+//
+// The parser is deliberately schema-tolerant because no real xctrace export is
+// committed as a fixture yet:
 //
 //   * A stage row is any <row> whose serialized text contains one of the
 //     signpost event names emitted by modules/excerlock-startup
@@ -56,7 +64,9 @@ const TIME_ATTRIBUTES = new Set([
 ]);
 
 function usage() {
-  process.stderr.write('usage: startup-stage-medians.cjs <signposts.xml> [--json <output.json>]\n');
+  process.stderr.write(
+    'usage: startup-stage-medians.cjs <signposts.xml|signposts.ndjson> [--json <output.json>]\n',
+  );
   process.exit(64);
 }
 
@@ -163,6 +173,73 @@ function collectLaunches(xml) {
   return launches;
 }
 
+/** Seconds for one `log show --signpost --style ndjson` row, or null.
+ *
+ * `machTimestamp` (nanoseconds on the device's monotonic clock) is the precise
+ * basis; the ISO `timestamp` is the fallback for rows that carry one alone.
+ * Only differences between stages are ever reported, so either basis works as
+ * long as every row of one launch is timed the same way.
+ */
+function ndjsonTime(row) {
+  if (typeof row.machTimestamp === 'number' && Number.isFinite(row.machTimestamp)) {
+    return row.machTimestamp / 1e9;
+  }
+  if (typeof row.timestamp === 'string') {
+    const epoch = Date.parse(row.timestamp);
+    return Number.isFinite(epoch) ? epoch / 1000 : null;
+  }
+  return null;
+}
+
+/** Same launch map as the XML path, built from the simulator's unified log. */
+function collectLaunchesFromNdjson(text) {
+  const launches = new Map();
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('{')) continue;
+    let row;
+    try {
+      row = JSON.parse(trimmed);
+    } catch {
+      continue;
+    }
+    const stage = EVENT_TO_STAGE[row.signpostName];
+    if (!stage) continue;
+    const time = ndjsonTime(row);
+    if (time === null) continue;
+    const key = row.processID === undefined ? 'launch' : `pid:${row.processID}`;
+    const stages = launches.get(key) ?? {};
+    if (stages[stage] === undefined || time < stages[stage]) stages[stage] = time;
+    launches.set(key, stages);
+  }
+  return launches;
+}
+
+function captureShape(text) {
+  const trimmed = text.trimStart();
+  if (trimmed.startsWith('[')) return 'json-array';
+  if (trimmed.startsWith('{')) return 'ndjson';
+  return 'xml';
+}
+
+/** Launch map for whichever capture shape the input is. */
+function readCapture(text) {
+  const shape = captureShape(text);
+  if (shape === 'xml') return { shape, launches: collectLaunches(text) };
+  if (shape === 'json-array') {
+    let rows;
+    try {
+      rows = JSON.parse(text);
+    } catch (error) {
+      process.stderr.write(`cannot parse JSON capture: ${error.message}\n`);
+      process.exit(2);
+    }
+    const ndjson = (Array.isArray(rows) ? rows : []).map((row) => JSON.stringify(row)).join('\n');
+    return { shape: 'json-array', launches: collectLaunchesFromNdjson(ndjson) };
+  }
+  return { shape, launches: collectLaunchesFromNdjson(text) };
+}
+
 function median(samples) {
   const sorted = [...samples].sort((left, right) => left - right);
   const middle = Math.floor(sorted.length / 2);
@@ -225,7 +302,8 @@ try {
   process.exit(2);
 }
 
-const launches = collectLaunches(xml);
+const capture = readCapture(xml);
+const launches = capture.launches;
 const stages = summarize(launches);
 const stageNames = Object.keys(stages);
 if (!stageNames.length) {
@@ -242,6 +320,7 @@ if (missing.length) {
 const document = {
   schema: 'startup-stage-medians/1',
   origin: 'AppDelegate entry (not process launch)',
+  capture: capture.shape,
   launches: launches.size,
   baseline: launches.size ? 'AppDelegateEntry when present, else the first reported stage' : null,
   units: 'milliseconds',
@@ -249,7 +328,7 @@ const document = {
   missing_stages: missing,
   real_trace_validated: false,
   note:
-    'Schema-tolerant parser verified against the jest fixture only; delegate-relative diagnostic, not process-launch or first-frame time (ADR 0021).',
+    'Schema-tolerant parser; delegate-relative diagnostic, not process-launch or first-frame time (ADR 0021). The xctrace XML shape is still verified against the jest fixture only; the ndjson shape (simulator unified log) is verified against a real capture.',
 };
 if (jsonOutput) {
   fs.writeFileSync(jsonOutput, `${JSON.stringify(document, null, 2)}\n`);

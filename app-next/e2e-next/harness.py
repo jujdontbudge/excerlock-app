@@ -36,6 +36,8 @@ FIXTURES = E2E / 'fixtures'
 BUILD_DIR = E2E / 'build'
 BUNDLE_ID = 'com.johansardar.excerlock'
 PINNED_SIM_NAME = 'ExcerLock-Next'
+#: os_signpost subsystem the B10 startup stages are emitted on.
+STARTUP_SUBSYSTEM = 'com.johansardar.excerlock.startup'
 POSTHOG_PROJECT = 537075
 
 PASS, FAIL, BLOCKED = 'PASS', 'FAIL', 'BLOCKED'
@@ -143,6 +145,11 @@ def _iso_to_epoch(timestamp: str) -> float:
         return _datetime.datetime.fromisoformat(cleaned).timestamp()
     except ValueError:
         return 0.0
+
+
+def log_timestamp(when: float | None = None) -> str:
+    """A `log show --start` stamp: local time, not ISO-8601."""
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time() if when is None else when))
 
 
 def simlib(udid: str):
@@ -719,6 +726,12 @@ class RunContext:
         `startup-stage-medians.cjs`). The numbers are delegate-relative
         diagnostics — ADR 0021/0033 keep the T15 cold-launch/first-frame budgets
         on a signed device build — so this is evidence, never the budget gate.
+
+        Only usable where `xcrun xctrace record` can tap the target. It cannot on
+        this host: the tap fails and the recorder never exits (README finding 3),
+        which is why E2E-S1 uses `record_simulator_stage_medians` instead. Nor is
+        there a `Points of Interest` template here — `--instrument os_signpost`
+        records under the implicit Blank template.
         """
         output_dir.mkdir(parents=True, exist_ok=True)
         trace = output_dir / 'startup.trace'
@@ -751,6 +764,46 @@ class RunContext:
             payload['error'] = (parsed.stderr or parsed.stdout).strip()[:400]
         return payload
 
+    def record_simulator_stage_medians(self, since: str, output_dir: Path) -> dict[str, Any]:
+        """Per-stage startup medians from the simulator's own os_signpost log.
+
+        Uses the repository contract end to end — `scripts/measure-startup.sh
+        --sim-log` captures the app's `STARTUP_SUBSYSTEM` signposts out of the
+        device's unified log and runs the same `startup-stage-medians.cjs` the
+        xctrace path uses, so both sources produce one schema. `since` bounds the
+        capture to this scenario's launches (`log show --start`).
+
+        These are simulator, delegate-relative numbers: evidence that the stages
+        are ordered and how they move, never the §6.2 budgets (ADR 0021/0033).
+        """
+        output = output_dir / 'startup-sim-log'
+        if output.exists():
+            shutil.rmtree(output)
+        parsed = shell(['bash', str(APP_NEXT / 'scripts' / 'measure-startup.sh'), '--sim-log', self.udid,
+                        '--since', since, '--output', str(output)], check=False, timeout=300)
+        payload: dict[str, Any] = {
+            'ok': parsed.returncode == 0,
+            'capture': 'simulator-unified-log',
+            'command': f'measure-startup.sh --sim-log {self.udid} --since {since}',
+            'stdout': parsed.stdout.strip()[:600],
+        }
+        medians = output / 'stage-medians.json'
+        if medians.exists():
+            try:
+                payload['medians'] = json.loads(medians.read_text())
+            except json.JSONDecodeError:
+                payload['ok'] = False
+                payload['error'] = 'stage-medians.json was not valid JSON'
+        elif parsed.returncode != 0:
+            payload['error'] = (parsed.stderr or parsed.stdout).strip()[:400]
+        health = output / 'diagnostic.json'
+        if health.exists():
+            try:
+                payload['diagnostic'] = json.loads(health.read_text())
+            except json.JSONDecodeError:  # diagnostic is evidence, not the gate
+                self.log('startup diagnostic.json was not valid JSON')
+        return payload
+
     # -- accessibility helpers --------------------------------------------- #
     def nodes(self, node_type: str | None = None) -> list[dict[str, Any]]:
         return [node for node in self.tree() if node_type is None or node.get('type') == node_type]
@@ -774,35 +827,54 @@ class RunContext:
         return None
 
     # -- startup marks (B10 os_signpost stages; harness reads the sim's log) -- #
-    def startup_marks(self, window_seconds: int = 240, start: str | None = None) -> dict[str, float]:
-        """Read the app's own startup signposts from the simulator unified log."""
+    def startup_signpost_rows(self, window_seconds: int = 240, start: str | None = None) -> list[dict[str, Any]]:
+        """Raw os_signpost rows for the app's startup subsystem, oldest first.
+
+        ``--signpost`` is singular on this toolchain: ``--signposts`` is rejected
+        as an unknown option, prints nothing to stdout and exits non-zero, which
+        is how this host was once believed to carry no signpost records at all.
+        """
         window = ['--start', start] if start else ['--last', f'{window_seconds}s']
         result = shell([
             'xcrun', 'simctl', 'spawn', self.udid, 'log', 'show', *window,
-            '--signposts', '--style', 'json',
-            '--predicate', 'subsystem == "com.johansardar.excerlock.startup"',
+            '--signpost', '--style', 'ndjson',
+            '--predicate', f'subsystem == "{STARTUP_SUBSYSTEM}"',
         ], check=False, timeout=240)
-        marks: dict[str, float] = {}
+        rows: list[dict[str, Any]] = []
         for line in result.stdout.splitlines():
-            line = line.strip().rstrip(',')
-            if not line.startswith('{') and not line.startswith('['):
+            line = line.strip()
+            if not line.startswith('{'):
                 continue
             try:
                 entry = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            for item in entry if isinstance(entry, list) else [entry]:
-                name = item.get('signpostName') or item.get('eventMessage') or ''
-                timestamp = item.get('timestamp') or ''
-                if name and timestamp and name not in marks:
-                    marks[name] = _iso_to_epoch(timestamp)
-        if marks:
-            ordered = sorted(marks.items(), key=lambda item: item[1])
-            marks = dict(ordered)
-            if 'AppDelegateEntry' in marks and 'InteractiveHome' in marks:
-                marks['delegateToInteractiveHome'] = marks['InteractiveHome'] - marks['AppDelegateEntry']
-            if 'AppDelegateEntry' in marks and 'FirstReactChildMount' in marks:
-                marks['delegateToFirstFrame'] = marks['FirstReactChildMount'] - marks['AppDelegateEntry']
+            # `log show --style ndjson` ends with a {"count":N,"finished":1} object.
+            if entry.get('signpostName') and entry.get('machTimestamp'):
+                rows.append(entry)
+        return rows
+
+    def startup_marks(self, window_seconds: int = 240, start: str | None = None) -> dict[str, float]:
+        """The newest launch's startup marks, on that process's monotonic clock.
+
+        Values are `machTimestamp` seconds (absolute since boot); only the deltas
+        between marks are meaningful. The derived deltas are delegate-relative
+        diagnostics, never the §6.2 budgets (ADR 0021/0033); the per-stage
+        medians across launches come from `measure-startup.sh --sim-log`.
+        """
+        rows = self.startup_signpost_rows(window_seconds, start)
+        if not rows:
+            return {}
+        newest = max(row['processID'] for row in rows)
+        rows = sorted((row for row in rows if row['processID'] == newest),
+                      key=lambda row: row['machTimestamp'])
+        marks: dict[str, float] = {}
+        for row in rows:
+            marks.setdefault(row['signpostName'], row['machTimestamp'] / 1e9)
+        if 'AppDelegateEntry' in marks and 'InteractiveHome' in marks:
+            marks['delegateToInteractiveHome'] = marks['InteractiveHome'] - marks['AppDelegateEntry']
+        if 'AppDelegateEntry' in marks and 'FirstReactChildMount' in marks:
+            marks['delegateToFirstFrame'] = marks['FirstReactChildMount'] - marks['AppDelegateEntry']
         return marks
 
     # -- analytics -------------------------------------------------------- #

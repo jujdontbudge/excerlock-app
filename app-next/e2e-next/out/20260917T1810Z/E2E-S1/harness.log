@@ -1,0 +1,11 @@
+[13:14:17] launch 1: command 0.29s, first surface 'Get started' after 4.656s
+[13:14:22] launch 2: command 0.25s, first surface 'Get started' after 3.093s
+[13:14:29] launch 3: command 0.24s, first surface 'Get started' after 3.966s
+[13:14:36] launch 4: command 0.99s, first surface 'Get started' after 4.745s
+[13:14:42] launch 5: command 0.31s, first surface 'Get started' after 3.832s
+[13:14:49] launch 6: command 0.34s, first surface 'Get started' after 4.134s
+[13:14:56] launch 7: command 0.30s, first surface 'Get started' after 4.221s
+[13:15:02] launch 8: command 0.42s, first surface 'Get started' after 3.418s
+[13:15:07] launch 9: command 0.24s, first surface 'Get started' after 3.322s
+[13:15:14] launch 10: command 0.26s, first surface 'Get started' after 3.931s
+[13:15:15] simulator stage medians: {"FirstReactRender": {"samples": 10, "median_step_ms": 41.649, "median_cumulative_ms": 41.649}, "HydrationDone": {"samples": 10, "median_step_ms": 0.471, "median_cumulative_ms": 42.103}, "RuntimeReady": {"samples": 10, "median_step_ms": 2.04, "median_cumulative_ms": 44.005}, "BootGateRedirect": {"samples": 10, "median_step_ms": 0.027, "median_cumulative_ms": 44.031}}

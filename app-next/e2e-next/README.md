@@ -138,7 +138,7 @@ with the inspected contract text instead of a bare failure. Current map (plan §
 | `E2E-N4W` | fresh install | one online launch creates the Adapty profile (never opening the paywall), then a launch with every Adapty endpoint denied (`/etc/hosts` → `0.0.0.0`), onboarding O01→P | Adapty profile existed and no placement was cached before the offline launch; endpoints verified unreachable; offline walk reaches the paywall; the export's remote-config title and its annual+monthly Premium A plans render; denial still holds after the walk; `/etc/hosts` restored byte-for-byte | **PASS** (`20260917T1936Z`): title + both Premium A plans render offline |
 | `E2E-E1` | existing user | relaunch, no paywall, Home | boot destination; `$screen home`; interactive-Home budget | BLOCKED-until the entitled existing-user fixture (see gap below) |
 | `E2E-V1` | fresh install | every production route (onboarding steps + deep links) | one `$screen` row per visited route; route-coverage table | onboarding sweep + `$screen` rows PASS; 20 guarded routes BLOCKED-until the fixture |
-| `E2E-S1` | fresh install | 10 cold launches, launch timing | medians vs §6.2 (first frame ≤1.5 s, interactive Home ≤2.5 s) | coarse launch→surface measured; §6.2 budgets BLOCKED-until the device lane (ADR 0021/0033) and the Home budget until the fixture; xctrace stage export unavailable on Xcode 26.4 |
+| `E2E-S1` | fresh install | 10 cold launches, launch timing | medians vs §6.2 (first frame ≤1.5 s, interactive Home ≤2.5 s) | coarse launch→surface measured **and** the app's delegate-relative stage medians recorded from the simulator's own unified log (`measure-startup.sh --sim-log`); §6.2 budgets BLOCKED-until the device lane (ADR 0021/0033) and the Home budget until the fixture; `xctrace`-on-simulator recording is broken on this host (finding 3) |
 | `E2E-A3` | fresh install | welcome footer → email sign-in | signed-in UI; Supabase user; `PUT /v1/user` 204; PostHog rows under the canonical distinct id; teardown 204/410/404 | **PASS** (recovery lane, admin-minted code — see findings) |
 | — | — | `E2E-POSTHOG-TIMEOUT` env | `E2E_POSTHOG_TIMEOUT` (screen window, default 60 s) and `E2E_PAYWALL_WAIT` (extended poll for load-driven events, default 300 s) tune the PostHog windows | — |
 | `E2E-A4` | existing user | Settings → Account → delete | 204, re-PUT 410, Supabase 404, PostHog person erased, local wipe | UI half BLOCKED-until the fixture; harness-driven API half runs and asserts the live contract |
@@ -164,12 +164,14 @@ PostHog query trace.
 | `20260917T1600Z` | `3cb66c1f` | `E2E-V1` | BLOCKED | PASS: 29-screen onboarding sweep, `$screen` step rows for every step (incl. `O13`), `$screen paywall`, run-scoped `$device_id`, ingestion. BLOCKED: 20 of 51 route visits sit behind the setup-complete/entitled guards (existing-user fixture) |
 | `20260917T0650Z` | pre-overhaul build (2026-09-17T10:40Z, revision not recorded) | `E2E-A3` | **PASS** | sign-in sheet → email → admin-minted code → sheet closes → re-opened sheet shows the signed-in account; Supabase user not anonymous; `PUT /v1/user` 204; app persisted the canonical UID as its PostHog distinct id; `$identify` row under that UID; teardown 204/410/404 |
 | `20260917T0640Z` | pre-overhaul build (2026-09-17T10:39Z) | `E2E-S1` | BLOCKED | PASS: 10 cold launches measured (launch call ~0.2 s; launch → first interactive surface 3.8–7 s through idb polling). BLOCKED: the xctrace stage export, the §6.2 budget gate (device lane) and the Home budget (fixture) |
+| `20260917T1810Z` | `32ce84a0` (tree dirty in the harness and `app-next/scripts/` only — this change; `appSourceRevision` `357920f28447` is main's app sources) | `E2E-S1` | BLOCKED | PASS: 10/10 cold launches reached an interactive surface (median 3.95 s launch → first surface, idb-polled). PASS **the stage medians**: every launch reported all four fresh-install B10 stages — median step/cumulative `FirstReactRender` 41.649 ms, `HydrationDone` +0.471 → 42.103 ms, `RuntimeReady` +2.04 → 44.005 ms, `BootGateRedirect` +0.027 → 44.031 ms — read from the simulator unified log through `measure-startup.sh --sim-log` (raw capture, parser output and diagnostic committed under `out/20260917T1810Z/E2E-S1/startup-sim-log/`). BLOCKED: the §6.2 budget gate (device lane) and the Home budget (fixture), unchanged and by design |
 | `20260917T0640Z` | pre-overhaul build | `E2E-E1`, `E2E-A4` | BLOCKED | existing-user fixture unavailable (fixture gap below) |
 | `20260917T0640Z` | pre-overhaul build | `E2E-E2` | BLOCKED | by design: publishes a preview-channel EAS Update (documented stub) |
 
-The A3/S1/E1/A4/E2 evidence predates the UI-overhaul commits that landed after
+The A3/E1/A4/E2 evidence predates the UI-overhaul commits that landed after
 those runs; their verdicts still record the build's `builtAt`/artifact path, and
-the harness re-runs them unchanged against any newer build.
+the harness re-runs them unchanged against any newer build. `E2E-S1` was re-run
+afterwards (`20260917T1810Z`) and its stage-median evidence is current.
 
 The N1/V1 evidence in `20260917T1600Z` was captured on the build made from
 `appSourceRevision` of that moment. Later commits on `main` touch app sources
@@ -201,12 +203,54 @@ lag).
    purchase (hardware, SBX lane `E2E-P1`) or the StoreKit binding §8.1 leaves
    unresolved. E1/A4/Home-budget/guarded-route coverage unblock the moment the SBX
    lane captures `--capture-fixture existing-user`.
-3. **No xctrace stage export on this host.** Xcode 26.4 has no `Points of
-   Interest` template and a `Logging` recording did not complete, so the
-   delegate-relative stage medians that B10/`measure-startup.sh` produce cannot be
-   captured here; and per ADR 0021/0033 the §6.2 budgets are device measurements
-   anyway. Run the xctrace half on a host that can record it, and the budget gate
-   on a signed TestFlight build.
+3. **`xcrun xctrace record` cannot record a simulator on this host.** The
+   delegate-relative stage medians no longer depend on it (they come from the
+   unified log, finding above), but the xctrace route is closed here. Evidence:
+
+   * **The missing piece is a template file, and it is not the blocker.**
+     `xcrun xctrace list templates` (Xcode 26.4.1, `xctrace version 16.0
+     (17E202)`) lists 25 templates with **no `Points of Interest` template**, and
+     `xcrun xctrace record --template 'Points of Interest' …` answers `Cannot
+     find template matching name: Points of Interest`. The *instrument* does
+     ship: `xcrun xctrace list instruments` lists both `Points of Interest` and
+     `os_signpost`, and the Point-of-Interest logic lives in
+     `Contents/Applications/Instruments.app/Contents/Packages/Narrative.instrdst/`
+     (its `Extensions/com.apple.dt.instruments.poi.dtac` ships, its
+     `Contents/Templates/` carries only `Logging.tracetemplate`). Only the file
+     `Narrative.instrdst/Contents/Templates/Points of Interest.tracetemplate` is
+     absent — and `--instrument os_signpost` without `--template` records anyway,
+     on the implicit Blank template (`Starting recording with the Blank template
+     and os_signpost Instrument`).
+   * **Every simulator recording dies at the same tap setup, whatever is asked
+     for it.** Tried against the pinned `ExcerLock-Next` simulator, each of:
+     `--instrument os_signpost --launch com.johansardar.excerlock`,
+     `--instrument os_signpost --all-processes`,
+     `--template 'Time Profiler' --launch com.johansardar.excerlock`,
+     `--template 'System Trace' --launch com.johansardar.excerlock`,
+     `--template 'App Launch' --launch com.johansardar.excerlock` — logs
+     `xcrun xctrace … (DVTInstrumentsFoundation) Device disconnected while trying
+     to set tap configuration` then `Device disconnected while trying to start
+     tap` about 4 s in, launches and runs the app regardless, and then **never
+     exits**. The recorder applies no `--time-limit` once the tap fails, so a
+     `--time-limit 5s` run is still alive minutes later and its `.trace` is
+     unexportable (`xctrace export --input … --toc` → `Export failed: Document
+     Missing Template Error`). The paired `dtsecurity` handshake fails with
+     `'fileDescriptorHandshakeWithReceivePort:' failed: (5)`.
+   * **It is not stale device state.** Shutting the pinned simulator down and
+     booting it again — clearing the `DTServiceHub` it had held open since the
+     first failed attempt — reproduces the identical failure, and the host log
+     shows the recorder spawning a fresh macOS-side `DTServiceHub` per attempt.
+   * **`xctrace` and its packages are otherwise healthy**: a host recording
+     (`xcrun xctrace record --template 'Time Profiler' --all-processes
+     --time-limit 5s`, no `--device`) completes and exports normally.
+   * **Statement for escalation:** what is broken is the CoreSimulator
+     *instruments tap* in this Xcode 26.4.1 installation, not a template, not an
+     Instruments package and not an Xcode version mismatch — the simulator
+     runtime and Xcode are both 26.4.1/23E254a. Whether a **device** recording
+     would work is *untested*, not known bad: the only paired device here (`Il`,
+     iOS 26.2.1) is offline, so `--device <phone>` could not be exercised. The
+     `Logging` template the earlier note blamed belongs to the same broken
+     recording path.
 4. **A first-ever offline launch cannot render the paywall.** AdaptySDK-iOS 4.0.2
    creates the profile on the server at activation (`createNewProfileOnServer`
    retries every 100 ms until the backend answers) and `identify` awaits that
@@ -230,11 +274,19 @@ lag).
   boot gate reports "ExcerLock could not finish starting". `build.py` signs
   ad-hoc; the fresh-install fixture resets the device keychain and privacy
   grants (`simctl keychain reset`, `simctl privacy reset all`).
-* **The simulator's unified log carries no os_signpost records on this host**
-  (`log show --signposts` returns zero lines device-wide, `log stream` has no
-  `--signposts` flag), so the §6.2 sub-second startup budgets cannot be read the
-  way plan §6.3 describes; they need the xctrace numeric parse that B10 owns.
-  S1 records coarse launch→surface numbers meanwhile.
+* **The simulator's unified log does carry the app's os_signpost stages — the
+  earlier "no signpost records on this host" reading was a flag typo.** `log
+  show` takes `--signpost` (singular) here; `--signposts` is rejected with
+  `log: unrecognized option '--signposts'`, prints nothing and exits non-zero,
+  which reads exactly like "this device has no signposts". With the correct flag,
+  `xcrun simctl spawn <udid> log show --start <date> --signpost --style ndjson
+  --predicate 'subsystem == "com.johansardar.excerlock.startup"'` returns the
+  full B10 stage set — `AppDelegateEntry`, `FirstReactRender` (once per native
+  content notification and once per JS call), `HydrationDone`, `RuntimeReady`,
+  `BootGateRedirect` — each with a nanosecond `machTimestamp`. E2E-S1 reads its
+  stage medians this way through `measure-startup.sh --sim-log`, the same parser
+  and JSON schema the xctrace path uses. These stay simulator, delegate-relative
+  numbers: the §6.2 budgets are still the device lane's (ADR 0021/0033).
 * **`example.com` recipients make Supabase's OTP send fail with 500** (the mail
   provider rejects the domain). The email lane uses a disposable address on the
   project's verified sending domain instead.

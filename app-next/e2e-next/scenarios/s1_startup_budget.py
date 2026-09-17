@@ -1,16 +1,28 @@
 """E2E-S1 — startup budget run: 10 cold launches, medians vs §6.2 budgets.
 
-What the SIM lane can measure today: the `simctl launch` call latency and the
-wall-clock time from launch to the first *interactive* app surface, observed
-through the accessibility tree (idb polling, so ~0.3-1 s resolution).
+What the SIM lane measures today, in two independent ways:
 
-What it cannot: the §6.2 sub-second budgets (first frame ≤1.5 s, interactive Home
-≤2.5 s). Those come from the app's own os_signpost marks, and the simulator's
-unified log carries no signpost records at all on this host (`log show
---signposts` returns zero lines for the whole device, not just this app), so the
-precise numbers need the xctrace path that plan §6.3 / B10 finishes. The scenario
-records every measurement and reports those budgets BLOCKED-until B10 instead of
-pretending a coarse number proves them.
+* the `simctl launch` call latency and the wall-clock time from launch to the
+  first *interactive* app surface, observed through the accessibility tree (idb
+  polling, so ~0.3-1 s resolution);
+* the app's own B10 os_signpost stage boundaries, read out of the simulator's
+  unified log (`log show --signpost`, parsed by `measure-startup.sh --sim-log`
+  through the same `startup-stage-medians.cjs` the xctrace path uses). These are
+  delegate-relative step and cumulative times — `FirstReactRender`,
+  `HydrationDone`, `RuntimeReady`, `BootGateRedirect` on a fresh install — with
+  one sample per launch.
+
+What it cannot measure: the §6.2 sub-second budgets (first frame ≤1.5 s,
+interactive Home ≤2.5 s). ADR 0021/0033 make those a signed Release build
+measured on the target device, so the budget assertions stay BLOCKED-until
+`device-lane`; the stage medians are simulator numbers and are labelled as such
+everywhere they appear. The interactive-Home stage additionally needs the
+existing-user fixture, because a fresh install boots into onboarding and never
+reaches Home (see E2E-E1).
+
+The xctrace route to the same numbers is recorded here as unusable on this host
+rather than attempted per run: `xcrun xctrace record` against a simulator
+target fails to set its tap and then never exits (README finding 3).
 """
 from __future__ import annotations
 
@@ -18,7 +30,7 @@ import json
 import statistics
 import time
 
-from harness import Scenario, RunContext
+from harness import Scenario, RunContext, log_timestamp
 
 LAUNCHES = 10
 #: §6.2 release-build budgets
@@ -26,6 +38,8 @@ BUDGET_FIRST_FRAME = 1.5
 BUDGET_INTERACTIVE_HOME = 2.5
 #: Coarse sanity bound for "the app came up at all" through idb polling.
 COARSE_SURFACE_BOUND = 10.0
+#: Stages a fresh install must mark on every cold start (Home needs the fixture).
+REQUIRED_STAGES = ('FirstReactRender', 'HydrationDone', 'RuntimeReady', 'BootGateRedirect')
 SURFACES = ('Get started', 'Home', 'Hi,', 'Choose your plan', 'Setup progress')
 
 
@@ -39,6 +53,7 @@ class S1StartupBudget(Scenario):
 
     def run(self, ctx: RunContext) -> None:
         verdict = ctx.verdict
+        since = log_timestamp()
         launches: list[dict] = []
         for index in range(1, LAUNCHES + 1):
             ctx.terminate()
@@ -57,12 +72,19 @@ class S1StartupBudget(Scenario):
             ctx.log(f'launch {index}: command {command_seconds:.2f}s, first surface {surface!r} '
                     f'after {record["firstSurfaceSeconds"]}s')
 
+        stages = ctx.record_simulator_stage_medians(since, ctx.dir)
+        ctx.log(f'simulator stage medians: {json.dumps(stages.get("medians", {}).get("stages", {}))}')
         artifact = ctx.dir / 'startup-budget.json'
         artifact.write_text(json.dumps({
             'launches': launches,
             'budgets': {'firstFrame': BUDGET_FIRST_FRAME, 'interactiveHome': BUDGET_INTERACTIVE_HOME,
                         'coarseSurfaceBound': COARSE_SURFACE_BOUND},
             'signposts': ctx.startup_marks(),
+            'stageMediansSource': stages.get('capture'),
+            'stageMediansCommand': stages.get('command'),
+            'stageMedians': stages.get('medians', {}).get('stages', {}),
+            'stageMediansLaunches': stages.get('medians', {}).get('launches'),
+            'stageMediansErrors': stages.get('error'),
         }, indent=2) + '\n')
         verdict.artifacts.setdefault('files', []).append(artifact.name)
 
@@ -80,27 +102,46 @@ class S1StartupBudget(Scenario):
                           f'(coarse idb-observed bound ≤{COARSE_SURFACE_BOUND}s; not the §6.2 budget)',
                           evidence=['startup-budget.json'])
 
-        trace = ctx.record_startup_trace(ctx.dir)
-        ctx.note(f'xctrace stage diagnostic: {json.dumps(trace)[:400]}')
-        verdict.check('startup.stage_signpost_diagnostic', None if not trace.get('ok') else True,
-                      ('delegate-relative stage medians recorded through the repository contract '
-                       '(xctrace + measure-startup.sh + startup-stage-medians.cjs): '
-                       + json.dumps(trace.get('medians'))[:300]) if trace.get('ok') else
-                      ('no xctrace stage export on this host: ' + json.dumps(trace.get('error'))[:300]
-                       + ' — Xcode 26.4 has no "Points of Interest" template and a "Logging" '
-                         'recording did not complete; the xctrace half stays on a host that can '
-                         'record it'),
-                      blocked_until='xctrace-host', evidence=['startup-budget.json'])
+        self.stage_medians(ctx, stages)
         verdict.check('startup.first_frame_median', None,
                       'the §6.2 budgets are device measurements: ADR 0021/0033 keep the os_signpost numbers '
-                      'delegate-relative diagnostics, and the simulator unified log carries no signpost '
-                      'records on this host, so the T15 budget gate stays on a signed TestFlight build '
-                      '(plan §6.3 "device numbers recorded once per binary on TestFlight hardware")',
+                      'delegate-relative diagnostics, and E2E-S1 measures them on a simulator, so the T15 budget '
+                      'gate stays on a signed TestFlight build (plan §6.3 "device numbers recorded once per binary '
+                      'on TestFlight hardware")',
                       blocked_until='device-lane', evidence=['startup-budget.json'])
         verdict.check('startup.interactive_home_median', None,
                       'the §6.2 interactive-Home budget additionally needs the existing-user fixture: this '
                       'run is a fresh install, which boots into onboarding (see E2E-E1 blocker)',
                       blocked_until='existing-user-fixture', evidence=['startup-budget.json'])
+
+    @staticmethod
+    def stage_medians(ctx: RunContext, capture: dict) -> None:
+        """Report the simulator's own B10 stage medians, or block on the capture."""
+        evidence = ['startup-budget.json', 'startup-sim-log/stage-medians.json']
+        if not capture.get('ok'):
+            ctx.verdict.check('startup.stage_medians_simulator', None,
+                              'the simulator unified-log stage capture did not complete: '
+                              + json.dumps(capture)[:300],
+                              blocked_until='sim-log-signposts', evidence=evidence)
+            return
+        medians = capture.get('medians') or {}
+        stages = medians.get('stages') or {}
+        missing = [stage for stage in REQUIRED_STAGES if stage not in stages]
+        detail = (f'simulator numbers (delegate-relative stage medians from the simulator unified log, '
+                  f'{medians.get("launches")} launch(es)): ' + json.dumps(stages))
+        if missing:
+            ctx.verdict.check('startup.stage_medians_simulator', False,
+                              f'the app marked only {sorted(stages)} on a cold start; missing {missing} — '
+                              'the B10 stage contract regressed', evidence=evidence)
+            return
+        if medians.get('launches') != LAUNCHES:
+            ctx.verdict.check('startup.stage_medians_simulator', False,
+                              f'only {medians.get("launches")}/{LAUNCHES} cold launches reported startup stages; '
+                              + detail, evidence=evidence)
+            return
+        ctx.verdict.check('startup.stage_medians_simulator', True, detail, evidence=evidence)
+        ctx.note('the stage medians above are simulator, delegate-relative diagnostics; they are not the §6.2 '
+                 'budgets and must not be reported as device startup numbers (ADR 0021/0033)')
 
     @staticmethod
     def first_surface(ctx: RunContext, started: float, timeout: float = 60.0) -> tuple[str, float | None]:

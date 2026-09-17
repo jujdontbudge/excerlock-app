@@ -1,0 +1,12 @@
+{
+  "origin": "AppDelegate entry (not process launch)",
+  "numeric_timing_verified": true,
+  "numeric_timing_source": "simulator unified log os_signpost events parsed by scripts/startup-stage-medians.cjs",
+  "capture_source": "simulator-unified-log",
+  "capture_validated_against_real_output": true,
+  "simulator_numbers": true,
+  "stage_medians": "stage-medians.json",
+  "real_trace_validated": false,
+  "full_cold_launch_verified": false,
+  "note": "Per-stage medians are delegate-relative step and cumulative times measured on the simulator, not process launch or first-frame time. The §6.2 budgets remain a signed Release build measured on the target device (ADR 0021/0033)."
+}

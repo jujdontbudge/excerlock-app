@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0037: Simulator startup stage medians come from the unified log](0037-simulator-startup-stage-medians.md) — **accepted**.
 - [0036: Walk keep-alive stays Always location, without the blue indicator](0036-walk-keep-alive-no-background-indicator.md) — **accepted**.
 - [0035: Remote stride-gate thresholds behind measured clamps and a kill switch](0035-remote-stride-gate-configuration.md) — **accepted**.
 - [0034: Explicit raw-stream suspension evidence in Walking Recorder archives](0034-explicit-raw-stream-suspension-evidence.md) — **accepted**.
