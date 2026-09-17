@@ -1,0 +1,95 @@
+[10:17:34] simctl launch returned in 0.20s
+[10:17:38] saw "Get started"
+[10:17:39] step 1: O01 — Block apps. Exercise more.
+[10:17:40] tapped "Get started"
+[10:17:40] saw "Block apps. Exercise more."
+[10:17:41] step 2: O02 — Block apps. Exercise more.
+[10:17:41] tapped "Get started"
+[10:17:42] saw "Block apps. Exercise more."
+[10:17:42] step 3: O03 — Block apps. Exercise more.
+[10:17:43] tapped "Get started"
+[10:17:44] saw "What should we call you?"
+[10:17:44] step 4: O04 — What should we call you?
+[10:17:45] typed the first name at O04
+[10:17:45] tapped "Continue"
+[10:17:46] saw "How did you hear about us?"
+[10:17:46] step 5: O05 — How did you hear about us?
+[10:17:47] tapped "YouTube"
+[10:17:48] tapped "Continue"
+[10:17:48] saw "How old are you?"
+[10:17:49] step 6: O06 — How old are you?
+[10:17:50] tapped "25–34"
+[10:17:50] tapped "Continue"
+[10:17:51] saw "What is your goal?"
+[10:17:51] step 7: O08 — What is your goal?
+[10:17:52] tapped "More exercise"
+[10:17:53] tapped "Continue"
+[10:17:53] saw "What’s the main reason you want to make a change?"
+[10:17:54] step 8: O09 — What’s the main reason you want to make a change?
+[10:17:54] tapped "Focus on what matters"
+[10:17:55] tapped "Continue"
+[10:17:56] saw "How many hours do you currently spend scrolling each day?"
+[10:17:56] step 9: O10 — How many hours do you currently spend scrolling each day?
+[10:17:57] tapped "Continue"
+[10:17:57] saw "Here’s some quick math"
+[10:17:58] step 10: O11 — Here’s some quick math
+[10:17:58] O11 is an impact explainer; waiting for its control or the next screen
+[10:18:01] tapped "Continue"
+[10:18:02] step 11: O12 — This is a year in your life
+[10:18:02] O12 is an impact explainer; waiting for its control or the next screen
+[10:18:04] step 12: O13 — This is the free time left
+[10:18:05] O13 is an impact explainer; waiting for its control or the next screen
+[10:18:06] step 13: O14 — This is how much time you spend scrolling
+[10:18:06] O14 is an impact explainer; waiting for its control or the next screen
+[10:18:09] tapped "Continue"
+[10:18:10] step 14: O15 — This is good.
+[10:18:10] tapped "Continue"
+[10:18:11] saw "You’re stuck in a loop"
+[10:18:11] step 15: O16 — You’re stuck in a loop
+[10:18:12] tapped "Continue"
+[10:18:12] saw "We’ll change the loop"
+[10:18:13] step 16: O17 — We’ll change the loop
+[10:18:13] tapped "Continue"
+[10:18:26] none of ['Block apps. Exercise more.', 'Choose your plan', 'Help us make ExcerLock better', 'Here’s some quick math', 'How did you hear about us?', 'How many hours do you currently spend scrolling each day?', 'How old are you?', 'How should walking unlock your apps?', 'How your free trial works', 'Set your walking goal', 'This is a year in your life', 'This is good.', 'This is how much time you spend scrolling', 'This is the free time left', 'Try ExcerLock free', 'Want a trial reminder?', "We'll remind you before it ends", 'We’ll change the loop', 'What exercise should unlock your apps?', 'What is your goal?', 'What should we call you?', 'What’s the main reason you want to make a change?', 'When should blocking be active?', 'Where do you walk?', 'You become', 'Your plan is ready', 'You’re stuck in a loop'] appeared in 12s
+[10:18:27] step 17: O18 — You become
+[10:18:27] tapped "Continue"
+[10:18:28] saw "What exercise should unlock your apps?"
+[10:18:28] step 18: O20 — What exercise should unlock your apps?
+[10:18:29] tapped "Walking"
+[10:18:29] tapped "Continue"
+[10:18:30] saw "Where do you walk?"
+[10:18:30] step 19: W1 — Where do you walk?
+[10:18:31] tapped "Outside"
+[10:18:32] tapped "Continue"
+[10:18:32] saw "How should walking unlock your apps?"
+[10:18:33] step 20: W2 — How should walking unlock your apps?
+[10:18:33] tapped "Continue"
+[10:18:34] saw "Set your walking goal"
+[10:18:34] step 21: W3 — Set your walking goal
+[10:18:35] tapped "Continue"
+[10:18:35] saw "When should blocking be active?"
+[10:18:36] step 22: S1 — When should blocking be active?
+[10:18:37] tapped "Continue"
+[10:18:38] saw "Your plan is ready"
+[10:18:39] step 23: S3 — Your plan is ready
+[10:18:40] tapped "Use this plan"
+[10:18:40] saw "Help us make ExcerLock better"
+[10:18:41] step 24: S4 — Help us make ExcerLock better
+[10:18:41] tapped "Not now"
+[10:18:42] saw "Try ExcerLock free"
+[10:18:42] step 25: T1 — Try ExcerLock free
+[10:18:43] tapped "Continue"
+[10:18:44] saw "We'll remind you before it ends"
+[10:18:44] step 26: T2 — We'll remind you before it ends
+[10:18:45] tapped "Continue"
+[10:18:45] saw "Want a trial reminder?"
+[10:18:46] step 27: T3 — Want a trial reminder?
+[10:18:47] tapped "Enable reminders"
+[10:19:00] none of ['Block apps. Exercise more.', 'Choose your plan', 'Help us make ExcerLock better', 'Here’s some quick math', 'How did you hear about us?', 'How many hours do you currently spend scrolling each day?', 'How old are you?', 'How should walking unlock your apps?', 'How your free trial works', 'Set your walking goal', 'This is a year in your life', 'This is good.', 'This is how much time you spend scrolling', 'This is the free time left', 'Try ExcerLock free', 'Want a trial reminder?', "We'll remind you before it ends", 'We’ll change the loop', 'What exercise should unlock your apps?', 'What is your goal?', 'What should we call you?', 'What’s the main reason you want to make a change?', 'When should blocking be active?', 'Where do you walk?', 'You become', 'Your plan is ready', 'You’re stuck in a loop'] appeared in 12s
+[10:19:00] tapped "Allow"
+[10:19:00] answered the system prompt with "Allow"
+[10:19:02] step 28: T4 — How your free trial works
+[10:19:03] tapped "Continue"
+[10:19:03] saw "Choose your plan"
+[10:19:04] step 29: P — Choose your plan
+[10:19:07] posthog $device_id = 01a0aff1-dc8e-7a17-8d7e-8f605ca57aac

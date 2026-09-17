@@ -1,0 +1,188 @@
+{
+  "scenario": "E2E-A3",
+  "title": "Email sign-in completes the identity spine",
+  "lane": "SIM",
+  "users": "NEW",
+  "status": "FAIL",
+  "reason": "spine.posthog_identify: PostHog stored 0 $identify row(s) under the canonical distinct_id af3361cf-efa4-49a6-a612-ff12eb950c5f after 187s",
+  "startedAt": "2026-09-17T15:35:03Z",
+  "endedAt": "2026-09-17T15:38:44Z",
+  "durationSeconds": 221.0,
+  "device": {
+    "udid": "B68873CD-B6ED-4961-85AF-0C807E657999",
+    "name": "ExcerLock-Next",
+    "CFBundleShortVersionString": "1.0.0",
+    "CFBundleVersion": "1"
+  },
+  "build": {
+    "app": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/11/excerlock-app/app-next/e2e-next/build/DerivedData/Build/Products/Release-iphonesimulator/ExcerLock.app",
+    "bundleId": "com.johansardar.excerlock",
+    "scheme": "ExcerLock",
+    "configuration": "Release",
+    "environment": "preview",
+    "channel": "preview",
+    "runtimeVersion": "2",
+    "derivedData": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/11/excerlock-app/app-next/e2e-next/build/DerivedData",
+    "log": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/11/excerlock-app/app-next/e2e-next/build/build.log",
+    "installed": true,
+    "builtAt": "2026-09-17T04:13:47Z"
+  },
+  "capabilities": {
+    "B1.remote_config_copy": {
+      "landed": true,
+      "contract": "remoteCopy reads flow.remoteConfigs[0].data (locale-aware)"
+    },
+    "B4a.screen_step_mapping": {
+      "landed": true,
+      "contract": "semanticScreenName resolves onboarding/setup step ids to a screen plus a step prop"
+    },
+    "B4b.root_screen_tracking": {
+      "landed": true,
+      "contract": "a single root-level usePathname subscriber emits screen() for every production route"
+    },
+    "B6.paywall_funnel_events": {
+      "landed": true,
+      "contract": "client emits paywall_viewed"
+    },
+    "B2.paywall_error_reporting": {
+      "landed": true,
+      "contract": "client emits paywall_error on paywall load/purchase/restore failure"
+    },
+    "B3.fallback_paywall": {
+      "landed": true,
+      "contract": "assets/adapty-fallback.json exists and the SDK fallback is wired"
+    },
+    "B7.signin_required_flag": {
+      "landed": true,
+      "contract": "SignInScreen mounts receive a flag-backed signInRequired source"
+    },
+    "B10.startup_marks": {
+      "landed": true,
+      "contract": "startup module emits the five os_signpost stages"
+    },
+    "A5.sentry_before_boot": {
+      "landed": true,
+      "contract": "Sentry initialisation runs at the entry, before the runtime boot gate"
+    }
+  },
+  "fixture": {
+    "kind": "fresh-install",
+    "detail": "simctl uninstall + install of the build under test"
+  },
+  "identity": {
+    "supabaseUserId": "af3361cf-efa4-49a6-a612-ff12eb950c5f",
+    "apiSession": "minted",
+    "posthogDeviceId": "01a0b001-e81c-71a2-b66d-ee7452f54da0",
+    "posthogDistinctId": "af3361cf-efa4-49a6-a612-ff12eb950c5f"
+  },
+  "assertions": [
+    {
+      "id": "signin.identity_lane",
+      "status": "PASS",
+      "detail": "recovery lane: the disposable account is pre-created and the code is minted server-side with the service key (plan \u00a75)"
+    },
+    {
+      "id": "signin.email_entered",
+      "status": "PASS",
+      "detail": "the sign-in field holds the disposable address (e2e-a3-20260917t0640z@excerlock.com)"
+    },
+    {
+      "id": "signin.code_entered",
+      "status": "PASS",
+      "detail": "the six-digit code is in the field"
+    },
+    {
+      "id": "signin.sheet_closed",
+      "status": "PASS",
+      "detail": "the sign-in sheet closes after the code is accepted"
+    },
+    {
+      "id": "signin.signed_in_ui",
+      "status": "PASS",
+      "detail": "the sign-in sheet renders the signed-in account (e2e-a3-20260917t0640z@excerlock.com); labels: [\"ExcerLock\", \"Dismiss sheet\", \"Close\", \"Sign in\", \"Save your progress\", \"e2e-a3-20260917t0640z@excerlock.com\", \"Continue\"]"
+    },
+    {
+      "id": "spine.supabase_user",
+      "status": "PASS",
+      "detail": "Supabase user af3361cf-efa4-49a6-a612-ff12eb950c5f exists, is_anonymous=False, email_confirmed=True"
+    },
+    {
+      "id": "spine.api_put_user",
+      "status": "PASS",
+      "detail": "PUT /v1/user with a service-minted session for af3361cf-efa4-49a6-a612-ff12eb950c5f returned 204: None"
+    },
+    {
+      "id": "analytics.device_id",
+      "status": "PASS",
+      "detail": "run-scoped $device_id: '01a0b001-e81c-71a2-b66d-ee7452f54da0'"
+    },
+    {
+      "id": "spine.analytics_identify",
+      "status": "PASS",
+      "detail": "the app's persisted PostHog distinct_id is 'af3361cf-efa4-49a6-a612-ff12eb950c5f' (canonical Supabase UID af3361cf-efa4-49a6-a612-ff12eb950c5f)"
+    },
+    {
+      "id": "spine.posthog_identify",
+      "status": "FAIL",
+      "detail": "PostHog stored 0 $identify row(s) under the canonical distinct_id af3361cf-efa4-49a6-a612-ff12eb950c5f after 187s"
+    },
+    {
+      "id": "teardown.delete_204",
+      "status": "PASS",
+      "detail": "DELETE /v1/user returned 204: None"
+    },
+    {
+      "id": "teardown.reput_410",
+      "status": "PASS",
+      "detail": "re-PUT after deletion returned 410 (expected 410 tombstone): {'error': {'code': 'ACCOUNT_DELETED', 'message': 'This account has been deleted'}}"
+    },
+    {
+      "id": "teardown.supabase_404",
+      "status": "PASS",
+      "detail": "Supabase admin user lookup after deletion returned 404"
+    }
+  ],
+  "artifacts": {
+    "screenshots": [
+      "01-sign-in-sheet.png",
+      "02-email-entered.png",
+      "03-code-entry.png",
+      "04-after-verify.png",
+      "05-signed-in.png"
+    ],
+    "trees": [
+      "01-sign-in-sheet.tree.json",
+      "02-email-entered.tree.json",
+      "03-code-entry.tree.json",
+      "04-after-verify.tree.json",
+      "05-signed-in.tree.json"
+    ],
+    "recordings": []
+  },
+  "notes": [
+    "disposable identity: e2e-a3-20260917t0640z@excerlock.com",
+    "sign-in lane: recovery (pre-created account, admin-minted magiclink code)",
+    "PostHog person mapping: 1 person(s) mapped to distinct_id af3361cf-efa4-49a6-a612-ff12eb950c5f",
+    "identity torn down through the app API deletion contract"
+  ],
+  "posthog": [
+    {
+      "query": "$identify rows under af3361cf-efa4-49a6-a612-ff12eb950c5f",
+      "rows": 0,
+      "waitedSeconds": 186.5
+    },
+    {
+      "query": "device rows",
+      "deviceId": "01a0b001-e81c-71a2-b66d-ee7452f54da0",
+      "rows": 2,
+      "waitedSeconds": 0.4,
+      "events": [
+        "$identify"
+      ],
+      "distinctIds": [
+        "654b6e65-caca-4a33-b8e9-3e47182794f1",
+        "af3361cf-efa4-49a6-a612-ff12eb950c5f"
+      ]
+    }
+  ]
+}

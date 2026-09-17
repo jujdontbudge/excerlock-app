@@ -116,11 +116,12 @@ with the inspected contract text instead of a bare failure. Current map (plan §
 
 | ID | Fixture | What it drives | Assertions | State in this worktree |
 |---|---|---|---|---|
-| `E2E-N1` | fresh install | real onboarding O01→P, paywall | full walk observed step by step; paywall renders; live products; CTA; `$screen` per step; `paywall_viewed`; startup first-frame budget | walk + live products + CTA PASS; analytics assertions BLOCKED-until `B4a`/`B4b`/`B6`; first-frame budget BLOCKED-until `B10` |
+| `E2E-N1` | fresh install | real onboarding O01→P, paywall | full walk observed step by step; paywall renders; live products; CTA; `$screen` per step; `paywall_viewed`; startup first-frame budget | walk, live products, CTA, `paywall_viewed` and `$screen` PASS; **O01 emits no `$screen` row** (the one app gap); startup budget BLOCKED (device lane) |
 | `E2E-E1` | existing user | relaunch, no paywall, Home | boot destination; `$screen home`; interactive-Home budget | BLOCKED-until the entitled existing-user fixture (see gap below) |
-| `E2E-V1` | fresh install | every production route (onboarding steps + deep links) | one `$screen` row per visited route; route-coverage table | onboarding sweep provable; `$screen` rows BLOCKED-until `B4a`/`B4b`; guarded routes BLOCKED-until the fixture |
-| `E2E-S1` | fresh install | 10 cold launches, launch timing | medians vs §6.2 (first frame ≤1.5 s, interactive Home ≤2.5 s) | coarse launch→surface measured; §6.2 budgets BLOCKED-until `B10` (no signposts in the simulator log) and the Home budget until the fixture |
+| `E2E-V1` | fresh install | every production route (onboarding steps + deep links) | one `$screen` row per visited route; route-coverage table | onboarding sweep + `$screen` rows PASS; 20 guarded routes BLOCKED-until the fixture |
+| `E2E-S1` | fresh install | 10 cold launches, launch timing | medians vs §6.2 (first frame ≤1.5 s, interactive Home ≤2.5 s) | coarse launch→surface measured; §6.2 budgets BLOCKED-until the device lane (ADR 0021/0033) and the Home budget until the fixture; xctrace stage export unavailable on Xcode 26.4 |
 | `E2E-A3` | fresh install | welcome footer → email sign-in | signed-in UI; Supabase user; `PUT /v1/user` 204; PostHog rows under the canonical distinct id; teardown 204/410/404 | **PASS** (recovery lane, admin-minted code — see findings) |
+| — | — | `E2E-POSTHOG-TIMEOUT` env | `E2E_POSTHOG_TIMEOUT` (screen window, default 60 s) and `E2E_PAYWALL_WAIT` (extended poll for load-driven events, default 300 s) tune the PostHog windows | — |
 | `E2E-A4` | existing user | Settings → Account → delete | 204, re-PUT 410, Supabase 404, PostHog person erased, local wipe | UI half BLOCKED-until the fixture; harness-driven API half runs and asserts the live contract |
 | `E2E-E2` | — | OTA receipt, binary unchanged | **documented stub** (publishes a preview EAS Update; §8.10 keeps release-lock ops out of E2E automation) | BLOCKED by design |
 
@@ -130,16 +131,30 @@ re-runs; purchase assertions stop at the CTA, §8.1) and the SBX lane
 
 ## Proven runs (committed evidence)
 
-Evidence is committed under `out/<run>/` (videos stay local: a full onboarding
-recording is >100 MB and regenerates with any run).
+Evidence is committed under `out/<run>/` (recordings stay local: a full onboarding
+video is >100 MB and regenerates with any run; screenshots are committed at
+480 px). Every verdict carries the build manifest, the capability map, the
+assertion list and the PostHog query trace.
 
-| Run | Scenario | Verdict | Passed | Blocked-until |
-|---|---|---|---|---|
-| `20260917T0510Z` | `E2E-N1` | BLOCKED | fresh install boots real onboarding; all 29 screens walked in flow order; paywall renders 2 live plans (Premium Annual/Monthly at $59.99) matching the live Adapty `onboarding` placement; CTA present; run-scoped `$device_id`; PostHog ingestion | `B4a`/`B4b` (`$screen` per step/route), `B6` (`paywall_viewed`), `B10` (first-frame budget) |
-| `20260917T0510Z` | `E2E-V1` | BLOCKED | onboarding sweep (29 step visits) + `route-coverage.json` for every production route; run-scoped `$device_id`; ingestion | `B4a`/`B4b` (`$screen` rows), existing-user fixture (20 guarded routes) |
-| `20260917T0440Z` | `E2E-A3` | **PASS** | sign-in sheet → email → admin-minted code → signed-in UI with the account; Supabase user not anonymous; `PUT /v1/user` 204; app persisted the canonical UID as its PostHog distinct id; `$identify` row under that UID; teardown 204/410/404 | — |
-| `20260917T0450Z` | `E2E-S1` | BLOCKED | 10 cold launches measured (launch call ~0.2 s; launch → first interactive surface 4.5–7.7 s through idb polling) | `B10` (signpost/xctrace budgets), existing-user fixture (Home budget) |
-| `20260917T0450Z` | `E2E-E1`, `E2E-A4`, `E2E-E2` | BLOCKED | — | existing-user fixture (E1/A4); by design for the E2 OTA stub |
+| Run | Scenario | Verdict | Result |
+|---|---|---|---|
+| `20260917T0620Z` | `E2E-N1` | **FAIL** (one real gap) + BLOCKED budget | PASS: fresh install boots real onboarding; all 29 screens walked in flow order; paywall renders the two live placement plans (Premium Annual/Monthly, $59.99) matching the Adapty `onboarding` placement; CTA; run-scoped `$device_id`; `paywall_viewed {placement: onboarding}` (1 row); `$screen paywall` (4 rows); ingestion 33 rows in 18 s. **FAIL**: 27/28 visited steps have a `$screen` row — **O01 emits none**. BLOCKED: §6.2 startup budget (device measurement, ADR 0021/0033) |
+| `20260917T0620Z` | `E2E-V1` | BLOCKED | PASS: 29-screen onboarding sweep, `$screen` step rows for every step (incl. `O13`), `$screen paywall` (arrived after 312 s), run-scoped `$device_id`, ingestion. BLOCKED: 20 of 51 route visits sit behind the setup-complete/entitled guards (existing-user fixture) |
+| `20260917T0650Z` | `E2E-A3` | **PASS** | sign-in sheet → email → admin-minted code → sheet closes → re-opened sheet shows the signed-in account; Supabase user not anonymous; `PUT /v1/user` 204; app persisted the canonical UID as its PostHog distinct id; `$identify` row under that UID; teardown 204/410/404 |
+| `20260917T0640Z` | `E2E-S1` | BLOCKED | PASS: 10 cold launches measured (launch call ~0.2 s; launch → first interactive surface 3.8–7 s through idb polling). BLOCKED: the xctrace stage export (no `Points of Interest` template on Xcode 26.4), the §6.2 budget gate (device lane) and the Home budget (fixture) |
+| `20260917T0640Z` | `E2E-E1`, `E2E-A4` | BLOCKED | existing-user fixture unavailable (see the fixture gap below) |
+| `20260917T0640Z` | `E2E-E2` | BLOCKED | by design: publishes a preview-channel EAS Update (documented stub) |
+
+### The one app finding N1 proves
+
+`$screen` rows cover every visited onboarding step **except O01**: the first
+screen of onboarding reports nothing to PostHog. The analytics gate requires a
+ready canonical identity (`allowed()` in `PostHogAnalyticsAdapter`), and on a
+fresh install the identity spine has not settled when O01 paints, so the event is
+dropped rather than queued. Every later step reports. Reproduce with
+`E2E-N1` and inspect `analytics.step_screen_events` in its `verdict.json`
+(`required` = observed steps minus the paywall, whose row arrives with ingestion
+lag).
 
 ## Findings this program pinned down
 
@@ -171,10 +186,19 @@ recording is >100 MB and regenerates with any run).
   screen-event window in one run, within 1 s in another). A3 polls up to 180 s
   and records the real wait; the person mapping for the UID is recorded as an
   informational note because PostHog merges it asynchronously.
-* **Sibling contracts are not in this worktree.** `harness.detect_capabilities()`
-  reports `B1`, `B2`, `B4a`, `B4b`, `B6`, `B7`, `B10` and `A5` as pending here
-  (main carries neither `paywall_error` nor the `remoteConfigs` remote-copy read),
-  which is exactly why N1/V1 report BLOCKED-until instead of FAIL.
+* **The sibling contracts landed mid-task.** `harness.detect_capabilities()` reads
+  the worktree, so the first evidence runs reported `B1/B2/B4a/B4b/B6/B7/B10/A5`
+  as pending and marked their assertions BLOCKED-until; after rebasing onto main
+  (where all of them landed) the same scenarios ran their analytics assertions for
+  real and N1's only remaining failure is the O01 gap. The capability map in every
+  `verdict.json` records which side of that boundary the run was on.
+* **PostHog ingestion for this project is bursty**: screen rows can arrive in
+  ~1 s, while the paywall's load-driven `paywall_viewed` / `$screen paywall` and
+  the `$identify` row under a new distinct id have taken 300 s+. The plan's 60 s
+  window is the first poll; `E2E_PAYWALL_WAIT` (default 300 s) is the extended one,
+  and a miss after both is reported BLOCKED-until-ingestion, never as an app
+  failure — except where the app-side proof is independent (A3 asserts the
+  persisted distinct id locally).
 
 ## Fixture policy and the SIM-lane fixture gap
 

@@ -1,0 +1,13 @@
+[10:40:40] saw "Get started"
+[10:40:41] tapped "Sign in"
+[10:40:41] saw "Continue with email"
+[10:40:42] tapped "Continue with email"
+[10:40:42] saw "Email address"
+[10:40:46] tapped "Send code"
+[10:40:47] saw "Check your email"
+[10:40:48] generate_link(magiclink) -> 200 code
+[10:40:50] tapped "Verify code"
+[10:40:52] tapped "Sign in"
+[10:40:52] saw "Save your progress"
+[10:40:54] tapped "Close"
+[10:40:55] posthog $device_id = 01a0b006-f2a6-78f9-99d9-827a5aa2e0c1

@@ -14,6 +14,7 @@ to 537075.
 from __future__ import annotations
 
 import json
+import os
 import time
 import urllib.error
 import urllib.request
@@ -21,7 +22,10 @@ from typing import Any, Callable, Iterable, Sequence
 
 from harness import POSTHOG_PROJECT, env_value
 
-DEFAULT_POLL_SECONDS = 60.0
+#: The plan's §4.5 window for near-real-time screen events. PostHog ingestion for
+#: this project has been observed to take minutes for identify-driven events, so
+#: the window is configurable for nightly runs (E2E_POSTHOG_TIMEOUT seconds).
+DEFAULT_POLL_SECONDS = float(os.environ.get('E2E_POSTHOG_TIMEOUT', '60'))
 POLL_INTERVAL = 4.0
 
 
@@ -108,10 +112,23 @@ def wait_for_query(hogql: str, predicate: Callable[[list[dict[str, Any]]], bool]
 
 
 def wait_for_device_events(device_id: str, since: str, predicate: Callable[[list[dict[str, Any]]], bool], *,
-                           events: Sequence[str] = (), extra: str = '', timeout: float = DEFAULT_POLL_SECONDS
-                           ) -> tuple[list[dict[str, Any]], bool, float]:
+                           events: Sequence[str] = (), extra: str = '', timeout: float = DEFAULT_POLL_SECONDS,
+                           interval: float = POLL_INTERVAL) -> tuple[list[dict[str, Any]], bool, float]:
     return wait_for_query(device_events_sql(device_id, since, events=events, extra=extra), predicate,
-                          timeout=timeout)
+                          timeout=timeout, interval=interval)
+
+
+def wait_for_device_event(device_id: str, since: str, event: str, *, timeout: float = 180.0,
+                          interval: float = 10.0) -> tuple[list[dict[str, Any]], bool, float]:
+    """Poll for one named event from the run's device.
+
+    Screen events arrive in seconds; identify-driven funnel events (paywall_viewed
+    after the paywall's placement load) have been observed to take minutes in
+    project 537075, so the caller can extend the window and report the wait
+    instead of recording a false failure.
+    """
+    return wait_for_device_events(device_id, since, lambda rows: bool(rows), events=(event,),
+                                  timeout=timeout, interval=interval)
 
 
 def device_events(device_id: str, since: str, *, events: Sequence[str] = (), extra: str = '') -> list[dict[str, Any]]:

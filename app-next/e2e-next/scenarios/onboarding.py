@@ -192,7 +192,7 @@ class OnboardingWalk:
                 deadline = time.monotonic() + 30
                 advanced = False
                 while time.monotonic() < deadline:
-                    time.sleep(1.2)
+                    time.sleep(0.35)
                     nxt = self.observe()
                     if self.ctx.answer_system_prompt():
                         continue

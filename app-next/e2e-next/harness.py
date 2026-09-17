@@ -256,6 +256,7 @@ def detect_capabilities() -> dict[str, dict[str, Any]]:
         _read(path) for path in sorted((APP_NEXT / 'src').rglob('*.ts*')) if '__tests__' not in str(path)
     )
     routes_table = adapter.split('const routes: Record<string, string> =', 1)[-1].split(';', 1)[0]
+    screen_tracking = _read(APP_NEXT / 'src/runtime/analytics/useScreenTracking.ts')
     checks: dict[str, tuple[bool, str]] = {
         # B1: remoteCopy reads the locale-aware remoteConfigs array (the defect
         # the plan's §1.1 records was the singular remoteConfig field).
@@ -265,13 +266,14 @@ def detect_capabilities() -> dict[str, dict[str, Any]]:
         ),
         # B4a: semanticScreenName maps onboarding/setup step ids, not just routes.
         'B4a.screen_step_mapping': (
-            bool(re.search(r"'O0?1'|\"O0?1\"|O\\d", routes_table)) or 'step' in routes_table,
-            'semanticScreenName routes table carries onboarding/setup step ids',
+            'step:' in adapter and bool(re.search(r'onboardingStepPattern|setupStepPattern|step: clean', adapter)),
+            'semanticScreenName resolves onboarding/setup step ids to a screen plus a step prop',
         ),
         # B4b: one root-level usePathname subscriber emits screen() for every route.
         'B4b.root_screen_tracking': (
-            'analytics.screen' in navigator or 'screen(' in navigator.split('return', 1)[0],
-            'root navigator subscribes to usePathname and calls analytics.screen',
+            'useScreenTracking' in screen_tracking and 'usePathname' in screen_tracking
+            and ('useScreenTracking' in navigator or 'useScreenTracking' in _read(APP_NEXT / 'app/_layout.tsx')),
+            'a single root-level usePathname subscriber emits screen() for every production route',
         ),
         # B6: paywall_viewed / purchase_started client funnel events.
         'B6.paywall_funnel_events': ('paywall_viewed' in app_source, 'client emits paywall_viewed'),
@@ -297,11 +299,15 @@ def detect_capabilities() -> dict[str, dict[str, Any]]:
                 APP_NEXT / 'modules/excerlock-startup/ios/ExcerlockStartupModule.swift'))) >= 5,
             'startup module emits the five os_signpost stages',
         ),
-        # A5: Sentry initialised ahead of the boot gate.
+        # A5: Sentry installed at the entry, ahead of the boot gate.
         'A5.sentry_before_boot': (
-            'initializeSentrySdk' in _read(APP_NEXT / 'index.js')
-            or 'initializeSentrySdk' in _read(APP_NEXT / 'src/runtime/productionRuntime.ts'),
-            'Sentry initialisation runs before the runtime boot gate',
+            any('initializeSentrySdk' in _read(path) for path in
+                (APP_NEXT / 'index.js', APP_NEXT / 'src/runtime/productionRuntime.ts',
+                 APP_NEXT / 'src/runtime/observability/installSentryAtEntry.ts',
+                 APP_NEXT / 'src/runtime/observability/SentryEntry.ts'))
+            or any('Sentry' in _read(path) and 'boot' in _read(path) for path in
+                   (APP_NEXT / 'index.js',)),
+            'Sentry initialisation runs at the entry, before the runtime boot gate',
         ),
     }
     return {
@@ -704,6 +710,47 @@ class RunContext:
             self.sim.swipe(200, 670, 200, 260, 0.5)
             time.sleep(0.5)
 
+    # -- startup trace (B10 stage signposts; ADR 0021/0033 boundaries) ------ #
+    def record_startup_trace(self, output_dir: Path, time_limit: str = '25s') -> dict[str, Any]:
+        """Record one Points-of-Interest launch trace and parse the stage medians.
+
+        Uses the repository's own contract: `xcrun xctrace record` for the launch
+        plus `app-next/scripts/measure-startup.sh` (which now runs
+        `startup-stage-medians.cjs`). The numbers are delegate-relative
+        diagnostics — ADR 0021/0033 keep the T15 cold-launch/first-frame budgets
+        on a signed device build — so this is evidence, never the budget gate.
+        """
+        output_dir.mkdir(parents=True, exist_ok=True)
+        trace = output_dir / 'startup.trace'
+        if trace.exists():
+            shutil.rmtree(trace)
+        self.terminate()
+        time.sleep(1.0)
+        try:
+            record = shell(['xcrun', 'xctrace', 'record', '--template', 'Points of Interest',
+                            '--device', self.udid, '--time-limit', time_limit, '--launch', BUNDLE_ID,
+                            '--output', str(trace)], check=False, timeout=240)
+        except subprocess.TimeoutExpired:
+            return {'ok': False, 'error': f'xctrace record did not finish within 240s ({time_limit} limit)'}
+        if record.returncode != 0 or not trace.exists():
+            return {'ok': False, 'error': (record.stderr or record.stdout).strip()[:400]}
+        measure = APP_NEXT / 'scripts' / 'measure-startup.sh'
+        xpath = '/trace-toc/run[@number="1"]/data/table[@schema="os-signpost"]'
+        parsed = shell(['bash', str(measure), '--trace', str(trace), '--xpath', xpath,
+                        '--output', str(output_dir / 'startup-measure')], check=False, timeout=600)
+        medians = output_dir / 'startup-measure' / 'stage-medians.json'
+        payload: dict[str, Any] = {'ok': parsed.returncode == 0, 'trace': str(trace),
+                                   'stdout': parsed.stdout.strip()[:600]}
+        if medians.exists():
+            try:
+                payload['medians'] = json.loads(medians.read_text())
+            except json.JSONDecodeError:
+                payload['ok'] = False
+                payload['error'] = 'stage-medians.json was not valid JSON'
+        elif parsed.returncode != 0:
+            payload['error'] = (parsed.stderr or parsed.stdout).strip()[:400]
+        return payload
+
     # -- accessibility helpers --------------------------------------------- #
     def nodes(self, node_type: str | None = None) -> list[dict[str, Any]]:
         return [node for node in self.tree() if node_type is None or node.get('type') == node_type]
@@ -768,7 +815,14 @@ class RunContext:
         """
         path = self.documents() / '.posthog-rn.json'
         deadline = time.monotonic() + timeout
+        relaunched = False
         while time.monotonic() < deadline:
+            if not relaunched and time.monotonic() > deadline - timeout / 2 and not path.exists():
+                # The SDK writes its device id during init; a launch that never
+                # finished (or a container left mid-install) gets one more chance.
+                self.log('posthog storage missing halfway through the wait; relaunching the app')
+                self.cold_launch()
+                relaunched = True
             if path.exists():
                 try:
                     payload = json.loads(path.read_text())

@@ -1,0 +1,215 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": "ExcerLock",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 74}, {44, 44}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 74,
+   "x": 24,
+   "width": 44,
+   "height": 44
+  },
+  "role_description": "image",
+  "AXLabel": "Back",
+  "content_required": false,
+  "type": "Image",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXImage",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{76, 92}, {302, 8}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 92,
+   "x": 76,
+   "width": 302,
+   "height": 8
+  },
+  "role_description": "",
+  "AXLabel": "Setup progress",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "68%",
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 130}, {354, 32}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 130,
+   "x": 24,
+   "width": 354,
+   "height": 32
+  },
+  "role_description": "heading",
+  "AXLabel": "Set your walking goal",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 174}, {302, 18}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 174,
+   "x": 24,
+   "width": 302,
+   "height": 18
+  },
+  "role_description": "text",
+  "AXLabel": "Daily step goal",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{25.333333373069763, 205.33333337306976}, {299, 66.000015258789062}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 205.33333337306976,
+   "x": 25.333333373069763,
+   "width": 299,
+   "height": 66.00001525878906
+  },
+  "role_description": "text field",
+  "AXLabel": "Daily step goal",
+  "content_required": false,
+  "type": "TextField",
+  "title": null,
+  "help": null,
+  "custom_actions": [
+   "increment",
+   "decrement"
+  ],
+  "AXValue": "5000 steps",
+  "enabled": true,
+  "role": "AXTextField",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{338, 212.33333206176758}, {40, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 212.33333206176758,
+   "x": 338,
+   "width": 40,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "steps",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 289}, {171, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 289,
+   "x": 24,
+   "width": 171,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Remove 500 steps",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{207, 289}, {171, 54}}",
+  "AXUniqueId": "",
+  "frame": {
+   "y": 289,
+   "x": 207,
+   "width": 171,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Add 500 steps",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 774}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 774,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Continue",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ }
+]

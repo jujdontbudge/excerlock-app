@@ -80,12 +80,23 @@ class S1StartupBudget(Scenario):
                           f'(coarse idb-observed bound ≤{COARSE_SURFACE_BOUND}s; not the §6.2 budget)',
                           evidence=['startup-budget.json'])
 
-        marks = ctx.startup_marks()
-        verdict.check('startup.first_frame_median', None if not marks else None,
-                      'the §6.2 first-frame budget needs the app\'s os_signpost marks, and the simulator '
-                      'unified log carries no signpost records on this host (log show --signposts returns 0 '
-                      'lines device-wide); plan §6.3/B10 owns the xctrace numeric parse',
-                      blocked_until='B10.startup_marks', evidence=['startup-budget.json'])
+        trace = ctx.record_startup_trace(ctx.dir)
+        ctx.note(f'xctrace stage diagnostic: {json.dumps(trace)[:400]}')
+        verdict.check('startup.stage_signpost_diagnostic', None if not trace.get('ok') else True,
+                      ('delegate-relative stage medians recorded through the repository contract '
+                       '(xctrace + measure-startup.sh + startup-stage-medians.cjs): '
+                       + json.dumps(trace.get('medians'))[:300]) if trace.get('ok') else
+                      ('no xctrace stage export on this host: ' + json.dumps(trace.get('error'))[:300]
+                       + ' — Xcode 26.4 has no "Points of Interest" template and a "Logging" '
+                         'recording did not complete; the xctrace half stays on a host that can '
+                         'record it'),
+                      blocked_until='xctrace-host', evidence=['startup-budget.json'])
+        verdict.check('startup.first_frame_median', None,
+                      'the §6.2 budgets are device measurements: ADR 0021/0033 keep the os_signpost numbers '
+                      'delegate-relative diagnostics, and the simulator unified log carries no signpost '
+                      'records on this host, so the T15 budget gate stays on a signed TestFlight build '
+                      '(plan §6.3 "device numbers recorded once per binary on TestFlight hardware")',
+                      blocked_until='device-lane', evidence=['startup-budget.json'])
         verdict.check('startup.interactive_home_median', None,
                       'the §6.2 interactive-Home budget additionally needs the existing-user fixture: this '
                       'run is a fresh install, which boots into onboarding (see E2E-E1 blocker)',

@@ -1,0 +1,254 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": "ExcerLock",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 74}, {44, 44}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 74,
+   "x": 24,
+   "width": 44,
+   "height": 44
+  },
+  "role_description": "image",
+  "AXLabel": "Back",
+  "content_required": false,
+  "type": "Image",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXImage",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{76, 92}, {302, 8}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 92,
+   "x": 76,
+   "width": 302,
+   "height": 8
+  },
+  "role_description": "",
+  "AXLabel": "Setup progress",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "82%",
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 130}, {354, 64}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 130,
+   "x": 24,
+   "width": 354,
+   "height": 64
+  },
+  "role_description": "heading",
+  "AXLabel": "Help us make ExcerLock better",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 354}, {44, 44}}",
+  "AXUniqueId": "",
+  "frame": {
+   "y": 354,
+   "x": 24,
+   "width": 44,
+   "height": 44
+  },
+  "role_description": "",
+  "AXLabel": "1 star",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "radio button, unchecked",
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{101.66666412353516, 354}, {44.000007629394531, 44}}",
+  "AXUniqueId": "",
+  "frame": {
+   "y": 354,
+   "x": 101.66666412353516,
+   "width": 44.00000762939453,
+   "height": 44
+  },
+  "role_description": "button",
+  "AXLabel": "2 stars",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "radio button, unchecked",
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{179, 354}, {44, 44}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 354,
+   "x": 179,
+   "width": 44,
+   "height": 44
+  },
+  "role_description": "button",
+  "AXLabel": "3 stars",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "radio button, unchecked",
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{256.66667175292969, 354}, {44, 44}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 354,
+   "x": 256.6666717529297,
+   "width": 44,
+   "height": 44
+  },
+  "role_description": "button",
+  "AXLabel": "4 stars",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "radio button, unchecked",
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{334, 354}, {44, 44}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 354,
+   "x": 334,
+   "width": 44,
+   "height": 44
+  },
+  "role_description": "",
+  "AXLabel": "5 stars",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "radio button, unchecked",
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 422}, {354, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 422,
+   "x": 24,
+   "width": 354,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "Your feedback helps us improve the experience.",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 468}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 468,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Not now",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 774}, {354, 54}}",
+  "AXUniqueId": "",
+  "frame": {
+   "y": 774,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "",
+  "AXLabel": "Continue",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ }
+]
