@@ -475,3 +475,23 @@ test('an earlier data-write failure does not make successful native teardown uns
   expect(motion.stop).toHaveBeenCalledTimes(1);
   expect(placement.stop).toHaveBeenCalledTimes(1);
 });
+
+test('a live stride verdict with a verified span reaches the reducer and releases relief at once', async () => {
+  let motionListener!: (evidence: never) => void;
+  const motion = {
+    subscribe: (listener: (evidence: never) => void) => { motionListener = listener; return () => {}; },
+    start: async () => {}, stop: async () => {},
+    reconcile: (now: number) => ({ qualifying: true, observedAt: now, activityAt: null, cadenceAt: null, cadencePerMinute: null, stride: 'walking', strideAt: now, verifiedMs: 4750 }),
+  } as unknown as MotionAdapter;
+  const placement = { subscribe: () => () => {}, start: async () => {}, stop: async () => {}, reconcile: () => ({ placement: 'unknown' as const, at: null }) } as unknown as PlacementAdapter;
+  const service = new DetectionService({ motion, placement, gymLog: { append: async () => {}, readAll: async () => [] }, historyLedger: historyLedger(), persist: async () => {} });
+  await service.start(30_000);
+  motionListener({ qualifying: true, observedAt: 5000, activityAt: null, cadenceAt: null, cadencePerMinute: null, stride: 'walking', strideAt: 5000, verifiedMs: 4750 } as never);
+  await service.flush();
+  expect(detectionStore.getState().data.walking).toMatchObject({ phase: 'active', qualifyingSince: 2000, activeSince: 5000 });
+  // The foreground tick carries the same span.
+  detectionStore.getState().reset();
+  await service.tick(6000, 30_000, 0);
+  expect(detectionStore.getState().data.walking).toMatchObject({ phase: 'active', activeSince: 6000 });
+  await service.stop();
+});
