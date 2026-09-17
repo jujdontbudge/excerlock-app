@@ -1,0 +1,897 @@
+{
+  "version": 1,
+  "scriptVersion": 1,
+  "expectedOutcomeVersion": 1,
+  "places": [
+    "away",
+    "in_gym",
+    "in_circle_not_gym",
+    "on_boundary",
+    "passing_by"
+  ],
+  "placeTitles": {
+    "away": "Away",
+    "in_gym": "I'm in the gym",
+    "in_circle_not_gym": "In the circle, not in the gym",
+    "on_boundary": "On the boundary line",
+    "passing_by": "Passing by, not stopping"
+  },
+  "thresholds": {
+    "confidenceToleranceSeconds": 15,
+    "confirmMs": 30000,
+    "confirmToleranceMs": 1500,
+    "slowDetectionSeconds": 180,
+    "slowReleaseSeconds": 600,
+    "falseNegativeMinimumInGymSeconds": 300,
+    "exitNeverDeliveredMinutes": 15,
+    "minimumOscillationBoundaries": 4,
+    "coveragePartialFloorRatio": 0.8,
+    "foregroundReturnAttributionSeconds": 5,
+    "radiusMinMeters": 50,
+    "radiusMaxMeters": 200,
+    "radiusStepMeters": 10,
+    "radiusDefaultMeters": 100,
+    "maxGyms": 5,
+    "minimumFreeBytesToStart": 314572800
+  },
+  "fixtures": [
+    {
+      "name": "gym-enter-exit",
+      "expectation": "one interval confirmed at enter + 30 s and ended by the exit receipt"
+    },
+    {
+      "name": "region-blip",
+      "expectation": "a 4 s blip never confirms and leaves no interval"
+    },
+    {
+      "name": "quiet",
+      "expectation": "no events, no regions, no intervals"
+    },
+    {
+      "name": "gym-oscillation",
+      "expectation": "every exit clears a pending confirmation; a confirmed visit ends on the first exit"
+    },
+    {
+      "name": "gym-passby",
+      "expectation": "a 25 s pass-by receives an enter but never confirms"
+    },
+    {
+      "name": "gym-coverage-lost",
+      "expectation": "coverageLost closes the open visit at max(confirmedAt, lostAt) and cannot resurrect it"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "S01",
+      "title": "Register the gym",
+      "captainWords": "I put in location for the gym",
+      "mode": "setup",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [],
+      "requiredAcks": [],
+      "cannotBeJudged": [
+        "region_monitoring_failed",
+        "reduced_accuracy"
+      ],
+      "refExpectation": "Monitoring starts without region_monitoring_failed; requestState returns inside within 60 s while standing at the entrance",
+      "prodExpectation": "sameGymSaved = true; if Always is granted and auto-detect is on the region was registered (declared, not observable)",
+      "steps": [
+        {
+          "id": "S01-1",
+          "text": "Stand at the gym entrance. Tap Set gym here and stand still for 20 seconds.",
+          "kind": "ack"
+        },
+        {
+          "id": "S01-2",
+          "text": "In ExcerLock, save the same gym at the same entrance and radius, then confirm the checklist on the harness Home screen.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S02",
+      "title": "Arrive on foot",
+      "captainWords": "I got there",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [
+        "no_location_coverage"
+      ],
+      "refExpectation": "region enter within 0-120 s of crossing (iOS latency, reported); port confirms exactly +30 s after the enter receipt; sampled presence inside at the label",
+      "prodExpectation": "Card At gym and canary opened observed after confirm; before confirm the card should read not at gym",
+      "steps": [
+        {
+          "id": "S02-1",
+          "text": "Start at least 300 m away, in the Away place.",
+          "kind": "place",
+          "place": "away"
+        },
+        {
+          "id": "S02-2",
+          "text": "Walk to the gym. Tap I'm in the gym when you pass the front desk.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S02-3",
+          "text": "Wait until the reducer line reads confirmed, then tap ExcerLock shows... At gym and try a locked app.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S03",
+      "title": "Stay there",
+      "captainWords": "while I am there",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [
+        "no_location_coverage"
+      ],
+      "refExpectation": "zero exit events during the window; the interval stays open; region presence must stay inside",
+      "prodExpectation": "both observations At gym and canary opened",
+      "minimumWindowSeconds": 1200,
+      "steps": [
+        {
+          "id": "S03-1",
+          "text": "Stay inside the gym for at least 20 minutes, in the I'm in the gym place.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S03-2",
+          "text": "Tap ExcerLock shows... At gym about 10 minutes in.",
+          "kind": "ack"
+        },
+        {
+          "id": "S03-3",
+          "text": "Tap ExcerLock shows... At gym again before you leave, and try a locked app once.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S04",
+      "title": "Use another app while there",
+      "captainWords": "click on another app when I am there",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym"
+      ],
+      "requiredAcks": [
+        "switched_app",
+        "locked_phone",
+        "returned"
+      ],
+      "cannotBeJudged": [
+        "no_location_coverage"
+      ],
+      "refExpectation": "the harness keeps receiving fixes in the background; no exit; the interval is unchanged",
+      "prodExpectation": "after returning the card still reads At gym; a canary opened from inside the other app is the strongest proof",
+      "steps": [
+        {
+          "id": "S04-1",
+          "text": "Be inside the gym in the I'm in the gym place.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S04-2",
+          "text": "Switch to another app and stay there 5 minutes, then tap Done.",
+          "kind": "ack",
+          "ack": "switched_app"
+        },
+        {
+          "id": "S04-3",
+          "text": "Lock the phone for 5 minutes, then unlock it and tap Done.",
+          "kind": "ack",
+          "ack": "locked_phone"
+        },
+        {
+          "id": "S04-4",
+          "text": "Open the locked app from the other app and record what happened, then return to the recorder and tap Done.",
+          "kind": "ack",
+          "ack": "returned"
+        }
+      ]
+    },
+    {
+      "id": "S05",
+      "title": "Leave",
+      "captainWords": "when I leave the circle",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym",
+        "away"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [
+        "no_location_coverage"
+      ],
+      "refExpectation": "region exit within 0-300 s of the label (iOS latency, reported); the interval's exitedAt is the exit receipt",
+      "prodExpectation": "after the exit the card is not present and a locked app is blocked; before the exit the card still reads At gym",
+      "steps": [
+        {
+          "id": "S05-1",
+          "text": "Be inside the gym in the I'm in the gym place and confirmed.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S05-2",
+          "text": "Walk out and at least 300 m away, then tap Away.",
+          "kind": "place",
+          "place": "away"
+        },
+        {
+          "id": "S05-3",
+          "text": "Record what ExcerLock shows now and whether a locked app opens.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S06",
+      "title": "Leave and return",
+      "captainWords": "leave and come back",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym",
+        "away",
+        "in_gym"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [
+        "missing_label:in_gym",
+        "missing_label:away"
+      ],
+      "refExpectation": "two enters, one exit, two intervals; the second visit gets a fresh 30 s confirmation",
+      "prodExpectation": "a second At gym observation after the second confirmation",
+      "steps": [
+        {
+          "id": "S06-1",
+          "text": "Be inside the gym, in the I'm in the gym place, confirmed.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S06-2",
+          "text": "Walk out past the circle and tap Away.",
+          "kind": "place",
+          "place": "away"
+        },
+        {
+          "id": "S06-3",
+          "text": "Walk back in and tap I'm in the gym.",
+          "kind": "place",
+          "place": "in_gym"
+        }
+      ]
+    },
+    {
+      "id": "S07",
+      "title": "Oscillate across the boundary",
+      "captainWords": "in the circle, everything around that",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_circle_not_gym",
+        "away",
+        "in_circle_not_gym",
+        "away",
+        "in_circle_not_gym",
+        "away"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [
+        "missing_label:in_circle_not_gym",
+        "missing_label:away"
+      ],
+      "refExpectation": "flap count reported; each exit cancels a pending confirmation; a confirmed interval ends on the first exit",
+      "prodExpectation": "report how many times At gym was observed; every exit should flip the card back",
+      "steps": [
+        {
+          "id": "S07-1",
+          "text": "Walk across the circle edge six times, about a minute apart. Tap In the circle, not in the gym each time you are inside, and Away each time you are outside.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S08",
+      "title": "Hover at the edge",
+      "captainWords": "right on the edge of the circle",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "on_boundary"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [],
+      "refExpectation": "either state is acceptable; enter/exit counts and confirmations are reported as boundary behaviour, never as FP/FN",
+      "prodExpectation": "whatever is observed is reported",
+      "steps": [
+        {
+          "id": "S08-1",
+          "text": "Stand on the boundary line for 5 minutes and tap On the boundary line.",
+          "kind": "place",
+          "place": "on_boundary"
+        }
+      ]
+    },
+    {
+      "id": "S09",
+      "title": "Brief pass-by that must not count",
+      "captainWords": "just walking past",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "passing_by",
+        "away"
+      ],
+      "requiredAcks": [],
+      "expectNoConfirmation": true,
+      "cannotBeJudged": [
+        "no_location_coverage"
+      ],
+      "refExpectation": "an enter may fire; the port must not confirm (exit before +30 s) and must open no interval",
+      "prodExpectation": "the card must never read At gym",
+      "steps": [
+        {
+          "id": "S09-1",
+          "text": "Walk straight through the circle without stopping. Tap Passing by, not stopping as the gym comes into view.",
+          "kind": "place",
+          "place": "passing_by"
+        },
+        {
+          "id": "S09-2",
+          "text": "Tap Away once the gym is behind you.",
+          "kind": "place",
+          "place": "away"
+        }
+      ]
+    },
+    {
+      "id": "S10",
+      "title": "Drive-by",
+      "captainWords": "driving past the gym",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "passing_by",
+        "away"
+      ],
+      "requiredAcks": [],
+      "expectNoConfirmation": true,
+      "cannotBeJudged": [],
+      "refExpectation": "usually no enter at all (iOS may not register a transient crossing); if there is an enter there is no confirmation",
+      "prodExpectation": "the card must never read At gym",
+      "steps": [
+        {
+          "id": "S10-1",
+          "text": "Drive past the gym in a vehicle. Tap Passing by, not stopping as it comes into view.",
+          "kind": "place",
+          "place": "passing_by"
+        },
+        {
+          "id": "S10-2",
+          "text": "Tap Away once the gym is behind you.",
+          "kind": "place",
+          "place": "away"
+        }
+      ]
+    },
+    {
+      "id": "S11",
+      "title": "Arrive by vehicle, park inside the circle, walk in",
+      "captainWords": "park at the gym and walk in",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_circle_not_gym",
+        "in_gym"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [],
+      "refExpectation": "enter at or before the parked label; confirmation may complete in the car park, which is expected by the production model (no building test); report confirmed_before_in_gym_seconds",
+      "prodExpectation": "At gym may be observed before entering the building; reported",
+      "steps": [
+        {
+          "id": "S11-1",
+          "text": "Drive to the car park inside the circle and tap In the circle, not in the gym when you park.",
+          "kind": "place",
+          "place": "in_circle_not_gym"
+        },
+        {
+          "id": "S11-2",
+          "text": "Walk into the building and tap I'm in the gym at the desk.",
+          "kind": "place",
+          "place": "in_gym"
+        }
+      ]
+    },
+    {
+      "id": "S12",
+      "title": "GPS drift and poor indoor accuracy",
+      "captainWords": "deep inside where GPS is bad",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [
+        "no_location_coverage"
+      ],
+      "refExpectation": "sampled presence goes ambiguous or outside_certain on bad fixes; report spurious_exit_count and the accuracy at those fixes",
+      "prodExpectation": "if an exit reaches ExcerLock the card drops to not present and relief is lost; the observation after 15 minutes tells",
+      "steps": [
+        {
+          "id": "S12-1",
+          "text": "Go deep inside the gym, phone in a locker or bag, and stay in the I'm in the gym place for 15 minutes.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S12-2",
+          "text": "Tap ExcerLock shows... before the end of the 15 minutes.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S13",
+      "title": "App killed and relaunched",
+      "captainWords": "kill the app while I'm in there",
+      "mode": "finding",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym",
+        "away"
+      ],
+      "requiredAcks": [
+        "app_force_quit",
+        "app_relaunched"
+      ],
+      "cannotBeJudged": [],
+      "refExpectation": "the port is unaffected; the harness records whether its own events continued so the reader knows iOS did emit them",
+      "prodExpectation": "with no noteCoverageLost caller the visit stays open until a later exit arrives; this scenario yields a finding, not a pass/fail",
+      "steps": [
+        {
+          "id": "S13-1",
+          "text": "Be inside the gym, in the I'm in the gym place, confirmed.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S13-2",
+          "text": "Force-quit ExcerLock, wait 3 minutes, relaunch it, then tap I did this in ExcerLock... app force quit and app relaunched.",
+          "kind": "ack",
+          "ack": "app_force_quit"
+        },
+        {
+          "id": "S13-3",
+          "text": "Reopen ExcerLock, then tap I did this in ExcerLock... app relaunched.",
+          "kind": "ack",
+          "ack": "app_relaunched"
+        },
+        {
+          "id": "S13-4",
+          "text": "Walk away from the gym and tap Away.",
+          "kind": "place",
+          "place": "away"
+        },
+        {
+          "id": "S13-5",
+          "text": "Record what the ExcerLock card shows after relaunch and after leaving.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S14",
+      "title": "Permission: When In Use only",
+      "captainWords": "manual check-in without Always",
+      "mode": "finding",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym"
+      ],
+      "requiredAcks": [
+        "permission_changed",
+        "manual_check_in_tapped"
+      ],
+      "cannotBeJudged": [
+        "no_excerlock_declaration"
+      ],
+      "refExpectation": "the harness still records everything with its own Always; the production auto path cannot exist",
+      "prodExpectation": "manual check-in should work: the person taps Check in and the harness Probe check-in records what a fresh fix says",
+      "steps": [
+        {
+          "id": "S14-1",
+          "text": "Set ExcerLock location to While Using only and switch auto-detect off. Tap I did this in ExcerLock... permission changed.",
+          "kind": "ack",
+          "ack": "permission_changed"
+        },
+        {
+          "id": "S14-2",
+          "text": "Walk to the gym from at least 300 m away and tap I'm in the gym at the desk.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S14-3",
+          "text": "In ExcerLock tap Check in on the gym card, then tap Done here.",
+          "kind": "ack",
+          "ack": "manual_check_in_tapped"
+        },
+        {
+          "id": "S14-4",
+          "text": "Tap Probe check-in on the harness and record what ExcerLock shows after a minute.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S15",
+      "title": "Permission denied",
+      "captainWords": "location off for ExcerLock",
+      "mode": "finding",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym"
+      ],
+      "requiredAcks": [
+        "permission_changed"
+      ],
+      "cannotBeJudged": [
+        "no_excerlock_declaration"
+      ],
+      "refExpectation": "the harness still records with its own permission; production gets nothing",
+      "prodExpectation": "the card never reads At gym and a locked app stays blocked",
+      "steps": [
+        {
+          "id": "S15-1",
+          "text": "Deny location for ExcerLock in iOS Settings, then tap I did this in ExcerLock... permission changed.",
+          "kind": "ack",
+          "ack": "permission_changed"
+        },
+        {
+          "id": "S15-2",
+          "text": "Walk to the gym from at least 300 m away and tap I'm in the gym at the desk.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S15-3",
+          "text": "Record what ExcerLock shows and whether a locked app opens.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S16",
+      "title": "Approximate location (precise off)",
+      "captainWords": "only approximate location",
+      "mode": "finding",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym"
+      ],
+      "requiredAcks": [
+        "permission_changed"
+      ],
+      "cannotBeJudged": [
+        "no_excerlock_declaration"
+      ],
+      "refExpectation": "region monitoring is not available under reduced accuracy; record region_monitoring_failed or the absence of events",
+      "prodExpectation": "the card never reads At gym and manual check-in fails",
+      "steps": [
+        {
+          "id": "S16-1",
+          "text": "Turn ExcerLock precise location off but leave Always on. If you can, also turn the harness's own precise location off in iOS Settings for a second run, then tap I did this in ExcerLock... permission changed.",
+          "kind": "ack",
+          "ack": "permission_changed"
+        },
+        {
+          "id": "S16-2",
+          "text": "Walk to the gym and tap I'm in the gym at the desk.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S16-3",
+          "text": "Record what ExcerLock shows and try Check in if you can.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S17",
+      "title": "Permission granted after arrival",
+      "captainWords": "grant permission once I'm already there",
+      "mode": "finding",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym"
+      ],
+      "requiredAcks": [
+        "permission_changed"
+      ],
+      "cannotBeJudged": [
+        "no_excerlock_declaration"
+      ],
+      "refExpectation": "on re-registration iOS answers requestState with inside; the harness re-registers its own region at the same moment via Probe re-register and logs what iOS sends",
+      "prodExpectation": "observe the card within 2 minutes of granting",
+      "steps": [
+        {
+          "id": "S17-1",
+          "text": "Arrive at the gym with ExcerLock denied and tap I'm in the gym.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S17-2",
+          "text": "Grant ExcerLock Always in iOS Settings, tap I did this in ExcerLock... permission changed, then tap Probe re-register on the harness.",
+          "kind": "ack",
+          "ack": "permission_changed"
+        },
+        {
+          "id": "S17-3",
+          "text": "Watch ExcerLock for 2 minutes and record what the card shows.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S18",
+      "title": "Screen locked during arrival",
+      "captainWords": "phone in my pocket when I walk in",
+      "mode": "finding",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "away",
+        "in_gym"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [],
+      "refExpectation": "the enter arrives in the background; the port confirms at +30 s on its ticker while production needs a second execution opportunity",
+      "prodExpectation": "the observation at the desk tells whether confirmation settled headlessly",
+      "allowBackdatedLabel": true,
+      "steps": [
+        {
+          "id": "S18-1",
+          "text": "Start 200 m out, lock the phone, and walk in with it locked. Tap Away before locking.",
+          "kind": "place",
+          "place": "away"
+        },
+        {
+          "id": "S18-2",
+          "text": "Unlock at the desk and tap I'm in the gym. If you forgot, use Oops, I forgot a tap with about 30 s ago.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S18-3",
+          "text": "Record what ExcerLock shows.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S19",
+      "title": "Multiple visits in one day",
+      "captainWords": "three visits in a day",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym",
+        "away",
+        "in_gym",
+        "away",
+        "in_gym"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [
+        "missing_label:in_gym",
+        "missing_label:away"
+      ],
+      "refExpectation": "three intervals; minutes union per local day; the event condition is met once per day",
+      "prodExpectation": "the card shows met/present accordingly",
+      "steps": [
+        {
+          "id": "S19-1",
+          "text": "Visit the gym three times today, at least 30 minutes apart. Tap I'm in the gym on each arrival and Away on each departure.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S20",
+      "title": "Day boundary while inside",
+      "captainWords": "cross midnight at the gym",
+      "mode": "finding",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [
+        "note missing"
+      ],
+      "refExpectation": "the interval continues; projectGymHistory splits at local midnight only, the configurable day boundary is not applied there",
+      "prodExpectation": "observe whether the card re-arms",
+      "steps": [
+        {
+          "id": "S20-1",
+          "text": "Set the ExcerLock day boundary to a near time in Settings, then stay inside the gym across it and tap I'm in the gym.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S20-2",
+          "text": "Write the boundary time in a label note and record what the card shows just before and after.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S21",
+      "title": "Two overlapping gyms",
+      "captainWords": "two gym circles that overlap",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [
+        "no_location_coverage"
+      ],
+      "requiresTwoGyms": true,
+      "refExpectation": "both regions are inside and both intervals open; minutes must not double count",
+      "prodExpectation": "one card per condition; reported",
+      "steps": [
+        {
+          "id": "S21-1",
+          "text": "Register a second gym circle that overlaps the first on the harness Gym card and in ExcerLock, then stand in the overlap.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S21-2",
+          "text": "Record what ExcerLock shows.",
+          "kind": "ack"
+        }
+      ]
+    },
+    {
+      "id": "S22",
+      "title": "Airplane mode, no network",
+      "captainWords": "no signal at the gym",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "away",
+        "in_gym"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [],
+      "refExpectation": "GPS-only fixes; region events are still expected because Core Location works offline; report accuracy",
+      "prodExpectation": "as S02",
+      "steps": [
+        {
+          "id": "S22-1",
+          "text": "Turn Wi-Fi and cellular off, then start at least 300 m away in the Away place and walk to the gym.",
+          "kind": "place",
+          "place": "away"
+        },
+        {
+          "id": "S22-2",
+          "text": "Tap I'm in the gym at the desk.",
+          "kind": "place",
+          "place": "in_gym"
+        }
+      ]
+    },
+    {
+      "id": "S23",
+      "title": "Low Power Mode on",
+      "captainWords": "battery saver on",
+      "mode": "scored",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "away",
+        "in_gym",
+        "away"
+      ],
+      "requiredAcks": [],
+      "cannotBeJudged": [],
+      "refExpectation": "same expectations as S02 and S05; latencies are reported separately so the cost is visible",
+      "prodExpectation": "as S02 and S05",
+      "steps": [
+        {
+          "id": "S23-1",
+          "text": "Turn Low Power Mode on, then arrive on foot from at least 300 m away and tap Away then I'm in the gym.",
+          "kind": "place",
+          "place": "away"
+        },
+        {
+          "id": "S23-2",
+          "text": "Stay a few minutes, then walk out past the circle and tap Away.",
+          "kind": "place",
+          "place": "away"
+        }
+      ]
+    },
+    {
+      "id": "S24",
+      "title": "Reboot while inside",
+      "captainWords": "reboot the phone at the gym",
+      "mode": "finding",
+      "requireExcerLockDeclaration": true,
+      "requiredLabels": [
+        "in_gym",
+        "away"
+      ],
+      "requiredAcks": [
+        "phone_rebooted"
+      ],
+      "cannotBeJudged": [],
+      "refExpectation": "the harness recovers the archive as interrupted; the production exit after reboot is the finding",
+      "prodExpectation": "observe after leaving whether the card cleared",
+      "steps": [
+        {
+          "id": "S24-1",
+          "text": "Be inside the gym, in the I'm in the gym place, confirmed.",
+          "kind": "place",
+          "place": "in_gym"
+        },
+        {
+          "id": "S24-2",
+          "text": "Reboot the phone, unlock it, and reopen the harness. Tap I did this in ExcerLock... phone rebooted.",
+          "kind": "ack",
+          "ack": "phone_rebooted"
+        },
+        {
+          "id": "S24-3",
+          "text": "Walk away from the gym and tap Away, then record what ExcerLock shows.",
+          "kind": "place",
+          "place": "away"
+        }
+      ]
+    },
+    {
+      "id": "S25",
+      "title": "Free session",
+      "captainWords": "just record whatever happens",
+      "mode": "descriptive",
+      "requireExcerLockDeclaration": false,
+      "requiredLabels": [],
+      "requiredAcks": [],
+      "cannotBeJudged": [
+        "descriptive_only"
+      ],
+      "refExpectation": "no expected table; the validator prints the timeline and latencies only",
+      "prodExpectation": "reported only",
+      "steps": [
+        {
+          "id": "S25-1",
+          "text": "Record whatever happens. Tap the place cards as you go and Finish when you are done.",
+          "kind": "ack"
+        }
+      ]
+    }
+  ]
+}

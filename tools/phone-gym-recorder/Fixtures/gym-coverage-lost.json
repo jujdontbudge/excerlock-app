@@ -1,0 +1,9 @@
+{
+  "name": "gym-coverage-lost",
+  "version": 1,
+  "description": "A confirmed visit, then a process-coverage loss with no exit event. The reducer must close the open visit at max(confirmedAt, lostAt) and must not resurrect it on a later tick.",
+  "timeline": [
+    { "atMs": 0, "event": "location.enterRegion", "payload": { "regionId": "gym-primary" } },
+    { "atMs": 60000, "event": "location.coverageLost", "payload": {} }
+  ]
+}

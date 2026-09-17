@@ -1,0 +1,10 @@
+PhoneGymRecorder.xcodeproj/
+DerivedData/
+.build/
+*.xcresult
+*.ipa
+*.app
+Exports/
+DerivedData-device/
+out/
+pull/
