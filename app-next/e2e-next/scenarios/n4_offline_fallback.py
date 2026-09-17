@@ -171,6 +171,10 @@ class _OfflineFallbackScenario(Scenario):
     users = 'NEW'
     fixture = 'fresh-install'
     requires = ('B3.fallback_paywall',)
+    #: mDNSResponder honours /etc/hosts, but a HUP it misses (or a positive
+    #: answer already in flight) can survive one flush: poll until the resolver
+    #: agrees with the file before the launch under test starts.
+    DENIAL_TIMEOUT = 20.0
 
     # -- the /etc/hosts denial ------------------------------------------------ #
     def _deny_adapty(self, ctx: RunContext) -> bool:
@@ -188,7 +192,18 @@ class _OfflineFallbackScenario(Scenario):
                 ctx.log(f'blocked {", ".join(ADAPTY_HOSTS)} via /etc/hosts')
             else:
                 ctx.log('the Adapty hosts were already blocked in /etc/hosts')
-            _flush_dns()
+            deadline = time.monotonic() + self.DENIAL_TIMEOUT
+            while True:
+                _flush_dns()
+                addresses = {host: _system_resolution(host)[0] for host in ADAPTY_HOSTS}
+                if all(found and all(address == '0.0.0.0' for address in found) for found in addresses.values()):
+                    break
+                if time.monotonic() >= deadline:
+                    unreachable = ', '.join(f'{host}={found or "unresolved"}' for host, found in addresses.items())
+                    ctx.log(f'the resolver still answers with real addresses after {self.DENIAL_TIMEOUT:.0f}s: '
+                            f'{unreachable}')
+                    break
+                time.sleep(1.0)
         except Exception as error:  # noqa: BLE001 - the block is the precondition
             ctx.verdict.block(
                 f'cannot deny the simulator network access to the Adapty hosts ({", ".join(ADAPTY_HOSTS)}): '
@@ -276,6 +291,7 @@ class _OfflineFallbackScenario(Scenario):
         walk = OnboardingWalk(ctx)
         result = walk.run(stop_at='P')
         steps = result['steps']
+        ctx.note(f'walk: {" -> ".join(steps)}' + (f' | stopped on: {result["stuck"]}' if result['stuck'] else ''))
         verdict.check('offline.walk_reaches_paywall', 'P' in steps,
                       f'the offline walk reached the paywall ({len(steps)} screens: {" -> ".join(steps)})'
                       if 'P' in steps else

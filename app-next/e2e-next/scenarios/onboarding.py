@@ -175,12 +175,27 @@ class OnboardingWalk:
                 return not observation['controls'][candidate]
         return True
 
+    def observe_settled(self, *, attempts: int = 6, delay: float = 1.5) -> dict[str, Any]:
+        """Observe, retrying while no catalog screen is visible.
+
+        A mid-transition frame or a restarted idb companion reports a tree with
+        no recognisable step; that is a harness hiccup, not an unknown app
+        screen, so give the surface a moment before calling it stuck.
+        """
+        observation = self.observe()
+        for _ in range(attempts - 1):
+            if observation['step']:
+                return observation
+            time.sleep(delay)
+            observation = self.observe()
+        return observation
+
     def run(self, *, max_steps: int = 40, stop_at: str = 'P') -> dict[str, Any]:
         ctx = self.ctx
         for index in range(1, max_steps + 1):
             if self.ctx.answer_system_prompt():
                 time.sleep(1.5)
-            observation = self.observe()
+            observation = self.observe_settled()
             if not observation['step']:
                 if observation['prices'] or any(title in label for title in PAYWALL_TITLES
                                                 for label in observation['labels']):
@@ -188,7 +203,9 @@ class OnboardingWalk:
                     observation['title'] = 'Choose your plan'
                 else:
                     self.stuck.append(' | '.join(sorted(set(observation['labels']))[:6]))
-                    ctx.log(f'step {index}: unrecognised screen, stopping')
+                    ctx.log(f'step {index}: unrecognised screen, stopping: '
+                            f'{self.stuck[-1] or "(no accessibility labels)"}')
+                    ctx.screenshot(f'{index:02d}-unrecognised', shrink=True)
                     break
             record = {'index': index, 'step': observation['step'], 'title': observation['title'],
                       'choices': observation['choices'], 'prices': observation['prices']}
