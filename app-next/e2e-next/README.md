@@ -133,17 +133,22 @@ re-runs; purchase assertions stop at the CTA, §8.1) and the SBX lane
 
 Evidence is committed under `out/<run>/` (recordings stay local: a full onboarding
 video is >100 MB and regenerates with any run; screenshots are committed at
-480 px). Every verdict carries the build manifest, the capability map, the
-assertion list and the PostHog query trace.
+480 px). Every verdict carries the build manifest — including the **git revision**
+and whether the tree was dirty — the capability map, the assertion list and the
+PostHog query trace.
 
-| Run | Scenario | Verdict | Result |
-|---|---|---|---|
-| `20260917T0620Z` | `E2E-N1` | **FAIL** (one real gap) + BLOCKED budget | PASS: fresh install boots real onboarding; all 29 screens walked in flow order; paywall renders the two live placement plans (Premium Annual/Monthly, $59.99) matching the Adapty `onboarding` placement; CTA; run-scoped `$device_id`; `paywall_viewed {placement: onboarding}` (1 row); `$screen paywall` (4 rows); ingestion 33 rows in 18 s. **FAIL**: 27/28 visited steps have a `$screen` row — **O01 emits none**. BLOCKED: §6.2 startup budget (device measurement, ADR 0021/0033) |
-| `20260917T0620Z` | `E2E-V1` | BLOCKED | PASS: 29-screen onboarding sweep, `$screen` step rows for every step (incl. `O13`), `$screen paywall` (arrived after 312 s), run-scoped `$device_id`, ingestion. BLOCKED: 20 of 51 route visits sit behind the setup-complete/entitled guards (existing-user fixture) |
-| `20260917T0650Z` | `E2E-A3` | **PASS** | sign-in sheet → email → admin-minted code → sheet closes → re-opened sheet shows the signed-in account; Supabase user not anonymous; `PUT /v1/user` 204; app persisted the canonical UID as its PostHog distinct id; `$identify` row under that UID; teardown 204/410/404 |
-| `20260917T0640Z` | `E2E-S1` | BLOCKED | PASS: 10 cold launches measured (launch call ~0.2 s; launch → first interactive surface 3.8–7 s through idb polling). BLOCKED: the xctrace stage export (no `Points of Interest` template on Xcode 26.4), the §6.2 budget gate (device lane) and the Home budget (fixture) |
-| `20260917T0640Z` | `E2E-E1`, `E2E-A4` | BLOCKED | existing-user fixture unavailable (see the fixture gap below) |
-| `20260917T0640Z` | `E2E-E2` | BLOCKED | by design: publishes a preview-channel EAS Update (documented stub) |
+| Run | Revision | Scenario | Verdict | Result |
+|---|---|---|---|---|
+| `20260917T1600Z` | `3cb66c1f` | `E2E-N1` | **FAIL** (one real gap) + BLOCKED budget | PASS: fresh install boots real onboarding; all 29 screens walked in flow order; paywall renders the two live placement plans (Premium Annual/Monthly, $59.99) matching the Adapty `onboarding` placement; CTA; run-scoped `$device_id`; `paywall_viewed {placement: onboarding}`; `$screen paywall`; 35 ingested rows in 2 s. **FAIL**: 27/28 visited steps have a `$screen` row — **O01 emits none**. BLOCKED: §6.2 startup budget (device measurement, ADR 0021/0033) |
+| `20260917T1600Z` | `3cb66c1f` | `E2E-V1` | BLOCKED | PASS: 29-screen onboarding sweep, `$screen` step rows for every step (incl. `O13`), `$screen paywall`, run-scoped `$device_id`, ingestion. BLOCKED: 20 of 51 route visits sit behind the setup-complete/entitled guards (existing-user fixture) |
+| `20260917T0650Z` | pre-overhaul build (2026-09-17T10:40Z, revision not recorded) | `E2E-A3` | **PASS** | sign-in sheet → email → admin-minted code → sheet closes → re-opened sheet shows the signed-in account; Supabase user not anonymous; `PUT /v1/user` 204; app persisted the canonical UID as its PostHog distinct id; `$identify` row under that UID; teardown 204/410/404 |
+| `20260917T0640Z` | pre-overhaul build (2026-09-17T10:39Z) | `E2E-S1` | BLOCKED | PASS: 10 cold launches measured (launch call ~0.2 s; launch → first interactive surface 3.8–7 s through idb polling). BLOCKED: the xctrace stage export, the §6.2 budget gate (device lane) and the Home budget (fixture) |
+| `20260917T0640Z` | pre-overhaul build | `E2E-E1`, `E2E-A4` | BLOCKED | existing-user fixture unavailable (fixture gap below) |
+| `20260917T0640Z` | pre-overhaul build | `E2E-E2` | BLOCKED | by design: publishes a preview-channel EAS Update (documented stub) |
+
+The A3/S1/E1/A4/E2 evidence predates the UI-overhaul commits that landed after
+those runs; their verdicts still record the build's `builtAt`/artifact path, and
+the harness re-runs them unchanged against any newer build.
 
 ### The one app finding N1 proves
 
@@ -155,6 +160,26 @@ dropped rather than queued. Every later step reports. Reproduce with
 `E2E-N1` and inspect `analytics.step_screen_events` in its `verdict.json`
 (`required` = observed steps minus the paywall, whose row arrives with ingestion
 lag).
+
+## Follow-ups this program opens (not fixed here)
+
+1. **O01 emits no `$screen` row.** The first onboarding screen is invisible to
+   analytics because the adapter's gate requires a ready canonical identity and
+   O01 paints before the spine settles; the event is dropped, not queued. Fix
+   belongs with the analytics-coverage work (queue until identity is ready, or
+   emit with the anonymous identity and let `$identify` join it). Reproduce:
+   `python3 app-next/e2e-next/run.py E2E-N1`.
+2. **The existing-user fixture is unreachable on the simulator.** A setup-complete
+   profile needs an entitlement, and the only entitlement sources are a sandbox
+   purchase (hardware, SBX lane `E2E-P1`) or the StoreKit binding §8.1 leaves
+   unresolved. E1/A4/Home-budget/guarded-route coverage unblock the moment the SBX
+   lane captures `--capture-fixture existing-user`.
+3. **No xctrace stage export on this host.** Xcode 26.4 has no `Points of
+   Interest` template and a `Logging` recording did not complete, so the
+   delegate-relative stage medians that B10/`measure-startup.sh` produce cannot be
+   captured here; and per ADR 0021/0033 the §6.2 budgets are device measurements
+   anyway. Run the xctrace half on a host that can record it, and the budget gate
+   on a signed TestFlight build.
 
 ## Findings this program pinned down
 

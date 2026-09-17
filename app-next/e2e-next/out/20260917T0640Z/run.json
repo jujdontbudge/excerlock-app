@@ -56,79 +56,6 @@
   "finishedAt": "2026-09-17T15:39:49Z",
   "scenarios": [
     {
-      "scenario": "E2E-A3",
-      "status": "FAIL",
-      "reason": "spine.posthog_identify: PostHog stored 0 $identify row(s) under the canonical distinct_id af3361cf-efa4-49a6-a612-ff12eb950c5f after 187s",
-      "verdict": "app-next/e2e-next/out/20260917T0640Z/E2E-A3/verdict.json",
-      "assertions": [
-        {
-          "id": "signin.identity_lane",
-          "status": "PASS",
-          "detail": "recovery lane: the disposable account is pre-created and the code is minted server-side with the service key (plan \u00a75)"
-        },
-        {
-          "id": "signin.email_entered",
-          "status": "PASS",
-          "detail": "the sign-in field holds the disposable address (e2e-a3-20260917t0640z@excerlock.com)"
-        },
-        {
-          "id": "signin.code_entered",
-          "status": "PASS",
-          "detail": "the six-digit code is in the field"
-        },
-        {
-          "id": "signin.sheet_closed",
-          "status": "PASS",
-          "detail": "the sign-in sheet closes after the code is accepted"
-        },
-        {
-          "id": "signin.signed_in_ui",
-          "status": "PASS",
-          "detail": "the sign-in sheet renders the signed-in account (e2e-a3-20260917t0640z@excerlock.com); labels: [\"ExcerLock\", \"Dismiss sheet\", \"Close\", \"Sign in\", \"Save your progress\", \"e2e-a3-20260917t0640z@excerlock.com\", \"Continue\"]"
-        },
-        {
-          "id": "spine.supabase_user",
-          "status": "PASS",
-          "detail": "Supabase user af3361cf-efa4-49a6-a612-ff12eb950c5f exists, is_anonymous=False, email_confirmed=True"
-        },
-        {
-          "id": "spine.api_put_user",
-          "status": "PASS",
-          "detail": "PUT /v1/user with a service-minted session for af3361cf-efa4-49a6-a612-ff12eb950c5f returned 204: None"
-        },
-        {
-          "id": "analytics.device_id",
-          "status": "PASS",
-          "detail": "run-scoped $device_id: '01a0b001-e81c-71a2-b66d-ee7452f54da0'"
-        },
-        {
-          "id": "spine.analytics_identify",
-          "status": "PASS",
-          "detail": "the app's persisted PostHog distinct_id is 'af3361cf-efa4-49a6-a612-ff12eb950c5f' (canonical Supabase UID af3361cf-efa4-49a6-a612-ff12eb950c5f)"
-        },
-        {
-          "id": "spine.posthog_identify",
-          "status": "FAIL",
-          "detail": "PostHog stored 0 $identify row(s) under the canonical distinct_id af3361cf-efa4-49a6-a612-ff12eb950c5f after 187s"
-        },
-        {
-          "id": "teardown.delete_204",
-          "status": "PASS",
-          "detail": "DELETE /v1/user returned 204: None"
-        },
-        {
-          "id": "teardown.reput_410",
-          "status": "PASS",
-          "detail": "re-PUT after deletion returned 410 (expected 410 tombstone): {'error': {'code': 'ACCOUNT_DELETED', 'message': 'This account has been deleted'}}"
-        },
-        {
-          "id": "teardown.supabase_404",
-          "status": "PASS",
-          "detail": "Supabase admin user lookup after deletion returned 404"
-        }
-      ]
-    },
-    {
       "scenario": "E2E-S1",
       "status": "BLOCKED",
       "reason": "startup.stage_signpost_diagnostic blocked until xctrace-host: no xctrace stage export on this host: \"Cannot find template matching name: Points of Interest\" \u2014 Xcode 26.4 has no \"Points of Interest\" template and a \"Logging\" recording did not complete; the xctrace half stays on a host that can record it; startup.first_frame_median blocked until device-lane: the \u00a76.2 budgets are device measurements: ADR 0021/0033 keep the os_signpost numbers delegate-relative diagnostics, and the simulator unified log carries no signpost records on this host, so the T15 budget gate stays on a signed TestFlight build (plan \u00a76.3 \"device numbers recorded once per binary on TestFlight hardware\"); startup.interactive_home_median blocked until existing-user-fixture: the \u00a76.2 interactive-Home budget additionally needs the existing-user fixture: this run is a fresh install, which boots into onboarding (see E2E-E1 blocker)",
@@ -197,5 +124,6 @@
       "verdict": "app-next/e2e-next/out/20260917T0640Z/E2E-E2/verdict.json",
       "assertions": []
     }
-  ]
+  ],
+  "note": "E2E-A3 was superseded by run 20260917T0650Z (PASS); this run carries S1/E1/A4/E2."
 }
