@@ -43,6 +43,7 @@ export async function createClientServices(options: {
       return {
         identify: (id) => telemetry.analytics.identify(id), reset: () => telemetry.analytics.reset(),
         getDistinctId: telemetry.getDistinctId,
+        replayPendingScreens: () => telemetry.analytics.replayPendingScreens(),
         dispose: () => telemetry.dispose(),
       };
     },

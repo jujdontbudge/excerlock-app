@@ -151,6 +151,64 @@ test('a reset lets the current screen emit again for the new identity', async ()
   expect(x.screens).toHaveLength(2);
 });
 
+test('replays the screens a cold start held once the rail becomes allowed', async () => {
+  const x = createAnalyticsFixture();
+  x.setIdentity({ userId: 'uid', generation: 1, ready: false });
+  // Both callers of each navigation fire before the identity spine commits.
+  x.adapter.screen('/onboarding/O01'); x.adapter.screen('O01');
+  x.adapter.screen('/onboarding/O02'); x.adapter.screen('O02');
+  await flushAdapter();
+  expect(x.screens).toEqual([]);
+  // Replay does nothing until consent and the spine both allow capture.
+  x.adapter.replayPendingScreens(); await flushAdapter();
+  expect(x.screens).toEqual([]);
+  await x.adapter.identify('uid');
+  x.setIdentity({ userId: 'uid', generation: 1, ready: true });
+  x.adapter.replayPendingScreens(); await flushAdapter();
+  // Held screens replay oldest first, deduplicated per navigation.
+  expect(x.screens).toEqual([
+    { name: 'onboarding', props: { step: 'O01' } },
+    { name: 'onboarding', props: { step: 'O02' } },
+  ]);
+  // A late duplicate of the last replayed screen stays deduplicated.
+  x.adapter.screen('/onboarding/O02'); await flushAdapter();
+  expect(x.screens).toHaveLength(2);
+});
+
+test('an opt-out drops held screens and consent-off requests never queue', async () => {
+  const x = createAnalyticsFixture();
+  x.setIdentity({ userId: 'uid', generation: 1, ready: false });
+  x.adapter.screen('/onboarding/O01');
+  await x.adapter.setEnabled!(false);
+  x.enable();
+  x.adapter.screen('O02'); x.adapter.screen('O03'); await flushAdapter();
+  // The dropped O01 is gone; only consent-on screens were held in order.
+  await x.adapter.identify('uid');
+  x.setIdentity({ userId: 'uid', generation: 1, ready: true });
+  x.adapter.replayPendingScreens(); await flushAdapter();
+  expect(x.screens).toEqual([
+    { name: 'onboarding', props: { step: 'O02' } },
+    { name: 'onboarding', props: { step: 'O03' } },
+  ]);
+  // While consent is off nothing is even held for a later opt-in.
+  x.disable(); await x.adapter.setEnabled!(false);
+  x.adapter.screen('/onboarding/O04');
+  x.enable(); x.adapter.replayPendingScreens(); await flushAdapter();
+  expect(x.screens).toHaveLength(2);
+});
+
+test('screens held for a previous identity never replay under the next one', async () => {
+  const x = createAnalyticsFixture();
+  x.setIdentity({ userId: 'uid', generation: 1, ready: false });
+  x.adapter.screen('/onboarding/O01'); await flushAdapter();
+  await x.adapter.reset();
+  x.setIdentity({ userId: 'uid-2', generation: 2, ready: false });
+  await x.adapter.identify('uid-2');
+  x.setIdentity({ userId: 'uid-2', generation: 2, ready: true });
+  x.adapter.replayPendingScreens(); await flushAdapter();
+  expect(x.screens).toEqual([]);
+});
+
 test('UI multi-select walking preferences become a typed person property', async () => {
   const x = createAnalyticsFixture(); await x.adapter.identify('uid');
   x.adapter.track('walk_places_updated', { walk_places: ['outside', 'treadmill'] });

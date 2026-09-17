@@ -54,7 +54,7 @@ export const CLIENT_EVENT_ALLOWLIST: ReadonlySet<string> = new Set(eventsOwnedBy
 export function createPostHogAnalyticsAdapter(options: {
   client: PostHogClientBoundary; getIdentity: () => CanonicalIdentity;
   analyticsEnabled: () => boolean; getContext: () => AnalyticsContext;
-}): AnalyticsPort & { discardPending(): Promise<void>; setWalkPlaces(value: WalkPlaces): void; flags: PostHogFlagsController } {
+}): AnalyticsPort & { discardPending(): Promise<void>; setWalkPlaces(value: WalkPlaces): void; replayPendingScreens(): void; flags: PostHogFlagsController } {
   const { client } = options;
   let committed: CanonicalIdentity | null = null;
   type Origin = { userId: string; generation: number };
@@ -86,9 +86,37 @@ export function createPostHogAnalyticsAdapter(options: {
   );
   let consentEpoch = 0;
   let shownScreen: string | null = null;
+  // Screens requested while the rail cannot capture yet. Cold start is the
+  // common case: the first route and the step caller both fire while the
+  // identity spine is still in flight, so the event would otherwise be lost.
+  // Only a bounded tail is kept, because a rail that never becomes allowed
+  // (offline identity spine) must not grow this without limit. Consent-off
+  // requests never queue, so nothing is captured before the user opts in.
+  const pendingScreens: { key: string; spec: SemanticScreen }[] = [];
+  const maxPendingScreens = 24;
+  const screenKey = (spec: SemanticScreen) => JSON.stringify([spec.name, spec.props ?? null]);
+  const rememberScreen = (entry: { key: string; spec: SemanticScreen }) => {
+    if (pendingScreens[pendingScreens.length - 1]?.key === entry.key) return;
+    pendingScreens.push(entry);
+    if (pendingScreens.length > maxPendingScreens) pendingScreens.shift();
+  };
+  /** Emits the screens kept while the rail was not allowed, oldest first. */
+  const replayPendingScreens = () => {
+    const started = origin();
+    if (!started || !allowed(started) || pendingScreens.length === 0) return;
+    const queued = pendingScreens.splice(0, pendingScreens.length);
+    shownScreen = queued[queued.length - 1]!.key;
+    void (async () => {
+      for (const entry of queued) {
+        if (!allowed(started)) return;
+        await emit(started, () => client.screen(entry.spec.name, entry.spec.props));
+      }
+    })();
+  };
   return {
     async setEnabled(enabled) {
       const epoch = ++consentEpoch;
+      if (!enabled) pendingScreens.length = 0;
       flags.invalidate();
       await client.optOut();
       await client.clearPendingQueues();
@@ -98,6 +126,7 @@ export function createPostHogAnalyticsAdapter(options: {
       await client.optIn();
       if (epoch !== consentEpoch || !options.analyticsEnabled()) { await client.optOut(); return; }
       flags.beginGeneration(started.generation);
+      replayPendingScreens();
     },
     async identify(id) {
       committed = null;
@@ -117,6 +146,9 @@ export function createPostHogAnalyticsAdapter(options: {
       if (completed.userId !== id || completed.generation !== started.generation) throw new Error('Analytics identity changed during identify');
       committed = { ...completed };
       flags.beginGeneration(beforeIdentify.generation);
+      // Re-identify while the spine is already ready has no later identity
+      // event, so the commit itself is the moment cold-start screens can go.
+      replayPendingScreens();
     },
     track(event, props) {
       const started = origin();
@@ -129,27 +161,31 @@ export function createPostHogAnalyticsAdapter(options: {
       });
     },
     screen(name) {
-      const started = origin();
-      if (!allowed(started)) return;
       const spec = semanticScreenName(name);
       if (!spec) return;
       // One navigation can report the same screen twice: the root pathname
       // subscriber fires for every route, and the four step-level callers fire
       // for their own screen. Deduplicate on the semantic result so a single
       // navigation emits `$screen` once.
-      const key = JSON.stringify([spec.name, spec.props ?? null]);
+      const key = screenKey(spec);
       if (key === shownScreen) return;
+      // Consent off captures nothing, now or later: the user must enable
+      // analytics while looking at a screen to report it.
+      if (!options.analyticsEnabled()) { pendingScreens.length = 0; return; }
+      const started = origin();
+      if (!allowed(started)) { rememberScreen({ key, spec }); return; }
       shownScreen = key;
       void emit(started!, () => client.screen(spec.name, spec.props));
     },
+    replayPendingScreens,
     setWalkPlaces(value) {
       const started = origin(); if (!allowed(started)) return;
       // The installed SDK emits the documented `$set` update. Avoid a flag
       // reload so an already-mounted surface cannot change underneath the user.
       void emit(started!, () => client.setPersonProperties({ walk_places: value }, false));
     },
-    async reset() { committed = null; shownScreen = null; flags.invalidate(); await client.optOut(); await client.clearPendingQueues(); client.reset(); await client.ready(); await register(); if (options.analyticsEnabled()) await client.optIn(); },
-    async discardPending() { committed = null; flags.invalidate(); await client.optOut(); await client.clearPendingQueues(); },
+    async reset() { committed = null; shownScreen = null; pendingScreens.length = 0; flags.invalidate(); await client.optOut(); await client.clearPendingQueues(); client.reset(); await client.ready(); await register(); if (options.analyticsEnabled()) await client.optIn(); },
+    async discardPending() { committed = null; pendingScreens.length = 0; flags.invalidate(); await client.optOut(); await client.clearPendingQueues(); },
     flags,
   };
 }

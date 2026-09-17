@@ -10,6 +10,8 @@ type AnalyticsIdentityHooks = {
   identify(id: string): Promise<void>;
   reset(): Promise<void>;
   getDistinctId(): string | null;
+  /** Emits screens kept while the analytics rail could not capture (cold start). */
+  replayPendingScreens(): void;
   dispose(): void | Promise<void>;
 };
 /** One identity graph: callbacks close over services, never create competing gates. */
@@ -63,6 +65,12 @@ export async function createIdentityServices(options: {
   }
   let disposed = false;
   let disposal: Promise<void> | null = null;
+  // A cold start asks for its first screen before the spine commits, and the
+  // rail holds it until consent and readiness allow capture. Every identity
+  // event (the `ready` flip included) gives the rail that chance; auth disposal
+  // clears the listener set (`SupabaseAuthAdapter.beginDispose`).
+  authServices.auth.subscribeIdentity(() => { analytics.replayPendingScreens(); });
+  analytics.replayPendingScreens();
   return {
     auth: authServices.auth, subscription, analytics,
     boot: () => authServices!.auth.boot(),

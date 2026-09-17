@@ -34,6 +34,13 @@ for its identity generation. Unknown values use control/false. Client code
 never emits purchase/trial/subscription lifecycle events; Adapty is their sole
 emitter.
 
+Screens requested while consent is on but the rail is not yet allowed (cold
+start: the root `usePathname` subscriber and the step caller both fire during
+the identity spine) are held in order, bounded, and replayed by
+`replayPendingScreens()` when the commit/readiness event arrives. Consent-off
+requests never queue, so nothing is captured before the user opts in; opt-out,
+`reset()` and `discardPending()` drop held screens.
+
 `shield_copy` is the payload-only flag rail: `flags.getPayload('shield_copy')`
 returns the live SDK payload for the current generation, waiting only for the
 first flags settlement when none has happened yet, and reads with
