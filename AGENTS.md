@@ -9,6 +9,7 @@
 - Read relevant `docs/adr/` records before architectural changes. Record core decisions, rationale and project state using `docs/adr/TEMPLATE.md`; preserve superseded records.
 - Releases: follow `docs/agents/operations.md`; wrap the entire authorized merge-to-health-check sequence in `python3 scripts/agent-ops.py run -- <command>`. If busy, stop and revalidate later. The lock does not authorize release.
 - Claim your worktree with `scripts/agent-ops.py claim`; finish only your committed completed work with the correct base ref. Follow the operations guide; never force cleanup.
+- App Store screenshots: `app-store-screenshots/README.md` (HTML outline → GPT Image edits via `gen.py`; the approved publish set is `app-store-screenshots/finals/`).
 - Issues: `JohanSardar/excerlock-app` via `gh`; details in `docs/agents/issue-tracker.md`.
 - Agent context configuration and opt-in tools: `docs/agents/context.md`.
 
