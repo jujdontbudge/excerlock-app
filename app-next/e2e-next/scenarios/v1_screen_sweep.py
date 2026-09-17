@@ -37,7 +37,7 @@ ROUTES: list[tuple[str, str, str, str]] = [
     ('/settings/permission/location', 'excerlock://settings/permission/location', 'settings_permission', 'Location'),
     ('/unlock/gym', 'excerlock://unlock/gym', 'unlock_gym', ''),
     ('/unlock/treadmill', 'excerlock://unlock/treadmill', 'unlock_treadmill', 'Unlock preview'),
-    ('/setup/X1', 'excerlock://setup/X1', 'setup', 'Save your progress'),
+    ('/setup/X4', 'excerlock://setup/X4', 'setup', 'Save your progress'),
 ]
 
 ONBOARDING_ROUTE_STEPS = ['O01', 'O20', 'W1', 'S1', 'T1', 'P']

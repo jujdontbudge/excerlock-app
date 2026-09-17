@@ -162,7 +162,12 @@ def build(udid: str, install: bool = True, clean: bool = False, log: Path | None
         raise SystemExit(f'build.py: expected app missing at {app}')
     if install:
         run(['xcrun', 'simctl', 'install', udid, str(app)], env, APP_NEXT, log, 'simctl-install')
+    revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=REPO, capture_output=True, text=True).stdout.strip()
+    dirty = bool(subprocess.run(['git', 'status', '--porcelain'], cwd=REPO, capture_output=True,
+                                text=True).stdout.strip())
     return {
+        'revision': revision,
+        'revisionDirty': dirty,
         'app': str(app),
         'bundleId': BUNDLE_ID,
         'scheme': SCHEME,
