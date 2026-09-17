@@ -13,3 +13,5 @@ T16: `accept-cold-launch.py` handles observed dev-client host chrome; `accept-br
 `accept-preferences.py` verifies actual native Switch value changes and auto-detect grant/deny/disable outcomes after scroll settling.
 
 `accept-picker-stability.py` measures the native picker heading before and after a query, verifying that filtering preserves control positions.
+
+`catalog-drift.py` compares the App Store Connect, Adapty and StoreKit product identifiers. `subscription-metadata.py` checks the metadata behind those identifiers for every SKU — grid-derived `en-US` display name, description, group, group order and introductory offer, and `READY_TO_SUBMIT` state — and `subscription-metadata.py --fill` applies only missing or differing fields (it never touches a `READY_TO_SUBMIT` subscription, a price or availability). Its live evidence is in `evidence/asc-subscription-metadata/`.
