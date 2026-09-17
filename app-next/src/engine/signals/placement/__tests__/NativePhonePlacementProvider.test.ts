@@ -1,6 +1,6 @@
+import type { DeviceMotionSample } from "../../../../../modules/excerlock-motion/src/ExcerlockMotion.types";
 import {
   NativePhonePlacementProvider,
-  type DeviceMotionSample,
   type PhonePlacementModuleClient,
 } from "../index";
 
@@ -23,6 +23,7 @@ describe("NativePhonePlacementProvider", () => {
       timestampMs: 1_000,
       gravity: { x: 0, y: -1, z: 0 },
       rotationRate: { x: 0.01, y: 0, z: 0 },
+      userAcceleration: { x: 0, y: 0.02, z: 0 },
     };
 
     await provider.start();

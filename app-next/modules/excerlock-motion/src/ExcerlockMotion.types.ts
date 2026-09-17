@@ -43,6 +43,8 @@ export interface DeviceMotionSample {
   readonly timestampMs: number;
   readonly gravity: MotionVector3;
   readonly rotationRate: MotionVector3;
+  /** Gravity-removed acceleration in g, phone frame (needed by the stride discriminator). */
+  readonly userAcceleration: MotionVector3;
 }
 
 export type ExcerlockMotionModuleEvents = {

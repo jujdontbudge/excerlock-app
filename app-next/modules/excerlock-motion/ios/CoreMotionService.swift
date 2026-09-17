@@ -92,7 +92,9 @@ final class CoreMotionService {
       throw MotionUnavailableException()
     }
     deviceMotionStarted = true
-    deviceMotionManager.deviceMotionUpdateInterval = 0.1
+    // 50 Hz: the stride discriminator needs the step waveform (band 0.8-3.5 Hz,
+    // impact peaks); the placement classifier decimates back to 10 Hz in JS.
+    deviceMotionManager.deviceMotionUpdateInterval = 0.02
     deviceMotionManager.startDeviceMotionUpdates(to: operationQueue) {
       [weak self] data, _ in
       guard let self, self.isDeviceMotionStarted, let data else { return }

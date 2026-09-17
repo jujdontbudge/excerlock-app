@@ -70,6 +70,11 @@ func deviceMotionPayload(
       x: data.rotationRate.x,
       y: data.rotationRate.y,
       z: data.rotationRate.z
+    ),
+    "userAcceleration": vectorPayload(
+      x: data.userAcceleration.x,
+      y: data.userAcceleration.y,
+      z: data.userAcceleration.z
     )
   ]
 }

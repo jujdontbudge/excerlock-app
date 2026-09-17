@@ -8,6 +8,7 @@ import { AsyncStorageGymVisitLog } from '../../engine/signals/location/AsyncStor
 import { detectionStore } from '../../state/detectionStore';
 import { MotionAdapter } from './MotionAdapter';
 import { PlacementAdapter } from './PlacementAdapter';
+import { decimateDeviceMotion, strideSourceFrom } from './deviceMotionStreams';
 import { DetectionService, type DetectionWake } from './DetectionService';
 import { AwakeSession } from './AwakeSession';
 import { StepsDetectionAdapter } from './StepsDetectionAdapter';
@@ -27,8 +28,10 @@ export function createNativeDetection(options: NativeDetectionFactoryOptions) {
   const rawPlacement = new NativePhonePlacementProvider(createPhonePlacementModuleClient());
   const location = createNativeLocationProvider();
   const gymLog = new AsyncStorageGymVisitLog();
-  const motion = new MotionAdapter(rawMotion);
-  const placement = new PlacementAdapter(rawPlacement);
+  // One 50 Hz device-motion stream feeds both consumers: the stride
+  // discriminator at full rate, the placement classifier at its calibrated 10 Hz.
+  const motion = new MotionAdapter(rawMotion, Date.now, strideSourceFrom(rawPlacement));
+  const placement = new PlacementAdapter(decimateDeviceMotion(rawPlacement));
   const historyLedger = new HistoryCreditLedger(AsyncStorage);
   const walkingDurationLedger = new WalkingDurationLedger(AsyncStorage);
   const service = new DetectionService({

@@ -7,6 +7,14 @@ import type {
 } from '../../engine/signals/motion/MotionProvider';
 import { runCleanups } from './runCleanups';
 import { linkedTrace } from '@linked-trace';
+import {
+  StrideRhythmAnalyzer,
+  UNKNOWN_STRIDE,
+  type StrideAssessment,
+  type StrideMotionSample,
+  type StrideMotionSource,
+  type StrideVerdict,
+} from './StrideRhythm';
 
 export const MOTION_FRESHNESS_MS = 5_000;
 export const MIN_WALKING_CADENCE_PER_MINUTE = 80;
@@ -17,6 +25,16 @@ export const MIN_WALKING_CADENCE_PER_MINUTE = 80;
  * beyond this is a broken sample.
  */
 export const MOTION_CLOCK_SKEW_MS = 250;
+/**
+ * `CMPedometer.currentCadence` keeps reporting the last walk's rate after the
+ * walker stops (measured: 102-134 steps/min with a flat step counter for
+ * 8-30 s). A cadence value therefore only counts while the pedometer's own
+ * cumulative counter is still accruing steps at least at this rate over the
+ * trailing horizon; real walking measured 63-152 over the same horizon, and
+ * carried values with flat counters drop below 40 about 7 s after the stop.
+ */
+export const MIN_CADENCE_STEP_RATE_PER_MINUTE = 40;
+export const CADENCE_STEP_RATE_WINDOW_MS = 10_000;
 
 export type MotionEvidence = {
   qualifying: boolean | 'unknown';
@@ -24,18 +42,26 @@ export type MotionEvidence = {
   activityAt: number | null;
   cadenceAt: number | null;
   cadencePerMinute: number | null;
+  /** Raw-stream stride verdict at this reconciliation (`unknown` without a raw stream). */
+  stride: StrideVerdict;
+  strideAt: number | null;
 };
 
 /** Fuses raw sources once. It never converts historical steps into live relief. */
 export class MotionAdapter {
   private activity: ActivitySample | null = null;
   private cadence: CadenceSample | null = null;
+  private cadenceSteps: { at: number; steps: number }[] = [];
+  private readonly strideAnalyzer = new StrideRhythmAnalyzer();
+  private strideVerdict: StrideVerdict = 'unknown';
+  private strideUnsubscribe: Unsubscribe | null = null;
   private unsubscribes: Unsubscribe[] = [];
   private listeners = new Set<(evidence: MotionEvidence) => void>();
 
   constructor(
     private readonly provider: MotionProvider,
     private readonly now: () => number = Date.now,
+    private readonly strideSource: StrideMotionSource | null = null,
   ) {}
 
   authorization(): MotionAuthStatus {
@@ -50,6 +76,10 @@ export class MotionAdapter {
     if (this.unsubscribes.length) return;
     this.activity = null;
     this.cadence = null;
+    this.cadenceSteps = [];
+    this.strideAnalyzer.reset();
+    this.strideVerdict = 'unknown';
+    this.strideUnsubscribe = this.strideSource?.onSample((sample) => this.acceptStride(sample)) ?? null;
     this.unsubscribes = [
       this.provider.on('activity', (sample) => {
         this.acceptActivity(sample);
@@ -63,8 +93,16 @@ export class MotionAdapter {
 
   async stop(): Promise<void> {
     const unsubscribes = this.unsubscribes.splice(0);
+    const strideUnsubscribe = this.strideUnsubscribe;
+    this.strideUnsubscribe = null;
+    this.strideAnalyzer.reset();
+    this.strideVerdict = 'unknown';
     await runCleanups(
-      [...unsubscribes.map((unsubscribe) => () => unsubscribe()), () => this.provider.stop()],
+      [
+        ...(strideUnsubscribe ? [() => strideUnsubscribe()] : []),
+        ...unsubscribes.map((unsubscribe) => () => unsubscribe()),
+        () => this.provider.stop(),
+      ],
       'Motion adapter cleanup failed',
     );
   }
@@ -85,16 +123,33 @@ export class MotionAdapter {
       this.activity!.classes.some((kind) => kind === 'walking' || kind === 'running');
     const cadencePerMinute =
       cadenceFresh && this.cadence!.stepsPerSecond !== null ? this.cadence!.stepsPerSecond * 60 : null;
-    const cadenceQualifies = cadencePerMinute !== null && cadencePerMinute >= MIN_WALKING_CADENCE_PER_MINUTE;
-    const supported = activityFresh || cadenceFresh;
+    const stride = this.strideAssessment(at);
+    // The cadence leg alone released relief on a seated shake (gate-proof-s1
+    // §5.1); it now needs the pedometer's counter to be accruing and the raw
+    // stream, when it is watching, to not contradict it now or within the
+    // last STRIDE_PENALTY_MS. Apple's activity classifier remains an
+    // independent leg.
+    const cadenceQualifies =
+      cadencePerMinute !== null &&
+      cadencePerMinute >= MIN_WALKING_CADENCE_PER_MINUTE &&
+      this.cadenceStepsAccruing() &&
+      stride.verdict !== 'notStride' &&
+      stride.verdict !== 'still' &&
+      !stride.recentVeto;
+    const supported = activityFresh || cadenceFresh || stride.verdict !== 'unknown';
     const activityAt = activityFresh ? this.activity!.receivedAt : null;
     const cadenceAt = cadenceFresh ? this.cadence!.asOf : null;
+    // An `unknown` stride never contributes a timestamp: a silent raw stream must
+    // not move the silence/grace anchor for the Apple sources.
+    const strideAt = stride.verdict === 'unknown' ? null : stride.at;
     return {
       qualifying: !supported ? 'unknown' : activityQualifies || cadenceQualifies,
-      observedAt: supported ? Math.max(activityAt ?? -Infinity, cadenceAt ?? -Infinity) : at,
+      observedAt: supported ? Math.max(activityAt ?? -Infinity, cadenceAt ?? -Infinity, strideAt ?? -Infinity) : at,
       activityAt,
       cadenceAt,
       cadencePerMinute,
+      stride: stride.verdict,
+      strideAt,
     };
   }
 
@@ -119,6 +174,8 @@ export class MotionAdapter {
       activityAtWallMs: evidence.activityAt,
       cadenceAtWallMs: evidence.cadenceAt,
       cadencePerMinute: evidence.cadencePerMinute,
+      stride: evidence.stride,
+      strideAtWallMs: evidence.strideAt,
     });
     this.listeners.forEach((listener) => listener(evidence));
   }
@@ -164,7 +221,33 @@ export class MotionAdapter {
     }
     if (__LINKED_RECORDER_TRACE__) linkedTrace.record('motion_input_js', { stream: 'cadence', status: 'accepted', sourceAtWallMs: sample.asOf });
     this.cadence = sample;
+    this.cadenceSteps.push({ at: sample.asOf, steps: sample.cumulativeSteps });
+    // Keep the newest sample at or beyond the horizon as the baseline so the
+    // rate always spans at least the horizon once enough history exists.
+    const horizon = sample.asOf - CADENCE_STEP_RATE_WINDOW_MS;
+    while (this.cadenceSteps.length >= 2 && this.cadenceSteps[1].at <= horizon) this.cadenceSteps.shift();
     this.publish(sample.asOf);
   }
 
+  /** The first cadence sample has no baseline to contradict it; later ones must show steps accruing. */
+  private cadenceStepsAccruing(): boolean {
+    const baseline = this.cadenceSteps[0];
+    const latest = this.cadenceSteps[this.cadenceSteps.length - 1];
+    if (baseline === undefined || latest === undefined || baseline === latest) return true;
+    const spanMs = latest.at - baseline.at;
+    if (spanMs <= 0) return true;
+    return ((latest.steps - baseline.steps) / spanMs) * 60_000 >= MIN_CADENCE_STEP_RATE_PER_MINUTE;
+  }
+
+  private acceptStride(sample: StrideMotionSample): void {
+    const assessment = this.strideAnalyzer.push(sample);
+    if (assessment === null || assessment.verdict === this.strideVerdict) return;
+    this.strideVerdict = assessment.verdict;
+    this.publish(sample.t);
+  }
+
+  private strideAssessment(at: number): StrideAssessment {
+    if (this.strideSource === null) return UNKNOWN_STRIDE;
+    return this.strideAnalyzer.assessmentAt(at);
+  }
 }

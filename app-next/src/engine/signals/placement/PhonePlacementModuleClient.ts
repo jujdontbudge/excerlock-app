@@ -1,4 +1,4 @@
-import type { DeviceMotionSample } from "./PhonePlacementProvider";
+import type { DeviceMotionSample } from "../../../../modules/excerlock-motion/src/ExcerlockMotion.types";
 
 export interface PhonePlacementModuleSubscription {
   remove(): void;

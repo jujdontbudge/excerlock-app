@@ -2,8 +2,8 @@ import type {
   PhonePlacementModuleClient,
   PhonePlacementModuleSubscription,
 } from "./PhonePlacementModuleClient";
+import type { DeviceMotionSample } from "../../../../modules/excerlock-motion/src/ExcerlockMotion.types";
 import type {
-  DeviceMotionSample,
   PhonePlacementProvider,
   PhonePlacementSubscription,
 } from "./PhonePlacementProvider";
@@ -24,6 +24,7 @@ export class NativePhonePlacementProvider implements PhonePlacementProvider {
     this.started = false;
   }
 
+  /** Native samples carry `userAcceleration` on top of the placement contract. */
   public onSample(
     callback: (sample: DeviceMotionSample) => void,
   ): PhonePlacementSubscription {
