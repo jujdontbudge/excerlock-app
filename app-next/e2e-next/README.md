@@ -19,6 +19,8 @@ app-next/e2e-next/
   build.py               release-style preview build (expo prebuild + pod install + xcodebuild Release)
   posthog.py             HogQL against project 537075, polled ≤60 s, scoped to the run's $device_id
   supabase.py            admin API: email OTP/session minting, user lookup (email sign-in + deletion lanes)
+  adapty.py              Adapty server-side API: grant/revoke the `premium` access level on a profile
+  fixture.py             existing-user fixture metadata + grant liveness (E2E-F1 captures, E2E-F2 tears down)
   scenarios/             one module per scenario, registered in scenarios/__init__.py
   out/<run>/             evidence: <scenario>/{verdict.json,screenshots,recording.mp4,harness.log}
   build/                 derived data + build log (git-ignored)
@@ -36,7 +38,18 @@ python3 app-next/e2e-next/run.py E2E-N1 E2E-V1
 python3 app-next/e2e-next/run.py --all --run-id 20260916T2300Z
 python3 app-next/e2e-next/run.py --list
 
-# mint the existing-user fixture from the currently installed app container
+# mint the existing-user fixture (Adapty server-side grant, not a purchase),
+# consume it in the same invocation while the keychain session is live, and
+# tear it down at the end (E2E-F2 revokes the grant, deletes the identity and
+# removes the snapshot; it also accepts an identity E2E-A4's UI half consumed)
+python3 app-next/e2e-next/run.py E2E-F1 E2E-E1 E2E-V1 E2E-F2 --run-id 20260917T2022Z
+python3 app-next/e2e-next/run.py E2E-F1 E2E-A4 E2E-F2 --run-id 20260917T2048Z
+
+# E2E-V1 owns both sweep states (guarded first, then the fresh install that
+# resets the keychain) and E2E-A4's confirmation consumes the identity, so each
+# consumer gets its own E2E-F1 mint.
+
+# snapshot/patch the installed app container manually (E2E-F1 automates this)
 python3 app-next/e2e-next/run.py --capture-fixture existing-user
 ```
 
@@ -55,6 +68,7 @@ dotfile convention documented in `scripts/check-env.ts`). The harness needs:
 | `POSTHOG_PERSONAL_API_KEY` | `posthog.py` HogQL queries (`~/.excerlock/POSTHOG_PERSONAL_API_KEY`) |
 | `POSTHOG_PROJECT_ID` (default 537075), `POSTHOG_API_HOST` (default `https://us.posthog.com`) | PostHog queries |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | `supabase.py` admin OTP/session/user operations |
+| `ADAPTY_SECRET_KEY` | `adapty.py` server-side grant/revoke (`~/.excerlock/ADAPTY_SECRET_KEY`; Adapty → App settings → General → API keys → Secret key) |
 | `EXPO_PUBLIC_*` + aliases (`~/.excerlock/env`) | `build.py` preview build |
 
 ## One build, one simulator (harness rule)
@@ -134,14 +148,16 @@ with the inspected contract text instead of a bare failure. Current map (plan §
 | ID | Fixture | What it drives | Assertions | State in this worktree |
 |---|---|---|---|---|
 | `E2E-N1` | fresh install | real onboarding O01→P, paywall | full walk observed step by step; paywall renders; live products; CTA; `$screen` per step; `paywall_viewed`; startup first-frame budget | walk, live products, CTA, `paywall_viewed` and `$screen` PASS; **O01 emits no `$screen` row** (the one app gap); startup budget BLOCKED (device lane) |
-| `E2E-N4` | fresh install | the plan's literal shape: every Adapty endpoint denied from the very first launch (`/etc/hosts` → `0.0.0.0`), onboarding O01→P | endpoints verified unreachable; the offline walk reaches the paywall; the fallback render is **BLOCKED-until `offline-first-launch-identity`** (AdaptySDK-iOS 4.0.2 cannot identify without the backend, see findings); denial still holds after the walk; `/etc/hosts` restored byte-for-byte | denial, boot, walk and restore PASS; render BLOCKED-until `offline-first-launch-identity` (follow-up 4, `20260917T1936Z`) |
+| `E2E-F1` | fresh install | mints the existing-user fixture: pre-created identity → server-side `premium` grant → real email sign-in → setup X4→X5 → capture | identity exists; grant active; sign-in completes; the app observes the grant (lands on setup X4) and completes setup; snapshot + metadata + persisted-key reads | **PASS** (`20260917T2022Z`, `20260917T2048Z`) |
+| `E2E-N4` | fresh install | the plan's literal shape: every Adapty endpoint denied from the very first launch (`/etc/hosts` → `0.0.0.0`), onboarding O01→P | endpoints verified unreachable; the offline walk reaches the paywall; the fallback render is **BLOCKED-until `offline-first-launch-identity`** (AdaptySDK-iOS 4.0.2 cannot identify without the backend, see findings); denial still holds after the walk; `/etc/hosts` restored byte-for-byte | denial, boot, walk and restore PASS; render BLOCKED-until `offline-first-launch-identity` (follow-up 5, `20260917T1936Z`) |
 | `E2E-N4W` | fresh install | one online launch creates the Adapty profile (never opening the paywall), then a launch with every Adapty endpoint denied (`/etc/hosts` → `0.0.0.0`), onboarding O01→P | Adapty profile existed and no placement was cached before the offline launch; endpoints verified unreachable; offline walk reaches the paywall; the export's remote-config title and its annual+monthly Premium A plans render; denial still holds after the walk; `/etc/hosts` restored byte-for-byte | **PASS** (`20260917T1936Z`): title + both Premium A plans render offline |
-| `E2E-E1` | existing user | relaunch, no paywall, Home | boot destination; `$screen home`; interactive-Home budget | BLOCKED-until the entitled existing-user fixture (see gap below) |
-| `E2E-V1` | fresh install | every production route (onboarding steps + deep links) | one `$screen` row per visited route; route-coverage table | onboarding sweep + `$screen` rows PASS; 20 guarded routes BLOCKED-until the fixture |
-| `E2E-S1` | fresh install | 10 cold launches, launch timing | medians vs §6.2 (first frame ≤1.5 s, interactive Home ≤2.5 s) | coarse launch→surface measured **and** the app's delegate-relative stage medians recorded from the simulator's own unified log (`measure-startup.sh --sim-log`); the device lane records the same stages through a real xctrace device capture (`evidence/T15/device-startup-stage-medians/`, finding 3); §6.2 budgets BLOCKED-until the device lane (ADR 0021/0033) and the Home budget until the fixture; `xctrace`-on-simulator recording is broken on this host (finding 3) |
+| `E2E-E1` | existing user | relaunch, no paywall, Home | boot destination; `$screen home`; interactive-Home budget | the fixture relaunches to Home with no paywall and **PASSES** boot/`$screen home` (`20260917T2001Z`); `startup.home_budget` stayed BLOCKED-until B10 on that run (its harness still used the pre-merge `--signposts` flag); the merged harness reads the simulator signpost stream, so a re-run records the delegate-relative number — the §6.2 budget itself stays on the device lane (ADR 0021/0033) |
+| `E2E-V1` | existing user + fresh install | every production route (guarded sweep + onboarding/deep links) | one `$screen` row per visited route; route-coverage table | **PASS** (`20260917T2022Z`): the guarded phase runs on the E2E-F1 fixture (19 label-judged visits render behind the guard, `/setup/X4` stays closed, the entitled paywall is proven by its `$screen` row), then the 29-step fresh sweep and the fresh guards |
+| `E2E-S1` | fresh install | 10 cold launches, launch timing | medians vs §6.2 (first frame ≤1.5 s, interactive Home ≤2.5 s) | coarse launch→surface measured **and** the app's delegate-relative stage medians recorded from the simulator's own unified log (`measure-startup.sh --sim-log`); the device lane records the same stages through a real xctrace device capture (`evidence/T15/device-startup-stage-medians/`, finding 3); §6.2 budgets BLOCKED-until the device lane (ADR 0021/0033); the fixture side is solved by E2E-F1/E1, so the Home budget only needs the device/signpost readout; `xctrace`-on-simulator recording is broken on this host (finding 3) |
 | `E2E-A3` | fresh install | welcome footer → email sign-in | signed-in UI; Supabase user; `PUT /v1/user` 204; PostHog rows under the canonical distinct id; teardown 204/410/404 | **PASS** (recovery lane, admin-minted code — see findings) |
 | — | — | `E2E-POSTHOG-TIMEOUT` env | `E2E_POSTHOG_TIMEOUT` (screen window, default 60 s) and `E2E_PAYWALL_WAIT` (extended poll for load-driven events, default 300 s) tune the PostHog windows | — |
-| `E2E-A4` | existing user | Settings → Account → delete | 204, re-PUT 410, Supabase 404, PostHog person erased, local wipe | UI half BLOCKED-until the fixture; harness-driven API half runs and asserts the live contract |
+| `E2E-A4` | existing user | Settings → Account → delete | 204, re-PUT 410, Supabase 404, PostHog person erased, local wipe | harness-driven API half **PASS** (204 → re-`PUT` 410 → Supabase 404 → PostHog person erased); the UI half runs on the E2E-F1 fixture and records **FAIL**: the server accepts the delete (204 at the confirm tap) but the app's local cleanup stays pending on the simulator (Family Controls/CoreMotion absent), so the sheet keeps its retry note instead of returning to onboarding (follow-up 3) |
+| `E2E-F2` | — | fixture teardown: revoke the grant, delete the identity, remove the snapshot | revoke 2xx + inactive readback; Supabase delete + 404 readback; files removed | **PASS** (`20260917T2022Z`); also accepts a 404 when E2E-A4's UI half already consumed the identity (`20260917T2048Z`) |
 | `E2E-E2` | — | OTA receipt, binary unchanged | **documented stub** (publishes a preview EAS Update; §8.10 keeps release-lock ops out of E2E automation) | BLOCKED by design |
 
 Not in scope here: `E2E-N3` purchase UI (standing instruction: no StoreKit UI
@@ -158,14 +174,18 @@ PostHog query trace.
 
 | Run | Revision | Scenario | Verdict | Result |
 |---|---|---|---|---|
+| `20260917T2022Z` | `f10c245c` (build `appSourceRevision` `19bfb23d6dbf`) | `E2E-F1`, `E2E-V1`, `E2E-F2` | **PASS** | **F1**: disposable identity, real Adapty server-side `premium` grant, email sign-in, X4→X5, snapshot + persisted keys. **V1**: guarded phase on the fixture (`guarded.boot_home`, every fixture route's `$screen` row, 51/72 label-judged visits exactly as their state allows, 19 behind the setup-complete guard, `/setup/X4` correctly closed), then the 29-step fresh sweep; ~306 s of the run was the PostHog guarded-screen wait. **F2**: revoke 200 + inactive readback, Supabase delete + 404, files removed |
+| `20260917T2001Z` | same build | `E2E-E1` | PASS assertions / BLOCKED budget | the fixture relaunches to Home with no paywall and emits `$screen home` (plus the mint's `onboarding`/`setup` rows under the same `$device_id`); only `startup.home_budget` is BLOCKED-until B10, and that run's harness still read the log with the pre-merge `--signposts` flag |
+| `20260917T2048Z` | same build | `E2E-A4`, `E2E-S1` | **FAIL** (UI delete) / BLOCKED (device lane) | **A4**: `ui.delete_flow` FAIL — the app stays on the confirmation sheet with its retry note; the server side is fully green (`PUT` 204, `DELETE` 204 at the confirm tap, re-`PUT` 410, Supabase 404, PostHog person erased), and F2's admin delete later found the identity still present because the durable erasure is asynchronous. **S1**: 10 cold launches measured, §6.2 budgets BLOCKED on the device/signpost lane |
+| `20260917T1948Z`–`T2040Z` | same build | intermediate | superseded | the mint attempts that drove the harness fixes below (lossy `idb ui text`, stale route markers, the `$screen` race); their verdicts stay under `out/` as evidence of the diagnosis |
 | `20260917T1936Z` | `61a42d2c` | `E2E-N4W` | **PASS** | **The offline-render proof for B3.** One online launch created and identified the Adapty profile (`a57ebe11-…`) without ever opening the paywall and cached no placement; every default-cluster Adapty endpoint was then denied (`/etc/hosts` → `0.0.0.0`, resolver + curl exit 7 verified before and after) and a 29-screen offline cold launch walked real onboarding to P; the paywall rendered the export's remote-config title `Unlock ExcerLock Premium` and both Premium A plans (Premium Annual/Monthly, $59.99; load-error state empty); `/etc/hosts` restored byte-for-byte |
-| `20260917T1936Z` | `61a42d2c` | `E2E-N4` | BLOCKED | PASS: the denial holds before and after the walk, the release build boots with Adapty unreachable, the 29-screen walk reaches the paywall, `/etc/hosts` restored byte-for-byte. BLOCKED-until `offline-first-launch-identity`: AdaptySDK-iOS 4.0.2 creates the profile on the server at activation and `identify` awaits it, so on a fresh install the identity spine never commits and `loadPaywall`'s expected-identity gate never opens (follow-up 4) |
+| `20260917T1936Z` | `61a42d2c` | `E2E-N4` | BLOCKED | PASS: the denial holds before and after the walk, the release build boots with Adapty unreachable, the 29-screen walk reaches the paywall, `/etc/hosts` restored byte-for-byte. BLOCKED-until `offline-first-launch-identity`: AdaptySDK-iOS 4.0.2 creates the profile on the server at activation and `identify` awaits it, so on a fresh install the identity spine never commits and `loadPaywall`'s expected-identity gate never opens (follow-up 5) |
 | `20260917T1600Z` | `3cb66c1f` | `E2E-N1` | **FAIL** (one real gap) + BLOCKED budget | PASS: fresh install boots real onboarding; all 29 screens walked in flow order; paywall renders the two live placement plans (Premium Annual/Monthly, $59.99) matching the Adapty `onboarding` placement; CTA; run-scoped `$device_id`; `paywall_viewed {placement: onboarding}`; `$screen paywall`; 35 ingested rows in 2 s. **FAIL**: 27/28 visited steps have a `$screen` row — **O01 emits none**. BLOCKED: §6.2 startup budget (device measurement, ADR 0021/0033) |
 | `20260917T1600Z` | `3cb66c1f` | `E2E-V1` | BLOCKED | PASS: 29-screen onboarding sweep, `$screen` step rows for every step (incl. `O13`), `$screen paywall`, run-scoped `$device_id`, ingestion. BLOCKED: 20 of 51 route visits sit behind the setup-complete/entitled guards (existing-user fixture) |
 | `20260917T0650Z` | pre-overhaul build (2026-09-17T10:40Z, revision not recorded) | `E2E-A3` | **PASS** | sign-in sheet → email → admin-minted code → sheet closes → re-opened sheet shows the signed-in account; Supabase user not anonymous; `PUT /v1/user` 204; app persisted the canonical UID as its PostHog distinct id; `$identify` row under that UID; teardown 204/410/404 |
 | `20260917T0640Z` | pre-overhaul build (2026-09-17T10:39Z) | `E2E-S1` | BLOCKED | PASS: 10 cold launches measured (launch call ~0.2 s; launch → first interactive surface 3.8–7 s through idb polling). BLOCKED: the xctrace stage export, the §6.2 budget gate (device lane) and the Home budget (fixture) |
-| `20260917T1810Z` | `32ce84a0` (tree dirty in the harness and `app-next/scripts/` only — this change; `appSourceRevision` `357920f28447` is main's app sources) | `E2E-S1` | BLOCKED | PASS: 10/10 cold launches reached an interactive surface (median 3.95 s launch → first surface, idb-polled). PASS **the stage medians**: every launch reported all four fresh-install B10 stages — median step/cumulative `FirstReactRender` 41.649 ms, `HydrationDone` +0.471 → 42.103 ms, `RuntimeReady` +2.04 → 44.005 ms, `BootGateRedirect` +0.027 → 44.031 ms — read from the simulator unified log through `measure-startup.sh --sim-log` (raw capture, parser output and diagnostic committed under `out/20260917T1810Z/E2E-S1/startup-sim-log/`). BLOCKED: the §6.2 budget gate (device lane) and the Home budget (fixture), unchanged and by design |
-| `20260917T0640Z` | pre-overhaul build | `E2E-E1`, `E2E-A4` | BLOCKED | existing-user fixture unavailable (fixture gap below) |
+| `20260917T1810Z` | `32ce84a0` (tree dirty in the harness and `app-next/scripts/` only — this change; `appSourceRevision` `357920f28447` is main's app sources) | `E2E-S1` | BLOCKED | PASS: 10/10 cold launches reached an interactive surface (median 3.95 s launch → first surface, idb-polled). PASS **the stage medians**: every launch reported all four fresh-install B10 stages — median step/cumulative `FirstReactRender` 41.649 ms, `HydrationDone` +0.471 → 42.103 ms, `RuntimeReady` +2.04 → 44.005 ms, `BootGateRedirect` +0.027 → 44.031 ms — read from the simulator unified log through `measure-startup.sh --sim-log` (raw capture, parser output and diagnostic committed under `out/20260917T1810Z/E2E-S1/startup-sim-log/`). BLOCKED: the §6.2 budget gate (device lane); the Home budget's fixture side is now solved by E2E-F1 |
+| `20260917T0640Z` | pre-overhaul build | `E2E-E1`, `E2E-A4` | BLOCKED | no existing-user fixture existed at that time (mint with E2E-F1 since) |
 | `20260917T0640Z` | pre-overhaul build | `E2E-E2` | BLOCKED | by design: publishes a preview-channel EAS Update (documented stub) |
 
 The A3/E1/A4/E2 evidence predates the UI-overhaul commits that landed after
@@ -209,12 +229,26 @@ lag).
    belongs with the analytics-coverage work (queue until identity is ready, or
    emit with the anonymous identity and let `$identify` join it). Reproduce:
    `python3 app-next/e2e-next/run.py E2E-N1`.
-2. **The existing-user fixture is unreachable on the simulator.** A setup-complete
-   profile needs an entitlement, and the only entitlement sources are a sandbox
-   purchase (hardware, SBX lane `E2E-P1`) or the StoreKit binding §8.1 leaves
-   unresolved. E1/A4/Home-budget/guarded-route coverage unblock the moment the SBX
-   lane captures `--capture-fixture existing-user`.
-3. **`xcrun xctrace record` cannot record a simulator on this host.** The
+2. **Existing-user fixture: delivered and proven (2026-09-17).** `E2E-F1`
+   mints a disposable identity, grants it a real Adapty `premium` access level
+   through the server-side API (never a purchase) and captures the
+   setup-complete container; `E2E-E1` boots it to Home and emits `$screen
+   home`; `E2E-V1` runs its 24-route guarded sweep on it; `E2E-F2` revokes the
+   grant, deletes the identity and removes the snapshot. Run them in one
+   invocation (`E2E-F1 E2E-E1 E2E-V1 E2E-F2`) because the fixture's Supabase
+   session lives in the device keychain. StoreKit receipt truth stays with the
+   SBX lane (`E2E-P1`) — the grant is not a purchase.
+3. **The client-driven delete cannot finish on the simulator (E2E-A4's UI
+   half).** The server accepts the delete (the simulator log shows a 204
+   landing on the app's API connection at the confirm tap, with the
+   FamilyControls/TCC cleanup churn starting immediately after; the harness
+   half proves 204 → re-`PUT` 410 → Supabase 404 → PostHog person erased) but
+   the app's post-acceptance local cleanup (FamilyControls
+   `eraseLockedSelection`, CoreMotion-backed detection teardown) stays pending
+   where those frameworks are absent, so the sheet keeps its retry note and
+   `ui.delete_flow` records FAIL. Re-run the UI half on the device lane; the
+   FAIL keeps the gap from hiding behind a simulator excuse.
+4. **`xcrun xctrace record` cannot record a simulator on this host.** The
    delegate-relative stage medians no longer depend on it (they come from the
    unified log, finding above), but the xctrace route is closed here. Evidence:
 
@@ -276,7 +310,7 @@ lag).
      and the device must be unlocked, or launches never emit the startup stages.
      The `Logging` template the earlier note blamed belongs to the same broken
      simulator path.
-4. **A first-ever offline launch cannot render the paywall.** AdaptySDK-iOS 4.0.2
+5. **A first-ever offline launch cannot render the paywall.** AdaptySDK-iOS 4.0.2
    creates the profile on the server at activation (`createNewProfileOnServer`
    retries every 100 ms until the backend answers) and `identify` awaits that
    task, so on a fresh install the app's identity spine never commits and
@@ -332,13 +366,30 @@ lag).
   (where all of them landed) the same scenarios ran their analytics assertions for
   real and N1's only remaining failure is the O01 gap. The capability map in every
   `verdict.json` records which side of that boundary the run was on.
+* **`idb ui text` is lossy mid-string and the mint must verify every field.**
+  The first mint attempts typed `e2e-fixtur` while the field kept `e2e-fixe`,
+  and a 43-backspace clear dropped most of its backspaces; clearing and typing
+  again could never converge. The harness types four characters at a time,
+  re-reads the field, repairs divergence from the common prefix and stops the
+  mint when a field still does not hold the intended value
+  (`harness.type_verified`, unit-tested against a fake lossy keyboard).
+* **An entitled `/paywall` visit is a one-frame mount.** `PaywallSlot` replaces
+  the route with Home as soon as the entitlement is trial/active, so the
+  guarded sweep saw its `$screen paywall` row in the same millisecond as the
+  home row and no paywall label 2.6 s later. The sweep no longer judges that
+  visit by label (the `$screen` row is the proof); five other route markers
+  had also drifted from the current copy and were corrected.
 * **PostHog ingestion for this project is bursty**: screen rows can arrive in
   ~1 s, while the paywall's load-driven `paywall_viewed` / `$screen paywall` and
-  the `$identify` row under a new distinct id have taken 300 s+. The plan's 60 s
-  window is the first poll; `E2E_PAYWALL_WAIT` (default 300 s) is the extended one,
-  and a miss after both is reported BLOCKED-until-ingestion, never as an app
-  failure — except where the app-side proof is independent (A3 asserts the
-  persisted distinct id locally).
+  the `$identify` row under a new distinct id have taken 300 s+. On 2026-09-17
+  the fixture runs hit even longer query/ingestion waits (E1's `home` row and
+  V1's guarded screen set were retrievable by hand minutes before the harness's
+  own poll saw them), always inside the extended window, which now costs the
+  SIM runs ~15 min each. The plan's 60 s window is the first poll;
+  `E2E_PAYWALL_WAIT` (default 300 s) is the extended one, and a miss after both
+  is reported BLOCKED-until-ingestion, never as an app failure — except where
+  the app-side proof is independent (A3 asserts the persisted distinct id
+  locally).
 * **The simulator has no per-device network switch; N4 denies the Adapty hosts
   in `/etc/hosts` for the launch under test.** Every default-cluster endpoint
   (`api.adapty.io`, `fallback.adapty.io`, `configs-cdn.adapty.io`,
@@ -357,23 +408,65 @@ lag).
   is what renders. The first-launch-offline case is a separate, pre-existing
   identity-spine limitation, reported here rather than fixed by this scenario.
 
-## Fixture policy and the SIM-lane fixture gap
+## Fixture policy and the existing-user fixture
 
 * **fresh install** — `simctl uninstall` + `simctl install` of the build under
   test, so onboarding runs for real. Nothing is hand-edited.
 * **existing user** — a captured app-container snapshot (`fixtures/existing-user`,
-  minted with `--capture-fixture`, restored with `simctl` container copy).
+  restored with `simctl` container copy) whose *entitlement is a real Adapty
+  server-side access level*, not a fake written into the app.
 
-**Gap, stated plainly:** on the simulator there is no way to mint an *entitled*
-profile — a purchase needs the StoreKit binding that §8.1 leaves unresolved, and
-`sandbox` purchases need hardware — and the app's own guards require an
-entitlement before setup can complete (`RootNavigator` protects `setup/*` and
-`(tabs)` behind `setupComplete`, which only setup X5 sets). Every scenario that
-needs a setup-complete profile (`E2E-E1`, `E2E-A4` UI half, `E2E-S1` Home budget,
-the guarded half of `E2E-V1`) therefore reports BLOCKED with that exact reason
-instead of a fake pass. The fixture becomes available as soon as the SBX lane
-(`E2E-P1`) captures a snapshot after a real sandbox purchase; the harness then
-runs those scenarios unchanged via `--capture-fixture existing-user`.
+### How the fixture is minted (E2E-F1)
+
+`adapty.py` grants the dashboard access level `premium` to a profile by
+`customer_user_id` through Adapty's server-side API (`POST
+/api/v2/server-side-api/purchase/profile/grant/access-level/`, `Authorization:
+Api-Key <ADAPTY_SECRET_KEY>`, app `9b8a6cf2-22c5-46f9-b938-35c27da2c66f`). The
+`E2E-F1` scenario uses that grant to reach a state the simulator could not reach
+before:
+
+1. pre-create the disposable Supabase identity (the A3 email lane) and grant
+   `premium` to its UID **before** the app signs in, so the first profile fetch
+   the app's own identity spine makes already carries the live access level —
+   the entitlement path (`AdaptySubscriptionAdapter` → `mapEntitlement`) runs
+   unmodified and no production refresh hook is faked;
+2. drive the real sign-in UI (welcome footer → email → admin-minted OTP);
+3. assert the app *observed* it: `RootNavigator` only exposes `setup/*` while
+   `entitled && !setupComplete`, so landing on setup X4 is proof the entitlement
+   store holds trial/active, and reaching Home through X5 proves
+   `setupComplete`;
+4. capture the app container and write `fixtures/existing-user.meta.json`
+   (identity, grant, run, build);
+5. `fixture.ensure_live` re-asserts the captured grant idempotently before every
+   restore, so a fixture minted on one day still carries a live entitlement a
+   day later.
+
+`E2E-F2` is teardown: it revokes the grant (with an inactive readback), deletes
+the disposable Supabase identity (with a 404 readback) and removes the snapshot
+and metadata, so a torn-down fixture can never be mistaken for a usable one.
+Never commit the secret key: it resolves through `harness.env_value` (process
+env → `~/.excerlock/env` → `~/.excerlock/ADAPTY_SECRET_KEY`).
+
+### One keychain, one invocation
+
+Only the container is snapshotted; the Supabase session lives in the simulator
+**keychain** (`expo-secure-store`). Any fresh-install scenario resets that
+keychain, so the fixture's consumers must run in the same invocation as the mint
+and before a fresh-install scenario. `E2E-V1` owns both states internally and
+runs its guarded sweep *first* for exactly this reason; `E2E-F1 E2E-E1 E2E-A4`
+is a valid one-invocation sequence, `E2E-F1` then a fresh-install scenario then
+`E2E-E1` is not (the fixture would boot with a new anonymous session).
+
+`E2E-A4`'s confirmation consumes the identity and `E2E-V1`'s fresh phase resets
+the keychain, so those two consumers can never share one mint; each gets its own
+`E2E-F1` (the validated sequences under Commands).
+
+### What the fixture does not prove
+
+The server-side grant is not a purchase: it says nothing about StoreKit, the
+`sandbox` receipt, or the §8.1 binding. That truth stays with the SBX lane
+(`E2E-P1/P2/X1`) on hardware; this fixture only removes the *entitlement*
+blocker from the SIM-lane scenarios.
 
 ## PostHog verification
 
@@ -389,8 +482,9 @@ Sign-in scenarios additionally assert rows under the canonical Supabase
 
 `supabase.py` mints the six-digit code server-side with the service key
 (`admin.generate_link` → `email_otp`); no inbox scraping and no browser. The
-disposable identity is `e2e-a3-<run-id>@example.com` (a domain that cannot
-receive mail) and the scenario tears it down through the app's own deletion
+disposable identity is `e2e-a3-<run-id>@excerlock.com` (the project's verified
+sending domain, receiving disabled) and the scenario tears it down through the
+app's own deletion
 contract (`DELETE /v1/user` → 204, re-`PUT` → 410, Supabase admin → 404).
 
 ## Rules this harness obeys

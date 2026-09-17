@@ -1,0 +1,212 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": "ExcerLock",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "button",
+  "AXLabel": "Dismiss sheet",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{334, 228.74199106416341}, {44, 44}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 228.74199106416341,
+   "x": 334,
+   "width": 44,
+   "height": 44
+  },
+  "role_description": "button",
+  "AXLabel": "Close",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 237.74199106416341}, {298, 26}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 237.74199106416341,
+   "x": 24,
+   "width": 298,
+   "height": 26
+  },
+  "role_description": "heading",
+  "AXLabel": "Sign in",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 284.74199106416341}, {354, 32}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 284.7419910641634,
+   "x": 24,
+   "width": 354,
+   "height": 32
+  },
+  "role_description": "heading",
+  "AXLabel": "Sign in with email",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 476.74199106416341}, {354, 18}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 476.7419910641634,
+   "x": 24,
+   "width": 354,
+   "height": 18
+  },
+  "role_description": "text",
+  "AXLabel": "Email address",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{25.333333373069763, 508.07532443723318}, {351, 55.999999999999943}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 508.0753244372332,
+   "x": 25.333333373069763,
+   "width": 351,
+   "height": 55.99999999999994
+  },
+  "role_description": "text field",
+  "AXLabel": "Email address",
+  "content_required": false,
+  "type": "TextField",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "e2e-fixture-20260917t1948z@excerlock.com",
+  "enabled": true,
+  "role": "AXTextField",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 589.74199106416336}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 589.7419910641634,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Send code",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 691.74199106416336}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 691.7419910641634,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Back to sign-in options",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 769.74199106416336}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 769.7419910641634,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Skip for now",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ }
+]

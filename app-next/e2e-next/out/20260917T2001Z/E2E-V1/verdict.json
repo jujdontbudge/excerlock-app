@@ -1,0 +1,446 @@
+{
+  "scenario": "E2E-V1",
+  "title": "Full-app screen sweep: every production route emits one $screen row",
+  "lane": "SIM",
+  "users": "BOTH",
+  "status": "FAIL",
+  "reason": "routes.reachable_count: 55 of 77 marker-evaluated route visits rendered; unexpected: ['/builder', '/paywall', '/unlock/gym', '/builder', '/unlock/gym']",
+  "startedAt": "2026-09-17T20:07:01Z",
+  "endedAt": "2026-09-17T20:19:11Z",
+  "durationSeconds": 730.3,
+  "device": {
+    "udid": "B68873CD-B6ED-4961-85AF-0C807E657999",
+    "name": "ExcerLock-Next",
+    "CFBundleShortVersionString": "1.0.0",
+    "CFBundleVersion": "1"
+  },
+  "build": {
+    "revision": "f10c245c0f5026845d72f77851ef3a68f910ff8b",
+    "revisionDirty": true,
+    "appSourceRevision": "19bfb23d6dbf",
+    "app": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/18/excerlock-app/app-next/e2e-next/build/DerivedData/Build/Products/Release-iphonesimulator/ExcerLock.app",
+    "bundleId": "com.johansardar.excerlock",
+    "scheme": "ExcerLock",
+    "configuration": "Release",
+    "environment": "preview",
+    "channel": "preview",
+    "runtimeVersion": "2",
+    "derivedData": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/18/excerlock-app/app-next/e2e-next/build/DerivedData",
+    "log": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/18/excerlock-app/app-next/e2e-next/build/build.log",
+    "installed": false,
+    "builtAt": "2026-09-17T18:40:08Z"
+  },
+  "capabilities": {
+    "B1.remote_config_copy": {
+      "landed": true,
+      "contract": "remoteCopy reads flow.remoteConfigs[0].data (locale-aware)"
+    },
+    "B4a.screen_step_mapping": {
+      "landed": true,
+      "contract": "semanticScreenName resolves onboarding/setup step ids to a screen plus a step prop"
+    },
+    "B4b.root_screen_tracking": {
+      "landed": true,
+      "contract": "a single root-level usePathname subscriber emits screen() for every production route"
+    },
+    "B6.paywall_funnel_events": {
+      "landed": true,
+      "contract": "client emits paywall_viewed"
+    },
+    "B2.paywall_error_reporting": {
+      "landed": true,
+      "contract": "client emits paywall_error on paywall load/purchase/restore failure"
+    },
+    "B3.fallback_paywall": {
+      "landed": true,
+      "contract": "assets/adapty-fallback.json exists and the SDK fallback is wired"
+    },
+    "B7.signin_required_flag": {
+      "landed": true,
+      "contract": "SignInScreen mounts receive a flag-backed signInRequired source"
+    },
+    "B10.startup_marks": {
+      "landed": true,
+      "contract": "startup module emits the five os_signpost stages"
+    },
+    "A5.sentry_before_boot": {
+      "landed": true,
+      "contract": "Sentry initialisation runs at the entry, before the runtime boot gate"
+    }
+  },
+  "fixture": {
+    "kind": "none",
+    "profile": {
+      "supabaseUserId": "5fbe7c85-acec-4e87-8443-68216fbd5712",
+      "email": "e2e-fixture-20260917t2001z@excerlock.com",
+      "supabaseUserStatus": 200,
+      "grant": {
+        "customerUserId": "5fbe7c85-acec-4e87-8443-68216fbd5712",
+        "accessLevelId": "premium",
+        "initialStatus": 200,
+        "action": "kept",
+        "active": true,
+        "expiresAt": "2026-09-20T20:01:07+00:00",
+        "level": {
+          "store": "adapty",
+          "store_product_id": "adapty_server_side_product",
+          "store_base_plan_id": null,
+          "store_transaction_id": "ced0b00e-7931-4761-953a-d287de2ba05e",
+          "store_original_transaction_id": "ced0b00e-7931-4761-953a-d287de2ba05e",
+          "offer": null,
+          "purchased_at": "2026-09-17T20:01:07.786608+00:00",
+          "originally_purchased_at": "2026-09-17T20:01:07.786608+00:00",
+          "expires_at": "2026-09-20T20:01:07+00:00",
+          "renewal_cancelled_at": "2026-09-17T20:01:07.788270+00:00",
+          "billing_issue_detected_at": null,
+          "is_in_grace_period": false,
+          "cancellation_reason": null,
+          "access_level_id": "premium",
+          "starts_at": "2026-09-17T20:01:07+00:00"
+        }
+      },
+      "ok": true,
+      "grantExpiresAt": "2026-09-20T20:01:07+00:00"
+    },
+    "phases": [
+      {
+        "phase": "existing-user",
+        "detail": "captured app-container snapshot + server-side grant",
+        "profile": {
+          "supabaseUserId": "5fbe7c85-acec-4e87-8443-68216fbd5712",
+          "email": "e2e-fixture-20260917t2001z@excerlock.com",
+          "supabaseUserStatus": 200,
+          "grant": {
+            "customerUserId": "5fbe7c85-acec-4e87-8443-68216fbd5712",
+            "accessLevelId": "premium",
+            "initialStatus": 200,
+            "action": "kept",
+            "active": true,
+            "expiresAt": "2026-09-20T20:01:07+00:00",
+            "level": {
+              "store": "adapty",
+              "store_product_id": "adapty_server_side_product",
+              "store_base_plan_id": null,
+              "store_transaction_id": "ced0b00e-7931-4761-953a-d287de2ba05e",
+              "store_original_transaction_id": "ced0b00e-7931-4761-953a-d287de2ba05e",
+              "offer": null,
+              "purchased_at": "2026-09-17T20:01:07.786608+00:00",
+              "originally_purchased_at": "2026-09-17T20:01:07.786608+00:00",
+              "expires_at": "2026-09-20T20:01:07+00:00",
+              "renewal_cancelled_at": "2026-09-17T20:01:07.788270+00:00",
+              "billing_issue_detected_at": null,
+              "is_in_grace_period": false,
+              "cancellation_reason": null,
+              "access_level_id": "premium",
+              "starts_at": "2026-09-17T20:01:07+00:00"
+            }
+          },
+          "ok": true,
+          "grantExpiresAt": "2026-09-20T20:01:07+00:00"
+        }
+      },
+      {
+        "phase": "fresh-install",
+        "detail": "simctl uninstall + keychain/privacy reset + install"
+      }
+    ]
+  },
+  "identity": {
+    "posthogDeviceId": "01a0b102-265d-77d8-92bb-c39c18bf469c",
+    "posthogDistinctId": "8bf3b791-e7d3-4fd1-9c3c-66ef870ed5ec"
+  },
+  "assertions": [
+    {
+      "id": "guarded.boot_home",
+      "status": "PASS",
+      "detail": "the restored fixture boots to a setup-complete Home"
+    },
+    {
+      "id": "analytics.guarded.device_id",
+      "status": "PASS",
+      "detail": "run-scoped $device_id: '01a0b0f5-76fd-7474-832b-86dbe92abaff'"
+    },
+    {
+      "id": "analytics.existing-user.step_mapping",
+      "status": "PASS",
+      "detail": "onboarding step ids map to a semantic screen name"
+    },
+    {
+      "id": "analytics.existing-user.root_tracking",
+      "status": "PASS",
+      "detail": "every route change emits $screen"
+    },
+    {
+      "id": "analytics.guarded_screens",
+      "status": "PASS",
+      "detail": "every fixture-rendered route emitted $screen; missing [] of ['analytics', 'builder', 'conditions', 'gym_picker', 'home', 'paywall', 'settings', 'settings_account', 'settings_bug', 'settings_feedback', 'settings_gyms', 'settings_legal', 'settings_permission', 'settings_preferences', 'settings_subscription', 'settings_units', 'sign_in', 'unlock_gym', 'unlock_treadmill']"
+    },
+    {
+      "id": "analytics.guarded.ingestion",
+      "status": "PASS",
+      "detail": "53 rows for this device after 306s",
+      "evidence": [
+        "[\"analytics\", \"builder\", \"conditions\", \"gym_picker\", \"home\", \"paywall\", \"settings\", \"settings_account\", \"settings_bug\", \"settings_feedback\", \"settings_gyms\", \"settings_legal\", \"settings_permission\", \"settings_preferences\", \"settings_subscription\", \"settings_units\", \"sign_in\", \"unlock_gym\", \"unlock_treadmill\"]"
+      ]
+    },
+    {
+      "id": "onboarding.steps_visited",
+      "status": "PASS",
+      "detail": "walked 29 onboarding screens (sampled ['O01', 'O20', 'W1', 'S1', 'T1', 'P'] all present: ['O01', 'O20', 'W1', 'S1', 'T1', 'P'])",
+      "evidence": [
+        "O01 | O02 | O03 | O04 | O05 | O06 | O08 | O09 | O10 | O11 | O12 | O13 | O14 | O15 | O16 | O17 | O18 | O20 | W1 | W2 | W3 | S1 | S3 | S4 | T1 | T2 | T3 | T4 | P"
+      ]
+    },
+    {
+      "id": "analytics.device_id",
+      "status": "PASS",
+      "detail": "run-scoped $device_id: '01a0b102-265d-77d8-92bb-c39c18bf469c'"
+    },
+    {
+      "id": "analytics.fresh-install.step_mapping",
+      "status": "PASS",
+      "detail": "onboarding step ids map to a semantic screen name"
+    },
+    {
+      "id": "analytics.fresh-install.root_tracking",
+      "status": "PASS",
+      "detail": "every route change emits $screen"
+    },
+    {
+      "id": "analytics.route_rows",
+      "status": "PASS",
+      "detail": "observed $screen names ['gym_picker', 'onboarding', 'paywall']"
+    },
+    {
+      "id": "analytics.paywall_screen_row",
+      "status": "PASS",
+      "detail": "$screen paywall row present"
+    },
+    {
+      "id": "analytics.ingestion",
+      "status": "PASS",
+      "detail": "56 rows for this device after 0s",
+      "evidence": [
+        "[\"gym_picker\", \"onboarding\", \"paywall\"]"
+      ]
+    },
+    {
+      "id": "routes.reachable_count",
+      "status": "FAIL",
+      "detail": "55 of 77 marker-evaluated route visits rendered; unexpected: ['/builder', '/paywall', '/unlock/gym', '/builder', '/unlock/gym']",
+      "evidence": [
+        "route-coverage.json"
+      ]
+    }
+  ],
+  "artifacts": {
+    "screenshots": [
+      "01-route-existing-user-(tabs)-home.png",
+      "02-route-existing-user-(tabs)-conditions.png",
+      "03-route-existing-user-(tabs)-analytics.png",
+      "04-route-existing-user-(tabs)-settings.png",
+      "05-route-existing-user-builder.png",
+      "06-route-existing-user-gym-picker.png",
+      "07-route-existing-user-paywall.png",
+      "08-route-existing-user-sign-in.png",
+      "09-route-existing-user-settings-account.png",
+      "10-route-existing-user-settings-subscription.png",
+      "11-route-existing-user-settings-preferences.png",
+      "12-route-existing-user-settings-units.png",
+      "13-route-existing-user-settings-gyms.png",
+      "14-route-existing-user-settings-bug.png",
+      "15-route-existing-user-settings-feedback.png",
+      "16-route-existing-user-settings-legal.png",
+      "17-route-existing-user-settings-legal-terms.png",
+      "18-route-existing-user-settings-legal-privacy.png",
+      "19-route-existing-user-settings-permission-screenTime.png",
+      "20-route-existing-user-settings-permission-motion.png",
+      "21-route-existing-user-settings-permission-location.png",
+      "22-route-existing-user-unlock-gym.png",
+      "23-route-existing-user-unlock-treadmill.png",
+      "24-route-existing-user-setup-X4.png",
+      "25-route-fresh-install-(tabs)-home.png",
+      "26-route-fresh-install-(tabs)-conditions.png",
+      "27-route-fresh-install-(tabs)-analytics.png",
+      "28-route-fresh-install-(tabs)-settings.png",
+      "29-route-fresh-install-builder.png",
+      "30-route-fresh-install-gym-picker.png",
+      "31-route-fresh-install-paywall.png",
+      "32-route-fresh-install-sign-in.png",
+      "33-route-fresh-install-settings-account.png",
+      "34-route-fresh-install-settings-subscription.png",
+      "35-route-fresh-install-settings-preferences.png",
+      "36-route-fresh-install-settings-units.png",
+      "37-route-fresh-install-settings-gyms.png",
+      "38-route-fresh-install-settings-bug.png",
+      "39-route-fresh-install-settings-feedback.png",
+      "40-route-fresh-install-settings-legal.png",
+      "41-route-fresh-install-settings-legal-terms.png",
+      "42-route-fresh-install-settings-legal-privacy.png",
+      "43-route-fresh-install-settings-permission-screenTime.png",
+      "44-route-fresh-install-settings-permission-motion.png",
+      "45-route-fresh-install-settings-permission-location.png",
+      "46-route-fresh-install-unlock-gym.png",
+      "47-route-fresh-install-unlock-treadmill.png",
+      "48-route-fresh-install-setup-X4.png"
+    ],
+    "trees": [
+      "01-route-existing-user-(tabs)-home.tree.json",
+      "02-route-existing-user-(tabs)-conditions.tree.json",
+      "03-route-existing-user-(tabs)-analytics.tree.json",
+      "04-route-existing-user-(tabs)-settings.tree.json",
+      "05-route-existing-user-builder.tree.json",
+      "06-route-existing-user-gym-picker.tree.json",
+      "07-route-existing-user-paywall.tree.json",
+      "08-route-existing-user-sign-in.tree.json",
+      "09-route-existing-user-settings-account.tree.json",
+      "10-route-existing-user-settings-subscription.tree.json",
+      "11-route-existing-user-settings-preferences.tree.json",
+      "12-route-existing-user-settings-units.tree.json",
+      "13-route-existing-user-settings-gyms.tree.json",
+      "14-route-existing-user-settings-bug.tree.json",
+      "15-route-existing-user-settings-feedback.tree.json",
+      "16-route-existing-user-settings-legal.tree.json",
+      "17-route-existing-user-settings-legal-terms.tree.json",
+      "18-route-existing-user-settings-legal-privacy.tree.json",
+      "19-route-existing-user-settings-permission-screenTime.tree.json",
+      "20-route-existing-user-settings-permission-motion.tree.json",
+      "21-route-existing-user-settings-permission-location.tree.json",
+      "22-route-existing-user-unlock-gym.tree.json",
+      "23-route-existing-user-unlock-treadmill.tree.json",
+      "24-route-existing-user-setup-X4.tree.json",
+      "25-route-fresh-install-(tabs)-home.tree.json",
+      "26-route-fresh-install-(tabs)-conditions.tree.json",
+      "27-route-fresh-install-(tabs)-analytics.tree.json",
+      "28-route-fresh-install-(tabs)-settings.tree.json",
+      "29-route-fresh-install-builder.tree.json",
+      "30-route-fresh-install-gym-picker.tree.json",
+      "31-route-fresh-install-paywall.tree.json",
+      "32-route-fresh-install-sign-in.tree.json",
+      "33-route-fresh-install-settings-account.tree.json",
+      "34-route-fresh-install-settings-subscription.tree.json",
+      "35-route-fresh-install-settings-preferences.tree.json",
+      "36-route-fresh-install-settings-units.tree.json",
+      "37-route-fresh-install-settings-gyms.tree.json",
+      "38-route-fresh-install-settings-bug.tree.json",
+      "39-route-fresh-install-settings-feedback.tree.json",
+      "40-route-fresh-install-settings-legal.tree.json",
+      "41-route-fresh-install-settings-legal-terms.tree.json",
+      "42-route-fresh-install-settings-legal-privacy.tree.json",
+      "43-route-fresh-install-settings-permission-screenTime.tree.json",
+      "44-route-fresh-install-settings-permission-motion.tree.json",
+      "45-route-fresh-install-settings-permission-location.tree.json",
+      "46-route-fresh-install-unlock-gym.tree.json",
+      "47-route-fresh-install-unlock-treadmill.tree.json",
+      "48-route-fresh-install-setup-X4.tree.json"
+    ],
+    "recordings": [
+      "E2E-V1-guarded.mp4",
+      "E2E-V1-sweep.mp4"
+    ],
+    "files": [
+      "route-coverage.json"
+    ]
+  },
+  "notes": [
+    "$screen rows (existing-user): ['analytics', 'builder', 'conditions', 'gym_picker', 'home', 'paywall', 'settings', 'settings_account', 'settings_bug', 'settings_feedback', 'settings_gyms', 'settings_legal', 'settings_permission', 'settings_preferences', 'settings_subscription', 'settings_units', 'sign_in', 'unlock_gym', 'unlock_treadmill'] steps: []",
+    "$screen rows (fresh-install): ['gym_picker', 'onboarding', 'paywall'] steps: ['O01', 'O02', 'O03', 'O04', 'O05', 'O06', 'O08', 'O09', 'O10', 'O11', 'O12', 'O13', 'O14', 'O15', 'O16', 'O17', 'O18', 'O20', 'S1', 'S2', 'S3', 'S4', 'T1', 'T2', 'T3', 'T4', 'W1', 'W2', 'W3']",
+    "coverage: [existing-user] /(tabs)/home=ok/expected; [existing-user] /(tabs)/conditions=ok/expected; [existing-user] /(tabs)/analytics=ok/expected; [existing-user] /(tabs)/settings=ok/expected; [existing-user] /builder=ok/UNEXPECTED; [existing-user] /gym-picker=ok/expected; [existing-user] /paywall=blocked/UNEXPECTED; [existing-user] /sign-in=ok/expected; [existing-user] /settings/account=ok/expected; [existing-user] /settings/subscription=ok/expected; [existing-user] /settings/preferences=ok/expected; [existing-user] /settings/units=ok/expected; [existing-user] /settings/gyms=ok/expected; [existing-user] /settings/bug=ok/expected; [existing-user] /settings/feedback=ok/expected; [existing-user] /settings/legal=ok/expected; [existing-user] /settings/legal/terms=ok/expected; [existing-user] /settings/legal/privacy=ok/expected; [existing-user] /settings/permission/screenTime=ok/expected; [existing-user] /settings/permission/motion=ok/expected; [existing-user] /settings/permission/location=ok/expected; [existing-user] /unlock/gym=ok/UNEXPECTED; [existing-user] /unlock/treadmill=ok/expected; [existing-user] /setup/X4=blocked/expected; [fresh-install] /onboarding/O01=ok/expected; [fresh-install] /onboarding/O02=ok/expected; [fresh-install] /onboarding/O03=ok/expected; [fresh-install] /onboarding/O04=ok/expected; [fresh-install] /onboarding/O05=ok/expected; [fresh-install] /onboarding/O06=ok/expected; [fresh-install] /onboarding/O08=ok/expected; [fresh-install] /onboarding/O09=ok/expected; [fresh-install] /onboarding/O10=ok/expected; [fresh-install] /onboarding/O11=ok/expected; [fresh-install] /onboarding/O12=ok/expected; [fresh-install] /onboarding/O13=ok/expected; [fresh-install] /onboarding/O14=ok/expected; [fresh-install] /onboarding/O15=ok/expected; [fresh-install] /onboarding/O16=ok/expected; [fresh-install] /onboarding/O17=ok/expected; [fresh-install] /onboarding/O18=ok/expected; [fresh-install] /onboarding/O20=ok/expected; [fresh-install] /onboarding/W1=ok/expected; [fresh-install] /onboarding/W2=ok/expected; [fresh-install] /onboarding/W3=ok/expected; [fresh-install] /onboarding/S1=ok/expected; [fresh-install] /onboarding/S3=ok/expected; [fresh-install] /onboarding/S4=ok/expected; [fresh-install] /onboarding/T1=ok/expected; [fresh-install] /onboarding/T2=ok/expected; [fresh-install] /onboarding/T3=ok/expected; [fresh-install] /onboarding/T4=ok/expected; [fresh-install] /onboarding/P=ok/expected; [fresh-install] /(tabs)/home=blocked/expected; [fresh-install] /(tabs)/conditions=blocked/expected; [fresh-install] /(tabs)/analytics=blocked/expected; [fresh-install] /(tabs)/settings=blocked/expected; [fresh-install] /builder=ok/UNEXPECTED; [fresh-install] /gym-picker=ok/expected; [fresh-install] /paywall=ok/expected; [fresh-install] /sign-in=blocked/expected; [fresh-install] /settings/account=blocked/expected; [fresh-install] /settings/subscription=blocked/expected; [fresh-install] /settings/preferences=blocked/expected; [fresh-install] /settings/units=blocked/expected; [fresh-install] /settings/gyms=blocked/expected; [fresh-install] /settings/bug=blocked/expected; [fresh-install] /settings/feedback=blocked/expected; [fresh-install] /settings/legal=blocked/expected; [fresh-install] /settings/legal/terms=blocked/expected; [fresh-install] /settings/legal/privacy=blocked/expected; [fresh-install] /settings/permission/screenTime=blocked/expected; [fresh-install] /settings/permission/motion=blocked/expected; [fresh-install] /settings/permission/location=blocked/expected; [fresh-install] /unlock/gym=ok/UNEXPECTED; [fresh-install] /unlock/treadmill=blocked/expected; [fresh-install] /setup/X4=blocked/expected"
+  ],
+  "posthog": [
+    {
+      "query": "device $screen rows (existing-user)",
+      "deviceId": "01a0b0f5-76fd-7474-832b-86dbe92abaff",
+      "waitedSeconds": 305.9,
+      "screens": [
+        "analytics",
+        "builder",
+        "conditions",
+        "gym_picker",
+        "home",
+        "paywall",
+        "settings",
+        "settings_account",
+        "settings_bug",
+        "settings_feedback",
+        "settings_gyms",
+        "settings_legal",
+        "settings_permission",
+        "settings_preferences",
+        "settings_subscription",
+        "settings_units",
+        "sign_in",
+        "unlock_gym",
+        "unlock_treadmill"
+      ],
+      "steps": [],
+      "expected": [
+        "analytics",
+        "builder",
+        "conditions",
+        "gym_picker",
+        "home",
+        "paywall",
+        "settings",
+        "settings_account",
+        "settings_bug",
+        "settings_feedback",
+        "settings_gyms",
+        "settings_legal",
+        "settings_permission",
+        "settings_preferences",
+        "settings_subscription",
+        "settings_units",
+        "sign_in",
+        "unlock_gym",
+        "unlock_treadmill"
+      ]
+    },
+    {
+      "query": "device $screen rows (fresh-install)",
+      "deviceId": "01a0b102-265d-77d8-92bb-c39c18bf469c",
+      "waitedSeconds": 0.4,
+      "screens": [
+        "gym_picker",
+        "onboarding",
+        "paywall"
+      ],
+      "steps": [
+        "O01",
+        "O02",
+        "O03",
+        "O04",
+        "O05",
+        "O06",
+        "O08",
+        "O09",
+        "O10",
+        "O11",
+        "O12",
+        "O13",
+        "O14",
+        "O15",
+        "O16",
+        "O17",
+        "O18",
+        "O20",
+        "S1",
+        "S2",
+        "S3",
+        "S4",
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "W1",
+        "W2",
+        "W3"
+      ],
+      "expected": [
+        "gym_picker",
+        "onboarding",
+        "paywall"
+      ]
+    }
+  ]
+}

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 
 import posthog
@@ -38,13 +39,22 @@ class E1ExistingUserHome(Scenario):
             ctx.flush_analytics(4)
             rows, satisfied, waited = posthog.wait_for_device_events(
                 device_id, since, lambda rows: any(row.get('event') == '$screen' for row in rows), timeout=60)
+            screens = posthog.screen_names(rows)
+            if 'home' not in screens:
+                # E2E-F1 minted on this same $device_id seconds earlier, so its
+                # onboarding rows satisfy the "any $screen" predicate before the
+                # home row is ingested (2026-09-17T1948Z run); wait for the row
+                # this assertion is actually about.
+                rows, satisfied, waited = posthog.wait_for_device_events(
+                    device_id, since, lambda rows: 'home' in posthog.screen_names(rows),
+                    timeout=float(os.environ.get('E2E_PAYWALL_WAIT', '300')), interval=15)
+                screens = posthog.screen_names(rows)
             ctx.posthog_trace.append({'query': 'device $screen rows', 'deviceId': device_id,
-                                      'waitedSeconds': round(waited, 1),
+                                      'waitedSeconds': round(waited, 1), 'screens': screens,
                                       'events': sorted({str(row.get('event')) for row in rows})})
             ctx.note(f'PostHog rows for this device: {posthog.summarise(rows)}')
-            if ctx.gate('B4b.root_screen_tracking', 'analytics.home_screen',
+            if ctx.gate('B4b.root_screen_tracking', 'analytics.home_screen_contract',
                          '$screen home emitted on the home route'):
-                screens = posthog.screen_names(rows)
                 verdict.check('analytics.home_screen', 'home' in screens, f'$screen rows: {screens}')
             verdict.check('analytics.ingestion', satisfied or bool(rows), f'{len(rows)} rows after {waited:.0f}s')
 

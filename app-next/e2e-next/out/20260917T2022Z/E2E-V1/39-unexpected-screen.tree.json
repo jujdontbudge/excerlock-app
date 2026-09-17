@@ -1,0 +1,317 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": "ExcerLock",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 66}, {354, 72}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 66,
+   "x": 24,
+   "width": 354,
+   "height": 72
+  },
+  "role_description": "heading",
+  "AXLabel": "Unlock ExcerLock Premium",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{64, 162.79112526434488}, {314, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 162.79112526434488,
+   "x": 64,
+   "width": 314,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "Exercise to unlock your apps",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{64, 198.78954685160411}, {314, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 198.78954685160411,
+   "x": 64,
+   "width": 314,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "Blocking that fits your schedule",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{64, 234.78797470756606}, {314, 21.999999999999972}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 234.78797470756606,
+   "x": 64,
+   "width": 314,
+   "height": 21.99999999999997
+  },
+  "role_description": "text",
+  "AXLabel": "See your progress build",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 459}, {354, 79}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 459,
+   "x": 24,
+   "width": 354,
+   "height": 79
+  },
+  "role_description": "",
+  "AXLabel": "Premium Annual",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "radio button, checked",
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 562}, {354, 78}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 562,
+   "x": 24,
+   "width": 354,
+   "height": 78
+  },
+  "role_description": "",
+  "AXLabel": "Premium Monthly",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "radio button, unchecked",
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 672}, {354, 18}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 672,
+   "x": 24,
+   "width": 354,
+   "height": 18
+  },
+  "role_description": "text",
+  "AXLabel": "1 week free, then $59.99 / 1 year. Cancel anytime.",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 698}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 698,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Start free trial",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 760}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 760,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Not now",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{55, 822}, {90, 14}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 822,
+   "x": 55,
+   "width": 90,
+   "height": 14
+  },
+  "role_description": "button",
+  "AXLabel": "Restore purchases",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{161, 822}, {3.3333282470703125, 14}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 822,
+   "x": 161,
+   "width": 3.3333282470703125,
+   "height": 14
+  },
+  "role_description": "text",
+  "AXLabel": "\u00b7",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{180.33332824707031, 822}, {64, 14}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 822,
+   "x": 180.3333282470703,
+   "width": 64,
+   "height": 14
+  },
+  "role_description": "button",
+  "AXLabel": "Terms of Use",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{260.33332824707031, 822}, {3.33331298828125, 14}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 822,
+   "x": 260.3333282470703,
+   "width": 3.33331298828125,
+   "height": 14
+  },
+  "role_description": "text",
+  "AXLabel": "\u00b7",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{279.66667175292969, 822}, {67, 14}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 822,
+   "x": 279.6666717529297,
+   "width": 67,
+   "height": 14
+  },
+  "role_description": "button",
+  "AXLabel": "Privacy Policy",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ }
+]

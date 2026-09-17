@@ -1,0 +1,275 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": "ExcerLock",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 86}, {303.66665649414062, 64}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 86,
+   "x": 24,
+   "width": 303.6666564941406,
+   "height": 64
+  },
+  "role_description": "heading",
+  "AXLabel": "Your day, with more movement",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{339.66665649414062, 86}, {38.333343505859375, 24}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 86,
+   "x": 339.6666564941406,
+   "width": 38.333343505859375,
+   "height": 24
+  },
+  "role_description": "",
+  "AXLabel": "0 day streak",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{98.333335876464844, 174}, {205.33331298828125, 265.66665649414062}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 174,
+   "x": 98.33333587646484,
+   "width": 205.33331298828125,
+   "height": 265.6666564941406
+  },
+  "role_description": "image",
+  "AXLabel": "Unlocked",
+  "content_required": false,
+  "type": "Image",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXImage",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 455.33334350585938}, {354, 52}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 455.3333435058594,
+   "x": 24,
+   "width": 354,
+   "height": 52
+  },
+  "role_description": "heading",
+  "AXLabel": "Apps blocked until\nyou complete exercise",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 531.66665649414062}, {354, 26}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 531.6666564941406,
+   "x": 24,
+   "width": 354,
+   "height": 26
+  },
+  "role_description": "heading",
+  "AXLabel": "Conditions",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{25, 582.66676448492217}, {352, 68}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 582.6667644849222,
+   "x": 25,
+   "width": 352,
+   "height": 68
+  },
+  "role_description": "button",
+  "AXLabel": "Lock list",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{25, 676.66668701171875}, {352, 68}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 676.6666870117188,
+   "x": 25,
+   "width": 352,
+   "height": 68
+  },
+  "role_description": "button",
+  "AXLabel": "Analytics",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 761.66668701171875}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 761.6666870117188,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Add condition",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{0, 782}, {100.66666412353516, 58}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 782,
+   "x": 0,
+   "width": 100.66666412353516,
+   "height": 58
+  },
+  "role_description": "button",
+  "AXLabel": "Home",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{100.66666412353516, 782}, {100.33333587646484, 58}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 782,
+   "x": 100.66666412353516,
+   "width": 100.33333587646484,
+   "height": 58
+  },
+  "role_description": "",
+  "AXLabel": "Conditions",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{201, 782}, {100.66665649414062, 58}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 782,
+   "x": 201,
+   "width": 100.66665649414062,
+   "height": 58
+  },
+  "role_description": "",
+  "AXLabel": "Analytics",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{301.66665649414062, 782}, {100.33334350585938, 58}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 782,
+   "x": 301.6666564941406,
+   "width": 100.33334350585938,
+   "height": 58
+  },
+  "role_description": "",
+  "AXLabel": "Settings",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ }
+]

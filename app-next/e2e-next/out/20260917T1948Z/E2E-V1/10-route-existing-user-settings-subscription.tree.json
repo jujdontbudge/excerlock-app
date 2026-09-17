@@ -1,0 +1,149 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": "ExcerLock",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 74}, {354, 44}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 74,
+   "x": 24,
+   "width": 354,
+   "height": 44
+  },
+  "role_description": "button",
+  "AXLabel": "Back",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 130}, {354, 32}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 130,
+   "x": 24,
+   "width": 354,
+   "height": 32
+  },
+  "role_description": "heading",
+  "AXLabel": "Subscription",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 166}, {354, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 166,
+   "x": 24,
+   "width": 354,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "Billing is handled by the App Store.",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{41, 236}, {320, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 236,
+   "x": 41,
+   "width": 320,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "ExcerLock membership",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{25, 282}, {352, 68}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 282,
+   "x": 25,
+   "width": 352,
+   "height": 68
+  },
+  "role_description": "button",
+  "AXLabel": "Manage in App Store",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{25, 351}, {352, 68}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 351,
+   "x": 25,
+   "width": 352,
+   "height": 68
+  },
+  "role_description": "button",
+  "AXLabel": "Restore purchases",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ }
+]

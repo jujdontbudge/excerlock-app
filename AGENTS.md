@@ -14,6 +14,10 @@
 
 - Service tooling: use `supabase`, `az` + SSH/rsync, `sentry`/`sentry-cli`, `posthog-cli`, `resend`, `eas`, `adapty`, `asc` and `gh` as appropriate. Read `docs/agents/service-cli.md` only for service/deployment tasks; discover commands with `--help`.
 
+## E2E / simulator verification
+
+- `app-next/e2e-next/README.md` owns the SIM-lane harness: one build, one pinned `ExcerLock-Next` simulator, a verdict per scenario. `E2E-F1` mints the entitled existing-user fixture (a real Adapty server-side `premium` grant, never a purchase) and `E2E-F2` tears it down; run scenarios only when no sibling lane is driving that simulator.
+
 ## On-demand skills
 
 Read the matching skill before the relevant task; do not preload all guides. Follow its relevant references only.

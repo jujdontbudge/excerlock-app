@@ -1,0 +1,296 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": "ExcerLock",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 74}, {354, 44}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 74,
+   "x": 24,
+   "width": 354,
+   "height": 44
+  },
+  "role_description": "button",
+  "AXLabel": "Back",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 130}, {354, 32}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 130,
+   "x": 24,
+   "width": 354,
+   "height": 32
+  },
+  "role_description": "heading",
+  "AXLabel": "Found a bug?",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 166}, {354, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 166,
+   "x": 24,
+   "width": 354,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "Let us know what happened so we can fix it.",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 348}, {354, 18}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 348,
+   "x": 24,
+   "width": 354,
+   "height": 18
+  },
+  "role_description": "text",
+  "AXLabel": "Reply email",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{25.333333373069763, 379.33333337306976}, {351, 56}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 379.33333337306976,
+   "x": 25.333333373069763,
+   "width": 351,
+   "height": 56
+  },
+  "role_description": "text field",
+  "AXLabel": "Reply email",
+  "content_required": false,
+  "type": "TextField",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "you@example.com",
+  "enabled": true,
+  "role": "AXTextField",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 461}, {354, 18}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 461,
+   "x": 24,
+   "width": 354,
+   "height": 18
+  },
+  "role_description": "text",
+  "AXLabel": "Describe the issue",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{25.333333373069763, 492.33333337306976}, {351, 55.999969482421875}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 492.33333337306976,
+   "x": 25.333333373069763,
+   "width": 351,
+   "height": 55.999969482421875
+  },
+  "role_description": "Group",
+  "AXLabel": "Describe the issue Tell us what went wrong\u2026",
+  "content_required": false,
+  "type": "TextArea",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXTextArea",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{41, 591}, {320, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 591,
+   "x": 41,
+   "width": 320,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "Device info (auto-attached)",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{41, 621}, {320, 18}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 621,
+   "x": 41,
+   "width": 320,
+   "height": 18
+  },
+  "role_description": "text",
+  "AXLabel": "Model: ExcerLock-Next",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{41, 647}, {320, 18}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 647,
+   "x": 41,
+   "width": 320,
+   "height": 18
+  },
+  "role_description": "text",
+  "AXLabel": "System: iOS 26.4.1",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{41, 673}, {320, 18}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 673,
+   "x": 41,
+   "width": 320,
+   "height": 18
+  },
+  "role_description": "text",
+  "AXLabel": "App version: ExcerLock 1.0.0 (1)",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 720}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 720,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Send report",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": false,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 782}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 782,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Email support instead",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ }
+]

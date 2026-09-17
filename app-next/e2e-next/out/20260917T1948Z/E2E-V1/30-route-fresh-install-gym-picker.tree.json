@@ -1,0 +1,278 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": "ExcerLock",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{25, 111}, {352, 382.66665649414062}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 111,
+   "x": 25,
+   "width": 352,
+   "height": 382.6666564941406
+  },
+  "role_description": "image",
+  "AXLabel": "Map",
+  "content_required": false,
+  "type": "Image",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXImage",
+  "subrole": "AXMapArea"
+ },
+ {
+  "AXFrame": "{{95.24929682413736, 472.92642211914062}, {28.57526695728302, 10.740234375}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 472.9264221191406,
+   "x": 95.24929682413736,
+   "width": 28.57526695728302,
+   "height": 10.740234375
+  },
+  "role_description": "link",
+  "AXLabel": "Legal",
+  "content_required": false,
+  "type": "Link",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXLink",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 66}, {354, 32}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 66,
+   "x": 24,
+   "width": 354,
+   "height": 32
+  },
+  "role_description": "heading",
+  "AXLabel": "Pick your gym",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{177, 326.33332824707031}, {48, 18}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 326.3333282470703,
+   "x": 177,
+   "width": 48,
+   "height": 18
+  },
+  "role_description": "text",
+  "AXLabel": "My gym",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{107.33333587646484, 450.66665649414062}, {187.33331298828125, 18}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 450.6666564941406,
+   "x": 107.33333587646484,
+   "width": 187.33331298828125,
+   "height": 18
+  },
+  "role_description": "text",
+  "AXLabel": "Move the map to adjust the pin",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 506.66665649414062}, {354, 56.000030517578125}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 506.6666564941406,
+   "x": 24,
+   "width": 354,
+   "height": 56.000030517578125
+  },
+  "role_description": "button",
+  "AXLabel": "Search for a gym or address",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{32, 574.66665649414062}, {338, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 574.6666564941406,
+   "x": 32,
+   "width": 338,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "Address",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{32, 600.66665649414062}, {338, 18}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 600.6666564941406,
+   "x": 32,
+   "width": 338,
+   "height": 18
+  },
+  "role_description": "text",
+  "AXLabel": "955 W Randolph St, Chicago IL 60607, United States",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{32, 630.66665649414062}, {100.66667175292969, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 630.6666564941406,
+   "x": 32,
+   "width": 100.66667175292969,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "Arrival radius",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{321, 630.66665649414062}, {49, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 630.6666564941406,
+   "x": 321,
+   "width": 49,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "100 m",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{32, 656.66665649414062}, {338, 44}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 656.6666564941406,
+   "x": 32,
+   "width": 338,
+   "height": 44
+  },
+  "role_description": "slider",
+  "AXLabel": "Arrival radius",
+  "content_required": false,
+  "type": "Slider",
+  "title": null,
+  "help": null,
+  "custom_actions": [
+   "increment",
+   "decrement"
+  ],
+  "AXValue": "100",
+  "enabled": true,
+  "role": "AXSlider",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 782}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 782,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Save gym",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ }
+]

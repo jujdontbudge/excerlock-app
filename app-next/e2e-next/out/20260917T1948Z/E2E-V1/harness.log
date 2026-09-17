@@ -1,0 +1,244 @@
+[14:48:47] fixture liveness: {"supabaseUserId": "091b4cf3-1d11-482f-b5b9-8bdd9fdd2c72", "email": "e2e-fixture-20260917t1948z@excerlock.com", "supabaseUserStatus": 200, "grant": {"customerUserId": "091b4cf3-1d11-482f-b5b9-8bdd9fdd2c72", "accessLevelId": "premium", "initialStatus": 200, "action": "kept", "active": true, "expiresAt": "2026-09-20T19:48:06+00:00", "level": {"store": "adapty", "store_product_id": "adapty_server_sid
+[14:48:50] saw "Home"
+[14:48:54] saw "Home"
+[14:48:54] visiting [existing-user] /(tabs)/home
+[14:48:57] [existing-user] /(tabs)/home: rendered=True observed='Conditions'
+[14:49:00] saw "Home"
+[14:49:00] visiting [existing-user] /(tabs)/conditions
+[14:49:03] [existing-user] /(tabs)/conditions: rendered=True observed='Conditions'
+[14:49:06] saw "Home"
+[14:49:06] visiting [existing-user] /(tabs)/analytics
+[14:49:09] [existing-user] /(tabs)/analytics: rendered=True observed='Conditions'
+[14:49:13] saw "Home"
+[14:49:13] visiting [existing-user] /(tabs)/settings
+[14:49:16] [existing-user] /(tabs)/settings: rendered=True observed='Conditions'
+[14:49:19] saw "Home"
+[14:49:19] visiting [existing-user] /builder
+[14:49:23] [existing-user] /builder: rendered=None observed='ExcerLock'
+[14:49:25] saw "Home"
+[14:49:25] visiting [existing-user] /gym-picker
+[14:49:28] [existing-user] /gym-picker: rendered=True observed='ExcerLock'
+[14:49:31] saw "Home"
+[14:49:31] visiting [existing-user] /paywall
+[14:49:34] [existing-user] /paywall: rendered=False observed='ExcerLock'
+[14:49:37] saw "Home"
+[14:49:37] visiting [existing-user] /sign-in
+[14:49:40] [existing-user] /sign-in: rendered=True observed='Save your progress'
+[14:49:44] saw "Home"
+[14:49:44] visiting [existing-user] /settings/account
+[14:49:47] [existing-user] /settings/account: rendered=True observed='ExcerLock'
+[14:49:50] saw "Home"
+[14:49:50] visiting [existing-user] /settings/subscription
+[14:49:53] [existing-user] /settings/subscription: rendered=True observed='ExcerLock'
+[14:49:57] saw "Home"
+[14:49:57] visiting [existing-user] /settings/preferences
+[14:50:00] [existing-user] /settings/preferences: rendered=True observed='ExcerLock'
+[14:50:03] saw "Home"
+[14:50:03] visiting [existing-user] /settings/units
+[14:50:07] [existing-user] /settings/units: rendered=False observed='ExcerLock'
+[14:50:10] saw "Home"
+[14:50:10] visiting [existing-user] /settings/gyms
+[14:50:13] [existing-user] /settings/gyms: rendered=True observed='Find your gym'
+[14:50:18] saw "Home"
+[14:50:18] visiting [existing-user] /settings/bug
+[14:50:21] [existing-user] /settings/bug: rendered=False observed='ExcerLock'
+[14:50:25] saw "Home"
+[14:50:25] visiting [existing-user] /settings/feedback
+[14:50:28] [existing-user] /settings/feedback: rendered=False observed='ExcerLock'
+[14:50:31] saw "Home"
+[14:50:31] visiting [existing-user] /settings/legal
+[14:50:34] [existing-user] /settings/legal: rendered=True observed='ExcerLock'
+[14:50:37] saw "Home"
+[14:50:37] visiting [existing-user] /settings/legal/terms
+[14:50:40] [existing-user] /settings/legal/terms: rendered=True observed='ExcerLock'
+[14:50:44] saw "Home"
+[14:50:44] visiting [existing-user] /settings/legal/privacy
+[14:50:47] [existing-user] /settings/legal/privacy: rendered=True observed='ExcerLock'
+[14:50:50] saw "Home"
+[14:50:50] visiting [existing-user] /settings/permission/screenTime
+[14:50:54] [existing-user] /settings/permission/screenTime: rendered=True observed='Settings'
+[14:50:59] saw "Home"
+[14:50:59] visiting [existing-user] /settings/permission/motion
+[14:51:02] [existing-user] /settings/permission/motion: rendered=True observed='Settings'
+[14:51:06] saw "Home"
+[14:51:06] visiting [existing-user] /settings/permission/location
+[14:51:09] [existing-user] /settings/permission/location: rendered=True observed='Settings'
+[14:51:12] saw "Home"
+[14:51:12] visiting [existing-user] /unlock/gym
+[14:51:15] [existing-user] /unlock/gym: rendered=None observed='Allow “ExcerLock” to use your location?'
+[14:51:16] tapped "Allow While Using App"
+[14:51:16] answered the system prompt with "Allow While Using App"
+[14:51:17] saw "Home"
+[14:51:17] visiting [existing-user] /unlock/treadmill
+[14:51:21] [existing-user] /unlock/treadmill: rendered=False observed='ExcerLock'
+[14:51:24] saw "Home"
+[14:51:24] visiting [existing-user] /setup/X4
+[14:51:27] [existing-user] /setup/X4: rendered=False observed='Conditions'
+[14:51:28] posthog $device_id = 01a0b0e9-8b7e-7d5c-8b02-b1eefb0e7d2d
+[14:51:45] saw "Get started"
+[14:51:46] step 1: O01 — Block apps. Exercise more.
+[14:51:46] tapped "Get started"
+[14:51:47] saw "Block apps. Exercise more."
+[14:51:47] step 2: O02 — Block apps. Exercise more.
+[14:51:47] tapped "Get started"
+[14:51:48] saw "Block apps. Exercise more."
+[14:51:49] step 3: O03 — Block apps. Exercise more.
+[14:51:49] tapped "Get started"
+[14:51:49] saw "What should we call you?"
+[14:51:50] step 4: O04 — What should we call you?
+[14:51:50] typed the first name at O04
+[14:51:51] tapped "Continue"
+[14:51:51] saw "How did you hear about us?"
+[14:51:52] step 5: O05 — How did you hear about us?
+[14:51:52] tapped "YouTube"
+[14:51:52] tapped "Continue"
+[14:51:53] saw "How old are you?"
+[14:51:53] step 6: O06 — How old are you?
+[14:51:54] tapped "25–34"
+[14:51:54] tapped "Continue"
+[14:51:55] saw "What is your goal?"
+[14:51:55] step 7: O08 — What is your goal?
+[14:51:56] tapped "More exercise"
+[14:51:56] tapped "Continue"
+[14:51:57] saw "What’s the main reason you want to make a change?"
+[14:51:57] step 8: O09 — What’s the main reason you want to make a change?
+[14:51:58] tapped "Focus on what matters"
+[14:51:59] tapped "Continue"
+[14:51:59] saw "How many hours do you currently spend scrolling each day?"
+[14:52:00] step 9: O10 — How many hours do you currently spend scrolling each day?
+[14:52:00] tapped "Continue"
+[14:52:01] saw "Here’s some quick math"
+[14:52:01] step 10: O11 — Here’s some quick math
+[14:52:01] O11 is an impact explainer; waiting for its control or the next screen
+[14:52:04] tapped "Continue"
+[14:52:05] step 11: O12 — This is a year in your life
+[14:52:05] O12 is an impact explainer; waiting for its control or the next screen
+[14:52:07] step 12: O13 — This is the free time left
+[14:52:07] O13 is an impact explainer; waiting for its control or the next screen
+[14:52:09] step 13: O14 — This is how much time you spend scrolling
+[14:52:09] O14 is an impact explainer; waiting for its control or the next screen
+[14:52:11] tapped "Continue"
+[14:52:12] step 14: O15 — This is good.
+[14:52:12] tapped "Continue"
+[14:52:13] saw "You’re stuck in a loop"
+[14:52:13] step 15: O16 — You’re stuck in a loop
+[14:52:14] tapped "Continue"
+[14:52:14] saw "We’ll change the loop"
+[14:52:15] step 16: O17 — We’ll change the loop
+[14:52:15] tapped "Continue"
+[14:52:27] none of ['Block apps. Exercise more.', 'Choose your plan', 'Help us make ExcerLock better', 'Here’s some quick math', 'How did you hear about us?', 'How many hours do you currently spend scrolling each day?', 'How old are you?', 'How should walking unlock your apps?', 'How your free trial works', 'Set your walking goal', 'This is a year in your life', 'This is good.', 'This is how much time you spend scrolling', 'This is the free time left', 'Try ExcerLock free', 'Want a trial reminder?', "We'll remind you before it ends", 'We’ll change the loop', 'What exercise should unlock your apps?', 'What is your goal?', 'What should we call you?', 'What’s the main reason you want to make a change?', 'When should blocking be active?', 'Where do you walk?', 'You become', 'Your plan is ready', 'You’re stuck in a loop'] appeared in 12s
+[14:52:28] step 17: O18 — You become
+[14:52:28] tapped "Continue"
+[14:52:29] saw "What exercise should unlock your apps?"
+[14:52:29] step 18: O20 — What exercise should unlock your apps?
+[14:52:29] tapped "Walking"
+[14:52:30] tapped "Continue"
+[14:52:31] saw "Where do you walk?"
+[14:52:31] step 19: W1 — Where do you walk?
+[14:52:31] tapped "Outside"
+[14:52:32] tapped "Continue"
+[14:52:33] saw "How should walking unlock your apps?"
+[14:52:33] step 20: W2 — How should walking unlock your apps?
+[14:52:34] tapped "Reach a step goal"
+[14:52:34] tapped "Continue"
+[14:52:35] saw "Set your walking goal"
+[14:52:35] step 21: W3 — Set your walking goal
+[14:52:35] tapped "Continue"
+[14:52:36] saw "When should blocking be active?"
+[14:52:37] step 22: S1 — When should blocking be active?
+[14:52:37] tapped "Continue"
+[14:52:39] saw "Your plan is ready"
+[14:52:39] step 23: S3 — Your plan is ready
+[14:52:39] tapped "Use this plan"
+[14:52:40] saw "Help us make ExcerLock better"
+[14:52:40] step 24: S4 — Help us make ExcerLock better
+[14:52:41] tapped "Not now"
+[14:52:41] saw "Try ExcerLock free"
+[14:52:42] step 25: T1 — Try ExcerLock free
+[14:52:42] tapped "Continue"
+[14:52:43] saw "We'll remind you before it ends"
+[14:52:43] step 26: T2 — We'll remind you before it ends
+[14:52:43] tapped "Continue"
+[14:52:44] saw "Want a trial reminder?"
+[14:52:44] step 27: T3 — Want a trial reminder?
+[14:52:45] tapped "Enable reminders"
+[14:52:57] none of ['Block apps. Exercise more.', 'Choose your plan', 'Help us make ExcerLock better', 'Here’s some quick math', 'How did you hear about us?', 'How many hours do you currently spend scrolling each day?', 'How old are you?', 'How should walking unlock your apps?', 'How your free trial works', 'Set your walking goal', 'This is a year in your life', 'This is good.', 'This is how much time you spend scrolling', 'This is the free time left', 'Try ExcerLock free', 'Want a trial reminder?', "We'll remind you before it ends", 'We’ll change the loop', 'What exercise should unlock your apps?', 'What is your goal?', 'What should we call you?', 'What’s the main reason you want to make a change?', 'When should blocking be active?', 'Where do you walk?', 'You become', 'Your plan is ready', 'You’re stuck in a loop'] appeared in 12s
+[14:52:58] tapped "Allow"
+[14:52:58] answered the system prompt with "Allow"
+[14:53:00] step 28: T4 — How your free trial works
+[14:53:00] tapped "Continue"
+[14:53:13] none of ['Block apps. Exercise more.', 'Choose your plan', 'Help us make ExcerLock better', 'Here’s some quick math', 'How did you hear about us?', 'How many hours do you currently spend scrolling each day?', 'How old are you?', 'How should walking unlock your apps?', 'How your free trial works', 'Set your walking goal', 'This is a year in your life', 'This is good.', 'This is how much time you spend scrolling', 'This is the free time left', 'Try ExcerLock free', 'Want a trial reminder?', "We'll remind you before it ends", 'We’ll change the loop', 'What exercise should unlock your apps?', 'What is your goal?', 'What should we call you?', 'What’s the main reason you want to make a change?', 'When should blocking be active?', 'Where do you walk?', 'You become', 'Your plan is ready', 'You’re stuck in a loop'] appeared in 12s
+[14:53:13] step 29: P — Choose your plan
+[14:53:17] saw "Choose your plan"
+[14:53:17] visiting [fresh-install] /(tabs)/home
+[14:53:21] [fresh-install] /(tabs)/home: rendered=False observed='Choose your plan'
+[14:53:25] saw "Choose your plan"
+[14:53:25] visiting [fresh-install] /(tabs)/conditions
+[14:53:28] [fresh-install] /(tabs)/conditions: rendered=False observed='Choose your plan'
+[14:53:32] saw "Choose your plan"
+[14:53:32] visiting [fresh-install] /(tabs)/analytics
+[14:53:36] [fresh-install] /(tabs)/analytics: rendered=False observed='Choose your plan'
+[14:53:39] saw "Choose your plan"
+[14:53:39] visiting [fresh-install] /(tabs)/settings
+[14:53:43] [fresh-install] /(tabs)/settings: rendered=False observed='Choose your plan'
+[14:53:47] saw "Choose your plan"
+[14:53:47] visiting [fresh-install] /builder
+[14:53:50] [fresh-install] /builder: rendered=None observed='Choose your plan'
+[14:53:54] saw "Choose your plan"
+[14:53:54] visiting [fresh-install] /gym-picker
+[14:53:57] [fresh-install] /gym-picker: rendered=True observed='ExcerLock'
+[14:54:02] saw "Choose your plan"
+[14:54:02] visiting [fresh-install] /paywall
+[14:54:05] [fresh-install] /paywall: rendered=True observed='Choose your plan'
+[14:54:08] saw "Choose your plan"
+[14:54:08] visiting [fresh-install] /sign-in
+[14:54:12] [fresh-install] /sign-in: rendered=False observed='Choose your plan'
+[14:54:15] saw "Choose your plan"
+[14:54:15] visiting [fresh-install] /settings/account
+[14:54:19] [fresh-install] /settings/account: rendered=False observed='Choose your plan'
+[14:54:22] saw "Choose your plan"
+[14:54:22] visiting [fresh-install] /settings/subscription
+[14:54:26] [fresh-install] /settings/subscription: rendered=False observed='Choose your plan'
+[14:54:30] saw "Choose your plan"
+[14:54:30] visiting [fresh-install] /settings/preferences
+[14:54:34] [fresh-install] /settings/preferences: rendered=False observed='Choose your plan'
+[14:54:37] saw "Choose your plan"
+[14:54:37] visiting [fresh-install] /settings/units
+[14:54:40] [fresh-install] /settings/units: rendered=False observed='Choose your plan'
+[14:54:44] saw "Choose your plan"
+[14:54:44] visiting [fresh-install] /settings/gyms
+[14:54:47] [fresh-install] /settings/gyms: rendered=False observed='Choose your plan'
+[14:54:51] saw "Choose your plan"
+[14:54:51] visiting [fresh-install] /settings/bug
+[14:54:54] [fresh-install] /settings/bug: rendered=False observed='Choose your plan'
+[14:54:58] saw "Choose your plan"
+[14:54:58] visiting [fresh-install] /settings/feedback
+[14:55:01] [fresh-install] /settings/feedback: rendered=False observed='Choose your plan'
+[14:55:04] saw "Choose your plan"
+[14:55:04] visiting [fresh-install] /settings/legal
+[14:55:07] [fresh-install] /settings/legal: rendered=False observed='Choose your plan'
+[14:55:10] saw "Choose your plan"
+[14:55:10] visiting [fresh-install] /settings/legal/terms
+[14:55:13] [fresh-install] /settings/legal/terms: rendered=False observed='Choose your plan'
+[14:55:16] saw "Choose your plan"
+[14:55:16] visiting [fresh-install] /settings/legal/privacy
+[14:55:19] [fresh-install] /settings/legal/privacy: rendered=False observed='Choose your plan'
+[14:55:22] saw "Choose your plan"
+[14:55:22] visiting [fresh-install] /settings/permission/screenTime
+[14:55:25] [fresh-install] /settings/permission/screenTime: rendered=False observed='Choose your plan'
+[14:55:28] saw "Choose your plan"
+[14:55:28] visiting [fresh-install] /settings/permission/motion
+[14:55:31] [fresh-install] /settings/permission/motion: rendered=False observed='Choose your plan'
+[14:55:34] saw "Choose your plan"
+[14:55:34] visiting [fresh-install] /settings/permission/location
+[14:55:37] [fresh-install] /settings/permission/location: rendered=False observed='Choose your plan'
+[14:55:40] saw "Choose your plan"
+[14:55:40] visiting [fresh-install] /unlock/gym
+[14:55:43] [fresh-install] /unlock/gym: rendered=None observed='Choose your plan'
+[14:55:45] saw "Choose your plan"
+[14:55:45] visiting [fresh-install] /unlock/treadmill
+[14:55:48] [fresh-install] /unlock/treadmill: rendered=False observed='Choose your plan'
+[14:55:51] saw "Choose your plan"
+[14:55:51] visiting [fresh-install] /setup/X4
+[14:55:55] [fresh-install] /setup/X4: rendered=False observed='Choose your plan'
+[14:55:55] posthog $device_id = 01a0b0ec-d1e5-7919-ae61-7d0839920075

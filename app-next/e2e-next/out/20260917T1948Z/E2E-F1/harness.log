@@ -1,0 +1,15 @@
+[14:48:11] saw "Get started"
+[14:48:11] tapped "Sign in"
+[14:48:12] saw "Continue with email"
+[14:48:13] tapped "Continue with email"
+[14:48:14] saw "Email address"
+[14:48:17] field holds 'e2e-fixe-20260917t1948z@excerlock.com'; clearing and retyping (attempt 2)
+[14:48:17] clearing field holding 'e2e-fixe-20260917t1948z@excerlock.com'
+[14:48:24] tapped "Send code"
+[14:48:25] saw "Check your email"
+[14:48:26] generate_link(magiclink) -> 200 code
+[14:48:28] tapped "Verify code"
+[14:48:30] tapped "Continue"
+[14:48:31] saw "You're all set"
+[14:48:31] tapped "Go to Home"
+[14:48:32] saw "Home"

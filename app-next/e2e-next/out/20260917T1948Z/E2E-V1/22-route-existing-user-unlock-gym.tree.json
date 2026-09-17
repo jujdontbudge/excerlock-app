@@ -1,0 +1,128 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": " ",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{71, 310}, {260, 42.333333333333314}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 310,
+   "x": 71,
+   "width": 260,
+   "height": 42.333333333333314
+  },
+  "role_description": "text",
+  "AXLabel": "Allow \u201cExcerLock\u201d to use your location?",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{71, 359.66666666666669}, {260, 58}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 359.6666666666667,
+   "x": 71,
+   "width": 260,
+   "height": 58
+  },
+  "role_description": "text",
+  "AXLabel": "Allow ExcerLock to check whether you are at a saved gym and keep a Walk Session active.",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{57, 438}, {288, 48}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 438,
+   "x": 57,
+   "width": 288,
+   "height": 48
+  },
+  "role_description": "button",
+  "AXLabel": "Allow Once",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{57, 494}, {288, 48}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 494,
+   "x": 57,
+   "width": 288,
+   "height": 48
+  },
+  "role_description": "button",
+  "AXLabel": "Allow While Using App",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{57, 550}, {288, 48}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 550,
+   "x": 57,
+   "width": 288,
+   "height": 48
+  },
+  "role_description": "button",
+  "AXLabel": "Don\u2019t Allow",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ }
+]

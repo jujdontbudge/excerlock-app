@@ -1,0 +1,88 @@
+[14:58:34] no existing-user snapshot at /Users/johansardar/.treehouse/excerlock-app-ad0bb5/18/excerlock-app/app-next/e2e-next/fixtures/existing-user
+[14:58:38] saw "Get started"
+[14:58:39] step 1: O01 — Block apps. Exercise more.
+[14:58:39] tapped "Get started"
+[14:58:40] saw "Block apps. Exercise more."
+[14:58:40] step 2: O02 — Block apps. Exercise more.
+[14:58:40] tapped "Get started"
+[14:58:41] saw "Block apps. Exercise more."
+[14:58:41] step 3: O03 — Block apps. Exercise more.
+[14:58:42] tapped "Get started"
+[14:58:42] saw "What should we call you?"
+[14:58:43] step 4: O04 — What should we call you?
+[14:58:43] typed the first name at O04
+[14:58:43] tapped "Continue"
+[14:58:44] saw "How did you hear about us?"
+[14:58:44] step 5: O05 — How did you hear about us?
+[14:58:44] tapped "YouTube"
+[14:58:45] tapped "Continue"
+[14:58:46] saw "How old are you?"
+[14:58:46] step 6: O06 — How old are you?
+[14:58:46] tapped "25–34"
+[14:58:47] tapped "Continue"
+[14:58:48] saw "What is your goal?"
+[14:58:48] step 7: O08 — What is your goal?
+[14:58:49] tapped "More exercise"
+[14:58:49] tapped "Continue"
+[14:58:50] saw "What’s the main reason you want to make a change?"
+[14:58:50] step 8: O09 — What’s the main reason you want to make a change?
+[14:58:51] tapped "Focus on what matters"
+[14:58:51] tapped "Continue"
+[14:58:52] saw "How many hours do you currently spend scrolling each day?"
+[14:58:52] step 9: O10 — How many hours do you currently spend scrolling each day?
+[14:58:52] tapped "Continue"
+[14:58:53] saw "Here’s some quick math"
+[14:58:53] step 10: O11 — Here’s some quick math
+[14:58:53] O11 is an impact explainer; waiting for its control or the next screen
+[14:58:57] tapped "Continue"
+[14:58:57] step 11: O12 — This is a year in your life
+[14:58:57] O12 is an impact explainer; waiting for its control or the next screen
+[14:58:59] step 12: O13 — This is the free time left
+[14:58:59] O13 is an impact explainer; waiting for its control or the next screen
+[14:59:01] step 13: O14 — This is how much time you spend scrolling
+[14:59:01] O14 is an impact explainer; waiting for its control or the next screen
+[14:59:04] tapped "Continue"
+[14:59:05] step 14: O15 — This is good.
+[14:59:06] tapped "Continue"
+[14:59:06] saw "You’re stuck in a loop"
+[14:59:07] step 15: O16 — You’re stuck in a loop
+[14:59:07] tapped "Continue"
+[14:59:07] saw "We’ll change the loop"
+[14:59:08] step 16: O17 — We’ll change the loop
+[14:59:08] tapped "Continue"
+[14:59:21] none of ['Block apps. Exercise more.', 'Choose your plan', 'Help us make ExcerLock better', 'Here’s some quick math', 'How did you hear about us?', 'How many hours do you currently spend scrolling each day?', 'How old are you?', 'How should walking unlock your apps?', 'How your free trial works', 'Set your walking goal', 'This is a year in your life', 'This is good.', 'This is how much time you spend scrolling', 'This is the free time left', 'Try ExcerLock free', 'Want a trial reminder?', "We'll remind you before it ends", 'We’ll change the loop', 'What exercise should unlock your apps?', 'What is your goal?', 'What should we call you?', 'What’s the main reason you want to make a change?', 'When should blocking be active?', 'Where do you walk?', 'You become', 'Your plan is ready', 'You’re stuck in a loop'] appeared in 12s
+[14:59:21] step 17: O18 — You become
+[14:59:21] tapped "Continue"
+[14:59:22] saw "What exercise should unlock your apps?"
+[14:59:22] step 18: O20 — What exercise should unlock your apps?
+[14:59:23] tapped "Walking"
+[14:59:23] tapped "Continue"
+[14:59:24] saw "Where do you walk?"
+[14:59:24] step 19: W1 — Where do you walk?
+[14:59:25] tapped "Outside"
+[14:59:25] tapped "Continue"
+[14:59:26] saw "How should walking unlock your apps?"
+[14:59:26] step 20: W2 — How should walking unlock your apps?
+[14:59:27] tapped "Reach a step goal"
+[14:59:27] tapped "Continue"
+[14:59:28] saw "Set your walking goal"
+[14:59:28] step 21: W3 — Set your walking goal
+[14:59:29] tapped "Continue"
+[14:59:29] saw "When should blocking be active?"
+[14:59:30] step 22: S1 — When should blocking be active?
+[14:59:30] tapped "Continue"
+[14:59:32] saw "Your plan is ready"
+[14:59:32] step 23: S3 — Your plan is ready
+[14:59:33] tapped "Use this plan"
+[14:59:33] saw "Help us make ExcerLock better"
+[14:59:34] step 24: S4 — Help us make ExcerLock better
+[14:59:34] tapped "Not now"
+[14:59:35] saw "Try ExcerLock free"
+[14:59:35] step 25: T1 — Try ExcerLock free
+[14:59:35] tapped "Continue"
+[14:59:36] saw "We'll remind you before it ends"
+[14:59:36] step 26: T2 — We'll remind you before it ends
+[14:59:36] tapped "Continue"
+[14:59:37] saw "Want a trial reminder?"
+[14:59:37] step 27: T3 — Want a trial reminder?
+[14:59:38] tapped "Enable reminders"

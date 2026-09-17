@@ -10,10 +10,12 @@ step identification the walk relies on.
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -173,7 +175,17 @@ class EnvResolution(unittest.TestCase):
 class ScenarioRegistry(unittest.TestCase):
     def test_expected_scenarios_are_registered(self):
         self.assertEqual(set(SCENARIOS),
-                         {'E2E-N1', 'E2E-N4', 'E2E-N4W', 'E2E-E1', 'E2E-V1', 'E2E-S1', 'E2E-A3', 'E2E-A4', 'E2E-E2'})
+                         {'E2E-N1', 'E2E-N4', 'E2E-N4W', 'E2E-E1', 'E2E-V1', 'E2E-S1', 'E2E-A3', 'E2E-A4', 'E2E-E2',
+                          'E2E-F1', 'E2E-F2'})
+
+    def test_fixture_mint_precedes_its_consumers_in_the_all_order(self):
+        from scenarios import SCENARIO_CLASSES
+
+        order = [cls.id for cls in SCENARIO_CLASSES]
+        self.assertLess(order.index('E2E-F1'), order.index('E2E-E1'))
+        self.assertLess(order.index('E2E-F1'), order.index('E2E-V1'))
+        self.assertLess(order.index('E2E-E1'), order.index('E2E-F2'))
+        self.assertEqual(order[-1], 'E2E-F2')
 
     def test_e2_ota_stub_is_blocked_by_design(self):
         scenario = SCENARIOS['E2E-E2']
@@ -183,6 +195,238 @@ class ScenarioRegistry(unittest.TestCase):
     def test_fixtures_are_declared(self):
         for scenario in SCENARIOS.values():
             self.assertIn(scenario.fixture, {'fresh-install', 'existing-user', 'none'})
+
+
+class FixtureContract(unittest.TestCase):
+    @staticmethod
+    def _container(folder: str, stores: dict) -> Path:
+        snapshot = Path(folder) / 'existing-user'
+        storage = snapshot / 'Library' / 'Application Support' / 'RCTAsyncLocalStorage_V1'
+        storage.mkdir(parents=True)
+        manifest = {f'excerlock-next.{name}.v1': json.dumps({'state': {'data': data}, 'version': 0})
+                    for name, data in stores.items()}
+        (storage / 'manifest.json').write_text(json.dumps(manifest))
+        return snapshot
+
+    def test_manifest_scan_reads_setup_and_entitlement_state(self):
+        import fixture
+
+        with tempfile.TemporaryDirectory() as folder:
+            snapshot = self._container(folder, {
+                'onboarding': {'step': 'P', 'setupComplete': True},
+                'entitlement': {'entitlement': {'status': 'active', 'renewsAt': None}},
+            })
+            self.assertIs(fixture.persisted_setup_complete(snapshot)[0], True)
+            self.assertIs(fixture.persisted_entitlement(snapshot)[0], True)
+
+    def test_manifest_scan_rejects_setup_incomplete(self):
+        import fixture
+
+        with tempfile.TemporaryDirectory() as folder:
+            snapshot = self._container(folder, {'onboarding': {'step': 'P', 'setupComplete': False}})
+            found, detail = fixture.persisted_setup_complete(snapshot)
+            self.assertIs(found, False)
+            self.assertIn('False', detail)
+
+    def test_large_values_live_in_the_key_file(self):
+        import hashlib
+
+        import fixture
+
+        with tempfile.TemporaryDirectory() as folder:
+            snapshot = Path(folder) / 'existing-user'
+            storage = snapshot / 'Library' / 'RCTAsyncLocalStorage_V1'
+            storage.mkdir(parents=True)
+            (storage / 'manifest.json').write_text(json.dumps({'excerlock-next.onboarding.v1': None}))
+            (storage / hashlib.md5(b'excerlock-next.onboarding.v1').hexdigest()).write_text(
+                json.dumps({'state': {'data': {'setupComplete': True}}, 'version': 0}))
+            self.assertIs(fixture.persisted_setup_complete(snapshot)[0], True)
+
+    def test_manifest_scan_reports_unknown_for_a_missing_snapshot(self):
+        import fixture
+
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertIsNone(fixture.persisted_setup_complete(Path(folder) / 'nope')[0])
+            missing = Path(folder) / 'existing-user'
+            missing.mkdir()
+            (missing / 'Library').mkdir()
+            self.assertIs(fixture.persisted_setup_complete(missing)[0], False)
+
+    def test_entitlement_scan_does_not_accept_none(self):
+        import fixture
+
+        with tempfile.TemporaryDirectory() as folder:
+            snapshot = self._container(folder, {'entitlement': {'entitlement': {'status': 'none'}}})
+            found, detail = fixture.persisted_entitlement(snapshot)
+            self.assertIs(found, False)
+            self.assertIn('none', detail)
+
+    def test_adapty_grant_readback_semantics(self):
+        import adapty
+
+        server = adapty.AdaptyServer(secret='secret_test', base='https://example.invalid/api/v2/server-side-api')
+        payload = {'data': {'access_levels': [
+            {'access_level_id': 'premium', 'starts_at': '2020-01-01T00:00:00Z',
+             'expires_at': '2030-01-01T00:00:00Z'}]}}
+        self.assertTrue(adapty.AdaptyServer.active(payload))
+        self.assertEqual(adapty.AdaptyServer.access_level(payload)['access_level_id'], 'premium')
+        expired = {'data': {'access_levels': [
+            {'access_level_id': 'premium', 'starts_at': '2020-01-01T00:00:00Z',
+             'expires_at': '2021-01-01T00:00:00Z'}]}}
+        self.assertFalse(adapty.AdaptyServer.active(expired))
+        self.assertFalse(adapty.AdaptyServer.active({'data': {'access_levels': []}}))
+
+    def test_adapty_secret_is_required(self):
+        import adapty
+
+        with unittest.mock.patch.object(adapty, 'env_value', return_value=''):
+            self.assertFalse(adapty.AdaptyServer.configured())
+            with self.assertRaises(adapty.AdaptySecretMissing):
+                adapty.AdaptyServer(secret='')
+
+    def test_adapty_grant_targets_the_documented_endpoint(self):
+        import adapty
+
+        captured = {}
+
+        class Response:
+            status = 200
+
+            def read(self):
+                return b'{"data": {}}'
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        def fake_urlopen(request, timeout=0):
+            captured['request'] = request
+            return Response()
+
+        server = adapty.AdaptyServer(secret='secret_test', base='https://api.adapty.io/api/v2/server-side-api')
+        with unittest.mock.patch.object(adapty.urllib.request, 'urlopen', fake_urlopen):
+            status, _ = server.grant('uid-1', days=3)
+        self.assertEqual(status, 200)
+        request = captured['request']
+        self.assertEqual(request.method, 'POST')
+        self.assertEqual(request.full_url, 'https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/')
+        self.assertEqual(request.get_header('Authorization'), 'Api-Key secret_test')
+        self.assertEqual(request.get_header('Adapty-customer-user-id'), 'uid-1')
+        body = json.loads(request.data.decode())
+        self.assertEqual(body['access_level_id'], 'premium')
+        self.assertIn('expires_at', body)
+
+
+class FieldTypingRepair(unittest.TestCase):
+    """``idb ui text`` is lossy; typing must converge anyway (harness.type_verified)."""
+
+    @staticmethod
+    def _type(text: str, mutations: dict[int, str] | None = None, *, start: str = '') -> tuple[bool, str]:
+        """Run ``type_verified`` against a keyboard that drops/garbles pieces.
+
+        ``mutations`` maps a 1-based ``type_text`` call index to the alteration
+        applied to that piece: 'drop' loses the last character, any other string
+        replaces the last two characters with it (the two observed idb failure
+        shapes).
+        """
+        mutations = mutations or {}
+        ctx = harness.RunContext.__new__(harness.RunContext)
+        ctx.udid = 'test-udid'
+        state = {'value': start, 'calls': 0}
+        ctx.field_value = lambda: state['value']
+        ctx.log = lambda message: None
+
+        def fake_type(piece: str) -> None:
+            state['calls'] += 1
+            mutation = mutations.get(state['calls'])
+            if mutation == 'drop':
+                piece = piece[:-1]
+            elif mutation:
+                piece = piece[:-2] + mutation
+            state['value'] += piece
+
+        ctx.type_text = fake_type
+
+        def fake_shell(command, **kwargs):
+            if isinstance(command, list) and 'key-sequence' in command:
+                delete = sum(1 for part in command if part == '42')
+                state['value'] = state['value'][:max(0, len(state['value']) - delete)]
+
+            class Result:
+                returncode = 0
+                stdout = ''
+
+            return Result()
+
+        with unittest.mock.patch.object(harness, 'shell', fake_shell):
+            ok = ctx.type_verified(text)
+        return ok, state['value']
+
+    def test_dropped_characters_are_retyped(self):
+        email = 'e2e-fixture-20260917t1958z@excerlock.com'
+        ok, value = self._type(email, {1: 'drop', 3: 'drop'})
+        self.assertTrue(ok)
+        self.assertEqual(value, email)
+
+    def test_a_garbled_piece_is_repaired(self):
+        email = 'e2e-fixture-20260917t1958z@excerlock.com'
+        ok, value = self._type(email, {2: 'e-'})
+        self.assertTrue(ok)
+        self.assertEqual(value, email)
+
+    def test_an_overtyped_tail_is_removed(self):
+        ok, value = self._type('e2e-fixture', start='e2e-fixture-oops')
+        self.assertTrue(ok)
+        self.assertEqual(value, 'e2e-fixture')
+
+
+class RouteStateExpectations(unittest.TestCase):
+    def test_fresh_install_renders_only_the_paywall_and_gym_picker(self):
+        from scenarios.v1_screen_sweep import V1ScreenSweep
+
+        self.assertTrue(V1ScreenSweep.expected('/paywall', 'fresh-install', 'Choose your plan'))
+        self.assertTrue(V1ScreenSweep.expected('/gym-picker', 'fresh-install', 'Pick your gym'))
+        self.assertFalse(V1ScreenSweep.expected('/settings/account', 'fresh-install', 'Account'))
+
+    def test_existing_user_renders_the_guarded_routes(self):
+        from scenarios.v1_screen_sweep import V1ScreenSweep
+
+        for route in ('/settings/account', '/settings/bug', '/builder', '/unlock/gym', '/(tabs)/home'):
+            self.assertTrue(V1ScreenSweep.expected(route, 'existing-user', 'x'), route)
+
+    def test_setup_step_is_state_gated_in_both_states(self):
+        from scenarios.v1_screen_sweep import V1ScreenSweep
+
+        self.assertFalse(V1ScreenSweep.expected('/setup/X4', 'fresh-install', 'Save your progress'))
+        self.assertFalse(V1ScreenSweep.expected('/setup/X4', 'existing-user', 'Save your progress'))
+
+    def test_markerless_routes_are_not_judged_by_a_label(self):
+        from scenarios.v1_screen_sweep import V1ScreenSweep
+
+        self.assertIsNone(V1ScreenSweep.expected('/builder', 'fresh-install', ''))
+        # An empty marker must never become a truthy ('' ,) that matches every label.
+        self.assertEqual(V1ScreenSweep.markers(''), ())
+        self.assertEqual(V1ScreenSweep.markers(('Pick your gym', '')), ('Pick your gym',))
+
+    def test_entitled_paywall_is_not_judged_by_its_label(self):
+        from scenarios.v1_screen_sweep import V1ScreenSweep
+
+        # PaywallSlot forwards an entitled profile to Home, so the guarded phase
+        # proves the route through its $screen row, not the on-screen label.
+        self.assertIsNone(V1ScreenSweep.expected('/paywall', 'existing-user', ('Unlock ExcerLock Premium',)))
+        self.assertTrue(V1ScreenSweep.expected('/paywall', 'fresh-install', ('Choose your plan',)))
+
+    def test_expected_screens_cover_the_guarded_route_set(self):
+        from scenarios.v1_screen_sweep import V1ScreenSweep
+
+        guarded = V1ScreenSweep.expected_screens('existing-user')
+        self.assertIn('builder', guarded)
+        self.assertIn('unlock_treadmill', guarded)
+        self.assertIn('settings_legal', guarded)
+        self.assertNotIn('setup', guarded)
+        self.assertEqual(V1ScreenSweep.expected_screens('fresh-install'), ['gym_picker', 'onboarding', 'paywall'])
 
 
 if __name__ == '__main__':

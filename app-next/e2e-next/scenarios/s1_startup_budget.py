@@ -112,9 +112,12 @@ class S1StartupBudget(Scenario):
                       'on TestFlight hardware")',
                       blocked_until='device-lane', evidence=['startup-budget.json'])
         verdict.check('startup.interactive_home_median', None,
-                      'the §6.2 interactive-Home budget additionally needs the existing-user fixture: this '
-                      'run is a fresh install, which boots into onboarding (see E2E-E1 blocker)',
-                      blocked_until='existing-user-fixture', evidence=['startup-budget.json'])
+                      'the §6.2 interactive-Home budget needs launches that land on the fixture Home and the app\'s '
+                      'own os_signpost marks. The fixture side is solved (E2E-F1 mints it; E2E-E1 boots Home from it), '
+                      'but this scenario is a fresh install booting into onboarding and the simulator unified log '
+                      'carries no signpost records on this host, so the budget still belongs to the signpost/device '
+                      'readout (B10, ADR 0021/0033) rather than this SIM run',
+                      blocked_until='device-lane', evidence=['startup-budget.json'])
 
     @staticmethod
     def stage_medians(ctx: RunContext, capture: dict) -> None:

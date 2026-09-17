@@ -674,27 +674,85 @@ class RunContext:
                 return str(node['AXValue'])
         return ''
 
+    def clear_field(self) -> bool:
+        """Empty the focused text field.
+
+        ``idb ui text`` types at the cursor; there is no replace, so a retry
+        after a mangled first attempt would append to the garbage forever.
+        Deliver backspaces (HID keycode 42) in small batches and re-read the
+        field between them: idb drops most of a large key-sequence delivered in
+        one shot, which left the tail of the previous value in place on the
+        2026-09-17T19:34Z mint and made the retype append to it.
+        """
+        value = self.field_value()
+        if not value:
+            return True
+        self.log(f'clearing field holding {value!r}')
+        for _ in range(12):
+            value = self.field_value()
+            if not value:
+                return True
+            shell(['idb', 'ui', 'key-sequence', '--udid', self.udid, *(['42'] * min(len(value) + 2, 6))])
+            time.sleep(0.25)
+        self.log(f'field still holds {self.field_value()!r} after backspaces')
+        return False
+
+    def type_verified(self, text: str, *, chunk: int = 4, steps: int = 60) -> bool:
+        """Type ``text`` into the focused field, repairing lost characters.
+
+        ``idb ui text`` is lossy for longer strings and the software keyboard
+        can swallow characters while it is still processing the previous
+        backspaces (the 2026-09-17T1958Z mint typed 'e2e-fixtur' and the field
+        kept only 'e2e-fixe' on every attempt, so a plain retype never
+        converged). Type in short pieces, re-read the field after each, and
+        when the field diverges from the target, backspace the wrong tail and
+        continue from the divergence.
+        """
+        for _ in range(steps):
+            value = self.field_value()
+            if value == text:
+                return True
+            common = 0
+            for expected, actual in zip(text, value):
+                if expected != actual:
+                    break
+                common += 1
+            if common < min(len(value), len(text)) or len(value) > len(text):
+                # Diverged (or overtyped): remove the wrong tail in small
+                # batches (idb drops most of a large key-sequence), then continue.
+                remove = min(len(value) - common, 6)
+                shell(['idb', 'ui', 'key-sequence', '--udid', self.udid, *(['42'] * remove)])
+                time.sleep(0.3)
+                continue
+            self.type_text(text[len(value):len(value) + chunk])
+            time.sleep(0.3)
+        return self.field_value() == text
+
     def fill_field(self, label: str, text: str) -> bool:
         """Type ``text`` into a field and verify it landed.
 
-        ``idb ui text`` can drop the tail of a longer string, so the harness
-        types in chunks and appends whatever the field is still missing.
+        ``idb ui text`` can drop characters from a longer string, so typing is
+        piecewise and verified (``type_verified``); a field that already holds
+        a prefix of the target only receives the missing tail. A field holding
+        anything else is cleared first — appending to a mangled value never
+        converges.
         """
         self.tap_field(label)
         for attempt in range(4):
             value = self.field_value()
             if value == text:
                 return True
-            if value and text.startswith(value):
-                self.type_text(text[len(value):])
-            elif value:
-                self.log(f'field holds {value!r}; retyping the full value (attempt {attempt + 1})')
-                self.type_text(text)
-            else:
-                for index in range(0, len(text), 10):
-                    self.type_text(text[index:index + 10])
-                    time.sleep(0.25)
-            time.sleep(0.6)
+            if value and not text.startswith(value):
+                self.log(f'field holds {value!r}; clearing and retyping (attempt {attempt + 1})')
+                if not self.clear_field():
+                    # Never type on top of a half-cleared value; refocus and
+                    # give the next pass another chance at the backspaces.
+                    self.tap_field(label)
+                    continue
+                time.sleep(0.6)  # the keyboard swallows keys right after backspaces
+            if self.type_verified(text):
+                return True
+            time.sleep(0.3)
         landed = self.field_value() == text
         self.log(f'field value after typing: {self.field_value()!r} (wanted {text!r})')
         return landed
@@ -1000,13 +1058,24 @@ class Scenario:
             if not ctx.restore_container('existing-user'):
                 ctx.verdict.block(
                     'existing-user fixture unavailable: no app-container snapshot at '
-                    f'{FIXTURES / "existing-user"}. Minting it requires a setup-complete profile, which on the '
-                    'simulator requires an Adapty entitlement that only a sandbox purchase can create '
-                    '(plan §7.3 SBX lane / §8.1); run the SBX lane first or pass --capture-fixture.'
+                    f'{FIXTURES / "existing-user"}. Mint it with the E2E-F1 scenario, which grants premium through '
+                    'Adapty\'s server-side API instead of purchasing (see the README\'s existing-user fixture '
+                    'section); the snapshot alone is not enough — its Supabase session lives in the device '
+                    'keychain and its entitlement in Adapty, and E2E-F2 revokes both.'
                 )
                 ctx.fixture_info = {'kind': 'existing-user', 'detail': 'missing snapshot'}
                 return False
             ctx.fixture_info = {'kind': 'existing-user', 'detail': 'app-container snapshot restored'}
+            # The snapshot is a container only: the Supabase session lives in the
+            # device keychain and the entitlement is a real Adapty access level.
+            # Re-assert the captured grant (idempotent) so a fixture minted on an
+            # earlier day still carries a live entitlement; never a gate.
+            try:
+                import fixture as fixture_module  # noqa: PLC0415 - avoids harness -> adapty import cycle
+
+                ctx.fixture_info['profile'] = fixture_module.ensure_live(ctx)
+            except Exception as error:  # noqa: BLE001 - liveness evidence only
+                ctx.fixture_info['profile'] = {'ok': None, 'reason': f'liveness check failed: {error}'}
             return True
         ctx.fixture_info = {'kind': 'none'}
         return True
