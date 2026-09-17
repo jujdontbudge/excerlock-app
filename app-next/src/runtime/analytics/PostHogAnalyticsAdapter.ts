@@ -192,7 +192,7 @@ export function createPostHogAnalyticsAdapter(options: {
 
 export type FlagName = 'paywall_variant' | 'signInRequired' | 'review_preset';
 /** Payload flags carry remote configuration, never experiment exposure events. */
-const allowedPayloadFlags = { shield_copy: true, onboarding_variant: true } as const;
+const allowedPayloadFlags = { shield_copy: true, onboarding_variant: true, stride_gate_config: true } as const;
 export type PayloadFlagName = keyof typeof allowedPayloadFlags;
 export type PaywallVariant = 'control' | 'variant_b';
 const allowedFlags: Record<FlagName, readonly (string | boolean)[]> = { paywall_variant: ['control', 'variant_b'], signInRequired: [false, true], review_preset: [false, true] };

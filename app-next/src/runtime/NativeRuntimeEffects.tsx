@@ -128,6 +128,26 @@ export function NativeRuntimeEffects() {
   }, [runtime]);
 
   useEffect(() => {
+    const sync = () => {
+      // Resolves, clamps and applies the whole `stride_gate_config` payload: a
+      // rejected or absent payload leaves the shipped gate running, and the
+      // kill switch inside a payload drops the raw-stream leg.
+      void runtime.strideGate?.sync();
+    };
+    // Same rail convention as the shield copy: cold start counts as a
+    // foreground pass, and every return to the foreground re-reads the flag,
+    // so a published change applies without an app update. The SDK's own flag
+    // fetch lands asynchronously, so a change published while the app was open
+    // applies on the pass after that fetch settles, at the latest the next
+    // foreground.
+    sync();
+    const foreground = AppState.addEventListener('change', (state) => {
+      if (state === 'active') sync();
+    });
+    return () => foreground.remove();
+  }, [runtime]);
+
+  useEffect(() => {
     if (!navigation?.key) return;
     let mounted = true;
     const handled = new Set<string>();

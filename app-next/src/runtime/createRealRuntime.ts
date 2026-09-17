@@ -12,6 +12,7 @@ import { hydrateProductionStores } from './hydrateProductionStores';
 // production Supabase/Adapty graph.
 import { createClientServices } from '@client-services';
 import { createNativeDetection } from './detection/createNativeDetection';
+import { createStrideGateConfigPort } from './detection/createStrideGateConfigPort';
 import { NativeWalkingPort } from './detection/NativeWalkingPort';
 import { createNativeGymPort } from './detection/NativeGymPort';
 import { createNativeClockPort } from './NativeClockPort';
@@ -94,13 +95,27 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     return cleanupResult;
   };
   try {
+    const userWalkingGraceMs = () => settingsStore.getState().data.stopGrace * 1000;
+    // The PostHog flag rail is bound to the analytics client, which is created
+    // below; the port reads through this late binding so `wakeContext` and the
+    // walking port can ask for the effective grace from the first wake.
+    let readStrideGatePayload: (() => Promise<unknown>) | null = null;
+    const strideGate = createStrideGateConfigPort({
+      readPayload: () => readStrideGatePayload?.() ?? Promise.resolve(undefined),
+      apply: (report) => detection.motion.applyStrideGateConfig(report),
+      reportError: options.reportError,
+    });
+    // The rail is read by `NativeRuntimeEffects` on mount and on every foreground
+    // (the shield-copy convention): the port resolves and clamps the payload
+    // before the adapter sees it, and a rejected payload applies the shipped gate.
+    const walkingGraceMs = () => strideGate.walkingGraceMs(userWalkingGraceMs());
     const wakeContext = () => {
       const now = clock.readNow(),
         timezone = clock.timezone();
       return {
         timezone,
         dayStart: Date.parse(localDayStart(dayKey(now, timezone), timezone)),
-        walkingGraceMs: settingsStore.getState().data.stopGrace * 1000,
+        walkingGraceMs: walkingGraceMs(),
         generation: detectionStore.getState().data.generation,
       };
     };
@@ -119,7 +134,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       service: detection.service,
       motion: detection.motion,
       placement: detection.placement,
-      walkingGraceMs: () => settingsStore.getState().data.stopGrace * 1000,
+      walkingGraceMs,
       resolveRuleId: () =>
         rulesStore
           .getState()
@@ -178,6 +193,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       },
     });
     cleanups.push(() => client.dispose());
+    readStrideGatePayload = () => client.analytics.flags.getPayload('stride_gate_config');
     // Remote shield copy: the PostHog payload is validated and written to the
     // App Group on every foreground once flags settle. The writer owns the
     // native call so a malformed payload can never reach the shared store.
@@ -554,6 +570,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       signInRequired: client.signInRequired,
       onboardingFlow: client.onboardingFlow,
       shieldCopy,
+      strideGate,
       notifications: { ...client.notifications, request: () => safety.prompt(() => client.notifications.request()) },
       dataExport: { requestShare: (payload) => safety.prompt(() => client.dataExport.requestShare(payload)) },
       // No rules-sync endpoint exists yet. Never acknowledge imaginary cloud writes.

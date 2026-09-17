@@ -125,6 +125,25 @@ const FLAG_CONSUMERS: readonly FlagConsumer[] = [
       },
     ],
   },
+  {
+    flag: "stride_gate_config",
+    read: { file: COMPOSITION, contains: "getPayload('stride_gate_config')" },
+    wired: { file: COMPOSITION, contains: "createStrideGateConfigPort(" },
+    consumers: [
+      {
+        file: "app-next/src/runtime/NativeRuntimeEffects.tsx",
+        contains: "runtime.strideGate?.sync()",
+      },
+      {
+        file: COMPOSITION,
+        contains: "detection.motion.applyStrideGateConfig(report)",
+      },
+      {
+        file: "app-next/src/runtime/detection/MotionAdapter.ts",
+        contains: "applyStrideGateConfig(report: StrideGateReport): void",
+      },
+    ],
+  },
 ];
 
 function assertSite(site: Site, label: string): void {

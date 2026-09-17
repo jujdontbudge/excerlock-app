@@ -15,6 +15,7 @@ import { ExportPort } from '../ports/ExportPort';
 import { RuntimeStatusPort } from '../ports/RuntimeStatusPort';
 import { ReviewPresetPort } from '../ports/ReviewPresetPort';
 import { ShieldCopyPort } from '../ports/ShieldCopyPort';
+import type { StrideGateConfigPort } from './detection/createStrideGateConfigPort';
 import type { OnboardingFlowPort } from '../onboarding/flowOrder';
 import type { PaywallExperimentPort, SignInRequiredPort } from './analytics/PostHogAnalyticsAdapter';
 export type Runtime = {
@@ -42,6 +43,13 @@ export type Runtime = {
   onboardingFlow?: OnboardingFlowPort;
   /** Remote shield copy rail; absent means no payload flag consumer is wired. */
   shieldCopy?: ShieldCopyPort;
+  /**
+   * Remote stride-gate configuration rail (`stride_gate_config`); absent means
+   * no payload flag consumer is wired and the adapter runs the shipped gate.
+   * `report()` is the effective configuration: source, flag key, kill switch,
+   * and every parameter as evaluated versus applied.
+   */
+  strideGate?: StrideGateConfigPort;
   /** Live production safety; absent means unknown, never safe by default. */
   safety?: () => { permissionPromptPending: boolean; cameraActive: boolean };
   /** Simulation-only surface. Real runtimes do not implement it. */

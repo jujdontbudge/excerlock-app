@@ -207,3 +207,23 @@ test('a missing shield copy port is inert', async () => {
   await act(async () => mockAppStateListeners.forEach((listener) => listener('active')));
   expect(mockReport).not.toHaveBeenCalled();
 });
+
+test('re-reads the remote stride-gate configuration on mount and every foreground', async () => {
+  const sync = jest.fn(async () => ({}));
+  const setup = runtime({ strideGate: { sync } });
+  mockRuntime = setup.value;
+  await render(<NativeRuntimeEffects />);
+  expect(sync).toHaveBeenCalledTimes(1);
+  await act(async () => mockAppStateListeners.forEach((listener) => listener('background')));
+  expect(sync).toHaveBeenCalledTimes(1);
+  await act(async () => mockAppStateListeners.forEach((listener) => listener('active')));
+  expect(sync).toHaveBeenCalledTimes(2);
+});
+
+test('a missing stride-gate port is inert', async () => {
+  const setup = runtime();
+  mockRuntime = setup.value;
+  await render(<NativeRuntimeEffects />);
+  await act(async () => mockAppStateListeners.forEach((listener) => listener('active')));
+  expect(mockReport).not.toHaveBeenCalled();
+});
