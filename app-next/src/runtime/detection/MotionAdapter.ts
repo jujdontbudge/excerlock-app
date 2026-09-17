@@ -45,6 +45,8 @@ export type MotionEvidence = {
   /** Raw-stream stride verdict at this reconciliation (`unknown` without a raw stream). */
   stride: StrideVerdict;
   strideAt: number | null;
+  /** Continuously verified walking behind a `walking` stride verdict, ms (0 otherwise). */
+  verifiedMs: number;
 };
 
 /** Fuses raw sources once. It never converts historical steps into live relief. */
@@ -127,8 +129,8 @@ export class MotionAdapter {
     // The cadence leg alone released relief on a seated shake (gate-proof-s1
     // §5.1); it now needs the pedometer's counter to be accruing and the raw
     // stream, when it is watching, to not contradict it now or within the
-    // last STRIDE_PENALTY_MS. Apple's activity classifier remains an
-    // independent leg.
+    // last STRIDE_PENALTY_MS. Apple's activity classifier and the raw stride
+    // verdict remain independent legs.
     const cadenceQualifies =
       cadencePerMinute !== null &&
       cadencePerMinute >= MIN_WALKING_CADENCE_PER_MINUTE &&
@@ -136,6 +138,7 @@ export class MotionAdapter {
       stride.verdict !== 'notStride' &&
       stride.verdict !== 'still' &&
       !stride.recentVeto;
+    const strideWalking = stride.verdict === 'walking';
     const supported = activityFresh || cadenceFresh || stride.verdict !== 'unknown';
     const activityAt = activityFresh ? this.activity!.receivedAt : null;
     const cadenceAt = cadenceFresh ? this.cadence!.asOf : null;
@@ -143,13 +146,14 @@ export class MotionAdapter {
     // not move the silence/grace anchor for the Apple sources.
     const strideAt = stride.verdict === 'unknown' ? null : stride.at;
     return {
-      qualifying: !supported ? 'unknown' : activityQualifies || cadenceQualifies,
+      qualifying: !supported ? 'unknown' : activityQualifies || cadenceQualifies || strideWalking,
       observedAt: supported ? Math.max(activityAt ?? -Infinity, cadenceAt ?? -Infinity, strideAt ?? -Infinity) : at,
       activityAt,
       cadenceAt,
       cadencePerMinute,
       stride: stride.verdict,
       strideAt,
+      verifiedMs: strideWalking && stride.since !== null && stride.at !== null ? Math.max(0, stride.at - stride.since) : 0,
     };
   }
 

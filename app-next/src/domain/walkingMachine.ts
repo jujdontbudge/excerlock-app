@@ -29,7 +29,18 @@ export type WalkingState = {
 };
 export type WalkingEvent =
   | { kind: 'tick' }
-  | { kind: 'evidence'; at: number; qualifying: boolean | 'unknown' };
+  | {
+      kind: 'evidence';
+      at: number;
+      qualifying: boolean | 'unknown';
+      /**
+       * Milliseconds of continuously verified walking already behind this
+       * observation (the raw stride path measures a multi-second window before
+       * it publishes). The 3 s qualifier is satisfied by that measurement
+       * instead of by waiting; clamped to WALK_QUALIFY_MS. Apple evidence omits it.
+       */
+      verifiedMs?: number;
+    };
 function validTime(time: number): void {
   if (!Number.isFinite(time) || !Number.isFinite(new Date(time).getTime())) throw new Error('Invalid walking timestamp');
 }
@@ -81,6 +92,8 @@ export function reduceWalking(previous: WalkingState, event: WalkingEvent, now: 
   if (event.kind === 'evidence') {
     validTime(event.at);
     if (event.at > now) throw new Error('Walking evidence is in the future');
+    const verifiedMs = event.verifiedMs ?? 0;
+    if (!Number.isFinite(verifiedMs) || verifiedMs < 0) throw new Error('Invalid verified walking span');
     const positive = event.qualifying === true;
     // Negative dominates contradictory observations at one timestamp. Duplicates
     // never reset verification/grace. Late history cannot revive live relief.
@@ -91,8 +104,11 @@ export function reduceWalking(previous: WalkingState, event: WalkingEvent, now: 
       state.lastEvidenceAt = event.at;
       state.lastQualifying = positive;
       if (positive) {
+        const qualifyingSince = event.at - Math.min(verifiedMs, WALK_QUALIFY_MS);
         if (state.phase === 'inactive') {
-          state.phase = 'verifying'; state.qualifyingSince = event.at;
+          state.phase = 'verifying'; state.qualifyingSince = qualifyingSince;
+        } else if (state.phase === 'verifying' && state.qualifyingSince !== null && qualifyingSince < state.qualifyingSince) {
+          state.qualifyingSince = qualifyingSince;
         } else if (state.phase === 'grace') {
           state.phase = 'active'; state.qualifyingSince = event.at; state.graceEndsAt = null;
         }
