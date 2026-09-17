@@ -1,9 +1,11 @@
 import { ExpoLocationClient, type ExpoLocationModule } from "../ExpoLocationClient";
 import { LocationTaskRuntime } from "../LocationTaskRuntime";
+import { NativeLocationProvider } from "../NativeLocationProvider";
 import {
   GEOFENCE_TASK_NAME,
   WALK_LOCATION_TASK_NAME,
 } from "../locationTaskNames";
+import { AwakeSession } from "../../../../runtime/detection/AwakeSession";
 
 describe("ExpoLocationClient", () => {
   it("hydrates persisted native permission and Walk task state", async () => {
@@ -67,10 +69,11 @@ describe("ExpoLocationClient", () => {
     expect(expo.startLocationUpdatesAsync).toHaveBeenCalledWith(
       WALK_LOCATION_TASK_NAME,
       {
-        accuracy: "high",
-        activityType: "fitness",
+        accuracy: "low",
+        activityType: "other",
+        distanceInterval: 500,
         pausesUpdatesAutomatically: false,
-        showsBackgroundLocationIndicator: true,
+        showsBackgroundLocationIndicator: false,
       },
     );
     expect(client.isLocationUpdatesActive()).toBe(true);
@@ -80,6 +83,38 @@ describe("ExpoLocationClient", () => {
       WALK_LOCATION_TASK_NAME,
     );
     expect(client.isLocationUpdatesActive()).toBe(false);
+  });
+
+  it("scopes coarse accuracy and the hidden indicator to the lock window only", async () => {
+    const expo = new RecordingExpoLocationModule();
+    expo.hasStartedLocationUpdatesAsync.mockResolvedValue(false);
+    const client = createClient(expo);
+    const provider = new NativeLocationProvider(client);
+    const session = new AwakeSession(provider);
+
+    // The runtime re-reads the OS grant before reconciling a window.
+    await expect(provider.refreshAuthorization()).resolves.toBe("authorizedAlways");
+
+    // Lock window active (shield or live-walking relief): coarse keep-alive.
+    await session.reconcile(true);
+    expect(expo.startLocationUpdatesAsync).toHaveBeenCalledWith(
+      WALK_LOCATION_TASK_NAME,
+      {
+        accuracy: "low",
+        activityType: "other",
+        distanceInterval: 500,
+        pausesUpdatesAutomatically: false,
+        showsBackgroundLocationIndicator: false,
+      },
+    );
+
+    // Outside the window the keep-alive stops, and the foreground fix keeps the
+    // app's current high accuracy for gym save/check-in.
+    await session.reconcile(false);
+    expect(expo.stopLocationUpdatesAsync).toHaveBeenCalledWith(WALK_LOCATION_TASK_NAME);
+    const foreground = jest.spyOn(expo, "getCurrentPositionAsync");
+    await provider.locateForGymSetup();
+    expect(foreground).toHaveBeenCalledWith({ accuracy: "high" });
   });
 
   it("skips stopping an absent geofence task and rechecks on repeated stops", async () => {
@@ -208,8 +243,8 @@ function createClient(expo: ExpoLocationModule) {
 }
 
 class RecordingExpoLocationModule implements ExpoLocationModule {
-  public readonly Accuracy = { High: "high" } as const;
-  public readonly ActivityType = { Fitness: "fitness" } as const;
+  public readonly Accuracy = { High: "high", Low: "low" } as const;
+  public readonly ActivityType = { Other: "other" } as const;
   public readonly startGeofencingAsync = jest.fn(async () => undefined);
   public readonly hasStartedGeofencingAsync = jest.fn(async () => false);
   public readonly stopGeofencingAsync = jest.fn(async () => undefined);
@@ -230,9 +265,7 @@ class RecordingExpoLocationModule implements ExpoLocationModule {
     };
   }
 
-  public async hasStartedLocationUpdatesAsync() {
-    return true;
-  }
+  public readonly hasStartedLocationUpdatesAsync = jest.fn(async () => true);
 
   public async requestForegroundPermissionsAsync() {
     return {

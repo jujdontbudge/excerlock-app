@@ -3,6 +3,13 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  ExpoLocationClient,
+  type ExpoLocationModule,
+} from "../src/engine/signals/location/ExpoLocationClient";
+import { LocationTaskRuntime } from "../src/engine/signals/location/LocationTaskRuntime";
+import { WALK_LOCATION_TASK_NAME } from "../src/engine/signals/location/locationTaskNames";
+
 const appNextRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const MAIN_KEYS = [
@@ -41,6 +48,109 @@ function need(path: string, why: string): string {
     );
   }
   return readFileSync(path, "utf8");
+}
+
+function locationTaskRuntime(): LocationTaskRuntime {
+  return new LocationTaskRuntime({
+    append: async () => undefined,
+    readAll: async () => [],
+  });
+}
+
+/**
+ * The blue background-location pill is chosen at runtime, so it cannot be
+ * asserted from the generated ios/ project. Pin the shipping adapter itself:
+ * the lock-window keep-alive must ask Expo for the hidden indicator and for
+ * coarse accuracy, while the foreground fix keeps high accuracy
+ * (ADR 0036; decision recorded from the blue-arrow investigation report).
+ */
+describe("walk keep-alive background-location guardrail (runtime options, not generated ios/)", () => {
+  it("keeps the indicator off and coarse accuracy on the keep-alive start", async () => {
+    const record = recordingExpoLocationModule();
+    const client = new ExpoLocationClient(record.module, locationTaskRuntime());
+
+    await client.startLocationUpdates();
+
+    expect(record.startCalls).toEqual([
+      {
+        taskName: WALK_LOCATION_TASK_NAME,
+        options: {
+          accuracy: "low",
+          activityType: "other",
+          distanceInterval: 500,
+          pausesUpdatesAutomatically: false,
+          showsBackgroundLocationIndicator: false,
+        },
+      },
+    ]);
+  });
+
+  it("stops the keep-alive outside the window and keeps foreground fixes high accuracy", async () => {
+    const record = recordingExpoLocationModule();
+    const client = new ExpoLocationClient(record.module, locationTaskRuntime());
+
+    await client.startLocationUpdates();
+    await client.stopLocationUpdates();
+    await client.getCurrentLocation();
+
+    expect(record.stopCalls).toEqual([WALK_LOCATION_TASK_NAME]);
+    expect(record.foregroundCalls).toEqual([{ accuracy: "high" }]);
+    // No start option may ever request the blue indicator.
+    expect(
+      record.startCalls.every(
+        ({ options }) => options.showsBackgroundLocationIndicator === false,
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps the location background mode and Always plugin flag the keep-alive needs", () => {
+    const nativeSource = readFileSync(
+      join(appNextRoot, "config", "native.ts"),
+      "utf8",
+    );
+    // Read from the config source, not the generated ios/ project: the keep-alive
+    // cannot run at all without the `location` background mode or the Always
+    // capability, and production loses residency entirely without either (#140).
+    expect(nativeSource).toMatch(/UIBackgroundModes:\s*\["location",\s*"fetch"\]/);
+    expect(nativeSource).toContain("isIosBackgroundLocationEnabled: true");
+  });
+});
+
+type KeepAliveStartCall = {
+  taskName: string;
+  options: Record<string, unknown>;
+};
+
+function recordingExpoLocationModule(): {
+  module: ExpoLocationModule;
+  startCalls: KeepAliveStartCall[];
+  stopCalls: string[];
+  foregroundCalls: { accuracy: unknown }[];
+} {
+  const startCalls: KeepAliveStartCall[] = [];
+  const stopCalls: string[] = [];
+  const foregroundCalls: { accuracy: unknown }[] = [];
+  const module = {
+    Accuracy: { High: "high", Low: "low" },
+    ActivityType: { Other: "other" },
+    startLocationUpdatesAsync: async (
+      taskName: string,
+      options: Record<string, unknown>,
+    ) => {
+      startCalls.push({ taskName, options });
+    },
+    stopLocationUpdatesAsync: async (taskName: string) => {
+      stopCalls.push(taskName);
+    },
+    getCurrentPositionAsync: async (options: { accuracy: unknown }) => {
+      foregroundCalls.push(options);
+      return {
+        coords: { latitude: 40.741, longitude: -73.989, accuracy: 8 },
+        timestamp: 2_000,
+      };
+    },
+  } as unknown as ExpoLocationModule;
+  return { module, startCalls, stopCalls, foregroundCalls };
 }
 
 describe("T01 entitlements guardrail (generated ios/, not config source)", () => {
