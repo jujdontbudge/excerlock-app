@@ -408,9 +408,6 @@ class _OfflineFallbackScenario(Scenario):
                 f'launch and then denies every Adapty endpoint.'
             )
             verdict.check('paywall.fallback_title', None, blocker, blocked_until=OFFLINE_IDENTITY_BLOCKER)
-            verdict.check('paywall.fallback_body', None,
-                          'same offline-first-launch identity gate as paywall.fallback_title',
-                          blocked_until=OFFLINE_IDENTITY_BLOCKER)
             verdict.check('paywall.fallback_plans', None,
                           'same offline-first-launch identity gate as paywall.fallback_title',
                           blocked_until=OFFLINE_IDENTITY_BLOCKER)
@@ -421,9 +418,14 @@ class _OfflineFallbackScenario(Scenario):
                       f'(observed {title!r}; load-error state {error!r})' if title else
                       f'the fallback title {FALLBACK_TITLE!r} is not on screen; load-error state {error!r}; '
                       f'labels: {json.dumps(labels[:12])}')
-        verdict.check('paywall.fallback_body', bool(body),
-                      f'the paywall renders the export body copy ({FALLBACK_BODY_FRAGMENT!r})' if body else
-                      'the export body copy is not on screen')
+        # The shipping paywall draws the remote-config title and its own benefit
+        # bullets (PaywallScreen.tsx renders `paywall.title`; nothing renders
+        # `paywall.body`), so the export's body copy is pinned by the unit test
+        # (`adaptyFallback.test.ts`) and recorded here instead of asserted as UI
+        # the design never draws.
+        ctx.note(f'export body copy {FALLBACK_BODY_FRAGMENT!r}: '
+                 + ('on screen' if body else 'not rendered by the paywall design; the title and the plans identify '
+                    'the fallback'))
         # Two rows and prices prove the fallback flow's products reached the
         # surface; a single row means StoreKit resolved partially, which is the
         # known simulator binding gap N1 also reports rather than a B3 failure.
