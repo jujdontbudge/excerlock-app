@@ -170,13 +170,29 @@ def _companion_alive(companion: str | None) -> bool:
         return False
 
 
+def _running_companion(udid: str) -> str:
+    """Address of an already-running companion for this device (idb_companion
+    binds a TCP port and refuses to start twice for the same device)."""
+    pids = shell(['pgrep', '-f', f'idb_companion --udid {udid}'], check=False).stdout.split()
+    for pid in pids:
+        listing = shell(['lsof', '-p', pid, '-a', '-iTCP', '-sTCP:LISTEN', '-P', '-n'], check=False).stdout
+        for line in listing.splitlines()[1:]:
+            match = re.search(r':(\d+)\s', line)
+            if match:
+                candidate = f'localhost:{match.group(1)}'
+                if _companion_alive(candidate):
+                    return candidate
+    return ''
+
+
 def ensure_companion(udid: str, log_dir: Path) -> str:
     """Make ``idb`` reachable for the pinned device; returns the companion address.
 
     ``idb_companion`` on this host binds TCP and only publishes the gRPC port on
     its stdout, while the ``idb`` client defaults to a unix socket. The harness
-    therefore starts the companion itself and exports ``IDB_COMPANION`` for every
-    child process (``app-next/scripts/sim.py`` included).
+    therefore discovers or starts the companion itself and exports
+    ``IDB_COMPANION`` for every child process (``app-next/scripts/sim.py``
+    included).
     """
     if _companion_alive(None):
         os.environ.pop('IDB_COMPANION', None)
@@ -190,6 +206,12 @@ def ensure_companion(udid: str, log_dir: Path) -> str:
         if companion and _companion_alive(companion):
             os.environ['IDB_COMPANION'] = companion
             return companion
+    running = _running_companion(udid)
+    if running:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps({'companion': running, 'udid': udid, 'source': 'existing-process'}) + '\n')
+        os.environ['IDB_COMPANION'] = running
+        return running
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / f'companion-{udid}.log'
     handle = log_path.open('w')
@@ -702,11 +724,42 @@ class RunContext:
         self.log('posthog $device_id not found in app storage')
         return ''
 
-    def flush_analytics(self, seconds: float = 6.0) -> None:
-        """Give the SDK a chance to flush (backgrounding flushes queues)."""
-        shell(['xcrun', 'simctl', 'spawn', self.udid, 'launchctl', 'kill', 'SIGSTOP', 'x'], check=False)
-        self.terminate()
+    def flush_analytics(self, seconds: float = 8.0) -> None:
+        """Force an analytics flush: backgrounding the app flushes the SDK queues.
+
+        The SDK flushes on the AppState 'background' transition, so the harness
+        opens another app (Settings) and waits, instead of killing the process
+        (which would drop the in-flight queue).
+        """
+        shell(['xcrun', 'simctl', 'launch', self.udid, 'com.apple.Preferences'], check=False)
         time.sleep(seconds)
+
+    def boot_failure(self) -> str:
+        """The app's own boot-gate failure copy, when the runtime could not start."""
+        for label in self.labels():
+            if 'could not finish starting' in label or 'could not start' in label:
+                return label
+        return ''
+
+    def wait_for_app(self, labels: Iterable[str], timeout: float = 60.0) -> str | None:
+        """Wait for one of ``labels``; fail the verdict when the boot gate errors out."""
+        wanted = {label.replace('\u00a0', ' ') for label in labels}
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            seen = set(self.labels())
+            for label in wanted:
+                if label in seen:
+                    self.log(f'saw "{label}"')
+                    return label
+            failure = self.boot_failure()
+            if failure:
+                self.screenshot('boot-failure')
+                self.verdict.fail(f'the app boot gate failed: {failure!r}')
+                self.log(f'boot gate failed: {failure}')
+                return None
+            time.sleep(0.25)
+        self.log(f'none of {sorted(wanted)} appeared in {timeout}s')
+        return None
 
 
 # --------------------------------------------------------------------------- #

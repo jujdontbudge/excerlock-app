@@ -55,7 +55,7 @@ class V1ScreenSweep(Scenario):
         since = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time() - 30))
         ctx.terminate()
         ctx.launch()
-        if not ctx.wait_for('Get started', 90):
+        if not ctx.wait_for_app(['Get started'], 90):
             verdict.block('fresh install never reached O01; the sweep cannot start')
             return
         visited: list[dict] = []

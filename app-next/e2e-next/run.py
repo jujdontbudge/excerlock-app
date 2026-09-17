@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build as build_module  # noqa: E402
 import harness  # noqa: E402
 from harness import BLOCKED, FAIL, PASS, OUT, RunContext, detect_capabilities, pinned_udid  # noqa: E402
-from scenarios import SCENARIOS  # noqa: E402
+from scenarios import SCENARIOS, SCENARIO_CLASSES  # noqa: E402
 
 
 def ensure_booted(udid: str) -> None:
@@ -93,7 +93,8 @@ def main() -> int:
             print(f'{scenario.id}\t{scenario.lane}\t{scenario.users}\t{scenario.fixture}\t{scenario.title}')
         return 0
 
-    selected = list(SCENARIOS.values()) if args.all else [SCENARIOS[key] for key in args.scenarios]
+    selected = ([cls() for cls in SCENARIO_CLASSES] if args.all
+                else [SCENARIOS[key]() for key in args.scenarios])
     if not selected:
         parser.error('no scenario selected (use --all, --list, or scenario ids)')
 

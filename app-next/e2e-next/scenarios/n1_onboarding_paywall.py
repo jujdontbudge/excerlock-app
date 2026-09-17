@@ -25,7 +25,7 @@ class N1OnboardingPaywall(Scenario):
         with ctx.recording('E2E-N1-onboarding'):
             launch_seconds = ctx.launch()
             ctx.log(f'simctl launch returned in {launch_seconds:.2f}s')
-            reached = ctx.wait_for('Get started', 90)
+            reached = ctx.wait_for_app(['Get started'], 90)
             verdict.check('onboarding.first_screen', reached, 'fresh install boots into O01 of real onboarding')
             if not reached:
                 verdict.block('fresh install never reached O01; see screenshots/recording in this directory')

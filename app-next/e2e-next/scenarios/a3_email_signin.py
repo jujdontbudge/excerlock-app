@@ -84,7 +84,7 @@ class A3EmailSignIn(Scenario):
         try:
             ctx.terminate()
             ctx.launch()
-            if not ctx.wait_for('Get started', 90):
+            if not ctx.wait_for_app(['Get started'], 90):
                 verdict.block('fresh install never reached O01; the sign-in sheet is unreachable')
                 return False
             with ctx.recording('E2E-A3-email-signin'):
