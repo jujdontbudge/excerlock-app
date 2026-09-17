@@ -134,6 +134,7 @@ with the inspected contract text instead of a bare failure. Current map (plan §
 | ID | Fixture | What it drives | Assertions | State in this worktree |
 |---|---|---|---|---|
 | `E2E-N1` | fresh install | real onboarding O01→P, paywall | full walk observed step by step; paywall renders; live products; CTA; `$screen` per step; `paywall_viewed`; startup first-frame budget | walk, live products, CTA, `paywall_viewed` and `$screen` PASS; **O01 emits no `$screen` row** (the one app gap); startup budget BLOCKED (device lane) |
+| `E2E-N4` | fresh install | online profile warm-up, then a launch with every Adapty endpoint denied (`/etc/hosts` → `0.0.0.0`), onboarding O01→P | Adapty profile existed and no placement was cached before the offline launch; endpoints verified unreachable; offline walk reaches the paywall; the export's remote-config title/body and its annual+monthly Premium A plans render; denial still holds after the walk; `/etc/hosts` restored byte-for-byte | catalogued by the B3 follow-up |
 | `E2E-E1` | existing user | relaunch, no paywall, Home | boot destination; `$screen home`; interactive-Home budget | BLOCKED-until the entitled existing-user fixture (see gap below) |
 | `E2E-V1` | fresh install | every production route (onboarding steps + deep links) | one `$screen` row per visited route; route-coverage table | onboarding sweep + `$screen` rows PASS; 20 guarded routes BLOCKED-until the fixture |
 | `E2E-S1` | fresh install | 10 cold launches, launch timing | medians vs §6.2 (first frame ≤1.5 s, interactive Home ≤2.5 s) | coarse launch→surface measured; §6.2 budgets BLOCKED-until the device lane (ADR 0021/0033) and the Home budget until the fixture; xctrace stage export unavailable on Xcode 26.4 |
@@ -247,6 +248,23 @@ lag).
   and a miss after both is reported BLOCKED-until-ingestion, never as an app
   failure — except where the app-side proof is independent (A3 asserts the
   persisted distinct id locally).
+* **The simulator has no per-device network switch; N4 denies the Adapty hosts
+  in `/etc/hosts` for the launch under test.** Every default-cluster endpoint
+  (`api.adapty.io`, `fallback.adapty.io`, `configs-cdn.adapty.io`,
+  `api-ua.adapty.io`) is mapped to `0.0.0.0`, the denial is verified through the
+  system resolver and a direct HTTPS connect before and after the walk, and the
+  file is restored byte-for-byte in a `finally`. This is a host-wide lever that
+  lasts only for the scenario; run it when no sibling E2E lane is mid-run.
+* **A first-ever offline launch cannot render the paywall, fallback or not.**
+  AdaptySDK-iOS 4.0.2's `activate`/`identify` create the profile with
+  `createNewProfileOnServer`, which retries every 100 ms until the network
+  answers; the app's identity spine awaits `identify`, so `loadPaywall`'s
+  canonical-identity gate never opens. N4 therefore establishes the live profile
+  with one online launch that never opens the paywall (verified against the
+  app's own `AdaptySDK_Purchaser_Info` / `AdaptySDK_Cached_Flow` UserDefaults),
+  then runs the launch under test with Adapty denied and proves the bundled file
+  is what renders. The first-launch-offline case is a separate, pre-existing
+  identity-spine limitation, reported here rather than fixed by this scenario.
 
 ## Fixture policy and the SIM-lane fixture gap
 

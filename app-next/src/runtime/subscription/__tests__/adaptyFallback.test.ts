@@ -14,14 +14,19 @@ type FallbackFile = {
   data: Record<
     string,
     {
-      meta: { placement: Record<string, unknown> };
+      meta: { placement: { developer_id: string; audience_name?: string } };
       data: {
         variation_id: string;
+        variation_name: string;
         weight: number;
         flow_id: string;
         flow_name: string;
         remote_configs: { lang: string; data: string }[];
-        variations: { paywall_id: string; products: { vendor_product_id: string; access_level_id: string; product_type: string }[] }[];
+        variations: {
+          paywall_id: string;
+          placement_id: string;
+          products: { vendor_product_id: string; access_level_id: string; product_type: string; title?: string }[];
+        }[];
       }[];
     }
   >;
@@ -122,8 +127,8 @@ test('a load failure with the fallback registered still yields a purchasable pay
   const { adapter } = setupFallbackSdk();
   await adapter.identify('uid');
   const paywall = await adapter.loadPaywall('onboarding');
-  expect(paywall.title).toBe('Choose your plan');
-  expect(paywall.body).toBe('Build a healthier relationship with your phone.');
+  expect(paywall.title).toBe('Unlock ExcerLock Premium');
+  expect(paywall.body).toBe('Your apps stay locked until you move. Pick a plan to start.');
   expect(paywall.flowVariationId).toBe(fallback.data.onboarding!.data[0]!.variation_id);
   expect(paywall.products.map((product) => [product.vendorProductId, product.localizedPrice, product.recommended])).toEqual([
     ['com.johansardar.excerlock.premium.a.annual', '$59.99', true],
@@ -162,8 +167,89 @@ describe('the committed asset is an SDK 4 fallback file', () => {
 
   it('covers every placement the client requests', () => {
     const requested: readonly SubscriptionPaywall['placement'][] = ['onboarding', 'in_app', 'winback'];
-    expect(fallback.meta.developer_ids).toEqual(requested);
+    // The dashboard writes its own order (`in_app`, `onboarding`, `winback`), so
+    // compare as a set instead of pinning an order the export does not promise.
+    expect([...fallback.meta.developer_ids].sort()).toEqual([...requested].sort());
     for (const placement of requested) expect(fallback.data[placement]?.meta.placement.developer_id).toBe(placement);
+  });
+
+  // Exact ids from the 2026-09-17 dashboard export; a refresh replaces these
+  // numbers (see README.md) and this table with it.
+  const dashboardPlacements: Record<
+    SubscriptionPaywall['placement'],
+    { placementId: string; paywallId: string; flowName: string; title: string; body: string; recommendedProductId: string }
+  > = {
+    in_app: {
+      placementId: 'beb86e0e-63a6-40c3-ab65-100b157b8de6',
+      paywallId: 'f3933bd1-d481-4359-a336-2fb11e35a04c',
+      flowName: 'Premium A',
+      title: 'Unlock ExcerLock Premium',
+      body: 'Your apps stay locked until you move. Pick a plan to start.',
+      recommendedProductId: 'com.johansardar.excerlock.premium.a.annual',
+    },
+    onboarding: {
+      placementId: '29524927-9f2f-4dc0-a56a-ce59c6876c4b',
+      paywallId: 'f3933bd1-d481-4359-a336-2fb11e35a04c',
+      flowName: 'Premium A',
+      title: 'Unlock ExcerLock Premium',
+      body: 'Your apps stay locked until you move. Pick a plan to start.',
+      recommendedProductId: 'com.johansardar.excerlock.premium.a.annual',
+    },
+    winback: {
+      placementId: '55351edf-8467-4d8a-8780-d9731151f05e',
+      paywallId: '14ae444b-4d90-4b27-b853-52eafdb66318',
+      flowName: 'Win-back A',
+      title: 'Come back to ExcerLock Premium',
+      body: 'Your special return offer. Your apps stay locked until you move.',
+      recommendedProductId: 'com.johansardar.excerlock.premium.a.winback.annual',
+    },
+  };
+
+  it('carries the dashboard export placement ids, flows and paywalls', () => {
+    for (const [placement, expected] of Object.entries(dashboardPlacements)) {
+      const entry = fallback.data[placement]!;
+      const item = entry.data[0]!;
+      const paywall = item.variations[0]!;
+      expect({ placement: entry.meta.placement.developer_id, id: paywall.placement_id }).toEqual({
+        placement,
+        id: expected.placementId,
+      });
+      expect(item.flow_name).toBe(expected.flowName);
+      expect(paywall.paywall_id).toBe(expected.paywallId);
+    }
+  });
+
+  it('embeds the live remote config for every placement', () => {
+    for (const [placement, expected] of Object.entries(dashboardPlacements)) {
+      const configs = fallback.data[placement]!.data[0]!.remote_configs;
+      expect(`${placement} remote_configs: ${configs.length}`).toBe(`${placement} remote_configs: 1`);
+      expect(configs[0]!.lang).toBe('en');
+      expect(JSON.parse(configs[0]!.data)).toEqual({
+        title: expected.title,
+        body: expected.body,
+        recommendedProductId: expected.recommendedProductId,
+      });
+    }
+  });
+
+  it('uses the real dashboard vendor product ids per placement', () => {
+    const expected: Record<SubscriptionPaywall['placement'], string[]> = {
+      in_app: [
+        'com.johansardar.excerlock.premium.a.annual',
+        'com.johansardar.excerlock.premium.a.monthly',
+      ],
+      onboarding: [
+        'com.johansardar.excerlock.premium.a.annual',
+        'com.johansardar.excerlock.premium.a.monthly',
+      ],
+      winback: ['com.johansardar.excerlock.premium.a.winback.annual'],
+    };
+    for (const [placement, vendorIds] of Object.entries(expected)) {
+      const products = fallback.data[placement]!.data[0]!.variations[0]!.products;
+      expect(products.map((product) => product.vendor_product_id)).toEqual(vendorIds);
+      // The remote config recommends a plan this same placement actually carries.
+      expect(vendorIds).toContain(dashboardPlacements[placement as SubscriptionPaywall['placement']].recommendedProductId);
+    }
   });
 
   it('carries flow, paywall and product references the SDK can resolve', () => {

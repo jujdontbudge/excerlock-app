@@ -6,6 +6,7 @@ from .a4_delete_account import A4DeleteAccount
 from .e1_existing_user_home import E1ExistingUserHome
 from .e2_ota_stub import E2OtaReceiptStub
 from .n1_onboarding_paywall import N1OnboardingPaywall
+from .n4_offline_fallback import N4OfflineFallbackPaywall
 from .s1_startup_budget import S1StartupBudget
 from .v1_screen_sweep import V1ScreenSweep
 
@@ -17,6 +18,7 @@ SCENARIO_CLASSES = (
     A3EmailSignIn,
     A4DeleteAccount,
     E2OtaReceiptStub,
+    N4OfflineFallbackPaywall,
 )
 
 SCENARIOS = {scenario.id: scenario for scenario in SCENARIO_CLASSES}

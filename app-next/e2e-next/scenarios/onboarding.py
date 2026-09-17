@@ -48,6 +48,15 @@ SCREENS: list[tuple[str, str, str]] = [
     ('P', 'Choose your plan', ''),
 ]
 
+#: Paywall headlines the app can legitimately render. The online placement and
+#: the bundled fallback (B3) both carry the dashboard's remote config copy, so
+#: the offline paywall says "Unlock ExcerLock Premium" instead of the generic
+#: content-default headline. Identification must accept either.
+PAYWALL_TITLES = ('Choose your plan', 'Unlock ExcerLock Premium')
+
+#: Steps whose title is one of several legitimate headlines.
+TITLE_ALIASES: dict[str, tuple[str, ...]] = {'P': PAYWALL_TITLES}
+
 #: Preferred choice per step (plan's walking path).
 PREFERRED_CHOICE = {
     'O05': 'Friend',
@@ -74,6 +83,11 @@ DEFAULT_ADVANCE = ('Continue', 'Get started', 'Use this plan', 'Not now', 'Enabl
 AUTO_ADVANCE = ('O11', 'O12', 'O13', 'O14')
 
 
+def _step_titles(step: str, title: str) -> list[str]:
+    """Every headline this step may render, normalised for label matching."""
+    return [normalise(alias).replace('’', "'") for alias in TITLE_ALIASES.get(step, (title,))]
+
+
 def normalise(text: str) -> str:
     return (text or '').replace('\u00a0', ' ').replace('’', "'").strip()
 
@@ -87,16 +101,14 @@ def identify(labels: list[str], seen: Sequence[str] = ()) -> tuple[str, str]:
     """
     haystack = [normalise(label).replace('’', "'") for label in labels]
     for step, title, body in SCREENS:
-        title_n = normalise(title).replace('’', "'")
-        if not any(title_n in label for label in haystack):
+        if not any(title_n in label for title_n in _step_titles(step, title) for label in haystack):
             continue
         if body and any(normalise(body).replace('’', "'") in label for label in haystack):
             return step, title
     for step, title, body in SCREENS:
         if step in seen:
             continue
-        title_n = normalise(title).replace('’', "'")
-        if any(title_n in label for label in haystack):
+        if any(title_n in label for title_n in _step_titles(step, title) for label in haystack):
             return step, title
     return '', ''
 
@@ -170,7 +182,8 @@ class OnboardingWalk:
                 time.sleep(1.5)
             observation = self.observe()
             if not observation['step']:
-                if observation['prices'] or any('Choose your plan' in label for label in observation['labels']):
+                if observation['prices'] or any(title in label for title in PAYWALL_TITLES
+                                                for label in observation['labels']):
                     observation['step'] = 'P'
                     observation['title'] = 'Choose your plan'
                 else:
