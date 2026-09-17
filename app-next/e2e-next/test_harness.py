@@ -173,7 +173,7 @@ class EnvResolution(unittest.TestCase):
 class ScenarioRegistry(unittest.TestCase):
     def test_expected_scenarios_are_registered(self):
         self.assertEqual(set(SCENARIOS),
-                         {'E2E-N1', 'E2E-N4', 'E2E-E1', 'E2E-V1', 'E2E-S1', 'E2E-A3', 'E2E-A4', 'E2E-E2'})
+                         {'E2E-N1', 'E2E-N4', 'E2E-N4W', 'E2E-E1', 'E2E-V1', 'E2E-S1', 'E2E-A3', 'E2E-A4', 'E2E-E2'})
 
     def test_e2_ota_stub_is_blocked_by_design(self):
         scenario = SCENARIOS['E2E-E2']
