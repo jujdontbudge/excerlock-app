@@ -1,7 +1,11 @@
 import type { EmptyProps, EventSpecMap } from '../types'
 
-/** Onboarding hard paywall vs any later in-app surface (shared vocabulary, D-props). */
-export type PaywallPlacement = 'onboarding' | 'in_app'
+/**
+ * Onboarding hard paywall, any later in-app surface, or the discounted win-back
+ * offer fired by the onboarding decline and by a lapsed entitlement on return
+ * (shared vocabulary, D-props).
+ */
+export type PaywallPlacement = 'onboarding' | 'in_app' | 'winback'
 
 /** The three paywall operations the client reports failures for. */
 export type PaywallOperation = 'load' | 'purchase' | 'restore'

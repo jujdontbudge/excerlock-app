@@ -33,8 +33,10 @@ import { unlockKind } from '../unlock/entry';
 import { UnlockEntry } from '../unlock/UnlockEntry';
 import { WalkingCheckButton } from './WalkingCheckButton';
 import { useInteractiveHomeMarker } from '../../runtime/startup/useInteractiveHomeMarker';
+import { useLapsedWinbackOffer } from '../subscription/useLapsedWinbackOffer';
 export function HomeScreen() {
   useDemoProgress();
+  useLapsedWinbackOffer();
   const runtime = useRuntime(),
     router = useRouter(),
     homeClock = useHomeClock(),

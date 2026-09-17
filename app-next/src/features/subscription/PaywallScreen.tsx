@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
-import { ChoiceRow, CloseButton, Heading, Label, PrimaryButton, ScreenShell } from '../../design-system';
+import { ChoiceRow, CloseButton, Heading, Label, PrimaryButton, ScreenShell, SecondaryButton } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { Icon } from '../../icons/Icon';
 import { Reveal } from '../../motion/Reveal';
@@ -19,6 +19,7 @@ export function PaywallScreen({
   reportError,
   variantKey = 'control',
   onClose,
+  onDecline,
   onLoaded,
 }: {
   placement: SubscriptionPaywall['placement'];
@@ -26,6 +27,11 @@ export function PaywallScreen({
   /** B7 UI variation; `control` leaves the remote catalog order in charge. */
   variantKey?: PaywallVariant;
   onClose?: () => void;
+  /**
+   * The onboarding hard wall cannot be closed, so the slot supplies an explicit
+   * decline here; it hands the user the win-back offer instead of leaving.
+   */
+  onDecline?: () => void;
   /** Reports the mounted placement so the slot can expose the variant it rendered. */
   onLoaded?: (paywall: SubscriptionPaywall) => void;
 }) {
@@ -134,10 +140,16 @@ export function PaywallScreen({
             disabled={!product || busy === 'restore' || busy === 'load'}
             onPress={() => void purchase()}
           />
+          {/* The onboarding decline is a quiet outlined button under the CTA, never
+              orange text, and disabled while a store call is in flight. */}
+          {onDecline ? (
+            <SecondaryButton label={subscriptionCopy.decline} disabled={busy !== null} onPress={onDecline} />
+          ) : null}
           {/* One quiet row of legal links under the button, as every reference paywall does. */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: t.space.lg }}>
             <Label
               accessibilityRole="button"
+              accessibilityLabel="Restore purchases"
               accessibilityState={{ disabled: busy !== null }}
               onPress={() => {
                 if (busy === null) void restore();
@@ -148,6 +160,7 @@ export function PaywallScreen({
             <Label style={{ ...w.type.legal, color: t.text.muted }}>·</Label>
             <Label
               accessibilityRole="button"
+              accessibilityLabel="Terms of Use"
               onPress={() => void Linking.openURL(TERMS_URL)}
               style={{ ...w.type.legal, color: t.text.muted }}>
               Terms of Use
@@ -155,6 +168,7 @@ export function PaywallScreen({
             <Label style={{ ...w.type.legal, color: t.text.muted }}>·</Label>
             <Label
               accessibilityRole="button"
+              accessibilityLabel="Privacy Policy"
               onPress={() => void Linking.openURL(PRIVACY_URL)}
               style={{ ...w.type.legal, color: t.text.muted }}>
               Privacy Policy

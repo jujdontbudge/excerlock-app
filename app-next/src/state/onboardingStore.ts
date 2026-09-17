@@ -8,6 +8,8 @@ export type OnboardingState = {
   complete: boolean;
   setupStep: string;
   setupComplete: boolean;
+  /** The onboarding hard paywall's one-per-install "Not now" decline was used. */
+  winbackDeclined: boolean;
 };
 const step = isOnboardingStepId;
 const answers = (value: unknown) =>
@@ -15,12 +17,13 @@ const answers = (value: unknown) =>
   Object.values(value).every((x) => v.text(x) || v.number(0, 30000)(x) || v.bool(x) || v.array(v.number(0, 6))(x));
 export const onboardingStore = createPersistedStore<OnboardingState>(
   'onboarding',
-  { step: 'O01', answers: {}, complete: false, setupStep: 'X1', setupComplete: false },
+  { step: 'O01', answers: {}, complete: false, setupStep: 'X1', setupComplete: false, winbackDeclined: false },
   {
     step,
     answers,
     complete: v.bool,
     setupStep: (value) => typeof value === 'string' && /^(X[1-6]|done)$/.test(value),
     setupComplete: v.bool,
+    winbackDeclined: v.bool,
   },
 );

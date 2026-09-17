@@ -30,6 +30,7 @@ export const subscriptionCopy = {
   ],
   start: 'Start free trial',
   continue: 'Continue',
+  decline: 'Not now',
   restore: 'Restore purchases',
   terms:
     'Subscriptions renew automatically unless canceled. Manage or cancel your subscription in your App Store account.',
