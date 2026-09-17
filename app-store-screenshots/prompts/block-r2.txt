@@ -1,0 +1,9 @@
+Redraw this App Store marketing screenshot in a playful, fun, modern cartoon style (like the "Unrot" App Store set): flat vector illustration, everything softly rounded, no thin strokes, no black outlines, soft tinted shadows. Keep the composition and layout of the reference image, same portrait canvas.
+
+Canvas: full-bleed flat warm orange (#F2792C) background. In the bottom third, a flat-vector illustrated park scene in warm orange/peach/cream tones with rounded hills, simple trees and a couple of puffy clouds — cute, minimal, no faces.
+
+Top: the headline exactly "Block apps. Scroll less. Exercise more." in a heavy rounded geometric sans, white, three lines, centered. No subline.
+
+Middle: a large white rounded slab (very large corner radius, no bezel, no Dynamic Island, no status bar, no home bar), upright, its bottom edge bleeding off / fading into the orange background. Inside the slab: a loose 4-column grid of real recognizable social app icons in their real colors — X, Instagram, YouTube, TikTok, Snapchat, Tinder, LinkedIn, Twitch, Reddit, Facebook, Netflix, Apple TV — big rounded-square icons, some cropped by the slab edges. Under the grid the text exactly "Choose apps to block" in near-black. Below it three white rounded chips reading exactly "Social", "Video", "Games", slightly scattered/rotated. At the bottom of the slab a big orange rounded pill button reading exactly "Block apps" with a small white padlock icon, slightly tilted, casting a soft shadow.
+
+Text colors: white on orange, near-black on white. No orange text. All text crisp and readable, exact spelling. No footnote text.
