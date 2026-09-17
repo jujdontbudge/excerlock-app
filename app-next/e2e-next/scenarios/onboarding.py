@@ -12,7 +12,8 @@ Step ids and titles come from `app-next/src/content/onboarding.ts`,
 from __future__ import annotations
 
 import re
-from typing import Any
+import time
+from typing import Any, Sequence
 
 # (step, title, body-fragment) in flow order for the walking branch
 SCREENS: list[tuple[str, str, str]] = [
@@ -68,21 +69,35 @@ ADVANCE_LABEL = {
 
 DEFAULT_ADVANCE = ('Continue', 'Get started', 'Use this plan', 'Not now', 'Enable reminders')
 
+#: Explainer screens advance themselves through useImpactPlayback; the shell
+#: renders a spacer instead of a continue button for these steps.
+AUTO_ADVANCE = ('O11', 'O12', 'O13', 'O14')
+
 
 def normalise(text: str) -> str:
     return (text or '').replace('\u00a0', ' ').replace('’', "'").strip()
 
 
-def identify(labels: list[str]) -> tuple[str, str]:
-    """Map the current screen's labels to a (step, title) pair."""
-    haystack = [normalise(label) for label in labels]
+def identify(labels: list[str], seen: Sequence[str] = ()) -> tuple[str, str]:
+    """Map the current screen's labels to a (step, title) pair.
+
+    Titles are unique per step except for the three welcome pages (O01–O03) and
+    some steps render no body copy, so matching is: title+body, then title-only
+    in flow order skipping steps already visited in this walk.
+    """
+    haystack = [normalise(label).replace('’', "'") for label in labels]
     for step, title, body in SCREENS:
         title_n = normalise(title).replace('’', "'")
         if not any(title_n in label for label in haystack):
             continue
-        if body and not any(normalise(body).replace('’', "'") in label for label in haystack):
+        if body and any(normalise(body).replace('’', "'") in label for label in haystack):
+            return step, title
+    for step, title, body in SCREENS:
+        if step in seen:
             continue
-        return step, title
+        title_n = normalise(title).replace('’', "'")
+        if any(title_n in label for label in haystack):
+            return step, title
     return '', ''
 
 
@@ -97,7 +112,8 @@ class OnboardingWalk:
     def observe(self) -> dict[str, Any]:
         nodes = self.ctx.tree()
         labels = [normalise(node.get('AXLabel') or '') for node in nodes]
-        step, title = identify(labels)
+        seen = [item['step'] for item in self.visited]
+        step, title = identify(labels, seen)
         return {
             'step': step,
             'title': title,
@@ -106,6 +122,11 @@ class OnboardingWalk:
             'fields': [n for n in nodes if n.get('type') in {'TextField', 'TextArea', 'SecureTextField'}],
             'buttons': {normalise(n.get('AXLabel') or ''): bool(n.get('enabled', True))
                         for n in nodes if n.get('type') == 'Button'},
+            # Some design-system buttons surface as GenericElement rather than
+            # Button (e.g. the impact screens' Continue), so advance decisions
+            # read every labelled control.
+            'controls': {normalise(n.get('AXLabel') or ''): bool(n.get('enabled', True))
+                         for n in nodes if n.get('AXLabel')},
             'choices': [normalise(n.get('AXLabel') or '') for n in self.ctx.choices()],
             'prices': sorted({match for label in labels for match in re.findall(r'\$\s?\d+(?:\.\d{2})?', label)}),
         }
@@ -128,23 +149,25 @@ class OnboardingWalk:
             ctx.tap(first)
         # 3. advance control
         label = ADVANCE_LABEL.get(step)
-        if label and label in observation['buttons']:
+        if label and label in observation['controls']:
             return ctx.tap(label)
         for candidate in DEFAULT_ADVANCE:
-            if candidate in observation['buttons']:
+            if candidate in observation['controls']:
                 return ctx.tap(candidate)
-        ctx.log(f'no advance control found at {step or "unknown step"}: {sorted(observation["buttons"])}')
+        ctx.log(f'no advance control found at {step or "unknown step"}: {sorted(observation["controls"])}')
         return False
 
     def _advance_disabled(self, observation: dict[str, Any]) -> bool:
         for candidate in DEFAULT_ADVANCE:
-            if candidate in observation['buttons']:
-                return not observation['buttons'][candidate]
+            if candidate in observation['controls']:
+                return not observation['controls'][candidate]
         return True
 
     def run(self, *, max_steps: int = 40, stop_at: str = 'P') -> dict[str, Any]:
         ctx = self.ctx
         for index in range(1, max_steps + 1):
+            if self.ctx.answer_system_prompt():
+                time.sleep(1.5)
             observation = self.observe()
             if not observation['step']:
                 if observation['prices'] or any('Choose your plan' in label for label in observation['labels']):
@@ -162,9 +185,40 @@ class OnboardingWalk:
                 ctx.screenshot(f'{index:02d}-{observation["step"]}', shrink=True)
             if observation['step'] == stop_at:
                 break
+            if observation['step'] in AUTO_ADVANCE:
+                # O11/O14 reveal their Continue control after the impact timing;
+                # O12/O13 advance themselves (useImpactPlayback). Poll for either.
+                ctx.log(f'{observation["step"]} is an impact explainer; waiting for its control or the next screen')
+                deadline = time.monotonic() + 30
+                advanced = False
+                while time.monotonic() < deadline:
+                    time.sleep(1.2)
+                    nxt = self.observe()
+                    if self.ctx.answer_system_prompt():
+                        continue
+                    if nxt['step'] and nxt['step'] != observation['step']:
+                        advanced = True
+                        break
+                    if any(button in nxt['controls'] for button in ('Continue', 'Get started')):
+                        advanced = self.advance(nxt)
+                        break
+                if not advanced:
+                    self.stuck.append(f'{observation["step"]}: explainer never advanced')
+                    break
+                continue
             if not self.advance(observation):
-                self.stuck.append(f'{observation["step"]}: no advance control')
-                break
+                # Animated explainer screens (O11-O15, O16-O18) reveal their
+                # control after the motion finishes; re-observe before giving up.
+                advanced = False
+                for _ in range(6):
+                    time.sleep(2.0)
+                    retry = self.observe()
+                    if retry['controls'] and self.advance(retry):
+                        advanced = True
+                        break
+                if not advanced:
+                    self.stuck.append(f'{observation["step"]}: no advance control')
+                    break
             ctx.wait_for_any([title for _, title, _ in SCREENS], timeout=12)
         return {'visited': self.visited, 'stuck': self.stuck,
                 'steps': [item['step'] for item in self.visited]}

@@ -21,10 +21,34 @@ class A3EmailSignIn(Scenario):
     def run(self, ctx: RunContext) -> None:
         verdict = ctx.verdict
         since = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time() - 30))
-        email = f'e2e-a3-{ctx.run_id.lower()}@example.com'.replace('_', '-')
+        # The project's verified sending domain (Resend: sending enabled, receiving
+        # disabled) — the app must really send, and the code is minted server-side,
+        # so nothing has to be deliverable. example.com is rejected by the mail
+        # provider and makes Supabase answer 500.
+        email = f'e2e-a3-{ctx.run_id.lower()}@excerlock.com'.replace('_', '-')
         ctx.note(f'disposable identity: {email}')
         admin = SupabaseAdmin()
-        if not self.drive_signin(ctx, admin, email):
+        # Lane selection (recorded in the verdict): a fresh install signs in from
+        # an anonymous identity, so the app calls updateUser({email}) and expects
+        # an email_change code. Supabase's admin generate_link refuses both
+        # email_change_* types for that pending change ("email_exists", 422), so
+        # the harness pre-creates the account and uses the returning-account
+        # recovery lane, which mints a magiclink code the app accepts with
+        # verifyOtp({type:'email'}) — the same identity spine (plan §5).
+        lane = 'recovery'
+        precreated = admin.request('POST', '/auth/v1/admin/users',
+                                   {'email': email, 'email_confirm': True,
+                                    'password': f'E2e!{ctx.run_id}'})
+        if precreated[0] >= 300 and 'already' not in json.dumps(precreated[1]).lower():
+            verdict.check('signin.identity_lane', None,
+                          f'could not pre-create the disposable identity ({precreated[0]}): {precreated[1]}',
+                          blocked_until='supabase-admin')
+            return
+        ctx.note(f'sign-in lane: {lane} (pre-created account, admin-minted magiclink code)')
+        verdict.check('signin.identity_lane', True,
+                      'recovery lane: the disposable account is pre-created and the code is minted '
+                      'server-side with the service key (plan §5)')
+        if not self.drive_signin(ctx, admin, email, lane):
             return
 
         # -- identity spine -------------------------------------------------- #
@@ -48,22 +72,36 @@ class A3EmailSignIn(Scenario):
 
         device_id = ctx.posthog_device_id(timeout=45)
         verdict.check('analytics.device_id', bool(device_id), f'run-scoped $device_id: {device_id!r}')
-        ctx.flush_analytics(4)
-        rows, identified, waited = posthog.wait_for_query(
-            'select event, timestamp, distinct_id, properties.$screen_name as screen_name '
-            f"from events where timestamp > toDateTime('{since}') and distinct_id = '{uid}' "
-            'order by timestamp asc limit 200',
-            lambda rows: bool(rows), timeout=60)
-        ctx.posthog_trace.append({'query': f'events for distinct_id {uid}', 'rows': len(rows),
-                                  'waitedSeconds': round(waited, 1),
-                                  'events': sorted({str(row.get('event')) for row in rows})})
-        verdict.check('spine.posthog_identify', identified,
-                      f'{len(rows)} PostHog rows carry the canonical distinct_id {uid} '
-                      f'(events: {sorted({str(row.get("event")) for row in rows})}) after {waited:.0f}s')
+        # PostHog attributes the $identify event to the previous distinct id, so
+        # the spine proof is: the app persisted the canonical UID as its distinct
+        # id, and PostHog knows a person for it.
+        identified = ctx.identity.get('posthogDistinctId') == uid
+        verdict.check('spine.analytics_identify', identified,
+                      f"the app's persisted PostHog distinct_id is {ctx.identity.get('posthogDistinctId')!r} "
+                      f'(canonical Supabase UID {uid})')
+        ctx.flush_analytics(6)
+        # The plan's chain: PostHog receives the identify under the canonical UID.
+        # identify-driven ingestion lags longer than the near-real-time screen
+        # events, so this assertion polls up to 180 s and records the real wait.
+        rows, identified_remote, waited = posthog.wait_for_query(
+            'select event, timestamp, distinct_id from events '
+            f"where timestamp > toDateTime('{since}') and distinct_id = '{uid}' and event = '$identify' "
+            'order by timestamp asc limit 20',
+            lambda rows: bool(rows), timeout=180, interval=10)
+        ctx.posthog_trace.append({'query': f'$identify rows under {uid}', 'rows': len(rows),
+                                  'waitedSeconds': round(waited, 1)})
+        verdict.check('spine.posthog_identify', identified_remote,
+                      f'PostHog stored {len(rows)} $identify row(s) under the canonical distinct_id {uid} '
+                      f'after {waited:.0f}s')
+        person, detail = self.person_state(uid)
+        ctx.note(f'PostHog person mapping: {detail}')
         if device_id:
-            device_rows = posthog.device_events(device_id, since)
-            ctx.posthog_trace.append({'query': 'device rows after identify', 'rows': len(device_rows),
-                                      'events': sorted({str(row.get('event')) for row in device_rows})})
+            device_rows, _, waited = posthog.wait_for_device_events(
+                device_id, since, lambda rows: bool(rows), timeout=60)
+            ctx.posthog_trace.append({'query': 'device rows', 'deviceId': device_id, 'rows': len(device_rows),
+                                      'waitedSeconds': round(waited, 1),
+                                      'events': sorted({str(row.get('event')) for row in device_rows}),
+                                      'distinctIds': sorted({str(row.get('distinct_id')) for row in device_rows})})
 
         # -- teardown: the disposable identity must not survive the run ------ #
         status, payload = harness.api_request('DELETE', '/v1/user', token=token)
@@ -78,7 +116,7 @@ class A3EmailSignIn(Scenario):
         ctx.note('identity torn down through the app API deletion contract')
 
     # ------------------------------------------------------------------ #
-    def drive_signin(self, ctx: RunContext, admin: SupabaseAdmin, email: str) -> bool:
+    def drive_signin(self, ctx: RunContext, admin: SupabaseAdmin, email: str, lane: str) -> bool:
         """Drive the real sign-in UI; returns False when a precondition blocked the run."""
         verdict = ctx.verdict
         try:
@@ -97,31 +135,41 @@ class A3EmailSignIn(Scenario):
                     verdict.block('sign-in sheet did not offer "Continue with email"')
                     return False
                 ctx.wait_for('Email address', 15)
-                ctx.tap_field('Email address')
-                ctx.type_text(email)
+                typed = ctx.fill_field('Email address', email)
                 ctx.screenshot('email-entered')
+                verdict.check('signin.email_entered', typed,
+                              f'the sign-in field holds the disposable address ({email})')
                 ctx.tap('Send code')
                 if not ctx.wait_for('Check your email', 30):
                     ctx.screenshot('code-request-failed')
                     verdict.block('the app never reached the code entry phase; see screenshots')
                     return False
                 ctx.screenshot('code-entry')
-                otp = self.mint_otp(ctx, admin, email)
+                otp = self.mint_otp(ctx, admin, email, lane)
                 if not otp:
                     verdict.block('could not mint the email OTP server-side: the admin generate_link call did '
                                   'not return email_otp for this pending flow (attempts in harness.log)')
                     return False
-                ctx.tap_field('Verification code')
-                ctx.type_text(otp)
+                code_typed = ctx.fill_field('Verification code', otp)
+                verdict.check('signin.code_entered', code_typed, 'the six-digit code is in the field')
                 ctx.tap('Verify code')
-                ctx.wait_for_any(['Save your progress', 'Continue'], 30)
-                time.sleep(1.5)
+                # Success closes the sheet (WelcomeFooter's onContinue).
+                closed = self.wait_for_sheet_closed(ctx, 45)
+                ctx.screenshot('after-verify')
+                verdict.check('signin.sheet_closed', closed,
+                              'the sign-in sheet closes after the code is accepted')
+                if not closed:
+                    return False
+                # Re-open the sheet: the app's own signed-in state shows the account.
+                ctx.tap('Sign in')
+                ctx.wait_for('Save your progress', 20)
+                time.sleep(1.0)
                 ctx.screenshot('signed-in')
                 labels = [label for label in ctx.labels() if label]
-                verdict.check('signin.signed_in_ui',
-                              any('Save your progress' in label for label in labels)
-                              or any(email.split('@')[0] in label for label in labels),
-                              f'signed-in state rendered: {json.dumps(labels[:10])}')
+                verdict.check('signin.signed_in_ui', email in labels,
+                              f'the sign-in sheet renders the signed-in account ({email}); '
+                              f'labels: {json.dumps(labels[:12])}')
+                ctx.tap('Close')
                 return True
         except Exception as error:  # noqa: BLE001 - a driver crash is a FAIL, never a silent skip
             ctx.log(f'sign-in drive failed: {type(error).__name__}: {error}')
@@ -129,7 +177,29 @@ class A3EmailSignIn(Scenario):
             return False
 
     @staticmethod
-    def mint_otp(ctx: RunContext, admin: SupabaseAdmin, email: str) -> str:
+    def wait_for_sheet_closed(ctx: RunContext, timeout: float = 45.0) -> bool:
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if 'Dismiss sheet' not in set(ctx.labels()):
+                return True
+            time.sleep(0.5)
+        return False
+
+    @staticmethod
+    def person_state(uid: str) -> tuple[bool | None, str]:
+        """Informational: is the canonical UID mapped to a PostHog person yet?"""
+        try:
+            rows = posthog.query(
+                'select count() from persons where id in (select person_id from person_distinct_ids '
+                f"where distinct_id = '{uid}')"
+            )
+        except Exception as error:  # noqa: BLE001 - query shape unavailable is not a failure
+            return None, f'person lookup unavailable: {error}'
+        count = int(rows[0].get('count()', 0)) if rows else 0
+        return count >= 1, f'{count} person(s) mapped to distinct_id {uid}'
+
+    @staticmethod
+    def mint_otp(ctx: RunContext, admin: SupabaseAdmin, email: str, lane: str) -> str:
         """Mint the code the app is waiting for, from the admin API.
 
         A fresh install signs in from an anonymous identity, so the app calls
@@ -138,6 +208,10 @@ class A3EmailSignIn(Scenario):
         Both are attempted and every response is logged as evidence.
         """
         attempts = (
+            ('magiclink', {'type': 'magiclink', 'email': email}),
+            ('email_change_new', {'type': 'email_change_new', 'email': email, 'new_email': email}),
+            ('email_change_current', {'type': 'email_change_current', 'email': email, 'new_email': email}),
+        ) if lane == 'recovery' else (
             ('email_change_new', {'type': 'email_change_new', 'email': email, 'new_email': email}),
             ('email_change_current', {'type': 'email_change_current', 'email': email, 'new_email': email}),
             ('magiclink', {'type': 'magiclink', 'email': email}),

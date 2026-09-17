@@ -91,7 +91,9 @@ def api_request(method: str, path: str, *, token: str | None = None, body: dict 
     import urllib.error
     import urllib.request
     data = json.dumps(body).encode() if body is not None else None
-    headers = {'Content-Type': 'application/json'}
+    # Fastify rejects an empty body when content-type says JSON, so only declare
+    # the type when a body is actually sent.
+    headers: dict[str, str] = {'Content-Type': 'application/json'} if data is not None else {}
     if token:
         headers['Authorization'] = f'Bearer {token}'
     request = urllib.request.Request(f'{api_url()}{path}', data=data, headers=headers, method=method)
@@ -450,6 +452,10 @@ class RunContext:
     def note(self, message: str) -> None:
         self.verdict.notes.append(message)
 
+    def gate(self, capability: str, assertion_id: str, detail: str, evidence: Sequence[str] = ()) -> bool:
+        """Assert a sibling contract; BLOCKED-until when it is not in this worktree."""
+        return self.verdict.gate(capability, assertion_id, detail, capabilities=self.capabilities, evidence=evidence)
+
     # -- artifacts -------------------------------------------------------- #
     def screenshot(self, name: str, *, shrink: bool = False) -> Path:
         self._screens += 1
@@ -526,9 +532,21 @@ class RunContext:
         shell(['xcrun', 'simctl', 'uninstall', self.udid, BUNDLE_ID], check=False)
 
     def erase_container_state(self) -> None:
-        """A fresh-install fixture: uninstall (container + local stores go away)."""
+        """A fresh-install fixture: uninstall + keychain reset + install.
+
+        Uninstalling removes the app container (AsyncStorage, PostHog state,
+        expo-updates state) but a simulator keeps the device keychain, so items
+        written by an earlier install survive and expo-secure-store then fails
+        with ERR_KEY_CHAIN ("a required entitlement isn't present") on the next
+        launch, which the app surfaces as a boot-gate failure. Reset the owned
+        device's keychain so the fresh install really starts fresh.
+        """
         self.terminate()
         self.uninstall()
+        shell(['xcrun', 'simctl', 'keychain', self.udid, 'reset'], check=False)
+        # Privacy grants (notifications, motion, health, location) also survive an
+        # uninstall on a simulator; a real fresh install starts with none.
+        shell(['xcrun', 'simctl', 'privacy', self.udid, 'reset', 'all', BUNDLE_ID], check=False)
         self.install(Path(self.build['app']))
 
     # -- fixtures --------------------------------------------------------- #
@@ -554,7 +572,13 @@ class RunContext:
 
     # -- UI driving ------------------------------------------------------- #
     def tree(self) -> list[dict[str, Any]]:
-        return self.sim.tree()
+        try:
+            return self.sim.tree()
+        except (subprocess.CalledProcessError, json.JSONDecodeError):
+            # The idb companion can exit mid-run; restart it and retry once.
+            self.log('idb describe-all failed; restarting the companion and retrying once')
+            self.companion = ensure_companion(self.udid, OUT / self.run_id)
+            return self.sim.tree()
 
     def labels(self) -> list[str]:
         return [(node.get('AXLabel') or '').replace('\u00a0', ' ') for node in self.tree()]
@@ -598,8 +622,14 @@ class RunContext:
 
     def tap_node(self, node: dict[str, Any]) -> None:
         frame = node['frame']
-        shell(['idb', 'ui', 'tap', '--udid', self.udid,
-               round(frame['x'] + frame['width'] / 2), round(frame['y'] + frame['height'] / 2)])
+        command = ['idb', 'ui', 'tap', '--udid', self.udid,
+                   round(frame['x'] + frame['width'] / 2), round(frame['y'] + frame['height'] / 2)]
+        try:
+            shell(command)
+        except RuntimeError:
+            self.log('idb tap failed; restarting the companion and retrying once')
+            self.companion = ensure_companion(self.udid, OUT / self.run_id)
+            shell(command)
 
     def tap_label_node(self, label: str) -> bool:
         """Tap by accessibility label even when the node is not reported as a Button."""
@@ -624,6 +654,37 @@ class RunContext:
         self.tap_node(node)
         time.sleep(0.4)
         return True
+
+    def field_value(self) -> str:
+        for node in self.tree():
+            if node.get('type') in {'TextField', 'TextArea', 'SecureTextField'} and node.get('AXValue'):
+                return str(node['AXValue'])
+        return ''
+
+    def fill_field(self, label: str, text: str) -> bool:
+        """Type ``text`` into a field and verify it landed.
+
+        ``idb ui text`` can drop the tail of a longer string, so the harness
+        types in chunks and appends whatever the field is still missing.
+        """
+        self.tap_field(label)
+        for attempt in range(4):
+            value = self.field_value()
+            if value == text:
+                return True
+            if value and text.startswith(value):
+                self.type_text(text[len(value):])
+            elif value:
+                self.log(f'field holds {value!r}; retyping the full value (attempt {attempt + 1})')
+                self.type_text(text)
+            else:
+                for index in range(0, len(text), 10):
+                    self.type_text(text[index:index + 10])
+                    time.sleep(0.25)
+            time.sleep(0.6)
+        landed = self.field_value() == text
+        self.log(f'field value after typing: {self.field_value()!r} (wanted {text!r})')
+        return landed
 
     def scroll_to(self, label: str, attempts: int = 8) -> bool:
         for _ in range(attempts):
@@ -714,10 +775,12 @@ class RunContext:
                 except json.JSONDecodeError:
                     time.sleep(0.5)
                     continue
-                device_id = payload.get('device_id') or ''
+                # posthog-react-native wraps the persisted map in {version, content}.
+                content = payload.get('content') if isinstance(payload.get('content'), dict) else payload
+                device_id = content.get('device_id') or ''
                 if device_id:
                     self.identity['posthogDeviceId'] = device_id
-                    self.identity['posthogDistinctId'] = payload.get('distinct_id', '')
+                    self.identity['posthogDistinctId'] = content.get('distinct_id', '')
                     self.log(f'posthog $device_id = {device_id}')
                     return device_id
             time.sleep(0.5)
@@ -733,6 +796,21 @@ class RunContext:
         """
         shell(['xcrun', 'simctl', 'launch', self.udid, 'com.apple.Preferences'], check=False)
         time.sleep(seconds)
+
+    #: System alerts the real (non-dev) build raises; the harness answers them
+    #: the way a user would so the flow continues. Exact labels only, so the
+    #: app's own "Allow Screen Time" primer buttons are never matched by mistake.
+    SYSTEM_PROMPTS = ('Allow', 'Allow While Using App', 'Allow Once', 'OK', "Don't Allow")
+
+    def answer_system_prompt(self, prefer: Sequence[str] = ('Allow', 'Allow While Using App', 'Allow Once', 'OK')) -> str:
+        """Dismiss a simulator system alert (notifications, motion, health, ...)."""
+        labels = set(self.labels())
+        for label in prefer:
+            if label in labels:
+                self.tap(label)
+                self.log(f'answered the system prompt with "{label}"')
+                return label
+        return ''
 
     def boot_failure(self) -> str:
         """The app's own boot-gate failure copy, when the runtime could not start."""
@@ -757,7 +835,10 @@ class RunContext:
                 self.verdict.fail(f'the app boot gate failed: {failure!r}')
                 self.log(f'boot gate failed: {failure}')
                 return None
+            if self.answer_system_prompt():
+                continue
             time.sleep(0.25)
+        self.screenshot('unexpected-screen')
         self.log(f'none of {sorted(wanted)} appeared in {timeout}s')
         return None
 

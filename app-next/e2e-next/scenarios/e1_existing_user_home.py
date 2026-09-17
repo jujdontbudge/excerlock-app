@@ -42,8 +42,8 @@ class E1ExistingUserHome(Scenario):
                                       'waitedSeconds': round(waited, 1),
                                       'events': sorted({str(row.get('event')) for row in rows})})
             ctx.note(f'PostHog rows for this device: {posthog.summarise(rows)}')
-            if self.gate('B4b.root_screen_tracking', 'analytics.home_screen',
-                         '$screen home emitted on the home route', capabilities=ctx.capabilities):
+            if ctx.gate('B4b.root_screen_tracking', 'analytics.home_screen',
+                         '$screen home emitted on the home route'):
                 screens = posthog.screen_names(rows)
                 verdict.check('analytics.home_screen', 'home' in screens, f'$screen rows: {screens}')
             verdict.check('analytics.ingestion', satisfied or bool(rows), f'{len(rows)} rows after {waited:.0f}s')

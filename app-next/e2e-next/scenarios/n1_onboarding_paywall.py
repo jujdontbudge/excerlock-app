@@ -56,26 +56,31 @@ class N1OnboardingPaywall(Scenario):
                           f'paywall renders: {json.dumps(observation)[:300]}')
 
             plans = observation['plans']
-            load_failed = any('couldn' in label.lower() or 'retry loading plans' in label.lower()
-                              for label in observation['labels'])
-            if load_failed or not plans:
-                expected_products = self.placement_products(ctx)
+            expected_products = self.placement_products(ctx)
+            if not plans:
+                # The paywall's own error state (or an empty plan list) means the
+                # store could not be reached for this run: §8.1 leaves the local
+                # StoreKit binding unresolved, and the simulator's product fetch
+                # is not reliable enough to call an app failure.
                 verdict.check(
                     'paywall.live_products', None,
-                    'the paywall cannot show live products on this simulator: StoreKit has no local catalog '
-                    'bound for the harness build (§8.1: the scheme→.storekit binding is unresolved and a '
-                    'simulator without it cannot fetch App Store products). Observed UI: '
-                    + json.dumps(observation)[:400]
-                    + (f'; live placement products (Adapty, read-only): {expected_products}' if expected_products else ''),
+                    'no plan rows rendered on the paywall (observed UI: '
+                    + json.dumps({'loadError': observation['loadError'], 'labels': observation['labels'][:8]})
+                    + ('; live placement products (Adapty, read-only): ' + json.dumps(expected_products)
+                       if expected_products else '')
+                    + '). The simulator store binding is unresolved (§8.1), so this is a harness '
+                      'precondition, not an app verdict',
                     blocked_until='StoreKit-binding',
-                    evidence=[json.dumps(observation)[:800]],
+                    evidence=[json.dumps(observation)[:900]],
                 )
             else:
-                expected_products = self.placement_products(ctx)
+                prices_ok = len(observation['prices']) >= 1
                 matched = self.match_products(plans, expected_products)
-                verdict.check('paywall.live_products', bool(matched),
-                              f'{len(plans)} plans rendered {plans}; live placement products {expected_products}',
-                              evidence=[json.dumps(observation)[:800]])
+                verdict.check('paywall.live_products', len(plans) >= 2 and prices_ok and matched,
+                              f'{len(plans)} plan rows rendered {plans} at {observation["prices"]}; '
+                              f'live placement products {expected_products}; price present={prices_ok}; '
+                              f'placement titles matched={matched}',
+                              evidence=[json.dumps(observation)[:900]])
             verdict.check('paywall.cta', bool(observation['cta']),
                           f'purchase CTA present: {observation["cta"]!r} (purchase UI itself is out of scope per §8.1)')
 
@@ -93,18 +98,18 @@ class N1OnboardingPaywall(Scenario):
                                               {str(row.get('event')) for row in rows})})
                 ctx.note(f'PostHog rows for this device: {posthog.summarise(rows)}')
                 screens = posthog.screen_names(rows)
-                landed = self.gate('B4a.screen_step_mapping', 'analytics.step_screen_events',
-                                   'every visited onboarding step emits $screen', capabilities=ctx.capabilities)
-                landed = self.gate('B4b.root_screen_tracking', 'analytics.route_screen_events',
-                                   'route changes emit $screen', capabilities=ctx.capabilities) and landed
+                landed = ctx.gate('B4a.screen_step_mapping', 'analytics.step_screen_events',
+                                   'every visited onboarding step emits $screen')
+                landed = ctx.gate('B4b.root_screen_tracking', 'analytics.route_screen_events',
+                                   'route changes emit $screen') and landed
                 if landed:
                     seen_steps = {row.get('step') for row in rows if row.get('event') == '$screen'}
                     verdict.check('analytics.step_screen_events', bool(screens),
                                   f'$screen rows observed: {sorted(set(screens))} (step props: {sorted(x for x in seen_steps if x)})',
                                   evidence=[json.dumps(rows)[:1500]])
                 paywall_rows = [row for row in rows if row.get('event') == 'paywall_viewed']
-                gate = self.gate('B6.paywall_funnel_events', 'analytics.paywall_viewed',
-                                 'paywall_viewed {placement: onboarding} is present', capabilities=ctx.capabilities)
+                gate = ctx.gate('B6.paywall_funnel_events', 'analytics.paywall_viewed',
+                                 'paywall_viewed {placement: onboarding} is present')
                 if gate:
                     verdict.check('analytics.paywall_viewed', bool(paywall_rows),
                                   f'paywall_viewed rows: {len(paywall_rows)} '
@@ -117,7 +122,10 @@ class N1OnboardingPaywall(Scenario):
             ctx.note(f'startup signposts: {json.dumps(marks)}')
             first_frame = marks.get('delegateToFirstFrame')
             verdict.check('startup.first_frame_budget', None if first_frame is None else first_frame <= 1.5,
-                          'no os_signpost marks observed in the simulator log' if first_frame is None
+                          'the §6.2 first-frame budget needs the app\'s os_signpost marks, and the simulator '
+                          'unified log carries no signpost records on this host (log show --signposts returns 0 '
+                          'lines device-wide); plan §6.3/B10 owns the xctrace numeric parse'
+                          if first_frame is None
                           else f'delegate → first React frame {first_frame:.2f}s (budget ≤1.5s, §6.2)',
                           blocked_until='B10.startup_marks',
                           evidence=[json.dumps(marks)])
@@ -125,17 +133,25 @@ class N1OnboardingPaywall(Scenario):
     # -- paywall helpers ---------------------------------------------------- #
     @staticmethod
     def paywall_state(ctx: RunContext) -> dict:
+        import re
         nodes = ctx.tree()
         labels = [(node.get('AXLabel') or '').replace('\u00a0', ' ').strip() for node in nodes]
-        titles = [label for label in labels if ' / ' in label or '/ year' in label or '/ month' in label]
+        # Plan rows are ChoiceRows: the app exposes their selected state as AXValue.
+        plans = [(node.get('AXLabel') or '').replace('\u00a0', ' ').strip() for node in ctx.choices()]
+        if not plans:
+            plans = [label for label in labels
+                     if re.search(r'annual|monthly|weekly|lifetime|year|month|week', label, re.I)
+                     and '$' not in label and len(label) < 60]
         cta = next((label for label in labels if label in {'Start free trial', 'Continue'}), '')
         title = next((label for label in labels if label in {'Choose your plan'}), '')
         return {
             'title': title,
-            'plans': titles,
+            'plans': plans,
             'cta': cta,
+            'loadError': next((label for label in labels
+                               if 'couldn' in label.lower() and 'load' in label.lower()), ''),
             'labels': labels,
-            'prices': sorted({price for label in labels for price in __import__('re').findall(r'\$\s?\d+(?:\.\d{2})?', label)}),
+            'prices': sorted({price for label in labels for price in re.findall(r'\$\s?\d+(?:\.\d{2})?', label)}),
         }
 
     @staticmethod

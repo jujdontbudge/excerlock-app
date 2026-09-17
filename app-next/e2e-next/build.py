@@ -139,11 +139,14 @@ def build(udid: str, install: bool = True, clean: bool = False, log: Path | None
             '-sdk', 'iphonesimulator',
             '-destination', f'id={udid}',
             '-derivedDataPath', str(DERIVED),
-            # Sign to run locally: an unsigned simulator build carries no
-            # entitlements, and expo-secure-store (the session store) needs the
-            # keychain access group, so the app would fail its boot gate.
+            # Sign to run locally (Xcode's simulator default: ad-hoc, no
+            # entitlements). Do not add entitlements here: a simulator build
+            # carrying application-identifier/keychain-access-groups without a
+            # matching provisioning profile is refused at launch, and ad-hoc
+            # signing is enough for expo-secure-store once the device keychain
+            # no longer holds items from an earlier install (the harness resets
+            # it for the fresh-install fixture).
             'CODE_SIGN_IDENTITY=-',
-            'CODE_SIGNING_REQUIRED=YES',
             'CODE_SIGNING_ALLOWED=YES',
             'ARCHS=arm64',
             'ONLY_ACTIVE_ARCH=YES',
@@ -157,13 +160,6 @@ def build(udid: str, install: bool = True, clean: bool = False, log: Path | None
     app = app_path()
     if not app.exists():
         raise SystemExit(f'build.py: expected app missing at {app}')
-    entitlements = shell(['codesign', '-d', '--entitlements', '-', str(app)], check=False).stdout
-    if 'keychain-access-groups' not in entitlements:
-        raise SystemExit(
-            'build.py: the app was built without a keychain access group entitlement; '
-            'expo-secure-store will fail and the boot gate will never open. '
-            f'Check the simulator signing settings (codesign said: {entitlements[:300]})'
-        )
     if install:
         run(['xcrun', 'simctl', 'install', udid, str(app)], env, APP_NEXT, log, 'simctl-install')
     return {

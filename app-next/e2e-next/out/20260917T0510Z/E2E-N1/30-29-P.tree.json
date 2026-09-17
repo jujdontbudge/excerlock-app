@@ -1,0 +1,212 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": "ExcerLock",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 66}, {354, 32}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 66,
+   "x": 24,
+   "width": 354,
+   "height": 32
+  },
+  "role_description": "heading",
+  "AXLabel": "Choose your plan",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 102}, {354, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 102,
+   "x": 24,
+   "width": 354,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "Build a healthier relationship with your phone.",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 148}, {354, 79}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 148,
+   "x": 24,
+   "width": 354,
+   "height": 79
+  },
+  "role_description": "",
+  "AXLabel": "Premium Annual",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "radio button, checked",
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 251}, {354, 78}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 251,
+   "x": 24,
+   "width": 354,
+   "height": 78
+  },
+  "role_description": "button",
+  "AXLabel": "Premium Monthly",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "radio button, unchecked",
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 353}, {354, 66}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 353,
+   "x": 24,
+   "width": 354,
+   "height": 66
+  },
+  "role_description": "text",
+  "AXLabel": "1 week free, then $59.99 per 1 year. Subscription renews automatically until canceled.",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 443}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 443,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Terms of Use",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 521}, {354, 54}}",
+  "AXUniqueId": "",
+  "frame": {
+   "y": 521,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "",
+  "AXLabel": "Privacy Policy",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 712}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 712,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Start free trial",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 774}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 774,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "image",
+  "AXLabel": "Restore purchases",
+  "content_required": false,
+  "type": "Image",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXImage",
+  "subrole": null
+ }
+]

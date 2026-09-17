@@ -1,0 +1,81 @@
+{
+  "scenario": "E2E-A4",
+  "title": "Delete account: 204 \u2192 re-PUT 410 \u2192 Supabase 404 \u2192 local wipe",
+  "lane": "SIM",
+  "users": "EXISTING",
+  "status": "BLOCKED",
+  "reason": "existing-user fixture unavailable: no app-container snapshot at /Users/johansardar/.treehouse/excerlock-app-ad0bb5/11/excerlock-app/app-next/e2e-next/fixtures/existing-user. Minting it requires a setup-complete profile, which on the simulator requires an Adapty entitlement that only a sandbox purchase can create (plan \u00a77.3 SBX lane / \u00a78.1); run the SBX lane first or pass --capture-fixture.",
+  "startedAt": "2026-09-17T03:48:57Z",
+  "endedAt": "2026-09-17T03:48:58Z",
+  "durationSeconds": 0.3,
+  "device": {
+    "udid": "B68873CD-B6ED-4961-85AF-0C807E657999",
+    "name": "ExcerLock-Next",
+    "CFBundleShortVersionString": "1.0.0",
+    "CFBundleVersion": "1"
+  },
+  "build": {
+    "app": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/11/excerlock-app/app-next/e2e-next/build/DerivedData/Build/Products/Release-iphonesimulator/ExcerLock.app",
+    "bundleId": "com.johansardar.excerlock",
+    "scheme": "ExcerLock",
+    "configuration": "Release",
+    "environment": "preview",
+    "channel": "preview",
+    "runtimeVersion": "2",
+    "derivedData": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/11/excerlock-app/app-next/e2e-next/build/DerivedData",
+    "log": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/11/excerlock-app/app-next/e2e-next/build/build.log",
+    "installed": true,
+    "builtAt": "2026-09-17T00:47:18Z"
+  },
+  "capabilities": {
+    "B1.remote_config_copy": {
+      "landed": false,
+      "contract": "remoteCopy reads flow.remoteConfigs[0].data (locale-aware)"
+    },
+    "B4a.screen_step_mapping": {
+      "landed": false,
+      "contract": "semanticScreenName routes table carries onboarding/setup step ids"
+    },
+    "B4b.root_screen_tracking": {
+      "landed": false,
+      "contract": "root navigator subscribes to usePathname and calls analytics.screen"
+    },
+    "B6.paywall_funnel_events": {
+      "landed": false,
+      "contract": "client emits paywall_viewed"
+    },
+    "B2.paywall_error_reporting": {
+      "landed": false,
+      "contract": "client emits paywall_error on paywall load/purchase/restore failure"
+    },
+    "B3.fallback_paywall": {
+      "landed": false,
+      "contract": "assets/adapty-fallback.json exists and the SDK fallback is wired"
+    },
+    "B7.signin_required_flag": {
+      "landed": false,
+      "contract": "SignInScreen mounts receive a flag-backed signInRequired source"
+    },
+    "B10.startup_marks": {
+      "landed": false,
+      "contract": "startup module emits the five os_signpost stages"
+    },
+    "A5.sentry_before_boot": {
+      "landed": false,
+      "contract": "Sentry initialisation runs before the runtime boot gate"
+    }
+  },
+  "fixture": {
+    "kind": "existing-user",
+    "detail": "missing snapshot"
+  },
+  "identity": {},
+  "assertions": [],
+  "artifacts": {
+    "screenshots": [],
+    "trees": [],
+    "recordings": []
+  },
+  "notes": [],
+  "posthog": []
+}

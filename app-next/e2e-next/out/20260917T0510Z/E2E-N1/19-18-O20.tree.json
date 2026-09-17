@@ -1,0 +1,149 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": "ExcerLock",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 74}, {44, 44}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 74,
+   "x": 24,
+   "width": 44,
+   "height": 44
+  },
+  "role_description": "image",
+  "AXLabel": "Back",
+  "content_required": false,
+  "type": "Image",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXImage",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{76, 92}, {302, 8}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 92,
+   "x": 76,
+   "width": 302,
+   "height": 8
+  },
+  "role_description": "",
+  "AXLabel": "Setup progress",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "58%",
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 130}, {354, 64}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 130,
+   "x": 24,
+   "width": 354,
+   "height": 64
+  },
+  "role_description": "heading",
+  "AXLabel": "What exercise should unlock your apps?",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 218}, {171, 171}}",
+  "AXUniqueId": "",
+  "frame": {
+   "y": 218,
+   "x": 24,
+   "width": 171,
+   "height": 171
+  },
+  "role_description": "",
+  "AXLabel": "Walking",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "radio button, unchecked",
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{207, 218}, {171, 171}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 218,
+   "x": 207,
+   "width": 171,
+   "height": 171
+  },
+  "role_description": "",
+  "AXLabel": "Gym",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "radio button, unchecked",
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 774}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 774,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "",
+  "AXLabel": "Continue",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": false,
+  "role": "AXGenericElement",
+  "subrole": null
+ }
+]

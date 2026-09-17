@@ -22,7 +22,7 @@ class E2OtaReceiptStub(Scenario):
     title = 'OTA receipt, binary unchanged (documented stub — publishes an EAS update)'
     lane = 'SIM'
     users = 'EXISTING'
-    fixture = 'existing-user'
+    fixture = 'none'
     blocked_reason = (
         'deliberately not automated: this scenario publishes a preview-channel EAS Update '
         '(plan §3.3/§7.3), which is out of scope here (no EAS build/update, no release-lock operations) '

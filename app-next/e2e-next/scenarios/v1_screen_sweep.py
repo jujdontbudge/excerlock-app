@@ -18,24 +18,24 @@ ROUTES: list[tuple[str, str, str, str]] = [
     ('/(tabs)/analytics', 'excerlock://analytics', 'analytics', 'Analytics'),
     ('/(tabs)/settings', 'excerlock://settings', 'settings', 'Settings'),
     ('/builder', 'excerlock://builder', 'builder', ''),
-    ('/gym-picker', 'excerlock://gym-picker', 'gym_picker', 'Find your gym'),
+    ('/gym-picker', 'excerlock://gym-picker', 'gym_picker', 'Pick your gym'),
     ('/paywall', 'excerlock://paywall', 'paywall', 'Choose your plan'),
     ('/sign-in', 'excerlock://sign-in', 'sign_in', 'Save your progress'),
-    ('/settings/account', 'excerlock://settings/account', 'settings_account', ''),
-    ('/settings/subscription', 'excerlock://settings/subscription', 'settings_subscription', ''),
-    ('/settings/preferences', 'excerlock://settings/preferences', 'settings_preferences', ''),
-    ('/settings/units', 'excerlock://settings/units', 'settings_units', ''),
-    ('/settings/gyms', 'excerlock://settings/gyms', 'settings_gyms', ''),
-    ('/settings/bug', 'excerlock://settings/bug', 'settings_bug', ''),
-    ('/settings/feedback', 'excerlock://settings/feedback', 'settings_feedback', ''),
-    ('/settings/legal', 'excerlock://settings/legal', 'settings_legal', ''),
-    ('/settings/legal/terms', 'excerlock://settings/legal/terms', 'settings_legal', ''),
-    ('/settings/legal/privacy', 'excerlock://settings/legal/privacy', 'settings_legal', ''),
+    ('/settings/account', 'excerlock://settings/account', 'settings_account', 'Account'),
+    ('/settings/subscription', 'excerlock://settings/subscription', 'settings_subscription', 'Subscription'),
+    ('/settings/preferences', 'excerlock://settings/preferences', 'settings_preferences', 'Preferences'),
+    ('/settings/units', 'excerlock://settings/units', 'settings_units', 'Units'),
+    ('/settings/gyms', 'excerlock://settings/gyms', 'settings_gyms', 'Saved gyms'),
+    ('/settings/bug', 'excerlock://settings/bug', 'settings_bug', 'Report a bug'),
+    ('/settings/feedback', 'excerlock://settings/feedback', 'settings_feedback', 'Give feedback'),
+    ('/settings/legal', 'excerlock://settings/legal', 'settings_legal', 'Privacy & terms'),
+    ('/settings/legal/terms', 'excerlock://settings/legal/terms', 'settings_legal', 'Read Terms of Use'),
+    ('/settings/legal/privacy', 'excerlock://settings/legal/privacy', 'settings_legal', 'Read Privacy Policy'),
     ('/settings/permission/screenTime', 'excerlock://settings/permission/screenTime', 'settings_permission', 'Screen Time'),
     ('/settings/permission/motion', 'excerlock://settings/permission/motion', 'settings_permission', 'Motion & Fitness'),
     ('/settings/permission/location', 'excerlock://settings/permission/location', 'settings_permission', 'Location'),
     ('/unlock/gym', 'excerlock://unlock/gym', 'unlock_gym', ''),
-    ('/unlock/treadmill', 'excerlock://unlock/treadmill', 'unlock_treadmill', ''),
+    ('/unlock/treadmill', 'excerlock://unlock/treadmill', 'unlock_treadmill', 'Unlock preview'),
     ('/setup/X1', 'excerlock://setup/X1', 'setup', 'Save your progress'),
 ]
 
@@ -73,8 +73,13 @@ class V1ScreenSweep(Scenario):
             visited.extend({'route': f'/onboarding/{step}', 'link': f'excerlock://onboarding/{step}',
                             'screen': 'onboarding', 'rendered': True, 'step': step} for step in onboarding_steps)
 
-            # 2. every other production route by deep link, observed after navigation.
+            # 2. every other production route by deep link. Each visit starts
+            # from a relaunch so a modal (gym picker) or a redirect cannot leak
+            # into the next route's observation.
             for route, link, screen, marker in ROUTES:
+                ctx.terminate()
+                ctx.launch()
+                ctx.wait_for_app(['Get started', 'Choose your plan'], 60)
                 ctx.log(f'visiting {route}')
                 ctx.sim.open_url(link)
                 time.sleep(2.6)
@@ -84,8 +89,8 @@ class V1ScreenSweep(Scenario):
                     'route': route,
                     'link': link,
                     'screen': screen,
-                    'rendered': bool(marker) and any(marker in label for label in labels),
                     'marker': marker,
+                    'rendered': (any(marker in label for label in labels) if marker else None),
                     'observedTitle': self.observed_title(labels),
                     'screenshot': screenshot.name,
                 }
@@ -105,10 +110,10 @@ class V1ScreenSweep(Scenario):
                                       'screens': screens, 'steps': steps_seen, 'events': sorted(
                                           {str(row.get('event')) for row in rows})})
             ctx.note(f'PostHog $screen rows: {screens} steps: {steps_seen}')
-            mapped = self.gate('B4a.screen_step_mapping', 'analytics.step_rows',
-                               'onboarding step ids map to a semantic screen name', capabilities=ctx.capabilities)
-            mapped = self.gate('B4b.root_screen_tracking', 'analytics.route_rows',
-                               'every route change emits $screen', capabilities=ctx.capabilities) and mapped
+            mapped = ctx.gate('B4a.screen_step_mapping', 'analytics.step_rows',
+                               'onboarding step ids map to a semantic screen name')
+            mapped = ctx.gate('B4b.root_screen_tracking', 'analytics.route_rows',
+                               'every route change emits $screen') and mapped
             if mapped:
                 expected_screens = {'onboarding', 'paywall', 'home', 'conditions', 'analytics', 'settings'}
                 verdict.check('analytics.route_rows', expected_screens.issubset(set(screens)),
@@ -117,18 +122,20 @@ class V1ScreenSweep(Scenario):
                           f'{len(rows)} rows for this device after {waited:.0f}s')
 
         # 4. coverage table: which routes are reachable in the fresh-install state.
-        unreachable = [entry for entry in visited if entry['route'] in {r[0] for r in ROUTES} and not entry['rendered']]
+        evaluated = [entry for entry in visited if entry['rendered'] is not None]
+        unreachable = [entry for entry in evaluated if not entry['rendered']]
         payload = ctx.dir / 'route-coverage.json'
         payload.write_text(json.dumps(visited, indent=2) + '\n')
         verdict.artifacts.setdefault('files', []).append(payload.name)
-        reachable = len([entry for entry in visited if entry['rendered']])
+        reachable = len([entry for entry in evaluated if entry['rendered']])
+        ctx.note('coverage: ' + '; '.join(
+            f'{entry["route"]}={"ok" if entry["rendered"] else "blocked" if entry["rendered"] is False else "no-marker"}'
+            for entry in visited))
         verdict.check('routes.reachable_count', None if unreachable else True,
-                      f'{reachable} of {len(visited)} route visits rendered their marker; the remaining '
+                      f'{reachable} of {len(evaluated)} marker-evaluated route visits rendered; the remaining '
                       f'{len(unreachable)} are behind the setup-complete/entitled guards: '
                       f'{[entry["route"] for entry in unreachable]}',
-                      blocked_until='existing-user-fixture',
-                      evidence=['route-coverage.json'])
-        ctx.note('coverage: ' + '; '.join(f'{e["route"]}={"ok" if e["rendered"] else "blocked"}' for e in visited))
+                      blocked_until='existing-user-fixture', evidence=['route-coverage.json'])
 
     @staticmethod
     def observed_title(labels: list[str]) -> str:
