@@ -20,33 +20,56 @@ export const preBranch = [
   'O20',
 ] as const;
 export const tail = ['S1', 'S2', 'S3', 'S4', 'T1', 'T2', 'T3', 'T4', 'P'] as const;
-export function pathFor(answers: Answers): string[] {
-  let branch: string[];
+
+/**
+ * A validated remote order for the two configurable groups (B8).
+ *
+ * The answer-driven branch in the middle (W/G) is never remote: it follows
+ * from what the user answered. `preBranch`/`tail` may reorder and drop steps
+ * within their own bundled sets; `pathFor` falls back to the bundled arrays
+ * for any group the payload leaves out.
+ */
+export type FlowOrder = { readonly preBranch: readonly string[]; readonly tail: readonly string[] };
+
+function branchFor(answers: Answers): string[] {
   switch (answers.activity) {
     case 'gym':
-      branch = answers.gymMode === 'arrival' ? ['G1'] : ['G1', 'G2'];
-      break;
+      return answers.gymMode === 'arrival' ? ['G1'] : ['G1', 'G2'];
     default:
-      branch = answers.walkingMode === 'state' ? ['W1', 'W2'] : ['W1', 'W2', 'W3'];
+      return answers.walkingMode === 'state' ? ['W1', 'W2'] : ['W1', 'W2', 'W3'];
   }
-  return [...preBranch, ...branch, ...tail];
 }
-export function nextStep(state: FlowState): string {
-  const path = pathFor(state.answers);
+
+export function pathFor(answers: Answers, order?: FlowOrder | null): string[] {
+  return [...(order?.preBranch ?? preBranch), ...branchFor(answers), ...(order?.tail ?? tail)];
+}
+
+/**
+ * The remote rail only applies while it still contains the step the user is
+ * standing on. A payload that dropped that step must not rewind (or loop) the
+ * flow through `indexOf(-1)`, so that navigation keeps using the bundled order.
+ */
+function applicableOrder(state: FlowState, order?: FlowOrder | null): FlowOrder | null {
+  if (!order) return null;
+  return pathFor(state.answers, order).includes(state.step) ? order : null;
+}
+
+export function nextStep(state: FlowState, order?: FlowOrder | null): string {
+  const path = pathFor(state.answers, applicableOrder(state, order));
   return path[Math.min(path.indexOf(state.step) + 1, path.length - 1)];
 }
-export function prevStep(state: FlowState): string {
-  const path = pathFor(state.answers);
+export function prevStep(state: FlowState, order?: FlowOrder | null): string {
+  const path = pathFor(state.answers, applicableOrder(state, order));
   return path[Math.max(0, path.indexOf(state.step) - 1)];
 }
-export function progressFraction(state: FlowState): number {
-  const path = pathFor(state.answers);
+export function progressFraction(state: FlowState, order?: FlowOrder | null): number {
+  const path = pathFor(state.answers, applicableOrder(state, order));
   return Math.max(0, path.indexOf(state.step)) / (path.length - 1);
 }
-export function resumeStep(persisted: unknown): string {
+export function resumeStep(persisted: unknown, order?: FlowOrder | null): string {
   if (typeof persisted !== 'object' || persisted === null) return 'O01';
   const state = persisted as Partial<FlowState>;
-  return typeof state.step === 'string' && state.answers && pathFor(state.answers).includes(state.step)
-    ? state.step
-    : 'O01';
+  if (typeof state.step !== 'string' || !state.answers) return 'O01';
+  const path = pathFor(state.answers, applicableOrder({ step: state.step, answers: state.answers }, order));
+  return path.includes(state.step) ? state.step : path[0] ?? 'O01';
 }

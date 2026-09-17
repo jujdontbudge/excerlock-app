@@ -1,7 +1,8 @@
 import { createAccountBoundExport } from '../../runtime/AccountBoundExport';
 import { createNativeNotifications } from '../../runtime/notifications/createNativeNotifications';
 import { createNativeJsonExport } from '../../runtime/NativeJsonExport';
-import { createPaywallExperimentPort, createReviewPresetPort } from '../../runtime/analytics/PostHogAnalyticsAdapter';
+import { createPaywallExperimentPort, createReviewPresetPort, createSignInRequiredPort } from '../../runtime/analytics/PostHogAnalyticsAdapter';
+import { createOnboardingFlowPort } from '../../onboarding/flowOrder';
 import { entitlementStore } from '../../state/entitlementStore';
 import type { Session } from '../../domain/types';
 import type { AuthIdentity, AuthPort } from '../../ports/AuthPort';
@@ -132,6 +133,11 @@ export async function createClientServices(options: {
     subscription,
     analytics: telemetry.analytics,
     experiments: createPaywallExperimentPort(telemetry.analytics.flags),
+    signInRequired: createSignInRequiredPort(telemetry.analytics.flags),
+    // The lab has no identity spine: the rail reads once and stays bundled.
+    onboardingFlow: createOnboardingFlowPort({
+      readPayload: () => telemetry.analytics.flags.getPayload('onboarding_variant'),
+    }),
     reviewPreset: createReviewPresetPort(telemetry.analytics.flags),
     notifications,
     dataExport,

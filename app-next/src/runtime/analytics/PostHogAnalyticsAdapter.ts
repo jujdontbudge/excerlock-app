@@ -154,12 +154,12 @@ export function createPostHogAnalyticsAdapter(options: {
   };
 }
 
-export type FlagName = 'paywall_variant' | 'signInRequired' | 'onboarding_variant' | 'review_preset';
+export type FlagName = 'paywall_variant' | 'signInRequired' | 'review_preset';
 /** Payload flags carry remote configuration, never experiment exposure events. */
-const allowedPayloadFlags = { shield_copy: true } as const;
+const allowedPayloadFlags = { shield_copy: true, onboarding_variant: true } as const;
 export type PayloadFlagName = keyof typeof allowedPayloadFlags;
 export type PaywallVariant = 'control' | 'variant_b';
-const allowedFlags: Record<FlagName, readonly (string | boolean)[]> = { paywall_variant: ['control', 'variant_b'], signInRequired: [false, true], onboarding_variant: ['control', 'variant_b'], review_preset: [false, true] };
+const allowedFlags: Record<FlagName, readonly (string | boolean)[]> = { paywall_variant: ['control', 'variant_b'], signInRequired: [false, true], review_preset: [false, true] };
 type FlagValue = string | boolean;
 type FlagOrigin = { userId: string; generation: number };
 type PendingFlag = { promise: Promise<FlagValue>; resolve: (value: FlagValue) => void; off?: () => void; timeout?: ReturnType<typeof globalThis.setTimeout>; origin: FlagOrigin };
@@ -296,6 +296,17 @@ export function createReviewPresetPort(flags: PostHogFlagsController) {
   };
 }
 
+/** Boolean gate behind every `SignInScreen` mount (`resolveSignInRequired`). */
+export interface SignInRequiredPort {
+  /** `true` makes the sign-in step blocking; an absent or unanswered flag is `false`. */
+  isRequired(): Promise<boolean>;
+}
+export function createSignInRequiredPort(flags: PostHogFlagsController): SignInRequiredPort {
+  // The controller answers the false fallback while the identity is not ready,
+  // so an unanswered flag keeps X4 skippable instead of locking the user out.
+  return { async isRequired() { return await flags.get('signInRequired') === true; } };
+}
+
 /** A resolved `$screen`: the semantic route name plus its bounded qualifiers. */
 export type SemanticScreen = { name: string; props?: Record<string, string | number | boolean> };
 
@@ -366,3 +377,4 @@ export function semanticScreenName(path: string): SemanticScreen | null {
   }
   return null;
 }
+

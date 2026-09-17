@@ -8,8 +8,10 @@ import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
 import { welcomeCopy as c } from '../../../content/welcome';
 import { onboardingLabels } from '../../../content/onboarding';
 import { SignInScreen } from '../../setup/SignInScreen';
+import { useSignInRequiredSource } from '../../setup/useSignInRequiredSource';
 import { LegalScreen } from '../../settings/LegalScreen';
 export function WelcomeFooter({ onContinue }: { onContinue: () => void }) {
+  const signInRequired = useSignInRequiredSource();
   const [sheet, setSheet] = useState<'signIn' | 'privacy' | 'terms' | null>(null);
   const show = (next: typeof sheet) => {
     feedback();
@@ -52,7 +54,7 @@ export function WelcomeFooter({ onContinue }: { onContinue: () => void }) {
         open={sheet !== null}
         title={sheet === 'signIn' ? c.signIn : c.legalTitle}
         onDismiss={() => setSheet(null)}>
-        {sheet === 'signIn' ? <SignInScreen onContinue={() => setSheet(null)} /> : null}
+        {sheet === 'signIn' ? <SignInScreen onContinue={() => setSheet(null)} signInRequired={signInRequired} /> : null}
         {sheet === 'privacy' || sheet === 'terms' ? <LegalScreen doc={sheet} /> : null}
       </BottomSheet>
     </>

@@ -1,4 +1,5 @@
 import { createPersistedStore } from './createPersistedStore';
+import { isOnboardingStepId } from '../onboarding/stepId';
 import * as v from './validation';
 export type Answers = Record<string, string | number | boolean | number[]>;
 export type OnboardingState = {
@@ -8,8 +9,7 @@ export type OnboardingState = {
   setupStep: string;
   setupComplete: boolean;
 };
-const step = (value: unknown) =>
-  typeof value === 'string' && /^(O(0[1-9]|1[0-9]|20)|W[1-3]|G[12]|[RB][12]|D|S[1-4]|T[1-4]|P)$/.test(value);
+const step = isOnboardingStepId;
 const answers = (value: unknown) =>
   v.object(value) &&
   Object.values(value).every((x) => v.text(x) || v.number(0, 30000)(x) || v.bool(x) || v.array(v.number(0, 6))(x));

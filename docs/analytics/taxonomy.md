@@ -23,7 +23,7 @@ Every emission registers `environment`, `runtime_version`, `update_id`, `walk_pl
 
 ## Feature flags
 
-`paywall_variant` and `onboarding_variant`: `control` or `variant_b`; `signInRequired`: boolean. Unknown values fail closed to `control`/`false`. Reads suppress SDK exposure events; exposure is explicitly recorded only for the stable value shown.
+`paywall_variant` (`control`/`variant_b`) is the value flag behind `PaywallScreen.variantKey` — control starts on the first returned product, variant_b on Adapty's `recommended` plan — and its exposure is recorded once per placement and identity generation, only for the stable value the mounted paywall rendered. `signInRequired` is boolean and gates the X4 "Skip for now" affordance. `onboarding_variant` and `shield_copy` are payload flags: their object payload carries the configuration (`onboarding_variant`: validated `preBranch`/`tail` step lists consumed by the onboarding flow rail; `shield_copy`: validated shield copy written on foreground), so their variant labels are not read client-side. Unknown values fail closed to `control`/`false`/the bundled order/nothing written. Reads suppress SDK exposure events.
 
 ## Forbidden data
 

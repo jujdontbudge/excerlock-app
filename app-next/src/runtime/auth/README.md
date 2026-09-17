@@ -8,7 +8,7 @@ The root composition must provide `clientAuth.supabaseUrl`, `clientAuth.supabase
 
 Every purchase and restore path must await the exact `waitForIdentityReady` function returned by this factory. A canonical UID alone is insufficient: the gate resolves only after authenticated `PUT /v1/user`, PostHog identify, Adapty activate/identify, and `posthog_distinct_user_id` attachment finish in order. T05 must use the returned global serializer for identity-sensitive vendor transitions; the raw identify/reset callbacks supplied to this factory must not acquire that serializer again.
 
-`SignInScreen` accepts an injected `signInRequired` boolean or function (sync or async, default false). Root/T06 should pass the existing PostHog flag result; this module does not create another PostHog client.
+`SignInScreen` accepts an injected `signInRequired` boolean or function (sync or async, default false). Root/T06 passes the `signInRequired` PostHog gate through `useSignInRequiredSource()` (`src/features/setup/`), which every mount — setup X4, the welcome footer sheet, `/sign-in` — supplies to the screen; this module does not create another PostHog client.
 
 ## Security and lifecycle
 

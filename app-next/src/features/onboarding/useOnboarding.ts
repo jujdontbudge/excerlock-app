@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Keyboard } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
-import { nextStep, prevStep, progressFraction, resumeStep } from '../../onboarding/flow';
+import { nextStep, prevStep, progressFraction, resumeStep, type FlowOrder } from '../../onboarding/flow';
 import { createDraft } from '../rules/draft';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { Answers } from '../../onboarding/types';
@@ -15,10 +15,23 @@ export function useOnboarding() {
     advancing = useRef(false),
     advanceEpoch = useRef(0),
     mounted = useRef(true),
+    // Seeded from the port's current snapshot, so a remount after the rail
+    // settled keeps the assignment without a setState-in-effect.
+    [flowOrder, setFlowOrder] = useState<FlowOrder | null>(() => runtime.onboardingFlow?.order() ?? null),
     [isAdvancing, setIsAdvancing] = useState(false),
     [direction, setDirection] = useState<'forward' | 'back'>('forward');
-  const step = params.step ?? resumeStep(state),
+  const step = params.step ?? resumeStep(state, flowOrder),
     flow = { step, answers: state.answers };
+  // B8: read the `onboarding_variant` order once, in the background. The first
+  // paint above already used the bundled order, and the rail only replaces it
+  // when a payload validates — the user never waits on a flag to see a step.
+  useEffect(() => {
+    const port = runtime.onboardingFlow;
+    if (!port) return;
+    const stop = port.subscribe(setFlowOrder);
+    void port.load();
+    return stop;
+  }, [runtime]);
   useEffect(() => {
     useOnboardingStore.getState().patch({ step });
     const current = useOnboardingStore.getState().data.answers;
@@ -48,7 +61,7 @@ export function useOnboarding() {
     answers: state.answers,
     direction,
     isAdvancing,
-    progress: progressFraction(flow),
+    progress: progressFraction(flow, flowOrder),
     setAnswer: (key: string, value: string | number | boolean | number[]) => {
       if (key === 'name') advanceEpoch.current += 1;
       useOnboardingStore.getState().patch({ answers: { ...useOnboardingStore.getState().data.answers, [key]: value } });
@@ -89,7 +102,7 @@ export function useOnboarding() {
         move(destination);
       } else {
         const latest = useOnboardingStore.getState().data.answers;
-        move(nextStep({ step, answers: latest }));
+        move(nextStep({ step, answers: latest }, flowOrder));
       }
       } finally {
         advancing.current = false;
@@ -116,7 +129,7 @@ export function useOnboarding() {
         useOnboardingStore.getState().patch({ answers: { ...restored, returnTo: '', editBackup: '' } });
         router.setParams({ returnTo: undefined });
         move(destination);
-      } else move(prevStep(flow), true);
+      } else move(prevStep(flow, flowOrder), true);
     },
   };
 }

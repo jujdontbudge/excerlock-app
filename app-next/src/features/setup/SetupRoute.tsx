@@ -11,12 +11,14 @@ import { PermissionPrimer } from './PermissionPrimer';
 import { AppsSetup } from './AppsSetup';
 import { GymPickerScreen } from '../gym-picker/GymPickerScreen';
 import { SignInScreen } from './SignInScreen';
+import { useSignInRequiredSource } from './useSignInRequiredSource';
 import { SetupComplete } from './SetupComplete';
 import { setupCopy as c } from '../../content/setup';
 export function SetupRoute() {
   const params = useLocalSearchParams<{ step?: string }>(),
     router = useRouter(),
     runtime = useRuntime(),
+    signInRequired = useSignInRequiredSource(),
     state = useOnboardingStore((s) => s.data),
     rules = useRulesStore((s) => s.data.rules),
     [direction, setDirection] = useState<'forward' | 'back'>('forward');
@@ -43,7 +45,7 @@ export function SetupRoute() {
   if (step === 'X2') body = <AppsSetup onContinue={advance} />;
   if (step === 'X3' && activity === 'gym') return <GymPickerScreen onSaved={advance} />;
   if (step === 'X3') body = <PermissionPrimer name={branchPermission(activity)} onContinue={advance} />;
-  if (step === 'X4') body = <SignInScreen onContinue={advance} />;
+  if (step === 'X4') body = <SignInScreen onContinue={advance} signInRequired={signInRequired} />;
   if (step === 'X5') body = <SetupComplete activity={activity} />;
   return (
     <OnboardingShell

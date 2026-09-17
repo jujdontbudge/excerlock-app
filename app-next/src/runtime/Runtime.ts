@@ -15,6 +15,8 @@ import { ExportPort } from '../ports/ExportPort';
 import { RuntimeStatusPort } from '../ports/RuntimeStatusPort';
 import { ReviewPresetPort } from '../ports/ReviewPresetPort';
 import { ShieldCopyPort } from '../ports/ShieldCopyPort';
+import type { OnboardingFlowPort } from '../onboarding/flowOrder';
+import type { PaywallExperimentPort, SignInRequiredPort } from './analytics/PostHogAnalyticsAdapter';
 export type Runtime = {
   readonly kind: 'fake' | 'real';
   screenTime: ScreenTimePort;
@@ -32,6 +34,12 @@ export type Runtime = {
   clock: ClockPort;
   status: RuntimeStatusPort;
   reviewPreset?: ReviewPresetPort;
+  /** PostHog `paywall_variant` rail read by the mounted paywall. */
+  experiments?: PaywallExperimentPort;
+  /** PostHog `signInRequired` gate behind every `SignInScreen` mount. */
+  signInRequired?: SignInRequiredPort;
+  /** PostHog `onboarding_variant` flow rail; absent means the bundled order. */
+  onboardingFlow?: OnboardingFlowPort;
   /** Remote shield copy rail; absent means no payload flag consumer is wired. */
   shieldCopy?: ShieldCopyPort;
   /** Live production safety; absent means unknown, never safe by default. */

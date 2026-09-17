@@ -93,7 +93,7 @@ describe("remote shield copy rail", () => {
         "PostHogAnalyticsAdapter.ts",
       ),
     );
-    expect(adapter).toContain("allowedPayloadFlags = { shield_copy: true }");
+    expect(adapter).toMatch(/allowedPayloadFlags = \{[^}]*shield_copy: true/);
 
     expect(
       readUtf8(fromRoot("app-next", "src", "runtime", "createRealRuntime.ts")),

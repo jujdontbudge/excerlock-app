@@ -6,6 +6,8 @@ Identity setup is `activate` once, one `onLatestProfileLoad` listener, then awai
 
 SDK 4 custom paywalls use `getFlow(placement, { fetchPolicy, loadTimeoutMs })`, `getPaywallProducts(flow)`, and `logShowFlow(flow)`. Returned product order and exact opaque SDK objects are retained behind generation/variation-bound public handles; stale handles fail. No static prices or product fallback are used. UI renders localized price, localized period, eligible returned offer, renewal disclosure, Terms, and Privacy.
 
+The mounted surface also takes the PostHog `paywall_variant` rail (B7) as `PaywallScreen.variantKey`: `control` starts on the first returned product, `variant_b` starts on the plan Adapty marks `recommended`. Which plans exist, their order and their prices stay Adapty-owned — a PostHog variant never changes money, and it never overrides a plan the user picked. `PaywallSlot` exposes the variant once per placement and identity generation after the placement actually loaded.
+
 ## Bundled fallback paywall (B3)
 
 Activation chains `activate` → `setFallback({ ios: { fileName } })` → the profile listener, so the fallback is registered before the first `getFlow`. When Adapty is unreachable and nothing is cached, the SDK answers a placement from that file instead of failing, and the paywall renders from it like any other flow.

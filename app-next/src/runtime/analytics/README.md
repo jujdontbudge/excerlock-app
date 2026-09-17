@@ -42,3 +42,14 @@ The payload crosses no trust boundary: `src/runtime/shield/` validates it
 strictly (unknown causes/fields, non-string or oversized copy are rejected) and
 only then hands canonical JSON to `ExcerlockEnforcementModule.setShieldCopyOverrides`,
 which writes the App Group key the shield extension reads.
+
+Every flag in both allow-lists has a production consumer, and
+`guardrails/flag-consumers.test.ts` fails when a registry entry has none:
+`paywall_variant` → `PaywallSlot` (variant key into `PaywallScreen` plus exactly
+one exposure per placement and identity generation), `signInRequired` →
+`useSignInRequiredSource()` at every `SignInScreen` mount, `review_preset` → the
+O04 advance, `onboarding_variant` → the flow rail payload
+(`src/onboarding/flowOrder.ts`, consumed by `useOnboarding`), `shield_copy` → the
+foreground writer. Payload flags are read with `getPayload`, so configuration
+travels without an exposure event, and both payload readers validate strictly:
+an unparseable payload leaves the bundled behavior in force.

@@ -1,6 +1,12 @@
 import { createIdentityServices } from './createIdentityServices';
 import { createPostHogRuntime } from '@posthog-runtime';
-import { createPaywallExperimentPort, createReviewPresetPort, normalizeWalkPlaces } from './analytics/PostHogAnalyticsAdapter';
+import {
+  createPaywallExperimentPort,
+  createReviewPresetPort,
+  createSignInRequiredPort,
+  normalizeWalkPlaces,
+} from './analytics/PostHogAnalyticsAdapter';
+import { createOnboardingFlowPort } from '../onboarding/flowOrder';
 import { initializeSentrySdk } from '@sentry-binding';
 import { getOtaObservabilityContext } from './updates';
 import { readClientConfiguration } from './clientConfiguration';
@@ -64,6 +70,19 @@ export async function createClientServices(options: {
   return {
     auth: identity.auth, subscription: identity.subscription, analytics: telemetry.analytics,
     experiments: createPaywallExperimentPort(telemetry.analytics.flags),
+    signInRequired: createSignInRequiredPort(telemetry.analytics.flags),
+    // The flow rail reads once per app run. A fresh install reads it before the
+    // identity spine has settled, so the port waits for the same canonical-ready
+    // gate the rest of the app uses (bounded) and reads once more; onboarding
+    // itself never waits — it paints the bundled order until this settles.
+    onboardingFlow: createOnboardingFlowPort({
+      readPayload: () => telemetry.analytics.flags.getPayload('onboarding_variant'),
+      awaitReady: () =>
+        identity.waitForIdentityReady({ timeoutMs: 5_000 }).then(
+          () => undefined,
+          () => undefined,
+        ),
+    }),
     reviewPreset: createReviewPresetPort(telemetry.analytics.flags), notifications,
     // Snapshot account before file writing. Payload assembly must also bind its origin.
     dataExport,

@@ -26,3 +26,33 @@ test('corrupt resume state falls back safely to O01', () => {
   expect(resumeStep(null)).toBe('O01');
   expect(resumeStep({ step: 'missing', answers: {} })).toBe('O01');
 });
+
+const remote = { preBranch: ['O01', 'O03', 'O02', ...pre.filter((step) => !['O01', 'O02', 'O03'].includes(step))], tail: ['S1', 'P'] };
+
+test('a remote rail reorders the pre-branch and shortens the tail', () => {
+  const answers = { activity: 'walking', walkingMode: 'steps' };
+  const path = [...remote.preBranch, 'W1', 'W2', 'W3', ...remote.tail];
+  expect(pathFor(answers, remote)).toEqual(path);
+  path.forEach((step, i) => {
+    const state = { step, answers };
+    expect(nextStep(state, remote)).toBe(path[Math.min(i + 1, path.length - 1)]);
+    expect(prevStep(state, remote)).toBe(path[Math.max(0, i - 1)]);
+    expect(resumeStep(state, remote)).toBe(step);
+  });
+  expect(progressFraction({ step: 'P', answers }, remote)).toBe(1);
+  expect(nextStep({ step: 'O01', answers }, remote)).toBe('O03');
+});
+
+test('a step the remote rail dropped keeps the bundled order instead of looping', () => {
+  const answers = { activity: 'walking', walkingMode: 'steps' };
+  const reduced = { preBranch: pre.filter((step) => step !== 'O05'), tail: [...tail] };
+  expect(nextStep({ step: 'O05', answers }, reduced)).toBe('O06');
+  expect(prevStep({ step: 'O05', answers }, reduced)).toBe('O04');
+  expect(resumeStep({ step: 'O05', answers }, reduced)).toBe('O05');
+  expect(resumeStep({ step: 'O05', answers })).toBe('O05');
+});
+
+test('resume without a remote rail keeps the bundled first step', () => {
+  expect(resumeStep({ step: 'missing', answers: {} }, remote)).toBe('O01');
+  expect(resumeStep(null, remote)).toBe('O01');
+});
