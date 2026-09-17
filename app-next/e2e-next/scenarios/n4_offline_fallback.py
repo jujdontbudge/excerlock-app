@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import plistlib
 import socket
 import subprocess
@@ -113,6 +114,44 @@ def _host_already_blocked(text: str, host: str) -> bool:
     return False
 
 
+def _ancestor_pids() -> set[int]:
+    """This process and the runner/build chain above it (its own lane)."""
+    pids: set[int] = set()
+    pid = os.getpid()
+    while pid and pid not in pids:
+        pids.add(pid)
+        result = subprocess.run(['ps', '-o', 'ppid=', '-p', str(pid)], capture_output=True, text=True)
+        try:
+            pid = int(result.stdout.strip() or 0)
+        except ValueError:
+            break
+    return pids
+
+
+def _sibling_e2e_scenarios(udid: str) -> list[str]:
+    """Other lanes driving the owned simulator right now.
+
+    The harness rule is one build, one simulator: a sibling lane's scenario
+    reinstalls the app and relaunches it on the same device, which restarts
+    onboarding mid-walk. Report it instead of scoring the corruption as an app
+    failure; the /etc/hosts lever is host-wide too, so siblings can also yank
+    the denial out from under this run.
+    """
+    own = _ancestor_pids()
+    listing = subprocess.run(['ps', '-axo', 'pid=,command='], capture_output=True, text=True).stdout
+    found: list[str] = []
+    for line in listing.splitlines():
+        fields = line.strip().split(None, 1)
+        if len(fields) != 2 or not fields[0].isdigit():
+            continue
+        pid, command = int(fields[0]), fields[1]
+        if pid in own or 'grep' in command:
+            continue
+        if 'e2e-next/run.py' in command or ('simctl' in command and udid in command):
+            found.append(f'pid {pid}: {command[:220]}')
+    return found
+
+
 def _read_preferences(ctx: RunContext) -> dict[str, Any]:
     """The app's own UserDefaults (Adapty stores its profile and flow cache there)."""
     path = ctx.app_container() / PREFERENCES
@@ -178,6 +217,14 @@ class _OfflineFallbackScenario(Scenario):
 
     # -- the /etc/hosts denial ------------------------------------------------ #
     def _deny_adapty(self, ctx: RunContext) -> bool:
+        siblings = _sibling_e2e_scenarios(ctx.udid)
+        if siblings:
+            ctx.verdict.block(
+                f'another e2e-next lane is driving the shared simulator {ctx.udid} (the harness rule is one build, '
+                'one simulator, and the /etc/hosts lever is host-wide): ' + ' | '.join(siblings)
+                + '. Re-run E2E-N4/N4W when the sibling lane is done.'
+            )
+            return False
         try:
             text = HOSTS_FILE.read_text()
             entries = [f'0.0.0.0 {host}' for host in ADAPTY_HOSTS if not _host_already_blocked(text, host)]
@@ -254,6 +301,20 @@ class _OfflineFallbackScenario(Scenario):
         return all_blocked, ' | '.join(report)
 
     # -- the app's own Adapty state ------------------------------------------- #
+    def _app_container_path(self, ctx: RunContext) -> str:
+        try:
+            return str(ctx.app_container('app'))
+        except Exception:  # noqa: BLE001 - the container check is evidence, not a gate
+            return ''
+
+    def _sibling_reinstall(self, ctx: RunContext, installed_at: str) -> str:
+        """A new Bundle container means another lane reinstalled the app."""
+        current = self._app_container_path(ctx)
+        if installed_at and current and current != installed_at:
+            return (f'the installed app changed mid-run ({Path(installed_at).parent.name} -> '
+                    f'{Path(current).parent.name}): another lane reinstalled it')
+        return ''
+
     def _wait_for_profile(self, ctx: RunContext, timeout: float = 90.0) -> tuple[dict[str, Any], float]:
         started = time.monotonic()
         while time.monotonic() - started < timeout:
@@ -278,7 +339,7 @@ class _OfflineFallbackScenario(Scenario):
         return _collect_developer_ids(raw)
 
     # -- the walk and the fallback assertions ---------------------------------- #
-    def _walk_to_paywall(self, ctx: RunContext) -> bool:
+    def _walk_to_paywall(self, ctx: RunContext, *, installed_at: str = '') -> bool:
         verdict = ctx.verdict
         launch = ctx.cold_launch(wait=2.0)
         ctx.log(f'launch under test returned in {launch:.2f}s')
@@ -292,16 +353,25 @@ class _OfflineFallbackScenario(Scenario):
         result = walk.run(stop_at='P')
         steps = result['steps']
         ctx.note(f'walk: {" -> ".join(steps)}' + (f' | stopped on: {result["stuck"]}' if result['stuck'] else ''))
-        verdict.check('offline.walk_reaches_paywall', 'P' in steps,
-                      f'the offline walk reached the paywall ({len(steps)} screens: {" -> ".join(steps)})'
-                      if 'P' in steps else
+        if 'P' in steps:
+            verdict.check('offline.walk_reaches_paywall', True,
+                          f'the offline walk reached the paywall ({len(steps)} screens: {" -> ".join(steps)})',
+                          evidence=[' | '.join(steps)])
+            ctx.screenshot('offline-paywall')
+            return True
+        reinstall = self._sibling_reinstall(ctx, installed_at)
+        if reinstall:
+            verdict.check('offline.walk_reaches_paywall', None,
+                          f'the walk stopped before the paywall because the shared simulator changed underneath it: '
+                          f'{reinstall}. The verdict says nothing about the app; re-run with exclusive device access.',
+                          blocked_until='exclusive-simulator')
+            verdict.block(f'sibling lane interference during the walk: {reinstall}')
+            return False
+        verdict.check('offline.walk_reaches_paywall', False,
                       'the offline walk did not reach the paywall; see the screenshots in this directory',
                       evidence=[' | '.join(steps)])
-        if 'P' not in steps:
-            verdict.block('the offline walk stopped before the paywall; the fallback claim is unproven')
-            return False
-        ctx.screenshot('offline-paywall')
-        return True
+        verdict.block('the offline walk stopped before the paywall; the fallback claim is unproven')
+        return False
 
     def _assert_fallback_rendered(self, ctx: RunContext, *, must_render: bool) -> None:
         """Assert the paywall rendered the bundled export.
@@ -393,10 +463,11 @@ class N4OfflineFallbackPaywall(_OfflineFallbackScenario):
         restored = False
         try:
             ctx.log('first launch under test: no online warm-up, the app is fresh and Adapty is denied')
+            installed_at = self._app_container_path(ctx)
             if not self._deny_adapty(ctx):
                 return
             with ctx.recording('E2E-N4-first-launch-offline'):
-                if not self._walk_to_paywall(ctx):
+                if not self._walk_to_paywall(ctx, installed_at=installed_at):
                     return
                 self._assert_fallback_rendered(ctx, must_render=False)
             held, held_detail = self._unreachable(ctx)
@@ -443,10 +514,11 @@ class N4WarmProfileOfflineFallback(_OfflineFallbackScenario):
         try:
             if not self._online_profile_precondition(ctx):
                 return
+            installed_at = self._app_container_path(ctx)
             if not self._deny_adapty(ctx):
                 return
             with ctx.recording('E2E-N4W-offline-paywall'):
-                if not self._walk_to_paywall(ctx):
+                if not self._walk_to_paywall(ctx, installed_at=installed_at):
                     return
                 self._assert_fallback_rendered(ctx, must_render=True)
             held, held_detail = self._unreachable(ctx)
