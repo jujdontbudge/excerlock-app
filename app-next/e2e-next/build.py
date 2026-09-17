@@ -21,6 +21,7 @@ Exit codes: 0 built (and installed), 2 build/install failure.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -119,6 +120,29 @@ def app_path() -> Path:
     return DERIVED / 'Build' / 'Products' / 'Release-iphonesimulator' / 'ExcerLock.app'
 
 
+def git_revision() -> str:
+    return subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=REPO, capture_output=True, text=True).stdout.strip()
+
+
+def app_source_revision() -> str:
+    """Cache key for the built artifact: the app sources the bundle is made of.
+
+    The harness builds once and runs every scenario on that one build, so the
+    cache must change exactly when the app changes — not when the harness's own
+    files change. The key is a hash of `git ls-tree -r HEAD -- app-next` with the
+    harness directory itself excluded.
+    """
+    listing = subprocess.run(['git', 'ls-tree', '-r', 'HEAD', '--', 'app-next'], cwd=REPO,
+                             capture_output=True, text=True).stdout
+    entries = '\n'.join(line for line in listing.splitlines() if '/e2e-next/' not in line)
+    return hashlib.sha1(entries.encode()).hexdigest()[:12]
+
+
+def cache_matches(manifest: dict, app_revision: str) -> bool:
+    """True when the manifest describes the current app sources (rebuild otherwise)."""
+    return bool(manifest.get('appSourceRevision')) and manifest['appSourceRevision'] == app_revision
+
+
 def build(udid: str, install: bool = True, clean: bool = False, log: Path | None = None) -> dict:
     env = preview_env()
     log = log or (E2E / 'build' / 'build.log')
@@ -162,12 +186,12 @@ def build(udid: str, install: bool = True, clean: bool = False, log: Path | None
         raise SystemExit(f'build.py: expected app missing at {app}')
     if install:
         run(['xcrun', 'simctl', 'install', udid, str(app)], env, APP_NEXT, log, 'simctl-install')
-    revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=REPO, capture_output=True, text=True).stdout.strip()
     dirty = bool(subprocess.run(['git', 'status', '--porcelain'], cwd=REPO, capture_output=True,
                                 text=True).stdout.strip())
     return {
-        'revision': revision,
+        'revision': git_revision(),
         'revisionDirty': dirty,
+        'appSourceRevision': app_source_revision(),
         'app': str(app),
         'bundleId': BUNDLE_ID,
         'scheme': SCHEME,

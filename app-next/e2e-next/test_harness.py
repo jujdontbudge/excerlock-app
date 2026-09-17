@@ -77,6 +77,21 @@ class VerdictSemantics(unittest.TestCase):
         self.assertEqual(verdict.status(), harness.BLOCKED)
 
 
+class BuildCache(unittest.TestCase):
+    def test_app_source_revision_is_stable_and_short(self):
+        import build
+        first = build.app_source_revision()
+        self.assertRegex(first, r'^[0-9a-f]{12}$')
+        self.assertEqual(first, build.app_source_revision())
+
+    def test_cache_matches_only_the_same_revision(self):
+        import build
+        revision = build.app_source_revision()
+        self.assertTrue(build.cache_matches({'appSourceRevision': revision}, revision))
+        self.assertFalse(build.cache_matches({'appSourceRevision': 'deadbeef0000'}, revision))
+        self.assertFalse(build.cache_matches({}, revision))
+
+
 class CapabilityMap(unittest.TestCase):
     def test_contract_keys_are_present_and_described(self):
         capabilities = harness.detect_capabilities()

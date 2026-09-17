@@ -52,22 +52,39 @@ def ensure_booted(udid: str) -> None:
 
 
 def resolve_build(udid: str, *, rebuild: bool, no_build: bool) -> dict:
+    """One build for the whole invocation, cached by the app-source revision.
+
+    The harness never rebuilds per scenario and never boots a second simulator:
+    every scenario in this process shares one artifact on one device. A stale
+    manifest (app sources changed since the build) is rebuilt, unless
+    ``--no-build`` says the operator knows the artifact is the one under test.
+    """
     manifest = harness.BUILD_DIR / 'build.json'
+    app_revision = build_module.app_source_revision()
     if manifest.exists() and not rebuild:
         info = json.loads(manifest.read_text())
-        if Path(info['app']).exists():
+        if not build_module.cache_matches(info, app_revision):
+            message = (f'cached build is stale: manifest appSourceRevision='
+                       f'{info.get("appSourceRevision", "(none)")} but the tree is {app_revision}')
+            if no_build:
+                print(f'== WARNING: {message}; reusing the cached artifact because --no-build was given')
+            else:
+                print(f'== {message}; rebuilding')
+                info = None  # type: ignore[assignment]
+        if info and Path(info['app']).exists():
             installed = subprocess.run(['xcrun', 'simctl', 'get_app_container', udid, harness.BUNDLE_ID, 'app'],
                                        capture_output=True).returncode == 0
             if installed:
+                print(f'== reusing build {info["app"]} (appSourceRevision={info["appSourceRevision"]})')
                 return info
             if not no_build:
                 print(f'== installing existing build {info["app"]}')
                 subprocess.run(['xcrun', 'simctl', 'install', udid, info['app']], check=True)
                 return info
-        else:
+        elif info:
             print(f'== build artifact missing at {info["app"]}; rebuilding')
     if no_build:
-        raise SystemExit('run.py: --no-build given but no usable build manifest exists')
+        raise SystemExit('run.py: --no-build given but no usable build manifest exists for the current app sources')
     print('== building release-style preview app (expo prebuild + pod install + xcodebuild Release)')
     info = build_module.build(udid, install=True)
     manifest.parent.mkdir(parents=True, exist_ok=True)

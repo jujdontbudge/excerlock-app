@@ -57,6 +57,23 @@ dotfile convention documented in `scripts/check-env.ts`). The harness needs:
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | `supabase.py` admin OTP/session/user operations |
 | `EXPO_PUBLIC_*` + aliases (`~/.excerlock/env`) | `build.py` preview build |
 
+## One build, one simulator (harness rule)
+
+The harness builds the app **once** and runs **every** scenario in the invocation
+against that one artifact on the one owned simulator:
+
+* `build.py` caches the artifact by the **app-source revision**
+  (`appSourceRevision`, a hash of `git ls-tree -r HEAD -- app-next` excluding the
+  harness itself) and records it in `build/build.json` next to the full `revision`.
+* `run.py` takes many scenarios in one invocation (`run.py E2E-N1 E2E-V1 ...` or
+  `--all`), resolves the build once, boots the pinned `EXCERLOCK_SIM_UDID` once,
+  and hands the same build manifest to every scenario. It rebuilds only when the
+  cached artifact's `appSourceRevision` no longer matches the tree — never per
+  scenario. `--no-build` reuses the artifact and warns when it is stale.
+* The fresh-install fixture reinstalls the **app** (`simctl uninstall` +
+  `keychain reset` + `privacy reset` + `simctl install`) on that same booted
+  device; no scenario boots, erases or creates a simulator.
+
 ## Build under test
 
 `build.py` produces a **Release** simulator build of `app-next` with
