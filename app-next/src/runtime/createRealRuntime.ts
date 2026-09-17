@@ -44,6 +44,7 @@ import { registerHeadlessDetectionHandler } from './detection/headlessRegistry';
 import { createShieldCopyWriter } from './shield/createShieldCopyWriter';
 import type { DetectionWake } from './detection/DetectionService';
 import { RuntimeCleanupError } from './RuntimeSingleton';
+import { markStartupStage } from '../../modules/excerlock-startup';
 
 const SELECTION_VERSION_KEY = 'excerlock-next.selection-version.v1';
 export type RealRuntime = Runtime & {
@@ -57,6 +58,7 @@ export type RealRuntime = Runtime & {
  */
 export async function createRealRuntime(options: { reportError(error: unknown): void }): Promise<RealRuntime> {
   await hydrateProductionStores();
+  markStartupStage('HydrationDone');
   const native = getExcerlockEnforcementModule();
   const gait = nativeGait();
   if (!gait) throw new Error('The production gait module is missing');
@@ -635,6 +637,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       );
       status = { ...status, loading: false };
       listeners.forEach((listener) => listener());
+      markStartupStage('RuntimeReady');
       return runtime;
     } catch (error) {
       try {

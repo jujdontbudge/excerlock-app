@@ -2,7 +2,9 @@
 
 ## Index
 
+- [0033: Startup stage signposts and a fixture-verified numeric parse](0033-startup-stage-signposts.md) — **accepted**.
 - [0032: PostHog flag rails with one production consumer per registry entry](0032-posthog-flag-consumers.md) — **accepted**.
+- [0031: Install Sentry at the entry and keep thrown Error messages](0031-entry-sentry-install-and-error-messages.md) — **accepted**.
 - [0026: Isolate the phone motion recorder from the shipping app](0026-isolate-phone-motion-recorder.md) — **accepted**.
 - [0025: Main is the release source](0025-main-is-the-release-source.md) — **accepted**.
 

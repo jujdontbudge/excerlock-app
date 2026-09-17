@@ -25,3 +25,4 @@ Points of Interest traces can explain native-delegate-to-React and delegate-to-i
 - `app-next/src/runtime/startup/useInteractiveHomeMarker.ts`
 - `app-next/scripts/measure-startup.sh`
 - `plans/ship/T15-performance.md`
+- [0033: Startup stage signposts and a fixture-verified numeric parse](0033-startup-stage-signposts.md) — **accepted**; extends the stage set and adds the fixture-verified numeric parse. The physical-device acceptance requirement is unchanged.

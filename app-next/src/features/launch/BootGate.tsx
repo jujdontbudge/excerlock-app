@@ -5,6 +5,7 @@ import { useHydrated } from '../../state/useHydrated';
 import { bootDestination } from '../../onboarding/bootDestination';
 import { BootScreen } from './BootScreen';
 import { useRuntimeStatus } from '../../state/selectors';
+import { markStartupStage } from '../../../modules/excerlock-startup';
 export function BootGate() {
   const hydrated = useHydrated(),
     runtimeState = useRuntimeStatus(),
@@ -15,5 +16,10 @@ export function BootGate() {
   // paywall. Ordinary bundles compile this branch out.
   if (__LINKED_RECORDER_TRACE__) return <Redirect href="/linked-trace" />;
   const destination = bootDestination(complete, step, entitlement.status, setupComplete, setupStep);
-  return hydrated && runtimeState.hydrated && !runtimeState.loading && destination ? <Redirect href={destination as Href} /> : <BootScreen />;
+  const redirecting = Boolean(hydrated && runtimeState.hydrated && !runtimeState.loading && destination);
+  // Diagnostic stage boundary: mark the commit that issues the redirect. The
+  // mark cannot wait for an effect because <Redirect> navigates BootGate away
+  // in that same commit; the JS wrapper is idempotent and bounds stage order.
+  if (redirecting) markStartupStage('BootGateRedirect');
+  return redirecting ? <Redirect href={destination as Href} /> : <BootScreen />;
 }
