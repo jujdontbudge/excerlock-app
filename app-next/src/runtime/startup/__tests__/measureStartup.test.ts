@@ -79,6 +79,29 @@ const MULTI_LAUNCH_EXPORT = `<?xml version="1.0" encoding="UTF-8"?>
 </trace-query-result>
 `;
 
+/** Two cold launches in the shape a real `xcrun xctrace export` writes: one
+ * `<process id fmt>` definition per launch that the rows reference (`ref`), the
+ * exact signpost name declared once and referenced later (`<signpost-name
+ * ref>`), `MM:SS.fff.uuu` formatted clocks next to raw nanosecond text, and the
+ * legacy `DelegateToInteractiveHome` interval whose text contains the
+ * `InteractiveHome` stage name. */
+const REAL_TRACE_EXPORT = `<?xml version="1.0"?>
+<trace-query-result>
+<node xpath='//trace-toc[1]/run[1]/data[1]/table[1]'><process id="4" fmt="ExcerLock (20461)"/><process id="9" fmt="ExcerLock (20500)"/><subsystem id="42" fmt="com.johansardar.excerlock.startup"/><signpost-name id="51" fmt="AppDelegateEntry">AppDelegateEntry</signpost-name><signpost-name id="52" fmt="FirstReactRender">FirstReactRender</signpost-name><signpost-name id="53" fmt="HydrationDone">HydrationDone</signpost-name><signpost-name id="54" fmt="RuntimeReady">RuntimeReady</signpost-name><signpost-name id="55" fmt="BootGateRedirect">BootGateRedirect</signpost-name><signpost-name id="56" fmt="DelegateToInteractiveHome">DelegateToInteractiveHome</signpost-name>
+<row><event-time id="39" fmt="00:00.905.375">905375791</event-time><process ref="4"/><signpost-name ref="56"/><subsystem ref="42"/></row>
+<row><event-time id="49" fmt="00:00.905.380">905380625</event-time><process ref="4"/><signpost-name ref="51"/><subsystem ref="42"/></row>
+<row><event-time id="331" fmt="00:01.172.622">1172622083</event-time><process ref="4"/><signpost-name ref="52"/><subsystem ref="42"/></row>
+<row><event-time id="332" fmt="00:01.173.100">1173100000</event-time><process ref="4"/><signpost-name ref="53"/><subsystem ref="42"/></row>
+<row><event-time id="333" fmt="00:01.175.200">1175200000</event-time><process ref="4"/><signpost-name ref="54"/><subsystem ref="42"/></row>
+<row><event-time id="334" fmt="00:01.175.300">1175300000</event-time><process ref="4"/><signpost-name ref="55"/><subsystem ref="42"/></row>
+<row><event-time id="335" fmt="00:10.000.000">10000000000</event-time><process ref="9"/><signpost-name ref="51"/><subsystem ref="42"/></row>
+<row><event-time id="336" fmt="00:10.200.000">10200000000</event-time><process ref="9"/><signpost-name ref="52"/><subsystem ref="42"/></row>
+<row><event-time id="337" fmt="00:10.400.000">10400000000</event-time><process ref="9"/><signpost-name ref="53"/><subsystem ref="42"/></row>
+<row><event-time id="338" fmt="00:10.500.000">10500000000</event-time><process ref="9"/><signpost-name ref="54"/><subsystem ref="42"/></row>
+<row><event-time id="339" fmt="00:10.520.000">10520000000</event-time><process ref="9"/><signpost-name ref="55"/><subsystem ref="42"/></row>
+</node></trace-query-result>
+`;
+
 function runMeasure(exportXml: string) {
   const dir = mkdtempSync(path.join(tmpdir(), 'measure-startup-'));
   const trace = path.join(dir, 'capture.trace');
@@ -204,6 +227,25 @@ test('prints per-stage medians across multiple launches in the export', () => {
     InteractiveHome: { samples: 2, median_step_ms: 305, median_cumulative_ms: 1500 },
   });
   expect(existsSync(path.join(output, 'signposts.xml'))).toBe(true);
+});
+
+test('reads a real xctrace export with shared refs into per-launch medians', () => {
+  const { result, output } = runMeasure(REAL_TRACE_EXPORT);
+
+  expect(result.status).toBe(0);
+  expect(result.stdout).toContain('across 2 launch(es)');
+  const medians = readJson(path.join(output, 'stage-medians.json'));
+  expect(medians.launches).toBe(2);
+  // The legacy DelegateToInteractiveHome interval is not the InteractiveHome
+  // stage, and raw nanosecond text must not be read as seconds: the refs,
+  // formatted clocks and per-launch process keys carry the numbers instead.
+  expect(medians.stages).toEqual({
+    FirstReactRender: { samples: 2, median_step_ms: 233.621, median_cumulative_ms: 233.621 },
+    HydrationDone: { samples: 2, median_step_ms: 100.239, median_cumulative_ms: 333.86 },
+    RuntimeReady: { samples: 2, median_step_ms: 51.05, median_cumulative_ms: 384.91 },
+    BootGateRedirect: { samples: 2, median_step_ms: 10.05, median_cumulative_ms: 394.96 },
+  });
+  expect(medians.missing_stages).toEqual(['InteractiveHome']);
 });
 
 test('reads the simulator unified log capture into per-launch stage medians', () => {

@@ -40,7 +40,7 @@ if [[ -n "$UDID" ]]; then
   "capture_validated_against_real_output": true,
   "simulator_numbers": true,
   "stage_medians": "stage-medians.json",
-  "real_trace_validated": false,
+  "real_trace_validated": true,
   "full_cold_launch_verified": false,
   "note": "Per-stage medians are delegate-relative step and cumulative times measured on the simulator, not process launch or first-frame time. The §6.2 budgets remain a signed Release build measured on the target device (ADR 0021/0033)."
 }
@@ -61,9 +61,9 @@ cat > "$OUT/diagnostic.json" <<'JSON'
   "capture_source": "xctrace-export",
   "simulator_numbers": false,
   "stage_medians": "stage-medians.json",
-  "real_trace_validated": false,
+  "real_trace_validated": true,
   "full_cold_launch_verified": false,
-  "note": "Per-stage medians are delegate-relative step and cumulative times, not process launch or first-frame time. The parser schema is fixture-verified only, and a signed Release build on the target device remains required before claiming the T15 budgets (ADR 0021)."
+  "note": "Per-stage medians are delegate-relative step and cumulative times, not process launch or first-frame time. The parser's xctrace shape is validated against a real device capture (app-next/evidence/T15/device-startup-stage-medians), and a signed distribution build on the target device remains required before claiming the T15 budgets (ADR 0021/0033)."
 }
 JSON
 cat "$OUT/diagnostic.json"

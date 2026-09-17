@@ -138,7 +138,7 @@ with the inspected contract text instead of a bare failure. Current map (plan §
 | `E2E-N4W` | fresh install | one online launch creates the Adapty profile (never opening the paywall), then a launch with every Adapty endpoint denied (`/etc/hosts` → `0.0.0.0`), onboarding O01→P | Adapty profile existed and no placement was cached before the offline launch; endpoints verified unreachable; offline walk reaches the paywall; the export's remote-config title and its annual+monthly Premium A plans render; denial still holds after the walk; `/etc/hosts` restored byte-for-byte | **PASS** (`20260917T1936Z`): title + both Premium A plans render offline |
 | `E2E-E1` | existing user | relaunch, no paywall, Home | boot destination; `$screen home`; interactive-Home budget | BLOCKED-until the entitled existing-user fixture (see gap below) |
 | `E2E-V1` | fresh install | every production route (onboarding steps + deep links) | one `$screen` row per visited route; route-coverage table | onboarding sweep + `$screen` rows PASS; 20 guarded routes BLOCKED-until the fixture |
-| `E2E-S1` | fresh install | 10 cold launches, launch timing | medians vs §6.2 (first frame ≤1.5 s, interactive Home ≤2.5 s) | coarse launch→surface measured **and** the app's delegate-relative stage medians recorded from the simulator's own unified log (`measure-startup.sh --sim-log`); §6.2 budgets BLOCKED-until the device lane (ADR 0021/0033) and the Home budget until the fixture; `xctrace`-on-simulator recording is broken on this host (finding 3) |
+| `E2E-S1` | fresh install | 10 cold launches, launch timing | medians vs §6.2 (first frame ≤1.5 s, interactive Home ≤2.5 s) | coarse launch→surface measured **and** the app's delegate-relative stage medians recorded from the simulator's own unified log (`measure-startup.sh --sim-log`); the device lane records the same stages through a real xctrace device capture (`evidence/T15/device-startup-stage-medians/`, finding 3); §6.2 budgets BLOCKED-until the device lane (ADR 0021/0033) and the Home budget until the fixture; `xctrace`-on-simulator recording is broken on this host (finding 3) |
 | `E2E-A3` | fresh install | welcome footer → email sign-in | signed-in UI; Supabase user; `PUT /v1/user` 204; PostHog rows under the canonical distinct id; teardown 204/410/404 | **PASS** (recovery lane, admin-minted code — see findings) |
 | — | — | `E2E-POSTHOG-TIMEOUT` env | `E2E_POSTHOG_TIMEOUT` (screen window, default 60 s) and `E2E_PAYWALL_WAIT` (extended poll for load-driven events, default 300 s) tune the PostHog windows | — |
 | `E2E-A4` | existing user | Settings → Account → delete | 204, re-PUT 410, Supabase 404, PostHog person erased, local wipe | UI half BLOCKED-until the fixture; harness-driven API half runs and asserts the live contract |
@@ -172,6 +172,17 @@ The A3/E1/A4/E2 evidence predates the UI-overhaul commits that landed after
 those runs; their verdicts still record the build's `builtAt`/artifact path, and
 the harness re-runs them unchanged against any newer build. `E2E-S1` was re-run
 afterwards (`20260917T1810Z`) and its stage-median evidence is current.
+
+The device lane has its own stage-median capture (no scenario verdict, so it is
+not a table row): `20260917T2015Z` recorded 20 cold launches of a
+manual-signed preview Release on `Il` and 11 carried all four fresh-install B10
+stages — device cumulative medians `FirstReactRender` 200.485 ms,
+`HydrationDone` 212.256 ms, `RuntimeReady` 268.051 ms, `BootGateRedirect`
+269.404 ms, parsed from a real xctrace export by the same
+`measure-startup.sh`/`startup-stage-medians.cjs` pair (evidence and recipe under
+`app-next/evidence/T15/device-startup-stage-medians/`). They are
+delegate-relative diagnostics: the §6.2 budgets stay with a signed distribution
+build (ADR 0021/0033).
 
 The N1/V1 evidence in `20260917T1600Z` was captured on the build made from
 `appSourceRevision` of that moment. Later commits on `main` touch app sources
@@ -243,14 +254,28 @@ lag).
    * **`xctrace` and its packages are otherwise healthy**: a host recording
      (`xcrun xctrace record --template 'Time Profiler' --all-processes
      --time-limit 5s`, no `--device`) completes and exports normally.
-   * **Statement for escalation:** what is broken is the CoreSimulator
-     *instruments tap* in this Xcode 26.4.1 installation, not a template, not an
-     Instruments package and not an Xcode version mismatch — the simulator
-     runtime and Xcode are both 26.4.1/23E254a. Whether a **device** recording
-     would work is *untested*, not known bad: the only paired device here (`Il`,
-     iOS 26.2.1) is offline, so `--device <phone>` could not be exercised. The
-     `Logging` template the earlier note blamed belongs to the same broken
-     recording path.
+   * **Statement for escalation:** the only broken piece is the CoreSimulator
+     *instruments tap* in this Xcode 26.4.1 installation — not a template, not an
+     Instruments package and not an Xcode/runtime mismatch (both are
+     26.4.1/23E254a). A **device** recording is no longer untested, and it works:
+     the same `--instrument os_signpost` invocation against the paired iPhone 13
+     (`Il`, iOS 26.2.1) starts, launches the app, completes inside its time
+     limit and exports the `os-signpost` table normally. A 20-cold-launch
+     capture yielded the full B10 stage set for 11 launches, parsed into the
+     device medians committed under
+     `app-next/evidence/T15/device-startup-stage-medians/` (revision `3104ec02`,
+     manual-signed preview Release). What kept the device half blocked was not
+     xctrace: the installed build predated B10, and the device build failed
+     under automatic signing (`No Accounts`, plus development profiles missing
+     the associated-domains / push / Sign In with Apple / family-controls
+     capabilities). The pre-issued `ExcerLock Development` profiles carry those
+     capabilities and include the device, so a manual-signed build installs and
+     records (recipe in the evidence README). Two recording quirks: the device
+     tap keeps roughly a minute of signpost data and the stream warms up over a
+     few launches, so a loop must pack 10+ launches after the first captured one;
+     and the device must be unlocked, or launches never emit the startup stages.
+     The `Logging` template the earlier note blamed belongs to the same broken
+     simulator path.
 4. **A first-ever offline launch cannot render the paywall.** AdaptySDK-iOS 4.0.2
    creates the profile on the server at activation (`createNewProfileOnServer`
    retries every 100 ms until the backend answers) and `identify` awaits that

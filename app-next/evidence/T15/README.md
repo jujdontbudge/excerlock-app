@@ -9,3 +9,7 @@ Changes from the accessibility review: keep AM/PM with its number, stack permiss
 The first Conditions recording hit the tab bar while trying to tap a scrolled Add condition. This was a capture-driver error: the native AX tree exposed the offscreen button. `visible_tap.py` now scrolls controls clear of fixed chrome before tapping. The first attempt is retained separately; the successful rerun exercises create/edit/discard and native swipe.
 
 Validation before acceptance-data changes: 412 tests / 112 suites / 14 snapshots passed; domain branch coverage 100%. TypeScript and lint passed. Red/green logs cover nonbreaking time labels and visible Restore progress.
+
+## Startup stage medians
+
+Both lanes' delegate-relative startup stage medians are recorded outside this motion pass: the simulator unified-log capture in the `E2E-S1` runs (`app-next/e2e-next/out/20260917T1810Z/`) and the device xctrace capture in [`device-startup-stage-medians/`](device-startup-stage-medians/README.md). Neither is the §6.2 budget gate (ADR 0021/0033).

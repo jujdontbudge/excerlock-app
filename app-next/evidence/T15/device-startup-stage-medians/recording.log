@@ -1,0 +1,9 @@
+Starting recording with the Blank template and os_signpost Instrument. Targeting All Processes. Time limit: 120.0 s
+Ctrl-C to stop the recording
+Reached specified time limit, ending recording...
+Run issues were detected (trace is still ready to be viewed):
+* [Warning] Data stream: Signpost intervals with backdated timestamps were emitted that are not visualized on the timeline until immediate mode recording is stopped.
+
+Recording completed. Saving output file...
+Output file saved as: device-b10g.trace
+recorder exit=0

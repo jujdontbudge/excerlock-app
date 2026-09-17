@@ -17,8 +17,13 @@ Facts: audit finding — rule set re-sorted every second while Home mounted; `re
 ## Steps
 
 1. `scripts/measure-startup.sh` (`--sim-log <udid>` reads the simulator's own
-   os_signpost stage medians out of its unified log — ADR 0036; `--trace/--xpath`
+   os_signpost stage medians out of its unified log — ADR 0037; `--trace/--xpath`
    parses an `xcrun xctrace` recording on device; `simctl` launch timing on sim).
+   Device diagnostics are recorded: 11 cold launches on `Il` of the manual-signed
+   preview Release gave cumulative medians `FirstReactRender` 200.485 ms →
+   `BootGateRedirect` 269.404 ms (`app-next/evidence/T15/device-startup-stage-medians/`).
+   These are delegate-relative diagnostics; the acceptance below still needs the
+   signed distribution build.
 2. Fix the Home sort; lazy routes for `unlock/propped`, gym picker map, Analytics charts.
 3. React Compiler already on; verify no `useMemo` regressions.
 

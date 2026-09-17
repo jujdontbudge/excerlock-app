@@ -1,0 +1,85 @@
+{
+  "schema": "device-startup-stage-medians/1",
+  "capture": "20260917T2015Z",
+  "capturedAt": "2026-09-17T20:15:49Z",
+  "device": {
+    "name": "Il",
+    "model": "iPhone 13 (iPhone14,5)",
+    "os": "26.2.1",
+    "xctraceUdid": "00008110-000E5041260BA01E",
+    "devicectlIdentifier": "F4E839C0-3F05-5BF8-BA31-12949B2B83AB"
+  },
+  "host": {
+    "xcode": "26.4.1 (23E254a)",
+    "xctrace": "16.0 (17E202)"
+  },
+  "build": {
+    "scheme": "ExcerLock",
+    "configuration": "Release",
+    "environment": "preview",
+    "bundleId": "com.johansardar.excerlock",
+    "revision": "3104ec02c0f7caa77c5ac266efbcebe7a8beb08b",
+    "builtAt": "2026-09-17T19:47:36Z",
+    "signing": {
+      "identity": "Apple Development: JOHAN AMIT SARDAR (9X6MMS8XMD)",
+      "team": "AX3C2B78YD",
+      "mainProfile": "ExcerLock Development",
+      "extensionProfiles": [
+        "ExcerLock Monitor Development",
+        "ExcerLock Report Development",
+        "ExcerLock Shield Development",
+        "ExcerLock ShieldAction Development"
+      ]
+    },
+    "note": "This worktree edited only harness tooling (app-next/scripts/ and the startup jest test) while the build ran; nothing the Release JS bundle or native app consumes changed, so the artifact matches revision 3104ec02's app sources. The generated ios/ project (git-ignored) was patched for manual signing before the build."
+  },
+  "recording": {
+    "instrument": "os_signpost",
+    "template": "Blank (implicit; no Points of Interest template ships)",
+    "output": "device-b10g.trace (local, git-ignored)",
+    "launchCount": 20,
+    "completeLaunchCount": 11,
+    "exportXpath": "/trace-toc/run[@number=\"1\"]/data/table[@schema=\"os-signpost\"]"
+  },
+  "stageMediansMs": {
+    "FirstReactRender": {
+      "samples": 11,
+      "median_step_ms": 200.485,
+      "median_cumulative_ms": 200.485
+    },
+    "HydrationDone": {
+      "samples": 11,
+      "median_step_ms": 11.69,
+      "median_cumulative_ms": 212.256
+    },
+    "RuntimeReady": {
+      "samples": 11,
+      "median_step_ms": 54.811,
+      "median_cumulative_ms": 268.051
+    },
+    "BootGateRedirect": {
+      "samples": 11,
+      "median_step_ms": 1.245,
+      "median_cumulative_ms": 269.404
+    }
+  },
+  "missingStages": [
+    "InteractiveHome"
+  ],
+  "interpretation": "Delegate-relative device diagnostics, not \u00a76.2 budget evidence: the numbers are measured from the app's AppDelegate entry and the build is a development-signed preview Release, while ADR 0021/0033 keep the T15 budgets on a signed distribution build. InteractiveHome is absent because a fresh install boots into onboarding (see E2E-E1).",
+  "simulatorComparisonMs": {
+    "note": "Same parser, simulator unified-log capture from E2E-S1 run 20260917T1810Z (10 launches); listed only to show the device/simulator gap, never as budget evidence.",
+    "FirstReactRender": 41.649,
+    "HydrationDone": 42.103,
+    "RuntimeReady": 44.005,
+    "BootGateRedirect": 44.031
+  },
+  "artifacts": {
+    "stage-medians.json": "parser output on the full os-signpost export",
+    "stage-medians-trimmed.json": "parser output on signposts-stage-rows.xml (identical numbers)",
+    "signposts-stage-rows.xml": "trimmed real export: 176 stage/legacy rows across 11 launches plus the 55 referenced definitions",
+    "diagnostic.json": "measure-startup.sh trace-path diagnostic",
+    "launches.log": "20 cold-launch log (pid before, devicectl latency) from the recording",
+    "recording.log": "xctrace recorder log"
+  }
+}

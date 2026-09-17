@@ -4,26 +4,34 @@
 // Two input shapes are accepted, auto-detected from the content:
 //
 //   * `xcrun xctrace export --xpath ...` XML (the `os-signpost` table) — the
-//     trace path `measure-startup.sh --trace/--xpath` uses.
+//     trace path `measure-startup.sh --trace/--xpath` uses. Verified against a
+//     real device capture (`app-next/evidence/T15/device-startup-stage-medians/`).
 //   * `xcrun simctl spawn <udid> log show --signpost --style ndjson` rows — the
 //     simulator path `measure-startup.sh --sim-log` uses. Stage rows are matched
 //     on `signpostName`, timed by `machTimestamp` (nanoseconds since boot) and
 //     keyed per launch by `processID`.
 //
-// The parser is deliberately schema-tolerant because no real xctrace export is
-// committed as a fixture yet:
+// The parser stays schema-tolerant across both shapes:
 //
-//   * A stage row is any <row> whose serialized text contains one of the
-//     signpost event names emitted by modules/excerlock-startup
-//     (FirstReactRender / FirstReactChildMount / HydrationDone / RuntimeReady /
-//     BootGateRedirect / InteractiveHome).
+//   * A stage row is a <row> whose declared signpost name is one of the events
+//     emitted by modules/excerlock-startup (FirstReactRender /
+//     FirstReactChildMount / HydrationDone / RuntimeReady / BootGateRedirect /
+//     InteractiveHome). Attribute-only fixture rows fall back to substring
+//     matching; real exports carry the exact name in `<signpost-name>` /
+//     `<os-signpost>`, which matters because the legacy
+//     `DelegateToInteractiveHome` interval contains the `InteractiveHome` text.
 //   * Its time comes from the first of these attributes or child elements that
-//     parses: timestamp, event-time, start-time, time, date. Values may be
-//     seconds ("12.345"), "MM:SS.ffffff", or "HH:MM:SS.ffffff".
-//   * Rows are grouped by the process/pid column when present, otherwise the
-//     whole export is one launch. Each launch contributes one sample per stage;
-//     a launch's step time for a stage is the distance from the previous stage
-//     it actually reported (skipped stages do not invent samples).
+//     parses: timestamp, event-time, start-time, time, date. A real xctrace
+//     export formats the value in the element's `fmt` (e.g. "00:01.172.622")
+//     while the element text is raw nanoseconds, so `fmt` wins when present;
+//     without one, values may be seconds ("12.345"), "MM:SS.ffffff" or
+//     "HH:MM:SS.ffffff".
+//   * Rows are grouped by the process/pid column when present — real exports
+//     share one `<process id=... fmt=...>` definition per launch and reference
+//     it from rows, so refs must be resolved — otherwise the whole export is one
+//     launch. Each launch contributes one sample per stage; a launch's step time
+//     for a stage is the distance from the previous stage it actually reported
+//     (skipped stages do not invent samples).
 //
 // Output: a per-stage median table in milliseconds plus a JSON document with
 // the same numbers. This is a delegate-relative diagnostic, not process-launch
@@ -97,11 +105,50 @@ function parseTime(value) {
   if (!trimmed) return null;
   if (/^\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
   const parts = trimmed.split(':');
-  if (parts.length < 2 || parts.length > 3 || parts.some((part) => !/^\d+(\.\d+)?$/.test(part))) return null;
-  const seconds = Number(parts.pop());
-  const minutes = Number(parts.pop());
-  const hours = parts.length ? Number(parts.pop()) : 0;
+  if (parts.length < 2 || parts.length > 3) return null;
+  // xctrace's formatted clock splits the fraction into groups
+  // ("00:01.172.622" = 1 s + 172622 µs); the raw text next to it is
+  // nanoseconds, so `fmt` is the portable form.
+  const secondParts = parts.pop().split('.');
+  if (!secondParts.length || secondParts.some((part) => !/^\d+$/.test(part))) return null;
+  const fraction = secondParts.slice(1).join('');
+  const seconds = Number(secondParts[0]) + Number(`0.${fraction || '0'}`);
+  const clock = parts.map(Number);
+  if (clock.some((part) => !Number.isFinite(part))) return null;
+  const minutes = clock.pop();
+  const hours = clock.length ? clock.pop() : 0;
   return hours * 3600 + minutes * 60 + seconds;
+}
+
+/** Shared-string index: real xctrace exports define a value once
+ * (`<process id="4" fmt="ExcerLock (20461)"/>`) and reference it from rows
+ * (`<process ref="4"/>`), so row fields must be resolved through it. */
+function buildRefIndex(xml) {
+  const index = new Map();
+  for (const match of xml.matchAll(/<(\w[\w-]*)\b([^>]*?)id="(\d+)"([^>]*?)>/g)) {
+    const formatted = /\bfmt="([^"]*)"/.exec(`${match[2]} ${match[4]}`);
+    if (formatted) index.set(match[3], { tag: match[1], fmt: formatted[1] });
+  }
+  return index;
+}
+
+/** The signpost name a row declares structurally, or null for the legacy
+ * attribute-only shape where only a substring can be matched. Later rows in a
+ * real export reference the first definition (`<signpost-name ref="N"/>`), so
+ * the shared-string index is consulted before the inline `fmt`/text. */
+function declaredEvent(row, refs = new Map()) {
+  for (const name of ['signpost-name', 'os-signpost']) {
+    const element = new RegExp(`<${name}(?![\\w-])([^>]*)>([^<]*)</${name}>|<${name}(?![\\w-])([^>]*)/>`, 'i').exec(row);
+    if (!element) continue;
+    const attrs = element[1] ?? element[3] ?? '';
+    const reference = /\bref="(\d+)"/.exec(attrs);
+    const referenced = reference ? refs.get(reference[1]) : null;
+    if (referenced?.fmt) return referenced.fmt.trim();
+    const formatted = /\bfmt="([^"]*)"/.exec(attrs);
+    const value = (formatted ? formatted[1] : element[2] ?? '').trim();
+    if (value) return value;
+  }
+  return null;
 }
 
 function firstTimestamp(row) {
@@ -110,14 +157,17 @@ function firstTimestamp(row) {
     const value = parseTime(match[2]);
     if (value !== null) return value;
   }
-  for (const match of row.matchAll(/<(event-time|start-time|timestamp|time|date)\b[^>]*>([^<]*)<\/\1>/gi)) {
-    const value = parseTime(match[2]);
+  for (const match of row.matchAll(/<(event-time|start-time|timestamp|time|date)\b([^>]*)>([^<]*)<\/\1>/gi)) {
+    const formatted = /\bfmt="([^"]*)"/.exec(match[2]);
+    const value = formatted ? parseTime(formatted[1]) ?? parseTime(match[3]) : parseTime(match[3]);
     if (value !== null) return value;
   }
   return null;
 }
 
-function firstStage(row) {
+function firstStage(row, refs) {
+  const declared = declaredEvent(row, refs);
+  if (declared) return EVENT_TO_STAGE[declared] ?? null;
   let winner = null;
   let winnerIndex = Infinity;
   for (const event of Object.keys(EVENT_TO_STAGE)) {
@@ -133,7 +183,7 @@ function firstStage(row) {
 /** Stable per-launch key from the pid/process column, when the export has one.
  * pid wins: two launches of the same app share a process name but never a pid.
  */
-function launchKey(row) {
+function launchKey(row, refs = new Map()) {
   const attributes = new Map();
   for (const match of row.matchAll(/([A-Za-z_][\w-]*)\s*=\s*"([^"]*)"/g)) {
     attributes.set(match[1].toLowerCase(), match[2].trim());
@@ -154,18 +204,27 @@ function launchKey(row) {
   for (const name of ['process', 'process-name']) {
     if (elements.get(name)) return `process:${elements.get(name)}`;
   }
+  // Real exports: `<process ref="4"/>` pointing at the launch's shared
+  // definition, whose `fmt` ("ExcerLock (20461)") is unique per launch.
+  for (const name of ['process', 'pid', 'processid', 'process-name']) {
+    const ref = new RegExp(`<${name}\\s+ref="(\\d+)"\\s*/?>`, 'i').exec(row);
+    if (!ref) continue;
+    const definition = refs.get(ref[1]);
+    if (definition?.fmt) return `pid:${definition.fmt.trim()}`;
+  }
   return 'launch';
 }
 
 function collectLaunches(xml) {
+  const refs = buildRefIndex(xml);
   const launches = new Map();
   const rows = xml.match(/<row\b[^>]*>[\s\S]*?<\/row>|<row\b[^>]*\/>/g) ?? [];
   for (const row of rows) {
-    const stage = firstStage(row);
+    const stage = firstStage(row, refs);
     if (!stage) continue;
     const time = firstTimestamp(row);
     if (time === null) continue;
-    const key = launchKey(row);
+    const key = launchKey(row, refs);
     const stages = launches.get(key) ?? {};
     if (stages[stage] === undefined || time < stages[stage]) stages[stage] = time;
     launches.set(key, stages);
@@ -326,9 +385,9 @@ const document = {
   units: 'milliseconds',
   stages,
   missing_stages: missing,
-  real_trace_validated: false,
+  real_trace_validated: true,
   note:
-    'Schema-tolerant parser; delegate-relative diagnostic, not process-launch or first-frame time (ADR 0021). The xctrace XML shape is still verified against the jest fixture only; the ndjson shape (simulator unified log) is verified against a real capture.',
+    'Schema-tolerant parser; delegate-relative diagnostic, not process-launch or first-frame time (ADR 0021). The xctrace XML shape is verified against a real device capture (app-next/evidence/T15/device-startup-stage-medians) plus the jest fixture; the ndjson shape (simulator unified log) is verified against real captures too.',
 };
 if (jsonOutput) {
   fs.writeFileSync(jsonOutput, `${JSON.stringify(document, null, 2)}\n`);

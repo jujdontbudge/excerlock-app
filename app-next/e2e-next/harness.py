@@ -727,11 +727,13 @@ class RunContext:
         diagnostics — ADR 0021/0033 keep the T15 cold-launch/first-frame budgets
         on a signed device build — so this is evidence, never the budget gate.
 
-        Only usable where `xcrun xctrace record` can tap the target. It cannot on
-        this host: the tap fails and the recorder never exits (README finding 3),
-        which is why E2E-S1 uses `record_simulator_stage_medians` instead. Nor is
-        there a `Points of Interest` template here — `--instrument os_signpost`
-        records under the implicit Blank template.
+        Only usable where `xcrun xctrace record` can tap the target. On this host
+        that means a physical device — proven end to end in
+        `app-next/evidence/T15/device-startup-stage-medians/`; the simulator tap
+        fails at setup and the recorder never exits (README finding 3), which is
+        why E2E-S1 uses `record_simulator_stage_medians` instead. No `Points of
+        Interest` template ships here, so the recording is started with
+        `--instrument os_signpost` under the implicit Blank template.
         """
         output_dir.mkdir(parents=True, exist_ok=True)
         trace = output_dir / 'startup.trace'
@@ -740,7 +742,7 @@ class RunContext:
         self.terminate()
         time.sleep(1.0)
         try:
-            record = shell(['xcrun', 'xctrace', 'record', '--template', 'Points of Interest',
+            record = shell(['xcrun', 'xctrace', 'record', '--no-prompt', '--instrument', 'os_signpost',
                             '--device', self.udid, '--time-limit', time_limit, '--launch', BUNDLE_ID,
                             '--output', str(trace)], check=False, timeout=240)
         except subprocess.TimeoutExpired:

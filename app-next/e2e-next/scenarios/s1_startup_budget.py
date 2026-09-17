@@ -20,9 +20,11 @@ everywhere they appear. The interactive-Home stage additionally needs the
 existing-user fixture, because a fresh install boots into onboarding and never
 reaches Home (see E2E-E1).
 
-The xctrace route to the same numbers is recorded here as unusable on this host
-rather than attempted per run: `xcrun xctrace record` against a simulator
-target fails to set its tap and then never exits (README finding 3).
+The xctrace route to the same numbers is not attempted per run on the simulator:
+`xcrun xctrace record` against a simulator target fails to set its tap and then
+never exits (README finding 3). Against the paired iPhone it does work, and the
+device stage medians were recorded that way once
+(`app-next/evidence/T15/device-startup-stage-medians/`).
 """
 from __future__ import annotations
 
