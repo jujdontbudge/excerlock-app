@@ -75,7 +75,8 @@ def resolve_build(udid: str, *, rebuild: bool, no_build: bool) -> dict:
             installed = subprocess.run(['xcrun', 'simctl', 'get_app_container', udid, harness.BUNDLE_ID, 'app'],
                                        capture_output=True).returncode == 0
             if installed:
-                print(f'== reusing build {info["app"]} (appSourceRevision={info["appSourceRevision"]})')
+                print(f'== reusing build {info["app"]} '
+                      f'(appSourceRevision={info.get("appSourceRevision", "(unrecorded)")})')
                 return info
             if not no_build:
                 print(f'== installing existing build {info["app"]}')

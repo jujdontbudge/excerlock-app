@@ -167,6 +167,12 @@ The A3/S1/E1/A4/E2 evidence predates the UI-overhaul commits that landed after
 those runs; their verdicts still record the build's `builtAt`/artifact path, and
 the harness re-runs them unchanged against any newer build.
 
+The N1/V1 evidence in `20260917T1600Z` was captured on the build made from
+`appSourceRevision` of that moment. Later commits on `main` touch app sources
+(detection work), so the next `run.py` invocation reports the cache as stale,
+rebuilds once, and re-runs every selected scenario against the new artifact — no
+scenario rebuilds anything on its own.
+
 ### The one app finding N1 proves
 
 `$screen` rows cover every visited onboarding step **except O01**: the first
