@@ -1,0 +1,2687 @@
+{
+ "app": "6787265352",
+ "groups": [
+  {
+   "id": "22372981",
+   "localizations": [
+    {
+     "customAppName": null,
+     "id": "622c61d3-632a-4a25-b3f7-7dc9e1933f3e",
+     "locale": "en-US",
+     "name": "ExcerLock Premium"
+    }
+   ],
+   "referenceName": "ExcerLock Premium",
+   "versionId": "6bdc9746-74a1-44ee-9de2-161a915342e1",
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "id": "22279282",
+   "localizations": [
+    {
+     "customAppName": "ExcerLock",
+     "id": "bb735f79-6f57-49fe-9b25-10e21fc01f52",
+     "locale": "en-US",
+     "name": "ExcerLock Premium"
+    }
+   ],
+   "referenceName": "ExcerLock Premium \u2014 Variant A",
+   "versionId": "c8d470aa-c919-49f6-9510-befce7b4fad1",
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "id": "22279120",
+   "localizations": [
+    {
+     "customAppName": "ExcerLock",
+     "id": "d2870586-5469-42a3-90d4-2198766290ab",
+     "locale": "en-US",
+     "name": "ExcerLock Premium"
+    }
+   ],
+   "referenceName": "ExcerLock Premium \u2014 Variant B",
+   "versionId": "207f9cf9-18e4-4029-9bd9-84be7be5a59a",
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  }
+ ],
+ "subscriptions": [
+  {
+   "groupId": "22279282",
+   "groupLevel": 1,
+   "groupName": "ExcerLock Premium \u2014 Variant A",
+   "id": "6796884321",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Earn screen time by moving. Billed yearly.",
+     "id": "a9acbebf-1c15-404a-b034-c7d880afebdc",
+     "locale": "en-US",
+     "name": "Premium Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.a.annual",
+   "productReviewScreenshotId": "0bd78ed4-9c91-406a-ab3d-3474394a080d",
+   "referenceName": "ExcerLock Premium Annual",
+   "reviewNote": null,
+   "state": "READY_TO_SUBMIT",
+   "versionId": "331149cd-b1f4-465c-833a-bfb14f4100cd",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22279282",
+   "groupLevel": 2,
+   "groupName": "ExcerLock Premium \u2014 Variant A",
+   "id": "6796884508",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Earn screen time by moving. Billed monthly.",
+     "id": "cdaefc7a-fcc6-4bfc-9bd5-0aeeb65dd7d1",
+     "locale": "en-US",
+     "name": "Premium Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.a.monthly",
+   "productReviewScreenshotId": "21ea0715-7972-4489-843f-badf5607eafa",
+   "referenceName": "ExcerLock Premium Monthly",
+   "reviewNote": null,
+   "state": "READY_TO_SUBMIT",
+   "versionId": "04a66d78-67cb-437d-b82d-e526ee5ff2bc",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22279282",
+   "groupLevel": 3,
+   "groupName": "ExcerLock Premium \u2014 Variant A",
+   "id": "6796884396",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Discounted yearly plan for returning members.",
+     "id": "a163bc8c-68c4-4ece-be81-476755b2d9df",
+     "locale": "en-US",
+     "name": "Premium Annual Offer"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.a.winback.annual",
+   "productReviewScreenshotId": null,
+   "referenceName": "ExcerLock Premium Annual Offer",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "0c4ddc0d-6fd9-44a3-b18a-ff6173b3d9ee",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 31,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463121",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "615fbe39-e9a5-4345-be0f-6708d36ded32",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.2999.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 29.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "3c7e3be5-5991-4f56-933c-a259aa5bdcce",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 32,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463213",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "081ecfd4-3c33-4267-a1f7-bc1296d5885f",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.2999.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 29.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "5253ab6d-62c6-4120-9bcf-41e42c1ecaf9",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 33,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463439",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "d39c5dba-b1fb-406b-92d2-195406cc2cfb",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.2999.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 29.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "de549ec2-9772-4514-9da6-e162fd770de1",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 34,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463367",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "ef0f94bc-fa2b-42d5-9fda-1d44b35b10d3",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.3499.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 34.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "6c39d2bc-38d6-4d19-be30-92d659949cbb",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 35,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463540",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "953bf35e-d4c2-46f9-91db-0a4acaeaa77b",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.3499.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 34.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "0ee60a1c-0676-465e-ac1f-7bbab6cb7225",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 36,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463652",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "44e0cf28-6603-46fc-8644-469d1708f9b3",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.3499.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 34.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "6024f863-e306-4cd8-961e-a7fc1b2d4798",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 37,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463566",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "2d8fee06-1f0b-4431-8ab1-e966ab0eeadd",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.3999.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 39.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "6b4cd8e8-3e30-4ce6-935d-4848b1451370",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 38,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463454",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "bbafb3cb-8a8e-466f-b46e-3da2d12493e0",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.3999.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 39.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "f3c593c1-7642-42c0-9384-7abb3f760a0d",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 39,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463830",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "f0b2e807-f7d3-442f-af8b-3e85d57338cd",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.3999.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 39.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "3ae1d940-d4da-4c50-a2b8-2635760b18c8",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 40,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463892",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "3b70f10d-bc94-4058-b610-33d94adb7804",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.4499.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 44.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "70ee8e9e-9cdc-4fd9-bba0-923ac27f978f",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 41,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463898",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "4a509c2e-a5dc-439d-80f4-ecb5b2786764",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.4499.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 44.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "a80f7d72-9570-40e5-8e29-f8c71e5a64d7",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 42,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463904",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "3404229b-f87a-4e31-b63f-633917b93b9d",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.4499.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 44.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "bd8fad79-4ebd-47ba-812e-50a0e4230ce8",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 43,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463718",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "9fcef036-39c5-4e13-a851-2a1bf1003a99",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.4999.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 49.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "45befe5c-b201-4e0d-aa7f-164ac725fcf3",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 44,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463930",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "770eba5c-5dc7-462c-8912-e949199ff9d3",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.4999.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 49.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "ec7f9bc9-4d28-45b4-82e4-76fc3e5ee39a",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 45,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463997",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews yearly.",
+     "id": "32bd603b-bb6c-45da-bc01-d5fefabde5d8",
+     "locale": "en-US",
+     "name": "Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.annual.4999.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Annual 49.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "e6cec7dd-e77a-4d57-b1af-2a1981d17da9",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22279120",
+   "groupLevel": 1,
+   "groupName": "ExcerLock Premium \u2014 Variant B",
+   "id": "6796884452",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Earn screen time by moving. Billed yearly.",
+     "id": "7d966013-320a-4a1c-929f-281b17a14ca9",
+     "locale": "en-US",
+     "name": "Premium Annual"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.b.annual",
+   "productReviewScreenshotId": null,
+   "referenceName": "ExcerLock Premium Annual B",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "c0be6ae6-9708-42ac-b013-927e6c2e73aa",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22279120",
+   "groupLevel": 2,
+   "groupName": "ExcerLock Premium \u2014 Variant B",
+   "id": "6796884291",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Earn screen time by moving. Billed monthly.",
+     "id": "98381674-38ea-48f9-9f67-fc7de99644e1",
+     "locale": "en-US",
+     "name": "Premium Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.b.monthly",
+   "productReviewScreenshotId": null,
+   "referenceName": "ExcerLock Premium Monthly B",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "e7c305ce-2b3c-487d-99d4-fbc051c4baeb",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22279120",
+   "groupLevel": 3,
+   "groupName": "ExcerLock Premium \u2014 Variant B",
+   "id": "6796884509",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-07-31"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-08-01"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-08-01"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-08-01"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-08-01"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-08-01"
+    },
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-08-01"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Discounted yearly plan for returning members.",
+     "id": "4076c8ba-d36a-447e-b3dd-1d8da762ddd3",
+     "locale": "en-US",
+     "name": "Premium Annual Offer"
+    }
+   ],
+   "period": "ONE_YEAR",
+   "productId": "com.johansardar.excerlock.premium.b.winback.annual",
+   "productReviewScreenshotId": null,
+   "referenceName": "ExcerLock Premium Annual Offer B",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "8034537e-6d60-4404-8312-54eb7f8400ee",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 16,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462748",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "e35bb263-b8e7-41f6-ab10-a4af02a1bd7f",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1099.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 10.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "a98dc929-cc08-411d-bc71-01298ef25b4d",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 17,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462751",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "ff9f2997-c1ae-4eac-ba85-cbd7739aa8dd",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1099.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 10.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "046cd6b5-f819-4052-a03a-83737b8638c3",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 18,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462774",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "4cfce3d6-903f-41cd-aaba-89901232b581",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1099.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 10.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "b49875a0-8bd1-4421-87c7-333775f2d82f",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 19,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462592",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "f7ff78db-ac2e-4adf-9bb0-357fa89860e1",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1299.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 12.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "d32aa5b8-edc2-4d36-a1e6-0d376fcf931e",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 20,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462782",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "8950744a-9435-459e-805e-e90211500676",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1299.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 12.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "bbdefc98-ed47-42c2-aa75-485d0c5f81f7",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 21,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462530",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "88e32ad6-f3e9-4662-8283-9c01db6a39ed",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1299.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 12.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "f74f4d10-f3dc-4d96-a66a-3ee5077cdbc3",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 22,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462867",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "f8f86491-9959-4146-8e03-6fa900eddb0d",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1499.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 14.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "869b45bb-8cff-447b-9816-61db66062e7a",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 23,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462923",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "6df79285-7dc5-40dd-8d30-f0d9ff0228c5",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1499.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 14.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "440af7de-4c98-4f9c-a28c-1ef6abb99ad1",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 24,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462983",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "6ee03540-57e9-4750-b817-2f89b91bac8f",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1499.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 14.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "b12504b1-cbb8-4348-8534-daa0c73e4569",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 25,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462930",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "a704ff9f-ef71-4446-b954-ab99be9dd544",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1799.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 17.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "4faa77b8-3828-4fdb-9e4b-ff08397bbfc9",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 26,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463022",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "7415222a-d457-4f59-83f4-71e6c57d3342",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1799.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 17.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "7de6ae86-bdc9-4fdf-ab97-8371ed034e6e",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 27,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463094",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "3382ba2e-3647-4152-9d75-d17597fb291d",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1799.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 17.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "e1f5c554-2f90-48f6-b09e-67bf9b089e60",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 28,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463027",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "e8614717-af57-4c0c-b16a-02a0c53618de",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1999.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 19.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "5b23c324-a309-4970-b6dc-ae988b5fc063",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 29,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463058",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "0d198254-d2bb-4fdd-a7ea-7cae92a5be18",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1999.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 19.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "cc064c06-3a6c-40d4-8436-c96afc435d07",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 30,
+   "groupName": "ExcerLock Premium",
+   "id": "6810463159",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "5a4eebe0-5eed-4ce7-97dc-af93286698e2",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.1999.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 19.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "b3e4619d-bf0d-4564-aecf-ff6033078365",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 10,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462569",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "634fc9ac-51aa-4096-959c-5811dc19b2e3",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.799.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 7.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "b92a6fb1-ef0e-478c-be2c-d5350f3b0f9b",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 11,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462571",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "3dd75ad1-b4b1-4a05-87e2-43a03f47e247",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.799.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 7.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "77fed722-ada8-4297-a7be-69541fde7715",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 12,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462578",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "7a251a4f-190e-417e-9ca5-2eb3456cb4c0",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.799.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 7.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "61e568c1-5f17-4269-814e-565caca820fa",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 13,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462659",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "076a0c64-4429-4ba3-9c63-6186c8cf30b8",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.999.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 9.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "d29903e7-b80f-4a43-a681-39989ffd41b2",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 14,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462561",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "2c86f2f4-ccbf-494d-8918-92e131c40e03",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.999.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 9.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "3c102a2f-cacc-4c3a-b02b-d0b270eb02d2",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 15,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462644",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews monthly.",
+     "id": "8d2341de-0efc-4884-a0be-07d0fd844816",
+     "locale": "en-US",
+     "name": "Monthly"
+    }
+   ],
+   "period": "ONE_MONTH",
+   "productId": "com.johansardar.excerlock.premium.monthly.999.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Monthly 9.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "738775e4-e2fa-47a8-901d-fec32d007947",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 3,
+   "groupName": "ExcerLock Premium",
+   "id": "6810461585",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews weekly.",
+     "id": "33d3ba6d-6818-4446-9289-3d68d74dda74",
+     "locale": "en-US",
+     "name": "Premium Weekly $5.99 (7-day trial)"
+    }
+   ],
+   "period": "ONE_WEEK",
+   "productId": "com.johansardar.excerlock.premium.weekly.599.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Weekly 5.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "80ec9ebb-c611-4d6c-aae6-7bca93801dad",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 4,
+   "groupName": "ExcerLock Premium",
+   "id": "6810461728",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews weekly.",
+     "id": "50310a22-0329-45a3-81a1-dab0f249f4c9",
+     "locale": "en-US",
+     "name": "Weekly"
+    }
+   ],
+   "period": "ONE_WEEK",
+   "productId": "com.johansardar.excerlock.premium.weekly.599.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Weekly 5.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "640a5da8-3632-42e5-be4a-ca4537d4686d",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 5,
+   "groupName": "ExcerLock Premium",
+   "id": "6810460971",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews weekly.",
+     "id": "0f6317ab-50f3-4198-bbce-29bb4a135d10",
+     "locale": "en-US",
+     "name": "Weekly"
+    }
+   ],
+   "period": "ONE_WEEK",
+   "productId": "com.johansardar.excerlock.premium.weekly.599.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Weekly 5.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "66dc2a86-8af3-4ca1-be88-f36327e00045",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 6,
+   "groupName": "ExcerLock Premium",
+   "id": "6810461729",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews weekly.",
+     "id": "025d8a96-d965-4362-ba1d-220579e11bbf",
+     "locale": "en-US",
+     "name": "Weekly"
+    }
+   ],
+   "period": "ONE_WEEK",
+   "productId": "com.johansardar.excerlock.premium.weekly.699.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Weekly 6.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "21fdd15b-c628-407f-be29-1c9ab239dd5a",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 2,
+   "groupName": "ExcerLock Premium",
+   "id": "6810461357",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews weekly.",
+     "id": "3706f487-b1f0-4487-baf6-dbf9c76cba8c",
+     "locale": "en-US",
+     "name": "Weekly"
+    }
+   ],
+   "period": "ONE_WEEK",
+   "productId": "com.johansardar.excerlock.premium.weekly.699.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Weekly 6.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "b946e702-6df9-4c09-97ea-21d77d789d64",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 1,
+   "groupName": "ExcerLock Premium",
+   "id": "6810460963",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews weekly.",
+     "id": "2fffe9a3-608d-414b-9143-7bff89b0acf4",
+     "locale": "en-US",
+     "name": "Weekly"
+    }
+   ],
+   "period": "ONE_WEEK",
+   "productId": "com.johansardar.excerlock.premium.weekly.699.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Weekly 6.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "e5db16a1-85b7-4ad8-8e50-af9e0a68f3c3",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 7,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462259",
+   "introductoryOffers": [],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews weekly.",
+     "id": "9fe77a8a-9f10-403e-92f6-866e3590135d",
+     "locale": "en-US",
+     "name": "Weekly"
+    }
+   ],
+   "period": "ONE_WEEK",
+   "productId": "com.johansardar.excerlock.premium.weekly.999.t0",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Weekly 9.99 T0",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "86218acd-8ff9-47b4-b234-f834fdcd3722",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 8,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462095",
+   "introductoryOffers": [
+    {
+     "duration": "THREE_DAYS",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews weekly.",
+     "id": "6c5355ee-6c6e-45d3-9d0e-0e788636bb80",
+     "locale": "en-US",
+     "name": "Weekly"
+    }
+   ],
+   "period": "ONE_WEEK",
+   "productId": "com.johansardar.excerlock.premium.weekly.999.t3",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Weekly 9.99 T3",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "dd4d419f-9358-473e-ba41-cc3a42937907",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  },
+  {
+   "groupId": "22372981",
+   "groupLevel": 9,
+   "groupName": "ExcerLock Premium",
+   "id": "6810462349",
+   "introductoryOffers": [
+    {
+     "duration": "ONE_WEEK",
+     "numberOfPeriods": 1,
+     "offerMode": "FREE_TRIAL",
+     "startDate": "2026-09-09"
+    }
+   ],
+   "localizations": [
+    {
+     "description": "Unlock your apps by exercising. Renews weekly.",
+     "id": "b32801f3-5a3b-42f1-afea-cf006934024c",
+     "locale": "en-US",
+     "name": "Weekly"
+    }
+   ],
+   "period": "ONE_WEEK",
+   "productId": "com.johansardar.excerlock.premium.weekly.999.t7",
+   "productReviewScreenshotId": null,
+   "referenceName": "Premium Weekly 9.99 T7",
+   "reviewNote": null,
+   "state": "MISSING_METADATA",
+   "versionId": "9d495b4f-6db3-44a5-adb1-07e3471c8dd2",
+   "versionImageCount": 0,
+   "versionState": "PREPARE_FOR_SUBMISSION"
+  }
+ ]
+}

@@ -73,7 +73,11 @@
     "test:storekit-harness": "node --test scripts/storekit-harness.test.cjs",
     "catalog:drift": "python3 scripts/catalog-drift.py",
     "catalog:drift:report": "python3 scripts/catalog-drift.py --report-only",
-    "test:catalog-drift": "python3 scripts/test_catalog_drift.py"
+    "catalog:metadata": "python3 scripts/subscription-metadata.py",
+    "catalog:metadata:report": "python3 scripts/subscription-metadata.py --report-only",
+    "catalog:metadata:fill": "python3 scripts/subscription-metadata.py --fill",
+    "test:catalog-drift": "python3 scripts/test_catalog_drift.py",
+    "test:subscription-metadata": "python3 scripts/test_subscription_metadata.py"
   },
   "private": true
 }

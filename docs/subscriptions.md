@@ -72,14 +72,31 @@ adapty products create --app 9b8a6cf2-22c5-46f9-b938-35c27da2c66f \
 Guardrail (from `app-next/`): `npm run catalog:drift` compares `asc subscriptions list`,
 `adapty products list` and the storekit catalog and exits non-zero on drift;
 `npm run catalog:drift:report` prints the same report and always exits 0 for scheduled CI runs.
+`npm run catalog:metadata` checks per-SKU App Store metadata against this grid (localization
+display name and description, group, group order, introductory offer, `READY_TO_SUBMIT`) and
+fails while any SKU is `MISSING_METADATA`; `npm run catalog:metadata:fill` applies only the
+missing or differing fields.
 
 ## Open item
 
-All 45 sit in `MISSING_METADATA` until an App Review screenshot is uploaded. Per product:
+The 45 grid products and the four non-READY A/B products are `MISSING_METADATA` for one reason
+only: no App Store review screenshot is attached, so App Store Connect will not move them to
+`READY_TO_SUBMIT`. Their localizations, prices, availability, introductory offers, group
+membership and group order are in place and checked by `scripts/subscription-metadata.py`. Copy,
+its derivation and the exact errors seen while filling it are recorded in
+`app-next/evidence/asc-subscription-metadata/README.md`.
+
+Project-local check (from `app-next/`):
 
 ```
-asc subscriptions setup --app 6787265352 --group-id 22372981 \
-  --product-id <PRODUCT_ID> --review-screenshot ./review.png
+python3 scripts/subscription-metadata.py            # fails while a SKU is not READY_TO_SUBMIT
+python3 scripts/subscription-metadata.py --fill     # idempotent; never touches READY_TO_SUBMIT SKUs
+```
+
+Uploading the approved review image per subscription version is the remaining step:
+
+```
+asc subscriptions versions images upload --version-id <SUBSCRIPTION_VERSION_ID> --file ./review.png
 ```
 
 ## Taking a price off sale

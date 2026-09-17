@@ -1,0 +1,104 @@
+Subscription metadata: 51 SKUs, 2 READY_TO_SUBMIT, 49 MISSING_METADATA
+  com.johansardar.excerlock.premium.a.winback.annual state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.2999.t0 name: localization name 'Annual', expected 'Annual $29.99 (no trial)'
+  com.johansardar.excerlock.premium.annual.2999.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.2999.t3 name: localization name 'Annual', expected 'Annual $29.99 (3-day trial)'
+  com.johansardar.excerlock.premium.annual.2999.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.2999.t7 name: localization name 'Annual', expected 'Annual $29.99 (7-day trial)'
+  com.johansardar.excerlock.premium.annual.2999.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.3499.t0 name: localization name 'Annual', expected 'Annual $34.99 (no trial)'
+  com.johansardar.excerlock.premium.annual.3499.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.3499.t3 name: localization name 'Annual', expected 'Annual $34.99 (3-day trial)'
+  com.johansardar.excerlock.premium.annual.3499.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.3499.t7 name: localization name 'Annual', expected 'Annual $34.99 (7-day trial)'
+  com.johansardar.excerlock.premium.annual.3499.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.3999.t0 name: localization name 'Annual', expected 'Annual $39.99 (no trial)'
+  com.johansardar.excerlock.premium.annual.3999.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.3999.t3 name: localization name 'Annual', expected 'Annual $39.99 (3-day trial)'
+  com.johansardar.excerlock.premium.annual.3999.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.3999.t7 name: localization name 'Annual', expected 'Annual $39.99 (7-day trial)'
+  com.johansardar.excerlock.premium.annual.3999.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.4499.t0 name: localization name 'Annual', expected 'Annual $44.99 (no trial)'
+  com.johansardar.excerlock.premium.annual.4499.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.4499.t3 name: localization name 'Annual', expected 'Annual $44.99 (3-day trial)'
+  com.johansardar.excerlock.premium.annual.4499.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.4499.t7 name: localization name 'Annual', expected 'Annual $44.99 (7-day trial)'
+  com.johansardar.excerlock.premium.annual.4499.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.4999.t0 name: localization name 'Annual', expected 'Annual $49.99 (no trial)'
+  com.johansardar.excerlock.premium.annual.4999.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.4999.t3 name: localization name 'Annual', expected 'Annual $49.99 (3-day trial)'
+  com.johansardar.excerlock.premium.annual.4999.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.annual.4999.t7 name: localization name 'Annual', expected 'Annual $49.99 (7-day trial)'
+  com.johansardar.excerlock.premium.annual.4999.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.b.annual state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.b.monthly state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.b.winback.annual state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1099.t0 name: localization name 'Monthly', expected 'Monthly $10.99 (no trial)'
+  com.johansardar.excerlock.premium.monthly.1099.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1099.t3 name: localization name 'Monthly', expected 'Monthly $10.99 (3-day trial)'
+  com.johansardar.excerlock.premium.monthly.1099.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1099.t7 name: localization name 'Monthly', expected 'Monthly $10.99 (7-day trial)'
+  com.johansardar.excerlock.premium.monthly.1099.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1299.t0 name: localization name 'Monthly', expected 'Monthly $12.99 (no trial)'
+  com.johansardar.excerlock.premium.monthly.1299.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1299.t3 name: localization name 'Monthly', expected 'Monthly $12.99 (3-day trial)'
+  com.johansardar.excerlock.premium.monthly.1299.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1299.t7 name: localization name 'Monthly', expected 'Monthly $12.99 (7-day trial)'
+  com.johansardar.excerlock.premium.monthly.1299.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1499.t0 name: localization name 'Monthly', expected 'Monthly $14.99 (no trial)'
+  com.johansardar.excerlock.premium.monthly.1499.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1499.t3 name: localization name 'Monthly', expected 'Monthly $14.99 (3-day trial)'
+  com.johansardar.excerlock.premium.monthly.1499.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1499.t7 name: localization name 'Monthly', expected 'Monthly $14.99 (7-day trial)'
+  com.johansardar.excerlock.premium.monthly.1499.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1799.t0 name: localization name 'Monthly', expected 'Monthly $17.99 (no trial)'
+  com.johansardar.excerlock.premium.monthly.1799.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1799.t3 name: localization name 'Monthly', expected 'Monthly $17.99 (3-day trial)'
+  com.johansardar.excerlock.premium.monthly.1799.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1799.t7 name: localization name 'Monthly', expected 'Monthly $17.99 (7-day trial)'
+  com.johansardar.excerlock.premium.monthly.1799.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1999.t0 name: localization name 'Monthly', expected 'Monthly $19.99 (no trial)'
+  com.johansardar.excerlock.premium.monthly.1999.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1999.t3 name: localization name 'Monthly', expected 'Monthly $19.99 (3-day trial)'
+  com.johansardar.excerlock.premium.monthly.1999.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.1999.t7 name: localization name 'Monthly', expected 'Monthly $19.99 (7-day trial)'
+  com.johansardar.excerlock.premium.monthly.1999.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.799.t0 name: localization name 'Monthly', expected 'Monthly $7.99 (no trial)'
+  com.johansardar.excerlock.premium.monthly.799.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.799.t3 name: localization name 'Monthly', expected 'Monthly $7.99 (3-day trial)'
+  com.johansardar.excerlock.premium.monthly.799.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.799.t7 name: localization name 'Monthly', expected 'Monthly $7.99 (7-day trial)'
+  com.johansardar.excerlock.premium.monthly.799.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.999.t0 name: localization name 'Monthly', expected 'Monthly $9.99 (no trial)'
+  com.johansardar.excerlock.premium.monthly.999.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.999.t3 name: localization name 'Monthly', expected 'Monthly $9.99 (3-day trial)'
+  com.johansardar.excerlock.premium.monthly.999.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.monthly.999.t7 name: localization name 'Monthly', expected 'Monthly $9.99 (7-day trial)'
+  com.johansardar.excerlock.premium.monthly.999.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.weekly.599.t0 order: group level 3, expected 1
+  com.johansardar.excerlock.premium.weekly.599.t0 name: localization name 'Premium Weekly $5.99 (7-day trial)', expected 'Weekly $5.99 (no trial)'
+  com.johansardar.excerlock.premium.weekly.599.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.weekly.599.t3 order: group level 4, expected 2
+  com.johansardar.excerlock.premium.weekly.599.t3 name: localization name 'Weekly', expected 'Weekly $5.99 (3-day trial)'
+  com.johansardar.excerlock.premium.weekly.599.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.weekly.599.t7 order: group level 5, expected 3
+  com.johansardar.excerlock.premium.weekly.599.t7 name: localization name 'Weekly', expected 'Weekly $5.99 (7-day trial)'
+  com.johansardar.excerlock.premium.weekly.599.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.weekly.699.t0 order: group level 6, expected 4
+  com.johansardar.excerlock.premium.weekly.699.t0 name: localization name 'Weekly', expected 'Weekly $6.99 (no trial)'
+  com.johansardar.excerlock.premium.weekly.699.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.weekly.699.t3 order: group level 2, expected 5
+  com.johansardar.excerlock.premium.weekly.699.t3 name: localization name 'Weekly', expected 'Weekly $6.99 (3-day trial)'
+  com.johansardar.excerlock.premium.weekly.699.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.weekly.699.t7 order: group level 1, expected 6
+  com.johansardar.excerlock.premium.weekly.699.t7 name: localization name 'Weekly', expected 'Weekly $6.99 (7-day trial)'
+  com.johansardar.excerlock.premium.weekly.699.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.weekly.999.t0 name: localization name 'Weekly', expected 'Weekly $9.99 (no trial)'
+  com.johansardar.excerlock.premium.weekly.999.t0 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.weekly.999.t3 name: localization name 'Weekly', expected 'Weekly $9.99 (3-day trial)'
+  com.johansardar.excerlock.premium.weekly.999.t3 state: MISSING_METADATA (App Store review screenshot missing)
+  com.johansardar.excerlock.premium.weekly.999.t7 name: localization name 'Weekly', expected 'Weekly $9.99 (7-day trial)'
+  com.johansardar.excerlock.premium.weekly.999.t7 state: MISSING_METADATA (App Store review screenshot missing)
+  ExcerLock Premium group-localization: group version localization has no customAppName
+SUBSCRIPTION METADATA GAPS: 101 finding(s) across 51 SKUs; 49 SKU(s) not READY_TO_SUBMIT
+  not READY_TO_SUBMIT: com.johansardar.excerlock.premium.a.winback.annual, com.johansardar.excerlock.premium.annual.2999.t0, com.johansardar.excerlock.premium.annual.2999.t3, com.johansardar.excerlock.premium.annual.2999.t7, com.johansardar.excerlock.premium.annual.3499.t0, com.johansardar.excerlock.premium.annual.3499.t3, com.johansardar.excerlock.premium.annual.3499.t7, com.johansardar.excerlock.premium.annual.3999.t0, com.johansardar.excerlock.premium.annual.3999.t3, com.johansardar.excerlock.premium.annual.3999.t7, com.johansardar.excerlock.premium.annual.4499.t0, com.johansardar.excerlock.premium.annual.4499.t3, com.johansardar.excerlock.premium.annual.4499.t7, com.johansardar.excerlock.premium.annual.4999.t0, com.johansardar.excerlock.premium.annual.4999.t3, com.johansardar.excerlock.premium.annual.4999.t7, com.johansardar.excerlock.premium.b.annual, com.johansardar.excerlock.premium.b.monthly, com.johansardar.excerlock.premium.b.winback.annual, com.johansardar.excerlock.premium.monthly.1099.t0, com.johansardar.excerlock.premium.monthly.1099.t3, com.johansardar.excerlock.premium.monthly.1099.t7, com.johansardar.excerlock.premium.monthly.1299.t0, com.johansardar.excerlock.premium.monthly.1299.t3, com.johansardar.excerlock.premium.monthly.1299.t7, com.johansardar.excerlock.premium.monthly.1499.t0, com.johansardar.excerlock.premium.monthly.1499.t3, com.johansardar.excerlock.premium.monthly.1499.t7, com.johansardar.excerlock.premium.monthly.1799.t0, com.johansardar.excerlock.premium.monthly.1799.t3, com.johansardar.excerlock.premium.monthly.1799.t7, com.johansardar.excerlock.premium.monthly.1999.t0, com.johansardar.excerlock.premium.monthly.1999.t3, com.johansardar.excerlock.premium.monthly.1999.t7, com.johansardar.excerlock.premium.monthly.799.t0, com.johansardar.excerlock.premium.monthly.799.t3, com.johansardar.excerlock.premium.monthly.799.t7, com.johansardar.excerlock.premium.monthly.999.t0, com.johansardar.excerlock.premium.monthly.999.t3, com.johansardar.excerlock.premium.monthly.999.t7, com.johansardar.excerlock.premium.weekly.599.t0, com.johansardar.excerlock.premium.weekly.599.t3, com.johansardar.excerlock.premium.weekly.599.t7, com.johansardar.excerlock.premium.weekly.699.t0, com.johansardar.excerlock.premium.weekly.699.t3, com.johansardar.excerlock.premium.weekly.699.t7, com.johansardar.excerlock.premium.weekly.999.t0, com.johansardar.excerlock.premium.weekly.999.t3, com.johansardar.excerlock.premium.weekly.999.t7
