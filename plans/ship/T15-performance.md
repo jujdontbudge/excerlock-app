@@ -16,7 +16,9 @@ Facts: audit finding — rule set re-sorted every second while Home mounted; `re
 
 ## Steps
 
-1. `scripts/measure-startup.sh` (os_signpost / `xcrun xctrace` on device; `simctl` launch timing on sim).
+1. `scripts/measure-startup.sh` (`--sim-log <udid>` reads the simulator's own
+   os_signpost stage medians out of its unified log — ADR 0036; `--trace/--xpath`
+   parses an `xcrun xctrace` recording on device; `simctl` launch timing on sim).
 2. Fix the Home sort; lazy routes for `unlock/propped`, gym picker map, Analytics charts.
 3. React Compiler already on; verify no `useMemo` regressions.
 
