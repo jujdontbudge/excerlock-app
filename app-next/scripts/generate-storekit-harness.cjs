@@ -8,14 +8,28 @@ const BUNDLE_ID = 'com.johansardar.excerlock.storekit-uitests';
 const PRODUCT_TYPE = 'com.apple.product-type.bundle.ui-testing';
 const FRAMEWORK = 'StoreKitTest.framework';
 const SOURCE_FILES = ['ExcerLock.storekit', `${TARGET}.swift`, `${TARGET}-Info.plist`];
+// The explicit A/B contracts plus the 45-SKU price/trial grid. Grid product ids encode the
+// price in cents and the trial as `<period>.<cents>.<t0|t3|t7>`, so the contract is derived
+// from that naming and any catalog typo in price, period or trial fails validation.
 const expected = new Map([
-  ['com.johansardar.excerlock.premium.a.monthly', ['9.99', 'P1M', false]],
-  ['com.johansardar.excerlock.premium.a.annual', ['59.99', 'P1Y', true]],
-  ['com.johansardar.excerlock.premium.a.winback.annual', ['29.99', 'P1Y', true]],
-  ['com.johansardar.excerlock.premium.b.monthly', ['12.99', 'P1M', false]],
-  ['com.johansardar.excerlock.premium.b.annual', ['79.99', 'P1Y', true]],
-  ['com.johansardar.excerlock.premium.b.winback.annual', ['39.99', 'P1Y', true]],
+  ['com.johansardar.excerlock.premium.a.monthly', ['9.99', 'P1M', null]],
+  ['com.johansardar.excerlock.premium.a.annual', ['59.99', 'P1Y', 'P1W']],
+  ['com.johansardar.excerlock.premium.a.winback.annual', ['29.99', 'P1Y', 'P1W']],
+  ['com.johansardar.excerlock.premium.b.monthly', ['12.99', 'P1M', null]],
+  ['com.johansardar.excerlock.premium.b.annual', ['79.99', 'P1Y', 'P1W']],
+  ['com.johansardar.excerlock.premium.b.winback.annual', ['39.99', 'P1Y', 'P1W']],
 ]);
+const gridPeriods = { weekly: 'P1W', monthly: 'P1M', annual: 'P1Y' };
+const gridTrials = { t0: null, t3: 'P3D', t7: 'P1W' };
+const gridPrices = { weekly: [599, 699, 999], monthly: [799, 999, 1099, 1299, 1499, 1799, 1999], annual: [2999, 3499, 3999, 4499, 4999] };
+for (const [period, prices] of Object.entries(gridPrices)) {
+  for (const cents of prices) {
+    const price = `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
+    for (const [trial, trialPeriod] of Object.entries(gridTrials)) {
+      expected.set(`com.johansardar.excerlock.premium.${period}.${cents}.${trial}`, [price, gridPeriods[period], trialPeriod]);
+    }
+  }
+}
 function fail(message) { throw new Error(`StoreKit harness: ${message}`); }
 function unquote(value) { return String(value ?? '').replace(/^"|"$/g, ''); }
 function readOwnedFile(source, destination, label) {
@@ -129,9 +143,12 @@ function validateCatalog(file) {
   for (const product of products) {
     const contract = expected.get(product.productID);
     if (!contract) fail(`unexpected product ${product.productID}`);
-    const [price, period, trial] = contract;
-    const hasTrial = product.introductoryOffer?.paymentMode === 'free' && product.introductoryOffer?.subscriptionPeriod === 'P1W' && product.introductoryOffer?.numberOfPeriods === 1;
-    if (product.displayPrice !== price || product.recurringSubscriptionPeriod !== period || hasTrial !== trial) fail(`catalog mismatch for ${product.productID}`);
+    const [price, period, trialPeriod] = contract;
+    const offer = product.introductoryOffer;
+    const hasExpectedTrial = trialPeriod === null
+      ? offer === undefined
+      : offer?.paymentMode === 'free' && offer?.subscriptionPeriod === trialPeriod && offer?.numberOfPeriods === 1;
+    if (product.displayPrice !== price || product.recurringSubscriptionPeriod !== period || !hasExpectedTrial) fail(`catalog mismatch for ${product.productID}`);
   }
   if (new Set(products.map(product => product.productID)).size !== expected.size) fail('duplicate product identifier');
 }

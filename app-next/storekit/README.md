@@ -23,7 +23,8 @@ existing `.storekit` source file alone does not prove the running app uses local
 account sign-in prompt instead of local purchase confirmation is a failed harness acceptance gate,
 not permission to enter credentials or count the purchase as passed.
 
-The six products mirror the App Store/Adapty catalog recorded in
+The 51 products (the six A/B contracts plus the 45-SKU price/trial grid) mirror the App
+Store/Adapty catalog recorded in
 `plans/ship/research/infra-audit.md`. Xcode StoreKit testing proves only local catalog, purchase UI,
 and client result handling. Its local transactions do not prove App Store sandbox receipts,
 Adapty entitlement/profile attribution, webhooks, or production activation.

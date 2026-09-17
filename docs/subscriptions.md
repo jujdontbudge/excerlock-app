@@ -55,6 +55,24 @@ opening a new market is an availability change rather than a pricing change.
 | `com.johansardar.excerlock.premium.annual.4999.t3` | annual | $49.99 | 3 days | 6810463930 |
 | `com.johansardar.excerlock.premium.annual.4999.t7` | annual | $49.99 | 7 days | 6810463997 |
 
+## Adapty + local StoreKit mirror
+
+Adapty app `9b8a6cf2-22c5-46f9-b938-35c27da2c66f` mirrors all 51 products (the six A/B
+contracts plus this 45-grid) on access level `premium` (`b95ba4b6-812e-4ce4-b2ac-8416006bc40a`),
+so any grid price/trial SKU can be attached to a paywall and served without an app change.
+The Debug-only local harness catalog (`app-next/storekit/ExcerLock.storekit`) mirrors the grid
+in a `Premium Grid` group. Add a future SKU to Adapty with:
+
+```
+adapty products create --app 9b8a6cf2-22c5-46f9-b938-35c27da2c66f \
+  --access-level-id b95ba4b6-812e-4ce4-b2ac-8416006bc40a \
+  --period <annual|monthly|weekly> --title "<human title>" --ios-product-id <PRODUCT_ID>
+```
+
+Guardrail (from `app-next/`): `npm run catalog:drift` compares `asc subscriptions list`,
+`adapty products list` and the storekit catalog and exits non-zero on drift;
+`npm run catalog:drift:report` prints the same report and always exits 0 for scheduled CI runs.
+
 ## Open item
 
 All 45 sit in `MISSING_METADATA` until an App Review screenshot is uploaded. Per product:

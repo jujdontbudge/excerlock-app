@@ -12,9 +12,19 @@ const {
   writeOwnedScheme,
 } = require('./generate-storekit-harness.cjs');
 
-test('catalog has exactly the six authoritative subscription contracts', () => {
+test('catalog has exactly the 51 authoritative subscription contracts', () => {
   assert.doesNotThrow(() => validateCatalog(path.join(__dirname, '..', 'storekit', 'ExcerLock.storekit')));
-  assert.equal(expected.size, 6);
+  assert.equal(expected.size, 51);
+});
+
+test('catalog price or trial drift fails validation', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'storekit-catalog-'));
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'storekit', 'ExcerLock.storekit'), 'utf8'));
+  const grid = catalog.subscriptionGroups.find(group => group.name === 'Premium Grid').subscriptions;
+  grid.find(product => product.productID.endsWith('premium.annual.2999.t3')).introductoryOffer.subscriptionPeriod = 'P1W';
+  const file = path.join(directory, 'ExcerLock.storekit');
+  fs.writeFileSync(file, JSON.stringify(catalog));
+  assert.throws(() => validateCatalog(file), /catalog mismatch for com\.johansardar\.excerlock\.premium\.annual\.2999\.t3/);
 });
 
 test('embedded Debug bundling changes only the main app React Native phase and is idempotent', () => {

@@ -70,7 +70,10 @@
     "test": "jest --runInBand",
     "lint": "expo lint",
     "ios:storekit-harness": "node scripts/generate-storekit-harness.cjs",
-    "test:storekit-harness": "node --test scripts/storekit-harness.test.cjs"
+    "test:storekit-harness": "node --test scripts/storekit-harness.test.cjs",
+    "catalog:drift": "python3 scripts/catalog-drift.py",
+    "catalog:drift:report": "python3 scripts/catalog-drift.py --report-only",
+    "test:catalog-drift": "python3 scripts/test_catalog_drift.py"
   },
   "private": true
 }

@@ -184,6 +184,1144 @@
           }
         }
       ]
+    },
+    {
+      "id": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+      "localizations": [
+        {
+          "description": "ExcerLock Premium plans for local testing.",
+          "displayName": "Premium Grid",
+          "locale": "en_US"
+        }
+      ],
+      "name": "Premium Grid",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "29.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "F9810B8D-C46E-5582-BCAD-C5442F49FFBF",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $29.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.2999.t0",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $29.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "29.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "8A77FF24-0766-58AF-BCC8-B1D6E3EC0D39",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $29.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.2999.t3",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $29.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "25DD2CD4-5859-55CF-8BB0-90102BAD7DA8",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "29.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "2265CA14-B966-5F2C-B1CC-520393C1A1E0",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $29.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.2999.t7",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $29.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "49CF6CDE-FAA2-5DD9-B994-0F320FF45AEC",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "34.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "C29FE95E-63D5-5ACA-8675-29D3E8770771",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $34.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.3499.t0",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $34.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "34.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "DD92B373-05D3-5BE9-A8F2-4F1B4727F656",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $34.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.3499.t3",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $34.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "82D28C45-D81B-59EE-BF06-57D2BD0B8129",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "34.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "CC99A4F7-DE24-55CB-BF4D-2A9EC6555A7C",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $34.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.3499.t7",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $34.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "2EC555B9-D14F-5285-92A9-114574355A13",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "39.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "88E09EE9-723A-50A1-ABF0-176B79FA6DC4",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $39.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.3999.t0",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $39.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "39.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "93FDDF8D-27BC-5429-8FE4-F3E0C767A0B0",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $39.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.3999.t3",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $39.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "B26B67BF-B233-584E-B312-B96A00D7CFE9",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "39.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "DB7CAB97-2F5C-5149-ABA5-34E4ABE532A3",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $39.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.3999.t7",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $39.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "9ABC9EF5-FF33-564B-A23D-C9D5AE8F7DE9",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "44.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "12D1DE4D-F8F1-5C2E-BFE9-5330AF505275",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $44.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.4499.t0",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $44.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "44.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "91F7B7CA-C264-57C9-98AD-FD7E430453F6",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $44.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.4499.t3",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $44.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "68EA3A9F-8BD3-56B1-9121-6B7EC799FD70",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "44.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "75C136B6-0E7D-55E0-8930-FD0B8C1E7046",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $44.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.4499.t7",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $44.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "A7FE141A-E6DF-5EA1-8BDB-9238CAE98449",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "49.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "D63DE2F4-E090-5E88-8A33-676EEF69688A",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $49.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.4999.t0",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $49.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "49.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "4D2D8092-6DBA-55F0-BFF3-FEE1CAF7489D",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $49.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.4999.t3",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $49.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "41893D7F-C22F-585E-A879-3D6694E4EFC9",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "49.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "3253BF1A-68B3-5213-BF41-592C3A773426",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Annual $49.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.annual.4999.t7",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "Premium Annual $49.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "4DE05781-F480-5054-A4B8-F597909F65A4",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "10.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "E3A9D805-AF57-5E63-A3D2-55801BB1E819",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $10.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1099.t0",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $10.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "10.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "1E63ECBB-B593-5123-A06B-D0ED06CD0EE0",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $10.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1099.t3",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $10.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "FDC060E9-F05B-5CCE-9984-E02EE5D524F0",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "10.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "D2A7D03F-DE99-5A12-83D8-3A1625262480",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $10.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1099.t7",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $10.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "50BF3BAB-DD2B-56E8-9EAC-9341E9939709",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "12.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "A881DDE8-22B6-5299-9D23-6FCACC3D205B",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $12.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1299.t0",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $12.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "12.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "41D078D0-378F-537B-BF20-E9931E238B2C",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $12.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1299.t3",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $12.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "7197CDDD-9B8A-59FD-985A-955AC76C9BB6",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "12.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6952D9D1-4547-5B68-8F11-37AE257C5D13",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $12.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1299.t7",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $12.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "D9330DED-D6BE-5800-8D36-2E01D5B41046",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "14.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "D5B1E679-C4CD-53DC-BDB8-782464ED5FE3",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $14.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1499.t0",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $14.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "14.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "940A64AB-30A6-5213-95BF-A18F7E2BCF6F",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $14.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1499.t3",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $14.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "5F491C39-F636-5929-B78E-3A7201FA1CDF",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "14.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "FA5D6F63-4425-5C07-81F8-752E85DE7CA7",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $14.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1499.t7",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $14.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "453B7D86-87AD-515C-9405-7E0D6F778A16",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "17.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "472EE5DE-92CC-5253-86CA-C2F4DDDF0540",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $17.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1799.t0",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $17.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "17.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "B2C89ECA-02E2-5CED-B5F8-4652198C08E9",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $17.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1799.t3",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $17.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "E6C6A9ED-4124-5652-892F-53A16068EDD1",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "17.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "79C1D9E1-75FB-5AC2-B23E-6230E9F3A24F",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $17.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1799.t7",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $17.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "CB3F1D4F-D618-514E-A19D-1B892B5CA247",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "19.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "BB19463B-AF2B-5817-A2F8-2E97D5B58964",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $19.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1999.t0",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $19.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "19.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "03BF7CF5-4DBC-5C50-B0D0-FC025B5312E8",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $19.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1999.t3",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $19.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "53069064-B57F-5547-9FDA-1AA0DFE4017D",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "19.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "B5A31271-CE46-5B32-B3D5-08E8AB112120",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $19.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.1999.t7",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $19.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "79DC2F29-3F41-5737-B98E-91694380A572",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "7.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "1B8C7722-3AB2-5BCC-914C-D888EC5F0443",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $7.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.799.t0",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $7.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "7.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "48DA2230-913D-5E0D-9829-594834FF22F8",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $7.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.799.t3",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $7.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "5A0E3D9C-762C-508D-8D9F-07B997547085",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "7.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "6EA2FF01-E772-5412-A041-42D9C112C76C",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $7.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.799.t7",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $7.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "C4053617-BB08-5FE2-9A45-27ADE7BFD063",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "9.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "168F851B-1AD5-5A69-9540-4BA26856CED4",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $9.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.999.t0",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $9.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "9.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "66570B95-F0D0-5CBF-8225-77B965FEE0F0",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $9.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.999.t3",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $9.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "1C52D5A4-E498-5F70-B7A6-414ADBA1433B",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "9.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "024F9E1C-2FFE-5460-BC4C-E664C4F21772",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Monthly $9.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.monthly.999.t7",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Premium Monthly $9.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "29AB9C63-49C9-5762-901D-A90321EDB9D7",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "5.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "AF364913-BA29-5656-8578-90718EA4FFD6",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Weekly $5.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.weekly.599.t0",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Premium Weekly $5.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "5.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "97CA561C-76E2-5665-900B-CFD2E5049C1B",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Weekly $5.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.weekly.599.t3",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Premium Weekly $5.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "7102D269-1C8C-5EF7-AA41-7C3BA0028D0D",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "5.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "4E73EE3F-32B2-518A-ABD6-EE8E35023080",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Weekly $5.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.weekly.599.t7",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Premium Weekly $5.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "D49D2BB2-6506-5B82-8BE4-0534780A8F64",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "6.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "F8825D0C-80F5-5E2C-A3FC-FFBBCF026379",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Weekly $6.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.weekly.699.t0",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Premium Weekly $6.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "6.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "3761678B-50D6-5D11-93F4-21629B7F7190",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Weekly $6.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.weekly.699.t3",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Premium Weekly $6.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "F284417E-891A-5E9F-93FF-29DF21A207FC",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "6.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "F7E4571A-B159-5B16-BE4F-0DC3C8A5F922",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Weekly $6.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.weekly.699.t7",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Premium Weekly $6.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "AD9BBD9F-B6A3-5472-952E-545859B2343B",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "9.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "FD44E27B-2F1F-5882-9C0E-CF1446EEC0C3",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Weekly $9.99 (no trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.weekly.999.t0",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Premium Weekly $9.99 (no trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "9.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "9E2385E9-A40F-5775-890B-56187F787C0B",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Weekly $9.99 (3-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.weekly.999.t3",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Premium Weekly $9.99 (3-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "595F6C59-558C-59DF-B7BC-C4F43F9C4B5A",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P3D"
+          }
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "9.99",
+          "familyShareable": false,
+          "groupNumber": 1,
+          "internalID": "7F8F6E06-9CFA-5015-A795-EFB73F1C9A81",
+          "localizations": [
+            {
+              "description": "Unlocks ExcerLock Premium.",
+              "displayName": "Premium Weekly $9.99 (7-day trial)",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "com.johansardar.excerlock.premium.weekly.999.t7",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Premium Weekly $9.99 (7-day trial)",
+          "subscriptionGroupID": "1C19588D-8AAF-5D98-B3AF-C0CC43B7604B",
+          "type": "RecurringSubscription",
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "46F4675A-C3D7-58FF-96DA-B24CAB3DF3FF",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
+        }
+      ]
     }
   ],
   "version": {
