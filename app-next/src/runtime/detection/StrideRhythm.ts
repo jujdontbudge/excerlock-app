@@ -29,7 +29,13 @@
  * gait band, purity or rotation bound for two evaluations), `still` (vertical
  * RMS below the still floor over the whole window) and `unknown` (everything
  * else, including no raw data). A still phone never yields `walking`.
+ *
+ * Every threshold below is a field of `StrideGateParams`; the shipped values
+ * and their remote clamps live in `strideGateConfig.ts`, and each function
+ * defaults to the shipped gate so callers that do not pass one keep today's
+ * measured behaviour exactly.
  */
+import { SHIPPED_STRIDE_GATE, type StrideGateParams } from './strideGateConfig';
 export type StrideVector = { readonly x: number; readonly y: number; readonly z: number };
 
 /** One raw device-motion observation. `t` is the receipt wall clock in ms. */
@@ -88,22 +94,26 @@ export type StrideAssessment = {
 
 export const UNKNOWN_STRIDE: StrideAssessment = { verdict: 'unknown', at: null, since: null, features: null, windowClass: null, recentVeto: false };
 
-export const STRIDE_WINDOW_MS = 3_000;
-export const STRIDE_EVALUATION_INTERVAL_MS = 250;
-/** No raw samples for this long: the stream stopped telling us anything. */
-export const STRIDE_STALENESS_MS = 2_000;
+/**
+ * The native device-motion stream contract: the module samples at 50 Hz and
+ * the analyzer grids onto it. Not remote-tunable on purpose - changing it
+ * would decimate or interpolate a physical stream, which is a build change.
+ */
 export const STRIDE_SAMPLE_HZ = 50;
-/** Band-pass applied before periodicity/peak analysis, Hz. */
-export const STRIDE_FILTER_HZ = { low: 0.8, high: 3.5 };
-/** Step-period search band for the autocorrelation peak, ms. */
-export const STRIDE_LAG_MS = { low: 300, high: 850 };
-const STRIDE_MIN_COVERAGE = 0.6;
-const STRIDE_MIN_SPAN_MS = 2_700;
-const STRIDE_PEAK_MIN_DISTANCE_MS = 220;
-const STRIDE_PEAK_HEIGHT_FRACTION = 0.35;
 
+// Shipped values, re-exported for readers and tests. The single source of
+// truth is `SHIPPED_STRIDE_GATE` in `strideGateConfig.ts`, where each field
+// also carries its remote clamp.
+export const STRIDE_WINDOW_MS = SHIPPED_STRIDE_GATE.windowMs;
+export const STRIDE_EVALUATION_INTERVAL_MS = SHIPPED_STRIDE_GATE.evaluationIntervalMs;
+/** No raw samples for this long: the stream stopped telling us anything. */
+export const STRIDE_STALENESS_MS = SHIPPED_STRIDE_GATE.stalenessMs;
+/** Band-pass applied before periodicity/peak analysis, Hz. */
+export const STRIDE_FILTER_HZ = Object.freeze({ low: SHIPPED_STRIDE_GATE.filterLowHz, high: SHIPPED_STRIDE_GATE.filterHighHz });
+/** Step-period search band for the autocorrelation peak, ms. */
+export const STRIDE_LAG_MS = Object.freeze({ low: SHIPPED_STRIDE_GATE.lagLowMs, high: SHIPPED_STRIDE_GATE.lagHighMs });
 /** Vertical RMS below this over the window is a still phone (sitting windows: p95 0.07 g incl. handling; walking p5 0.08 g). */
-export const STRIDE_STILL_G = 0.06;
+export const STRIDE_STILL_G = SHIPPED_STRIDE_GATE.stillG;
 /**
  * A stride window must still be stepping in its newest second (recent RMS at
  * or above the still floor): a shake that is dying out looks like walking on
@@ -112,22 +122,22 @@ export const STRIDE_STILL_G = 0.06;
  * treadmill/walking stride windows measured 0.061 g at their very lowest and
  * 0.073 g at p1. A verdict must also not outlive the walker's last step.
  */
-export const STRIDE_RECENT_MS = 1_000;
+export const STRIDE_RECENT_MS = SHIPPED_STRIDE_GATE.recentMs;
 /** A stride verdict needs at least this much vertical motion. */
-export const STRIDE_WALK_MIN_G = 0.08;
+export const STRIDE_WALK_MIN_G = SHIPPED_STRIDE_GATE.walkMinG;
 /** A non-gait verdict needs real motion to stand on. */
-export const STRIDE_VETO_MIN_G = 0.1;
-export const STRIDE_MIN_PERIODICITY = 0.4;
-export const STRIDE_WALK_HZ = { low: 1.2, high: 2.3 };
+export const STRIDE_VETO_MIN_G = SHIPPED_STRIDE_GATE.vetoMinG;
+export const STRIDE_MIN_PERIODICITY = SHIPPED_STRIDE_GATE.minPeriodicity;
+export const STRIDE_WALK_HZ = Object.freeze({ low: SHIPPED_STRIDE_GATE.walkLowHz, high: SHIPPED_STRIDE_GATE.walkHighHz });
 /** Periodic motion faster than this is not a walk (captured shakes: 2.3-3.3 Hz; walking p95 2.08 Hz). */
-export const STRIDE_VETO_HZ = 2.4;
-export const STRIDE_MAX_INTERVAL_CV = 0.45;
+export const STRIDE_VETO_HZ = SHIPPED_STRIDE_GATE.vetoHz;
+export const STRIDE_MAX_INTERVAL_CV = SHIPPED_STRIDE_GATE.maxIntervalCv;
 /** Walking windows: p95 0.89, p99 0.91. Captured shakes in their steady phases: 0.87-0.97. */
-export const STRIDE_MAX_AXIS_PURITY = 0.9;
-export const STRIDE_VETO_AXIS_PURITY = 0.92;
+export const STRIDE_MAX_AXIS_PURITY = SHIPPED_STRIDE_GATE.maxAxisPurity;
+export const STRIDE_VETO_AXIS_PURITY = SHIPPED_STRIDE_GATE.vetoAxisPurity;
 /** Walking p95 4.6; rotation-dominated shake phases 5-18. */
-export const STRIDE_MAX_ROTATION_RATIO = 4.0;
-export const STRIDE_VETO_ROTATION_RATIO = 8.0;
+export const STRIDE_MAX_ROTATION_RATIO = SHIPPED_STRIDE_GATE.maxRotationRatio;
+export const STRIDE_VETO_ROTATION_RATIO = SHIPPED_STRIDE_GATE.vetoRotationRatio;
 /**
  * A phone twisted about far more than it is lifted (rotation RMS at or above
  * this, and STRIDE_VETO_ROTATION_RATIO times the vertical RMS) is being
@@ -135,7 +145,7 @@ export const STRIDE_VETO_ROTATION_RATIO = 8.0;
  * walking/treadmill windows inside labels, 58 sitting (handling) windows and
  * 28 shake windows.
  */
-export const STRIDE_VETO_ROTATION_RMS = 1.0;
+export const STRIDE_VETO_ROTATION_RMS = SHIPPED_STRIDE_GATE.vetoRotationRms;
 /**
  * Consecutive stride evaluations (250 ms apart) before `walking` is published:
  * 8 evaluations = 4.75 s of stride-quality motion from its start. The four
@@ -143,44 +153,44 @@ export const STRIDE_VETO_ROTATION_RMS = 1.0;
  * five consecutive evaluations (4.0-4.25 s) between changes of rhythm; a
  * steady walk sustains it indefinitely. Three evaluations (0.75 s) of margin.
  */
-export const STRIDE_WALK_DWELL = 8;
+export const STRIDE_WALK_DWELL = SHIPPED_STRIDE_GATE.walkDwell;
 /** Consecutive non-gait evaluations before `notStride` is published. */
-export const STRIDE_VETO_DWELL = 2;
+export const STRIDE_VETO_DWELL = SHIPPED_STRIDE_GATE.vetoDwell;
 /** A walk does not begin from a shake: no `walking` verdict this soon after a non-gait one. */
-export const STRIDE_PENALTY_MS = 8000;
+export const STRIDE_PENALTY_MS = SHIPPED_STRIDE_GATE.penaltyMs;
 /** Step frequency must stay within this fraction of the previous evaluation across the dwell. */
-export const STRIDE_HZ_TOLERANCE = 0.15;
+export const STRIDE_HZ_TOLERANCE = SHIPPED_STRIDE_GATE.hzTolerance;
 
 /** Streams the raw device-motion samples the discriminator needs. */
 export interface StrideMotionSource {
   onSample(callback: (sample: StrideMotionSample) => void): () => void;
 }
 
-export function classifyStrideWindow(features: StrideFeatures): StrideWindowClass {
-  if (features.verticalRms < STRIDE_STILL_G) return 'still';
-  const periodic = features.periodicity >= STRIDE_MIN_PERIODICITY;
+export function classifyStrideWindow(features: StrideFeatures, gate: StrideGateParams = SHIPPED_STRIDE_GATE): StrideWindowClass {
+  if (features.verticalRms < gate.stillG) return 'still';
+  const periodic = features.periodicity >= gate.minPeriodicity;
   if (
-    features.verticalRms >= STRIDE_WALK_MIN_G &&
-    features.recentRms >= STRIDE_STILL_G &&
+    features.verticalRms >= gate.walkMinG &&
+    features.recentRms >= gate.stillG &&
     periodic &&
-    features.stepHz >= STRIDE_WALK_HZ.low &&
-    features.stepHz <= STRIDE_WALK_HZ.high &&
-    features.intervalCv <= STRIDE_MAX_INTERVAL_CV &&
-    features.axisPurity <= STRIDE_MAX_AXIS_PURITY &&
-    features.rotationRatio <= STRIDE_MAX_ROTATION_RATIO
+    features.stepHz >= gate.walkLowHz &&
+    features.stepHz <= gate.walkHighHz &&
+    features.intervalCv <= gate.maxIntervalCv &&
+    features.axisPurity <= gate.maxAxisPurity &&
+    features.rotationRatio <= gate.maxRotationRatio
   ) {
     return 'stride';
   }
   if (
-    features.verticalRms >= STRIDE_VETO_MIN_G &&
+    features.verticalRms >= gate.vetoMinG &&
     periodic &&
-    (features.stepHz > STRIDE_VETO_HZ ||
-      features.axisPurity > STRIDE_VETO_AXIS_PURITY ||
-      features.rotationRatio > STRIDE_VETO_ROTATION_RATIO)
+    (features.stepHz > gate.vetoHz ||
+      features.axisPurity > gate.vetoAxisPurity ||
+      features.rotationRatio > gate.vetoRotationRatio)
   ) {
     return 'nonGait';
   }
-  if (features.rotationRms >= STRIDE_VETO_ROTATION_RMS && features.rotationRatio > STRIDE_VETO_ROTATION_RATIO) return 'nonGait';
+  if (features.rotationRms >= gate.vetoRotationRms && features.rotationRatio > gate.vetoRotationRatio) return 'nonGait';
   return 'ambiguous';
 }
 
@@ -230,18 +240,18 @@ function biquad(input: readonly number[], c: Biquad): number[] {
 }
 
 /** Forward-then-backward band-pass: zero phase, so peaks stay time-aligned. */
-function bandPass(values: readonly number[], sampleRate: number): number[] {
-  const c = bandPassCoefficients(sampleRate, STRIDE_FILTER_HZ.low, STRIDE_FILTER_HZ.high);
+function bandPass(values: readonly number[], sampleRate: number, gate: StrideGateParams): number[] {
+  const c = bandPassCoefficients(sampleRate, gate.filterLowHz, gate.filterHighHz);
   return biquad(biquad(values, c).reverse(), c).reverse();
 }
 
-function autocorrelationPeak(signal: readonly number[], sampleRate: number): { periodicity: number; stepHz: number } {
+function autocorrelationPeak(signal: readonly number[], sampleRate: number, gate: StrideGateParams): { periodicity: number; stepHz: number } {
   const count = signal.length;
   const center = mean(signal);
   let energy = 0;
   for (let index = 0; index < count; index += 1) energy += (signal[index] - center) ** 2;
-  const lowLag = Math.max(1, Math.round((STRIDE_LAG_MS.low * sampleRate) / 1000));
-  const highLag = Math.min(count - 1, Math.round((STRIDE_LAG_MS.high * sampleRate) / 1000));
+  const lowLag = Math.max(1, Math.round((gate.lagLowMs * sampleRate) / 1000));
+  const highLag = Math.min(count - 1, Math.round((gate.lagHighMs * sampleRate) / 1000));
   let best = -Infinity;
   let bestLag = lowLag;
   for (let lag = lowLag; lag <= highLag; lag += 1) {
@@ -253,9 +263,9 @@ function autocorrelationPeak(signal: readonly number[], sampleRate: number): { p
   return { periodicity: energy > 0 ? best : 0, stepHz: sampleRate / bestLag };
 }
 
-function intervalCv(signal: readonly number[], sampleRate: number): number {
-  const threshold = STRIDE_PEAK_HEIGHT_FRACTION * rms(signal);
-  const minDistance = Math.round((STRIDE_PEAK_MIN_DISTANCE_MS * sampleRate) / 1000);
+function intervalCv(signal: readonly number[], sampleRate: number, gate: StrideGateParams): number {
+  const threshold = gate.peakHeightFraction * rms(signal);
+  const minDistance = Math.round((gate.peakMinDistanceMs * sampleRate) / 1000);
   const peaks: number[] = [];
   for (let index = 1; index < signal.length - 1; index += 1) {
     if (signal[index] < threshold || signal[index] <= signal[index - 1] || signal[index] < signal[index + 1]) continue;
@@ -297,11 +307,16 @@ function axisPurity(acceleration: readonly StrideVector[]): number {
   return Math.min(1, eigen / trace);
 }
 
-export function computeStrideFeatures(grid: Grid, windowMs: number, sampleRate = STRIDE_SAMPLE_HZ): StrideFeatures {
+export function computeStrideFeatures(
+  grid: Grid,
+  windowMs: number,
+  sampleRate = STRIDE_SAMPLE_HZ,
+  gate: StrideGateParams = SHIPPED_STRIDE_GATE,
+): StrideFeatures {
   const verticalRms = rms(grid.vertical);
-  const recentRms = rms(grid.vertical.slice(-Math.round((STRIDE_RECENT_MS * sampleRate) / 1000)));
-  const filtered = bandPass(grid.vertical.map((value) => value), sampleRate);
-  const { periodicity, stepHz } = autocorrelationPeak(filtered, sampleRate);
+  const recentRms = rms(grid.vertical.slice(-Math.round((gate.recentMs * sampleRate) / 1000)));
+  const filtered = bandPass(grid.vertical.map((value) => value), sampleRate, gate);
+  const { periodicity, stepHz } = autocorrelationPeak(filtered, sampleRate, gate);
   const rotationRms = rms(grid.rotation);
   return {
     windowMs,
@@ -309,7 +324,7 @@ export function computeStrideFeatures(grid: Grid, windowMs: number, sampleRate =
     recentRms,
     periodicity,
     stepHz,
-    intervalCv: intervalCv(filtered, sampleRate),
+    intervalCv: intervalCv(filtered, sampleRate, gate),
     axisPurity: axisPurity(grid.acceleration),
     rotationRms,
     rotationRatio: rotationRms / (verticalRms + 1e-9),
@@ -330,10 +345,7 @@ export class StrideRhythmAnalyzer {
   private vetoRun = 0;
   private lastVetoAt = Number.NEGATIVE_INFINITY;
 
-  constructor(
-    private readonly windowMs = STRIDE_WINDOW_MS,
-    private readonly evaluationIntervalMs = STRIDE_EVALUATION_INTERVAL_MS,
-  ) {}
+  constructor(private readonly gate: StrideGateParams = SHIPPED_STRIDE_GATE) {}
 
   /** Returns the new assessment when this sample triggered an evaluation, else null. */
   push(sample: StrideMotionSample): StrideAssessment | null {
@@ -341,9 +353,9 @@ export class StrideRhythmAnalyzer {
     const newest = this.samples[this.samples.length - 1];
     if (newest !== undefined && sample.t < newest.t) return null;
     this.samples.push(sample);
-    const horizon = sample.t - this.windowMs;
+    const horizon = sample.t - this.gate.windowMs;
     while (this.samples.length && this.samples[0].t < horizon) this.samples.shift();
-    if (sample.t - this.evaluatedAt < this.evaluationIntervalMs) return null;
+    if (sample.t - this.evaluatedAt < this.gate.evaluationIntervalMs) return null;
     this.evaluatedAt = sample.t;
     this.assessment = this.evaluate(sample.t);
     return this.assessment;
@@ -352,7 +364,7 @@ export class StrideRhythmAnalyzer {
   /** Newest assessment, or `unknown` when the stream has gone quiet or moved backwards. */
   assessmentAt(at: number): StrideAssessment {
     const observedAt = this.assessment.at;
-    if (observedAt === null || at < observedAt || at - observedAt >= STRIDE_STALENESS_MS) return UNKNOWN_STRIDE;
+    if (observedAt === null || at < observedAt || at - observedAt >= this.gate.stalenessMs) return UNKNOWN_STRIDE;
     return this.assessment;
   }
 
@@ -371,18 +383,18 @@ export class StrideRhythmAnalyzer {
     const window = this.samples;
     const first = window[0];
     const span = first === undefined ? 0 : at - first.t;
-    const minimumSamples = (this.windowMs / 1000) * STRIDE_SAMPLE_HZ * STRIDE_MIN_COVERAGE;
-    if (first === undefined || span < STRIDE_MIN_SPAN_MS || window.length < minimumSamples) {
+    const minimumSamples = (this.gate.windowMs / 1000) * STRIDE_SAMPLE_HZ * this.gate.minCoverage;
+    if (first === undefined || span < this.gate.minSpanMs || window.length < minimumSamples) {
       this.walkRun = 0; this.walkRunHz = null; this.walkSince = null; this.vetoRun = 0;
       return { verdict: 'unknown', at, since: null, features: null, windowClass: null, recentVeto: this.recentVeto(at) };
     }
-    const grid = resample(window, at - this.windowMs, at);
+    const grid = resample(window, at - this.gate.windowMs, at, this.gate);
     if (grid === null) {
       this.walkRun = 0; this.walkRunHz = null; this.walkSince = null; this.vetoRun = 0;
       return { verdict: 'unknown', at, since: null, features: null, windowClass: null, recentVeto: this.recentVeto(at) };
     }
-    const features = computeStrideFeatures(grid, span);
-    const windowClass = classifyStrideWindow(features);
+    const features = computeStrideFeatures(grid, span, STRIDE_SAMPLE_HZ, this.gate);
+    const windowClass = classifyStrideWindow(features, this.gate);
     const verdict = this.smooth(windowClass, features.stepHz, at);
     return { verdict, at, since: verdict === 'walking' ? this.walkSince : null, features, windowClass, recentVeto: this.recentVeto(at) };
   }
@@ -394,29 +406,34 @@ export class StrideRhythmAnalyzer {
    * windows; `still` is immediate because the window itself spans 3 s.
    */
   private smooth(windowClass: StrideWindowClass, stepHz: number, at: number): StrideVerdict {
-    const stable = this.walkRunHz === null || Math.abs(stepHz - this.walkRunHz) <= STRIDE_HZ_TOLERANCE * this.walkRunHz;
+    const stable = this.walkRunHz === null || Math.abs(stepHz - this.walkRunHz) <= this.gate.hzTolerance * this.walkRunHz;
     if (windowClass === 'stride') {
       this.walkRun = stable ? this.walkRun + 1 : 1;
-      if (this.walkRun === 1) this.walkSince = at - this.windowMs;
+      if (this.walkRun === 1) this.walkSince = at - this.gate.windowMs;
       this.walkRunHz = stepHz;
     } else {
       this.walkRun = 0; this.walkRunHz = null; this.walkSince = null;
     }
     this.vetoRun = windowClass === 'nonGait' ? this.vetoRun + 1 : 0;
-    if (this.vetoRun >= STRIDE_VETO_DWELL) this.lastVetoAt = at;
+    if (this.vetoRun >= this.gate.vetoDwell) this.lastVetoAt = at;
     if (windowClass === 'still') return 'still';
-    if (this.vetoRun >= STRIDE_VETO_DWELL) return 'notStride';
-    if (this.walkRun >= STRIDE_WALK_DWELL && !this.recentVeto(at)) return 'walking';
+    if (this.vetoRun >= this.gate.vetoDwell) return 'notStride';
+    if (this.walkRun >= this.gate.walkDwell && !this.recentVeto(at)) return 'walking';
     return 'unknown';
   }
 
   private recentVeto(at: number): boolean {
-    return at - this.lastVetoAt < STRIDE_PENALTY_MS;
+    return at - this.lastVetoAt < this.gate.penaltyMs;
   }
 }
 
 /** Linear resample onto a uniform 50 Hz grid over [from, to]; null when the window cannot be gridded. */
-export function resample(window: readonly StrideMotionSample[], from: number, to: number): Grid | null {
+export function resample(
+  window: readonly StrideMotionSample[],
+  from: number,
+  to: number,
+  gate: StrideGateParams = SHIPPED_STRIDE_GATE,
+): Grid | null {
   const step = 1000 / STRIDE_SAMPLE_HZ;
   const vertical: number[] = [];
   const acceleration: StrideVector[] = [];
@@ -440,6 +457,6 @@ export function resample(window: readonly StrideMotionSample[], from: number, to
     acceleration.push(userAcceleration);
     rotation.push(magnitude(rotationRate));
   }
-  if (vertical.length < (STRIDE_WINDOW_MS / 1000) * STRIDE_SAMPLE_HZ * STRIDE_MIN_COVERAGE) return null;
+  if (vertical.length < (gate.windowMs / 1000) * STRIDE_SAMPLE_HZ * gate.minCoverage) return null;
   return { vertical, acceleration, rotation };
 }

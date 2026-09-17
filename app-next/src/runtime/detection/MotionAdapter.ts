@@ -15,6 +15,11 @@ import {
   type StrideMotionSource,
   type StrideVerdict,
 } from './StrideRhythm';
+import {
+  SHIPPED_STRIDE_GATE_REPORT,
+  sameStrideGateParams,
+  type StrideGateReport,
+} from './strideGateConfig';
 
 export const MOTION_FRESHNESS_MS = 5_000;
 export const MIN_WALKING_CADENCE_PER_MINUTE = 80;
@@ -32,6 +37,8 @@ export const MOTION_CLOCK_SKEW_MS = 250;
  * cumulative counter is still accruing steps at least at this rate over the
  * trailing horizon; real walking measured 63-152 over the same horizon, and
  * carried values with flat counters drop below 40 about 7 s after the stop.
+ * This is an Apple-only correctness check, independent of the raw stream and of
+ * every remote parameter, so it survives the stride gate's kill switch.
  */
 export const MIN_CADENCE_STEP_RATE_PER_MINUTE = 40;
 export const CADENCE_STEP_RATE_WINDOW_MS = 10_000;
@@ -54,9 +61,15 @@ export class MotionAdapter {
   private activity: ActivitySample | null = null;
   private cadence: CadenceSample | null = null;
   private cadenceSteps: { at: number; steps: number }[] = [];
-  private readonly strideAnalyzer = new StrideRhythmAnalyzer();
+  /**
+   * The raw-stream reader, or null while the kill switch is on. Null is what
+   * "Apple-only" means here: no subscription, no verdict, no cadence gating.
+   */
+  private analyzer: StrideRhythmAnalyzer | null;
+  private gate: StrideGateReport;
   private strideVerdict: StrideVerdict = 'unknown';
   private strideUnsubscribe: Unsubscribe | null = null;
+  private started = false;
   private unsubscribes: Unsubscribe[] = [];
   private listeners = new Set<(evidence: MotionEvidence) => void>();
 
@@ -64,7 +77,38 @@ export class MotionAdapter {
     private readonly provider: MotionProvider,
     private readonly now: () => number = Date.now,
     private readonly strideSource: StrideMotionSource | null = null,
-  ) {}
+    gate: StrideGateReport = SHIPPED_STRIDE_GATE_REPORT,
+  ) {
+    this.gate = gate;
+    this.analyzer = gate.killSwitch.applied ? null : new StrideRhythmAnalyzer(gate.effective);
+  }
+
+  /**
+   * The effective gate configuration this adapter is running with: source,
+   * flag key, kill switch, and every parameter as evaluated versus applied.
+   * A future reader can reconstruct exactly what the gate ran with.
+   */
+  strideGate(): StrideGateReport {
+    return this.gate;
+  }
+
+  /**
+   * Applies a resolved gate configuration (`resolveStrideGateConfig` is the
+   * only producer). Applying the same parameters again is a no-op, so a
+   * foreground re-read never restarts an in-flight dwell; a real change resets
+   * the reader, because no verdict may mix two parameter sets. The kill switch
+   * drops the raw-stream subscription entirely.
+   */
+  applyStrideGateConfig(report: StrideGateReport): void {
+    const unchanged =
+      sameStrideGateParams(this.gate.effective, report.effective) &&
+      this.gate.killSwitch.applied === report.killSwitch.applied;
+    this.gate = report;
+    if (unchanged) return;
+    this.resetStride();
+    if (this.analyzer === null) this.detachStride();
+    else if (this.started) this.attachStride();
+  }
 
   authorization(): MotionAuthStatus {
     return this.provider.getAuthorizationStatus();
@@ -79,9 +123,9 @@ export class MotionAdapter {
     this.activity = null;
     this.cadence = null;
     this.cadenceSteps = [];
-    this.strideAnalyzer.reset();
-    this.strideVerdict = 'unknown';
-    this.strideUnsubscribe = this.strideSource?.onSample((sample) => this.acceptStride(sample)) ?? null;
+    this.started = true;
+    this.resetStride();
+    this.attachStride();
     this.unsubscribes = [
       this.provider.on('activity', (sample) => {
         this.acceptActivity(sample);
@@ -97,8 +141,8 @@ export class MotionAdapter {
     const unsubscribes = this.unsubscribes.splice(0);
     const strideUnsubscribe = this.strideUnsubscribe;
     this.strideUnsubscribe = null;
-    this.strideAnalyzer.reset();
-    this.strideVerdict = 'unknown';
+    this.started = false;
+    this.resetStride();
     await runCleanups(
       [
         ...(strideUnsubscribe ? [() => strideUnsubscribe()] : []),
@@ -130,7 +174,9 @@ export class MotionAdapter {
     // §5.1); it now needs the pedometer's counter to be accruing and the raw
     // stream, when it is watching, to not contradict it now or within the
     // last STRIDE_PENALTY_MS. Apple's activity classifier and the raw stride
-    // verdict remain independent legs.
+    // verdict remain independent legs. With the kill switch on the stride
+    // verdict is permanently `unknown` with no veto, so this reduces to the
+    // Apple-only pedometer rule plus the accrual check above.
     const cadenceQualifies =
       cadencePerMinute !== null &&
       cadencePerMinute >= MIN_WALKING_CADENCE_PER_MINUTE &&
@@ -153,7 +199,9 @@ export class MotionAdapter {
       cadencePerMinute,
       stride: stride.verdict,
       strideAt,
-      verifiedMs: strideWalking && stride.since !== null && stride.at !== null ? Math.max(0, stride.at - stride.since) : 0,
+      verifiedMs: strideWalking && stride.since !== null && stride.at !== null
+      ? Math.min(this.gate.effective.qualifyCreditMs, Math.max(0, stride.at - stride.since))
+      : 0,
     };
   }
 
@@ -244,14 +292,32 @@ export class MotionAdapter {
   }
 
   private acceptStride(sample: StrideMotionSample): void {
-    const assessment = this.strideAnalyzer.push(sample);
+    if (this.analyzer === null) return;
+    const assessment = this.analyzer.push(sample);
     if (assessment === null || assessment.verdict === this.strideVerdict) return;
     this.strideVerdict = assessment.verdict;
     this.publish(sample.t);
   }
 
   private strideAssessment(at: number): StrideAssessment {
-    if (this.strideSource === null) return UNKNOWN_STRIDE;
-    return this.strideAnalyzer.assessmentAt(at);
+    if (this.strideSource === null || this.analyzer === null) return UNKNOWN_STRIDE;
+    return this.analyzer.assessmentAt(at);
+  }
+
+  /** Fresh reader for the current gate parameters; null while the kill switch is on. */
+  private resetStride(): void {
+    this.analyzer = this.gate.killSwitch.applied ? null : new StrideRhythmAnalyzer(this.gate.effective);
+    this.strideVerdict = 'unknown';
+  }
+
+  private attachStride(): void {
+    if (!this.started || this.strideUnsubscribe !== null || this.analyzer === null) return;
+    this.strideUnsubscribe = this.strideSource?.onSample((sample) => this.acceptStride(sample)) ?? null;
+  }
+
+  private detachStride(): void {
+    const unsubscribe = this.strideUnsubscribe;
+    this.strideUnsubscribe = null;
+    unsubscribe?.();
   }
 }

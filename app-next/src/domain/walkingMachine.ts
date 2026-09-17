@@ -1,5 +1,13 @@
 /** Persist timestamps, never timer handles. Raw motion/cadence OR/freshness fusion belongs to the adapter. */
 export const WALK_QUALIFY_MS = 3000;
+/**
+ * The grace contract this reducer enforces (`reduceWalking` throws outside it).
+ * The runtime clamps the user's own stop-grace into these bounds before any
+ * wake reaches the reducer, so a bad setting or a bad remote bound can never
+ * throw here (see `detection/strideGateConfig.ts`).
+ */
+export const WALK_GRACE_MIN_MS = 30_000;
+export const WALK_GRACE_MAX_MS = 300_000;
 export const WALK_SILENCE_MS = 5000;
 /**
  * Freshness contract between the adapter and this reducer. The adapter only
@@ -86,7 +94,7 @@ function advance(state: WalkingState, now: number, graceMs: number): void {
  */
 export function reduceWalking(previous: WalkingState, event: WalkingEvent, now: number, graceMs: number): WalkingState {
   validTime(now); validTime(previous.watermark); validateState(previous);
-  if (previous.version !== 1 || !Number.isFinite(graceMs) || graceMs < 30000 || graceMs > 300000) throw new Error('Invalid walking state/grace');
+  if (previous.version !== 1 || !Number.isFinite(graceMs) || graceMs < WALK_GRACE_MIN_MS || graceMs > WALK_GRACE_MAX_MS) throw new Error('Invalid walking state/grace');
   const state = { ...previous };
   const current = Math.max(now, previous.watermark);
   if (event.kind === 'evidence') {
