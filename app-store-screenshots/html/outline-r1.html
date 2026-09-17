@@ -49,8 +49,8 @@
   .cap.g{color:var(--grey);font-weight:500}
   .btn{display:block;background:var(--orange);color:#fff;border-radius:999px;padding:38px;text-align:center;font:700 40px/1 sans-serif}
   .btn.out{background:transparent;color:var(--ink);border:3px solid var(--ink)}
-  .bars{display:flex;align-items:flex-end;gap:14px;height:260px;margin-top:20px}
-  .bars i{flex:1;background:var(--orange);border-radius:10px 10px 4px 4px}
+  .bars{display:flex;align-items:flex-end;gap:34px;height:260px;margin-top:20px;padding:0 10px}
+  .bars i{flex:1;background:var(--orange);border-radius:999px 999px 14px 14px}
   .bars.grey i{background:#BDBDC4}
   .bars.dash{border-top:4px dashed var(--grey)}
   .heat{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-top:16px}
@@ -78,6 +78,13 @@
   .stat span{font:600 30px/1 sans-serif;color:var(--grey);letter-spacing:.08em;text-transform:uppercase}
   .chip{position:absolute;background:var(--ink);color:#fff;border-radius:999px;padding:20px 36px;font:700 34px/1 sans-serif}
   .arrowdown::after{content:"▼";font-size:72px;color:var(--orange);display:block;text-align:center;margin:0}
+  .fade{position:absolute;left:0;right:0;bottom:0;height:33.3%;background:linear-gradient(180deg,rgba(242,121,44,0) 0%,var(--o2) 45%,var(--o2) 100%);pointer-events:none}
+  .laurels{position:absolute;left:0;right:0;bottom:250px;display:flex;justify-content:center;gap:110px;color:#fff;text-align:center}
+  .laurel{display:flex;align-items:center;gap:6px}
+  .laurel small{display:block;font:600 28px/1 sans-serif;letter-spacing:.12em}
+  .laurel b{display:block;font:800 120px/1 sans-serif;margin:16px 0}
+  .laurel .leaf{font-size:120px;line-height:1;opacity:.9}
+  .laurel .leaf.flip{transform:scaleX(-1)}
   .note{position:absolute;bottom:70px;left:0;right:0;text-align:center;font:600 34px/1.3 sans-serif;color:var(--grey)}
   .frame.solid .note{color:rgba(255,255,255,.85)}
 </style>
@@ -91,11 +98,16 @@
     <div class="h1">Become <em>ADDICTED</em> to exercise.</div>
     <div class="sub">Your phone unlocks only while you walk.</div>
   </div>
-  <div class="phone tilt" style="left:165px;top:760px">
+  <div class="phone tilt" style="left:165px;top:560px">
     <img class="shot" src="shots/home-walking.png" alt="Home — Unlock while walking condition">
   </div>
-  <div class="icons" style="left:80px;top:2330px"><b class="off">IG</b><b class="off">TT</b><b class="off">YT</b><b class="off">X</b><b class="off">SC</b><b class="off">RD</b></div>
-  <div class="note">placeholder: blocked social icons greyed, fanning out under the phone</div>
+  <!-- fade starts 1/3 from the bottom and swallows the phone -->
+  <div class="fade"></div>
+  <div class="laurels">
+    <div class="laurel"><span class="leaf">🌿</span><div><small>AVERAGE</small><b>4.8</b><small>RATING</small></div><span class="leaf flip">🌿</span></div>
+    <div class="laurel"><span class="leaf">🌿</span><div><small>LOVED BY</small><b>10K+</b><small>WALKERS</small></div><span class="leaf flip">🌿</span></div>
+  </div>
+  <div class="note">placeholder numbers — laurel wreaths drawn as thin white line-art</div>
 </div></div>
 
 <!-- 1 BLOCK APPS — icon grid (Unrot "Unblock apps with coins" layout) -->
@@ -137,22 +149,22 @@
 <div class="frame solid">
   <div class="top">
     <div class="h1">Choose <em>your</em> rules.</div>
-    <div class="sub">Pick how exercise unlocks your apps. Filler copy for now.</div>
+    <div class="sub">Walk, run or hit the gym — you decide what earns your apps.</div>
   </div>
   <div class="phone" style="left:165px;top:640px;height:2100px;overflow:visible">
     <div class="island"></div><div class="sb"><span>9:41</span><span>●●● ⌔ ▮</span></div>
     <div class="screen" style="overflow:visible;border-radius:136px">
       <div style="font:800 64px/1 sans-serif;margin-bottom:30px">Conditions</div>
       <div style="position:relative;height:1420px"><div class="card" style="position:absolute;left:-80px;top:120px;width:980px;padding:44px 50px;background:#fff;transform:rotate(-3deg);box-shadow:0 30px 60px rgba(0,0,0,.18);display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font:800 52px/1.1 sans-serif">Walk & Scroll</div><div class="cap g" style="text-align:left;font-size:32px;margin-top:10px">Apps open while you walk</div></div>
+        <div><div style="font:800 52px/1.1 sans-serif">Walk & Scroll</div><div class="cap g" style="text-align:left;font-size:32px;margin-top:10px">Apps stay open while you walk</div></div>
         <div class="btn" style="font-size:32px;padding:26px 40px">Start now</div></div><div class="card" style="position:absolute;left:20px;top:380px;width:980px;padding:44px 50px;background:#fff;transform:rotate(2deg);box-shadow:0 30px 60px rgba(0,0,0,.18);display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font:800 52px/1.1 sans-serif">Arrive at the gym</div><div class="cap g" style="text-align:left;font-size:32px;margin-top:10px">Unlock when you reach your gym</div></div>
+        <div><div style="font:800 52px/1.1 sans-serif">Arrive at the gym</div><div class="cap g" style="text-align:left;font-size:32px;margin-top:10px">Check in at your gym → 45 min unlocked</div></div>
         </div><div class="card" style="position:absolute;left:-50px;top:640px;width:980px;padding:44px 50px;background:#fff;transform:rotate(-2deg);box-shadow:0 30px 60px rgba(0,0,0,.18);display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font:800 52px/1.1 sans-serif">Walk for a set time</div><div class="cap g" style="text-align:left;font-size:32px;margin-top:10px">20 minutes opens your apps</div></div>
+        <div><div style="font:800 52px/1.1 sans-serif">Walk 5,000 steps</div><div class="cap g" style="text-align:left;font-size:32px;margin-top:10px">Hit 5,000 steps today → 1 hour unlocked</div></div>
         </div><div class="card" style="position:absolute;left:40px;top:900px;width:980px;padding:44px 50px;background:#fff;transform:rotate(3deg);box-shadow:0 30px 60px rgba(0,0,0,.18);display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font:800 52px/1.1 sans-serif">Daily step goal</div><div class="cap g" style="text-align:left;font-size:32px;margin-top:10px">8,000 steps earns today's time</div></div>
+        <div><div style="font:800 52px/1.1 sans-serif">Steps exchange</div><div class="cap g" style="text-align:left;font-size:32px;margin-top:10px">Every 1,000 steps = 20 min of apps</div></div>
         </div><div class="card" style="position:absolute;left:-60px;top:1160px;width:980px;padding:44px 50px;background:#fff;transform:rotate(-3deg);box-shadow:0 30px 60px rgba(0,0,0,.18);display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font:800 52px/1.1 sans-serif">Treadmill walk</div><div class="cap g" style="text-align:left;font-size:32px;margin-top:10px">Indoor walking counts too</div></div>
+        <div><div style="font:800 52px/1.1 sans-serif">Run 5 km</div><div class="cap g" style="text-align:left;font-size:32px;margin-top:10px">Finish a 5 km run → rest of the day unlocked</div></div>
         </div></div>
       <div class="btn out" style="margin:0 60px;font-size:34px;padding:30px">+ Add a condition</div>
     </div>
@@ -172,14 +184,14 @@
     <div class="card" style="position:absolute;left:-60px;top:190px;width:1080px;padding:50px 60px;background:#fff;transform:rotate(-2deg);box-shadow:0 30px 60px rgba(0,0,0,.18)">
       <div style="font:800 46px/1 sans-serif;color:var(--grey)">Screen time</div>
       <div style="display:flex;align-items:baseline;gap:24px;margin-top:22px"><span style="font:800 96px/1 sans-serif">2h 05m</span><span class="cap g" style="font-size:32px">daily average</span><span class="chip" style="position:static;margin-left:auto">↓ 66%</span></div>
-      <div class="bars grey" style="height:420px;margin-top:40px"><i style="height:100%"></i><i style="height:92%"></i><i style="height:80%"></i><i style="height:66%"></i><i style="height:52%"></i><i style="height:40%"></i><i style="height:30%"></i><i style="height:26%"></i></div>
+      <div class="bars grey" style="height:420px;margin-top:40px"><i style="height:100%"></i><i style="height:84%"></i><i style="height:90%"></i><i style="height:62%"></i><i style="height:48%"></i><i style="height:54%"></i><i style="height:34%"></i><i style="height:28%"></i></div>
       <div class="ph" style="position:absolute;inset:auto 60px 50px;height:0;border:0;padding:0"></div>
       <div class="cap g" style="font-size:28px;margin-top:14px">placeholder: grey→orange line trending down over the bars</div>
     </div>
     <div class="card" style="position:absolute;left:-40px;top:1100px;width:1080px;padding:50px 60px;background:#fff;transform:rotate(2deg);box-shadow:0 30px 60px rgba(0,0,0,.18)">
       <div style="font:800 46px/1 sans-serif;color:var(--grey)">Exercise</div>
-      <div style="display:flex;align-items:baseline;gap:24px;margin-top:22px"><span style="font:800 96px/1 sans-serif;color:var(--orange)">52 min</span><span class="cap g" style="font-size:32px">per day</span><span class="chip" style="position:static;margin-left:auto;background:var(--orange)">↑ 3.2×</span></div>
-      <div class="bars" style="height:420px;margin-top:40px"><i style="height:22%"></i><i style="height:30%"></i><i style="height:38%"></i><i style="height:50%"></i><i style="height:60%"></i><i style="height:74%"></i><i style="height:88%"></i><i style="height:100%"></i></div>
+      <div style="display:flex;align-items:baseline;gap:24px;margin-top:22px"><span style="font:800 96px/1 sans-serif;color:var(--orange)">1h 45m</span><span class="cap g" style="font-size:32px">per day</span><span class="chip" style="position:static;margin-left:auto;background:var(--orange)">↑ 3.2×</span></div>
+      <div class="bars" style="height:420px;margin-top:40px"><i style="height:22%"></i><i style="height:34%"></i><i style="height:30%"></i><i style="height:52%"></i><i style="height:64%"></i><i style="height:58%"></i><i style="height:86%"></i><i style="height:100%"></i></div>
       <div class="cap g" style="font-size:28px;margin-top:14px">placeholder: orange line rising over the bars</div>
     </div>
     <div class="home"></div>
