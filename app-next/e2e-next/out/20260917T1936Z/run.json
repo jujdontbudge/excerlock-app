@@ -1,0 +1,182 @@
+{
+  "runId": "20260917T1936Z",
+  "udid": "B68873CD-B6ED-4961-85AF-0C807E657999",
+  "build": {
+    "revision": "61a42d2cd11da4cab073fca05e08d1dafb216df0",
+    "revisionDirty": false,
+    "appSourceRevision": "9539466796c5",
+    "app": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/19/excerlock-app/app-next/e2e-next/build/DerivedData/Build/Products/Release-iphonesimulator/ExcerLock.app",
+    "bundleId": "com.johansardar.excerlock",
+    "scheme": "ExcerLock",
+    "configuration": "Release",
+    "environment": "preview",
+    "channel": "preview",
+    "runtimeVersion": "2",
+    "derivedData": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/19/excerlock-app/app-next/e2e-next/build/DerivedData",
+    "log": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/19/excerlock-app/app-next/e2e-next/build/build.log",
+    "installed": true,
+    "builtAt": "2026-09-17T19:41:06Z"
+  },
+  "capabilities": {
+    "B1.remote_config_copy": {
+      "landed": true,
+      "contract": "remoteCopy reads flow.remoteConfigs[0].data (locale-aware)"
+    },
+    "B4a.screen_step_mapping": {
+      "landed": true,
+      "contract": "semanticScreenName resolves onboarding/setup step ids to a screen plus a step prop"
+    },
+    "B4b.root_screen_tracking": {
+      "landed": true,
+      "contract": "a single root-level usePathname subscriber emits screen() for every production route"
+    },
+    "B6.paywall_funnel_events": {
+      "landed": true,
+      "contract": "client emits paywall_viewed"
+    },
+    "B2.paywall_error_reporting": {
+      "landed": true,
+      "contract": "client emits paywall_error on paywall load/purchase/restore failure"
+    },
+    "B3.fallback_paywall": {
+      "landed": true,
+      "contract": "assets/adapty-fallback.json exists and the SDK fallback is wired"
+    },
+    "B7.signin_required_flag": {
+      "landed": true,
+      "contract": "SignInScreen mounts receive a flag-backed signInRequired source"
+    },
+    "B10.startup_marks": {
+      "landed": true,
+      "contract": "startup module emits the five os_signpost stages"
+    },
+    "A5.sentry_before_boot": {
+      "landed": true,
+      "contract": "Sentry initialisation runs at the entry, before the runtime boot gate"
+    }
+  },
+  "startedAt": "20260917T1936Z",
+  "finishedAt": "2026-09-17T19:46:23Z",
+  "scenarios": [
+    {
+      "scenario": "E2E-N4",
+      "status": "BLOCKED",
+      "reason": "paywall.fallback_title blocked until offline-first-launch-identity: the bundled fallback cannot render on a first-ever launch: AdaptySDK-iOS 4.0.2 creates the profile on the server at activation (Sources/Adapty.swift createNewProfileOnServer retries every 100 ms until the backend answers) and identify awaits that task, so the app's identity spine never commits and loadPaywall's expected-identity gate never opens. Observed the paywall load-error state \"Plans couldn't load. Please retry.\"; the app's own AdaptySDK_Purchaser_Info is absent and AdaptySDK_Cached_Flow holds nothing. The fallback render itself is proven by E2E-N4W, which establishes the profile with one online launch and then denies every Adapty endpoint.; paywall.fallback_plans blocked until offline-first-launch-identity: same offline-first-launch identity gate as paywall.fallback_title",
+      "verdict": "app-next/e2e-next/out/20260917T1936Z/E2E-N4/verdict.json",
+      "assertions": [
+        {
+          "id": "offline.adapty_unreachable",
+          "status": "PASS",
+          "detail": "every Adapty endpoint is denied and verified unreachable: api.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to api.adapty.io port 443 after 7 ms: Couldn't connect to server\" | fallback.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to fallback.adapty.io port 443 after 7 ms: Couldn't connect to server\" | configs-cdn.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to configs-cdn.adapty.io port 443 after 3 ms: Couldn't connect to server\" | api-ua.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to api-ua.adapty.io port 443 after 1 ms: Couldn't connect to server\""
+        },
+        {
+          "id": "offline.boots",
+          "status": "PASS",
+          "detail": "the release build boots with every Adapty endpoint denied"
+        },
+        {
+          "id": "offline.walk_reaches_paywall",
+          "status": "PASS",
+          "detail": "the offline walk reached the paywall (29 screens: O01 -> O02 -> O03 -> O04 -> O05 -> O06 -> O08 -> O09 -> O10 -> O11 -> O12 -> O13 -> O14 -> O15 -> O16 -> O17 -> O18 -> O20 -> W1 -> W2 -> W3 -> S1 -> S3 -> S4 -> T1 -> T2 -> T3 -> T4 -> P)",
+          "evidence": [
+            "O01 | O02 | O03 | O04 | O05 | O06 | O08 | O09 | O10 | O11 | O12 | O13 | O14 | O15 | O16 | O17 | O18 | O20 | W1 | W2 | W3 | S1 | S3 | S4 | T1 | T2 | T3 | T4 | P"
+          ]
+        },
+        {
+          "id": "paywall.fallback_title",
+          "status": "BLOCKED",
+          "detail": "the bundled fallback cannot render on a first-ever launch: AdaptySDK-iOS 4.0.2 creates the profile on the server at activation (Sources/Adapty.swift createNewProfileOnServer retries every 100 ms until the backend answers) and identify awaits that task, so the app's identity spine never commits and loadPaywall's expected-identity gate never opens. Observed the paywall load-error state \"Plans couldn't load. Please retry.\"; the app's own AdaptySDK_Purchaser_Info is absent and AdaptySDK_Cached_Flow holds nothing. The fallback render itself is proven by E2E-N4W, which establishes the profile with one online launch and then denies every Adapty endpoint.",
+          "blockedUntil": "offline-first-launch-identity"
+        },
+        {
+          "id": "paywall.fallback_plans",
+          "status": "BLOCKED",
+          "detail": "same offline-first-launch identity gate as paywall.fallback_title",
+          "blockedUntil": "offline-first-launch-identity"
+        },
+        {
+          "id": "offline.adapty_held_through_walk",
+          "status": "PASS",
+          "detail": "the denial still holds after the walk: api.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to api.adapty.io port 443 after 2 ms: Couldn't connect to server\" | fallback.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to fallback.adapty.io port 443 after 18 ms: Couldn't connect to server\" | configs-cdn.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to configs-cdn.adapty.io port 443 after 2 ms: Couldn't connect to server\" | api-ua.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to api-ua.adapty.io port 443 after 3 ms: Couldn't connect to server\""
+        },
+        {
+          "id": "offline.hosts_restored",
+          "status": "PASS",
+          "detail": "/etc/hosts is byte-identical to its pre-run state (sha256 c7dd0e2ed261)"
+        }
+      ]
+    },
+    {
+      "scenario": "E2E-N4W",
+      "status": "PASS",
+      "reason": "all assertions passed",
+      "verdict": "app-next/e2e-next/out/20260917T1936Z/E2E-N4W/verdict.json",
+      "assertions": [
+        {
+          "id": "precondition.adapty_online_for_first_launch",
+          "status": "PASS",
+          "detail": "api.adapty.io is reachable for the profile-creating launch: addresses=['104.20.21.29', '172.66.175.221'], curl_exit=0 '404'"
+        },
+        {
+          "id": "precondition.first_launch_boots",
+          "status": "PASS",
+          "detail": "the online launch boots into O01 so the identity spine runs"
+        },
+        {
+          "id": "precondition.adapty_profile_created",
+          "status": "PASS",
+          "detail": "the online launch created and identified the Adapty profile in 6s (profileId='a57ebe11-4fe0-4432-9f8e-8e59f9b4a465', customerUserId='ad2d8dc6-5250-468f-b62d-f772d946fc8f')",
+          "evidence": [
+            "{\"profileId\": \"a57ebe11-4fe0-4432-9f8e-8e59f9b4a465\", \"customerUserId\": \"ad2d8dc6-5250-468f-b62d-f772d946fc8f\", \"version\": null}"
+          ]
+        },
+        {
+          "id": "precondition.no_cached_flow",
+          "status": "PASS",
+          "detail": "before the offline launch the Adapty flow cache holds no placement; 'onboarding' is not cached, so the offline load cannot be served from cache",
+          "evidence": [
+            "[]"
+          ]
+        },
+        {
+          "id": "offline.adapty_unreachable",
+          "status": "PASS",
+          "detail": "every Adapty endpoint is denied and verified unreachable: api.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to api.adapty.io port 443 after 3 ms: Couldn't connect to server\" | fallback.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to fallback.adapty.io port 443 after 3 ms: Couldn't connect to server\" | configs-cdn.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to configs-cdn.adapty.io port 443 after 8 ms: Couldn't connect to server\" | api-ua.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to api-ua.adapty.io port 443 after 2 ms: Couldn't connect to server\""
+        },
+        {
+          "id": "offline.boots",
+          "status": "PASS",
+          "detail": "the release build boots with every Adapty endpoint denied"
+        },
+        {
+          "id": "offline.walk_reaches_paywall",
+          "status": "PASS",
+          "detail": "the offline walk reached the paywall (29 screens: O01 -> O02 -> O03 -> O04 -> O05 -> O06 -> O08 -> O09 -> O10 -> O11 -> O12 -> O13 -> O14 -> O15 -> O16 -> O17 -> O18 -> O20 -> W1 -> W2 -> W3 -> S1 -> S3 -> S4 -> T1 -> T2 -> T3 -> T4 -> P)",
+          "evidence": [
+            "O01 | O02 | O03 | O04 | O05 | O06 | O08 | O09 | O10 | O11 | O12 | O13 | O14 | O15 | O16 | O17 | O18 | O20 | W1 | W2 | W3 | S1 | S3 | S4 | T1 | T2 | T3 | T4 | P"
+          ]
+        },
+        {
+          "id": "paywall.fallback_title",
+          "status": "PASS",
+          "detail": "the paywall renders the export remote-config title 'Unlock ExcerLock Premium' (observed 'Unlock ExcerLock Premium'; load-error state '')"
+        },
+        {
+          "id": "paywall.fallback_plans",
+          "status": "PASS",
+          "detail": "2 plan rows ['Premium Annual', 'Premium Monthly'] at ['$59.99'] \u2014 the export onboarding placement carries the annual and monthly Premium A products ['com.johansardar.excerlock.premium.a.annual', 'com.johansardar.excerlock.premium.a.monthly']"
+        },
+        {
+          "id": "offline.adapty_held_through_walk",
+          "status": "PASS",
+          "detail": "the denial still holds after the walk: api.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to api.adapty.io port 443 after 3 ms: Couldn't connect to server\" | fallback.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to fallback.adapty.io port 443 after 1 ms: Couldn't connect to server\" | configs-cdn.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to configs-cdn.adapty.io port 443 after 2 ms: Couldn't connect to server\" | api-ua.adapty.io: addresses=['0.0.0.0'] curl_exit=7 \"000curl: (7) Failed to connect to api-ua.adapty.io port 443 after 2 ms: Couldn't connect to server\""
+        },
+        {
+          "id": "offline.hosts_restored",
+          "status": "PASS",
+          "detail": "/etc/hosts is byte-identical to its pre-run state (sha256 c7dd0e2ed261)"
+        }
+      ]
+    }
+  ]
+}

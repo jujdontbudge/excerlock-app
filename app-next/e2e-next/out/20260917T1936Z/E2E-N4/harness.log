@@ -1,0 +1,105 @@
+[14:41:08] first launch under test: no online warm-up, the app is fresh and Adapty is denied
+[14:41:09] blocked api.adapty.io, fallback.adapty.io, configs-cdn.adapty.io, api-ua.adapty.io via /etc/hosts
+[14:41:09] network check api.adapty.io: addresses=['0.0.0.0'], curl_exit=7
+[14:41:09] network check fallback.adapty.io: addresses=['0.0.0.0'], curl_exit=7
+[14:41:09] network check configs-cdn.adapty.io: addresses=['0.0.0.0'], curl_exit=7
+[14:41:09] network check api-ua.adapty.io: addresses=['0.0.0.0'], curl_exit=7
+[14:41:12] launch under test returned in 2.21s
+[14:41:14] saw "Get started"
+[14:41:14] step 1: O01 — Block apps. Exercise more.
+[14:41:15] tapped "Get started"
+[14:41:16] saw "Block apps. Exercise more."
+[14:41:16] step 2: O02 — Block apps. Exercise more.
+[14:41:17] tapped "Get started"
+[14:41:17] saw "Block apps. Exercise more."
+[14:41:18] step 3: O03 — Block apps. Exercise more.
+[14:41:18] tapped "Get started"
+[14:41:19] saw "What should we call you?"
+[14:41:19] step 4: O04 — What should we call you?
+[14:41:20] typed the first name at O04
+[14:41:20] tapped "Continue"
+[14:41:21] saw "How did you hear about us?"
+[14:41:21] step 5: O05 — How did you hear about us?
+[14:41:22] tapped "YouTube"
+[14:41:23] tapped "Continue"
+[14:41:23] saw "How old are you?"
+[14:41:24] step 6: O06 — How old are you?
+[14:41:24] tapped "25–34"
+[14:41:25] tapped "Continue"
+[14:41:25] saw "What is your goal?"
+[14:41:26] step 7: O08 — What is your goal?
+[14:41:27] tapped "More exercise"
+[14:41:27] tapped "Continue"
+[14:41:28] saw "What’s the main reason you want to make a change?"
+[14:41:28] step 8: O09 — What’s the main reason you want to make a change?
+[14:41:29] tapped "Focus on what matters"
+[14:41:30] tapped "Continue"
+[14:41:30] saw "How many hours do you currently spend scrolling each day?"
+[14:41:31] step 9: O10 — How many hours do you currently spend scrolling each day?
+[14:41:31] tapped "Continue"
+[14:41:32] saw "Here’s some quick math"
+[14:41:32] step 10: O11 — Here’s some quick math
+[14:41:33] O11 is an impact explainer; waiting for its control or the next screen
+[14:41:35] tapped "Continue"
+[14:41:36] step 11: O12 — This is a year in your life
+[14:41:36] O12 is an impact explainer; waiting for its control or the next screen
+[14:41:38] step 12: O13 — This is the free time left
+[14:41:38] O13 is an impact explainer; waiting for its control or the next screen
+[14:41:40] step 13: O14 — This is how much time you spend scrolling
+[14:41:40] O14 is an impact explainer; waiting for its control or the next screen
+[14:41:43] tapped "Continue"
+[14:41:44] step 14: O15 — This is good.
+[14:41:44] tapped "Continue"
+[14:41:45] saw "You’re stuck in a loop"
+[14:41:45] step 15: O16 — You’re stuck in a loop
+[14:41:46] tapped "Continue"
+[14:41:47] saw "We’ll change the loop"
+[14:41:47] step 16: O17 — We’ll change the loop
+[14:41:48] tapped "Continue"
+[14:42:00] none of ['Block apps. Exercise more.', 'Choose your plan', 'Help us make ExcerLock better', 'Here’s some quick math', 'How did you hear about us?', 'How many hours do you currently spend scrolling each day?', 'How old are you?', 'How should walking unlock your apps?', 'How your free trial works', 'Set your walking goal', 'This is a year in your life', 'This is good.', 'This is how much time you spend scrolling', 'This is the free time left', 'Try ExcerLock free', 'Want a trial reminder?', "We'll remind you before it ends", 'We’ll change the loop', 'What exercise should unlock your apps?', 'What is your goal?', 'What should we call you?', 'What’s the main reason you want to make a change?', 'When should blocking be active?', 'Where do you walk?', 'You become', 'Your plan is ready', 'You’re stuck in a loop'] appeared in 12s
+[14:42:00] step 17: O18 — You become
+[14:42:01] tapped "Continue"
+[14:42:02] saw "What exercise should unlock your apps?"
+[14:42:02] step 18: O20 — What exercise should unlock your apps?
+[14:42:03] tapped "Walking"
+[14:42:03] tapped "Continue"
+[14:42:04] saw "Where do you walk?"
+[14:42:04] step 19: W1 — Where do you walk?
+[14:42:05] tapped "Outside"
+[14:42:06] tapped "Continue"
+[14:42:06] saw "How should walking unlock your apps?"
+[14:42:07] step 20: W2 — How should walking unlock your apps?
+[14:42:07] tapped "Reach a step goal"
+[14:42:08] tapped "Continue"
+[14:42:09] saw "Set your walking goal"
+[14:42:09] step 21: W3 — Set your walking goal
+[14:42:10] tapped "Continue"
+[14:42:11] saw "When should blocking be active?"
+[14:42:12] step 22: S1 — When should blocking be active?
+[14:42:12] tapped "Continue"
+[14:42:15] saw "Your plan is ready"
+[14:42:16] step 23: S3 — Your plan is ready
+[14:42:18] tapped "Use this plan"
+[14:42:18] saw "Help us make ExcerLock better"
+[14:42:20] step 24: S4 — Help us make ExcerLock better
+[14:42:22] tapped "Not now"
+[14:42:22] saw "Try ExcerLock free"
+[14:42:23] step 25: T1 — Try ExcerLock free
+[14:42:24] tapped "Continue"
+[14:42:25] saw "We'll remind you before it ends"
+[14:42:26] step 26: T2 — We'll remind you before it ends
+[14:42:27] tapped "Continue"
+[14:42:28] saw "Want a trial reminder?"
+[14:42:29] step 27: T3 — Want a trial reminder?
+[14:42:30] tapped "Enable reminders"
+[14:42:42] none of ['Block apps. Exercise more.', 'Choose your plan', 'Help us make ExcerLock better', 'Here’s some quick math', 'How did you hear about us?', 'How many hours do you currently spend scrolling each day?', 'How old are you?', 'How should walking unlock your apps?', 'How your free trial works', 'Set your walking goal', 'This is a year in your life', 'This is good.', 'This is how much time you spend scrolling', 'This is the free time left', 'Try ExcerLock free', 'Want a trial reminder?', "We'll remind you before it ends", 'We’ll change the loop', 'What exercise should unlock your apps?', 'What is your goal?', 'What should we call you?', 'What’s the main reason you want to make a change?', 'When should blocking be active?', 'Where do you walk?', 'You become', 'Your plan is ready', 'You’re stuck in a loop'] appeared in 12s
+[14:42:43] tapped "Allow"
+[14:42:43] answered the system prompt with "Allow"
+[14:42:45] step 28: T4 — How your free trial works
+[14:42:47] tapped "Continue"
+[14:42:48] saw "Choose your plan"
+[14:42:48] step 29: P — Choose your plan
+[14:42:51] network check api.adapty.io: addresses=['0.0.0.0'], curl_exit=7
+[14:42:51] network check fallback.adapty.io: addresses=['0.0.0.0'], curl_exit=7
+[14:42:51] network check configs-cdn.adapty.io: addresses=['0.0.0.0'], curl_exit=7
+[14:42:52] network check api-ua.adapty.io: addresses=['0.0.0.0'], curl_exit=7

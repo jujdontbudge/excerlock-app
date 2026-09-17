@@ -1,0 +1,170 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": "ExcerLock",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 74}, {44, 44}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 74,
+   "x": 24,
+   "width": 44,
+   "height": 44
+  },
+  "role_description": "image",
+  "AXLabel": "Back",
+  "content_required": false,
+  "type": "Image",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXImage",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{76, 92}, {302, 8}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 92,
+   "x": 76,
+   "width": 302,
+   "height": 8
+  },
+  "role_description": "",
+  "AXLabel": "Setup progress",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": "93%",
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 130}, {354, 32}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 130,
+   "x": 24,
+   "width": 354,
+   "height": 32
+  },
+  "role_description": "heading",
+  "AXLabel": "Want a trial reminder?",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{48, 346}, {306, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 346,
+   "x": 48,
+   "width": 306,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "Want a trial reminder?",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{48, 376}, {306, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 376,
+   "x": 48,
+   "width": 306,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "2 days before your trial ends",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 684}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 684,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "",
+  "AXLabel": "Enable reminders",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 762}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 762,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Maybe later",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ }
+]

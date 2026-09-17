@@ -1,0 +1,296 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": "ExcerLock",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 66}, {354, 36}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 66,
+   "x": 24,
+   "width": 354,
+   "height": 36
+  },
+  "role_description": "heading",
+  "AXLabel": "Choose your plan",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{64, 127}, {314, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 127,
+   "x": 64,
+   "width": 314,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "Exercise to unlock your apps",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{64, 163}, {314, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 163,
+   "x": 64,
+   "width": 314,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "Blocking that fits your schedule",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{64, 199}, {314, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 199,
+   "x": 64,
+   "width": 314,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "See your progress build",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 246}, {354, 22}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 246,
+   "x": 24,
+   "width": 354,
+   "height": 22
+  },
+  "role_description": "text",
+  "AXLabel": "Plans couldn't load. Please retry.",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 292}, {354, 54}}",
+  "AXUniqueId": "",
+  "frame": {
+   "y": 292,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "",
+  "AXLabel": "Retry loading plans",
+  "content_required": false,
+  "type": "GenericElement",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXGenericElement",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 698}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 698,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Continue",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": false,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 760}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 760,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "image",
+  "AXLabel": "Not now",
+  "content_required": false,
+  "type": "Image",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXImage",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{55, 822}, {90, 14}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 822,
+   "x": 55,
+   "width": 90,
+   "height": 14
+  },
+  "role_description": "button",
+  "AXLabel": "Restore purchases",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{161, 822}, {3.3333282470703125, 14}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 822,
+   "x": 161,
+   "width": 3.3333282470703125,
+   "height": 14
+  },
+  "role_description": "text",
+  "AXLabel": "\u00b7",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{180.33332824707031, 822}, {64, 14}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 822,
+   "x": 180.3333282470703,
+   "width": 64,
+   "height": 14
+  },
+  "role_description": "button",
+  "AXLabel": "Terms of Use",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{260.33332824707031, 822}, {3.33331298828125, 14}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 822,
+   "x": 260.3333282470703,
+   "width": 3.33331298828125,
+   "height": 14
+  },
+  "role_description": "text",
+  "AXLabel": "\u00b7",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{279.66667175292969, 822}, {67, 14}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 822,
+   "x": 279.6666717529297,
+   "width": 67,
+   "height": 14
+  },
+  "role_description": "button",
+  "AXLabel": "Privacy Policy",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ }
+]

@@ -1,0 +1,275 @@
+[
+ {
+  "AXFrame": "{{0, 0}, {402, 874}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 0,
+   "x": 0,
+   "width": 402,
+   "height": 874
+  },
+  "role_description": "application",
+  "AXLabel": "ExcerLock",
+  "content_required": false,
+  "type": "Application",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXApplication",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 66}, {354, 72}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 66,
+   "x": 24,
+   "width": 354,
+   "height": 72
+  },
+  "role_description": "heading",
+  "AXLabel": "Block apps. Exercise more.",
+  "content_required": false,
+  "type": "Heading",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXHeading",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 223}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 223,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "image",
+  "AXLabel": "Instagram, YouTube, WhatsApp and TikTok, locked",
+  "content_required": false,
+  "type": "Image",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXImage",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{185.99999934432918, 288.99999934432918}, {30.000001311341663, 30.000001311341634}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 288.9999993443292,
+   "x": 185.99999934432918,
+   "width": 30.000001311341663,
+   "height": 30.000001311341634
+  },
+  "role_description": "image",
+  "AXLabel": "unlock by",
+  "content_required": false,
+  "type": "Image",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXImage",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{76.302916966802727, 359.39974225906286}, {88.837236208674014, 88.837236208674028}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 359.39974225906286,
+   "x": 76.30291696680273,
+   "width": 88.83723620867401,
+   "height": 88.83723620867403
+  },
+  "role_description": "image",
+  "AXLabel": "Walking",
+  "content_required": false,
+  "type": "Image",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXImage",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{234.04323335216449, 356.44794756997464}, {94.991196471713323, 94.991196471713351}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 356.44794756997464,
+   "x": 234.0432333521645,
+   "width": 94.99119647171332,
+   "height": 94.99119647171335
+  },
+  "role_description": "image",
+  "AXLabel": "Gym",
+  "content_required": false,
+  "type": "Image",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXImage",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{51, 576}, {300, 60}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 576,
+   "x": 51,
+   "width": 300,
+   "height": 60
+  },
+  "role_description": "text",
+  "AXLabel": "Exercise more each week and stay consistent.",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{179, 656}, {44, 44}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 656,
+   "x": 179,
+   "width": 44,
+   "height": 44
+  },
+  "role_description": "button",
+  "AXLabel": "Back",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 716}, {354, 54}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 716,
+   "x": 24,
+   "width": 354,
+   "height": 54
+  },
+  "role_description": "button",
+  "AXLabel": "Get started",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{101.33333587646484, 774}, {199.66665649414062, 44}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 774,
+   "x": 101.33333587646484,
+   "width": 199.66665649414062,
+   "height": 44
+  },
+  "role_description": "button",
+  "AXLabel": "Sign in",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": null,
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{24, 822}, {354, 14}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 822,
+   "x": 24,
+   "width": 354,
+   "height": 14
+  },
+  "role_description": "text",
+  "AXLabel": "By continuing, you agree to our Privacy Policy and Terms of Use",
+  "content_required": false,
+  "type": "StaticText",
+  "title": null,
+  "help": "2 buttons found, swipe to move to the first button.",
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXStaticText",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{200.65576171875, 822}, {66.9921875, 14}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 822,
+   "x": 200.65576171875,
+   "width": 66.9921875,
+   "height": 14
+  },
+  "role_description": "button",
+  "AXLabel": "Privacy Policy",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": "Button 1 of 2.",
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ },
+ {
+  "AXFrame": "{{291.35400390625, 822}, {63.7939453125, 14}}",
+  "AXUniqueId": null,
+  "frame": {
+   "y": 822,
+   "x": 291.35400390625,
+   "width": 63.7939453125,
+   "height": 14
+  },
+  "role_description": "button",
+  "AXLabel": "Terms of Use",
+  "content_required": false,
+  "type": "Button",
+  "title": null,
+  "help": "Button 2 of 2.",
+  "custom_actions": [],
+  "AXValue": null,
+  "enabled": true,
+  "role": "AXButton",
+  "subrole": null
+ }
+]
