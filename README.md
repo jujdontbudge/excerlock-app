@@ -40,6 +40,7 @@ npm run test:guardrails
 ```
 
 The full CI workflow also verifies Expo config loading, installed native patches,
-and signed-manifest validation. Product requirements live in
-[`plans/ship/README.md`](plans/ship/README.md), with deferred work in
-[`plans/post-ship/README.md`](plans/post-ship/README.md).
+and signed-manifest validation. Agents follow the standing TDD + E2E + screenshot
+loop in [`AGENTS.md`](AGENTS.md); do not ship TestFlight on a red loop. Product
+requirements live in [`plans/ship/README.md`](plans/ship/README.md), with deferred
+work in [`plans/post-ship/README.md`](plans/post-ship/README.md).

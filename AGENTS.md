@@ -16,9 +16,21 @@
 
 - Service tooling: use `supabase`, `az` + SSH/rsync, `sentry`/`sentry-cli`, `posthog-cli`, `resend`, `eas`, `adapty`, `asc` and `gh` as appropriate. Read `docs/agents/service-cli.md` only for service/deployment tasks; discover commands with `--help`.
 
-## E2E / simulator verification
+## Verification loop (standing — do not wait to be told)
 
-- `app-next/e2e-next/README.md` owns the SIM-lane harness: one build, one pinned `ExcerLock-Next` simulator, a verdict per scenario. `E2E-F1` mints the entitled existing-user fixture (a real Adapty server-side `premium` grant, never a purchase) and `E2E-F2` tears it down; run scenarios only when no sibling lane is driving that simulator.
+Whenever you design a test harness, ship product, or build any feature that is not a pure visual/copy-only UI change, run this loop. It is project law for every agent. Do not wait for the captain to repeat it. Do not invent a new agent control plane (no extra Stop/PreToolUse harness in this repo); the existing gates are CI (`.github/workflows/ci.yml`) and `app-next/e2e-next/`.
+
+1. **TDD + code checks.** Write a failing test first. Run it and confirm it fails for the right reason. Then write the code. Re-run that test plus the focused suite for the package you touched (`npm run test --workspace app-next`, `npm run test --workspace server`, package vitest, or the matching Python test) and the code checks CI already runs (`npm run typecheck`; `npm run lint --workspace app-next` when you touched app-next; `npm run test:guardrails` when architecture bounds move). Ban skip/delete/weaken: no `it.skip`, `test.skip`, `xit`, deleted failing tests, or loosened assertions to go green.
+
+2. **E2E as close to a real user as this stack allows.** Assert the visible result **and** the server/API effect. iOS: `app-next/e2e-next/README.md` — one release-style build, one pinned `ExcerLock-Next` simulator, `xcrun simctl` + `idb`, a fail-closed `verdict.json` per scenario. Maestro is banned machine-wide (`e2e/README.md`, ADR 0008); do not add Maestro, Detox, or a second iOS driver. `E2E-F1` mints the entitled existing-user fixture (a real Adapty server-side `premium` grant, never a purchase) and `E2E-F2` tears it down; run scenarios only when no sibling lane is driving that simulator. Screen Time / Family Controls / canary cannot run on the simulator: say so, then still run the closest real path (SIM-lane UI + live preview API / PostHog / Supabase assertions). Web (`site/`): Playwright. Server-only: hit the running API and assert the persisted effect.
+
+3. **Screenshots** of every user-visible screen in that flow. The SIM-lane harness writes them under `app-next/e2e-next/out/<run>/<scenario>/`; for a UI-only round use `screenshot` in `app-next/scripts/sim.py`. A green test without the screen is not proof.
+
+4. **Loop until those tests pass.** If they fail, fix and re-run. Do not ship TestFlight, OTA, or `api.excerlock.com` on a red loop. Never treat harness `BLOCKED` as `PASS`.
+
+5. **Exempt:** pure visual/copy-only UI rounds skip full TDD+E2E; they still need a screenshot of the changed screen.
+
+Short citations (why this is encoded as law, not a prompt): [Claude Code verification loops](https://claude.com/blog/building-verification-loops-in-claude-code-with-skills) / [Stop hooks](https://docs.claude.com/en/docs/claude-code/hooks#stop); [Cursor test-generation loop](https://cursor.com/for/test-generation); [Spotify Honk hidden verifiers](https://engineering.atspotify.com/2025/12/feedback-loops-background-coding-agents-part-3); [Devin computer-use + assertions before click](https://cognition.ai/blog/testing-development); [Maestro MCP](https://maestro.dev/mcp) (agentic UI-test pattern; not used here); [Ken Imoto PreToolUse TDD hook](https://kenimoto.dev/blog/claude-code-tdd-test-after-code-six-of-ten/). On X/Grok: write the verifier first so proof sits outside the agent's narration; an external oracle is the score, not the transcript.
 
 ## On-demand skills
 
@@ -47,3 +59,10 @@ Pi and Hermes discover the kept skills in `.agents/skills/`: opensrc, Adapty int
 ## Text color
 
 - UI text must not be orange, except the single hero metric on a screen and one emphasis word inside an onboarding headline. Use neutral primary/secondary text on light surfaces and white text on orange fills; orange remains available for backgrounds, icons and non-text indicators.
+
+## Maintaining this file
+
+Keep this file for knowledge useful to almost every future agent session in this project.
+Do not repeat what the codebase already shows; point to the authoritative file or command instead.
+Prefer rewriting or pruning existing entries over appending new ones.
+When updating this file, preserve this bar for all agents and keep entries concise.
