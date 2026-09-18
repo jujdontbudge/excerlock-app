@@ -8,4 +8,6 @@ Read `/Users/johansardar/.agents/skills/asc-cli-usage/SKILL.md` on App Store Con
 
 Use existing authentication profiles; select the correct app/team explicitly. Installation is not authorization to upload, submit or change App Store data. Follow `docs/agents/operations.md`, including the shared release lock, for authorized release work. Do not write API keys into the repository.
 
-The verified local archive → export → TestFlight upload lane, with its pitfalls, is recorded in `docs/releases/2026-09-17-testflight-1.0.0-2.md`.
+The verified local archive → export → TestFlight upload lane, with its pitfalls, is recorded in `docs/releases/2026-09-17-testflight-1.0.0-2.md` and repeated in `docs/releases/2026-09-18-testflight-1.0.0-4.md`.
+
+The ExcerLock API key is not a stored `asc` profile (the keychain default belongs to another app). Export the env before any `asc` call: `set -a; source ~/.excerlock/env; set +a; export ASC_PRIVATE_KEY_PATH=~/.excerlock/AuthKey_${ASC_KEY_ID}.p8` — `asc auth status` must then report `environmentCredentialsComplete: true`.
