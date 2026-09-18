@@ -7,7 +7,7 @@ describe("AnalyticsKit transport wiring", () => {
     const kit = createAnalyticsKit();
 
     expect(() => {
-    kit.track("shields_applied");
+    kit.track("shield_screen_opened");
       kit.trackScreen("confession");
       kit.identify("user_123");
       kit.reset();

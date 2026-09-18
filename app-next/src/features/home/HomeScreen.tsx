@@ -35,6 +35,7 @@ import { WalkingCheckButton } from './WalkingCheckButton';
 import { useInteractiveHomeMarker } from '../../runtime/startup/useInteractiveHomeMarker';
 import { useLapsedWinbackOffer } from '../subscription/useLapsedWinbackOffer';
 import { useLockListPicker } from '../permissions/useLockListPicker';
+import { useBackgroundWalkingSetup } from './useBackgroundWalkingSetup';
 export function HomeScreen() {
   useDemoProgress();
   useLapsedWinbackOffer();
@@ -63,6 +64,7 @@ export function HomeScreen() {
     }),
     glyph = useUnlockMoment(status.state);
   const { open: chooseApps } = useLockListPicker();
+  const backgroundWalking = useBackgroundWalkingSetup(runtime);
   const add = () => router.push('/builder');
   useEffect(() => {
     runtime.analytics.screen('Home');
@@ -113,10 +115,11 @@ export function HomeScreen() {
           </Label>
           {rule.mode.kind === 'state' ? null : <Label variant="support" tone="secondary">{`${Math.round(Math.max(0, Math.min(1, model.value)) * 100)}%`}</Label>}
         </View>
-        <Label variant="label">{model.detail}</Label>
+        <Label variant="label">{rule.mode.kind === 'state' && backgroundWalking.state !== 'ready' ? backgroundWalking.detail : model.detail}</Label>
         {rule.mode.kind === 'state' ? null : <ProgressBar value={Math.max(0, Math.min(1, model.value))} label={model.title} tone={detected ? 'success' : 'brand'} />}
         {row.met ? null : rule.mode.kind === 'state' ? (
           <>
+            {backgroundWalking.state === 'ready' ? null : <SecondaryButton label={backgroundWalking.label} onPress={backgroundWalking.onPress} />}
             <WalkingCheckButton rule={rule} checkWalking={(target) => runtime.walking.check(target)} />
             {walk === 'idle' ? <UnlockEntry kind="treadmill" label={c.treadmillEntry} onPress={() => router.push({ pathname: '/unlock/treadmill', params: { ruleId: rule.id } })} /> : null}
           </>

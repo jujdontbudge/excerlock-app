@@ -28,8 +28,12 @@ export type {
 } from './src/events/onboarding'
 export type { ConditionKind, PayoutKind } from './src/events/conditions'
 export type {
+  EnforcementAppState,
+  EnforcementSource,
   ShieldCause,
   ShieldLiftReason,
+  ShieldsAppliedCause,
+  ShieldsLiftedReason,
   WalkSessionEndReason,
   WalkSessionSource,
 } from './src/events/shield'

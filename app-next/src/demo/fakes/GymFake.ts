@@ -22,9 +22,18 @@ export function GymFake(ctx: FakeContext): GymPort & { dispose: () => void } {
       await ctx.request('location');
       return permissionsStore.getState().data.location;
     },
+    // Mirrors iOS: a refused Always upgrade keeps While Using; a refused first ask is denied.
     requestBackgroundLocation: async () => {
-      await ctx.request('location');
-      return permissionsStore.getState().data.location;
+      const mode = ctx.snapshot().promptMode;
+      const granted =
+        mode === 'ask'
+          ? (await ctx.prompt({ kind: 'permission', name: 'location', scope: 'always' })) === true
+          : mode === 'grant';
+      const current = permissionsStore.getState().data.location;
+      const location = granted ? 'always' : current === 'notDetermined' ? 'denied' : current;
+      permissionsStore.getState().patch({ location });
+      ctx.log('permission_result', { name: 'location', status: location });
+      return location;
     },
     searchPlaces: async (query) =>
       places.filter((p) => (p.name + ' ' + p.address).toLowerCase().includes(query.trim().toLowerCase())),

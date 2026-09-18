@@ -54,8 +54,8 @@ requires a migration note here.
 | `condition_created` / `condition_edited` / `condition_deleted` | — |
 | `earn_claimed` | — |
 | `sick_day_override_used` | — (reason text stays on-device, D12) |
-| `shields_applied` | — |
-| `shields_lifted` | — |
+| `shields_applied` | `app_state`, `source`, `cause` |
+| `shields_lifted` | `app_state`, `source`, `reason` |
 | `shield_screen_opened` | — |
 | `walk_session_started` | — |
 | `walk_session_ended` | — |
@@ -73,7 +73,7 @@ requires a migration note here.
 | `diagnostics_shared` | — |
 | `data_export_requested` | — |
 | `permission_resolved` | `permission`, `outcome` |
-| `unlock_completed` | `method` |
+| `unlock_completed` | `method`, `app_state`, `source` |
 | `review_preset_selected` | `preset` |
 | `walk_places_updated` | `walk_places` |
 | `gym_presence_auto_started` / `gym_presence_auto_confirmed` / `gym_presence_ended` | — |

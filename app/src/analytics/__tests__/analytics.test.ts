@@ -29,7 +29,7 @@ describe("the app-wide kit", () => {
     sink.clear();
 
     flowTracker.trackOnboardingAnswer("confession", 360);
-    analytics.track("shields_lifted");
+    analytics.track("shields_lifted", { app_state: "active", source: "foreground", reason: "earned" });
 
     expect(sink.eventNames()).toEqual(["onboarding_answer", "shields_lifted"]);
   });

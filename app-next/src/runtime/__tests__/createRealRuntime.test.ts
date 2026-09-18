@@ -28,6 +28,7 @@ jest.mock('../detection/headlessRegistry', () => ({ registerHeadlessDetectionHan
 jest.mock('../../domain/projectStepHistory', () => ({ projectStepHistory: (_rules: unknown, rows: unknown) => rows }));
 jest.mock('../../domain/projectGymHistory', () => ({ ...jest.requireActual('../../domain/projectGymHistory'), projectGymHistory: (_rules: unknown, rows: unknown) => rows }));
 
+import { AppState } from 'react-native';
 import { ruleDaysStore } from '../../state/ruleDaysStore';
 import { rulesStore } from '../../state/rulesStore';
 import { historyStore } from '../../state/historyStore';
@@ -65,7 +66,7 @@ function graph(options?: { gait?: object | null; boot?: () => Promise<void>; aut
   const client = {
     boot: jest.fn(options?.boot ?? (async () => {})), dispose: jest.fn(),
     auth: { identity: () => identity, subscribeIdentity: jest.fn(() => jest.fn()) },
-    subscription: { entitlement: () => ({ status: 'unknown' }) }, analytics: {}, notifications: {}, dataExport: {},
+    subscription: { entitlement: () => ({ status: 'unknown' }) }, analytics: { track: jest.fn() }, notifications: {}, dataExport: {},
     reviewPreset: { isEnabled: jest.fn(async () => false), expose: jest.fn() },
   };
   const walking = { snapshot: () => ({ phase: 'inactive' }), stop: jest.fn() };
@@ -263,5 +264,39 @@ test('schedule recovery notice clears only after native apply, not a failed repa
   mockHostReconcile.mockResolvedValue('applied');
   await runtime.reconcile('manual');
   expect(runtime.status.snapshot().scheduleIssue).toBeUndefined();
+  await runtime.disposeAsync();
+});
+
+test('a pocket walk that lifts a shield while backgrounded reports the unlock with its app state', async () => {
+  const { client } = graph();
+  const shield = { state: 'shield', relief: 'unlockedWalking', revision: 1 };
+  mockSourceRead.mockReturnValue(shield);
+  const setAppState = (value: string) => Object.defineProperty(AppState, 'currentState', { configurable: true, value });
+  const original = Object.getOwnPropertyDescriptor(AppState, 'currentState');
+  setAppState('active');
+  const runtime = await createRealRuntime({ reportError: jest.fn() });
+  expect(client.analytics.track).toHaveBeenCalledWith('shields_applied', { app_state: 'active', source: 'foreground', cause: 'boot' });
+  client.analytics.track.mockClear();
+  // A tick with nothing new must not re-report the standing shield.
+  await runtime.reconcile('manual');
+  expect(client.analytics.track).not.toHaveBeenCalled();
+  setAppState('background');
+  mockSourceRead.mockReturnValue({ ...shield, state: 'conditional', revision: 2 });
+  await runtime.reconcile('background');
+  expect(client.analytics.track.mock.calls).toEqual([
+    ['unlock_completed', { method: 'walking', app_state: 'background', source: 'background' }],
+    ['shields_lifted', { app_state: 'background', source: 'background', reason: 'walking' }],
+  ]);
+  client.analytics.track.mockClear();
+  // A policy the host did not apply (superseded/preserved) reports nothing.
+  mockSourceRead.mockReturnValue({ ...shield, revision: 3 });
+  mockHostReconcile.mockResolvedValueOnce('superseded');
+  await runtime.reconcile('background');
+  expect(client.analytics.track).not.toHaveBeenCalled();
+  await runtime.reconcile('background');
+  expect(client.analytics.track.mock.calls).toEqual([
+    ['shields_applied', { app_state: 'background', source: 'background', cause: 'relock' }],
+  ]);
+  if (original) Object.defineProperty(AppState, 'currentState', original);
   await runtime.disposeAsync();
 });

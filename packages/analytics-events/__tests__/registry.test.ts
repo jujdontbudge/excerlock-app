@@ -109,4 +109,12 @@ describe('single-emitter ownership (D4/D5)', () => {
         .toEqual((EVENTS[name] as { transmittedProperties: readonly string[] }).transmittedProperties)
     }
   })
+
+  it('background enforcement events carry where and why shields moved, never what was detected', () => {
+    // app_state + source say whether the transition happened with ExcerLock closed;
+    // cause/reason/method are closed enums (D12) — no timings, steps or locations.
+    expect(transmittedPropertiesOf('shields_applied')).toEqual(['app_state', 'source', 'cause'])
+    expect(transmittedPropertiesOf('shields_lifted')).toEqual(['app_state', 'source', 'reason'])
+    expect(transmittedPropertiesOf('unlock_completed')).toEqual(['method', 'app_state', 'source'])
+  })
 })

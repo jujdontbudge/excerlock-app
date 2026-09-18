@@ -19,8 +19,8 @@ const flow = createFlowTracker(kit);
 const computedName: string = "shields_applied";
 
 // ---- Legal: client-owned events with their exact registry payloads ----------
-kit.track("shields_applied");
-kit.track("shields_lifted");
+kit.track("shields_applied", { app_state: "background", source: "manual", cause: "relock" });
+kit.track("shields_lifted", { app_state: "background", source: "manual", reason: "walking" });
 kit.track("condition_created");
 kit.track("earn_claimed");
 kit.track("paywall_viewed", { placement: "onboarding", has_trial: true });

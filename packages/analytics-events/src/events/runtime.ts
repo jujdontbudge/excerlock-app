@@ -1,4 +1,5 @@
 import type { EmptyProps, EventSpecMap } from '../types'
+import type { EnforcementAppState, EnforcementSource } from './shield'
 
 /** The two unlock surfaces (PRD §3.9 gym check-in, §3.8 propped walking). */
 export type UnlockKind = 'gym' | 'treadmill'
@@ -18,7 +19,7 @@ export type TreadmillScanFailure = 'denied' | 'timeout'
  */
 export const runtimeEvents = {
   permission_resolved: { owner: 'client', transmittedProperties: ['permission', 'outcome'] },
-  unlock_completed: { owner: 'client', transmittedProperties: ['method'] },
+  unlock_completed: { owner: 'client', transmittedProperties: ['method', 'app_state', 'source'] },
   review_preset_selected: { owner: 'client', transmittedProperties: ['preset'] },
   walk_places_updated: { owner: 'client', transmittedProperties: ['walk_places'] },
   gym_presence_auto_started: { owner: 'client', transmittedProperties: [] },
@@ -37,7 +38,9 @@ export const runtimeEvents = {
 
 export interface RuntimeEventProps {
   permission_resolved: { permission: 'motion' | 'screen_time' | 'notifications' | 'camera' | 'location'; outcome: 'granted' | 'denied' }
-  unlock_completed: { method: 'walking' | 'propped' | 'gym' }
+  // Emitted by the enforcement host when a shield gives way to live relief, so
+  // app_state/source prove whether the unlock happened with ExcerLock closed.
+  unlock_completed: { method: 'walking' | 'propped' | 'gym'; app_state: EnforcementAppState; source: EnforcementSource }
   review_preset_selected: { preset: 'keep' | 'adjust' | 'disable' }
   walk_places_updated: { walk_places: 'outside' | 'treadmill' | 'outside_and_treadmill' | 'none' }
   gym_presence_auto_started: EmptyProps

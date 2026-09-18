@@ -78,9 +78,11 @@ export const nativePlugins: ExpoPlugin[] = [
     {
       isIosBackgroundLocationEnabled: true,
       locationWhenInUsePermission:
-        "Allow ExcerLock to check whether you are at a saved gym and keep a Walk Session active.",
+        "Allow ExcerLock to check whether you are at a saved gym.",
+      // Always also powers the lock-window keep-alive (ADR 0036/0040): without
+      // it iOS suspends ExcerLock and a pocket walk can never lift the shields.
       locationAlwaysAndWhenInUsePermission:
-        "Allow ExcerLock to detect arrivals at saved gyms when you opt into auto-detect.",
+        "Allow ExcerLock to keep walk detection and gym auto-detect running while the app is closed, so exercise opens your apps without opening ExcerLock.",
     },
   ],
   "expo-notifications",
@@ -150,7 +152,7 @@ export const nativeConfig: {
       // No CFBundleAlternateIcons: v1 bundles no alternate icon assets, so any
       // declaration would be a phantom reference. Primary icon stays Expo-owned.
       NSLocationAlwaysUsageDescription:
-        "Allow ExcerLock to detect arrivals at saved gyms when you opt into auto-detect.",
+        "Allow ExcerLock to keep walk detection and gym auto-detect running while the app is closed, so exercise opens your apps without opening ExcerLock.",
       CFBundleLocalizations: ["en"],
       CFBundleAllowMixedLocalizations: true,
     },

@@ -48,9 +48,16 @@ import { registerHeadlessDetectionHandler } from './detection/headlessRegistry';
 import { createShieldCopyWriter } from './shield/createShieldCopyWriter';
 import type { DetectionWake } from './detection/DetectionService';
 import { RuntimeCleanupError } from './RuntimeSingleton';
+import { enforcementTransitionEvents, type AppliedPolicy } from './enforcement/enforcementAnalytics';
+import type { EnforcementAppState } from '@excerlock/analytics-events';
 import { markStartupStage } from '../../modules/excerlock-startup';
 
 const SELECTION_VERSION_KEY = 'excerlock-next.selection-version.v1';
+const APP_STATES = new Set(['active', 'background', 'inactive']);
+const currentAppState = (): EnforcementAppState => {
+  const state: unknown = AppState.currentState;
+  return typeof state === 'string' && APP_STATES.has(state) ? (state as EnforcementAppState) : 'unknown';
+};
 export type RealRuntime = Runtime & {
   reconcile(source?: DetectionWake['source']): Promise<void>;
   disposeAsync(): Promise<void>;
@@ -148,6 +155,8 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
       onError: options.reportError,
     });
     let committedWalking = walking.snapshot();
+    // Last policy the host applied in this JS context; null until the first apply.
+    let appliedPolicy: AppliedPolicy | null = null;
     let committedGymPresence = ruleDaysStore.getState().data.gymPresence;
     let deletionSuspended = false;
     let host!: EnforcementHost;
@@ -489,6 +498,18 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               relief: snapshot.state === 'conditional' ? snapshot.relief : null,
               result: applied,
             });
+            if (applied === 'applied' && source.read().revision === snapshot.revision) {
+              // The host is the only writer of native shields, so this is the one
+              // place that knows a lock/unlock really landed — and whether it did
+              // so with the app closed.
+              for (const event of enforcementTransitionEvents(appliedPolicy, snapshot, { appState: currentAppState(), source: wakeSource })) {
+                // Static literals per call site (D3), so the emitter guard can read them.
+                if (event.name === 'unlock_completed') client.analytics.track('unlock_completed', event.props);
+                else if (event.name === 'shields_lifted') client.analytics.track('shields_lifted', event.props);
+                else client.analytics.track('shields_applied', event.props);
+              }
+              appliedPolicy = { state: snapshot.state, relief: snapshot.relief, openReason: snapshot.openReason };
+            }
             // A repaired plan is not proof of native activation. Keep the recovery
             // notice until apply succeeds and this source revision is still current.
             if (

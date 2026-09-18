@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0040: Background walking asks for its grants on Home and reports every shield move](0040-background-walking-grants-at-point-of-need.md) — **accepted**.
 - [0039: In-app incident reports carry a bounded, denylisted diagnostic snapshot](0039-in-app-incident-reports.md) — **accepted**.
 - [0038: Device startup stage medians come from a real xctrace capture](0038-device-startup-stage-medians.md) — **accepted**.
 - [0037: Simulator startup stage medians come from the unified log](0037-simulator-startup-stage-medians.md) — **accepted**.
