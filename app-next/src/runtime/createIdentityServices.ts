@@ -73,6 +73,8 @@ export async function createIdentityServices(options: {
   analytics.replayPendingScreens();
   return {
     auth: authServices.auth, subscription, analytics,
+    /** Bearer for our own API only; null while provisional, deleting-mismatched or after disposal. */
+    getAuthContext: () => (disposed ? Promise.resolve(null) : authServices!.auth.getAuthContext()),
     boot: () => authServices!.auth.boot(),
     waitForIdentityReady: authServices.waitForIdentityReady,
     runIdentityOperation: authServices.runIdentityOperation,

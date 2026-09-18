@@ -1,6 +1,6 @@
 import { render, screen, userEvent, fireEvent, act } from '@testing-library/react-native';
 import { Linking } from 'react-native';
-import { BugReportScreen } from '../BugReportScreen';
+import { ReportProblemScreen } from '../ReportProblemScreen';
 import { SubscriptionScreen } from '../SubscriptionScreen';
 import { LegalHubScreen } from '../LegalHubScreen';
 import { LegalScreen } from '../LegalScreen';
@@ -11,6 +11,7 @@ import { supportDelivery } from '../../../runtime/SupportDelivery';
 import { supportEmail, supportServerCategory } from '../../../content/support';
 import { subscriptionCopy } from '../../../content/subscription';
 import { settingsCopy as c } from '../../../content/settings';
+import { incidentCopy as i } from '../../../content/incident';
 import { legalCopy } from '../../../content/legal';
 import { SupportPort } from '../../../ports/SupportPort';
 
@@ -37,20 +38,22 @@ test('a realistic Problem report opens mail with the mapped bug subject and keep
   openURL.mockRestore();
 });
 
-test('bug report keeps a typed bug when send fails', async () => {
+test('an incident report keeps both typed answers when send fails', async () => {
   const runtime = createRuntime();
-  runtime.support.send = jest.fn().mockRejectedValue(new Error('no mail'));
+  runtime.incidentReports.send = jest.fn().mockRejectedValue(new Error('offline'));
   await runtime.dev.load('fresh-install');
   await render(
     <AppRuntimeProvider runtime={runtime}>
-      <BugReportScreen />
+      <ReportProblemScreen />
     </AppRuntimeProvider>,
   );
-  await fireEvent.changeText(screen.getByLabelText('Reply email'), 'alex@example.com');
-  await fireEvent.changeText(screen.getByLabelText('Describe the issue'), bug);
-  await userEvent.press(screen.getByRole('button', { name: 'Send report' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent(new RegExp(supportEmail));
-  expect(screen.getByLabelText('Describe the issue')).toHaveProp('value', bug);
+  await fireEvent.changeText(screen.getByLabelText(i.wrongField), bug);
+  await fireEvent.changeText(screen.getByLabelText(i.expectedField), 'Instagram should have opened once I was inside.');
+  await userEvent.press(screen.getByRole('button', { name: i.send }));
+  expect(await screen.findByRole('alert')).toHaveTextContent(i.error);
+  expect(screen.getByLabelText(i.wrongField)).toHaveProp('value', bug);
+  expect(screen.getByLabelText(i.expectedField)).toHaveProp('value', 'Instagram should have opened once I was inside.');
+  expect(screen.getByRole('button', { name: i.send })).toBeEnabled();
 });
 
 test('expired membership can still restore and shows the App Store cancel path', async () => {

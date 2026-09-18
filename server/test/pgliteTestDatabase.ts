@@ -25,6 +25,7 @@ export async function createPgliteTestDatabase() {
           feature_request_votes,
           feature_requests,
           support_requests,
+          incident_reports,
           vendor_webhook_events,
           vendor_oauth_states,
           vendor_connections,

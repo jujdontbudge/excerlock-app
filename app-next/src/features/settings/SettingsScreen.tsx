@@ -9,6 +9,7 @@ import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
 import { settingsCopy as c } from '../../content/settings';
 import { supportCopy as s } from '../../content/support';
+import { incidentCopy as i } from '../../content/incident';
 import { openSupportEmail } from '../../runtime/SupportDelivery';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 
@@ -53,7 +54,7 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
         />
       </CompactGroup>
       <CompactGroup>
-        <CompactRow title={c.reportBug} icon="info" onPress={() => navigate('bug')} />
+        <CompactRow title={i.row} subtitle={i.rowBody} icon="info" onPress={() => navigate('report')} />
         <CompactRow title={c.giveFeedback} icon="star" onPress={() => navigate('feedback')} />
         <CompactRow
           title={c.supportRow}

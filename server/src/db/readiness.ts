@@ -12,6 +12,7 @@ const REQUIRED_TABLES = [
   "support_requests",
   "feature_requests",
   "feature_request_votes",
+  "incident_reports",
   "vendor_connections",
   "vendor_oauth_states",
   "vendor_webhook_events",

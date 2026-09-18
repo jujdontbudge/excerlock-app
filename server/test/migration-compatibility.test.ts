@@ -67,14 +67,14 @@ describe("production migration compatibility", { timeout: 15_000 }, () => {
     }
   });
 
-  it("applies ten migrations to a fresh database and replays idempotently", async () => {
+  it("applies eleven migrations to a fresh database and replays idempotently", async () => {
     const client = new PGlite();
     clients.push(client);
     const db = drizzle(client);
     await migrate(db, { migrationsFolder });
-    expect(await migrationRows(client)).toHaveLength(10);
+    expect(await migrationRows(client)).toHaveLength(11);
     await migrate(db, { migrationsFolder });
-    expect(await migrationRows(client)).toHaveLength(10);
+    expect(await migrationRows(client)).toHaveLength(11);
   });
 
   it("upgrades the exact legacy production migration history without losing existing identity or sync data", async () => {
@@ -95,7 +95,7 @@ describe("production migration compatibility", { timeout: 15_000 }, () => {
 
     await migrate(db, { migrationsFolder });
     const upgradedMigrations = await migrationRows(client);
-    expect(upgradedMigrations).toHaveLength(12);
+    expect(upgradedMigrations).toHaveLength(13);
     expect(upgradedMigrations.slice(0, 8)).toEqual(
       legacyHashes.map((hash, index) => ({ hash, createdAt: Number(legacyEntries[index]?.when) })),
     );

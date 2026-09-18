@@ -33,6 +33,10 @@ behind `index.ts`; consumers do not deep-import them.
   state row and nulls delivery-ledger user links.
 - `support_requests` stores the submitted category and content.
   Feature-category submissions create one linked `feature_requests` row.
+- `incident_reports` stores one in-app incident report per row: the two
+  answers, app version/build and the diagnostics JSON the app sent. The
+  incidents service rejects location, contact, token and app-name keys before
+  insert; rows cascade away with their user.
 - `feature_request_votes` has a unique `(feature_request_id, user_id)` index,
   making retry and double-tap votes idempotent at the database boundary.
 - This schema stores account and integration transport state only.

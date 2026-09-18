@@ -51,7 +51,7 @@ ROUTES: list[tuple[str, str, str, str | tuple[str, ...]]] = [
     ('/settings/preferences', 'excerlock://settings/preferences', 'settings_preferences', 'Preferences'),
     ('/settings/units', 'excerlock://settings/units', 'settings_units', 'Distance units'),
     ('/settings/gyms', 'excerlock://settings/gyms', 'settings_gyms', 'Saved gyms'),
-    ('/settings/bug', 'excerlock://settings/bug', 'settings_bug', 'Found a bug?'),
+    ('/settings/report', 'excerlock://settings/report', 'settings_report', 'Something not working?'),
     ('/settings/feedback', 'excerlock://settings/feedback', 'settings_feedback', 'Feedback'),
     ('/settings/legal', 'excerlock://settings/legal', 'settings_legal', 'Privacy & terms'),
     ('/settings/legal/terms', 'excerlock://settings/legal/terms', 'settings_legal', 'Read Terms of Use'),

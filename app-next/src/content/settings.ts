@@ -11,8 +11,6 @@ export const settingsCopy = {
   privacyPermissions: 'Privacy & permissions',
   account: 'Account',
   accountPrivacy: 'Account & privacy',
-  reportBug: 'Report a bug',
-  reportBugBody: 'Tell us what went wrong',
   giveFeedback: 'Give feedback',
   giveFeedbackBody: 'Help us make ExcerLock better',
   supportRow: 'Support',

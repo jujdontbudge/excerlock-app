@@ -132,6 +132,8 @@ export async function createClientServices(options: {
     auth,
     subscription,
     analytics: telemetry.analytics,
+    // The lab has no API identity, so a report cannot leave the device.
+    incidentReports: { post: async () => { throw new LabIdentityUnavailableError(); } },
     experiments: createPaywallExperimentPort(telemetry.analytics.flags),
     signInRequired: createSignInRequiredPort(telemetry.analytics.flags),
     // The lab has no identity spine: the rail reads once and stays bundled.

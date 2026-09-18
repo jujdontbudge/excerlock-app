@@ -1,4 +1,4 @@
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Runtime } from './Runtime';
@@ -17,6 +17,9 @@ import { NativeWalkingPort } from './detection/NativeWalkingPort';
 import { createNativeGymPort } from './detection/NativeGymPort';
 import { createNativeClockPort } from './NativeClockPort';
 import { createNativeSupportPort } from './NativeSupportPort';
+import { createIncidentLog } from './incident/IncidentLog';
+import { buildIncidentDiagnostics } from './incident/incidentDiagnostics';
+import { createIncidentReportPort } from './incident/createIncidentReportPort';
 import { nativeGait } from './NativeGait';
 import { createNativeScreenTimePort } from '../screentime/native/createNativeScreenTimePort';
 import { getExcerlockEnforcementModule } from '../../modules/excerlock-enforcement';
@@ -236,6 +239,11 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
     });
     cleanups.push(() => host.dispose());
     const gym = createNativeGymPort(detection);
+    // Small persisted ring of lock/unlock transitions so an incident report can say when things last changed.
+    const incidentLog = createIncidentLog();
+    // The last decision the runtime acted on. Reports read this rather than `source.read()`,
+    // whose revision bump would supersede an apply that is still in flight.
+    let lastEnforcement: ReturnType<typeof source.read> | null = null;
     let insideReconcile = false;
     let projecting = false;
     let stepsByDay: Record<string, number> = {};
@@ -449,6 +457,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
                 void client.notifications.scheduleOpenToUnlock().catch(options.reportError);
             }
             const snapshot = source.read();
+            lastEnforcement = snapshot;
             if (
               snapshot.scheduleIssue &&
               JSON.stringify(status.scheduleIssue) !== JSON.stringify(snapshot.scheduleIssue)
@@ -460,7 +469,26 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
               snapshot.state === 'shield' || snapshot.state === 'conditional',
             );
             if (awake.error) options.reportError(new Error(awake.error));
-            const applied = await host.reconcile(wakeSource !== 'manual');
+            let applied: Awaited<ReturnType<typeof host.reconcile>>;
+            try {
+              applied = await host.reconcile(wakeSource !== 'manual');
+            } catch (error) {
+              incidentLog.record({
+                at: new Date().toISOString(),
+                state: snapshot.state,
+                openReason: snapshot.openReason ?? null,
+                relief: snapshot.state === 'conditional' ? snapshot.relief : null,
+                result: 'failed',
+              });
+              throw error;
+            }
+            incidentLog.record({
+              at: new Date().toISOString(),
+              state: snapshot.state,
+              openReason: snapshot.openReason ?? null,
+              relief: snapshot.state === 'conditional' ? snapshot.relief : null,
+              result: applied,
+            });
             // A repaired plan is not proof of native activation. Keep the recovery
             // notice until apply succeeds and this source revision is still current.
             if (
@@ -562,6 +590,39 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         },
       },
       support: createNativeSupportPort(),
+      incidentReports: createIncidentReportPort({
+        transport: client.incidentReports,
+        app: {
+          version: Constants.expoConfig?.version ?? '1.0.0',
+          build: Constants.expoConfig?.ios?.buildNumber ?? '1',
+          osVersion: String(Platform.Version),
+        },
+        collect: async () => {
+          await incidentLog.ready();
+          const duration = await detection.walkingDurationLedger.read();
+          return buildIncidentDiagnostics({
+            now: Date.now(),
+            timezone: clock.timezone(),
+            enforcement: lastEnforcement,
+            walking: walking.snapshot(),
+            walkingDetails: walking.details(),
+            detection: detection.snapshot(),
+            gymPresence: committedGymPresence,
+            gymAutoDetect: settingsStore.getState().data.gymAutoDetect,
+            savedGyms: settingsStore.getState().data.gymPlaces.length,
+            permissions: permissionsStore.getState().data,
+            rules: rulesStore.getState().data.rules,
+            lockedApps: rulesStore.getState().data.lockedApps,
+            ruleDays: ruleDaysStore.getState().data.days,
+            entitlement: client.subscription.entitlement(),
+            identity: client.auth.identity(),
+            stopGraceSeconds: settingsStore.getState().data.stopGrace,
+            notificationsEnabled: settingsStore.getState().data.notificationsEnabled,
+            walkingDuration: duration,
+            events: incidentLog.read(),
+          });
+        },
+      }),
       auth: client.auth,
       subscription: client.subscription,
       analytics: client.analytics,

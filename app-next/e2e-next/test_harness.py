@@ -393,7 +393,7 @@ class RouteStateExpectations(unittest.TestCase):
     def test_existing_user_renders_the_guarded_routes(self):
         from scenarios.v1_screen_sweep import V1ScreenSweep
 
-        for route in ('/settings/account', '/settings/bug', '/builder', '/unlock/gym', '/(tabs)/home'):
+        for route in ('/settings/account', '/settings/report', '/builder', '/unlock/gym', '/(tabs)/home'):
             self.assertTrue(V1ScreenSweep.expected(route, 'existing-user', 'x'), route)
 
     def test_setup_step_is_state_gated_in_both_states(self):

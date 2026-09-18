@@ -60,6 +60,27 @@ Only after that transaction succeeds, the server emits one
 `support_request_submitted` event with the category. The message and title are
 never analytics properties.
 
+### `POST /v1/incident-reports`
+
+The in-app "Something not working?" report. Strict body; unknown keys are
+rejected:
+
+```json
+{
+  "whatWentWrong": "Apps stayed locked after my walk.",
+  "shouldHaveHappened": "They should have opened at 3,000 steps.",
+  "app": { "version": "1.0.0", "build": "2", "osVersion": "18.5" },
+  "reportedAt": "2026-09-18T10:15:00.000Z",
+  "diagnostics": { "lock": { "state": "shield" }, "walking": { "phase": "inactive" } }
+}
+```
+
+Both answers are trimmed and must contain 1–4,000 characters. `diagnostics`
+is any JSON object up to 32 KB; a key naming raw location, contact details,
+credentials or Screen Time app identity (see `incidents/diagnostics.ts`)
+rejects the report with `400 DIAGNOSTICS_REJECTED`. A persisted report returns
+`201 { "reportId": "…" }`; the row lives in `incident_reports` for later reading.
+
 ### `GET /v1/feature-requests`
 
 Returns `200` with newest requests first. `voteCount` is authoritative and

@@ -11,6 +11,7 @@ import { requireAuth } from "./auth.js";
 import { adaptyWebhookRoutes } from "./routes/adaptyWebhook.js";
 import { config } from "./config.js";
 import { healthRoutes } from "./routes/health.js";
+import { incidentReportRoutes } from "./routes/incidentReports.js";
 import { supportRoutes } from "./routes/support.js";
 import { userRoutes } from "./routes/user.js";
 import { subscriptionRoutes } from "./routes/subscription.js";
@@ -56,6 +57,7 @@ export function buildServer(options: BuildServerOptions = {}): FastifyInstance {
     async (protectedScope) => {
       protectedScope.addHook("onRequest", requireAuth);
       await protectedScope.register(supportRoutes);
+      await protectedScope.register(incidentReportRoutes);
       await protectedScope.register(userRoutes);
       await protectedScope.register(subscriptionRoutes);
       await protectedScope.register(vendorRoutes);

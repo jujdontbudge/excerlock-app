@@ -1,9 +1,7 @@
-import { Keyboard, Platform, View } from 'react-native';
+import { Keyboard } from 'react-native';
 import { useState } from 'react';
-import Constants from 'expo-constants';
 import { SettingsPage } from './SettingsPage';
 import { Heading, Label, TextField, PrimaryButton, SecondaryButton } from '../../design-system';
-import { tokens as t } from '../../design-system/tokens';
 import { settingsCopy as c } from '../../content/settings';
 import { supportCopy as s } from '../../content/support';
 import { LivingIcon } from '../../motion/LivingIcon';
@@ -23,7 +21,6 @@ export function SupportFormScreen({
   submit,
   sent,
   icon,
-  deviceInfo = false,
 }: {
   onBack?: () => void;
   category: SupportCategory;
@@ -34,7 +31,6 @@ export function SupportFormScreen({
   submit: string;
   sent: string;
   icon: IconName;
-  deviceInfo?: boolean;
 }) {
   const runtime = useRuntime(),
     [replyEmail, setReplyEmail] = useState(''),
@@ -71,9 +67,6 @@ export function SupportFormScreen({
         <LivingIcon name={state === 'handedOff' ? 'mail' : 'check'} />
       </SettingsPage>
     );
-  const model = Constants.deviceName ?? 'iPhone';
-  const system = `iOS ${Platform.Version}`;
-  const appVersion = c.version(Constants.expoConfig?.version ?? '1.0.0', Constants.expoConfig?.ios?.buildNumber ?? '1');
   return (
     <SettingsPage
       scrollToEndOnKeyboard
@@ -108,28 +101,6 @@ export function SupportFormScreen({
         multiline
         maxLength={4000}
       />
-      {deviceInfo ? (
-        <View
-          style={{
-            backgroundColor: t.surface.card,
-            borderWidth: t.stroke.hairline,
-            borderColor: t.border.outline,
-            borderRadius: t.radius.card,
-            padding: t.space.lg,
-            gap: t.space.sm,
-          }}>
-          <Label variant="label">{s.deviceInfo}</Label>
-          <Label tone="secondary" variant="support">
-            {`${s.deviceModel}: ${model}`}
-          </Label>
-          <Label tone="secondary" variant="support">
-            {`${s.deviceSystem}: ${system}`}
-          </Label>
-          <Label tone="secondary" variant="support">
-            {`${s.deviceApp}: ${appVersion}`}
-          </Label>
-        </View>
-      ) : null}
       {state === 'error' ? (
         <Reveal>
           <Label accessibilityRole="alert" selectable>

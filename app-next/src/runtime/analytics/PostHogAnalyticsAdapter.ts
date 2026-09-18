@@ -365,7 +365,7 @@ const routes: Record<string, string> = {
   '/settings/preferences': 'settings_preferences',
   '/settings/units': 'settings_units',
   '/settings/gyms': 'settings_gyms',
-  '/settings/bug': 'settings_bug',
+  '/settings/report': 'settings_report',
   '/settings/feedback': 'settings_feedback',
   '/settings/legal': 'settings_legal',
   '/builder': 'builder',

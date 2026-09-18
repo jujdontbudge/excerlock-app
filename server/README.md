@@ -8,6 +8,8 @@ Self-contained Node 22+ Fastify API skeleton for the ExcerLock VPS backend.
 - User-facing APIs live under `/v1` and pass through the Clerk auth boundary.
 - Support submissions persist through `POST /v1/support`; feature requests are
   listed and voted on through `/v1/feature-requests`.
+- In-app incident reports (two answers plus the app's diagnostic snapshot)
+  persist through `POST /v1/incident-reports`; see `src/incidents/README.md`.
 - OAuth callbacks and signed vendor webhook receivers are the intentionally
   public exceptions; connect, disconnect, and cursor reads require Clerk.
 - The shared-secret-verified Adapty webhook mirrors subscription access and

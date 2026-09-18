@@ -16,6 +16,7 @@ import { createNativeNotifications } from './notifications/createNativeNotificat
 import { createNativeJsonExport } from './NativeJsonExport';
 import { createAccountBoundExport } from './AccountBoundExport';
 import { RuntimeCleanupError } from './RuntimeSingleton';
+import { createIncidentReportTransport } from './incident/IncidentReportClient';
 
 /** Real client services; root must hydrate stores before construction and supply native deletion cleanup. */
 export async function createClientServices(options: {
@@ -85,6 +86,11 @@ export async function createClientServices(options: {
         ),
     }),
     reviewPreset: createReviewPresetPort(telemetry.analytics.flags), notifications,
+    // Incident reports ride the same bearer as PUT /v1/user; the adapter decides whether a token may leave.
+    incidentReports: createIncidentReportTransport({
+      apiBaseUrl: config.auth.apiBaseUrl,
+      getAuthContext: () => (disposed ? Promise.resolve(null) : identity.getAuthContext()),
+    }),
     // Snapshot account before file writing. Payload assembly must also bind its origin.
     dataExport,
     boot: identity.boot,

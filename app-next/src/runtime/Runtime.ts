@@ -1,4 +1,5 @@
 import { SupportPort } from '../ports/SupportPort';
+import { IncidentReportPort } from '../ports/IncidentReportPort';
 import { ScreenTimePort } from '../ports/ScreenTimePort';
 import { StepsPort } from '../ports/StepsPort';
 import { WalkingPort } from '../ports/WalkingPort';
@@ -31,6 +32,8 @@ export type Runtime = {
   notifications: NotificationsPort;
   sync: SyncPort;
   support: SupportPort;
+  /** In-app 'Something not working?' report: two answers plus the app's diagnostic snapshot, to our API. */
+  incidentReports: IncidentReportPort;
   dataExport: ExportPort;
   clock: ClockPort;
   status: RuntimeStatusPort;

@@ -11,6 +11,7 @@ import { permissionsStore } from '../../../state/permissionsStore';
 import { profileStore } from '../../../state/profileStore';
 import { settingsCopy as c } from '../../../content/settings';
 import { supportEmail } from '../../../content/support';
+import { incidentCopy as i } from '../../../content/incident';
 import { validateRule } from '../../../domain/validateRule';
 
 test('root rows navigate to destinations and seven taps open developer', async () => {
@@ -31,7 +32,7 @@ test('root rows navigate to destinations and seven taps open developer', async (
     profile,
     c.manage,
     c.preferences,
-    c.reportBug,
+    i.row,
     c.giveFeedback,
     c.supportRow,
     c.legal,
@@ -45,8 +46,8 @@ test('root rows navigate to destinations and seven taps open developer', async (
   expect(navigate).toHaveBeenCalledWith('subscription');
   await userEvent.press(screen.getByRole('button', { name: c.preferences }));
   expect(navigate).toHaveBeenCalledWith('preferences');
-  await userEvent.press(screen.getByRole('button', { name: c.reportBug }));
-  expect(navigate).toHaveBeenCalledWith('bug');
+  await userEvent.press(screen.getByRole('button', { name: i.row }));
+  expect(navigate).toHaveBeenCalledWith('report');
   await userEvent.press(screen.getByRole('button', { name: c.giveFeedback }));
   expect(navigate).toHaveBeenCalledWith('feedback');
   await userEvent.press(screen.getByRole('button', { name: c.legal }));

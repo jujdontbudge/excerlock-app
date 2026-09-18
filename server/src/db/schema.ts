@@ -2,6 +2,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   primaryKey,
   pgTable,
   text,
@@ -99,6 +100,42 @@ export const featureRequestVotes = pgTable(
     ),
   ],
 );
+
+/**
+ * In-app incident reports: the user's own words plus the diagnostic snapshot
+ * the app held at send time. Diagnostics are an opaque JSON document the app
+ * builds from non-identifying state (lock decision, detection phases,
+ * permissions, recent transitions); the service rejects coordinate, contact,
+ * token and app-name keys before anything is written.
+ */
+export const incidentReports = pgTable(
+  "incident_reports",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    appVersion: text("app_version").notNull(),
+    appBuild: text("app_build").notNull(),
+    osVersion: text("os_version"),
+    whatWentWrong: text("what_went_wrong").notNull(),
+    shouldHaveHappened: text("should_have_happened").notNull(),
+    diagnostics: jsonb("diagnostics").notNull(),
+    reportedAt: timestamp("reported_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("incident_reports_user_created_index").on(
+      table.userId,
+      table.createdAt,
+    ),
+  ],
+);
+
+export type IncidentReport = typeof incidentReports.$inferSelect;
+export type NewIncidentReport = typeof incidentReports.$inferInsert;
 
 export type SupportRequest = typeof supportRequests.$inferSelect;
 export type NewSupportRequest = typeof supportRequests.$inferInsert;
