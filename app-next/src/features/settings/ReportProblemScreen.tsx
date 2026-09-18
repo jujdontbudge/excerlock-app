@@ -9,23 +9,44 @@ import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 
-/** Two questions and Send. The runtime attaches the diagnostic snapshot; this screen never sees it. */
+/**
+ * Two questions and Send. The runtime attaches the diagnostic snapshot; this screen never sees it.
+ * Send is always pressable (except mid-send): a tap with a missing answer says which one, a failed
+ * send shows its reason on screen and keeps the words for a retry. Nothing is swallowed.
+ */
 export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void }) {
   const runtime = useRuntime(),
     [whatWentWrong, setWhatWentWrong] = useState(''),
     [shouldHaveHappened, setShouldHaveHappened] = useState(''),
-    [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-  const ready = whatWentWrong.trim().length > 0 && shouldHaveHappened.trim().length > 0;
+    [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle'),
+    [message, setMessage] = useState<{ text: string; reason?: string } | null>(null);
+  const missing = () => {
+    const wrong = whatWentWrong.trim().length > 0,
+      expected = shouldHaveHappened.trim().length > 0;
+    if (wrong && expected) return null;
+    return !wrong && !expected ? i.missingBoth : wrong ? i.missingExpected : i.missingWrong;
+  };
   const send = async () => {
-    if (!ready || state === 'sending') return;
+    if (state === 'sending') return;
+    const nag = missing();
+    if (nag) {
+      setMessage({ text: nag });
+      return;
+    }
     Keyboard.dismiss();
+    setMessage(null);
     setState('sending');
     try {
       await runtime.incidentReports.send({ whatWentWrong: whatWentWrong.trim(), shouldHaveHappened: shouldHaveHappened.trim() });
       setState('sent');
-    } catch {
-      setState('error');
+    } catch (error) {
+      setState('idle');
+      setMessage({ text: i.error, reason: error instanceof Error ? error.message : String(error) });
     }
+  };
+  const edit = (set: (value: string) => void) => (value: string) => {
+    set(value);
+    setMessage(null);
   };
   if (state === 'sent')
     return (
@@ -42,7 +63,6 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
         <PrimaryButton
           label={state === 'sending' ? i.sending : i.send}
           loading={state === 'sending'}
-          disabled={!ready}
           onPress={() => void send()}
         />
       }>
@@ -51,7 +71,7 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
         label={i.wrongField}
         labelTone="primary"
         value={whatWentWrong}
-        onChangeText={setWhatWentWrong}
+        onChangeText={edit(setWhatWentWrong)}
         placeholder={i.wrongPlaceholder}
         multiline
         maxLength={4000}
@@ -60,7 +80,7 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
         label={i.expectedField}
         labelTone="primary"
         value={shouldHaveHappened}
-        onChangeText={setShouldHaveHappened}
+        onChangeText={edit(setShouldHaveHappened)}
         placeholder={i.expectedPlaceholder}
         multiline
         maxLength={4000}
@@ -79,9 +99,14 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
           {i.attachedBody}
         </Label>
       </View>
-      {state === 'error' ? (
-        <Reveal>
-          <Label accessibilityRole="alert">{i.error}</Label>
+      {message ? (
+        <Reveal key={message.text + (message.reason ?? '')}>
+          <Label accessibilityRole="alert">{message.text}</Label>
+          {message.reason ? (
+            <Label tone="secondary" variant="support">
+              {message.reason}
+            </Label>
+          ) : null}
         </Reveal>
       ) : null}
     </SettingsPage>
