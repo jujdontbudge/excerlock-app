@@ -1,11 +1,12 @@
 # TestFlight 1.0.0 (5) — 2026-09-18
 
 Incident-Send candidate built locally from branch `fm/incident-send-s1` (a
-fast-forward of `main` at `be559e46`) with `ios.buildNumber = "5"`:
+fast-forward of `main`; the IPA was built from the tree at `3edeb4a2` on top of
+`be559e46`, later rebased unchanged onto `4b66483d`) with `ios.buildNumber = "5"`:
 
-- `b063a580` fix(incident): Send always answers a tap on Something not working?
-- `46f92e8c` chore(ios): build number 5.
-- `3edeb4a2` test(e2e-next): E2E-R1 drives the real Report screen (harness only; not in the IPA's behaviour).
+- `6070b10d` (was `b063a580`) fix(incident): Send always answers a tap on Something not working?
+- `3e8872e2` (was `46f92e8c`) chore(ios): build number 5.
+- `20b421ef` (was `3edeb4a2`) test(e2e-next): E2E-R1 drives the real Report screen (harness only; not in the IPA's behaviour).
 
 ## What changed for the tester
 
