@@ -74,6 +74,10 @@ final class LocationCaptureService: NSObject, CLLocationManagerDelegate {
         manager.requestWhenInUseAuthorization()
     }
 
+    func requestAlways() {
+        manager.requestAlwaysAuthorization()
+    }
+
     /// Starts updates and registers one circular region per saved gym, exactly
     /// as the production provider does: notify on entry and exit, then ask iOS
     /// for the current state so a start inside the circle is not invisible.

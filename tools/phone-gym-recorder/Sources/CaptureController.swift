@@ -13,6 +13,7 @@ protocol LocationCaptureServicing: AnyObject {
     var accuracyAuthorization: LocationAccuracyAuthorization { get }
     var locationServicesEnabled: Bool { get }
     func requestWhenInUse()
+    func requestAlways()
     func start(gyms: [SavedGym])
     func stop()
     func reregister(gyms: [SavedGym])
@@ -235,6 +236,57 @@ final class CaptureController: ObservableObject {
     var motionPermissionIsUsable: Bool { motion.permission == .authorized }
 
     func requestLocationPermission() { location.requestWhenInUse() }
+
+    /// Always is what the background-geofence scenarios need. iOS only shows
+    /// the upgrade prompt once; after that the user has to flip it in Settings.
+    func requestAlwaysLocationPermission() {
+        if location.permission == .notDetermined {
+            location.requestWhenInUse()
+        } else {
+            location.requestAlways()
+        }
+    }
+
+    var missingPermissionSummary: String? {
+        var missing: [String] = []
+        switch location.permission {
+        case .notDetermined: missing.append("location")
+        case .whenInUse: missing.append("location Always")
+        case .denied, .restricted: missing.append("location (denied)")
+        case .always: break
+        }
+        if motion.permission != .authorized { missing.append("motion") }
+        return missing.isEmpty ? nil : missing.joined(separator: " and ")
+    }
+
+    /// The one button the permissions row shows, in the order iOS needs them.
+    var nextPermissionAction: (title: String, run: () -> Void)? {
+        switch location.permission {
+        case .notDetermined:
+            return ("Allow location", { [weak self] in self?.requestLocationPermission() })
+        case .whenInUse:
+            return ("Allow Always", { [weak self] in self?.requestAlwaysLocationPermission() })
+        case .denied, .restricted:
+            return ("Open Settings", { Self.openSettings() })
+        case .always:
+            break
+        }
+        if motion.permission == .notDetermined {
+            return ("Allow motion", { [weak self] in self?.requestMotionPermission() })
+        }
+        if motion.permission != .authorized {
+            return ("Open Settings", { Self.openSettings() })
+        }
+        return nil
+    }
+
+    static func openSettings() {
+        #if canImport(UIKit)
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
+        #endif
+    }
 
     func requestMotionPermission() {
         motion.requestLiveAuthorization { _ in }

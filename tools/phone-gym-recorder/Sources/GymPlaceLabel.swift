@@ -31,6 +31,10 @@ enum GymPlaceLabel: String, CaseIterable, Codable, Identifiable {
         }
     }
 
+    /// The two places the recording screen shows as giant buttons; the rest
+    /// live under More.
+    var isPrimaryPlace: Bool { self == .inGym || self == .away }
+
     var guidance: String {
         switch self {
         case .inGym: return "Inside the building, past the front desk"

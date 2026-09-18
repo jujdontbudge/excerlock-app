@@ -25,54 +25,52 @@ saw in ExcerLock.
 
 ### 1. Before a session
 
-Open **Gym Recorder**. The Home screen is one scrolling page:
+Open **Gym Recorder**. The Home screen is three giant buttons, top to bottom,
+and only the next one is orange:
 
-1. **Permissions** — **Allow location** (While Using), then **Allow Always in
-   Settings** for the auto-detect scenarios, and **Allow Motion**. Recording is
-   deliberately allowed under *any* permission state, because S14–S16 exist to be
-   judged; the card only tells you what the current capture can prove.
-2. **The circle under test** — stand at the gym entrance and tap **Set gym here**
-   (it averages 20 s of fixes, rejects fixes worse than 65 m), or **Type
-   coordinates**. The radius steps 50–200 m in 10 m and defaults to 100 m, the
-   same clamp and default the app uses.
-3. **ExcerLock setup (tap once per session)** — the four declarations
-   (same gym saved, auto-detect, permission, precise location) plus which build
-   you are testing. These are your declarations: this app cannot read ExcerLock.
-4. **What are you testing?** — pick a script (the table below). Choosing one shows
-   its steps; **Free session** is at the top for anything unscripted.
-5. **Where are you right now?** — start as **Away** unless you begin inside.
-6. Tap **Start recording**.
+1. **Allow location** / **Allow Always** / **Allow motion** — shown only while
+   a permission is missing; it asks for the next one iOS needs and disappears
+   once everything is granted. Recording is still allowed under *any*
+   permission state (S14–S16 exist to be judged); the current state is under
+   **More → Permissions**.
+2. **I'm at the gym** — stand at the entrance and tap it; it averages 20 s of
+   fixes (rejecting fixes worse than 65 m) and becomes **Gym set ✓**. No
+   coordinates are shown on Home. Typed coordinates, the 50–200 m radius
+   stepper and the saved-circle list live under **More → Gym circle
+   (advanced)**.
+3. **Start** — a free session, starting as *Away*. Picking a script (**More →
+   Run a script**) and the ExcerLock setup declarations (**More → ExcerLock
+   setup**) are optional and off the happy path.
 
 ### 2. While recording
 
-- **Status header** — big **INSIDE / OUTSIDE / UNKNOWN** (the same region presence
-  ExcerLock sees), the live distance and accuracy to the circle, what the ported
-  reducer is doing (`confirming 12 s`, `confirmed 03:41`, `idle`), the activity
-  (`walking · 96 spm`, `automotive`, `stationary`) and a dot for whether your own
-  location stream is live.
-- **Script strip** — the current step and the one tap it expects.
-- **Place cards** — exactly one active, radio-style: **I'm in the gym** · **In the
-  circle, not in the gym** (car park, entrance, café) · **On the boundary line** ·
-  **Passing by, not stopping** · **Away**. One tap is one boundary.
-- **ExcerLock shows…** — tap **Card: At gym / Not at gym / Confirming / No card /
-  Can't tell** and **Locked app: Opened / Blocked / Can't tell** when you glance at
-  ExcerLock. Opened a locked app on purpose? Tap the canary row (**It opened** /
-  **It was blocked** / **Not sure**) — that is the strongest production evidence.
-- **Actions** — **Probe check-in** (mirrors the production manual check-in with one
-  fresh fix), **Probe re-register** (S17), **I did this in ExcerLock…** (permission
-  changed, force quit, relaunched, rebooted, auto-detect toggled, manual check-in),
+- **Status header** — big **INSIDE / OUTSIDE / UNKNOWN** (the same region
+  presence ExcerLock sees), the live distance and accuracy to the circle, and
+  one small line with the ported reducer (`confirming 12 s`, `confirmed 03:41`,
+  `idle`) and the activity (`walking · 96 spm`, `automotive`, `stationary`).
+  The dot says whether your own location stream is live.
+- **I'm in** / **I'm out** — the two giant place buttons, radio-style. One tap
+  is one boundary. `I'm in` records `in_gym`; `I'm out` records `away`.
+- **Finish** — saves the archive and returns Home, where **Last recording ·
+  Share** hands you the zip.
+- **More** (small link at the bottom) holds everything else: the rarer places
+  (**On the boundary line**, **In the circle, not in the gym**, **Passing by,
+  not stopping** — when one of these is active it also appears as a third
+  place button), **ExcerLock shows…** (card / locked app), the canary row,
+  **Probe check-in**, **Probe re-register**, **I did this in ExcerLock…**,
   **Oops, I forgot a tap** (a boundary placed at now − 30 s/1/2/5 min, marked
-  *approximate*), **Add a note**.
-- **Finish & save** — tap **Done** on strip steps that have no place change.
+  *approximate*), **Add a note**, and the saved recordings.
+- **Script strip** — only when a script was picked: the current step and the
+  one tap it expects, or **Done** for steps with no place change.
 
-A plain arrival-and-leave costs three taps: *I'm in the gym* on the way in,
-*Away* on the way out, **Finish & save**.
+A plain arrival-and-leave costs three taps: *I'm in* on the way in, *I'm out*
+on the way out, **Finish**.
 
 ### 3. The 25 scripts
 
 | Id | What you do | Taps you owe the strip |
 |---|---|---|
-| S01 | **Register the gym** — stand at the entrance, Set gym here, save the same circle in ExcerLock. | Setup only: no place taps. |
+| S01 | **Register the gym** — stand at the entrance, tap I'm at the gym, save the same circle in ExcerLock. | Setup only: no place taps. |
 | S02 | **Arrive on foot** — start ≥ 300 m away, walk in. | Away → I'm in the gym (at the desk). |
 | S03 | **Stay there** — stay in_gym ≥ 20 min. | In_gym, plus two *ExcerLock shows…* taps. |
 | S04 | **Use another app while there** — 5 min in another app, 5 min locked, then return. | In_gym + **Done** on the three switch/lock/return steps. |

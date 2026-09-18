@@ -24,13 +24,13 @@ struct GymRecorderHomeView: View {
 
     @State private var shareURL: URL?
     @State private var pendingDelete: SessionSummary?
-    @State private var showGymSetup = false
+    @State private var showMore = false
     @State private var showActions = false
     @State private var showBackdate = false
     @State private var showNote = false
-    @State private var showBackdatePlace: GymPlaceLabel = .inGym
     @State private var noteText = ""
     @State private var startPlace: GymPlaceLabel = .away
+    @State private var selectedScenarioId: String?
 
     var body: some View {
         NavigationStack {
@@ -39,17 +39,12 @@ struct GymRecorderHomeView: View {
                     if controller.isRecording {
                         recordingSection
                     } else {
-                        header
-                        permissionsCard
-                        gymCard
-                        scenarioSection
-                        setupChecklist
-                        savedSessionsSection
+                        homeSection
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
-                .padding(.bottom, controller.isRecording ? 120 : 40)
+                .padding(.bottom, 40)
             }
             .background(backgroundGradient.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
@@ -59,7 +54,18 @@ struct GymRecorderHomeView: View {
             controller.noteScenePhase(Self.name(for: phase))
         }
         .onAppear { UIApplication.shared.isIdleTimerDisabled = controller.isRecording }
-        .sheet(isPresented: $showGymSetup) { GymSetupSheet(controller: controller) }
+        .onChange(of: controller.isRecording) { _, recording in UIApplication.shared.isIdleTimerDisabled = recording }
+        .sheet(isPresented: $showMore) {
+            MoreSheet(
+                controller: controller,
+                selectedScenarioId: $selectedScenarioId,
+                shareURL: $shareURL,
+                pendingDelete: $pendingDelete,
+                showActions: $showActions,
+                showBackdate: $showBackdate,
+                showNote: $showNote
+            )
+        }
         .sheet(isPresented: $showActions) { ExcerLockActionsSheet(controller: controller) }
         .sheet(isPresented: $showBackdate) { BackdateSheet(controller: controller) }
         .sheet(isPresented: $showNote) { NoteSheet(controller: controller, text: $noteText) }
@@ -100,270 +106,115 @@ struct GymRecorderHomeView: View {
     // MARK: Home
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Gym Recorder")
-                .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                .foregroundStyle(RecorderTheme.primaryText)
-            Text("Record beside ExcerLock and tap where you are. One tap per place change; the strip tells you the next one.")
-                .font(.body)
-                .foregroundStyle(RecorderTheme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("This app records your own labels, the location stream your phone delivers, and what it thinks the production gym reducer would decide. It never drives ExcerLock.")
-                .font(.footnote)
-                .foregroundStyle(RecorderTheme.secondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .accessibilityElement(children: .combine)
+        Text("Gym Recorder")
+            .font(.system(.largeTitle, design: .rounded, weight: .bold))
+            .foregroundStyle(RecorderTheme.primaryText)
     }
 
-    private var permissionsCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Permissions")
-                .font(.headline)
-                .foregroundStyle(RecorderTheme.primaryText)
-            statusRow(
-                title: "Location",
-                value: controller.locationPermissionTitle,
-                ok: controller.locationPermissionIsUsable
-            )
-            statusRow(
-                title: "Precise location",
-                value: controller.precisionTitle,
-                ok: controller.precisionIsFull
-            )
-            statusRow(
-                title: "Motion & Fitness",
-                value: controller.motionPermissionTitle,
-                ok: controller.motionPermissionIsUsable
-            )
-            HStack(spacing: 10) {
-                Button("Allow location") { controller.requestLocationPermission() }
-                    .buttonStyle(SecondaryButtonStyle())
-                Button("Allow Motion") { controller.requestMotionPermission() }
-                    .buttonStyle(SecondaryButtonStyle())
-            }
-            if let reason = controller.startBlockedReason, !controller.isRecording {
-                Text(reason)
+    /// The happy path is three giant buttons in order: allow, set the gym,
+    /// start. Only the next one is orange; the others wait below it.
+    @ViewBuilder
+    private var homeSection: some View {
+        header
+        if let action = controller.nextPermissionAction {
+            giantButton(action.title, symbol: "location.fill", primary: true, action: action.run)
+        }
+        gymButton
+        giantButton("Start", symbol: "record.circle", primary: controller.canStart && controller.nextPermissionAction == nil) {
+            controller.startSession(scenarioId: selectedScenarioId, startPlace: .away)
+        }
+        .disabled(!controller.canStart)
+        if let scenario = controller.catalog.scenario(id: selectedScenarioId) {
+            HStack {
+                Text("Script \(scenario.id) · \(scenario.title)")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(RecorderTheme.primaryText)
+                Spacer()
+                Button("Clear") { selectedScenarioId = nil }
                     .font(.footnote)
-                    .foregroundStyle(RecorderTheme.error)
+                    .foregroundStyle(RecorderTheme.secondaryText)
             }
-            Text("Recording under any permission state is allowed on purpose: the denied and approximate scenarios exist to be judged.")
-                .font(.caption)
-                .foregroundStyle(RecorderTheme.secondaryText)
+            .padding(.horizontal, 4)
         }
-        .padding(16)
-        .background(RecorderTheme.card, in: RoundedRectangle(cornerRadius: 20))
+        if let last = controller.repository.sessions.first {
+            lastRecordingRow(last)
+        }
+        Spacer(minLength: 24)
+        moreLink
     }
 
-    private func statusRow(title: String, value: String, ok: Bool) -> some View {
-        HStack {
-            Image(systemName: ok ? "checkmark.circle.fill" : "exclamationmark.circle")
-                .foregroundStyle(ok ? RecorderTheme.success : RecorderTheme.error)
-            Text(title).font(.subheadline).foregroundStyle(RecorderTheme.primaryText)
-            Spacer()
-            Text(value).font(.subheadline.weight(.semibold)).foregroundStyle(RecorderTheme.secondaryText)
+    private var gymButton: some View {
+        let gym = controller.registry.gymUnderTest
+        let needsPermission = controller.nextPermissionAction != nil
+        let title: String
+        if controller.isAveragingGym {
+            title = "Hold still… \(controller.averagingFixCount)"
+        } else if gym != nil {
+            title = "Gym set ✓"
+        } else {
+            title = "I'm at the gym"
+        }
+        return VStack(spacing: 6) {
+            giantButton(title, symbol: "dumbbell.fill", primary: gym == nil && !needsPermission && !controller.isAveragingGym) {
+                controller.beginGymAveraging(name: gym?.name ?? "Gym") { _ in }
+            }
+            .disabled(controller.isAveragingGym || !controller.locationPermissionIsUsable)
+            if controller.isAveragingGym {
+                ProgressView(value: Double(controller.averagingFixCount), total: GymRegistry.averagingWindowSeconds)
+                    .tint(RecorderTheme.orange)
+            } else if gym == nil, let note = controller.lastGymAverageNote {
+                Text(note).font(.footnote).foregroundStyle(RecorderTheme.error)
+                    .multilineTextAlignment(.center)
+            }
         }
     }
 
-    private var gymCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("The circle under test")
-                .font(.headline)
-                .foregroundStyle(RecorderTheme.primaryText)
-            if let gym = controller.registry.gymUnderTest {
-                Text("\(gym.name) · \(Int(gym.radiusMeters)) m radius")
+    private func lastRecordingRow(_ session: SessionSummary) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Last recording")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(RecorderTheme.primaryText)
-                Text("\(String(format: "%.5f", gym.latitude)), \(String(format: "%.5f", gym.longitude))")
-                    .font(.footnote.monospaced())
-                    .foregroundStyle(RecorderTheme.secondaryText)
-                Text("Set by \(gym.setBy.replacingOccurrences(of: "_", with: " "))" + (gym.averageAccuracyM.map { String(format: " · averaged accuracy %.0f m over %d fixes", $0, gym.fixesAveraged) } ?? ""))
+                Text("\(SessionCard.dateFormatter.string(from: Date(timeIntervalSince1970: Double(session.startedAt.wallTimeMs) / 1_000))) · \(SessionCard.formatDuration(session.durationSeconds))")
                     .font(.caption)
                     .foregroundStyle(RecorderTheme.secondaryText)
-                HStack(spacing: 10) {
-                    Button("−10 m") { controller.registry.updateRadius(id: gym.id, radiusMeters: gym.radiusMeters - 10) }
-                        .buttonStyle(SecondaryButtonStyle())
-                    Button("+10 m") { controller.registry.updateRadius(id: gym.id, radiusMeters: gym.radiusMeters + 10) }
-                        .buttonStyle(SecondaryButtonStyle())
-                }
-            } else {
-                Text("No circle yet. Stand at the gym entrance and use Set gym here, or type the coordinates.")
-                    .font(.subheadline)
-                    .foregroundStyle(RecorderTheme.secondaryText)
             }
-            Button(controller.registry.gyms.isEmpty ? "Set gym here" : "Add or change the circle") { showGymSetup = true }
+            Spacer()
+            Button("Share") { shareURL = try? controller.repository.export(session) }
                 .buttonStyle(SecondaryButtonStyle())
         }
         .padding(16)
         .background(RecorderTheme.card, in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(RecorderTheme.outline, lineWidth: 1))
     }
 
-    private var scenarioSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("What are you testing?")
-                .font(.headline)
-                .foregroundStyle(RecorderTheme.primaryText)
-            Text("Free session is at the top. Picking a script shows its steps here and in the strip while you record.")
-                .font(.caption)
-                .foregroundStyle(RecorderTheme.secondaryText)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    scenarioChip(id: nil, title: "Free session", subtitle: "Anything goes")
-                    ForEach(controller.catalog.scenarios) { scenario in
-                        scenarioChip(id: scenario.id, title: "\(scenario.id) \(scenario.title)", subtitle: shortScript(for: scenario))
-                    }
-                }
-                .padding(.vertical, 2)
-            }
-            if let scenario = controller.catalog.scenario(id: selectedScenarioId) {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(scenario.steps) { step in
-                        Text("• \(step.text)")
-                            .font(.footnote)
-                            .foregroundStyle(RecorderTheme.secondaryText)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Text("Expect: \(scenario.refExpectation)")
-                        .font(.caption)
-                        .foregroundStyle(RecorderTheme.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            Text("Where are you right now?")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(RecorderTheme.primaryText)
-            placeChips(selection: $startPlace)
-            Button("Start recording") { controller.startSession(scenarioId: selectedScenarioId, startPlace: startPlace) }
-                .buttonStyle(PrimaryButtonStyle())
-                .disabled(!controller.canStart)
-        }
-        .padding(16)
-        .background(RecorderTheme.card, in: RoundedRectangle(cornerRadius: 20))
-    }
-
-    @State private var selectedScenarioId: String?
-
-    private func shortScript(for scenario: GymScenario) -> String {
-        scenario.captainWords ?? scenario.mode
-    }
-
-    private func scenarioChip(id: String?, title: String, subtitle: String) -> some View {
-        let isSelected = selectedScenarioId == id
-        return Button {
-            selectedScenarioId = id
-        } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.footnote.weight(.semibold)).foregroundStyle(RecorderTheme.primaryText)
-                Text(subtitle).font(.caption2).foregroundStyle(RecorderTheme.secondaryText)
-            }
-            .padding(10)
-            .frame(minWidth: 130, alignment: .leading)
-            .background(isSelected ? RecorderTheme.selected : RecorderTheme.solid, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(RecorderTheme.outline, lineWidth: isSelected ? 2 : 1))
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func placeChips(selection: Binding<GymPlaceLabel>) -> some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(GymPlaceLabel.allCases) { place in
-                Button {
-                    selection.wrappedValue = place
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: place.symbol)
-                        Text(place.title).font(.caption.weight(.semibold)).lineLimit(2)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 46)
-                    .padding(.horizontal, 8)
-                    .background(selection.wrappedValue == place ? RecorderTheme.selected : RecorderTheme.solid, in: RoundedRectangle(cornerRadius: 14))
-                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(RecorderTheme.outline, lineWidth: selection.wrappedValue == place ? 2 : 1))
-                    .foregroundStyle(RecorderTheme.primaryText)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private var setupChecklist: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("ExcerLock setup (tap once per session)")
-                .font(.headline)
-                .foregroundStyle(RecorderTheme.primaryText)
-            toggleRow("The same gym circle is saved in ExcerLock", isOn: Binding(
-                get: { controller.setup.sameGymSaved },
-                set: { value in
-                    var setup = controller.setup
-                    setup.sameGymSaved = value
-                    controller.updateSetup(setup)
-                }
-            ))
-            toggleRow("Auto-detect is on in ExcerLock", isOn: Binding(
-                get: { controller.setup.autoDetectOn },
-                set: { value in
-                    var setup = controller.setup
-                    setup.autoDetectOn = value
-                    controller.updateSetup(setup)
-                }
-            ))
-            HStack(spacing: 8) {
-                listChip("ExcerLock permission", options: ["unknown", "whenInUse", "always", "denied"], keyPath: \.locationPermission)
-                listChip("Precise", options: ["unknown", "true", "false"], keyPath: \.preciseLocation)
-                listChip("Build", options: ["unknown", "production", "traceLab"], keyPath: \.buildKind)
-            }
-            Text("ExcerLock cannot be read by this app, so these are your declarations. They are recorded with the session.")
-                .font(.caption)
-                .foregroundStyle(RecorderTheme.secondaryText)
-        }
-        .padding(16)
-        .background(RecorderTheme.card, in: RoundedRectangle(cornerRadius: 20))
-    }
-
-    private func listChip(_ title: String, options: [String], keyPath: WritableKeyPath<ExcerLockSetupDeclaration, String>) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.caption2).foregroundStyle(RecorderTheme.secondaryText)
-            Picker(title, selection: Binding(
-                get: { controller.setup[keyPath: keyPath] },
-                set: { value in
-                    var setup = controller.setup
-                    setup[keyPath: keyPath] = value
-                    controller.updateSetup(setup)
-                }
-            )) {
-                ForEach(options, id: \.self) { Text($0).tag($0) }
-            }
-            .pickerStyle(.menu)
-            .labelsHidden()
-        }
-    }
-
-    private func toggleRow(_ title: String, isOn: Binding<Bool>) -> some View {
-        Toggle(title, isOn: isOn)
-            .font(.subheadline)
-            .foregroundStyle(RecorderTheme.primaryText)
-            .tint(RecorderTheme.orange)
-    }
-
-    private var savedSessionsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Saved on this phone")
-                .font(.headline)
-                .foregroundStyle(RecorderTheme.primaryText)
-            if controller.repository.sessions.isEmpty {
-                Text("Nothing saved yet.")
-                    .font(.subheadline)
+    private var moreLink: some View {
+        HStack {
+            Spacer()
+            Button {
+                showMore = true
+            } label: {
+                Label("More", systemImage: "ellipsis.circle")
+                    .font(.footnote)
                     .foregroundStyle(RecorderTheme.secondaryText)
             }
-            ForEach(controller.repository.sessions) { session in
-                SessionCard(
-                    session: session,
-                    export: {
-                        shareURL = try? controller.repository.export(session)
-                    },
-                    delete: { pendingDelete = session }
-                )
-            }
+            Spacer()
         }
+    }
+
+    /// A button a toddler can hit: full width, 96 pt tall, one or two words.
+    private func giantButton(_ title: String, symbol: String, primary: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: symbol).font(.system(size: 30, weight: .bold))
+                Text(title).font(.system(size: 30, weight: .bold, design: .rounded))
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, minHeight: 96)
+            .padding(.horizontal, 20)
+        }
+        .buttonStyle(GiantButtonStyle(primary: primary))
     }
 
     // MARK: Recording
@@ -371,47 +222,46 @@ struct GymRecorderHomeView: View {
     private var recordingSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             statusHeader
-            scriptStrip
-            placeCardGrid
-            observationRow
-            actionRow
-            Button("Finish & save") { controller.finish() }
-                .buttonStyle(PrimaryButtonStyle())
+            if controller.scenarioId != nil {
+                scriptStrip
+            }
+            placeButton(.inGym, title: "I'm in")
+            placeButton(.away, title: "I'm out")
+            if !controller.activePlace.isPrimaryPlace {
+                placeButton(controller.activePlace, title: controller.activePlace.title)
+            }
+            giantButton("Finish", symbol: "stop.circle.fill", primary: true) { controller.finish() }
             if let note = controller.finishNote {
                 Text(note).font(.footnote).foregroundStyle(RecorderTheme.secondaryText)
             }
+            moreLink
         }
     }
 
     private var statusHeader: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(controller.status.streamIsLive ? RecorderTheme.success : RecorderTheme.secondaryText)
-                    .frame(width: 10, height: 10)
-                Text(controller.status.streamHealth == "live" ? "location stream live" : "location stream \(controller.status.streamHealth)")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(RecorderTheme.secondaryText)
-                Spacer()
-                Text(controller.status.gymName).font(.caption).foregroundStyle(RecorderTheme.secondaryText)
-            }
+        VStack(alignment: .center, spacing: 6) {
             Text(controller.status.presence)
-                .font(.system(size: 40, weight: .heavy, design: .rounded))
+                .font(.system(size: 44, weight: .heavy, design: .rounded))
                 .foregroundStyle(RecorderTheme.primaryText)
             // The one hero metric: the live distance is the only orange text.
             Text(controller.status.distanceLine)
                 .font(.system(size: 30, weight: .bold, design: .rounded))
                 .foregroundStyle(RecorderTheme.orange)
-            Text(controller.status.reducerLine)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(RecorderTheme.primaryText)
-            Text(controller.status.activityLine)
-                .font(.subheadline)
-                .foregroundStyle(RecorderTheme.secondaryText)
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(controller.status.streamIsLive ? RecorderTheme.success : RecorderTheme.secondaryText)
+                    .frame(width: 8, height: 8)
+                Text("\(controller.status.reducerLine) · \(controller.status.activityLine)")
+                    .font(.caption)
+                    .foregroundStyle(RecorderTheme.secondaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
         .padding(18)
         .background(RecorderTheme.card, in: RoundedRectangle(cornerRadius: 22))
+        .overlay(RoundedRectangle(cornerRadius: 22).stroke(RecorderTheme.outline, lineWidth: 1))
     }
 
     private var scriptStrip: some View {
@@ -425,19 +275,15 @@ struct GymRecorderHomeView: View {
                     .foregroundStyle(RecorderTheme.primaryText)
                     .fixedSize(horizontal: false, vertical: true)
                 if step.expectsPlaceTap {
-                    Text("Tap “\(step.place?.title ?? "")” below when you are there.")
+                    Text("Tap “\(step.place?.title ?? "")” when you are there.")
                         .font(.subheadline)
                         .foregroundStyle(RecorderTheme.secondaryText)
                 } else {
                     Button("Done") { controller.acknowledgeCurrentStep() }
                         .buttonStyle(SecondaryButtonStyle())
                 }
-            } else if controller.scenarioId == nil {
-                Text("Free session · tap the place cards whenever they change.")
-                    .font(.subheadline)
-                    .foregroundStyle(RecorderTheme.secondaryText)
             } else {
-                Text("All scripted steps acknowledged. Keep tapping place cards if anything changes.")
+                Text("All scripted steps acknowledged.")
                     .font(.subheadline)
                     .foregroundStyle(RecorderTheme.secondaryText)
             }
@@ -448,93 +294,248 @@ struct GymRecorderHomeView: View {
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(RecorderTheme.outline, lineWidth: 1))
     }
 
-    private var placeCardGrid: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Where are you now?")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(RecorderTheme.primaryText)
-            ForEach(GymPlaceLabel.allCases) { place in
-                Button {
-                    controller.setPlace(place)
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: place.symbol).font(.title3)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(place.title).font(.subheadline.weight(.semibold))
-                            Text(place.guidance).font(.caption2).foregroundStyle(RecorderTheme.secondaryText)
-                        }
-                        Spacer()
-                        if controller.activePlace == place {
-                            Image(systemName: "largecircle.fill.circle")
-                                .foregroundStyle(RecorderTheme.orange)
-                        } else {
-                            Image(systemName: "circle").foregroundStyle(RecorderTheme.secondaryText)
-                        }
-                    }
-                    .foregroundStyle(RecorderTheme.primaryText)
-                    .frame(maxWidth: .infinity, minHeight: 54, alignment: .leading)
-                    .padding(.horizontal, 12)
-                    .background(controller.activePlace == place ? RecorderTheme.selected : RecorderTheme.solid, in: RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(RecorderTheme.outline, lineWidth: controller.activePlace == place ? 2 : 1))
-                }
-                .buttonStyle(ScalePressStyle())
+    /// One giant radio-style place button; the active one is filled orange.
+    private func placeButton(_ place: GymPlaceLabel, title: String) -> some View {
+        let isActive = controller.activePlace == place
+        return Button {
+            controller.setPlace(place)
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: place.symbol).font(.system(size: 30, weight: .bold))
+                Text(title).font(.system(size: 30, weight: .bold, design: .rounded))
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                Spacer()
+                Image(systemName: isActive ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 28))
             }
+            .frame(maxWidth: .infinity, minHeight: 96)
+            .padding(.horizontal, 20)
         }
-    }
-
-    private var observationRow: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("ExcerLock shows…")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(RecorderTheme.primaryText)
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                ForEach(ObserverCard.allCases, id: \.self) { card in
-                    compactButton("Card: \(card.title)") {
-                        controller.observeExcerLock(card: card, lock: .cannotTell)
-                    }
-                }
-            }
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                ForEach(ObserverLock.allCases, id: \.self) { lock in
-                    compactButton("Locked app: \(lock.title)") {
-                        controller.observeExcerLock(card: .cannotTell, lock: lock)
-                    }
-                }
-            }
-            Text("Opened a locked app on purpose? Record it:")
-                .font(.caption)
-                .foregroundStyle(RecorderTheme.secondaryText)
-            HStack(spacing: 8) {
-                ForEach(CanaryOutcome.allCases, id: \.self) { outcome in
-                    compactButton(outcome.title) { controller.recordCanary(outcome) }
-                }
-            }
-        }
-        .padding(16)
-        .background(RecorderTheme.card, in: RoundedRectangle(cornerRadius: 20))
-    }
-
-    private var actionRow: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                Button("Probe check-in") { controller.probeCheckIn() }
-                    .buttonStyle(SecondaryButtonStyle())
-                Button("Probe re-register") { controller.reregisterRegions() }
-                    .buttonStyle(SecondaryButtonStyle())
-            }
-            HStack(spacing: 10) {
-                Button("I did this in ExcerLock…") { showActions = true }
-                    .buttonStyle(SecondaryButtonStyle())
-                Button("Oops, I forgot a tap") { showBackdate = true }
-                    .buttonStyle(SecondaryButtonStyle())
-            }
-            Button("Add a note") { showNote = true }
-                .buttonStyle(SecondaryButtonStyle())
-        }
+        .buttonStyle(GiantButtonStyle(primary: isActive))
     }
 
     // MARK: Sheets
 
+    /// Everything the lab can do that a person at a gym does not need on the
+    /// happy path: scripts, the circle's numbers, ExcerLock declarations, the
+    /// rarer places, observations, probes and saved recordings.
+    private struct MoreSheet: View {
+        @ObservedObject var controller: CaptureController
+        @Binding var selectedScenarioId: String?
+        @Binding var shareURL: URL?
+        @Binding var pendingDelete: SessionSummary?
+        @Binding var showActions: Bool
+        @Binding var showBackdate: Bool
+        @Binding var showNote: Bool
+        @Environment(\.dismiss) private var dismiss
+
+        var body: some View {
+            NavigationStack {
+                List {
+                    if controller.isRecording {
+                        recordingSections
+                    } else {
+                        setupSections
+                    }
+                    Section("Permissions") {
+                        LabeledContent("Location", value: controller.locationPermissionTitle)
+                        LabeledContent("Precise location", value: controller.precisionTitle)
+                        LabeledContent("Motion & Fitness", value: controller.motionPermissionTitle)
+                        Button("Open Settings") { CaptureController.openSettings() }
+                    }
+                    Section("Saved on this phone") {
+                        if controller.repository.sessions.isEmpty {
+                            Text("Nothing saved yet.").foregroundStyle(RecorderTheme.secondaryText)
+                        }
+                        ForEach(controller.repository.sessions) { session in
+                            SessionCard(
+                                session: session,
+                                export: {
+                                    shareURL = try? controller.repository.export(session)
+                                    dismiss()
+                                },
+                                delete: {
+                                    pendingDelete = session
+                                    dismiss()
+                                }
+                            )
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                        }
+                    }
+                }
+                .navigationTitle("More")
+                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+                .tint(RecorderTheme.orange)
+            }
+        }
+
+        @ViewBuilder
+        private var setupSections: some View {
+            Section {
+                NavigationLink {
+                    ScriptPickerSheet(controller: controller, selectedScenarioId: $selectedScenarioId)
+                } label: {
+                    LabeledContent("Run a script", value: controller.catalog.scenario(id: selectedScenarioId).map(\.id) ?? "Free session")
+                }
+                NavigationLink {
+                    GymSetupSheet(controller: controller)
+                } label: {
+                    LabeledContent("Gym circle (advanced)", value: controller.registry.gymUnderTest.map { "\(Int($0.radiusMeters)) m" } ?? "not set")
+                }
+                NavigationLink {
+                    ExcerLockSetupSheet(controller: controller)
+                } label: {
+                    LabeledContent("ExcerLock setup", value: controller.setup.isComplete ? "declared" : "not declared")
+                }
+            }
+        }
+
+        @ViewBuilder
+        private var recordingSections: some View {
+            Section("Other places") {
+                ForEach([GymPlaceLabel.onBoundary, .inCircleNotGym, .passingBy], id: \.self) { place in
+                    Button {
+                        controller.setPlace(place)
+                        dismiss()
+                    } label: {
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(place.title)
+                                Text(place.guidance).font(.caption).foregroundStyle(RecorderTheme.secondaryText)
+                            }
+                        } icon: {
+                            Image(systemName: controller.activePlace == place ? "checkmark.circle.fill" : place.symbol)
+                        }
+                    }
+                }
+            }
+            Section("ExcerLock shows…") {
+                ForEach(ObserverCard.allCases, id: \.self) { card in
+                    Button("Card: \(card.title)") {
+                        controller.observeExcerLock(card: card, lock: .cannotTell)
+                        dismiss()
+                    }
+                }
+                ForEach(ObserverLock.allCases, id: \.self) { lock in
+                    Button("Locked app: \(lock.title)") {
+                        controller.observeExcerLock(card: .cannotTell, lock: lock)
+                        dismiss()
+                    }
+                }
+            }
+            Section("Opened a locked app on purpose?") {
+                ForEach(CanaryOutcome.allCases, id: \.self) { outcome in
+                    Button(outcome.title) {
+                        controller.recordCanary(outcome)
+                        dismiss()
+                    }
+                }
+            }
+            Section("Lab actions") {
+                Button("Probe check-in") { controller.probeCheckIn(); dismiss() }
+                Button("Probe re-register") { controller.reregisterRegions(); dismiss() }
+                Button("I did this in ExcerLock…") { dismiss(); showActions = true }
+                Button("Oops, I forgot a tap") { dismiss(); showBackdate = true }
+                Button("Add a note") { dismiss(); showNote = true }
+            }
+        }
+    }
+
+    private struct ScriptPickerSheet: View {
+        @ObservedObject var controller: CaptureController
+        @Binding var selectedScenarioId: String?
+        @Environment(\.dismiss) private var dismiss
+
+        var body: some View {
+            List {
+                Section {
+                    Button {
+                        selectedScenarioId = nil
+                        dismiss()
+                    } label: {
+                        row(title: "Free session", subtitle: "Anything goes", selected: selectedScenarioId == nil)
+                    }
+                }
+                Section("Scripts") {
+                    ForEach(controller.catalog.scenarios) { scenario in
+                        Button {
+                            selectedScenarioId = scenario.id
+                            dismiss()
+                        } label: {
+                            row(
+                                title: "\(scenario.id) \(scenario.title)",
+                                subtitle: scenario.captainWords ?? scenario.mode,
+                                selected: selectedScenarioId == scenario.id
+                            )
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Run a script")
+        }
+
+        private func row(title: String, subtitle: String, selected: Bool) -> some View {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).foregroundStyle(RecorderTheme.primaryText)
+                    Text(subtitle).font(.caption).foregroundStyle(RecorderTheme.secondaryText)
+                }
+                Spacer()
+                if selected { Image(systemName: "checkmark").foregroundStyle(RecorderTheme.orange) }
+            }
+        }
+    }
+
+    private struct ExcerLockSetupSheet: View {
+        @ObservedObject var controller: CaptureController
+        @Environment(\.dismiss) private var dismiss
+
+        var body: some View {
+            Form {
+                Section {
+                    Toggle("The same gym circle is saved in ExcerLock", isOn: binding(\.sameGymSaved))
+                    Toggle("Auto-detect is on in ExcerLock", isOn: binding(\.autoDetectOn))
+                }
+                Section {
+                    picker("ExcerLock permission", options: ["unknown", "whenInUse", "always", "denied"], keyPath: \.locationPermission)
+                    picker("Precise location", options: ["unknown", "true", "false"], keyPath: \.preciseLocation)
+                    picker("Build", options: ["unknown", "production", "traceLab"], keyPath: \.buildKind)
+                } footer: {
+                    Text("ExcerLock cannot be read by this app, so these are your declarations. They are recorded with the session.")
+                }
+            }
+            .navigationTitle("ExcerLock setup")
+        }
+
+        private func binding(_ keyPath: WritableKeyPath<ExcerLockSetupDeclaration, Bool>) -> Binding<Bool> {
+            Binding(
+                get: { controller.setup[keyPath: keyPath] },
+                set: { value in
+                    var setup = controller.setup
+                    setup[keyPath: keyPath] = value
+                    controller.updateSetup(setup)
+                }
+            )
+        }
+
+        private func picker(_ title: String, options: [String], keyPath: WritableKeyPath<ExcerLockSetupDeclaration, String>) -> some View {
+            Picker(title, selection: Binding(
+                get: { controller.setup[keyPath: keyPath] },
+                set: { value in
+                    var setup = controller.setup
+                    setup[keyPath: keyPath] = value
+                    controller.updateSetup(setup)
+                }
+            )) {
+                ForEach(options, id: \.self) { Text($0).tag($0) }
+            }
+        }
+    }
+
+    /// The circle's numbers. Deliberately off the happy path: typed
+    /// coordinates, the radius stepper and the saved-circle list.
     private struct GymSetupSheet: View {
         @ObservedObject var controller: CaptureController
         @Environment(\.dismiss) private var dismiss
@@ -543,59 +544,53 @@ struct GymRecorderHomeView: View {
         @State private var typedLongitude = ""
 
         var body: some View {
-            NavigationStack {
-                Form {
-                    Section("Stand at the gym entrance") {
-                        Button(controller.isAveragingGym ? "Averaging… \(controller.averagingFixCount) fixes" : "Set gym here (20 seconds)") {
-                            controller.beginGymAveraging(name: name.isEmpty ? "Gym" : name) { _ in }
-                        }
-                        .disabled(controller.isAveragingGym)
-                        Text("The centre is the accuracy-weighted average of the fixes taken while you stand still for 20 seconds. Fixes worse than 65 m are rejected, and nothing is saved if fewer than 3 usable fixes arrive.")
-                            .font(.caption)
-                            .foregroundStyle(RecorderTheme.secondaryText)
-                        if let note = controller.lastGymAverageNote {
-                            Text(note)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(RecorderTheme.primaryText)
-                        }
+            Form {
+                if let gym = controller.registry.gymUnderTest {
+                    Section("Radius") {
+                        Stepper(
+                            "\(Int(gym.radiusMeters)) m",
+                            value: Binding(
+                                get: { gym.radiusMeters },
+                                set: { controller.registry.updateRadius(id: gym.id, radiusMeters: $0) }
+                            ),
+                            in: gymRadiusMinimumMeters...gymRadiusMaximumMeters,
+                            step: gymRadiusStepMeters
+                        )
                     }
-                    Section("Or type the coordinates") {
-                        TextField("Name", text: $name)
-                        TextField("Latitude", text: $typedLatitude).keyboardType(.numbersAndPunctuation)
-                        TextField("Longitude", text: $typedLongitude).keyboardType(.numbersAndPunctuation)
-                        Button("Save typed gym") {
-                            if let latitude = Double(typedLatitude), let longitude = Double(typedLongitude) {
-                                controller.registry.addTypedGym(
-                                    name: name,
-                                    latitude: latitude,
-                                    longitude: longitude,
-                                    radiusMeters: controller.registry.gymUnderTest?.radiusMeters ?? gymRadiusDefaultMeters
-                                )
-                                dismiss()
-                            }
-                        }
-                    }
-                    Section("Saved circles") {
-                        ForEach(controller.registry.gyms) { gym in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("\(gym.name)\(gym.isUnderTest ? " · under test" : "")")
-                                Text("\(Int(gym.radiusMeters)) m · \(String(format: "%.5f", gym.latitude)), \(String(format: "%.5f", gym.longitude))")
-                                    .font(.caption)
-                                    .foregroundStyle(RecorderTheme.secondaryText)
-                            }
-                            .contentShape(Rectangle())
-                            .onTapGesture { controller.registry.markUnderTest(id: gym.id) }
-                        }
-                        .onDelete { indexSet in
-                            for index in indexSet { controller.registry.remove(id: controller.registry.gyms[index].id) }
+                }
+                Section("Type the coordinates") {
+                    TextField("Name", text: $name)
+                    TextField("Latitude", text: $typedLatitude).keyboardType(.numbersAndPunctuation)
+                    TextField("Longitude", text: $typedLongitude).keyboardType(.numbersAndPunctuation)
+                    Button("Save typed gym") {
+                        if let latitude = Double(typedLatitude), let longitude = Double(typedLongitude) {
+                            controller.registry.addTypedGym(
+                                name: name,
+                                latitude: latitude,
+                                longitude: longitude,
+                                radiusMeters: controller.registry.gymUnderTest?.radiusMeters ?? gymRadiusDefaultMeters
+                            )
+                            dismiss()
                         }
                     }
                 }
-                .navigationTitle("The circle under test")
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+                Section("Saved circles") {
+                    ForEach(controller.registry.gyms) { gym in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("\(gym.name)\(gym.isUnderTest ? " · under test" : "")")
+                            Text("\(Int(gym.radiusMeters)) m · \(String(format: "%.5f", gym.latitude)), \(String(format: "%.5f", gym.longitude)) · \(gym.setBy.replacingOccurrences(of: "_", with: " "))")
+                                .font(.caption)
+                                .foregroundStyle(RecorderTheme.secondaryText)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture { controller.registry.markUnderTest(id: gym.id) }
+                    }
+                    .onDelete { indexSet in
+                        for index in indexSet { controller.registry.remove(id: controller.registry.gyms[index].id) }
+                    }
                 }
             }
+            .navigationTitle("Gym circle")
         }
     }
 
@@ -694,7 +689,7 @@ private struct SessionCard: View {
     let export: () -> Void
     let delete: () -> Void
 
-    private static let dateFormatter: DateFormatter = {
+    static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
@@ -708,7 +703,7 @@ private struct SessionCard: View {
                     Text(Self.dateFormatter.string(from: Date(timeIntervalSince1970: Double(session.startedAt.wallTimeMs) / 1_000)))
                         .font(.headline)
                         .foregroundStyle(RecorderTheme.primaryText)
-                    Text("\(session.scenarioId ?? "free") · \(formatDuration(session.durationSeconds)) · \(session.eventCount) events · \(ByteCountFormatter.string(fromByteCount: session.byteCount, countStyle: .file))")
+                    Text("\(session.scenarioId ?? "free") · \(Self.formatDuration(session.durationSeconds)) · \(session.eventCount) events · \(ByteCountFormatter.string(fromByteCount: session.byteCount, countStyle: .file))")
                         .font(.subheadline)
                         .foregroundStyle(RecorderTheme.secondaryText)
                     if !session.placeCounts.isEmpty {
@@ -739,7 +734,7 @@ private struct SessionCard: View {
         .background(RecorderTheme.card, in: RoundedRectangle(cornerRadius: 18))
     }
 
-    private func formatDuration(_ seconds: TimeInterval) -> String {
+    static func formatDuration(_ seconds: TimeInterval) -> String {
         let total = Int(seconds.rounded())
         if total >= 3_600 { return "\(total / 3_600) h \((total % 3_600) / 60) min" }
         if total >= 60 { return "\(total / 60) min \(total % 60) s" }
@@ -755,6 +750,24 @@ private struct PrimaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity, minHeight: 54)
             .padding(.horizontal, 20)
             .background(configuration.isPressed ? RecorderTheme.orangePressed : RecorderTheme.orange, in: Capsule())
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+/// Full-width, 96 pt, orange when it is the next thing to do; outlined otherwise.
+private struct GiantButtonStyle: ButtonStyle {
+    let primary: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(primary ? .white : RecorderTheme.primaryText)
+            .background(
+                primary ? (configuration.isPressed ? RecorderTheme.orangePressed : RecorderTheme.orange)
+                    : (configuration.isPressed ? RecorderTheme.selected : RecorderTheme.solid),
+                in: RoundedRectangle(cornerRadius: 24)
+            )
+            .overlay(RoundedRectangle(cornerRadius: 24).stroke(RecorderTheme.outline, lineWidth: primary ? 0 : 1))
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
     }
