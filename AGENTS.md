@@ -7,6 +7,7 @@
 - UI: read `design/UI-STYLE.md` before making or changing any screen or component and follow it. Depart from it only when Johan deliberately asks for something that contradicts it; say that you are doing so.
 - For Expo API/native/dependency/build changes, consult official docs matching the installed version. Run affected checks and fix introduced regressions.
 - Read relevant `docs/adr/` records before architectural changes. Record core decisions, rationale and project state using `docs/adr/TEMPLATE.md`; preserve superseded records.
+- API server (`server/`) deploys to `api.excerlock.com`: follow `deploy/README.md` (current host, `deploy/deploy.sh`, migrations, health/ready proof).
 - Releases: follow `docs/agents/operations.md`; wrap the entire authorized merge-to-health-check sequence in `python3 scripts/agent-ops.py run -- <command>`. If busy, stop and revalidate later. The lock does not authorize release.
 - Claim your worktree with `scripts/agent-ops.py claim`; finish only your committed completed work with the correct base ref. Follow the operations guide; never force cleanup.
 - App Store screenshots: `app-store-screenshots/README.md` (HTML outline → GPT Image edits via `gen.py`; the approved publish set is `app-store-screenshots/finals/`).

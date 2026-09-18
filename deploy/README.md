@@ -5,9 +5,35 @@ locally, rsync the compiled output and package manifests to one Azure VM,
 install production dependencies there, and restart a hardened systemd service
 behind Caddy. There is no Docker layer.
 
-## Current deployment (ticket #23, 2026-07-30)
+## Current deployment (2026-09-18)
 
-The box exists and the API is serving.
+`api.excerlock.com` is served from a Google Compute Engine VM. The Azure box
+described under "Provision the VM" below is the original provisioning path; that
+VM was deallocated with its subscription disabled (`docs/agents/service-cli.md`),
+and DNS now points at GCE. `deploy/deploy.sh` is host-agnostic: it only needs
+`DEPLOY_HOST` and `DEPLOY_SSH_KEY`.
+
+| | |
+|---|---|
+| Public IP | `34.134.201.129` (`dig +short api.excerlock.com A`) |
+| SSH | `DEPLOY_HOST=johansardar@34.134.201.129 DEPLOY_SSH_KEY=~/.ssh/google_compute_engine` |
+| Instance | `excerlock-api`, `us-central1-a`, `e2-micro`, GCP project `174877771548` (**x86_64**) |
+| Stack | Debian 12 · Node 22.23.2 · Postgres 15 (local socket) · Caddy 2.11.4 |
+| Health | `curl https://api.excerlock.com/v1/health` → `{"ok":true,...}`; `/v1/ready` → `{"ready":true,...}` |
+
+The same box serves the public site; `deploy/site.sh` and `deploy/deploy.sh`
+both install `deploy/Caddyfile` over `/etc/caddy/Caddyfile`, so every vhost must
+live in that one file. `/etc/excerlock/env` carries the Supabase identity
+variables (`SUPABASE_URL`, `SUPABASE_JWT_JWKS_URL`, `SUPABASE_SERVICE_ROLE_KEY`)
+in addition to the baseline below; `RESEND_API_KEY` is unset, so incident-report
+emails are skipped while persistence still succeeds (`server/src/incidents/notify.ts`).
+
+Latest API deploy: `docs/releases/2026-09-18-api-incident-reports.md`
+(migration `0010_incident-reports.sql`, `POST /v1/incident-reports`).
+
+### Original Azure provisioning (ticket #23, 2026-07-30; retired)
+
+Kept for the record; this box is no longer in service.
 
 | | |
 |---|---|
@@ -155,7 +181,7 @@ up-to-date deploy a no-op, but a pending migration changes the database before
 the new process starts. The current journal is forward-only; for the legacy
 production shape it applies `0006_legacy-production-bridge.sql`, then
 `0007_supabase-identity-and-durable-erasure.sql`, `0008_deletion-retry-index.sql`,
-and `0009_deep_firebrand.sql`. Never rewrite applied journal rows or substitute
+`0009_deep_firebrand.sql` and `0010_incident-reports.sql`. Never rewrite applied journal rows or substitute
 the superseded migrations by matching file number.
 
 Re-running the same revision is safe: rsync converges the built files,
