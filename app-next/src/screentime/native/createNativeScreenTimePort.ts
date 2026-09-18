@@ -5,6 +5,7 @@ import { deviceActivityApi } from './deviceActivityApi';
 import { nativeScreenTimePicker, NativeScreenTimePickerHost } from './NativeScreenTimePickerHost';
 import { NATIVE_LOCKED_SELECTION } from './nativeSelection';
 import { rulesStore } from '../../state/rulesStore';
+import { ScreenTimeAuthorizationError } from '../ScreenTimeAuthorizationError';
 
 export type NativeScreenTimeEnforcementHandler = Readonly<{
   applyLock(decision: LockDecision): Promise<LockApplyResult>;
@@ -28,20 +29,25 @@ export function createNativeScreenTimePort(enforcement: NativeScreenTimeEnforcem
   let authorization = mapAuthorization(deviceActivityApi.authorizationStatus());
   let authorizationPromptBusy = false;
   let pickerBusy = false;
+  const readAuthorization = () => { authorization = mapAuthorization(deviceActivityApi.authorizationStatus()); return authorization; };
+  const requestAuthorization = async () => {
+    if (authorizationPromptBusy) return authorization;
+    authorizationPromptBusy = true;
+    try {
+      if (readAuthorization() === 'notDetermined') await deviceActivityApi.requestAuthorization('individual');
+      return readAuthorization();
+    } finally { authorizationPromptBusy = false; }
+  };
   return {
-    authorizationStatus: () => { authorization = mapAuthorization(deviceActivityApi.authorizationStatus()); return authorization; },
-    requestAuthorization: async () => {
-      if (authorizationPromptBusy) return authorization;
-      authorizationPromptBusy = true;
-      try {
-        if (authorization === 'notDetermined') await deviceActivityApi.requestAuthorization('individual');
-        authorization = mapAuthorization(deviceActivityApi.authorizationStatus());
-        return authorization;
-      } finally { authorizationPromptBusy = false; }
-    },
+    authorizationStatus: readAuthorization,
+    requestAuthorization,
     presentAppPicker: async () => {
       if (pickerBusy) throw new Error('A Screen Time picker request is already active');
-      if (authorization !== 'granted') throw new Error('Screen Time authorization is required before selection');
+      // The phone is the authority: a grant from Settings or another prompt must
+      // not be hidden by a cached status, and an undecided grant is asked for here
+      // so a lock-apps control always ends in the system sheet or a typed error.
+      if (readAuthorization() === 'notDetermined') await requestAuthorization();
+      if (authorization !== 'granted') throw new ScreenTimeAuthorizationError(authorization);
       pickerBusy = true;
       try {
         const contents = await nativeScreenTimePicker.pick(NATIVE_LOCKED_SELECTION);

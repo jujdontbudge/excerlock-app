@@ -34,6 +34,7 @@ import { UnlockEntry } from '../unlock/UnlockEntry';
 import { WalkingCheckButton } from './WalkingCheckButton';
 import { useInteractiveHomeMarker } from '../../runtime/startup/useInteractiveHomeMarker';
 import { useLapsedWinbackOffer } from '../subscription/useLapsedWinbackOffer';
+import { useLockListPicker } from '../permissions/useLockListPicker';
 export function HomeScreen() {
   useDemoProgress();
   useLapsedWinbackOffer();
@@ -61,7 +62,7 @@ export function HomeScreen() {
       timezone: runtime.clock.timezone(),
     }),
     glyph = useUnlockMoment(status.state);
-  const chooseApps = () => void runtime.screenTime.presentAppPicker();
+  const { open: chooseApps } = useLockListPicker();
   const add = () => router.push('/builder');
   useEffect(() => {
     runtime.analytics.screen('Home');

@@ -594,7 +594,11 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
           return permission;
         },
         presentAppPicker: async () => {
-          const selection = await safety.prompt(() => rawScreenTime.presentAppPicker());
+          // The port asks for Screen Time itself when undecided; mirror the
+          // phone's answer into the store whether the pick succeeds or throws.
+          const selection = await safety
+            .prompt(() => rawScreenTime.presentAppPicker())
+            .finally(() => permissionsStore.getState().patch({ screenTime: rawScreenTime.authorizationStatus() }));
           selectionVersion = `${Date.now()}:${native.getPolicyRevision() + 1}`;
           await AsyncStorage.setItem(SELECTION_VERSION_KEY, selectionVersion);
           rulesStore.getState().patch({ lockedApps: selection });

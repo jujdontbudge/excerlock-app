@@ -5,11 +5,13 @@ import { profileStore as useProfileStore } from '../../state/profileStore';
 import { settingsCopy as c } from '../../content/settings';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { SettingsPage } from './SettingsPage';
+import { useLockListPicker } from '../permissions/useLockListPicker';
 const graceSeconds = [30, 60, 120, 180, 300];
 export function PreferencesScreen({ navigate, onBack }: { navigate: (path: string) => void; onBack: () => void }) {
   const s = useSettingsStore((s) => s.data),
     walkPlaces = useProfileStore((state) => state.data.walkPlaces),
     runtime = useRuntime(),
+    { open: openLockList } = useLockListPicker(),
     [grace, setGrace] = useState(false),
     [autoDenied, setAutoDenied] = useState(false),
     [analyticsError, setAnalyticsError] = useState(false);
@@ -103,7 +105,7 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
       </SettingsGroup>
       <SettingsGroup>
         <SettingsRow title={c.gyms} icon="gym" onPress={() => navigate('gyms')} />
-        <SettingsRow title={c.apps} icon="lock" onPress={() => void runtime.screenTime.presentAppPicker()} />
+        <SettingsRow title={c.apps} icon="lock" onPress={() => void openLockList()} />
       </SettingsGroup>
     </SettingsPage>
   );

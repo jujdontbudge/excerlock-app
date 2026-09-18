@@ -24,9 +24,11 @@ import { ConfirmSheet } from './ConfirmSheet';
 import { toggleRule, deleteRule } from './mutations';
 import { SchedulePlanError } from '../../domain/scheduleRepresentability';
 import { useRuntimeStatus } from '../../state/selectors';
+import { useLockListPicker } from '../permissions/useLockListPicker';
 export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit: (id: string) => void }) {
   const { rules, lockedApps, migrationNote } = useRulesStore((s) => s.data),
     runtime = useRuntime(),
+    { open: openLockList } = useLockListPicker(),
     { scheduleIssue } = useRuntimeStatus(),
     [deleting, setDeleting] = useState<string | null>(null),
     [scheduleError, setScheduleError] = useState(false);
@@ -126,7 +128,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
         <EmptyState icon="walking" title={c.empty} body={c.emptyBody} action={c.add} onAction={onAdd} />
       )}
       <View style={{ backgroundColor: t.surface.card, borderRadius: t.radius.pill, borderWidth: t.stroke.hairline, borderColor: t.border.outline }}>
-        <SettingsRow title="Lock list" icon="lock" iconTint={t.brand.primary} onPress={() => void runtime.screenTime.presentAppPicker()} />
+        <SettingsRow title="Lock list" icon="lock" iconTint={t.brand.primary} onPress={() => void openLockList()} />
       </View>
     </ScreenShell>
   );

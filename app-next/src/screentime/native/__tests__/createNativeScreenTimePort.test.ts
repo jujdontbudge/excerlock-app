@@ -30,3 +30,35 @@ it('treats a persisted FamilyControls payload as a real pick when the sheet meta
     isEmpty: false,
   });
 });
+
+describe('Lock list opens the picker from any authorization state', () => {
+  beforeEach(() => { jest.clearAllMocks(); mockApi.getFamilyActivitySelectionId.mockReturnValue(undefined); });
+  it('requests Screen Time authorization first when it was never decided, then presents the picker', async () => {
+    mockApi.authorizationStatus.mockReturnValue(0);
+    mockApi.requestAuthorization.mockImplementation(async () => { mockApi.authorizationStatus.mockReturnValue(2); });
+    mockPick.mockResolvedValue({ applicationCount: 1, categoryCount: 0 });
+    const port = createNativeScreenTimePort(handler);
+    expect(await port.presentAppPicker()).toEqual({ handle: { token: 'excerlock.selection.locked.v1' }, isEmpty: false });
+    expect(mockApi.requestAuthorization).toHaveBeenCalledWith('individual');
+    expect(mockPick).toHaveBeenCalledTimes(1);
+  });
+
+  it('rereads authorization granted outside this port instead of trusting the cached value', async () => {
+    mockApi.authorizationStatus.mockReturnValue(0);
+    const port = createNativeScreenTimePort(handler);
+    mockApi.authorizationStatus.mockReturnValue(2);
+    mockPick.mockResolvedValue({ applicationCount: 1, categoryCount: 0 });
+    await port.presentAppPicker();
+    expect(mockApi.requestAuthorization).not.toHaveBeenCalled();
+    expect(mockPick).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws a typed denied error and never opens the picker when Screen Time is off', async () => {
+    const { ScreenTimeAuthorizationError } = require('../../ScreenTimeAuthorizationError');
+    mockApi.authorizationStatus.mockReturnValue(1);
+    const port = createNativeScreenTimePort(handler);
+    await expect(port.presentAppPicker()).rejects.toBeInstanceOf(ScreenTimeAuthorizationError);
+    await expect(port.presentAppPicker()).rejects.toMatchObject({ status: 'denied' });
+    expect(mockPick).not.toHaveBeenCalled();
+  });
+});
