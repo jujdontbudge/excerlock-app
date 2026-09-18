@@ -7,3 +7,5 @@ Installed through Homebrew as `asc`. Use `asc version` and `asc <command> --help
 Read `/Users/johansardar/.agents/skills/asc-cli-usage/SKILL.md` on App Store Connect tasks. Read additional installed `asc-*` guides only for the specific task (build, signing, TestFlight, review, metadata or crash triage); do not preload the pack. No MCP server is required.
 
 Use existing authentication profiles; select the correct app/team explicitly. Installation is not authorization to upload, submit or change App Store data. Follow `docs/agents/operations.md`, including the shared release lock, for authorized release work. Do not write API keys into the repository.
+
+The verified local archive → export → TestFlight upload lane, with its pitfalls, is recorded in `docs/releases/2026-09-17-testflight-1.0.0-2.md`.
