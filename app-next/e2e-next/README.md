@@ -44,6 +44,7 @@ python3 app-next/e2e-next/run.py --list
 # removes the snapshot; it also accepts an identity E2E-A4's UI half consumed)
 python3 app-next/e2e-next/run.py E2E-F1 E2E-E1 E2E-V1 E2E-F2 --run-id 20260917T2022Z
 python3 app-next/e2e-next/run.py E2E-F1 E2E-A4 E2E-F2 --run-id 20260917T2048Z
+python3 app-next/e2e-next/run.py E2E-F1 E2E-R1 E2E-F2 --run-id 20260918T2059Z
 
 # E2E-V1 owns both sweep states (guarded first, then the fresh install that
 # resets the keychain) and E2E-A4's confirmation consumes the identity, so each
@@ -157,6 +158,7 @@ with the inspected contract text instead of a bare failure. Current map (plan §
 | `E2E-A3` | fresh install | welcome footer → email sign-in | signed-in UI; Supabase user; `PUT /v1/user` 204; PostHog rows under the canonical distinct id; teardown 204/410/404 | **PASS** (recovery lane, admin-minted code — see findings) |
 | — | — | `E2E-POSTHOG-TIMEOUT` env | `E2E_POSTHOG_TIMEOUT` (screen window, default 60 s) and `E2E_PAYWALL_WAIT` (extended poll for load-driven events, default 300 s) tune the PostHog windows | — |
 | `E2E-A4` | existing user | Settings → Account → delete | 204, re-PUT 410, Supabase 404, PostHog person erased, local wipe | harness-driven API half **PASS** (204 → re-`PUT` 410 → Supabase 404 → PostHog person erased); the UI half runs on the E2E-F1 fixture and records **FAIL**: the server accepts the delete (204 at the confirm tap) but the app's local cleanup stays pending on the simulator (Family Controls/CoreMotion absent), so the sheet keeps its retry note instead of returning to onboarding (follow-up 3) |
+| `E2E-R1` | existing user | Settings → "Something not working?": empty Send press, one-answer press, both answers + Send | Send is enabled with both answers empty; an empty press shows "Answer both questions, then tap Send."; one answer names the missing one; both answers reach the thanks screen (or a visible error — silence fails) | **PASS** (`20260918T2059Z`): all seven assertions, real report accepted by the API |
 | `E2E-F2` | — | fixture teardown: revoke the grant, delete the identity, remove the snapshot | revoke 2xx + inactive readback; Supabase delete + 404 readback; files removed | **PASS** (`20260917T2022Z`); also accepts a 404 when E2E-A4's UI half already consumed the identity (`20260917T2048Z`) |
 | `E2E-E2` | — | OTA receipt, binary unchanged | **documented stub** (publishes a preview EAS Update; §8.10 keeps release-lock ops out of E2E automation) | BLOCKED by design |
 
@@ -174,6 +176,7 @@ PostHog query trace.
 
 | Run | Revision | Scenario | Verdict | Result |
 |---|---|---|---|---|
+| `20260918T2059Z` | `b063a580`+ (build `appSourceRevision` 09e9ac8a3dfe) | `E2E-F1`, `E2E-R1`, `E2E-F2` | **PASS** | **R1**: the Report screen on the fixture — Send enabled while empty, empty press → "Answer both questions, then tap Send.", one answer → "Tell us what should have happened, then tap Send.", both answers → real `POST /v1/incident-reports` accepted and the thanks screen. Harness fix in the same change: `tap_field`/`text_field` target the field node, not its same-labelled caption, and match a multiline TextArea whose label carries its placeholder (the `20260918T2043Z` mint typed into nothing) |
 | `20260917T2022Z` | `f10c245c` (build `appSourceRevision` `19bfb23d6dbf`) | `E2E-F1`, `E2E-V1`, `E2E-F2` | **PASS** | **F1**: disposable identity, real Adapty server-side `premium` grant, email sign-in, X4→X5, snapshot + persisted keys. **V1**: guarded phase on the fixture (`guarded.boot_home`, every fixture route's `$screen` row, 51/72 label-judged visits exactly as their state allows, 19 behind the setup-complete guard, `/setup/X4` correctly closed), then the 29-step fresh sweep; ~306 s of the run was the PostHog guarded-screen wait. **F2**: revoke 200 + inactive readback, Supabase delete + 404, files removed |
 | `20260917T2001Z` | same build | `E2E-E1` | PASS assertions / BLOCKED budget | the fixture relaunches to Home with no paywall and emits `$screen home` (plus the mint's `onboarding`/`setup` rows under the same `$device_id`); only `startup.home_budget` is BLOCKED-until B10, and that run's harness still read the log with the pre-merge `--signposts` flag |
 | `20260917T2048Z` | same build | `E2E-A4`, `E2E-S1` | **FAIL** (UI delete) / BLOCKED (device lane) | **A4**: `ui.delete_flow` FAIL — the app stays on the confirmation sheet with its retry note; the server side is fully green (`PUT` 204, `DELETE` 204 at the confirm tap, re-`PUT` 410, Supabase 404, PostHog person erased), and F2's admin delete later found the identity still present because the durable erasure is asynchronous. **S1**: 10 cold launches measured, §6.2 budgets BLOCKED on the device/signpost lane |

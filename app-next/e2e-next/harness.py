@@ -657,8 +657,22 @@ class RunContext:
         shell(['idb', 'ui', 'text', '--udid', self.udid, text])
 
     def tap_field(self, label: str | None = None) -> bool:
-        """Focus a text field: by label when given, else the first TextField."""
-        node = self.find(label, 4) if label else None
+        """Focus a text field: by label when given, else the first TextField.
+
+        The field's caption is a ``StaticText`` carrying the same label and it
+        precedes the field in the tree, so a plain label lookup lands on the
+        caption and the tap never focuses anything (the 2026-09-18T2043Z mint
+        typed into nothing). Prefer a text-field node with that label.
+        """
+        node = None
+        if label:
+            deadline = time.monotonic() + 4
+            while node is None and time.monotonic() < deadline:
+                node = self.text_field(label)
+                if node is None:
+                    time.sleep(0.15)
+            if node is None:
+                node = self.find(label, 1)
         if node is None:
             fields = [n for n in self.tree() if n.get('type') in {'TextField', 'TextArea', 'SecureTextField'}]
             node = fields[0] if fields else None
@@ -667,6 +681,20 @@ class RunContext:
         self.tap_node(node)
         time.sleep(0.4)
         return True
+
+    def text_field(self, label: str) -> dict[str, Any] | None:
+        """The text-field node (not its caption) carrying ``label``."""
+        wanted = label.replace('\u00a0', ' ')
+        fields = [(node, (node.get('AXLabel') or '').replace('\u00a0', ' ')) for node in self.tree()
+                  if node.get('type') in {'TextField', 'TextArea', 'SecureTextField'}]
+        for node, seen in fields:
+            if seen == wanted:
+                return node
+        # An empty multiline TextArea reports "<label> <placeholder>" as its label.
+        for node, seen in fields:
+            if seen.startswith(wanted + ' '):
+                return node
+        return None
 
     def field_value(self) -> str:
         for node in self.tree():
