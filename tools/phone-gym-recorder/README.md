@@ -83,7 +83,7 @@ on the way out, **Finish**.
 | S06 | **Leave and return** — S05 then walk back in. | Away, then I'm in the gym. |
 | S07 | **Oscillate** — cross the edge 6 times, ~1 min apart. | In the circle, not in the gym ↔ Away six times. |
 | S08 | **Hover at the edge** — stand on the boundary line for 5 min. | On the boundary line. |
-| S09 | **Brief pass-by** — through a 100 m circle without stopping (< 30 s). | Passing by, not stopping → Away. |
+| S09 | **Brief pass-by** — through a 100 m circle without stopping (< 10 s). | Passing by, not stopping → Away. |
 | S10 | **Drive-by** — same by car (≈5–10 s inside). | Passing by, not stopping → Away. |
 | S11 | **Arrive by vehicle, park inside, walk in.** | In the circle, not in the gym (parked) → I'm in the gym. |
 | S12 | **Poor indoor accuracy** — 15 min deep inside with the phone in a locker/bag. | In_gym. |
@@ -168,7 +168,7 @@ a manifest coverage mismatch). It writes `verdict.json`, `timeline.csv` and
 Scoring rules, in one paragraph: a confirmed interval while the label is `away`
 or `passing_by` is a **false positive**; an `in_gym`/`in_circle_not_gym` window
 with no confirmed interval is a **false negative** (flagged as a failure from
-5 minutes up). The first 30 s + 15 s of an `in_gym` window are not counted (that
+5 minutes up). The first 10 s + 15 s of an `in_gym` window are not counted (that
 is the confirmation itself), every human boundary carries ±15 s of uncertainty
 (the whole declared span for a backdated boundary), only
 location-covered seconds are scored, and `on_boundary` is reported as boundary
@@ -240,7 +240,7 @@ install.
 - **This app is an equivalent observer, not ExcerLock.** Two apps monitoring the
   same circle get independent callbacks from the same system engine; they should
   agree within seconds, but nothing here proves what iOS told *ExcerLock*, when
-  Task Manager ran, or whether the 30 s confirmation settled headlessly. That
+  Task Manager ran, or whether the 10 s confirmation settled headlessly. That
   needs a gym trace in Trace Lab.
 - **iOS region internals are invisible.** Latency, the hysteresis around the
   boundary, assisted determination and why a transient crossing did or did not

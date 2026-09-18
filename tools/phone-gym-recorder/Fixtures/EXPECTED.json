@@ -18,7 +18,7 @@
   },
   "thresholds": {
     "confidenceToleranceSeconds": 15,
-    "confirmMs": 30000,
+    "confirmMs": 10000,
     "confirmToleranceMs": 1500,
     "slowDetectionSeconds": 180,
     "slowReleaseSeconds": 600,
@@ -37,7 +37,7 @@
   "fixtures": [
     {
       "name": "gym-enter-exit",
-      "expectation": "one interval confirmed at enter + 30 s and ended by the exit receipt"
+      "expectation": "one interval confirmed at enter + 10 s and ended by the exit receipt"
     },
     {
       "name": "region-blip",
@@ -101,7 +101,7 @@
       "cannotBeJudged": [
         "no_location_coverage"
       ],
-      "refExpectation": "region enter within 0-120 s of crossing (iOS latency, reported); port confirms exactly +30 s after the enter receipt; sampled presence inside at the label",
+      "refExpectation": "region enter within 0-120 s of crossing (iOS latency, reported); port confirms exactly +10 s after the enter receipt; sampled presence inside at the label",
       "prodExpectation": "Card At gym and canary opened observed after confirm; before confirm the card should read not at gym",
       "steps": [
         {
@@ -256,7 +256,7 @@
         "missing_label:in_gym",
         "missing_label:away"
       ],
-      "refExpectation": "two enters, one exit, two intervals; the second visit gets a fresh 30 s confirmation",
+      "refExpectation": "two enters, one exit, two intervals; the second visit gets a fresh 10 s confirmation",
       "prodExpectation": "a second At gym observation after the second confirmation",
       "steps": [
         {
@@ -345,7 +345,7 @@
       "cannotBeJudged": [
         "no_location_coverage"
       ],
-      "refExpectation": "an enter may fire; the port must not confirm (exit before +30 s) and must open no interval",
+      "refExpectation": "an enter may fire; the port must not confirm (exit before +10 s) and must open no interval",
       "prodExpectation": "the card must never read At gym",
       "steps": [
         {
@@ -666,7 +666,7 @@
       ],
       "requiredAcks": [],
       "cannotBeJudged": [],
-      "refExpectation": "the enter arrives in the background; the port confirms at +30 s on its ticker while production needs a second execution opportunity",
+      "refExpectation": "the enter arrives in the background; the port confirms at +10 s on its ticker while production needs a second execution opportunity",
       "prodExpectation": "the observation at the desk tells whether confirmation settled headlessly",
       "allowBackdatedLabel": true,
       "steps": [

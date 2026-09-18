@@ -635,7 +635,7 @@ final class CaptureController: ObservableObject {
     }
 
     /// The ticker body, callable by the simulator/host tests with a controlled
-    /// clock so the 30 s confirmation can be proven without waiting for it.
+    /// clock so the 10 s confirmation can be proven without waiting for it.
     func performTick(at stamp: CaptureStamp) {
         guard isRecording, let writer else { return }
         if let last = lastTickStamp {

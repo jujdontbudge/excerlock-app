@@ -11,7 +11,7 @@ compile-only selection stubs here; T11 wires the Motion/Placement/Gym adapters.
 | `signals/motion` | `CMPedometer` / `CMMotionActivity` providers and `WalkVerifier` |
 | `signals/gait` | Vision pose provider, periodicity detector and real-footage fixtures |
 | `signals/placement` | propped-vs-handheld classifier and treadmill recordings |
-| `signals/location` | Expo Location, geofence task runtime, 30 s arrival confirmation, gym visit log |
+| `signals/location` | Expo Location, geofence task runtime, 10 s arrival confirmation, gym visit log |
 | `signals/health` | HealthKit client and workout totals |
 | `signals/timeline` | fixture timeline player every fixture provider replays |
 | `screentime` (sibling `src/screentime`, not under `engine`) | FamilyControls/DeviceActivity native edge; ledger workspace types kept to compile |

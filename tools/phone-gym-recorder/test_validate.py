@@ -347,7 +347,7 @@ class ArchiveBuilder:
             "scenarioId": self.scenario,
             "permissionAtStart": "always",
             "accuracyAtStart": "fullAccuracy",
-            "productionParity": {"gymConfirmMs": 30000, "radiusMinMeters": 50, "radiusMaxMeters": 200, "maxGyms": 5},
+            "productionParity": {"gymConfirmMs": 10000, "radiusMinMeters": 50, "radiusMaxMeters": 200, "maxGyms": 5},
         }), encoding="utf-8")
         (directory / "schema.json").write_text(json.dumps({"schemaVersion": 1}), encoding="utf-8")
         (directory / "README.txt").write_text("Synthetic archive for the validator tests.\n", encoding="utf-8")
@@ -414,9 +414,9 @@ class ValidatorTests(unittest.TestCase):
         builder.finish(400)
 
         verdict, _ = build_verdict(builder, self.root)
-        # The window is 340 s: the first 30 s of confirmation plus the 15 s
-        # tolerance are not counted, so 295 s of missing presence are.
-        self.assertAlmostEqual(verdict["fnSeconds"], 295.0, delta=1.0)
+        # The window is 340 s: the first 10 s of confirmation plus the 15 s
+        # tolerance are not counted, so 315 s of missing presence are.
+        self.assertAlmostEqual(verdict["fnSeconds"], 315.0, delta=1.0)
         self.assertEqual(verdict["verdict"], "FAIL")
 
     def test_short_in_gym_window_without_presence_is_reported_but_not_a_failure(self) -> None:
@@ -810,7 +810,7 @@ class ValidatorTests(unittest.TestCase):
     def test_expected_table_is_read_not_hardcoded(self) -> None:
         expected = validate.load_expected()
         self.assertEqual(expected["scenarios"][0]["id"], "S01")
-        self.assertEqual(expected["thresholds"]["confirmMs"], 30000)
+        self.assertEqual(expected["thresholds"]["confirmMs"], 10000)
         # The shipped copy next to the validator must equal the app's fixture.
         fixture = json.loads((Path(validate.__file__).parent / "Fixtures" / "EXPECTED.json").read_text(encoding="utf-8"))
         self.assertEqual(expected, fixture)

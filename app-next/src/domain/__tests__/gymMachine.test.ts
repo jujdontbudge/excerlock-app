@@ -6,21 +6,21 @@ const row = (id: string, regionId: string, type: 'enter' | 'exit', atMs: number)
   atMs,
   receivedAtMs: atMs,
 });
-test('enter confirms only on a later actual wake after thirty seconds', () => {
+test('enter confirms only on a later actual wake after ten seconds', () => {
   const pending = reduceGym(createGymState(0), { kind: 'records', records: [row('e', 'a', 'enter', 1000)] }, 1000);
   expect(confirmedGymRegions(pending)).toEqual([]);
-  expect(confirmedGymRegions(reduceGym(pending, { kind: 'tick' }, 30999))).toEqual([]);
-  expect(confirmedGymRegions(reduceGym(pending, { kind: 'tick' }, 31000))).toEqual(['a']);
+  expect(confirmedGymRegions(reduceGym(pending, { kind: 'tick' }, 10999))).toEqual([]);
+  expect(confirmedGymRegions(reduceGym(pending, { kind: 'tick' }, 11000))).toEqual(['a']);
 });
 test('explicit exit before confirmation prevents presence; explicit exit after is immediate', () => {
   let state = reduceGym(
     createGymState(0),
-    { kind: 'records', records: [row('e', 'a', 'enter', 1000), row('x', 'a', 'exit', 20000)] },
-    20000,
+    { kind: 'records', records: [row('e', 'a', 'enter', 1000), row('x', 'a', 'exit', 10000)] },
+    10000,
   );
   expect(confirmedGymRegions(reduceGym(state, { kind: 'tick' }, 40000))).toEqual([]);
-  state = reduceGym(createGymState(0), { kind: 'records', records: [row('e2', 'a', 'enter', 1000)] }, 31000);
-  state = reduceGym(state, { kind: 'records', records: [row('x2', 'a', 'exit', 32000)] }, 32000);
+  state = reduceGym(createGymState(0), { kind: 'records', records: [row('e2', 'a', 'enter', 1000)] }, 11000);
+  state = reduceGym(state, { kind: 'records', records: [row('x2', 'a', 'exit', 12000)] }, 12000);
   expect(confirmedGymRegions(state)).toEqual([]);
   expect(gymDwellMs(state, 'a', 99999)).toBe(1000);
 });
@@ -38,15 +38,15 @@ test('duplicates, out-of-order delivery and overlapping places do not double cre
   expect(once.intervals).toHaveLength(2);
 });
 test('coverage loss invalidates live relief without inventing an exit interval', () => {
-  const active = reduceGym(createGymState(0), { kind: 'records', records: [row('e', 'a', 'enter', 0)] }, 30000);
+  const active = reduceGym(createGymState(0), { kind: 'records', records: [row('e', 'a', 'enter', 0)] }, 10000);
   const lost = reduceGym(active, { kind: 'coverageLost' }, 60000);
   expect(confirmedGymRegions(lost)).toEqual([]);
   expect(lost.intervals[0].exitedAt).toBe(60000);
-  expect(gymDwellMs(lost, 'a', 99999)).toBe(30000);
+  expect(gymDwellMs(lost, 'a', 99999)).toBe(50000);
   expect(confirmedGymRegions(reduceGym(lost, { kind: 'tick' }, 90000))).toEqual([]);
 });
-test('clock rewind cannot replay old enter', () => {
-  const expired = reduceGym(createGymState(10000), { kind: 'coverageLost' }, 20000);
+test('clock rewind cannot replay old enter after coverage loss', () => {
+  const expired = reduceGym(createGymState(10000), { kind: 'coverageLost', regionId: 'a' }, 20000);
   const replay = reduceGym(expired, { kind: 'records', records: [row('old', 'a', 'enter', 1000)] }, 5000);
   expect(replay.watermark).toBe(20000);
   expect(confirmedGymRegions(replay)).toEqual([]);
@@ -59,7 +59,7 @@ test('per-region coverage boundary closes dwell and cannot resurrect on tick', (
   );
   state = reduceGym(state, { kind: 'coverageLost', regionId: 'a' }, 40000);
   expect(confirmedGymRegions(state)).toEqual(['b']);
-  expect(gymDwellMs(state, 'a', 100000)).toBe(10000);
+  expect(gymDwellMs(state, 'a', 100000)).toBe(30000);
   expect(confirmedGymRegions(reduceGym(state, { kind: 'tick' }, 100000))).toEqual(['b']);
 });
 test('exit deterministically dominates enter at the same timestamp', () => {

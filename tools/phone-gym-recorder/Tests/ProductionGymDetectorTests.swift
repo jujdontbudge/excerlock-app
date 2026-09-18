@@ -46,29 +46,29 @@ final class ProductionGymDetectorTests: XCTestCase {
         )
     }
 
-    func testEnterConfirmsOnlyOnALaterTickAfterThirtySeconds() throws {
+    func testEnterConfirmsOnlyOnALaterTickAfterTenSeconds() throws {
         var state = try createGymState(now: 0)
         state = try reduceGym(state, event: .records([GymTransitionRecord.regionEvent(gymId: "a", type: .enter, atMs: 1_000)]), now: 1_000)
         XCTAssertEqual(confirmedGymRegions(state), [])
-        state = try reduceGym(state, event: .tick, now: 30_999)
+        state = try reduceGym(state, event: .tick, now: 10_999)
         XCTAssertEqual(confirmedGymRegions(state), [])
-        state = try reduceGym(state, event: .tick, now: 31_000)
+        state = try reduceGym(state, event: .tick, now: 11_000)
         XCTAssertEqual(confirmedGymRegions(state), ["a"])
-        XCTAssertEqual(state.intervals.first?.confirmedAt, 31_000)
+        XCTAssertEqual(state.intervals.first?.confirmedAt, 11_000)
     }
 
     func testExitBeforeConfirmationPreventsPresenceAndExitAfterIsImmediate() throws {
         var state = try createGymState(now: 0)
         state = try reduceGym(state, event: .records([
             GymTransitionRecord.regionEvent(gymId: "a", type: .enter, atMs: 1_000),
-            GymTransitionRecord.regionEvent(gymId: "a", type: .exit, atMs: 20_000),
-        ]), now: 20_000)
+            GymTransitionRecord.regionEvent(gymId: "a", type: .exit, atMs: 10_000),
+        ]), now: 10_000)
         state = try reduceGym(state, event: .tick, now: 40_000)
         XCTAssertEqual(confirmedGymRegions(state), [])
 
         var confirmed = try createGymState(now: 0)
-        confirmed = try reduceGym(confirmed, event: .records([GymTransitionRecord.regionEvent(gymId: "a", type: .enter, atMs: 1_000)]), now: 31_000)
-        confirmed = try reduceGym(confirmed, event: .records([GymTransitionRecord.regionEvent(gymId: "a", type: .exit, atMs: 32_000)]), now: 32_000)
+        confirmed = try reduceGym(confirmed, event: .records([GymTransitionRecord.regionEvent(gymId: "a", type: .enter, atMs: 1_000)]), now: 11_000)
+        confirmed = try reduceGym(confirmed, event: .records([GymTransitionRecord.regionEvent(gymId: "a", type: .exit, atMs: 12_000)]), now: 12_000)
         XCTAssertEqual(confirmedGymRegions(confirmed), [])
         XCTAssertEqual(gymDwellMs(confirmed, regionId: "a", now: 99_999), 1_000)
     }
@@ -93,14 +93,14 @@ final class ProductionGymDetectorTests: XCTestCase {
         state = try reduceGym(state, event: .coverageLost(regionId: nil), now: 60_000)
         XCTAssertEqual(confirmedGymRegions(state), [])
         XCTAssertEqual(state.intervals.first?.exitedAt, 60_000)
-        XCTAssertEqual(gymDwellMs(state, regionId: "a", now: 99_999), 30_000)
+        XCTAssertEqual(gymDwellMs(state, regionId: "a", now: 99_999), 50_000)
         let ticked = try reduceGym(state, event: .tick, now: 90_000)
         XCTAssertEqual(confirmedGymRegions(ticked), [])
     }
 
-    func testClockRewindCannotReplayAnOldEnter() throws {
+    func testClockRewindCannotReplayAnOldEnterAfterCoverageLoss() throws {
         var expired = try createGymState(now: 10_000)
-        expired = try reduceGym(expired, event: .coverageLost(regionId: nil), now: 20_000)
+        expired = try reduceGym(expired, event: .coverageLost(regionId: "a"), now: 20_000)
         let replay = try reduceGym(expired, event: .records([GymTransitionRecord.regionEvent(gymId: "a", type: .enter, atMs: 1_000)]), now: 5_000)
         XCTAssertEqual(replay.watermark, 20_000)
         XCTAssertEqual(confirmedGymRegions(replay), [])
@@ -114,7 +114,7 @@ final class ProductionGymDetectorTests: XCTestCase {
         ]), now: 30_000)
         state = try reduceGym(state, event: .coverageLost(regionId: "a"), now: 40_000)
         XCTAssertEqual(confirmedGymRegions(state), ["b"])
-        XCTAssertEqual(gymDwellMs(state, regionId: "a", now: 100_000), 10_000)
+        XCTAssertEqual(gymDwellMs(state, regionId: "a", now: 100_000), 30_000)
         XCTAssertEqual(confirmedGymRegions(try reduceGym(state, event: .tick, now: 100_000)), ["b"])
     }
 

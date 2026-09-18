@@ -29,7 +29,7 @@ const productionFixturesDirectory = resolve(here, '../../../app-next/src/engine/
 
 const COPIED_FIXTURES = ['gym-enter-exit.json', 'region-blip.json', 'quiet.json'];
 const TICK_MS = 1_000;
-/// Long enough for a 30 s confirmation and any coverage due to settle after the
+/// Long enough for a 10 s confirmation and any coverage due to settle after the
 /// last event, so the final derived state is stable in both implementations.
 const TAIL_MS = 65_000;
 
@@ -245,8 +245,8 @@ function main(): void {
   const enterExit = results.get('gym-enter-exit')!;
   assert.deepEqual(
     enterExit.intervals.map((interval) => interval.confirmedAt),
-    [31_000],
-    'gym-enter-exit must confirm exactly 30 s after the enter receipt',
+    [11_000],
+    'gym-enter-exit must confirm exactly 10 s after the enter receipt',
   );
   assert.deepEqual(
     enterExit.intervals.map((interval) => interval.exitedAt),
@@ -279,7 +279,7 @@ function main(): void {
   );
 
   const passby = results.get('gym-passby')!;
-  assert.deepEqual(passby.intervals, [], 'a 25 s pass-by must never open an interval');
+  assert.deepEqual(passby.intervals, [], 'a 6 s pass-by must never open an interval');
   assert.deepEqual(passby.transitions.map((entry) => entry.transition), ['enter_received', 'exit_received']);
 
   const coverage = results.get('gym-coverage-lost')!;
@@ -290,7 +290,7 @@ function main(): void {
   const coverageStep = coverage.steps.find((step) => step.trigger === 'coverage_lost');
   assert(coverageStep, 'coverageLost must produce a derived step');
   assert.equal(coverageStep.intervals.length, 1, 'coverageLost must keep the visit it closes at that step');
-  assert.equal(coverageStep.intervals[0].confirmedAt, 30_000);
+  assert.equal(coverageStep.intervals[0].confirmedAt, 10_000);
   assert.equal(coverageStep.intervals[0].exitedAt, 60_000, 'coverageLost must close at max(confirmedAt, lostAt)');
   assert.deepEqual(
     coverageStep.regions['gym-primary'],
@@ -315,7 +315,7 @@ function main(): void {
   });
   assert.deepEqual(
     twoVisits.intervals.map((interval) => interval.confirmedAt),
-    [30_000, 150_000],
+    [10_000, 130_000],
     'enter-exit-enter must yield two intervals with fresh confirmations',
   );
 

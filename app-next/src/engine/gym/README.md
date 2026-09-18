@@ -1,7 +1,7 @@
 # Gym engine (T01 stub)
 
 Nothing yet, by design. The gym signal path lives in
-`engine/signals/location`: `GeofenceEventProcessor` (the fixed 30-second
+`engine/signals/location`: `GeofenceEventProcessor` (the fixed 10-second
 arrival confirmation), `GymVisitLog` / `AsyncStorageGymVisitLog` (the
 on-device, coordinate-free interval store), `LocationTaskRuntime` and
 `registerLocationTasks`. `GymAdapter` (T11 §6) implements the port's visit

@@ -1,5 +1,5 @@
 import type { GymTransitionRecord } from '../engine/signals/location/GymVisitLog';
-export const GYM_CONFIRM_MS = 30_000;
+export const GYM_CONFIRM_MS = 10_000;
 export type GymInterval = {
   id: string;
   regionId: string;

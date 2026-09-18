@@ -30,7 +30,7 @@ manual check-in intact. With no enabled location condition, the host neither sel
 reads location.
 
 Raw presence changes immediately when a region event arrives: there is no dwell state and
-`isInsideRegion` does not wait. A separate, invisible 30-second confirmation debounce delays when the
+`isInsideRegion` does not wait. A separate, invisible 10-second confirmation debounce delays when the
 arrival counts; an exit during that window cancels the arrival. Manual and automatic arrivals share
 that processor. Confirmed arrivals append only `{regionId, atMs}` to AsyncStorage. Coordinates are used
 only in memory for the OS boundary and distance calculation; they are never logged or sent to
@@ -48,11 +48,11 @@ persisting them. Walk keep-alive starts foreground-authorized high-accuracy Fitn
 iOS background-location indicator visible, and stops them explicitly. Expo permission and registered
 task state are rehydrated after a JS reload.
 
-Automated tests cover the shared provider contract, five-gym/radius limits, exact 30-second timing,
+Automated tests cover the shared provider contract, five-gym/radius limits, exact 10-second timing,
 quick enter-exit cancellation, permission prompt timing, SDK translation, module-scope registration,
 fixture-default selection, coordinate-free persistence, and native-state hydration. This lane had no
 physical iPhone. Simulator tests cannot establish that iOS relaunches the app for a real region event
-or grants the headless task enough execution time to finish the 30-second debounce and persist the
+or grants the headless task enough execution time to finish the 10-second debounce and persist the
 visit; those checks remain mandatory before claiming physical-device geofencing. If the Task Manager
 window is too short, the debounce must move into a small native Swift module without widening
 `LocationProvider`.

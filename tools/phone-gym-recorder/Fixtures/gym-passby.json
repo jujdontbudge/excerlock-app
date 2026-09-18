@@ -1,10 +1,10 @@
 {
   "name": "gym-passby",
   "version": 1,
-  "description": "A 25 s pass through the circle: enter, an accurate fix inside, then exit before the 30 s confirmation. The reducer may receive the enter and must never confirm.",
+  "description": "A 6 s pass through the circle: enter, an accurate fix inside, then exit before the 10 s confirmation. The reducer may receive the enter and must never confirm.",
   "timeline": [
     { "atMs": 1000, "event": "location.enterRegion", "payload": { "regionId": "gym-primary" } },
-    { "atMs": 5000, "event": "location.update", "payload": { "lat": 40.741, "lon": -73.989, "accuracy": 9 } },
-    { "atMs": 26000, "event": "location.exitRegion", "payload": { "regionId": "gym-primary" } }
+    { "atMs": 4000, "event": "location.update", "payload": { "lat": 40.741, "lon": -73.989, "accuracy": 9 } },
+    { "atMs": 7000, "event": "location.exitRegion", "payload": { "regionId": "gym-primary" } }
   ]
 }

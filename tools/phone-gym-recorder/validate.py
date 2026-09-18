@@ -69,7 +69,7 @@ DEMOTING_REASONS = (
 
 _DEFAULT_THRESHOLDS: dict[str, Any] = {
     "confidenceToleranceSeconds": 15.0,
-    "confirmMs": 30_000,
+    "confirmMs": 10_000,
     "confirmToleranceMs": 1_500,
     "slowDetectionSeconds": 180.0,
     "slowReleaseSeconds": 600.0,

@@ -6,7 +6,7 @@ let recorderSchemaVersion = 1
 /// The production gym constants this harness mirrors. They are recorded in
 /// every archive's metadata.json so a reader never has to guess which build of
 /// the reducer the port tracked.
-let gymConfirmMs: Int64 = 30_000
+let gymConfirmMs: Int64 = 10_000
 let gymRadiusMinimumMeters = 50.0
 let gymRadiusMaximumMeters = 200.0
 let gymRadiusStepMeters = 10.0

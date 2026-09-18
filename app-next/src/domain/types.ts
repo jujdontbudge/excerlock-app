@@ -47,7 +47,7 @@ export type PlacementEvidence = { state: 'propped' | 'handheld' | 'unknown'; liv
 
 export type GymPresence = {
   placeId: string; // the saved gym being confirmed or occupied
-  startedAt: string; // ISO, when the 30-second presence confirmation began
+  startedAt: string; // ISO, when the presence confirmation began
   confirmedAt: string | null; // ISO once presence held for the full confirmation; null while confirming
 };
 

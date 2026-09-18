@@ -91,7 +91,7 @@ final class ScenarioCatalogTests: XCTestCase {
     func testThresholdsMatchTheProductionConstantsTheyMirror() throws {
         let table = try table()
         let thresholds = table.thresholds
-        XCTAssertEqual(Int64(thresholds.confirmMs), gymConfirmMs, "the 30 s confirmation must be the reducer's own constant")
+        XCTAssertEqual(Int64(thresholds.confirmMs), gymConfirmMs, "the 10 s confirmation must be the reducer's own constant")
         XCTAssertEqual(thresholds.radiusMinMeters, gymRadiusMinimumMeters)
         XCTAssertEqual(thresholds.radiusMaxMeters, gymRadiusMaximumMeters)
         XCTAssertEqual(thresholds.radiusStepMeters, gymRadiusStepMeters)
