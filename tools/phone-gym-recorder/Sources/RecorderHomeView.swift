@@ -25,6 +25,7 @@ struct GymRecorderHomeView: View {
     @State private var shareURL: URL?
     @State private var pendingDelete: SessionSummary?
     @State private var showMore = false
+    @State private var showGymPicker = false
     @State private var showActions = false
     @State private var showBackdate = false
     @State private var showNote = false
@@ -66,6 +67,7 @@ struct GymRecorderHomeView: View {
                 showNote: $showNote
             )
         }
+        .sheet(isPresented: $showGymPicker) { GymPickerView(controller: controller) }
         .sheet(isPresented: $showActions) { ExcerLockActionsSheet(controller: controller) }
         .sheet(isPresented: $showBackdate) { BackdateSheet(controller: controller) }
         .sheet(isPresented: $showNote) { NoteSheet(controller: controller, text: $noteText) }
@@ -143,27 +145,20 @@ struct GymRecorderHomeView: View {
         moreLink
     }
 
+    /// Opens the map picker (search, pin, radius, "I'm here"), the same way a
+    /// gym is set in ExcerLock. Once set, the button shows the circle and
+    /// re-opens the picker on that circle.
     private var gymButton: some View {
         let gym = controller.registry.gymUnderTest
         let needsPermission = controller.nextPermissionAction != nil
-        let title: String
-        if controller.isAveragingGym {
-            title = "Hold still… \(controller.averagingFixCount)"
-        } else if gym != nil {
-            title = "Gym set ✓"
-        } else {
-            title = "I'm at the gym"
-        }
         return VStack(spacing: 6) {
-            giantButton(title, symbol: "dumbbell.fill", primary: gym == nil && !needsPermission && !controller.isAveragingGym) {
-                controller.beginGymAveraging(name: gym?.name ?? "Gym") { _ in }
+            giantButton(gym == nil ? "Set the gym" : "Gym set ✓", symbol: gym == nil ? "mappin.and.ellipse" : "checkmark.circle.fill", primary: gym == nil && !needsPermission) {
+                showGymPicker = true
             }
-            .disabled(controller.isAveragingGym || !controller.locationPermissionIsUsable)
-            if controller.isAveragingGym {
-                ProgressView(value: Double(controller.averagingFixCount), total: GymRegistry.averagingWindowSeconds)
-                    .tint(RecorderTheme.orange)
-            } else if gym == nil, let note = controller.lastGymAverageNote {
-                Text(note).font(.footnote).foregroundStyle(RecorderTheme.error)
+            if let gym {
+                Text("\(gym.name) · \(Int(gym.radiusMeters)) m · tap to change")
+                    .font(.footnote)
+                    .foregroundStyle(RecorderTheme.secondaryText)
                     .multilineTextAlignment(.center)
             }
         }
@@ -382,7 +377,7 @@ struct GymRecorderHomeView: View {
                 NavigationLink {
                     GymSetupSheet(controller: controller)
                 } label: {
-                    LabeledContent("Gym circle (advanced)", value: controller.registry.gymUnderTest.map { "\(Int($0.radiusMeters)) m" } ?? "not set")
+                    LabeledContent("Gym circle", value: controller.registry.gymUnderTest.map { "\(Int($0.radiusMeters)) m" } ?? "not set")
                 }
                 NavigationLink {
                     ExcerLockSetupSheet(controller: controller)
@@ -534,14 +529,10 @@ struct GymRecorderHomeView: View {
         }
     }
 
-    /// The circle's numbers. Deliberately off the happy path: typed
-    /// coordinates, the radius stepper and the saved-circle list.
+    /// The saved circles: which one is under test, its radius, and deleting.
+    /// Setting a circle happens on Home through the map picker.
     private struct GymSetupSheet: View {
         @ObservedObject var controller: CaptureController
-        @Environment(\.dismiss) private var dismiss
-        @State private var name = ""
-        @State private var typedLatitude = ""
-        @State private var typedLongitude = ""
 
         var body: some View {
             Form {
@@ -558,23 +549,10 @@ struct GymRecorderHomeView: View {
                         )
                     }
                 }
-                Section("Type the coordinates") {
-                    TextField("Name", text: $name)
-                    TextField("Latitude", text: $typedLatitude).keyboardType(.numbersAndPunctuation)
-                    TextField("Longitude", text: $typedLongitude).keyboardType(.numbersAndPunctuation)
-                    Button("Save typed gym") {
-                        if let latitude = Double(typedLatitude), let longitude = Double(typedLongitude) {
-                            controller.registry.addTypedGym(
-                                name: name,
-                                latitude: latitude,
-                                longitude: longitude,
-                                radiusMeters: controller.registry.gymUnderTest?.radiusMeters ?? gymRadiusDefaultMeters
-                            )
-                            dismiss()
-                        }
-                    }
-                }
                 Section("Saved circles") {
+                    if controller.registry.gyms.isEmpty {
+                        Text("None yet. Tap Set the gym on Home.").foregroundStyle(RecorderTheme.secondaryText)
+                    }
                     ForEach(controller.registry.gyms) { gym in
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(gym.name)\(gym.isUnderTest ? " · under test" : "")")

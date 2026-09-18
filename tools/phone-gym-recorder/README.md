@@ -10,7 +10,8 @@ saw in ExcerLock.
 - Production bundle ID: `com.johansardar.excerlock` (untouched, not overwritten)
 - Storage: this app's own sandbox only; no App Group, no URL scheme, no
   Trace Lab handshake
-- Networking: none; no uploads, no accounts, no map tiles
+- Networking: only Apple MapKit for the gym picker (map tiles, place search,
+  reverse geocoding); no uploads, no accounts, no ExcerLock servers
 - Delivery: existing Apple Development signing and direct connected-device
   install only (never `-allowProvisioningUpdates`)
 - Permissions: Location "While Using"/"Always" and Motion & Fitness
@@ -33,11 +34,15 @@ and only the next one is orange:
    once everything is granted. Recording is still allowed under *any*
    permission state (S14–S16 exist to be judged); the current state is under
    **More → Permissions**.
-2. **I'm at the gym** — stand at the entrance and tap it; it averages 20 s of
-   fixes (rejecting fixes worse than 65 m) and becomes **Gym set ✓**. No
-   coordinates are shown on Home. Typed coordinates, the 50–200 m radius
-   stepper and the saved-circle list live under **More → Gym circle
-   (advanced)**.
+2. **Set the gym** — the same picker ExcerLock uses, in native MapKit
+   (`Sources/GymPickerView.swift` mirrors `app-next/src/features/gym-picker/`):
+   search a gym name or address, or tap **I'm here** to drop the pin on your
+   current fix (20 s accuracy-weighted average, fixes worse than 65 m rejected,
+   stopped as soon as you pan), then drag the map under the pin, set the
+   50–200 m radius and **Save gym**. The button becomes **Gym set ✓** with the
+   name and radius; tapping it reopens the picker on that circle. The
+   saved-circle list (which one is under test, delete) lives under **More →
+   Gym circle**.
 3. **Start** — a free session, starting as *Away*. Picking a script (**More →
    Run a script**) and the ExcerLock setup declarations (**More → ExcerLock
    setup**) are optional and off the happy path.
@@ -70,7 +75,7 @@ on the way out, **Finish**.
 
 | Id | What you do | Taps you owe the strip |
 |---|---|---|
-| S01 | **Register the gym** — stand at the entrance, tap I'm at the gym, save the same circle in ExcerLock. | Setup only: no place taps. |
+| S01 | **Register the gym** — set the gym (search, I'm here or the pin), save the same circle in ExcerLock. | Setup only: no place taps. |
 | S02 | **Arrive on foot** — start ≥ 300 m away, walk in. | Away → I'm in the gym (at the desk). |
 | S03 | **Stay there** — stay in_gym ≥ 20 min. | In_gym, plus two *ExcerLock shows…* taps. |
 | S04 | **Use another app while there** — 5 min in another app, 5 min locked, then return. | In_gym + **Done** on the three switch/lock/return steps. |
@@ -114,7 +119,7 @@ as `gym-capture-<session-id>.zip`:
 | `observations.ndjson` | What you saw in ExcerLock (card, locked app, canary) and your setup declarations. Human observation, never sensor truth. |
 | `decisions.ndjson` | The Swift port of the production reducer fed by this app's own region events, per-fix sampled distance/accuracy band, manual check-in probes. Intended decisions, never claimed enforcement. |
 | `system.ndjson` | Session, permissions, lifecycle, recording gaps, `location_stream_suspended`/`location_stream_coverage`, Low Power Mode, clock mapping, recovery. |
-| `gym.json` | The registered circle(s): id, name, centre, radius, how it was set, averaged accuracy, fixes averaged. |
+| `gym.json` | The registered circle(s): id, name, centre, radius, how it was set (`search`, `map_pin`, `current_fix_average`), averaged accuracy, fixes averaged. |
 | `metadata.json` | Build/source commit, device, permissions at start, the production parity constants this build mirrors. |
 | `schema.json` | Field/time-base/unit guide. |
 | `manifest.json` | Completion status, duration, counts, per-stream first/last receipts, suspensions, per-label-window coverage, scenario id, gym ids and the reducer intervals held at finish. |
@@ -246,5 +251,6 @@ install.
   eyes on the card and a locked app.
 - **This app cannot force ExcerLock states.** Permission changes, auto-detect,
   force-quit and reboot are done by you and self-reported.
-- **No map, on purpose.** The circle is set by standing there or typing
-  coordinates, so the lab needs no network; plots come from `distance.csv`.
+- **The map is only for setting the circle.** Tiles, search and reverse
+  geocoding come from Apple MapKit; nothing from the archive is sent anywhere,
+  and plots still come from `distance.csv`.

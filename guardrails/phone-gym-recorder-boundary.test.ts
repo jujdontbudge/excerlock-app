@@ -70,7 +70,10 @@ describe("phone gym recorder isolation", () => {
       .map(readUtf8)
       .join("\n");
     expect(source).not.toMatch(/URLSession|NWConnection|uploadTask|dataTask/);
-    expect(source).not.toMatch(/MKMapView|import\s+MapKit/);
+    // MapKit is allowed for the gym picker (tiles, search and reverse
+    // geocoding go to Apple, never to an ExcerLock server); the archive itself
+    // still never leaves the sandbox except by the person's share sheet.
+    expect(source).not.toMatch(/MKMapView/);
     expect(source).not.toMatch(/identifierForVendor|advertisingIdentifier/);
     expect(source).not.toMatch(/import\s+Expo/);
     expect(source).not.toContain("com.johansardar.excerlock.lab.linkedtrace");

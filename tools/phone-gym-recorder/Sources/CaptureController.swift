@@ -157,9 +157,6 @@ final class CaptureController: ObservableObject {
     @Published private(set) var activePlace: GymPlaceLabel = .away
     @Published private(set) var finishNote: String?
     @Published private(set) var errorMessage: String?
-    @Published private(set) var averagingFixCount = 0
-    @Published private(set) var isAveragingGym = false
-    @Published private(set) var lastGymAverageNote: String?
 
     let repository: SessionRepository
     let registry: GymRegistry
@@ -296,48 +293,13 @@ final class CaptureController: ObservableObject {
         setup = declaration
     }
 
-    /// Stands at the entrance for the averaging window, taking one fresh fix a
-    /// second. The average is accuracy-weighted and rejects fixes worse than
-    /// 65 m, exactly as `GymRegistry.averagedLocation` documents.
-    func beginGymAveraging(
-        seconds: Double = GymRegistry.averagingWindowSeconds,
-        name: String,
-        completion: @escaping (Bool) -> Void
-    ) {
-        guard !isAveragingGym else { return }
-        isAveragingGym = true
-        averagingFixCount = 0
-        lastGymAverageNote = nil
-        var collected: [GymFixSample] = []
-        let deadline = Date().addingTimeInterval(seconds)
-
-        func poll() {
-            location.probeCurrentLocation { [weak self] fix in
-                DispatchQueue.main.async {
-                    guard let self else { return }
-                    if let fix { collected.append(fix) }
-                    self.averagingFixCount = collected.count
-                    if Date() < deadline {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { poll() }
-                    } else {
-                        self.isAveragingGym = false
-                        let usable = collected.filter { $0.horizontalAccuracyM > 0 && $0.horizontalAccuracyM <= GymRegistry.maximumAcceptedAccuracyM }
-                        if GymRegistry.averagedLocation(from: collected) != nil {
-                            _ = self.registry.addAveragedGym(name: name, fixes: collected)
-                            self.lastGymAverageNote = String(
-                                format: "Averaged %d fixes (%d usable), mean accuracy %.0f m",
-                                collected.count, usable.count, usable.isEmpty ? 0 : usable.map(\.horizontalAccuracyM).reduce(0, +) / Double(usable.count)
-                            )
-                            completion(true)
-                        } else {
-                            self.lastGymAverageNote = "Only \(usable.count) usable fixes in \(Int(seconds)) s; nothing was saved. Stand still, outdoors if possible."
-                            completion(false)
-                        }
-                    }
-                }
-            }
+    /// One fresh fix for the gym picker's "I'm here" shortcut. The picker
+    /// averages several of these itself, with the same accuracy reject as
+    /// `GymRegistry.averagedLocation`.
+    func probeCurrentFix(completion: @escaping (GymFixSample?) -> Void) {
+        location.probeCurrentLocation { fix in
+            DispatchQueue.main.async { completion(fix) }
         }
-        poll()
     }
 
     var currentScenario: GymScenario? { catalog.scenario(id: scenarioId) }

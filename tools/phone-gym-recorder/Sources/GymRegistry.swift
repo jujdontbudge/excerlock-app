@@ -14,7 +14,7 @@ struct SavedGym: Codable, Equatable, Identifiable {
     let latitude: Double
     let longitude: Double
     var radiusMeters: Double
-    /// `current_fix_average` or `typed`, so a reader knows how the centre was set.
+    /// `search`, `map_pin` or `current_fix_average`, so a reader knows how the centre was set.
     let setBy: String
     let setAtWallTimeMs: Int64
     let fixesAveraged: Int
@@ -112,44 +112,45 @@ final class GymRegistry: ObservableObject {
         )
     }
 
+    /// Saves the circle the picker settled on and makes it the one under test.
+    /// `setBy` says how the centre was chosen: `search`, `map_pin` or
+    /// `current_fix_average` (with the fixes averaged and their mean accuracy).
+    /// Passing an existing `id` replaces that circle in place, so editing keeps
+    /// the id the archive already refers to.
     @discardableResult
-    func addAveragedGym(name: String, fixes: [GymFixSample], clock: CaptureClock = SystemCaptureClock()) -> SavedGym? {
-        guard canAddMore, let averaged = Self.averagedLocation(from: fixes) else { return nil }
-        let gym = SavedGym(
-            id: "gym-\(UUID().uuidString.lowercased().prefix(8))",
-            name: name.isEmpty ? "Gym \(gyms.count + 1)" : name,
-            latitude: averaged.latitude,
-            longitude: averaged.longitude,
-            radiusMeters: gymRadiusDefaultMeters,
-            setBy: "current_fix_average",
-            setAtWallTimeMs: clock.now().wallTimeMs,
-            fixesAveraged: averaged.count,
-            averageAccuracyM: averaged.accuracyM,
-            isUnderTest: gyms.isEmpty
-        )
-        gyms.append(gym)
-        save()
-        return gym
-    }
-
-    @discardableResult
-    func addTypedGym(name: String, latitude: Double, longitude: Double, radiusMeters: Double, clock: CaptureClock = SystemCaptureClock()) -> SavedGym? {
-        guard canAddMore else { return nil }
+    func savePicked(
+        id: String? = nil,
+        name: String,
+        latitude: Double,
+        longitude: Double,
+        radiusMeters: Double,
+        setBy: String,
+        fixesAveraged: Int = 0,
+        averageAccuracyM: Double? = nil,
+        clock: CaptureClock = SystemCaptureClock()
+    ) -> SavedGym? {
         guard (-90...90).contains(latitude), (-180...180).contains(longitude) else { return nil }
         guard !(latitude == 0 && longitude == 0) else { return nil }
+        let existingIndex = id.flatMap { id in gyms.firstIndex { $0.id == id } }
+        guard existingIndex != nil || canAddMore else { return nil }
         let gym = SavedGym(
-            id: "gym-\(UUID().uuidString.lowercased().prefix(8))",
-            name: name.isEmpty ? "Gym \(gyms.count + 1)" : name,
+            id: existingIndex.map { gyms[$0].id } ?? "gym-\(UUID().uuidString.lowercased().prefix(8))",
+            name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Gym \(gyms.count + 1)" : name.trimmingCharacters(in: .whitespacesAndNewlines),
             latitude: latitude,
             longitude: longitude,
             radiusMeters: Self.normalisedRadius(radiusMeters),
-            setBy: "typed",
+            setBy: setBy,
             setAtWallTimeMs: clock.now().wallTimeMs,
-            fixesAveraged: 0,
-            averageAccuracyM: nil,
-            isUnderTest: gyms.isEmpty
+            fixesAveraged: fixesAveraged,
+            averageAccuracyM: averageAccuracyM,
+            isUnderTest: true
         )
-        gyms.append(gym)
+        if let existingIndex {
+            gyms[existingIndex] = gym
+        } else {
+            gyms.append(gym)
+        }
+        for index in gyms.indices { gyms[index].isUnderTest = gyms[index].id == gym.id }
         save()
         return gym
     }
