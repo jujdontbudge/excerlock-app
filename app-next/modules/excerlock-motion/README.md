@@ -14,6 +14,30 @@ idempotent `start`/`stop`, historical `queryActivity`/`querySteps`, device-motio
 contract. Expo autolinking discovers the pod through `expo-module.config.json`; the config plugin
 adds `NSMotionUsageDescription`, so `expo prebuild --clean` regenerates all required native wiring.
 
+### Collect-only streams (ADR 0042, runtime version 3)
+
+The binary also exposes streams nothing in the unlock gate reads. They exist so an OTA JS bundle can
+collect richer sensor evidence without a new App Store binary; `src/runtime/detection/sensorStreams.ts`
+catalogues them and `runSensorStreamSmoke` is the JS-side proof.
+
+| Surface | Native source | Availability flag(s) | Motion & Fitness |
+|---|---|---|---|
+| `onCadence` gains `distanceMeters`, `currentPaceSecondsPerMeter`, `floorsAscended`, `floorsDescended` | `CMPedometerData` | `distance`, `pace`, `floorCounting` | yes (same `start`) |
+| `onDeviceMotion` gains `attitude` (roll/pitch/yaw), `quaternion`, `heading` (null when the frame has none), calibrated `magneticField` + accuracy | `CMDeviceMotion` | `deviceMotion` | no |
+| `startDeviceMotion({ referenceFrame })` | `CMAttitudeReferenceFrame`; the frame must be in `availableAttitudeReferenceFrames()` | `deviceMotion` | no |
+| `startAltimeter` / `stopAltimeter` → `onAltitude` | `CMAltimeter` relative altitude + pressure | `relativeAltitude` | yes |
+| `startMagnetometer({ intervalMs })` / `stopMagnetometer` → `onMagnetometer` (20–1000 ms, default 100) | `CMMotionManager` raw magnetometer | `magnetometer` | no |
+| `startPedometerEvents` / `stopPedometerEvents` → `onPedometerEvent` (`pause` / `resume`) | `CMPedometer.startEventUpdates` | `pedometerEvents` | yes |
+| `recordAccelerometer(seconds)` / `queryRecordedAccelerometer(from, to)` | `CMSensorRecorder` | `sensorRecorder` (false on every iPhone to date) | yes |
+
+Every `start*` guard checks its availability flag **before** touching Core Motion and throws
+`ERR_MOTION_UNAVAILABLE` (`SensorUnavailableException`, reason names the stream) when the framework
+says no; nothing is faked. Because the guard runs first, an unavailable stream never raises the Motion &
+Fitness prompt even while authorization is undetermined. Every `stop*` is idempotent and `OnDestroy`
+stops everything. GPS speed/course are not here: `expo-location` already delivers `coords.speed` and
+`coords.heading` (= `CLLocation.course`) to `LocationSample.speedMps` / `courseDeg` without a new
+Always grant.
+
 The production signal feed constructs `WalkVerifier` only when the user has selected a stop-grace
 period, sends both native event streams through it, and publishes cadence-freshness and grace-period
 deadlines with an on-device watchdog. A walking classification by itself never becomes an active
@@ -86,7 +110,15 @@ A private hook (`CMActivityManagerInternal simulateMotionState:withState:withHin
 the runtime binary, but invoking it aborts the process on an uninitialised internal semaphore — and
 it is private API regardless. It is not a route.
 
-**Consequence for this module:** `motionAvailabilityPayload()` maps one-to-one onto the three calls
-measured `false`, so on a simulator the module degrades to a hard unavailability error and **no Walk
-& Scroll code path past the availability gate can ever execute there**. `FixtureMotionProvider`
-remains the only way to exercise Walk & Scroll behaviour without hardware — which is what it is for.
+**Consequence for this module:** `motionAvailabilityPayload()` maps one-to-one onto the framework's
+own availability calls (all eleven measure `false` on the simulator), so on a simulator the module
+degrades to a hard unavailability error and **no Walk & Scroll code path past the availability gate
+can ever execute there**. `FixtureMotionProvider` remains the only way to exercise Walk & Scroll
+behaviour without hardware — which is what it is for. The e2e-next scenario `E2E-M1` uses exactly
+this: on the simulator it proves every bridge function exists, rejects with the documented code and
+stops cleanly (`app-next/e2e-next/README.md`); sensor readings stay a device-lane concern.
+
+Do **not** grant motion to the simulator before launching the app: with Motion & Fitness authorized
+the runtime's boot reconcile starts detection, the motion-less simulator rejects it and the boot
+gate fails (run `20260919T0448Z`, Sentry `EXCERLOCK-MOBILE-H`). Every supported iPhone ships Core
+Motion, so that path is simulator-only.

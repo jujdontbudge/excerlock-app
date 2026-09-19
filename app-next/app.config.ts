@@ -65,7 +65,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: linkedRecorderResearch ? [linkedRecorderConfig.URL_SCHEME] : ['excerlock', ...(google ? [google.scheme] : [])],
     name: config.name,
     slug: config.slug,
-    runtimeVersion: linkedRecorderResearch ? linkedRecorderConfig.RUNTIME_VERSION : '2',
+    // 3: the ExcerlockMotion native surface grew (attitude, altimeter, magnetometer,
+    // pedometer events, sensor recorder) — JS built for it must never reach a
+    // runtime-2 binary (docs/agents/operations.md "Bumping runtimeVersion").
+    runtimeVersion: linkedRecorderResearch ? linkedRecorderConfig.RUNTIME_VERSION : '3',
     ios: {
       ...config.ios,
       ...(linkedRecorderResearch ? researchIos(nativeConfig.ios, linkedIdentifiers) : nativeConfig.ios),

@@ -24,7 +24,7 @@ test(`actual Expo loader preserves ${profile} native configuration and excludes 
   assert.equal(config.extra.environment, environment);
   assert.ok(config.scheme.includes('com.googleusercontent.apps.fixture'));
   assert.equal(config.extra.clientAuth.googleRedirectUri, 'com.googleusercontent.apps.fixture:/oauthredirect');
-  assert.equal(config.runtimeVersion, '2');
+  assert.equal(config.runtimeVersion, '3');
   assert.equal(config.updates.checkAutomatically, 'ON_LOAD');
   assert.deepEqual(config.updates.requestHeaders, { 'expo-channel-name': require('../eas.json').build[profile].channel });
   assert.equal(config.ios.bundleIdentifier, 'com.johansardar.excerlock');

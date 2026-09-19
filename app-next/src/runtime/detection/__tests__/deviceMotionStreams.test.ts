@@ -1,6 +1,7 @@
 import type { DeviceMotionSample as NativeDeviceMotionSample } from '../../../../modules/excerlock-motion/src/ExcerlockMotion.types';
 import type { DeviceMotionSample, PhonePlacementProvider } from '../../../engine/signals/placement/PhonePlacementProvider';
 import { PLACEMENT_SAMPLE_INTERVAL_MS, decimateDeviceMotion, strideSourceFrom } from '../deviceMotionStreams';
+import { nativeDeviceMotionSample } from '../testing/deviceMotionSample';
 
 function fakeProvider() {
   const listeners = new Set<(sample: NativeDeviceMotionSample) => void>();
@@ -11,12 +12,12 @@ function fakeProvider() {
     onSample: (callback: (sample: NativeDeviceMotionSample) => void) => { listeners.add(callback); return () => listeners.delete(callback); },
   };
   const emit = (timestampMs: number) => {
-    const sample: NativeDeviceMotionSample = {
+    const sample: NativeDeviceMotionSample = nativeDeviceMotionSample({
       timestampMs,
       gravity: { x: 0, y: 0, z: -1 },
       rotationRate: { x: 0.1, y: 0, z: 0 },
       userAcceleration: { x: 0, y: 0.02, z: 0 },
-    };
+    });
     listeners.forEach((listener) => listener(sample));
   };
   return { provider, emit, start, stop, listeners };

@@ -3,13 +3,19 @@ import ExpoModulesCore
 private let activityEvent = "onActivityChange"
 private let cadenceEvent = "onCadence"
 private let deviceMotionEvent = "onDeviceMotion"
+private let altitudeEvent = "onAltitude"
+private let magnetometerEvent = "onMagnetometer"
+private let pedometerEventEvent = "onPedometerEvent"
 
 public final class ExcerlockMotionModule: Module {
   private let motion = CoreMotionService()
 
   public func definition() -> ModuleDefinition {
     Name("ExcerlockMotion")
-    Events(activityEvent, cadenceEvent, deviceMotionEvent)
+    Events(
+      activityEvent, cadenceEvent, deviceMotionEvent,
+      altitudeEvent, magnetometerEvent, pedometerEventEvent
+    )
 
     Function("getAvailability") {
       motion.availability()
@@ -40,14 +46,52 @@ public final class ExcerlockMotionModule: Module {
       self.motion.stop()
     }
 
-    AsyncFunction("startDeviceMotion") { () throws -> Void in
-      try self.motion.startDeviceMotion { [weak self] payload in
+    AsyncFunction("startDeviceMotion") { (options: DeviceMotionOptions?) throws -> Void in
+      try self.motion.startDeviceMotion(referenceFrame: options?.referenceFrame?.frame) { [weak self] payload in
         self?.sendEvent(deviceMotionEvent, payload)
       }
     }
 
     AsyncFunction("stopDeviceMotion") {
       self.motion.stopDeviceMotion()
+    }
+
+    AsyncFunction("startAltimeter") { () throws -> Void in
+      try self.motion.startAltimeter { [weak self] payload in
+        self?.sendEvent(altitudeEvent, payload)
+      }
+    }
+
+    AsyncFunction("stopAltimeter") {
+      self.motion.stopAltimeter()
+    }
+
+    AsyncFunction("startMagnetometer") { (options: MagnetometerOptions?) throws -> Void in
+      try self.motion.startMagnetometer(intervalMs: options?.intervalMs) { [weak self] payload in
+        self?.sendEvent(magnetometerEvent, payload)
+      }
+    }
+
+    AsyncFunction("stopMagnetometer") {
+      self.motion.stopMagnetometer()
+    }
+
+    AsyncFunction("startPedometerEvents") { () throws -> Void in
+      try self.motion.startPedometerEvents { [weak self] payload in
+        self?.sendEvent(pedometerEventEvent, payload)
+      }
+    }
+
+    AsyncFunction("stopPedometerEvents") {
+      self.motion.stopPedometerEvents()
+    }
+
+    AsyncFunction("recordAccelerometer") { (durationSeconds: Double) throws -> Void in
+      try self.motion.recordAccelerometer(durationSeconds: durationSeconds)
+    }
+
+    AsyncFunction("queryRecordedAccelerometer") { (fromMs: Double, toMs: Double) throws -> [MotionPayload] in
+      try self.motion.queryRecordedAccelerometer(fromMs: fromMs, toMs: toMs)
     }
 
     AsyncFunction("queryActivity") {
@@ -75,8 +119,7 @@ public final class ExcerlockMotionModule: Module {
     }
 
     OnDestroy {
-      self.motion.stop()
-      self.motion.stopDeviceMotion()
+      self.motion.stopAll()
     }
   }
 }

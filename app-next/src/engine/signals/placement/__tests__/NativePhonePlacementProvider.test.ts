@@ -1,4 +1,5 @@
 import type { DeviceMotionSample } from "../../../../../modules/excerlock-motion/src/ExcerlockMotion.types";
+import { nativeDeviceMotionSample } from "../../../../runtime/detection/testing/deviceMotionSample";
 import {
   NativePhonePlacementProvider,
   type PhonePlacementModuleClient,
@@ -19,12 +20,12 @@ describe("NativePhonePlacementProvider", () => {
     const provider = new NativePhonePlacementProvider(client);
     const received: DeviceMotionSample[] = [];
     const unsubscribe = provider.onSample((sample) => received.push(sample));
-    const sample: DeviceMotionSample = {
+    const sample: DeviceMotionSample = nativeDeviceMotionSample({
       timestampMs: 1_000,
       gravity: { x: 0, y: -1, z: 0 },
       rotationRate: { x: 0.01, y: 0, z: 0 },
       userAcceleration: { x: 0, y: 0.02, z: 0 },
-    };
+    });
 
     await provider.start();
     listener(sample);

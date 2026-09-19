@@ -5,10 +5,37 @@ import Foundation
 import ExcerlockEnforcement
 #endif
 
+/// Swift enumeration of `CMAttitudeReferenceFrame` for the JS `referenceFrame` option.
+enum AttitudeReferenceFrameOption: String, Enumerable {
+  case xArbitraryZVertical
+  case xArbitraryCorrectedZVertical
+  case xMagneticNorthZVertical
+  case xTrueNorthZVertical
+
+  var frame: CMAttitudeReferenceFrame {
+    switch self {
+    case .xArbitraryZVertical: return .xArbitraryZVertical
+    case .xArbitraryCorrectedZVertical: return .xArbitraryCorrectedZVertical
+    case .xMagneticNorthZVertical: return .xMagneticNorthZVertical
+    case .xTrueNorthZVertical: return .xTrueNorthZVertical
+    }
+  }
+}
+
+struct DeviceMotionOptions: Record {
+  @Field var referenceFrame: AttitudeReferenceFrameOption? = nil
+}
+
+struct MagnetometerOptions: Record {
+  @Field var intervalMs: Double? = nil
+}
+
 final class CoreMotionService {
   private let activityManager = CMMotionActivityManager()
   private let deviceMotionManager = CMMotionManager()
   private let pedometer = CMPedometer()
+  private let altimeter = CMAltimeter()
+  private let sensorRecorder = CMSensorRecorder()
   private let operationQueue: OperationQueue = {
     let queue = OperationQueue()
     queue.name = "com.johansardar.excerlock.motion"
@@ -19,9 +46,12 @@ final class CoreMotionService {
   private let stateLock = NSLock()
   private var started = false
   private var deviceMotionStarted = false
+  private var altimeterStarted = false
+  private var magnetometerStarted = false
+  private var pedometerEventsStarted = false
 
   func availability() -> MotionPayload {
-    motionAvailabilityPayload()
+    motionAvailabilityPayload(motionManager: deviceMotionManager)
   }
 
   func authorizationStatus() -> String {
@@ -81,6 +111,7 @@ final class CoreMotionService {
   }
 
   func startDeviceMotion(
+    referenceFrame: CMAttitudeReferenceFrame?,
     onDeviceMotion: @escaping (MotionPayload) -> Void
   ) throws {
     stateLock.lock()
@@ -89,20 +120,31 @@ final class CoreMotionService {
       return
     }
     guard deviceMotionManager.isDeviceMotionAvailable else {
-      throw MotionUnavailableException()
+      throw SensorUnavailableException(stream: "deviceMotion")
+    }
+    if let referenceFrame,
+      !CMMotionManager.availableAttitudeReferenceFrames().contains(referenceFrame)
+    {
+      throw SensorUnavailableException(stream: "deviceMotion reference frame")
     }
     deviceMotionStarted = true
     // 50 Hz: the stride discriminator needs the step waveform (band 0.8-3.5 Hz,
     // impact peaks); the placement classifier decimates back to 10 Hz in JS.
     deviceMotionManager.deviceMotionUpdateInterval = 0.02
-    deviceMotionManager.startDeviceMotionUpdates(to: operationQueue) {
-      [weak self] data, _ in
+    let handler: CMDeviceMotionHandler = { [weak self] data, _ in
       guard let self, self.isDeviceMotionStarted, let data else { return }
       let payload = deviceMotionPayload(data)
       #if EXCERLOCK_LINKED_RECORDER_TRACE
       self.traceMotionCallback(stream: "device_motion", payload: payload)
       #endif
       onDeviceMotion(payload)
+    }
+    // No frame keeps the historical call and its default frame (no magnetometer).
+    if let referenceFrame {
+      deviceMotionManager.startDeviceMotionUpdates(
+        using: referenceFrame, to: operationQueue, withHandler: handler)
+    } else {
+      deviceMotionManager.startDeviceMotionUpdates(to: operationQueue, withHandler: handler)
     }
   }
 
@@ -114,6 +156,125 @@ final class CoreMotionService {
     if wasStarted {
       deviceMotionManager.stopDeviceMotionUpdates()
     }
+  }
+
+  /// CMAltimeter sits behind Motion & Fitness like the pedometer; the JS side
+  /// only starts it once authorization is settled.
+  func startAltimeter(onAltitude: @escaping (MotionPayload) -> Void) throws {
+    stateLock.lock()
+    defer { stateLock.unlock() }
+    if altimeterStarted {
+      return
+    }
+    try assertAuthorized()
+    guard CMAltimeter.isRelativeAltitudeAvailable() else {
+      throw SensorUnavailableException(stream: "relativeAltitude")
+    }
+    altimeterStarted = true
+    altimeter.startRelativeAltitudeUpdates(to: operationQueue) { [weak self] data, _ in
+      guard let self, self.isAltimeterStarted, let data else { return }
+      onAltitude(altitudePayload(data))
+    }
+  }
+
+  func stopAltimeter() {
+    stateLock.lock()
+    let wasStarted = altimeterStarted
+    altimeterStarted = false
+    stateLock.unlock()
+    if wasStarted {
+      altimeter.stopRelativeAltitudeUpdates()
+    }
+  }
+
+  func startMagnetometer(
+    intervalMs: Double?,
+    onMagnetometer: @escaping (MotionPayload) -> Void
+  ) throws {
+    stateLock.lock()
+    defer { stateLock.unlock() }
+    if magnetometerStarted {
+      return
+    }
+    guard deviceMotionManager.isMagnetometerAvailable else {
+      throw SensorUnavailableException(stream: "magnetometer")
+    }
+    magnetometerStarted = true
+    let interval = min(max(intervalMs ?? 100, 20), 1_000) / 1_000
+    deviceMotionManager.magnetometerUpdateInterval = interval
+    deviceMotionManager.startMagnetometerUpdates(to: operationQueue) { [weak self] data, _ in
+      guard let self, self.isMagnetometerStarted, let data else { return }
+      onMagnetometer(magnetometerPayload(data))
+    }
+  }
+
+  func stopMagnetometer() {
+    stateLock.lock()
+    let wasStarted = magnetometerStarted
+    magnetometerStarted = false
+    stateLock.unlock()
+    if wasStarted {
+      deviceMotionManager.stopMagnetometerUpdates()
+    }
+  }
+
+  func startPedometerEvents(onEvent: @escaping (MotionPayload) -> Void) throws {
+    stateLock.lock()
+    defer { stateLock.unlock() }
+    if pedometerEventsStarted {
+      return
+    }
+    try assertAuthorized()
+    guard CMPedometer.isPedometerEventTrackingAvailable() else {
+      throw SensorUnavailableException(stream: "pedometerEvents")
+    }
+    pedometerEventsStarted = true
+    pedometer.startEventUpdates { [weak self] event, _ in
+      guard let self, self.isPedometerEventsStarted, let event else { return }
+      onEvent(pedometerEventPayload(event))
+    }
+  }
+
+  func stopPedometerEvents() {
+    stateLock.lock()
+    let wasStarted = pedometerEventsStarted
+    pedometerEventsStarted = false
+    stateLock.unlock()
+    if wasStarted {
+      pedometer.stopEventUpdates()
+    }
+  }
+
+  /// CMSensorRecorder is only usable where `isAccelerometerRecordingAvailable()`
+  /// says so (no iPhone to date). The guard keeps the module honest: a device
+  /// without the recorder gets `ERR_MOTION_UNAVAILABLE`, never an empty success.
+  func recordAccelerometer(durationSeconds: Double) throws {
+    try assertAuthorized()
+    guard CMSensorRecorder.isAccelerometerRecordingAvailable() else {
+      throw SensorUnavailableException(stream: "sensorRecorder")
+    }
+    guard durationSeconds.isFinite, durationSeconds > 0 else {
+      throw MotionQueryFailedException()
+    }
+    sensorRecorder.recordAccelerometer(forDuration: durationSeconds)
+  }
+
+  func queryRecordedAccelerometer(fromMs: Double, toMs: Double) throws -> [MotionPayload] {
+    try assertAuthorized()
+    guard CMSensorRecorder.isAccelerometerRecordingAvailable() else {
+      throw SensorUnavailableException(stream: "sensorRecorder")
+    }
+    guard let range = historicalRange(fromMs: fromMs, toMs: toMs),
+      let list = sensorRecorder.accelerometerData(from: range.start, to: range.end)
+    else {
+      return []
+    }
+    var rows: [MotionPayload] = []
+    for element in list {
+      guard let datum = element as? CMRecordedAccelerometerData else { continue }
+      rows.append(recordedAccelerometerPayload(datum))
+    }
+    return rows
   }
 
   func queryActivity(
@@ -176,6 +337,14 @@ final class CoreMotionService {
     }
   }
 
+  func stopAll() {
+    stop()
+    stopDeviceMotion()
+    stopAltimeter()
+    stopMagnetometer()
+    stopPedometerEvents()
+  }
+
   private var isStarted: Bool {
     stateLock.lock()
     defer { stateLock.unlock() }
@@ -186,6 +355,24 @@ final class CoreMotionService {
     stateLock.lock()
     defer { stateLock.unlock() }
     return deviceMotionStarted
+  }
+
+  private var isAltimeterStarted: Bool {
+    stateLock.lock()
+    defer { stateLock.unlock() }
+    return altimeterStarted
+  }
+
+  private var isMagnetometerStarted: Bool {
+    stateLock.lock()
+    defer { stateLock.unlock() }
+    return magnetometerStarted
+  }
+
+  private var isPedometerEventsStarted: Bool {
+    stateLock.lock()
+    defer { stateLock.unlock() }
+    return pedometerEventsStarted
   }
 
   #if EXCERLOCK_LINKED_RECORDER_TRACE
@@ -269,5 +456,12 @@ final class CoreMotionService {
     let start = max(requestedStart, earliest)
     let end = min(requestedEnd, now)
     return start <= end ? (start, end) : nil
+  }
+}
+
+/// `CMSensorDataList` is an `NSFastEnumeration` container; Swift needs this to iterate it.
+extension CMSensorDataList: Sequence {
+  public func makeIterator() -> NSFastEnumerationIterator {
+    NSFastEnumerationIterator(self)
   }
 }
