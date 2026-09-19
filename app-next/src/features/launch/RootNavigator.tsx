@@ -9,6 +9,8 @@ import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { useRuntimeStatus } from '../../state/selectors';
 import { useScreenTracking } from '../../runtime/analytics/useScreenTracking';
 import { linkedTrace } from '@linked-trace';
+import Constants from 'expo-constants';
+import { diagnosticsRoutesEnabled } from '../../runtime/diagnosticsRoutes';
 export function RootNavigator() {
   const motion = useMotion();
   const pathname = usePathname();
@@ -77,6 +79,10 @@ export function RootNavigator() {
             <Stack.Screen name="builder" options={{ presentation: 'fullScreenModal' }} />
             <Stack.Screen name="unlock/gym" options={{ presentation: 'fullScreenModal' }} />
             <Stack.Screen name="unlock/treadmill" options={{ presentation: 'fullScreenModal' }} />
+          </Stack.Protected>
+          {/* Harness-only proof of the native sensor surface: preview and dev builds, never prod. */}
+          <Stack.Protected guard={diagnosticsRoutesEnabled(Constants.expoConfig?.extra?.environment, __DEV__)}>
+            <Stack.Screen name="diagnostics/sensors" />
           </Stack.Protected>
         </Stack.Protected>
       </Stack>

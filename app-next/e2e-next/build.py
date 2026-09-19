@@ -188,6 +188,9 @@ def build(udid: str, install: bool = True, clean: bool = False, log: Path | None
         run(['xcrun', 'simctl', 'install', udid, str(app)], env, APP_NEXT, log, 'simctl-install')
     dirty = bool(subprocess.run(['git', 'status', '--porcelain'], cwd=REPO, capture_output=True,
                                 text=True).stdout.strip())
+    # The runtime the artifact really carries (never a constant that can drift from app.config.ts).
+    runtime = subprocess.run(['plutil', '-extract', 'EXUpdatesRuntimeVersion', 'raw', '-o', '-', str(app / 'Expo.plist')],
+                             capture_output=True, text=True)
     return {
         'revision': git_revision(),
         'revisionDirty': dirty,
@@ -198,7 +201,7 @@ def build(udid: str, install: bool = True, clean: bool = False, log: Path | None
         'configuration': 'Release',
         'environment': 'preview',
         'channel': 'preview',
-        'runtimeVersion': '2',
+        'runtimeVersion': runtime.stdout.strip() if runtime.returncode == 0 else 'unknown',
         'derivedData': str(DERIVED),
         'log': str(log),
         'installed': install,

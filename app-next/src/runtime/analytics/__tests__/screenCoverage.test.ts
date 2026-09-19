@@ -14,6 +14,8 @@ const appDir = path.resolve(__dirname, '../../../../app');
 
 /** Launch gates (`app/index.tsx`), non-production routes and layouts are not screens. */
 const notScreens = new Set(['index', 'dev', 'linked-trace', '_layout']);
+/** Harness-only routes (`RootNavigator` closes them in a prod build); never a `$screen`. */
+const notScreenDirectories = new Set(['diagnostics']);
 
 const onboardingSteps = [...preBranch, ...tail.filter((step) => step !== 'P'), 'W1', 'W2', 'W3', 'G1', 'G2'];
 
@@ -50,6 +52,7 @@ function concreteRoutes(): string[] {
     const name = path.basename(file, '.tsx');
     if (name === '_layout' || (path.dirname(file) === appDir && notScreens.has(name))) return [];
     const segments = routeSegments(file);
+    if (notScreenDirectories.has(segments[0])) return [];
     if (!segments.some((segment) => segment.startsWith('['))) return [`/${segments.join('/')}`];
     return segments.reduce<string[]>(
       (routes, segment) =>

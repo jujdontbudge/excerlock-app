@@ -14,6 +14,7 @@ from .e2_ota_stub import E2OtaReceiptStub
 from .f1_fixture_mint import F1FixtureMint
 from .f2_fixture_teardown import F2FixtureTeardown
 from .h1_home_report import H1HomeReport
+from .m1_sensor_smoke import M1SensorSmoke
 from .n1_onboarding_paywall import N1OnboardingPaywall
 from .n4_offline_fallback import N4OfflineFallbackPaywall, N4WarmProfileOfflineFallback
 from .r1_incident_report import R1IncidentReport
@@ -27,6 +28,7 @@ SCENARIO_CLASSES = (
     V1ScreenSweep,
     R1IncidentReport,
     H1HomeReport,
+    M1SensorSmoke,
     S1StartupBudget,
     A3EmailSignIn,
     A4DeleteAccount,

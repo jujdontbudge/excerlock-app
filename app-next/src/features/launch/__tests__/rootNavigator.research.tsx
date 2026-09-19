@@ -35,6 +35,7 @@ const mockProductionScreens = [
   'builder',
   'unlock/gym',
   'unlock/treadmill',
+  'diagnostics/sensors',
 ];
 
 function mockWalk(children: React.ReactNode, excluded: boolean) {
