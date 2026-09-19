@@ -102,9 +102,19 @@ function input(overrides: Partial<IncidentDiagnosticsInput> = {}): IncidentDiagn
       millisecondsByDay: { '2026-09-14': 1, '2026-09-15': 600_000, '2026-09-17': 900_000, '2026-09-18': 3_600_000 },
     },
     events,
+    activityTruth: { activity: 'walking', heldAt: '2026-09-18T10:14:30.000Z', ageSeconds: 30 },
     ...overrides,
   };
 }
+
+test('the snapshot carries the held ground-truth label, or null when nothing fresh was held', () => {
+  expect(buildIncidentDiagnostics(input()).activityTruth).toEqual({
+    activity: 'walking',
+    heldAt: '2026-09-18T10:14:30.000Z',
+    ageSeconds: 30,
+  });
+  expect(buildIncidentDiagnostics(input({ activityTruth: null })).activityTruth).toBeNull();
+});
 
 test('the snapshot carries the lock decision, detection phases, permissions and last lock/unlock times', () => {
   const d = buildIncidentDiagnostics(input());

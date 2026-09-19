@@ -21,7 +21,8 @@ const settle = () =>
 
 test('Send is pressable from the start and says what is missing instead of doing nothing', async () => {
   const runtime = await renderReport();
-  const send = jest.spyOn(runtime.incidentReports, 'send');
+  const send = jest.spyOn(runtime.incidentReports, 'send'),
+    track = jest.spyOn(runtime.analytics, 'track');
   expect(screen.getByRole('header', { name: i.title })).toBeTruthy();
   expect(screen.queryByLabelText('Reply email')).toBeNull();
   // Both empty: a tap must answer on screen, never be swallowed by a disabled button.
@@ -46,6 +47,7 @@ test('Send is pressable from the start and says what is missing instead of doing
     whatWentWrong: 'My apps stayed locked after my walk.',
     shouldHaveHappened: 'They should have opened at 3,000 steps.',
   });
+  expect(track).toHaveBeenCalledWith('incident_report_sent', expect.objectContaining({ source: 'settings', activity: 'none' }));
 });
 
 test('Send with only the second answer names the first one', async () => {

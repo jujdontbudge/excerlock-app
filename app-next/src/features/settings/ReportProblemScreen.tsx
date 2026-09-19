@@ -8,6 +8,8 @@ import { incidentCopy as i } from '../../content/incident';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useLockDecision } from '../../state/selectors';
+import { activityTruthStore } from '../../state/activityTruthStore';
 
 /**
  * Two questions and Send. The runtime attaches the diagnostic snapshot; this screen never sees it.
@@ -16,6 +18,8 @@ import { useRuntime } from '../../runtime/AppRuntimeProvider';
  */
 export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void }) {
   const runtime = useRuntime(),
+    lockState = useLockDecision().state,
+    held = activityTruthStore((s) => s.data?.activity ?? 'none'),
     [whatWentWrong, setWhatWentWrong] = useState(''),
     [shouldHaveHappened, setShouldHaveHappened] = useState(''),
     [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle'),
@@ -38,6 +42,7 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
     setState('sending');
     try {
       await runtime.incidentReports.send({ whatWentWrong: whatWentWrong.trim(), shouldHaveHappened: shouldHaveHappened.trim() });
+      runtime.analytics.track('incident_report_sent', { source: 'settings', activity: held, lock_state: lockState });
       setState('sent');
     } catch (error) {
       setState('idle');

@@ -18,4 +18,30 @@ export const incidentCopy = {
   error: 'Could not send right now. Your words are still here — try again in a moment.',
   attached: 'Sent with your report',
   attachedBody: 'App version, lock status, walking and gym detection, permissions and recent lock changes. Never your location, apps or email.',
+  /** Home: hold a chip, tap Report, tap Send. Giant, few words. */
+  home: {
+    caption: 'Hold what you are doing now',
+    nudge: 'Hold, do not tap',
+    walking: 'Walking',
+    sitting: 'Sitting',
+    shaking: 'Shaking',
+    treadmill: 'Treadmill',
+    report: 'Report',
+    reportLabel: 'Report a problem',
+    sheetTitle: 'Report',
+    stillLocked: 'Still locked',
+    wronglyOpen: 'Unlocked by mistake',
+    other: 'Something else',
+    /** One line that says exactly what leaves the phone. */
+    summary: (reason: string, activity: string | null) =>
+      activity ? `${reason} · ${activity} · what the app saw` : `${reason} · what the app saw`,
+    words: (reason: string, activity: string | null) => (activity ? `${reason} while ${activity.toLowerCase()}` : reason),
+    expected: {
+      stillLocked: 'Apps should have unlocked',
+      wronglyOpen: 'Apps should have stayed locked',
+      other: 'See what the app saw',
+    },
+    sentBody: 'Sent with what the app saw.',
+    done: 'Done',
+  },
 } as const;

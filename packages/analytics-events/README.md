@@ -72,6 +72,8 @@ requires a migration note here.
 | `rating_prompt_shown` | `source` |
 | `diagnostics_shared` | — |
 | `data_export_requested` | — |
+| `activity_truth_held` | `activity` (`walking \| sitting \| shaking \| treadmill`), `lock_state` |
+| `incident_report_sent` | `source` (`home \| settings`), `activity` (or `none`), `lock_state` |
 | `permission_resolved` | `permission`, `outcome` |
 | `unlock_completed` | `method`, `app_state`, `source` |
 | `review_preset_selected` | `preset` |

@@ -20,6 +20,7 @@ import { createNativeSupportPort } from './NativeSupportPort';
 import { createIncidentLog } from './incident/IncidentLog';
 import { buildIncidentDiagnostics } from './incident/incidentDiagnostics';
 import { createIncidentReportPort } from './incident/createIncidentReportPort';
+import { currentActivityTruth } from '../state/activityTruthStore';
 import { nativeGait } from './NativeGait';
 import { createNativeScreenTimePort } from '../screentime/native/createNativeScreenTimePort';
 import { getExcerlockEnforcementModule } from '../../modules/excerlock-enforcement';
@@ -641,6 +642,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             notificationsEnabled: settingsStore.getState().data.notificationsEnabled,
             walkingDuration: duration,
             events: incidentLog.read(),
+            activityTruth: currentActivityTruth(Date.now()),
           });
         },
       }),

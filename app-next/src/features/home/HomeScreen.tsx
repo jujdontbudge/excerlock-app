@@ -32,6 +32,7 @@ import { Reveal } from '../../motion/Reveal';
 import { unlockKind } from '../unlock/entry';
 import { UnlockEntry } from '../unlock/UnlockEntry';
 import { WalkingCheckButton } from './WalkingCheckButton';
+import { HomeReport } from './HomeReport';
 import { useInteractiveHomeMarker } from '../../runtime/startup/useInteractiveHomeMarker';
 import { useLapsedWinbackOffer } from '../subscription/useLapsedWinbackOffer';
 import { useLockListPicker } from '../permissions/useLockListPicker';
@@ -169,6 +170,7 @@ export function HomeScreen() {
           {c.paused}
         </Label>
       ) : null}
+      <HomeReport lockState={decision.state} />
       <View style={{ gap: t.space.md }}>
         <Label variant="section" accessibilityRole="header">{c.today}</Label>
         {conditionCards}

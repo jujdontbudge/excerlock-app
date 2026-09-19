@@ -44,7 +44,7 @@ export type {
   ShareCardFormat,
   ShareCardKind,
 } from './src/events/engagement'
-export type { SupportCategory } from './src/events/support'
+export type { SupportCategory, ActivityTruth, IncidentReportSource } from './src/events/support'
 export type { Vendor } from './src/events/vendors'
 export type { AdaptyForwardedProps } from './src/events/subscription'
 export type { TreadmillScanFailure, UnlockKind } from './src/events/runtime'

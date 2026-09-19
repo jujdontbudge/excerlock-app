@@ -84,6 +84,11 @@ describe('single-emitter ownership (D4/D5)', () => {
     expect(ownerOf('condition_created')).toBe('client')
     expect(ownerOf('earn_claimed')).toBe('client')
     expect(ownerOf('shields_applied')).toBe('client')
+    // Home ground truth + the in-app incident report: on-device UI events, so the client owns them.
+    expect(ownerOf('activity_truth_held')).toBe('client')
+    expect(transmittedPropertiesOf('activity_truth_held')).toEqual(['activity', 'lock_state'])
+    expect(ownerOf('incident_report_sent')).toBe('client')
+    expect(transmittedPropertiesOf('incident_report_sent')).toEqual(['source', 'activity', 'lock_state'])
     // Server: persisted /v1 domain actions (PRD §10.1).
     expect(ownerOf('support_request_submitted')).toBe('server')
     expect(ownerOf('vendor_connected')).toBe('server')
