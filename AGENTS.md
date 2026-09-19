@@ -41,7 +41,7 @@ Read the matching skill before the relevant task; do not preload all guides. Fol
 - `log-pitfall` — A diagnosed cross-app iOS pitfall; follow the global ledger rule: `/Users/johansardar/.codex/plugins/cache/johan-skills/johan-skills/1.0.1/skills/log-pitfall/SKILL.md`.
 - `adapty-sdk-integration` — Adapty subscriptions, identity and paywalls: `/Users/johansardar/ExcerLock/.agents/skills/adapty-sdk-integration/SKILL.md`.
 - `mobile-app-ui-design` — Mobile screens, flows, components and UI improvements; follow the existing ExcerLock design system over generic style prescriptions: `/Users/johansardar/.codex/plugins/cache/johan-skills/johan-skills/1.0.1/skills/mobile-app-ui-design/SKILL.md`.
-- `excerlock-visual-design` — Every substantive ExcerLock visual-design task; automatically explores useful visual enrichment with GPT Image 2.5 Sunburst at low quality while keeping exact product UI code-native and truthful: `.agents/skills/excerlock-visual-design/SKILL.md`.
+- `excerlock-visual-design` — Every substantive ExcerLock visual-design task; automatically use GPT Image 2.5 Sunburst at low quality to spice up the design: `.agents/skills/excerlock-visual-design/SKILL.md`.
 - `asc-cli-usage` — App Store Connect, TestFlight, builds, signing and releases via the installed `asc` CLI: `/Users/johansardar/.agents/skills/asc-cli-usage/SKILL.md`. Check installed command help; see `docs/agents/app-store-connect.md`.
 
 <!-- agent-web:start -->
