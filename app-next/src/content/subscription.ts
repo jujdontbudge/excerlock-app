@@ -52,3 +52,25 @@ export const subscriptionCopy = {
 } as const;
 
 export const appStoreSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';
+
+/**
+ * Guideline 3.1.2(c): the billed renewal price is the most prominent pricing
+ * element. The footer and the plan-row title lead with it; the trial offer
+ * follows in smaller support text. `offerLabel` is the adapter's
+ * "<numberOfPeriods> <unit> free" label, so "after your 7 day free trial"
+ * reads as one sentence.
+ */
+export function priceFirstFooterLabel(product: {
+  localizedPrice: string;
+  localizedPeriod: string;
+  offerLabel: string | null;
+}): string {
+  return product.offerLabel
+    ? `${product.localizedPrice} / ${product.localizedPeriod} after your ${product.offerLabel} trial. Cancel anytime.`
+    : `${product.localizedPrice} / ${product.localizedPeriod}. Cancel anytime.`;
+}
+
+/** Plan-row title line: the plan name and the billed renewal price, one string. */
+export function planRowTitle(product: { title: string; localizedPrice: string; localizedPeriod: string }): string {
+  return `${product.title} · ${product.localizedPrice} / ${product.localizedPeriod}`;
+}

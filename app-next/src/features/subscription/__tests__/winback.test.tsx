@@ -67,7 +67,7 @@ beforeEach(() => resetWinbackSession());
 test('the onboarding hard paywall declines into the win-back placement once', async () => {
   const { runtime, loadPaywall } = await mountPaywall();
   const decline = await screen.findByRole('button', { name: 'Not now' });
-  await screen.findByRole('radio', { name: 'Annual' });
+  await screen.findByRole('radio', { name: 'Annual · $29.99 / year' });
   expect(viewedPlacements(runtime)).toEqual([
     { placement: 'onboarding', has_trial: true, variation_id: 'onboarding-variation' },
   ]);
@@ -88,7 +88,7 @@ test('the onboarding hard paywall declines into the win-back placement once', as
 
 test('an install that already spent its decline never offers it again', async () => {
   const { loadPaywall } = await mountPaywall(true);
-  await screen.findByRole('radio', { name: 'Annual' });
+  await screen.findByRole('radio', { name: 'Annual · $29.99 / year' });
   expect(screen.queryByRole('button', { name: 'Not now' })).toBeNull();
   expect(loadPaywall).toHaveBeenCalledTimes(1);
   expect(loadPaywall).toHaveBeenCalledWith('onboarding');
@@ -118,7 +118,7 @@ test('a win-back placement that cannot load falls back to the original paywall',
   expect(viewedPlacements(runtime).every((props) => (props as { placement: string }).placement === 'onboarding')).toBe(
     true,
   );
-  expect(await screen.findByRole('radio', { name: 'Annual' })).toBeTruthy();
+  expect(await screen.findByRole('radio', { name: 'Annual · $29.99 / year' })).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Not now' })).toBeNull();
   expect(
     runtime.dev!.snapshot().events.some((event) => event.event === 'paywall_error' && event.props.operation === 'load'),
@@ -170,7 +170,7 @@ test('the production navigator turns a lapsed cold start into the win-back paywa
   const rendered = await routed;
   await waitFor(() => expect(routed.getPathname()).toBe('/paywall'));
   await waitFor(() => expect(loadPaywall).toHaveBeenCalledWith('winback'));
-  expect(await screen.findByRole('radio', { name: 'Annual' })).toBeTruthy();
+  expect(await screen.findByRole('radio', { name: 'Annual · $29.99 / year' })).toBeTruthy();
   await rendered.unmount();
 });
 

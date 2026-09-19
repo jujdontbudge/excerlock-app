@@ -72,7 +72,7 @@ async function mount(variant: PaywallVariant | null | (() => Promise<PaywallVari
 test('a variant_b assignment preselects the recommended plan and exposes the loaded flow variation once', async () => {
   const { runtime, exposure } = await mount('variant_b');
   const choices = await screen.findAllByRole('radio');
-  expect(choices.map((choice) => choice.props.accessibilityLabel)).toEqual(['Monthly', 'Annual']);
+  expect(choices.map((choice) => choice.props.accessibilityLabel)).toEqual(['Monthly · $9.99 / month', 'Annual · $49.99 / year']);
   await waitFor(() => expect(choices[1].props.accessibilityState.checked).toBe(true));
   expect(choices[0].props.accessibilityState.checked).toBe(false);
   expect(exposure).toHaveBeenCalledTimes(1);

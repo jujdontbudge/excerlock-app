@@ -29,7 +29,9 @@ const paywall: SubscriptionPaywall = {
       detail: 'Annual access',
       localizedPrice: '79,99 €',
       localizedPeriod: 'Jahr',
-      offerLabel: '14 Tage kostenlos',
+      // Realistic adapter output: `${numberOfPeriods} ${unit} free` (English, unlike
+      // the store-localized price/period which may be any locale).
+      offerLabel: '7 day free',
       recommended: true,
     },
   ],
@@ -46,9 +48,15 @@ test('renders fetched product order and localized offer copy and opens legal lin
   );
 
   const choices = await screen.findAllByRole('radio');
-  expect(choices.map((choice) => choice.props.accessibilityLabel)).toEqual(['Flexible', 'Committed']);
-  expect(screen.getByText('9,99 € / Monat')).toBeTruthy();
-  expect(screen.getByText('79,99 € / Jahr · 14 Tage kostenlos')).toBeTruthy();
+  expect(choices.map((choice) => choice.props.accessibilityLabel)).toEqual([
+    'Flexible · 9,99 € / Monat',
+    'Committed · 79,99 € / Jahr',
+  ]);
+  // The renewal price sits on the plan-row title line; the trial label is the
+  // smaller support line beneath it (3.1.2(c)).
+  expect(screen.getByText('Flexible · 9,99 € / Monat')).toBeTruthy();
+  expect(screen.getByText('Committed · 79,99 € / Jahr')).toBeTruthy();
+  expect(screen.getByText('7 day free')).toBeTruthy();
 
   await userEvent.press(screen.getByRole('button', { name: 'Terms of Use' }));
   await userEvent.press(screen.getByRole('button', { name: 'Privacy Policy' }));
@@ -109,7 +117,7 @@ test('emits the client purchase-funnel events for the loaded placement and the C
     </AppRuntimeProvider>,
   );
 
-  await userEvent.press(await screen.findByRole('radio', { name: 'Committed' }));
+  await userEvent.press(await screen.findByRole('radio', { name: 'Committed · 79,99 € / Jahr' }));
   await userEvent.press(screen.getByRole('button', { name: 'Start free trial' }));
   await waitFor(() => expect(runtime.subscription.purchase).toHaveBeenCalledWith('9:best.annual'));
 
@@ -118,4 +126,40 @@ test('emits the client purchase-funnel events for the loaded placement and the C
     ['paywall_viewed', { placement: 'onboarding', has_trial: true, variation_id: 'variation-b' }],
     ['purchase_started', { placement: 'onboarding', plan_id: 'best.annual' }],
   ]);
+});
+
+test('the billed renewal price leads the footer and the plan row ahead of the trial offer (3.1.2(c))', async () => {
+  const runtime = createRuntime();
+  runtime.subscription.loadPaywall = jest.fn(async () => paywall);
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <PaywallScreen placement="onboarding" reportError={jest.fn()} />
+    </AppRuntimeProvider>,
+  );
+
+  await screen.findAllByRole('radio');
+  // The preselected monthly plan has no offer: the billed price still leads.
+  expect(screen.getByText('9,99 € / Monat. Cancel anytime.')).toBeTruthy();
+  // Selecting the annual plan: billed price first, then the trial offer, then
+  // plain renewal terms.
+  await userEvent.press(screen.getByRole('radio', { name: 'Committed · 79,99 € / Jahr' }));
+  expect(screen.getByText('79,99 € / Jahr after your 7 day free trial. Cancel anytime.')).toBeTruthy();
+  // The offer never leads the pricing sentence.
+  expect(screen.queryByText('7 day free, then 79,99 € / Jahr. Cancel anytime.')).toBeNull();
+  // The renewal price sits on the plan-row title line, ahead of the trial label.
+  expect(screen.getByText('Committed · 79,99 € / Jahr')).toBeTruthy();
+});
+
+test('the price-first footer also renders on the winback placement (3.1.2(c))', async () => {
+  const runtime = createRuntime();
+  runtime.subscription.loadPaywall = jest.fn(async () => ({ ...paywall, placement: 'winback' as const }));
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <PaywallScreen placement="winback" reportError={jest.fn()} />
+    </AppRuntimeProvider>,
+  );
+
+  await screen.findAllByRole('radio');
+  await userEvent.press(screen.getByRole('radio', { name: 'Committed · 79,99 € / Jahr' }));
+  expect(screen.getByText('79,99 € / Jahr after your 7 day free trial. Cancel anytime.')).toBeTruthy();
 });
