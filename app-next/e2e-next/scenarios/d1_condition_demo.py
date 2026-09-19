@@ -26,11 +26,22 @@ CASES = [
 ]
 
 
-def has_state(ctx: RunContext, kind: str, place: str, phase: str, phone: str, locked: bool) -> bool:
+def matches_state(node: dict, kind: str, place: str, phase: str, phone: str, locked: bool) -> bool:
     wanted = f'condition-demo-{kind}-{place}-{phase}-{phone}-{"locked" if locked else "unlocked"}'
+    title = {
+        'prop': 'Phone propped on the console', 'scan': 'Reading your stride',
+        'walking': 'Unlocked while you walk' if kind == 'walk-state' else 'Apps are blocked',
+        'blocked': 'Apps are blocked', 'approach': 'Apps are blocked',
+        'confirming': "Confirming you're here", 'counting': 'Unlocked while at the gym',
+        'unlocked': 'Unlocked for the rest of today', 'leave': 'Unlocked for the rest of today',
+    }[phase]
+    return (node.get('AXIdentifier') or node.get('AXUniqueId')) == wanted and (node.get('AXLabel') or '').startswith(title)
+
+
+def has_state(ctx: RunContext, kind: str, place: str, phase: str, phone: str, locked: bool) -> bool:
     deadline = time.monotonic() + 8
     while time.monotonic() < deadline:
-        if any(node.get('AXIdentifier') == wanted for node in ctx.tree()):
+        if any(matches_state(node, kind, place, phase, phone, locked) for node in ctx.tree()):
             return True
         time.sleep(0.15)
     return False

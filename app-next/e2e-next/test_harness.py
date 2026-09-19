@@ -175,6 +175,16 @@ class EnvResolution(unittest.TestCase):
                 harness._DOTENV = None
 
 
+class ConditionDemoState(unittest.TestCase):
+    def test_native_identifier_and_visible_status_must_both_match(self):
+        from scenarios.d1_condition_demo import matches_state
+        node = {'AXUniqueId': 'condition-demo-walk-state-outside-blocked-shield-locked',
+                'AXLabel': 'Apps are blocked. Stopped — walk to open them'}
+        self.assertTrue(matches_state(node, 'walk-state', 'outside', 'blocked', 'shield', True))
+        self.assertFalse(matches_state({**node, 'AXLabel': 'Unlocked while you walk'}, 'walk-state', 'outside', 'blocked', 'shield', True))
+        self.assertFalse(matches_state(node, 'walk-state', 'outside', 'walking', 'tiktok', False))
+
+
 class ScenarioRegistry(unittest.TestCase):
     def test_expected_scenarios_are_registered(self):
         self.assertEqual(set(SCENARIOS),
