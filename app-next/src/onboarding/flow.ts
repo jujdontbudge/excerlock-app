@@ -19,7 +19,7 @@ export const preBranch = [
   'O18',
   'O20',
 ] as const;
-export const tail = ['S1', 'S2', 'S3', 'S4', 'T1', 'T2', 'T3', 'T4', 'P'] as const;
+export const tail = ['S1', 'S2', 'S3', 'S3b', 'S4', 'T1', 'T2', 'T3', 'T4', 'P'] as const;
 
 /**
  * A validated remote order for the two configurable groups (B8).

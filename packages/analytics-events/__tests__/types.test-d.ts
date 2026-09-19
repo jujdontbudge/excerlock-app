@@ -35,7 +35,9 @@ describe('PropsOf', () => {
       reason_class: 'cancelled' | 'declined' | 'network' | 'unavailable' | 'unknown'
     }>()
     expectTypeOf<PropsOf<'onboarding_screen_viewed'>>().toEqualTypeOf<{
-      screen: FlowScreen
+      screen: FlowScreen | 'S3b'
+      scenario?: 'walk-state' | 'walk-steps' | 'walk-minutes' | 'gym-arrival' | 'gym-minutes'
+      place?: 'outside' | 'treadmill'
     }>()
     expectTypeOf<PropsOf<'milestone_unlocked'>>().toEqualTypeOf<
       Record<string, never>

@@ -1,0 +1,4 @@
+# Local verification transcripts; committed evidence belongs in app-next/e2e-next/out/.
+verification/
+jest-effective.json
+*.log

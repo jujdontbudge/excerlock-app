@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from .a3_email_signin import A3EmailSignIn
 from .a4_delete_account import A4DeleteAccount
+from .d1_condition_demo import D1ConditionDemo
 from .e1_existing_user_home import E1ExistingUserHome
 from .e2_ota_stub import E2OtaReceiptStub
 from .f1_fixture_mint import F1FixtureMint
@@ -25,6 +26,7 @@ from .v1_screen_sweep import V1ScreenSweep
 SCENARIO_CLASSES = (
     N1OnboardingPaywall,
     N1GymOnboarding,
+    D1ConditionDemo,
     F1FixtureMint,
     E1ExistingUserHome,
     V1ScreenSweep,

@@ -128,6 +128,9 @@ class PostHogSql(unittest.TestCase):
 
 
 class OnboardingIdentification(unittest.TestCase):
+    def test_condition_demo_is_a_distinct_observed_step(self):
+        self.assertEqual(identify(['How your plan works', 'Apps are blocked'])[0], 'S3b')
+
     def test_identifies_shared_title_by_body(self):
         self.assertEqual(identify(['Block apps. Exercise more.', 'Less scrolling. More time to move.'])[0], 'O01')
         self.assertEqual(identify(['Block apps. Exercise more.', 'Reduce your screen time and track your progress.'])[0],
@@ -176,7 +179,7 @@ class ScenarioRegistry(unittest.TestCase):
     def test_expected_scenarios_are_registered(self):
         self.assertEqual(set(SCENARIOS),
                          {'E2E-N1', 'E2E-N4', 'E2E-N4W', 'E2E-E1', 'E2E-V1', 'E2E-S1', 'E2E-A3', 'E2E-A4', 'E2E-E2',
-                          'E2E-F1', 'E2E-F2', 'E2E-N1G', 'E2E-M1', 'E2E-R1', 'E2E-H1'})
+                          'E2E-F1', 'E2E-F2', 'E2E-N1G', 'E2E-M1', 'E2E-R1', 'E2E-H1', 'E2E-D1'})
 
     def test_fixture_mint_precedes_its_consumers_in_the_all_order(self):
         from scenarios import SCENARIO_CLASSES

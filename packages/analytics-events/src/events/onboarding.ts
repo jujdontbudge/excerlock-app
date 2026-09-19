@@ -8,12 +8,16 @@ import type { FlowScreen } from '../flow'
  * new code.
  */
 export const onboardingEvents = {
-  onboarding_screen_viewed: { owner: 'client', transmittedProperties: ['screen'] },
+  onboarding_screen_viewed: { owner: 'client', transmittedProperties: ['screen', 'scenario', 'place'] },
   onboarding_answer: { owner: 'client', transmittedProperties: ['screen'] },
 } as const satisfies EventSpecMap
 
 export interface OnboardingEventProps {
-  onboarding_screen_viewed: { screen: FlowScreen }
+  onboarding_screen_viewed: {
+    screen: FlowScreen | 'S3b';
+    scenario?: 'walk-state' | 'walk-steps' | 'walk-minutes' | 'gym-arrival' | 'gym-minutes';
+    place?: 'outside' | 'treadmill';
+  }
   onboarding_answer: { screen: FlowScreen }
 }
 

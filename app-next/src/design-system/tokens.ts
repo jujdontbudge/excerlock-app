@@ -1,5 +1,17 @@
 /** Normative design values. Geometry for illustrations is in SVG viewBox coordinates. */
 export const tokens = {
+  /** Decorative palette of the captain-approved condition-demo illustration. */
+  conditionDemo: {
+    sky: ['#F2792C', '#F58E42', '#F9AE72'],
+    farHill: '#F9C79A', nearHill: '#F6B583', ground: '#FBDCC1', path: '#FFF1E3', pebble: '#F4C79E',
+    trunk: '#8A4A2B', tree: '#E8823F', treeLight: '#F0955B',
+    map: '#F3EBDF', block: '#EADFCC', building: '#E4D5BE', park: '#DDE8C9', parkTree: '#CFE0B4', gym: '#F0B98C',
+    location: '#2F7CF6', locationHalo: 'rgba(47,124,246,.18)', radius: 'rgba(201,71,16,.12)',
+    treadmill: '#2B2E3A', belt: '#3E4252', beltTick: '#5A5F72',
+    video: '#1b1b1f', videoSubject: '#3a3a44', avatar: '#6b6b73', black: '#000000',
+    cyan: '#69C9D0', red: '#EE1D52',
+    shadow: '0px 16px 36px rgba(120,50,10,.22)',
+  },
   surface: {
     orangeGradient: ['#F6B583', '#FBE2CF', '#FFF7F1'],
     tabBarGradient: ['rgba(255,247,241,0)', 'rgba(255,247,241,0.92)', '#FFF7F1'],

@@ -14,6 +14,7 @@ import { createDraft, toRule } from '../rules/draft';
 import { PlanBuild } from '../rules/PlanBuild';
 import { PlanCelebration } from '../rules/PlanCelebration';
 import { PlanSummary } from '../rules/PlanSummary';
+import { ConditionDemo } from './condition-demo/ConditionDemo';
 import { ReviewWarmup } from '../rules/ReviewWarmup';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { planCopy as c } from '../../content/plan';
@@ -85,6 +86,7 @@ export function OnboardingRoute() {
         {scheduleError ? <Label style={{ color: t.text.secondary }}>{c.scheduleLimit}</Label> : null}
       </View>
     );
+  if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} />;
   if (flow.step === 'S4') body = <ReviewWarmup onSkip={flow.advance} />;
   return (
     <OnboardingShell

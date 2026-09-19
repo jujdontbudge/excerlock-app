@@ -44,6 +44,7 @@ SCREENS: list[tuple[str, str, str]] = [
     ('W3', 'Set your walking goal', 'movement into every day'),
     ('S1', 'When should blocking be active?', 'days and times'),
     ('S3', 'Your plan is ready', 'A little movement'),
+    ('S3b', 'How your plan works', ''),
     ('S4', 'Help us make ExcerLock better', 'How does your plan feel'),
     ('T1', 'Try ExcerLock free', 'things that matter'),
     ('T2', "We'll remind you before it ends", 'A heads-up'),
