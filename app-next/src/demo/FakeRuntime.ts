@@ -1,6 +1,7 @@
 import { activityHistory } from './activityHistory';
 import { stores } from '../state/stores';
 import { SupportFake } from './fakes/SupportFake';
+import { ReviewFake } from './fakes/ReviewFake';
 import { IncidentReportFake } from './fakes/IncidentReportFake';
 import { Runtime } from '../runtime/Runtime';
 import { dayKey } from '../domain/schedule';
@@ -103,6 +104,7 @@ export function FakeRuntime(): FakeRuntimeInstance {
     notifications: NotificationsFake(ctx),
     sync: SyncFake(),
     support: SupportFake(ctx),
+    review: ReviewFake(ctx),
     incidentReports: IncidentReportFake(ctx),
     dataExport: {
       requestShare: async (buildPayload) => {

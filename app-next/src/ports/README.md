@@ -12,6 +12,7 @@ Vendor-free boundaries. Every interface has a local fake in demo/fakes; features
 - NotificationsPort: Schedules local trial and condition reminders.
 - SyncPort: Phase 2 synchronizes rules and day facts with the VPS.
 - ClockPort: Phase 2 observes system time and timezone changes.
+- StoreReviewPort: Apple's system review sheet (`expo-store-review`), JS-callable so an OTA bundle decides when to ask; the real runtime routes it through the prompt safety window. No gating in the port: `isAvailable` is false on TestFlight while the sheet still renders (ADR 0042).
 
 models.ts defines shared facts. RuntimeControls is a local-only developer interface and is never a product service adapter.
 

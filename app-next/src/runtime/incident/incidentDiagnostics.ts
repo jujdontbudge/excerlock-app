@@ -7,9 +7,12 @@ import type { WalkingDurationState } from '../detection/WalkingDurationLedger';
 import type { IncidentLogEvent } from './IncidentLog';
 import { addDays, dayKey } from '../../domain/calendar';
 import type { ActivityTruth } from '../../state/activityTruthStore';
+import type { SensorSnapshot } from '../detection/sensorStreams';
 
 /** The Home chip the person held: their own word for what they were doing, and how long before Send. */
 export type ActivityTruthSnapshot = { activity: ActivityTruth; heldAt: string; ageSeconds: number };
+
+export type { SensorSnapshot };
 
 /** What the app believed when the person pressed Send. Everything here is state the app already keeps;
  * nothing names an app, a place on a map, an address or a token. */
@@ -59,6 +62,8 @@ export type IncidentDiagnostics = {
   events: IncidentLogEvent[];
   /** Ground truth from the person, not a sensor: null when nothing fresh was held. */
   activityTruth: ActivityTruthSnapshot | null;
+  /** Null when the native module could not be asked (never a guess). */
+  sensors: SensorSnapshot | null;
 };
 
 export type IncidentDiagnosticsInput = {
@@ -83,6 +88,7 @@ export type IncidentDiagnosticsInput = {
   walkingDuration: Pick<WalkingDurationState, 'segments' | 'millisecondsByDay'>;
   events: IncidentLogEvent[];
   activityTruth: ActivityTruthSnapshot | null;
+  sensors: SensorSnapshot | null;
 };
 
 const RECENT_WINDOW_MS = 48 * 60 * 60 * 1000;
@@ -171,5 +177,6 @@ export function buildIncidentDiagnostics(input: IncidentDiagnosticsInput): Incid
     detection: { generation: detection.generation, observedAt: detection.observedAt ? iso(detection.observedAt) : null },
     events: input.events,
     activityTruth: input.activityTruth,
+    sensors: input.sensors,
   };
 }

@@ -6,8 +6,8 @@ const NOW = Date.parse('2026-09-18T10:15:00.000Z');
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
-/** Keys that must never leave the phone. Mirrors the server denylist. */
-const forbidden = /^(latitude|longitude|lat|lng|lon|coords|coordinates|email|phone|token|accesstoken|refreshtoken|bundleid|appname|applicationtoken)$/i;
+/** Keys that must never leave the phone. Mirrors `server/src/incidents/diagnostics.ts` FORBIDDEN_DIAGNOSTIC_KEYS exactly. */
+const forbidden = /^(latitude|longitude|lat|lng|lon|coords|coordinates|coordinate|email|phone|token|accesstoken|refreshtoken|idtoken|authorization|password|secret|bundleid|bundleidentifier|appname|appnames|applicationtoken|applicationtokens|categorytoken|webdomaintoken|familyactivityselection)$/i;
 function keysOf(value: unknown, into: string[] = []): string[] {
   if (Array.isArray(value)) value.forEach((item) => keysOf(item, into));
   else if (value && typeof value === 'object')
@@ -103,9 +103,31 @@ function input(overrides: Partial<IncidentDiagnosticsInput> = {}): IncidentDiagn
     },
     events,
     activityTruth: { activity: 'walking', heldAt: '2026-09-18T10:14:30.000Z', ageSeconds: 30 },
+    sensors: {
+      availability: {
+        activity: true, cadence: true, stepCounting: true, deviceMotion: true, magnetometer: true,
+        relativeAltitude: true, floorCounting: true, distance: true, pace: true, pedometerEvents: true,
+        sensorRecorder: false,
+      },
+      motionAccess: 'authorized',
+    },
     ...overrides,
   };
 }
+
+test('the snapshot names which Core Motion sensors this phone has, as the binary reports them', () => {
+  const d = buildIncidentDiagnostics(input());
+  expect(d.sensors).toEqual({
+    availability: {
+      activity: true, cadence: true, stepCounting: true, deviceMotion: true, magnetometer: true,
+      relativeAltitude: true, floorCounting: true, distance: true, pace: true, pedometerEvents: true,
+      sensorRecorder: false,
+    },
+    motionAccess: 'authorized',
+  });
+  // A runtime whose native module could not answer reports that, never a guess.
+  expect(buildIncidentDiagnostics(input({ sensors: null })).sensors).toBeNull();
+});
 
 test('the snapshot carries the held ground-truth label, or null when nothing fresh was held', () => {
   expect(buildIncidentDiagnostics(input()).activityTruth).toEqual({

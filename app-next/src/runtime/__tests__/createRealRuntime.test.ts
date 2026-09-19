@@ -15,6 +15,8 @@ jest.mock('../detection/NativeWalkingPort', () => ({ NativeWalkingPort: function
 jest.mock('../detection/NativeGymPort', () => ({ createNativeGymPort: (...args: unknown[]) => mockCreateGym(...args) }));
 jest.mock('../NativeClockPort', () => ({ createNativeClockPort: () => mockCreateClock() }));
 jest.mock('../NativeSupportPort', () => ({ createNativeSupportPort: () => ({ send: jest.fn() }) }));
+const mockStoreReviewRequest = jest.fn(async () => {});
+jest.mock('expo-store-review', () => ({ isAvailableAsync: async () => false, requestReview: () => mockStoreReviewRequest() }));
 jest.mock('../NativeGait', () => ({ nativeGait: () => mockNativeGait() }));
 jest.mock('../../screentime/native/createNativeScreenTimePort', () => ({ createNativeScreenTimePort: (...args: unknown[]) => mockCreateScreenTime(...args) }));
 jest.mock('../../../modules/excerlock-enforcement', () => ({ getExcerlockEnforcementModule: () => ({ getPolicyRevision: () => 1 }) }));
@@ -168,6 +170,21 @@ test('successful construction returns only the real graph and disposes idempoten
   await Promise.all([runtime.disposeAsync(), runtime.disposeAsync()]);
   expect(started.detection.stop).toHaveBeenCalledTimes(1);
   expect(started.client.dispose).toHaveBeenCalledTimes(1);
+});
+
+test('the review port asks StoreKit for the system sheet inside the prompt safety window', async () => {
+  graph();
+  const runtime = await createRealRuntime({ reportError: jest.fn() });
+  let pendingDuringCall: boolean | undefined;
+  mockStoreReviewRequest.mockImplementationOnce(async () => {
+    pendingDuringCall = runtime.safety?.().permissionPromptPending;
+  });
+  await expect(runtime.review.requestReview()).resolves.toBe('requested');
+  expect(mockStoreReviewRequest).toHaveBeenCalledTimes(1);
+  expect(pendingDuringCall).toBe(true);
+  expect(runtime.safety?.().permissionPromptPending).toBe(false);
+  await expect(runtime.review.isAvailable()).resolves.toBe(false);
+  await runtime.disposeAsync();
 });
 
 test('permission-denied fresh boot skips live motion and explicitly disables step-history query', async () => {

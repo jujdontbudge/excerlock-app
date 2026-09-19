@@ -17,6 +17,7 @@ import { GymRegionAdapter } from './GymRegionAdapter';
 import { HistoryCreditLedger } from './HistoryCreditLedger';
 import { WalkingDurationLedger } from './WalkingDurationLedger';
 import { runCleanups } from './runCleanups';
+import { createSensorStreamModuleClient } from './sensorStreams';
 export type NativeDetectionFactoryOptions = {
   getWakeContext(): Omit<DetectionWake, 'now' | 'source'>;
   onError?(error: unknown): void;
@@ -26,6 +27,9 @@ export type NativeDetectionFactoryOptions = {
 export function createNativeDetection(options: NativeDetectionFactoryOptions) {
   const rawMotion = new NativeMotionProvider(createExcerlockMotionModuleClient());
   const rawPlacement = new NativePhonePlacementProvider(createPhonePlacementModuleClient());
+  // The whole native sensor surface (same JSI module as above), exposed for
+  // diagnostics and a later OTA; the walking gate does not read it.
+  const sensors = createSensorStreamModuleClient();
   const location = createNativeLocationProvider();
   const gymLog = new AsyncStorageGymVisitLog();
   // One 50 Hz device-motion stream feeds both consumers: the stride
@@ -60,6 +64,7 @@ export function createNativeDetection(options: NativeDetectionFactoryOptions) {
     motionProvider: rawMotion,
     placement,
     placementProvider: rawPlacement,
+    sensors,
     location,
     gymLog,
     gyms,

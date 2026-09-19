@@ -17,6 +17,9 @@ import { NativeWalkingPort } from './detection/NativeWalkingPort';
 import { createNativeGymPort } from './detection/NativeGymPort';
 import { createNativeClockPort } from './NativeClockPort';
 import { createNativeSupportPort } from './NativeSupportPort';
+import * as StoreReview from 'expo-store-review';
+import { createStoreReviewPort } from './review/createStoreReviewPort';
+import { snapshotSensors } from './detection/sensorStreams';
 import { createIncidentLog } from './incident/IncidentLog';
 import { buildIncidentDiagnostics } from './incident/incidentDiagnostics';
 import { createIncidentReportPort } from './incident/createIncidentReportPort';
@@ -77,6 +80,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
   let selectionVersion = (await AsyncStorage.getItem(SELECTION_VERSION_KEY)) ?? 'initial';
   const clock = createNativeClockPort();
   const safety = new RuntimeSafety();
+  const storeReview = createStoreReviewPort(StoreReview);
   let disposed = false;
   let stopping: Promise<void> | null = null;
   let queue: Promise<void> = Promise.resolve();
@@ -612,6 +616,12 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         },
       },
       support: createNativeSupportPort(),
+      sensors: detection.sensors,
+      review: {
+        ...storeReview,
+        // A system sheet is a prompt for the OTA coordinator's purposes (no reload under it).
+        requestReview: () => safety.prompt(() => storeReview.requestReview()),
+      },
       incidentReports: createIncidentReportPort({
         transport: client.incidentReports,
         app: {
@@ -643,6 +653,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
             walkingDuration: duration,
             events: incidentLog.read(),
             activityTruth: currentActivityTruth(Date.now()),
+            sensors: snapshotSensors(detection.sensors),
           });
         },
       }),
