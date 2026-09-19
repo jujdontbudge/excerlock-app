@@ -654,7 +654,10 @@ class RunContext:
         return True
 
     def type_text(self, text: str) -> None:
-        shell(['idb', 'ui', 'text', '--udid', self.udid, text])
+        # ``--`` ends option parsing: a chunk that starts with ``-`` (the
+        # ``-fix`` of ``e2e-fixture…`` after idb dropped the ``-`` once) is
+        # otherwise read as an unknown flag and the mint dies (20260919T052145Z).
+        shell(['idb', 'ui', 'text', '--udid', self.udid, '--', text])
 
     def tap_field(self, label: str | None = None) -> bool:
         """Focus a text field: by label when given, else the first TextField.
