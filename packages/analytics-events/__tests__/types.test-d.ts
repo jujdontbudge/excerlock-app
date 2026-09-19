@@ -17,12 +17,12 @@ import type {
 describe('PropsOf', () => {
   it('resolves per-event property shapes', () => {
     expectTypeOf<PropsOf<'paywall_viewed'>>().toEqualTypeOf<{
-      placement: 'onboarding' | 'in_app'
+      placement: 'onboarding' | 'in_app' | 'winback'
       has_trial: boolean
       variation_id?: string
     }>()
     expectTypeOf<PropsOf<'purchase_started'>>().toEqualTypeOf<{
-      placement: 'onboarding' | 'in_app'
+      placement: 'onboarding' | 'in_app' | 'winback'
       plan_id: string
     }>()
     expectTypeOf<PropsOf<'restore_started'>>().toEqualTypeOf<
@@ -83,7 +83,7 @@ describe('AnalyticsEvent', () => {
     const ev = {} as AnalyticsEvent
     if (ev.name === 'purchase_started') {
       expectTypeOf(ev.props).toEqualTypeOf<{
-        placement: 'onboarding' | 'in_app'
+        placement: 'onboarding' | 'in_app' | 'winback'
         plan_id: string
       }>()
     }
