@@ -7,6 +7,10 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
   useLocalSearchParams: () => ({}),
 }));
+// The provider ticks the fake runtime once per real second. Keep this UI test
+// about the +1-hour control, not how long a loaded build machine takes to tap.
+beforeEach(() => jest.useFakeTimers());
+afterEach(() => jest.useRealTimers());
 test('scenario controls load a real fixture and adjust its clock', async () => {
   const runtime = createRuntime();
   await render(
