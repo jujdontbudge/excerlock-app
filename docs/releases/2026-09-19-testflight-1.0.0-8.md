@@ -2,16 +2,16 @@
 
 First App Store candidate (ADR 0042: the OTA-ready native sensor surface and a
 JS-callable review sheet) built locally from branch `fm/native-ota-surface-n1`
-(a fast-forward of `main` at `f9b34210`) with `ios.buildNumber = "8"`:
+(a fast-forward of `main` at `9be23dc7`; the archive was cut before the rebase onto `9be23dc7`, whose only delta is `app-store-screenshots/`, so the app tree — harness fingerprint `07feadef6f06` — is the one in the IPA; pre-rebase hashes `cf373c7c`/`9e72060e` appear in the committed verdicts) with `ios.buildNumber = "8"`:
 
-- `3f9f033d` feat(motion): collect-only Core Motion streams behind honest availability flags; runtimeVersion 3.
-- `5e19c5f3` feat(location): LocationSample carries GPS speed and course from the existing paths.
-- `9a973881` feat(runtime): JS-callable StoreKit review sheet, sensor stream catalogue, flags-only sensors snapshot in incident diagnostics.
-- `e4f09b99` test(e2e-next): E2E-M1 drives the preview-only /diagnostics/sensors smoke (harness + a route closed in prod; not in the IPA's behaviour).
-- `f5589d11` docs(adr): 0042.
-- `cf373c7c` chore(ios): build number 8.
-- `3326e979` fix(e2e-next): idb ui text takes the chunk after `--` (harness only).
-- `9e72060e` test(e2e-next): E2E-F1/H1/M1/F2 pass on cf373c7c (run `20260919T054020Z`).
+- `0269d99e` feat(motion): collect-only Core Motion streams behind honest availability flags; runtimeVersion 3.
+- `67529040` feat(location): LocationSample carries GPS speed and course from the existing paths.
+- `8f9001d4` feat(runtime): JS-callable StoreKit review sheet, sensor stream catalogue, flags-only sensors snapshot in incident diagnostics.
+- `295a691e` test(e2e-next): E2E-M1 drives the preview-only /diagnostics/sensors smoke (harness + a route closed in prod; not in the IPA's behaviour).
+- `14e502cc` docs(adr): 0042.
+- `aaeecfda` chore(ios): build number 8.
+- `9ff8fd30` fix(e2e-next): idb ui text takes the chunk after `--` (harness only).
+- `78a3af5c` test(e2e-next): E2E-F1/H1/M1/F2 pass on aaeecfda (run `20260919T054020Z`).
 
 Native delta against build 7: `modules/excerlock-motion` grew (new AsyncFunctions,
 events and payload fields), so `runtimeVersion` moves `2` → `3`. No new dependency,
@@ -30,13 +30,13 @@ that build 7 never showed, a launch crash or a stuck "Starting ExcerLock…".
 
 ## Proof before upload
 
-- `9e72060e`: E2E-F1/H1/M1/F2 PASS on the pinned `ExcerLock-Next` simulator
-  against a release-style build of `cf373c7c` (run `20260919T054020Z`): the fixture mints,
+- `78a3af5c`: E2E-F1/H1/M1/F2 PASS on the pinned `ExcerLock-Next` simulator
+  against a release-style build of `aaeecfda` (run `20260919T054020Z`): the fixture mints,
   Home and the Home Report flow still land their row with the new runtime graph, and
   E2E-M1 proves every new bridge function exists in the release bundle, rejects with
   `ERR_MOTION_UNAVAILABLE` on the motion-less simulator (never faked, never prompting),
   stops idempotently and repeats.
-- On `cf373c7c` before archiving: `npm run typecheck` clean (all workspaces);
+- On `aaeecfda` before archiving: `npm run typecheck` clean (all workspaces);
   `npm run lint --workspace app-next` 0 errors; `npm run test:guardrails` PASS;
   `node --test app-next/scripts/*.test.cjs` PASS (config smoke pins runtime `3`);
   `npm run test --workspace app-next` 296 suites / 1704 tests pass;
