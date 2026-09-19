@@ -33,6 +33,7 @@ import { World, Treadmill } from './World';
 import { GymMap } from './GymMap';
 import { Phone } from './Phone';
 import { PhaseTimeline } from './PhaseTimeline';
+import { sceneGeometry } from './layout';
 
 const HoldArc = Animated.createAnimatedComponent(Circle);
 /** An illustration only: never starts detection, changes permission state or grants access. */
@@ -152,7 +153,8 @@ function DemoScene({
     scenario.kind === 'walk-minutes' ||
     (scenario.kind === 'gym-minutes' && ['counting', 'unlocked', 'leave'].includes(frame.phase));
   // A single scene coordinate space keeps both columns disjoint at every width.
-  const scale = Math.min(dimensions.width / 400, dimensions.height / 440);
+  const geometry = sceneGeometry(dimensions.width, dimensions.height);
+  const { scale } = geometry;
   const unit = scenario.kind === 'walk-steps' ? 'steps' : 'min';
   const remaining = Math.max(0, scenario.goal - frame.progress);
   const counter =
@@ -220,10 +222,10 @@ function DemoScene({
           <View
             style={{
               position: 'absolute',
-              top: 0,
-              left: (dimensions.width - 400 * scale) / 2,
+              top: geometry.top,
+              left: geometry.left,
               width: 400,
-              height: 440,
+              height: geometry.height,
               transformOrigin: 'top left',
               transform: [{ scale }],
             }}>
