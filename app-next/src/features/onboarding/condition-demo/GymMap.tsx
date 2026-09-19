@@ -11,7 +11,7 @@ export function GymMap({ clock, scenario }: { clock: SharedValue<DemoState>; sce
     const distance = snapshot(clock.value, scenario).mapFraction * 216;
     const x = distance < 96 ? 40 : distance < 174 ? 40 + distance - 96 : 118;
     const y = distance < 96 ? 306 - distance : distance < 174 ? 210 : 210 - (distance - 174);
-    return { transform: `translate(${x},${y})` };
+    return { matrix: [1, 0, 0, 1, x, y] };
   });
   const ring = useAnimatedProps(() => {
     const state = snapshot(clock.value, scenario);

@@ -9,7 +9,7 @@ const hill = (y: number) =>
   `M-400 ${y + 60} C-300 ${y},-200 ${y + 80},-100 ${y + 20} S100 ${y + 70},200 ${y + 10} S400 ${y + 70},500 ${y + 20} S700 ${y + 70},800 ${y + 10} L800 400 L-400 400 Z`;
 function Layer({ index, clock }: { index: number; clock: SharedValue<DemoState> }) {
   const props = useAnimatedProps(() => ({
-    transform: `translate(${-((clock.value.distance * [0.08, 0.18, 0.45, 1][index]) % 400)},0)`,
+    matrix: [1, 0, 0, 1, -((clock.value.distance * [0.08, 0.18, 0.45, 1][index]) % 400), 0],
   }));
   return (
     <Group animatedProps={props}>
@@ -69,7 +69,7 @@ export function World({ clock }: { clock: SharedValue<DemoState> }) {
   );
 }
 export function Treadmill({ clock }: { clock: SharedValue<DemoState> }) {
-  const props = useAnimatedProps(() => ({ transform: `translate(${-clock.value.distance % 30},0)` }));
+  const props = useAnimatedProps(() => ({ matrix: [1, 0, 0, 1, -clock.value.distance % 30, 0] }));
   return (
     <Svg width={190} height={120} style={{ position: 'absolute', left: 0, bottom: 40 }} viewBox="0 0 190 120">
       <Rect x={6} y={88} width={178} height={22} rx={11} fill={c.treadmill} />
