@@ -24,3 +24,9 @@ Default screen set (captain may change): problem → promise → how walking wor
 (1290×2796, 6.9" iPhone). Source round: `rounds/r2-unrot/` (GPT Image 2.5 Sunburst, quality low,
 edits of the `html/outline-r1.html` frames; style spec in `STYLE-R2.md`; prompts in `prompts/*-r2.txt`).
 Order: hero → block apps → exercise to unlock → choose your rules → screen time down → reviews.
+
+2026-09-19 honesty pass: 01, 04 and 06 re-edited (`prompts/hero-r2d-edit.txt`, `rules-r2b-edit.txt`,
+`reviews-r2b-edit.txt`; rounds `hero-r2d`, `rules-r2b`, `reviews-r2b`) to drop the unsubstantiated
+rating/user-count laurels and named reviews, the non-1.0 "Steps exchange" / "Run 5 km" conditions and
+the wrong unlock durations. 06 is now the Screen Time / privacy frame. Edit prompts must not contain `;`
+— `gen.py` passes the prompt through `curl -F`, which treats `;` as an option separator and truncates it.
