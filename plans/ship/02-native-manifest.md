@@ -15,7 +15,7 @@ Exhaustive. Every row is something that **cannot be added by an OTA update**. `a
 | 6 | `.shieldaction` appex | `com.johansardar.excerlock.shieldaction`, frameworks ManagedSettings + UserNotifications | `targets/ShieldAction/` | |
 | 7 | `.report` appex (DeviceActivityReport) | `com.johansardar.excerlock.report`; display-only, cannot share data back | bundle ID exists in ASC; target is **new** | new |
 | 8 | App Groups | `group.com.johansardar.excerlock` on app + all appex; `REACT_NATIVE_DEVICE_ACTIVITY_APP_GROUP` | all entitlements files | |
-| 9 | CoreMotion | `NSMotionUsageDescription` (**prompting without it crashes**) + `modules/excerlock-motion` pod | `modules/excerlock-motion/` | |
+| 9 | CoreMotion | `NSMotionUsageDescription` (**prompting without it crashes**) + `modules/excerlock-motion` pod; since runtime `3` (ADR 0042) the pod also exposes collect-only streams — attitude/quaternion/heading/magnetic field on device motion, pedometer distance/pace/floors, `CMAltimeter`, raw magnetometer, pedometer pause/resume events, guarded `CMSensorRecorder` — each behind its own availability flag | `modules/excerlock-motion/` | |
 | 10 | Camera + Vision | `NSCameraUsageDescription` + gait-vision pod | already in `app-next/modules/excerlock-gait-vision` | |
 | 11 | Location When-In-Use | `NSLocationWhenInUseUsageDescription` | `app.json` | |
 | 12 | Location Always + geofencing | `NSLocationAlwaysAndWhenInUseUsageDescription`, `NSLocationAlwaysUsageDescription`; `expo-location`, `expo-task-manager` | `app/app.json:62-63` | |
@@ -37,10 +37,10 @@ Exhaustive. Every row is something that **cannot be added by an OTA update**. `a
 | 28 | Analytics | `posthog-react-native` | `app/` | |
 | 29 | OTA | `expo-updates` (+ code signing certificate if enabled) | `app/` | |
 | 30 | Config | `app.config.ts` resolving every key from EAS secrets with `~/.excerlock/env` fallback | `app/app.config.ts` | |
-| 31 | Misc Expo | `expo-device`, `expo-crypto`, `expo-store-review`, `expo-sharing`, `expo-web-browser`, `expo-auth-session`, `expo-network` | `app/package.json` | |
+| 31 | Misc Expo | `expo-device`, `expo-crypto`, `expo-store-review` (JS-callable system review sheet via `runtime.review`, ADR 0042), `expo-sharing`, `expo-web-browser`, `expo-auth-session`, `expo-network` | `app/package.json` | |
 | 32 | Startup diagnostics | app-owned `excerlock-startup` Expo module + AppDelegate Points of Interest markers (ADR 0021); diagnostic only, not full cold-launch acceptance | `app-next/modules/excerlock-startup/` | new |
 
-Native runtime boundary: adding row32 advances `app-next` runtimeVersion to `2`. No runtime2 OTA publication is authorized; build and test the new binary.
+Native runtime boundary: adding row32 advanced `app-next` runtimeVersion to `2`; widening row 9 (collect-only sensor streams, ADR 0042) advances it to `3` in build 8, the first App Store candidate. No runtime3 OTA publication is authorized; build and test the new binary.
 
 ## 2. Config plugin order (LIFO — first in the array runs last)
 
