@@ -63,6 +63,8 @@ describe("ExpoLocationClient", () => {
       lon: -73.989,
       accuracy: 8,
       atMs: 2_000,
+      speedMps: null,
+      courseDeg: null,
     });
 
     await client.startLocationUpdates();

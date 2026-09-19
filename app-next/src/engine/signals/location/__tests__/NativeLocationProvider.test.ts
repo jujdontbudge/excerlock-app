@@ -243,6 +243,8 @@ const sample: LocationSample = {
   lon: -73.989,
   accuracy: 8,
   atMs: 1_000,
+  speedMps: null,
+  courseDeg: null,
 };
 
 describe("NativeLocationProvider gym setup fix", () => {

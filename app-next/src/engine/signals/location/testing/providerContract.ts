@@ -40,6 +40,8 @@ export function runLocationProviderContract(
         lon: -73.989,
         accuracy: 8,
         atMs: 1_000,
+        speedMps: null,
+        courseDeg: null,
       });
       expect(transitions).toEqual([
         { type: "exit", regionId: "gym-a", atMs: 2_000 },

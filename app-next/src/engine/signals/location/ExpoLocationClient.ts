@@ -24,9 +24,15 @@ type ExpoLocationObject = {
     readonly accuracy: number | null;
     readonly latitude: number;
     readonly longitude: number;
+    /** CLLocation.speed / course; -1 when unknown. */
+    readonly speed?: number | null;
+    readonly heading?: number | null;
   };
   readonly timestamp: number;
 };
+
+const knownOrNull = (value: number | null | undefined): number | null =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
 
 export interface ExpoLocationModule {
   readonly Accuracy: { readonly High: unknown; readonly Low: unknown };
@@ -130,6 +136,8 @@ export class ExpoLocationClient implements NativeLocationClient {
       lon: location.coords.longitude,
       accuracy: location.coords.accuracy,
       atMs: location.timestamp,
+      speedMps: knownOrNull(location.coords.speed),
+      courseDeg: knownOrNull(location.coords.heading),
     };
   }
 

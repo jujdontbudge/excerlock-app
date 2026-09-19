@@ -17,6 +17,10 @@ export interface LocationSample {
   readonly lon: number;
   readonly accuracy: number;
   readonly atMs: number;
+  /** CLLocation.speed in m/s; null when Core Location reports it unknown (-1). Not read by any gate yet. */
+  readonly speedMps: number | null;
+  /** CLLocation.course in degrees clockwise from true north; null when unknown (-1). */
+  readonly courseDeg: number | null;
 }
 
 export interface RegionTransition {

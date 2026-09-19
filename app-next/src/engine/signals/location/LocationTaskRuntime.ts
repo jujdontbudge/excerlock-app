@@ -27,10 +27,17 @@ export type LocationTaskData = {
       readonly accuracy: number | null;
       readonly latitude: number;
       readonly longitude: number;
+      /** expo-location exports CLLocation.speed (m/s) and course (as `heading`, degrees); -1 means unknown. */
+      readonly speed?: number | null;
+      readonly heading?: number | null;
     };
     readonly timestamp: number;
   }[];
 };
+
+/** Core Location's "unknown" sentinel is a negative value; expose it as null. */
+const knownOrNull = (value: number | null | undefined): number | null =>
+  typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
 
 /** Shared state between Task Manager callbacks and the foreground adapter. */
 export class LocationTaskRuntime {
@@ -85,6 +92,8 @@ export class LocationTaskRuntime {
         lon: location.coords.longitude,
         accuracy: location.coords.accuracy,
         atMs: location.timestamp,
+        speedMps: knownOrNull(location.coords.speed),
+        courseDeg: knownOrNull(location.coords.heading),
       };
       this.lastLocation = sample;
       this.locationListeners.forEach((listener) => listener(sample));

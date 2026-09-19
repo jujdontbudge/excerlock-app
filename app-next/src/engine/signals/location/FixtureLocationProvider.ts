@@ -235,7 +235,8 @@ export class FixtureLocationProvider implements LocationProvider, ManualGymCheck
 
     if (row.event === "location.update") {
       assertLocationUpdatePayload(row.payload);
-      this.lastLocation = { ...row.payload, atMs: row.atMs };
+      // Fixtures predate speed/course; they carry no GPS velocity.
+      this.lastLocation = { speedMps: null, courseDeg: null, ...row.payload, atMs: row.atMs };
       this.locationCallbacks.forEach((callback) =>
         callback(this.lastLocation as LocationSample),
       );

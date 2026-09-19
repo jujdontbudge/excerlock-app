@@ -23,7 +23,20 @@ describe('LocationTaskRuntime', () => {
     runtime.handleLocationTask({
       locations: [{ coords: { latitude: 40.741, longitude: -73.989, accuracy: 8 }, timestamp: 2_000 }],
     });
-    expect(samples).toEqual([{ lat: 40.741, lon: -73.989, accuracy: 8, atMs: 2_000 }]);
+    expect(samples).toEqual([{ lat: 40.741, lon: -73.989, accuracy: 8, atMs: 2_000, speedMps: null, courseDeg: null }]);
+  });
+  it('passes GPS speed and course through, and reads Core Location’s -1 sentinels as unknown', () => {
+    const runtime = new LocationTaskRuntime(new RecordingGymVisitLog());
+    const samples: LocationSample[] = [];
+    runtime.onLocation((sample) => samples.push(sample));
+    runtime.handleLocationTask({
+      locations: [
+        { coords: { latitude: 40.741, longitude: -73.989, accuracy: 5, speed: 1.4, heading: 271.5 }, timestamp: 3_000 },
+        { coords: { latitude: 40.742, longitude: -73.989, accuracy: 5, speed: -1, heading: -1 }, timestamp: 4_000 },
+      ],
+    });
+    expect(samples.map((sample) => [sample.speedMps, sample.courseDeg])).toEqual([[1.4, 271.5], [null, null]]);
+    expect(runtime.getLastLocation()).toMatchObject({ atMs: 4_000, speedMps: null, courseDeg: null });
   });
 });
 class RecordingGymVisitLog implements GymVisitLog {
