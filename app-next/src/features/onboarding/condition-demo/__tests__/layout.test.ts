@@ -1,5 +1,9 @@
 import { sceneGeometry } from '../layout';
-test.each([[327, 300], [354, 440], [382, 520]])('fits a %s × %s stage without floating feet or overlapping status/timeline', (width, height) => {
+test.each([
+  [327, 300],
+  [354, 440],
+  [382, 520],
+])('fits a %s × %s stage without floating feet or overlapping status/timeline', (width, height) => {
   const g = sceneGeometry(width, height);
   const phoneTop = g.top + 76 * g.scale;
   const phoneBottom = g.top + (76 + 312) * g.scale;

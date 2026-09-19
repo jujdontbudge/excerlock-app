@@ -90,6 +90,7 @@ function DemoScene({
   const [frame, setFrame] = useState(() => snapshot(initial, scenario));
   const [dimensions, setDimensions] = useState({ width: 354, height: 430 });
   const [burst, setBurst] = useState(0);
+  const [holdFocused, setHoldFocused] = useState(false);
   const loaded = useRef(0);
   const accessibilityRelease = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gym = useSettingsStore((s) => s.data.gymPlaces[0]);
@@ -325,7 +326,20 @@ function DemoScene({
           }}
           onPressIn={hold}
           onPressOut={release}
-          style={[styles.hold, { backgroundColor: frame.manual === 'walking' ? t.brand.primary : t.surface.card }]}>
+          onFocus={() => setHoldFocused(true)}
+          onBlur={() => {
+            setHoldFocused(false);
+            release();
+          }}
+          style={[
+            styles.hold,
+            {
+              backgroundColor: frame.manual === 'walking' ? t.brand.primary : t.surface.card,
+              outlineColor: t.brand.primary,
+              outlineOffset: 2,
+              outlineWidth: holdFocused ? 3 : 0,
+            },
+          ]}>
           <Animated.View pointerEvents="none" style={[styles.holdProgress, holdFill]} />
           <View style={styles.holdRing}>
             <Svg width={26} height={26} viewBox="0 0 26 26">
@@ -343,7 +357,7 @@ function DemoScene({
               />
             </Svg>
           </View>
-          <View>
+          <View style={{ flexDirection: fontScale > 1.3 ? 'column' : 'row', alignItems: 'center', gap: 6 }}>
             <Text style={[styles.holdTitle, { color: frame.manual === 'walking' ? t.text.onAccent : t.text.primary }]}>
               {frame.manual === 'walking'
                 ? 'Walking · apps open'

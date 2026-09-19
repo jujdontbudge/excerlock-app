@@ -23,7 +23,7 @@ function Segment({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Preview ${label}`}
-      hitSlop={{ top: 17, bottom: 17 }}
+      hitSlop={{ top: 17, bottom: 17, left: 4, right: 4 }}
       onPress={onPress}
       style={[styles.segment, { flex: duration }]}>
       <Animated.View style={[styles.fill, fill]} />
