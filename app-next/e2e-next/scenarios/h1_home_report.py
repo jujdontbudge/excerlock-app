@@ -24,7 +24,8 @@ REPORT = 'Report a problem'
 SEND = 'Send report'
 THANKS = 'Thank you'
 ERROR = 'Could not send right now.'
-STILL_LOCKED = 'Still locked'
+#: The preselected reason follows the lock decision; on the simulator (no Screen Time) it is rarely 'locked'.
+REASONS = ('Still locked', 'Unlocked by mistake', 'Something else')
 #: The API host's Postgres is only reachable over the deploy SSH path (deploy/README.md).
 DEFAULT_HOST = 'johansardar@34.134.201.129'
 DEFAULT_KEY = '~/.ssh/google_compute_engine'
@@ -67,7 +68,8 @@ class H1HomeReport(Scenario):
             sheet = ctx.wait_for(SEND, 10)
             verdict.check('report.sheet_opened', sheet, 'Report opens the sheet with Send')
             summary = next((l for l in ctx.labels() if 'what the app saw' in l), '')
-            verdict.check('report.summary_names_held_label', STILL_LOCKED in summary and WALKING in summary,
+            reason = next((r for r in REASONS if summary.startswith(r)), '')
+            verdict.check('report.summary_names_held_label', bool(reason) and f' · {WALKING} · ' in summary,
                           f'the sheet says what goes out: {summary!r}')
             ctx.screenshot('report-sheet', shrink=True)
             if not sheet:
@@ -100,7 +102,8 @@ class H1HomeReport(Scenario):
                           blocked_until='deploy-ssh', evidence=[f'uid={uid!r}'])
             return
         fresh = row.get('created_at', 0) >= started - 5
-        verdict.check('api.report_persisted', fresh and row.get('what_went_wrong', '').startswith(STILL_LOCKED),
+        verdict.check('api.report_persisted',
+                      fresh and row.get('what_went_wrong', '') == f'{reason} while {WALKING.lower()}',
                       f'newest incident_reports row for the fixture user: {row}')
         verdict.check('api.report_carries_activity_truth', row.get('activity') == 'walking',
                       f'diagnostics.activityTruth.activity = {row.get("activity")!r}')
