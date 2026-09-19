@@ -48,6 +48,14 @@ export type WalkingEvent =
        * instead of by waiting; clamped to WALK_QUALIFY_MS. Apple evidence omits it.
        */
       verifiedMs?: number;
+      /**
+       * The adapter has measured the phone motionless for the gate's still-stop
+       * span (raw stream, not Apple's classifier, which carries "walking" for
+       * 8-30 s after a walker stops). A confirmed stop ends relief now instead
+       * of waiting out the silence and the grace. Only a negative observation
+       * may carry it.
+       */
+      stopped?: boolean;
     };
 function validTime(time: number): void {
   if (!Number.isFinite(time) || !Number.isFinite(new Date(time).getTime())) throw new Error('Invalid walking timestamp');
@@ -73,17 +81,30 @@ function deactivate(state: WalkingState): void {
   state.phase = 'inactive'; state.qualifyingSince = null; state.activeSince = null; state.graceEndsAt = null;
 }
 function advance(state: WalkingState, now: number, graceMs: number): void {
-  if ((state.phase === 'verifying' || state.phase === 'active') && state.lastEvidenceAt !== null && now >= state.lastEvidenceAt + WALK_SILENCE_MS) {
+  const silent = state.lastEvidenceAt !== null && now >= state.lastEvidenceAt + WALK_SILENCE_MS;
+  if ((state.phase === 'verifying' || state.phase === 'active') && silent) {
     if (state.phase === 'verifying') deactivate(state);
     else {
       state.phase = 'grace';
       state.qualifyingSince = null;
-      state.graceEndsAt = state.lastEvidenceAt + WALK_SILENCE_MS + graceMs;
+      state.graceEndsAt = state.lastEvidenceAt! + WALK_SILENCE_MS + graceMs;
     }
   }
-  if (state.phase === 'grace' && state.graceEndsAt !== null && now >= state.graceEndsAt) deactivate(state);
+  // Re-verification inside grace (qualifyingSince set by positive evidence)
+  // lapses with silence like any verification; it never moves the deadline.
+  if (state.phase === 'grace' && state.qualifyingSince !== null && silent) state.qualifyingSince = null;
+  if (state.phase === 'grace' && state.graceEndsAt !== null && now >= state.graceEndsAt) {
+    // Relief lapses at the deadline; a re-verification in flight continues as
+    // plain verification so the walker does not restart the three seconds.
+    const qualifyingSince = state.qualifyingSince;
+    deactivate(state);
+    if (qualifyingSince !== null) { state.phase = 'verifying'; state.qualifyingSince = qualifyingSince; }
+  }
   if (state.phase === 'verifying' && state.qualifyingSince !== null && now >= state.qualifyingSince + WALK_QUALIFY_MS) {
     state.phase = 'active'; state.activeSince = state.qualifyingSince + WALK_QUALIFY_MS;
+  }
+  if (state.phase === 'grace' && state.qualifyingSince !== null && now >= state.qualifyingSince + WALK_QUALIFY_MS) {
+    state.phase = 'active'; state.graceEndsAt = null;
   }
   state.watermark = Math.max(state.watermark, now);
 }
@@ -103,6 +124,8 @@ export function reduceWalking(previous: WalkingState, event: WalkingEvent, now: 
     const verifiedMs = event.verifiedMs ?? 0;
     if (!Number.isFinite(verifiedMs) || verifiedMs < 0) throw new Error('Invalid verified walking span');
     const positive = event.qualifying === true;
+    const stopped = event.stopped === true;
+    if (stopped && positive) throw new Error('A confirmed stop cannot be qualifying evidence');
     // Negative dominates contradictory observations at one timestamp. Duplicates
     // never reset verification/grace. Late history cannot revive live relief.
     const fresh = current - event.at <= WALK_EVIDENCE_FRESHNESS_MS && (state.lastEvidenceAt === null || event.at > state.lastEvidenceAt ||
@@ -111,19 +134,24 @@ export function reduceWalking(previous: WalkingState, event: WalkingEvent, now: 
       advance(state, event.at, graceMs);
       state.lastEvidenceAt = event.at;
       state.lastQualifying = positive;
-      if (positive) {
+      if (stopped) deactivate(state);
+      else if (positive) {
         const qualifyingSince = event.at - Math.min(verifiedMs, WALK_QUALIFY_MS);
         if (state.phase === 'inactive') {
           state.phase = 'verifying'; state.qualifyingSince = qualifyingSince;
-        } else if (state.phase === 'verifying' && state.qualifyingSince !== null && qualifyingSince < state.qualifyingSince) {
+        } else if ((state.phase === 'verifying' || state.phase === 'grace') &&
+          (state.qualifyingSince === null || qualifyingSince < state.qualifyingSince)) {
+          // Resuming from grace re-verifies like a fresh start: one positive
+          // sample (a pedometer reading on a shaken phone, a late Apple
+          // classification) must not flip relief back on by itself. Relief is
+          // kept meanwhile, so a real walker sees nothing; the raw stride path
+          // brings its verified span and resumes at once.
           state.qualifyingSince = qualifyingSince;
-        } else if (state.phase === 'grace') {
-          state.phase = 'active'; state.qualifyingSince = event.at; state.graceEndsAt = null;
         }
       } else if (state.phase === 'verifying') deactivate(state);
       else if (state.phase === 'active') {
         state.phase = 'grace'; state.qualifyingSince = null; state.graceEndsAt = event.at + graceMs;
-      }
+      } else if (state.phase === 'grace') state.qualifyingSince = null;
     }
   }
   advance(state, current, graceMs);

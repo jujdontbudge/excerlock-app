@@ -90,9 +90,29 @@ export type StrideAssessment = {
    * CMPedometer kept reporting 118-134 steps/min with steps accruing.
    */
   readonly recentVeto: boolean;
+  /**
+   * The newest window is shaped like a gait (`gaitShapedWindow`): walking
+   * intensity and tempo, regular, three-dimensional, translating more than it
+   * rotates - every stride check except periodicity. Apple's classifier and
+   * pedometer may corroborate a walk only through such a window while the raw
+   * stream is live (walk-shake-stop-w1: CMMotionActivity kept reporting
+   * walking:high and CMPedometer carried 120.7 steps/min on a phone the raw
+   * stream measured still at 0.052 g for 17.8 s; a seated shake reads 118-134
+   * steps/min on the pedometer). False without an evaluated window.
+   */
+  readonly gaitLike: boolean;
+  /**
+   * Start of the stillness behind a `still` verdict: the start of the first
+   * still window of the current uninterrupted run of still evaluations. The
+   * adapter turns `at - stillSince` into the confirmed-stop signal. Null unless
+   * the verdict is `still`.
+   */
+  readonly stillSince: number | null;
 };
 
-export const UNKNOWN_STRIDE: StrideAssessment = { verdict: 'unknown', at: null, since: null, features: null, windowClass: null, recentVeto: false };
+export const UNKNOWN_STRIDE: StrideAssessment = {
+  verdict: 'unknown', at: null, since: null, features: null, windowClass: null, recentVeto: false, gaitLike: false, stillSince: null,
+};
 
 /**
  * The native device-motion stream contract: the module samples at 50 Hz and
@@ -166,21 +186,31 @@ export interface StrideMotionSource {
   onSample(callback: (sample: StrideMotionSample) => void): () => void;
 }
 
-export function classifyStrideWindow(features: StrideFeatures, gate: StrideGateParams = SHIPPED_STRIDE_GATE): StrideWindowClass {
-  if (features.verticalRms < gate.stillG) return 'still';
-  const periodic = features.periodicity >= gate.minPeriodicity;
-  if (
+/**
+ * Every stride check except periodicity: a stepping body at walking intensity
+ * and tempo, regular, three-dimensional, translating more than it rotates.
+ * Measured on the captures (per-window features from this module): the pocket
+ * gait 8b91a77d clears it for 15 s straight with periodicity 0.2-0.39; hand-held
+ * walks clear it in runs of 7-210 evaluations; the longest run on any seated
+ * shake or sitting window is 8 (shakes: 2 of 171 windows on cd592ea2, 6-21 of
+ * 30-67 on f09377f9; sitting: 0-17 of 36-2091).
+ */
+export function gaitShapedWindow(features: StrideFeatures, gate: StrideGateParams = SHIPPED_STRIDE_GATE): boolean {
+  return (
     features.verticalRms >= gate.walkMinG &&
     features.recentRms >= gate.stillG &&
-    periodic &&
     features.stepHz >= gate.walkLowHz &&
     features.stepHz <= gate.walkHighHz &&
     features.intervalCv <= gate.maxIntervalCv &&
     features.axisPurity <= gate.maxAxisPurity &&
     features.rotationRatio <= gate.maxRotationRatio
-  ) {
-    return 'stride';
-  }
+  );
+}
+
+export function classifyStrideWindow(features: StrideFeatures, gate: StrideGateParams = SHIPPED_STRIDE_GATE): StrideWindowClass {
+  if (features.verticalRms < gate.stillG) return 'still';
+  const periodic = features.periodicity >= gate.minPeriodicity;
+  if (periodic && gaitShapedWindow(features, gate)) return 'stride';
   if (
     features.verticalRms >= gate.vetoMinG &&
     periodic &&
@@ -344,6 +374,7 @@ export class StrideRhythmAnalyzer {
   private walkSince: number | null = null;
   private vetoRun = 0;
   private lastVetoAt = Number.NEGATIVE_INFINITY;
+  private stillSince: number | null = null;
 
   constructor(private readonly gate: StrideGateParams = SHIPPED_STRIDE_GATE) {}
 
@@ -377,6 +408,7 @@ export class StrideRhythmAnalyzer {
     this.walkSince = null;
     this.vetoRun = 0;
     this.lastVetoAt = Number.NEGATIVE_INFINITY;
+    this.stillSince = null;
   }
 
   private evaluate(at: number): StrideAssessment {
@@ -384,19 +416,28 @@ export class StrideRhythmAnalyzer {
     const first = window[0];
     const span = first === undefined ? 0 : at - first.t;
     const minimumSamples = (this.gate.windowMs / 1000) * STRIDE_SAMPLE_HZ * this.gate.minCoverage;
-    if (first === undefined || span < this.gate.minSpanMs || window.length < minimumSamples) {
-      this.walkRun = 0; this.walkRunHz = null; this.walkSince = null; this.vetoRun = 0;
-      return { verdict: 'unknown', at, since: null, features: null, windowClass: null, recentVeto: this.recentVeto(at) };
-    }
-    const grid = resample(window, at - this.gate.windowMs, at, this.gate);
+    const grid = first === undefined || span < this.gate.minSpanMs || window.length < minimumSamples
+      ? null
+      : resample(window, at - this.gate.windowMs, at, this.gate);
     if (grid === null) {
-      this.walkRun = 0; this.walkRunHz = null; this.walkSince = null; this.vetoRun = 0;
-      return { verdict: 'unknown', at, since: null, features: null, windowClass: null, recentVeto: this.recentVeto(at) };
+      this.walkRun = 0; this.walkRunHz = null; this.walkSince = null; this.vetoRun = 0; this.stillSince = null;
+      return { verdict: 'unknown', at, since: null, features: null, windowClass: null, recentVeto: this.recentVeto(at), gaitLike: false, stillSince: null };
     }
     const features = computeStrideFeatures(grid, span, STRIDE_SAMPLE_HZ, this.gate);
     const windowClass = classifyStrideWindow(features, this.gate);
     const verdict = this.smooth(windowClass, features.stepHz, at);
-    return { verdict, at, since: verdict === 'walking' ? this.walkSince : null, features, windowClass, recentVeto: this.recentVeto(at) };
+    // The still anchor survives only across an uninterrupted run of still windows.
+    this.stillSince = windowClass === 'still' ? this.stillSince ?? Math.max(at - this.gate.windowMs, first!.t) : null;
+    return {
+      verdict,
+      at,
+      since: verdict === 'walking' ? this.walkSince : null,
+      features,
+      windowClass,
+      recentVeto: this.recentVeto(at),
+      gaitLike: gaitShapedWindow(features, this.gate),
+      stillSince: verdict === 'still' ? this.stillSince : null,
+    };
   }
 
   /**

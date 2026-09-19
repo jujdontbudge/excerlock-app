@@ -5,6 +5,7 @@ import {
   STRIDE_WINDOW_MS,
   StrideRhythmAnalyzer,
   classifyStrideWindow,
+  gaitShapedWindow,
   type StrideAssessment,
   type StrideFeatures,
   type StrideMotionSample,
@@ -133,5 +134,100 @@ describe('still phones and synthetic shakes', () => {
     const at = analyzer.assessmentAt(samples[199].t).at!;
     expect(at).toBeLessThanOrEqual(samples[199].t);
     expect(at).toBeGreaterThan(samples[199].t - 250);
+  });
+});
+
+// ---- Gait-shaped windows and the still anchor (walk-shake-stop-w1) ----
+// Apple's classifier and pedometer both call a shaken or freshly stopped phone
+// "walking"; while the raw stream is live they may only corroborate a window
+// that is shaped like a gait. "Gait-shaped" is every stride check except
+// periodicity, because the one captured gait the rhythm check never confirms
+// (8b91a77d, periodicity 0.2-0.39, step estimate alternating 1.4/1.9 Hz) clears
+// every other bound for 15 s, while no captured shake or sitting window sustains
+// the shape beyond eight evaluations.
+describe('gaitShapedWindow', () => {
+  test('a stride window is gait-shaped; an aperiodic window that clears every other bound is too', () => {
+    expect(gaitShapedWindow(walkingFeatures)).toBe(true);
+    expect(gaitShapedWindow({ ...walkingFeatures, periodicity: 0.2 })).toBe(true);
+    expect(classifyStrideWindow({ ...walkingFeatures, periodicity: 0.2 })).toBe('ambiguous');
+  });
+  test('a still, dying, one-dimensional, too fast or rotation-dominated window is not gait-shaped', () => {
+    expect(gaitShapedWindow({ ...walkingFeatures, verticalRms: 0.03, recentRms: 0.03 })).toBe(false);
+    expect(gaitShapedWindow({ ...walkingFeatures, recentRms: 0.04 })).toBe(false);
+    expect(gaitShapedWindow({ ...walkingFeatures, axisPurity: 0.95 })).toBe(false);
+    expect(gaitShapedWindow({ ...walkingFeatures, stepHz: 2.6 })).toBe(false);
+    expect(gaitShapedWindow({ ...walkingFeatures, stepHz: 1.0 })).toBe(false);
+    expect(gaitShapedWindow({ ...walkingFeatures, intervalCv: 0.6 })).toBe(false);
+    expect(gaitShapedWindow({ ...walkingFeatures, rotationRms: 2.5, rotationRatio: 9 })).toBe(false);
+  });
+});
+
+function longestGaitRun(trace: Trace): number {
+  let best = 0;
+  let run = 0;
+  for (const row of trace) {
+    run = row.assessment.gaitLike ? run + 1 : 0;
+    best = Math.max(best, run);
+  }
+  return best;
+}
+
+describe('real captures: gait-shaped runs', () => {
+  test('the pocket gait the rhythm check never confirms is gait-shaped throughout', () => {
+    const { trace } = run(strideSegment('walkPocketGait'));
+    expect(verdicts(trace).has('walking')).toBe(false);
+    const evaluated = trace.filter((row) => row.assessment.features !== null);
+    expect(evaluated.length).toBeGreaterThan(10);
+    expect(evaluated.every((row) => row.assessment.windowClass === 'ambiguous' && row.assessment.gaitLike)).toBe(true);
+  });
+  test('steady walks are gait-shaped for their whole length', () => {
+    for (const name of ['walkSteady', 'treadmillSteady'] as const) {
+      const { trace } = run(strideSegment(name));
+      expect(`${name}: ${longestGaitRun(trace)}`).toBe(`${name}: ${trace.filter((row) => row.assessment.features !== null).length}`);
+    }
+  });
+  test('no captured shake or still phone sustains the gait shape beyond eight evaluations', () => {
+    for (const name of ['shakeVigorous', 'shakeRotation', 'shakeSlowTail', 'shakeShort', 'sittingStill'] as const) {
+      expect(`${name}: ${longestGaitRun(run(strideSegment(name)).trace)}`).toMatch(new RegExp(`^${name}: [0-8]$`));
+    }
+    expect(run(strideSegment('shakeVigorous')).trace.every((row) => !row.assessment.gaitLike)).toBe(true);
+    expect(run(strideSegment('sittingStill')).trace.every((row) => !row.assessment.gaitLike)).toBe(true);
+  });
+});
+
+describe('the still anchor', () => {
+  test('a still verdict reports when the stillness began and keeps that anchor across the run', () => {
+    const { trace } = run(stillSamples(0, 8000));
+    const still = trace.filter((row) => row.verdict === 'still');
+    expect(still.length).toBeGreaterThan(10);
+    // The anchor is the start of the first still window, never earlier than
+    // the first sample the analyzer ever saw (the stream began at 0).
+    expect(still[0].t - STRIDE_WINDOW_MS).toBeLessThan(0);
+    expect(still[0].assessment.stillSince).toBe(0);
+    expect(new Set(still.map((row) => row.assessment.stillSince)).size).toBe(1);
+    expect(still[still.length - 1].t - still[still.length - 1].assessment.stillSince!).toBeGreaterThanOrEqual(7500);
+  });
+  test('a walking or shaking phone carries no still anchor; a shake that dies out anchors when the hand stops', () => {
+    for (const name of ['walkSteady', 'shakeVigorous'] as const) {
+      expect(run(strideSegment(name)).trace.every((row) => row.assessment.stillSince === null)).toBe(true);
+    }
+    const { trace } = run(strideSegment('shakeSlowTail'));
+    const firstStill = trace.find((row) => row.verdict === 'still')!;
+    expect(firstStill).toBeDefined();
+    // The start of the first still window: its first sample, within one
+    // 50 Hz sample of the window's nominal start.
+    expect(firstStill.assessment.stillSince).toBeGreaterThanOrEqual(firstStill.t - STRIDE_WINDOW_MS);
+    expect(firstStill.assessment.stillSince).toBeLessThan(firstStill.t - STRIDE_WINDOW_MS + 40);
+    expect(trace.filter((row) => row.t < firstStill.t).every((row) => row.assessment.stillSince === null)).toBe(true);
+  });
+  test('motion after a still run clears the anchor and a new still run starts a new one', () => {
+    const samples = [...stillSamples(0, 5000), ...strideSegment('walkSteady', 5020), ...stillSamples(11_000, 5000, 7)];
+    const { trace } = run(samples);
+    const anchors = trace.filter((row) => row.assessment.stillSince !== null).map((row) => row.assessment.stillSince);
+    expect(new Set(anchors).size).toBe(2);
+    expect(trace.filter((row) => row.t > 6000 && row.t < 10_000).every((row) => row.assessment.stillSince === null)).toBe(true);
+    const last = trace[trace.length - 1].assessment;
+    expect(last.verdict).toBe('still');
+    expect(last.stillSince).toBeGreaterThan(10_000);
   });
 });

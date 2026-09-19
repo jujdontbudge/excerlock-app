@@ -268,3 +268,26 @@ describe('the grace bounds keep the reducer contract', () => {
     }
   });
 });
+
+describe('the still-stop span', () => {
+  // Measured on the captures: the longest stillness the raw stream reports
+  // inside any walking label is 4.8 s (treadmill belt ramps at label start, both
+  // already in relief), so 10 s is twice that margin and a third of the
+  // silence + shipped grace (35 s) the captain waited through (walk-shake-stop-w1).
+  test('ships at 10 s, clamps to 5-60 s, and the hostile endpoint is the longest', () => {
+    expect(SHIPPED_STRIDE_GATE.stillStopMs).toBe(10_000);
+    expect(STRIDE_GATE_FIELD_SPECS.stillStopMs.clamp).toEqual([5_000, 60_000]);
+    expect(STRIDE_GATE_FIELD_SPECS.stillStopMs.hostile).toBe(60_000);
+    expect(payloadOf({ stillStopMs: 4_999 }).source).toBe('rejected');
+    expect(payloadOf({ stillStopMs: 60_001 }).source).toBe('rejected');
+    const applied = payloadOf({ stillStopMs: 6_000 });
+    expect(applied.source).toBe('remote');
+    expect(applied.effective.stillStopMs).toBe(6_000);
+    expect(describeStrideGateReport(applied)).toContain('stillStopMs=6000');
+  });
+  test('the floor always covers one full analysis window plus one evaluation', () => {
+    expect(STRIDE_GATE_FIELD_SPECS.stillStopMs.clamp[0]).toBeGreaterThan(
+      STRIDE_GATE_FIELD_SPECS.windowMs.clamp[1] + STRIDE_GATE_FIELD_SPECS.evaluationIntervalMs.clamp[1],
+    );
+  });
+});

@@ -54,6 +54,13 @@ export type MotionEvidence = {
   strideAt: number | null;
   /** Continuously verified walking behind a `walking` stride verdict, ms (0 otherwise). */
   verifiedMs: number;
+  /**
+   * The raw stream has measured the phone motionless for the gate's still-stop
+   * span (`stillStopMs`): a confirmed stop for the walking machine, which ends
+   * relief at once instead of waiting out the silence and the grace. Never true
+   * alongside qualifying evidence and never true without a live raw stream.
+   */
+  stopped: boolean;
 };
 
 /** Fuses raw sources once. It never converts historical steps into live relief. */
@@ -68,6 +75,7 @@ export class MotionAdapter {
   private analyzer: StrideRhythmAnalyzer | null;
   private gate: StrideGateReport;
   private strideVerdict: StrideVerdict = 'unknown';
+  private strideStopped = false;
   private strideUnsubscribe: Unsubscribe | null = null;
   private started = false;
   private unsubscribes: Unsubscribe[] = [];
@@ -163,28 +171,34 @@ export class MotionAdapter {
     const cadenceAge = this.cadence === null ? Infinity : at - this.cadence.asOf;
     const activityFresh = activityAge >= 0 && activityAge < MOTION_FRESHNESS_MS;
     const cadenceFresh = cadenceAge >= 0 && cadenceAge < MOTION_FRESHNESS_MS;
-    const activityQualifies =
+    const activityWalking =
       activityFresh &&
       (this.activity!.confidence === 'medium' || this.activity!.confidence === 'high') &&
       this.activity!.classes.some((kind) => kind === 'walking' || kind === 'running');
     const cadencePerMinute =
       cadenceFresh && this.cadence!.stepsPerSecond !== null ? this.cadence!.stepsPerSecond * 60 : null;
     const stride = this.strideAssessment(at);
-    // The cadence leg alone released relief on a seated shake (gate-proof-s1
-    // §5.1); it now needs the pedometer's counter to be accruing and the raw
-    // stream, when it is watching, to not contradict it now or within the
-    // last STRIDE_PENALTY_MS. Apple's activity classifier and the raw stride
-    // verdict remain independent legs. With the kill switch on the stride
-    // verdict is permanently `unknown` with no veto, so this reduces to the
-    // Apple-only pedometer rule plus the accrual check above.
+    // While the raw stream is live (an evaluated window exists), Apple's legs
+    // may only corroborate a window shaped like a gait, and never one vetoed
+    // now or within the last STRIDE_PENALTY_MS. The cadence leg alone released
+    // relief on a seated shake (gate-proof-s1 §5.1: CMPedometer reads a shake
+    // as 118-134 steps/min), and the activity leg alone kept a stopped walker in
+    // relief (walk-shake-stop-w1: CMMotionActivity reported walking:high on a
+    // phone measured still at 0.052 g for 17.8 s, f09377f9 +16.4 s). A gait the
+    // rhythm check never confirms (8b91a77d, periodicity 0.2-0.39) is still
+    // gait-shaped, so the Apple path keeps unlocking it. Without a live raw
+    // stream - no source, the kill switch, a stale stream, the first window -
+    // the Apple legs stand alone exactly as before the gate.
+    const rawLive = stride.features !== null;
+    const corroborated = !rawLive || (stride.gaitLike && !stride.recentVeto);
+    const activityQualifies = activityWalking && corroborated;
     const cadenceQualifies =
       cadencePerMinute !== null &&
       cadencePerMinute >= MIN_WALKING_CADENCE_PER_MINUTE &&
       this.cadenceStepsAccruing() &&
-      stride.verdict !== 'notStride' &&
-      stride.verdict !== 'still' &&
-      !stride.recentVeto;
+      corroborated;
     const strideWalking = stride.verdict === 'walking';
+    const stopped = this.confirmedStop(stride);
     const supported = activityFresh || cadenceFresh || stride.verdict !== 'unknown';
     const activityAt = activityFresh ? this.activity!.receivedAt : null;
     const cadenceAt = cadenceFresh ? this.cadence!.asOf : null;
@@ -202,6 +216,7 @@ export class MotionAdapter {
       verifiedMs: strideWalking && stride.since !== null && stride.at !== null
       ? Math.min(this.gate.effective.qualifyCreditMs, Math.max(0, stride.at - stride.since))
       : 0,
+      stopped,
     };
   }
 
@@ -228,6 +243,8 @@ export class MotionAdapter {
       cadencePerMinute: evidence.cadencePerMinute,
       stride: evidence.stride,
       strideAtWallMs: evidence.strideAt,
+      verifiedMs: evidence.verifiedMs,
+      stopped: evidence.stopped,
     });
     this.listeners.forEach((listener) => listener(evidence));
   }
@@ -294,8 +311,14 @@ export class MotionAdapter {
   private acceptStride(sample: StrideMotionSample): void {
     if (this.analyzer === null) return;
     const assessment = this.analyzer.push(sample);
-    if (assessment === null || assessment.verdict === this.strideVerdict) return;
+    if (assessment === null) return;
+    // Publish on a verdict change, and once more when a still run reaches the
+    // still-stop span: the reducer must learn of a confirmed stop without
+    // waiting for the next tick.
+    const stopped = this.confirmedStop(assessment);
+    if (assessment.verdict === this.strideVerdict && stopped === this.strideStopped) return;
     this.strideVerdict = assessment.verdict;
+    this.strideStopped = stopped;
     this.publish(sample.t);
   }
 
@@ -304,10 +327,26 @@ export class MotionAdapter {
     return this.analyzer.assessmentAt(at);
   }
 
+  /**
+   * A phone the raw stream has measured motionless for the still-stop span is
+   * a confirmed stop: the silence and the grace exist to absorb Apple's own
+   * 8-30 s stop lag, not a measured stillness. Still windows never corroborate,
+   * so a stop can never coincide with qualifying evidence.
+   */
+  private confirmedStop(stride: StrideAssessment): boolean {
+    return (
+      stride.verdict === 'still' &&
+      stride.stillSince !== null &&
+      stride.at !== null &&
+      stride.at - stride.stillSince >= this.gate.effective.stillStopMs
+    );
+  }
+
   /** Fresh reader for the current gate parameters; null while the kill switch is on. */
   private resetStride(): void {
     this.analyzer = this.gate.killSwitch.applied ? null : new StrideRhythmAnalyzer(this.gate.effective);
     this.strideVerdict = 'unknown';
+    this.strideStopped = false;
   }
 
   private attachStride(): void {

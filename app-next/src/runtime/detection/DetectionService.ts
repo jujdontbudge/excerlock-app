@@ -114,7 +114,7 @@ export class DetectionService {
       this.assertGeneration(wake.generation);
       let walking = reduceWalking(
         before.walking,
-        { kind: 'evidence', at: motion.observedAt, qualifying: motion.qualifying, verifiedMs: motion.verifiedMs },
+        { kind: 'evidence', at: motion.observedAt, qualifying: motion.qualifying, verifiedMs: motion.verifiedMs, stopped: motion.stopped },
         wake.now,
         wake.walkingGraceMs,
       );
@@ -210,7 +210,7 @@ export class DetectionService {
       this.assertGeneration(generation);
       let walking = reduceWalking(
         before.walking,
-        { kind: 'evidence', at: motion.observedAt, qualifying: motion.qualifying, verifiedMs: motion.verifiedMs },
+        { kind: 'evidence', at: motion.observedAt, qualifying: motion.qualifying, verifiedMs: motion.verifiedMs, stopped: motion.stopped },
         now,
         walkingGraceMs,
       );
@@ -307,7 +307,7 @@ export class DetectionService {
       const data = detectionStore.getState().data;
       let walking = reduceWalking(
         data.walking,
-        { kind: 'evidence', at: evidence.observedAt, qualifying: evidence.qualifying, verifiedMs: evidence.verifiedMs },
+        { kind: 'evidence', at: evidence.observedAt, qualifying: evidence.qualifying, verifiedMs: evidence.verifiedMs, stopped: evidence.stopped },
         now,
         graceMs,
       );
@@ -326,7 +326,7 @@ export class DetectionService {
     const data = detectionStore.getState().data;
     const walking = reduceWalking(
         data.walking,
-        { kind: 'evidence', at: evidence.observedAt, qualifying: evidence.qualifying, verifiedMs: evidence.verifiedMs },
+        { kind: 'evidence', at: evidence.observedAt, qualifying: evidence.qualifying, verifiedMs: evidence.verifiedMs, stopped: evidence.stopped },
         evidence.observedAt,
         graceMs,
       );

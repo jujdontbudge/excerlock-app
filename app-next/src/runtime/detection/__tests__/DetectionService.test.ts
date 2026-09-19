@@ -1,7 +1,7 @@
 import { DetectionService, MAX_HISTORY_SEGMENTS_PER_WAKE } from '../DetectionService';
 import { detectionStore } from '../../../state/detectionStore';
 import { confirmedGymRegions } from '../../../domain/gymMachine';
-import type { MotionAdapter } from '../MotionAdapter';
+import type { MotionAdapter, MotionEvidence } from '../MotionAdapter';
 import type { PlacementAdapter } from '../PlacementAdapter';
 import type { HistoryCredit } from '../DetectionService';
 import { HistoryCreditLedger } from '../HistoryCreditLedger';
@@ -494,4 +494,66 @@ test('a live stride verdict with a verified span reaches the reducer and release
   await service.tick(6000, 30_000, 0);
   expect(detectionStore.getState().data.walking).toMatchObject({ phase: 'active', activeSince: 6000 });
   await service.stop();
+});
+
+// ---- walk-shake-stop-w1: a confirmed stop from the adapter ends relief on every path ----
+function stopHarness() {
+  let evidence: MotionEvidence = { qualifying: true, observedAt: 0, activityAt: 0, cadenceAt: null, cadencePerMinute: null, stride: 'unknown', strideAt: null, verifiedMs: 0, stopped: false };
+  let motionListener: ((value: never) => void) | null = null;
+  const motion = {
+    reconcile: () => evidence,
+    subscribe: (listener: (value: never) => void) => { motionListener = listener; return () => {}; },
+    start: async () => {}, stop: async () => {},
+  } as unknown as MotionAdapter;
+  const placement = {
+    reconcile: () => ({ placement: 'unknown' as const, at: null }),
+    subscribe: () => () => {}, start: async () => {}, stop: async () => {},
+  } as unknown as PlacementAdapter;
+  const service = new DetectionService({
+    motion, placement, gymLog: { append: async () => {}, readAll: async () => [] }, historyLedger: historyLedger(), persist: async () => {},
+  });
+  const set = (next: Partial<MotionEvidence>) => { evidence = { ...evidence, ...next }; };
+  const walk = async () => {
+    set({ qualifying: true, observedAt: 0, stopped: false });
+    await service.reconcileMotion(0, 30_000, 0);
+    set({ observedAt: 3_000 });
+    await service.reconcileMotion(3_000, 30_000, 0);
+    expect(detectionStore.getState().data.walking.phase).toBe('active');
+  };
+  return { service, set, walk, emit: (value: MotionEvidence) => motionListener!(value as never) };
+}
+const walkingPhase = () => detectionStore.getState().data.walking.phase;
+
+test('a confirmed stop ends an active walk on reconcileMotion instead of starting the grace', async () => {
+  const h = stopHarness();
+  await h.walk();
+  h.set({ qualifying: false, observedAt: 14_000, stopped: true });
+  await h.service.reconcileMotion(14_000, 30_000, 0);
+  expect(walkingPhase()).toBe('inactive');
+});
+test('a plain negative still starts the grace, and a confirmed stop then ends it early', async () => {
+  const h = stopHarness();
+  await h.walk();
+  h.set({ qualifying: false, observedAt: 4_000, stopped: false });
+  await h.service.reconcileMotion(4_000, 30_000, 0);
+  expect(walkingPhase()).toBe('grace');
+  h.set({ observedAt: 14_000, stopped: true });
+  await h.service.tick(14_000, 30_000, 0);
+  expect(walkingPhase()).toBe('inactive');
+});
+test('a confirmed stop delivered by the motion subscription ends the walk', async () => {
+  const h = stopHarness();
+  await h.service.start(30_000);
+  await h.walk();
+  h.emit({ qualifying: false, observedAt: 14_000, activityAt: null, cadenceAt: null, cadencePerMinute: null, stride: 'still', strideAt: 14_000, verifiedMs: 0, stopped: true });
+  await h.service.flush();
+  expect(walkingPhase()).toBe('inactive');
+  await h.service.stop();
+});
+test('a confirmed stop seen by a wake ends the walk', async () => {
+  const h = stopHarness();
+  await h.walk();
+  h.set({ qualifying: false, observedAt: 14_000, stopped: true });
+  await h.service.reconcileWake({ now: 14_000, dayStart: 0, timezone: 'UTC', walkingGraceMs: 30_000, generation: 0, source: 'foreground', includeStepHistory: false });
+  expect(walkingPhase()).toBe('inactive');
 });

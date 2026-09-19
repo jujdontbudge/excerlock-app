@@ -20,6 +20,15 @@ import type { ActivitySample, CadenceSample, MotionProvider } from '../../../eng
  * intended): copy `StrideRhythm.ts` and `MotionAdapter.ts` from aa293011 into a
  * scratch test, push the same segments through both copies, and rewrite this
  * fixture from the old output.
+ *
+ * Re-recorded once, for walk-shake-stop-w1 (ADR 0041): the assessment gained
+ * `gaitLike` and `stillSince`, the evidence gained `stopped`, and the Apple
+ * legs now need a gait-shaped raw window. The scratch generator first asserted
+ * every pre-existing field of every analyzer row and every adapter row equal
+ * to the aa293011 rows before writing the new fields: nothing else moved, on
+ * any capture, including `qualifying` under the hostile 130 steps/min
+ * pedometer (the shake windows that leg used to ride were already inside the
+ * veto penalty).
  */
 
 const CAPTURES = ['walkSteady', 'treadmillSteady', 'walkColdStart', 'shakeVigorous', 'shakeRotation', 'shakeSlowTail', 'shakeShort', 'sittingStill'] as const;

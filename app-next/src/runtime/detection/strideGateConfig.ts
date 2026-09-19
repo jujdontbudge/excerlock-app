@@ -22,7 +22,8 @@
  * floors may only tighten, and the walking band may never reach the measured
  * shake band) and nothing here can make unlocking impossible (the band stays
  * reachable, the dwell stays inside the Apple path's own latency, and the
- * Apple legs are never touched).
+ * Apple legs are gated only by the same clamped window checks while the raw
+ * stream is live, standing alone whenever it is not - ADR 0041).
  *
  * Measured anchors, from the shipped gate's capture report (walking+treadmill
  * n=1726 windows, shaking n=328, sitting n=3100):
@@ -119,6 +120,16 @@ export const SHIPPED_STRIDE_GATE = Object.freeze({
   /** Effective walking grace bounds, ms: the user's own stop-grace is clamped into these. */
   graceMinMs: WALK_GRACE_MIN_MS,
   graceMaxMs: WALK_GRACE_MAX_MS,
+  /**
+   * A phone the raw stream has measured motionless (uninterrupted `still`
+   * windows) for this long is a confirmed stop: the walking machine ends relief
+   * at once instead of waiting out the 5 s silence and the user's grace, which
+   * exist to absorb Apple's 8-30 s stop lag, not a measured stillness. Measured
+   * on the captures: the longest stillness inside any walking label is 4.8 s
+   * (treadmill belt ramps at label start); the captain's still phone waited
+   * through 35 s (walk-shake-stop-w1).
+   */
+  stillStopMs: 10_000,
 });
 
 export type StrideGateField = keyof typeof SHIPPED_STRIDE_GATE;
@@ -303,6 +314,11 @@ export const STRIDE_GATE_FIELD_SPECS: Readonly<Record<StrideGateField, StrideGat
     clamp: [WALK_GRACE_MIN_MS, WALK_GRACE_MAX_MS],
     hostile: WALK_GRACE_MAX_MS,
     note: 'Upper bound applied to the user\'s own stop-grace, inside the same reducer contract.',
+  },
+  stillStopMs: {
+    clamp: [5_000, 60_000],
+    hostile: 60_000,
+    note: 'Measured stillness that ends relief: the floor keeps one full window plus one evaluation of margin over the longest stillness inside any captured walk (4.8 s, treadmill belt ramps); the ceiling is longer than the silence plus the shipped grace, i.e. it never fires before the grace does, which is the pre-change behaviour.',
   },
 };
 

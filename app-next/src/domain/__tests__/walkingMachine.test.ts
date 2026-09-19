@@ -36,10 +36,9 @@ test('unknown is a single negative observation, not perpetual relief', () => {
   expect(s.graceEndsAt).toBe(34000);
   expect(reduceWalking(s, evidence(30000, 'unknown'), 40000, 30000).phase).toBe('inactive');
 });
-test('new positive evidence during grace resumes immediately, after expiry must requalify', () => {
+test('positive evidence after grace expiry must requalify from scratch', () => {
   const stopped = reduceWalking(active(), evidence(4000, false), 4000, 30000);
-  expect(reduceWalking(stopped, evidence(20000, true), 20000, 30000)).toMatchObject({ phase: 'active', activeSince: 3000 });
-  expect(reduceWalking(stopped, evidence(40000, true), 40000, 30000)).toMatchObject({ phase: 'verifying', activeSince: null });
+  expect(reduceWalking(stopped, evidence(40000, true), 40000, 30000)).toMatchObject({ phase: 'verifying', activeSince: null, qualifyingSince: 40000 });
 });
 test('clock rewind and old evidence cannot revive expired state', () => {
   const expired = reduceWalking(active(), tick, 60000, 30000);
@@ -137,4 +136,62 @@ test('a verified span is validated and never applies to non-qualifying evidence'
   expect(() => reduceWalking(start, verified(5000, NaN), 5000, 30000)).toThrow();
   expect(reduceWalking(start, { kind: 'evidence', at: 5000, qualifying: false, verifiedMs: 4750 }, 5000, 30000).phase).toBe('inactive');
   expect(reduceWalking(start, { kind: 'evidence', at: 5000, qualifying: 'unknown', verifiedMs: 4750 }, 5000, 30000).phase).toBe('inactive');
+});
+
+// ---- A confirmed stop, and re-verification from grace (walk-shake-stop-w1) ----
+// The raw stream can measure a motionless phone in 3 s; Apple's classifier and
+// pedometer carry "walking" for 8-30 s after a walker stops (f09377f9 +16.4 s:
+// vertical RMS 0.052 g while CMMotionActivity kept reporting walking:high and
+// CMPedometer carried 120.7 steps/min). A confirmed stop ends relief now; a
+// single positive sample inside grace no longer flips relief back on.
+const stopped = (at: number) => ({ kind: 'evidence' as const, at, qualifying: false as const, stopped: true });
+const inGrace = () => reduceWalking(active(), evidence(4000, false), 4000, 30000);
+test('a confirmed stop ends relief at once, from active, grace and verifying', () => {
+  expect(reduceWalking(active(), stopped(4000), 4000, 30000)).toMatchObject({
+    phase: 'inactive', activeSince: null, graceEndsAt: null, qualifyingSince: null, lastEvidenceAt: 4000, lastQualifying: false,
+  });
+  expect(reduceWalking(inGrace(), stopped(10000), 10000, 30000)).toMatchObject({ phase: 'inactive', graceEndsAt: null });
+  const verifying = reduceWalking(start, evidence(0, true), 0, 30000);
+  expect(reduceWalking(verifying, stopped(1000), 1000, 30000).phase).toBe('inactive');
+  expect(walkingRelief(reduceWalking(inGrace(), stopped(10000), 10000, 30000))).toBe(false);
+});
+test('a stopped observation obeys the freshness contract and is never a positive', () => {
+  const s = active();
+  // 5.001 s old at wall 9001: stale, so it is only a tick.
+  expect(reduceWalking(s, stopped(4000), 9001, 30000)).toEqual(reduceWalking(s, tick, 9001, 30000));
+  // Older than the last evidence: ignored the same way.
+  expect(reduceWalking(s, stopped(2000), 4000, 30000)).toEqual(reduceWalking(s, tick, 4000, 30000));
+  expect(() => reduceWalking(start, { kind: 'evidence', at: 0, qualifying: true, stopped: true }, 0, 30000)).toThrow();
+  expect(reduceWalking(start, stopped(0), 0, 30000)).toMatchObject({ phase: 'inactive', lastEvidenceAt: 0 });
+});
+test('new positive evidence during grace re-verifies for three seconds before resuming', () => {
+  const resumed = reduceWalking(inGrace(), evidence(20000, true), 20000, 30000);
+  expect(resumed).toMatchObject({ phase: 'grace', qualifyingSince: 20000, activeSince: 3000, graceEndsAt: 34000 });
+  expect(walkingRelief(resumed)).toBe(true);
+  const again = reduceWalking(resumed, evidence(22000, true), 22000, 30000);
+  expect(again).toMatchObject({ phase: 'grace', qualifyingSince: 20000, graceEndsAt: 34000 });
+  expect(reduceWalking(again, tick, 22999, 30000).phase).toBe('grace');
+  expect(reduceWalking(again, tick, 23000, 30000)).toMatchObject({ phase: 'active', activeSince: 3000, graceEndsAt: null });
+});
+test('a lone positive sample in grace neither resumes relief nor extends the grace', () => {
+  const one = reduceWalking(inGrace(), evidence(20000, true), 20000, 30000);
+  // Silence lapses the re-verification; the grace deadline is untouched.
+  expect(reduceWalking(one, tick, 25000, 30000)).toMatchObject({ phase: 'grace', qualifyingSince: null, graceEndsAt: 34000 });
+  expect(reduceWalking(one, tick, 34000, 30000).phase).toBe('inactive');
+  // A negative in between cancels it too, without touching the deadline.
+  expect(reduceWalking(one, evidence(21000, false), 21000, 30000)).toMatchObject({ phase: 'grace', qualifyingSince: null, graceEndsAt: 34000 });
+  expect(reduceWalking(one, evidence(21000, 'unknown'), 21000, 30000)).toMatchObject({ phase: 'grace', qualifyingSince: null, graceEndsAt: 34000 });
+});
+test('re-verification that outlives the grace deadline continues as plain verification', () => {
+  const late = reduceWalking(inGrace(), evidence(32000, true), 32000, 30000);
+  const later = reduceWalking(late, evidence(33500, true), 33500, 30000);
+  expect(later.phase).toBe('grace');
+  expect(reduceWalking(later, tick, 34000, 30000)).toMatchObject({ phase: 'verifying', qualifyingSince: 32000, activeSince: null, graceEndsAt: null });
+  expect(reduceWalking(later, tick, 35000, 30000)).toMatchObject({ phase: 'active', activeSince: 35000 });
+});
+test('a verified span resumes from grace at once; a shorter one shortens the re-verification', () => {
+  expect(reduceWalking(inGrace(), verified(10000, 4750), 10000, 30000)).toMatchObject({ phase: 'active', activeSince: 3000, graceEndsAt: null });
+  const partial = reduceWalking(inGrace(), verified(10000, 2000), 10000, 30000);
+  expect(partial).toMatchObject({ phase: 'grace', qualifyingSince: 8000 });
+  expect(reduceWalking(partial, tick, 11000, 30000)).toMatchObject({ phase: 'active', activeSince: 3000 });
 });

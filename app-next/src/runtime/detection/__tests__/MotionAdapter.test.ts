@@ -1,4 +1,6 @@
 import { MOTION_CLOCK_SKEW_MS, MotionAdapter, type MotionEvidence } from '../MotionAdapter';
+import { SHIPPED_STRIDE_GATE } from '../strideGateConfig';
+import { createWalkingState, reduceWalking, walkingRelief } from '../../../domain/walkingMachine';
 import type { ActivitySample, CadenceSample, MotionProvider } from '../../../engine/signals/motion/MotionProvider';
 import { STRIDE_PENALTY_MS, type StrideMotionSample } from '../StrideRhythm';
 import { stillSamples, strideSegment } from './strideFixtures';
@@ -166,14 +168,18 @@ test('the first cadence sample has no baseline and is trusted on its own', async
   s.emitCadence({ stepsPerSecond: 1.7, cumulativeSteps: 400, asOf: 5000 });
   expect(s.adapter.reconcile(5000).qualifying).toBe(true);
 });
-test('a raw-stream still or non-gait verdict vetoes cadence but not the activity classifier', async () => {
+test('a raw-stream still verdict vetoes the pedometer and the activity classifier alike', async () => {
+  // f09377f9 +16.4 s: the phone measured still at 0.052 g while CMMotionActivity
+  // kept reporting walking:high and CMPedometer carried 120.7 steps/min, so the
+  // walk stayed in relief for the whole silence + grace. Neither Apple leg may
+  // stand on a phone the raw stream can see is not moving.
   const s = setup(true);
   await s.adapter.start();
   s.emitStride(stillSamples(0, 5000));
   walkingCadence(s, 2500, 5000, 120, 50);
-  expect(s.adapter.reconcile(5000)).toMatchObject({ qualifying: false, stride: 'still' });
+  expect(s.adapter.reconcile(5000)).toMatchObject({ qualifying: false, stride: 'still', stopped: false });
   s.emitActivity({ classes: ['walking'], confidence: 'high', startedAt: 5000, receivedAt: 5000 });
-  expect(s.adapter.reconcile(5000)).toMatchObject({ qualifying: true, stride: 'still' });
+  expect(s.adapter.reconcile(5000)).toMatchObject({ qualifying: false, stride: 'still', activityAt: 5000, stopped: false });
 });
 test('a seated shake counted by the pedometer never qualifies: vetoed live and for the penalty window after', async () => {
   const s = setup(true);
@@ -244,4 +250,106 @@ test('stop releases the raw stream and start resets the stride state', async () 
   await s.adapter.start();
   expect(s.adapter.reconcile(5980)).toMatchObject({ stride: 'unknown', qualifying: 'unknown' });
   void STRIDE_PENALTY_MS;
+});
+
+// ---- Apple legs corroborated by the raw stream; the confirmed stop (walk-shake-stop-w1) ----
+test('a phone measured still for the still-stop span is a confirmed stop; before that it is only negative', async () => {
+  const s = setup(true);
+  await s.adapter.start();
+  const published: MotionEvidence[] = [];
+  s.adapter.subscribe((evidence) => published.push(evidence));
+  s.emitStride(stillSamples(0, 9_000));
+  s.emitActivity({ classes: ['walking'], confidence: 'high', startedAt: 9_000, receivedAt: 9_000 });
+  const before = s.adapter.reconcile(9_000);
+  expect(before).toMatchObject({ qualifying: false, stride: 'still', stopped: false });
+  s.emitStride(stillSamples(9_020, 4_000, 3));
+  const after = s.adapter.reconcile(13_000);
+  expect(after).toMatchObject({ qualifying: false, stride: 'still', stopped: true });
+  expect(after.observedAt).toBe(after.strideAt);
+  // The stop was published to listeners the moment the span was reached, not only on reconcile.
+  const stops = published.filter((evidence) => evidence.stopped);
+  expect(stops.length).toBeGreaterThan(0);
+  expect(stops[0].observedAt).toBeGreaterThanOrEqual(SHIPPED_STRIDE_GATE.stillStopMs);
+  expect(stops[0].observedAt).toBeLessThan(SHIPPED_STRIDE_GATE.stillStopMs + 600);
+  expect(published.every((evidence) => !(evidence.stopped && evidence.qualifying === true))).toBe(true);
+});
+test('a confirmed stop needs uninterrupted stillness: handling the phone restarts the span', async () => {
+  const s = setup(true);
+  await s.adapter.start();
+  // Still from 0 would have confirmed a stop at 10 s; a short shake at 6 s
+  // (last sample 14 009) restarts the span from where its decaying tail first
+  // measured still (window start 13 708), so 9 s after the shake dies is not
+  // yet a stop and 10.3 s after it is.
+  s.emitStride([...stillSamples(0, 6_000), ...strideSegment('shakeShort', 6_020), ...stillSamples(14_100, 5_900, 5)]);
+  expect(s.adapter.reconcile(20_000)).toMatchObject({ stride: 'still', stopped: false });
+  s.emitStride(stillSamples(20_000, 3_100, 5));
+  expect(s.adapter.reconcile(23_100)).toMatchObject({ stride: 'still', stopped: false });
+  s.emitStride(stillSamples(23_100, 1_300, 5));
+  expect(s.adapter.reconcile(24_400)).toMatchObject({ stride: 'still', stopped: true });
+});
+test('the Apple legs corroborate a gait the rhythm check never confirms, and unlock it', async () => {
+  // 8b91a77d: periodicity 0.2-0.39, step estimate alternating 1.4/1.9 Hz; the
+  // stride path never publishes `walking`, Apple did at +4.6 s. This walk must
+  // keep unlocking through the Apple path.
+  const s = setup(true);
+  await s.adapter.start();
+  const walk = strideSegment('walkPocketGait', 4_020);
+  let state = createWalkingState(0);
+  let strideVerdicts = new Set<string>();
+  let steps = 0;
+  s.emitStride(stillSamples(0, 4_000));
+  for (const sample of walk) {
+    s.emitStride([sample]);
+    if (sample.t % 1000 < 20) {
+      s.emitActivity({ classes: ['walking'], confidence: 'high', startedAt: sample.t, receivedAt: sample.t });
+      steps += 100 / 60;
+      s.emitCadence({ stepsPerSecond: 100 / 60, cumulativeSteps: Math.round(steps), asOf: sample.t });
+      const evidence = s.adapter.reconcile(sample.t);
+      strideVerdicts.add(evidence.stride);
+      state = reduceWalking(state, { kind: 'evidence', at: evidence.observedAt, qualifying: evidence.qualifying, verifiedMs: evidence.verifiedMs, stopped: evidence.stopped }, sample.t, 30_000);
+      state = reduceWalking(state, { kind: 'tick' }, sample.t, 30_000);
+    }
+  }
+  expect(strideVerdicts.has('walking')).toBe(false);
+  expect(state.phase).toBe('active');
+  expect(s.adapter.reconcile(walk[walk.length - 1].t)).toMatchObject({ qualifying: true, stride: 'unknown', stopped: false });
+});
+test.each(['shakeVigorous', 'shakeRotation', 'shakeSlowTail', 'shakeShort', 'sittingStill'] as const)(
+  '%s with a hostile pedometer and a hostile activity classifier never earns relief',
+  async (name) => {
+    // Every Apple leg says "walking" throughout: 130 steps/min accruing and
+    // walking:high every second. With the raw stream live, the legs may only
+    // corroborate a gait-shaped window, and no captured shake sustains one.
+    const s = setup(true);
+    await s.adapter.start();
+    const segment = strideSegment(name, 4_020);
+    let state = createWalkingState(0);
+    let steps = 0;
+    const phases = new Set<string>();
+    s.emitStride(stillSamples(0, 4_000));
+    for (const sample of segment) {
+      s.emitStride([sample]);
+      if (sample.t % 1000 < 20) {
+        s.emitActivity({ classes: ['walking'], confidence: 'high', startedAt: sample.t, receivedAt: sample.t });
+        steps += 130 / 60;
+        s.emitCadence({ stepsPerSecond: 130 / 60, cumulativeSteps: Math.round(steps), asOf: sample.t });
+        const evidence = s.adapter.reconcile(sample.t);
+        expect(evidence.stopped && evidence.qualifying === true).toBe(false);
+        state = reduceWalking(state, { kind: 'evidence', at: evidence.observedAt, qualifying: evidence.qualifying, verifiedMs: evidence.verifiedMs, stopped: evidence.stopped }, sample.t, 30_000);
+        state = reduceWalking(state, { kind: 'tick' }, sample.t, 30_000);
+        phases.add(state.phase);
+        expect(walkingRelief(state)).toBe(false);
+      }
+    }
+    expect(phases.has('active')).toBe(false);
+  },
+);
+test('with the raw stream absent the Apple legs stand alone, so the background path is unchanged', async () => {
+  const s = setup(false);
+  await s.adapter.start();
+  s.setNow(5000);
+  s.emitActivity({ classes: ['walking'], confidence: 'high', startedAt: 5000, receivedAt: 5000 });
+  expect(s.adapter.reconcile(5000)).toMatchObject({ qualifying: true, stride: 'unknown', stopped: false });
+  walkingCadence(s, 5000, 10000, 100);
+  expect(s.adapter.reconcile(10000)).toMatchObject({ qualifying: true, stopped: false });
 });
