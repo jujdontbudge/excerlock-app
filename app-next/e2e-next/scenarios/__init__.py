@@ -13,6 +13,7 @@ from .e1_existing_user_home import E1ExistingUserHome
 from .e2_ota_stub import E2OtaReceiptStub
 from .f1_fixture_mint import F1FixtureMint
 from .f2_fixture_teardown import F2FixtureTeardown
+from .h1_home_report import H1HomeReport
 from .n1_onboarding_paywall import N1OnboardingPaywall
 from .n4_offline_fallback import N4OfflineFallbackPaywall, N4WarmProfileOfflineFallback
 from .r1_incident_report import R1IncidentReport
@@ -25,6 +26,7 @@ SCENARIO_CLASSES = (
     E1ExistingUserHome,
     V1ScreenSweep,
     R1IncidentReport,
+    H1HomeReport,
     S1StartupBudget,
     A3EmailSignIn,
     A4DeleteAccount,

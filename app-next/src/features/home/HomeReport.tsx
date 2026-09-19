@@ -9,7 +9,7 @@ import { Reveal } from '../../motion/Reveal';
 import { feedback } from '../../motion/haptics';
 import { useMotion } from '../../motion/useMotion';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
-import { activityTruthStore, type ActivityTruth } from '../../state/activityTruthStore';
+import { activityTruthStore, activityTruthStore as useActivityTruthStore, type ActivityTruth } from '../../state/activityTruthStore';
 
 const h = i.home;
 const ACTIVITIES: { id: ActivityTruth; label: string }[] = [
@@ -38,7 +38,8 @@ export function defaultReason(lockState: string): Reason {
  */
 export function HomeReport({ lockState }: { lockState: string }) {
   const runtime = useRuntime(),
-    held = activityTruthStore((s) => s.data),
+    // The `use` alias keeps the React Compiler treating the store selector as a hook (it must never be memoized conditionally).
+    held = useActivityTruthStore((s) => s.data),
     activity = held?.activity ?? null,
     [nudged, setNudged] = useState(false),
     [open, setOpen] = useState(false);

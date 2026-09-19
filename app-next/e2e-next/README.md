@@ -45,6 +45,7 @@ python3 app-next/e2e-next/run.py --list
 python3 app-next/e2e-next/run.py E2E-F1 E2E-E1 E2E-V1 E2E-F2 --run-id 20260917T2022Z
 python3 app-next/e2e-next/run.py E2E-F1 E2E-A4 E2E-F2 --run-id 20260917T2048Z
 python3 app-next/e2e-next/run.py E2E-F1 E2E-R1 E2E-F2 --run-id 20260918T2059Z
+python3 app-next/e2e-next/run.py E2E-F1 E2E-H1 E2E-F2
 
 # E2E-V1 owns both sweep states (guarded first, then the fresh install that
 # resets the keychain) and E2E-A4's confirmation consumes the identity, so each
