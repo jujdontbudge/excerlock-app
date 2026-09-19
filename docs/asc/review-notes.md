@@ -10,4 +10,10 @@ No demo account is required. Sign in with Apple is available; anonymous use must
 
 If Screen Time permission is denied or no apps are selected, the app shows that state and provides recovery guidance.
 
+The app uses Expo OTA (`expo-updates`) to deliver JavaScript-only fixes within the reviewed feature set: an update carries no native code, no new or changed permissions, and no feature the reviewed binary does not already contain.
+
+Remote configuration (PostHog) only tunes analytics-driven copy, step order and thresholds; its defaults are exactly the reviewed behavior above, and it does not enable, disable or unlock any capability.
+
+The app is self-control for the signed-in adult on this device: it is not a parent/child product, not MDM, and does not manage anyone else's device. Shielding is done through Apple's Family Controls and ManagedSettings — not through a VPN and not through MDM.
+
 Canonical support and privacy URLs are now entered in App Store Connect. Reviewer contact and phone must still be entered before submission. This file remains a draft and is not evidence that the `App Review` preset is present/active.
