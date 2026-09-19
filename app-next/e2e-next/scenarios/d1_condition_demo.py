@@ -18,7 +18,7 @@ from .onboarding import OnboardingWalk
 # (kind, place, chosen mode, (scene time, phase, phone, locked)...)
 CASES = [
     ('walk-steps', 'outside', 'Reach a step goal', [(1, 'walking', 'shield', True), (8, 'unlocked', 'tiktok', False)]),
-    ('walk-state', 'outside', 'Unlock while walking (Recommended)', [(0.4, 'walking', 'tiktok', False), (6, 'blocked', 'shield', True)]),
+    ('walk-state', 'outside', 'Unlock while walking (Recommended)', [(0.4, 'walking', 'tiktok', False), (1.4, 'walking', 'tiktok', False), (2.2, 'walking', 'tiktok', False), (6, 'blocked', 'shield', True)]),
     ('walk-state', 'treadmill', 'Unlock while walking (Recommended)', [(1, 'prop', 'excerlock', True), (3.5, 'scan', 'excerlock', True), (6, 'walking', 'tiktok', False), (11, 'blocked', 'shield', True)]),
     ('walk-minutes', 'outside', 'Walk for a set time', [(3, 'walking', 'shield', True), (8, 'unlocked', 'tiktok', False)]),
     ('gym-arrival', 'outside', 'Arrive at the gym', [(2, 'approach', 'shield', True), (5, 'confirming', 'shield', True), (8, 'unlocked', 'tiktok', False), (12, 'leave', 'tiktok', False)]),
@@ -75,8 +75,8 @@ class D1ConditionDemo(Scenario):
             for at, phase, phone, locked in phases:
                 ctx.sim.open_url(f'excerlock://onboarding/S3b?demoTime={at}&demoPause=1')
                 ok = has_state(ctx, kind, place, phase, phone, locked)
-                image = ctx.screenshot(f'{index + 1:02d}-{kind}-{place}-{phase}', shrink=False)
-                ctx.verdict.check(f'{kind}.{place}.{phase}', ok, f'Visible phase={phase}, phone={phone}, locked={locked}', evidence=[str(image)])
+                image = ctx.screenshot(f'{index + 1:02d}-{kind}-{place}-{phase}-{at}s', shrink=False)
+                ctx.verdict.check(f'{kind}.{place}.{phase}.{at}s', ok, f'Visible phase={phase}, phone={phone}, locked={locked}', evidence=[str(image)])
             if kind == 'walk-state' and place == 'outside':
                 self.hold_and_record(ctx)
             ctx.tap('Continue')
