@@ -134,6 +134,26 @@ not enabled. Do not create keys and do not claim tamper verification. The
 tamper-manifest proof below runs once per certificate only when signing is
 enabled.
 
+### Submission scope of remote configuration (Wave 2 audit, fix 10)
+
+An OTA may carry anything the reviewed binary already contains; it may never
+change what users can reach beyond that. Treat each of the following as
+**new-submission material — never an OTA**:
+
+- Widening the `stride_gate_config` clamps beyond their measured endpoints
+  (ADR 0035), weakening a one-directional field, or disabling the kill switch
+  defaults.
+- A new PostHog flag, or any new consumer of the existing flag rail
+  (`guardrails/flag-consumers.test.ts` bounds the rail).
+- A `shield_copy` (or any other remote copy) change that alters
+  user-visible capability — what the app lets a user do, gate, or reach.
+
+Review Notes (`docs/asc/review-notes.md`) commit to "remote configuration only
+tunes analytics-driven copy, step order and thresholds whose defaults are
+exactly the reviewed behavior"; the review binary must keep matching that
+sentence for every OTA it receives. If an OTA would move any of the above,
+ship it inside the next new-submission binary instead.
+
 ### Release ritual (gate for T16; script `app-next/scripts/verify-ota.sh` revision)
 
 1. `eas update --branch production --message "<sha>"` only from a tagged
