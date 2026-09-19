@@ -62,7 +62,7 @@ class M1SensorSmoke(Scenario):
         verdict.check('route.opens', True, 'the preview build routes /diagnostics/sensors')
 
         summary = self.wait_for_summary(ctx, 45)
-        ctx.screenshot('sensor-smoke-top')
+        ctx.screenshot('sensor-smoke-top', shrink=True)
         labels = [label.strip() for label in ctx.labels() if label and label.strip()]
         ctx.note('labels: ' + json.dumps(labels))
         if summary is None:
@@ -115,7 +115,7 @@ class M1SensorSmoke(Scenario):
         verdict.check('availability.motion_access', access == 'notDetermined',
                       f'Motion & Fitness = {access!r} (the smoke must not prompt)')
         ctx.scroll_to('sensorRecorder')
-        ctx.screenshot('sensor-smoke-availability')
+        ctx.screenshot('sensor-smoke-availability', shrink=True)
 
         # Run again must reach the same honest verdict: start/stop are idempotent.
         # The verdict text is identical, so the screen's run counter is what
@@ -125,7 +125,7 @@ class M1SensorSmoke(Scenario):
             second = self.wait_for_summary(ctx, 45, run='2')
             verdict.check('smoke.repeatable', second is not None and bool(HONEST.match(second)),
                           f'second run: {second!r}')
-            ctx.screenshot('sensor-smoke-rerun')
+            ctx.screenshot('sensor-smoke-rerun', shrink=True)
         else:
             verdict.check('smoke.repeatable', False, 'Run again button not found')
 
