@@ -1,0 +1,6 @@
+[22:28:17] idb describe-all failed; restarting the companion and retrying once
+[22:28:19] saw "Home"
+[22:28:21] held (118, 610) for 0.9s
+[22:28:23] tapped "Report a problem"
+[22:28:24] saw "Send report"
+[22:28:24] tapped "Send report"
