@@ -10,7 +10,7 @@ import type { PaywallErrorOperation } from '../../runtime/observability/paywallE
 import type { PaywallVariant } from '../../runtime/analytics/PostHogAnalyticsAdapter';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
-import { subscriptionCopy } from '../../content/subscription';
+import { subscriptionCopy, priceFirstFooterLabel, planRowTitle } from '../../content/subscription';
 import { defaultPlanHandle } from './paywallVariant';
 const TERMS_URL = 'https://excerlock.com/terms';
 const PRIVACY_URL = 'https://excerlock.com/privacy';
@@ -129,9 +129,8 @@ export function PaywallScreen({
       footer={
         <>
           {product ? (
-            <Label variant="support" tone="secondary" style={{ textAlign: 'center' }}>
-              {product.offerLabel ? `${product.offerLabel}, then ` : ''}
-              {product.localizedPrice} / {product.localizedPeriod}. Cancel anytime.
+            <Label variant="support" style={{ textAlign: 'center' }}>
+              {priceFirstFooterLabel(product)}
             </Label>
           ) : null}
           <PrimaryButton
@@ -203,8 +202,8 @@ export function PaywallScreen({
       {paywall?.products.map((item) => (
         <ChoiceRow
           key={item.handle}
-          title={item.title}
-          support={`${item.localizedPrice} / ${item.localizedPeriod}${item.offerLabel ? ` · ${item.offerLabel}` : ''}`}
+          title={planRowTitle(item)}
+          support={item.offerLabel ?? undefined}
           selected={selected === item.handle}
           recommended={item.recommended}
           onPress={() => {
