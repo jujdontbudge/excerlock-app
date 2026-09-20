@@ -1,4 +1,8 @@
-import { taskMotion, PLAN_MOTION } from '../planMotion';
+import { taskMotion, PLAN_MOTION, PLAN_RING, planRingCenterY } from '../planMotion';
+test('the celebration check lands on the loading ring centre', () => {
+  expect(planRingCenterY(874, 59)).toBe(59 + 874 * PLAN_RING.topFraction + PLAN_RING.size / 2);
+  expect(PLAN_RING.checkSize).toBeLessThan(PLAN_RING.size - PLAN_RING.stroke * 2);
+});
 test('completion holds before the pill exits toward the upper-right corner', () => {
   expect(taskMotion(0, 500).checked).toBe(false);
   expect(taskMotion(0, 700).checked).toBe(true);

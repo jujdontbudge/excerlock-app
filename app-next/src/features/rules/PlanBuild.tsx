@@ -10,10 +10,10 @@ import { ruleName } from '../../domain/ruleName';
 import { scheduleLabel } from '../../domain/scheduleLabel';
 import { Rule } from '../../domain/types';
 import { useMotion } from '../../motion/useMotion';
-import { PLAN_MOTION, taskMotion } from './planMotion';
+import { PLAN_MOTION, PLAN_RING, taskMotion } from './planMotion';
 const Arc = Animated.createAnimatedComponent(Circle);
 const Counter = Animated.createAnimatedComponent(TextInput);
-const RADIUS = 96;
+const RADIUS = PLAN_RING.radius;
 const LENGTH = 2 * Math.PI * RADIUS;
 
 function Task({ title, index, elapsed, checked, reduced, rowHeight }: {
@@ -77,17 +77,20 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
   }, [m.duration.fast, m.duration.slow, m.reduced]);
   const arc = useAnimatedProps(() => ({ strokeDashoffset: LENGTH * (1 - Math.min(1, elapsed.get() / PLAN_MOTION.count)) }));
   const counter = useAnimatedProps(() => ({ text: `${Math.min(100, Math.round(elapsed.get() / PLAN_MOTION.count * 100))}%`, defaultValue: '0%' }));
-  return <View style={{ flex: 1, paddingTop: height * 0.14, alignItems: 'center', gap: 32 }}>
+  // The celebration check lands in the ring at 100%; the percentage clears the centre for it.
+  const counterStyle = useAnimatedStyle(() => ({ opacity: elapsed.get() >= PLAN_MOTION.count ? 0 : 1 }));
+  const ring = PLAN_RING.size, middle = ring / 2;
+  return <View style={{ flex: 1, paddingTop: height * PLAN_RING.topFraction, alignItems: 'center', gap: 32 }}>
     <View accessible accessibilityRole="progressbar" accessibilityLabel="Preparing your plan"
       accessibilityValue={{ min: 0, max: 100, now: Math.round(completed / 6 * 100) }}
-      style={{ width: 224, height: 224, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={224} height={224} style={{ position: 'absolute' }}>
-        <Circle cx={112} cy={112} r={RADIUS} stroke={t.border.divider} strokeWidth={16} fill="none" />
-        <Arc cx={112} cy={112} r={RADIUS} stroke={t.brand.primary} strokeWidth={16} fill="none"
-          strokeLinecap="round" strokeDasharray={`${LENGTH} ${LENGTH}`} rotation={-90} origin="112,112" animatedProps={arc} />
+      style={{ width: ring, height: ring, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={ring} height={ring} style={{ position: 'absolute' }}>
+        <Circle cx={middle} cy={middle} r={RADIUS} stroke={t.border.divider} strokeWidth={PLAN_RING.stroke} fill="none" />
+        <Arc cx={middle} cy={middle} r={RADIUS} stroke={t.brand.primary} strokeWidth={PLAN_RING.stroke} fill="none"
+          strokeLinecap="round" strokeDasharray={`${LENGTH} ${LENGTH}`} rotation={-90} origin={`${middle},${middle}`} animatedProps={arc} />
       </Svg>
       <Counter editable={false} accessible={false} pointerEvents="none" defaultValue="0%" animatedProps={counter}
-        style={[t.type.metric, { color: t.brand.primary, padding: 0, textAlign: 'center', width: 180, fontVariant: ['tabular-nums'] }]} />
+        style={[t.type.metric, { color: t.brand.primary, padding: 0, textAlign: 'center', width: 180, fontVariant: ['tabular-nums'] }, counterStyle]} />
     </View>
     <View style={{ width: '100%', height: m.reduced ? (rowHeight + 12) * tasks.length : (rowHeight + 12) * 3 }}>
       {tasks.map((title, index) => <Task key={title} title={title} index={index} elapsed={elapsed}
