@@ -39,15 +39,21 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
     const v = Math.max(0, Math.min(1, (elapsed.get() - p.burst) / (p.covered - p.burst)));
     return { transform: [{ scale: m.reduced ? 1 : 1 + v * v * (coverScale - 1) }] };
   });
-  const rippleCycle = (offset: number) => {
+  // Keep this arithmetic inside each worklet; calling an ordinary JS helper from the UI thread crashes Hermes.
+  const ripple1 = useAnimatedStyle(() => {
     const now = elapsed.get();
-    const sinceStart = now - p.gap - offset;
-    if (sinceStart < 0 || now >= p.burst) return { opacity: 0, transform: [{ scale: 1 }] };
+    const sinceStart = now - p.gap;
+    if (m.reduced || sinceStart < 0 || now >= p.burst) return { opacity: 0, transform: [{ scale: 1 }] };
     const v = (sinceStart % b.ripple) / b.ripple;
     return { opacity: 0.4 * (1 - v), transform: [{ scale: 1 + v * 0.55 }] };
-  };
-  const ripple1 = useAnimatedStyle(() => (m.reduced ? { opacity: 0, transform: [{ scale: 1 }] } : rippleCycle(0)));
-  const ripple2 = useAnimatedStyle(() => (m.reduced ? { opacity: 0, transform: [{ scale: 1 }] } : rippleCycle(b.ripple / 2)));
+  });
+  const ripple2 = useAnimatedStyle(() => {
+    const now = elapsed.get();
+    const sinceStart = now - p.gap - b.ripple / 2;
+    if (m.reduced || sinceStart < 0 || now >= p.burst) return { opacity: 0, transform: [{ scale: 1 }] };
+    const v = (sinceStart % b.ripple) / b.ripple;
+    return { opacity: 0.4 * (1 - v), transform: [{ scale: 1 + v * 0.55 }] };
+  });
   const coin = useAnimatedStyle(() => ({
     opacity: m.reduced ? 1 : interpolate(elapsed.get(), [p.burst - 150, p.burst], [0, 1], 'clamp'),
   }));
