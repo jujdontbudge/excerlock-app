@@ -6,7 +6,7 @@ import { useMotion } from '../../motion/useMotion';
 
 export function MonthGrid({ data, goal, unit }: {
   data: { day: string; value: number | null }[];
-  goal: number;
+  goal: number | null;
   unit: string;
 }) {
   const motion = useMotion();
@@ -22,7 +22,7 @@ export function MonthGrid({ data, goal, unit }: {
         {Array.from({ length: leading }).map((_, index) => <View key={`blank-${index}`} style={s.cell} />)}
         {data.map((point, index) => {
           const value = point.value ?? 0;
-          const met = value >= goal && goal > 0;
+          const met = goal !== null && value >= goal && goal > 0;
           const measured = point.value !== null;
           return (
             <Animated.View
@@ -41,8 +41,12 @@ export function MonthGrid({ data, goal, unit }: {
       <View style={s.legend}>
         <View style={[s.dot, s.measured]} />
         <Label variant="support" tone="secondary">Measured</Label>
-        <View style={[s.dot, s.met]} />
-        <Label variant="support" tone="secondary">Goal met</Label>
+        {goal === null ? null : (
+          <>
+            <View style={[s.dot, s.met]} />
+            <Label variant="support" tone="secondary">Goal met</Label>
+          </>
+        )}
       </View>
     </View>
   );

@@ -45,8 +45,12 @@ export function AnalyticsScreen() {
     () => rules.filter((rule) => rule.enabled).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
     [rules],
   );
-  const primaryRule = enabledRules[0];
+  const gymRules = enabledRules.filter((rule) => rule.activity === 'gym');
+  const primaryRule = gymRules[0] ?? enabledRules[0];
   const primaryActivity = primaryRule?.activity ?? 'walking';
+  const gymDurationRule = gymRules.find(
+    (rule) => rule.mode.kind === 'target' && rule.mode.metric === 'minutes',
+  );
   const stepDays = useMemo(() => model.series.map((point) => point.day), [model.series]);
   const stepFallback = useMemo(
     () => model.series.map((point) => ({ day: point.day, value: point.day > today ? null : point.activity.walking })),
@@ -62,10 +66,7 @@ export function AnalyticsScreen() {
   const walkingAverage = measuredAverage(
     apple.points.filter((point) => point.day >= model.start && point.day <= model.end).map((point) => point.value),
   );
-  const arrivalMode = primaryRule?.activity === 'gym' && primaryRule.mode.kind === 'event';
-  const gymValues = model.series.map((point) => arrivalMode
-    ? ruleDays.filter((row) => row.day === point.day && row.met && enabledRules.some((rule) => rule.id === row.ruleId)).length
-    : point.day > today ? null : point.activity.gym);
+  const gymValues = model.series.map((point) => point.day > today ? null : point.activity.gym);
   const movementValues = primaryActivity === 'walking' ? walkingValues : gymValues;
   const movementTotal = primaryActivity === 'walking' ? walkingTotal : sum(
     model.series.map((point, index) => point.day >= model.start && point.day <= model.end ? gymValues[index] : null),
@@ -87,8 +88,15 @@ export function AnalyticsScreen() {
     selected: point.day === model.start && period === 'Day',
   }));
   const movementName = primaryActivity === 'walking' ? 'Walking' : 'Gym';
-  const movementGoal = primaryRule?.mode.kind === 'target' ? primaryRule.mode.goal : 1;
-  const movementUnit = primaryActivity === 'walking' ? 'steps from Apple Motion & Fitness' : arrivalMode ? 'gym visits' : 'minutes at the gym';
+  const movementGoal = primaryActivity === 'walking'
+    ? primaryRule?.mode.kind === 'target' ? primaryRule.mode.goal : null
+    : gymDurationRule?.mode.kind === 'target' ? gymDurationRule.mode.goal : null;
+  const movementUnit = primaryActivity === 'walking' ? 'steps from Apple Motion & Fitness' : 'minutes at the gym';
+  const gymPeriodValues = model.series.flatMap((point, index) =>
+    point.day >= model.start && point.day <= model.end && gymValues[index] !== null ? [gymValues[index] as number] : [],
+  );
+  const gymDaysMet = movementGoal === null ? 0 : gymPeriodValues.filter((value) => value >= movementGoal).length;
+  const gymDaysVisited = gymPeriodValues.filter((value) => value > 0).length;
   return (
     <ScreenShell dock safeBottom={false} contentStyle={s.content}>
       <View style={s.header}>
@@ -108,17 +116,19 @@ export function AnalyticsScreen() {
       <AnalyticsSection
         title={movementName}
         icon={primaryActivity}
-        total={primaryActivity === 'walking' ? integer(movementTotal) : arrivalMode ? integer(movementTotal) : duration(movementTotal)}
+        total={primaryActivity === 'walking' ? integer(movementTotal) : duration(movementTotal)}
         totalLabel={period === 'Day' ? 'Today' : 'Total'}
-        average={primaryActivity === 'walking' ? `AVG ${integer(movementAverage)}` : arrivalMode ? `AVG ${integer(movementAverage)}` : `AVG ${duration(movementAverage)}`}
+        average={primaryActivity === 'walking' ? `AVG ${integer(movementAverage)}` : `AVG ${duration(movementAverage)}`}
         chips={primaryActivity === 'walking'
           ? [
               { label: 'Streak', value: `${model.streak.current}d` },
               { label: 'Daily goal', value: primaryRule?.mode.kind === 'target' && primaryRule.mode.metric === 'steps' ? integer(primaryRule.mode.goal) : '—' },
             ]
           : [
-              { label: arrivalMode ? 'Visits' : 'Gym time', value: arrivalMode ? integer(movementTotal) : duration(movementTotal) },
-              { label: 'Days met', value: integer(model.met) },
+              { label: 'Gym time', value: duration(movementTotal) },
+              movementGoal === null
+                ? { label: 'Days visited', value: integer(gymDaysVisited) }
+                : { label: 'Days met', value: integer(gymDaysMet) },
             ]}>
         {primaryActivity === 'walking' && apple.status !== 'granted' ? (
           <PressableScale label="Connect Apple steps" onPress={() => void apple.request()} style={s.connect}>
@@ -130,7 +140,7 @@ export function AnalyticsScreen() {
           <MonthGrid
             data={model.series.map((point, index) => ({ day: point.day, value: movementValues[index] }))}
             goal={movementGoal}
-            unit={primaryActivity === 'walking' ? 'steps' : arrivalMode ? 'visits' : 'minutes'}
+            unit={primaryActivity === 'walking' ? 'steps' : 'minutes'}
           />
         ) : <MetricBars title={movementName} data={movementPoints} unit={movementUnit} />}
       </AnalyticsSection>

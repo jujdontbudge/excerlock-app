@@ -34,6 +34,23 @@ test('gym condition replaces Walking with Gym and keeps Screen Time', async () =
   runtime.dispose();
 });
 
+test('arrival-only gym conditions still show measured workout duration', async () => {
+  const runtime = await mountScenario('gym-arrival-user');
+  expect(screen.getByRole('header', { name: 'Gym' })).toBeTruthy();
+  expect(screen.getByText('Gym time')).toBeTruthy();
+  expect(screen.getByText('minutes at the gym')).toBeTruthy();
+  expect(screen.queryByText('Visits')).toBeNull();
+  expect(screen.queryByText('gym visits')).toBeNull();
+  runtime.dispose();
+});
+
+test('Gym stays above analytics whenever any enabled gym condition exists', async () => {
+  const runtime = await mountScenario('multi-rule-overlap');
+  expect(screen.getByRole('header', { name: 'Gym' })).toBeTruthy();
+  expect(screen.queryByRole('header', { name: 'Walking' })).toBeNull();
+  runtime.dispose();
+});
+
 test('walking analytics offers Apple step connection when motion access is absent', async () => {
   const runtime = await mountScenario('fresh-install');
   expect(screen.getByRole('button', { name: 'Connect Apple steps' })).toBeTruthy();
