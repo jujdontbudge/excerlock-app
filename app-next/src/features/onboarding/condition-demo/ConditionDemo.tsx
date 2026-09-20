@@ -189,7 +189,7 @@ function DemoScene({
             ? 'Today stays unlocked'
             : `You're at ${gymName}.`;
   return (
-    <View style={styles.root} testID="condition-demo">
+    <View key={fontScale} style={styles.root} testID="condition-demo">
       <View style={{ gap: 6 }}>
         <Text accessibilityRole="header" style={styles.heading}>
           How your plan works
@@ -235,10 +235,10 @@ function DemoScene({
             <Phone {...{ clock, scenario, reduced, frame }} />
             {goalCard ? (
               <View style={[styles.info, { top: isGym ? 54 : 76 }]}>
-                <Text style={styles.small}>{frame.goalMet ? 'GOAL REACHED' : isGym ? 'AT THE GYM' : 'TODAY'}</Text>
-                <Text style={styles.number}>
+                <Text maxFontSizeMultiplier={1} style={styles.small}>{frame.goalMet ? 'GOAL REACHED' : isGym ? 'AT THE GYM' : 'TODAY'}</Text>
+                <Text maxFontSizeMultiplier={1} style={styles.number}>
                   {frame.progress.toLocaleString('en-US')}
-                  <Text style={styles.small}>
+                  <Text maxFontSizeMultiplier={1} style={styles.small}>
                     {' '}
                     / {scenario.goal.toLocaleString('en-US')} {unit}
                   </Text>
@@ -250,8 +250,8 @@ function DemoScene({
             ) : null}
             {isGym ? (
               <View style={styles.mapCaption}>
-                <Text style={styles.mapTitle}>{mapTitle}</Text>
-                <Text style={styles.mapBody}>{mapBody}</Text>
+                <Text maxFontSizeMultiplier={1} style={styles.mapTitle}>{mapTitle}</Text>
+                <Text maxFontSizeMultiplier={1} style={styles.mapBody}>{mapBody}</Text>
               </View>
             ) : null}
           </View>
@@ -264,24 +264,24 @@ function DemoScene({
           style={[styles.status, { backgroundColor: frame.statusLocked ? t.text.primary : t.surface.solid }]}>
           <View style={styles.statusLine}>
             <View style={[styles.dot, { backgroundColor: frame.statusLocked ? t.text.onAccent : t.brand.primary }]} />
-            <Text style={[styles.statusTitle, { color: frame.statusLocked ? t.text.onAccent : t.text.primary }]}>
+            <Text maxFontSizeMultiplier={1} style={[styles.statusTitle, { color: frame.statusLocked ? t.text.onAccent : t.text.primary }]}>
               {frame.title}
             </Text>
             {counter ? (
-              <Text style={[styles.count, { color: frame.statusLocked ? t.text.onAccent : t.text.primary }]}>
+              <Text maxFontSizeMultiplier={1} style={[styles.count, { color: frame.statusLocked ? t.text.onAccent : t.text.primary }]}>
                 {counter}
               </Text>
             ) : null}
           </View>
           {fontScale < 1.8 ? (
-            <Text style={[styles.caption, { color: frame.statusLocked ? t.text.onAccent : t.text.secondary }]}>
+            <Text maxFontSizeMultiplier={1} style={[styles.caption, { color: frame.statusLocked ? t.text.onAccent : t.text.secondary }]}>
               {frame.caption}
             </Text>
           ) : null}
         </View>
         <View accessible={false} style={styles.timeline}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={styles.timelineLabel}>
+            <Text maxFontSizeMultiplier={1} style={styles.timelineLabel}>
               {frame.manual
                 ? `Hold · ${frame.phase}`
                 : frame.phase === 'walking'
@@ -292,7 +292,7 @@ function DemoScene({
                     ? 'Stopped · blocked'
                     : frame.phase}
             </Text>
-            <Text style={styles.timelineLabel}>
+            <Text maxFontSizeMultiplier={1} style={styles.timelineLabel}>
               {Math.floor(frame.time)} / {frame.total} s
             </Text>
           </View>
@@ -300,6 +300,11 @@ function DemoScene({
         </View>
         {burst > 0 && !reduced ? <Confetti key={burst} width={dimensions.width} /> : null}
       </View>
+      {fontScale > 1.3 ? (
+        <Text testID="condition-demo-large-explanation" style={styles.support}>
+          {frame.title}{'. '}{frame.caption}{counter ? `. ${counter}` : ''}
+        </Text>
+      ) : null}
       {scenario.kind === 'walk-state' ? (
         <Pressable
           testID="condition-demo-hold"
@@ -445,7 +450,9 @@ const styles = StyleSheet.create({
   timelineLabel: { fontSize: 11, fontWeight: '600', color: t.text.primary, fontVariant: ['tabular-nums'] },
   segment: { height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: t.surface.scrim },
   hold: {
-    height: 54,
+    minHeight: 54,
+    paddingVertical: 12,
+    paddingHorizontal: 42,
     borderRadius: 27,
     borderWidth: 1,
     borderColor: t.border.outline,
