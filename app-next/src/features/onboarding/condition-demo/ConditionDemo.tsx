@@ -14,6 +14,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { tokens as t } from '../../../design-system/tokens';
+import { PressableScale } from '../../../design-system/PressableScale';
+import { Icon } from '../../../icons/Icon';
 import { conditionDemoTokens as c } from '../../../design-system/conditionDemoTokens';
 import { useMotion } from '../../../motion/useMotion';
 import { feedback } from '../../../motion/haptics';
@@ -36,10 +38,12 @@ export function ConditionDemo({
   draft,
   schedule,
   answers,
+  onBack,
 }: {
   draft: RuleDraft;
   schedule: Schedule;
   answers: Answers;
+  onBack: () => void;
 }) {
   const places = useProfileStore((s) => s.data.walkPlaces.join(','));
   const scenario = useMemo(() => scenarioFor(draft, places), [draft, places]);
@@ -53,16 +57,18 @@ export function ConditionDemo({
   return (
     <DemoScene
       key={`${scenario.kind}:${scenario.place}:${scenario.goal}:${control?.time}:${control?.paused}`}
-      {...{ scenario, control }}
+      {...{ scenario, control, onBack }}
     />
   );
 }
 function DemoScene({
   scenario,
   control,
+  onBack,
 }: {
   scenario: ReturnType<typeof scenarioFor>;
   control: ReturnType<typeof demoTestControl>;
+  onBack: () => void;
 }) {
   const { reduced: initialReduced } = useMotion();
   const [reduced, setReduced] = useState(initialReduced);
@@ -174,13 +180,20 @@ function DemoScene({
   return (
     <View key={fontScale} style={styles.root} testID="condition-demo">
       <View
-        accessible
-        accessibilityLiveRegion="polite"
-        accessibilityLabel={`${unlockPromise} ${frame.title}. ${frame.caption}`}
         testID={`condition-demo-${scenario.kind}-${scenario.place}-${frame.phase}-${frame.phone}-${frame.locked ? 'locked' : 'unlocked'}`}
         style={[styles.stage, { minHeight: windowHeight < 740 ? 520 : 650 }]}
         onLayout={(event) => setDimensions(event.nativeEvent.layout)}>
         <LinearGradient colors={c.sky} style={StyleSheet.absoluteFill} />
+        <View accessible accessibilityLiveRegion="polite"
+          accessibilityLabel={`${unlockPromise} ${frame.title}. ${frame.caption}`}
+          style={styles.liveRegion} />
+        <View style={styles.promise}>
+          <PressableScale label="Back" onPress={onBack} style={styles.promiseBack}>
+            <Icon name="back" size={24} variant="utility" tint={t.brand.primary} />
+          </PressableScale>
+          <Text maxFontSizeMultiplier={1} style={styles.promiseText}>{unlockPromise}</Text>
+          <View style={styles.promiseBack} />
+        </View>
         <View
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
@@ -197,9 +210,6 @@ function DemoScene({
               transformOrigin: 'top left',
               transform: [{ scale }],
             }}>
-            <View style={styles.promise}>
-              <Text maxFontSizeMultiplier={1} style={styles.promiseText}>{unlockPromise}</Text>
-            </View>
             {scenario.place === 'treadmill' ? <Treadmill clock={clock} /> : null}
             {isGym ? <GymMap {...{ clock, scenario }} /> : <Character {...{ clock, scenario, reduced, onLoad }} />}
             <Phone {...{ clock, scenario, reduced, frame }} />
@@ -306,6 +316,7 @@ function DemoScene({
 const styles = StyleSheet.create({
   root: { flexGrow: 1 },
   stage: { flex: 1, minHeight: 650, overflow: 'hidden' },
+  liveRegion: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   promise: {
     position: 'absolute',
     top: 120,
@@ -316,11 +327,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingVertical: 14,
     backgroundColor: t.surface.solid,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     boxShadow: c.shadow,
+    zIndex: 10,
   },
-  promiseText: { fontSize: 15, lineHeight: 20, fontWeight: '700', color: t.text.primary, textAlign: 'center' },
+  promiseBack: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  promiseText: { flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '700', color: t.text.primary, textAlign: 'center' },
   info: {
     position: 'absolute',
     left: 14,

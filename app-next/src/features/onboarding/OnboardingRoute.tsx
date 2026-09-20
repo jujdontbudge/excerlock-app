@@ -77,7 +77,7 @@ export function OnboardingRoute() {
         {scheduleError ? <Label style={{ color: t.text.secondary }}>{c.scheduleLimit}</Label> : null}
       </View>
     );
-  if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} />;
+  if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} onBack={flow.back} />;
   if (flow.step === 'S4') body = <ReviewWarmup onSkip={flow.advance} />;
   return (
     <OnboardingShell
