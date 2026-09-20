@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, AppState, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, AppState, Pressable, StyleSheet, Text as NativeText, TextProps, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import Constants from 'expo-constants';
@@ -31,6 +31,10 @@ import { World, Treadmill } from './World';
 import { GymMap } from './GymMap';
 import { Phone } from './Phone';
 import { sceneGeometry } from './layout';
+
+function Text(props: TextProps) {
+  return <NativeText {...props} style={[{ fontFamily: t.font.regular }, props.style]} />;
+}
 
 const HoldArc = Animated.createAnimatedComponent(Circle);
 /** An illustration only: never starts detection, changes permission state or grants access. */

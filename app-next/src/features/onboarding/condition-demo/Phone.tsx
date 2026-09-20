@@ -14,7 +14,7 @@ import { DemoState, Scenario, snapshot } from './model';
 const ScanArc = Animated.createAnimatedComponent(Circle);
 // The phone is a decorative miniature, not a second accessible interface.
 function Text(props: TextProps) {
-  return <NativeText {...props} allowFontScaling={false} />;
+  return <NativeText {...props} allowFontScaling={false} style={[{ fontFamily: t.font.regular }, props.style]} />;
 }
 const note = 'M42 4c1 9 6 14 15 15v12c-6 0-11-2-15-5v23c0 12-9 20-20 20S2 61 2 50s9-20 20-20h5v12h-5a8 8 0 1 0 8 8V4Z';
 function TikTokMark() {

@@ -56,7 +56,7 @@ export function PlanTrialPreview({ condition }: { condition: string }) {
           <View style={{ height: 54, borderTopWidth: 1, borderTopColor: t.border.divider,
             flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' }}>
             {['Home', 'Conditions', 'Stats', 'Settings'].map((item, index) => (
-              <Text key={item} maxFontSizeMultiplier={1} style={{ flex: 1, fontSize: 7, fontWeight: '700',
+              <Text key={item} maxFontSizeMultiplier={1} style={{ flex: 1, fontSize: 7, fontFamily: t.font.bold,
                 textAlign: 'center', color: index === 1 ? t.brand.primary : t.text.secondary }}>
                 {item}
               </Text>
