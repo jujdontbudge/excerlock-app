@@ -10,7 +10,7 @@ test('completion holds before the pill exits toward the upper-right corner', () 
 test('100% immediately starts the centered check and orange cover transition', () => {
   expect(PLAN_MOTION.ready).toBe(PLAN_MOTION.count);
   expect(PLAN_MOTION.burst).toBe(0);
-  expect(PLAN_MOTION.covered).toBeLessThanOrEqual(700);
+  expect(PLAN_MOTION.covered).toBeLessThanOrEqual(200);
   expect(PLAN_MOTION.covered).toBeLessThan(PLAN_MOTION.fade);
   expect(PLAN_MOTION.fade).toBeLessThan(PLAN_MOTION.done);
 });

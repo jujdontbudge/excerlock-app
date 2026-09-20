@@ -1,5 +1,5 @@
 /** Milliseconds measured against the Pep AI replay; presentation, not server progress. */
-export const PLAN_MOTION = { count: 6000, ready: 6000, burst: 0, covered: 650, fade: 900, done: 1200 } as const;
+export const PLAN_MOTION = { count: 6000, ready: 6000, burst: 0, covered: 180, fade: 360, done: 520 } as const;
 function clamp(n: number) { 'worklet'; return Math.max(0, Math.min(1, n)); }
 function smooth(n: number) { 'worklet'; const x = clamp(n); return x * x * (3 - 2 * x); }
 export function taskMotion(index: number, elapsed: number) {
