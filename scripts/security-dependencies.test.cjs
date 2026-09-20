@@ -79,12 +79,28 @@ test("all locked Nano ID copies include the zero-size loop fix", () => {
   }
 });
 
-test("the JSON-RPC client no longer locks the quadratic stream-json parser", () => {
-  assert.equal(root.packages["node_modules/stream-json"], undefined);
-  const jaysonMajor = Number(
-    root.packages["node_modules/jayson"]?.version.split(".")[0],
-  );
-  assert.ok(jaysonMajor >= 5, String(jaysonMajor));
+test("no locked JSON-RPC client resolves the quadratic stream-json parser", () => {
+  for (const [label, lockfile] of [
+    ["root", root],
+    ["server", server],
+  ]) {
+    const entries = Object.entries(lockfile.packages);
+    const streamJson = entries
+      .filter(([packagePath]) => packagePath.endsWith("node_modules/stream-json"))
+      .map(([packagePath, packageInfo]) => `${label}:${packagePath}@${packageInfo.version}`);
+    assert.deepEqual(streamJson, []);
+
+    const jayson = entries.filter(([packagePath]) =>
+      packagePath.endsWith("node_modules/jayson"),
+    );
+    if (label === "root") {
+      assert.ok(jayson.length > 0, "root must lock jayson");
+    }
+    const vulnerable = jayson
+      .filter(([, packageInfo]) => Number(packageInfo.version.split(".")[0]) < 5)
+      .map(([packagePath, packageInfo]) => `${label}:${packagePath}@${packageInfo.version}`);
+    assert.deepEqual(vulnerable, []);
+  }
 });
 
 test("every locked uuid copy has the v3/v5/v6 buffer bounds check", () => {
