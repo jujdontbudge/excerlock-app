@@ -79,6 +79,42 @@ test("all locked Nano ID copies include the zero-size loop fix", () => {
   }
 });
 
+test("the JSON-RPC client no longer locks the quadratic stream-json parser", () => {
+  assert.equal(root.packages["node_modules/stream-json"], undefined);
+  const jaysonMajor = Number(
+    root.packages["node_modules/jayson"]?.version.split(".")[0],
+  );
+  assert.ok(jaysonMajor >= 5, String(jaysonMajor));
+});
+
+test("every locked uuid copy has the v3/v5/v6 buffer bounds check", () => {
+  const versions = Object.entries(root.packages)
+    .filter(([packagePath]) => packagePath.endsWith("node_modules/uuid"))
+    .map(([, packageInfo]) => packageInfo.version);
+  assert.ok(versions.length > 0, "root must lock uuid");
+  assert.deepEqual(
+    versions.filter((version) => Number(version.split(".")[0]) < 11),
+    [],
+    versions.join(", "),
+  );
+});
+
+test("no lockfile nests the pre-0.25 esbuild development server", () => {
+  for (const [label, lockfile] of [
+    ["root", root],
+    ["server", server],
+  ]) {
+    const stale = Object.entries(lockfile.packages)
+      .filter(([packagePath]) => /(?:^|\/)node_modules\/esbuild$/.test(packagePath))
+      .filter(([, packageInfo]) => {
+        const [major, minor] = packageInfo.version.split(".").map(Number);
+        return major === 0 && minor < 25;
+      })
+      .map(([packagePath, packageInfo]) => `${label}:${packagePath}@${packageInfo.version}`);
+    assert.deepEqual(stale, []);
+  }
+});
+
 test("CI actions are pinned to reviewed immutable commits", () => {
   assert.match(
     ciWorkflow,

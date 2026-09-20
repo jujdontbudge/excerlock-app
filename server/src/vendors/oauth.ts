@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { Environment } from "../env.js";
+import { VendorClientError } from "./errors.js";
 import type { VendorAnalytics } from "../services/analytics.js";
 import { analytics as defaultAnalytics } from "../services/analytics.js";
 import {
@@ -139,7 +140,7 @@ export function createVendorOAuthService(
 
     async completeConnection(vendor, callback) {
       if (!callback.state) {
-        throw new Error("OAuth callback is missing its state");
+        throw new VendorClientError("OAuth callback is missing its state");
       }
 
       const completedAt = now();
@@ -149,7 +150,9 @@ export function createVendorOAuthService(
         completedAt,
       );
       if (!state) {
-        throw new Error("OAuth state is invalid, expired, or already used");
+        throw new VendorClientError(
+          "OAuth state is invalid, expired, or already used",
+        );
       }
       if (callback.error) {
         const vendorLabel =
@@ -159,12 +162,14 @@ export function createVendorOAuthService(
         const description = callback.errorDescription
           ? ` (${callback.errorDescription})`
           : "";
-        throw new Error(
+        throw new VendorClientError(
           `${vendorLabel} authorization failed: ${callback.error}${description}`,
         );
       }
       if (!callback.code) {
-        throw new Error("OAuth callback is missing its authorization code");
+        throw new VendorClientError(
+          "OAuth callback is missing its authorization code",
+        );
       }
 
       const configuration = requireVendorOAuthConfiguration(
@@ -206,7 +211,7 @@ export function createVendorOAuthService(
         vendor,
       );
       if (!connection) {
-        throw new Error(`${vendor} is not connected for this user`);
+        throw new VendorClientError(`${vendor} is not connected for this user`);
       }
 
       const cipher = requireVendorTokenCipher(options.environment);
@@ -255,7 +260,7 @@ export function createVendorOAuthService(
         vendor,
       );
       if (!connection) {
-        throw new Error(`${vendor} is not connected for this user`);
+        throw new VendorClientError(`${vendor} is not connected for this user`);
       }
 
       const configuration = requireVendorOAuthConfiguration(

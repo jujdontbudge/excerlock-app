@@ -96,10 +96,18 @@ instead of being silently discarded.
 - Remediation: `server/src/index.ts` now maps unexpected errors to stable
   generic 4xx/5xx envelopes. `server/src/routes/vendorRouteSupport.ts` now
   returns generic configuration, upstream, and request-failure messages.
+  Caller-caused OAuth outcomes (missing or replayed `state`, missing `code`,
+  a vendor `error=access_denied`, disconnecting a vendor that is not
+  connected) are thrown as `VendorClientError`
+  (`server/src/vendors/errors.ts`) and answered with
+  `400 VENDOR_REQUEST_INVALID`; everything else unexpected stays `500`, so
+  a declined consent no longer feeds 5xx alerting.
 - Regression evidence: `server/test/routes.test.ts` asserts that a thrown
   `database password=...` message is absent from the response.
   `server/test/vendor-routes.test.ts` asserts that missing configuration
-  details are not disclosed.
+  details are not disclosed and that a declined callback is a 400.
+  `server/test/vendor-oauth.test.ts` asserts the service throws the typed
+  client error for those callback outcomes.
 
 ### SEC-004 — Production could bind publicly and accept insecure service URLs
 
@@ -159,11 +167,20 @@ instead of being silently discarded.
   reachable through parser/URL handling code.
 - Remediation: Root overrides pin `decode-uri-component` to `0.5.0`,
   `@xmldom/xmldom` to `0.8.15`, and the existing server lock resolution
-  contains patched `fast-uri` versions. Both Expo Jest configurations
-  explicitly transform the ESM decoder so the security upgrade does not
-  regress the existing test harness.
+  contains patched `fast-uri` versions. `decode-uri-component@0.5.0` is
+  ESM-only (`export default`) while its only consumer, `query-string@7.1.3`
+  under `expo-router`, is CommonJS, so a bare override made
+  `queryString.parse()` throw `decodeComponent is not a function` under
+  Metro, Jest and Node. `app-next/patches/query-string+7.1.3.patch` (applied
+  by the root `postinstall`) unwraps the default export so both module
+  shapes work. Both Expo Jest configurations explicitly transform the ESM
+  decoder so the security upgrade does not regress the existing test
+  harness.
 - Regression evidence: `scripts/security-dependencies.test.cjs` checks the
   root URL-parser version and both backend `fast-uri` resolutions.
+  `app-next/src/runtime/__tests__/routerQueryString.test.ts` executes
+  `query-string` `parse`/`stringify` through the app's Jest transform and
+  fails with the unpatched consumer.
 
 ### SEC-008 — Vitest mocker path traversal advisory in test tooling
 
@@ -209,38 +226,42 @@ instead of being silently discarded.
 
 ## Dependency and scanner residual risk
 
-These findings remain visible in dependency scanners and are intentionally
-not described as fixed:
+The advisories that an earlier draft of this report left open are now
+remediated through supported upstream releases; the scanners are clean:
 
-1. `npm audit --omit=dev --audit-level=moderate` still reports 30 moderate
-   root-workspace advisories, and the equivalent `app-next` audit reports 17.
-   The remaining chains include:
-   - `stream-json@1.9.1` through `jayson` and Clerk's Solana wallet
-     dependency graph. The upstream fix is `stream-json@3.5.0`, but the
-     current `jayson@4.3.0` dependency range is 1.x; forcing a major
-     replacement or replacing the Clerk SDK would be a compatibility/product
-     change.
-   - `uuid@7.0.3` and `uuid@8.3.2` through Expo build tooling and `jayson`.
-     The attempted broad override did not remove all incompatible nested
-     copies. A safe fix requires compatible upstream Expo/Clerk/tooling
-     releases rather than silently replacing APIs across SDK boundaries.
-2. OSV still reports `esbuild@0.18.20` in
-   `@esbuild-kit/core-utils`, pulled by Drizzle Kit's TypeScript config
-   loader. The advisory concerns esbuild's exposed development HTTP server;
-   this dependency is used as a local transform/loader and is not used by the
-   production server. The fixed esbuild range is incompatible with that
-   deprecated loader's `~0.18.20` requirement. Upgrade Drizzle Kit or its
-   loader replacement before forcing this dependency.
-3. The backend production audit is clean:
-   `npm audit --workspace server --omit=dev --audit-level=moderate` reported
-   `found 0 vulnerabilities`. The server deploy uses `npm ci --omit=dev`,
-   which excludes the remaining development-only esbuild chain.
+1. `stream-json@1.9.1` (GHSA-528h-pc64-c93x) reached the tree through
+   `@solana/web3.js` → `jayson@4.3.0` under Clerk's Solana wallet adapters.
+   `jayson@5.0.0` (published 2026-09-18) removed both the `stream-json` and
+   `uuid` dependencies; the only breaking change is TCP/TLS stream framing,
+   and `@solana/web3.js@1.98.4` uses `jayson/lib/client/browser`, which is
+   unaffected. The root `overrides` now force `jayson` to `^5.0.0`.
+2. `uuid@7.0.3` / `uuid@8.3.2` (GHSA-w5hq-g745-h8pq) reached the tree
+   through `xcode@3.0.1`, `@bacons/xcode` and `jayson`. Those consumers only
+   call `uuid.v4()`, which `uuid@11.1.1` still exports from its CommonJS
+   build, so the root `overrides` map every `uuid@<11.1.1` request to
+   `^11.1.1`; `rpc-websockets`' `uuid@14` copy is untouched.
+3. `esbuild@0.18.20` (GHSA-67mh-4wv8-2f99) reached both lockfiles through
+   Drizzle Kit's declared-but-unused `@esbuild-kit/esm-loader` (Drizzle
+   Kit's bundled `bin.cjs` loads config through `tsx`; it never requires
+   `@esbuild-kit`). `@esbuild-kit/core-utils` only calls the stable
+   `transform`/`transformSync` API, so the root and `server` `overrides`
+   force its `esbuild` to `>=0.25.4`, deduplicating onto Drizzle Kit's own
+   esbuild. `server/package-lock.json` was regenerated from the manifest
+   (minus the private workspace sibling) and a deploy-style
+   `npm ci --omit=dev` against the pruned manifest installs 119 packages
+   cleanly.
 
-Recommended external follow-up is to update the Clerk/Expo and Drizzle Kit
-dependency chains in a dedicated compatibility change, then rerun npm audit,
-OSV, app builds, and runtime tests. No production credential rotation is
-inferred from these scanner-only findings because the scans did not identify
-an exposed private key in the repository.
+Post-fix scanner state:
+
+- `npm audit --omit=dev --audit-level=moderate` (root): `found 0 vulnerabilities`.
+- `npm audit --workspace app-next --omit=dev --audit-level=moderate`:
+  `found 0 vulnerabilities`.
+- `npm audit --audit-level=moderate` for the regenerated `server` lockfile
+  (dev dependencies included): `found 0 vulnerabilities`.
+
+No production credential rotation is inferred from these scanner-only
+findings because the scans did not identify an exposed private key in the
+repository.
 
 ## Secret scan and static-analysis triage
 
@@ -299,6 +320,33 @@ Completed focused checks:
 - `npm run typecheck` — all workspaces passed.
 - `npm run test --workspace server` — 39 files and 234 tests passed.
 - `npm test` — repository test, E2E contract, and guardrail stages passed.
+
+Review-round checks after the typed OAuth outcome, `query-string` interop and
+advisory remediation changes:
+
+- `npm run test:security-dependencies` — 9 tests passed.
+- `npx vitest run test/vendor-oauth.test.ts test/vendor-routes.test.ts
+  test/routes.test.ts` in `server` — 32 tests passed; `server` `typecheck`
+  and `typecheck:test` passed.
+- `npx jest src/runtime/__tests__/routerQueryString.test.ts` in `app-next`
+  — 3 tests passed with the patch and 2 failed
+  (`decodeComponent is not a function`) with it removed.
+- Live built server (`node dist/index.js`, loopback, throwaway vendor and
+  database configuration): `GET /v1/health` → 200;
+  `GET /v1/vendors/strava/callback?error=access_denied&…` and a callback
+  without `state` → `400 VENDOR_REQUEST_INVALID`; a callback whose state
+  lookup hits an unreachable database → `500 VENDOR_REQUEST_FAILED` with no
+  connection detail in the body.
+- `osv-scanner scan --lockfile package-lock.json --lockfile
+  server/package-lock.json` — `No issues found`.
+- Deploy-style `npm ci --omit=dev` against the pruned server manifest and
+  the regenerated `server/package-lock.json` — 119 packages installed.
+
+Not run in the review round: the SIM-lane E2E scenarios and screen captures
+(`app-next/e2e-next/README.md`) and the post-deploy health/ready proof
+against `api.excerlock.com`. Those belong to the pipeline's test/validation
+and release phases; the server changes are not deployed until that gate is
+green.
 
 The repository's no-mistakes production validation remains the final delivery
 gate for this branch. No PR URL is claimed until that gate is green.

@@ -4,7 +4,10 @@ import {
   createVendorProtectedRoutes,
   createVendorPublicRoutes,
 } from "../src/routes/vendors.js";
-import type { VendorOAuthService } from "../src/vendors/index.js";
+import {
+  VendorClientError,
+  type VendorOAuthService,
+} from "../src/vendors/index.js";
 import type { VendorEventFeed } from "../src/webhooks/index.js";
 
 let app: FastifyInstance | undefined;
@@ -167,6 +170,37 @@ describe("vendor OAuth routes", () => {
 });
 
 describe("neutral identity and tombstones", () => {
+  it("reports a declined or replayed OAuth callback as a client error", async () => {
+    const completeConnection = vi.fn(async () => {
+      throw new VendorClientError(
+        "Strava authorization failed: access_denied (The athlete declined access)",
+      );
+    });
+    const service: VendorOAuthService = {
+      beginConnection: vi.fn(),
+      completeConnection,
+      disconnect: vi.fn(),
+      getAccessToken: vi.fn(),
+    };
+    app = Fastify({ logger: false });
+    await app.register(createVendorPublicRoutes({ service }), {
+      prefix: "/v1",
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/vendors/strava/callback?error=access_denied&error_description=The+athlete+declined+access&state=state-123",
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      error: {
+        code: "VENDOR_REQUEST_INVALID",
+        message: "Vendor request is invalid",
+      },
+    });
+  });
+
   it("does not disclose internal vendor errors to the authenticated caller", async () => {
     const readSince = vi.fn(async () => {
       throw new Error("database password=super-secret");
