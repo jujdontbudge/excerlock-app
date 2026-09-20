@@ -2,9 +2,8 @@ import { useEffect, useRef } from 'react';
 import { Modal, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { cancelAnimation, Easing, interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, Easing, interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Icon } from '../../icons/Icon';
-import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
 import { PLAN_MOTION as p, PLAN_RING, planRingCenterY } from './planMotion';
@@ -47,13 +46,17 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
   }));
   const at = (left: number, top: number, size: number) =>
     ({ position: 'absolute' as const, left, top, width: size, height: size, borderRadius: size / 2 });
+  // Sits inside the ring on the loading screen, then turns white as the bloom sweeps under it.
+  const caption = useAnimatedStyle(() => {
+    const sweep = Math.max(0, Math.min(90, elapsed.get()));
+    return { color: m.reduced ? t.text.onAccent : interpolateColor(sweep, [0, 90], [t.text.primary, t.text.onAccent]) };
+  });
   return <Modal transparent animationType="none" statusBarTranslucent accessibilityViewIsModal>
     <Animated.View style={[{ flex: 1 }, layer]} testID="plan-celebration">
       {m.reduced ? <LinearGradient colors={[...t.surface.orangeGradient]} style={StyleSheet.absoluteFill} /> : null}
       <Animated.View style={[at(centerX - (badge + 16) / 2, centerY - (badge + 16) / 2, badge + 16), { backgroundColor: t.brand.primary }, halo]} />
-      <View style={{ position: 'absolute', top: centerY + badge / 2 + 12, left: 24, right: 24 }}>
-        <Label variant="section" style={{ textAlign: 'center', color: m.reduced ? t.text.onAccent : t.text.primary }}>Plan created</Label>
-      </View>
+      <Animated.Text allowFontScaling maxFontSizeMultiplier={t.a11y.textScale}
+        style={[t.type.section, { position: 'absolute', top: centerY + badge / 2 + 8, left: 24, right: 24, textAlign: 'center' }, caption]}>Plan created</Animated.Text>
       <Animated.View style={[at(centerX - badge / 2, centerY - badge / 2, badge), { overflow: 'hidden' }, circle]}>
         <LinearGradient colors={[t.brand.lockHighlight, t.brand.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
       </Animated.View>
