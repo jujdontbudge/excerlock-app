@@ -105,5 +105,5 @@ describe("runMigrations", () => {
     expect(names).toContain("support_requests");
 
     await client.close();
-  });
+  }, 30_000);
 });

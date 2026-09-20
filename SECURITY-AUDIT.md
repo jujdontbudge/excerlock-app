@@ -2,8 +2,9 @@
 
 Audit date: 2026-09-20 UTC  
 Repository: `JohanSardar/excerlock-app`  
-Audit status: remediation in progress; this report does not claim that the
-product is vulnerability-free.
+Audit status: local remediation and verification complete; simulator and
+deployment evidence remain external blockers. This report does not claim that
+the product is vulnerability-free.
 
 ## Governing method
 
@@ -308,45 +309,52 @@ These are review conclusions, not a guarantee against future regressions.
 
 ## Verification status
 
-Completed focused checks:
+Completed local checks after the final review fixes:
 
-- `npm run test:security-dependencies` — 6 tests passed.
-- `npm run test --workspace server -- --run test/routes.test.ts` — 5 tests
-  passed, including the new exception-disclosure regression test.
+- `npm test` — all root unit, dependency-topology, E2E-contract, security
+  dependency and guardrail stages passed.
+- `npm run test --workspace server` — 39 files and 237 tests passed.
+  PGlite setup and the real-schema migration test use explicit 30-second
+  allowances at the affected hooks/tests; no global Vitest timeout is set.
+- `npm run test --workspace app-next` — 297 suites, 1,709 tests and 13
+  snapshots passed.
+- `npx jest src/runtime/__tests__/routerQueryString.test.ts --runInBand`
+  from `app-next` — 3 deep-link parse/stringify tests passed after applying
+  the committed `query-string` compatibility patch.
 - `python3 -m unittest test_harness.py` from `app-next/e2e-next` — 42 tests
   passed.
-- `npm run test --workspace app-next` — 296 suites and 1,706 tests passed.
-- `npm run lint --workspace app-next` — 0 errors (existing warnings only).
 - `npm run typecheck` — all workspaces passed.
-- `npm run test --workspace server` — 39 files and 234 tests passed.
-- `npm test` — repository test, E2E contract, and guardrail stages passed.
-
-Review-round checks after the typed OAuth outcome, `query-string` interop and
-advisory remediation changes:
-
+- `npm run lint --workspace app-next` — 0 errors; existing warnings only.
 - `npm run test:security-dependencies` — 9 tests passed.
-- `npx vitest run test/vendor-oauth.test.ts test/vendor-routes.test.ts
-  test/routes.test.ts` in `server` — 32 tests passed; `server` `typecheck`
-  and `typecheck:test` passed.
-- `npx jest src/runtime/__tests__/routerQueryString.test.ts` in `app-next`
-  — 3 tests passed with the patch and 2 failed
-  (`decodeComponent is not a function`) with it removed.
-- Live built server (`node dist/index.js`, loopback, throwaway vendor and
-  database configuration): `GET /v1/health` → 200;
-  `GET /v1/vendors/strava/callback?error=access_denied&…` and a callback
-  without `state` → `400 VENDOR_REQUEST_INVALID`; a callback whose state
-  lookup hits an unreachable database → `500 VENDOR_REQUEST_FAILED` with no
-  connection detail in the body.
+- `npx vitest run --config guardrails/vitest.config.ts
+  guardrails/e2e-gate.test.ts` — 3 tests passed. The two full Expo bundle
+  exports completed in 253 seconds with a scoped 10-minute test allowance.
+- `npm audit --omit=dev --audit-level=moderate` and the equivalent
+  `app-next` scan — 0 vulnerabilities.
 - `osv-scanner scan --lockfile package-lock.json --lockfile
-  server/package-lock.json` — `No issues found`.
-- Deploy-style `npm ci --omit=dev` against the pruned server manifest and
-  the regenerated `server/package-lock.json` — 119 packages installed.
+  server/package-lock.json` — no issues found.
+- Live built server on loopback: `/v1/health` → 200; `/v1/ready` → 503 with
+  the expected missing/unreachable database reason; missing OAuth `state` →
+  `400 VENDOR_REQUEST_INVALID`; unreachable OAuth state lookup →
+  `500 VENDOR_REQUEST_FAILED` with no connection detail in the body.
 
-Not run in the review round: the SIM-lane E2E scenarios and screen captures
-(`app-next/e2e-next/README.md`) and the post-deploy health/ready proof
-against `api.excerlock.com`. Those belong to the pipeline's test/validation
-and release phases; the server changes are not deployed until that gate is
-green.
+Static-analysis triage:
 
-The repository's no-mistakes production validation remains the final delivery
-gate for this branch. No PR URL is claimed until that gate is green.
+- `gitleaks` reported 16 redacted matches, all historical `REDACTED`
+  placeholders in recovery/design documentation; no repository credential was
+  exposed and no rotation was performed.
+- Semgrep reported the two previously documented trusted-input review items
+  in `app-store-screenshots/gen.py` and
+  `excer-ui-mock/scripts/vectorize_icons.py`; it also timed out on
+  `app-next/src/runtime/createRealRuntime.ts`. These are coverage/triage
+  limits, not silently treated as clean findings.
+
+External proof still pending:
+
+- The SIM-lane deep-link flow and policy-permitted screenshots were not run
+  because the captain's interactive onboarding simulator session owns the
+  pinned `ExcerLock-Next` simulator. A locally started build was stopped
+  before install, boot or interaction when that ownership instruction arrived.
+- Post-deploy health/ready proof against `api.excerlock.com` was not run:
+  deployment is explicitly out of scope.
+- No No-Mistakes rerun, push, PR, deployment or release was performed.

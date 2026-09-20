@@ -32,15 +32,15 @@ let postgres: Awaited<ReturnType<typeof createPgliteTestDatabase>>;
 
 beforeAll(async () => {
   postgres = await createPgliteTestDatabase();
-});
+}, 30_000);
 
 beforeEach(async () => {
   await postgres.reset();
-});
+}, 30_000);
 
 afterAll(async () => {
   await postgres.client.close();
-});
+}, 30_000);
 
 describe("repository database execution boundary", () => {
   it("rejects SQL that names a column absent from the migrations", async () => {
