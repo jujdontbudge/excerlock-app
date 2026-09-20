@@ -608,6 +608,7 @@ export async function createRealRuntime(options: { reportError(error: unknown): 
         authorizationStatus: () => detection.steps.authorizationStatus(),
         stepsSince: (day) => detection.steps.stepsSince(day),
         stepsBetween: (from, to) => detection.steps.stepsBetween(from, to),
+        metricsBetween: (from, to) => detection.steps.metricsBetween(from, to),
         subscribe: (cb) => detection.steps.subscribe(cb),
         request: async () => {
           const permission = await safety.prompt(() => detection.steps.request());

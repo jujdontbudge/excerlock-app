@@ -40,6 +40,13 @@ export interface CadenceSample {
  * faked. `sensorRecorder` is `CMSensorRecorder.isAccelerometerRecordingAvailable()`,
  * which is false on every iPhone to date.
  */
+export interface PedometerMeasurement {
+  readonly steps: number;
+  readonly distanceMeters: number | null;
+  readonly floorsAscended: number | null;
+  readonly activeMinutes: number | null;
+}
+
 export interface MotionAvailability {
   readonly activity: boolean;
   readonly cadence: boolean;

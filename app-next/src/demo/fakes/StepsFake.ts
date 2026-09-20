@@ -12,6 +12,16 @@ export function StepsFake(ctx: FakeContext): StepsPort {
       const now = Date.parse(ctx.clock.now());
       return Date.parse(from) <= now && now < Date.parse(to) ? count() : 0;
     },
+    metricsBetween: async (from, to) => {
+      const now = Date.parse(ctx.clock.now());
+      const steps = Date.parse(from) <= now && now < Date.parse(to) ? count() : 0;
+      return {
+        steps,
+        distanceMeters: steps * 0.76,
+        floorsAscended: Math.floor(steps / 3000),
+        activeMinutes: steps / 100,
+      };
+    },
     subscribe: (callback) => {
       callback(count());
       const stops = [ctx.clock.subscribe(() => callback(count())), ctx.subscribe(() => callback(count()))];

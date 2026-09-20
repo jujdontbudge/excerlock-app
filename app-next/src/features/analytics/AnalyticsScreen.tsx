@@ -1,6 +1,6 @@
-import { ReactNode, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Label, PressableScale, ScreenShell } from '../../design-system';
+import { Label, PressableScale, ScreenShell, SegmentedControl } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { Icon } from '../../icons/Icon';
 import { useClock, useHistory } from '../../state/selectors';
@@ -11,19 +11,24 @@ import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
 import { dayKey } from '../../domain/calendar';
 import { analyticsCopy as c } from '../../content/analytics';
 import { analyticsModel } from './analyticsModel';
+import { Period } from './period';
 import { MetricBars, MetricPoint } from './MetricBars';
 import { useAppleSteps } from './useAppleSteps';
+import { DailyActivityRing } from './DailyActivityRing';
+import { MonthGrid } from './MonthGrid';
+import { ActivityStats, ActivityStat } from './ActivityStats';
+import { ActivityTrend } from './ActivityTrend';
 
 const sum = (values: (number | null)[]) => values.reduce<number>((total, value) => total + (value ?? 0), 0);
-const measuredAverage = (values: (number | null)[]) => {
-  const measured = values.flatMap((value) => value === null ? [] : [value]);
-  return measured.length ? sum(measured) / measured.length : 0;
-};
 const duration = (minutes: number) => {
   const rounded = Math.round(minutes);
   return rounded < 60 ? `${rounded}m` : `${Math.floor(rounded / 60)}h ${rounded % 60}m`;
 };
+const integer = (value: number) => Math.round(value).toLocaleString('en-US');
+const periodLabels: Record<string, Period> = { D: 'Day', W: 'Week', M: 'Month' };
+
 export function AnalyticsScreen() {
+  const [period, setPeriod] = useState<Period>('Week');
   const [offset, setOffset] = useState(0);
   const runtime = useRuntime();
   const now = useClock();
@@ -33,14 +38,22 @@ export function AnalyticsScreen() {
   const ruleDays = useRuleDaysStore((state) => state.data.days);
   const today = dayKey(now, runtime.clock.timezone());
   const model = useMemo(
-    () => analyticsModel(history, today, 'Week', offset, baseline, { rules, ruleDays }),
-    [history, today, offset, baseline, rules, ruleDays],
+    () => analyticsModel(history, today, period, offset, baseline, { rules, ruleDays }),
+    [history, today, period, offset, baseline, rules, ruleDays],
   );
   const enabledRules = useMemo(
     () => rules.filter((rule) => rule.enabled).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
     [rules],
   );
-  const primaryActivity = enabledRules.some((rule) => rule.activity === 'gym') ? 'gym' : 'walking';
+  const gymRules = enabledRules.filter((rule) => rule.activity === 'gym');
+  const primaryActivity = gymRules.length ? 'gym' : 'walking';
+  const walkingRule = enabledRules.find(
+    (rule) => rule.activity === 'walking' && rule.mode.kind === 'target' && rule.mode.metric === 'steps',
+  );
+  const gymRule = gymRules.find((rule) => rule.mode.kind === 'target' && rule.mode.metric === 'minutes');
+  const goal = primaryActivity === 'walking'
+    ? walkingRule?.mode.kind === 'target' ? walkingRule.mode.goal : 10_000
+    : gymRule?.mode.kind === 'target' ? gymRule.mode.goal : 30;
   const stepDays = useMemo(() => model.series.map((point) => point.day), [model.series]);
   const stepFallback = useMemo(
     () => model.series.map((point) => ({ day: point.day, value: point.day > today ? null : point.activity.walking })),
@@ -50,22 +63,40 @@ export function AnalyticsScreen() {
   const walkingValues = apple.points.map((point) => point.value);
   const gymValues = model.series.map((point) => point.day > today ? null : point.activity.gym);
   const movementValues = primaryActivity === 'walking' ? walkingValues : gymValues;
-  const screenValues = model.series.map((point) => point.day > today ? null : point.value);
-  const screenPeriodValues = model.rows.map((row) => row.usageMinutes);
-  const rangeLabel = offset === 0 ? c.thisPeriod('Week') : c.range(model.start, model.end);
+  const movementName = primaryActivity === 'walking' ? 'Walking' : 'Gym';
+  const movementUnit = primaryActivity === 'walking' ? 'steps from Apple Motion & Fitness' : 'minutes at the gym';
   const movementPoints: MetricPoint[] = model.series.map((point, index) => ({
     label: point.label,
     value: movementValues[index],
+    selected: period === 'Day' && point.day === model.start,
   }));
-  const screenPoints: MetricPoint[] = model.series.map((point, index) => ({
-    label: point.label,
-    value: screenValues[index],
-  }));
-  const movementName = primaryActivity === 'walking' ? 'Walking' : 'Gym';
-  const movementUnit = primaryActivity === 'walking' ? 'steps from Apple Motion & Fitness' : 'minutes at the gym';
+  const selectedIndexes = model.series.flatMap((point, index) =>
+    point.day >= model.start && point.day <= model.end ? [index] : [],
+  );
+  const selectedValues = selectedIndexes.map((index) => movementValues[index]);
+  const movementTotal = sum(selectedValues);
+  const selectedApple = selectedIndexes.map((index) => apple.points[index]).filter(Boolean);
+  const stats = primaryActivity === 'walking'
+    ? walkingStats(model.streak.current, movementTotal, selectedApple)
+    : gymStats(model.streak.current, movementTotal, selectedValues);
+  const rangeLabel = offset === 0 ? c.thisPeriod(period) : c.range(model.start, model.end);
+  const dayLabel = offset === 0 ? 'Today' : new Date(`${model.start}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long' });
+  const monthlyTrend = useMemo(() => monthTrend(history, model.end, primaryActivity), [history, model.end, primaryActivity]);
+  const trendValues = period === 'Month' ? monthlyTrend.values : movementValues.map((value) => value ?? 0);
+  const trendStart = period === 'Month' ? monthlyTrend.startLabel : monthName(model.series[0]?.day);
+  const trendEnd = period === 'Month' ? monthlyTrend.endLabel : monthName(model.series.at(-1)?.day);
   return (
     <ScreenShell dock safeBottom={false} contentStyle={s.content}>
-      <Label accessibilityRole="header" variant="question">{c.title}</Label>
+      <View style={s.header}>
+        <Label accessibilityRole="header" variant="question" style={{ flex: 1 }}>{c.title}</Label>
+        <View style={s.periodControl}>
+          <SegmentedControl
+            options={['D', 'W', 'M']}
+            value={period === 'Day' ? 'D' : period === 'Week' ? 'W' : 'M'}
+            onChange={(label) => { setPeriod(periodLabels[label]); setOffset(0); }}
+          />
+        </View>
+      </View>
       <View style={s.nav}>
         <PressableScale label={c.previous} onPress={() => setOffset((value) => value - 1)} style={s.arrow}>
           <Icon name="back" variant="utility" size={20} tint={t.text.primary} />
@@ -76,80 +107,83 @@ export function AnalyticsScreen() {
           <Icon name="chevron" variant="utility" size={20} tint={t.text.primary} />
         </PressableScale>
       </View>
-      <View style={s.section}>
-        {primaryActivity === 'walking' && apple.status !== 'granted' ? (
-          <PressableScale label="Connect Apple steps" onPress={() => void apple.request()} style={s.connect}>
-            <Icon name="walking" variant="utility" size={20} tint={t.brand.primary} />
-            <Label variant="label">Connect Apple steps</Label>
-          </PressableScale>
-        ) : null}
+      {primaryActivity === 'walking' && apple.status !== 'granted' ? (
+        <PressableScale label="Connect Apple steps" onPress={() => void apple.request()} style={s.connect}>
+          <Icon name="walking" variant="utility" size={20} tint={t.brand.primary} />
+          <Label variant="label">Connect Apple steps</Label>
+        </PressableScale>
+      ) : null}
+      {period === 'Day' ? (
+        <DailyActivityRing value={movementTotal} goal={goal} unit={primaryActivity === 'walking' ? 'steps' : 'minutes'} dayLabel={dayLabel} />
+      ) : period === 'Month' ? (
+        <MonthGrid
+          data={model.series.map((point, index) => ({ day: point.day, value: movementValues[index] }))}
+          goal={goal}
+          unit={primaryActivity === 'walking' ? 'steps' : 'minutes'}
+        />
+      ) : (
         <MetricBars title={movementName} data={movementPoints} unit={movementUnit} />
-      </View>
-      <AnalyticsSection
-        title="Screen Time"
-        icon="phone"
-        total={duration(sum(screenPeriodValues))}
-        totalLabel="Total"
-        average={`AVG ${duration(measuredAverage(screenPeriodValues))}`}
-        chips={[
-          { label: 'Time replaced', value: duration(model.reclaimed.minutes) },
-          { label: 'Days measured', value: `${model.reclaimed.measuredDays}` },
-        ]}>
-        <MetricBars title="Screen Time" data={screenPoints} unit="locked-app usage" />
-      </AnalyticsSection>
+      )}
+      <ActivityStats stats={stats} />
+      <ActivityTrend
+        label={primaryActivity === 'walking' ? 'Steps trend' : 'Gym trend'}
+        values={trendValues}
+        startLabel={trendStart}
+        endLabel={trendEnd}
+      />
     </ScreenShell>
   );
 }
 
-function AnalyticsSection({ title, icon, total, totalLabel, average, chips, children }: {
-  title: string;
-  icon: 'walking' | 'gym' | 'phone';
-  total: string;
-  totalLabel: string;
-  average: string;
-  chips: { label: string; value: string }[];
-  children: ReactNode;
-}) {
-  return (
-    <View style={s.section}>
-      <View style={s.sectionTitle}>
-        <Icon name={icon} variant="utility" size={32} tint={t.brand.primary} />
-        <Label accessibilityRole="header" variant="section" style={{ flex: 1 }}>{title}</Label>
-      </View>
-      <View style={s.summary}>
-        <View style={{ flex: 1 }}>
-          <Label variant="support" tone="secondary">{totalLabel}</Label>
-          <Label variant="metric">{total}</Label>
-        </View>
-        <View style={s.average}><Label variant="support">{average}</Label></View>
-      </View>
-      <View style={s.chips}>
-        {chips.map((chip) => (
-          <View key={chip.label} style={s.chip}>
-            <Label variant="label">{chip.value}</Label>
-            <Label variant="badge" tone="secondary">{chip.label}</Label>
-          </View>
-        ))}
-      </View>
-      {children}
-    </View>
-  );
+function walkingStats(streak: number, steps: number, points: ReturnType<typeof useAppleSteps>['points']): ActivityStat[] {
+  const distanceMeters = points.reduce((total, point) => total + (point.distanceMeters ?? (point.value ?? 0) * 0.705), 0);
+  const activeMinutes = points.reduce((total, point) => total + (point.activeMinutes ?? (point.value ?? 0) / 107), 0);
+  const floorValues = points.flatMap((point) => point.floorsAscended === null ? [] : [point.floorsAscended]);
+  return [
+    { label: 'Streak', value: `${streak}d` },
+    { label: 'Calories', value: `${integer(steps * 0.0142)} kcal` },
+    { label: 'Distance', value: `${(distanceMeters / 1609.344).toFixed(1)} mi` },
+    { label: 'Minutes', value: duration(activeMinutes) },
+    { label: 'Floors', value: floorValues.length ? integer(sum(floorValues)) : '—' },
+  ];
+}
+
+function gymStats(streak: number, minutes: number, values: (number | null)[]): ActivityStat[] {
+  return [
+    { label: 'Streak', value: `${streak}d` },
+    { label: 'Minutes', value: duration(minutes) },
+    { label: 'Days visited', value: integer(values.filter((value) => (value ?? 0) > 0).length) },
+  ];
+}
+
+function monthTrend(history: ReturnType<typeof useHistory>, end: string, activity: 'walking' | 'gym') {
+  const endDate = new Date(`${end.slice(0, 7)}-01T12:00:00Z`);
+  const months = Array.from({ length: 12 }, (_, index) => {
+    const date = new Date(endDate);
+    date.setUTCMonth(date.getUTCMonth() - (11 - index));
+    return date.toISOString().slice(0, 7);
+  });
+  return {
+    values: months.map((month) => history
+      .filter((row) => row.day.startsWith(month))
+      .reduce((total, row) => total + row.activity[activity], 0)),
+    startLabel: monthName(`${months[0]}-01`),
+    endLabel: monthName(`${months.at(-1)}-01`),
+  };
+}
+
+function monthName(day?: string) {
+  return day ? new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short' }).toUpperCase() : '';
 }
 
 const s = StyleSheet.create({
   content: { paddingHorizontal: t.space.lg, paddingTop: t.space.sm, gap: t.space.lg },
+  header: { flexDirection: 'row', alignItems: 'center', gap: t.space.lg },
+  periodControl: { width: 180 },
   nav: { flexDirection: 'row', alignItems: 'center' },
   arrow: { width: t.layout.touch, height: t.layout.touch, alignItems: 'center' },
   range: { flex: 1, textAlign: 'center' },
-  section: { gap: t.space.lg, paddingVertical: t.space.sm },
-  sectionTitle: { flexDirection: 'row', alignItems: 'center', gap: t.space.md },
-  summary: { flexDirection: 'row', alignItems: 'center', gap: t.space.md },
-  average: { borderRadius: t.radius.pill, backgroundColor: t.surface.solid,
-    borderWidth: t.stroke.hairline, borderColor: t.border.divider, paddingHorizontal: t.space.md, paddingVertical: t.space.sm },
-  chips: { flexDirection: 'row', gap: t.space.md },
-  chip: { flex: 1, backgroundColor: t.surface.solid, borderRadius: t.radius.card,
-    borderWidth: t.stroke.hairline, borderColor: t.border.divider, padding: t.space.md, gap: t.space.xs },
-  connect: { minHeight: t.layout.button, borderRadius: t.radius.pill, backgroundColor: t.surface.solid,
-    borderWidth: t.stroke.hairline, borderColor: t.brand.primary, flexDirection: 'row', alignItems: 'center',
+  connect: { minHeight: t.layout.button, borderRadius: t.radius.pill, backgroundColor: t.surface.card,
+    borderWidth: t.stroke.hairline, borderColor: t.border.outline, flexDirection: 'row', alignItems: 'center',
     justifyContent: 'center', gap: t.space.sm },
 });

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react-native';
+import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { AnalyticsScreen } from '../AnalyticsScreen';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
@@ -10,25 +10,33 @@ async function mountScenario(id: string) {
   return runtime;
 }
 
-test('walking analytics is weekly-only and pairs movement with Screen Time', async () => {
+test('walking analytics follows the reference Day, Week, and Month hierarchy', async () => {
   const runtime = await mountScenario('home-locked-walking');
   expect(screen.getByText('This week')).toBeTruthy();
-  expect(screen.queryByRole('tab', { name: 'D' })).toBeNull();
-  expect(screen.queryByRole('tab', { name: 'W' })).toBeNull();
-  expect(screen.queryByRole('tab', { name: 'M' })).toBeNull();
-  expect(screen.queryByRole('header', { name: 'Walking' })).toBeNull();
-  expect(screen.getByRole('header', { name: 'Screen Time' })).toBeTruthy();
+  expect(screen.getByRole('tab', { name: 'D' })).toBeTruthy();
+  expect(screen.getByRole('tab', { name: 'W' })).toBeTruthy();
+  expect(screen.getByRole('tab', { name: 'M' })).toBeTruthy();
   expect(screen.getByLabelText('Walking chart')).toBeTruthy();
-  expect(screen.getByLabelText('Screen Time chart')).toBeTruthy();
+  expect(screen.getByText('Streak')).toBeTruthy();
+  expect(screen.getByText('Calories')).toBeTruthy();
+  expect(screen.getByText('Distance')).toBeTruthy();
+  expect(screen.getByText('Minutes')).toBeTruthy();
+  expect(screen.getByText('Floors')).toBeTruthy();
+  expect(screen.getByLabelText('Steps trend')).toBeTruthy();
+  expect(screen.queryByRole('header', { name: 'Screen Time' })).toBeNull();
   await waitFor(() => expect(screen.getAllByText('3,200').length).toBeGreaterThan(0));
+  await userEvent.press(screen.getByRole('tab', { name: 'D' }));
+  expect(screen.getByLabelText('Daily steps ring')).toBeTruthy();
+  await userEvent.press(screen.getByRole('tab', { name: 'M' }));
+  expect(screen.getByLabelText('Monthly activity calendar')).toBeTruthy();
   runtime.dispose();
 });
 
-test('gym condition replaces Walking with Gym and keeps Screen Time', async () => {
+test('gym condition replaces Walking with Gym without a Screen Time section', async () => {
   const runtime = await mountScenario('gym-time-user');
   expect(screen.queryByRole('header', { name: 'Gym' })).toBeNull();
   expect(screen.queryByRole('header', { name: 'Walking' })).toBeNull();
-  expect(screen.getByRole('header', { name: 'Screen Time' })).toBeTruthy();
+  expect(screen.queryByRole('header', { name: 'Screen Time' })).toBeNull();
   expect(screen.getByLabelText('Gym chart')).toBeTruthy();
   runtime.dispose();
 });
