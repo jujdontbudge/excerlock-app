@@ -1,4 +1,4 @@
-import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { AnalyticsScreen } from '../AnalyticsScreen';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
@@ -15,7 +15,12 @@ test('walking analytics follows the reference Day, Week, and Month hierarchy', a
   expect(screen.queryByText('This week')).toBeNull();
   expect(screen.queryByLabelText('Previous period')).toBeNull();
   expect(screen.queryByLabelText('Next period')).toBeNull();
-  expect(screen.getByTestId('Analytics period swipe')).toBeTruthy();
+  await waitFor(() => expect(screen.getAllByText('3,200').length).toBeGreaterThan(0));
+  const scrubber = screen.getByTestId('Analytics trend scrubber');
+  expect(scrubber).toHaveAccessibilityValue({ text: 'SEP' });
+  await fireEvent(scrubber, 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } });
+  await fireEvent(screen.getByTestId('Analytics trend scrubber'), 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } });
+  await waitFor(() => expect(screen.getByTestId('Analytics trend scrubber')).toHaveAccessibilityValue({ text: 'AUG' }));
   expect(screen.getByRole('tab', { name: 'D' })).toBeTruthy();
   expect(screen.getByRole('tab', { name: 'W' })).toBeTruthy();
   expect(screen.getByRole('tab', { name: 'M' })).toBeTruthy();
@@ -27,7 +32,6 @@ test('walking analytics follows the reference Day, Week, and Month hierarchy', a
   expect(screen.getByText('Floors')).toBeTruthy();
   expect(screen.getByLabelText('Steps trend')).toBeTruthy();
   expect(screen.queryByRole('header', { name: 'Screen Time' })).toBeNull();
-  await waitFor(() => expect(screen.getAllByText('3,200').length).toBeGreaterThan(0));
   await userEvent.press(screen.getByRole('tab', { name: 'D' }));
   expect(screen.getByLabelText('Daily steps ring')).toBeTruthy();
   await userEvent.press(screen.getByRole('tab', { name: 'M' }));

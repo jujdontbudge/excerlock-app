@@ -1,5 +1,5 @@
 import { analyticsModel } from '../analyticsModel';
-import { offsetAfterPeriodSwipe } from '../periodSwipe';
+import { nearestEnabledTrendIndex, trendPoints } from '../trendModel';
 import { HistoryDay } from '../../../ports/models';
 import { Rule, RuleMode } from '../../../domain/types';
 const makeRule = (id: string, mode: RuleMode): Rule => ({
@@ -60,11 +60,15 @@ test('unscheduled days do not break streak; previous period is independent', () 
   expect(m.delta).toBe(30);
   expect(m.activities.walking).toBe(2000);
 });
-test('period swipes reveal older dates and never move into the future', () => {
-  expect(offsetAfterPeriodSwipe(0, 80)).toBe(-1);
-  expect(offsetAfterPeriodSwipe(-2, -80)).toBe(-1);
-  expect(offsetAfterPeriodSwipe(0, -80)).toBe(0);
-  expect(offsetAfterPeriodSwipe(-1, 20)).toBe(-1);
+test('trend points select exact days, weeks, and months without exposing future days', () => {
+  const history = [row('2026-09-07', 60), row('2026-09-08', 30)];
+  const days = trendPoints('Day', '2026-09-09', history, 'walking');
+  expect(days.map((point) => point.label)).toEqual(['THU', 'FRI', 'SAT', 'SUN', 'MON', 'TUE', 'WED']);
+  expect(days.map((point) => point.offset)).toEqual([-6, -5, -4, -3, -2, -1, 0]);
+  expect(nearestEnabledTrendIndex(days, 100, 100)).toBe(6);
+
+  expect(trendPoints('Week', '2026-09-09', history, 'walking').map((point) => point.offset)).toEqual([-7, -6, -5, -4, -3, -2, -1, 0]);
+  expect(trendPoints('Month', '2026-09-09', history, 'walking')).toHaveLength(12);
 });
 
 test('history keeps a cross-midnight result on its supplied start day', () => {

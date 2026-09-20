@@ -1,8 +1,7 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Label, PressableScale, ScreenShell, SegmentedControl } from '../../design-system';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { FadeIn, SlideInLeft, SlideInRight, runOnJS } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { tokens as t } from '../../design-system/tokens';
 import { Icon } from '../../icons/Icon';
 import { useClock, useHistory } from '../../state/selectors';
@@ -20,7 +19,7 @@ import { DailyActivityRing } from './DailyActivityRing';
 import { MonthGrid } from './MonthGrid';
 import { ActivityStats, ActivityStat } from './ActivityStats';
 import { ActivityTrend } from './ActivityTrend';
-import { offsetAfterPeriodSwipe } from './periodSwipe';
+import { trendPoints } from './trendModel';
 
 const sum = (values: (number | null)[]) => values.reduce<number>((total, value) => total + (value ?? 0), 0);
 const duration = (minutes: number) => {
@@ -33,7 +32,6 @@ const periodLabels: Record<string, Period> = { D: 'Day', W: 'Week', M: 'Month' }
 export function AnalyticsScreen() {
   const [period, setPeriod] = useState<Period>('Week');
   const [offset, setOffset] = useState(0);
-  const [swipeDirection, setSwipeDirection] = useState<-1 | 0 | 1>(0);
   const runtime = useRuntime();
   const now = useClock();
   const history = useHistory();
@@ -83,26 +81,15 @@ export function AnalyticsScreen() {
   const stats = primaryActivity === 'walking'
     ? walkingStats(model.streak.current, movementTotal, selectedApple)
     : gymStats(model.streak.current, movementTotal, selectedValues);
-  const dayLabel = offset === 0 ? 'Today' : new Date(`${model.start}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long' });
-  const monthlyTrend = useMemo(() => monthTrend(history, model.end, primaryActivity), [history, model.end, primaryActivity]);
-  const trendValues = period === 'Month' ? monthlyTrend.values : movementValues.map((value) => value ?? 0);
-  const trendStart = period === 'Month' ? monthlyTrend.startLabel : monthName(model.series[0]?.day);
-  const trendEnd = period === 'Month' ? monthlyTrend.endLabel : monthName(model.series.at(-1)?.day);
-  const movePeriod = useCallback((translationX: number) => {
-    const next = offsetAfterPeriodSwipe(offset, translationX);
-    if (next === offset) return;
-    setSwipeDirection(next < offset ? -1 : 1);
-    setOffset(next);
-  }, [offset]);
-  const periodSwipe = useMemo(
-    () => Gesture.Pan()
-      .withTestId('Analytics period swipe gesture')
-      .activeOffsetX([-24, 24])
-      .failOffsetY([-18, 18])
-      .onEnd((event) => { runOnJS(movePeriod)(event.translationX); }),
-    [movePeriod],
+  const dayLabel = offset === 0
+    ? 'Today'
+    : offset === -1
+      ? 'Yesterday'
+      : new Date(`${model.start}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const trend = useMemo(
+    () => trendPoints(period, today, history, primaryActivity),
+    [period, today, history, primaryActivity],
   );
-  const entering = swipeDirection < 0 ? SlideInLeft : swipeDirection > 0 ? SlideInRight : FadeIn;
   return (
     <ScreenShell dock safeBottom={false} contentStyle={s.content}>
       <View style={s.header}>
@@ -111,16 +98,15 @@ export function AnalyticsScreen() {
           <SegmentedControl
             options={['D', 'W', 'M']}
             value={period === 'Day' ? 'D' : period === 'Week' ? 'W' : 'M'}
-            onChange={(label) => { setPeriod(periodLabels[label]); setOffset(0); setSwipeDirection(0); }}
+            onChange={(label) => { setPeriod(periodLabels[label]); setOffset(0); }}
           />
         </View>
       </View>
-      <GestureDetector gesture={periodSwipe}>
-        <Animated.View
-          key={`${period}-${offset}`}
-          testID="Analytics period swipe"
-          entering={entering.duration(t.motion.duration.navigation)}
-          style={s.swipeContent}>
+      <Animated.View
+          key={period}
+          testID="Analytics period content"
+          entering={FadeIn.duration(t.motion.duration.navigation)}
+          style={s.periodContent}>
           {primaryActivity === 'walking' && apple.status !== 'granted' ? (
             <PressableScale label="Connect Apple steps" onPress={() => void apple.request()} style={s.connect}>
               <Icon name="walking" variant="utility" size={20} tint={t.brand.primary} />
@@ -141,12 +127,11 @@ export function AnalyticsScreen() {
           <ActivityStats stats={stats} />
           <ActivityTrend
             label={primaryActivity === 'walking' ? 'Steps trend' : 'Gym trend'}
-            values={trendValues}
-            startLabel={trendStart}
-            endLabel={trendEnd}
+            points={trend}
+            selectedOffset={offset}
+            onSelect={setOffset}
           />
-        </Animated.View>
-      </GestureDetector>
+      </Animated.View>
     </ScreenShell>
   );
 }
@@ -172,31 +157,11 @@ function gymStats(streak: number, minutes: number, values: (number | null)[]): A
   ];
 }
 
-function monthTrend(history: ReturnType<typeof useHistory>, end: string, activity: 'walking' | 'gym') {
-  const endDate = new Date(`${end.slice(0, 7)}-01T12:00:00Z`);
-  const months = Array.from({ length: 12 }, (_, index) => {
-    const date = new Date(endDate);
-    date.setUTCMonth(date.getUTCMonth() - (11 - index));
-    return date.toISOString().slice(0, 7);
-  });
-  return {
-    values: months.map((month) => history
-      .filter((row) => row.day.startsWith(month))
-      .reduce((total, row) => total + row.activity[activity], 0)),
-    startLabel: monthName(`${months[0]}-01`),
-    endLabel: monthName(`${months.at(-1)}-01`),
-  };
-}
-
-function monthName(day?: string) {
-  return day ? new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short' }).toUpperCase() : '';
-}
-
 const s = StyleSheet.create({
   content: { paddingHorizontal: t.space.lg, paddingTop: t.space.sm, gap: t.space.lg },
   header: { flexDirection: 'row', alignItems: 'center', gap: t.space.lg },
   periodControl: { width: 180 },
-  swipeContent: { gap: t.space.lg },
+  periodContent: { gap: t.space.lg },
   connect: { minHeight: t.layout.button, borderRadius: t.radius.pill, backgroundColor: t.surface.card,
     borderWidth: t.stroke.hairline, borderColor: t.border.outline, flexDirection: 'row', alignItems: 'center',
     justifyContent: 'center', gap: t.space.sm },
