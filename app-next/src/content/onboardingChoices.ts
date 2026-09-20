@@ -22,6 +22,7 @@ export const choiceQuestions: { [step: string]: { key: string; options: Onboardi
       { id: 'exercise', title: 'More exercise', icon: 'walking' },
       { id: 'screenTime', title: 'Less screen time', icon: 'lock' },
       { id: 'wellness', title: 'Overall wellness', icon: 'heart' },
+      { id: 'other', title: 'Something else', icon: 'more' },
     ],
   },
   O09: {

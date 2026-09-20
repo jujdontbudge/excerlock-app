@@ -15,6 +15,7 @@ test.each([
   ['O05', 'Friends', 'referralSource', 'friend'],
   ['O06', '25–34', 'ageBand', '25–34'],
   ['O08', 'More exercise', 'improveFirst', 'exercise'],
+  ['O08', 'Something else', 'improveFirst', 'other'],
   ['O09', 'Focus on what matters', 'mainReason', 'focus'],
 ])('%s commits its selected answer', async (step, label, key, value) => {
   const setAnswer = jest.fn();
@@ -45,12 +46,13 @@ test('selected onboarding answers use white text on their orange selection', asy
   expect(screen.getByRole('radio', { name: 'YouTube' })).toBeChecked();
   expect(screen.getByText('YouTube')).toHaveStyle({ color: '#FFFFFF' });
 });
-test('goal question keeps its three existing answer choices', async () => {
+test('goal question keeps existing choices and adds Something else', async () => {
   await render(<ChoiceQuestion step="O08" answers={{}} setAnswer={jest.fn()} />);
   expect(screen.getByRole('header', { name: 'What is your goal?' })).toBeTruthy();
   expect(screen.getAllByRole('radio').map((row) => row.props.accessibilityLabel)).toEqual([
     'More exercise',
     'Less screen time',
     'Overall wellness',
+    'Something else',
   ]);
 });

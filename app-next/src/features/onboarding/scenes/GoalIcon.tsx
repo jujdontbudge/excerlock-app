@@ -4,7 +4,7 @@ import { profileTokens as p } from '../../../design-system/profileTokens';
 export function GoalIcon({ goal, selected }: { goal: string; selected: boolean }) {
   return (
     <Icon
-      name={goal === 'exercise' ? 'gym' : goal === 'screenTime' ? 'phone' : 'heart'}
+      name={goal === 'exercise' ? 'gym' : goal === 'screenTime' ? 'phone' : goal === 'other' ? 'more' : 'heart'}
       size={p.icon.size}
       tint={selected ? t.text.onAccent : t.brand.primary}
     />
