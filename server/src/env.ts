@@ -40,7 +40,7 @@ const envSchema = z.object({
     .enum(["development", "test", "production"])
     .default("development")
     .catch("development"),
-  HOST: z.preprocess(blankToUndefined, z.string().default("0.0.0.0")),
+  HOST: optionalString,
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000).catch(3000),
   DATABASE_URL: optionalString,
   SENTRY_DSN: optionalString,
@@ -120,6 +120,46 @@ const envSchema = z.object({
     .catch(DEFAULT_DELETION_GATEWAY_TIMEOUT_MS),
 });
 
+function requireProductionHttps(
+  parsed: z.infer<typeof envSchema>,
+): void {
+  if (parsed.NODE_ENV !== "production") {
+    return;
+  }
+
+  const settings: readonly [
+    name: string,
+    value: string | undefined,
+    allowUsername: boolean,
+  ][] = [
+    ["SUPABASE_URL", parsed.SUPABASE_URL, false],
+    ["SUPABASE_JWKS_URL", parsed.SUPABASE_JWKS_URL, false],
+    ["CLERK_ISSUER", parsed.CLERK_ISSUER, false],
+    [
+      "VENDOR_OAUTH_CALLBACK_BASE_URL",
+      parsed.VENDOR_OAUTH_CALLBACK_BASE_URL,
+      false,
+    ],
+    ["POSTHOG_HOST", parsed.POSTHOG_HOST, false],
+    ["POSTHOG_API_HOST", parsed.POSTHOG_API_HOST, false],
+    ["SENTRY_DSN", parsed.SENTRY_DSN, true],
+  ];
+
+  for (const [name, value, allowUsername] of settings) {
+    if (!value) {
+      continue;
+    }
+    const url = new URL(value);
+    if (
+      url.protocol !== "https:" ||
+      Boolean(url.password) ||
+      (!allowUsername && Boolean(url.username))
+    ) {
+      throw new Error(`${name} must use HTTPS without private credentials`);
+    }
+  }
+}
+
 export interface Environment {
   nodeEnv: "development" | "test" | "production";
   host: string;
@@ -169,10 +209,13 @@ export function parseEnv(
   input: Readonly<Record<string, string | undefined>> = process.env,
 ): Environment {
   const parsed = envSchema.parse(input);
+  requireProductionHttps(parsed);
 
   return {
     nodeEnv: parsed.NODE_ENV,
-    host: parsed.HOST,
+    host:
+      parsed.HOST ??
+      (parsed.NODE_ENV === "production" ? "127.0.0.1" : "0.0.0.0"),
     port: parsed.PORT,
     databaseUrl: parsed.DATABASE_URL,
     sentryDsn: parsed.SENTRY_DSN,

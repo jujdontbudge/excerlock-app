@@ -152,6 +152,11 @@ Run from any directory. `DEPLOY_HOST` is the SSH destination and
 `DEPLOY_SSH_KEY` is its private key, not the `.pub` file. Use
 `DEPLOY_SSH_PORT` only when SSH is not on port 22.
 
+Before the first deploy, verify the VM host key out of band and add it to the
+operator's SSH `known_hosts`. The deploy script requires
+`StrictHostKeyChecking=yes` for both SSH and rsync; it will not trust a new
+host key automatically.
+
 ```sh
 export DEPLOY_HOST="johan@<public-ip>"
 export DEPLOY_SSH_KEY="$HOME/.ssh/id_ed25519"

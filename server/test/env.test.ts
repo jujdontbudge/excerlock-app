@@ -143,6 +143,28 @@ describe("parseEnv", () => {
     expect(parsed.posthogHost).toBe("https://us.i.posthog.com");
   });
 
+  it("binds production to loopback when HOST is omitted", () => {
+    expect(parseEnv({ NODE_ENV: "production" }).host).toBe("127.0.0.1");
+  });
+
+  it.each([
+    "SUPABASE_URL",
+    "SUPABASE_JWKS_URL",
+    "CLERK_ISSUER",
+    "VENDOR_OAUTH_CALLBACK_BASE_URL",
+    "POSTHOG_HOST",
+    "POSTHOG_API_HOST",
+    "SENTRY_DSN",
+  ])("rejects insecure production transport for %s", (key) => {
+    expect(
+      () =>
+        parseEnv({
+          NODE_ENV: "production",
+          [key]: "http://example.test/service",
+        }),
+    ).toThrow(/HTTPS/);
+  });
+
   it("accepts both webhook stores but fixes shared authorization to production", () => {
     const environment = parseEnv({
       ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS: "sandbox, production",

@@ -76,9 +76,9 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
-  # %DOMAIN% is replaced by azure-provision.sh (falls back to ":80" = plain HTTP
-  # on the bare IP until a real domain is set -- Caddy mints TLS automatically
-  # once a domain with a live A record is in place).
+  # %DOMAIN% is replaced by azure-provision.sh. Provisioning requires a real
+  # DNS hostname so the API never starts behind a plaintext bare-IP vhost.
+  # Caddy mints TLS automatically once that hostname has a live A record.
   - path: /etc/caddy/Caddyfile
     owner: root:root
     permissions: "0644"

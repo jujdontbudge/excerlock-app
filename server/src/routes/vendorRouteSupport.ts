@@ -130,15 +130,14 @@ export async function sendVendorRouteError(
     });
     return;
   }
-  const message =
-    error instanceof Error ? error.message : "Vendor request failed";
+  const message = error instanceof Error ? error.message : "";
   const status =
     message.includes("not configured") ||
     message.includes("missing DATABASE_URL")
       ? 503
       : message.includes("upstream HTTP")
         ? 502
-        : 400;
+        : 500;
 
   await reply.code(status).send({
     error: {
@@ -147,8 +146,13 @@ export async function sendVendorRouteError(
           ? "VENDOR_NOT_CONFIGURED"
           : status === 502
             ? "VENDOR_UPSTREAM_ERROR"
-            : "VENDOR_REQUEST_INVALID",
-      message,
+            : "VENDOR_REQUEST_FAILED",
+      message:
+        status === 503
+          ? "Vendor integration is not configured"
+          : status === 502
+            ? "Vendor provider is unavailable"
+            : "Vendor request failed",
     },
   });
 }

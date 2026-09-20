@@ -29,6 +29,46 @@ describe("GET /v1/health", () => {
   });
 });
 
+describe("proxy metadata", () => {
+  it("does not trust forwarded client IPs from a direct connection", async () => {
+    app = buildServer({ logger: false });
+    app.get("/test-client-ip", async (request) => request.ip);
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/test-client-ip",
+      remoteAddress: "203.0.113.10",
+      headers: { "x-forwarded-for": "198.51.100.22" },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toBe("203.0.113.10");
+  });
+});
+
+describe("error disclosure", () => {
+  it("does not return unexpected exception messages", async () => {
+    app = buildServer({ logger: false });
+    app.get("/test-error", async () => {
+      throw new Error("database password=super-secret");
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/test-error",
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toEqual({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error",
+      },
+    });
+    expect(response.body).not.toContain("super-secret");
+  });
+});
+
 describe("planned v1 routes", () => {
   it("fails closed when Clerk is not configured", async () => {
     app = buildServer({ logger: false });

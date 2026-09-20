@@ -37,8 +37,10 @@ export interface BuildServerOptions extends FastifyServerOptions {
 
 export function buildServer(options: BuildServerOptions = {}): FastifyInstance {
   const app = Fastify({
-    trustProxy: true,
     ...options,
+    // Caddy is the only intended proxy and runs on loopback. Trusting every
+    // proxy lets a direct client spoof X-Forwarded-For and evade IP limits.
+    trustProxy: ["127.0.0.1", "::1"],
   });
   void app.register(helmet, {
     contentSecurityPolicy: false,
@@ -48,6 +50,39 @@ export function buildServer(options: BuildServerOptions = {}): FastifyInstance {
     global: true,
     max: config.nodeEnv === "test" ? Number.MAX_SAFE_INTEGER : 100,
     timeWindow: "1 minute",
+  });
+  app.setErrorHandler((error, _request, reply) => {
+    const errorStatusCode =
+      typeof error === "object" &&
+      error !== null &&
+      "statusCode" in error &&
+      typeof error.statusCode === "number"
+        ? error.statusCode
+        : undefined;
+    const statusCode =
+      typeof errorStatusCode === "number" &&
+      Number.isInteger(errorStatusCode) &&
+      errorStatusCode >= 400 &&
+      errorStatusCode < 500
+        ? errorStatusCode
+        : 500;
+    const code =
+      statusCode === 404
+        ? "NOT_FOUND"
+        : statusCode === 429
+          ? "RATE_LIMITED"
+          : statusCode >= 500
+            ? "INTERNAL_SERVER_ERROR"
+            : "INVALID_REQUEST";
+    const message =
+      statusCode === 404
+        ? "Route not found"
+        : statusCode === 429
+          ? "Too many requests"
+          : statusCode >= 500
+            ? "Internal server error"
+            : "Invalid request";
+    return reply.code(statusCode).send({ error: { code, message } });
   });
   void app.register(healthRoutes, { prefix: "/v1" });
   void app.register(adaptyWebhookRoutes, { prefix: "/v1" });

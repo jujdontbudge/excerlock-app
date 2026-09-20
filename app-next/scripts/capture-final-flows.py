@@ -23,6 +23,8 @@ with recording(out/(flow+'.mp4')):
   code=code.replace('def capture(name):', 'def capture(name):\n print(round(time.monotonic()-_recording_start,2),name,flush=True)')
   code=code.replace('from sim import *', 'from sim import *\nfrom visible_tap import visible_tap as tap')
   marks.append({'time':round(time.monotonic()-start,2),'script':script})
-  exec(compile(code,script,'exec'),{'__name__':'__main__','_recording_start':start})
+  # `script` is selected from the fixed `flows` map above; no user-controlled
+  # source is evaluated.
+  exec(compile(code,script,'exec'),{'__name__':'__main__','_recording_start':start})  # nosemgrep: python.lang.security.audit.exec-detected.exec-detected
 (out/(flow+'-timing.json')).write_text(json.dumps(marks,indent=2))
 print('Recorded',flow,flush=True)

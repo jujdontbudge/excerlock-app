@@ -15,12 +15,17 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from harness import env_value
+from harness import env_value, validate_remote_url
 
 
 class SupabaseAdmin:
     def __init__(self, url: str | None = None, service_key: str | None = None) -> None:
-        self.url = (url or env_value('SUPABASE_URL', '') or '').rstrip('/')
+        configured_url = url or env_value('SUPABASE_URL', '') or ''
+        self.url = validate_remote_url(
+            configured_url,
+            'Supabase URL',
+            allowed_suffixes=('.supabase.co',),
+        ) if configured_url else ''
         self.key = service_key or env_value('SUPABASE_SERVICE_ROLE_KEY', '') or ''
         if not self.url or not self.key:
             raise RuntimeError(
@@ -42,7 +47,7 @@ class SupabaseAdmin:
             method=method,
         )
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with urllib.request.urlopen(request, timeout=timeout) as response:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
                 raw = response.read()
                 return response.status, (json.loads(raw) if raw else None)
         except urllib.error.HTTPError as error:

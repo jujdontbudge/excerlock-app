@@ -20,7 +20,8 @@
     "test:packages": "vitest run --config vitest.packages.config.ts",
     "test:server": "npm run test --workspace server --if-present",
     "test:app": "npm run test --workspace app --if-present",
-    "test:guardrails": "npm run prebuild:guardrails --workspace app && vitest run --config guardrails/vitest.config.ts",
+    "test:guardrails": "npm run prebuild:guardrails --workspace app && npm run test:security-dependencies && vitest run --config guardrails/vitest.config.ts",
+    "test:security-dependencies": "node --test scripts/security-dependencies.test.cjs",
     "test:dependency-topology": "node --test scripts/sentry-core-topology.test.cjs",
     "typecheck": "npm run typecheck --workspaces",
     "test:e2e-contract": "node --test e2e/tests/*.test.mjs"
@@ -28,9 +29,11 @@
   "devDependencies": {
     "patch-package": "^8.0.1",
     "typescript": "~6.0.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "overrides": {
+    "@xmldom/xmldom": "0.8.15",
+    "decode-uri-component": "0.5.0",
     "react-native": "0.86.3",
     "react-native-reanimated": "4.5.1",
     "react-native-worklets": "0.10.1",
