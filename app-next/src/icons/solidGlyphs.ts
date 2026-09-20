@@ -1,6 +1,11 @@
 import { IconName } from './paths';
 import { activityPaths } from './activityLibrary';
 import { flameGlyph } from './flameLibrary';
+import { genderPaths } from './genderLibrary';
+const gender = (name: keyof typeof genderPaths) => {
+  const icon = genderPaths[name];
+  return `<svg x="2" y="2" width="20" height="20" viewBox="${icon.viewBox}"><path d="${icon.path}" fill="currentColor"/></svg>`;
+};
 const activity = (name: keyof typeof activityPaths) => {
   const icon = activityPaths[name];
   return `<svg x="2" y="2" width="20" height="20" viewBox="${icon.viewBox}"><path d="${icon.path}" fill="currentColor"/></svg>`;
@@ -10,6 +15,9 @@ const rect = (x: number, y: number, w: number, h: number, r: number) =>
   `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="currentColor"/>`;
 /** Shared 24-unit rounded silhouettes; never copy these into screens. */
 export const solidGlyphs: Partial<Record<IconName, string>> = {
+  male: gender('male'),
+  female: gender('female'),
+  'gender-other': gender('gender-other'),
   walking: activity('person-walking'),
   ruler: fill(
     'M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm2 0v6h2V5Zm5 0v4h2V5Zm5 0v6h2V5Z',

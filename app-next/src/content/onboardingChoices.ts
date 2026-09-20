@@ -41,9 +41,9 @@ export const choiceQuestions: { [step: string]: { key: string; options: Onboardi
   O07: {
     key: 'gender',
     options: [
-      { id: 'male', title: 'Male', icon: 'person' },
-      { id: 'female', title: 'Female', icon: 'person' },
-      { id: 'other', title: 'Other', icon: 'person' },
+      { id: 'male', title: 'Male', icon: 'male' },
+      { id: 'female', title: 'Female', icon: 'female' },
+      { id: 'other', title: 'Other', icon: 'gender-other' },
       { id: 'preferNotToSay', title: 'Prefer not to say', icon: 'more' },
     ],
   },
