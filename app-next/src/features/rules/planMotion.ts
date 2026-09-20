@@ -18,17 +18,23 @@ export const PLAN_RING = { size: 224, radius: 96, stroke: 16, topFraction: 0.14 
 export const PLAN_BADGE = { size: 80, coin: 48, glyph: 36, ripple: 300 } as const;
 function clamp(n: number) { 'worklet'; return Math.max(0, Math.min(1, n)); }
 export function smooth(n: number) { 'worklet'; const x = clamp(n); return x * x * (3 - 2 * x); }
+export function planPercentLabel(value: number) {
+  'worklet';
+  return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
+}
 /**
- * Each pill fades out exactly where it sits once its check has filled, and the stack
- * closes the gap behind it; the reference replay never flings a pill across the screen.
+ * A completed pill drifts toward an alternating side as it fades. The following pills
+ * glide upward during the exit, keeping the gesture visible without flinging the row.
  */
 export function taskMotion(index: number, elapsed: number) {
   'worklet';
   let shifted = 0;
-  for (let i = 0; i < index; i++) shifted += smooth((elapsed - (i * 1000 + 550)) / 300);
+  for (let i = 0; i < index; i++) shifted += smooth((elapsed - (i * 1000 + 520)) / 320);
+  const exit = smooth((elapsed - (index * 1000 + 400)) / 260);
   return {
     checked: elapsed >= Math.max(index * 1000, 150),
-    exit: smooth((elapsed - (index * 1000 + 400)) / 130),
+    exit,
+    swipeX: exit * (index % 2 === 0 ? -28 : 28),
     slot: index - shifted,
   };
 }

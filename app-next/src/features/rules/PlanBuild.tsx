@@ -10,7 +10,7 @@ import { ruleName } from '../../domain/ruleName';
 import { scheduleLabel } from '../../domain/scheduleLabel';
 import { Rule } from '../../domain/types';
 import { useMotion } from '../../motion/useMotion';
-import { PLAN_MOTION, PLAN_RING, taskMotion, smooth } from './planMotion';
+import { PLAN_MOTION, PLAN_RING, planPercentLabel, taskMotion, smooth } from './planMotion';
 const Arc = Animated.createAnimatedComponent(Circle);
 const Counter = Animated.createAnimatedComponent(TextInput);
 const RADIUS = PLAN_RING.radius;
@@ -28,7 +28,7 @@ function Task({ title, index, elapsed, checked, working, reduced, rowHeight }: {
       backgroundColor: interpolateColor(fill, [0, 1], [t.surface.card, t.brand.primary]),
       borderColor: interpolateColor(fill, [0, 1], [t.border.outline, t.brand.primary]),
       opacity: reduced ? 1 : (1 - exit) * Math.max(0, Math.min(1, 3 - m.slot)) * (1 - Math.min(2, m.slot) * 0.24),
-      transform: reduced ? [] : [{ translateY: m.slot * (rowHeight + 12) }],
+      transform: reduced ? [] : [{ translateY: m.slot * (rowHeight + 12) }, { translateX: working ? 0 : m.swipeX }],
     };
   });
   const titleStyle = useAnimatedStyle(() => ({
@@ -38,11 +38,14 @@ function Task({ title, index, elapsed, checked, working, reduced, rowHeight }: {
   return <Animated.View accessible accessibilityRole="checkbox" accessibilityLabel={title} accessibilityState={{ checked }}
     style={[{ position: 'absolute', left: 0, right: 0, top: reduced ? index * (rowHeight + 12) : 0, height: rowHeight, borderWidth: t.stroke.hairline,
       borderRadius: t.radius.card, paddingHorizontal: t.space.lg, flexDirection: 'row', alignItems: 'center', gap: t.space.md }, style]}>
+    <View testID={`plan-task-clock-${index}`} style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+      <Icon name="clock" size={24} tint={checked ? t.text.onAccent : t.text.secondary} />
+    </View>
     <Animated.Text allowFontScaling maxFontSizeMultiplier={t.a11y.textScale}
       style={[t.type.label, { flex: 1 }, titleStyle]}>{title}</Animated.Text>
-    {checked ? <SelectionCheck /> : <View style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-      <Icon name="clock" size={24} tint={t.text.secondary} />
-    </View>}
+    <View testID={`plan-task-status-${index}`} style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+      {checked ? <SelectionCheck /> : <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: t.stroke.hairline, borderColor: t.text.secondary }} />}
+    </View>
   </Animated.View>;
 }
 
@@ -75,7 +78,7 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
   const arc = useAnimatedProps(() => ({ strokeDashoffset: LENGTH * (1 - Math.min(1, elapsed.get() / PLAN_MOTION.count)) }));
   const counter = useAnimatedProps(() => {
     const pct = Math.min(100, Math.round(elapsed.get() / PLAN_MOTION.count * 100));
-    return { text: pct >= 100 ? '100' : `${pct}%`, defaultValue: '0%' };
+    return { text: planPercentLabel(pct), defaultValue: '0%' };
   });
   // At 100% the screen holds one beat, then everything fades out together before the celebration.
   const content = useAnimatedStyle(() => ({
