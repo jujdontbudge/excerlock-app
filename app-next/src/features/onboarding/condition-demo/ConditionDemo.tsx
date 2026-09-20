@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     left: 14,
     right: 14,
     minHeight: 56,
-    borderRadius: 28,
+    borderRadius: t.radius.pill,
     paddingHorizontal: 22,
     paddingVertical: 14,
     backgroundColor: t.surface.solid,
