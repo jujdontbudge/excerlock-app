@@ -49,7 +49,7 @@ requires a migration note here.
 
 | Event | Properties |
 |---|---|
-| `onboarding_screen_viewed` | `screen` |
+| `onboarding_screen_viewed` | `screen` (a `FlowScreen` slug, or `plan-demo` for the S3b "How your plan works" step, which adds `scenario` and, for walk-state, `place`) |
 | `onboarding_answer` | `screen` (answer value stays on-device) |
 | `condition_created` / `condition_edited` / `condition_deleted` | — |
 | `earn_claimed` | — |

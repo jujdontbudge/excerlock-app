@@ -48,7 +48,7 @@ export function useOnboarding() {
     if (step === 'S3b') {
       const demo = scenarioFor(draftFromAnswers(current), profileStore.getState().data.walkPlaces.join(','));
       runtime.analytics.track('onboarding_screen_viewed', {
-        screen: step, scenario: demo.kind, ...(demo.kind === 'walk-state' ? { place: demo.place } : {}),
+        screen: 'plan-demo', scenario: demo.kind, ...(demo.kind === 'walk-state' ? { place: demo.place } : {}),
       });
     }
     return () => { advanceEpoch.current += 1; };

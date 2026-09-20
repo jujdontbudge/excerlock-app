@@ -95,7 +95,7 @@ class D1ConditionDemo(Scenario):
             ctx.flush_analytics(4)
             query = ("select properties.scenario as scenario, properties.place as place from events where "
                      f"properties.$device_id={posthog.sql_literal(device_id)} and timestamp>toDateTime({posthog.sql_literal(since)}) "
-                     "and event='onboarding_screen_viewed' and properties.screen='S3b'")
+                     "and event='onboarding_screen_viewed' and properties.screen='plan-demo'")
             expected = {(kind, place if kind == 'walk-state' else '') for kind, place, _, _ in CASES}
             def covered(rows):
                 return expected.issubset({(row.get('scenario'), row.get('place') or '') for row in rows})

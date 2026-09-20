@@ -42,7 +42,7 @@ locked state without adding diagnostic text to the user-facing copy.
 `E2E-D1` in the existing SIM harness selects all six variants, commits through S3,
 seeks/captures every phase, tests a real sustained touch and release, records a
 10-second walking cycle, checks persisted rules after Continue/Back, and asserts
-live PostHog `onboarding_screen_viewed` rows for each scenario/place. It does not
+live PostHog `onboarding_screen_viewed` rows (`screen='plan-demo'`) for each scenario/place. It does not
 claim native Screen Time or real motion/location enforcement on a simulator.
 
 Run only when the pinned simulator is free:

@@ -7,12 +7,12 @@
 | Prompt | `gen/character-sheet-v1.txt` (verbatim, sent unmodified) |
 | Reference images passed | none (style described in the prompt from `data/condition-demo-prototype-f1/references/*.png` and `app-store-screenshots/STYLE-R2.md`) |
 | Usage / cost | input 482 text tokens, output 892 image tokens, $0.0292 |
-| Raw output | `gen/raw/character-sheet-v1.png` (2048×2048, opaque magenta field) |
+| Raw output | `gen/raw/character-sheet-v1.png` (2048×2048, opaque magenta field; `gen/raw/` is ignored, regenerate with the command above) |
 | Keying | `python3 prototype/scripts/remove_chroma_key.py <raw> gen/raw/character-sheet-v1-keyed.png --edge-contract 1 --despill` |
 | Slicing | `python3 gen/slice_sheet.py gen/raw/character-sheet-v1-keyed.png assets/frames 640` — 8 cells found by alpha projection, feet bottom-aligned, head-centred, common canvas 435×648 |
 | Fringe pass | residual magenta pixels (10–33 per frame) neutralised to green channel + half alpha; `validate_icons.py` residual = 0, corners alpha 0 on every frame |
 | Frames | `assets/frames/walk-1..6.png` (walk cycle, side view facing right), `stand-phone.png` (still, looking at phone), `stand-ahead.png` (still, looking ahead, raised eyebrows) |
-| Contact sheet | `gen/raw/frames-contact-sheet.png` |
+| Contact sheet | `gen/raw/frames-contact-sheet.png` (ignored, rebuilt by the slicing step) |
 | Verdict | ACCEPTED v1 — consistent character across all 8 cells, flat vector, no outlines, phone in hand in every frame. Walk cycle order used in the prototype: 2 → 1 → 4 → 6 → 2 → 3 → 5 → 3 at 9 fps with opacity crossfade. |
 
 ## Reference material kept for the prototype

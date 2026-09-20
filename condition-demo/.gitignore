@@ -2,3 +2,6 @@
 verification/
 jest-effective.json
 *.log
+# Regenerable binaries: raw Sunburst sheets (gen/PROVENANCE.md commands) and capture.sh output.
+gen/raw/
+screenshots/*.png

@@ -39,9 +39,7 @@ export function PhaseTimeline({
   scenario: Scenario;
   onSeek: (frame: ReturnType<typeof snapshot>) => void;
 }) {
-  const manual = useAnimatedStyle(() => ({
-    width: `${clock.value.manual === 'walking' ? Math.min(1, clock.value.manualTime / 3) * 100 : 0}%`,
-  }));
+  const manual = useAnimatedStyle(() => ({ width: clock.value.manual === 'walking' ? '100%' : '0%' }));
   const outline = useAnimatedStyle(() => ({ borderWidth: clock.value.manual ? 2 : 0 }));
   const phases = phasesFor(scenario);
   return (

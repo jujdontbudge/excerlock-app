@@ -141,13 +141,9 @@ function DemoScene({
     loaded.current += 1;
     if (loaded.current >= 8) ready.set(true);
   }, [ready]);
-  const holdFill = useAnimatedStyle(() => ({
-    width: `${clock.value.manual === 'walking' ? Math.min(1, clock.value.manualTime / 3) * 100 : 0}%`,
-  }));
+  const holdFill = useAnimatedStyle(() => ({ width: clock.value.manual === 'walking' ? '100%' : '0%' }));
   const goalFill = useAnimatedStyle(() => ({ width: `${snapshot(clock.value, scenario).progressFraction * 100}%` }));
-  const holdArc = useAnimatedProps(() => ({
-    strokeDashoffset: 69.12 * (1 - (clock.value.manual === 'walking' ? Math.min(1, clock.value.manualTime / 3) : 0)),
-  }));
+  const holdArc = useAnimatedProps(() => ({ strokeDashoffset: clock.value.manual === 'walking' ? 0 : 69.12 }));
   const isGym = scenario.kind.startsWith('gym');
   const goalCard =
     scenario.kind === 'walk-steps' ||
@@ -311,15 +307,12 @@ function DemoScene({
           accessibilityRole="button"
           accessibilityLabel="Continue walking. Press and hold to walk. Release to stop."
           accessibilityValue={{
-            min: 0,
-            max: 3,
-            now: frame.manual === 'walking' ? Math.min(3, Math.floor(frame.local)) : 0,
             text:
               frame.manual === 'walking'
                 ? 'Walking. Apps open.'
                 : frame.manual === 'blocked'
                   ? 'Stopped. Apps blocked.'
-                  : 'Hold for three seconds to try walking.',
+                  : 'Hold to try walking.',
           }}
           accessibilityActions={[{ name: 'activate' }]}
           onAccessibilityAction={() => {
@@ -345,7 +338,7 @@ function DemoScene({
               outlineWidth: holdFocused ? 3 : 0,
             },
           ]}>
-          <Animated.View pointerEvents="none" style={[styles.holdProgress, holdFill]} />
+          <Animated.View testID="condition-demo-hold-fill" pointerEvents="none" style={[styles.holdProgress, holdFill]} />
           <View style={styles.holdRing}>
             <Svg width={26} height={26} viewBox="0 0 26 26">
               <Circle cx={13} cy={13} r={11} stroke={t.border.divider} strokeWidth={4} fill={t.surface.solid} />

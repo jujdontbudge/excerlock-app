@@ -14,7 +14,7 @@ export const onboardingEvents = {
 
 export interface OnboardingEventProps {
   onboarding_screen_viewed: {
-    screen: FlowScreen | 'S3b';
+    screen: FlowScreen | 'plan-demo';
     scenario?: 'walk-state' | 'walk-steps' | 'walk-minutes' | 'gym-arrival' | 'gym-minutes';
     place?: 'outside' | 'treadmill';
   }

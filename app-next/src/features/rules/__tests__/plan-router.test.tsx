@@ -55,7 +55,7 @@ test('demo view reports selected scenario and treadmill preference without a sec
   const track = jest.spyOn(runtime.analytics, 'track');
   const route = renderRouter({ ...routes, _layout: () => <AppRuntimeProvider runtime={runtime}><Slot /></AppRuntimeProvider> }, { initialUrl: '/onboarding/S3b' });
   await route;
-  expect(track).toHaveBeenCalledWith('onboarding_screen_viewed', { screen: 'S3b', scenario: 'walk-state', place: 'treadmill' });
+  expect(track).toHaveBeenCalledWith('onboarding_screen_viewed', { screen: 'plan-demo', scenario: 'walk-state', place: 'treadmill' });
   expect(screen.getByRole('header', { name: 'How your plan works' })).toBeTruthy();
   expect(rulesStore.getState().data.rules).toEqual([]);
 });

@@ -17,7 +17,7 @@ S3b follows the existing S3 plan commit and precedes S4. All six approved scenar
 - Large Dynamic Type exposed clipped hold text. Added a red/green regression, flexible hold height, fixed-size diagram labels plus an uncapped large-text explanation; native live-resize screenshots now show readable content and reachable Continue. Reduce Motion native capture shows discrete frames without crossfade/bob; settings restored afterward.
 - Compact geometry is covered by layout tests (327×300 stage); native captures use the one pinned 402×874 simulator. No physical 375×667 device claim. Family Controls and actual sensor enforcement cannot be proved on simulator.
 
-Durable proof: `app-next/evidence/condition-demo/` (verdict, 57 reduced screenshots, 10-second walking video, motion contact sheets, query freshness evidence). Full-resolution originals and logs stay in ignored `app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/` and `condition-demo/verification/`.
+Durable proof: `app-next/evidence/condition-demo/` (verdict and query freshness JSON plus README, the only evidence types `app-next/.gitignore` admits). Screenshots, the 10-second walking video, motion contact sheets and logs stay in ignored `app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/` and `condition-demo/verification/`.
 
 ## Diagnoses fixed, without weakening tests
 
