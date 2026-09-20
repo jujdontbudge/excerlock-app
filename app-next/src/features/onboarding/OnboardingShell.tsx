@@ -9,7 +9,6 @@ import { onboardingLabels as c } from '../../content/onboarding';
 import { WelcomeFooter } from './welcome/WelcomeFooter';
 import { SolidChoices } from '../../design-system/ChoiceAppearance';
 import { Reveal } from '../../motion/Reveal';
-import { OnboardingPanorama } from './OnboardingPanorama';
 export function OnboardingShell({
   children,
   step,
@@ -54,8 +53,6 @@ export function OnboardingShell({
     <SolidChoices>
       <ScreenShell
         scrollResetKey={step}
-        background={!['O01', 'O02', 'O03', 'S2', 'S3', 'S3b', 'S4', 'T1', 'T2', 'T3', 'T4'].includes(step)
-          ? <OnboardingPanorama progress={progress} /> : undefined}
         overlay={overlay}
         contentStyle={['O01', 'O02', 'O03'].includes(step) ? { paddingBottom: t.space.sm } : undefined}
         header={
