@@ -8,6 +8,10 @@ export function StepsFake(ctx: FakeContext): StepsPort {
     authorizationStatus: () => permissionsStore.getState().data.motion,
     request: () => ctx.request('motion'),
     stepsSince: async () => count(),
+    stepsBetween: async (from, to) => {
+      const now = Date.parse(ctx.clock.now());
+      return Date.parse(from) <= now && now < Date.parse(to) ? count() : 0;
+    },
     subscribe: (callback) => {
       callback(count());
       const stops = [ctx.clock.subscribe(() => callback(count())), ctx.subscribe(() => callback(count()))];

@@ -1,54 +1,41 @@
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { AnalyticsScreen } from '../AnalyticsScreen';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
-test.each([
-  ['analytics-day-zero', 'Your first week starts today'],
-  ['analytics-no-measurement', 'No measurement yet'],
-])('%s reports unavailable measurements honestly', async (id, title) => {
+
+async function mountScenario(id: string) {
   const runtime = createRuntime();
   await runtime.dev.load(id);
-  await render(
-    <AppRuntimeProvider runtime={runtime}>
-      <AnalyticsScreen />
-    </AppRuntimeProvider>,
-  );
-  expect(screen.getByRole('header', { name: title })).toBeTruthy();
-  await userEvent.press(screen.getByRole('tab', { name: 'All time' }));
-  expect(screen.getByText(/^Since /)).toBeTruthy();
-  await userEvent.press(screen.getByRole('tab', { name: 'Day' }));
-  expect(screen.getByText('Today')).toBeTruthy();
-  expect(screen.getByLabelText('Days met this week')).toBeTruthy();
-  expect(screen.queryByText('Your weekly recap')).toBeNull();
-});
-test('tiles follow the gym-minutes condition as the fake gym clock ticks', async () => {
-  const runtime = createRuntime();
-  await runtime.dev.load('gym-time-user');
-  await runtime.gym.checkIn(runtime.gym.listPlaces()[0].id);
-  runtime.dev.advance(18 * 60000 + 9000);
-  await render(
-    <AppRuntimeProvider runtime={runtime}>
-      <AnalyticsScreen />
-    </AppRuntimeProvider>,
-  );
-  expect(screen.getByLabelText(/^At the gym, 30m/)).toBeTruthy();
-  expect(screen.getByLabelText(/^Streak, /)).toBeTruthy();
-  expect(screen.queryByLabelText(/^Gym arrivals/)).toBeNull();
-  expect(screen.queryByLabelText(/^Steps, /)).toBeNull();
-  expect(screen.getByRole('header', { name: 'How you earned time' })).toBeTruthy();
-  expect(screen.getByText('30 minutes')).toBeTruthy();
-  expect(screen.getAllByText('Screen time replaced').length).toBeGreaterThan(0);
-  expect(screen.getByLabelText('Screen time replaced chart')).toBeTruthy();
+  await render(<AppRuntimeProvider runtime={runtime}><AnalyticsScreen /></AppRuntimeProvider>);
+  return runtime;
+}
+
+test('walking analytics uses D/W/M periods and always pairs movement with Screen Time', async () => {
+  const runtime = await mountScenario('home-locked-walking');
+  expect(screen.getByRole('header', { name: 'Walking' })).toBeTruthy();
+  expect(screen.getByRole('header', { name: 'Screen Time' })).toBeTruthy();
+  expect(screen.getByLabelText('Walking chart')).toBeTruthy();
+  expect(screen.getByLabelText('Screen Time chart')).toBeTruthy();
+  await waitFor(() => expect(screen.getAllByText('3,200').length).toBeGreaterThan(0));
+  await userEvent.press(screen.getByRole('tab', { name: 'M' }));
+  expect(screen.getByText('This month')).toBeTruthy();
+  expect(screen.getByLabelText('Monthly activity calendar')).toBeTruthy();
+  await userEvent.press(screen.getByRole('tab', { name: 'D' }));
+  expect(screen.getAllByText('Today').length).toBeGreaterThan(0);
   runtime.dispose();
 });
-test('an arrival condition shows check-ins instead of gym minutes', async () => {
-  const runtime = createRuntime();
-  await runtime.dev.load('gym-arrival-user');
-  await render(
-    <AppRuntimeProvider runtime={runtime}>
-      <AnalyticsScreen />
-    </AppRuntimeProvider>,
-  );
-  expect(screen.getByLabelText(/^Gym arrivals, /)).toBeTruthy();
+
+test('gym condition replaces Walking with Gym and keeps Screen Time', async () => {
+  const runtime = await mountScenario('gym-time-user');
+  expect(screen.getByRole('header', { name: 'Gym' })).toBeTruthy();
+  expect(screen.queryByRole('header', { name: 'Walking' })).toBeNull();
+  expect(screen.getByRole('header', { name: 'Screen Time' })).toBeTruthy();
+  expect(screen.getByLabelText('Gym chart')).toBeTruthy();
+  runtime.dispose();
+});
+
+test('walking analytics offers Apple step connection when motion access is absent', async () => {
+  const runtime = await mountScenario('fresh-install');
+  expect(screen.getByRole('button', { name: 'Connect Apple steps' })).toBeTruthy();
   runtime.dispose();
 });

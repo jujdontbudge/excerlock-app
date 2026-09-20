@@ -3,8 +3,8 @@ const date = (day: string, options: Intl.DateTimeFormatOptions) =>
   new Date(day + 'T12:00:00Z').toLocaleDateString('en-US', { timeZone: 'UTC', ...options });
 export const analyticsCopy = {
   title: 'Analytics',
-  periods: ['Day', 'Week', 'All time'],
-  periodIds: { Day: 'Day', Week: 'Week', 'All time': 'All' } as const,
+  periods: ['D', 'W', 'M'],
+  periodIds: { D: 'Day', W: 'Week', M: 'Month' } as const,
   previous: 'Previous period',
   next: 'Next period',
   replaced: 'Screen time replaced',
@@ -49,13 +49,13 @@ export const analyticsCopy = {
   dayZeroBody: 'Every bit of movement is a start. Your progress will grow here.',
   noRules: 'Make room for movement',
   noRulesBody: 'Add a condition to start tracking your progress.',
-  thisPeriod: (p: string) => (p === 'Day' ? 'Today' : p === 'Week' ? 'This week' : 'All time'),
+  thisPeriod: (p: string) => (p === 'Day' ? 'Today' : p === 'Week' ? 'This week' : 'This month'),
   range: (start: string, end: string) =>
     start === end
       ? date(start, { weekday: 'short', month: 'short', day: 'numeric' })
       : `${date(start, { month: 'short', day: 'numeric' })} – ${date(end, { month: 'short', day: 'numeric', year: 'numeric' })}`,
   since: (start: string) => `Since ${date(start, { month: 'short', day: 'numeric', year: 'numeric' })}`,
   point: (day: string, period: string) =>
-    period === 'All' ? date(day, { month: 'short', day: 'numeric' }) : date(day, { weekday: 'short' }),
+    period === 'Month' ? date(day, { day: 'numeric' }) : date(day, { weekday: 'short' }),
   noMeasurement: 'No measurement',
 } as const;

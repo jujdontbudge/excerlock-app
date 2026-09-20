@@ -17,7 +17,7 @@ export function analyticsModel(
 ) {
   const firstDay = history.reduce((min, d) => (d.day < min ? d.day : min), today),
     { start, end } = periodBounds(today, period, offset, firstDay),
-    prev = period === 'All' ? null : periodBounds(today, period, offset - 1, firstDay),
+    prev = periodBounds(today, period, offset - 1, firstDay),
     inRange = (day: string) => day >= start && day <= end && day <= today,
     rows = history.filter((d) => inRange(d.day)),
     previousRows = prev ? history.filter((d) => d.day >= prev.start && d.day <= prev.end && d.day <= today) : [],
@@ -31,17 +31,9 @@ export function analyticsModel(
     ),
     allDays = dates(start, end),
     eligible = allDays.filter((d) => d <= today);
-  // Day shows its surrounding week as a dot row; Week is daily; All time is weekly buckets.
+  // Day keeps its surrounding week for the seven-day trend; Week and Month are daily.
   const groupDays = period === 'Day' ? dates(weekStart(start), addDays(weekStart(start), 6)) : allDays;
-  const groups: string[][] =
-    period === 'All'
-      ? Object.values(
-          groupDays.reduce<Record<string, string[]>>((acc, d) => {
-            (acc[weekStart(d)] ??= []).push(d);
-            return acc;
-          }, {}),
-        )
-      : groupDays.map((d) => [d]);
+  const groups: string[][] = groupDays.map((d) => [d]);
   const series = groups.map((days) => {
     const bucket = history.filter((r) => days.includes(r.day) && r.day <= today),
       values = bucket.flatMap((r) => (r.usageMinutes === null ? [] : [r.usageMinutes]));

@@ -17,12 +17,13 @@ const row = (day: string, usageMinutes: number | null, scheduled = true, met = t
   met,
   activity: { walking: 2000, gym: 30 },
 });
-test('all-time buckets average replaced minutes per calendar week after clamping each day', () => {
-  const model = analyticsModel([row('2026-09-01', 240), row('2026-09-02', 60)], '2026-09-07', 'All', 0, 180);
+test('month view shows one bucket per calendar day', () => {
+  const model = analyticsModel([row('2026-09-01', 240), row('2026-09-02', 60)], '2026-09-07', 'Month', 0, 180);
   expect(model.start).toBe('2026-09-01');
-  expect(model.series).toHaveLength(2);
-  expect(model.series[0].reclaimed).toBe(60);
-  expect(model.series[1].reclaimed).toBeNull();
+  expect(model.end).toBe('2026-09-30');
+  expect(model.series).toHaveLength(30);
+  expect(model.series[0].reclaimed).toBe(0);
+  expect(model.series[1].reclaimed).toBe(120);
 });
 test('partial weeks exclude unmeasured days from replaced math and future days from denominator', () => {
   const m = analyticsModel([row('2026-09-07', 60), row('2026-09-08', null)], '2026-09-09', 'Week', 0, 180);
@@ -79,7 +80,7 @@ test('conditions drive arrivals and verified walking minutes inside the period',
   expect(week.arrivals).toBe(1);
   expect(week.walkingMinutes).toBe(25);
   expect(week.conditions).toMatchObject({ gymArrival: true, walking: true, gymMinutes: false, steps: false });
-  const all = analyticsModel([row('2026-08-30', 60)], '2026-09-07', 'All', 0, 180, { rules, ruleDays });
-  expect(all.arrivals).toBe(2);
-  expect(all.walkingMinutes).toBe(65);
+  const month = analyticsModel([row('2026-08-30', 60)], '2026-09-07', 'Month', 0, 180, { rules, ruleDays });
+  expect(month.arrivals).toBe(2);
+  expect(month.walkingMinutes).toBe(25);
 });

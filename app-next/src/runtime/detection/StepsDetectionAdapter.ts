@@ -17,6 +17,9 @@ export class StepsDetectionAdapter implements StepsPort {
   async stepsSince(dayStart: string): Promise<number> {
     return (await this.motion.querySteps(Date.parse(dayStart), this.now())).steps;
   }
+  async stepsBetween(from: string, to: string): Promise<number> {
+    return (await this.motion.querySteps(Date.parse(from), Date.parse(to))).steps;
+  }
   subscribe(callback: (steps: number) => void): Unsubscribe {
     return this.motion.on('cadence', (sample) => callback(sample.cumulativeSteps));
   }
