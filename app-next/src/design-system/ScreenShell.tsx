@@ -8,6 +8,7 @@ export function ScreenShell({
   footer,
   header,
   overlay,
+  background,
   safeBottom = true,
   dock = false,
   scrollUnderStatusBar = true,
@@ -21,6 +22,7 @@ export function ScreenShell({
   footer?: ReactNode;
   header?: ReactNode;
   overlay?: ReactNode;
+  background?: ReactNode;
   safeBottom?: boolean;
   dock?: boolean;
   scrollUnderStatusBar?: boolean;
@@ -56,6 +58,7 @@ export function ScreenShell({
           style={orangeBackground ? [s.wash, { height: '100%' }] : s.wash}
         />
       ) : null}
+      {background}
       <SafeAreaView
         style={s.rootClear}
         edges={scrollUnderStatusBar ? (safeBottom ? ['bottom'] : []) : safeBottom ? ['top', 'bottom'] : ['top']}>
