@@ -71,7 +71,7 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
         {f.step === 'O20' ? (
           <O20
             answers={f.chosen ? { activity: f.draft.activity } : {}}
-            setAnswer={(_, value) => f.choose(value as Activity)}
+            setAnswer={(key, value) => { if (key === 'activity') f.choose(value as Activity); }}
           />
         ) : null}
         {branch ? <RuleScreen step={f.step as BranchStep} draft={f.draft} onAction={f.dispatch} /> : null}

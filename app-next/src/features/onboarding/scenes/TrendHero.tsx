@@ -14,13 +14,7 @@ export function TrendHero() {
           accessible
           accessibilityRole="image"
           accessibilityLabel={trendCopy.description}
-          style={{
-            borderRadius: t.radius.sheet,
-            backgroundColor: t.surface.card,
-            borderWidth: t.stroke.hairline,
-            borderColor: t.border.outline,
-            padding: t.space.lg,
-          }}>
+          style={{ paddingVertical: t.space.lg }}>
           <View style={{ width: '100%', aspectRatio: 320 / 240 }}>
             <TrendCurves />
             <View

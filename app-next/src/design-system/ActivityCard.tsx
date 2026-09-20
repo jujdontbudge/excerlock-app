@@ -4,7 +4,6 @@ import { ActivityId } from '../content/activities';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { tokens as t } from './tokens';
-import { useMotion } from '../motion/useMotion';
 import { View } from 'react-native';
 import { useSolidChoices } from './ChoiceAppearance';
 import { SelectionCheck } from './SelectionCheck';
@@ -19,7 +18,6 @@ export function ActivityCard({
   selected: boolean;
   onPress: () => void;
 }) {
-  const m = useMotion();
   const solid = useSolidChoices() && selected;
   return (
     <PressableScale
@@ -38,9 +36,8 @@ export function ActivityCard({
           borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
           borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.default,
           backgroundColor: solid ? t.brand.primary : selected ? t.surface.selected : t.surface.card,
-          transform: [{ translateY: selected ? -m.distance.float : 0 }],
-          transitionProperty: ['transform', 'backgroundColor', 'borderColor'],
-          transitionDuration: m.duration.standard,
+          transitionProperty: ['backgroundColor', 'borderColor'],
+          transitionDuration: t.motion.duration.standard,
         }}>
         <Icon name={activity} size={t.space.hero} tint={solid ? t.text.onAccent : undefined} />
         <Label variant="label" style={{ color: solid ? t.text.onAccent : t.text.primary }}>

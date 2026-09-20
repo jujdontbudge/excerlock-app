@@ -15,10 +15,12 @@ test('schedule controls follow edited times and all-day without a decorative loc
   const props = { ruleDraft: createDraft('gym'), onAction: jest.fn(), onChoose: jest.fn() };
   const view = await render(<ScheduleScreen {...props} draft={scheduleDraft({})} />);
   expect(screen.queryByTestId('rule-preview-lock')).toBeNull();
-  expect(screen.getByRole('button', { name: /Start at: 9.AM/ })).toBeTruthy();
+  expect(screen.getByRole('image', { name: /Blocking window from 9.AM to 9.PM/ })).toBeTruthy();
+  await userEvent.press(screen.getByRole('button', { name: /Start at: 9.AM/ }));
+  expect(props.onChoose).toHaveBeenCalledWith('start');
   await view.rerender(<ScheduleScreen {...props} draft={scheduleDraft({ startMinute: 600, endMinute: 1200 })} />);
   expect(screen.queryByTestId('rule-preview-lock')).toBeNull();
-  expect(screen.getByRole('button', { name: /Start at: 10.AM/ })).toBeTruthy();
+  expect(screen.getByRole('image', { name: /Blocking window from 10.AM to 8.PM/ })).toBeTruthy();
   await view.rerender(<ScheduleScreen {...props} draft={scheduleDraft({ allDay: true })} />);
   expect(screen.queryByTestId('rule-preview-lock')).toBeNull();
   expect(screen.getByRole('switch', { name: 'All day' })).toHaveProp('value', true);

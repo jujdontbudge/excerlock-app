@@ -36,7 +36,7 @@ export function ChoiceRow({
     <PressableScale
       label={title}
       accessibilityRole={multiple ? 'checkbox' : 'radio'}
-      accessibilityState={{ checked: selected }}
+      accessibilityState={{ checked: selected, selected }}
       onPress={onPress}>
       <Animated.View
         style={{

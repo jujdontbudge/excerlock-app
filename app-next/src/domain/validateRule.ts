@@ -20,7 +20,7 @@ export function validateRule(value: unknown): RuleIssue[] {
     issues.push('mode');
   else {
     if (m.kind === 'state') {
-      if (m.activity !== 'walking') issues.push('mode');
+      if (!['walking', 'gym'].includes(String(m.activity))) issues.push('mode');
     } else if (m.kind === 'event') {
       if (m.activity !== 'gym' || m.trigger !== 'arrival') issues.push('mode');
     } else if (m.kind === 'target') {

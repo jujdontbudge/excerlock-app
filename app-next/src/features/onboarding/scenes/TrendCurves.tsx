@@ -20,7 +20,7 @@ export function TrendCurves() {
         </ClipPath>
       </Defs>
       {[40, 120, 200, 232].map((y) => (
-        <Line key={y} x1={12} x2={308} y1={y} y2={y} stroke={t.chart.grid} strokeWidth={t.stroke.hairline} />
+        <Line key={y} x1={12} x2={308} y1={y} y2={y} stroke={t.border.divider} strokeWidth={t.stroke.selected} />
       ))}
       <G clipPath={`url(#${id})`}>
         <Path

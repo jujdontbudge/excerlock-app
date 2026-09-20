@@ -31,7 +31,7 @@ export function O02({ onBack }: { onBack?: () => void }) {
         <ProgressArtwork />
       </View>
       <Reveal index={3} style={{ marginTop: w.progress.captionGap, paddingHorizontal: t.space.xxl }}>
-        <Label variant="support" style={{ textAlign: 'center' }}>
+        <Label style={{ ...w.type.introCaption, color: t.text.primary, textAlign: 'center' }}>
           {c.O02.body}
         </Label>
       </Reveal>

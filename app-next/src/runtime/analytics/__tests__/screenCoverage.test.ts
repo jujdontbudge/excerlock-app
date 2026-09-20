@@ -17,7 +17,7 @@ const notScreens = new Set(['index', 'dev', 'linked-trace', '_layout']);
 /** Harness-only routes (`RootNavigator` closes them in a prod build); never a `$screen`. */
 const notScreenDirectories = new Set(['diagnostics']);
 
-const onboardingSteps = [...preBranch, ...tail.filter((step) => step !== 'P'), 'W1', 'W2', 'W3', 'G1', 'G2'];
+const onboardingSteps = [...preBranch, ...tail.filter((step) => step !== 'P'), 'W0', 'W1', 'W2', 'W3', 'G0F', 'G0H', 'G1', 'G2'];
 
 function routeFiles(directory: string): string[] {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

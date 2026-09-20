@@ -20,7 +20,7 @@ export function WorkoutModeScreen({
             title={mode.title}
             selected={d.gymMode === mode.id}
             compact
-            onPress={() => onAction({ type: 'setGymMode', value: mode.id as 'time' | 'arrival' })}
+            onPress={() => onAction({ type: 'setGymMode', value: mode.id })}
           />
         </Reveal>
       ))}

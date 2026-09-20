@@ -15,7 +15,7 @@ export function O01() {
         <WelcomeArtwork />
       </View>
       <Reveal index={3} style={{ marginTop: w.captionGap }}>
-        <Label variant="support" style={{ textAlign: 'center' }}>
+        <Label style={{ ...w.type.introCaption, color: t.text.primary, textAlign: 'center' }}>
           {onboardingCopy.O01.body}
         </Label>
       </Reveal>

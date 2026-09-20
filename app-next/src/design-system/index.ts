@@ -11,6 +11,7 @@ export { NumberField } from './NumberField';
 export { Slider } from './Slider';
 export { DayPicker } from './DayPicker';
 export { TimeRangeRow } from './TimeRangeRow';
+export { ScheduleDial } from './ScheduleDial';
 export { SegmentedControl } from './SegmentedControl';
 export { SettingsGroup } from './SettingsGroup';
 export { SettingsRow } from './SettingsRow';

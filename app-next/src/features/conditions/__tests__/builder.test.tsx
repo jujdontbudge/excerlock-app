@@ -4,7 +4,7 @@ import { ConditionsScreen } from '../ConditionsScreen';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { rulesStore } from '../../../state/rulesStore';
-import { createDraft, toRule } from '../../rules/draft';
+import { createDraft, reduceDraft, toRule } from '../../rules/draft';
 import { scheduleDraft, toSchedule } from '../../rules/scheduleDraft';
 import { validateRule } from '../../../domain/validateRule';
 import type { Rule } from '../../../domain/types';
@@ -33,11 +33,12 @@ jest.mock('../../sheets/GymPicker', () => ({
     ) : null;
   },
 }));
+const gymTimeDraft = () => reduceDraft(createDraft('gym'), { type: 'setGymMode', value: 'time' });
 async function mount(id?: string) {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
   if (id)
-    rulesStore.getState().patch({ rules: [{ ...toRule(createDraft('gym'), toSchedule(scheduleDraft({}))), id }] });
+    rulesStore.getState().patch({ rules: [{ ...toRule(gymTimeDraft(), toSchedule(scheduleDraft({}))), id }] });
   await render(
     <AppRuntimeProvider runtime={runtime}>
       <ConditionBuilder id={id} onClose={leave} />
@@ -106,7 +107,7 @@ test('two mounted builders own independent draft transactions', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
   const first = { ...toRule(createDraft('walking'), toSchedule(scheduleDraft({}))), id: 'first' };
-  const second = { ...toRule(createDraft('gym'), toSchedule(scheduleDraft({}))), id: 'second' };
+  const second = { ...toRule(gymTimeDraft(), toSchedule(scheduleDraft({}))), id: 'second' };
   rulesStore.getState().patch({ rules: [first, second] });
   await render(
     <AppRuntimeProvider runtime={runtime}>

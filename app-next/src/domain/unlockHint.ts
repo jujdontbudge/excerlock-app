@@ -4,7 +4,12 @@ export function unlockHint(rules: Rule[], days: RuleDay[]): UnlockHint {
   const offers = rules.map((rule): UnlockHint => {
     const mode = rule.mode;
     if (mode.kind !== 'target')
-      return { ruleId: rule.id, action: mode.kind === 'state' ? 'walk' : 'arrive', remaining: null, unit: null };
+      return {
+        ruleId: rule.id,
+        action: mode.kind === 'state' && mode.activity === 'walking' ? 'walk' : 'arrive',
+        remaining: null,
+        unit: null,
+      };
     return {
       ruleId: rule.id,
       action: 'progress',

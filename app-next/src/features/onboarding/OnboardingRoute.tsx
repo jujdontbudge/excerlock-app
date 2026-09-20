@@ -12,6 +12,7 @@ import { scheduleDraft, reduceSchedule, scheduleAnswers, toSchedule, ScheduleAct
 import { draftFromAnswers, commitPlan } from '../rules/plan';
 import { createDraft, toRule } from '../rules/draft';
 import { PlanBuild } from '../rules/PlanBuild';
+import { PlanCelebration } from '../rules/PlanCelebration';
 import { PlanSummary } from '../rules/PlanSummary';
 import { ReviewWarmup } from '../rules/ReviewWarmup';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
@@ -29,7 +30,8 @@ export function OnboardingRoute() {
   const flow = useOnboarding(),
     unit = useSettingsStore((s) => s.data.units),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null),
-    [scheduleError, setScheduleError] = useState(false);
+    [scheduleError, setScheduleError] = useState(false),
+    [celebrating, setCelebrating] = useState(false);
   const playback = useImpactPlayback(flow.step, flow.advance, focused);
   const base = useMemo(() => createDraft('walking'), []);
   const draft = draftFromAnswers(flow.answers, base),
@@ -75,11 +77,11 @@ export function OnboardingRoute() {
         }
       />
     );
-  if (flow.step === 'S2') body = <PlanBuild rule={toRule(draft, toSchedule(schedule))} onComplete={flow.advance} />;
+  if (flow.step === 'S2') body = <PlanBuild rule={toRule(draft, toSchedule(schedule))} onComplete={() => setCelebrating(true)} />;
   if (flow.step === 'S3')
     body = (
       <View style={{ gap: t.space.lg }}>
-        <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} />
+        <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} answers={flow.answers} />
         {scheduleError ? <Label style={{ color: t.text.secondary }}>{c.scheduleLimit}</Label> : null}
       </View>
     );
@@ -96,6 +98,8 @@ export function OnboardingRoute() {
       continueLabel={flow.step === 'S3' ? c.use : undefined}
       hideContinue={flow.step === 'S2' || flow.step === 'T3' || playback.hideContinue}
       overlay={
+        <>
+        {celebrating ? <PlanCelebration onCovered={() => { if (flow.step === 'S2') void flow.advance(); }} onDone={() => setCelebrating(false)} /> : null}
         <TimeSheet
           which={wheel}
           value={wheel ? schedule[wheel] : schedule.start}
@@ -104,6 +108,7 @@ export function OnboardingRoute() {
           }}
           onDismiss={() => setWheel(null)}
         />
+        </>
       }>
       {body}
     </OnboardingShell>

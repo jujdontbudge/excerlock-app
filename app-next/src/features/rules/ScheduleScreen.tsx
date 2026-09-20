@@ -1,4 +1,4 @@
-import { Heading, DayPicker, TimeRangeRow, Label } from '../../design-system';
+import { Heading, DayPicker, ScheduleDial, Label } from '../../design-system';
 import { View } from 'react-native';
 import { ReactNode } from 'react';
 import { RuleDraft } from './draft';
@@ -36,10 +36,11 @@ export function ScheduleScreen({
           </Reveal>
         ) : null}
         <Reveal index={2}>
-          <TimeRangeRow
-            compact
+          <ScheduleDial
             start={minuteLabel(d.start)}
             end={minuteLabel(d.end)}
+            startMinute={d.start}
+            endMinute={d.end}
             allDay={d.allDay}
             onAllDay={(value) => onAction({ type: 'allDay', value })}
             onChoose={onChoose}

@@ -4,7 +4,12 @@ import { choiceQuestions } from '../content/onboardingChoices';
 import { draftFromAnswers } from '../features/rules/answersDraft';
 import { goalRange, validGoal } from '../features/rules/goalRange';
 import { isValidStepGoal } from '../domain/stepGoal';
+import { activityBaseline, BaselineStep } from '../content/activityBaseline';
 export function canContinue(step: string, answers: Answers): boolean {
+  if (step in activityBaseline) {
+    const question = activityBaseline[step as BaselineStep];
+    return question.options.some((option) => option.value === answers[question.key]);
+  }
   if (step === 'O04')
     return typeof answers.name === 'string' && answers.name.trim().length > 0 && answers.name.trim().length <= 30;
   if (choiceQuestions[step]) {

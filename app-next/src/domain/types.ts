@@ -13,7 +13,7 @@ export type Rule = {
 
 export type RuleMode =
   | { kind: 'target'; activity: 'walking'; metric: 'steps' | 'minutes'; goal: number }
-  | { kind: 'state'; activity: 'walking' }
+  | { kind: 'state'; activity: 'walking' | 'gym' }
   | { kind: 'event'; activity: 'gym'; trigger: 'arrival' }
   | { kind: 'target'; activity: 'gym'; metric: 'minutes'; goal: number };
 

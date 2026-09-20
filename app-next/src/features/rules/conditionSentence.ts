@@ -6,7 +6,7 @@ import { conditionPreviewCopy as c } from '../../content/conditionPreview';
 import { RuleDraft } from './draft';
 
 const answered = (value: unknown) => value !== undefined && value !== '' && Number.isFinite(Number(value));
-const number = (value: number) => (Number.isFinite(value) ? value.toLocaleString('en-US') : c.blank);
+const number = (value: number) => value.toLocaleString('en-US');
 
 /** The window and days, appended once the schedule question is on screen. */
 function scheduleTail(schedule: Schedule): string {
@@ -25,9 +25,8 @@ function scheduleTail(schedule: Schedule): string {
 }
 
 /**
- * Plain English for the condition as it is being built. Answers the user has not reached
- * yet read as a blank, so the same sentence can carry from the mode question to the goal
- * question and on to the schedule. Null until the first dependency is chosen.
+ * Plain English for the condition as it is being built. Until the user chooses a value,
+ * the sentence uses the visible control's default so the preview is always complete.
  */
 export function conditionSentence(
   answers: Answers,
@@ -39,19 +38,16 @@ export function conditionSentence(
   return sentence === null ? null : sentence + tail;
 }
 
-/** On the goal question itself the wheel already stands on a value, so it is no longer a blank. */
 function conditionClause(a: Answers, d: RuleDraft, goalChosen: boolean): string | null {
-  const known = (value: unknown) => goalChosen || answered(value);
   // Before the mode question the draft default stands in, so the card is on every step of the flow.
   if (d.activity === 'walking') {
     if (d.walkingMode === 'state') return c.unless(c.walking);
-    if (d.walkingMode === 'minutes')
-      return c.until(c.walkMinutes(known(a.walkMinutes) ? number(d.walkMinutes) : c.blank));
-    return c.until(c.steps(known(a.stepGoal) ? number(d.stepGoal) : c.blank));
+    if (d.walkingMode === 'minutes') return c.until(c.walkMinutes(number(d.walkMinutes)));
+    return c.until(c.steps(number(d.stepGoal)));
   }
   if (d.activity === 'gym') {
-    if (d.gymMode === 'arrival') return c.until(c.gymArrival);
-    return c.until(c.spendAt(known(a.gymMinutes) ? c.minutes(number(d.gymMinutes)) : c.blank, c.gym));
+    if (d.gymMode === 'arrival' || d.gymMode === 'presence') return c.unless('are at the gym');
+    return c.untilSpent(goalChosen || answered(a.gymMinutes) ? c.minutes(number(d.gymMinutes)) : 'time', c.gym);
   }
   return null;
 }

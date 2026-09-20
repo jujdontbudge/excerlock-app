@@ -16,6 +16,7 @@ from .f2_fixture_teardown import F2FixtureTeardown
 from .h1_home_report import H1HomeReport
 from .m1_sensor_smoke import M1SensorSmoke
 from .n1_onboarding_paywall import N1OnboardingPaywall
+from .n1_gym_onboarding import N1GymOnboarding
 from .n4_offline_fallback import N4OfflineFallbackPaywall, N4WarmProfileOfflineFallback
 from .r1_incident_report import R1IncidentReport
 from .s1_startup_budget import S1StartupBudget
@@ -23,6 +24,7 @@ from .v1_screen_sweep import V1ScreenSweep
 
 SCENARIO_CLASSES = (
     N1OnboardingPaywall,
+    N1GymOnboarding,
     F1FixtureMint,
     E1ExistingUserHome,
     V1ScreenSweep,

@@ -34,9 +34,9 @@ export type FlowOrder = { readonly preBranch: readonly string[]; readonly tail: 
 function branchFor(answers: Answers): string[] {
   switch (answers.activity) {
     case 'gym':
-      return answers.gymMode === 'arrival' ? ['G1'] : ['G1', 'G2'];
+      return answers.gymMode === 'time' ? ['G0F', 'G0H', 'G1', 'G2'] : ['G0F', 'G0H', 'G1'];
     default:
-      return answers.walkingMode === 'state' ? ['W1', 'W2'] : ['W1', 'W2', 'W3'];
+      return answers.walkingMode === 'state' ? ['W0', 'W1', 'W2'] : ['W0', 'W1', 'W2', 'W3'];
   }
 }
 

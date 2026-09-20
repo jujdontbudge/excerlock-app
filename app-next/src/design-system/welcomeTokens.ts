@@ -2,8 +2,8 @@
 export const welcomeTokens = {
   canvasWidth: 354,
   heroHeight: 244,
-  headingTop: 0,
-  headingGap: 40,
+  headingTop: 24,
+  headingGap: 48,
   captionGap: 24,
   dotsGap: 20,
   control: {
@@ -93,6 +93,7 @@ export const welcomeTokens = {
   },
   type: {
     card: { fontSize: 16, lineHeight: 21, fontWeight: '600' },
+    introCaption: { fontSize: 20, lineHeight: 26, fontWeight: '600' },
     legal: { fontSize: 10, lineHeight: 14, fontWeight: '400' },
   },
 } as const;

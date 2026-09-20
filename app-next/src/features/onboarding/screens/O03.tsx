@@ -41,7 +41,7 @@ export function O03({ onBack }: { onBack?: () => void }) {
       <Reveal index={3} style={{ marginTop: w.control.captionGap, paddingHorizontal: t.space.lg }}>
         <Label
           style={{
-            ...w.control.caption,
+            ...w.type.introCaption,
             color: t.text.primary,
             textAlign: 'center',
             maxWidth: w.control.captionWidth,

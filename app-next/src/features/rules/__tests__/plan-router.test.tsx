@@ -23,12 +23,11 @@ beforeEach(() => {
     .patch({ answers: { activity: 'walking', walkingMode: 'steps', name: 'Alex', stepGoal: 5000 } });
 });
 test.each([
-  ['Edit goal', 'W3'],
-  ['Edit schedule', 'S1'],
-])('%s returns directly to the summary', async (label, step) => {
-  const route = renderRouter(routes, { initialUrl: '/onboarding/S3' });
+  ['goal', 'W3'],
+  ['schedule', 'S1'],
+])('%s edit route still returns directly to the simplified summary', async (_label, step) => {
+  const route = renderRouter(routes, { initialUrl: `/onboarding/${step}?returnTo=S3` });
   await route;
-  await userEvent.press(screen.getByRole('button', { name: label }));
   expect(route.getPathname()).toBe('/onboarding/' + step);
   if (step === 'W3')
     fireEvent(screen.getByRole('adjustable'), 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });

@@ -20,6 +20,7 @@ test('invalid data cannot create a condition; every activity keeps its prescribe
     { kind: 'state', activity: 'walking' },
     { kind: 'state', activity: 'walking' },
     { kind: 'state', activity: 'walking' },
+    { kind: 'state', activity: 'gym' },
     { kind: 'event', activity: 'gym', trigger: 'arrival' },
     { kind: 'target', activity: 'walking', metric: 'steps', goal: 500 },
     { kind: 'target', activity: 'walking', metric: 'steps', goal: 30000 },
@@ -37,7 +38,7 @@ test('invalid data cannot create a condition; every activity keeps its prescribe
 test('malformed modes and missing schedule fields are rejected at hydration', () => {
   for (const invalid of [
     { ...rule, mode: { kind: 'target', activity: 'walking', metric: 'minutes', goal: 2 } },
-    { ...rule, activity: 'gym', mode: { kind: 'state', activity: 'gym' } },
+    { ...rule, activity: 'gym', mode: { kind: 'state', activity: 'walking' } },
     { ...rule, mode: { kind: 'event', activity: 'walking', trigger: 'arrival' } },
     { ...rule, mode: { kind: 'rate', activity: 'walking' } },
     { ...rule, mode: { ...rule.mode, metric: 'distance', unit: 'km' } },

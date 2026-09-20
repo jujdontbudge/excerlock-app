@@ -6,19 +6,20 @@ import { AnswerProps } from '../types';
 import { ProfileHeading } from './ProfileHeading';
 import { ProfileChoiceRow } from './ProfileChoiceRow';
 import { ReferralIcon } from './ReferralIcon';
+import { SolidChoices } from '../../../design-system/ChoiceAppearance';
 export function ProfileQuestion({ step, answers, setAnswer }: AnswerProps & { step: 'O05' | 'O06' }) {
   const question = choiceQuestions[step];
   return (
     <>
       <ProfileHeading step={step} />
-      <View style={{ gap: p.row.gap }}>
+      <SolidChoices>
+        <View style={{ gap: p.row.gap }}>
         {question.options.map((option, index) => (
           <Reveal key={option.id} index={index + 1}>
             <ProfileChoiceRow
               title={option.title}
               selected={answers[question.key] === option.id}
               onPress={() => setAnswer(question.key, option.id)}
-              radioFirst={step === 'O06'}
               leading={
                 step === 'O05' ? (
                   <ReferralIcon name={option.id} selected={answers[question.key] === option.id} />
@@ -27,7 +28,8 @@ export function ProfileQuestion({ step, answers, setAnswer }: AnswerProps & { st
             />
           </Reveal>
         ))}
-      </View>
+        </View>
+      </SolidChoices>
     </>
   );
 }

@@ -14,9 +14,9 @@ test.each([false, true])('checks real facts and completes once with reduced moti
   const rule = toRule(createDraft('walking'), { days: [1, 2, 3, 4, 5], window: { kind: 'allDay' } });
   await render(<PlanBuild rule={rule} onComplete={onComplete} />);
   expect(screen.getByRole('checkbox', { name: 'Walk 10,000 steps' })).not.toBeChecked();
-  await act(() => jest.advanceTimersByTime(reduced ? tokens.motion.duration.fast : 1200));
+  await act(() => jest.advanceTimersByTime(reduced ? tokens.motion.duration.fast : 6000));
   expect(screen.getAllByRole('checkbox').every((node) => node.props.accessibilityState.checked)).toBe(true);
   expect(onComplete).not.toHaveBeenCalled();
-  await act(() => jest.advanceTimersByTime(300));
+  await act(() => jest.advanceTimersByTime(reduced ? 300 : 1400));
   expect(onComplete).toHaveBeenCalledTimes(1);
 });

@@ -176,7 +176,7 @@ class ScenarioRegistry(unittest.TestCase):
     def test_expected_scenarios_are_registered(self):
         self.assertEqual(set(SCENARIOS),
                          {'E2E-N1', 'E2E-N4', 'E2E-N4W', 'E2E-E1', 'E2E-V1', 'E2E-S1', 'E2E-A3', 'E2E-A4', 'E2E-E2',
-                          'E2E-F1', 'E2E-F2'})
+                          'E2E-F1', 'E2E-F2', 'E2E-N1G', 'E2E-M1', 'E2E-R1', 'E2E-H1'})
 
     def test_fixture_mint_precedes_its_consumers_in_the_all_order(self):
         from scenarios import SCENARIO_CLASSES

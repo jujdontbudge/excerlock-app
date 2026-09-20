@@ -8,7 +8,10 @@ export function O20({ answers, setAnswer }: AnswerProps) {
       <Heading title={c.O20.title} support={c.O20.body} />
       <ChoiceGrid
         selected={answers.activity as Activity | undefined}
-        onChange={(activity) => setAnswer('activity', activity)}
+        onChange={(activity) => {
+          setAnswer('activity', activity);
+          if (activity === 'walking' && answers.walkingMode === undefined) setAnswer('walkingMode', 'state');
+        }}
       />
     </>
   );
