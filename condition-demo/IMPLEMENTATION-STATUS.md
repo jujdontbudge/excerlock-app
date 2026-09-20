@@ -1,4 +1,6 @@
-# Astra production implementation — verified locally, awaiting No Mistakes
+# Astra implementation — stopped locally; shipping not authorized
+
+Captain correction (2026-09-20): do not run or resubmit No Mistakes. The already-active local proof finished: E2E-D1 r5 PASS, 45 assertions, live `plan-demo` coverage on exact source `3dad23e41c43d354fcf3aec14be29777809e5f9e`; instant full hold fill inspected at 0 seconds. Current source: 302 suites/1,732 tests, typecheck and lint pass. Compact final evidence: `app-next/evidence/condition-demo/README.md` and `verdict.json`. No push, merge, publication or release. The prior pipeline failed at its 30-minute test-agent limit; guarded recovery preserved its changes. Everything below is earlier implementation history, not authorization to resume a pipeline.
 
 Branch `fm/condition-demo-prototype-f1` starts from local main `5cb0885e`; only accepted prototype assets were carried from the scout. Production source verified at `0c48eb61347a8852f3384b0fd023844cd5d02275`. Nothing pushed or released; no fast/priority service mode enabled.
 
@@ -30,4 +32,4 @@ r1/r2 FAIL verdicts remain untouched. r3 passed but reused an outdated metadata 
 
 ## Handoff
 
-Implementation and evidence are complete locally. Await Firstmate's explicit `/no-mistakes` instruction under the promoted delivery contract. No remote push, merge, TestFlight, OTA, or API release has occurred. The captain-approved prototype and granular prompt remain in `condition-demo/`.
+Implementation and evidence are retained locally. The earlier Firstmate shipping escalation was unauthorized and has been withdrawn. Stop; do not resume No Mistakes or delivery without a new explicit captain instruction. No remote push, merge, TestFlight, OTA, or API release has occurred. The captain-approved prototype and granular prompt remain in `condition-demo/`.

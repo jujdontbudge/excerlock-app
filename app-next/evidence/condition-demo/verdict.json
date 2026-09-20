@@ -5,9 +5,9 @@
   "users": "NEW",
   "status": "PASS",
   "reason": "all assertions passed",
-  "startedAt": "2026-09-20T00:59:53Z",
-  "endedAt": "2026-09-20T01:03:28Z",
-  "durationSeconds": 214.3,
+  "startedAt": "2026-09-20T02:28:18Z",
+  "endedAt": "2026-09-20T02:31:58Z",
+  "durationSeconds": 219.9,
   "device": {
     "udid": "B68873CD-B6ED-4961-85AF-0C807E657999",
     "name": "ExcerLock-Next",
@@ -15,9 +15,9 @@
     "CFBundleVersion": "8"
   },
   "build": {
-    "revision": "0c48eb61347a8852f3384b0fd023844cd5d02275",
-    "revisionDirty": true,
-    "appSourceRevision": "9204cf9b2f47",
+    "revision": "3dad23e41c43d354fcf3aec14be29777809e5f9e",
+    "revisionDirty": false,
+    "appSourceRevision": "abe0f3c9ad60",
     "app": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/build/DerivedData/Build/Products/Release-iphonesimulator/ExcerLock.app",
     "bundleId": "com.johansardar.excerlock",
     "scheme": "ExcerLock",
@@ -28,7 +28,7 @@
     "derivedData": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/build/DerivedData",
     "log": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/build/build.log",
     "installed": false,
-    "builtAt": "2026-09-20T00:59:40Z"
+    "builtAt": "2026-09-20T02:26:47Z"
   },
   "capabilities": {
     "B1.remote_config_copy": {
@@ -73,8 +73,8 @@
     "detail": "simctl uninstall + install of the build under test"
   },
   "identity": {
-    "posthogDeviceId": "01a0bc53-d388-7256-a14b-f23d80735dbd",
-    "posthogDistinctId": "cbd6a9cc-aaca-47bc-9980-208707f051c6"
+    "posthogDeviceId": "01a0bca4-c1a1-753e-b56a-c2983102ef0e",
+    "posthogDistinctId": "f0f3c331-69f2-476b-a57a-96012a5c19de"
   },
   "assertions": [
     {
@@ -92,7 +92,7 @@
       "status": "PASS",
       "detail": "Visible phase=walking, phone=shield, locked=True",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/25-01-walk-steps-outside-walking-1s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/25-01-walk-steps-outside-walking-1s.png"
       ]
     },
     {
@@ -100,7 +100,7 @@
       "status": "PASS",
       "detail": "Visible phase=unlocked, phone=tiktok, locked=False",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/26-01-walk-steps-outside-unlocked-8s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/26-01-walk-steps-outside-unlocked-8s.png"
       ]
     },
     {
@@ -123,7 +123,7 @@
       "status": "PASS",
       "detail": "Visible phase=walking, phone=tiktok, locked=False",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/28-02-walk-state-outside-walking-0.4s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/28-02-walk-state-outside-walking-0.4s.png"
       ]
     },
     {
@@ -131,7 +131,7 @@
       "status": "PASS",
       "detail": "Visible phase=walking, phone=tiktok, locked=False",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/29-02-walk-state-outside-walking-1.4s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/29-02-walk-state-outside-walking-1.4s.png"
       ]
     },
     {
@@ -139,7 +139,7 @@
       "status": "PASS",
       "detail": "Visible phase=walking, phone=tiktok, locked=False",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/30-02-walk-state-outside-walking-2.2s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/30-02-walk-state-outside-walking-2.2s.png"
       ]
     },
     {
@@ -147,7 +147,7 @@
       "status": "PASS",
       "detail": "Visible phase=blocked, phone=shield, locked=True",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/31-02-walk-state-outside-blocked-6s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/31-02-walk-state-outside-blocked-6s.png"
       ]
     },
     {
@@ -185,7 +185,7 @@
       "status": "PASS",
       "detail": "Visible phase=prop, phone=excerlock, locked=True",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/35-03-walk-state-treadmill-prop-1s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/35-03-walk-state-treadmill-prop-1s.png"
       ]
     },
     {
@@ -193,7 +193,7 @@
       "status": "PASS",
       "detail": "Visible phase=scan, phone=excerlock, locked=True",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/36-03-walk-state-treadmill-scan-3.5s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/36-03-walk-state-treadmill-scan-3.5s.png"
       ]
     },
     {
@@ -201,7 +201,7 @@
       "status": "PASS",
       "detail": "Visible phase=walking, phone=tiktok, locked=False",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/37-03-walk-state-treadmill-walking-6s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/37-03-walk-state-treadmill-walking-6s.png"
       ]
     },
     {
@@ -209,7 +209,7 @@
       "status": "PASS",
       "detail": "Visible phase=blocked, phone=shield, locked=True",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/38-03-walk-state-treadmill-blocked-11s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/38-03-walk-state-treadmill-blocked-11s.png"
       ]
     },
     {
@@ -232,7 +232,7 @@
       "status": "PASS",
       "detail": "Visible phase=walking, phone=shield, locked=True",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/40-04-walk-minutes-outside-walking-3s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/40-04-walk-minutes-outside-walking-3s.png"
       ]
     },
     {
@@ -240,7 +240,7 @@
       "status": "PASS",
       "detail": "Visible phase=unlocked, phone=tiktok, locked=False",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/41-04-walk-minutes-outside-unlocked-8s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/41-04-walk-minutes-outside-unlocked-8s.png"
       ]
     },
     {
@@ -263,7 +263,7 @@
       "status": "PASS",
       "detail": "Visible phase=approach, phone=shield, locked=True",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/43-05-gym-arrival-outside-approach-2s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/43-05-gym-arrival-outside-approach-2s.png"
       ]
     },
     {
@@ -271,7 +271,7 @@
       "status": "PASS",
       "detail": "Visible phase=confirming, phone=shield, locked=True",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/44-05-gym-arrival-outside-confirming-5s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/44-05-gym-arrival-outside-confirming-5s.png"
       ]
     },
     {
@@ -279,7 +279,7 @@
       "status": "PASS",
       "detail": "Visible phase=unlocked, phone=tiktok, locked=False",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/45-05-gym-arrival-outside-unlocked-8s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/45-05-gym-arrival-outside-unlocked-8s.png"
       ]
     },
     {
@@ -287,7 +287,7 @@
       "status": "PASS",
       "detail": "Visible phase=leave, phone=tiktok, locked=False",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/46-05-gym-arrival-outside-leave-12s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/46-05-gym-arrival-outside-leave-12s.png"
       ]
     },
     {
@@ -310,7 +310,7 @@
       "status": "PASS",
       "detail": "Visible phase=approach, phone=shield, locked=True",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/48-06-gym-minutes-outside-approach-2s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/48-06-gym-minutes-outside-approach-2s.png"
       ]
     },
     {
@@ -318,7 +318,7 @@
       "status": "PASS",
       "detail": "Visible phase=confirming, phone=shield, locked=True",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/49-06-gym-minutes-outside-confirming-5s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/49-06-gym-minutes-outside-confirming-5s.png"
       ]
     },
     {
@@ -326,7 +326,7 @@
       "status": "PASS",
       "detail": "Visible phase=counting, phone=tiktok, locked=False",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/50-06-gym-minutes-outside-counting-10s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/50-06-gym-minutes-outside-counting-10s.png"
       ]
     },
     {
@@ -334,7 +334,7 @@
       "status": "PASS",
       "detail": "Visible phase=unlocked, phone=tiktok, locked=False",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/51-06-gym-minutes-outside-unlocked-14s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/51-06-gym-minutes-outside-unlocked-14s.png"
       ]
     },
     {
@@ -342,7 +342,7 @@
       "status": "PASS",
       "detail": "Visible phase=leave, phone=tiktok, locked=False",
       "evidence": [
-        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/52-06-gym-minutes-outside-leave-17s.png"
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r5-plan-demo/E2E-D1/52-06-gym-minutes-outside-leave-17s.png"
       ]
     },
     {
@@ -365,7 +365,7 @@
       "status": "PASS",
       "detail": "Live PostHog ingested every selected scenario/place",
       "evidence": [
-        "[{\"scenario\": \"gym-minutes\", \"place\": null}, {\"scenario\": \"gym-arrival\", \"place\": null}, {\"scenario\": \"gym-arrival\", \"place\": null}, {\"scenario\": \"walk-minutes\", \"place\": null}, {\"scenario\": \"walk-minutes\", \"place\": null}, {\"scenario\": \"walk-state\", \"place\": \"treadmill\"}, {\"scenario\": \"walk-state\", \"place\": \"treadmill\"}, {\"scenario\": \"walk-state\", \"place\": \"outside\"}, {\"scenario\": \"walk-state\", \"place\": \"outside\"}, {\"scenario\": \"walk-steps\", \"place\": null}, {\"scenario\": \"walk-steps\", \"place\": null}]"
+        "[{\"scenario\": \"gym-minutes\", \"place\": null}, {\"scenario\": \"gym-arrival\", \"place\": null}, {\"scenario\": \"walk-state\", \"place\": \"treadmill\"}, {\"scenario\": \"walk-state\", \"place\": \"treadmill\"}, {\"scenario\": \"walk-minutes\", \"place\": null}, {\"scenario\": \"walk-minutes\", \"place\": null}, {\"scenario\": \"gym-minutes\", \"place\": null}, {\"scenario\": \"gym-arrival\", \"place\": null}, {\"scenario\": \"walk-state\", \"place\": \"outside\"}, {\"scenario\": \"walk-steps\", \"place\": null}, {\"scenario\": \"walk-steps\", \"place\": null}, {\"scenario\": \"walk-state\", \"place\": \"outside\"}]"
       ]
     }
   ],
@@ -489,7 +489,7 @@
   ],
   "posthog": [
     {
-      "query": "select properties.scenario as scenario, properties.place as place from events where properties.$device_id='01a0bc53-d388-7256-a14b-f23d80735dbd' and timestamp>toDateTime('2026-09-20 01:00:00') and event='onboarding_screen_viewed' and properties.screen='S3b'",
+      "query": "select properties.scenario as scenario, properties.place as place from events where properties.$device_id='01a0bca4-c1a1-753e-b56a-c2983102ef0e' and timestamp>toDateTime('2026-09-20 02:28:24') and event='onboarding_screen_viewed' and properties.screen='plan-demo'",
       "rows": [
         {
           "scenario": "gym-minutes",
@@ -500,30 +500,30 @@
           "place": null
         },
         {
+          "scenario": "walk-state",
+          "place": "treadmill"
+        },
+        {
+          "scenario": "walk-state",
+          "place": "treadmill"
+        },
+        {
+          "scenario": "walk-minutes",
+          "place": null
+        },
+        {
+          "scenario": "walk-minutes",
+          "place": null
+        },
+        {
+          "scenario": "gym-minutes",
+          "place": null
+        },
+        {
           "scenario": "gym-arrival",
           "place": null
         },
         {
-          "scenario": "walk-minutes",
-          "place": null
-        },
-        {
-          "scenario": "walk-minutes",
-          "place": null
-        },
-        {
-          "scenario": "walk-state",
-          "place": "treadmill"
-        },
-        {
-          "scenario": "walk-state",
-          "place": "treadmill"
-        },
-        {
-          "scenario": "walk-state",
-          "place": "outside"
-        },
-        {
           "scenario": "walk-state",
           "place": "outside"
         },
@@ -534,9 +534,13 @@
         {
           "scenario": "walk-steps",
           "place": null
+        },
+        {
+          "scenario": "walk-state",
+          "place": "outside"
         }
       ],
-      "waitedSeconds": 6.5067961669992656
+      "waitedSeconds": 14.045909624997876
     }
   ]
 }
