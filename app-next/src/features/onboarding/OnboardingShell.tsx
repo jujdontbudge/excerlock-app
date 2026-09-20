@@ -60,7 +60,7 @@ export function OnboardingShell({
           ? { paddingHorizontal: 0, paddingBottom: 0 }
           : ['O01', 'O02', 'O03'].includes(step) ? { paddingBottom: t.space.sm } : undefined}
         header={
-          ['O01', 'O02', 'O03', 'S2', 'S3', 'S3b'].includes(step) ? undefined : (
+          ['O01', 'O02', 'O03', 'S2', 'S3', 'S3b', 'S3c'].includes(step) ? undefined : (
             <OnboardingHeader progress={progress} onBack={hideBack ? undefined : onBack} />
           )
         }

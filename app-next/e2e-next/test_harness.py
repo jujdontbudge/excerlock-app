@@ -139,7 +139,8 @@ class PostHogSql(unittest.TestCase):
 
 class OnboardingIdentification(unittest.TestCase):
     def test_condition_demo_is_a_distinct_observed_step(self):
-        self.assertEqual(identify(['How your plan works', 'Apps are blocked'])[0], 'S3b')
+        self.assertEqual(identify(['Once you hit 10,000 steps, your apps will unlock.'])[0], 'S3b')
+        self.assertEqual(identify(['We want you to try ExcerLock Premium for free'])[0], 'S3c')
 
     def test_identifies_shared_title_by_body(self):
         self.assertEqual(identify(['Block apps. Exercise more.', 'Less scrolling. More time to move.'])[0], 'O01')

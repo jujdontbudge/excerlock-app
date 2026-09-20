@@ -10,11 +10,12 @@ import { ScheduleScreen } from '../rules/ScheduleScreen';
 import { TimeSheet } from '../rules/TimeSheet';
 import { scheduleDraft, reduceSchedule, scheduleAnswers, toSchedule, ScheduleAction } from '../rules/scheduleDraft';
 import { draftFromAnswers, commitPlan } from '../rules/plan';
-import { createDraft, toRule } from '../rules/draft';
+import { createDraft, toRule, RuleDraft } from '../rules/draft';
 import { PlanBuild } from '../rules/PlanBuild';
 import { PlanCelebration } from '../rules/PlanCelebration';
 import { PlanSummary } from '../rules/PlanSummary';
 import { ConditionDemo } from './condition-demo/ConditionDemo';
+import { PlanTrialPreview } from '../rules/PlanTrialPreview';
 import { ReviewWarmup } from '../rules/ReviewWarmup';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { planCopy as c } from '../../content/plan';
@@ -78,6 +79,7 @@ export function OnboardingRoute() {
       </View>
     );
   if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} onBack={flow.back} />;
+  if (flow.step === 'S3c') body = <PlanTrialPreview condition={previewCondition(draft)} />;
   if (flow.step === 'S4') body = <ReviewWarmup onSkip={flow.advance} />;
   return (
     <OnboardingShell
@@ -88,7 +90,7 @@ export function OnboardingRoute() {
       onContinue={advance}
       valid={canContinue(flow.step, flow.answers)}
       continuing={flow.isAdvancing}
-      continueLabel={flow.step === 'S3' ? c.use : undefined}
+      continueLabel={flow.step === 'S3' ? c.use : flow.step === 'S3c' ? 'Next' : undefined}
       hideContinue={flow.step === 'S2' || flow.step === 'T3' || playback.hideContinue}
       overlay={
         <>
@@ -106,4 +108,15 @@ export function OnboardingRoute() {
       {body}
     </OnboardingShell>
   );
+}
+
+function previewCondition(draft: RuleDraft) {
+  if (draft.activity === 'walking') {
+    if (draft.walkingMode === 'steps') return `Walk ${draft.stepGoal.toLocaleString()} steps to unlock`;
+    if (draft.walkingMode === 'minutes') return `Walk for ${draft.walkMinutes} minutes to unlock`;
+    return 'Go for a walk to unlock';
+  }
+  if (draft.gymMode === 'time') return `Exercise for ${draft.gymMinutes} minutes to unlock`;
+  if (draft.gymMode === 'arrival') return 'Arrive at your gym to unlock';
+  return 'Complete a gym visit to unlock';
 }
