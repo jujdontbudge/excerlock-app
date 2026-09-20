@@ -12,7 +12,10 @@ async function mountScenario(id: string) {
 
 test('walking analytics follows the reference Day, Week, and Month hierarchy', async () => {
   const runtime = await mountScenario('home-locked-walking');
-  expect(screen.getByText('This week')).toBeTruthy();
+  expect(screen.queryByText('This week')).toBeNull();
+  expect(screen.queryByLabelText('Previous period')).toBeNull();
+  expect(screen.queryByLabelText('Next period')).toBeNull();
+  expect(screen.getByTestId('Analytics period swipe')).toBeTruthy();
   expect(screen.getByRole('tab', { name: 'D' })).toBeTruthy();
   expect(screen.getByRole('tab', { name: 'W' })).toBeTruthy();
   expect(screen.getByRole('tab', { name: 'M' })).toBeTruthy();

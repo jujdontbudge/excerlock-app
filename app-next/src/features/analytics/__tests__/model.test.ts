@@ -1,4 +1,5 @@
 import { analyticsModel } from '../analyticsModel';
+import { offsetAfterPeriodSwipe } from '../periodSwipe';
 import { HistoryDay } from '../../../ports/models';
 import { Rule, RuleMode } from '../../../domain/types';
 const makeRule = (id: string, mode: RuleMode): Rule => ({
@@ -59,6 +60,13 @@ test('unscheduled days do not break streak; previous period is independent', () 
   expect(m.delta).toBe(30);
   expect(m.activities.walking).toBe(2000);
 });
+test('period swipes reveal older dates and never move into the future', () => {
+  expect(offsetAfterPeriodSwipe(0, 80)).toBe(-1);
+  expect(offsetAfterPeriodSwipe(-2, -80)).toBe(-1);
+  expect(offsetAfterPeriodSwipe(0, -80)).toBe(0);
+  expect(offsetAfterPeriodSwipe(-1, 20)).toBe(-1);
+});
+
 test('history keeps a cross-midnight result on its supplied start day', () => {
   const m = analyticsModel([row('2026-09-06', 70)], '2026-09-07', 'Week', -1, 180);
   expect(m.series[6].value).toBe(70);
