@@ -24,10 +24,11 @@ type Props = PropsWithChildren<{
   expanded?: boolean;
   title: string;
   onDismiss: () => void;
+  onClosed?: () => void;
 }>;
 export function BottomSheet(props: Props) {
   return props.open ? (
-    <Modal transparent visible animationType="fade" onRequestClose={props.onDismiss}>
+    <Modal transparent visible animationType="fade" onRequestClose={props.onDismiss} onDismiss={props.onClosed}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
           <SheetPanel {...props} />

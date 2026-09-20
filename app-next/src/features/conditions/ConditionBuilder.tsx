@@ -76,7 +76,7 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
         ) : null}
         {branch ? <RuleScreen step={f.step as BranchStep} draft={f.draft} onAction={f.dispatch} /> : null}
         {f.step === 'S1' ? <ScheduleScreen draft={f.schedule} onAction={f.onSchedule} onChoose={setWheel} /> : null}
-        {f.step === 'S3' ? <PlanSummary draft={f.draft} schedule={toSchedule(f.schedule)} onEdit={f.edit} /> : null}
+        {f.step === 'S3' ? <PlanSummary draft={f.draft} schedule={toSchedule(f.schedule)} onEdit={f.edit} editing={f.editing} /> : null}
       </Animated.View>
     </ScreenShell>
     </SolidChoices>

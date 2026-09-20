@@ -75,8 +75,10 @@ export function RootNavigator() {
             <Stack.Screen name="settings" />
             <Stack.Screen name="sign-in" options={{ presentation: 'fullScreenModal' }} />
           </Stack.Protected>
-          <Stack.Protected guard={loading || (entitled && onboarding.setupComplete)}>
+          <Stack.Protected guard={loading || onboarding.setupComplete}>
             <Stack.Screen name="builder" options={{ presentation: 'fullScreenModal' }} />
+          </Stack.Protected>
+          <Stack.Protected guard={loading || (entitled && onboarding.setupComplete)}>
             <Stack.Screen name="unlock/gym" options={{ presentation: 'fullScreenModal' }} />
             <Stack.Screen name="unlock/treadmill" options={{ presentation: 'fullScreenModal' }} />
           </Stack.Protected>

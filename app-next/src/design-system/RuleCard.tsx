@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { View } from 'react-native';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
@@ -25,9 +25,18 @@ export function RuleCard({
   onDelete: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pendingAction = useRef<(() => void) | null>(null);
+  const runPendingAction = () => {
+    const action = pendingAction.current;
+    pendingAction.current = null;
+    action?.();
+  };
   const closeThen = (action: () => void) => {
+    pendingAction.current = action;
     setMenuOpen(false);
-    action();
+    // The native Modal's onDismiss is authoritative on iOS. This guarded
+    // fallback covers environments that do not emit it (including tests).
+    setTimeout(runPendingAction, t.motion.duration.sheet + t.motion.duration.fast);
   };
   return (
     <>
@@ -74,7 +83,7 @@ export function RuleCard({
           <Label variant="body" tone="secondary" style={{ textAlign: 'center' }}>{schedule}</Label>
         </PressableScale>
       </View>
-      <BottomSheet open={menuOpen} title={title} onDismiss={() => setMenuOpen(false)}>
+      <BottomSheet open={menuOpen} title={title} onDismiss={() => setMenuOpen(false)} onClosed={runPendingAction}>
         <ActionRow icon="gear" label="Edit condition" onPress={() => closeThen(onOpen)} />
         <ActionRow
           icon={enabled ? 'lock-open' : 'lock'}

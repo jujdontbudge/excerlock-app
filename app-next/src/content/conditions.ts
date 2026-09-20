@@ -11,6 +11,8 @@ export const conditionsCopy = {
   back: 'Back',
   continue: 'Continue',
   save: 'Save condition',
+  editTitle: 'Edit condition',
+  editBody: 'Update the exercise goal, active days, or blocking times.',
   discardTitle: 'Discard changes?',
   discardBody: 'Your changes have not been saved.',
   discard: 'Discard changes',

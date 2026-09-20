@@ -13,17 +13,20 @@ import { Answers } from '../../onboarding/types';
 import { weeklyTargets } from './weeklyTargets';
 import { ConditionPreview } from './ConditionPreview';
 import { conditionSentence } from './conditionSentence';
+import { conditionsCopy } from '../../content/conditions';
 import { Icon, IconName } from '../../icons/Icon';
 export function PlanSummary({
   draft,
   schedule,
   onEdit,
   answers,
+  editing = false,
 }: {
   draft: RuleDraft;
   answers?: Answers;
   schedule: Schedule;
   onEdit: (step: string) => void;
+  editing?: boolean;
 }) {
   const rule = toRule(draft, schedule);
   const targets = answers ? weeklyTargets(answers) : null;
@@ -53,7 +56,8 @@ export function PlanSummary({
   ];
   return (
     <>
-      <Heading title={c.S3} support={c.summaryBody} />
+      <Heading title={editing ? conditionsCopy.editTitle : c.S3} support={editing ? undefined : c.summaryBody} />
+      {editing ? <Label tone="secondary" style={{ textAlign: 'center' }}>{conditionsCopy.editBody}</Label> : null}
       <LivingIcon name="check" size={t.layout.ring} />
       <View style={{ gap: t.space.md }}>
         {rows.map((row, index) => (
