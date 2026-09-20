@@ -149,7 +149,12 @@ function requireProductionHttps(
     if (!value) {
       continue;
     }
-    const url = new URL(value);
+    let url: URL;
+    try {
+      url = new URL(value);
+    } catch {
+      throw new Error(`${name} must be a valid HTTPS URL`);
+    }
     if (
       url.protocol !== "https:" ||
       Boolean(url.password) ||

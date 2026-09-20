@@ -193,7 +193,8 @@ class RemoteURLValidation(unittest.TestCase):
 
         self.assertEqual(adapty.AdaptyServer(secret='test', base='https://api.adapty.io').base,
                          'https://api.adapty.io')
-        self.assertEqual(posthog.api_host(), 'https://us.posthog.com')
+        with unittest.mock.patch.dict(os.environ, {'POSTHOG_API_HOST': 'https://eu.posthog.com'}):
+            self.assertEqual(posthog.api_host(), 'https://eu.posthog.com')
         self.assertEqual(supabase.SupabaseAdmin(url='https://project.supabase.co', service_key='test').url,
                          'https://project.supabase.co')
         with self.assertRaises(ValueError):

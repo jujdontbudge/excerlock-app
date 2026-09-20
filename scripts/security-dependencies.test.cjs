@@ -39,12 +39,30 @@ test("production URL parsing dependency is patched", () => {
   assert.equal(versionAtLeast(version, "0.5.0"), true, version);
 });
 
-test("backend production URI dependencies are patched", () => {
-  const versions = [
-    server.packages["node_modules/fast-uri"]?.version,
-    server.packages["node_modules/fast-json-stringify/node_modules/fast-uri"]?.version,
-  ];
-  assert.deepEqual(versions, ["3.1.8", "4.2.1"]);
+function compareVersions(left, right) {
+  const a = left.split(".").map(Number);
+  const b = right.split(".").map(Number);
+  for (let index = 0; index < Math.max(a.length, b.length); index += 1) {
+    const difference = (a[index] ?? 0) - (b[index] ?? 0);
+    if (difference !== 0) {
+      return difference;
+    }
+  }
+  return 0;
+}
+
+test("every backend fast-uri copy is at or above its patched release", () => {
+  const patchedByMajor = { 3: "3.1.8", 4: "4.2.1" };
+  const copies = Object.entries(server.packages)
+    .filter(([packagePath]) => packagePath.endsWith("node_modules/fast-uri"))
+    .map(([packagePath, packageInfo]) => `${packagePath}@${packageInfo.version}`);
+  assert.ok(copies.length > 0, "server must lock fast-uri");
+  const vulnerable = copies.filter((copy) => {
+    const version = copy.slice(copy.lastIndexOf("@") + 1);
+    const minimum = patchedByMajor[version.split(".")[0]];
+    return minimum === undefined || compareVersions(version, minimum) < 0;
+  });
+  assert.deepEqual(vulnerable, []);
 });
 
 test("all Vitest packages include the patched mocker", () => {

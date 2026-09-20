@@ -165,6 +165,12 @@ describe("parseEnv", () => {
     ).toThrow(/HTTPS/);
   });
 
+  it("names the setting when a production URL cannot be parsed", () => {
+    expect(() =>
+      parseEnv({ NODE_ENV: "production", SENTRY_DSN: "not a url" }),
+    ).toThrow("SENTRY_DSN must be a valid HTTPS URL");
+  });
+
   it("accepts both webhook stores but fixes shared authorization to production", () => {
     const environment = parseEnv({
       ADAPTY_WEBHOOK_ACCEPTED_STORE_ENVIRONMENTS: "sandbox, production",

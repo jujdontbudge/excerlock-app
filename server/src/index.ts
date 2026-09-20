@@ -67,21 +67,17 @@ export function buildServer(options: BuildServerOptions = {}): FastifyInstance {
         ? errorStatusCode
         : 500;
     const code =
-      statusCode === 404
-        ? "NOT_FOUND"
-        : statusCode === 429
-          ? "RATE_LIMITED"
-          : statusCode >= 500
-            ? "INTERNAL_SERVER_ERROR"
-            : "INVALID_REQUEST";
+      statusCode === 429
+        ? "RATE_LIMITED"
+        : statusCode >= 500
+          ? "INTERNAL_SERVER_ERROR"
+          : "INVALID_REQUEST";
     const message =
-      statusCode === 404
-        ? "Route not found"
-        : statusCode === 429
-          ? "Too many requests"
-          : statusCode >= 500
-            ? "Internal server error"
-            : "Invalid request";
+      statusCode === 429
+        ? "Too many requests"
+        : statusCode >= 500
+          ? "Internal server error"
+          : "Invalid request";
     return reply.code(statusCode).send({ error: { code, message } });
   });
   void app.register(healthRoutes, { prefix: "/v1" });
