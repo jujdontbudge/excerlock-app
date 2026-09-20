@@ -12,6 +12,11 @@ test('content and fixed footer remain independently accessible', async () => {
   expect(screen.getByText('Continue')).toBeTruthy();
 });
 
+test('scrolling can be disabled for gesture-driven screens', async () => {
+  await render(<ScreenShell scrollEnabled={false}><Text>Dial</Text></ScreenShell>);
+  expect(screen.getByTestId('screen-scroll')).toHaveProp('scrollEnabled', false);
+});
+
 test('headers scroll with content below the notch while the footer stays outside', async () => {
   const insets = jest.spyOn(safeArea, 'useSafeAreaInsets').mockReturnValue({ top: 59, bottom: 34, left: 0, right: 0 });
   try {

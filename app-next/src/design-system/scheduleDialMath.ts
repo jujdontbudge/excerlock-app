@@ -7,10 +7,10 @@ export function dialPoint(minute: number, center: number, radius: number) {
   return { x: center + Math.cos(angle) * radius, y: center + Math.sin(angle) * radius };
 }
 
-/** Clockwise from midnight, snapped to 15-minute increments. */
+/** Clockwise from midnight at one-minute precision. */
 export function dialMinute(x: number, y: number, center: number): number {
   const angle = Math.atan2(y - center, x - center) + Math.PI / 2;
-  return wrap(Math.round(angle / (Math.PI * 2) * DAY / 15) * 15);
+  return wrap(Math.round(angle / (Math.PI * 2) * DAY));
 }
 
 export function nearestHandle(minute: number, start: number, end: number): ScheduleHandle {
@@ -19,7 +19,7 @@ export function nearestHandle(minute: number, start: number, end: number): Sched
 }
 
 export function boundedMinute(which: ScheduleHandle, minute: number, start: number, end: number): number {
-  const snapped = wrap(Math.round(minute / 15) * 15);
-  return which === 'start' && snapped === end ? wrap(end - 15)
-    : which === 'end' && snapped === start ? wrap(start + 15) : snapped;
+  const snapped = wrap(Math.round(minute));
+  return which === 'start' && snapped === end ? wrap(end - 1)
+    : which === 'end' && snapped === start ? wrap(start + 1) : snapped;
 }

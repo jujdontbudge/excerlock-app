@@ -27,8 +27,8 @@ test('schedule controls follow edited times and all-day without a decorative loc
   expect(screen.getByRole('image', { name: 'Blocking window all day' })).toBeTruthy();
   expect(screen.queryByText('How it will look:')).toBeNull();
   await fireEvent(screen.getByRole('adjustable', { name: 'Blocking start time' }), 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
-  expect(props.onAction).toHaveBeenCalledWith({ type: 'start', value: 555 });
-  expect(reduceSchedule(scheduleDraft({ allDay: true }), { type: 'start', value: 555 })).toMatchObject({ allDay: false, start: 555 });
+  expect(props.onAction).toHaveBeenCalledWith({ type: 'start', value: 541 });
+  expect(reduceSchedule(scheduleDraft({ allDay: true }), { type: 'start', value: 541 })).toMatchObject({ allDay: false, start: 541 });
 });
 test('schedule errors and live cross-midnight label are rendered', async () => {
   const onAction = jest.fn(),

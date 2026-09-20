@@ -53,6 +53,7 @@ export function OnboardingShell({
     <SolidChoices>
       <ScreenShell
         scrollResetKey={step}
+        scrollEnabled={step !== 'S1'}
         overlay={overlay}
         contentStyle={['O01', 'O02', 'O03'].includes(step) ? { paddingBottom: t.space.sm } : undefined}
         header={

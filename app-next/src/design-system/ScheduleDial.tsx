@@ -131,13 +131,13 @@ export function ScheduleDial({
         {(['start', 'end'] as const).map(which => (
           <View key={which} pointerEvents="none" accessible accessibilityRole="adjustable"
             accessibilityLabel={which === 'start' ? 'Blocking start time' : 'Blocking end time'}
-            accessibilityHint="Swipe up or down to adjust by 15 minutes."
+            accessibilityHint="Swipe up or down to adjust by one minute."
             accessibilityValue={{ min: 0, max: 1425, now: preview[which], text: which === 'start' ? start : end }}
             accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
             onAccessibilityAction={event => {
               const action = event.nativeEvent.actionName;
               if (action !== 'increment' && action !== 'decrement') return;
-              const minute = boundedMinute(which, preview[which] + (action === 'increment' ? 15 : -15), preview.start, preview.end);
+              const minute = boundedMinute(which, preview[which] + (action === 'increment' ? 1 : -1), preview.start, preview.end);
               setPreview({ ...preview, [which]: minute });
               onChange(which, minute);
             }}

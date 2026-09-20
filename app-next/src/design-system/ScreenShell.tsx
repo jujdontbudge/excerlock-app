@@ -16,6 +16,7 @@ export function ScreenShell({
   orangeBackground = true,
   scrollToEndOnKeyboard = false,
   scrollResetKey,
+  scrollEnabled = true,
   contentStyle,
   onLayout,
 }: PropsWithChildren<{
@@ -30,6 +31,7 @@ export function ScreenShell({
   orangeBackground?: boolean;
   scrollToEndOnKeyboard?: boolean;
   scrollResetKey?: string;
+  scrollEnabled?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
   onLayout?: (event: LayoutChangeEvent) => void;
 }>) {
@@ -67,6 +69,7 @@ export function ScreenShell({
           <ScrollView
             testID="screen-scroll"
             ref={scroll}
+            scrollEnabled={scrollEnabled}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={[
               s.content,
