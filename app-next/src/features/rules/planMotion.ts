@@ -4,6 +4,7 @@ export const PLAN_MOTION = {
   ready: 6000,
   hold: 140,
   fadeout: 130,
+  buildDone: 6270,
   gap: 70,
   badgeIn: 280,
   burst: 950,

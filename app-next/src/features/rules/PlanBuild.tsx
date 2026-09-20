@@ -58,7 +58,8 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
     'Personalizing your routine', 'Preparing your weekly goals', 'Putting your plan together'];
   useEffect(() => { callback.current = onComplete; }, [onComplete]);
   useEffect(() => {
-    elapsed.set(withTiming(PLAN_MOTION.ready, { duration: m.reduced ? m.duration.fast : PLAN_MOTION.ready, easing: Easing.linear }));
+    // Continue through the post-100% hold and fade; stopping at `ready` leaves the loading UI stranded onscreen.
+    elapsed.set(withTiming(PLAN_MOTION.buildDone, { duration: m.reduced ? m.duration.fast : PLAN_MOTION.buildDone, easing: Easing.linear }));
     return () => cancelAnimation(elapsed);
   }, [elapsed, m.duration.fast, m.reduced]);
   useEffect(() => {
@@ -67,7 +68,7 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
       setTimeout(() => callback.current(), m.duration.slow),
     ] : [
       ...[0, 1, 2, 3, 4].map((n) => setTimeout(() => setCompleted(n + 1), Math.max(n * 1000, 150))),
-      setTimeout(() => callback.current(), PLAN_MOTION.ready + PLAN_MOTION.hold + PLAN_MOTION.fadeout),
+      setTimeout(() => callback.current(), PLAN_MOTION.buildDone),
     ];
     return () => timers.forEach(clearTimeout);
   }, [m.duration.fast, m.duration.slow, m.reduced]);

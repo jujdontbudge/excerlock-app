@@ -4,6 +4,7 @@ test('100% holds, then the whole loading screen fades out as one piece', () => {
   expect(PLAN_MOTION.hold).toBeGreaterThan(0);
   expect(PLAN_MOTION.hold).toBeLessThan(300);
   expect(PLAN_MOTION.fadeout).toBeLessThanOrEqual(200);
+  expect(PLAN_MOTION.buildDone).toBe(PLAN_MOTION.ready + PLAN_MOTION.hold + PLAN_MOTION.fadeout);
 });
 test('pills fade out in place and the stack closes the gap behind them', () => {
   expect(taskMotion(0, 100).checked).toBe(false);

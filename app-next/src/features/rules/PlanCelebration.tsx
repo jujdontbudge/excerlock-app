@@ -40,9 +40,10 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
     return { transform: [{ scale: m.reduced ? 1 : 1 + v * v * (coverScale - 1) }] };
   });
   const rippleCycle = (offset: number) => {
-    const cycle = elapsed.get() - p.gap - offset;
-    if (cycle < 0 || cycle > b.ripple) return { opacity: 0, transform: [{ scale: 1 }] };
-    const v = cycle / b.ripple;
+    const now = elapsed.get();
+    const sinceStart = now - p.gap - offset;
+    if (sinceStart < 0 || now >= p.burst) return { opacity: 0, transform: [{ scale: 1 }] };
+    const v = (sinceStart % b.ripple) / b.ripple;
     return { opacity: 0.4 * (1 - v), transform: [{ scale: 1 + v * 0.55 }] };
   };
   const ripple1 = useAnimatedStyle(() => (m.reduced ? { opacity: 0, transform: [{ scale: 1 }] } : rippleCycle(0)));
@@ -71,7 +72,7 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
       </Animated.View>
       <Animated.View style={[at(badgeLeft, badgeTop, b.size), { alignItems: 'center', justifyContent: 'center' }, appear]}>
         <Animated.View style={glyph}>
-          <Icon name="check" size={b.glyph} tint={t.text.solid} />
+          <Icon name="check" size={b.glyph} tint={t.surface.solid} />
         </Animated.View>
       </Animated.View>
       <Animated.View style={[at(centerX - b.coin / 2, badgeTop + (b.size - b.coin) / 2, b.coin), { backgroundColor: t.text.onAccent, alignItems: 'center', justifyContent: 'center' }, coin]}>
