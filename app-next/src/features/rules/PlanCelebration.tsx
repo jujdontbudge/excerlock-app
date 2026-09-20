@@ -27,17 +27,17 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
     return () => { clearTimeout(covered); clearTimeout(done); };
   }, [m.duration.fast, m.duration.slow, m.reduced]);
   const layer = useAnimatedStyle(() => ({
-    opacity: m.reduced ? 1 : interpolate(elapsed.get(), [0, 180, p.fade, p.done], [0, 1, 1, 0], 'clamp'),
+    opacity: m.reduced ? 1 : interpolate(elapsed.get(), [0, p.fade, p.done], [1, 1, 0], 'clamp'),
   }));
   const circle = useAnimatedStyle(() => {
     const v = Math.max(0, Math.min(1, (elapsed.get() - p.burst) / (p.covered - p.burst)));
     return { transform: [{ scale: m.reduced ? 1 : 1 + v * v * v * (coverScale - 1) }] };
   });
   const halo = useAnimatedStyle(() => ({
-    opacity: m.reduced ? 0 : interpolate(elapsed.get(), [100, 350, p.burst, p.burst + 200], [0, 0.22, 0.14, 0], 'clamp'),
-    transform: [{ scale: m.reduced ? 1 : interpolate(elapsed.get(), [0, p.burst], [0.8, 1.7], 'clamp') }],
+    opacity: m.reduced ? 0 : interpolate(elapsed.get(), [0, 180, p.covered], [0.22, 0.14, 0], 'clamp'),
+    transform: [{ scale: m.reduced ? 1 : interpolate(elapsed.get(), [0, p.covered], [0.8, 1.7], 'clamp') }],
   }));
-  const caption = useAnimatedStyle(() => ({ opacity: interpolate(elapsed.get(), [0, 200, p.burst - 100, p.burst + 180], [0, 1, 1, 0], 'clamp') }));
+  const caption = useAnimatedStyle(() => ({ opacity: interpolate(elapsed.get(), [0, 80, p.covered], [1, 1, 0], 'clamp') }));
   return <Modal transparent animationType="none" statusBarTranslucent accessibilityViewIsModal>
     <Animated.View style={[{ flex: 1 }, layer]} testID="plan-celebration">
       <LinearGradient colors={[...t.surface.orangeGradient]} style={StyleSheet.absoluteFill} />

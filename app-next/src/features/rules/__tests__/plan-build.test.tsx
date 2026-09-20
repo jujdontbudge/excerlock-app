@@ -16,7 +16,7 @@ test.each([false, true])('checks real facts and completes once with reduced moti
   expect(screen.getByRole('checkbox', { name: 'Walk 10,000 steps' })).not.toBeChecked();
   await act(() => jest.advanceTimersByTime(reduced ? tokens.motion.duration.fast : 6000));
   expect(screen.getAllByRole('checkbox').every((node) => node.props.accessibilityState.checked)).toBe(true);
-  expect(onComplete).not.toHaveBeenCalled();
+  expect(onComplete).toHaveBeenCalledTimes(reduced ? 0 : 1);
   await act(() => jest.advanceTimersByTime(reduced ? 300 : 1400));
   expect(onComplete).toHaveBeenCalledTimes(1);
 });
