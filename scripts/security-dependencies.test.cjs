@@ -21,24 +21,6 @@ const deployScript = fs.readFileSync(
   "utf8",
 );
 
-function versionAtLeast(version, minimum) {
-  const parse = (value) => value.split(".").map((part) => Number(part));
-  const actual = parse(version);
-  const expected = parse(minimum);
-  return expected.every(
-    (part, index) =>
-      actual[index] > part ||
-      (actual[index] === part &&
-        actual.slice(index + 1).some((value, offset) => value > expected[index + 1 + offset])),
-  ) || version === minimum;
-}
-
-test("production URL parsing dependency is patched", () => {
-  const version = root.packages["node_modules/decode-uri-component"]?.version;
-  assert.ok(version, "decode-uri-component must be present in the lockfile");
-  assert.equal(versionAtLeast(version, "0.5.0"), true, version);
-});
-
 function compareVersions(left, right) {
   const a = left.split(".").map(Number);
   const b = right.split(".").map(Number);
@@ -51,16 +33,31 @@ function compareVersions(left, right) {
   return 0;
 }
 
+function versionAtLeast(version, minimum) {
+  return compareVersions(version, minimum) >= 0;
+}
+
+test("production URL parsing dependency is patched", () => {
+  const version = root.packages["node_modules/decode-uri-component"]?.version;
+  assert.ok(version, "decode-uri-component must be present in the lockfile");
+  assert.equal(versionAtLeast(version, "0.5.0"), true, version);
+});
+
 test("every backend fast-uri copy is at or above its patched release", () => {
   const patchedByMajor = { 3: "3.1.8", 4: "4.2.1" };
   const copies = Object.entries(server.packages)
     .filter(([packagePath]) => packagePath.endsWith("node_modules/fast-uri"))
     .map(([packagePath, packageInfo]) => `${packagePath}@${packageInfo.version}`);
   assert.ok(copies.length > 0, "server must lock fast-uri");
+  const highestKnownMajor = Math.max(...Object.keys(patchedByMajor).map(Number));
   const vulnerable = copies.filter((copy) => {
     const version = copy.slice(copy.lastIndexOf("@") + 1);
-    const minimum = patchedByMajor[version.split(".")[0]];
-    return minimum === undefined || compareVersions(version, minimum) < 0;
+    const major = Number(version.split(".")[0]);
+    if (major > highestKnownMajor) {
+      return false;
+    }
+    const minimum = patchedByMajor[major];
+    return minimum === undefined || !versionAtLeast(version, minimum);
   });
   assert.deepEqual(vulnerable, []);
 });

@@ -8,7 +8,10 @@ import {
   VendorClientError,
   type VendorOAuthService,
 } from "../src/vendors/index.js";
-import type { VendorEventFeed } from "../src/webhooks/index.js";
+import {
+  createVendorEventFeed,
+  type VendorEventFeed,
+} from "../src/webhooks/index.js";
 
 let app: FastifyInstance | undefined;
 
@@ -199,6 +202,43 @@ describe("neutral identity and tombstones", () => {
         message: "Vendor request is invalid",
       },
     });
+  });
+
+  it("reports malformed pagination as a client error", async () => {
+    const listWebhookEvents = vi.fn(async () => []);
+    app = Fastify({ logger: false });
+    await app.register(
+      async (protectedScope) => {
+        protectedScope.addHook("onRequest", async (request) => {
+          request.clerkIdentity = { userId: "user_123", roles: [] };
+        });
+        await protectedScope.register(
+          createVendorProtectedRoutes({
+            eventFeed: createVendorEventFeed({ listWebhookEvents }),
+          }),
+        );
+      },
+      { prefix: "/v1" },
+    );
+
+    const badLimit = await app.inject({
+      method: "GET",
+      url: "/v1/vendors/events?limit=0",
+    });
+    const badCursor = await app.inject({
+      method: "GET",
+      url: "/v1/vendors/events?cursor=not-a-cursor",
+    });
+
+    expect([badLimit.statusCode, badCursor.statusCode]).toEqual([400, 400]);
+    expect(badLimit.json()).toEqual({
+      error: {
+        code: "VENDOR_REQUEST_INVALID",
+        message: "Vendor request is invalid",
+      },
+    });
+    expect(badCursor.json()).toEqual(badLimit.json());
+    expect(listWebhookEvents).not.toHaveBeenCalled();
   });
 
   it("does not disclose internal vendor errors to the authenticated caller", async () => {
