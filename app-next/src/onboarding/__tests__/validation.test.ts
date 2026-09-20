@@ -15,7 +15,7 @@ test('pre-branch forms require their answer while numeric scrolling starts with 
     ['O05', 'referralSource', 'friend'],
     ['O06', 'ageBand', '25–34'],
     ['O08', 'improveFirst', 'exercise'],
-    ['O09', 'mainReason', 'focus'],
+    ['O09', 'weeklyExerciseHours', '1-2'],
     ['O20', 'activity', 'walking'],
   ]) {
     expect(canContinue(step, {})).toBe(false);

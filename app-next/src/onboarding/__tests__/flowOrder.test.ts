@@ -34,7 +34,7 @@ test.each([
   [{ preBranch: ['O99'] }],
   [{ preBranch: ['X1'] }],
   [{ preBranch: ['W1'] }],
-  [{ preBranch: ['O07'] }],
+  [{ preBranch: ['O19'] }],
   [{ tail: ['O01'] }],
   [{ tail: ['S3', 'S1', 'P', 'P'] }],
   [{ preBranch: swapped, extra: true }],
@@ -47,7 +47,10 @@ test('the parser and the persisted store share one step-id vocabulary', () => {
   expect(isOnboardingStepId('O01')).toBe(true);
   expect(isOnboardingStepId('O20')).toBe(true);
   expect(isOnboardingStepId('P')).toBe(true);
-  expect(isOnboardingStepId('O21')).toBe(false);
+  expect(isOnboardingStepId('O07')).toBe(true);
+  expect(isOnboardingStepId('O21')).toBe(true);
+  expect(isOnboardingStepId('O22')).toBe(true);
+  expect(isOnboardingStepId('O23')).toBe(false);
   expect(isOnboardingStepId('X1')).toBe(false);
   expect(isOnboardingStepId('O1')).toBe(false);
   expect(isOnboardingStepId(7)).toBe(false);

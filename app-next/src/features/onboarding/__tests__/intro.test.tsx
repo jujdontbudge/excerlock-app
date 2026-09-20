@@ -39,7 +39,7 @@ test('welcome keeps only the bottom CTA and local sign-in without legal copy', a
 });
 test.each([
   ['O02', 'O03'],
-  ['O03', 'O04'],
+  ['O03', 'O07'],
 ])('intro %s retains the welcome footer and advances to %s', async (step, next) => {
   mockParams.step = step;
   onboardingStore.getState().reset();

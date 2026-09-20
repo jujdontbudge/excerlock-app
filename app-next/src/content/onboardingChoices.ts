@@ -25,15 +25,45 @@ export const choiceQuestions: { [step: string]: { key: string; options: Onboardi
       { id: 'other', title: 'Something else', icon: 'more' },
     ],
   },
-  O09: {
-    key: 'mainReason',
+  O21: {
+    key: 'exercisePreference',
     options: [
-      { id: 'confidence', title: 'Feel more confident', icon: 'star' },
-      { id: 'energy', title: 'Have more energy', icon: 'flame' },
-      { id: 'focus', title: 'Focus on what matters', icon: 'list' },
-      { id: 'fitness', title: 'Feel stronger and healthier', icon: 'gym' },
-      { id: 'presence', title: 'Be more present', icon: 'heart' },
-      { id: 'consistency', title: 'Keep a promise to myself', icon: 'check' },
+      { id: 'walking', title: 'Walking', icon: 'walking' },
+      { id: 'lifting', title: 'Lifting', icon: 'gym' },
+      { id: 'pilates', title: 'Pilates', icon: 'person' },
+      { id: 'yoga', title: 'Yoga', icon: 'heart' },
+      { id: 'running', title: 'Running', icon: 'flame' },
+      { id: 'cycling', title: 'Cycling', icon: 'clock' },
+      { id: 'swimming', title: 'Swimming', icon: 'person' },
+      { id: 'other', title: 'Something else', icon: 'more' },
+    ],
+  },
+  O07: {
+    key: 'gender',
+    options: [
+      { id: 'male', title: 'Male', icon: 'person' },
+      { id: 'female', title: 'Female', icon: 'person' },
+      { id: 'other', title: 'Other', icon: 'person' },
+      { id: 'preferNotToSay', title: 'Prefer not to say', icon: 'more' },
+    ],
+  },
+  O22: {
+    key: 'bodyGoal',
+    options: [
+      { id: 'gain', title: 'Gain weight', icon: 'gym' },
+      { id: 'lose', title: 'Lose weight', icon: 'flame' },
+      { id: 'maintain', title: 'Maintain', icon: 'heart' },
+    ],
+  },
+  O09: {
+    key: 'weeklyExerciseHours',
+    options: [
+      { id: 'none', title: 'None yet' },
+      { id: 'under-1', title: 'Less than 1 hour' },
+      { id: '1-2', title: '1–2 hours' },
+      { id: '3-4', title: '3–4 hours' },
+      { id: '5-6', title: '5–6 hours' },
+      { id: '7-plus', title: '7+ hours' },
     ],
   },
 };

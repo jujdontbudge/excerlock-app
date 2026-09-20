@@ -7,6 +7,7 @@ import { choiceQuestions } from '../../../content/onboardingChoices';
 import { AnswerProps } from '../types';
 import { ProfileQuestion } from '../profile/ProfileQuestion';
 import { GoalIcon } from './GoalIcon';
+import { weeklyExerciseQuestion } from '../../../content/exercisePreference';
 export function ChoiceQuestion({ step, answers, setAnswer }: AnswerProps & { step: string }) {
   if (step === 'O05' || step === 'O06')
     return <ProfileQuestion step={step} answers={answers} setAnswer={setAnswer} />;
@@ -15,7 +16,7 @@ export function ChoiceQuestion({ step, answers, setAnswer }: AnswerProps & { ste
   return (
     <>
       <Reveal>
-        <Heading title={copy.title} />
+        <Heading title={step === 'O09' ? weeklyExerciseQuestion(answers.exercisePreference) : copy.title} />
       </Reveal>
       <View style={{ gap: t.space.md }}>
         {question.options.map((option, index) => (

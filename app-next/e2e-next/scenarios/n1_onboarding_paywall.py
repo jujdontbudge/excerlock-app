@@ -37,7 +37,7 @@ class N1OnboardingPaywall(Scenario):
             walk = OnboardingWalk(ctx, activity=self.activity)
             result = walk.run(stop_at='P')
             steps = result['steps']
-            expected = ['O01', 'O02', 'O03', 'O04', 'O05', 'O06', 'O08', 'O09', 'O10', 'O11', 'O12', 'O13',
+            expected = ['O01', 'O02', 'O03', 'O07', 'O04', 'O05', 'O06', 'O08', 'O22', 'O21', 'O09', 'O10', 'O11', 'O12', 'O13',
                         'O14', 'O15', 'O16', 'O17', 'O18', 'O20', 'W0', 'W1', 'W2', 'W3', 'S1', 'S3', 'S4', 'T1',
                         'T2', 'T3', 'T4', 'P']
             if self.activity == 'Gym':

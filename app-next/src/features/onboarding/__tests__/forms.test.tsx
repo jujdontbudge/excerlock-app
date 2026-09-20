@@ -16,7 +16,7 @@ test.each([
   ['O06', '25–34', 'ageBand', '25–34'],
   ['O08', 'More exercise', 'improveFirst', 'exercise'],
   ['O08', 'Something else', 'improveFirst', 'other'],
-  ['O09', 'Focus on what matters', 'mainReason', 'focus'],
+  ['O09', '1–2 hours', 'weeklyExerciseHours', '1-2'],
 ])('%s commits its selected answer', async (step, label, key, value) => {
   const setAnswer = jest.fn();
   await render(<ChoiceQuestion step={step} answers={{}} setAnswer={setAnswer} />);

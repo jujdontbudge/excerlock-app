@@ -6,7 +6,10 @@ export const onboardingCopy = {
   O05: { title: 'How did you hear about us?', body: '' },
   O06: { title: 'How old are you?', body: 'This helps us tailor your plan.' },
   O08: { title: 'What is your goal?', body: 'Pick one. You can change it later.' },
-  O09: { title: 'What’s the main reason you want to make a change?', body: 'Start with what matters to you.' },
+  O21: { title: 'What exercise would you like to do more of?', body: 'Pick the one you’re most interested in.' },
+  O07: { title: 'What is your gender?', body: '' },
+  O22: { title: 'What is your body goal?', body: '' },
+  O09: { title: 'How many hours of exercise do you do per week?', body: '' },
   O10: {
     title: 'How many hours do you currently spend scrolling each day?',
     body: 'Don’t worry about the exact number. Just give your best guess.',

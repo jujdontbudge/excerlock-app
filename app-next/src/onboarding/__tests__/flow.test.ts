@@ -1,7 +1,7 @@
 import { pathFor, nextStep, prevStep, progressFraction, resumeStep } from '../flow';
 const pre = Array.from({ length: 20 }, (_, i) => 'O' + String(i + 1).padStart(2, '0')).filter(
   (step) => step !== 'O07' && step !== 'O19',
-);
+).flatMap(step => step === 'O03' ? [step, 'O07'] : step === 'O08' ? [step, 'O22', 'O21'] : [step]);
 const tail = ['S1', 'S2', 'S3', 'S3b', 'S4', 'T1', 'T2', 'T3', 'T4', 'P'];
 test.each([
   [{ activity: 'walking', walkingMode: 'steps' }, ['W1', 'W2', 'W3']],
