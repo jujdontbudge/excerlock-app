@@ -11,10 +11,8 @@ import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
 import { dayKey } from '../../domain/calendar';
 import { analyticsCopy as c } from '../../content/analytics';
 import { analyticsModel } from './analyticsModel';
-import { Period } from './period';
 import { MetricBars, MetricPoint } from './MetricBars';
 import { useAppleSteps } from './useAppleSteps';
-import { MonthGrid } from './MonthGrid';
 
 const sum = (values: (number | null)[]) => values.reduce<number>((total, value) => total + (value ?? 0), 0);
 const measuredAverage = (values: (number | null)[]) => {
@@ -25,10 +23,7 @@ const duration = (minutes: number) => {
   const rounded = Math.round(minutes);
   return rounded < 60 ? `${rounded}m` : `${Math.floor(rounded / 60)}h ${rounded % 60}m`;
 };
-const integer = (value: number) => Math.round(value).toLocaleString('en-US');
-
 export function AnalyticsScreen() {
-  const [period, setPeriod] = useState<Period>('Week');
   const [offset, setOffset] = useState(0);
   const runtime = useRuntime();
   const now = useClock();
@@ -38,71 +33,39 @@ export function AnalyticsScreen() {
   const ruleDays = useRuleDaysStore((state) => state.data.days);
   const today = dayKey(now, runtime.clock.timezone());
   const model = useMemo(
-    () => analyticsModel(history, today, period, offset, baseline, { rules, ruleDays }),
-    [history, today, period, offset, baseline, rules, ruleDays],
+    () => analyticsModel(history, today, 'Week', offset, baseline, { rules, ruleDays }),
+    [history, today, offset, baseline, rules, ruleDays],
   );
   const enabledRules = useMemo(
     () => rules.filter((rule) => rule.enabled).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
     [rules],
   );
-  const gymRules = enabledRules.filter((rule) => rule.activity === 'gym');
-  const primaryRule = gymRules[0] ?? enabledRules[0];
-  const primaryActivity = primaryRule?.activity ?? 'walking';
-  const gymDurationRule = gymRules.find(
-    (rule) => rule.mode.kind === 'target' && rule.mode.metric === 'minutes',
-  );
+  const primaryActivity = enabledRules.some((rule) => rule.activity === 'gym') ? 'gym' : 'walking';
   const stepDays = useMemo(() => model.series.map((point) => point.day), [model.series]);
   const stepFallback = useMemo(
     () => model.series.map((point) => ({ day: point.day, value: point.day > today ? null : point.activity.walking })),
     [model.series, today],
   );
   const apple = useAppleSteps(stepDays, today, stepFallback);
-  const walkingValues = apple.points.map((point) =>
-    point.day < model.start || point.day > model.end ? (period === 'Day' ? point.value : null) : point.value,
-  );
-  const walkingTotal = period === 'Day'
-    ? apple.points.find((point) => point.day === model.start)?.value ?? 0
-    : sum(walkingValues);
-  const walkingAverage = measuredAverage(
-    apple.points.filter((point) => point.day >= model.start && point.day <= model.end).map((point) => point.value),
-  );
+  const walkingValues = apple.points.map((point) => point.value);
   const gymValues = model.series.map((point) => point.day > today ? null : point.activity.gym);
   const movementValues = primaryActivity === 'walking' ? walkingValues : gymValues;
-  const movementTotal = primaryActivity === 'walking' ? walkingTotal : sum(
-    model.series.map((point, index) => point.day >= model.start && point.day <= model.end ? gymValues[index] : null),
-  );
-  const movementAverage = primaryActivity === 'walking' ? walkingAverage : measuredAverage(
-    model.series.flatMap((point, index) => point.day >= model.start && point.day <= model.end ? [gymValues[index]] : []),
-  );
   const screenValues = model.series.map((point) => point.day > today ? null : point.value);
   const screenPeriodValues = model.rows.map((row) => row.usageMinutes);
-  const rangeLabel = offset === 0 ? c.thisPeriod(period) : c.range(model.start, model.end);
+  const rangeLabel = offset === 0 ? c.thisPeriod('Week') : c.range(model.start, model.end);
   const movementPoints: MetricPoint[] = model.series.map((point, index) => ({
     label: point.label,
     value: movementValues[index],
-    selected: point.day === model.start && period === 'Day',
   }));
   const screenPoints: MetricPoint[] = model.series.map((point, index) => ({
     label: point.label,
     value: screenValues[index],
-    selected: point.day === model.start && period === 'Day',
   }));
   const movementName = primaryActivity === 'walking' ? 'Walking' : 'Gym';
-  const movementGoal = primaryActivity === 'walking'
-    ? primaryRule?.mode.kind === 'target' ? primaryRule.mode.goal : null
-    : gymDurationRule?.mode.kind === 'target' ? gymDurationRule.mode.goal : null;
   const movementUnit = primaryActivity === 'walking' ? 'steps from Apple Motion & Fitness' : 'minutes at the gym';
-  const gymPeriodValues = model.series.flatMap((point, index) =>
-    point.day >= model.start && point.day <= model.end && gymValues[index] !== null ? [gymValues[index] as number] : [],
-  );
-  const gymDaysMet = movementGoal === null ? 0 : gymPeriodValues.filter((value) => value >= movementGoal).length;
-  const gymDaysVisited = gymPeriodValues.filter((value) => value > 0).length;
   return (
     <ScreenShell dock safeBottom={false} contentStyle={s.content}>
-      <View style={s.header}>
-        <Label accessibilityRole="header" variant="question">{c.title}</Label>
-        <PeriodControl value={period} onChange={(next) => { setPeriod(next); setOffset(0); }} />
-      </View>
+      <Label accessibilityRole="header" variant="question">{c.title}</Label>
       <View style={s.nav}>
         <PressableScale label={c.previous} onPress={() => setOffset((value) => value - 1)} style={s.arrow}>
           <Icon name="back" variant="utility" size={20} tint={t.text.primary} />
@@ -113,42 +76,20 @@ export function AnalyticsScreen() {
           <Icon name="chevron" variant="utility" size={20} tint={t.text.primary} />
         </PressableScale>
       </View>
-      <AnalyticsSection
-        title={movementName}
-        icon={primaryActivity}
-        total={primaryActivity === 'walking' ? integer(movementTotal) : duration(movementTotal)}
-        totalLabel={period === 'Day' ? 'Today' : 'Total'}
-        average={primaryActivity === 'walking' ? `AVG ${integer(movementAverage)}` : `AVG ${duration(movementAverage)}`}
-        chips={primaryActivity === 'walking'
-          ? [
-              { label: 'Streak', value: `${model.streak.current}d` },
-              { label: 'Daily goal', value: primaryRule?.mode.kind === 'target' && primaryRule.mode.metric === 'steps' ? integer(primaryRule.mode.goal) : '—' },
-            ]
-          : [
-              { label: 'Gym time', value: duration(movementTotal) },
-              movementGoal === null
-                ? { label: 'Days visited', value: integer(gymDaysVisited) }
-                : { label: 'Days met', value: integer(gymDaysMet) },
-            ]}>
+      <View style={s.section}>
         {primaryActivity === 'walking' && apple.status !== 'granted' ? (
           <PressableScale label="Connect Apple steps" onPress={() => void apple.request()} style={s.connect}>
             <Icon name="walking" variant="utility" size={20} tint={t.brand.primary} />
             <Label variant="label">Connect Apple steps</Label>
           </PressableScale>
         ) : null}
-        {period === 'Month' ? (
-          <MonthGrid
-            data={model.series.map((point, index) => ({ day: point.day, value: movementValues[index] }))}
-            goal={movementGoal}
-            unit={primaryActivity === 'walking' ? 'steps' : 'minutes'}
-          />
-        ) : <MetricBars title={movementName} data={movementPoints} unit={movementUnit} />}
-      </AnalyticsSection>
+        <MetricBars title={movementName} data={movementPoints} unit={movementUnit} />
+      </View>
       <AnalyticsSection
         title="Screen Time"
         icon="phone"
         total={duration(sum(screenPeriodValues))}
-        totalLabel={period === 'Day' ? 'Today' : 'Total'}
+        totalLabel="Total"
         average={`AVG ${duration(measuredAverage(screenPeriodValues))}`}
         chips={[
           { label: 'Time replaced', value: duration(model.reclaimed.minutes) },
@@ -157,28 +98,6 @@ export function AnalyticsScreen() {
         <MetricBars title="Screen Time" data={screenPoints} unit="locked-app usage" />
       </AnalyticsSection>
     </ScreenShell>
-  );
-}
-
-function PeriodControl({ value, onChange }: { value: Period; onChange: (period: Period) => void }) {
-  const items: { label: string; value: Period }[] = [
-    { label: 'D', value: 'Day' },
-    { label: 'W', value: 'Week' },
-    { label: 'M', value: 'Month' },
-  ];
-  return (
-    <View style={s.periodControl}>
-      {items.map((item) => {
-        const selected = item.value === value;
-        return (
-          <PressableScale key={item.value} label={item.label} accessibilityRole="tab"
-            accessibilityState={{ selected }} onPress={() => onChange(item.value)}
-            style={[s.periodButton, selected && s.periodSelected]}>
-            <Label variant="label" style={{ color: selected ? t.text.primary : t.text.secondary }}>{item.label}</Label>
-          </PressableScale>
-        );
-      })}
-    </View>
   );
 }
 
@@ -219,11 +138,6 @@ function AnalyticsSection({ title, icon, total, totalLabel, average, chips, chil
 
 const s = StyleSheet.create({
   content: { paddingHorizontal: t.space.lg, paddingTop: t.space.sm, gap: t.space.lg },
-  header: { flexDirection: 'row', alignItems: 'center', gap: t.space.lg },
-  periodControl: { flexDirection: 'row', borderRadius: t.radius.pill, borderWidth: t.stroke.hairline,
-    borderColor: t.border.divider, backgroundColor: t.surface.solid, padding: t.space.xs },
-  periodButton: { width: t.layout.touch, height: t.layout.touch, alignItems: 'center', borderRadius: t.radius.pill },
-  periodSelected: { backgroundColor: t.surface.selected, borderWidth: t.stroke.hairline, borderColor: t.brand.primary },
   nav: { flexDirection: 'row', alignItems: 'center' },
   arrow: { width: t.layout.touch, height: t.layout.touch, alignItems: 'center' },
   range: { flex: 1, textAlign: 'center' },
