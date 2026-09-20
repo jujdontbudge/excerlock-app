@@ -40,7 +40,6 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
   const caption = useAnimatedStyle(() => ({ opacity: interpolate(elapsed.get(), [0, 80, p.covered], [1, 1, 0], 'clamp') }));
   return <Modal transparent animationType="none" statusBarTranslucent accessibilityViewIsModal>
     <Animated.View style={[{ flex: 1 }, layer]} testID="plan-celebration">
-      <LinearGradient colors={[...t.surface.orangeGradient]} style={StyleSheet.absoluteFill} />
       <Animated.View style={[{ position: 'absolute', left: width / 2 - 48, top: centerY - 48, width: 96, height: 96, borderRadius: 48, backgroundColor: t.brand.primary }, halo]} />
       <Animated.View style={[{ position: 'absolute', left: width / 2 - 32, top: centerY - 32, width: 64, height: 64, borderRadius: 32, overflow: 'hidden' }, circle]}>
         <LinearGradient colors={[t.brand.lockHighlight, t.brand.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
