@@ -12,7 +12,7 @@ test('maps every shipping draft mode and selected thresholds', () => {
   });
   expect(scenarioFor({ ...d, walkingMode: 'state' }, 'treadmill')).toEqual(treadmill);
   expect(scenarioFor({ ...d, activity: 'gym', gymMode: 'arrival' }, '')).toMatchObject({ kind: 'gym-arrival' });
-  expect(scenarioFor({ ...d, activity: 'gym', gymMinutes: 45 }, '')).toMatchObject({ kind: 'gym-minutes', goal: 45 });
+  expect(scenarioFor({ ...d, activity: 'gym', gymMode: 'time', gymMinutes: 45 }, '')).toMatchObject({ kind: 'gym-minutes', goal: 45 });
 });
 test.each([
   [outside, 8],
