@@ -188,11 +188,12 @@ function DemoScene({
           accessibilityLabel={`${unlockPromise} ${frame.title}. ${frame.caption}`}
           style={styles.liveRegion} />
         <View style={styles.promise}>
-          <PressableScale label="Back" onPress={onBack} style={styles.promiseBack}>
-            <Icon name="back" size={24} variant="utility" tint={t.brand.primary} />
-          </PressableScale>
+          <View style={styles.promiseBack}>
+            <PressableScale label="Back" onPress={onBack} style={styles.promiseBackHit}>
+              <Icon name="back" size={24} variant="utility" tint={t.brand.primary} />
+            </PressableScale>
+          </View>
           <Text maxFontSizeMultiplier={1} style={styles.promiseText}>{unlockPromise}</Text>
-          <View style={styles.promiseBack} />
         </View>
         <View
           accessibilityElementsHidden
@@ -214,7 +215,7 @@ function DemoScene({
             {isGym ? <GymMap {...{ clock, scenario }} /> : <Character {...{ clock, scenario, reduced, onLoad }} />}
             <Phone {...{ clock, scenario, reduced, frame }} />
             {goalCard ? (
-              <View style={[styles.info, { top: 200 }]}>
+              <View style={[styles.info, { top: 150 }]}>
                 <Text maxFontSizeMultiplier={1} style={styles.small}>{frame.goalMet ? 'GOAL REACHED' : isGym ? 'AT THE GYM' : 'TODAY'}</Text>
                 <Text maxFontSizeMultiplier={1} style={styles.number}>
                   {frame.progress.toLocaleString('en-US')}
@@ -319,12 +320,12 @@ const styles = StyleSheet.create({
   liveRegion: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   promise: {
     position: 'absolute',
-    top: 120,
+    top: 70,
     left: 14,
     right: 14,
     minHeight: 56,
     borderRadius: t.radius.card,
-    paddingHorizontal: 22,
+    paddingHorizontal: 58,
     paddingVertical: 14,
     backgroundColor: t.surface.solid,
     flexDirection: 'row',
@@ -333,7 +334,18 @@ const styles = StyleSheet.create({
     boxShadow: c.shadow,
     zIndex: 10,
   },
-  promiseBack: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  promiseBack: {
+    position: 'absolute',
+    left: 8,
+    top: '50%',
+    marginTop: -22,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  promiseBackHit: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   promiseText: { flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '700', color: t.text.primary, textAlign: 'center' },
   info: {
     position: 'absolute',
