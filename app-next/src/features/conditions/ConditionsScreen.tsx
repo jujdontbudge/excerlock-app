@@ -7,7 +7,6 @@ import {
   SettingsRow,
   SettingsGroup,
   RuleCard,
-  PrimaryButton,
   PressableScale,
   EmptyState,
   Label,
@@ -50,7 +49,19 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
           }}
         />
       }>
-      <Heading title={c.title} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
+        <View style={{ flex: 1 }}><Heading title={c.title} /></View>
+        {ordered.length ? (
+          <PressableScale label={c.add} onPress={onAdd}
+            style={{ minHeight: t.layout.touch, paddingHorizontal: t.space.lg,
+              flexDirection: 'row', alignItems: 'center', gap: t.space.sm,
+              borderRadius: t.radius.pill, backgroundColor: t.surface.solid,
+              borderWidth: t.stroke.hairline, borderColor: t.border.divider }}>
+            <LivingIcon name="plus" size={20} tint={t.brand.primary} />
+            <Label variant="label">{c.add}</Label>
+          </PressableScale>
+        ) : null}
+      </View>
       {scheduleIssue ? (
         <View
           style={{
@@ -96,7 +107,6 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
           </PressableScale>
         </View>
       ) : null}
-      {ordered.length ? <PrimaryButton label={c.add} onPress={onAdd} /> : null}
       {ordered.length ? (
         <>
           {ordered.map((rule, index) => (
