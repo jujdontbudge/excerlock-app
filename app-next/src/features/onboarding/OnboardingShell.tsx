@@ -55,7 +55,16 @@ export function OnboardingShell({
         scrollResetKey={step}
         scrollEnabled={step !== 'S1'}
         fullBleed={step === 'S3b'}
-        overlay={overlay}
+        overlay={
+          <>
+            {overlay}
+            {step === 'S3b' ? (
+              <View pointerEvents="box-none" style={{ position: 'absolute', top: 48, left: 0, right: 0 }}>
+                <OnboardingHeader progress={progress} onBack={hideBack ? undefined : onBack} showProgress={false} />
+              </View>
+            ) : null}
+          </>
+        }
         contentStyle={step === 'S3b'
           ? { paddingHorizontal: 0, paddingBottom: 0 }
           : ['O01', 'O02', 'O03'].includes(step) ? { paddingBottom: t.space.sm } : undefined}

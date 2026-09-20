@@ -204,7 +204,7 @@ function DemoScene({
             {isGym ? <GymMap {...{ clock, scenario }} /> : <Character {...{ clock, scenario, reduced, onLoad }} />}
             <Phone {...{ clock, scenario, reduced, frame }} />
             {goalCard ? (
-              <View style={[styles.info, { top: 150 }]}>
+              <View style={[styles.info, { top: 200 }]}>
                 <Text maxFontSizeMultiplier={1} style={styles.small}>{frame.goalMet ? 'GOAL REACHED' : isGym ? 'AT THE GYM' : 'TODAY'}</Text>
                 <Text maxFontSizeMultiplier={1} style={styles.number}>
                   {frame.progress.toLocaleString('en-US')}
@@ -308,11 +308,11 @@ const styles = StyleSheet.create({
   stage: { flex: 1, minHeight: 650, overflow: 'hidden' },
   promise: {
     position: 'absolute',
-    top: 70,
+    top: 120,
     left: 14,
     right: 14,
     minHeight: 56,
-    borderRadius: t.radius.pill,
+    borderRadius: t.radius.card,
     paddingHorizontal: 22,
     paddingVertical: 14,
     backgroundColor: t.surface.solid,

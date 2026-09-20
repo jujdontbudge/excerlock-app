@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   phone: {
     position: 'absolute',
     right: 14,
-    top: 150,
+    top: 200,
     width: 170,
     height: 312,
     borderRadius: 26,
