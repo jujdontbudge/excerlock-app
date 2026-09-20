@@ -4,7 +4,8 @@ import Animated, { SharedValue, useAnimatedProps } from 'react-native-reanimated
 import { tokens as t } from '../../../design-system/tokens';
 import { conditionDemoTokens as c } from '../../../design-system/conditionDemoTokens';
 import { DemoState, Scenario, snapshot } from './model';
-const Group = Animated.createAnimatedComponent(G);
+// G's generic extension exposes the native Fabric matrix prop to Reanimated.
+const Group = Animated.createAnimatedComponent(G<{ matrix?: number[] }>);
 const Ring = Animated.createAnimatedComponent(Circle);
 export function GymMap({ clock, scenario }: { clock: SharedValue<DemoState>; scenario: Scenario }) {
   const dot = useAnimatedProps(() => {

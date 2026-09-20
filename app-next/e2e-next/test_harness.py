@@ -112,6 +112,16 @@ class CapabilityMap(unittest.TestCase):
 
 
 class PostHogSql(unittest.TestCase):
+    def test_live_query_forces_recalculation_instead_of_cached_partial_coverage(self):
+        from unittest.mock import patch, MagicMock
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = b'{"columns":["scenario"],"results":[["gym-minutes"]]}'
+        with patch.object(posthog, 'personal_key', return_value='test-key'), \
+             patch.object(posthog.urllib.request, 'urlopen', return_value=response) as request:
+            self.assertEqual(posthog.query('select scenario from events'), [{'scenario': 'gym-minutes'}])
+        payload = json.loads(request.call_args.args[0].data)
+        self.assertEqual(payload['refresh'], 'force_blocking')
+
     def test_sql_is_scoped_to_the_run_device_id(self):
         sql = posthog.device_events_sql('abc-123', '2026-09-16 22:00:00', events=('$screen', 'paywall_viewed'))
         self.assertIn("properties.$device_id = 'abc-123'", sql)

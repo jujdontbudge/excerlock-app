@@ -52,7 +52,9 @@ def configured() -> bool:
 
 def query(hogql: str, *, timeout: float = 60.0) -> list[dict[str, Any]]:
     """Run one HogQL query, returning the raw result rows."""
-    body = json.dumps({'query': {'kind': 'HogQLQuery', 'query': hogql}}).encode()
+    # The default Query API response may cache the first partial result across
+    # every poll. Live-ingestion assertions must recalculate, not extend waits.
+    body = json.dumps({'query': {'kind': 'HogQLQuery', 'query': hogql}, 'refresh': 'force_blocking'}).encode()
     request = urllib.request.Request(
         f'{api_host()}/api/projects/{project_id()}/query/',
         data=body,

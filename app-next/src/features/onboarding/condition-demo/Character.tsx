@@ -50,11 +50,12 @@ function Frame({
   });
   return (
     <Animated.Image
+      testID={`condition-demo-frame-${index}`}
       source={source}
       resizeMode="contain"
       fadeDuration={0}
       onLoad={onLoad}
-      style={[StyleSheet.absoluteFill, style]}
+      style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }, style]}
     />
   );
 }

@@ -4,7 +4,8 @@ import Animated, { SharedValue, useAnimatedProps } from 'react-native-reanimated
 import { tokens as t } from '../../../design-system/tokens';
 import { conditionDemoTokens as c } from '../../../design-system/conditionDemoTokens';
 import { DemoState } from './model';
-const Group = Animated.createAnimatedComponent(G);
+// G's generic extension exposes the native Fabric matrix prop to Reanimated.
+const Group = Animated.createAnimatedComponent(G<{ matrix?: number[] }>);
 const hill = (y: number) =>
   `M-400 ${y + 60} C-300 ${y},-200 ${y + 80},-100 ${y + 20} S100 ${y + 70},200 ${y + 10} S400 ${y + 70},500 ${y + 20} S700 ${y + 70},800 ${y + 10} L800 400 L-400 400 Z`;
 function Layer({ index, clock }: { index: number; clock: SharedValue<DemoState> }) {
