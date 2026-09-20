@@ -18,7 +18,7 @@ export const tokens = {
     canvas: '#FFFFFF',
     topTint: '#FFF0E5',
     topTintMid: '#FFF8F3',
-    card: 'rgba(255,255,255,0.62)',
+    card: '#FFFFFF',
     glass: 'rgba(255,255,255,0.62)',
     solid: '#FFFFFF',
     subtle: '#F7F7F8',
