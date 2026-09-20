@@ -18,7 +18,10 @@ export function ProfileHeading({ step }: { step: 'O04' | 'O05' | 'O06' }) {
         <Label
           accessibilityRole="header"
           accessibilityLabel={copy.title}
-          style={step === 'O04' || step === 'O05' ? p.largeTitle : p.title}>
+          style={[
+            step === 'O04' || step === 'O05' ? p.largeTitle : p.title,
+            { width: '100%', textAlign: 'center' },
+          ]}>
           {title}
         </Label>
 
