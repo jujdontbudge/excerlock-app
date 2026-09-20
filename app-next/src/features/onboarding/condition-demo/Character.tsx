@@ -89,7 +89,7 @@ export function Character({
         {
           position: 'absolute',
           left: compact ? 16 : 10,
-          bottom: 52,
+          bottom: 112,
           width: compact ? 145 : 160,
           height: compact ? 216 : 238,
         },

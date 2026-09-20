@@ -134,6 +134,15 @@ function DemoScene({
   const goalFill = useAnimatedStyle(() => ({ width: `${snapshot(clock.value, scenario).progressFraction * 100}%` }));
   const holdArc = useAnimatedProps(() => ({ strokeDashoffset: clock.value.manual === 'walking' ? 0 : 69.12 }));
   const isGym = scenario.kind.startsWith('gym');
+  const unlockPromise = scenario.kind === 'walk-steps'
+    ? `Once you hit ${scenario.goal.toLocaleString('en-US')} steps, your apps will unlock.`
+    : scenario.kind === 'walk-minutes'
+      ? `Once you walk for ${scenario.goal} minutes, your apps will unlock.`
+      : scenario.kind === 'walk-state'
+        ? 'Once you start walking, your apps will unlock.'
+        : scenario.kind === 'gym-minutes'
+          ? `Once you spend ${scenario.goal} minutes at the gym, your apps will unlock.`
+          : 'Once you arrive at the gym, your apps will unlock.';
   const goalCard =
     scenario.kind === 'walk-steps' ||
     scenario.kind === 'walk-minutes' ||
@@ -167,7 +176,7 @@ function DemoScene({
       <View
         accessible
         accessibilityLiveRegion="polite"
-        accessibilityLabel={`${frame.title}. ${frame.caption}`}
+        accessibilityLabel={`${unlockPromise} ${frame.title}. ${frame.caption}`}
         testID={`condition-demo-${scenario.kind}-${scenario.place}-${frame.phase}-${frame.phone}-${frame.locked ? 'locked' : 'unlocked'}`}
         style={[styles.stage, { minHeight: windowHeight < 740 ? 520 : 650 }]}
         onLayout={(event) => setDimensions(event.nativeEvent.layout)}>
@@ -188,11 +197,14 @@ function DemoScene({
               transformOrigin: 'top left',
               transform: [{ scale }],
             }}>
+            <View style={styles.promise}>
+              <Text maxFontSizeMultiplier={1} style={styles.promiseText}>{unlockPromise}</Text>
+            </View>
             {scenario.place === 'treadmill' ? <Treadmill clock={clock} /> : null}
             {isGym ? <GymMap {...{ clock, scenario }} /> : <Character {...{ clock, scenario, reduced, onLoad }} />}
             <Phone {...{ clock, scenario, reduced, frame }} />
             {goalCard ? (
-              <View style={[styles.info, { top: 72 }]}>
+              <View style={[styles.info, { top: 150 }]}>
                 <Text maxFontSizeMultiplier={1} style={styles.small}>{frame.goalMet ? 'GOAL REACHED' : isGym ? 'AT THE GYM' : 'TODAY'}</Text>
                 <Text maxFontSizeMultiplier={1} style={styles.number}>
                   {frame.progress.toLocaleString('en-US')}
@@ -294,6 +306,21 @@ function DemoScene({
 const styles = StyleSheet.create({
   root: { flexGrow: 1 },
   stage: { flex: 1, minHeight: 650, overflow: 'hidden' },
+  promise: {
+    position: 'absolute',
+    top: 70,
+    left: 14,
+    right: 14,
+    minHeight: 56,
+    borderRadius: 28,
+    paddingHorizontal: 22,
+    paddingVertical: 14,
+    backgroundColor: t.surface.solid,
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: c.shadow,
+  },
+  promiseText: { fontSize: 15, lineHeight: 20, fontWeight: '700', color: t.text.primary, textAlign: 'center' },
   info: {
     position: 'absolute',
     left: 14,

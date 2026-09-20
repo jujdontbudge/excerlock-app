@@ -15,6 +15,7 @@ export function Heading({
   centered?: boolean;
 }) {
   const setupScreen = useSolidChoices();
+  const alignCenter = centered || title.trim().endsWith('?');
   return (
     <Reveal>
       <View style={{ gap: t.space.xs }}>
@@ -22,11 +23,11 @@ export function Heading({
           accessibilityLabel={title.replace(/\s+/g, ' ')}
           accessibilityRole="header"
           variant={variant}
-          style={{ textAlign: centered ? 'center' : 'left' }}>
+          style={{ textAlign: alignCenter ? 'center' : 'left' }}>
           {title}
         </Label>
         {support && !setupScreen ? (
-          <Label tone="secondary" style={{ textAlign: centered ? 'center' : 'left' }}>
+          <Label tone="secondary" style={{ textAlign: alignCenter ? 'center' : 'left' }}>
             {support}
           </Label>
         ) : null}
