@@ -1,0 +1,542 @@
+{
+  "scenario": "E2E-D1",
+  "title": "Every selected condition: plan commit, demo states, hold and live view analytics",
+  "lane": "SIM",
+  "users": "NEW",
+  "status": "PASS",
+  "reason": "all assertions passed",
+  "startedAt": "2026-09-20T00:59:53Z",
+  "endedAt": "2026-09-20T01:03:28Z",
+  "durationSeconds": 214.3,
+  "device": {
+    "udid": "B68873CD-B6ED-4961-85AF-0C807E657999",
+    "name": "ExcerLock-Next",
+    "CFBundleShortVersionString": "1.0.0",
+    "CFBundleVersion": "8"
+  },
+  "build": {
+    "revision": "0c48eb61347a8852f3384b0fd023844cd5d02275",
+    "revisionDirty": true,
+    "appSourceRevision": "9204cf9b2f47",
+    "app": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/build/DerivedData/Build/Products/Release-iphonesimulator/ExcerLock.app",
+    "bundleId": "com.johansardar.excerlock",
+    "scheme": "ExcerLock",
+    "configuration": "Release",
+    "environment": "preview",
+    "channel": "preview",
+    "runtimeVersion": "3",
+    "derivedData": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/build/DerivedData",
+    "log": "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/build/build.log",
+    "installed": false,
+    "builtAt": "2026-09-20T00:59:40Z"
+  },
+  "capabilities": {
+    "B1.remote_config_copy": {
+      "landed": true,
+      "contract": "remoteCopy reads flow.remoteConfigs[0].data (locale-aware)"
+    },
+    "B4a.screen_step_mapping": {
+      "landed": true,
+      "contract": "semanticScreenName resolves onboarding/setup step ids to a screen plus a step prop"
+    },
+    "B4b.root_screen_tracking": {
+      "landed": true,
+      "contract": "a single root-level usePathname subscriber emits screen() for every production route"
+    },
+    "B6.paywall_funnel_events": {
+      "landed": true,
+      "contract": "client emits paywall_viewed"
+    },
+    "B2.paywall_error_reporting": {
+      "landed": true,
+      "contract": "client emits paywall_error on paywall load/purchase/restore failure"
+    },
+    "B3.fallback_paywall": {
+      "landed": true,
+      "contract": "assets/adapty-fallback.json exists and the SDK fallback is wired"
+    },
+    "B7.signin_required_flag": {
+      "landed": true,
+      "contract": "SignInScreen mounts receive a flag-backed signInRequired source"
+    },
+    "B10.startup_marks": {
+      "landed": true,
+      "contract": "startup module emits the five os_signpost stages"
+    },
+    "A5.sentry_before_boot": {
+      "landed": true,
+      "contract": "Sentry initialisation runs at the entry, before the runtime boot gate"
+    }
+  },
+  "fixture": {
+    "kind": "fresh-install",
+    "detail": "simctl uninstall + install of the build under test"
+  },
+  "identity": {
+    "posthogDeviceId": "01a0bc53-d388-7256-a14b-f23d80735dbd",
+    "posthogDistinctId": "cbd6a9cc-aaca-47bc-9980-208707f051c6"
+  },
+  "assertions": [
+    {
+      "id": "navigation.after_plan",
+      "status": "PASS",
+      "detail": "Observed real onboarding to demo: {'visited': [{'index': 1, 'step': 'O01', 'title': 'Block apps. Exercise more.', 'choices': [], 'prices': []}, {'index': 2, 'step': 'O02', 'title': 'Block apps. Exercise more.', 'choices': [], 'prices': []}, {'index': 3, 'step': 'O03', 'title': 'Block apps. Exercise more.', 'choices': [], 'prices': []}, {'index': 4, 'step': 'O04', 'title': 'What should we call you?', 'choices': [], 'prices': []}, {'index': 5, 'step': 'O05', 'title': 'How did you hear about us?', 'choices': ['YouTube', 'Instagram', 'TikTok', 'App Store', 'Friends', 'Other'], 'prices': []}, {'index': 6, 'step': 'O06', 'title': 'How old are you?', 'choices': ['Under 18', '18\u201324', '25\u201334', '35\u201344', '45\u201354', '55\u201364', '65+'], 'prices': []}, {'index': 7, 'step': 'O08', 'title': 'What is your goal?', 'choices': ['More exercise', 'Less screen time', 'Overall wellness'], 'prices': []}, {'index': 8, 'step': 'O09', 'title': 'What\u2019s the main reason you want to make a change?', 'choices': ['Feel more confident', 'Have more energy', 'Focus on what matters', 'Feel stronger and healthier', 'Be more present', 'Keep a promise to myself'], 'prices': []}, {'index': 9, 'step': 'O10', 'title': 'How many hours do you currently spend scrolling each day?', 'choices': ['Less than 2 hours', '2 to 4 hours', '4 to 6 hours', '6 to 8 hours', 'More than 8 hours'], 'prices': []}, {'index': 10, 'step': 'O11', 'title': 'Here\u2019s some quick math', 'choices': [], 'prices': []}, {'index': 11, 'step': 'O12', 'title': 'This is a year in your life', 'choices': [], 'prices': []}, {'index': 12, 'step': 'O13', 'title': 'This is the free time left', 'choices': [], 'prices': []}, {'index': 13, 'step': 'O14', 'title': 'This is how much time you spend scrolling', 'choices': [], 'prices': []}, {'index': 14, 'step': 'O15', 'title': 'This is good.', 'choices': [], 'prices': []}, {'index': 15, 'step': 'O16', 'title': 'You\u2019re stuck in a loop', 'choices': [], 'prices': []}, {'index': 16, 'step': 'O17', 'title': 'We\u2019ll change the loop', 'choices': [], 'prices': []}, {'index': 17, 'step': 'O18', 'title': 'You become', 'choices': [], 'prices': []}, {'index': 18, 'step': 'O20', 'title': 'What exercise should unlock your apps?', 'choices': ['Walking', 'Gym'], 'prices': []}, {'index': 19, 'step': 'W1', 'title': 'Where do you walk?', 'choices': ['Outside', 'Treadmill', 'Both'], 'prices': []}, {'index': 20, 'step': 'W2', 'title': 'How should walking unlock your apps?', 'choices': ['Reach a step goal', 'Walk for a set time', 'Unlock while walking (Recommended)'], 'prices': []}, {'index': 21, 'step': 'W3', 'title': 'Set your walking goal', 'choices': [], 'prices': []}, {'index': 22, 'step': 'S1', 'title': 'When should blocking be active?', 'choices': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], 'prices': []}, {'index': 23, 'step': 'S3', 'title': 'Your plan is ready', 'choices': [], 'prices': []}, {'index': 24, 'step': 'S3b', 'title': 'How your plan works', 'choices': [], 'prices': []}], 'stuck': [], 'steps': ['O01', 'O02', 'O03', 'O04', 'O05', 'O06', 'O08', 'O09', 'O10', 'O11', 'O12', 'O13', 'O14', 'O15', 'O16', 'O17', 'O18', 'O20', 'W1', 'W2', 'W3', 'S1', 'S3', 'S3b']}"
+    },
+    {
+      "id": "walk-steps.outside.persisted_plan",
+      "status": "PASS",
+      "detail": "Actual S3 commit, source=Library/Application Support/com.johansardar.excerlock/RCTAsyncLocalStorage_V1/manifest.json[excerlock-next.rules.v1], rule modes=[{'kind': 'target', 'activity': 'walking', 'metric': 'steps', 'goal': 10000}]"
+    },
+    {
+      "id": "walk-steps.outside.walking.1s",
+      "status": "PASS",
+      "detail": "Visible phase=walking, phone=shield, locked=True",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/25-01-walk-steps-outside-walking-1s.png"
+      ]
+    },
+    {
+      "id": "walk-steps.outside.unlocked.8s",
+      "status": "PASS",
+      "detail": "Visible phase=unlocked, phone=tiktok, locked=False",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/26-01-walk-steps-outside-unlocked-8s.png"
+      ]
+    },
+    {
+      "id": "walk-steps.outside.continue_no_commit",
+      "status": "PASS",
+      "detail": "Continue reaches S4 and leaves persisted rule state byte-equivalent"
+    },
+    {
+      "id": "walk-steps.outside.back",
+      "status": "PASS",
+      "detail": "Back returns through S3b to S3"
+    },
+    {
+      "id": "walk-state.outside.persisted_plan",
+      "status": "PASS",
+      "detail": "Actual S3 commit, source=Library/Application Support/com.johansardar.excerlock/RCTAsyncLocalStorage_V1/manifest.json[excerlock-next.rules.v1], rule modes=[{'kind': 'state', 'activity': 'walking'}]"
+    },
+    {
+      "id": "walk-state.outside.walking.0.4s",
+      "status": "PASS",
+      "detail": "Visible phase=walking, phone=tiktok, locked=False",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/28-02-walk-state-outside-walking-0.4s.png"
+      ]
+    },
+    {
+      "id": "walk-state.outside.walking.1.4s",
+      "status": "PASS",
+      "detail": "Visible phase=walking, phone=tiktok, locked=False",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/29-02-walk-state-outside-walking-1.4s.png"
+      ]
+    },
+    {
+      "id": "walk-state.outside.walking.2.2s",
+      "status": "PASS",
+      "detail": "Visible phase=walking, phone=tiktok, locked=False",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/30-02-walk-state-outside-walking-2.2s.png"
+      ]
+    },
+    {
+      "id": "walk-state.outside.blocked.6s",
+      "status": "PASS",
+      "detail": "Visible phase=blocked, phone=shield, locked=True",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/31-02-walk-state-outside-blocked-6s.png"
+      ]
+    },
+    {
+      "id": "hold.press_unlocks",
+      "status": "PASS",
+      "detail": "A real sustained native touch shows walking and TikTok"
+    },
+    {
+      "id": "hold.release_locks",
+      "status": "PASS",
+      "detail": "Touch-up shows stopped character and shield"
+    },
+    {
+      "id": "hold.auto_resume",
+      "status": "PASS",
+      "detail": "After three stopped seconds, auto walking resumes"
+    },
+    {
+      "id": "walk-state.outside.continue_no_commit",
+      "status": "PASS",
+      "detail": "Continue reaches S4 and leaves persisted rule state byte-equivalent"
+    },
+    {
+      "id": "walk-state.outside.back",
+      "status": "PASS",
+      "detail": "Back returns through S3b to S3"
+    },
+    {
+      "id": "walk-state.treadmill.persisted_plan",
+      "status": "PASS",
+      "detail": "Actual S3 commit, source=Library/Application Support/com.johansardar.excerlock/RCTAsyncLocalStorage_V1/manifest.json[excerlock-next.rules.v1], rule modes=[{'kind': 'state', 'activity': 'walking'}]"
+    },
+    {
+      "id": "walk-state.treadmill.prop.1s",
+      "status": "PASS",
+      "detail": "Visible phase=prop, phone=excerlock, locked=True",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/35-03-walk-state-treadmill-prop-1s.png"
+      ]
+    },
+    {
+      "id": "walk-state.treadmill.scan.3.5s",
+      "status": "PASS",
+      "detail": "Visible phase=scan, phone=excerlock, locked=True",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/36-03-walk-state-treadmill-scan-3.5s.png"
+      ]
+    },
+    {
+      "id": "walk-state.treadmill.walking.6s",
+      "status": "PASS",
+      "detail": "Visible phase=walking, phone=tiktok, locked=False",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/37-03-walk-state-treadmill-walking-6s.png"
+      ]
+    },
+    {
+      "id": "walk-state.treadmill.blocked.11s",
+      "status": "PASS",
+      "detail": "Visible phase=blocked, phone=shield, locked=True",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/38-03-walk-state-treadmill-blocked-11s.png"
+      ]
+    },
+    {
+      "id": "walk-state.treadmill.continue_no_commit",
+      "status": "PASS",
+      "detail": "Continue reaches S4 and leaves persisted rule state byte-equivalent"
+    },
+    {
+      "id": "walk-state.treadmill.back",
+      "status": "PASS",
+      "detail": "Back returns through S3b to S3"
+    },
+    {
+      "id": "walk-minutes.outside.persisted_plan",
+      "status": "PASS",
+      "detail": "Actual S3 commit, source=Library/Application Support/com.johansardar.excerlock/RCTAsyncLocalStorage_V1/manifest.json[excerlock-next.rules.v1], rule modes=[{'kind': 'target', 'activity': 'walking', 'metric': 'minutes', 'goal': 20}]"
+    },
+    {
+      "id": "walk-minutes.outside.walking.3s",
+      "status": "PASS",
+      "detail": "Visible phase=walking, phone=shield, locked=True",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/40-04-walk-minutes-outside-walking-3s.png"
+      ]
+    },
+    {
+      "id": "walk-minutes.outside.unlocked.8s",
+      "status": "PASS",
+      "detail": "Visible phase=unlocked, phone=tiktok, locked=False",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/41-04-walk-minutes-outside-unlocked-8s.png"
+      ]
+    },
+    {
+      "id": "walk-minutes.outside.continue_no_commit",
+      "status": "PASS",
+      "detail": "Continue reaches S4 and leaves persisted rule state byte-equivalent"
+    },
+    {
+      "id": "walk-minutes.outside.back",
+      "status": "PASS",
+      "detail": "Back returns through S3b to S3"
+    },
+    {
+      "id": "gym-arrival.outside.persisted_plan",
+      "status": "PASS",
+      "detail": "Actual S3 commit, source=Library/Application Support/com.johansardar.excerlock/RCTAsyncLocalStorage_V1/manifest.json[excerlock-next.rules.v1], rule modes=[{'kind': 'event', 'activity': 'gym', 'trigger': 'arrival'}]"
+    },
+    {
+      "id": "gym-arrival.outside.approach.2s",
+      "status": "PASS",
+      "detail": "Visible phase=approach, phone=shield, locked=True",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/43-05-gym-arrival-outside-approach-2s.png"
+      ]
+    },
+    {
+      "id": "gym-arrival.outside.confirming.5s",
+      "status": "PASS",
+      "detail": "Visible phase=confirming, phone=shield, locked=True",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/44-05-gym-arrival-outside-confirming-5s.png"
+      ]
+    },
+    {
+      "id": "gym-arrival.outside.unlocked.8s",
+      "status": "PASS",
+      "detail": "Visible phase=unlocked, phone=tiktok, locked=False",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/45-05-gym-arrival-outside-unlocked-8s.png"
+      ]
+    },
+    {
+      "id": "gym-arrival.outside.leave.12s",
+      "status": "PASS",
+      "detail": "Visible phase=leave, phone=tiktok, locked=False",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/46-05-gym-arrival-outside-leave-12s.png"
+      ]
+    },
+    {
+      "id": "gym-arrival.outside.continue_no_commit",
+      "status": "PASS",
+      "detail": "Continue reaches S4 and leaves persisted rule state byte-equivalent"
+    },
+    {
+      "id": "gym-arrival.outside.back",
+      "status": "PASS",
+      "detail": "Back returns through S3b to S3"
+    },
+    {
+      "id": "gym-minutes.outside.persisted_plan",
+      "status": "PASS",
+      "detail": "Actual S3 commit, source=Library/Application Support/com.johansardar.excerlock/RCTAsyncLocalStorage_V1/manifest.json[excerlock-next.rules.v1], rule modes=[{'kind': 'target', 'activity': 'gym', 'metric': 'minutes', 'goal': 30}]"
+    },
+    {
+      "id": "gym-minutes.outside.approach.2s",
+      "status": "PASS",
+      "detail": "Visible phase=approach, phone=shield, locked=True",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/48-06-gym-minutes-outside-approach-2s.png"
+      ]
+    },
+    {
+      "id": "gym-minutes.outside.confirming.5s",
+      "status": "PASS",
+      "detail": "Visible phase=confirming, phone=shield, locked=True",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/49-06-gym-minutes-outside-confirming-5s.png"
+      ]
+    },
+    {
+      "id": "gym-minutes.outside.counting.10s",
+      "status": "PASS",
+      "detail": "Visible phase=counting, phone=tiktok, locked=False",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/50-06-gym-minutes-outside-counting-10s.png"
+      ]
+    },
+    {
+      "id": "gym-minutes.outside.unlocked.14s",
+      "status": "PASS",
+      "detail": "Visible phase=unlocked, phone=tiktok, locked=False",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/51-06-gym-minutes-outside-unlocked-14s.png"
+      ]
+    },
+    {
+      "id": "gym-minutes.outside.leave.17s",
+      "status": "PASS",
+      "detail": "Visible phase=leave, phone=tiktok, locked=False",
+      "evidence": [
+        "/Users/johansardar/.treehouse/excerlock-app-ad0bb5/17/excerlock-app/app-next/e2e-next/out/condition-demo-native-r4/E2E-D1/52-06-gym-minutes-outside-leave-17s.png"
+      ]
+    },
+    {
+      "id": "gym-minutes.outside.continue_no_commit",
+      "status": "PASS",
+      "detail": "Continue reaches S4 and leaves persisted rule state byte-equivalent"
+    },
+    {
+      "id": "gym-minutes.outside.back",
+      "status": "PASS",
+      "detail": "Back returns through S3b to S3"
+    },
+    {
+      "id": "analytics.device_id",
+      "status": "PASS",
+      "detail": "Read the run-specific device ID from the real app container"
+    },
+    {
+      "id": "analytics.live_scenario_views",
+      "status": "PASS",
+      "detail": "Live PostHog ingested every selected scenario/place",
+      "evidence": [
+        "[{\"scenario\": \"gym-minutes\", \"place\": null}, {\"scenario\": \"gym-arrival\", \"place\": null}, {\"scenario\": \"gym-arrival\", \"place\": null}, {\"scenario\": \"walk-minutes\", \"place\": null}, {\"scenario\": \"walk-minutes\", \"place\": null}, {\"scenario\": \"walk-state\", \"place\": \"treadmill\"}, {\"scenario\": \"walk-state\", \"place\": \"treadmill\"}, {\"scenario\": \"walk-state\", \"place\": \"outside\"}, {\"scenario\": \"walk-state\", \"place\": \"outside\"}, {\"scenario\": \"walk-steps\", \"place\": null}, {\"scenario\": \"walk-steps\", \"place\": null}]"
+      ]
+    }
+  ],
+  "artifacts": {
+    "screenshots": [
+      "01-01-O01.png",
+      "02-02-O02.png",
+      "03-03-O03.png",
+      "04-04-O04.png",
+      "05-05-O05.png",
+      "06-06-O06.png",
+      "07-07-O08.png",
+      "08-08-O09.png",
+      "09-09-O10.png",
+      "10-10-O11.png",
+      "11-11-O12.png",
+      "12-12-O13.png",
+      "13-13-O14.png",
+      "14-14-O15.png",
+      "15-15-O16.png",
+      "16-16-O17.png",
+      "17-17-O18.png",
+      "18-18-O20.png",
+      "19-19-W1.png",
+      "20-20-W2.png",
+      "21-21-W3.png",
+      "22-22-S1.png",
+      "23-23-S3.png",
+      "24-24-S3b.png",
+      "25-01-walk-steps-outside-walking-1s.png",
+      "26-01-walk-steps-outside-unlocked-8s.png",
+      "27-01-S4.png",
+      "28-02-walk-state-outside-walking-0.4s.png",
+      "29-02-walk-state-outside-walking-1.4s.png",
+      "30-02-walk-state-outside-walking-2.2s.png",
+      "31-02-walk-state-outside-blocked-6s.png",
+      "32-hold-walking.png",
+      "33-hold-released.png",
+      "34-02-S4.png",
+      "35-03-walk-state-treadmill-prop-1s.png",
+      "36-03-walk-state-treadmill-scan-3.5s.png",
+      "37-03-walk-state-treadmill-walking-6s.png",
+      "38-03-walk-state-treadmill-blocked-11s.png",
+      "39-03-S4.png",
+      "40-04-walk-minutes-outside-walking-3s.png",
+      "41-04-walk-minutes-outside-unlocked-8s.png",
+      "42-04-S4.png",
+      "43-05-gym-arrival-outside-approach-2s.png",
+      "44-05-gym-arrival-outside-confirming-5s.png",
+      "45-05-gym-arrival-outside-unlocked-8s.png",
+      "46-05-gym-arrival-outside-leave-12s.png",
+      "47-05-S4.png",
+      "48-06-gym-minutes-outside-approach-2s.png",
+      "49-06-gym-minutes-outside-confirming-5s.png",
+      "50-06-gym-minutes-outside-counting-10s.png",
+      "51-06-gym-minutes-outside-unlocked-14s.png",
+      "52-06-gym-minutes-outside-leave-17s.png",
+      "53-06-S4.png"
+    ],
+    "trees": [
+      "01-01-O01.tree.json",
+      "02-02-O02.tree.json",
+      "03-03-O03.tree.json",
+      "04-04-O04.tree.json",
+      "05-05-O05.tree.json",
+      "06-06-O06.tree.json",
+      "07-07-O08.tree.json",
+      "08-08-O09.tree.json",
+      "09-09-O10.tree.json",
+      "10-10-O11.tree.json",
+      "11-11-O12.tree.json",
+      "12-12-O13.tree.json",
+      "13-13-O14.tree.json",
+      "14-14-O15.tree.json",
+      "15-15-O16.tree.json",
+      "16-16-O17.tree.json",
+      "17-17-O18.tree.json",
+      "18-18-O20.tree.json",
+      "19-19-W1.tree.json",
+      "20-20-W2.tree.json",
+      "21-21-W3.tree.json",
+      "22-22-S1.tree.json",
+      "23-23-S3.tree.json",
+      "24-24-S3b.tree.json",
+      "25-01-walk-steps-outside-walking-1s.tree.json",
+      "26-01-walk-steps-outside-unlocked-8s.tree.json",
+      "27-01-S4.tree.json",
+      "28-02-walk-state-outside-walking-0.4s.tree.json",
+      "29-02-walk-state-outside-walking-1.4s.tree.json",
+      "30-02-walk-state-outside-walking-2.2s.tree.json",
+      "31-02-walk-state-outside-blocked-6s.tree.json",
+      "32-hold-walking.tree.json",
+      "33-hold-released.tree.json",
+      "34-02-S4.tree.json",
+      "35-03-walk-state-treadmill-prop-1s.tree.json",
+      "36-03-walk-state-treadmill-scan-3.5s.tree.json",
+      "37-03-walk-state-treadmill-walking-6s.tree.json",
+      "38-03-walk-state-treadmill-blocked-11s.tree.json",
+      "39-03-S4.tree.json",
+      "40-04-walk-minutes-outside-walking-3s.tree.json",
+      "41-04-walk-minutes-outside-unlocked-8s.tree.json",
+      "42-04-S4.tree.json",
+      "43-05-gym-arrival-outside-approach-2s.tree.json",
+      "44-05-gym-arrival-outside-confirming-5s.tree.json",
+      "45-05-gym-arrival-outside-unlocked-8s.tree.json",
+      "46-05-gym-arrival-outside-leave-12s.tree.json",
+      "47-05-S4.tree.json",
+      "48-06-gym-minutes-outside-approach-2s.tree.json",
+      "49-06-gym-minutes-outside-confirming-5s.tree.json",
+      "50-06-gym-minutes-outside-counting-10s.tree.json",
+      "51-06-gym-minutes-outside-unlocked-14s.tree.json",
+      "52-06-gym-minutes-outside-leave-17s.tree.json",
+      "53-06-S4.tree.json"
+    ],
+    "recordings": [
+      "walking-10s.mp4"
+    ]
+  },
+  "notes": [
+    "This tests the explanatory UI and persisted plan plus live analytics, not native Family Controls or real sensor enforcement (unavailable on simulator)."
+  ],
+  "posthog": [
+    {
+      "query": "select properties.scenario as scenario, properties.place as place from events where properties.$device_id='01a0bc53-d388-7256-a14b-f23d80735dbd' and timestamp>toDateTime('2026-09-20 01:00:00') and event='onboarding_screen_viewed' and properties.screen='S3b'",
+      "rows": [
+        {
+          "scenario": "gym-minutes",
+          "place": null
+        },
+        {
+          "scenario": "gym-arrival",
+          "place": null
+        },
+        {
+          "scenario": "gym-arrival",
+          "place": null
+        },
+        {
+          "scenario": "walk-minutes",
+          "place": null
+        },
+        {
+          "scenario": "walk-minutes",
+          "place": null
+        },
+        {
+          "scenario": "walk-state",
+          "place": "treadmill"
+        },
+        {
+          "scenario": "walk-state",
+          "place": "treadmill"
+        },
+        {
+          "scenario": "walk-state",
+          "place": "outside"
+        },
+        {
+          "scenario": "walk-state",
+          "place": "outside"
+        },
+        {
+          "scenario": "walk-steps",
+          "place": null
+        },
+        {
+          "scenario": "walk-steps",
+          "place": null
+        }
+      ],
+      "waitedSeconds": 6.5067961669992656
+    }
+  ]
+}
