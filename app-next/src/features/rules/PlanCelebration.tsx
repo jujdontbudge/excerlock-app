@@ -42,14 +42,14 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
   // Keep this arithmetic inside each worklet; calling an ordinary JS helper from the UI thread crashes Hermes.
   const ripple1 = useAnimatedStyle(() => {
     const now = elapsed.get();
-    const sinceStart = now - p.gap;
+    const sinceStart = now - (p.gap + p.badgeIn);
     if (m.reduced || sinceStart < 0 || now >= p.burst) return { opacity: 0, transform: [{ scale: 1 }] };
     const v = (sinceStart % b.ripple) / b.ripple;
     return { opacity: 0.4 * (1 - v), transform: [{ scale: 1 + v * 0.55 }] };
   });
   const ripple2 = useAnimatedStyle(() => {
     const now = elapsed.get();
-    const sinceStart = now - p.gap - b.ripple / 2;
+    const sinceStart = now - (p.gap + p.badgeIn) - b.ripple / 2;
     if (m.reduced || sinceStart < 0 || now >= p.burst) return { opacity: 0, transform: [{ scale: 1 }] };
     const v = (sinceStart % b.ripple) / b.ripple;
     return { opacity: 0.4 * (1 - v), transform: [{ scale: 1 + v * 0.55 }] };
