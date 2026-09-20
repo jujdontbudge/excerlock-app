@@ -10,34 +10,30 @@ import { ruleName } from '../../domain/ruleName';
 import { scheduleLabel } from '../../domain/scheduleLabel';
 import { Rule } from '../../domain/types';
 import { useMotion } from '../../motion/useMotion';
-import { PLAN_MOTION, PLAN_RING, taskMotion } from './planMotion';
+import { PLAN_MOTION, PLAN_RING, taskMotion, smooth } from './planMotion';
 const Arc = Animated.createAnimatedComponent(Circle);
 const Counter = Animated.createAnimatedComponent(TextInput);
 const RADIUS = PLAN_RING.radius;
 const LENGTH = 2 * Math.PI * RADIUS;
 
-function Task({ title, index, elapsed, checked, reduced, rowHeight }: {
-  title: string; index: number; elapsed: SharedValue<number>; checked: boolean; reduced: boolean; rowHeight: number;
+function Task({ title, index, elapsed, checked, working, reduced, rowHeight }: {
+  title: string; index: number; elapsed: SharedValue<number>; checked: boolean; working: boolean; reduced: boolean; rowHeight: number;
 }) {
-  const { width } = useWindowDimensions();
   const style = useAnimatedStyle(() => {
     const m = taskMotion(index, elapsed.get());
-    const colorProgress = Math.max(0, Math.min(1, (elapsed.get() - (index * 1000 + 600)) / 140));
+    // The closing pill never resolves: it fades with the rest of the screen at 100%.
+    const exit = working ? 0 : m.exit;
+    const fill = working ? 0 : Math.max(0, Math.min(1, (elapsed.get() - Math.max(index * 1000, 150)) / 140));
     return {
-      backgroundColor: interpolateColor(colorProgress, [0, 1], [t.surface.card, t.brand.primary]),
-      borderColor: interpolateColor(colorProgress, [0, 1], [t.border.outline, t.brand.primary]),
-      opacity: reduced ? 1 : (1 - m.exit) * Math.max(0, Math.min(1, 3 - m.slot)) * (1 - Math.min(2, m.slot) * 0.24),
-      transform: reduced ? [] : [
-        { translateY: m.slot * (rowHeight + 12) - m.exit * 88 },
-        { translateX: m.exit * width * 0.8 },
-        { scale: 1 - m.exit * 0.14 },
-        { rotate: `${m.exit * 8}deg` },
-      ],
+      backgroundColor: interpolateColor(fill, [0, 1], [t.surface.card, t.brand.primary]),
+      borderColor: interpolateColor(fill, [0, 1], [t.border.outline, t.brand.primary]),
+      opacity: reduced ? 1 : (1 - exit) * Math.max(0, Math.min(1, 3 - m.slot)) * (1 - Math.min(2, m.slot) * 0.24),
+      transform: reduced ? [] : [{ translateY: m.slot * (rowHeight + 12) }],
     };
   });
   const titleStyle = useAnimatedStyle(() => ({
     // Keep readable dark text until the fill has become dark enough for white.
-    color: elapsed.get() >= index * 1000 + 705 ? t.text.onAccent : t.text.primary,
+    color: !working && elapsed.get() >= Math.max(index * 1000, 150) + 105 ? t.text.onAccent : t.text.primary,
   }));
   return <Animated.View accessible accessibilityRole="checkbox" accessibilityLabel={title} accessibilityState={{ checked }}
     style={[{ position: 'absolute', left: 0, right: 0, top: reduced ? index * (rowHeight + 12) : 0, height: rowHeight, borderWidth: t.stroke.hairline,
@@ -67,22 +63,27 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
   }, [elapsed, m.duration.fast, m.reduced]);
   useEffect(() => {
     const timers = m.reduced ? [
-      setTimeout(() => setCompleted(6), m.duration.fast),
+      setTimeout(() => setCompleted(5), m.duration.fast),
       setTimeout(() => callback.current(), m.duration.slow),
     ] : [
-      ...[0, 1, 2, 3, 4, 5].map((n) => setTimeout(() => setCompleted(n + 1), n * 1000 + 600)),
-      setTimeout(() => callback.current(), PLAN_MOTION.ready),
+      ...[0, 1, 2, 3, 4].map((n) => setTimeout(() => setCompleted(n + 1), Math.max(n * 1000, 150))),
+      setTimeout(() => callback.current(), PLAN_MOTION.ready + PLAN_MOTION.hold + PLAN_MOTION.fadeout),
     ];
     return () => timers.forEach(clearTimeout);
   }, [m.duration.fast, m.duration.slow, m.reduced]);
   const arc = useAnimatedProps(() => ({ strokeDashoffset: LENGTH * (1 - Math.min(1, elapsed.get() / PLAN_MOTION.count)) }));
-  const counter = useAnimatedProps(() => ({ text: `${Math.min(100, Math.round(elapsed.get() / PLAN_MOTION.count * 100))}%`, defaultValue: '0%' }));
-  // The celebration check lands in the ring at 100%; the percentage clears the centre for it.
-  const counterStyle = useAnimatedStyle(() => ({ opacity: elapsed.get() >= PLAN_MOTION.count ? 0 : 1 }));
+  const counter = useAnimatedProps(() => {
+    const pct = Math.min(100, Math.round(elapsed.get() / PLAN_MOTION.count * 100));
+    return { text: pct >= 100 ? '100' : `${pct}%`, defaultValue: '0%' };
+  });
+  // At 100% the screen holds one beat, then everything fades out together before the celebration.
+  const content = useAnimatedStyle(() => ({
+    opacity: m.reduced ? 1 : 1 - smooth((elapsed.get() - (PLAN_MOTION.count + PLAN_MOTION.hold)) / PLAN_MOTION.fadeout),
+  }));
   const ring = PLAN_RING.size, middle = ring / 2;
-  return <View style={{ flex: 1, paddingTop: height * PLAN_RING.topFraction, alignItems: 'center', gap: 32 }}>
+  return <Animated.View style={[{ flex: 1, paddingTop: height * PLAN_RING.topFraction, alignItems: 'center', gap: 32 }, content]}>
     <View accessible accessibilityRole="progressbar" accessibilityLabel="Preparing your plan"
-      accessibilityValue={{ min: 0, max: 100, now: Math.round(completed / 6 * 100) }}
+      accessibilityValue={{ min: 0, max: 100, now: Math.round(Math.min(completed, 5) / 5 * 100) }}
       style={{ width: ring, height: ring, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={ring} height={ring} style={{ position: 'absolute' }}>
         <Circle cx={middle} cy={middle} r={RADIUS} stroke={t.border.divider} strokeWidth={PLAN_RING.stroke} fill="none" />
@@ -90,11 +91,11 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
           strokeLinecap="round" strokeDasharray={`${LENGTH} ${LENGTH}`} rotation={-90} origin={`${middle},${middle}`} animatedProps={arc} />
       </Svg>
       <Counter editable={false} accessible={false} pointerEvents="none" defaultValue="0%" animatedProps={counter}
-        style={[t.type.metric, { color: t.brand.primary, padding: 0, textAlign: 'center', width: 180, fontVariant: ['tabular-nums'] }, counterStyle]} />
+        style={[t.type.metric, { color: t.brand.primary, padding: 0, textAlign: 'center', width: 180, fontVariant: ['tabular-nums'] }]} />
     </View>
     <View style={{ width: '100%', height: m.reduced ? (rowHeight + 12) * tasks.length : (rowHeight + 12) * 3 }}>
       {tasks.map((title, index) => <Task key={title} title={title} index={index} elapsed={elapsed}
-        checked={completed > index} reduced={m.reduced} rowHeight={rowHeight} />)}
+        checked={index < 5 && completed > index} working={index === 5} reduced={m.reduced} rowHeight={rowHeight} />)}
     </View>
-  </View>;
+  </Animated.View>;
 }
