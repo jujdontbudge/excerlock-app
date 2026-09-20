@@ -18,12 +18,8 @@ import { conditionDemoTokens as c } from '../../../design-system/conditionDemoTo
 import { useMotion } from '../../../motion/useMotion';
 import { feedback } from '../../../motion/haptics';
 import { Confetti } from '../../../motion/Confetti';
-import { Icon } from '../../../icons/Icon';
-import { conditionSentence } from '../../rules/conditionSentence';
-import { RuleDraft, toRule } from '../../rules/draft';
+import { RuleDraft } from '../../rules/draft';
 import { Schedule } from '../../../domain/types';
-import { scheduleLabel } from '../../../domain/scheduleLabel';
-import { ruleName } from '../../../domain/ruleName';
 import { Answers } from '../../../onboarding/types';
 import { profileStore as useProfileStore } from '../../../state/profileStore';
 import { settingsStore as useSettingsStore } from '../../../state/settingsStore';
@@ -32,7 +28,6 @@ import { Character } from './Character';
 import { World, Treadmill } from './World';
 import { GymMap } from './GymMap';
 import { Phone } from './Phone';
-import { PhaseTimeline } from './PhaseTimeline';
 import { sceneGeometry } from './layout';
 
 const HoldArc = Animated.createAnimatedComponent(Circle);
@@ -58,21 +53,15 @@ export function ConditionDemo({
   return (
     <DemoScene
       key={`${scenario.kind}:${scenario.place}:${scenario.goal}:${control?.time}:${control?.paused}`}
-      {...{ scenario, draft, schedule, answers, control }}
+      {...{ scenario, control }}
     />
   );
 }
 function DemoScene({
   scenario,
-  draft,
-  schedule,
-  answers,
   control,
 }: {
   scenario: ReturnType<typeof scenarioFor>;
-  draft: RuleDraft;
-  schedule: Schedule;
-  answers: Answers;
   control: ReturnType<typeof demoTestControl>;
 }) {
   const { reduced: initialReduced } = useMotion();
@@ -153,17 +142,6 @@ function DemoScene({
   const geometry = sceneGeometry(dimensions.width, dimensions.height);
   const { scale } = geometry;
   const unit = scenario.kind === 'walk-steps' ? 'steps' : 'min';
-  const remaining = Math.max(0, scenario.goal - frame.progress);
-  const counter =
-    frame.phase === 'confirming'
-      ? `${Math.ceil(30 * (1 - frame.p))} s`
-      : frame.phase === 'scan'
-        ? `${Math.ceil(3 - frame.local)} s`
-        : frame.phase === 'blocked'
-          ? `${Math.max(0, Math.ceil(3 - frame.local))} s`
-          : goalCard && !frame.goalMet
-            ? `${remaining.toLocaleString('en-US')} ${unit === 'steps' ? '' : 'min '}to go`
-            : '';
   const mapTitle =
     frame.phase === 'approach'
       ? 'Walking to the gym'
@@ -186,28 +164,12 @@ function DemoScene({
             : `You're at ${gymName}.`;
   return (
     <View key={fontScale} style={styles.root} testID="condition-demo">
-      <View style={{ gap: 6 }}>
-        <Text accessibilityRole="header" style={styles.heading}>
-          How your plan works
-        </Text>
-        <Text style={styles.support}>{conditionSentence(answers, draft, { schedule, goalChosen: true })}</Text>
-        <View style={styles.ruleRow}>
-          <View style={styles.glyph}>
-            <Icon
-              name={isGym ? 'gym' : scenario.kind === 'walk-minutes' ? 'clock' : 'walking'}
-              variant="utility"
-              tint={t.text.onAccent}
-              size={14}
-            />
-          </View>
-          <Text numberOfLines={1} style={styles.ruleName}>
-            {ruleName(toRule(draft, schedule))}
-          </Text>
-          <Text style={styles.schedule}>· {scheduleLabel(schedule)}</Text>
-        </View>
-      </View>
       <View
-        style={[styles.stage, { minHeight: windowHeight < 740 ? 300 : 360 }]}
+        accessible
+        accessibilityLiveRegion="polite"
+        accessibilityLabel={`${frame.title}. ${frame.caption}`}
+        testID={`condition-demo-${scenario.kind}-${scenario.place}-${frame.phase}-${frame.phone}-${frame.locked ? 'locked' : 'unlocked'}`}
+        style={[styles.stage, { minHeight: windowHeight < 740 ? 520 : 650 }]}
         onLayout={(event) => setDimensions(event.nativeEvent.layout)}>
         <LinearGradient colors={c.sky} style={StyleSheet.absoluteFill} />
         <View
@@ -230,7 +192,7 @@ function DemoScene({
             {isGym ? <GymMap {...{ clock, scenario }} /> : <Character {...{ clock, scenario, reduced, onLoad }} />}
             <Phone {...{ clock, scenario, reduced, frame }} />
             {goalCard ? (
-              <View style={[styles.info, { top: isGym ? 54 : 76 }]}>
+              <View style={[styles.info, { top: 72 }]}>
                 <Text maxFontSizeMultiplier={1} style={styles.small}>{frame.goalMet ? 'GOAL REACHED' : isGym ? 'AT THE GYM' : 'TODAY'}</Text>
                 <Text maxFontSizeMultiplier={1} style={styles.number}>
                   {frame.progress.toLocaleString('en-US')}
@@ -252,55 +214,8 @@ function DemoScene({
             ) : null}
           </View>
         </View>
-        <View
-          accessible
-          accessibilityLiveRegion="polite"
-          accessibilityLabel={`${frame.title}. ${frame.caption}`}
-          testID={`condition-demo-${scenario.kind}-${scenario.place}-${frame.phase}-${frame.phone}-${frame.locked ? 'locked' : 'unlocked'}`}
-          style={[styles.status, { backgroundColor: frame.statusLocked ? t.text.primary : t.surface.solid }]}>
-          <View style={styles.statusLine}>
-            <View style={[styles.dot, { backgroundColor: frame.statusLocked ? t.text.onAccent : t.brand.primary }]} />
-            <Text maxFontSizeMultiplier={1} style={[styles.statusTitle, { color: frame.statusLocked ? t.text.onAccent : t.text.primary }]}>
-              {frame.title}
-            </Text>
-            {counter ? (
-              <Text maxFontSizeMultiplier={1} style={[styles.count, { color: frame.statusLocked ? t.text.onAccent : t.text.primary }]}>
-                {counter}
-              </Text>
-            ) : null}
-          </View>
-          {fontScale < 1.8 ? (
-            <Text maxFontSizeMultiplier={1} style={[styles.caption, { color: frame.statusLocked ? t.text.onAccent : t.text.secondary }]}>
-              {frame.caption}
-            </Text>
-          ) : null}
-        </View>
-        <View accessible={false} style={styles.timeline}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text maxFontSizeMultiplier={1} style={styles.timelineLabel}>
-              {frame.manual
-                ? `Hold · ${frame.phase}`
-                : frame.phase === 'walking'
-                  ? frame.locked
-                    ? 'Walking · towards your goal'
-                    : 'Walking · apps open'
-                  : frame.phase === 'blocked'
-                    ? 'Stopped · blocked'
-                    : frame.phase}
-            </Text>
-            <Text maxFontSizeMultiplier={1} style={styles.timelineLabel}>
-              {Math.floor(frame.time)} / {frame.total} s
-            </Text>
-          </View>
-          <PhaseTimeline clock={clock} scenario={scenario} onSeek={setFrame} />
-        </View>
         {burst > 0 && !reduced ? <Confetti key={burst} width={dimensions.width} /> : null}
       </View>
-      {fontScale > 1.3 ? (
-        <Text testID="condition-demo-large-explanation" style={styles.support}>
-          {frame.title}{'. '}{frame.caption}{counter ? `. ${counter}` : ''}
-        </Text>
-      ) : null}
       {scenario.kind === 'walk-state' ? (
         <Pressable
           testID="condition-demo-hold"
@@ -377,36 +292,8 @@ function DemoScene({
   );
 }
 const styles = StyleSheet.create({
-  root: { flexGrow: 1, gap: 12 },
-  heading: { ...t.type.question, color: t.text.primary },
-  support: { fontSize: 15, lineHeight: 20, color: t.text.secondary },
-  ruleRow: { marginTop: 4, flexDirection: 'row', gap: 6, alignItems: 'center' },
-  glyph: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: t.brand.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ruleName: { flexShrink: 1, fontSize: 13, lineHeight: 18, fontWeight: '600', color: t.text.primary },
-  schedule: { fontSize: 13, lineHeight: 18, color: t.text.secondary, flexShrink: 1 },
-  stage: { flex: 1, minHeight: 360, borderRadius: 28, overflow: 'hidden' },
-  status: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    right: 12,
-    borderRadius: 18,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    boxShadow: c.shadow,
-  },
-  statusLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  statusTitle: { fontSize: 13, fontWeight: '600', flexShrink: 1 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  count: { fontSize: 11, fontWeight: '600', fontVariant: ['tabular-nums'], marginLeft: 'auto' },
-  caption: { marginLeft: 14, marginTop: 3, fontSize: 11, lineHeight: 14, fontWeight: '500' },
+  root: { flexGrow: 1 },
+  stage: { flex: 1, minHeight: 650, overflow: 'hidden' },
   info: {
     position: 'absolute',
     left: 14,
@@ -439,9 +326,6 @@ const styles = StyleSheet.create({
   },
   mapTitle: { fontSize: 13, fontWeight: '600', color: t.text.primary },
   mapBody: { fontSize: 12, lineHeight: 16, color: t.text.secondary },
-  timeline: { position: 'absolute', bottom: 10, left: 14, right: 14, gap: 6 },
-  timelineLabel: { fontSize: 11, fontWeight: '600', color: t.text.primary, fontVariant: ['tabular-nums'] },
-  segment: { height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: t.surface.scrim },
   hold: {
     minHeight: 54,
     paddingVertical: 12,

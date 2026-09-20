@@ -17,6 +17,7 @@ export function ScreenShell({
   scrollToEndOnKeyboard = false,
   scrollResetKey,
   scrollEnabled = true,
+  fullBleed = false,
   contentStyle,
   onLayout,
 }: PropsWithChildren<{
@@ -32,6 +33,7 @@ export function ScreenShell({
   scrollToEndOnKeyboard?: boolean;
   scrollResetKey?: string;
   scrollEnabled?: boolean;
+  fullBleed?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
   onLayout?: (event: LayoutChangeEvent) => void;
 }>) {
@@ -63,7 +65,9 @@ export function ScreenShell({
       {background}
       <SafeAreaView
         style={s.rootClear}
-        edges={scrollUnderStatusBar ? (safeBottom ? ['bottom'] : []) : safeBottom ? ['top', 'bottom'] : ['top']}>
+        edges={scrollUnderStatusBar
+          ? (safeBottom && !footer ? ['bottom'] : [])
+          : safeBottom && !footer ? ['top', 'bottom'] : ['top']}>
         <KeyboardAvoidingView behavior="padding" style={s.rootClear}>
           {!scrollUnderStatusBar ? header : null}
           <ScrollView
@@ -75,7 +79,9 @@ export function ScreenShell({
               s.content,
               contentStyle,
               dock && { paddingBottom: t.layout.tabHeight + insets.bottom + t.space.xl },
-              scrollUnderStatusBar && { paddingTop: insets.top + t.space.xs },
+              footer && !fullBleed && { paddingBottom: t.layout.button + insets.bottom + t.space.xl },
+              scrollUnderStatusBar && !fullBleed && { paddingTop: insets.top + t.space.xs },
+              fullBleed && { paddingTop: 0 },
             ]}
             showsVerticalScrollIndicator={false}>
             {scrollUnderStatusBar && header ? (
@@ -85,7 +91,7 @@ export function ScreenShell({
             ) : null}
             {children}
           </ScrollView>
-          {footer ? <View style={s.footer}>{footer}</View> : null}
+          {footer ? <View style={[s.footer, { paddingBottom: insets.bottom + t.space.xs }]}>{footer}</View> : null}
         </KeyboardAvoidingView>
       </SafeAreaView>
       {overlay}
@@ -111,9 +117,13 @@ const s = StyleSheet.create({
     alignSelf: 'center',
   },
   footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 20,
     paddingHorizontal: t.layout.page,
     paddingTop: t.space.sm,
-    paddingBottom: t.space.xs,
     gap: t.space.sm,
     backgroundColor: t.surface.transparent,
   },

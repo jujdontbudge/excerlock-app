@@ -54,10 +54,13 @@ export function OnboardingShell({
       <ScreenShell
         scrollResetKey={step}
         scrollEnabled={step !== 'S1'}
+        fullBleed={step === 'S3b'}
         overlay={overlay}
-        contentStyle={['O01', 'O02', 'O03'].includes(step) ? { paddingBottom: t.space.sm } : undefined}
+        contentStyle={step === 'S3b'
+          ? { paddingHorizontal: 0, paddingBottom: 0 }
+          : ['O01', 'O02', 'O03'].includes(step) ? { paddingBottom: t.space.sm } : undefined}
         header={
-          ['O01', 'O02', 'O03', 'S2'].includes(step) ? undefined : (
+          ['O01', 'O02', 'O03', 'S2', 'S3', 'S3b'].includes(step) ? undefined : (
             <OnboardingHeader progress={progress} onBack={hideBack ? undefined : onBack} />
           )
         }
