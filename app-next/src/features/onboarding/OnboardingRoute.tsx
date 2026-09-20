@@ -19,8 +19,6 @@ import { ReviewWarmup } from '../rules/ReviewWarmup';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { planCopy as c } from '../../content/plan';
 import { useImpactPlayback } from './impact/useImpactPlayback';
-import { conditionSentence } from '../rules/conditionSentence';
-import { ConditionPreview } from '../rules/ConditionPreview';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { SchedulePlanError } from '../../domain/scheduleRepresentability';
 import { Label } from '../../design-system';
@@ -69,13 +67,6 @@ export function OnboardingRoute() {
         draft={schedule}
         onAction={onSchedule}
         onChoose={setWheel}
-        preview={
-          <ConditionPreview
-            icon={draft.activity}
-            schedule={toSchedule(schedule)}
-            sentence={conditionSentence(flow.answers, draft, { schedule: toSchedule(schedule), goalChosen: true })}
-          />
-        }
       />
     );
   if (flow.step === 'S2') body = <PlanBuild rule={toRule(draft, toSchedule(schedule))} onComplete={() => setCelebrating(true)} />;

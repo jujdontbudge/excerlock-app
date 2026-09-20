@@ -1,129 +1,150 @@
-import { useEffect } from 'react';
-import { Switch, View } from 'react-native';
-import Svg, { Circle, Line } from 'react-native-svg';
-import Animated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useEffect, useRef, useState } from 'react';
+import { PanResponder, View, useWindowDimensions } from 'react-native';
+import Svg, { Circle, G, Line, Text as SvgText } from 'react-native-svg';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { tokens as t } from './tokens';
 import { controls } from '../content/controls';
+import { minuteLabel } from '../domain/scheduleLabel';
 import { feedback } from '../motion/haptics';
-import { useMotion } from '../motion/useMotion';
+import { boundedMinute, dialMinute, dialPoint, nearestHandle, ScheduleHandle } from './scheduleDialMath';
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-const SIZE = 260;
+const SIZE = 360;
 const CENTER = SIZE / 2;
-const RADIUS = 96;
+const RADIUS = 154;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-/** A 24-hour schedule at a glance. Time badges retain the precise wheel editor. */
+/** Drag either endpoint around a 24-hour clock; tap the times for precise wheel entry. */
 export function ScheduleDial({
-  start,
-  end,
-  startMinute,
-  endMinute,
-  allDay,
-  onAllDay,
-  onChoose,
+  startMinute, endMinute, allDay, onChange, onChoose,
 }: {
-  start: string;
-  end: string;
   startMinute: number;
   endMinute: number;
   allDay: boolean;
-  onAllDay: (value: boolean) => void;
-  onChoose: (which: 'start' | 'end') => void;
+  onChange: (which: ScheduleHandle, minute: number) => void;
+  onChoose: (which: ScheduleHandle) => void;
 }) {
-  const motion = useMotion();
-  const duration = allDay ? 1440 : (endMinute - startMinute + 1440) % 1440;
-  const progress = useSharedValue(duration / 1440);
-  const angle = useSharedValue(-90 + startMinute / 4);
+  const { width } = useWindowDimensions();
+  const size = Math.min(width - t.layout.page * 2, 420);
+  const [preview, setPreview] = useState({ start: startMinute, end: endMinute });
+  const active = useRef<ScheduleHandle | null>(null);
+  const origin = useRef({ x: 0, y: 0 });
+  const live = useRef({ preview, size, onChange });
+  live.current = { preview, size, onChange };
   useEffect(() => {
-    progress.set(
-      motion.reduced
-        ? duration / 1440
-        : withTiming(duration / 1440, { duration: motion.duration.sheet }),
-    );
-    angle.set(
-      motion.reduced
-        ? -90 + startMinute / 4
-        : withTiming(-90 + startMinute / 4, { duration: motion.duration.sheet }),
-    );
-  }, [angle, duration, motion.duration.sheet, motion.reduced, progress, startMinute]);
-  const arc = useAnimatedProps(() => ({
-    strokeDashoffset: CIRCUMFERENCE * (1 - progress.get()),
-    rotation: angle.get(),
-  }));
+    if (!active.current) setPreview({ start: startMinute, end: endMinute });
+  }, [startMinute, endMinute]);
+
+  const responders = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: (event) => {
+      const scale = SIZE / live.current.size;
+      const x = event.nativeEvent.locationX * scale;
+      const y = event.nativeEvent.locationY * scale;
+      return Math.abs(Math.hypot(x - CENTER, y - CENTER) - RADIUS) <= 28;
+    },
+    onPanResponderGrant: (event) => {
+      const e = event.nativeEvent;
+      const scale = SIZE / live.current.size;
+      origin.current = { x: e.pageX - e.locationX, y: e.pageY - e.locationY };
+      const minute = dialMinute(e.locationX * scale, e.locationY * scale, CENTER);
+      active.current = nearestHandle(minute, live.current.preview.start, live.current.preview.end);
+      feedback();
+    },
+    onPanResponderMove: (event) => {
+      const which = active.current;
+      if (!which) return;
+      const scale = SIZE / live.current.size;
+      const minute = dialMinute((event.nativeEvent.pageX - origin.current.x) * scale,
+        (event.nativeEvent.pageY - origin.current.y) * scale, CENTER);
+      const p = live.current.preview;
+      const value = boundedMinute(which, minute, p.start, p.end);
+      if (p[which] === value) return;
+      const next = { ...p, [which]: value };
+      live.current.preview = next;
+      setPreview(next);
+    },
+    onPanResponderRelease: () => {
+      const which = active.current;
+      active.current = null;
+      if (which) { live.current.onChange(which, live.current.preview[which]); feedback(); }
+    },
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderTerminate: () => {
+      const which = active.current;
+      active.current = null;
+      if (which) live.current.onChange(which, live.current.preview[which]);
+    },
+    onShouldBlockNativeResponder: () => true,
+  })).current;
+
+  const start = minuteLabel(preview.start);
+  const end = minuteLabel(preview.end);
+  const duration = allDay && !active.current ? 1440 : (preview.end - preview.start + 1440) % 1440;
+  const points = { start: dialPoint(preview.start, CENTER, RADIUS), end: dialPoint(preview.end, CENTER, RADIUS) };
+  const durationText = `${Math.floor(duration / 60)} hr${duration % 60 ? ` ${duration % 60} min` : ''}`;
+
   return (
-    <View style={{ gap: t.space.md }}>
-      <View style={{ flexDirection: 'row', gap: t.space.md }}>
-        <PressableScale label={`${controls.start}: ${start}`} onPress={() => onChoose('start')} style={{ flex: 1 }}>
-          <View style={{ alignItems: 'center', gap: t.space.xs }}>
-            <Label variant="support" tone="secondary">{controls.start}</Label>
-            <Label variant="section">{start}</Label>
+    <View style={{ gap: t.space.lg }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: t.space.lg }}>
+        {(['start', 'end'] as const).map(which => (
+          <View key={which} style={{ flex: 1 }}>
+            <PressableScale label={`${controls[which]}: ${which === 'start' ? start : end}`} onPress={() => onChoose(which)}>
+              <View style={{ alignItems: 'center', gap: t.space.xs }}>
+                <Label variant="label">{controls[which]}</Label>
+                <Label variant="section" style={{ fontSize: 28, lineHeight: 34 }}>{which === 'start' ? start : end}</Label>
+              </View>
+            </PressableScale>
           </View>
-        </PressableScale>
-        <PressableScale label={`${controls.end}: ${end}`} onPress={() => onChoose('end')} style={{ flex: 1 }}>
-          <View style={{ alignItems: 'center', gap: t.space.xs }}>
-            <Label variant="support" tone="secondary">{controls.end}</Label>
-            <Label variant="section">{end}</Label>
-          </View>
-        </PressableScale>
+        ))}
       </View>
-      <View
-        accessible
-        accessibilityRole="image"
-        accessibilityLabel={allDay ? 'Blocking window all day' : `Blocking window from ${start} to ${end}`}
-        style={{ width: SIZE, height: SIZE, alignSelf: 'center', alignItems: 'center', justifyContent: 'center' }}>
-        <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} accessible={false}>
-          <Circle cx={CENTER} cy={CENTER} r={RADIUS} fill="none" stroke={t.border.divider} strokeWidth={22} />
-          <AnimatedCircle
-            cx={CENTER}
-            cy={CENTER}
-            r={RADIUS}
-            origin={`${CENTER}, ${CENTER}`}
-            fill="none"
-            stroke={t.brand.primary}
-            strokeWidth={22}
-            strokeLinecap="round"
-            strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
-            animatedProps={arc}
-          />
-          {Array.from({ length: 24 }, (_, hour) => {
-            const angle = (hour / 24) * Math.PI * 2 - Math.PI / 2;
-            const inner = hour % 6 === 0 ? 74 : 80;
-            const outer = 84;
-            return (
-              <Line
-                key={hour}
-                x1={CENTER + Math.cos(angle) * inner}
-                y1={CENTER + Math.sin(angle) * inner}
-                x2={CENTER + Math.cos(angle) * outer}
-                y2={CENTER + Math.sin(angle) * outer}
-                stroke={t.text.secondary}
-                strokeWidth={hour % 6 === 0 ? t.stroke.selected : t.stroke.hairline}
-                strokeLinecap="round"
-              />
-            );
-          })}
-        </Svg>
-        <Label variant="support" style={{ position: 'absolute', top: 48 }}>12 AM</Label>
-        <Label variant="support" style={{ position: 'absolute', right: 42 }}>6 AM</Label>
-        <Label variant="support" style={{ position: 'absolute', bottom: 48 }}>12 PM</Label>
-        <Label variant="support" style={{ position: 'absolute', left: 46 }}>6 PM</Label>
-        <Label variant="label" style={{ position: 'absolute' }}>
-          {allDay ? controls.allDay : `${Math.floor(duration / 60)}h${duration % 60 ? ` ${duration % 60}m` : ''}`}
-        </Label>
+      <View testID="schedule-dial" {...responders.panHandlers} style={{ width: size, height: size, alignSelf: 'center' }}>
+        <View pointerEvents="none" accessible accessibilityRole="image"
+          accessibilityLabel={allDay ? 'Blocking window all day' : `Blocking window from ${start} to ${end}`}>
+          <Svg width={size} height={size} viewBox={`0 0 ${SIZE} ${SIZE}`} accessible={false}>
+            <Circle cx={CENTER} cy={CENTER} r={RADIUS} fill="none" stroke={t.border.divider} strokeWidth={30} />
+            <Circle cx={CENTER} cy={CENTER} r={RADIUS} fill="none" stroke={t.brand.primary} strokeWidth={30}
+              strokeLinecap="round" strokeDasharray={`${CIRCUMFERENCE * duration / 1440} ${CIRCUMFERENCE}`}
+              rotation={-90 + preview.start / 4} origin={`${CENTER}, ${CENTER}`} />
+            {Array.from({ length: 96 }, (_, index) => {
+              const major = index % 4 === 0;
+              const a = dialPoint(index * 15, CENTER, major ? 123 : 128);
+              const b = dialPoint(index * 15, CENTER, 132);
+              return <Line key={index} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+                stroke={t.text.primary} strokeWidth={major ? 1.5 : 0.7} />;
+            })}
+            {Array.from({ length: 12 }, (_, index) => {
+              const hour = index * 2;
+              const p = dialPoint(hour * 60, CENTER, 99);
+              const cardinal = hour % 6 === 0;
+              const label = hour === 0 ? '12 AM' : hour === 6 ? '6 AM' : hour === 12 ? '12 PM' : hour === 18 ? '6 PM' : String(hour % 12);
+              return <SvgText key={hour} x={p.x} y={p.y + 5} textAnchor="middle" fill={t.text.primary}
+                fontSize={cardinal ? 15 : 13} fontWeight={cardinal ? '700' : '500'}>{label}</SvgText>;
+            })}
+            {(['start', 'end'] as const).map(which => (
+              <G key={which} transform={`translate(${points[which].x - 18}, ${points[which].y - 18})`}>
+                <Circle cx={18} cy={18} r={16} fill={t.surface.solid} stroke={t.brand.primary} strokeWidth={3} />
+                <SvgText x={18} y={23} textAnchor="middle" fontSize={14} fontWeight="700" fill={t.text.primary}>{which === 'start' ? 'S' : 'E'}</SvgText>
+              </G>
+            ))}
+          </Svg>
+        </View>
+        {(['start', 'end'] as const).map(which => (
+          <View key={which} pointerEvents="none" accessible accessibilityRole="adjustable"
+            accessibilityLabel={which === 'start' ? 'Blocking start time' : 'Blocking end time'}
+            accessibilityHint="Swipe up or down to adjust by 15 minutes."
+            accessibilityValue={{ min: 0, max: 1425, now: preview[which], text: which === 'start' ? start : end }}
+            accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+            onAccessibilityAction={event => {
+              const action = event.nativeEvent.actionName;
+              if (action !== 'increment' && action !== 'decrement') return;
+              const minute = boundedMinute(which, preview[which] + (action === 'increment' ? 15 : -15), preview.start, preview.end);
+              setPreview({ ...preview, [which]: minute });
+              onChange(which, minute);
+            }}
+            style={{ position: 'absolute', left: points[which].x / SIZE * size - 22, top: points[which].y / SIZE * size - 22, width: 44, height: 44 }} />
+        ))}
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Label>{controls.allDay}</Label>
-        <Switch
-          accessibilityRole="switch"
-          accessibilityLabel={controls.allDay}
-          value={allDay}
-          onValueChange={(value) => { feedback(); onAllDay(value); }}
-          trackColor={{ true: t.state.switchOn, false: t.border.divider }}
-        />
-      </View>
+      <Label variant="section" style={{ textAlign: 'center' }}>{durationText}</Label>
     </View>
   );
 }
