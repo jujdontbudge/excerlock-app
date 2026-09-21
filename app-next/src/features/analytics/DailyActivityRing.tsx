@@ -20,19 +20,30 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
 }) {
   const progress = useSharedValue(0);
   const motion = useMotion();
-  const ratio = goal > 0 ? Math.min(1, Math.max(0, value / goal)) : 0;
+  const ratio = goal > 0 ? Math.max(0, value / goal) : 0;
   useEffect(() => {
-    progress.set(motion.reduced ? ratio : withTiming(ratio, { duration: t.motion.duration.tick }));
+    progress.set(motion.reduced ? ratio : withTiming(ratio, {
+      duration: t.motion.duration.tick * Math.max(1, Math.min(2, ratio)),
+    }));
   }, [motion.reduced, progress, ratio]);
-  const animatedProps = useAnimatedProps(() => ({
-    strokeDashoffset: CIRCUMFERENCE * (1 - progress.get()),
+  const baseAnimatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: CIRCUMFERENCE * (1 - Math.min(1, progress.get())),
   }));
+  const overflowAnimatedProps = useAnimatedProps(() => {
+    const excess = Math.max(0, progress.get() - 1);
+    const lap = excess > 0 && excess % 1 === 0 ? 1 : excess % 1;
+    return {
+      opacity: excess > 0 ? 1 : 0,
+      strokeDashoffset: CIRCUMFERENCE * (1 - lap),
+    };
+  });
   return (
     <View accessible accessibilityLabel={unit === 'steps' ? 'Daily steps ring' : 'Daily gym ring'} style={s.card}>
       <View style={s.ring}>
         <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           <Circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none" stroke={t.surface.well} strokeWidth={STROKE} />
           <AnimatedCircle
+            testID="Daily ring base lap"
             cx={SIZE / 2}
             cy={SIZE / 2}
             r={RADIUS}
@@ -41,10 +52,26 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
             strokeWidth={STROKE}
             strokeLinecap="round"
             strokeDasharray={CIRCUMFERENCE}
-            animatedProps={animatedProps}
+            animatedProps={baseAnimatedProps}
             rotation={-90}
             origin={`${SIZE / 2}, ${SIZE / 2}`}
           />
+          {ratio > 1 ? (
+            <AnimatedCircle
+              testID="Daily ring overflow lap"
+              cx={SIZE / 2}
+              cy={SIZE / 2}
+              r={RADIUS}
+              fill="none"
+              stroke={t.brand.decorative}
+              strokeWidth={STROKE}
+              strokeLinecap="round"
+              strokeDasharray={CIRCUMFERENCE}
+              animatedProps={overflowAnimatedProps}
+              rotation={-90}
+              origin={`${SIZE / 2}, ${SIZE / 2}`}
+            />
+          ) : null}
         </Svg>
         <View style={s.center}>
           <Label variant="support" tone="secondary">{dayLabel}</Label>

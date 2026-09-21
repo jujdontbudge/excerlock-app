@@ -34,17 +34,24 @@ test('walking analytics follows the reference Day, Week, and Month hierarchy', a
   expect(screen.queryByRole('header', { name: 'Screen Time' })).toBeNull();
   await userEvent.press(screen.getByRole('tab', { name: 'D' }));
   expect(screen.getByLabelText('Daily steps ring')).toBeTruthy();
+  expect(screen.getByTestId('Daily ring base lap')).toBeTruthy();
+  expect(screen.getByTestId('Daily ring overflow lap')).toBeTruthy();
   await userEvent.press(screen.getByRole('tab', { name: 'M' }));
   expect(screen.getByLabelText('Monthly activity calendar')).toBeTruthy();
   runtime.dispose();
 });
 
-test('gym condition replaces Walking with Gym without a Screen Time section', async () => {
+test('gym condition gets the same analytics experience with a 45-minute day ring', async () => {
   const runtime = await mountScenario('gym-time-user');
   expect(screen.queryByRole('header', { name: 'Gym' })).toBeNull();
   expect(screen.queryByRole('header', { name: 'Walking' })).toBeNull();
   expect(screen.queryByRole('header', { name: 'Screen Time' })).toBeNull();
   expect(screen.getByLabelText('Gym chart')).toBeTruthy();
+  await userEvent.press(screen.getByRole('tab', { name: 'D' }));
+  expect(screen.getByLabelText('Daily gym ring')).toBeTruthy();
+  expect(screen.getByText('45')).toBeTruthy();
+  expect(screen.getByTestId('Daily ring overflow lap')).toBeTruthy();
+  expect(screen.getByTestId('Analytics period swipe')).toBeTruthy();
   runtime.dispose();
 });
 

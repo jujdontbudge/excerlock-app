@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Label, ScreenShell, SegmentedControl } from '../../design-system';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { FadeIn, runOnJS } from 'react-native-reanimated';
 import { tokens as t } from '../../design-system/tokens';
 import { useClock, useHistory } from '../../state/selectors';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
@@ -19,6 +20,7 @@ import { MonthGrid } from './MonthGrid';
 import { ActivityStats, ActivityStat } from './ActivityStats';
 import { ActivityTrend } from './ActivityTrend';
 import { trendPoints } from './trendModel';
+import { offsetAfterPeriodSwipe } from './periodSwipe';
 
 const sum = (values: (number | null)[]) => values.reduce<number>((total, value) => total + (value ?? 0), 0);
 const duration = (minutes: number) => {
@@ -89,6 +91,16 @@ export function AnalyticsScreen() {
     () => trendPoints(period, today, history, primaryActivity),
     [period, today, history, primaryActivity],
   );
+  const movePeriod = useCallback((translationX: number) => {
+    setOffset((current) => offsetAfterPeriodSwipe(current, translationX));
+  }, []);
+  const periodSwipe = useMemo(
+    () => Gesture.Pan()
+      .activeOffsetX([-24, 24])
+      .failOffsetY([-18, 18])
+      .onEnd((event) => { runOnJS(movePeriod)(event.translationX); }),
+    [movePeriod],
+  );
   return (
     <ScreenShell dock safeBottom={false} contentStyle={s.content}>
       <View style={s.header}>
@@ -106,18 +118,22 @@ export function AnalyticsScreen() {
           testID="Analytics period content"
           entering={FadeIn.duration(t.motion.duration.navigation)}
           style={s.periodContent}>
-          {period === 'Day' ? (
-            <DailyActivityRing value={movementTotal} goal={goal} unit={primaryActivity === 'walking' ? 'steps' : 'minutes'} dayLabel={dayLabel} />
-          ) : period === 'Month' ? (
-            <MonthGrid
-              data={model.series.map((point, index) => ({ day: point.day, value: movementValues[index] }))}
-              goal={goal}
-              unit={primaryActivity === 'walking' ? 'steps' : 'minutes'}
-            />
-          ) : (
-            <MetricBars title={movementName} data={movementPoints} unit={movementUnit} />
-          )}
-          <ActivityStats stats={stats} />
+          <GestureDetector gesture={periodSwipe}>
+            <View testID="Analytics period swipe" style={s.swipeArea}>
+              {period === 'Day' ? (
+                <DailyActivityRing value={movementTotal} goal={goal} unit={primaryActivity === 'walking' ? 'steps' : 'minutes'} dayLabel={dayLabel} />
+              ) : period === 'Month' ? (
+                <MonthGrid
+                  data={model.series.map((point, index) => ({ day: point.day, value: movementValues[index] }))}
+                  goal={goal}
+                  unit={primaryActivity === 'walking' ? 'steps' : 'minutes'}
+                />
+              ) : (
+                <MetricBars title={movementName} data={movementPoints} unit={movementUnit} />
+              )}
+              <ActivityStats stats={stats} />
+            </View>
+          </GestureDetector>
           <ActivityTrend
             label={primaryActivity === 'walking' ? 'Steps trend' : 'Gym trend'}
             points={trend}
@@ -155,4 +171,5 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: t.space.lg },
   periodControl: { width: 180 },
   periodContent: { gap: t.space.lg },
+  swipeArea: { gap: t.space.lg },
 });
