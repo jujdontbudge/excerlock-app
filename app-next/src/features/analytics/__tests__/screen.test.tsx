@@ -15,7 +15,7 @@ test('walking analytics follows the reference Day, Week, and Month hierarchy', a
   expect(screen.queryByText('This week')).toBeNull();
   expect(screen.queryByLabelText('Previous period')).toBeNull();
   expect(screen.queryByLabelText('Next period')).toBeNull();
-  await waitFor(() => expect(screen.getAllByText('3,200').length).toBeGreaterThan(0));
+  await waitFor(() => expect(screen.getAllByText('15,000').length).toBeGreaterThan(0));
   const scrubber = screen.getByTestId('Analytics trend scrubber');
   expect(scrubber).toHaveAccessibilityValue({ text: 'SEP' });
   await fireEvent(scrubber, 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } });
@@ -65,8 +65,8 @@ test('Gym stays above analytics whenever any enabled gym condition exists', asyn
   runtime.dispose();
 });
 
-test('walking analytics offers Apple step connection when motion access is absent', async () => {
+test('walking analytics keeps the dashboard clean when motion access is absent', async () => {
   const runtime = await mountScenario('fresh-install');
-  expect(screen.getByRole('button', { name: 'Connect Apple steps' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Connect Apple steps' })).toBeNull();
   runtime.dispose();
 });

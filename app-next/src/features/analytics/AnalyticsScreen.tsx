@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Label, PressableScale, ScreenShell, SegmentedControl } from '../../design-system';
+import { Label, ScreenShell, SegmentedControl } from '../../design-system';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { tokens as t } from '../../design-system/tokens';
-import { Icon } from '../../icons/Icon';
 import { useClock, useHistory } from '../../state/selectors';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { profileStore as useProfileStore } from '../../state/profileStore';
@@ -107,12 +106,6 @@ export function AnalyticsScreen() {
           testID="Analytics period content"
           entering={FadeIn.duration(t.motion.duration.navigation)}
           style={s.periodContent}>
-          {primaryActivity === 'walking' && apple.status !== 'granted' ? (
-            <PressableScale label="Connect Apple steps" onPress={() => void apple.request()} style={s.connect}>
-              <Icon name="walking" variant="utility" size={20} tint={t.brand.primary} />
-              <Label variant="label">Connect Apple steps</Label>
-            </PressableScale>
-          ) : null}
           {period === 'Day' ? (
             <DailyActivityRing value={movementTotal} goal={goal} unit={primaryActivity === 'walking' ? 'steps' : 'minutes'} dayLabel={dayLabel} />
           ) : period === 'Month' ? (
@@ -162,7 +155,4 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: t.space.lg },
   periodControl: { width: 180 },
   periodContent: { gap: t.space.lg },
-  connect: { minHeight: t.layout.button, borderRadius: t.radius.pill, backgroundColor: t.surface.card,
-    borderWidth: t.stroke.hairline, borderColor: t.border.outline, flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'center', gap: t.space.sm },
 });
