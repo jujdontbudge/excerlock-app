@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { LayoutChangeEvent, NativeSyntheticEvent, StyleSheet, View, ViewProps } from 'react-native';
-import Svg, { Circle, Defs, Line, LinearGradient, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { nearestEnabledTrendIndex, TrendPoint } from './trendModel';
@@ -61,17 +61,11 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
         style={s.graph}
         {...responder}>
         <Svg width="100%" height={HEIGHT} viewBox={`0 0 320 ${HEIGHT}`} pointerEvents="none">
-          <Defs>
-            <LinearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={t.brand.decorative} stopOpacity="0.28" />
-              <Stop offset="1" stopColor={t.brand.decorative} stopOpacity="0.01" />
-            </LinearGradient>
-          </Defs>
           {[0, 1, 2].map((row) => {
             const y = TOP + (BOTTOM - TOP) * row / 2;
             return <Line key={row} x1={LEFT} x2={RIGHT} y1={y} y2={y} stroke={t.chart.grid} strokeWidth="1" strokeDasharray="3 5" />;
           })}
-          {geometry.area ? <Path d={geometry.area} fill="url(#trend-fill)" /> : null}
+          {geometry.area ? <Path d={geometry.area} fill={t.brand.light} /> : null}
           {geometry.line ? <Path d={geometry.line} fill="none" stroke={t.chart.exercise} strokeWidth={t.stroke.chart} strokeLinecap="round" strokeLinejoin="round" /> : null}
           {geometry.coordinates.map((point, index) => (
             <Circle
