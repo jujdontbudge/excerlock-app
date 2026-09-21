@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import Animated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
@@ -47,10 +47,33 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
       cy: SIZE / 2 + RADIUS * Math.sin(angle),
     };
   });
+  const overflowShadowAnimatedProps = useAnimatedProps(() => {
+    const excess = Math.max(0, progress.get() - 1);
+    const lap = excess > 0 && excess % 1 === 0 ? 1 : excess % 1;
+    const angle = -Math.PI / 2 + Math.PI * 2 * lap;
+    return {
+      opacity: excess > 0 ? 1 : 0,
+      cx: SIZE / 2 + RADIUS * Math.cos(angle) + Math.sin(angle) * 3,
+      cy: SIZE / 2 + RADIUS * Math.sin(angle) - Math.cos(angle) * 3,
+    };
+  });
   return (
     <View accessible accessibilityLabel={unit === 'steps' ? 'Daily steps ring' : 'Daily gym ring'} style={s.card}>
       <View style={s.ring}>
         <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+          <Defs>
+            <LinearGradient
+              id="ring-gradient"
+              gradientUnits="userSpaceOnUse"
+              x1={SIZE / 2 - RADIUS}
+              y1={SIZE / 2}
+              x2={SIZE / 2 + RADIUS}
+              y2={SIZE / 2}>
+              <Stop offset="0" stopColor={t.chart.ringBase} />
+              <Stop offset="0.5" stopColor={t.chart.ringMid} />
+              <Stop offset="1" stopColor={t.chart.ringOverflow} />
+            </LinearGradient>
+          </Defs>
           <Circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none" stroke={t.surface.well} strokeWidth={STROKE} />
           <AnimatedCircle
             testID="Daily ring base lap"
@@ -58,7 +81,7 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
             cy={SIZE / 2}
             r={RADIUS}
             fill="none"
-            stroke={t.chart.ringBase}
+            stroke="url(#ring-gradient)"
             strokeWidth={STROKE}
             strokeLinecap={ratio >= 1 ? 'butt' : 'round'}
             strokeDasharray={CIRCUMFERENCE}
@@ -73,7 +96,7 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
               cy={SIZE / 2}
               r={RADIUS}
               fill="none"
-              stroke={t.chart.ringOverflow}
+              stroke="url(#ring-gradient)"
               strokeWidth={STROKE}
               strokeLinecap="butt"
               strokeDasharray={CIRCUMFERENCE}
@@ -85,7 +108,14 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
           {ratio > 1 ? (
             <AnimatedCircle
               r={STROKE / 2}
-              fill={t.chart.ringOverflow}
+              fill={t.chart.ringEndpointShadow}
+              animatedProps={overflowShadowAnimatedProps}
+            />
+          ) : null}
+          {ratio > 1 ? (
+            <AnimatedCircle
+              r={STROKE / 2}
+              fill="url(#ring-gradient)"
               animatedProps={overflowEndAnimatedProps}
             />
           ) : null}
