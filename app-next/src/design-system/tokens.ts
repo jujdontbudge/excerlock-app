@@ -53,8 +53,8 @@ export const tokens = {
   },
   chart: {
     exercise: '#C94710', comparison: '#92929C', grid: '#ECECEF',
-    ringBase: '#D9531B', ringMid: '#E45E25', ringOverflow: '#EF6B32',
-    ringEndpointShadow: 'rgba(116,53,16,0.24)',
+    ringBase: '#D9531B', ringMid: '#E45E25', ringOverflow: '#EF6B32', ringEndpoint: '#FF7A3D',
+    ringEndpointShadow: 'rgba(116,53,16,0.34)',
   },
   icon: {
     mint: '#9FE1C3',

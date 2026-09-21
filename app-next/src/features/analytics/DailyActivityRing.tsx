@@ -114,8 +114,8 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
           ) : null}
           {ratio > 1 ? (
             <AnimatedCircle
-              r={STROKE / 2}
-              fill="url(#ring-gradient)"
+              r={STROKE / 2 + 1}
+              fill={t.chart.ringEndpoint}
               animatedProps={overflowEndAnimatedProps}
             />
           ) : null}
