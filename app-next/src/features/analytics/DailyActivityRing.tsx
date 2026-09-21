@@ -37,6 +37,16 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
       strokeDashoffset: CIRCUMFERENCE * (1 - lap),
     };
   });
+  const overflowEndAnimatedProps = useAnimatedProps(() => {
+    const excess = Math.max(0, progress.get() - 1);
+    const lap = excess > 0 && excess % 1 === 0 ? 1 : excess % 1;
+    const angle = -Math.PI / 2 + Math.PI * 2 * lap;
+    return {
+      opacity: excess > 0 ? 1 : 0,
+      cx: SIZE / 2 + RADIUS * Math.cos(angle),
+      cy: SIZE / 2 + RADIUS * Math.sin(angle),
+    };
+  });
   return (
     <View accessible accessibilityLabel={unit === 'steps' ? 'Daily steps ring' : 'Daily gym ring'} style={s.card}>
       <View style={s.ring}>
@@ -48,9 +58,9 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
             cy={SIZE / 2}
             r={RADIUS}
             fill="none"
-            stroke={t.brand.primary}
+            stroke={t.chart.ringBase}
             strokeWidth={STROKE}
-            strokeLinecap="round"
+            strokeLinecap={ratio >= 1 ? 'butt' : 'round'}
             strokeDasharray={CIRCUMFERENCE}
             animatedProps={baseAnimatedProps}
             rotation={-90}
@@ -63,13 +73,20 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
               cy={SIZE / 2}
               r={RADIUS}
               fill="none"
-              stroke={t.brand.decorative}
+              stroke={t.chart.ringOverflow}
               strokeWidth={STROKE}
-              strokeLinecap="round"
+              strokeLinecap="butt"
               strokeDasharray={CIRCUMFERENCE}
               animatedProps={overflowAnimatedProps}
               rotation={-90}
               origin={`${SIZE / 2}, ${SIZE / 2}`}
+            />
+          ) : null}
+          {ratio > 1 ? (
+            <AnimatedCircle
+              r={STROKE / 2}
+              fill={t.chart.ringOverflow}
+              animatedProps={overflowEndAnimatedProps}
             />
           ) : null}
         </Svg>

@@ -51,7 +51,10 @@ export const tokens = {
     error: '#BD3038',
     locked: '#1D1D22',
   },
-  chart: { exercise: '#C94710', comparison: '#92929C', grid: '#ECECEF' },
+  chart: {
+    exercise: '#C94710', comparison: '#92929C', grid: '#ECECEF',
+    ringBase: '#D9531B', ringOverflow: '#EF6B32',
+  },
   icon: {
     mint: '#9FE1C3',
     lilac: '#C9B8F5',
