@@ -12,6 +12,8 @@ module.exports = {
     '^@posthog-runtime$': '<rootDir>/src/runtime/analytics/createPostHogRuntime.ts',
     '^@sentry-binding$': '<rootDir>/src/runtime/observability/SentryBinding.ts',
     '^@sentry-capture$': '<rootDir>/src/runtime/observability/SentryCapture.ts',
+    // Config plugins run in Node; jest-expo's conditions would otherwise pick uuid 11's ESM browser build.
+    '^uuid$': require.resolve('uuid'),
   },
   testPathIgnorePatterns: ['/node_modules/', '/evidence/'],
   transformIgnorePatterns: [
