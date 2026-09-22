@@ -3,6 +3,7 @@ export {
   requireVendorTokenCipher,
   type VendorOAuthConfiguration,
 } from "./configuration.js";
+export { VendorClientError } from "./errors.js";
 export {
   createVendorOAuthService,
   type VendorOAuthCallback,

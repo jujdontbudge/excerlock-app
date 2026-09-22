@@ -22,16 +22,16 @@ let postgres: Awaited<ReturnType<typeof createPgliteTestDatabase>>;
 
 beforeAll(async () => {
   postgres = await createPgliteTestDatabase();
-});
+}, 30_000);
 
 beforeEach(async () => {
   await postgres.reset();
   await postgres.db.insert(users).values({ id: "user_123" });
-});
+}, 30_000);
 
 afterAll(async () => {
   await postgres.client.close();
-});
+}, 30_000);
 
 describe("sandbox and production purchases stay distinguishable", () => {
   it("stamps the ledger row and the access mirror with the store environment", async () => {

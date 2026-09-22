@@ -196,6 +196,40 @@ class ConditionDemoState(unittest.TestCase):
         self.assertFalse(matches_state(node, 'walk-state', 'outside', 'walking', 'tiktok', False))
 
 
+class RemoteURLValidation(unittest.TestCase):
+    def test_rejects_non_https_and_file_urls(self):
+        for value in ('http://api.excerlock.com', 'file:///etc/passwd', 'https://user:pass@api.excerlock.com'):
+            with self.assertRaises(ValueError):
+                harness.validate_remote_url(value, 'service', allowed_hosts=('api.excerlock.com',))
+
+    def test_rejects_untrusted_hosts_and_nonstandard_ports(self):
+        with self.assertRaises(ValueError):
+            harness.validate_remote_url('https://attacker.example', 'service',
+                                        allowed_hosts=('api.excerlock.com',))
+        with self.assertRaises(ValueError):
+            harness.validate_remote_url('https://api.excerlock.com:8443', 'service',
+                                        allowed_hosts=('api.excerlock.com',))
+
+    def test_service_clients_use_trusted_host_allowlists(self):
+        import adapty
+        import posthog
+        import supabase
+
+        self.assertEqual(adapty.AdaptyServer(secret='test', base='https://api.adapty.io').base,
+                         'https://api.adapty.io')
+        with unittest.mock.patch.dict(os.environ, {'POSTHOG_API_HOST': 'https://eu.posthog.com'}):
+            self.assertEqual(posthog.api_host(), 'https://eu.posthog.com')
+        self.assertEqual(supabase.SupabaseAdmin(url='https://project.supabase.co', service_key='test').url,
+                         'https://project.supabase.co')
+        with self.assertRaises(ValueError):
+            adapty.AdaptyServer(secret='test', base='https://attacker.example')
+        with self.assertRaises(ValueError):
+            posthog.validate_remote_url('https://attacker.example', 'PostHog API host',
+                                        allowed_suffixes=('.posthog.com',))
+        with self.assertRaises(ValueError):
+            supabase.SupabaseAdmin(url='file:///etc/passwd', service_key='test')
+
+
 class ScenarioRegistry(unittest.TestCase):
     def test_expected_scenarios_are_registered(self):
         self.assertEqual(set(SCENARIOS),
@@ -262,7 +296,7 @@ class FixtureContract(unittest.TestCase):
             storage = snapshot / 'Library' / 'RCTAsyncLocalStorage_V1'
             storage.mkdir(parents=True)
             (storage / 'manifest.json').write_text(json.dumps({'excerlock-next.onboarding.v1': None}))
-            (storage / hashlib.md5(b'excerlock-next.onboarding.v1').hexdigest()).write_text(
+            (storage / hashlib.md5(b'excerlock-next.onboarding.v1', usedforsecurity=False).hexdigest()).write_text(
                 json.dumps({'state': {'data': {'setupComplete': True}}, 'version': 0}))
             self.assertIs(fixture.persisted_setup_complete(snapshot)[0], True)
 
@@ -288,7 +322,7 @@ class FixtureContract(unittest.TestCase):
     def test_adapty_grant_readback_semantics(self):
         import adapty
 
-        server = adapty.AdaptyServer(secret='secret_test', base='https://example.invalid/api/v2/server-side-api')
+        server = adapty.AdaptyServer(secret='secret_test', base='https://api.adapty.io/api/v2/server-side-api')
         payload = {'data': {'access_levels': [
             {'access_level_id': 'premium', 'starts_at': '2020-01-01T00:00:00Z',
              'expires_at': '2030-01-01T00:00:00Z'}]}}

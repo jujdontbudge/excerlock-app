@@ -94,8 +94,15 @@ function normalizeEvidence(value) {
 function containsPhrase(text, phrase) {
   const normalized = normalizeEvidence(phrase);
   if (!normalized) return false;
-  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`(^| )${escaped}($| )`).test(text);
+  let offset = text.indexOf(normalized);
+  while (offset !== -1) {
+    const startsAtWord = offset === 0 || text[offset - 1] === ' ';
+    const endsAtWord = offset + normalized.length === text.length
+      || text[offset + normalized.length] === ' ';
+    if (startsAtWord && endsAtWord) return true;
+    offset = text.indexOf(normalized, offset + 1);
+  }
+  return false;
 }
 
 /** Return `{ phase, markers }` for the first research-screen phase in the OCR text, or null. */

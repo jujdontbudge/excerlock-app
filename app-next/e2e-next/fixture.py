@@ -178,7 +178,7 @@ def persisted_store_state(key: str, snapshot: Path = SNAPSHOT) -> tuple[dict[str
     raw: str | None = manifest.get(key)
     source = f'{manifest_path.relative_to(snapshot)}[{key}]'
     if raw is None:
-        data_path = storage / hashlib.md5(key.encode()).hexdigest()
+        data_path = storage / hashlib.md5(key.encode(), usedforsecurity=False).hexdigest()
         if not data_path.exists():
             return None, f'{source} is not present and {data_path.name} does not exist'
         raw = data_path.read_text(errors='replace')

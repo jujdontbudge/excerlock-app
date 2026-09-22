@@ -40,7 +40,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from harness import env_value
+from harness import env_value, validate_remote_url
 
 APP_ID = '9b8a6cf2-22c5-46f9-b938-35c27da2c66f'
 ACCESS_LEVEL_ID = 'premium'
@@ -77,7 +77,11 @@ class AdaptyServer:
 
     def __init__(self, secret: str | None = None, base: str | None = None) -> None:
         self.secret = secret or env_value('ADAPTY_SECRET_KEY', '') or ''
-        self.base = (base or env_value('ADAPTY_SSAPI_URL', BASE_URL) or BASE_URL).rstrip('/')
+        self.base = validate_remote_url(
+            base or env_value('ADAPTY_SSAPI_URL', BASE_URL) or BASE_URL,
+            'Adapty server API',
+            allowed_hosts=('api.adapty.io',),
+        )
         if not self.secret:
             raise AdaptySecretMissing(
                 'adapty.py: no secret server-side API key: set ADAPTY_SECRET_KEY in the environment, '
@@ -99,7 +103,7 @@ class AdaptyServer:
             headers['Content-Type'] = 'application/json'
         request = urllib.request.Request(f'{self.base}{path}', data=data, headers=headers, method=method)
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with urllib.request.urlopen(request, timeout=timeout) as response:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
                 raw = response.read()
                 return response.status, (json.loads(raw) if raw else None)
         except urllib.error.HTTPError as error:
