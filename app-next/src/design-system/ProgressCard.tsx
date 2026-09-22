@@ -31,7 +31,7 @@ export function ProgressCard({
         style={{
           padding: inLock ? w.card.padding : t.space.lg,
           paddingVertical: inLock ? t.space.md : t.space.lg,
-          borderRadius: inLock ? 0 : t.radius.card,
+          borderRadius: inLock ? undefined : t.radius.card,
           borderWidth: inLock ? 0 : t.stroke.hairline,
           borderTopWidth: inLock ? 0 : t.stroke.hairline,
           borderColor: inLock ? 'rgba(255,255,255,0.4)' : t.border.outline,
@@ -40,7 +40,7 @@ export function ProgressCard({
         }}>
         {inLock ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: t.space.md }}>
-            <Icon name={icon} tint={t.text.onAccent} variant="utility" size={t.space.xxl} />
+            <Icon name={icon} tint={t.text.onAccent} variant="utility" size={t.icon.lg} />
             <View style={{ flexShrink: 1 }}>
               <ValueReveal value={detail}>
                 <Label variant="label" tone="onAccent">

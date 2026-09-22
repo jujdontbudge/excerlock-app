@@ -102,7 +102,7 @@ function HoldChip({ label, active, onHold, onTap }: { label: string; active: boo
       style={{ flexBasis: '46%', flexGrow: 1 }}>
       <Animated.View
         style={{
-          minHeight: t.layout.button,
+          minHeight: t.control.full,
           alignItems: 'center',
           justifyContent: 'center',
           paddingHorizontal: t.space.lg,

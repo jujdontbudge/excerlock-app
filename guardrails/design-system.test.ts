@@ -11,7 +11,7 @@ import { fromRoot, readUtf8, repoRelative, walkFiles } from "./repo-files";
  * run yet, or on and passing; none is weakened to make a wave pass. Raise this number
  * as each wave lands.
  */
-const WAVE = 3;
+const WAVE = 4;
 const staged = (wave: number) => it.runIf(WAVE >= wave);
 
 const tokenModule = "app-next/src/design-system/tokens.ts";
@@ -156,6 +156,11 @@ const illustrationFiles = [
   /^app-next\/src\/features\/onboarding\/progress\/(ProgressArtwork|ProgressBars|ProgressBadge|ProgressCurve)\.tsx$/,
   /^app-next\/src\/features\/onboarding\/control\/(ControlArtwork|ActivityTile|LockedAppsRow)\.tsx$/,
   /^app-next\/src\/features\/onboarding\/profile\/ReferralIcon\.tsx$/,
+  // Pictograms and padlock artwork are drawn to their own proportions, above the UI icon scale.
+  /^app-next\/src\/design-system\/(Pictogram|UnlockLockFrame)\.tsx$/,
+  /^app-next\/src\/motion\/LivingIcon\.tsx$/,
+  /^app-next\/src\/features\/home\/HomeLockStatus\.tsx$/,
+  /^app-next\/src\/features\/rules\/PlanCelebration\.tsx$/,
   /^app-next\/src\/features\/rules\/PlanTrialPreview\.tsx$/,
   /^app-next\/src\/icons\//,
 ];

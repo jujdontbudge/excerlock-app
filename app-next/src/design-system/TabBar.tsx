@@ -43,7 +43,7 @@ export function TabBar({ selected, onSelect }: { selected: TabId; onSelect: (tab
               <Icon
                 name={tab.icon}
                 variant="utility"
-                size={t.layout.glyph}
+                size={t.icon.md}
                 tint={selected === tab.id ? t.brand.primary : t.border.mutedStroke}
               />
               <Label

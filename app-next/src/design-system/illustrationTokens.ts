@@ -6,6 +6,12 @@ import { tokens as t } from './tokens';
  * roles. UI chrome may not import this module (guardrails/design-system.test.ts).
  */
 export const illustrationTokens = {
+  /** Standalone pictograms: artwork drawn with icon glyphs, above the UI icon scale. */
+  pictogram: { card: 64, hero: 112 },
+  /** Padlock artwork proportions, as fractions of the padlock's width. */
+  padlock: { bodyRadius: 0.13, bodyInset: 6, homeBodyRadius: 0.16, shackleRadius: 0.31 },
+  /** Corner radii inside artwork: miniature phones and the cards pinned to the demo scene. */
+  corner: { phone: 26, previewPhone: 40, previewScreen: 34, blob: 40, tile: 20, glyph: 3, info: 18, caption: 14 },
   /** Lettering inside a miniature phone, drawn at the phone's scale. */
   miniature: {
     glyph: { fontSize: 20, fontFamily: t.font.regular },

@@ -61,7 +61,7 @@ export function FakeSystemPrompt({
               onPress={() => onResolve(granted)}
               style={{
                 padding: t.space.md,
-                minHeight: t.layout.touch,
+                minHeight: t.control.inline,
                 alignItems: 'center',
                 borderTopWidth: granted ? t.stroke.hairline : 0,
                 borderColor: t.border.divider,

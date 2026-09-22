@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 import Animated, { SharedValue, useAnimatedProps } from 'react-native-reanimated';
 import { tokens as t } from '../../../design-system/tokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { conditionDemoTokens as c } from '../../../design-system/conditionDemoTokens';
 import { DemoState, Scenario, snapshot } from './model';
 // G's generic extension exposes the native Fabric matrix prop to Reanimated.
@@ -89,7 +90,7 @@ const styles = StyleSheet.create({
     top: 76,
     width: 170,
     height: 312,
-    borderRadius: 26,
+    borderRadius: art.corner.phone,
     overflow: 'hidden',
     backgroundColor: c.map,
     boxShadow: c.shadow,

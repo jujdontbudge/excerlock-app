@@ -21,7 +21,7 @@ export function ReviewWarmup({ onSkip }: { onSkip: () => void }) {
               accessibilityRole="radio"
               accessibilityState={{ checked: rating === n }}
               onPress={() => useProfileStore.getState().patch({ warmupRating: n })}
-              style={{ minWidth: t.layout.touch, alignItems: 'center' }}>
+              style={{ minWidth: t.control.inline, alignItems: 'center' }}>
               <Animated.View
                 style={{
                   opacity: n <= rating ? 1 : 0.35,
@@ -29,7 +29,7 @@ export function ReviewWarmup({ onSkip }: { onSkip: () => void }) {
                   transitionProperty: ['opacity', 'transform'],
                   transitionDuration: t.motion.duration.standard,
                 }}>
-                <Icon name="star" size={t.layout.disc} />
+                <Icon name="star" size={t.icon.lg} />
               </Animated.View>
             </PressableScale>
           </Reveal>

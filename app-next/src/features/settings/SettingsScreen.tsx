@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { Linking } from 'react-native';
 import Constants from 'expo-constants';
-import { ScreenShell, Label, PressableScale } from '../../design-system';
-import { CompactGroup, CompactRow } from '../../design-system/CompactGroup';
+import { ScreenShell, Label, PressableScale, SettingsGroup, SettingsRow } from '../../design-system';
+import { tokens as t } from '../../design-system/tokens';
 import { profileStore as useProfileStore } from '../../state/profileStore';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
@@ -31,40 +31,64 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
   };
   const version = c.version(Constants.expoConfig?.version ?? '1.0.0', Constants.expoConfig?.ios?.buildNumber ?? '1');
   return (
-    <ScreenShell dock safeBottom={false} contentStyle={{ paddingHorizontal: 20, gap: 8 }}>
-      <Label accessibilityRole="header" variant="display" style={{ paddingHorizontal: 8 }}>
+    <ScreenShell dock safeBottom={false}>
+      <Label accessibilityRole="header" variant="display">
         {c.title}
       </Label>
-      <CompactGroup>
-        <CompactRow title={name || c.account} icon="person" onPress={() => navigate('account')} />
-      </CompactGroup>
-      <CompactGroup>
-        <CompactRow
+      <SettingsGroup>
+        <SettingsRow
+          iconTint={t.brand.primary}
+          title={name || c.account}
+          icon="person"
+          onPress={() => navigate('account')}
+        />
+      </SettingsGroup>
+      <SettingsGroup>
+        <SettingsRow
+          iconTint={t.brand.primary}
           title={c.manage}
           subtitle={c.plan(entitlement.status)}
           icon="lock"
           onPress={() => navigate('subscription')}
         />
-        <CompactRow title={c.preferences} icon="gear" onPress={() => navigate('preferences')} />
-        <CompactRow
+        <SettingsRow
+          iconTint={t.brand.primary}
+          title={c.preferences}
+          icon="gear"
+          onPress={() => navigate('preferences')}
+        />
+        <SettingsRow
+          iconTint={t.brand.primary}
           title={c.notificationsToggle}
           icon="bell"
           toggle={notificationsOn}
           onToggle={(on) => void toggleNotifications(on)}
         />
-      </CompactGroup>
-      <CompactGroup>
-        <CompactRow title={i.row} subtitle={i.rowBody} icon="info" onPress={() => navigate('report')} />
-        <CompactRow title={c.giveFeedback} icon="star" onPress={() => navigate('feedback')} />
-        <CompactRow
+      </SettingsGroup>
+      <SettingsGroup>
+        <SettingsRow
+          iconTint={t.brand.primary}
+          title={i.row}
+          subtitle={i.rowBody}
+          icon="info"
+          onPress={() => navigate('report')}
+        />
+        <SettingsRow
+          iconTint={t.brand.primary}
+          title={c.giveFeedback}
+          icon="star"
+          onPress={() => navigate('feedback')}
+        />
+        <SettingsRow
+          iconTint={t.brand.primary}
           title={c.supportRow}
           icon="mail"
           onPress={() => {
             void openSupportEmail().catch(() => setMailNote(true));
           }}
         />
-        <CompactRow title={c.legal} icon="list" onPress={() => navigate('legal')} />
-      </CompactGroup>
+        <SettingsRow iconTint={t.brand.primary} title={c.legal} icon="list" onPress={() => navigate('legal')} />
+      </SettingsGroup>
       {mailNote ? (
         <Label accessibilityRole="alert" selectable>
           {s.errorWithAddress}

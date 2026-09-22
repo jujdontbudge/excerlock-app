@@ -1,3 +1,4 @@
+import * as reanimated from 'react-native-reanimated';
 import { motionFor } from '../useMotion';
 test('Reduce Motion retains fades but removes every spatial offset and scale', () => {
   const m = motionFor(true);
@@ -9,7 +10,6 @@ test('Reduce Motion retains fades but removes every spatial offset and scale', (
 });
 
 test('timing eases on the Material 3 standard curve, and lands immediately under Reduce Motion', () => {
-  const reanimated = require('react-native-reanimated');
   const withTiming = jest.spyOn(reanimated, 'withTiming');
   expect(motionFor(true).timing(1, 'fast')).toBe(1);
   expect(withTiming).not.toHaveBeenCalled();

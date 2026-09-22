@@ -39,12 +39,12 @@ function Task({ title, index, elapsed, checked, working, reduced, rowHeight }: {
     style={[{ position: 'absolute', left: 0, right: 0, top: reduced ? index * (rowHeight + 12) : 0, height: rowHeight, borderWidth: t.stroke.hairline,
       borderRadius: t.radius.card, paddingHorizontal: t.space.lg, flexDirection: 'row', alignItems: 'center', gap: t.space.md }, style]}>
     <View testID={`plan-task-clock-${index}`} style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-      <Icon name="clock" size={24} tint={checked ? t.text.onAccent : t.text.secondary} />
+      <Icon name="clock" size={t.icon.md} tint={checked ? t.text.onAccent : t.text.secondary} />
     </View>
     <Animated.Text allowFontScaling maxFontSizeMultiplier={t.a11y.textScale}
       style={[t.type.label, { flex: 1 }, titleStyle]}>{title}</Animated.Text>
     <View testID={`plan-task-status-${index}`} style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-      {checked ? <SelectionCheck /> : <View style={{ width: 24, height: 24, borderRadius: 12, borderWidth: t.stroke.hairline, borderColor: t.text.secondary }} />}
+      {checked ? <SelectionCheck /> : <View style={{ width: 24, height: 24, borderRadius: t.radius.pill, borderWidth: t.stroke.hairline, borderColor: t.text.secondary }} />}
     </View>
   </Animated.View>;
 }

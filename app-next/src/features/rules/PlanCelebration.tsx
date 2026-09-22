@@ -61,7 +61,7 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
     opacity: m.reduced ? 0 : interpolate(elapsed.get(), [p.burst - 150, p.burst], [1, 0], 'clamp'),
   }));
   const at = (left: number, top: number, size: number) =>
-    ({ position: 'absolute' as const, left, top, width: size, height: size, borderRadius: size / 2 });
+    ({ position: 'absolute' as const, left, top, width: size, height: size, borderRadius: t.radius.pill });
   const badgeTop = centerY - b.size / 2, badgeLeft = centerX - b.size / 2;
   const ring = (extra: object) => [at(badgeLeft - 2, badgeTop - 2, b.size + 4), { borderWidth: 2.5, borderColor: t.brand.primary }, extra];
   return <Modal transparent animationType="none" statusBarTranslucent accessibilityViewIsModal>

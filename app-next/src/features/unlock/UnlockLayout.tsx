@@ -1,9 +1,8 @@
 import { ReactNode } from 'react';
 import { View } from 'react-native';
-import { ScreenShell, Label, CloseButton } from '../../design-system';
+import { ScreenShell, Label, CloseButton, Pictogram } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { unlockCopy as c } from '../../content/unlock';
-import { Icon } from '../../icons/Icon';
 import Animated from 'react-native-reanimated';
 import { popIn } from '../../motion/presets';
 import { useUnlockMotion } from './useUnlockMotion';
@@ -45,7 +44,7 @@ export function Detected({ title, body }: { title: string; body: string }) {
         padding: t.space.xl,
       }}>
       <View style={{ alignItems: 'center', marginBottom: t.space.lg }}>
-        <Icon name="check" variant="utility" size={56} tint={t.text.onAccent} />
+        <Pictogram name="check" size="card" variant="utility" tint={t.text.onAccent} />
       </View>
       <Label accessibilityRole="header" variant="display" tone="onAccent" style={{ textAlign: 'center' }}>
         {title}

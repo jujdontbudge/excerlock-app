@@ -30,7 +30,7 @@ export function ImpactDots({ step, minutes }: { step: string; minutes: number })
               borderRadius: t.radius.pill,
               backgroundColor: state.scrolling ? t.brand.primary : t.chart.comparison,
               opacity: state.visible ? 1 : 0,
-              transform: [{ translateY: step === 'O12' ? 0 : -t.space.huge }, { scale: state.visible ? 1 : 0.4 }],
+              transform: [{ translateY: step === 'O12' ? 0 : -(t.space.xxl + t.space.lg) }, { scale: state.visible ? 1 : 0.4 }],
               transitionProperty: ['opacity', 'transform', 'backgroundColor'],
               transitionDuration: m.reduced ? 0 : step === 'O14' ? timing.fade : timing.collapse,
               transitionDelay: m.reduced

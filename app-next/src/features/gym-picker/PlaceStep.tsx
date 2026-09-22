@@ -23,7 +23,7 @@ export function PlaceStep({ picker: p }: { picker: PickerState }) {
         accessibilityLabel={c.search}
         onPress={p.openSearch}
         style={{
-          minHeight: t.layout.field,
+          minHeight: t.control.full,
           borderRadius: t.radius.field,
           backgroundColor: t.surface.card,
           borderWidth: t.stroke.hairline,
@@ -33,7 +33,7 @@ export function PlaceStep({ picker: p }: { picker: PickerState }) {
           alignItems: 'center',
           gap: t.space.md,
         }}>
-        <Icon name="search" variant="utility" size={t.layout.glyph} tint={t.brand.primary} />
+        <Icon name="search" variant="utility" size={t.icon.md} tint={t.brand.primary} />
         <Label tone="secondary">{c.search}</Label>
       </Pressable>
       <View

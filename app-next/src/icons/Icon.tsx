@@ -2,12 +2,12 @@ import { SvgXml } from 'react-native-svg';
 import { tokens } from '../design-system/tokens';
 import { iconXml } from './art';
 import { paths, IconName } from './paths';
-import { useSolidChoices } from '../design-system/ChoiceAppearance';
+import { useSetupPresentation } from '../design-system/SetupPresentation';
 export type { IconName } from './paths';
 export const iconNames = Object.keys(paths) as IconName[];
 export function Icon({
   name,
-  size = tokens.layout.icon,
+  size = tokens.icon.lg,
   tint,
   label,
   variant = 'color',
@@ -18,7 +18,7 @@ export function Icon({
   label?: string;
   variant?: 'color' | 'utility';
 }) {
-  const onboarding = useSolidChoices();
+  const onboarding = useSetupPresentation();
   return (
     <SvgXml
       xml={iconXml(name, variant === 'utility', onboarding)}

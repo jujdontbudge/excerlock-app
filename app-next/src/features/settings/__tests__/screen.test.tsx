@@ -9,6 +9,7 @@ import { settingsStore } from '../../../state/settingsStore';
 import { rulesStore } from '../../../state/rulesStore';
 import { permissionsStore } from '../../../state/permissionsStore';
 import { profileStore } from '../../../state/profileStore';
+import { entitlementStore } from '../../../state/entitlementStore';
 import { settingsCopy as c } from '../../../content/settings';
 import { supportEmail } from '../../../content/support';
 import { incidentCopy as i } from '../../../content/incident';
@@ -28,11 +29,14 @@ test('root rows navigate to destinations and seven taps open developer', async (
   expect(screen.queryByRole('header', { name: 'Preferences' })).toBeNull();
   expect(screen.queryByRole('header', { name: 'Account & support' })).toBeNull();
   const profile = profileStore.getState().data.name || c.account;
+  // Standard settings rows name a row by its title and its subtitle together.
+  const manage = `${c.manage}, ${c.plan(entitlementStore.getState().data.entitlement.status)}`;
+  const report = `${i.row}, ${i.rowBody}`;
   expect(screen.getAllByRole('button').map((node) => node.props.accessibilityLabel)).toEqual([
     profile,
-    c.manage,
+    manage,
     c.preferences,
-    i.row,
+    report,
     c.giveFeedback,
     c.supportRow,
     c.legal,
@@ -42,11 +46,11 @@ test('root rows navigate to destinations and seven taps open developer', async (
   expect(screen.queryByRole('button', { name: c.exportData })).toBeNull();
   expect(screen.queryByRole('button', { name: c.permissionNames.screenTime })).toBeNull();
   expect(screen.getByRole('switch', { name: c.notificationsToggle })).toBeTruthy();
-  await userEvent.press(screen.getByRole('button', { name: c.manage }));
+  await userEvent.press(screen.getByRole('button', { name: manage }));
   expect(navigate).toHaveBeenCalledWith('subscription');
   await userEvent.press(screen.getByRole('button', { name: c.preferences }));
   expect(navigate).toHaveBeenCalledWith('preferences');
-  await userEvent.press(screen.getByRole('button', { name: i.row }));
+  await userEvent.press(screen.getByRole('button', { name: report }));
   expect(navigate).toHaveBeenCalledWith('report');
   await userEvent.press(screen.getByRole('button', { name: c.giveFeedback }));
   expect(navigate).toHaveBeenCalledWith('feedback');

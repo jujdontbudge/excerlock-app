@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
 import { Icon, IconName } from '../icons/Icon';
+import { Pictogram } from './Pictogram';
 import { PressableScale } from './PressableScale';
 import { BottomSheet } from './BottomSheet';
 import { controls } from '../content/controls';
@@ -54,22 +55,22 @@ export function RuleCard({
             accessibilityRole="image"
             accessibilityLabel={enabled ? 'Active condition' : 'Inactive condition'}
             style={{
-              width: t.layout.touch,
-              height: t.layout.touch,
+              width: t.control.inline,
+              height: t.control.inline,
               borderRadius: t.radius.pill,
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: enabled ? t.brand.primary : t.surface.well,
             }}>
-            <Icon name="clock" variant="utility" size={t.layout.glyph}
+            <Icon name="clock" variant="utility" size={t.icon.md}
               tint={enabled ? t.text.onAccent : t.border.mutedStroke} />
           </View>
           <PressableScale
             label={`More actions for ${title}`}
             onPress={() => setMenuOpen(true)}
             hitSlop={8}
-            style={{ width: t.layout.touch, alignItems: 'center' }}>
-            <Icon name="more" variant="utility" size={t.layout.glyph} tint={t.text.secondary} />
+            style={{ width: t.control.inline, alignItems: 'center' }}>
+            <Icon name="more" variant="utility" size={t.icon.md} tint={t.text.secondary} />
           </PressableScale>
         </View>
         <PressableScale
@@ -77,8 +78,7 @@ export function RuleCard({
           onPress={onOpen}
           accessibilityHint="Edit condition"
           style={{ alignItems: 'center', paddingHorizontal: t.space.lg, paddingBottom: t.space.lg, gap: t.space.sm }}>
-          <Icon name={icon} variant="utility" tint={enabled ? t.brand.primary : t.border.mutedStroke}
-            size={t.space.hero} />
+          <Pictogram name={icon} size="card" variant="utility" tint={enabled ? t.brand.primary : t.border.mutedStroke} />
           <Label variant="section" style={{ textAlign: 'center' }}>{title}</Label>
           <Label variant="body" tone="secondary" style={{ textAlign: 'center' }}>{schedule}</Label>
         </PressableScale>
@@ -111,8 +111,8 @@ function ActionRow({
   return (
     <PressableScale label={label} onPress={onPress}
       style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.lg,
-        minHeight: t.layout.row, borderBottomWidth: t.stroke.hairline, borderBottomColor: t.border.divider }}>
-      <Icon name={icon} variant="utility" size={t.layout.glyph} tint={tint} />
+        minHeight: t.control.row, borderBottomWidth: t.stroke.hairline, borderBottomColor: t.border.divider }}>
+      <Icon name={icon} variant="utility" size={t.icon.md} tint={tint} />
       <Label variant="label" style={{ color: tint }}>{label}</Label>
     </PressableScale>
   );

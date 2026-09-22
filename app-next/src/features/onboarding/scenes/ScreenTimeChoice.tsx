@@ -10,5 +10,5 @@ export function ScreenTimeChoice({
   selected: boolean;
   onPress: () => void;
 }) {
-  return <ChoiceRow title={label} selected={selected} onPress={onPress} />;
+  return <ChoiceRow emphasis="solid" title={label} selected={selected} onPress={onPress} />;
 }

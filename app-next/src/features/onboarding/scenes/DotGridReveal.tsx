@@ -18,7 +18,7 @@ export function DotGridReveal({ step, answers }: AnswerProps & { step: 'O12' | '
   return (
     <>
       <Animated.View
-        style={{ minHeight: t.space.hero + t.space.xxl }}
+        style={{ minHeight: t.layout.ring }}
         key={step}
         entering={opacityIn(m.reduced ? 0 : timing.title)}
         exiting={opacityOut(m.reduced ? 0 : timing.title)}>

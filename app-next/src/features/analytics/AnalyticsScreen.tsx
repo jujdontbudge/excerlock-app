@@ -190,7 +190,7 @@ function PeriodStep({ direction, onPress, disabled }: {
       onPress={onPress}
       style={s.step}>
       <View style={direction === 'back' ? { transform: [{ scaleX: -1 }] } : undefined}>
-        <Icon name="chevron" size={t.layout.glyph} tint={disabled ? t.state.disabledText : t.text.primary} variant="utility" />
+        <Icon name="chevron" size={t.icon.md} tint={disabled ? t.state.disabledText : t.text.primary} variant="utility" />
       </View>
     </PressableScale>
   );
@@ -239,12 +239,12 @@ function streakStat(streak: number): ActivityStat {
 }
 
 const s = StyleSheet.create({
-  content: { paddingHorizontal: t.space.lg, gap: t.space.lg },
+  content: { gap: t.space.lg },
   header: { flexDirection: 'row', alignItems: 'center', gap: t.space.lg },
   periodControl: { width: 200 },
   periodContent: { gap: t.space.lg },
   swipeArea: { gap: t.space.lg },
   chart: { width: '100%' },
   dayStage: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  step: { width: t.layout.touch, height: t.layout.touch, alignItems: 'center', justifyContent: 'center' },
+  step: { width: t.control.inline, height: t.control.inline, alignItems: 'center', justifyContent: 'center' },
 });

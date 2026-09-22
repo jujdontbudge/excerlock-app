@@ -24,12 +24,20 @@ export function PreBranchScreen({ step, ...props }: AnswerProps & { step: string
   if (['O07', 'O21', 'O22'].includes(step)) return <ChoiceQuestion step={step} {...props} />;
   if (step in activityBaseline) {
     const question = activityBaseline[step as BaselineStep];
-    return <>
-      <Heading title={question.title} centered />
-      {question.options.map((option) => <ChoiceRow key={option.value} title={option.label}
-        selected={props.answers[question.key] === option.value}
-        onPress={() => props.setAnswer(question.key, option.value)} />)}
-    </>;
+    return (
+      <>
+        <Heading title={question.title} centered />
+        {question.options.map((option) => (
+          <ChoiceRow
+            emphasis="solid"
+            key={option.value}
+            title={option.label}
+            selected={props.answers[question.key] === option.value}
+            onPress={() => props.setAnswer(question.key, option.value)}
+          />
+        ))}
+      </>
+    );
   }
   if (step === 'O02') return <O02 />;
   if (step === 'O03') return <O03 />;

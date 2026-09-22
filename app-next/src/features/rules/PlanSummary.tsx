@@ -43,7 +43,7 @@ export function PlanSummary({
         {metrics.map((metric, index) => <Reveal key={metric.id} index={index}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.lg, padding: t.space.lg,
             borderWidth: t.stroke.hairline, borderColor: t.border.outline, borderRadius: t.radius.card, backgroundColor: t.surface.card }}>
-            <View testID={`weekly-target-icon-${metric.id}`}><Icon name={metric.icon} tint={t.brand.primary} size={28} /></View>
+            <View testID={`weekly-target-icon-${metric.id}`}><Icon name={metric.icon} tint={t.brand.primary} size={t.icon.md} /></View>
             <Label variant="label" style={{ flex: 1 }}>{metric.text}</Label>
           </View>
         </Reveal>)}
@@ -58,7 +58,7 @@ export function PlanSummary({
     <>
       <Heading title={editing ? conditionsCopy.editTitle : c.S3} support={editing ? undefined : c.summaryBody} />
       {editing ? <Label tone="secondary" style={{ textAlign: 'center' }}>{conditionsCopy.editBody}</Label> : null}
-      <LivingIcon name="check" size={t.layout.ring} />
+      <LivingIcon name="check" />
       <View style={{ gap: t.space.md }}>
         {rows.map((row, index) => (
           <Reveal
@@ -82,7 +82,7 @@ export function PlanSummary({
               <PressableScale
                 label={row.edit}
                 onPress={() => onEdit(row.step)}
-                style={{ minWidth: t.layout.touch, alignItems: 'center' }}>
+                style={{ minWidth: t.control.inline, alignItems: 'center' }}>
                 <Label variant="support" style={{ color: t.text.primary }}>
                   {c.edit}
                 </Label>

@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { LockShackle } from './LockShackle';
 import { UnlockRing } from './UnlockRing';
 import { tokens as t } from './tokens';
+import { illustrationTokens as art } from './illustrationTokens';
 import { welcomeTokens as w } from './welcomeTokens';
 import { useUnlockMotion } from '../features/unlock/useUnlockMotion';
 import { Confetti } from '../motion/Confetti';
@@ -82,9 +83,9 @@ export function UnlockLockFrame({
           <LockShackle bodyWidth={width} />
         </Animated.View>
       ) : null}
-      <Animated.View style={[{ width, height: width, borderRadius: width * 0.13, boxShadow: w.card.shadow }, body]}>
-        <LinearGradient colors={[w.card.start, w.card.end]} style={{ flex: 1, borderRadius: width * 0.13, padding: 6 }}>
-          <View style={{ flex: 1, overflow: 'hidden', borderRadius: width * 0.13 - 6 }}>
+      <Animated.View style={[{ width, height: width, borderRadius: width * art.padlock.bodyRadius, boxShadow: w.card.shadow }, body]}>
+        <LinearGradient colors={[w.card.start, w.card.end]} style={{ flex: 1, borderRadius: width * art.padlock.bodyRadius, padding: art.padlock.bodyInset }}>
+          <View style={{ flex: 1, overflow: 'hidden', borderRadius: width * art.padlock.bodyRadius - art.padlock.bodyInset }}>
             {surface}
             {overlay}
           </View>

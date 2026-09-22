@@ -33,7 +33,7 @@ export function O03() {
         <LockedAppsRow />
         <Reveal index={1} style={{ alignItems: 'center' }}>
           <View style={{ transform: [{ rotate: '90deg' }] }}>
-            <Icon name="arrow" size={w.control.arrow.size} tint={w.control.orange} label={welcomeCopy.unlockArrow} />
+            <Icon name="arrow" size={t.icon.lg} tint={w.control.orange} label={welcomeCopy.unlockArrow} />
           </View>
         </Reveal>
         <ControlArtwork />

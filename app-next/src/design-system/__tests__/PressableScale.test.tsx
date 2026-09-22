@@ -1,4 +1,4 @@
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { PressableScale } from '../PressableScale';
 test('the feedback primitive preserves disabled semantics and custom content', async () => {
@@ -13,7 +13,6 @@ test('the feedback primitive preserves disabled semantics and custom content', a
 });
 
 test('a visually small control still gets a 44 x 44pt hit region', async () => {
-  const { fireEvent } = require('@testing-library/react-native');
   await render(
     <PressableScale label="Next day" onPress={jest.fn()}>
       <Text>›</Text>

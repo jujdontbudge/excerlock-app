@@ -24,7 +24,7 @@ export function BackButton({
       onPress={onPress}
       disabled={disabled}
       accessibilityState={{ disabled }}
-      style={{ width: t.layout.touch, height: t.layout.touch, alignItems: 'center', justifyContent: 'center' }}>
+      style={{ width: t.control.inline, height: t.control.inline, alignItems: 'center', justifyContent: 'center' }}>
       <Svg accessible={false} width={p.header.arrow} height={p.header.arrow} viewBox="0 0 24 24">
         <Path
           d={paths.back}

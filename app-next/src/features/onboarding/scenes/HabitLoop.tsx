@@ -87,7 +87,7 @@ export function HabitLoop({
                     transitionDuration: m.reduced ? 0 : m.duration.slow,
                     transitionTimingFunction: 'ease-in-out',
                   }}>
-                  <LivingIcon name={icons[layerPhase][index]} size={t.space.xxl} tint={t.brand.primary} />
+                  <LivingIcon name={icons[layerPhase][index]} size="lg" tint={t.brand.primary} />
                   <Label variant="label" style={{ textAlign: 'center' }}>
                     {stage.title}
                   </Label>
@@ -134,7 +134,7 @@ export function HabitLoop({
               animationFillMode: 'backwards',
               animationTimingFunction: 'ease-out',
             }}>
-            {index === 0 ? <LoopBrandMark /> : <LivingIcon name="walking" size={t.space.xxl} tint={t.brand.primary} />}
+            {index === 0 ? <LoopBrandMark /> : <LivingIcon name="walking" size="lg" tint={t.brand.primary} />}
             <Label variant="label" style={{ textAlign: 'center' }}>
               {stage.title}
             </Label>

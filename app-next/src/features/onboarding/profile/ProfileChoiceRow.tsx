@@ -14,5 +14,5 @@ export function ProfileChoiceRow({
   leading?: ReactNode;
   radioFirst?: boolean;
 }) {
-  return <ChoiceRow title={title} selected={selected} onPress={onPress} leading={leading} />;
+  return <ChoiceRow emphasis="solid" title={title} selected={selected} onPress={onPress} leading={leading} />;
 }

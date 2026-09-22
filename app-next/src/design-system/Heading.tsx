@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import { Label } from './Label';
 import { tokens as t } from './tokens';
 import { Reveal } from '../motion/Reveal';
-import { useSolidChoices } from './ChoiceAppearance';
+import { useSetupPresentation } from './SetupPresentation';
 export function Heading({
   title,
   support,
@@ -14,7 +14,7 @@ export function Heading({
   variant?: 'display' | 'section';
   centered?: boolean;
 }) {
-  const setupScreen = useSolidChoices();
+  const setupScreen = useSetupPresentation();
   const alignCenter = centered;
   return (
     <Reveal>

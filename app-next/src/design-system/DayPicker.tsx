@@ -18,11 +18,11 @@ export function DayPicker({ days, onChange }: { days: number[]; onChange: (days:
               accessibilityRole="checkbox"
               accessibilityState={{ checked: selected }}
               onPress={() => onChange(order.filter((day) => (day === d ? !selected : days.includes(day))))}
-              style={{ minWidth: t.layout.touch, alignItems: 'center' }}>
+              style={{ minWidth: t.control.inline, alignItems: 'center' }}>
               <Animated.View
                 style={{
-                  width: t.layout.disc,
-                  height: t.layout.disc,
+                  width: t.control.inline,
+                  height: t.control.inline,
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: t.radius.pill,

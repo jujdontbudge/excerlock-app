@@ -61,7 +61,8 @@ export const tokens = {
     ringBase: '#D9531B', ringMid: '#E45E25', ringOverflow: '#EF6B32', ringEndpoint: '#FF7A3D',
     ringEndpointShadow: 'rgba(116,53,16,0.34)',
   },
-  icon: {
+  /** Pastel fills for decorative discs and app tiles; never text or icon tints. */
+  swatch: {
     mint: '#9FE1C3',
     lilac: '#C9B8F5',
     sky: '#9CCBFF',
@@ -89,27 +90,19 @@ export const tokens = {
     lg: 16,
     xl: 24,
     xxl: 32,
-    xxxl: 40,
-    huge: 48,
-    hero: 64,
   },
-  radius: { card: 20, field: 16, sheet: 28, pill: 999, cta: 27 },
+  /** pill: fixed-height controls. card: content containers. field: inputs and surfaces nested in a card. sheet: bottom-sheet top corners. */
+  radius: { card: 20, field: 16, sheet: 28, pill: 999 },
+  /** full: full-width buttons and fields. inline: chips, segments, icon buttons, tab items. indicator: non-tappable badges. row: list rows only. */
+  control: { full: 56, inline: 44, indicator: 32, row: 68 },
+  icon: { sm: 16, md: 24, lg: 36 },
   stroke: { hairline: 1, selected: 1.5, chart: 3 },
   layout: {
     page: 24,
     logo: 140,
     wash: 220,
     washMid: 96,
-    touch: 44,
-    choiceCheck: 32,
-    disc: 36,
-    button: 54,
-    field: 56,
     fieldMax: 220,
-    row: 68,
-    glyph: 24,
-    icon: 48,
-    heroIcon: 112,
     tabHeight: 49,
     chartHeight: 170,
     cardWidth: 171,

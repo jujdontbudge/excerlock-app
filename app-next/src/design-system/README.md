@@ -2,7 +2,7 @@
 
 Shared visual tokens and components. No domain or fake-data imports.
 
-CloseButton is the one dismiss control: a brand-orange stroked cross on a 44pt target, used by OnboardingHeader, BottomSheet and the unlock screens. OnboardingHeader is the single inline back/progress header for every onboarding question and branch. SolidChoices scopes the shared row and activity-card selection treatment to onboarding: orange surface, white labels, retained icons, and SelectionCheck's white badge with orange check.
+CloseButton is the one dismiss control: a brand-orange stroked cross on a 44pt target, used by OnboardingHeader, BottomSheet and the unlock screens. OnboardingHeader is the single inline back/progress header for every onboarding question and branch. SetupPresentation scopes the shared row and activity-card selection treatment to onboarding: orange surface, white labels, retained icons, and SelectionCheck's white badge with orange check.
 
 All 36 contracted components have interactive default/alternate examples in `__previews__`, reachable through `/dev?component=Name`. Components accept copy and callbacks; they do not read stores or call services. SVG chart coordinates are local drawing geometry; UI layout and colors come from tokens. Native controls are limited to ordinary switches, inputs and the time wheel.
 

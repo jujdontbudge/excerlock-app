@@ -168,7 +168,7 @@ export function PaywallScreen({
       <View style={{ gap: t.space.md }}>
         {subscriptionCopy.benefits.map((b, index) => (
           <Reveal key={b.text} index={index + 1} style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.lg }}>
-            <Icon name={b.icon} size={t.layout.glyph} tint={t.brand.primary} variant="utility" />
+            <Icon name={b.icon} size={t.icon.md} tint={t.brand.primary} variant="utility" />
             <Label variant="label" style={{ flex: 1 }}>
               {b.text}
             </Label>

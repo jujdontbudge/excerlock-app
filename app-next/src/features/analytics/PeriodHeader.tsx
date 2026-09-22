@@ -25,7 +25,7 @@ export function PeriodHeader({ range, total, average, rising, unit }: {
         <Label variant="label" numberOfLines={1}>AVG {average}</Label>
         <View style={s.disc}>
           <View style={{ transform: [{ rotate: rising ? '-45deg' : '45deg' }] }}>
-            <Icon name="arrow" size={t.layout.glyph - 8} tint={t.text.onAccent} variant="utility" />
+            <Icon name="arrow" size={t.icon.sm} tint={t.text.onAccent} variant="utility" />
           </View>
         </View>
       </View>

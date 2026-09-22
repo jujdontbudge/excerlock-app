@@ -40,7 +40,7 @@ export function ScreenShell({
   const scroll = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   // Until the footer reports its size, reserve one button plus the home indicator.
-  const [footerHeight, setFooterHeight] = useState<number>(t.layout.button + insets.bottom + t.space.xs + t.space.sm);
+  const [footerHeight, setFooterHeight] = useState<number>(t.control.full + insets.bottom + t.space.xs + t.space.sm);
   useLayoutEffect(() => {
     if (scrollResetKey === undefined) return;
     scroll.current?.scrollTo({ y: 0, animated: false });

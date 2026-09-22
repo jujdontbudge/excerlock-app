@@ -54,7 +54,7 @@ export function StatusCard({
           {hero ?? (
             <LivingIcon
               name={unlocked ? 'lock-open' : 'lock'}
-              size={t.space.hero}
+              size="card"
               tint={orange ? t.text.onAccent : undefined}
             />
           )}

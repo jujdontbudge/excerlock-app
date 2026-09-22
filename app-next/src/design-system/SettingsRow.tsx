@@ -16,6 +16,7 @@ export function SettingsRow({
   destructive = false,
   flat = false,
   iconTint,
+  status,
 }: {
   title: string;
   value?: string;
@@ -27,6 +28,8 @@ export function SettingsRow({
   destructive?: boolean;
   flat?: boolean;
   iconTint?: string;
+  /** A green (on) or muted (off) dot beside the value. */
+  status?: boolean;
 }) {
   const fontScale = useWindowDimensions().fontScale;
   const stacked = !!subtitle || fontScale > 1;
@@ -34,14 +37,14 @@ export function SettingsRow({
   const content = (
     <View
       style={{
-        minHeight: t.layout.row,
+        minHeight: t.control.row,
         flexDirection: 'row',
         alignItems: 'center',
         padding: t.space.lg,
         paddingHorizontal: flat ? 0 : t.space.lg,
         gap: t.space.md,
       }}>
-      {icon ? <Icon name={icon} size={t.space.xxl} tint={iconTint} /> : null}
+      {icon ? <Icon name={icon} size={t.icon.lg} tint={iconTint} /> : null}
       <View
         style={{
           flex: 1,
@@ -53,7 +56,20 @@ export function SettingsRow({
           {title}
         </Label>
         {detail ? (
-          <ValueReveal value={detail} style={{ flexShrink: 1 }}>
+          <ValueReveal
+            value={detail}
+            style={{ flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: t.space.sm }}>
+            {status !== undefined ? (
+              <View
+                testID="settings-row-status"
+                style={{
+                  width: t.layout.dot,
+                  height: t.layout.dot,
+                  borderRadius: t.radius.pill,
+                  backgroundColor: status ? t.state.success : t.border.mutedStroke,
+                }}
+              />
+            ) : null}
             <Label tone="secondary" variant="support">
               {detail}
             </Label>
@@ -72,7 +88,7 @@ export function SettingsRow({
           trackColor={{ true: t.brand.primary, false: t.border.divider }}
         />
       ) : onPress ? (
-        <Icon name="chevron" variant="utility" size={t.space.lg} tint={iconTint ?? t.border.mutedStroke} />
+        <Icon name="chevron" variant="utility" size={t.icon.sm} tint={iconTint ?? t.border.mutedStroke} />
       ) : null}
     </View>
   );

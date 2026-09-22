@@ -7,7 +7,7 @@ import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
 import { onboardingLabels as c } from '../../content/onboarding';
 import { WelcomeFooter } from './welcome/WelcomeFooter';
-import { SolidChoices } from '../../design-system/ChoiceAppearance';
+import { SetupPresentation } from '../../design-system/SetupPresentation';
 import { Reveal } from '../../motion/Reveal';
 export function OnboardingShell({
   children,
@@ -50,7 +50,7 @@ export function OnboardingShell({
     ? opacityOut(m.duration.standard)
     : (direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.slow);
   return (
-    <SolidChoices>
+    <SetupPresentation>
       <ScreenShell
         scrollResetKey={step}
         scrollEnabled={step !== 'S1'}
@@ -70,7 +70,7 @@ export function OnboardingShell({
         footer={
           hideContinue ? (
             ['O11', 'O12', 'O13', 'O14'].includes(step) ? (
-              <View style={{ height: t.layout.button }} />
+              <View style={{ height: t.control.full }} />
             ) : undefined
           ) : ['O01', 'O02', 'O03'].includes(step) ? (
             <WelcomeFooter onContinue={onContinue} />
@@ -92,6 +92,6 @@ export function OnboardingShell({
           </Animated.View>
         </View>
       </ScreenShell>
-    </SolidChoices>
+    </SetupPresentation>
   );
 }

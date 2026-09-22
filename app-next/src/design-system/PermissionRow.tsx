@@ -39,12 +39,12 @@ export function PermissionRow({
             paddingHorizontal: t.space.sm,
             paddingVertical: t.space.xs,
             borderRadius: t.radius.pill,
-            backgroundColor: status === 'Granted' ? t.icon.mint : t.surface.subtle,
+            backgroundColor: status === 'Granted' ? t.swatch.mint : t.surface.subtle,
           }}>
           <Label variant="micro">{status}</Label>
         </View>
       </View>
-      <Icon name="chevron" variant="utility" size={t.space.lg} />
+      <Icon name="chevron" variant="utility" size={t.icon.sm} />
     </PressableScale>
   );
 }

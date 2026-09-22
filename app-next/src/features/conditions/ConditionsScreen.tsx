@@ -53,11 +53,11 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
         <View style={{ flex: 1 }}><Heading title={c.title} /></View>
         {ordered.length ? (
           <PressableScale label={c.add} onPress={onAdd}
-            style={{ minHeight: t.layout.touch, paddingHorizontal: t.space.lg,
+            style={{ minHeight: t.control.inline, paddingHorizontal: t.space.lg,
               flexDirection: 'row', alignItems: 'center', gap: t.space.sm,
               borderRadius: t.radius.pill, backgroundColor: t.surface.card,
               borderWidth: t.stroke.hairline, borderColor: t.border.divider }}>
-            <LivingIcon name="plus" size={20} tint={t.brand.primary} />
+            <LivingIcon name="plus" size="md" tint={t.brand.primary} />
             <Label variant="label">{c.add}</Label>
           </PressableScale>
         ) : null}
@@ -100,7 +100,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
           <PressableScale
             label={c.dismissRetired}
             onPress={() => useRulesStore.getState().patch({ migrationNote: null })}
-            style={{ alignSelf: 'flex-start', minHeight: t.layout.touch, justifyContent: 'center' }}>
+            style={{ alignSelf: 'flex-start', minHeight: t.control.inline, justifyContent: 'center' }}>
             <Label variant="support" style={{ color: t.text.primary }}>
               {c.dismissRetired}
             </Label>

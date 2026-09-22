@@ -31,9 +31,9 @@ export function SecondaryButton({
       }}>
       <Animated.View
         style={{
-          minHeight: t.layout.button,
+          minHeight: t.control.full,
           padding: t.space.md,
-          borderRadius: t.radius.cta,
+          borderRadius: t.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: variant === 'tertiary' ? t.surface.transparent : disabled ? t.state.disabledFill : t.surface.card,

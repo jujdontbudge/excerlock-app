@@ -12,7 +12,7 @@ import { TimeSheet } from '../rules/TimeSheet';
 import { PlanSummary } from '../rules/PlanSummary';
 import { toSchedule } from '../rules/scheduleDraft';
 import { Activity } from '../../domain/types';
-import { SolidChoices } from '../../design-system/ChoiceAppearance';
+import { SetupPresentation } from '../../design-system/SetupPresentation';
 import { ConfirmSheet } from './ConfirmSheet';
 import { useBuilder } from './useBuilder';
 import { BuilderGymStep } from '../gym-picker/BuilderGymStep';
@@ -29,7 +29,7 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
     : (f.direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.slow);
   if (f.step === 'GPlace') return <BuilderGymStep onSaved={f.next} onBack={f.back} onClose={f.cancel} />;
   return (
-    <SolidChoices>
+    <SetupPresentation>
     <ScreenShell
       scrollResetKey={f.step}
       header={
@@ -79,6 +79,6 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
         {f.step === 'S3' ? <PlanSummary draft={f.draft} schedule={toSchedule(f.schedule)} onEdit={f.edit} editing={f.editing} /> : null}
       </Animated.View>
     </ScreenShell>
-    </SolidChoices>
+    </SetupPresentation>
   );
 }

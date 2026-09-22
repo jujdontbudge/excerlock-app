@@ -5,7 +5,7 @@ test('the one back affordance is a labelled chevron on a 44 x 44pt target', asyn
   const back = jest.fn();
   await render(<BackButton onPress={back} />);
   const button = screen.getByRole('button', { name: 'Back' });
-  expect(button.children[0]).toHaveStyle({ width: t.layout.touch, height: t.layout.touch });
+  expect(button.children[0]).toHaveStyle({ width: t.control.inline, height: t.control.inline });
   await userEvent.press(button);
   expect(back).toHaveBeenCalledTimes(1);
 });

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react-native';
+import { fireEvent, render, screen, within } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
 import * as safeArea from 'react-native-safe-area-context';
 import { ScreenShell } from '../ScreenShell';
@@ -28,7 +28,6 @@ test('caller content style is merged last, so a caller padding is not silently o
 });
 
 test('the scroll content reserves the measured footer height, so a tall footer hides nothing', async () => {
-  const { fireEvent } = require('@testing-library/react-native');
   await render(
     <ScreenShell footer={<Text>Continue</Text>}>
       <Text>Content</Text>

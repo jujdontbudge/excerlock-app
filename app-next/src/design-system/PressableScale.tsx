@@ -25,8 +25,8 @@ export function PressableScale({
       hitSlop={props.hitSlop ?? slop}
       onLayout={(e) => {
         const { width, height } = e.nativeEvent.layout;
-        const x = Math.max(0, (t.layout.touch - width) / 2);
-        const y = Math.max(0, (t.layout.touch - height) / 2);
+        const x = Math.max(0, (t.control.inline - width) / 2);
+        const y = Math.max(0, (t.control.inline - height) / 2);
         setSlop(x || y ? { top: y, bottom: y, left: x, right: x } : undefined);
         props.onLayout?.(e);
       }}
@@ -46,7 +46,7 @@ export function PressableScale({
       }}>
       <Animated.View
         style={[
-          { minHeight: t.layout.touch, justifyContent: 'center' },
+          { minHeight: t.control.inline, justifyContent: 'center' },
           style,
           {
             transform: [{ scale: pressed ? m.scale.pressed : 1 }],

@@ -93,7 +93,7 @@ export function HomeScreen() {
         padding: t.space.lg, gap: t.space.md,
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
-          <Icon name={model.icon} variant="utility" size={32} tint={t.brand.primary} />
+          <Icon name={model.icon} variant="utility" size={t.icon.lg} tint={t.brand.primary} />
           <View style={{ flex: 1, gap: t.space.xs }}>
             <Label variant="label">{model.title}</Label>
             <Label variant="support" tone="secondary">{scheduleLabel(rule.schedule)}</Label>

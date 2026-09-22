@@ -7,6 +7,7 @@ export function O20({ answers, setAnswer }: AnswerProps) {
     <>
       <Heading title={c.O20.title} support={c.O20.body} centered />
       <ChoiceGrid
+        emphasis="solid"
         selected={answers.activity as Activity | undefined}
         onChange={(activity) => {
           setAnswer('activity', activity);

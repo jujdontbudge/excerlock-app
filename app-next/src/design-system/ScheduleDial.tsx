@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { PanResponder, View, useWindowDimensions } from 'react-native';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { View, ViewProps, useWindowDimensions } from 'react-native';
 import Svg, { Circle, G, Line, Text as SvgText } from 'react-native-svg';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
@@ -27,30 +27,39 @@ export function ScheduleDial({
   const { width } = useWindowDimensions();
   const size = Math.min(width - t.layout.page * 2, 420);
   const [preview, setPreview] = useState({ start: startMinute, end: endMinute });
+  // Rendering reads `dragging`; the gesture callbacks read the refs at event time.
+  const [dragging, setDragging] = useState(false);
   const active = useRef<ScheduleHandle | null>(null);
   const origin = useRef({ x: 0, y: 0 });
   const live = useRef({ preview, size, onChange });
-  live.current = { preview, size, onChange };
+  useLayoutEffect(() => {
+    live.current = { preview, size, onChange };
+  });
   useEffect(() => {
     if (!active.current) setPreview({ start: startMinute, end: endMinute });
   }, [startMinute, endMinute]);
 
-  const responders = useRef(PanResponder.create({
-    onStartShouldSetPanResponder: (event) => {
+  // View responder props, not PanResponder: the dial reads only native touch positions,
+  // and the handlers read the refs at event time, never during render.
+  const responders: ViewProps = {
+    onStartShouldSetResponder: (event) => {
       const scale = SIZE / live.current.size;
       const x = event.nativeEvent.locationX * scale;
       const y = event.nativeEvent.locationY * scale;
       return Math.abs(Math.hypot(x - CENTER, y - CENTER) - RADIUS) <= 28;
     },
-    onPanResponderGrant: (event) => {
+    onResponderGrant: (event) => {
       const e = event.nativeEvent;
       const scale = SIZE / live.current.size;
       origin.current = { x: e.pageX - e.locationX, y: e.pageY - e.locationY };
       const minute = dialMinute(e.locationX * scale, e.locationY * scale, CENTER);
       active.current = nearestHandle(minute, live.current.preview.start, live.current.preview.end);
+      setDragging(true);
       feedback();
+      // Returning true blocks the native responder (the enclosing scroll view) for the drag.
+      return true;
     },
-    onPanResponderMove: (event) => {
+    onResponderMove: (event) => {
       const which = active.current;
       if (!which) return;
       const scale = SIZE / live.current.size;
@@ -63,23 +72,24 @@ export function ScheduleDial({
       live.current.preview = next;
       setPreview(next);
     },
-    onPanResponderRelease: () => {
+    onResponderRelease: () => {
       const which = active.current;
       active.current = null;
+      setDragging(false);
       if (which) { live.current.onChange(which, live.current.preview[which]); feedback(); }
     },
-    onPanResponderTerminationRequest: () => false,
-    onPanResponderTerminate: () => {
+    onResponderTerminationRequest: () => false,
+    onResponderTerminate: () => {
       const which = active.current;
       active.current = null;
+      setDragging(false);
       if (which) live.current.onChange(which, live.current.preview[which]);
     },
-    onShouldBlockNativeResponder: () => true,
-  })).current;
+  };
 
   const start = minuteLabel(preview.start);
   const end = minuteLabel(preview.end);
-  const duration = allDay && !active.current ? 1440 : (preview.end - preview.start + 1440) % 1440;
+  const duration = allDay && !dragging ? 1440 : (preview.end - preview.start + 1440) % 1440;
   const points = { start: dialPoint(preview.start, CENTER, RADIUS), end: dialPoint(preview.end, CENTER, RADIUS) };
   const durationText = `${Math.floor(duration / 60)} hr${duration % 60 ? ` ${duration % 60} min` : ''}`;
 
@@ -97,7 +107,7 @@ export function ScheduleDial({
           </View>
         ))}
       </View>
-      <View testID="schedule-dial" {...responders.panHandlers} style={{ width: size, height: size, alignSelf: 'center' }}>
+      <View testID="schedule-dial" {...responders} style={{ width: size, height: size, alignSelf: 'center' }}>
         <View pointerEvents="none" accessible accessibilityRole="image"
           accessibilityLabel={allDay ? 'Blocking window all day' : `Blocking window from ${start} to ${end}`}>
           <Svg width={size} height={size} viewBox={`0 0 ${SIZE} ${SIZE}`} accessible={false}>

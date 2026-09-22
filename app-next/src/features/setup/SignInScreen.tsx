@@ -122,7 +122,7 @@ export function SignInScreen({
   return (
     <Reveal key={phase} style={{ flexGrow: 1, gap: t.space.xl }}>
       {phase !== 'options' ? (
-        <View style={{ marginLeft: -(t.layout.touch - p.header.arrow) / 2, marginBottom: -t.space.lg }}>
+        <View style={{ marginLeft: -(t.control.inline - p.header.arrow) / 2, marginBottom: -t.space.lg }}>
           <BackButton
             label={c.backToOptions}
             disabled={busy}
@@ -166,8 +166,8 @@ export function SignInScreen({
               <AppleAuthenticationButton
                 buttonType={AppleAuthenticationButtonType.CONTINUE}
                 buttonStyle={AppleAuthenticationButtonStyle.WHITE_OUTLINE}
-                cornerRadius={t.radius.cta}
-                style={{ width: '100%', height: t.layout.button }}
+                cornerRadius={t.radius.pill}
+                style={{ width: '100%', height: t.control.full }}
                 accessible
                 accessibilityRole="button"
                 accessibilityLabel={c.apple}

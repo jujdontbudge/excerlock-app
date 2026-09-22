@@ -6,8 +6,7 @@ import { Label } from './Label';
 import { Icon, IconName } from '../icons/Icon';
 import { PressableScale } from './PressableScale';
 import { Reveal } from '../motion/Reveal';
-
-import { useSolidChoices } from './ChoiceAppearance';
+import type { ChoiceEmphasis } from './ActivityCard';
 import { SelectionCheck } from './SelectionCheck';
 export function ChoiceRow({
   title,
@@ -19,6 +18,7 @@ export function ChoiceRow({
 
   multiple = false,
   compact = false,
+  emphasis = 'outline',
 }: {
   title: string;
   support?: string;
@@ -29,8 +29,9 @@ export function ChoiceRow({
   recommended?: boolean;
   multiple?: boolean;
   compact?: boolean;
+  emphasis?: ChoiceEmphasis;
 }) {
-  const solid = useSolidChoices() && selected;
+  const solid = emphasis === 'solid' && selected;
   void compact; // sizing is universal — compact retained for API compat only
   return (
     <PressableScale
@@ -40,7 +41,7 @@ export function ChoiceRow({
       onPress={onPress}>
       <Animated.View
         style={{
-          minHeight: t.layout.row,
+          minHeight: t.control.row,
           flexDirection: 'row',
           alignItems: 'center',
           gap: t.space.lg,
@@ -60,10 +61,7 @@ export function ChoiceRow({
           </Label>
 
           {support ? (
-            <Label
-              variant="support"
-              tone="secondary"
-              style={solid ? { color: t.text.onAccent } : undefined}>
+            <Label variant="support" tone="secondary" style={solid ? { color: t.text.onAccent } : undefined}>
               {support}
             </Label>
           ) : null}
@@ -73,8 +71,8 @@ export function ChoiceRow({
         ) : (
           <View
             style={{
-              width: t.layout.choiceCheck,
-              height: t.layout.choiceCheck,
+              width: t.control.indicator,
+              height: t.control.indicator,
               borderRadius: t.radius.pill,
               borderWidth: t.stroke.selected,
               borderColor: selected ? t.brand.primary : t.border.outline,
@@ -83,7 +81,7 @@ export function ChoiceRow({
             }}>
             {selected ? (
               <Reveal>
-                <Icon name="check" size={20} variant="utility" tint={t.brand.primary} />
+                <Icon name="check" size={t.icon.md} variant="utility" tint={t.brand.primary} />
               </Reveal>
             ) : null}
           </View>

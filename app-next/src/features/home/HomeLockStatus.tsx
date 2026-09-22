@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Label } from '../../design-system/Label';
 import { tokens as t } from '../../design-system/tokens';
+import { illustrationTokens as art } from '../../design-system/illustrationTokens';
 import { homeCopy as c } from '../../content/home';
 
 /** A centered, rounded lock inspired by the product mark without illustrated effects. */
@@ -23,8 +24,8 @@ export function HomeLockStatus({ unlocked }: { unlocked: boolean }) {
           borderWidth: stroke,
           borderBottomWidth: 0,
           borderColor: t.brand.decorative,
-          borderTopLeftRadius: width * 0.31,
-          borderTopRightRadius: width * 0.31,
+          borderTopLeftRadius: width * art.padlock.shackleRadius,
+          borderTopRightRadius: width * art.padlock.shackleRadius,
           marginBottom: -width * 0.14,
         }} />
         <LinearGradient
@@ -34,7 +35,7 @@ export function HomeLockStatus({ unlocked }: { unlocked: boolean }) {
           style={{
             width: '100%',
             height: width * 0.72,
-            borderRadius: width * 0.16,
+            borderRadius: width * art.padlock.homeBodyRadius,
             alignItems: 'center',
             justifyContent: 'center',
           }}>

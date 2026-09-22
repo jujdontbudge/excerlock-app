@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { View } from 'react-native';
 import { Heading, SettingsGroup, SettingsRow, BottomSheet, ChoiceRow, Label } from '../../design-system';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { profileStore as useProfileStore } from '../../state/profileStore';
 import { settingsCopy as c } from '../../content/settings';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { SettingsPage } from './SettingsPage';
+import { tokens as t } from '../../design-system/tokens';
 import { useLockListPicker } from '../permissions/useLockListPicker';
 const graceSeconds = [30, 60, 120, 180, 300];
 export function PreferencesScreen({ navigate, onBack }: { navigate: (path: string) => void; onBack: () => void }) {
@@ -52,8 +54,11 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
           <Label accessibilityRole="alert">Analytics preference saved. Restart ExcerLock to finish applying it.</Label>
         ) : null}
       </SettingsGroup>
-      <SettingsGroup>
-        <Label variant="section">{c.walkPlaces}</Label>
+      {/* Choice rows carry their own outline, so the walk places are a titled list, not rows inside a card. */}
+      <View style={{ gap: t.space.sm }}>
+        <Label accessibilityRole="header" variant="section">
+          {c.walkPlaces}
+        </Label>
         {(
           [
             ['outside', c.walkOutside],
@@ -75,7 +80,7 @@ export function PreferencesScreen({ navigate, onBack }: { navigate: (path: strin
             }}
           />
         ))}
-      </SettingsGroup>
+      </View>
       <SettingsGroup>
         <SettingsRow
           title={c.grace}

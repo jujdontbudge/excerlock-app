@@ -29,19 +29,16 @@ export function WalkingScreen({
   const runtime = useOptionalRuntime();
   const minutes = d.walkingMode === 'minutes';
   const value = minutes ? d.walkMinutes : d.stepGoal;
-  const valid = Number.isFinite(value) && (minutes
-    ? Number.isInteger(value) && value >= 5 && value <= 180
-    : isValidStepGoal(value));
+  const valid =
+    Number.isFinite(value) &&
+    (minutes ? Number.isInteger(value) && value >= 5 && value <= 180 : isValidStepGoal(value));
   const change = (next: number) => onAction({ type: minutes ? 'setWalkMinutes' : 'setStepGoal', value: next });
   return (
     <>
       {!contentOnly ? (
         <>
           <Heading title={c[step].title} centered={step !== 'W3'} />
-          <LivingIcon
-            name={step === 'W2' && d.walkingMode === 'state' ? 'lock-open' : 'walking'}
-            size={t.layout.ring}
-          />
+          <LivingIcon name={step === 'W2' && d.walkingMode === 'state' ? 'lock-open' : 'walking'} />
         </>
       ) : null}
       {step === 'W1'
@@ -53,6 +50,7 @@ export function WalkingScreen({
             return (
               <Reveal key={p.id} index={index + 1}>
                 <ChoiceRow
+                  emphasis="solid"
                   title={p.title}
                   multiple
                   selected={selected}
@@ -75,6 +73,7 @@ export function WalkingScreen({
         ? c.modes.map((m, index) => (
             <Reveal key={m.id} index={index + 1}>
               <ChoiceRow
+                emphasis="solid"
                 title={m.title}
 
                 selected={d.walkingMode === m.id}
@@ -87,6 +86,7 @@ export function WalkingScreen({
       {step === 'W3' ? (
         <Reveal index={1} style={{ gap: t.space.lg }}>
           <NumberField
+            emphasis="solid"
             centered
             label={minutes ? c.minutesGoal : c.goal}
             step={minutes ? 5 : STEP_GOAL_INCREMENT}
@@ -95,11 +95,15 @@ export function WalkingScreen({
             value={Number.isNaN(value) ? '' : String(value)}
             unit={minutes ? c.minutesUnit : c.unit}
             onChange={(text) => change(text.trim() ? Number(text) : NaN)}
-            adjustValue={minutes ? undefined : (current, direction) => {
-              if (direction === 'increment' && current === REVIEW_STEP_GOAL) return MIN_STANDARD_STEP_GOAL;
-              if (direction === 'decrement' && current <= MIN_STANDARD_STEP_GOAL) return current;
-              return current + (direction === 'increment' ? STEP_GOAL_INCREMENT : -STEP_GOAL_INCREMENT);
-            }}
+            adjustValue={
+              minutes
+                ? undefined
+                : (current, direction) => {
+                    if (direction === 'increment' && current === REVIEW_STEP_GOAL) return MIN_STANDARD_STEP_GOAL;
+                    if (direction === 'decrement' && current <= MIN_STANDARD_STEP_GOAL) return current;
+                    return current + (direction === 'increment' ? STEP_GOAL_INCREMENT : -STEP_GOAL_INCREMENT);
+                  }
+            }
             error={valid ? undefined : minutes ? c.minutesRange : c.range}
           />
         </Reveal>

@@ -34,7 +34,7 @@ export function OnboardingHeader({
         alignItems: 'center',
         gap: t.space.sm,
       }}>
-      {onBack ? <BackButton onPress={onBack} /> : <View style={{ width: t.layout.touch }} />}
+      {onBack ? <BackButton onPress={onBack} /> : <View style={{ width: t.control.inline }} />}
       {showProgress ? <View
         accessible
         accessibilityRole="progressbar"

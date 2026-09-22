@@ -58,7 +58,7 @@ export function TextField({
           style={[
             t.type.body,
             {
-              minHeight: t.layout.field,
+              minHeight: t.control.full,
               color: t.text.primary,
               paddingHorizontal: t.space.lg,
               paddingVertical: t.space.lg,

@@ -1,24 +1,31 @@
 import Animated from 'react-native-reanimated';
-import { Icon } from '../icons/Icon';
+import { Pictogram } from './Pictogram';
 import { ActivityId } from '../content/activities';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { tokens as t } from './tokens';
 import { View } from 'react-native';
-import { useSolidChoices } from './ChoiceAppearance';
 import { SelectionCheck } from './SelectionCheck';
+/**
+ * How a selected choice reads. `solid` (orange fill, white text) marks a full-screen
+ * commitment in onboarding and the condition builder; `outline` (orange border on the
+ * selected surface) marks a reversible preference. See design/UI-STYLE.md.
+ */
+export type ChoiceEmphasis = 'solid' | 'outline';
 export function ActivityCard({
   activity,
   title,
   selected,
   onPress,
+  emphasis = 'outline',
 }: {
   activity: ActivityId;
   title: string;
   selected: boolean;
   onPress: () => void;
+  emphasis?: ChoiceEmphasis;
 }) {
-  const solid = useSolidChoices() && selected;
+  const solid = emphasis === 'solid' && selected;
   return (
     <PressableScale
       label={title}
@@ -39,7 +46,7 @@ export function ActivityCard({
           transitionProperty: ['backgroundColor', 'borderColor'],
           transitionDuration: t.motion.duration.standard,
         }}>
-        <Icon name={activity} size={t.space.hero} tint={solid ? t.text.onAccent : undefined} />
+        <Pictogram name={activity} size="card" tint={solid ? t.text.onAccent : undefined} />
         <Label variant="label" style={{ color: solid ? t.text.onAccent : t.text.primary }}>
           {title}
         </Label>

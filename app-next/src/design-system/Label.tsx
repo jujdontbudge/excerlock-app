@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TextProps } from 'react-native';
 import { tokens as t } from './tokens';
-import { useSolidChoices } from './ChoiceAppearance';
+import { useSetupPresentation } from './SetupPresentation';
 export function Label({
   variant = 'body',
   tone = 'primary',
@@ -8,7 +8,7 @@ export function Label({
   ...props
 }: TextProps & { variant?: keyof typeof t.type; tone?: keyof typeof t.text }) {
   // Onboarding centres flowing text; an absolutely placed label keeps its own box.
-  const onboarding = useSolidChoices() && StyleSheet.flatten(style)?.position !== 'absolute';
+  const onboarding = useSetupPresentation() && StyleSheet.flatten(style)?.position !== 'absolute';
   return (
     <Text
       {...props}

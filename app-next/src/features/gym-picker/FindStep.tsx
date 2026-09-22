@@ -54,7 +54,7 @@ function Row({
       }}>
       {showLocationIcon ? (
         <View style={{ backgroundColor: t.surface.selected, borderRadius: t.radius.field, padding: t.space.md }}>
-          <Icon name="map-pin" variant="utility" size={t.layout.glyph} tint={t.brand.primary} />
+          <Icon name="map-pin" variant="utility" size={t.icon.md} tint={t.brand.primary} />
         </View>
       ) : null}
       <View style={{ flex: 1, gap: t.space.xs }}>

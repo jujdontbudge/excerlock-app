@@ -63,7 +63,7 @@ export function Slider({
         width.set(e.nativeEvent.layout.width);
       }}>
       <GestureDetector gesture={gesture}>
-        <Animated.View style={{ height: t.layout.touch, justifyContent: 'center' }}>
+        <Animated.View style={{ height: t.control.inline, justifyContent: 'center' }}>
           <View
             style={{
               height: t.layout.progress,
