@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Label } from './Label';
 import { tokens as t } from './tokens';
@@ -7,6 +7,7 @@ import { Schedule } from '../domain/types';
 import { timelineSegments } from './timelineSegments';
 export function BlockingTimeline({ start, end, window }: { start: string; end: string; window?: Schedule['window'] }) {
   const m = useMotion();
+  const { fontScale } = useWindowDimensions();
   return (
     <View style={{ gap: t.space.sm }}>
       <Animated.View
@@ -68,9 +69,8 @@ export function BlockingTimeline({ start, end, window }: { start: string; end: s
       </Animated.View>
       {window?.kind === 'range' ? (
         <View style={{ marginHorizontal: t.space.xs }}>
-          <Label variant="support" style={{ opacity: 0 }} accessible={false}>
-            {start}
-          </Label>
+          {/* Reserves one line of support text for the absolutely placed times below. */}
+          <View style={{ height: t.type.support.lineHeight * Math.min(fontScale, t.a11y.textScale) }} />
           {[
             { text: start, minute: window.startMinute },
             { text: end, minute: window.endMinute },

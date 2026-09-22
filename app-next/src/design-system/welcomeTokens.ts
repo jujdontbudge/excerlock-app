@@ -1,3 +1,4 @@
+import { tokens as t } from './tokens';
 /** Geometry and illustration colors sampled from the approved O01 composition. */
 export const welcomeTokens = {
   canvasWidth: 354,
@@ -8,7 +9,7 @@ export const welcomeTokens = {
   dotsGap: 20,
   control: {
     captionWidth: 300,
-    caption: { fontSize: 24, lineHeight: 30, fontWeight: '700' },
+    caption: { fontSize: 24, lineHeight: 34, fontFamily: t.font.bold },
     height: 156,
     gap: 20,
     captionGap: 24,
@@ -52,7 +53,8 @@ export const welcomeTokens = {
       icon: 50,
       arrow: 28,
       fontSize: 27,
-      lineHeight: 34,
+      lineHeight: 38,
+      fontFamily: t.font.semibold,
       padding: 14,
       shadow: '0px 12px 20px rgba(132,64,18,0.15)',
     },
@@ -92,8 +94,8 @@ export const welcomeTokens = {
     white: '#FFFFFF',
   },
   type: {
-    card: { fontSize: 16, lineHeight: 21, fontWeight: '600' },
-    introCaption: { fontSize: 20, lineHeight: 26, fontWeight: '600' },
-    legal: { fontSize: 10, lineHeight: 14, fontWeight: '400' },
+    card: { fontSize: 16, lineHeight: 22, fontFamily: t.font.semibold },
+    introCaption: { fontSize: 20, lineHeight: 28, fontFamily: t.font.semibold },
+    legal: { fontSize: 12, lineHeight: 17, fontFamily: t.font.regular },
   },
 } as const;

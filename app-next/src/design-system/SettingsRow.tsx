@@ -72,7 +72,7 @@ export function SettingsRow({
           trackColor={{ true: t.brand.primary, false: t.border.divider }}
         />
       ) : onPress ? (
-        <Icon name="chevron" variant="utility" size={t.space.lg} tint={iconTint ?? t.text.muted} />
+        <Icon name="chevron" variant="utility" size={t.space.lg} tint={iconTint ?? t.border.mutedStroke} />
       ) : null}
     </View>
   );

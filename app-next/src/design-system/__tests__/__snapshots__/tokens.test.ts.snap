@@ -8,6 +8,7 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
   },
   "border": {
     "divider": "#E5E5EA",
+    "mutedStroke": "#767680",
     "outline": "#1D1D22",
     "selected": "#C94710",
   },
@@ -57,6 +58,7 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
       "#F58E42",
       "#F9AE72",
     ],
+    "tabInactive": "rgba(255,255,255,0.6)",
     "treadmill": "#2B2E3A",
     "tree": "#E8823F",
     "treeLight": "#F0955B",
@@ -223,7 +225,6 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
     "well": "#F2F2F7",
   },
   "text": {
-    "muted": "#767680",
     "onAccent": "#FFFFFF",
     "primary": "#1D1D22",
     "secondary": "#66666F",
@@ -231,8 +232,8 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
   "type": {
     "badge": {
       "fontFamily": "Baloo2_600SemiBold",
-      "fontSize": 11,
-      "lineHeight": 14,
+      "fontSize": 12,
+      "lineHeight": 17,
     },
     "body": {
       "fontFamily": "Baloo2_400Regular",
@@ -242,7 +243,7 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
     "hero": {
       "fontFamily": "Baloo2_800ExtraBold",
       "fontSize": 30,
-      "lineHeight": 36,
+      "lineHeight": 42,
     },
     "label": {
       "fontFamily": "Baloo2_600SemiBold",
@@ -252,7 +253,7 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
     "metric": {
       "fontFamily": "Baloo2_700Bold",
       "fontSize": 48,
-      "lineHeight": 54,
+      "lineHeight": 58,
     },
     "metricCaption": {
       "fontFamily": "Baloo2_600SemiBold",
@@ -277,12 +278,12 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
     "question": {
       "fontFamily": "Baloo2_700Bold",
       "fontSize": 26,
-      "lineHeight": 32,
+      "lineHeight": 37,
     },
     "section": {
       "fontFamily": "Baloo2_700Bold",
       "fontSize": 20,
-      "lineHeight": 26,
+      "lineHeight": 28,
     },
     "support": {
       "fontFamily": "Baloo2_400Regular",

@@ -27,7 +27,7 @@ export function Heading({
           {title}
         </Label>
         {support && !setupScreen ? (
-          <Label tone="secondary" style={{ textAlign: alignCenter ? 'center' : 'left' }}>
+          <Label style={{ textAlign: alignCenter ? 'center' : 'left' }}>
             {support}
           </Label>
         ) : null}

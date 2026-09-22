@@ -51,7 +51,7 @@ export function TextField({
             setFocused(false);
             props.onBlur?.(e);
           }}
-          placeholderTextColor={t.text.muted}
+          placeholderTextColor={t.text.secondary}
           selectionColor={t.brand.primary}
           allowFontScaling
           maxFontSizeMultiplier={t.a11y.bodyScale}

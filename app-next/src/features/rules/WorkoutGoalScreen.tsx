@@ -96,8 +96,8 @@ function MinutesWheel({
                     style={{
                       fontSize: isActive ? 26 : 20,
                       lineHeight: isActive ? 32 : 26,
-                      fontWeight: isActive ? '700' : '400',
-                      color: isActive ? t.text.primary : t.text.muted,
+                      fontFamily: isActive ? t.font.bold : t.font.regular,
+                      color: isActive ? t.text.primary : t.text.secondary,
                     }}>
                     {`${item} min`}
                   </Label>

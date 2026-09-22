@@ -86,14 +86,14 @@ export function Phone({
         <View style={styles.videoSubject} />
         <View style={styles.tabs}>
           <Text style={styles.tab}>Following</Text>
-          <Text style={[styles.tab, { opacity: 1, borderBottomWidth: 2, borderColor: t.text.onAccent }]}>For You</Text>
+          <Text style={[styles.tab, { color: t.text.onAccent, borderBottomWidth: 2, borderColor: t.text.onAccent }]}>For You</Text>
         </View>
         <View style={styles.rail}>
           <View style={styles.avatar} />
           {['♥', '●', '▮', '↗'].map((glyph, i) => (
             <View key={glyph} style={{ alignItems: 'center' }}>
-              <Text style={{ color: t.text.onAccent, fontSize: 20 }}>{glyph}</Text>
-              <Text style={{ color: t.text.onAccent, fontSize: 7 }}>{['128K', '2,431', '9,870', 'Share'][i]}</Text>
+              <Text style={{ color: t.text.onAccent, fontSize: 20, fontFamily: t.font.regular }}>{glyph}</Text>
+              <Text style={{ color: t.text.onAccent, fontSize: 7, fontFamily: t.font.regular }}>{['128K', '2,431', '9,870', 'Share'][i]}</Text>
             </View>
           ))}
         </View>
@@ -128,7 +128,7 @@ export function Phone({
       </View>
       <Animated.View style={[styles.splash, splash]}>
         <TikTokMark />
-        <Text style={{ color: t.text.onAccent, fontWeight: '700', fontSize: 15 }}>TikTok</Text>
+        <Text style={{ color: t.text.onAccent, fontFamily: t.font.bold, fontSize: 15 }}>TikTok</Text>
       </Animated.View>
       <Animated.View style={[styles.spinner, spinner]} />
       <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: t.surface.topTint }, shield]}>
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     boxShadow: c.shadow,
   },
-  time: { position: 'absolute', top: 8, alignSelf: 'center', fontSize: 10, fontWeight: '600' },
+  time: { position: 'absolute', top: 8, alignSelf: 'center', fontSize: 10, fontFamily: t.font.semibold },
   home: { position: 'absolute', bottom: 6, alignSelf: 'center', width: 56, height: 4, borderRadius: 2 },
   videoSubject: {
     position: 'absolute',
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     backgroundColor: c.videoSubject,
   },
   tabs: { position: 'absolute', top: 32, alignSelf: 'center', flexDirection: 'row', gap: 8 },
-  tab: { fontSize: 10, fontWeight: '600', color: t.text.onAccent, opacity: 0.6 },
+  tab: { fontSize: 10, fontFamily: t.font.semibold, color: c.tabInactive },
   rail: { position: 'absolute', bottom: 74, right: 10, gap: 8, alignItems: 'center' },
   avatar: {
     width: 24,
@@ -254,8 +254,8 @@ const styles = StyleSheet.create({
     borderTopColor: t.text.onAccent,
   },
   shieldContent: { marginTop: 78, paddingHorizontal: 14, alignItems: 'center', gap: 8 },
-  shieldTitle: { color: t.text.primary, textAlign: 'center', fontSize: 11.5, lineHeight: 14, fontWeight: '700' },
-  shieldBody: { color: t.text.secondary, textAlign: 'center', fontSize: 9, lineHeight: 12 },
+  shieldTitle: { color: t.text.primary, textAlign: 'center', fontSize: 11.5, lineHeight: 16, fontFamily: t.font.bold },
+  shieldBody: { color: t.text.secondary, textAlign: 'center', fontSize: 9, lineHeight: 13, fontFamily: t.font.regular },
   close: {
     position: 'absolute',
     bottom: 22,
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeText: { color: t.text.onAccent, fontSize: 10.5, fontWeight: '600' },
+  closeText: { color: t.text.onAccent, fontSize: 10.5, fontFamily: t.font.semibold },
   scanTile: {
     width: 96,
     height: 96,
@@ -276,14 +276,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scanPercent: { position: 'absolute', color: t.text.primary, fontSize: 18, fontWeight: '700' },
+  scanPercent: { position: 'absolute', color: t.text.primary, fontSize: 18, fontFamily: t.font.bold },
   xlTitle: {
     color: t.text.primary,
     marginTop: 12,
     fontSize: 12,
-    lineHeight: 15,
-    fontWeight: '700',
+    lineHeight: 17,
+    fontFamily: t.font.bold,
     textAlign: 'center',
   },
-  xlBody: { color: t.text.secondary, marginTop: 8, fontSize: 9.5, lineHeight: 13, textAlign: 'center' },
+  xlBody: { color: t.text.secondary, marginTop: 8, fontSize: 9.5, lineHeight: 14, fontFamily: t.font.regular, textAlign: 'center' },
 });

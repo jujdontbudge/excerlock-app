@@ -18,6 +18,7 @@ export const tokens = {
     video: '#1b1b1f', videoSubject: '#3a3a44', avatar: '#6b6b73', black: '#000000',
     cyan: '#69C9D0', red: '#EE1D52',
     shadow: '0px 16px 36px rgba(120,50,10,.22)',
+    tabInactive: 'rgba(255,255,255,0.6)',
   },
   surface: {
     orangeGradient: ['#F6B583', '#FBE2CF', '#FFF7F1'],
@@ -35,7 +36,6 @@ export const tokens = {
   text: {
     primary: '#1D1D22',
     secondary: '#66666F',
-    muted: '#767680',
     onAccent: '#FFFFFF',
   },
   brand: {
@@ -47,7 +47,8 @@ export const tokens = {
     decorative: '#F47735',
     light: '#FFD6BD',
   },
-  border: { divider: '#E5E5EA', selected: '#C94710', outline: '#1D1D22' },
+  /** `mutedStroke` is for non-text strokes, dividers and inactive glyphs only; it fails AA as text. */
+  border: { divider: '#E5E5EA', selected: '#C94710', outline: '#1D1D22', mutedStroke: '#767680' },
   state: {
     switchOn: '#34C759',
     disabledFill: '#EEEEF1',
@@ -69,14 +70,14 @@ export const tokens = {
   },
   font,
   type: {
-    hero: { fontSize: 30, lineHeight: 36, fontFamily: font.extraBold },
-    question: { fontSize: 26, lineHeight: 32, fontFamily: font.bold },
-    section: { fontSize: 20, lineHeight: 26, fontFamily: font.bold },
+    hero: { fontSize: 30, lineHeight: 42, fontFamily: font.extraBold },
+    question: { fontSize: 26, lineHeight: 37, fontFamily: font.bold },
+    section: { fontSize: 20, lineHeight: 28, fontFamily: font.bold },
     body: { fontSize: 16, lineHeight: 22, fontFamily: font.regular },
     label: { fontSize: 16, lineHeight: 22, fontFamily: font.semibold },
     support: { fontSize: 13, lineHeight: 18, fontFamily: font.regular },
-    badge: { fontSize: 11, lineHeight: 14, fontFamily: font.semibold },
-    metric: { fontSize: 48, lineHeight: 54, fontFamily: font.bold },
+    badge: { fontSize: 12, lineHeight: 17, fontFamily: font.semibold },
+    metric: { fontSize: 48, lineHeight: 58, fontFamily: font.bold },
     metricSmall: { fontSize: 28, lineHeight: 34, fontFamily: font.bold },
     metricHero: { fontSize: 57, lineHeight: 80, fontFamily: font.bold },
     metricStat: { fontSize: 21, lineHeight: 30, fontFamily: font.bold },

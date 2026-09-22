@@ -36,15 +36,14 @@ export function SecondaryButton({
           borderRadius: t.radius.cta,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: variant === 'tertiary' ? t.surface.transparent : t.surface.card,
+          backgroundColor: variant === 'tertiary' ? t.surface.transparent : disabled ? t.state.disabledFill : t.surface.card,
           borderWidth: variant === 'tertiary' ? 0 : t.stroke.hairline,
-          borderColor: t.border.outline,
-          opacity: disabled ? 0.5 : 1,
+          borderColor: disabled ? t.state.disabledFill : t.border.outline,
           transform: [{ scale: pressed ? m.scale.pressed : 1 }],
-          transitionProperty: ['transform', 'opacity'],
+          transitionProperty: ['transform', 'backgroundColor', 'borderColor'],
           transitionDuration: m.duration.press,
         }}>
-        <Label variant="label" style={{ color: t.text.primary, textAlign: 'center' }}>
+        <Label variant="label" style={{ color: disabled ? t.state.disabledText : t.text.primary, textAlign: 'center' }}>
           {label}
         </Label>
       </Animated.View>

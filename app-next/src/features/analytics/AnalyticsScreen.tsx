@@ -188,8 +188,8 @@ function PeriodStep({ direction, onPress, disabled }: {
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={[s.step, disabled && s.stepDisabled]}>
-      <Icon name={direction === 'back' ? 'back' : 'chevron'} size={t.layout.glyph} tint={t.text.primary} variant="utility" />
+      style={s.step}>
+      <Icon name={direction === 'back' ? 'back' : 'chevron'} size={t.layout.glyph} tint={disabled ? t.state.disabledText : t.text.primary} variant="utility" />
     </PressableScale>
   );
 }
@@ -245,5 +245,4 @@ const s = StyleSheet.create({
   chart: { width: '100%' },
   dayStage: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   step: { width: t.layout.touch, height: t.layout.touch, alignItems: 'center', justifyContent: 'center' },
-  stepDisabled: { opacity: 0.22 },
 });

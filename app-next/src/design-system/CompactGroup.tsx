@@ -51,7 +51,7 @@ export function CompactRow({
     <View style={[s.row, subtitle ? { minHeight: 60 } : null]}>
       <Icon name={icon} variant="utility" size={28} tint={t.brand.primary} />
       <View style={{ flex: 1, gap: 2 }}>
-        <Label style={{ fontWeight: subtitle ? '600' : '400' }}>{title}</Label>
+        <Label variant={subtitle ? 'label' : 'body'}>{title}</Label>
         {subtitle ? (
           <Label tone="secondary" variant="support">
             {subtitle}
@@ -66,7 +66,7 @@ export function CompactRow({
       {!stacked && value ? (
         <View style={s.status}>
           {status !== undefined ? (
-            <View style={[s.dot, { backgroundColor: status ? t.state.success : t.text.muted }]} />
+            <View style={[s.dot, { backgroundColor: status ? t.state.success : t.border.mutedStroke }]} />
           ) : null}
           <Label tone="secondary" variant="support">
             {value}

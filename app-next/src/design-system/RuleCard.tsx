@@ -62,7 +62,7 @@ export function RuleCard({
               backgroundColor: enabled ? t.brand.primary : t.surface.well,
             }}>
             <Icon name="clock" variant="utility" size={t.layout.glyph}
-              tint={enabled ? t.text.onAccent : t.text.muted} />
+              tint={enabled ? t.text.onAccent : t.border.mutedStroke} />
           </View>
           <PressableScale
             label={`More actions for ${title}`}
@@ -77,7 +77,7 @@ export function RuleCard({
           onPress={onOpen}
           accessibilityHint="Edit condition"
           style={{ alignItems: 'center', paddingHorizontal: t.space.lg, paddingBottom: t.space.lg, gap: t.space.sm }}>
-          <Icon name={icon} variant="utility" tint={enabled ? t.brand.primary : t.text.muted}
+          <Icon name={icon} variant="utility" tint={enabled ? t.brand.primary : t.border.mutedStroke}
             size={t.space.hero} />
           <Label variant="section" style={{ textAlign: 'center' }}>{title}</Label>
           <Label variant="body" tone="secondary" style={{ textAlign: 'center' }}>{schedule}</Label>

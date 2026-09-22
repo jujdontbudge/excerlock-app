@@ -41,7 +41,7 @@ export function UnlockEntry({
         </Label>
       </Pressable>
       {detail ? (
-        <Label variant="support" tone="onAccent" style={{ opacity: 0.8, textAlign: 'center' }}>
+        <Label variant="support" tone="onAccent" style={{ textAlign: 'center' }}>
           {detail}
         </Label>
       ) : null}

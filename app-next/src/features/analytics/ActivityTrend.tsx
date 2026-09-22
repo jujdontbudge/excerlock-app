@@ -76,7 +76,7 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
             x2={right}
             y1={geometry.averageY}
             y2={geometry.averageY}
-            stroke={t.text.muted}
+            stroke={t.border.mutedStroke}
             strokeWidth="2"
             strokeLinecap="round"
             strokeDasharray="0.1 6"
@@ -96,11 +96,11 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
           ))}
           {selected ? (
             <>
-              <Line x1={selected.x} x2={selected.x} y1={28} y2={BOTTOM} stroke={t.text.muted} strokeWidth="1" strokeDasharray="3 3" />
+              <Line x1={selected.x} x2={selected.x} y1={28} y2={BOTTOM} stroke={t.border.mutedStroke} strokeWidth="1" strokeDasharray="3 3" />
               <Circle cx={selected.x} cy={selected.y} r="8" fill={t.surface.card} stroke={t.chart.exercise} strokeWidth="2.5" />
               <Circle cx={selected.x} cy={selected.y} r="3" fill={t.chart.exercise} />
               <Rect x={bubbleX} y="2" width={BUBBLE} height="24" rx="12" fill={t.text.primary} />
-              <SvgText x={bubbleX + BUBBLE / 2} y="18" textAnchor="middle" fill={t.text.onAccent} fontFamily={t.font.semibold} fontSize="11">{selectedLabel}</SvgText>
+              <SvgText x={bubbleX + BUBBLE / 2} y="18" textAnchor="middle" fill={t.text.onAccent} fontFamily={t.type.badge.fontFamily} fontSize={t.type.badge.fontSize}>{selectedLabel}</SvgText>
             </>
           ) : null}
         </Svg>

@@ -44,12 +44,12 @@ export function TabBar({ selected, onSelect }: { selected: TabId; onSelect: (tab
                 name={tab.icon}
                 variant="utility"
                 size={t.layout.glyph}
-                tint={selected === tab.id ? t.brand.primary : t.text.muted}
+                tint={selected === tab.id ? t.brand.primary : t.border.mutedStroke}
               />
               <Label
                 variant="badge"
                 style={{
-                  color: selected === tab.id ? t.text.primary : t.text.muted,
+                  color: selected === tab.id ? t.text.primary : t.text.secondary,
                   textAlign: 'center',
                 }}>
                 {tab.title}

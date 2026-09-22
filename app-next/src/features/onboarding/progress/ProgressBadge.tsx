@@ -54,7 +54,7 @@ export function ProgressBadge() {
             />
           </Svg>
         </View>
-        <Label style={{ color: p.deep, fontSize: p.badge.fontSize, lineHeight: p.badge.lineHeight, fontWeight: '600' }}>
+        <Label style={{ color: p.deep, fontSize: p.badge.fontSize, lineHeight: p.badge.lineHeight, fontFamily: p.badge.fontFamily }}>
           {c.progressValue}
         </Label>
       </Animated.View>

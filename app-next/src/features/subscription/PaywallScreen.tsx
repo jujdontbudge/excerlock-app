@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking, View } from 'react-native';
-import { ChoiceRow, CloseButton, Heading, Label, PrimaryButton, ScreenShell, SecondaryButton } from '../../design-system';
+import { ChoiceRow, CloseButton, Heading, Label, PressableScale, PrimaryButton, ScreenShell, SecondaryButton } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { Icon } from '../../icons/Icon';
 import { Reveal } from '../../motion/Reveal';
-import { welcomeTokens as w } from '../../design-system/welcomeTokens';
 import type { SubscriptionPaywall } from '../../ports/SubscriptionPort';
 import type { PaywallErrorOperation } from '../../runtime/observability/paywallErrors';
 import type { PaywallVariant } from '../../runtime/analytics/PostHogAnalyticsAdapter';
@@ -145,33 +144,23 @@ export function PaywallScreen({
             <SecondaryButton label={subscriptionCopy.decline} disabled={busy !== null} onPress={onDecline} />
           ) : null}
           {/* One quiet row of legal links under the button, as every reference paywall does. */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: t.space.lg }}>
-            <Label
-              accessibilityRole="button"
-              accessibilityLabel="Restore purchases"
+          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: t.space.sm }}>
+            <PressableScale
+              label="Restore purchases"
               accessibilityState={{ disabled: busy !== null }}
               onPress={() => {
                 if (busy === null) void restore();
-              }}
-              style={{ ...w.type.legal, color: t.text.muted }}>
-              Restore purchases
-            </Label>
-            <Label style={{ ...w.type.legal, color: t.text.muted }}>·</Label>
-            <Label
-              accessibilityRole="button"
-              accessibilityLabel="Terms of Use"
-              onPress={() => void Linking.openURL(TERMS_URL)}
-              style={{ ...w.type.legal, color: t.text.muted }}>
-              Terms of Use
-            </Label>
-            <Label style={{ ...w.type.legal, color: t.text.muted }}>·</Label>
-            <Label
-              accessibilityRole="button"
-              accessibilityLabel="Privacy Policy"
-              onPress={() => void Linking.openURL(PRIVACY_URL)}
-              style={{ ...w.type.legal, color: t.text.muted }}>
-              Privacy Policy
-            </Label>
+              }}>
+              <Label variant="support" tone="secondary">Restore purchases</Label>
+            </PressableScale>
+            <Label variant="support" tone="secondary" accessible={false}>·</Label>
+            <PressableScale label="Terms of Use" onPress={() => void Linking.openURL(TERMS_URL)}>
+              <Label variant="support" tone="secondary">Terms of Use</Label>
+            </PressableScale>
+            <Label variant="support" tone="secondary" accessible={false}>·</Label>
+            <PressableScale label="Privacy Policy" onPress={() => void Linking.openURL(PRIVACY_URL)}>
+              <Label variant="support" tone="secondary">Privacy Policy</Label>
+            </PressableScale>
           </View>
         </>
       }>
