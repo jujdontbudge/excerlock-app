@@ -232,7 +232,7 @@ class F1FixtureMint(Scenario):
         if not ctx.tap('Go to Home'):
             verdict.fail('setup X5 did not offer "Go to Home"')
             return False
-        home = ctx.wait_for_any(['Home', 'Hi,'], 60)
+        home = ctx.wait_for_any(['Home', 'Hello,'], 60)
         ctx.screenshot('home')
         verdict.check('fixture.setup_complete', bool(home),
                       'setup X5 → Home completed, so setupComplete is persisted for the captured snapshot'

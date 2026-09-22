@@ -21,7 +21,7 @@ class E1ExistingUserHome(Scenario):
         verdict = ctx.verdict
         since = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time.time() - 30))
         ctx.launch()
-        home = ctx.wait_for_any(['Home', 'Hi,'], 60)
+        home = ctx.wait_for_any(['Home', 'Hello,'], 60)
         if not home:
             # The existing-user fixture must boot straight to Home. Anything else
             # means the restored state is not a completed profile.

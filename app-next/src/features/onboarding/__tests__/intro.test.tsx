@@ -16,7 +16,7 @@ test('intro shows its exercise-first promise and advances on the pinned CTA', as
       <OnboardingRoute />
     </AppRuntimeProvider>,
   );
-  expect(screen.getByRole('header', { name: 'Block apps. Exercise more.' })).toBeTruthy();
+  expect(screen.getByRole('header', { name: 'Block apps. Move more.' })).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: 'Get started' }));
   expect(mockSetParams).toHaveBeenCalledWith({ step: 'O02' });
   expect(onboardingStore.getState().data.step).toBe('O02');

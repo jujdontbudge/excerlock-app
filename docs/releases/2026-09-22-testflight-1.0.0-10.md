@@ -50,3 +50,15 @@ and screenshots plus accessibility trees were retained locally.
   the baseline launch and direct onboarding transition.
 - Build 10 was not attached to the App Store version and was not submitted for
   review. The existing rejected App Store version remains attached to build 9.
+
+## OTA proof copy
+
+The Build 10 baseline carries the first-onboarding headline **Block apps.
+Exercise more.** and the named Home greeting template **Hi, {name}**. The
+captain-authorized runtime-3 OTA commit changes only their identifying words:
+
+- **Exercise** → **Move**: **Block apps. Move more.**
+- **Hi** → **Hello**: **Hello, {name}**
+
+Publication remains pending until this copy commit is fast-forwarded onto local
+`main`.

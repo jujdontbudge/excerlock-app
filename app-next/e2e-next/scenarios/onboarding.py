@@ -17,7 +17,7 @@ from typing import Any, Sequence
 
 # (step, title, body-fragment) in flow order for the walking branch
 SCREENS: list[tuple[str, str, str]] = [
-    ('O01', 'Block apps. Exercise more.', ''),
+    ('O01', 'Block apps. Move more.', ''),
     ('O02', 'Block apps. Exercise more.', 'Reduce your screen time'),
     ('O03', 'Block apps. Exercise more.', 'Exercise more each week'),
     ('O07', 'What is your gender?', ''),

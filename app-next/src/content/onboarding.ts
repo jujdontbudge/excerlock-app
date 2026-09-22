@@ -1,5 +1,5 @@
 export const onboardingCopy = {
-  O01: { title: 'Block apps. Exercise more.', body: 'Less scrolling. More moving.' },
+  O01: { title: 'Block apps. Move more.', body: 'Less scrolling. More moving.' },
   O02: { title: 'Block apps. Exercise more.', body: 'Less scrolling. More moving.' },
   O03: { title: 'Block apps. Exercise more.', body: 'Less scrolling. More moving.' },
   O04: { title: 'What should we call you?', body: 'Let’s make this personal.' },

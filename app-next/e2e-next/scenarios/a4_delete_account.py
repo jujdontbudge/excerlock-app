@@ -35,7 +35,7 @@ class A4DeleteAccount(Scenario):
             time.sleep(1.0)
             ctx.screenshot('delete-confirm')
             ctx.tap('Delete account forever')
-            wiped = ctx.wait_for_any(['Block apps. Exercise more.', 'Get started'], 30)
+            wiped = ctx.wait_for_any(['Block apps. Move more.', 'Get started'], 30)
             observed = [label for label in ctx.labels() if label][:14]
             verdict.check('ui.delete_flow', bool(wiped),
                           'the app returns to a fresh onboarding state after deletion' if wiped else
@@ -84,7 +84,7 @@ class A4DeleteAccount(Scenario):
             # the settings deep link on a reachable route.
             ctx.terminate()
             ctx.launch()
-            if not ctx.wait_for_app(['Home', 'Hi,'], 30):
+            if not ctx.wait_for_app(['Home', 'Hello,'], 30):
                 return False
             ctx.sim.open_url('excerlock://settings/account')
         except Exception:  # noqa: BLE001 - deep link failure is a BLOCKED precondition, not a crash

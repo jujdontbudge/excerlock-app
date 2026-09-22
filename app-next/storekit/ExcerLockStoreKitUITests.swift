@@ -24,7 +24,7 @@ final class ExcerLockStoreKitUITests: XCTestCase {
     app.launch()
     XCTAssertTrue(app.wait(for: .runningForeground, timeout: 20), "Real preview runtime did not launch")
     XCTAssertTrue(
-      app.staticTexts["Block apps. Exercise more."].waitForExistence(timeout: 20),
+      app.staticTexts["Block apps. Move more."].waitForExistence(timeout: 20),
       "Fresh-install precondition failed; reset only the dedicated test app before rerunning"
     )
 

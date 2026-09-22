@@ -143,7 +143,7 @@ class OnboardingIdentification(unittest.TestCase):
         self.assertEqual(identify(['We want you to try ExcerLock Premium for free'])[0], 'S3c')
 
     def test_identifies_shared_title_by_body(self):
-        self.assertEqual(identify(['Block apps. Exercise more.', 'Less scrolling. More time to move.'])[0], 'O01')
+        self.assertEqual(identify(['Block apps. Move more.', 'Less scrolling. More time to move.'])[0], 'O01')
         self.assertEqual(identify(['Block apps. Exercise more.', 'Reduce your screen time and track your progress.'])[0],
                          'O02')
         self.assertEqual(identify(['Block apps. Exercise more.', 'Exercise more each week and stay consistent.'])[0],

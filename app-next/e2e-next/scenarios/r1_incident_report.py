@@ -33,7 +33,7 @@ class R1IncidentReport(Scenario):
     def run(self, ctx: RunContext) -> None:
         verdict = ctx.verdict
         ctx.launch()
-        if not ctx.wait_for_app(['Home', 'Hi,'], 60):
+        if not ctx.wait_for_app(['Home', 'Hello,'], 60):
             verdict.block('the existing-user fixture did not boot to Home; the guarded settings stack is closed')
             return
         with ctx.recording('E2E-R1'):

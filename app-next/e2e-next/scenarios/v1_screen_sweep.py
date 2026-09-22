@@ -144,7 +144,7 @@ class V1ScreenSweep(Scenario):
             return False
         ctx.terminate()
         ctx.launch()
-        if not ctx.wait_for_app(['Home', 'Hi,'], 60):
+        if not ctx.wait_for_app(['Home', 'Hello,'], 60):
             verdict.check('guarded.boot_home', False,
                           'the restored fixture did not boot to Home (is the keychain session still the minted one?)')
             return False
@@ -205,7 +205,7 @@ class V1ScreenSweep(Scenario):
         """Relaunch, deep-link one route, and record what rendered."""
         ctx.terminate()
         ctx.launch()
-        ctx.wait_for_app(boot_labels or ['Home', 'Hi,'], 60)
+        ctx.wait_for_app(boot_labels or ['Home', 'Hello,'], 60)
         ctx.log(f'visiting [{phase}] {route}')
         ctx.sim.open_url(link)
         time.sleep(2.6)
@@ -326,7 +326,7 @@ class V1ScreenSweep(Scenario):
     @staticmethod
     def observed_title(labels: list[str]) -> str:
         for candidate in ('Choose your plan', 'Conditions', 'Analytics', 'Settings', 'Find your gym',
-                          'Save your progress', 'Home', 'Block apps. Exercise more.'):
+                          'Save your progress', 'Home', 'Block apps. Move more.'):
             if any(candidate in label for label in labels):
                 return candidate
         return next((label for label in labels if label and len(label) < 48), '')

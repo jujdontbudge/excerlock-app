@@ -42,7 +42,7 @@ BUDGET_INTERACTIVE_HOME = 2.5
 COARSE_SURFACE_BOUND = 10.0
 #: Stages a fresh install must mark on every cold start (Home needs the fixture).
 REQUIRED_STAGES = ('FirstReactRender', 'HydrationDone', 'RuntimeReady', 'BootGateRedirect')
-SURFACES = ('Get started', 'Home', 'Hi,', 'Choose your plan', 'Setup progress')
+SURFACES = ('Get started', 'Home', 'Hello,', 'Choose your plan', 'Setup progress')
 
 
 class S1StartupBudget(Scenario):

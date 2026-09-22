@@ -17,7 +17,7 @@ from typing import Any
 import fixture
 from harness import RunContext, Scenario, env_value
 
-HOME = ['Home', 'Hi,']
+HOME = ['Home', 'Hello,']
 CAPTION = 'Hold what you are doing now'
 WALKING = 'Walking'
 REPORT = 'Report a problem'

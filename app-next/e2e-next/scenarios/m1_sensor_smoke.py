@@ -49,7 +49,7 @@ class M1SensorSmoke(Scenario):
     def run(self, ctx: RunContext) -> None:
         verdict = ctx.verdict
         ctx.launch()
-        if not ctx.wait_for_app(['Get started', 'Home', 'Hi,'], 90):
+        if not ctx.wait_for_app(['Get started', 'Home', 'Hello,'], 90):
             verdict.block('the release build did not reach a first surface within 60 s')
             return
         ctx.sim.open_url('excerlock://diagnostics/sensors')
