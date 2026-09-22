@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, userEvent, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, userEvent, waitFor, within } from '@testing-library/react-native';
 import { AnalyticsScreen } from '../AnalyticsScreen';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
@@ -12,7 +12,8 @@ async function mountScenario(id: string) {
 
 test('walking analytics follows the reference Day, Week, and Month hierarchy', async () => {
   const runtime = await mountScenario('home-locked-walking');
-  expect(screen.queryByText('This week')).toBeNull();
+  expect(screen.getByText('This week')).toBeTruthy();
+  expect(screen.getByTestId('Analytics average')).toBeTruthy();
   expect(screen.queryByLabelText('Previous period')).toBeNull();
   expect(screen.queryByLabelText('Next period')).toBeNull();
   await waitFor(() => expect(screen.getAllByText('15,000').length).toBeGreaterThan(0));
@@ -24,11 +25,11 @@ test('walking analytics follows the reference Day, Week, and Month hierarchy', a
   expect(screen.getByRole('tab', { name: 'D' })).toBeTruthy();
   expect(screen.getByRole('tab', { name: 'W' })).toBeTruthy();
   expect(screen.getByRole('tab', { name: 'M' })).toBeTruthy();
-  expect(screen.getByLabelText('Walking chart')).toBeTruthy();
+  expect(screen.getByLabelText('Walking chart, steps from Apple Motion & Fitness')).toBeTruthy();
   expect(screen.getByText('Streak')).toBeTruthy();
-  expect(screen.getByText('Calories')).toBeTruthy();
-  expect(screen.getByText('Distance')).toBeTruthy();
-  expect(screen.getByText('Minutes')).toBeTruthy();
+  expect(screen.getByText('kcal')).toBeTruthy();
+  expect(screen.getByText('mi')).toBeTruthy();
+  expect(screen.getByText('min')).toBeTruthy();
   expect(screen.getByText('Floors')).toBeTruthy();
   expect(screen.getByLabelText('Steps trend')).toBeTruthy();
   expect(screen.queryByRole('header', { name: 'Screen Time' })).toBeNull();
@@ -46,10 +47,10 @@ test('gym condition gets the same analytics experience with a 45-minute day ring
   expect(screen.queryByRole('header', { name: 'Gym' })).toBeNull();
   expect(screen.queryByRole('header', { name: 'Walking' })).toBeNull();
   expect(screen.queryByRole('header', { name: 'Screen Time' })).toBeNull();
-  expect(screen.getByLabelText('Gym chart')).toBeTruthy();
+  expect(screen.getByLabelText('Gym chart, minutes at the gym')).toBeTruthy();
   await userEvent.press(screen.getByRole('tab', { name: 'D' }));
-  expect(screen.getByLabelText('Daily gym ring')).toBeTruthy();
-  expect(screen.getByText('45')).toBeTruthy();
+  expect(within(screen.getByLabelText('Daily gym ring')).getByText('45')).toBeTruthy();
+  expect(screen.getByLabelText('Previous day')).toBeTruthy();
   expect(screen.getByTestId('Daily ring overflow lap')).toBeTruthy();
   expect(screen.getByTestId('Analytics period swipe')).toBeTruthy();
   runtime.dispose();
@@ -58,8 +59,7 @@ test('gym condition gets the same analytics experience with a 45-minute day ring
 test('arrival-only gym conditions still show measured workout duration', async () => {
   const runtime = await mountScenario('gym-arrival-user');
   expect(screen.queryByRole('header', { name: 'Gym' })).toBeNull();
-  expect(screen.getByLabelText('Gym chart')).toBeTruthy();
-  expect(screen.getByText('minutes at the gym')).toBeTruthy();
+  expect(screen.getByLabelText('Gym chart, minutes at the gym')).toBeTruthy();
   expect(screen.queryByText('Gym time')).toBeNull();
   runtime.dispose();
 });
@@ -67,8 +67,8 @@ test('arrival-only gym conditions still show measured workout duration', async (
 test('Gym stays above analytics whenever any enabled gym condition exists', async () => {
   const runtime = await mountScenario('multi-rule-overlap');
   expect(screen.queryByRole('header', { name: 'Gym' })).toBeNull();
-  expect(screen.getByLabelText('Gym chart')).toBeTruthy();
-  expect(screen.queryByLabelText('Walking chart')).toBeNull();
+  expect(screen.getByLabelText('Gym chart, minutes at the gym')).toBeTruthy();
+  expect(screen.queryByLabelText('Walking chart, steps from Apple Motion & Fitness')).toBeNull();
   runtime.dispose();
 });
 

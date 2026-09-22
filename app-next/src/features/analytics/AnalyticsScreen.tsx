@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Label, ScreenShell, SegmentedControl } from '../../design-system';
+import { Label, PressableScale, ScreenShell, SegmentedControl } from '../../design-system';
+import { Icon } from '../../icons/Icon';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { FadeIn, runOnJS } from 'react-native-reanimated';
 import { tokens as t } from '../../design-system/tokens';
@@ -19,13 +20,17 @@ import { DailyActivityRing } from './DailyActivityRing';
 import { MonthGrid } from './MonthGrid';
 import { ActivityStats, ActivityStat } from './ActivityStats';
 import { ActivityTrend } from './ActivityTrend';
+import { PeriodHeader } from './PeriodHeader';
 import { trendPoints } from './trendModel';
 import { offsetAfterPeriodSwipe } from './periodSwipe';
 
 const sum = (values: (number | null)[]) => values.reduce<number>((total, value) => total + (value ?? 0), 0);
 const duration = (minutes: number) => {
   const rounded = Math.round(minutes);
-  return rounded < 60 ? `${rounded}m` : `${Math.floor(rounded / 60)}h ${rounded % 60}m`;
+  if (rounded < 60) return { value: `${rounded}`, label: 'min', spoken: `${rounded} minutes` };
+  const hours = Math.floor(rounded / 60);
+  const rest = rounded % 60;
+  return { value: `${hours}:${`${rest}`.padStart(2, '0')}`, label: 'h', spoken: `${hours} hours ${rest} minutes` };
 };
 const integer = (value: number) => Math.round(value).toLocaleString('en-US');
 const periodLabels: Record<string, Period> = { D: 'Day', W: 'Week', M: 'Month' };
@@ -91,6 +96,19 @@ export function AnalyticsScreen() {
     () => trendPoints(period, today, history, primaryActivity),
     [period, today, history, primaryActivity],
   );
+  const previousModel = useMemo(
+    () => analyticsModel(history, today, period, offset - 1, baseline, { rules, ruleDays }),
+    [history, today, period, offset, baseline, rules, ruleDays],
+  );
+  const measuredValues = selectedValues.flatMap((value) => value === null ? [] : [value]);
+  const average = measuredValues.length ? movementTotal / measuredValues.length : 0;
+  const previousValues = previousModel.series
+    .flatMap((point) => point.day > today ? [] : [primaryActivity === 'walking' ? point.activity.walking : point.activity.gym])
+    .flatMap((value) => value === null ? [] : [value]);
+  const previousAverage = previousValues.length
+    ? previousValues.reduce((total, value) => total + value, 0) / previousValues.length
+    : 0;
+  const metricUnit = primaryActivity === 'walking' ? 'steps' : 'minutes';
   const movePeriod = useCallback((translationX: number) => {
     setOffset((current) => offsetAfterPeriodSwipe(current, translationX));
   }, []);
@@ -113,24 +131,38 @@ export function AnalyticsScreen() {
           />
         </View>
       </View>
-      <Animated.View
-          key={period}
-          testID="Analytics period content"
-          entering={FadeIn.duration(t.motion.duration.navigation)}
-          style={s.periodContent}>
+      <View testID="Analytics period content" style={s.periodContent}>
           <GestureDetector gesture={periodSwipe}>
             <View testID="Analytics period swipe" style={s.swipeArea}>
+              {period === 'Day' ? null : (
+                <PeriodHeader
+                  range={rangeLabel(period, model.start, model.end, offset)}
+                  total={integer(movementTotal)}
+                  average={integer(average)}
+                  rising={average >= previousAverage}
+                  unit={metricUnit}
+                />
+              )}
+              <Animated.View
+                key={period}
+                entering={FadeIn.duration(t.motion.duration.fast)}
+                style={s.chart}>
               {period === 'Day' ? (
-                <DailyActivityRing value={movementTotal} goal={goal} unit={primaryActivity === 'walking' ? 'steps' : 'minutes'} dayLabel={dayLabel} />
+                <View style={s.dayStage}>
+                  <PeriodStep direction="back" onPress={() => setOffset(offset - 1)} />
+                  <DailyActivityRing value={movementTotal} goal={goal} unit={metricUnit} dayLabel={dayLabel} />
+                  <PeriodStep direction="next" onPress={() => setOffset(offset + 1)} disabled={offset >= 0} />
+                </View>
               ) : period === 'Month' ? (
                 <MonthGrid
                   data={model.series.map((point, index) => ({ day: point.day, value: movementValues[index] }))}
                   goal={goal}
-                  unit={primaryActivity === 'walking' ? 'steps' : 'minutes'}
+                  unit={metricUnit}
                 />
               ) : (
                 <MetricBars title={movementName} data={movementPoints} unit={movementUnit} />
               )}
+              </Animated.View>
               <ActivityStats stats={stats} />
             </View>
           </GestureDetector>
@@ -140,36 +172,78 @@ export function AnalyticsScreen() {
             selectedOffset={offset}
             onSelect={setOffset}
           />
-      </Animated.View>
+      </View>
     </ScreenShell>
   );
 }
+
+function PeriodStep({ direction, onPress, disabled }: {
+  direction: 'back' | 'next';
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <PressableScale
+      label={direction === 'back' ? 'Previous day' : 'Next day'}
+      accessibilityState={{ disabled: !!disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={[s.step, disabled && s.stepDisabled]}>
+      <Icon name={direction === 'back' ? 'back' : 'chevron'} size={t.layout.glyph} tint={t.text.primary} variant="utility" />
+    </PressableScale>
+  );
+}
+
+function rangeLabel(period: Period, start: string, end: string, offset: number) {
+  if (period === 'Week') {
+    if (offset === 0) return 'This week';
+    if (offset === -1) return 'Last week';
+    return `${shortDate(start)} \u2013 ${shortDate(end)}`;
+  }
+  if (offset === 0) return 'This month';
+  return new Date(`${start}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+const shortDate = (day: string) =>
+  new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 function walkingStats(streak: number, steps: number, points: ReturnType<typeof useAppleSteps>['points']): ActivityStat[] {
   const distanceMeters = points.reduce((total, point) => total + (point.distanceMeters ?? (point.value ?? 0) * 0.705), 0);
   const activeMinutes = points.reduce((total, point) => total + (point.activeMinutes ?? (point.value ?? 0) / 107), 0);
   const floorValues = points.flatMap((point) => point.floorsAscended === null ? [] : [point.floorsAscended]);
+  const floors = floorValues.length ? integer(sum(floorValues)) : '—';
+  const active = duration(activeMinutes);
   return [
-    { label: 'Streak', value: `${streak}d` },
-    { label: 'Calories', value: `${integer(steps * 0.0142)} kcal` },
-    { label: 'Distance', value: `${(distanceMeters / 1609.344).toFixed(1)} mi` },
-    { label: 'Minutes', value: duration(activeMinutes) },
-    { label: 'Floors', value: floorValues.length ? integer(sum(floorValues)) : '—' },
+    streakStat(streak),
+    { label: 'kcal', value: integer(steps * 0.0142), a11y: `Calories: ${integer(steps * 0.0142)} kcal` },
+    { label: 'mi', value: (distanceMeters / 1609.344).toFixed(1), a11y: `Distance: ${(distanceMeters / 1609.344).toFixed(1)} miles` },
+    { label: active.label, value: active.value, a11y: `Active time: ${active.spoken}` },
+    { label: 'Floors', value: floors, a11y: `Floors: ${floors}` },
   ];
 }
 
 function gymStats(streak: number, minutes: number, values: (number | null)[]): ActivityStat[] {
+  const active = duration(minutes);
+  const days = integer(values.filter((value) => (value ?? 0) > 0).length);
   return [
-    { label: 'Streak', value: `${streak}d` },
-    { label: 'Minutes', value: duration(minutes) },
-    { label: 'Days visited', value: integer(values.filter((value) => (value ?? 0) > 0).length) },
+    streakStat(streak),
+    { label: active.label, value: active.value, a11y: `Gym time: ${active.spoken}` },
+    { label: 'Days', value: days, a11y: `Days visited: ${days}` },
   ];
+}
+
+function streakStat(streak: number): ActivityStat {
+  return { label: 'Streak', value: `${streak}`, glyph: 'flame', a11y: `Streak: ${streak} days` };
 }
 
 const s = StyleSheet.create({
   content: { paddingHorizontal: t.space.lg, paddingTop: t.space.sm, gap: t.space.lg },
   header: { flexDirection: 'row', alignItems: 'center', gap: t.space.lg },
-  periodControl: { width: 180 },
+  periodControl: { width: 200 },
   periodContent: { gap: t.space.lg },
   swipeArea: { gap: t.space.lg },
+  chart: { width: '100%' },
+  dayStage: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  step: { width: t.layout.touch, height: t.layout.touch, alignItems: 'center', justifyContent: 'center' },
+  stepDisabled: { opacity: 0.22 },
 });

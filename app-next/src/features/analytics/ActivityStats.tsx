@@ -1,24 +1,32 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Label } from '../../design-system';
+import { Icon } from '../../icons/Icon';
 import { tokens as t } from '../../design-system/tokens';
 
-export type ActivityStat = { label: string; value: string };
+export type ActivityStat = { label: string; value: string; glyph?: 'flame'; a11y?: string };
+
+/** Every stat stays on screen: the row divides the content width instead of scrolling one off the edge. */
 export function ActivityStats({ stats }: { stats: ActivityStat[] }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.scroll} contentContainerStyle={s.content}>
+    <View style={s.row}>
       {stats.map((stat) => (
-        <View key={stat.label} style={s.stat} accessible accessibilityLabel={`${stat.label}: ${stat.value}`}>
-          <Label variant="label" numberOfLines={1}>{stat.value}</Label>
-          <Label variant="badge" tone="secondary" numberOfLines={1}>{stat.label}</Label>
+        <View key={stat.label} style={s.stat} accessible accessibilityLabel={stat.a11y ?? `${stat.label}: ${stat.value}`}>
+          <View style={s.valueRow}>
+            {stat.glyph ? <Icon name={stat.glyph} size={t.layout.glyph - 4} tint={t.brand.primary} variant="utility" /> : null}
+            <Label variant="metricStat" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{stat.value}</Label>
+          </View>
+          <Label variant="support" tone="secondary" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+            {stat.label}
+          </Label>
         </View>
       ))}
-    </ScrollView>
+    </View>
   );
 }
 const s = StyleSheet.create({
-  scroll: { marginHorizontal: -t.space.lg },
-  content: { gap: t.space.sm, paddingHorizontal: t.space.lg },
-  stat: { minWidth: 92, alignItems: 'center', backgroundColor: t.surface.card,
-    borderWidth: t.stroke.hairline, borderColor: t.border.outline, borderRadius: t.radius.card,
-    paddingHorizontal: t.space.md, paddingVertical: t.space.sm, gap: t.space.xs },
+  row: { flexDirection: 'row', gap: t.space.sm },
+  stat: { flex: 1, height: 58, alignItems: 'center', justifyContent: 'center', backgroundColor: t.surface.card,
+    borderWidth: t.stroke.hairline, borderColor: t.border.outline, borderRadius: t.radius.field,
+    paddingHorizontal: t.space.xs },
+  valueRow: { flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: -t.space.sm },
 });

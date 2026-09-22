@@ -79,6 +79,9 @@ export const tokens = {
     badge: { fontSize: 11, lineHeight: 14, fontFamily: 'Baloo2_600SemiBold' },
     metric: { fontSize: 48, lineHeight: 54, fontFamily: 'Baloo2_700Bold' },
     metricSmall: { fontSize: 28, lineHeight: 34, fontFamily: 'Baloo2_700Bold' },
+    metricHero: { fontSize: 57, lineHeight: 80, fontFamily: 'Baloo2_700Bold' },
+    metricStat: { fontSize: 21, lineHeight: 30, fontFamily: 'Baloo2_700Bold' },
+    metricCaption: { fontSize: 21, lineHeight: 30, fontFamily: 'Baloo2_600SemiBold' },
   },
   space: {
     xs: 4,

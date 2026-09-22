@@ -1,15 +1,15 @@
 import { useCallback, useMemo, useState } from 'react';
 import { LayoutChangeEvent, NativeSyntheticEvent, StyleSheet, View, ViewProps } from 'react-native';
-import Svg, { Circle, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Line, Path, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { nearestEnabledTrendIndex, TrendPoint } from './trendModel';
 
 const HEIGHT = 156;
-const LEFT = 10;
-const RIGHT = 310;
-const TOP = 34;
-const BOTTOM = 132;
+const INSET = 14;
+const TOP = 32;
+const BOTTOM = 146;
+const BUBBLE = 46;
 
 type TouchEvent = NativeSyntheticEvent<{ locationX: number }>;
 
@@ -19,9 +19,10 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
   selectedOffset: number;
   onSelect: (offset: number) => void;
 }) {
-  const [width, setWidth] = useState(1);
+  const [width, setWidth] = useState(0);
+  const plotWidth = Math.max(120, width);
   const selectedIndex = Math.max(0, points.findIndex((point) => point.offset === selectedOffset));
-  const geometry = useMemo(() => graphGeometry(points), [points]);
+  const geometry = useMemo(() => graphGeometry(points, plotWidth), [points, plotWidth]);
   const selectAt = useCallback((event: TouchEvent) => {
     const index = nearestEnabledTrendIndex(points, event.nativeEvent.locationX, width);
     const point = points[index];
@@ -37,7 +38,10 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
   }, [onSelect, points, selectedIndex]);
   const selected = geometry.coordinates[selectedIndex] ?? geometry.coordinates[0];
   const selectedLabel = points[selectedIndex]?.label ?? '';
-  const bubbleX = selected ? Math.max(LEFT, Math.min(RIGHT - 42, selected.x - 21)) : LEFT;
+  const right = plotWidth - INSET;
+  const bubbleX = selected
+    ? Math.max(INSET, Math.min(right - BUBBLE, selected.x - BUBBLE / 2))
+    : INSET;
   const responder: ViewProps = {
     onStartShouldSetResponder: () => true,
     onMoveShouldSetResponder: () => true,
@@ -46,10 +50,7 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
   };
   return (
     <View style={s.card}>
-      <View style={s.heading}>
-        <Label variant="label">{label}</Label>
-        <Label variant="support" tone="secondary">Drag to explore</Label>
-      </View>
+      <Label variant="label">{label}</Label>
       <View
         testID="Analytics trend scrubber"
         accessibilityRole="adjustable"
@@ -60,12 +61,27 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
         onLayout={(event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)}
         style={s.graph}
         {...responder}>
-        <Svg width="100%" height={HEIGHT} viewBox={`0 0 320 ${HEIGHT}`} pointerEvents="none">
-          {[0, 1, 2].map((row) => {
-            const y = TOP + (BOTTOM - TOP) * row / 2;
-            return <Line key={row} x1={LEFT} x2={RIGHT} y1={y} y2={y} stroke={t.chart.grid} strokeWidth="1" strokeDasharray="3 5" />;
-          })}
-          {geometry.area ? <Path d={geometry.area} fill={t.brand.light} /> : null}
+        <Svg width="100%" height={HEIGHT} viewBox={`0 0 ${plotWidth} ${HEIGHT}`} pointerEvents="none">
+          <Defs>
+            <LinearGradient id="trend-area" x1="0" y1={TOP} x2="0" y2={BOTTOM} gradientUnits="userSpaceOnUse">
+              <Stop offset="0" stopColor={t.brand.primary} stopOpacity="0.30" />
+              <Stop offset="1" stopColor={t.brand.primary} stopOpacity="0.02" />
+            </LinearGradient>
+          </Defs>
+          {geometry.coordinates.map((point, index) => (
+            <Line key={`grid-${index}`} x1={point.x} x2={point.x} y1={TOP - 6} y2={BOTTOM} stroke={t.chart.grid} strokeWidth="1" />
+          ))}
+          <Line
+            x1={INSET}
+            x2={right}
+            y1={geometry.averageY}
+            y2={geometry.averageY}
+            stroke={t.text.muted}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray="0.1 6"
+          />
+          {geometry.area ? <Path d={geometry.area} fill="url(#trend-area)" /> : null}
           {geometry.line ? <Path d={geometry.line} fill="none" stroke={t.chart.exercise} strokeWidth={t.stroke.chart} strokeLinecap="round" strokeLinejoin="round" /> : null}
           {geometry.coordinates.map((point, index) => (
             <Circle
@@ -80,11 +96,11 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
           ))}
           {selected ? (
             <>
-              <Line x1={selected.x} x2={selected.x} y1={26} y2={BOTTOM} stroke={t.text.muted} strokeWidth="1" strokeDasharray="3 3" />
+              <Line x1={selected.x} x2={selected.x} y1={28} y2={BOTTOM} stroke={t.text.muted} strokeWidth="1" strokeDasharray="3 3" />
               <Circle cx={selected.x} cy={selected.y} r="8" fill={t.surface.solid} stroke={t.chart.exercise} strokeWidth="2.5" />
               <Circle cx={selected.x} cy={selected.y} r="3" fill={t.chart.exercise} />
-              <Rect x={bubbleX} y="4" width="42" height="22" rx="11" fill={t.text.primary} />
-              <SvgText x={bubbleX + 21} y="19" textAnchor="middle" fill={t.text.onAccent} fontFamily={t.font.semibold} fontSize="10">{selectedLabel}</SvgText>
+              <Rect x={bubbleX} y="2" width={BUBBLE} height="24" rx="12" fill={t.text.primary} />
+              <SvgText x={bubbleX + BUBBLE / 2} y="18" textAnchor="middle" fill={t.text.onAccent} fontFamily={t.font.semibold} fontSize="11">{selectedLabel}</SvgText>
             </>
           ) : null}
         </Svg>
@@ -93,16 +109,20 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
   );
 }
 
-function graphGeometry(points: readonly TrendPoint[]) {
+function graphGeometry(points: readonly TrendPoint[], plotWidth: number) {
+  const left = INSET;
+  const right = plotWidth - INSET;
   const max = Math.max(1, ...points.map((point) => point.value));
   const coordinates = points.map((point, index) => ({
-    x: points.length <= 1 ? (LEFT + RIGHT) / 2 : LEFT + (RIGHT - LEFT) * index / (points.length - 1),
+    x: points.length <= 1 ? (left + right) / 2 : left + (right - left) * index / (points.length - 1),
     y: BOTTOM - (BOTTOM - TOP) * point.value / max,
   }));
-  if (!coordinates.length) return { coordinates, line: '', area: '' };
+  if (!coordinates.length) return { coordinates, line: '', area: '', averageY: BOTTOM };
   const line = smoothPath(coordinates);
   const area = `${line} L ${coordinates.at(-1)!.x} ${BOTTOM} L ${coordinates[0].x} ${BOTTOM} Z`;
-  return { coordinates, line, area };
+  const average = points.reduce((total, point) => total + point.value, 0) / points.length;
+  const averageY = BOTTOM - (BOTTOM - TOP) * average / max;
+  return { coordinates, line, area, averageY };
 }
 
 function smoothPath(points: readonly { x: number; y: number }[]) {
@@ -121,7 +141,7 @@ function smoothPath(points: readonly { x: number; y: number }[]) {
 
 const s = StyleSheet.create({
   card: { backgroundColor: t.surface.card, borderWidth: t.stroke.hairline, borderColor: t.border.outline,
-    borderRadius: t.radius.card, paddingHorizontal: t.space.lg, paddingTop: t.space.md, overflow: 'hidden' },
-  heading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  graph: { height: HEIGHT, marginTop: t.space.xs },
+    borderRadius: t.radius.card, paddingHorizontal: t.space.lg, paddingTop: t.space.md,
+    paddingBottom: t.space.sm, gap: t.space.xs, overflow: 'hidden' },
+  graph: { height: HEIGHT },
 });

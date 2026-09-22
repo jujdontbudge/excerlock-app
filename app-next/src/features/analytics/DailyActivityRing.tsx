@@ -1,14 +1,14 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
-import Animated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-const SIZE = 224;
-const STROKE = 18;
+const SIZE = 266;
+const STROKE = 21;
 const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
@@ -24,6 +24,7 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
   useEffect(() => {
     progress.set(motion.reduced ? ratio : withTiming(ratio, {
       duration: t.motion.duration.tick * Math.max(1, Math.min(2, ratio)),
+      easing: Easing.bezier(...t.motion.easing.enter),
     }));
   }, [motion.reduced, progress, ratio]);
   const baseAnimatedProps = useAnimatedProps(() => ({
@@ -74,7 +75,7 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
               <Stop offset="1" stopColor={t.chart.ringOverflow} />
             </LinearGradient>
           </Defs>
-          <Circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none" stroke={t.surface.well} strokeWidth={STROKE} />
+          <Circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none" stroke={t.border.divider} strokeWidth={STROKE} />
           <AnimatedCircle
             testID="Daily ring base lap"
             cx={SIZE / 2}
@@ -121,9 +122,13 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
           ) : null}
         </Svg>
         <View style={s.center}>
-          <Label variant="support" tone="secondary">{dayLabel}</Label>
-          <Label variant="metric">{Math.round(value).toLocaleString('en-US')}</Label>
-          <Label variant="support" tone="secondary">of {Math.round(goal).toLocaleString('en-US')} {unit}</Label>
+          <Label variant="metricCaption" style={s.dayLabel} numberOfLines={1}>{dayLabel}</Label>
+          <Label variant="metricHero" style={s.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+            {Math.round(value).toLocaleString('en-US')}
+          </Label>
+          <Label variant="support" tone="secondary" numberOfLines={1}>
+            of {Math.round(goal).toLocaleString('en-US')} {unit}
+          </Label>
         </View>
       </View>
     </View>
@@ -133,5 +138,8 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
 const s = StyleSheet.create({
   card: { alignItems: 'center', paddingVertical: t.space.md },
   ring: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
-  center: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' },
+  center: { position: 'absolute', top: STROKE, right: STROKE, bottom: STROKE, left: STROKE,
+    alignItems: 'center', justifyContent: 'center' },
+  dayLabel: { color: t.brand.primary },
+  value: { marginTop: t.space.xs, marginBottom: -t.space.md },
 });

@@ -55,14 +55,14 @@ export function MonthGrid({ data, goal, unit }: {
 }
 const s = StyleSheet.create({
   card: { backgroundColor: t.surface.card, borderRadius: t.radius.card,
-    borderWidth: t.stroke.hairline, borderColor: t.border.outline, padding: t.space.lg, gap: t.space.md },
+    borderWidth: t.stroke.hairline, borderColor: t.border.outline, padding: t.space.md, gap: t.space.sm },
   row: { flexDirection: 'row' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: t.space.sm },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: t.space.xs },
   cell: { width: `${100 / 7}%`, alignItems: 'center', justifyContent: 'center' },
-  day: { width: 34, height: 34, borderRadius: t.radius.pill, alignItems: 'center', justifyContent: 'center',
+  day: { width: 32, height: 32, borderRadius: t.radius.pill, alignItems: 'center', justifyContent: 'center',
     backgroundColor: t.surface.well },
   measured: { borderWidth: t.stroke.selected, borderColor: t.brand.primary, backgroundColor: t.surface.selected },
   met: { backgroundColor: t.brand.primary, borderColor: t.brand.primary },
   legend: { flexDirection: 'row', alignItems: 'center', gap: t.space.sm },
-  dot: { width: 12, height: 12, borderRadius: t.radius.pill },
+  dot: { width: 10, height: 10, borderRadius: t.radius.pill },
 });
