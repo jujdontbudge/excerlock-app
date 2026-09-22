@@ -41,7 +41,7 @@ export function PermissionRow({
             borderRadius: t.radius.pill,
             backgroundColor: status === 'Granted' ? t.icon.mint : t.surface.subtle,
           }}>
-          <Label variant="badge">{status}</Label>
+          <Label variant="micro">{status}</Label>
         </View>
       </View>
       <Icon name="chevron" variant="utility" size={t.space.lg} />

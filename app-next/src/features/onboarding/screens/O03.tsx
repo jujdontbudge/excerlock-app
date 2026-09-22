@@ -27,7 +27,7 @@ export function O03() {
   );
   return (
     <View style={{ flexGrow: 1, paddingTop: w.headingTop / Math.max(1, fontScale) }}>
-      <Heading title={c.O03.title.replace('. ', '.\n')} centered variant="hero" />
+      <Heading title={c.O03.title.replace('. ', '.\n')} centered variant="display" />
       {/* Locked apps, an arrow down, then the activities that unlock them; caption and dots ride just above the button. */}
       <View style={{ flex: 1, justifyContent: 'center', paddingTop: w.control.gap, gap: w.control.arrow.gap }}>
         <LockedAppsRow />
@@ -41,7 +41,7 @@ export function O03() {
       <Reveal index={3} style={{ marginTop: w.control.captionGap, paddingHorizontal: t.space.lg }}>
         <Label
           style={{
-            ...w.type.introCaption,
+            ...t.type.section,
             color: t.text.primary,
             textAlign: 'center',
             maxWidth: w.control.captionWidth,

@@ -29,7 +29,7 @@ export function FreeTimePercentage({ hours }: { hours: number }) {
       <Label variant="metric" style={{ color: t.text.primary, textAlign: 'center' }}>
         {percent}%
       </Label>
-      <Label variant="question" style={{ textAlign: 'center' }}>
+      <Label variant="display" style={{ textAlign: 'center' }}>
         {impactCopy.percentageLabel}
       </Label>
     </Animated.View>

@@ -63,7 +63,7 @@ export function BlockingScheduleCard({
               <Label
                 accessibilityRole="header"
                 accessibilityLabel={message.replace(/\n/g, ' ')}
-                style={{ ...w.type.card, color: t.text.onAccent, flex: lock ? undefined : 1, flexShrink: 1 }}>
+                style={{ ...t.type.label, color: t.text.onAccent, flex: lock ? undefined : 1, flexShrink: 1 }}>
                 {message}
               </Label>
             </View>

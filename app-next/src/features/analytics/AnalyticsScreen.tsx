@@ -122,7 +122,7 @@ export function AnalyticsScreen() {
   return (
     <ScreenShell dock safeBottom={false} contentStyle={s.content}>
       <View style={s.header}>
-        <Label accessibilityRole="header" variant="question" style={{ flex: 1 }}>{c.title}</Label>
+        <Label accessibilityRole="header" variant="display" style={{ flex: 1 }}>{c.title}</Label>
         <View style={s.periodControl}>
           <SegmentedControl
             options={['D', 'W', 'M']}

@@ -122,8 +122,8 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
           ) : null}
         </Svg>
         <View style={s.center}>
-          <Label variant="metricCaption" numberOfLines={1}>{dayLabel}</Label>
-          <Label variant="metricHero" style={s.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+          <Label variant="label" numberOfLines={1}>{dayLabel}</Label>
+          <Label variant="metric" style={s.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
             {Math.round(value).toLocaleString('en-US')}
           </Label>
           <Label variant="support" tone="secondary" numberOfLines={1}>

@@ -9,7 +9,6 @@ export const welcomeTokens = {
   dotsGap: 20,
   control: {
     captionWidth: 300,
-    caption: { fontSize: 24, lineHeight: 34, fontFamily: t.font.bold },
     height: 156,
     gap: 20,
     captionGap: 24,
@@ -52,9 +51,6 @@ export const welcomeTokens = {
       minHeight: 56,
       icon: 50,
       arrow: 28,
-      fontSize: 27,
-      lineHeight: 38,
-      fontFamily: t.font.semibold,
       padding: 14,
       shadow: '0px 12px 20px rgba(132,64,18,0.15)',
     },
@@ -92,10 +88,5 @@ export const welcomeTokens = {
     cyan: '#25F4EE',
     pink: '#FE2C55',
     white: '#FFFFFF',
-  },
-  type: {
-    card: { fontSize: 16, lineHeight: 22, fontFamily: t.font.semibold },
-    introCaption: { fontSize: 20, lineHeight: 28, fontFamily: t.font.semibold },
-    legal: { fontSize: 12, lineHeight: 17, fontFamily: t.font.regular },
   },
 } as const;

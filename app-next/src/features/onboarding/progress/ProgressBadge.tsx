@@ -54,7 +54,7 @@ export function ProgressBadge() {
             />
           </Svg>
         </View>
-        <Label style={{ color: p.deep, fontSize: p.badge.fontSize, lineHeight: p.badge.lineHeight, fontFamily: p.badge.fontFamily }}>
+        <Label variant="section" style={{ color: p.deep }}>
           {c.progressValue}
         </Label>
       </Animated.View>

@@ -13,7 +13,7 @@ export function ActivityStats({ stats }: { stats: ActivityStat[] }) {
         <View key={stat.label} style={s.stat} accessible accessibilityLabel={stat.a11y ?? `${stat.label}: ${stat.value}`}>
           <View style={s.valueRow}>
             {stat.glyph ? <Icon name={stat.glyph} size={t.layout.glyph - 4} tint={t.brand.primary} variant="utility" /> : null}
-            <Label variant="metricStat" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{stat.value}</Label>
+            <Label variant="metricSmall" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{stat.value}</Label>
           </View>
           <Label variant="support" tone="secondary" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
             {stat.label}

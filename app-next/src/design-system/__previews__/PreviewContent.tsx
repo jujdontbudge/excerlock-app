@@ -22,7 +22,7 @@ export function PreviewContent({
         <UI.Heading
           title={c.heading}
           support={c.support}
-          variant={alternate ? 'hero' : 'question'}
+          variant={alternate ? 'section' : 'display'}
           centered={alternate}
         />
       );

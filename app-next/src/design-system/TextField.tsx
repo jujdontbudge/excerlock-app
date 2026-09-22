@@ -54,7 +54,7 @@ export function TextField({
           placeholderTextColor={t.text.secondary}
           selectionColor={t.brand.primary}
           allowFontScaling
-          maxFontSizeMultiplier={t.a11y.bodyScale}
+          maxFontSizeMultiplier={t.a11y.textScale}
           style={[
             t.type.body,
             {

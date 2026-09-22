@@ -129,7 +129,7 @@ export function HomeScreen() {
       >
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: t.space.md }}>
         <View style={{ flex: 1, gap: t.space.xs }}>
-          <Label variant="question" accessibilityRole="header">
+          <Label variant="display" accessibilityRole="header">
             {c.greeting(name)}
           </Label>
         </View>

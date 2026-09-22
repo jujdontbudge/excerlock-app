@@ -93,12 +93,8 @@ function MinutesWheel({
               <PressableScale label={`${item} ${c.minutes}`} onPress={() => step(index - active)}>
                 <View style={{ height: ITEM, alignItems: 'center', justifyContent: 'center' }}>
                   <Label
-                    style={{
-                      fontSize: isActive ? 26 : 20,
-                      lineHeight: isActive ? 32 : 26,
-                      fontFamily: isActive ? t.font.bold : t.font.regular,
-                      color: isActive ? t.text.primary : t.text.secondary,
-                    }}>
+                    variant={isActive ? 'section' : 'body'}
+                    tone={isActive ? 'primary' : 'secondary'}>
                     {`${item} min`}
                   </Label>
                 </View>

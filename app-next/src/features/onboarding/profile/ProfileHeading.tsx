@@ -1,7 +1,6 @@
 import { View } from 'react-native';
 import { Label } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
-import { profileTokens as p } from '../../../design-system/profileTokens';
 import { onboardingCopy as c } from '../../../content/onboarding';
 import { Reveal } from '../../../motion/Reveal';
 export function ProfileHeading({ step }: { step: 'O04' | 'O05' | 'O06' }) {
@@ -18,10 +17,8 @@ export function ProfileHeading({ step }: { step: 'O04' | 'O05' | 'O06' }) {
         <Label
           accessibilityRole="header"
           accessibilityLabel={copy.title}
-          style={[
-            step === 'O04' || step === 'O05' ? p.largeTitle : p.title,
-            { width: '100%', textAlign: 'center' },
-          ]}>
+          variant="display"
+          style={{ width: '100%', textAlign: 'center' }}>
           {title}
         </Label>
 

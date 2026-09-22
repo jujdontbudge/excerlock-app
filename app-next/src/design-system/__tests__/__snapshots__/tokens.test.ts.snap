@@ -3,8 +3,7 @@
 exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`] = `
 {
   "a11y": {
-    "bodyScale": 2,
-    "textScale": 1.6,
+    "textScale": 2,
   },
   "border": {
     "divider": "#E5E5EA",
@@ -230,65 +229,45 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
     "secondary": "#66666F",
   },
   "type": {
-    "badge": {
-      "fontFamily": "Baloo2_600SemiBold",
-      "fontSize": 12,
-      "lineHeight": 17,
-    },
     "body": {
       "fontFamily": "Baloo2_400Regular",
-      "fontSize": 16,
-      "lineHeight": 22,
+      "fontSize": 18,
+      "lineHeight": 26,
     },
-    "hero": {
+    "display": {
       "fontFamily": "Baloo2_800ExtraBold",
       "fontSize": 30,
       "lineHeight": 42,
     },
     "label": {
       "fontFamily": "Baloo2_600SemiBold",
-      "fontSize": 16,
-      "lineHeight": 22,
+      "fontSize": 18,
+      "lineHeight": 26,
     },
     "metric": {
       "fontFamily": "Baloo2_700Bold",
       "fontSize": 48,
       "lineHeight": 58,
     },
-    "metricCaption": {
-      "fontFamily": "Baloo2_600SemiBold",
-      "fontSize": 21,
-      "lineHeight": 30,
-    },
-    "metricHero": {
-      "fontFamily": "Baloo2_700Bold",
-      "fontSize": 57,
-      "lineHeight": 80,
-    },
     "metricSmall": {
       "fontFamily": "Baloo2_700Bold",
-      "fontSize": 28,
-      "lineHeight": 34,
+      "fontSize": 30,
+      "lineHeight": 36,
     },
-    "metricStat": {
-      "fontFamily": "Baloo2_700Bold",
-      "fontSize": 21,
-      "lineHeight": 30,
-    },
-    "question": {
-      "fontFamily": "Baloo2_700Bold",
-      "fontSize": 26,
-      "lineHeight": 37,
+    "micro": {
+      "fontFamily": "Baloo2_600SemiBold",
+      "fontSize": 12,
+      "lineHeight": 17,
     },
     "section": {
       "fontFamily": "Baloo2_700Bold",
-      "fontSize": 20,
-      "lineHeight": 28,
+      "fontSize": 22,
+      "lineHeight": 31,
     },
     "support": {
       "fontFamily": "Baloo2_400Regular",
-      "fontSize": 13,
-      "lineHeight": 18,
+      "fontSize": 14,
+      "lineHeight": 20,
     },
   },
 }

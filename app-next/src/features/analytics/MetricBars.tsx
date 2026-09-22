@@ -42,7 +42,7 @@ export function MetricBars({ title, data, unit }: { title: string; data: MetricP
           <View style={s.labels}>
             {data.map((point, index) => (
               <View key={`${point.label}-label-${index}`} style={s.labelCell}>
-                <Label variant="badge" tone={point.selected ? 'primary' : 'secondary'} style={{ textAlign: 'center' }}>
+                <Label variant="micro" tone={point.selected ? 'primary' : 'secondary'} style={{ textAlign: 'center' }}>
                   {point.label}
                 </Label>
               </View>
@@ -86,7 +86,7 @@ function BarValue({ value, max, delay }: { value: number | null; max: number; de
   return (
     <Animated.View pointerEvents="none" style={[s.valueSlot, style]}>
       {value === null ? null : (
-        <Label variant="badge" style={s.value} numberOfLines={1}>
+        <Label variant="micro" style={s.value} numberOfLines={1}>
           {Math.round(value).toLocaleString('en-US')}
         </Label>
       )}

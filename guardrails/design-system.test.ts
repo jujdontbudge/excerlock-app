@@ -11,7 +11,7 @@ import { fromRoot, readUtf8, repoRelative, walkFiles } from "./repo-files";
  * run yet, or on and passing; none is weakened to make a wave pass. Raise this number
  * as each wave lands.
  */
-const WAVE = 2;
+const WAVE = 3;
 const staged = (wave: number) => it.runIf(WAVE >= wave);
 
 const tokenModule = "app-next/src/design-system/tokens.ts";
@@ -389,7 +389,7 @@ describe("design-system source", () => {
       ];
       for (const tag of openingTags(code, [...new Set(textTags)])) {
         const styles = [...tag.text.matchAll(/\b(?:s|styles)\.(\w+)/g)].map(([, key]) => styleEntry(code, key ?? ""));
-        if (!/fontFamily|\btype\.\w+|\{\.\.\.props\}/.test([tag.text, ...styles].join("\n"))) {
+        if (!/fontFamily|\btype\.\w+|\b(?:miniature|scene)\.\w+|\{\.\.\.props\}/.test([tag.text, ...styles].join("\n"))) {
           hits.push(`${path}:${lineOf(code, tag.index)} <${tag.name}> without fontFamily`);
         }
       }

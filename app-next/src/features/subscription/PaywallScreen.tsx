@@ -164,7 +164,7 @@ export function PaywallScreen({
           </View>
         </>
       }>
-      <Heading title={paywall?.title ?? 'Choose your plan'} variant="hero" centered />
+      <Heading title={paywall?.title ?? 'Choose your plan'} variant="display" centered />
       <View style={{ gap: t.space.md }}>
         {subscriptionCopy.benefits.map((b, index) => (
           <Reveal key={b.text} index={index + 1} style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.lg }}>

@@ -13,7 +13,7 @@ export function Label({
     <Text
       {...props}
       allowFontScaling
-      maxFontSizeMultiplier={variant === 'body' ? t.a11y.bodyScale : t.a11y.textScale}
+      maxFontSizeMultiplier={t.a11y.textScale}
       style={[
         t.type[variant],
         { color: t.text[tone], fontVariant: ['tabular-nums'] },

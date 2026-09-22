@@ -6,12 +6,12 @@ import { useSolidChoices } from './ChoiceAppearance';
 export function Heading({
   title,
   support,
-  variant = 'question',
+  variant = 'display',
   centered = false,
 }: {
   title: string;
   support?: string;
-  variant?: 'hero' | 'question' | 'section';
+  variant?: 'display' | 'section';
   centered?: boolean;
 }) {
   const setupScreen = useSolidChoices();

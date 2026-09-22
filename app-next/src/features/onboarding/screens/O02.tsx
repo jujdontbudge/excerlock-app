@@ -25,13 +25,13 @@ export function O02() {
   );
   return (
     <View style={{ flexGrow: 1, paddingTop: w.headingTop / Math.max(1, fontScale) }}>
-      <Heading title={c.O02.title.replace('. ', '.\n')} centered variant="hero" />
+      <Heading title={c.O02.title.replace('. ', '.\n')} centered variant="display" />
       {/* Artwork centres in the space under the heading; caption and dots ride just above the button. */}
       <View style={{ flex: 1, justifyContent: 'center', paddingTop: w.progress.gap }}>
         <ProgressArtwork />
       </View>
       <Reveal index={3} style={{ marginTop: w.progress.captionGap, paddingHorizontal: t.space.xxl }}>
-        <Label style={{ ...w.type.introCaption, color: t.text.primary, textAlign: 'center' }}>
+        <Label style={{ ...t.type.section, color: t.text.primary, textAlign: 'center' }}>
           {c.O02.body}
         </Label>
       </Reveal>

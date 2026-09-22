@@ -47,7 +47,7 @@ export function Detected({ title, body }: { title: string; body: string }) {
       <View style={{ alignItems: 'center', marginBottom: t.space.lg }}>
         <Icon name="check" variant="utility" size={56} tint={t.text.onAccent} />
       </View>
-      <Label accessibilityRole="header" variant="question" tone="onAccent" style={{ textAlign: 'center' }}>
+      <Label accessibilityRole="header" variant="display" tone="onAccent" style={{ textAlign: 'center' }}>
         {title}
       </Label>
       <Label tone="onAccent" style={{ textAlign: 'center', marginTop: t.space.md }}>

@@ -2,11 +2,12 @@ import { Text, View } from 'react-native';
 import { Icon } from '../../icons/Icon';
 import { Label } from '../../design-system/Label';
 import { tokens as t } from '../../design-system/tokens';
+import { illustrationTokens as art } from '../../design-system/illustrationTokens';
 
 export function PlanTrialPreview({ condition }: { condition: string }) {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'space-between', gap: t.space.xl }}>
-      <Label accessibilityRole="header" variant="question" style={{ textAlign: 'center', maxWidth: 330 }}>
+      <Label accessibilityRole="header" variant="display" style={{ textAlign: 'center', maxWidth: 330 }}>
         We want you to try ExcerLock Premium for free
       </Label>
       <View
@@ -29,7 +30,7 @@ export function PlanTrialPreview({ condition }: { condition: string }) {
           borderRadius: 2, backgroundColor: t.text.primary }} />
         <View style={{ flex: 1, overflow: 'hidden', borderRadius: 34, backgroundColor: t.surface.card }}> 
           <View style={{ height: 42, justifyContent: 'center', paddingHorizontal: 16 }}>
-            <Label variant="badge" style={{ width: 'auto', alignSelf: 'flex-start' }}>9:41</Label>
+            <Label variant="micro" style={{ width: 'auto', alignSelf: 'flex-start' }}>9:41</Label>
             <View style={{ position: 'absolute', top: 8, alignSelf: 'center', width: 76, height: 24,
               borderRadius: t.radius.pill, backgroundColor: t.text.primary }} />
           </View>
@@ -56,7 +57,7 @@ export function PlanTrialPreview({ condition }: { condition: string }) {
           <View style={{ height: 54, borderTopWidth: 1, borderTopColor: t.border.divider,
             flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' }}>
             {['Home', 'Conditions', 'Stats', 'Settings'].map((item, index) => (
-              <Text key={item} maxFontSizeMultiplier={1} style={{ flex: 1, fontSize: 7, fontFamily: t.font.bold,
+              <Text key={item} maxFontSizeMultiplier={1} style={{ flex: 1, ...art.miniature.tab,
                 textAlign: 'center', color: index === 1 ? t.brand.primary : t.text.secondary }}>
                 {item}
               </Text>

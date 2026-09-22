@@ -69,19 +69,18 @@ export const tokens = {
     yellow: '#FFD466',
   },
   font,
+  // Eight roles across six sizes. lineHeight = ceil(size x 1.40) for text and
+  // ceil(size x 1.20) for digit-only roles: the smallest factors that clear
+  // Baloo 2's clip floor at every weight (see guardrails/design-system.test.ts).
   type: {
-    hero: { fontSize: 30, lineHeight: 42, fontFamily: font.extraBold },
-    question: { fontSize: 26, lineHeight: 37, fontFamily: font.bold },
-    section: { fontSize: 20, lineHeight: 28, fontFamily: font.bold },
-    body: { fontSize: 16, lineHeight: 22, fontFamily: font.regular },
-    label: { fontSize: 16, lineHeight: 22, fontFamily: font.semibold },
-    support: { fontSize: 13, lineHeight: 18, fontFamily: font.regular },
-    badge: { fontSize: 12, lineHeight: 17, fontFamily: font.semibold },
     metric: { fontSize: 48, lineHeight: 58, fontFamily: font.bold },
-    metricSmall: { fontSize: 28, lineHeight: 34, fontFamily: font.bold },
-    metricHero: { fontSize: 57, lineHeight: 80, fontFamily: font.bold },
-    metricStat: { fontSize: 21, lineHeight: 30, fontFamily: font.bold },
-    metricCaption: { fontSize: 21, lineHeight: 30, fontFamily: font.semibold },
+    display: { fontSize: 30, lineHeight: 42, fontFamily: font.extraBold },
+    metricSmall: { fontSize: 30, lineHeight: 36, fontFamily: font.bold },
+    section: { fontSize: 22, lineHeight: 31, fontFamily: font.bold },
+    body: { fontSize: 18, lineHeight: 26, fontFamily: font.regular },
+    label: { fontSize: 18, lineHeight: 26, fontFamily: font.semibold },
+    support: { fontSize: 14, lineHeight: 20, fontFamily: font.regular },
+    micro: { fontSize: 12, lineHeight: 17, fontFamily: font.semibold },
   },
   space: {
     xs: 4,
@@ -124,7 +123,7 @@ export const tokens = {
     prompt: 300,
   },
   shadow: { cta: '0px 4px 12px rgba(0,0,0,0.08)' },
-  a11y: { textScale: 1.6, bodyScale: 2 },
+  a11y: { textScale: 2 },
   motion: {
     duration: {
       press: 100,

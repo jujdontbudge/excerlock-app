@@ -118,12 +118,13 @@ export function ScheduleDial({
               const cardinal = hour % 6 === 0;
               const label = hour === 0 ? '12 AM' : hour === 6 ? '6 AM' : hour === 12 ? '12 PM' : hour === 18 ? '6 PM' : String(hour % 12);
               return <SvgText key={hour} x={p.x} y={p.y + 5} textAnchor="middle" fill={t.text.primary}
-                fontSize={cardinal ? 15 : 13} fontFamily={cardinal ? t.font.bold : t.font.regular}>{label}</SvgText>;
+                fontSize={(cardinal ? t.type.label : t.type.support).fontSize}
+                fontFamily={(cardinal ? t.type.label : t.type.support).fontFamily}>{label}</SvgText>;
             })}
             {(['start', 'end'] as const).map(which => (
               <G key={which} transform={`translate(${points[which].x - 18}, ${points[which].y - 18})`}>
                 <Circle cx={18} cy={18} r={16} fill={t.surface.card} stroke={t.brand.primary} strokeWidth={3} />
-                <SvgText x={18} y={23} textAnchor="middle" fontSize={14} fontFamily={t.font.bold} fill={t.text.primary}>{which === 'start' ? 'S' : 'E'}</SvgText>
+                <SvgText x={18} y={24} textAnchor="middle" fontSize={t.type.label.fontSize} fontFamily={t.type.label.fontFamily} fill={t.text.primary}>{which === 'start' ? 'S' : 'E'}</SvgText>
               </G>
             ))}
           </Svg>

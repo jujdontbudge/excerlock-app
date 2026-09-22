@@ -47,7 +47,7 @@ export function TabBar({ selected, onSelect }: { selected: TabId; onSelect: (tab
                 tint={selected === tab.id ? t.brand.primary : t.border.mutedStroke}
               />
               <Label
-                variant="badge"
+                variant="micro"
                 style={{
                   color: selected === tab.id ? t.text.primary : t.text.secondary,
                   textAlign: 'center',

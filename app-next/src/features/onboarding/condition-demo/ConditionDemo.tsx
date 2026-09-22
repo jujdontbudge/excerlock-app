@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { tokens as t } from '../../../design-system/tokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { BackButton } from '../../../design-system/BackButton';
 import { conditionDemoTokens as c } from '../../../design-system/conditionDemoTokens';
 import { useMotion } from '../../../motion/useMotion';
@@ -344,7 +345,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 1,
   },
-  promiseText: { flex: 1, fontSize: 15, lineHeight: 20, fontFamily: t.font.bold, color: t.text.primary, textAlign: 'center' },
+  promiseText: { flex: 1, ...t.type.label, color: t.text.primary, textAlign: 'center' },
   info: {
     position: 'absolute',
     left: 14,
@@ -354,12 +355,10 @@ const styles = StyleSheet.create({
     backgroundColor: t.surface.card,
     boxShadow: c.shadow,
   },
-  small: { fontSize: 12, lineHeight: 17, color: t.text.secondary, fontFamily: t.font.semibold },
+  small: { ...art.scene.caption, color: t.text.secondary },
   number: {
-    fontSize: 16,
-    lineHeight: 20,
+    ...art.scene.value,
     color: t.text.primary,
-    fontFamily: t.font.bold,
     fontVariant: ['tabular-nums'],
     marginTop: 3,
   },
@@ -375,8 +374,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     backgroundColor: t.surface.card,
   },
-  mapTitle: { fontSize: 13, fontFamily: t.font.semibold, color: t.text.primary },
-  mapBody: { fontSize: 12, lineHeight: 17, fontFamily: t.font.regular, color: t.text.secondary },
+  mapTitle: { ...art.scene.title, color: t.text.primary },
+  mapBody: { ...art.scene.body, color: t.text.secondary },
   hold: {
     minHeight: 54,
     paddingVertical: 12,
@@ -390,8 +389,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
   },
-  holdTitle: { fontSize: 16, fontFamily: t.font.semibold, textAlign: 'center' },
-  holdHint: { fontSize: 13, fontFamily: t.font.regular, textAlign: 'center' },
+  holdTitle: { ...t.type.label, textAlign: 'center' },
+  holdHint: { ...t.type.support, textAlign: 'center' },
   holdProgress: { position: 'absolute', top: 0, bottom: 0, left: 0, backgroundColor: t.brand.primary },
   holdRing: {
     position: 'absolute',

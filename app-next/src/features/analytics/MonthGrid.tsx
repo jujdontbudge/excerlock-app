@@ -15,7 +15,7 @@ export function MonthGrid({ data, goal, unit }: {
     <View accessible accessibilityLabel="Monthly activity calendar" style={s.card}>
       <View style={s.row}>
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, index) => (
-          <View key={`${label}-${index}`} style={s.cell}><Label variant="badge" tone="secondary">{label}</Label></View>
+          <View key={`${label}-${index}`} style={s.cell}><Label variant="micro" tone="secondary">{label}</Label></View>
         ))}
       </View>
       <View style={s.grid}>
@@ -32,7 +32,7 @@ export function MonthGrid({ data, goal, unit }: {
               accessibilityLabel={`${point.day}: ${point.value === null ? 'no measurement' : `${Math.round(value).toLocaleString('en-US')} ${unit}`}`}
               style={s.cell}>
               <View style={[s.day, measured && s.measured, met && s.met]}>
-                <Label variant="badge" style={{ color: met ? t.text.onAccent : t.text.primary }}>
+                <Label variant="micro" style={{ color: met ? t.text.onAccent : t.text.primary }}>
                   {Number(point.day.slice(-2))}
                 </Label>
               </View>

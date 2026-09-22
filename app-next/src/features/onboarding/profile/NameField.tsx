@@ -34,7 +34,7 @@ export function NameField({ value, onChange }: { value: string; onChange: (value
           onBlur={() => setFocused(false)}
           selectionColor={t.brand.primary}
           placeholderTextColor={t.text.secondary}
-          maxFontSizeMultiplier={t.a11y.bodyScale}
+          maxFontSizeMultiplier={t.a11y.textScale}
           style={{
             ...t.type.body,
             color: t.text.primary,

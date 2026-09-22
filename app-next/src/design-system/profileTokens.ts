@@ -1,10 +1,6 @@
 import { tokens as t } from './tokens';
 /** O04–O06 geometry sampled from the approved question mockups; surfaces follow the app-wide outline style. */
 export const profileTokens = {
-  title: { fontSize: 28, lineHeight: 39, fontFamily: t.font.bold },
-  largeTitle: { fontSize: 30, lineHeight: 42, fontFamily: t.font.bold },
-  support: { fontSize: 16, lineHeight: 22, fontFamily: t.font.regular },
-  rowType: { fontSize: 16, lineHeight: 22, fontFamily: t.font.regular },
   row: { height: 68, referralHeight: 72, radius: 20, gap: 12, horizontal: 16, vertical: 16 },
   radio: { size: 32, dot: 12 },
   icon: { size: 34, radius: 8 },

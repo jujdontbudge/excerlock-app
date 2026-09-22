@@ -9,13 +9,13 @@ import { WelcomeArtwork } from '../welcome/WelcomeArtwork';
 export function O01() {
   return (
     <View style={{ flexGrow: 1, paddingTop: w.headingTop }}>
-      <Heading title={onboardingCopy.O01.title.replace('. ', '.\n')} centered variant="hero" />
+      <Heading title={onboardingCopy.O01.title.replace('. ', '.\n')} centered variant="display" />
       {/* Artwork centres in the space under the heading; caption and dots ride just above the button. */}
       <View style={{ flex: 1, justifyContent: 'center', paddingTop: w.headingGap }}>
         <WelcomeArtwork />
       </View>
       <Reveal index={3} style={{ marginTop: w.captionGap }}>
-        <Label style={{ ...w.type.introCaption, color: t.text.primary, textAlign: 'center' }}>
+        <Label style={{ ...t.type.section, color: t.text.primary, textAlign: 'center' }}>
           {onboardingCopy.O01.body}
         </Label>
       </Reveal>

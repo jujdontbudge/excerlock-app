@@ -100,7 +100,7 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
               <Circle cx={selected.x} cy={selected.y} r="8" fill={t.surface.card} stroke={t.chart.exercise} strokeWidth="2.5" />
               <Circle cx={selected.x} cy={selected.y} r="3" fill={t.chart.exercise} />
               <Rect x={bubbleX} y="2" width={BUBBLE} height="24" rx="12" fill={t.text.primary} />
-              <SvgText x={bubbleX + BUBBLE / 2} y="18" textAnchor="middle" fill={t.text.onAccent} fontFamily={t.type.badge.fontFamily} fontSize={t.type.badge.fontSize}>{selectedLabel}</SvgText>
+              <SvgText x={bubbleX + BUBBLE / 2} y="18" textAnchor="middle" fill={t.text.onAccent} fontFamily={t.type.micro.fontFamily} fontSize={t.type.micro.fontSize}>{selectedLabel}</SvgText>
             </>
           ) : null}
         </Svg>

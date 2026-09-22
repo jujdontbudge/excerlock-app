@@ -70,7 +70,7 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
       <Animated.View style={ring(ripple1)} />
       <Animated.View style={ring(ripple2)} />
       <Animated.Text allowFontScaling maxFontSizeMultiplier={t.a11y.textScale}
-        style={[t.type.question, { position: 'absolute', top: badgeTop + b.size + 28, left: 24, right: 24, textAlign: 'center', color: t.text.primary }, appear]}>
+        style={[t.type.display, { position: 'absolute', top: badgeTop + b.size + 28, left: 24, right: 24, textAlign: 'center', color: t.text.primary }, appear]}>
         Plan created
       </Animated.Text>
       <Animated.View style={[at(badgeLeft, badgeTop, b.size), { overflow: 'hidden' }, appear, disc]}>
