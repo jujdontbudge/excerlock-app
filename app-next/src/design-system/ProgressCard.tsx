@@ -40,7 +40,7 @@ export function ProgressCard({
         }}>
         {inLock ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: t.space.md }}>
-            <Icon name={icon} tint={t.text.onAccent} variant="utility" size={t.icon.lg} />
+            <Icon name={icon} tone="onAccent" variant="utility" size={t.icon.lg} />
             <View style={{ flexShrink: 1 }}>
               <ValueReveal value={detail}>
                 <Label variant="label" tone="onAccent">
@@ -56,7 +56,7 @@ export function ProgressCard({
               alignItems: 'center',
               gap: t.space.md,
             }}>
-            <Icon name={icon} tint={inLock ? t.text.onAccent : undefined} variant={inLock ? 'utility' : 'color'} />
+            <Icon name={icon} tone={inLock ? 'onAccent' : undefined} variant={inLock ? 'utility' : 'color'} />
             <Label variant="label" tone={inLock ? 'onAccent' : 'primary'} style={{ flex: 1 }}>
               {title}
             </Label>

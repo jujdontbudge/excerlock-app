@@ -18,7 +18,7 @@ export function CloseButton({
       testID={testID}
       onPress={onPress}
       style={{ width: t.control.inline, height: t.control.inline, alignItems: 'center', justifyContent: 'center' }}>
-      <Icon name="close" variant="utility" tint={t.brand.primary} size={t.icon.md} />
+      <Icon name="close" variant="utility" size={t.icon.md} />
     </PressableScale>
   );
 }

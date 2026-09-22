@@ -46,7 +46,7 @@ export function ActivityCard({
           transitionProperty: ['backgroundColor', 'borderColor'],
           transitionDuration: t.motion.duration.standard,
         }}>
-        <Pictogram name={activity} size="card" tint={solid ? t.text.onAccent : undefined} />
+        <Pictogram name={activity} size="card" tone={solid ? 'onAccent' : undefined} />
         <Label variant="label" style={{ color: solid ? t.text.onAccent : t.text.primary }}>
           {title}
         </Label>

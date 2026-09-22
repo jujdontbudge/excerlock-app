@@ -33,7 +33,7 @@ export function PlaceStep({ picker: p }: { picker: PickerState }) {
           alignItems: 'center',
           gap: t.space.md,
         }}>
-        <Icon name="search" variant="utility" size={t.icon.md} tint={t.brand.primary} />
+        <Icon name="search" variant="utility" size={t.icon.md} />
         <Label tone="secondary">{c.search}</Label>
       </Pressable>
       <View

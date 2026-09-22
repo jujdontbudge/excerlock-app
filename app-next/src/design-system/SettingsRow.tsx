@@ -15,7 +15,6 @@ export function SettingsRow({
   onToggle,
   destructive = false,
   flat = false,
-  iconTint,
   status,
 }: {
   title: string;
@@ -27,7 +26,6 @@ export function SettingsRow({
   onToggle?: (value: boolean) => void;
   destructive?: boolean;
   flat?: boolean;
-  iconTint?: string;
   /** A green (on) or muted (off) dot beside the value. */
   status?: boolean;
 }) {
@@ -44,7 +42,7 @@ export function SettingsRow({
         paddingHorizontal: flat ? 0 : t.space.lg,
         gap: t.space.md,
       }}>
-      {icon ? <Icon name={icon} size={t.icon.lg} tint={iconTint} /> : null}
+      {icon ? <Icon name={icon} size={t.icon.lg} /> : null}
       <View
         style={{
           flex: 1,
@@ -88,7 +86,7 @@ export function SettingsRow({
           trackColor={{ true: t.brand.primary, false: t.border.divider }}
         />
       ) : onPress ? (
-        <Icon name="chevron" variant="utility" size={t.icon.sm} tint={iconTint ?? t.border.mutedStroke} />
+        <Icon name="chevron" variant="utility" size={t.icon.sm} tone="muted" />
       ) : null}
     </View>
   );

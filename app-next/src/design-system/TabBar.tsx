@@ -44,7 +44,7 @@ export function TabBar({ selected, onSelect }: { selected: TabId; onSelect: (tab
                 name={tab.icon}
                 variant="utility"
                 size={t.icon.md}
-                tint={selected === tab.id ? t.brand.primary : t.border.mutedStroke}
+                tone={selected === tab.id ? 'accent' : 'muted'}
               />
               <Label
                 variant="micro"

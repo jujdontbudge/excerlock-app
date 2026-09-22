@@ -26,7 +26,7 @@ export function TrendHero() {
                 alignItems: 'center',
                 gap: t.space.xs,
               }}>
-              <Icon name="walking" size={t.icon.lg} tint={t.brand.primary} />
+              <Icon name="walking" size={t.icon.lg} />
               <Label variant="label" style={{ color: t.text.primary }}>
                 {c.exercise}
               </Label>
@@ -40,7 +40,7 @@ export function TrendHero() {
                 alignItems: 'center',
                 gap: t.space.xs,
               }}>
-              <Icon name="phone" size={t.icon.md} tint={t.text.secondary} />
+              <Icon name="phone" size={t.icon.md} tone="muted" />
               <Label variant="label" tone="secondary">
                 {c.screenTime}
               </Label>

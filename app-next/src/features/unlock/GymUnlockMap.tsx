@@ -60,7 +60,7 @@ export function GymUnlockMap({
             if (location) map.current?.animateToRegion(region(location), 350);
           }}
           style={s.disc}>
-          <Icon name="map-pin" variant="utility" tint={following ? t.brand.primary : t.text.secondary} size={t.icon.md} />
+          <Icon name="map-pin" variant="utility" tone={following ? 'accent' : 'muted'} size={t.icon.md} />
         </Pressable>
         {gym ? (
           <Pressable
@@ -72,7 +72,7 @@ export function GymUnlockMap({
               map.current?.animateToRegion(region(gym, gym.radiusMeters), 350);
             }}
             style={s.disc}>
-            <Icon name="gym" variant="utility" tint={t.brand.primary} size={t.icon.md} />
+            <Icon name="gym" variant="utility" size={t.icon.md} />
           </Pressable>
         ) : null}
       </View>

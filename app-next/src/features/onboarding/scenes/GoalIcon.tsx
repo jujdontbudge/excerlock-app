@@ -5,7 +5,7 @@ export function GoalIcon({ goal, selected }: { goal: string; selected: boolean }
     <Icon
       name={goal === 'exercise' ? 'gym' : goal === 'screenTime' ? 'phone' : goal === 'other' ? 'more' : 'heart'}
       size={t.icon.lg}
-      tint={selected ? t.text.onAccent : t.brand.primary}
+      tone={selected ? 'onAccent' : 'accent'}
     />
   );
 }

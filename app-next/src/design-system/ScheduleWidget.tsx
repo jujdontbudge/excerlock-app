@@ -51,7 +51,7 @@ export function ScheduleWidget({
                 }}>
                 <Label variant="label">{time}</Label>
               </View>
-              {!i ? <Icon name="arrow" size={t.icon.md} variant="utility" tint={t.brand.primary} /> : null}
+              {!i ? <Icon name="arrow" size={t.icon.md} variant="utility" /> : null}
             </View>
           ))}
         </View>

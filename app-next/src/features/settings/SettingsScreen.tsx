@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import { Linking } from 'react-native';
 import Constants from 'expo-constants';
 import { ScreenShell, Label, PressableScale, SettingsGroup, SettingsRow } from '../../design-system';
-import { tokens as t } from '../../design-system/tokens';
 import { profileStore as useProfileStore } from '../../state/profileStore';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
@@ -36,29 +35,17 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
         {c.title}
       </Label>
       <SettingsGroup>
-        <SettingsRow
-          iconTint={t.brand.primary}
-          title={name || c.account}
-          icon="person"
-          onPress={() => navigate('account')}
-        />
+        <SettingsRow title={name || c.account} icon="person" onPress={() => navigate('account')} />
       </SettingsGroup>
       <SettingsGroup>
         <SettingsRow
-          iconTint={t.brand.primary}
           title={c.manage}
           subtitle={c.plan(entitlement.status)}
           icon="lock"
           onPress={() => navigate('subscription')}
         />
+        <SettingsRow title={c.preferences} icon="gear" onPress={() => navigate('preferences')} />
         <SettingsRow
-          iconTint={t.brand.primary}
-          title={c.preferences}
-          icon="gear"
-          onPress={() => navigate('preferences')}
-        />
-        <SettingsRow
-          iconTint={t.brand.primary}
           title={c.notificationsToggle}
           icon="bell"
           toggle={notificationsOn}
@@ -66,28 +53,16 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
         />
       </SettingsGroup>
       <SettingsGroup>
+        <SettingsRow title={i.row} subtitle={i.rowBody} icon="info" onPress={() => navigate('report')} />
+        <SettingsRow title={c.giveFeedback} icon="star" onPress={() => navigate('feedback')} />
         <SettingsRow
-          iconTint={t.brand.primary}
-          title={i.row}
-          subtitle={i.rowBody}
-          icon="info"
-          onPress={() => navigate('report')}
-        />
-        <SettingsRow
-          iconTint={t.brand.primary}
-          title={c.giveFeedback}
-          icon="star"
-          onPress={() => navigate('feedback')}
-        />
-        <SettingsRow
-          iconTint={t.brand.primary}
           title={c.supportRow}
           icon="mail"
           onPress={() => {
             void openSupportEmail().catch(() => setMailNote(true));
           }}
         />
-        <SettingsRow iconTint={t.brand.primary} title={c.legal} icon="list" onPress={() => navigate('legal')} />
+        <SettingsRow title={c.legal} icon="list" onPress={() => navigate('legal')} />
       </SettingsGroup>
       {mailNote ? (
         <Label accessibilityRole="alert" selectable>

@@ -15,7 +15,7 @@ export function SelectionCheck({ size = t.control.indicator }: { size?: number }
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-        <Icon name="check" variant="utility" size={t.icon.sm} tint={t.brand.primary} />
+        <Icon name="check" variant="utility" size={t.icon.sm} />
       </View>
     </Reveal>
   );

@@ -11,7 +11,10 @@ import { onboardingCopy as c } from '../../../content/onboarding';
 export function O03() {
   const { fontScale } = useWindowDimensions();
   const dots = (
-    <View accessible accessibilityLabel={welcomeCopy.controlPagination} style={{ flexDirection: 'row', gap: t.space.sm }}>
+    <View
+      accessible
+      accessibilityLabel={welcomeCopy.controlPagination}
+      style={{ flexDirection: 'row', gap: t.space.sm }}>
       {[0, 1, 2].map((i) => (
         <View
           key={i}
@@ -33,7 +36,7 @@ export function O03() {
         <LockedAppsRow />
         <Reveal index={1} style={{ alignItems: 'center' }}>
           <View style={{ transform: [{ rotate: '90deg' }] }}>
-            <Icon name="arrow" size={t.icon.lg} tint={w.control.orange} label={welcomeCopy.unlockArrow} />
+            <Icon name="arrow" size={t.icon.lg} label={welcomeCopy.unlockArrow} />
           </View>
         </Reveal>
         <ControlArtwork />

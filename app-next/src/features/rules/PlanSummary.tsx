@@ -43,7 +43,7 @@ export function PlanSummary({
         {metrics.map((metric, index) => <Reveal key={metric.id} index={index}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.lg, padding: t.space.lg,
             borderWidth: t.stroke.hairline, borderColor: t.border.outline, borderRadius: t.radius.card, backgroundColor: t.surface.card }}>
-            <View testID={`weekly-target-icon-${metric.id}`}><Icon name={metric.icon} tint={t.brand.primary} size={t.icon.md} /></View>
+            <View testID={`weekly-target-icon-${metric.id}`}><Icon name={metric.icon} size={t.icon.md} /></View>
             <Label variant="label" style={{ flex: 1 }}>{metric.text}</Label>
           </View>
         </Reveal>)}

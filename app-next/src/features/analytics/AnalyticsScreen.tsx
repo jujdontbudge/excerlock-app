@@ -190,7 +190,7 @@ function PeriodStep({ direction, onPress, disabled }: {
       onPress={onPress}
       style={s.step}>
       <View style={direction === 'back' ? { transform: [{ scaleX: -1 }] } : undefined}>
-        <Icon name="chevron" size={t.icon.md} tint={disabled ? t.state.disabledText : t.text.primary} variant="utility" />
+        <Icon name="chevron" size={t.icon.md} tone={disabled ? 'muted' : 'accent'} variant="utility" />
       </View>
     </PressableScale>
   );

@@ -63,14 +63,14 @@ export function RuleCard({
               backgroundColor: enabled ? t.brand.primary : t.surface.well,
             }}>
             <Icon name="clock" variant="utility" size={t.icon.md}
-              tint={enabled ? t.text.onAccent : t.border.mutedStroke} />
+              tone={enabled ? 'onAccent' : 'muted'} />
           </View>
           <PressableScale
             label={`More actions for ${title}`}
             onPress={() => setMenuOpen(true)}
             hitSlop={8}
             style={{ width: t.control.inline, alignItems: 'center' }}>
-            <Icon name="more" variant="utility" size={t.icon.md} tint={t.text.secondary} />
+            <Icon name="more" variant="utility" size={t.icon.md} tone="muted" />
           </PressableScale>
         </View>
         <PressableScale
@@ -78,7 +78,7 @@ export function RuleCard({
           onPress={onOpen}
           accessibilityHint="Edit condition"
           style={{ alignItems: 'center', paddingHorizontal: t.space.lg, paddingBottom: t.space.lg, gap: t.space.sm }}>
-          <Pictogram name={icon} size="card" variant="utility" tint={enabled ? t.brand.primary : t.border.mutedStroke} />
+          <Pictogram name={icon} size="card" variant="utility" tone={enabled ? 'accent' : 'muted'} />
           <Label variant="section" style={{ textAlign: 'center' }}>{title}</Label>
           <Label variant="body" tone="secondary" style={{ textAlign: 'center' }}>{schedule}</Label>
         </PressableScale>
@@ -107,13 +107,13 @@ function ActionRow({
   destructive?: boolean;
   onPress: () => void;
 }) {
-  const tint = destructive ? t.state.error : t.text.primary;
+  const color = destructive ? t.state.error : t.text.primary;
   return (
     <PressableScale label={label} onPress={onPress}
       style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.lg,
         minHeight: t.control.row, borderBottomWidth: t.stroke.hairline, borderBottomColor: t.border.divider }}>
-      <Icon name={icon} variant="utility" size={t.icon.md} tint={tint} />
-      <Label variant="label" style={{ color: tint }}>{label}</Label>
+      <Icon name={icon} variant="utility" size={t.icon.md} tone={destructive ? 'danger' : 'accent'} />
+      <Label variant="label" style={{ color }}>{label}</Label>
     </PressableScale>
   );
 }

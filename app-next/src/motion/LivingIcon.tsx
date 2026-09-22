@@ -1,5 +1,5 @@
 import Animated, { LinearTransition } from 'react-native-reanimated';
-import { Icon, IconName } from '../icons/Icon';
+import { Icon, IconName, IconTone } from '../icons/Icon';
 import { tokens as t } from '../design-system/tokens';
 import { illustrationTokens as art } from '../design-system/illustrationTokens';
 import { useMotion } from './useMotion';
@@ -8,11 +8,11 @@ import { popIn, fadeOut, fadeIn } from './presets';
 export function LivingIcon({
   name,
   size = 'hero',
-  tint,
+  tone,
 }: {
   name: IconName;
   size?: keyof typeof art.pictogram | keyof typeof t.icon;
-  tint?: string;
+  tone?: IconTone;
 }) {
   const m = useMotion();
   const px = size === 'hero' || size === 'card' ? art.pictogram[size] : t.icon[size];
@@ -37,7 +37,7 @@ export function LivingIcon({
           animationTimingFunction: 'ease-in-out',
         }}>
         <Animated.View key={name} entering={fadeIn} exiting={fadeOut}>
-          <Icon name={name} size={px} tint={tint} variant={tint ? 'utility' : 'color'} />
+          <Icon name={name} size={px} tone={tone} />
         </Animated.View>
       </Animated.View>
     </Animated.View>

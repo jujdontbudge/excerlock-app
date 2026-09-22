@@ -35,7 +35,7 @@ export function RulePreviewLock({ draft, schedule }: { draft: RuleDraft; schedul
             lock>
             <View style={{ paddingHorizontal: t.space.lg, paddingBottom: t.space.lg, gap: t.space.sm }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: t.space.sm }}>
-                <Icon name={preview.icon} variant="utility" tint={t.text.onAccent} size={t.icon.md} />
+                <Icon name={preview.icon} variant="utility" tone="onAccent" size={t.icon.md} />
                 <Label variant="label" style={{ color: t.text.onAccent }}>
                   {preview.progress}
                 </Label>

@@ -78,11 +78,11 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
       </Animated.View>
       <Animated.View style={[at(badgeLeft, badgeTop, b.size), { alignItems: 'center', justifyContent: 'center' }, appear]}>
         <Animated.View style={glyph}>
-          <Icon name="check" size={b.glyph} tint={t.surface.card} />
+          <Icon name="check" size={b.glyph} tone="onAccent" />
         </Animated.View>
       </Animated.View>
       <Animated.View style={[at(centerX - b.coin / 2, badgeTop + (b.size - b.coin) / 2, b.coin), { backgroundColor: t.text.onAccent, alignItems: 'center', justifyContent: 'center' }, coin]}>
-        <Icon name="check" size={b.glyph * 0.7} tint={t.brand.primary} />
+        <Icon name="check" size={b.glyph * 0.7} />
       </Animated.View>
     </Animated.View>
   </Modal>;

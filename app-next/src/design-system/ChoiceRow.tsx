@@ -54,7 +54,7 @@ export function ChoiceRow({
           transitionProperty: ['borderColor', 'backgroundColor'],
           transitionDuration: t.motion.duration.standard,
         }}>
-        {leading ?? (icon ? <Icon name={icon} tint={solid ? t.text.onAccent : undefined} /> : null)}
+        {leading ?? (icon ? <Icon name={icon} tone={solid ? 'onAccent' : undefined} /> : null)}
         <View style={{ flex: 1, gap: t.space.xs }}>
           <Label variant="label" style={{ color: solid ? t.text.onAccent : t.text.primary }}>
             {title}
@@ -81,7 +81,7 @@ export function ChoiceRow({
             }}>
             {selected ? (
               <Reveal>
-                <Icon name="check" size={t.icon.md} variant="utility" tint={t.brand.primary} />
+                <Icon name="check" size={t.icon.md} variant="utility" />
               </Reveal>
             ) : null}
           </View>

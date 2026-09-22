@@ -44,7 +44,7 @@ export function Detected({ title, body }: { title: string; body: string }) {
         padding: t.space.xl,
       }}>
       <View style={{ alignItems: 'center', marginBottom: t.space.lg }}>
-        <Pictogram name="check" size="card" variant="utility" tint={t.text.onAccent} />
+        <Pictogram name="check" size="card" variant="utility" tone="onAccent" />
       </View>
       <Label accessibilityRole="header" variant="display" tone="onAccent" style={{ textAlign: 'center' }}>
         {title}

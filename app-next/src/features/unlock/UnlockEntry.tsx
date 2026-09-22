@@ -35,7 +35,7 @@ export function UnlockEntry({
           gap: t.space.md,
           transform: [{ scale: pressed ? t.motion.scale.pressed : 1 }],
         })}>
-        <Icon name={kind === 'gym' ? 'gym' : 'walking'} variant="utility" size={t.icon.md} tint={inverted ? t.text.onAccent : t.brand.primary} />
+        <Icon name={kind === 'gym' ? 'gym' : 'walking'} variant="utility" size={t.icon.md} tone={inverted ? 'onAccent' : 'accent'} />
         <Label variant="label" style={{ color: inverted ? t.text.onAccent : t.text.primary }}>
           {label}
         </Label>

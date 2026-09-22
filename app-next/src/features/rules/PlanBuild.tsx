@@ -39,7 +39,7 @@ function Task({ title, index, elapsed, checked, working, reduced, rowHeight }: {
     style={[{ position: 'absolute', left: 0, right: 0, top: reduced ? index * (rowHeight + 12) : 0, height: rowHeight, borderWidth: t.stroke.hairline,
       borderRadius: t.radius.card, paddingHorizontal: t.space.lg, flexDirection: 'row', alignItems: 'center', gap: t.space.md }, style]}>
     <View testID={`plan-task-clock-${index}`} style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-      <Icon name="clock" size={t.icon.md} tint={checked ? t.text.onAccent : t.text.secondary} />
+      <Icon name="clock" size={t.icon.md} tone={checked ? 'onAccent' : 'muted'} />
     </View>
     <Animated.Text allowFontScaling maxFontSizeMultiplier={t.a11y.textScale}
       style={[t.type.label, { flex: 1 }, titleStyle]}>{title}</Animated.Text>

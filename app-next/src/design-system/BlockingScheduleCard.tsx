@@ -58,7 +58,7 @@ export function BlockingScheduleCard({
             }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: lock ? 'center' : undefined, gap: t.space.md }}>
               <View style={{ paddingTop: t.space.xs }}>
-                <Icon name={lock ? 'lock' : icon} variant="utility" tint={t.text.onAccent} size={t.icon.lg} />
+                <Icon name={lock ? 'lock' : icon} variant="utility" tone="onAccent" size={t.icon.lg} />
               </View>
               <Label
                 accessibilityRole="header"

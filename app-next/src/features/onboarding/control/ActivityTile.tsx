@@ -38,7 +38,7 @@ export function ActivityTile({ index }: { index: number }) {
           <LinearGradient
             colors={tile.peach ? [p.peach, p.peachEnd] : [w.brands.white, w.brands.white]}
             style={{ flex: 1, borderRadius: p.radius, justifyContent: 'center', alignItems: 'center' }}>
-            <Icon name={activityNames[tile.icon]} size={p.iconSize} tint={p.orange} label={c.activities[index]} />
+            <Icon name={activityNames[tile.icon]} size={p.iconSize} label={c.activities[index]} />
           </LinearGradient>
         </Animated.View>
       </Reveal>

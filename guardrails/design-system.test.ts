@@ -472,6 +472,11 @@ describe("design-system source", () => {
     expect(hits, report(hits)).toEqual([]);
   });
 
+  staged(4)("tints every icon by the one tone rule, never by an ad-hoc colour", () => {
+    const hits = findAll(/<(?:Icon|LivingIcon|Pictogram)\b[^>]*?\btint=/g);
+    expect(hits, report(hits)).toEqual([]);
+  });
+
   staged(5)("keeps literal colours in the token module and the illustration module only", () => {
     const hits = findAll(/(?<=['"`\s(,])#[0-9A-Fa-f]{3,8}\b|\brgba?\(/g);
     expect(hits, report(hits)).toEqual([]);

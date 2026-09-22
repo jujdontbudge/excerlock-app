@@ -40,7 +40,7 @@ export function Checklist({
               }}>
               {(checked?.[i] ?? i < completed) ? (
                 <Reveal>
-                  <Icon name="check" variant="utility" tint={t.state.success} size={t.icon.md} />
+                  <Icon name="check" variant="utility" tone="success" size={t.icon.md} />
                 </Reveal>
               ) : (
                 <Label variant="support" tone="secondary">

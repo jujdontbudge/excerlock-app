@@ -57,7 +57,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
               flexDirection: 'row', alignItems: 'center', gap: t.space.sm,
               borderRadius: t.radius.pill, backgroundColor: t.surface.card,
               borderWidth: t.stroke.hairline, borderColor: t.border.divider }}>
-            <LivingIcon name="plus" size="md" tint={t.brand.primary} />
+            <LivingIcon name="plus" size="md" />
             <Label variant="label">{c.add}</Label>
           </PressableScale>
         ) : null}
@@ -138,7 +138,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
         <EmptyState icon="walking" title={c.empty} body={c.emptyBody} action={c.add} onAction={onAdd} />
       )}
       <View style={{ backgroundColor: t.surface.card, borderRadius: t.radius.pill, borderWidth: t.stroke.hairline, borderColor: t.border.outline }}>
-        <SettingsRow title="Lock list" icon="lock" iconTint={t.brand.primary} onPress={() => void openLockList()} />
+        <SettingsRow title="Lock list" icon="lock" onPress={() => void openLockList()} />
       </View>
     </ScreenShell>
   );

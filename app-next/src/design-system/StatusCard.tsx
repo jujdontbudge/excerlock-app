@@ -52,11 +52,7 @@ export function StatusCard({
             alignItems: 'center',
           }}>
           {hero ?? (
-            <LivingIcon
-              name={unlocked ? 'lock-open' : 'lock'}
-              size="card"
-              tint={orange ? t.text.onAccent : undefined}
-            />
+            <LivingIcon name={unlocked ? 'lock-open' : 'lock'} size="card" tone={orange ? 'onAccent' : undefined} />
           )}
           <View style={{ flex: 1, gap: t.space.sm }}>
             <ValueReveal value={title}>

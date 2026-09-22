@@ -43,7 +43,7 @@ export function PlanTrialPreview({ condition }: { condition: string }) {
               backgroundColor: t.surface.card, padding: 18, alignItems: 'center', gap: 14 }}>
               <View style={{ width: 54, height: 54, borderRadius: t.radius.pill, backgroundColor: t.brand.primary,
                 alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name="lock" size={28} variant="utility" tint={t.text.onAccent} />
+                <Icon name="lock" size={28} variant="utility" tone="onAccent" />
               </View>
               <Label variant="section">Apps are blocked</Label>
               <Label variant="support">{condition}</Label>

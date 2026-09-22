@@ -44,7 +44,7 @@ export function GaitFake(preview = false): GaitPort & { set(value: 'none' | 'wal
       <View
         accessible={false}
         style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.surface.subtle }}>
-        <Pictogram name="walking" variant="utility" tint={t.brand.primary} />
+        <Pictogram name="walking" variant="utility" />
       </View>
     ),
   };
