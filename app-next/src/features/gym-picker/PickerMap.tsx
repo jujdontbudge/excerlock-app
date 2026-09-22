@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView from 'react-native-maps';
 import Svg, { Circle, Path } from 'react-native-svg';
-import Animated, { useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedProps, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { gymPickerCopy as c } from '../../content/gymPicker';
@@ -41,8 +41,8 @@ export function PickerMap({
   const latestRadius = useRef(radius);
   useEffect(() => {
     latestRadius.current = radius;
-    radiusValue.set(m.reduced ? radius : withSpring(radius, t.motion.spring.control));
-  }, [radius, radiusValue, m.reduced]);
+    radiusValue.set(m.spring(radius, 'control'));
+  }, [radius, radiusValue, m]);
   const circle = useAnimatedProps(() => ({
     r: Math.min(
       Math.hypot(width.get(), mapHeight.get()) * 2,
@@ -64,7 +64,7 @@ export function PickerMap({
     region.set(next);
     if (!moving.current) {
       moving.current = true;
-      if (!m.reduced) lift.set(withSpring(1, t.motion.spring.control));
+      if (!m.reduced) lift.set(m.spring(1, 'control'));
     }
   };
   return (
@@ -85,7 +85,7 @@ export function PickerMap({
         mapHeight.set(next.height);
         const fitted = regionForRadius(coordinate, latestRadius.current, next);
         region.set(fitted);
-        map.current?.animateToRegion(fitted, m.reduced ? 0 : m.duration.navigation);
+        map.current?.animateToRegion(fitted, m.reduced ? 0 : m.duration.emphasized);
       }}>
       <MapView
         ref={map}
@@ -105,7 +105,7 @@ export function PickerMap({
           onSettle({ latitude: next.latitude, longitude: next.longitude });
           if (moving.current) feedback();
           moving.current = false;
-          lift.set(m.reduced ? 0 : withSpring(0, t.motion.spring.control));
+          lift.set(m.spring(0, 'control'));
         }}
       />
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>

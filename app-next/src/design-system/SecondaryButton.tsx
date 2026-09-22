@@ -40,8 +40,7 @@ export function SecondaryButton({
           borderWidth: variant === 'tertiary' ? 0 : t.stroke.hairline,
           borderColor: disabled ? t.state.disabledFill : t.border.outline,
           transform: [{ scale: pressed ? m.scale.pressed : 1 }],
-          transitionProperty: ['transform', 'backgroundColor', 'borderColor'],
-          transitionDuration: m.duration.press,
+          ...m.transition(['transform', 'backgroundColor', 'borderColor'], 'press'),
         }}>
         <Label variant="label" style={{ color: disabled ? t.state.disabledText : t.text.primary, textAlign: 'center' }}>
           {label}

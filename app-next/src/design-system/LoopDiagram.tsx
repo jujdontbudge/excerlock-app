@@ -6,6 +6,7 @@ import { Label } from './Label';
 import { tokens as t } from './tokens';
 import { LivingIcon } from '../motion/LivingIcon';
 import { IconName } from '../icons/Icon';
+import { useMotion } from '../motion/useMotion';
 export function LoopDiagram({
   phase,
   labels,
@@ -15,6 +16,7 @@ export function LoopDiagram({
   labels: readonly string[];
   icons?: readonly IconName[];
 }) {
+  const m = useMotion();
   return (
     <View style={{ gap: t.space.lg }}>
       <View style={{ flexDirection: 'row', gap: t.space.lg }}>
@@ -26,8 +28,7 @@ export function LoopDiagram({
               alignItems: 'center',
               gap: t.space.md,
               opacity: i === phase ? 1 : 0.5,
-              transitionProperty: 'opacity',
-              transitionDuration: t.motion.duration.standard,
+              ...m.transition('opacity', 'standard'),
             }}>
             <LivingIcon name={icons[i]} size="card" />
             <Animated.View key={label} entering={fadeIn} exiting={fadeOut}>

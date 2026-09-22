@@ -93,16 +93,9 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
     },
     "duration": {
       "breathe": 3600,
-      "fast": 180,
-      "frame": 16,
-      "navigation": 460,
-      "planCheck": 400,
+      "emphasized": 480,
       "press": 100,
-      "reveal": 600,
-      "sheet": 360,
-      "slow": 320,
       "standard": 240,
-      "tick": 900,
     },
     "easing": {
       "enter": [
@@ -134,13 +127,9 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
         "mass": 0.8,
         "stiffness": 240,
       },
-      "sheet": {
-        "damping": 28,
-        "mass": 1,
-        "stiffness": 250,
-      },
     },
     "stagger": {
+      "dot": 16,
       "hero": 90,
       "list": 40,
     },

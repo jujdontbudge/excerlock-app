@@ -1,9 +1,8 @@
 import { View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { Heading, Label } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
 import { useMotion } from '../../../motion/useMotion';
-import { opacityIn, opacityOut } from '../../../motion/presets';
 import { onboardingCopy } from '../../../content/onboarding';
 import { impactCopy as c } from '../../../content/impact';
 import { ImpactDots } from '../impact/ImpactDots';
@@ -20,8 +19,8 @@ export function DotGridReveal({ step, answers }: AnswerProps & { step: 'O12' | '
       <Animated.View
         style={{ minHeight: t.layout.ring }}
         key={step}
-        entering={opacityIn(m.reduced ? 0 : timing.title)}
-        exiting={opacityOut(m.reduced ? 0 : timing.title)}>
+        entering={FadeIn.duration(m.reduced ? 0 : timing.title)}
+        exiting={FadeOut.duration(m.reduced ? 0 : timing.title)}>
         <Heading title={onboardingCopy[step].title} centered />
       </Animated.View>
       <View style={{ paddingTop: t.space.xxl, gap: t.space.xl }}>

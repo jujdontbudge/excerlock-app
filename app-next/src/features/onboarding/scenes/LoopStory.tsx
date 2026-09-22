@@ -35,9 +35,7 @@ export function LoopStory({ step }: { step: (typeof steps)[number] }) {
               position: 'absolute',
               width: '100%',
               opacity: contentPhase === candidatePhase ? 1 : 0,
-              transitionProperty: 'opacity',
-              transitionDuration: m.reduced ? 0 : m.duration.slow,
-              transitionTimingFunction: 'ease-in-out',
+              ...m.transition('opacity', 'standard'),
             }}>
             <View
               onLayout={(e) => {

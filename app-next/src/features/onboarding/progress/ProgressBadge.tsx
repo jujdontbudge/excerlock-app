@@ -23,16 +23,15 @@ export function ProgressBadge() {
           borderRadius: t.radius.pill,
           backgroundColor: art.welcome.brands.white,
           boxShadow: p.badge.shadow,
-          animationName: m.reduced
-            ? undefined
-            : {
-                from: { transform: [{ translateY: 0 }] },
-                '50%': { transform: [{ translateY: -m.distance.float }] },
-                to: { transform: [{ translateY: 0 }] },
-              },
-          animationDuration: m.duration.breathe,
-          animationIterationCount: 'infinite',
-          animationTimingFunction: 'ease-in-out',
+          ...m.keyframes(
+            {
+              from: { transform: [{ translateY: 0 }] },
+              '50%': { transform: [{ translateY: -m.distance.float }] },
+              to: { transform: [{ translateY: 0 }] },
+            },
+            'breathe',
+            { loop: true },
+          ),
         }}>
         <View
           style={{

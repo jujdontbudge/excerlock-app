@@ -50,8 +50,7 @@ export function PressableScale({
           style,
           {
             transform: [{ scale: pressed ? m.scale.pressed : 1 }],
-            transitionProperty: ['transform', 'backgroundColor', 'borderColor'],
-            transitionDuration: m.duration.press,
+            ...m.transition(['transform', 'backgroundColor', 'borderColor'], 'press'),
           },
         ]}>
         {children}

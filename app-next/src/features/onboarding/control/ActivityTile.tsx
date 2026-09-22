@@ -24,16 +24,15 @@ export function ActivityTile({ index }: { index: number }) {
             borderRadius: p.radius,
             boxShadow: p.shadow,
             transform: [{ rotate: tile.tilt }],
-            animationName: m.reduced
-              ? undefined
-              : {
-                  from: { transform: [{ rotate: tile.tilt }, { translateY: 0 }] },
-                  '50%': { transform: [{ rotate: tile.tilt }, { translateY: -m.distance.float }] },
-                  to: { transform: [{ rotate: tile.tilt }, { translateY: 0 }] },
-                },
-            animationDuration: m.duration.breathe + index * m.stagger.hero,
-            animationIterationCount: 'infinite',
-            animationTimingFunction: 'ease-in-out',
+            ...m.keyframes(
+              {
+                from: { transform: [{ rotate: tile.tilt }, { translateY: 0 }] },
+                '50%': { transform: [{ rotate: tile.tilt }, { translateY: -m.distance.float }] },
+                to: { transform: [{ rotate: tile.tilt }, { translateY: 0 }] },
+              },
+              'breathe',
+              { loop: true, spread: index * m.stagger.hero },
+            ),
           }}>
           <LinearGradient
             colors={tile.peach ? [p.peach, p.peachEnd] : [art.welcome.brands.white, art.welcome.brands.white]}

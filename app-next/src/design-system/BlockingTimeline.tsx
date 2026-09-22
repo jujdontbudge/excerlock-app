@@ -16,12 +16,10 @@ export function BlockingTimeline({ start, end, window }: { start: string; end: s
           marginHorizontal: t.space.xs,
           backgroundColor: window ? t.surface.onAccentTrack : t.text.onAccent,
           borderRadius: t.radius.pill,
-          animationName: m.reduced
-            ? undefined
-            : { from: { transform: [{ scaleX: 0 }] }, to: { transform: [{ scaleX: 1 }] } },
-          animationDuration: m.duration.reveal,
-          animationDelay: m.duration.standard,
-          animationFillMode: 'both',
+          ...m.keyframes({ from: { transform: [{ scaleX: 0 }] }, to: { transform: [{ scaleX: 1 }] } }, 'emphasized', {
+            delay: m.duration.standard,
+            fill: 'both',
+          }),
           transformOrigin: 'left center',
         }}>
         {window

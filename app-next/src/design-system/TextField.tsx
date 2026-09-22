@@ -4,6 +4,7 @@ import Animated from 'react-native-reanimated';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
 import { Reveal } from '../motion/Reveal';
+import { useMotion } from '../motion/useMotion';
 export function TextField({
   label,
   error,
@@ -19,6 +20,7 @@ export function TextField({
   /** Centred caption, value and error for a field that is the screen's hero number. */
   centered?: boolean;
 }) {
+  const m = useMotion();
   const [focused, setFocused] = useState(false);
   return (
     <View style={{ gap: t.space.md }}>
@@ -36,8 +38,7 @@ export function TextField({
           borderRadius: t.radius.field,
           borderWidth: t.stroke.selected,
           borderColor: error ? t.state.error : focused ? t.brand.primary : t.border.outline,
-          transitionProperty: 'borderColor',
-          transitionDuration: t.motion.duration.fast,
+          ...m.transition('borderColor', 'standard'),
         }}>
         <TextInput
           {...props}

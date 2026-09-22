@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { BackButton } from './BackButton';
 import { CloseButton } from './CloseButton';
 import { tokens as t } from './tokens';
@@ -21,8 +21,8 @@ export function OnboardingHeader({
     amount = Math.max(0, Math.min(1, progress)),
     value = useSharedValue(amount);
   useEffect(() => {
-    value.set(m.reduced ? amount : withTiming(amount, { duration: m.duration.standard }));
-  }, [amount, value, m.reduced, m.duration.standard]);
+    value.set(m.timing(amount, 'standard'));
+  }, [amount, value, m]);
   const fill = useAnimatedStyle(() => ({ width: `${value.get() * 100}%` }));
   return (
     <View
@@ -52,12 +52,9 @@ export function OnboardingHeader({
               height: '100%',
               backgroundColor: t.brand.primary,
               borderRadius: t.radius.pill,
-              animationName: m.reduced
-                ? undefined
-                : { from: { opacity: 1 }, '50%': { opacity: 0.7 }, to: { opacity: 1 } },
-              animationDuration: m.duration.breathe,
-              animationIterationCount: 'infinite',
-              animationTimingFunction: 'ease-in-out',
+              ...m.keyframes({ from: { opacity: 1 }, '50%': { opacity: 0.7 }, to: { opacity: 1 } }, 'breathe', {
+                loop: true,
+              }),
             },
             fill,
           ]}

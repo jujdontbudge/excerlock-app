@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
+import { opacityIn } from '../../motion/presets';
 import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
@@ -27,7 +28,7 @@ export function MonthGrid({ data, goal, unit }: {
           return (
             <Animated.View
               key={point.day}
-              entering={motion.reduced ? undefined : FadeIn.delay(index * 18).duration(t.motion.duration.standard)}
+              entering={motion.reduced ? undefined : opacityIn('standard', index * t.motion.stagger.dot)}
               accessible
               accessibilityLabel={`${point.day}: ${point.value === null ? 'no measurement' : `${Math.round(value).toLocaleString('en-US')} ${unit}`}`}
               style={s.cell}>

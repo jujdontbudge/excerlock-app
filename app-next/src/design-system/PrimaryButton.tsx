@@ -47,8 +47,7 @@ export function PrimaryButton({
             borderRadius: shape === 'rounded' ? t.radius.card : t.radius.pill,
             backgroundColor: unavailable ? t.state.disabledFill : pressed ? t.brand.pressed : t.brand.primary,
             transform: [{ scale: pressed ? m.scale.pressed : 1 }],
-            transitionProperty: ['transform', 'backgroundColor'],
-            transitionDuration: m.duration.press,
+            ...m.transition(['transform', 'backgroundColor'], 'press'),
           },
         ]}>
         {loading ? (

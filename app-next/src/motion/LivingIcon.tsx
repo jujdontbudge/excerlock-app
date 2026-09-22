@@ -1,9 +1,9 @@
-import Animated, { LinearTransition } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { Icon, IconName, IconTone } from '../icons/Icon';
 import { tokens as t } from '../design-system/tokens';
 import { illustrationTokens as art } from '../design-system/illustrationTokens';
 import { useMotion } from './useMotion';
-import { popIn, fadeOut, fadeIn } from './presets';
+import { popIn, fadeOut, fadeIn, layoutTransition } from './presets';
 /** A floating glyph: a pictogram (`hero`, `card`) or, inline, a UI icon size. */
 export function LivingIcon({
   name,
@@ -20,21 +20,20 @@ export function LivingIcon({
     <Animated.View
       entering={popIn(m.reduced)}
       exiting={fadeOut}
-      layout={LinearTransition.duration(m.reduced ? 0 : m.duration.standard)}
+      layout={layoutTransition(m.reduced)}
       style={{ alignSelf: 'center' }}>
       <Animated.View
         style={{
           alignSelf: 'center',
-          animationName: m.reduced
-            ? undefined
-            : {
-                from: { transform: [{ translateY: 0 }] },
-                '50%': { transform: [{ translateY: -m.distance.float }] },
-                to: { transform: [{ translateY: 0 }] },
-              },
-          animationDuration: m.duration.breathe,
-          animationIterationCount: 'infinite',
-          animationTimingFunction: 'ease-in-out',
+          ...m.keyframes(
+            {
+              from: { transform: [{ translateY: 0 }] },
+              '50%': { transform: [{ translateY: -m.distance.float }] },
+              to: { transform: [{ translateY: 0 }] },
+            },
+            'breathe',
+            { loop: true },
+          ),
         }}>
         <Animated.View key={name} entering={fadeIn} exiting={fadeOut}>
           <Icon name={name} size={px} tone={tone} />

@@ -8,6 +8,7 @@ import { PressableScale } from './PressableScale';
 import { Reveal } from '../motion/Reveal';
 import type { ChoiceEmphasis } from './ActivityCard';
 import { SelectionCheck } from './SelectionCheck';
+import { useMotion } from '../motion/useMotion';
 export function ChoiceRow({
   title,
   support,
@@ -31,6 +32,7 @@ export function ChoiceRow({
   compact?: boolean;
   emphasis?: ChoiceEmphasis;
 }) {
+  const m = useMotion();
   const solid = emphasis === 'solid' && selected;
   void compact; // sizing is universal — compact retained for API compat only
   return (
@@ -51,8 +53,7 @@ export function ChoiceRow({
           borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
           borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.outline,
           backgroundColor: solid ? t.brand.primary : selected ? t.surface.selected : t.surface.card,
-          transitionProperty: ['borderColor', 'backgroundColor'],
-          transitionDuration: t.motion.duration.standard,
+          ...m.transition(['borderColor', 'backgroundColor'], 'standard'),
         }}>
         {leading ?? (icon ? <Icon name={icon} tone={solid ? 'onAccent' : undefined} /> : null)}
         <View style={{ flex: 1, gap: t.space.xs }}>

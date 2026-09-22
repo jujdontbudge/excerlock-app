@@ -39,7 +39,7 @@ export function RootNavigator() {
         screenOptions={{
           headerShown: false,
           animation: motion.reduced ? 'fade' : 'slide_from_right',
-          animationDuration: t.motion.duration.navigation,
+          animationDuration: t.motion.duration.emphasized,
         }}>
         <Stack.Screen name="index" />
         {__DEV__ ? <Stack.Screen name="dev" /> : null}

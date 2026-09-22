@@ -40,9 +40,7 @@ export function DotGrid({
                   borderRadius: t.radius.pill,
                   backgroundColor: ready && index < emphasized ? t.brand.primary : t.chart.grid,
                   opacity: ready ? 1 : 0,
-                  transitionProperty: ['backgroundColor', 'opacity'],
-                  transitionDuration: m.duration.standard,
-                  transitionDelay: m.reduced ? 0 : index * m.duration.frame,
+                  ...m.transition(['backgroundColor', 'opacity'], 'standard', { delay: index * m.stagger.dot }),
                 }}
               />
             );

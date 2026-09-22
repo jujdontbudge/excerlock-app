@@ -7,7 +7,9 @@ import { planCopy as c } from '../../content/plan';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { profileStore as useProfileStore } from '../../state/profileStore';
+import { useMotion } from '../../motion/useMotion';
 export function ReviewWarmup({ onSkip }: { onSkip: () => void }) {
+  const m = useMotion();
   const rating = useProfileStore((s) => s.data.warmupRating ?? 0);
   return (
     <>
@@ -26,8 +28,7 @@ export function ReviewWarmup({ onSkip }: { onSkip: () => void }) {
                 style={{
                   opacity: n <= rating ? 1 : 0.35,
                   transform: [{ scale: n === rating ? t.motion.scale.selected : 1 }],
-                  transitionProperty: ['opacity', 'transform'],
-                  transitionDuration: t.motion.duration.standard,
+                  ...m.transition(['opacity', 'transform'], 'standard'),
                 }}>
                 <Icon name="star" size={t.icon.lg} />
               </Animated.View>

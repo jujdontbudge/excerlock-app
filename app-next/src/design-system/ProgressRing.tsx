@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import Animated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedProps, useSharedValue } from 'react-native-reanimated';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
 import { useMotion } from '../motion/useMotion';
@@ -14,8 +14,8 @@ export function ProgressRing({ value, label, size = t.layout.ring }: { value: nu
   const radius = (size - t.layout.progress) / 2,
     length = 2 * Math.PI * radius;
   useEffect(() => {
-    p.set(m.reduced ? progress : withTiming(progress, { duration: m.duration.reveal }));
-  }, [progress, p, m.reduced, m.duration.reveal]);
+    p.set(m.timing(progress, 'emphasized'));
+  }, [progress, p, m]);
   const props = useAnimatedProps(() => ({
     strokeDashoffset: length * (1 - p.get()),
   }));

@@ -1,7 +1,7 @@
 import { useEffect, useId } from 'react';
 import { View } from 'react-native';
 import Svg, { Path, Line, Defs, ClipPath, Rect, G } from 'react-native-svg';
-import Animated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedProps, useSharedValue } from 'react-native-reanimated';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
 import { useMotion } from '../motion/useMotion';
@@ -24,8 +24,8 @@ export function LineChart({
     m = useMotion(),
     id = useId().replace(/:/g, '');
   useEffect(() => {
-    p.set(m.reduced ? 1 : withTiming(1, { duration: m.duration.reveal }));
-  }, [p, values, m.reduced, m.duration.reveal]);
+    p.set(m.timing(1, 'emphasized'));
+  }, [p, values, m]);
   const clip = useAnimatedProps(() => ({ width: p.get() * 320 }));
   const max = Math.max(1, ...values, ...(comparison ?? []));
   const path = (series: readonly number[]) =>

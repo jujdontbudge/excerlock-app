@@ -111,8 +111,7 @@ function HoldChip({ label, active, onHold, onTap }: { label: string; active: boo
           borderColor: active ? t.border.selected : t.border.outline,
           backgroundColor: active ? t.surface.selected : t.surface.card,
           transform: [{ scale: pressed ? m.scale.pressed : 1 }],
-          transitionProperty: ['transform', 'backgroundColor', 'borderColor'],
-          transitionDuration: m.duration.press,
+          ...m.transition(['transform', 'backgroundColor', 'borderColor'], 'press'),
         }}>
         <Label variant="section" style={{ textAlign: 'center' }}>
           {label}

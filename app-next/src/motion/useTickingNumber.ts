@@ -10,9 +10,12 @@ export function useTickingNumber(target: number, delay = 0, duration?: number) {
         ? target
         : withDelay(
             delay,
-            withTiming(target, { duration: duration ?? m.duration.tick, easing: Easing.bezier(...m.easing.enter) }),
+            withTiming(target, {
+              duration: duration ?? m.duration.emphasized,
+              easing: Easing.bezier(...m.easing.enter),
+            }),
           ),
     );
-  }, [target, delay, duration, m.reduced, m.duration.tick, m.easing.enter, value]);
+  }, [target, delay, duration, m.reduced, m.duration.emphasized, m.easing.enter, value]);
   return value;
 }

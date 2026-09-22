@@ -133,29 +133,17 @@ export const tokens = {
   },
   a11y: { textScale: 2 },
   motion: {
-    duration: {
-      press: 100,
-      fast: 180,
-      standard: 240,
-      slow: 320,
-      sheet: 360,
-      reveal: 600,
-      tick: 900,
-      planCheck: 400,
-      navigation: 460,
-      breathe: 3600,
-      frame: 16,
-    },
+    /** Four durations: press feedback, UI change, emphasized entrance, and the ambient breathing loop. */
+    duration: { press: 100, standard: 240, emphasized: 480, breathe: 3600 },
     easing: {
       standard: [0.2, 0, 0, 1],
       enter: [0.16, 1, 0.3, 1],
     },
     spring: {
       control: { mass: 0.55, stiffness: 420, damping: 30 },
-      sheet: { mass: 1, stiffness: 250, damping: 28 },
       pop: { mass: 0.8, stiffness: 240, damping: 15 },
     },
-    stagger: { list: 40, hero: 90 },
+    stagger: { list: 40, hero: 90, dot: 16 },
     distance: { enter: 16, hero: 24, float: 4, dismiss: 120 },
     scale: { pressed: 0.97, pop: 0.9, selected: 1.02 },
     velocity: { dismiss: 800 },

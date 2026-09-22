@@ -14,7 +14,7 @@ test.each([false, true])('checks real facts and completes once with reduced moti
   const rule = toRule(createDraft('walking'), { days: [1, 2, 3, 4, 5], window: { kind: 'allDay' } });
   await render(<PlanBuild rule={rule} onComplete={onComplete} />);
   expect(screen.getByRole('checkbox', { name: 'Walk 10,000 steps' })).not.toBeChecked();
-  await act(() => jest.advanceTimersByTime(reduced ? tokens.motion.duration.fast : 6000));
+  await act(() => jest.advanceTimersByTime(reduced ? tokens.motion.duration.standard : 6000));
   const boxes = screen.getAllByRole('checkbox');
   // The closing "working" pill stays unresolved, exactly like the reference replay.
   expect(boxes.slice(0, 5).every((node) => node.props.accessibilityState.checked)).toBe(true);

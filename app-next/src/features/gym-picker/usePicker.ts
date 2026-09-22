@@ -100,7 +100,7 @@ export function usePicker(port: GymPort, onSaved: () => void, existing?: SavedPl
         .catch(() => {
           if (active) setAddress(c.addressError);
         });
-    }, t.motion.duration.planCheck);
+    }, t.motion.duration.emphasized);
     return () => {
       active = false;
       clearTimeout(timer);

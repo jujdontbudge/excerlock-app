@@ -1,13 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { View, useWindowDimensions } from 'react-native';
-import Animated, {
-  SharedValue,
-  useSharedValue,
-  useAnimatedStyle,
-  withDelay,
-  withTiming,
-  withSequence,
-} from 'react-native-reanimated';
+import Animated, { SharedValue, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LockShackle } from './LockShackle';
 import { UnlockRing } from './UnlockRing';
@@ -32,7 +25,8 @@ export function UnlockLockFrame({
 }) {
   const { width: screenWidth } = useWindowDimensions(),
     width = Math.min(t.layout.maxWidth - 2 * t.layout.page, screenWidth - 2 * t.layout.page);
-  const { reduced } = useUnlockMotion(),
+  const m = useUnlockMotion(),
+    { reduced } = m,
     lift = useSharedValue(0),
     scale = useSharedValue(1),
     [burst, setBurst] = useState(false);
@@ -41,17 +35,18 @@ export function UnlockLockFrame({
       lift.value = 0;
       return;
     }
-    lift.value = withDelay(180, withTiming(1, { duration: 380 }));
-    if (!reduced) scale.value = withSequence(withTiming(0.97, { duration: 90 }), withTiming(1, { duration: 90 }));
-    const haptic = setTimeout(() => feedback('success'), 180);
+    // The shackle lifts a press after the hold completes, with the success haptic; confetti follows.
+    lift.value = m.delay(m.duration.press, m.timing(1, 'emphasized'));
+    scale.value = m.sequence(m.timing(m.scale.pressed, 'press'), m.timing(1, 'press'));
+    const haptic = setTimeout(() => feedback('success'), m.duration.press);
     const confetti = setTimeout(() => {
       if (!reduced && celebrate) setBurst(true);
-    }, 420);
+    }, m.duration.emphasized);
     return () => {
       clearTimeout(haptic);
       clearTimeout(confetti);
     };
-  }, [phase, reduced, celebrate, lift, scale]);
+  }, [phase, reduced, celebrate, lift, scale, m]);
   const shackle = useAnimatedStyle(() =>
     reduced
       ? { opacity: 1 - lift.value }

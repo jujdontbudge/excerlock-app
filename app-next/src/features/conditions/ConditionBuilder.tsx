@@ -1,6 +1,6 @@
-import { opacityIn, opacityOut } from '../../motion/presets';
+import { pageIn, pageOut } from '../../motion/presets';
 import { useState } from 'react';
-import Animated, { SlideInRight, SlideInLeft, SlideOutLeft, SlideOutRight } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { ScreenShell, PrimaryButton, OnboardingHeader, Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
@@ -21,12 +21,8 @@ export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => 
     m = useMotion(),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null);
   const branch = !['O20', 'S1', 'S3', 'GPlace'].includes(f.step);
-  const enter = m.reduced
-    ? opacityIn(m.duration.sheet)
-    : (f.direction === 'forward' ? SlideInRight : SlideInLeft).duration(m.duration.sheet);
-  const exit = m.reduced
-    ? opacityOut(m.duration.slow)
-    : (f.direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.slow);
+  const enter = pageIn(m.reduced, f.direction);
+  const exit = pageOut(m.reduced, f.direction);
   if (f.step === 'GPlace') return <BuilderGymStep onSaved={f.next} onBack={f.back} onClose={f.cancel} />;
   return (
     <SetupPresentation>

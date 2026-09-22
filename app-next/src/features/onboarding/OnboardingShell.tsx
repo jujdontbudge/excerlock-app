@@ -1,7 +1,7 @@
-import { opacityIn, opacityOut } from '../../motion/presets';
+import { pageIn, pageOut } from '../../motion/presets';
 import { PropsWithChildren, ReactNode } from 'react';
 import { View } from 'react-native';
-import Animated, { SlideInRight, SlideInLeft, SlideOutLeft, SlideOutRight } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { ScreenShell, OnboardingHeader, PrimaryButton } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
@@ -43,12 +43,8 @@ export function OnboardingShell({
         : ['O16', 'O17', 'O18'].includes(step)
           ? 'loop'
           : step;
-  const enter = m.reduced
-    ? opacityIn(m.duration.standard)
-    : (direction === 'forward' ? SlideInRight : SlideInLeft).duration(m.duration.sheet);
-  const exit = m.reduced
-    ? opacityOut(m.duration.standard)
-    : (direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.slow);
+  const enter = pageIn(m.reduced, direction);
+  const exit = pageOut(m.reduced, direction);
   return (
     <SetupPresentation>
       <ScreenShell

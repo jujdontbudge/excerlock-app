@@ -37,7 +37,7 @@ export function RuleCard({
     setMenuOpen(false);
     // The native Modal's onDismiss is authoritative on iOS. This guarded
     // fallback covers environments that do not emit it (including tests).
-    setTimeout(runPendingAction, t.motion.duration.sheet + t.motion.duration.fast);
+    setTimeout(runPendingAction, t.motion.duration.emphasized + t.motion.duration.standard);
   };
   return (
     <>

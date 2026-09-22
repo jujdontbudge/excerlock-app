@@ -14,7 +14,7 @@ export function Reveal({
       collapsable={false}
       entering={slideUp(m.reduced, index)}
       exiting={fadeOut}
-      layout={layoutTransition}
+      layout={layoutTransition(m.reduced)}
       style={style}>
       {children}
     </Animated.View>

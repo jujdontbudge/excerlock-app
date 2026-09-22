@@ -4,6 +4,7 @@ import { Label } from './Label';
 import { Icon } from '../icons/Icon';
 import { Reveal } from '../motion/Reveal';
 import { tokens as t } from './tokens';
+import { useMotion } from '../motion/useMotion';
 export function Checklist({
   items,
   completed = 0,
@@ -13,6 +14,7 @@ export function Checklist({
   completed?: number;
   checked?: readonly boolean[];
 }) {
+  const m = useMotion();
   return (
     <View style={{ gap: t.space.lg }}>
       {items.map((item, i) => (
@@ -35,8 +37,7 @@ export function Checklist({
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: (checked?.[i] ?? i < completed) ? t.swatch.mint : t.surface.subtle,
-                transitionProperty: 'backgroundColor',
-                transitionDuration: t.motion.duration.standard,
+                ...m.transition('backgroundColor', 'standard'),
               }}>
               {(checked?.[i] ?? i < completed) ? (
                 <Reveal>

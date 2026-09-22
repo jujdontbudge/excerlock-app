@@ -15,12 +15,11 @@ export function ProgressBars() {
         width: p.barWidth,
         height,
         transformOrigin: 'bottom',
-        animationName: m.reduced
-          ? { from: { opacity: 0 }, to: { opacity: 1 } }
-          : { from: { opacity: 0, transform: [{ scaleY: 0.15 }] }, to: { opacity: 1, transform: [{ scaleY: 1 }] } },
-        animationDuration: m.duration.reveal,
-        animationDelay: i * m.stagger.hero,
-        animationFillMode: 'both',
+        ...m.keyframes(
+          { from: { opacity: 0, transform: [{ scaleY: 0.15 }] }, to: { opacity: 1, transform: [{ scaleY: 1 }] } },
+          'emphasized',
+          { delay: i * m.stagger.hero, fill: 'both', still: { from: { opacity: 0 }, to: { opacity: 1 } } },
+        ),
       }}>
       <LinearGradient
         colors={[p.pale, p.pale, art.welcome.brands.white]}

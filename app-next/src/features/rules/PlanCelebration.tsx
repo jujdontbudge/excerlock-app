@@ -22,14 +22,14 @@ export function PlanCelebration({ onCovered, onDone }: { onCovered: () => void; 
   const coverScale = Math.hypot(centerX, Math.max(centerY, height - centerY)) / (b.size / 2) + 1;
   useEffect(() => { callbacks.current = { onCovered, onDone }; }, [onCovered, onDone]);
   useEffect(() => {
-    elapsed.set(withTiming(p.done, { duration: m.reduced ? m.duration.slow : p.done, easing: Easing.linear }));
+    elapsed.set(withTiming(p.done, { duration: m.reduced ? m.duration.standard : p.done, easing: Easing.linear }));
     return () => cancelAnimation(elapsed);
-  }, [elapsed, m.duration.slow, m.reduced]);
+  }, [elapsed, m.duration.standard, m.reduced]);
   useEffect(() => {
-    const covered = setTimeout(() => callbacks.current.onCovered(), m.reduced ? m.duration.fast : p.covered);
-    const done = setTimeout(() => callbacks.current.onDone(), m.reduced ? m.duration.slow : p.done);
+    const covered = setTimeout(() => callbacks.current.onCovered(), m.reduced ? m.duration.standard : p.covered);
+    const done = setTimeout(() => callbacks.current.onDone(), m.reduced ? m.duration.standard : p.done);
     return () => { clearTimeout(covered); clearTimeout(done); };
-  }, [m.duration.fast, m.duration.slow, m.reduced]);
+  }, [m.duration.standard, m.reduced]);
   // The covered hold keeps the orange screen up for a beat before it fades onto the ready screen.
   const layer = useAnimatedStyle(() => ({
     opacity: m.reduced ? 1 : interpolate(elapsed.get(), [0, p.reveal, p.done], [1, 1, 0], 'clamp'),

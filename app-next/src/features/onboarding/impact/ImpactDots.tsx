@@ -37,7 +37,7 @@ export function ImpactDots({ step, minutes }: { step: string; minutes: number })
                 ? 0
                 : step === 'O14'
                   ? state.order * timing.dotColor
-                  : (index % 20) * m.duration.frame,
+                  : (index % 20) * m.stagger.dot,
             }}
           />
         );

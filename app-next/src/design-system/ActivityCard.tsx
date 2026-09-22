@@ -6,6 +6,7 @@ import { PressableScale } from './PressableScale';
 import { tokens as t } from './tokens';
 import { View } from 'react-native';
 import { SelectionCheck } from './SelectionCheck';
+import { useMotion } from '../motion/useMotion';
 /**
  * How a selected choice reads. `solid` (orange fill, white text) marks a full-screen
  * commitment in onboarding and the condition builder; `outline` (orange border on the
@@ -25,6 +26,7 @@ export function ActivityCard({
   onPress: () => void;
   emphasis?: ChoiceEmphasis;
 }) {
+  const m = useMotion();
   const solid = emphasis === 'solid' && selected;
   return (
     <PressableScale
@@ -43,8 +45,7 @@ export function ActivityCard({
           borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
           borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.outline,
           backgroundColor: solid ? t.brand.primary : selected ? t.surface.selected : t.surface.card,
-          transitionProperty: ['backgroundColor', 'borderColor'],
-          transitionDuration: t.motion.duration.standard,
+          ...m.transition(['backgroundColor', 'borderColor'], 'standard'),
         }}>
         <Pictogram name={activity} size="card" tone={solid ? 'onAccent' : undefined} />
         <Label variant="label" style={{ color: solid ? t.text.onAccent : t.text.primary }}>

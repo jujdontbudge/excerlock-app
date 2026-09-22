@@ -11,7 +11,7 @@ import { fromRoot, readUtf8, repoRelative, walkFiles } from "./repo-files";
  * run yet, or on and passing; none is weakened to make a wave pass. Raise this number
  * as each wave lands.
  */
-const WAVE = 5;
+const WAVE = 6;
 const staged = (wave: number) => it.runIf(WAVE >= wave);
 
 const tokenModule = "app-next/src/design-system/tokens.ts";
@@ -165,6 +165,16 @@ const illustrationFiles = [
   /^app-next\/src\/icons\//,
 ];
 const isIllustration = (path: string) => illustrationFiles.some((pattern) => pattern.test(path));
+/**
+ * The two scripted storyboard timelines keep their own clocks: they are choreography, not UI motion
+ * (app-next/src/motion/README.md). The unlock ceremony is not one of them.
+ */
+const storyboards = [
+  /^app-next\/src\/features\/rules\/(PlanBuild|PlanCelebration)\.tsx$/,
+  /^app-next\/src\/features\/onboarding\/impact\//,
+  /^app-next\/src\/features\/onboarding\/screens\/O11\.tsx$/,
+  /^app-next\/src\/features\/onboarding\/scenes\/DotGridReveal\.tsx$/,
+];
 /** The O01–O03 intro screens may read their approved composition gaps, and nothing else counts as artwork there. */
 const introCompositions = /^app-next\/src\/features\/onboarding\/screens\/O0[123]\.tsx$/;
 
@@ -264,6 +274,10 @@ function consumed(path: string[]) {
   const parent = path[path.length - 2];
   const patterns = [new RegExp(`\\b${parent}\\.${key}\\b`), new RegExp(`\\b${parent}\\[['"]${key}['"]\\]`)];
   if (path[0] === "type") patterns.push(new RegExp(`variant(=|:\\s*)\\{?['"]${key}['"]`));
+  // Motion helpers take duration, spring and curve names as strings: m.timing(1, 'emphasized', { curve: 'enter' }).
+  if (path[0] === "motion" && ["duration", "spring", "easing"].includes(parent ?? "")) {
+    patterns.push(new RegExp(`\\b(timing|spring|transition|keyframes|opacityIn|opacityOut)\\([\\s\\S]{0,600}?['"]${key}['"]`));
+  }
   return patterns.some((pattern) => pattern.test(consumerText));
 }
 
@@ -279,7 +293,6 @@ describe("design-system tokens", () => {
 
   it("has a consumer for every token", () => {
     const dead = leafPaths(tokens)
-      .filter((path) => path[0] !== "conditionDemo")
       .filter((path) => !consumed(path))
       .map((path) => `${tokenModule} tokens.${path.join(".")} has no consumer`);
     expect(dead, report(dead)).toEqual([]);
@@ -363,6 +376,14 @@ describe("design-system tokens", () => {
       const values = Object.values(scale ?? {});
       expect(new Set(values).size, `duplicate value in ${JSON.stringify(scale)}`).toBe(values.length);
     }
+  });
+
+  staged(6)("gates each storyboard timeline on Reduce Motion itself", () => {
+    const ungated = sources
+      .filter(({ path }) => storyboards.some((pattern) => pattern.test(path)))
+      .filter(({ code }) => /\b(withTiming|animationName|transitionProperty|FadeIn)\b/.test(code) && !/\breduced\b/.test(code))
+      .map(({ path }) => path);
+    expect(ungated, report(ungated)).toEqual([]);
   });
 
   staged(6)("limits motion to four durations, two easings, and two springs", () => {
@@ -500,7 +521,9 @@ describe("design-system source", () => {
   });
 
   staged(6)("reaches every animation call site through a reduced-motion gate", () => {
-    const outsideMotion = uiSources.filter(({ path }) => !path.startsWith("app-next/src/motion/"));
+    const outsideMotion = uiSources.filter(
+      ({ path }) => !path.startsWith("app-next/src/motion/") && !storyboards.some((pattern) => pattern.test(path)),
+    );
     const hits = findAll(
       /\b(withTiming|withSpring|withDecay|withRepeat|withSequence|withDelay)\(|\bEasing\.|\b(animationName|transitionProperty|animationTimingFunction|transitionTimingFunction)\b|\b(FadeIn\w*|FadeOut\w*|ZoomIn\w*|ZoomOut\w*|SlideIn\w*|SlideOut\w*|LinearTransition|LayoutAnimationConfig)\b|\bLayoutAnimation\.|\bAnimated\.(timing|spring)\(/g,
       outsideMotion,

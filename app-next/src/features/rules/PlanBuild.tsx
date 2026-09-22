@@ -62,19 +62,19 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
   useEffect(() => { callback.current = onComplete; }, [onComplete]);
   useEffect(() => {
     // Continue through the post-100% hold and fade; stopping at `ready` leaves the loading UI stranded onscreen.
-    elapsed.set(withTiming(PLAN_MOTION.buildDone, { duration: m.reduced ? m.duration.fast : PLAN_MOTION.buildDone, easing: Easing.linear }));
+    elapsed.set(withTiming(PLAN_MOTION.buildDone, { duration: m.reduced ? m.duration.standard : PLAN_MOTION.buildDone, easing: Easing.linear }));
     return () => cancelAnimation(elapsed);
-  }, [elapsed, m.duration.fast, m.reduced]);
+  }, [elapsed, m.duration.standard, m.reduced]);
   useEffect(() => {
     const timers = m.reduced ? [
-      setTimeout(() => setCompleted(5), m.duration.fast),
-      setTimeout(() => callback.current(), m.duration.slow),
+      setTimeout(() => setCompleted(5), m.duration.standard),
+      setTimeout(() => callback.current(), m.duration.emphasized),
     ] : [
       ...[0, 1, 2, 3, 4].map((n) => setTimeout(() => setCompleted(n + 1), Math.max(n * 1000, 150))),
       setTimeout(() => callback.current(), PLAN_MOTION.buildDone),
     ];
     return () => timers.forEach(clearTimeout);
-  }, [m.duration.fast, m.duration.slow, m.reduced]);
+  }, [m.duration.standard, m.duration.emphasized, m.reduced]);
   const arc = useAnimatedProps(() => ({ strokeDashoffset: LENGTH * (1 - Math.min(1, elapsed.get() / PLAN_MOTION.count)) }));
   const counter = useAnimatedProps(() => {
     const pct = Math.min(100, Math.round(elapsed.get() / PLAN_MOTION.count * 100));

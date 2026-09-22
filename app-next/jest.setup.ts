@@ -3,6 +3,8 @@ import 'react-native-gesture-handler/jestSetup';
 jest.mock('react-native-reanimated/mock', () => ({
   ...jest.requireActual('react-native-reanimated/mock'),
   useReducedMotion: () => true,
+  // The upstream mock omits the CSS easing builders that motion helpers pass to style transitions.
+  cubicBezier: (...points: number[]) => ({ toString: () => `cubicBezier(${points.join(', ')})` }),
   // Expo Router testing-library replaces the root mock with this exact module.
   // Reanimated 4.5.1 leaves this hook unimplemented; pure model + SIM test time.
   useFrameCallback: () => require('react').useMemo(() => ({

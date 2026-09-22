@@ -5,7 +5,9 @@ import { Label } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
 import { onboardingLabels as c } from '../../../content/onboarding';
 import { Reveal } from '../../../motion/Reveal';
+import { useMotion } from '../../../motion/useMotion';
 export function NameField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const m = useMotion();
   const [focused, setFocused] = useState(false),
     error = value.trim().length > 30;
   return (
@@ -16,8 +18,7 @@ export function NameField({ value, onChange }: { value: string; onChange: (value
           borderWidth: t.stroke.hairline,
           borderColor: error ? t.state.error : focused ? t.brand.primary : t.border.outline,
           backgroundColor: t.surface.card,
-          transitionProperty: 'borderColor',
-          transitionDuration: t.motion.duration.fast,
+          ...m.transition('borderColor', 'standard'),
         }}>
         <TextInput
           accessibilityLabel={c.name}

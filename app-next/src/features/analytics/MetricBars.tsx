@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
@@ -63,11 +63,8 @@ function SmoothBar({ value, max, selected, delay }: { value: number; max: number
   const motion = useMotion();
   useEffect(() => {
     const target = fillRatio(value, max) * 100;
-    progress.set(motion.reduced ? target : withDelay(delay, withTiming(target, {
-      duration: t.motion.duration.reveal,
-      easing: Easing.bezier(...t.motion.easing.enter),
-    })));
-  }, [value, max, delay, motion.reduced, progress]);
+    progress.set(motion.delay(delay, motion.timing(target, 'emphasized', { curve: 'enter' })));
+  }, [value, max, delay, motion, progress]);
   const style = useAnimatedStyle(() => ({ height: `${progress.get()}%` }));
   return <Animated.View style={[s.bar, { backgroundColor: selected ? t.brand.lockHighlight : t.brand.primary }, style]} />;
 }
@@ -77,11 +74,8 @@ function BarValue({ value, max, delay }: { value: number | null; max: number; de
   const motion = useMotion();
   useEffect(() => {
     const target = value === null ? 0 : fillRatio(value, max) * PLOT;
-    progress.set(motion.reduced ? target : withDelay(delay, withTiming(target, {
-      duration: t.motion.duration.reveal,
-      easing: Easing.bezier(...t.motion.easing.enter),
-    })));
-  }, [value, max, delay, motion.reduced, progress]);
+    progress.set(motion.delay(delay, motion.timing(target, 'emphasized', { curve: 'enter' })));
+  }, [value, max, delay, motion, progress]);
   const style = useAnimatedStyle(() => ({ bottom: progress.get() + t.space.xs }));
   return (
     <Animated.View pointerEvents="none" style={[s.valueSlot, style]}>

@@ -22,7 +22,7 @@ export function useSheetKeyboard(height: number) {
     };
   }, [height]);
   return useAnimatedStyle(() => ({
-    bottom: withTiming(inset, { duration: motion.duration.sheet }),
-    maxHeight: withTiming((height - inset) * t.layout.sheetMax, { duration: motion.duration.sheet }),
+    bottom: withTiming(inset, { duration: motion.duration.emphasized }),
+    maxHeight: withTiming((height - inset) * t.layout.sheetMax, { duration: motion.duration.emphasized }),
   }));
 }

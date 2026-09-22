@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text as NativeText, TextProps, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
@@ -6,10 +7,10 @@ import Animated, {
   useAnimatedProps,
   useAnimatedStyle,
   useDerivedValue,
-  withTiming,
 } from 'react-native-reanimated';
 import { tokens as t } from '../../../design-system/tokens';
 import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
+import { motionFor } from '../../../motion/useMotion';
 import { DemoState, Scenario, snapshot } from './model';
 const ScanArc = Animated.createAnimatedComponent(Circle);
 // The phone is a decorative miniature, not a second accessible interface.
@@ -51,9 +52,8 @@ export function Phone({
   frame: ReturnType<typeof snapshot>;
 }) {
   const scanArc = useAnimatedProps(() => ({ strokeDashoffset: 264 * (1 - snapshot(clock.value, scenario).p) }));
-  const shieldAlpha = useDerivedValue(() =>
-    withTiming(snapshot(clock.value, scenario).phone === 'shield' ? 1 : 0, { duration: reduced ? 0 : 240 }),
-  );
+  const { timing } = useMemo(() => motionFor(reduced), [reduced]);
+  const shieldAlpha = useDerivedValue(() => timing(snapshot(clock.value, scenario).phone === 'shield' ? 1 : 0, 'standard'));
   const shield = useAnimatedStyle(() => ({ opacity: shieldAlpha.value }));
   const xl = useAnimatedStyle(() => ({ opacity: snapshot(clock.value, scenario).phone === 'excerlock' ? 1 : 0 }));
   const splash = useAnimatedStyle(() => {

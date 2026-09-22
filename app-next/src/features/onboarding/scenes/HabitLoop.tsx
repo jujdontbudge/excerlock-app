@@ -65,10 +65,7 @@ export function HabitLoop({
               marginTop: -50,
               alignItems: 'center',
               justifyContent: 'center',
-              transitionProperty: ['left', 'top', 'width', 'marginLeft'],
-              transitionDelay: m.reduced ? 0 : m.duration.press,
-              transitionDuration: m.reduced ? 0 : m.duration.planCheck,
-              transitionTimingFunction: 'ease-in-out',
+              ...m.transition(['left', 'top', 'width', 'marginLeft'], 'emphasized', { delay: m.duration.press }),
             }}>
             {habitLoopCopy.map((layerCopy, layerPhase) => {
               const stage = layerCopy.stages[index];
@@ -83,9 +80,7 @@ export function HabitLoop({
                     alignItems: 'center',
                     gap: t.space.xs,
                     opacity: contentPhase === layerPhase ? 1 : 0,
-                    transitionProperty: 'opacity',
-                    transitionDuration: m.reduced ? 0 : m.duration.slow,
-                    transitionTimingFunction: 'ease-in-out',
+                    ...m.transition('opacity', 'standard'),
                   }}>
                   <LivingIcon name={icons[layerPhase][index]} size="lg" />
                   <Label variant="label" style={{ textAlign: 'center' }}>
@@ -116,9 +111,8 @@ export function HabitLoop({
               alignItems: 'center',
               justifyContent: 'center',
               gap: t.space.xs,
-              animationName: m.reduced
-                ? undefined
-                : index === 0
+              ...m.keyframes(
+                index === 0
                   ? {
                       from: { opacity: 0, transform: [{ translateX: t.space.xl }] },
                       '82%': { opacity: 1, transform: [{ translateX: -t.space.xs }] },
@@ -129,10 +123,9 @@ export function HabitLoop({
                       '82%': { opacity: 1, transform: [{ translateY: -t.space.xs }] },
                       to: { opacity: 1, transform: [{ translateY: 0 }] },
                     },
-              animationDuration: m.duration.slow,
-              animationDelay: index === 0 ? m.duration.planCheck : m.duration.reveal,
-              animationFillMode: 'backwards',
-              animationTimingFunction: 'ease-out',
+                'standard',
+                { delay: m.duration.emphasized + index * m.duration.standard, fill: 'backwards', curve: 'enter' },
+              ),
             }}>
             {index === 0 ? <LoopBrandMark /> : <LivingIcon name="walking" size="lg" />}
             <Label variant="label" style={{ textAlign: 'center' }}>

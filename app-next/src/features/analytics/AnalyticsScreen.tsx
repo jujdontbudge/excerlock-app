@@ -3,7 +3,8 @@ import { StyleSheet, View } from 'react-native';
 import { Label, PressableScale, ScreenShell, SegmentedControl } from '../../design-system';
 import { Icon } from '../../icons/Icon';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { FadeIn, runOnJS } from 'react-native-reanimated';
+import Animated, { runOnJS } from 'react-native-reanimated';
+import { fadeIn } from '../../motion/presets';
 import { tokens as t } from '../../design-system/tokens';
 import { useClock, useHistory } from '../../state/selectors';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
@@ -145,7 +146,7 @@ export function AnalyticsScreen() {
               )}
               <Animated.View
                 key={period}
-                entering={FadeIn.duration(t.motion.duration.fast)}
+                entering={fadeIn}
                 style={s.chart}>
               {period === 'Day' ? (
                 <View style={s.dayStage}>

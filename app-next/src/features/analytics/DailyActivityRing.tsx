@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
-import Animated, { Easing, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedProps, useSharedValue } from 'react-native-reanimated';
 import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
@@ -22,11 +22,9 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
   const motion = useMotion();
   const ratio = goal > 0 ? Math.max(0, value / goal) : 0;
   useEffect(() => {
-    progress.set(motion.reduced ? ratio : withTiming(ratio, {
-      duration: t.motion.duration.tick * Math.max(1, Math.min(2, ratio)),
-      easing: Easing.bezier(...t.motion.easing.enter),
-    }));
-  }, [motion.reduced, progress, ratio]);
+    // A day past its goal fills for longer, up to twice the emphasized duration.
+    progress.set(motion.timing(ratio, 'emphasized', { curve: 'enter', stretch: Math.max(1, Math.min(2, ratio)) }));
+  }, [motion, progress, ratio]);
   const baseAnimatedProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRCUMFERENCE * (1 - Math.min(1, progress.get())),
   }));

@@ -29,16 +29,15 @@ export function AppTile({ index }: { index: number }) {
         <Animated.View
           style={{
             transform: [{ rotate: tile.tilt }],
-            animationName: m.reduced
-              ? undefined
-              : {
-                  from: { transform: [{ translateY: 0 }, { rotate: tile.tilt }] },
-                  '50%': { transform: [{ translateY: -m.distance.float }, { rotate: tile.tilt }] },
-                  to: { transform: [{ translateY: 0 }, { rotate: tile.tilt }] },
-                },
-            animationDuration: m.duration.breathe + index * m.stagger.hero,
-            animationIterationCount: 'infinite',
-            animationTimingFunction: 'ease-in-out',
+            ...m.keyframes(
+              {
+                from: { transform: [{ translateY: 0 }, { rotate: tile.tilt }] },
+                '50%': { transform: [{ translateY: -m.distance.float }, { rotate: tile.tilt }] },
+                to: { transform: [{ translateY: 0 }, { rotate: tile.tilt }] },
+              },
+              'breathe',
+              { loop: true, spread: index * m.stagger.hero },
+            ),
             width: art.welcome.tile.size,
             height: art.welcome.tile.size,
             borderRadius: art.welcome.tile.radius,
