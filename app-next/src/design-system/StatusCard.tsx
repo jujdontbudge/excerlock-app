@@ -30,7 +30,7 @@ export function StatusCard({
           padding: t.space.xl,
           borderRadius: orange ? w.card.radius : t.radius.card,
           borderWidth: orange ? 0 : t.stroke.hairline,
-          borderColor: t.border.default,
+          borderColor: t.border.outline,
           backgroundColor: orange ? w.card.start : t.surface.card,
           minHeight: orange ? w.card.minHeight : undefined,
           justifyContent: 'center',

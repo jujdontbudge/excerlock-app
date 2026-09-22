@@ -37,13 +37,13 @@ export function GymMap({ clock, scenario }: { clock: SharedValue<DemoState>; sce
           </G>
         ))}
         <Rect x={104} y={118} width={62} height={70} rx={8} fill={c.gym} />
-        <Rect x={116} y={144} width={36} height={8} rx={3} fill={t.surface.solid} />
+        <Rect x={116} y={144} width={36} height={8} rx={3} fill={t.surface.card} />
         <Rect x={108} y={236} width={62} height={92} rx={8} fill={c.park} />
         {[124, 150].map((x) => (
           <Circle key={x} cx={x} cy={280} r={18} fill={c.parkTree} />
         ))}
-        <Path d="M41 0V328 M0 111H170 M0 210H170" stroke={t.surface.solid} strokeWidth={22} />
-        <Path d="M100 111V210" stroke={t.surface.solid} strokeWidth={8} />
+        <Path d="M41 0V328 M0 111H170 M0 210H170" stroke={t.surface.card} strokeWidth={22} />
+        <Path d="M100 111V210" stroke={t.surface.card} strokeWidth={8} />
         <Path d="M41 0V328 M0 111H170 M0 210H170" stroke={c.block} strokeWidth={1} strokeDasharray="4 5" />
         <Circle
           cx={132}
@@ -56,7 +56,7 @@ export function GymMap({ clock, scenario }: { clock: SharedValue<DemoState>; sce
         />
         <G transform="translate(132,130)">
           <Path d="M0 16C-5 9-14 1-14-7a14 14 0 0 1 28 0C14 1 5 9 0 16Z" fill={t.brand.primary} />
-          <Circle cy={-6} r={9} fill={t.surface.solid} />
+          <Circle cy={-6} r={9} fill={t.surface.card} />
           <Path d="M-6-6H6M-5-10V-2M5-10V-2" stroke={t.brand.primary} strokeWidth={2} />
         </G>
         <Group animatedProps={dot}>
@@ -72,7 +72,7 @@ export function GymMap({ clock, scenario }: { clock: SharedValue<DemoState>; sce
             strokeDasharray="163.4"
             transform="rotate(-90)"
           />
-          <Circle r={8} fill={c.location} stroke={t.surface.solid} strokeWidth={3} />
+          <Circle r={8} fill={c.location} stroke={t.surface.card} strokeWidth={3} />
           <Group animatedProps={check}>
             <Circle cy={-34} r={16} fill={t.brand.primary} />
             <Path d="M-7-34l5 5 9-10" stroke={t.text.onAccent} strokeWidth={3.5} fill="none" strokeLinecap="round" />

@@ -92,7 +92,7 @@ function SheetPanel({ title, onDismiss, children, footer, expanded = false }: Pr
             right: 0,
             height: expanded ? height * t.layout.sheetMax : undefined,
             maxHeight: height * t.layout.sheetMax,
-            backgroundColor: t.surface.canvas,
+            backgroundColor: t.surface.card,
             borderTopLeftRadius: t.radius.sheet,
             borderTopRightRadius: t.radius.sheet,
             paddingBottom: Math.max(insets.bottom, t.space.lg),

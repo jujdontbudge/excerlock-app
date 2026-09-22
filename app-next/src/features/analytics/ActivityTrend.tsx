@@ -89,7 +89,7 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
               cx={point.x}
               cy={point.y}
               r={points[index]?.disabled ? 3 : 4}
-              fill={points[index]?.disabled ? t.state.disabledFill : t.surface.solid}
+              fill={points[index]?.disabled ? t.state.disabledFill : t.surface.card}
               stroke={points[index]?.disabled ? t.state.disabledText : t.chart.exercise}
               strokeWidth="1.5"
             />
@@ -97,7 +97,7 @@ export function ActivityTrend({ label, points, selectedOffset, onSelect }: {
           {selected ? (
             <>
               <Line x1={selected.x} x2={selected.x} y1={28} y2={BOTTOM} stroke={t.text.muted} strokeWidth="1" strokeDasharray="3 3" />
-              <Circle cx={selected.x} cy={selected.y} r="8" fill={t.surface.solid} stroke={t.chart.exercise} strokeWidth="2.5" />
+              <Circle cx={selected.x} cy={selected.y} r="8" fill={t.surface.card} stroke={t.chart.exercise} strokeWidth="2.5" />
               <Circle cx={selected.x} cy={selected.y} r="3" fill={t.chart.exercise} />
               <Rect x={bubbleX} y="2" width={BUBBLE} height="24" rx="12" fill={t.text.primary} />
               <SvgText x={bubbleX + BUBBLE / 2} y="18" textAnchor="middle" fill={t.text.onAccent} fontFamily={t.font.semibold} fontSize="11">{selectedLabel}</SvgText>

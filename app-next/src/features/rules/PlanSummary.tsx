@@ -69,7 +69,7 @@ export function PlanSummary({
               borderRadius: t.radius.card,
               backgroundColor: t.surface.card,
               borderWidth: t.stroke.hairline,
-              borderColor: t.border.default,
+              borderColor: t.border.outline,
               gap: t.space.sm,
             }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>

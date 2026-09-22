@@ -27,7 +27,7 @@ export function PlanTrialPreview({ condition }: { condition: string }) {
           borderRadius: 2, backgroundColor: t.text.primary }} />
         <View style={{ position: 'absolute', right: -7, top: 122, width: 3, height: 68,
           borderRadius: 2, backgroundColor: t.text.primary }} />
-        <View style={{ flex: 1, overflow: 'hidden', borderRadius: 34, backgroundColor: t.surface.canvas }}> 
+        <View style={{ flex: 1, overflow: 'hidden', borderRadius: 34, backgroundColor: t.surface.card }}> 
           <View style={{ height: 42, justifyContent: 'center', paddingHorizontal: 16 }}>
             <Label variant="badge" style={{ width: 'auto', alignSelf: 'flex-start' }}>9:41</Label>
             <View style={{ position: 'absolute', top: 8, alignSelf: 'center', width: 76, height: 24,
@@ -39,7 +39,7 @@ export function PlanTrialPreview({ condition }: { condition: string }) {
           </View>
           <View style={{ flex: 1, justifyContent: 'center', padding: 16 }}>
             <View style={{ borderWidth: 1, borderColor: t.border.outline, borderRadius: t.radius.card,
-              backgroundColor: t.surface.solid, padding: 18, alignItems: 'center', gap: 14 }}>
+              backgroundColor: t.surface.card, padding: 18, alignItems: 'center', gap: 14 }}>
               <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: t.brand.primary,
                 alignItems: 'center', justifyContent: 'center' }}>
                 <Icon name="lock" size={28} variant="utility" tint={t.text.onAccent} />

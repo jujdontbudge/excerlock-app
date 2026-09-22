@@ -55,7 +55,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
           <PressableScale label={c.add} onPress={onAdd}
             style={{ minHeight: t.layout.touch, paddingHorizontal: t.space.lg,
               flexDirection: 'row', alignItems: 'center', gap: t.space.sm,
-              borderRadius: t.radius.pill, backgroundColor: t.surface.solid,
+              borderRadius: t.radius.pill, backgroundColor: t.surface.card,
               borderWidth: t.stroke.hairline, borderColor: t.border.divider }}>
             <LivingIcon name="plus" size={20} tint={t.brand.primary} />
             <Label variant="label">{c.add}</Label>
@@ -93,7 +93,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
             borderRadius: t.radius.card,
             backgroundColor: t.surface.card,
             borderWidth: t.stroke.hairline,
-            borderColor: t.border.default,
+            borderColor: t.border.outline,
             gap: t.space.sm,
           }}>
           <Label>{migrationNote}</Label>

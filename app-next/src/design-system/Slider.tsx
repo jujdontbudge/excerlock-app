@@ -90,7 +90,7 @@ export function Slider({
                 borderRadius: t.radius.pill,
                 backgroundColor: t.brand.primary,
                 borderWidth: t.stroke.chart,
-                borderColor: t.surface.canvas,
+                borderColor: t.surface.card,
                 boxShadow: t.shadow.cta,
               },
               thumb,

@@ -25,7 +25,7 @@ export function ScheduleWidget({
           gap: t.space.xl,
           backgroundColor: t.surface.card,
           borderWidth: t.stroke.hairline,
-          borderColor: t.border.default,
+          borderColor: t.border.outline,
         }}>
         <View
           style={{

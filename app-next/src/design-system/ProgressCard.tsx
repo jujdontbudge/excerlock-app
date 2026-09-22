@@ -34,7 +34,7 @@ export function ProgressCard({
           borderRadius: inLock ? 0 : t.radius.card,
           borderWidth: inLock ? 0 : t.stroke.hairline,
           borderTopWidth: inLock ? 0 : t.stroke.hairline,
-          borderColor: inLock ? 'rgba(255,255,255,0.4)' : t.border.default,
+          borderColor: inLock ? 'rgba(255,255,255,0.4)' : t.border.outline,
           backgroundColor: inLock ? 'transparent' : t.surface.card,
           gap: t.space.lg,
         }}>

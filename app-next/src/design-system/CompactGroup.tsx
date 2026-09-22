@@ -102,7 +102,7 @@ const s = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: t.surface.card,
     borderWidth: 1,
-    borderColor: t.border.default,
+    borderColor: t.border.outline,
     overflow: 'hidden',
   },
   row: {

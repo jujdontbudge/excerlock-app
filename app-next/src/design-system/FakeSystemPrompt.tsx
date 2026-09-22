@@ -37,7 +37,7 @@ export function FakeSystemPrompt({
         style={{
           width: '100%',
           maxWidth: t.layout.prompt,
-          backgroundColor: t.surface.canvas,
+          backgroundColor: t.surface.card,
           borderRadius: t.radius.card,
           overflow: 'hidden',
         }}>

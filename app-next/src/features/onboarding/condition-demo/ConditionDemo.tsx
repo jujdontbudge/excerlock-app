@@ -283,7 +283,7 @@ function DemoScene({
           <Animated.View testID="condition-demo-hold-fill" pointerEvents="none" style={[styles.holdProgress, holdFill]} />
           <View style={styles.holdRing}>
             <Svg width={26} height={26} viewBox="0 0 26 26">
-              <Circle cx={13} cy={13} r={11} stroke={t.border.divider} strokeWidth={4} fill={t.surface.solid} />
+              <Circle cx={13} cy={13} r={11} stroke={t.border.divider} strokeWidth={4} fill={t.surface.card} />
               <HoldArc
                 animatedProps={holdArc}
                 cx={13}
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: t.radius.card,
     paddingHorizontal: 58,
-    backgroundColor: t.surface.solid,
+    backgroundColor: t.surface.card,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     width: 170,
     borderRadius: 18,
     padding: 12,
-    backgroundColor: t.surface.solid,
+    backgroundColor: t.surface.card,
     boxShadow: c.shadow,
   },
   small: { fontSize: 11, color: t.text.secondary, fontWeight: '600' },
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 8,
     paddingHorizontal: 10,
-    backgroundColor: t.surface.solid,
+    backgroundColor: t.surface.card,
   },
   mapTitle: { fontSize: 13, fontWeight: '600', color: t.text.primary },
   mapBody: { fontSize: 12, lineHeight: 16, color: t.text.secondary },

@@ -22,7 +22,7 @@ export default function TabLayout() {
         headerShown: false,
         lazy: false,
         animation: motion.reduced ? 'fade' : 'shift',
-        sceneStyle: { backgroundColor: t.surface.canvas },
+        sceneStyle: { backgroundColor: t.surface.card },
       }}
       tabBar={({ state, navigation }) => (
         <TabBar

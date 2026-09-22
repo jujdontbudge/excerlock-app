@@ -35,7 +35,7 @@ export function TextField({
           backgroundColor: t.surface.card,
           borderRadius: t.radius.field,
           borderWidth: t.stroke.selected,
-          borderColor: error ? t.state.error : focused ? t.brand.primary : t.border.default,
+          borderColor: error ? t.state.error : focused ? t.brand.primary : t.border.outline,
           transitionProperty: 'borderColor',
           transitionDuration: t.motion.duration.fast,
         }}>

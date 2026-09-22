@@ -56,7 +56,7 @@ export function ScreenShell({
         <LinearGradient
           pointerEvents="none"
           colors={
-            orangeBackground ? t.surface.orangeGradient : [t.surface.topTint, t.surface.topTintMid, t.surface.canvas]
+            orangeBackground ? t.surface.orangeGradient : [t.surface.topTint, t.surface.topTintMid, t.surface.card]
           }
           locations={orangeBackground ? [0, 0.35, 1] : [0, t.layout.washMid / t.layout.wash, 1]}
           style={orangeBackground ? [s.wash, { height: '100%' }] : s.wash}
@@ -99,7 +99,7 @@ export function ScreenShell({
   );
 }
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: t.surface.canvas },
+  root: { flex: 1, backgroundColor: t.surface.card },
   rootClear: { flex: 1 },
   wash: {
     position: 'absolute',

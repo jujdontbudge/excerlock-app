@@ -82,7 +82,7 @@ export function Treadmill({ clock }: { clock: SharedValue<DemoState> }) {
       </Group>
       <Rect x={158} y={18} width={12} height={76} rx={6} fill={c.belt} />
       <Rect x={140} y={6} width={46} height={26} rx={8} fill={c.treadmill} />
-      <Rect x={153} width={16} height={26} rx={4} fill={t.surface.solid} transform="rotate(-8 161 13)" />
+      <Rect x={153} width={16} height={26} rx={4} fill={t.surface.card} transform="rotate(-8 161 13)" />
     </Svg>
   );
 }

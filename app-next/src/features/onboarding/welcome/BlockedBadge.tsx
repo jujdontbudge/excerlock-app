@@ -16,7 +16,7 @@ export function BlockedBadge({ variant = 'hourglass', size = w.tile.badge, offse
         width: size,
         height: size,
         borderRadius: t.radius.pill,
-        backgroundColor: t.surface.canvas,
+        backgroundColor: t.surface.card,
         boxShadow: w.tile.shadow,
         padding: t.space.xs,
       }}>

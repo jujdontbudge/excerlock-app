@@ -28,7 +28,7 @@ export function DayPicker({ days, onChange }: { days: number[]; onChange: (days:
                   borderRadius: t.radius.pill,
                   backgroundColor: selected ? t.brand.primary : t.surface.card,
                   borderWidth: selected ? 0 : t.stroke.hairline,
-                  borderColor: t.border.default,
+                  borderColor: t.border.outline,
                   transitionProperty: 'backgroundColor',
                   transitionDuration: t.motion.duration.standard,
                 }}>

@@ -149,7 +149,7 @@ export function Phone({
             {frame.phase === 'scan' ? (
               <>
                 <Svg width={96} height={96} viewBox="0 0 96 96">
-                  <Circle cx={48} cy={48} r={42} fill={t.surface.solid} stroke={t.border.divider} strokeWidth={8} />
+                  <Circle cx={48} cy={48} r={42} fill={t.surface.card} stroke={t.border.divider} strokeWidth={8} />
                   <G rotation={-90} origin="48,48">
                     <ScanArc
                       animatedProps={scanArc}
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     width: 170,
     height: 312,
     borderRadius: 26,
-    backgroundColor: t.surface.solid,
+    backgroundColor: t.surface.card,
     overflow: 'hidden',
     boxShadow: c.shadow,
   },

@@ -33,7 +33,7 @@ export function TimeRangeRow({
           backgroundColor: t.surface.card,
           borderRadius: t.radius.field,
           borderWidth: t.stroke.hairline,
-          borderColor: t.border.default,
+          borderColor: t.border.outline,
           overflow: 'hidden',
         }}>
         <View

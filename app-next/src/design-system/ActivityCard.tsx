@@ -34,7 +34,7 @@ export function ActivityCard({
           gap: t.space.lg,
           borderRadius: t.radius.card,
           borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
-          borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.default,
+          borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.outline,
           backgroundColor: solid ? t.brand.primary : selected ? t.surface.selected : t.surface.card,
           transitionProperty: ['backgroundColor', 'borderColor'],
           transitionDuration: t.motion.duration.standard,
