@@ -1,4 +1,3 @@
-import { tokens as t } from './tokens';
 /** Geometry and illustration colors sampled from the approved O01 composition. */
 export const welcomeTokens = {
   canvasWidth: 354,
