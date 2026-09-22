@@ -71,7 +71,7 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
           onPress={() => void send()}
         />
       }>
-      <Heading title={i.title} support={i.support} />
+      <Heading title={i.title} support={i.support} centered />
       <TextField
         label={i.wrongField}
         labelTone="primary"

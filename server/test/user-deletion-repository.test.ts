@@ -34,15 +34,15 @@ function containsDateParameter(value: unknown, seen = new WeakSet<object>()): bo
 
 beforeAll(async () => {
   postgres = await createPgliteTestDatabase();
-});
+}, 30_000);
 
 beforeEach(async () => {
   await postgres.reset();
-});
+}, 30_000);
 
 afterAll(async () => {
   await postgres.client.close();
-});
+}, 30_000);
 
 describe("account deletion persistence", () => {
   it("does not pass raw Date objects through conflict-update SQL", async () => {

@@ -34,5 +34,5 @@ export function commitPlan(a: Answers, unit: 'km' | 'mi', base?: RuleDraft, cont
 }
 export function goalStep(d: RuleDraft) {
   if (d.activity === 'walking') return d.walkingMode === 'state' ? 'W2' : 'W3';
-  return d.gymMode === 'arrival' ? 'G1' : 'G2';
+  return d.gymMode === 'time' ? 'G2' : 'G1';
 }

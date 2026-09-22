@@ -5,7 +5,7 @@ import {
   AppleAuthenticationButtonStyle,
   AppleAuthenticationButtonType,
 } from 'expo-apple-authentication';
-import { Heading, Label, TextField, PrimaryButton, SecondaryButton } from '../../design-system';
+import { BackButton, Heading, Label, TextField, PrimaryButton, SecondaryButton } from '../../design-system';
 import { setupCopy as c } from '../../content/setup';
 import { tokens as t } from '../../design-system/tokens';
 import { LivingIcon } from '../../motion/LivingIcon';
@@ -120,6 +120,18 @@ export function SignInScreen({
     );
   return (
     <Reveal key={phase} style={{ flexGrow: 1, gap: t.space.xl }}>
+      {phase !== 'options' ? (
+        <View style={{ marginLeft: -(t.control.inline - t.icon.md) / 2, marginBottom: -t.space.lg }}>
+          <BackButton
+            label={c.backToOptions}
+            disabled={busy}
+            onPress={() => {
+              setPhase('options');
+              setError('');
+            }}
+          />
+        </View>
+      ) : null}
       {phase === 'code' ? (
         <EmailCodeScreen
           code={code}
@@ -153,8 +165,8 @@ export function SignInScreen({
               <AppleAuthenticationButton
                 buttonType={AppleAuthenticationButtonType.CONTINUE}
                 buttonStyle={AppleAuthenticationButtonStyle.WHITE_OUTLINE}
-                cornerRadius={t.radius.cta}
-                style={{ width: '100%', height: t.layout.button }}
+                cornerRadius={t.radius.pill}
+                style={{ width: '100%', height: t.control.full }}
                 accessible
                 accessibilityRole="button"
                 accessibilityLabel={c.apple}
@@ -221,17 +233,6 @@ export function SignInScreen({
         </>
       )}
       <View style={{ flexGrow: 1 }} />
-      {phase !== 'options' ? (
-        <SecondaryButton
-          label={c.back}
-          disabled={busy}
-          variant="tertiary"
-          onPress={() => {
-            setPhase('options');
-            setError('');
-          }}
-        />
-      ) : null}
       {required === false ? <SecondaryButton label={c.skip} disabled={busy} variant="tertiary" onPress={onContinue} /> : null}
     </Reveal>
   );

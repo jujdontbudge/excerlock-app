@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import Svg, { Rect } from 'react-native-svg';
-import Animated, { useAnimatedProps, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedProps, useSharedValue } from 'react-native-reanimated';
 import { tokens as t } from './tokens';
 import { useMotion } from '../motion/useMotion';
 const Bar = Animated.createAnimatedComponent(Rect);
@@ -18,8 +18,8 @@ export function ChartBar({
   const p = useSharedValue(0),
     m = useMotion();
   useEffect(() => {
-    p.set(m.reduced ? 1 : withDelay(index * m.stagger.list, withTiming(1, { duration: m.duration.reveal })));
-  }, [p, m.reduced, m.duration.reveal, m.stagger.list, index, value]);
+    p.set(m.delay(index * m.stagger.list, m.timing(1, 'emphasized')));
+  }, [p, m, index, value]);
   const active = useAnimatedProps(() => ({
     height: (value / max) * 100 * p.get(),
     y: 100 - (value / max) * 100 * p.get(),

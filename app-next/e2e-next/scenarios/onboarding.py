@@ -17,29 +17,38 @@ from typing import Any, Sequence
 
 # (step, title, body-fragment) in flow order for the walking branch
 SCREENS: list[tuple[str, str, str]] = [
-    ('O01', 'Block apps. Exercise more.', 'Less scrolling'),
+    ('O01', 'Block apps. Exercise more.', ''),
     ('O02', 'Block apps. Exercise more.', 'Reduce your screen time'),
     ('O03', 'Block apps. Exercise more.', 'Exercise more each week'),
+    ('O07', 'What is your gender?', ''),
     ('O04', 'What should we call you?', 'personal'),
     ('O05', 'How did you hear about us?', ''),
     ('O06', 'How old are you?', 'tailor your plan'),
     ('O08', 'What is your goal?', 'change it later'),
-    ('O09', 'What’s the main reason you want to make a change?', 'what matters to you'),
+    ('O22', 'What is your body goal?', ''),
+    ('O21', 'What exercise would you like to do more of?', 'most interested in'),
+    ('O09', 'How many hours of walking do you do per week?', ''),
     ('O10', 'How many hours do you currently spend scrolling each day?', 'best guess'),
     ('O11', 'Here’s some quick math', 'add up over time'),
     ('O12', 'This is a year in your life', 'Each dot'),
     ('O13', 'This is the free time left', 'After sleep and work'),
     ('O14', 'This is how much time you spend scrolling', 'make room'),
-    ('O15', 'This is good.', 'fuel exercise'),
+    ('O15', 'We’ll trick your brain into craving exercise instead.', ''),
     ('O16', 'You’re stuck in a loop', ''),
     ('O17', 'We’ll change the loop', 'between the urge and the app'),
     ('O18', 'You become', 'ADDICTED'),
     ('O20', 'What exercise should unlock your apps?', 'really do'),
+    ('G0F', 'How many times per week do you go to the gym?', ''),
+    ('G0H', 'How many hours per session?', ''),
+    ('G1', 'What unlocks your screen time?', ''),
+    ('W0', 'How many steps do you walk per day currently?', ''),
     ('W1', 'Where do you walk?', 'every place that fits'),
     ('W2', 'How should walking unlock your apps?', 'kind of nudge'),
     ('W3', 'Set your walking goal', 'movement into every day'),
     ('S1', 'When should blocking be active?', 'days and times'),
     ('S3', 'Your plan is ready', 'A little movement'),
+    ('S3b', 'Once you', ''),
+    ('S3c', 'We want you to try ExcerLock Premium for free', ''),
     ('S4', 'Help us make ExcerLock better', 'How does your plan feel'),
     ('T1', 'Try ExcerLock free', 'things that matter'),
     ('T2', "We'll remind you before it ends", 'A heads-up'),
@@ -62,8 +71,15 @@ PREFERRED_CHOICE = {
     'O05': 'Friend',
     'O06': '25–34',
     'O08': 'More exercise',
-    'O09': 'Focus on what matters',
+    'O21': 'Walking',
+    'O07': 'Prefer not to say',
+    'O22': 'Maintain',
+    'O09': '1–2 hours',
     'O20': 'Walking',
+    'G0F': '3 times',
+    'G0H': '1 hour',
+    'G1': 'Arrive at the gym',
+    'W0': '5,000–10,000 steps',
     'W1': 'Outside',
     'W2': 'Reach a step goal',
 }
@@ -114,8 +130,9 @@ def identify(labels: list[str], seen: Sequence[str] = ()) -> tuple[str, str]:
 
 
 class OnboardingWalk:
-    def __init__(self, ctx: Any, *, name: str = 'Alex', screenshot_every_step: bool = True) -> None:
+    def __init__(self, ctx: Any, *, name: str = 'Alex', screenshot_every_step: bool = True, activity: str = 'Walking') -> None:
         self.ctx = ctx
+        self.activity = activity
         self.name = name
         self.screenshot_every_step = screenshot_every_step
         self.visited: list[dict[str, Any]] = []
@@ -153,7 +170,7 @@ class OnboardingWalk:
             ctx.type_text(self.name)
             ctx.log(f'typed the first name at {step}')
         # 2. selection steps: the preferred option, else the first unchecked row
-        preferred = PREFERRED_CHOICE.get(step)
+        preferred = self.activity if step == 'O20' else PREFERRED_CHOICE.get(step)
         if preferred and preferred in observation['choices']:
             ctx.tap(preferred)
         elif observation['choices'] and self._advance_disabled(observation):

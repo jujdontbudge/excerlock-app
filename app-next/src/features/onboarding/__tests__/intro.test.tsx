@@ -21,7 +21,7 @@ test('intro shows its exercise-first promise and advances on the pinned CTA', as
   expect(mockSetParams).toHaveBeenCalledWith({ step: 'O02' });
   expect(onboardingStore.getState().data.step).toBe('O02');
 });
-test('welcome offers local sign-in and legal reading without advancing the onboarding draft', async () => {
+test('welcome keeps only the bottom CTA and local sign-in without legal copy', async () => {
   onboardingStore.getState().reset();
   await render(
     <AppRuntimeProvider>
@@ -33,13 +33,13 @@ test('welcome offers local sign-in and legal reading without advancing the onboa
   await userEvent.press(screen.getByRole('button', { name: 'Sign in' }));
   expect(screen.getByRole('button', { name: 'Continue with email' })).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: 'Close' }));
-  await userEvent.press(screen.getByRole('button', { name: 'Privacy Policy' }));
-  expect(screen.getByRole('header', { name: 'Privacy Policy' })).toBeTruthy();
+  expect(screen.queryByText(/By continuing/)).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Privacy Policy' })).toBeNull();
   expect(onboardingStore.getState().data.step).toBe('O01');
 });
 test.each([
   ['O02', 'O03'],
-  ['O03', 'O04'],
+  ['O03', 'O07'],
 ])('intro %s retains the welcome footer and advances to %s', async (step, next) => {
   mockParams.step = step;
   onboardingStore.getState().reset();

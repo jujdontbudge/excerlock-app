@@ -1,15 +1,15 @@
 import { View, useWindowDimensions } from 'react-native';
-import { Heading, Label, PressableScale } from '../../../design-system';
+import { Heading, Label } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
 import { Reveal } from '../../../motion/Reveal';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { ProgressArtwork } from '../progress/ProgressArtwork';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
 import { welcomeCopy } from '../../../content/welcome';
 import { onboardingCopy as c } from '../../../content/onboarding';
-export function O02({ onBack }: { onBack?: () => void }) {
+export function O02() {
   const { fontScale } = useWindowDimensions();
   const dots = (
-    <View accessibilityLabel={welcomeCopy.progressPagination} style={{ flexDirection: 'row', gap: t.space.sm }}>
+    <View accessible accessibilityLabel={welcomeCopy.progressPagination} style={{ flexDirection: 'row', gap: t.space.sm }}>
       {[0, 1, 2].map((i) => (
         <View
           key={i}
@@ -24,28 +24,19 @@ export function O02({ onBack }: { onBack?: () => void }) {
     </View>
   );
   return (
-    <View style={{ flexGrow: 1, paddingTop: w.headingTop / Math.max(1, fontScale) }}>
-      <Heading title={c.O02.title.replace('. ', '.\n')} centered variant="hero" />
+    <View style={{ flexGrow: 1, paddingTop: t.space.xl / Math.max(1, fontScale) }}>
+      <Heading title={c.O02.title.replace('. ', '.\n')} centered variant="display" />
       {/* Artwork centres in the space under the heading; caption and dots ride just above the button. */}
-      <View style={{ flex: 1, justifyContent: 'center', paddingTop: w.progress.gap }}>
+      <View style={{ flex: 1, justifyContent: 'center', paddingTop: art.welcome.gap.progress }}>
         <ProgressArtwork />
       </View>
-      <Reveal index={3} style={{ marginTop: w.progress.captionGap, paddingHorizontal: t.space.xxl }}>
-        <Label variant="support" style={{ textAlign: 'center' }}>
+      <Reveal index={3} style={{ marginTop: t.space.xl, paddingHorizontal: t.space.xxl }}>
+        <Label style={{ ...t.type.section, color: t.text.primary, textAlign: 'center' }}>
           {c.O02.body}
         </Label>
       </Reveal>
-      <Reveal index={4} style={{ marginTop: w.dotsGap - t.space.lg, alignItems: 'center' }}>
-        {onBack ? (
-          <PressableScale
-            label={welcomeCopy.back}
-            onPress={onBack}
-            style={{ minWidth: t.layout.touch, alignItems: 'center' }}>
-            {dots}
-          </PressableScale>
-        ) : (
-          dots
-        )}
+      <Reveal index={4} style={{ marginTop: t.space.xs, alignItems: 'center' }}>
+        {dots}
       </Reveal>
     </View>
   );

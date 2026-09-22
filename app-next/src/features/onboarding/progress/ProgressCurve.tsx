@@ -1,17 +1,17 @@
 import { useEffect, useId } from 'react';
 import Svg, { Defs, LinearGradient, Stop, Path } from 'react-native-svg';
-import Animated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import Animated, { useAnimatedProps, useSharedValue } from 'react-native-reanimated';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { useMotion } from '../../../motion/useMotion';
 const Stroke = Animated.createAnimatedComponent(Path);
-const p = w.progress;
+const p = art.welcome.progress;
 export function ProgressCurve() {
   const m = useMotion(),
     drawn = useSharedValue(0),
     id = useId().replace(/:/g, '');
   useEffect(() => {
-    drawn.set(m.reduced ? 1 : withTiming(1, { duration: m.duration.reveal * 2 }));
-  }, [drawn, m.reduced, m.duration.reveal]);
+    drawn.set(m.timing(1, 'emphasized', { stretch: 2 }));
+  }, [drawn, m]);
   const props = useAnimatedProps(() => ({ strokeDashoffset: p.curveLength * (1 - drawn.get()) }));
   return (
     <Svg accessible={false} width={p.width} height={p.height} style={{ position: 'absolute' }}>

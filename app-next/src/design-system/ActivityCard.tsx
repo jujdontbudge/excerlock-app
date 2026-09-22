@@ -1,26 +1,33 @@
 import Animated from 'react-native-reanimated';
-import { Icon } from '../icons/Icon';
+import { Pictogram } from './Pictogram';
 import { ActivityId } from '../content/activities';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { tokens as t } from './tokens';
-import { useMotion } from '../motion/useMotion';
 import { View } from 'react-native';
-import { useSolidChoices } from './ChoiceAppearance';
 import { SelectionCheck } from './SelectionCheck';
+import { useMotion } from '../motion/useMotion';
+/**
+ * How a selected choice reads. `solid` (orange fill, white text) marks a full-screen
+ * commitment in onboarding and the condition builder; `outline` (orange border on the
+ * selected surface) marks a reversible preference. See design/UI-STYLE.md.
+ */
+export type ChoiceEmphasis = 'solid' | 'outline';
 export function ActivityCard({
   activity,
   title,
   selected,
   onPress,
+  emphasis = 'outline',
 }: {
   activity: ActivityId;
   title: string;
   selected: boolean;
   onPress: () => void;
+  emphasis?: ChoiceEmphasis;
 }) {
   const m = useMotion();
-  const solid = useSolidChoices() && selected;
+  const solid = emphasis === 'solid' && selected;
   return (
     <PressableScale
       label={title}
@@ -36,13 +43,11 @@ export function ActivityCard({
           gap: t.space.lg,
           borderRadius: t.radius.card,
           borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
-          borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.default,
+          borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.outline,
           backgroundColor: solid ? t.brand.primary : selected ? t.surface.selected : t.surface.card,
-          transform: [{ translateY: selected ? -m.distance.float : 0 }],
-          transitionProperty: ['transform', 'backgroundColor', 'borderColor'],
-          transitionDuration: m.duration.standard,
+          ...m.transition(['backgroundColor', 'borderColor'], 'standard'),
         }}>
-        <Icon name={activity} size={t.space.hero} tint={solid ? t.text.onAccent : undefined} />
+        <Pictogram name={activity} size="card" tone={solid ? 'onAccent' : undefined} />
         <Label variant="label" style={{ color: solid ? t.text.onAccent : t.text.primary }}>
           {title}
         </Label>

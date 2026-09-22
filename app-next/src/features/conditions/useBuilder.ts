@@ -54,6 +54,7 @@ export function useBuilder(id: string | undefined, onClose: () => void) {
     confirm,
     scheduleError,
     direction,
+    editing: initial.editing,
     dispatch,
     valid: step === 'GPlace' ? gymCount > 0 : builderValid(step, draft, schedule, chosen),
     choose: (activity: Activity) => {

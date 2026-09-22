@@ -3,22 +3,22 @@ import { Keyboard, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Label } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
-import { profileTokens as p } from '../../../design-system/profileTokens';
 import { onboardingLabels as c } from '../../../content/onboarding';
 import { Reveal } from '../../../motion/Reveal';
+import { useMotion } from '../../../motion/useMotion';
 export function NameField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const m = useMotion();
   const [focused, setFocused] = useState(false),
     error = value.trim().length > 30;
   return (
     <View style={{ gap: t.space.sm }}>
       <Animated.View
         style={{
-          borderRadius: p.field.radius,
+          borderRadius: t.radius.field,
           borderWidth: t.stroke.hairline,
-          borderColor: error ? t.state.error : focused ? t.brand.primary : p.colors.line,
-          backgroundColor: p.colors.row,
-          transitionProperty: 'borderColor',
-          transitionDuration: t.motion.duration.fast,
+          borderColor: error ? t.state.error : focused ? t.brand.primary : t.border.outline,
+          backgroundColor: t.surface.card,
+          ...m.transition('borderColor', 'standard'),
         }}>
         <TextInput
           accessibilityLabel={c.name}
@@ -33,12 +33,12 @@ export function NameField({ value, onChange }: { value: string; onChange: (value
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           selectionColor={t.brand.primary}
-          placeholderTextColor={t.text.muted}
-          maxFontSizeMultiplier={t.a11y.bodyScale}
+          placeholderTextColor={t.text.secondary}
+          maxFontSizeMultiplier={t.a11y.textScale}
           style={{
-            ...p.rowType,
+            ...t.type.body,
             color: t.text.primary,
-            minHeight: p.field.height,
+            minHeight: t.control.full,
             paddingHorizontal: t.space.lg,
             paddingVertical: t.space.md,
           }}

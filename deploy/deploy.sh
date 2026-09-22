@@ -126,9 +126,9 @@ SSH_OPTIONS=(
   -o BatchMode=yes
   -o ConnectTimeout=10
   -o IdentitiesOnly=yes
-  -o StrictHostKeyChecking=accept-new
+  -o StrictHostKeyChecking=yes
 )
-printf -v RSYNC_SSH 'ssh -i %q -p %q -o BatchMode=yes -o ConnectTimeout=10 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new' \
+printf -v RSYNC_SSH 'ssh -i %q -p %q -o BatchMode=yes -o ConnectTimeout=10 -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes' \
   "$DEPLOY_SSH_KEY" "$DEPLOY_SSH_PORT"
 RSYNC_OPTIONS=(
   -az

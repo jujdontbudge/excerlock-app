@@ -325,7 +325,12 @@ final class CoreMotionService {
     }
 
     guard let range = historicalRange(fromMs: fromMs, toMs: toMs) else {
-      completion(.success(["steps": 0]))
+      completion(.success([
+        "steps": 0,
+        "distanceMeters": NSNull(),
+        "floorsAscended": NSNull(),
+        "activeMinutes": NSNull()
+      ]))
       return
     }
     pedometer.queryPedometerData(from: range.start, to: range.end) { data, error in
@@ -333,7 +338,16 @@ final class CoreMotionService {
         completion(.failure(self.currentException()))
         return
       }
-      completion(.success(["steps": data?.numberOfSteps.intValue ?? 0]))
+      let distance = data?.distance?.doubleValue
+      let activeMinutes = distance.flatMap { metres in
+        data?.averageActivePace.map { metres * $0.doubleValue / 60 }
+      }
+      completion(.success([
+        "steps": data?.numberOfSteps.intValue ?? 0,
+        "distanceMeters": distance.map { $0 as Any } ?? NSNull(),
+        "floorsAscended": data?.floorsAscended?.intValue ?? NSNull(),
+        "activeMinutes": activeMinutes.map { $0 as Any } ?? NSNull()
+      ]))
     }
   }
 

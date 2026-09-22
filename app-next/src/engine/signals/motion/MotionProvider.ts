@@ -35,6 +35,13 @@ export interface MotionAvailability {
   readonly stepCounting: boolean;
 }
 
+export type PedometerMeasurement = {
+  readonly steps: number;
+  readonly distanceMeters?: number | null;
+  readonly floorsAscended?: number | null;
+  readonly activeMinutes?: number | null;
+};
+
 export interface MotionProvider {
   getAvailability(): MotionAvailability;
   getAuthorizationStatus(): MotionAuthStatus;
@@ -42,7 +49,7 @@ export interface MotionProvider {
   start(): Promise<void>;
   stop(): Promise<void>;
   queryActivity(fromMs: number, toMs: number): Promise<readonly ActivitySample[]>;
-  querySteps(fromMs: number, toMs: number): Promise<{ readonly steps: number }>;
+  querySteps(fromMs: number, toMs: number): Promise<PedometerMeasurement>;
   on(event: "activity", callback: (sample: ActivitySample) => void): Unsubscribe;
   on(event: "cadence", callback: (sample: CadenceSample) => void): Unsubscribe;
 }

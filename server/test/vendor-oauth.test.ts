@@ -4,6 +4,7 @@ import { parseEnv } from "../src/env.js";
 import {
   createVendorOAuthService,
   requireVendorTokenCipher,
+  VendorClientError,
   type NewVendorConnectionRecord,
   type NewVendorOAuthStateRecord,
   type NewVendorTokenRecord,
@@ -468,31 +469,35 @@ describe("vendor OAuth callback", () => {
       randomState: () => "strava-state-12345678",
     });
 
-    await expect(
-      service.completeConnection("strava", {
-        code: "auth-code",
-        state: "",
-      }),
-    ).rejects.toThrow("OAuth callback is missing its state");
+    const missingState = await service
+      .completeConnection("strava", { code: "auth-code", state: "" })
+      .catch((error: unknown) => error);
+    expect(missingState).toBeInstanceOf(VendorClientError);
+    expect((missingState as Error).message).toBe(
+      "OAuth callback is missing its state",
+    );
 
     const state = new URL(
       await service.beginConnection("user_123", "strava"),
     ).searchParams.get("state");
-    await expect(
-      service.completeConnection("strava", {
+    const denied = await service
+      .completeConnection("strava", {
         error: "access_denied",
         errorDescription: "The athlete declined access",
         state: state ?? "",
-      }),
-    ).rejects.toThrow(
+      })
+      .catch((error: unknown) => error);
+    expect(denied).toBeInstanceOf(VendorClientError);
+    expect((denied as Error).message).toBe(
       "Strava authorization failed: access_denied (The athlete declined access)",
     );
-    await expect(
-      service.completeConnection("strava", {
-        code: "auth-code",
-        state: state ?? "",
-      }),
-    ).rejects.toThrow("OAuth state is invalid, expired, or already used");
+    const replayed = await service
+      .completeConnection("strava", { code: "auth-code", state: state ?? "" })
+      .catch((error: unknown) => error);
+    expect(replayed).toBeInstanceOf(VendorClientError);
+    expect((replayed as Error).message).toBe(
+      "OAuth state is invalid, expired, or already used",
+    );
 
     expect({
       requests: http.requests,

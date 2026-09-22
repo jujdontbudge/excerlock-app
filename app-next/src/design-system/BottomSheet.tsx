@@ -1,14 +1,8 @@
-import { opacityIn, opacityOut, layoutTransition } from '../motion/presets';
+import { opacityIn, opacityOut, layoutTransition, sheetOut } from '../motion/presets';
 import { PropsWithChildren, ReactNode, useEffect, useMemo } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
-import Animated, {
-  FadeOutDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { tokens as t } from './tokens';
@@ -24,10 +18,11 @@ type Props = PropsWithChildren<{
   expanded?: boolean;
   title: string;
   onDismiss: () => void;
+  onClosed?: () => void;
 }>;
 export function BottomSheet(props: Props) {
   return props.open ? (
-    <Modal transparent visible animationType="fade" onRequestClose={props.onDismiss}>
+    <Modal transparent visible animationType="fade" onRequestClose={props.onDismiss} onDismiss={props.onClosed}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
           <SheetPanel {...props} />
@@ -43,8 +38,10 @@ function SheetPanel({ title, onDismiss, children, footer, expanded = false }: Pr
     y = useSharedValue(m.reduced ? 0 : height);
   const keyboard = useSheetKeyboard(height);
   useEffect(() => {
-    y.set(m.reduced ? 0 : withSpring(0, t.motion.spring.sheet));
-  }, [y, m.reduced]);
+    y.set(m.timing(0, 'emphasized', { curve: 'enter' }));
+  }, [y, m]);
+  // Gesture callbacks run on the UI thread; they capture only the worklet helpers.
+  const { timing, spring } = m;
   const gesture = useMemo(
     () =>
       Gesture.Pan()
@@ -54,13 +51,15 @@ function SheetPanel({ title, onDismiss, children, footer, expanded = false }: Pr
         .onEnd((e) => {
           if (y.get() > t.motion.distance.dismiss || e.velocityY > t.motion.velocity.dismiss) {
             y.set(
-              withTiming(height, { duration: t.motion.duration.sheet }, (finished) => {
-                if (finished) scheduleOnRN(onDismiss);
+              timing(height, 'emphasized', {
+                done: (finished) => {
+                  if (finished) scheduleOnRN(onDismiss);
+                },
               }),
             );
-          } else y.set(withSpring(0, t.motion.spring.sheet));
+          } else y.set(spring(0, 'control'));
         }),
-    [height, onDismiss, y],
+    [height, onDismiss, y, timing, spring],
   );
   const position = useAnimatedStyle(() => ({
     transform: [{ translateY: y.get() }],
@@ -68,8 +67,8 @@ function SheetPanel({ title, onDismiss, children, footer, expanded = false }: Pr
   return (
     <Animated.View
       accessibilityViewIsModal
-      entering={opacityIn(m.duration.fast)}
-      exiting={opacityOut(m.duration.sheet)}
+      entering={opacityIn('standard')}
+      exiting={opacityOut('emphasized')}
       style={[StyleSheet.absoluteFill, { zIndex: 100, backgroundColor: t.surface.scrim }]}>
       <Pressable
         style={StyleSheet.absoluteFill}
@@ -81,8 +80,8 @@ function SheetPanel({ title, onDismiss, children, footer, expanded = false }: Pr
         }}
       />
       <Animated.View
-        layout={layoutTransition}
-        exiting={m.reduced ? opacityOut(m.duration.fast) : FadeOutDown.duration(m.duration.sheet)}
+        layout={layoutTransition(m.reduced)}
+        exiting={sheetOut(m.reduced)}
         style={[
           {
             position: 'absolute',
@@ -91,7 +90,7 @@ function SheetPanel({ title, onDismiss, children, footer, expanded = false }: Pr
             right: 0,
             height: expanded ? height * t.layout.sheetMax : undefined,
             maxHeight: height * t.layout.sheetMax,
-            backgroundColor: t.surface.canvas,
+            backgroundColor: t.surface.card,
             borderTopLeftRadius: t.radius.sheet,
             borderTopRightRadius: t.radius.sheet,
             paddingBottom: Math.max(insets.bottom, t.space.lg),

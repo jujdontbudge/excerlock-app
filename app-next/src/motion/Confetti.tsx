@@ -5,7 +5,7 @@ import Svg, { Rect } from 'react-native-svg';
 import { tokens as t } from '../design-system/tokens';
 import { confettiPieces, CONFETTI_LIFETIME, particlePosition } from './confettiPhysics';
 const Piece = Animated.createAnimatedComponent(Rect);
-const colors = [t.brand.lockHighlight, t.brand.decorative, t.brand.light, t.text.onAccent, t.icon.yellow];
+const colors = [t.brand.lockHighlight, t.brand.decorative, t.brand.light, t.text.onAccent, t.swatch.yellow];
 function Particle({ index, time, width }: { index: number; time: SharedValue<number>; width: number }) {
   const piece = confettiPieces[index];
   const props = useAnimatedProps(() => {

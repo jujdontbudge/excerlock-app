@@ -12,7 +12,7 @@ export function scheduleDraft(a: Answers): ScheduleDraft {
   };
 }
 export function reduceSchedule(d: ScheduleDraft, a: ScheduleAction): ScheduleDraft {
-  return { ...d, [a.type]: a.value };
+  return { ...d, [a.type]: a.value, ...((a.type === 'start' || a.type === 'end') ? { allDay: false } : {}) };
 }
 export function toSchedule(d: ScheduleDraft): Schedule {
   return {

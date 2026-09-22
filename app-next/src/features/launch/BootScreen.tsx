@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: tokens.surface.canvas,
+    backgroundColor: tokens.surface.card,
   },
   logo: { width: tokens.layout.logo, height: tokens.layout.logo },
 });

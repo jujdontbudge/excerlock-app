@@ -17,10 +17,11 @@ export function WorkoutModeScreen({
       {c.modes.gym.map((mode, index) => (
         <Reveal key={mode.id} index={index + 1}>
           <ChoiceRow
+            emphasis="solid"
             title={mode.title}
             selected={d.gymMode === mode.id}
             compact
-            onPress={() => onAction({ type: 'setGymMode', value: mode.id as 'time' | 'arrival' })}
+            onPress={() => onAction({ type: 'setGymMode', value: mode.id })}
           />
         </Reveal>
       ))}

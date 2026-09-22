@@ -26,12 +26,7 @@ module.exports = defineConfig([
   },
   {
     files: ['src/features/**/*.{ts,tsx}', 'src/design-system/**/*.{ts,tsx}'],
-    ignores: [
-      '**/tokens.ts',
-      'src/design-system/welcomeTokens.ts',
-      'src/design-system/profileTokens.ts',
-      '**/__tests__/**',
-    ],
+    ignores: ['**/tokens.ts', 'src/design-system/illustrationTokens.ts', '**/__tests__/**'],
     rules: {
       'no-restricted-syntax': [
         'error',

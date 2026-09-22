@@ -25,6 +25,7 @@ export function rulePreviewModel(draft: RuleDraft, schedule?: Schedule): RulePre
     return { message: block(c.walkingTarget(goal)), progress: c.progress(goal, 'steps'), icon: 'walking' };
   }
   if (draft.gymMode === 'arrival') return { message: block(c.gymArrival), progress: c.gymWaiting, icon: 'gym' };
+  if (draft.gymMode === 'presence') return { message: block(c.gymPresence), progress: c.gymWaiting, icon: 'gym' };
   const goal = number(draft.gymMinutes);
   return { message: block(c.gymTime(goal)), progress: c.progress(goal, 'minutes'), icon: 'gym' };
 }

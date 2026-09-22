@@ -1,8 +1,8 @@
 import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { tokens as t } from '../../../design-system/tokens';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
-export function BlockedBadge({ variant = 'hourglass', size = w.tile.badge, offset = w.tile.badgeOffset }: {
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
+export function BlockedBadge({ variant = 'hourglass', size = art.welcome.tile.badge, offset = art.welcome.tile.badgeOffset }: {
   variant?: 'hourglass' | 'lock';
   size?: number;
   offset?: number;
@@ -16,8 +16,8 @@ export function BlockedBadge({ variant = 'hourglass', size = w.tile.badge, offse
         width: size,
         height: size,
         borderRadius: t.radius.pill,
-        backgroundColor: t.surface.canvas,
-        boxShadow: w.tile.shadow,
+        backgroundColor: t.surface.card,
+        boxShadow: art.welcome.tile.shadow,
         padding: t.space.xs,
       }}>
       <Svg viewBox="0 0 24 24" width="100%" height="100%" accessible={false}>

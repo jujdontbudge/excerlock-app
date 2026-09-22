@@ -54,9 +54,13 @@ die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 
 # ── Preflight ────────────────────────────────────────────────────────────────
 command -v az >/dev/null || die "az CLI not found — brew install azure-cli"
-az account show >/dev/null 2>&1 || die "not logged in — run: az login && az account set --subscription <id>"
 [ -f "$SSH_KEY_PATH" ] || die "ssh public key not found at $SSH_KEY_PATH (set SSH_KEY_PATH or ssh-keygen -t ed25519)"
 [ -f "$CLOUD_INIT_SRC" ] || die "cloud-init.yaml not found next to this script"
+[[ -n "$DOMAIN" ]] ||
+  die "DOMAIN is required; refusing to provision a plaintext HTTP API"
+[[ "$DOMAIN" =~ ^[A-Za-z0-9.-]+$ && "$DOMAIN" != .* && "$DOMAIN" != *. && "$DOMAIN" != *..* ]] ||
+  die "DOMAIN must be a DNS hostname without shell or Caddyfile metacharacters"
+az account show >/dev/null 2>&1 || die "not logged in — run: az login && az account set --subscription <id>"
 # az CLI encodes --custom-data as latin-1, so a single non-ASCII byte anywhere in
 # cloud-init.yaml aborts `az vm create` client-side with an opaque codec error
 # ("'latin-1' codec can't encode character ... in position N"). An em dash in a
@@ -126,7 +130,7 @@ if ! az network nic show -g "$RG" -n "$NIC" >/dev/null 2>&1; then
 fi
 
 # ── 6. Render cloud-init (substitute the Caddy site address) ─────────────────
-CADDY_SITE="${DOMAIN:-:80}"   # no domain yet → plain HTTP on the bare IP
+CADDY_SITE="$DOMAIN"
 RENDERED="$(mktemp -t excerlock-cloud-init.XXXXXX)"
 trap 'rm -f "$RENDERED"' EXIT
 sed "s|%DOMAIN%|${CADDY_SITE}|" "$CLOUD_INIT_SRC" > "$RENDERED"
@@ -174,7 +178,7 @@ cat <<SUMMARY
   public IP : $PUBLIC_IP
   ssh       : ssh ${ADMIN_USER}@${PUBLIC_IP}
   caddy site: ${CADDY_SITE}
-  next      : $([ -n "$DOMAIN" ] && echo "ensure the A record for $DOMAIN is live, then Caddy mints TLS on its own" || echo "set DOMAIN and re-run (or edit /etc/caddy/Caddyfile) once the API hostname exists")
+  next      : ensure the A record for $DOMAIN is live, then Caddy mints TLS on its own
               fill /etc/excerlock/excerlock-api.env (PRD §10.10), rsync-deploy the server, systemctl enable --now excerlock-api
 
 SUMMARY

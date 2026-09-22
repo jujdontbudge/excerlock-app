@@ -43,7 +43,7 @@ export function GymUnlockMap({
             <Circle
               center={gym}
               radius={gym.radiusMeters}
-              fillColor="rgba(239,76,0,0.18)"
+              fillColor={t.map.geofence}
               strokeColor={t.brand.primary}
               strokeWidth={1.5}
             />
@@ -60,7 +60,7 @@ export function GymUnlockMap({
             if (location) map.current?.animateToRegion(region(location), 350);
           }}
           style={s.disc}>
-          <Icon name="map-pin" variant="utility" tint={following ? t.brand.primary : t.text.secondary} size={24} />
+          <Icon name="map-pin" variant="utility" tone={following ? 'accent' : 'muted'} size={t.icon.md} />
         </Pressable>
         {gym ? (
           <Pressable
@@ -72,7 +72,7 @@ export function GymUnlockMap({
               map.current?.animateToRegion(region(gym, gym.radiusMeters), 350);
             }}
             style={s.disc}>
-            <Icon name="gym" variant="utility" tint={t.brand.primary} size={24} />
+            <Icon name="gym" variant="utility" size={t.icon.md} />
           </Pressable>
         ) : null}
       </View>
@@ -83,10 +83,10 @@ const s = StyleSheet.create({
   disc: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: 'white',
+    borderRadius: t.radius.pill,
+    backgroundColor: t.surface.card,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 3px 10px #0002',
+    boxShadow: t.shadow.control,
   },
 });

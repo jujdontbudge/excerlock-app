@@ -43,13 +43,13 @@ export function TabBar({ selected, onSelect }: { selected: TabId; onSelect: (tab
               <Icon
                 name={tab.icon}
                 variant="utility"
-                size={t.layout.glyph}
-                tint={selected === tab.id ? t.brand.primary : t.text.muted}
+                size={t.icon.md}
+                tone={selected === tab.id ? 'accent' : 'muted'}
               />
               <Label
-                variant="badge"
+                variant="micro"
                 style={{
-                  color: selected === tab.id ? t.text.primary : t.text.muted,
+                  color: selected === tab.id ? t.text.primary : t.text.secondary,
                   textAlign: 'center',
                 }}>
                 {tab.title}

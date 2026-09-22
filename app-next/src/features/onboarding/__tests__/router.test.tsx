@@ -17,7 +17,10 @@ const answers = {
   referralSource: 'friend',
   ageBand: '25–34',
   improveFirst: 'exercise',
-  mainReason: 'focus',
+  gender: 'preferNotToSay',
+  bodyGoal: 'maintain',
+  exercisePreference: 'walking',
+  weeklyExerciseHours: '1-2',
   estimatedDailyMinutes: 180,
   activity: 'walking',
   walkingMode: 'steps',
@@ -47,7 +50,7 @@ test.each(preBranch)('%s renders, advances, and returns through the actual route
   entitlementStore.getState().reset();
   const routed = renderRouter(routes, { initialUrl: `/onboarding/${step}` });
   await routed;
-  expect(screen.getByRole('header', { name: onboardingCopy[step].title })).toBeTruthy();
+  expect(screen.getByRole('header', { name: step === 'O09' ? 'How many hours of walking do you do per week?' : onboardingCopy[step].title })).toBeTruthy();
   await userEvent.press(
     screen.getByRole('button', { name: ['O01', 'O02', 'O03'].includes(step) ? 'Get started' : 'Continue' }),
   );
@@ -55,7 +58,7 @@ test.each(preBranch)('%s renders, advances, and returns through the actual route
   await userEvent.press(screen.getByRole('button', { name: 'Back' }));
   expect(routed.getPathname()).toBe('/onboarding/' + step);
 });
-test.each(['O04', 'O05', 'O06', 'O08', 'O09', 'O20'])('%s blocks continuation without an answer', async (step) => {
+test.each(['O04', 'O05', 'O06', 'O07', 'O08', 'O09', 'O20', 'O21', 'O22'])('%s blocks continuation without an answer', async (step) => {
   onboardingStore.getState().reset();
   const routed = renderRouter(routes, { initialUrl: `/onboarding/${step}` });
   await routed;
@@ -134,7 +137,7 @@ test('pending remote lookup guards duplicate taps, stale edits, and Back', async
   fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
   await waitFor(() => expect(isEnabled).toHaveBeenCalledTimes(2));
   fireEvent.press(screen.getByRole('button', { name: 'Back' }));
-  await waitFor(() => expect(routed.getPathname()).toBe('/onboarding/O03'));
+  await waitFor(() => expect(routed.getPathname()).toBe('/onboarding/O07'));
   await act(async () => { backGate.resolve(true); await Promise.resolve(); });
   expect(onboardingStore.getState().data.answers.stepGoal).toBe(5000);
 });

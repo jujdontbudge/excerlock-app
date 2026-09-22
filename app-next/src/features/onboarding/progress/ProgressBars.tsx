@@ -1,8 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated from 'react-native-reanimated';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { useMotion } from '../../../motion/useMotion';
-const p = w.progress;
+const p = art.welcome.progress;
 export function ProgressBars() {
   const m = useMotion();
   return p.bars.map((height, i) => (
@@ -15,15 +15,14 @@ export function ProgressBars() {
         width: p.barWidth,
         height,
         transformOrigin: 'bottom',
-        animationName: m.reduced
-          ? { from: { opacity: 0 }, to: { opacity: 1 } }
-          : { from: { opacity: 0, transform: [{ scaleY: 0.15 }] }, to: { opacity: 1, transform: [{ scaleY: 1 }] } },
-        animationDuration: m.duration.reveal,
-        animationDelay: i * m.stagger.hero,
-        animationFillMode: 'both',
+        ...m.keyframes(
+          { from: { opacity: 0, transform: [{ scaleY: 0.15 }] }, to: { opacity: 1, transform: [{ scaleY: 1 }] } },
+          'emphasized',
+          { delay: i * m.stagger.hero, fill: 'both', still: { from: { opacity: 0 }, to: { opacity: 1 } } },
+        ),
       }}>
       <LinearGradient
-        colors={[p.pale, p.pale, w.brands.white]}
+        colors={[p.pale, p.pale, art.welcome.brands.white]}
         locations={[0, 0.35, 1]}
         style={{ flex: 1, borderRadius: p.barRadius }}
       />

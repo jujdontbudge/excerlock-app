@@ -1,54 +1,79 @@
-import { render, screen, userEvent } from '@testing-library/react-native';
+import { fireEvent, render, screen, userEvent, waitFor, within } from '@testing-library/react-native';
 import { AnalyticsScreen } from '../AnalyticsScreen';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
-test.each([
-  ['analytics-day-zero', 'Your first week starts today'],
-  ['analytics-no-measurement', 'No measurement yet'],
-])('%s reports unavailable measurements honestly', async (id, title) => {
+
+async function mountScenario(id: string) {
   const runtime = createRuntime();
   await runtime.dev.load(id);
-  await render(
-    <AppRuntimeProvider runtime={runtime}>
-      <AnalyticsScreen />
-    </AppRuntimeProvider>,
-  );
-  expect(screen.getByRole('header', { name: title })).toBeTruthy();
-  await userEvent.press(screen.getByRole('tab', { name: 'All time' }));
-  expect(screen.getByText(/^Since /)).toBeTruthy();
-  await userEvent.press(screen.getByRole('tab', { name: 'Day' }));
-  expect(screen.getByText('Today')).toBeTruthy();
-  expect(screen.getByLabelText('Days met this week')).toBeTruthy();
-  expect(screen.queryByText('Your weekly recap')).toBeNull();
-});
-test('tiles follow the gym-minutes condition as the fake gym clock ticks', async () => {
-  const runtime = createRuntime();
-  await runtime.dev.load('gym-time-user');
-  await runtime.gym.checkIn(runtime.gym.listPlaces()[0].id);
-  runtime.dev.advance(18 * 60000 + 9000);
-  await render(
-    <AppRuntimeProvider runtime={runtime}>
-      <AnalyticsScreen />
-    </AppRuntimeProvider>,
-  );
-  expect(screen.getByLabelText(/^At the gym, 30m/)).toBeTruthy();
-  expect(screen.getByLabelText(/^Streak, /)).toBeTruthy();
-  expect(screen.queryByLabelText(/^Gym arrivals/)).toBeNull();
-  expect(screen.queryByLabelText(/^Steps, /)).toBeNull();
-  expect(screen.getByRole('header', { name: 'How you earned time' })).toBeTruthy();
-  expect(screen.getByText('30 minutes')).toBeTruthy();
-  expect(screen.getAllByText('Screen time replaced').length).toBeGreaterThan(0);
-  expect(screen.getByLabelText('Screen time replaced chart')).toBeTruthy();
+  await render(<AppRuntimeProvider runtime={runtime}><AnalyticsScreen /></AppRuntimeProvider>);
+  return runtime;
+}
+
+test('walking analytics follows the reference Day, Week, and Month hierarchy', async () => {
+  const runtime = await mountScenario('home-locked-walking');
+  expect(screen.getByText('This week')).toBeTruthy();
+  expect(screen.getByTestId('Analytics average')).toBeTruthy();
+  expect(screen.queryByLabelText('Previous period')).toBeNull();
+  expect(screen.queryByLabelText('Next period')).toBeNull();
+  await waitFor(() => expect(screen.getAllByText('15,000').length).toBeGreaterThan(0));
+  const scrubber = screen.getByTestId('Analytics trend scrubber');
+  expect(scrubber).toHaveAccessibilityValue({ text: 'SEP' });
+  await fireEvent(scrubber, 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } });
+  await fireEvent(screen.getByTestId('Analytics trend scrubber'), 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } });
+  await waitFor(() => expect(screen.getByTestId('Analytics trend scrubber')).toHaveAccessibilityValue({ text: 'AUG' }));
+  expect(screen.getByRole('tab', { name: 'D' })).toBeTruthy();
+  expect(screen.getByRole('tab', { name: 'W' })).toBeTruthy();
+  expect(screen.getByRole('tab', { name: 'M' })).toBeTruthy();
+  expect(screen.getByLabelText('Walking chart, steps from Apple Motion & Fitness')).toBeTruthy();
+  expect(screen.getByText('Streak')).toBeTruthy();
+  expect(screen.getByText('kcal')).toBeTruthy();
+  expect(screen.getByText('mi')).toBeTruthy();
+  expect(screen.getByText('min')).toBeTruthy();
+  expect(screen.getByText('Floors')).toBeTruthy();
+  expect(screen.getByLabelText('Steps trend')).toBeTruthy();
+  expect(screen.queryByRole('header', { name: 'Screen Time' })).toBeNull();
+  await userEvent.press(screen.getByRole('tab', { name: 'D' }));
+  expect(screen.getByLabelText('Daily steps ring')).toBeTruthy();
+  expect(screen.getByTestId('Daily ring base lap')).toBeTruthy();
+  expect(screen.getByTestId('Daily ring overflow lap')).toBeTruthy();
+  await userEvent.press(screen.getByRole('tab', { name: 'M' }));
+  expect(screen.getByLabelText('Monthly activity calendar')).toBeTruthy();
   runtime.dispose();
 });
-test('an arrival condition shows check-ins instead of gym minutes', async () => {
-  const runtime = createRuntime();
-  await runtime.dev.load('gym-arrival-user');
-  await render(
-    <AppRuntimeProvider runtime={runtime}>
-      <AnalyticsScreen />
-    </AppRuntimeProvider>,
-  );
-  expect(screen.getByLabelText(/^Gym arrivals, /)).toBeTruthy();
+
+test('gym condition gets the same analytics experience with a 45-minute day ring', async () => {
+  const runtime = await mountScenario('gym-time-user');
+  expect(screen.queryByRole('header', { name: 'Gym' })).toBeNull();
+  expect(screen.queryByRole('header', { name: 'Walking' })).toBeNull();
+  expect(screen.queryByRole('header', { name: 'Screen Time' })).toBeNull();
+  expect(screen.getByLabelText('Gym chart, minutes at the gym')).toBeTruthy();
+  await userEvent.press(screen.getByRole('tab', { name: 'D' }));
+  expect(within(screen.getByLabelText('Daily gym ring')).getByText('45')).toBeTruthy();
+  expect(screen.getByLabelText('Previous day')).toBeTruthy();
+  expect(screen.getByTestId('Daily ring overflow lap')).toBeTruthy();
+  expect(screen.getByTestId('Analytics period swipe')).toBeTruthy();
+  runtime.dispose();
+});
+
+test('arrival-only gym conditions still show measured workout duration', async () => {
+  const runtime = await mountScenario('gym-arrival-user');
+  expect(screen.queryByRole('header', { name: 'Gym' })).toBeNull();
+  expect(screen.getByLabelText('Gym chart, minutes at the gym')).toBeTruthy();
+  expect(screen.queryByText('Gym time')).toBeNull();
+  runtime.dispose();
+});
+
+test('Gym stays above analytics whenever any enabled gym condition exists', async () => {
+  const runtime = await mountScenario('multi-rule-overlap');
+  expect(screen.queryByRole('header', { name: 'Gym' })).toBeNull();
+  expect(screen.getByLabelText('Gym chart, minutes at the gym')).toBeTruthy();
+  expect(screen.queryByLabelText('Walking chart, steps from Apple Motion & Fitness')).toBeNull();
+  runtime.dispose();
+});
+
+test('walking analytics keeps the dashboard clean when motion access is absent', async () => {
+  const runtime = await mountScenario('fresh-install');
+  expect(screen.queryByRole('button', { name: 'Connect Apple steps' })).toBeNull();
   runtime.dispose();
 });

@@ -1,17 +1,18 @@
 import { useEffect, useState, useRef } from 'react';
 import { AccessibilityInfo } from 'react-native';
-import { useSharedValue, withTiming } from 'react-native-reanimated';
+import { useSharedValue } from 'react-native-reanimated';
 import { feedback } from '../../motion/haptics';
 import { useUnlockMotion } from './useUnlockMotion';
 export function useCeremony(value: number, lifted: boolean, message: string) {
   const progress = useSharedValue(0),
-    { reduced } = useUnlockMotion();
+    m = useUnlockMotion(),
+    { reduced } = m;
   const [showMessage, setMessage] = useState(false),
     [done, setDone] = useState(false);
   const tick = useRef(0);
   useEffect(() => {
-    progress.value = withTiming(value, { duration: 100 });
-  }, [value, progress]);
+    progress.value = m.timing(value, 'press');
+  }, [value, progress, m]);
   useEffect(() => {
     const next = Math.floor(value * 4);
     if (next > tick.current && !reduced) feedback('selection');

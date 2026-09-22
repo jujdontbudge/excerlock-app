@@ -1,13 +1,13 @@
-import { opacityIn, opacityOut } from '../../motion/presets';
+import { pageIn, pageOut } from '../../motion/presets';
 import { PropsWithChildren, ReactNode } from 'react';
 import { View } from 'react-native';
-import Animated, { SlideInRight, SlideInLeft, SlideOutLeft, SlideOutRight } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { ScreenShell, OnboardingHeader, PrimaryButton } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { useMotion } from '../../motion/useMotion';
 import { onboardingLabels as c } from '../../content/onboarding';
 import { WelcomeFooter } from './welcome/WelcomeFooter';
-import { SolidChoices } from '../../design-system/ChoiceAppearance';
+import { SetupPresentation } from '../../design-system/SetupPresentation';
 import { Reveal } from '../../motion/Reveal';
 export function OnboardingShell({
   children,
@@ -43,27 +43,30 @@ export function OnboardingShell({
         : ['O16', 'O17', 'O18'].includes(step)
           ? 'loop'
           : step;
-  const enter = m.reduced
-    ? opacityIn(m.duration.standard)
-    : (direction === 'forward' ? SlideInRight : SlideInLeft).duration(m.duration.sheet);
-  const exit = m.reduced
-    ? opacityOut(m.duration.standard)
-    : (direction === 'forward' ? SlideOutLeft : SlideOutRight).duration(m.duration.slow);
+  const enter = pageIn(m.reduced, direction);
+  const exit = pageOut(m.reduced, direction);
   return (
-    <SolidChoices>
+    <SetupPresentation>
       <ScreenShell
         scrollResetKey={step}
+        scrollEnabled={step !== 'S1'}
+        fullBleed={step === 'S3b'}
         overlay={overlay}
-        contentStyle={['O01', 'O02', 'O03'].includes(step) ? { paddingBottom: t.space.sm } : undefined}
+        contentStyle={step === 'S3b'
+          ? { paddingHorizontal: 0, paddingBottom: 0 }
+          : undefined}
         header={
-          ['O01', 'O02', 'O03'].includes(step) ? undefined : (
+          ['S2', 'S3', 'S3b', 'S3c'].includes(step) ? undefined : ['O01', 'O02', 'O03'].includes(step) ? (
+            // The welcome pages show a real back control rather than tappable pagination dots.
+            <OnboardingHeader progress={0} showProgress={false} onBack={step === 'O01' ? undefined : onBack} />
+          ) : (
             <OnboardingHeader progress={progress} onBack={hideBack ? undefined : onBack} />
           )
         }
         footer={
           hideContinue ? (
             ['O11', 'O12', 'O13', 'O14'].includes(step) ? (
-              <View style={{ height: t.layout.button }} />
+              <View style={{ height: t.control.full }} />
             ) : undefined
           ) : ['O01', 'O02', 'O03'].includes(step) ? (
             <WelcomeFooter onContinue={onContinue} />
@@ -85,6 +88,6 @@ export function OnboardingShell({
           </Animated.View>
         </View>
       </ScreenShell>
-    </SolidChoices>
+    </SetupPresentation>
   );
 }

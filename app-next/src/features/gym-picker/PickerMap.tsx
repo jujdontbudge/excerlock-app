@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView from 'react-native-maps';
 import Svg, { Circle, Path } from 'react-native-svg';
-import Animated, { useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedProps, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
-import { gymPickerTokens as g } from '../../design-system/gymPickerTokens';
 import { gymPickerCopy as c } from '../../content/gymPicker';
 import { useMotion } from '../../motion/useMotion';
 import { feedback } from '../../motion/haptics';
@@ -42,8 +41,8 @@ export function PickerMap({
   const latestRadius = useRef(radius);
   useEffect(() => {
     latestRadius.current = radius;
-    radiusValue.set(m.reduced ? radius : withSpring(radius, t.motion.spring.control));
-  }, [radius, radiusValue, m.reduced]);
+    radiusValue.set(m.spring(radius, 'control'));
+  }, [radius, radiusValue, m]);
   const circle = useAnimatedProps(() => ({
     r: Math.min(
       Math.hypot(width.get(), mapHeight.get()) * 2,
@@ -59,13 +58,13 @@ export function PickerMap({
     return { d: `M0 0H${w}V${h}H0Z M${x - r} ${y}a${r} ${r} 0 1 0 ${r * 2} 0a${r} ${r} 0 1 0 ${-r * 2} 0` };
   });
   const pinStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: -lift.get() * g.pin.lift }, { scale: 1 + lift.get() * (g.pin.scale - 1) }],
+    transform: [{ translateY: -lift.get() * t.map.pin.lift }, { scale: 1 + lift.get() * (t.map.pin.scale - 1) }],
   }));
   const change = (next: MapRegion) => {
     region.set(next);
     if (!moving.current) {
       moving.current = true;
-      if (!m.reduced) lift.set(withSpring(1, t.motion.spring.control));
+      if (!m.reduced) lift.set(m.spring(1, 'control'));
     }
   };
   return (
@@ -86,7 +85,7 @@ export function PickerMap({
         mapHeight.set(next.height);
         const fitted = regionForRadius(coordinate, latestRadius.current, next);
         region.set(fitted);
-        map.current?.animateToRegion(fitted, m.reduced ? 0 : m.duration.navigation);
+        map.current?.animateToRegion(fitted, m.reduced ? 0 : m.duration.emphasized);
       }}>
       <MapView
         ref={map}
@@ -106,19 +105,19 @@ export function PickerMap({
           onSettle({ latitude: next.latitude, longitude: next.longitude });
           if (moving.current) feedback();
           moving.current = false;
-          lift.set(m.reduced ? 0 : withSpring(0, t.motion.spring.control));
+          lift.set(m.spring(0, 'control'));
         }}
       />
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         <Svg width="100%" height="100%">
-          <Mask animatedProps={mask} fill={g.ring.dim} fillRule="evenodd" />
+          <Mask animatedProps={mask} fill={t.map.ring.dim} fillRule="evenodd" />
           <Ring
             cx={size.width / 2}
             cy={size.height / 2}
             animatedProps={circle}
             stroke={t.brand.primary}
-            strokeWidth={g.ring.stroke}
-            fill={g.ring.fill}
+            strokeWidth={t.map.ring.stroke}
+            fill={t.map.ring.fill}
           />
         </Svg>
         <View
@@ -128,17 +127,17 @@ export function PickerMap({
             left: 0,
             right: 0,
             alignItems: 'center',
-            marginTop: -g.pin.size / 2,
+            marginTop: -t.map.pin.size / 2,
           }}>
           <Animated.View
             style={[
               {
-                width: g.pin.size,
-                height: g.pin.size,
+                width: t.map.pin.size,
+                height: t.map.pin.size,
                 borderRadius: t.radius.pill,
                 backgroundColor: t.brand.primary,
-                borderWidth: g.pin.border,
-                borderColor: t.surface.solid,
+                borderWidth: t.map.pin.border,
+                borderColor: t.surface.card,
                 boxShadow: t.shadow.cta,
               },
               pinStyle,
@@ -151,7 +150,7 @@ export function PickerMap({
               paddingHorizontal: t.space.md,
               paddingVertical: t.space.xs,
               borderRadius: t.radius.pill,
-              backgroundColor: t.surface.solid,
+              backgroundColor: t.surface.card,
               borderWidth: t.stroke.hairline,
               borderColor: t.border.outline,
             }}>
@@ -166,7 +165,7 @@ export function PickerMap({
               position: 'absolute',
               bottom: t.space.lg,
               alignSelf: 'center',
-              backgroundColor: t.surface.solid,
+              backgroundColor: t.surface.card,
               paddingHorizontal: t.space.md,
               paddingVertical: t.space.sm,
               borderRadius: t.radius.pill,

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { fadeIn, fadeOut } from '../motion/presets';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { tokens as t } from './tokens';
 import { useMotion } from '../motion/useMotion';
 export function ProgressBar({
@@ -18,14 +18,8 @@ export function ProgressBar({
     p = useSharedValue(0);
   const m = useMotion();
   useEffect(() => {
-    p.set(
-      m.reduced
-        ? progress
-        : withTiming(progress, {
-            duration: m.reduced ? m.duration.fast : m.duration.reveal,
-          }),
-    );
-  }, [progress, p, m.reduced, m.duration.fast, m.duration.reveal]);
+    p.set(m.timing(progress, 'emphasized'));
+  }, [progress, p, m]);
   const fill = useAnimatedStyle(() => ({ width: `${p.get() * 100}%` }));
   return (
     <Animated.View
@@ -38,7 +32,7 @@ export function ProgressBar({
       accessibilityValue={{ min: 0, max: 100, now: progress * 100 }}
       style={{
         height: inverse ? t.layout.progress * 1.4 : t.layout.progress,
-        backgroundColor: inverse ? 'rgba(255,255,255,0.3)' : t.chart.grid,
+        backgroundColor: inverse ? t.surface.onAccentTrack : t.chart.grid,
         borderRadius: t.radius.pill,
         overflow: 'hidden',
       }}>

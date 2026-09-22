@@ -10,7 +10,7 @@ export function TrialTimeline({ milestones }: { milestones: readonly { title: st
         <Reveal key={milestone.title} index={i}>
           <View style={{ flexDirection: 'row', gap: t.space.lg }}>
             <View style={{ alignItems: 'center' }}>
-              <Icon name={i === 0 ? 'lock-open' : i === 1 ? 'bell' : 'star'} size={t.layout.disc} />
+              <Icon name={i === 0 ? 'lock-open' : i === 1 ? 'bell' : 'star'} size={t.icon.lg} />
               {i < milestones.length - 1 ? (
                 <View
                   style={{

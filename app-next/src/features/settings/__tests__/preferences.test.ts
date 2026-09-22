@@ -9,7 +9,7 @@ test('units switch freely and leave step and minute goals untouched', () => {
     { ...createDraft('walking'), stepGoal: 8000 },
     toSchedule(scheduleDraft({})),
   );
-  const gym = toRule({ ...createDraft('gym'), gymMinutes: 45 }, toSchedule(scheduleDraft({})));
+  const gym = toRule({ ...createDraft('gym'), gymMode: 'time', gymMinutes: 45 }, toSchedule(scheduleDraft({})));
   rulesStore.getState().patch({ rules: [walking, gym] });
   setUnits('km');
   expect(settingsStore.getState().data.units).toBe('km');

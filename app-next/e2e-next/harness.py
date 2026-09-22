@@ -27,6 +27,7 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Sequence
+from urllib.parse import urlsplit
 
 REPO = Path(__file__).resolve().parents[2]
 APP_NEXT = REPO / 'app-next'
@@ -84,7 +85,42 @@ def env_value(name: str, default: str | None = None) -> str | None:
 
 
 def api_url() -> str:
-    return (env_value('EXPO_PUBLIC_API_URL') or env_value('EXCERLOCK_API_URL') or 'https://api.excerlock.com').rstrip('/')
+    return validate_remote_url(
+        env_value('EXPO_PUBLIC_API_URL') or env_value('EXCERLOCK_API_URL') or 'https://api.excerlock.com',
+        'ExcerLock API',
+        allowed_hosts=('api.excerlock.com',),
+    )
+
+
+def validate_remote_url(
+    value: str,
+    label: str,
+    *,
+    allowed_hosts: Sequence[str] = (),
+    allowed_suffixes: Sequence[str] = (),
+) -> str:
+    """Accept only HTTPS service URLs from the explicitly trusted hosts.
+
+    These helpers carry bearer/service credentials and are test tooling, but a
+    compromised environment file must not turn an E2E run into an arbitrary
+    file read or credential exfiltration primitive.
+    """
+    parsed = urlsplit(value)
+    hostname = (parsed.hostname or '').lower().rstrip('.')
+    try:
+        port = parsed.port
+    except ValueError as error:
+        raise ValueError(f'{label} has an invalid port') from error
+    if parsed.scheme != 'https' or not hostname or parsed.username or parsed.password or port not in (None, 443):
+        raise ValueError(f'{label} must be an HTTPS URL without embedded credentials')
+    if parsed.query or parsed.fragment:
+        raise ValueError(f'{label} must not contain a query or fragment')
+    if allowed_hosts or allowed_suffixes:
+        host_allowed = hostname in {host.lower().rstrip('.') for host in allowed_hosts}
+        host_allowed = host_allowed or any(hostname.endswith(suffix.lower()) for suffix in allowed_suffixes)
+        if not host_allowed:
+            raise ValueError(f'{label} host is not trusted: {hostname}')
+    return value.rstrip('/')
 
 
 def api_request(method: str, path: str, *, token: str | None = None, body: dict | None = None,
@@ -100,7 +136,7 @@ def api_request(method: str, path: str, *, token: str | None = None, body: dict 
         headers['Authorization'] = f'Bearer {token}'
     request = urllib.request.Request(f'{api_url()}{path}', data=data, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with urllib.request.urlopen(request, timeout=timeout) as response:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
             raw = response.read()
             return response.status, (json.loads(raw) if raw else None)
     except urllib.error.HTTPError as error:

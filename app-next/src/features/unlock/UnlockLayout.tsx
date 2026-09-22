@@ -1,9 +1,8 @@
 import { ReactNode } from 'react';
 import { View } from 'react-native';
-import { ScreenShell, Label, CloseButton } from '../../design-system';
+import { ScreenShell, Label, CloseButton, Pictogram } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { unlockCopy as c } from '../../content/unlock';
-import { Icon } from '../../icons/Icon';
 import Animated from 'react-native-reanimated';
 import { popIn } from '../../motion/presets';
 import { useUnlockMotion } from './useUnlockMotion';
@@ -22,8 +21,8 @@ export function UnlockLayout({
     <ScreenShell
       header={
         <View style={{ paddingHorizontal: t.layout.page, flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flex: 1 }}>{preview ? <Label>{c.preview}</Label> : null}</View>
           <CloseButton label={c.close} onPress={close} />
-          {preview ? <Label tone="secondary">{c.preview}</Label> : null}
         </View>
       }
       footer={footer}
@@ -40,14 +39,14 @@ export function Detected({ title, body }: { title: string; body: string }) {
       style={{
         position: 'absolute',
         inset: 0,
-        backgroundColor: 'rgba(239,76,0,0.88)',
+        backgroundColor: t.surface.detected,
         justifyContent: 'center',
         padding: t.space.xl,
       }}>
       <View style={{ alignItems: 'center', marginBottom: t.space.lg }}>
-        <Icon name="check" variant="utility" size={56} tint={t.text.onAccent} />
+        <Pictogram name="check" size="card" variant="utility" tone="onAccent" />
       </View>
-      <Label accessibilityRole="header" variant="question" tone="onAccent" style={{ textAlign: 'center' }}>
+      <Label accessibilityRole="header" variant="display" tone="onAccent" style={{ textAlign: 'center' }}>
         {title}
       </Label>
       <Label tone="onAccent" style={{ textAlign: 'center', marginTop: t.space.md }}>

@@ -8,9 +8,9 @@ export const walkingCopy = {
     { id: 'both', title: 'Both', support: 'Outside or on a treadmill.' },
   ],
   modes: [
+    { id: 'state', title: 'Unlock while walking (Recommended)', support: 'Apps open while you walk, close when you stop' },
     { id: 'steps', title: 'Reach a step goal', support: 'Unlocks your apps for the rest of the day' },
     { id: 'minutes', title: 'Walk for a set time', support: 'Unlocks after your walking minutes are complete' },
-    { id: 'state', title: 'Unlock while walking (Recommended)', support: 'Apps open while you walk, close when you stop' },
   ],
   goal: 'Daily step goal',
   unit: 'steps',

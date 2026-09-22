@@ -11,6 +11,7 @@ import { validateRule } from '../../../domain/validateRule';
 const gymPaths = [
   ['G1', 'Spend time at the gym', 'How long at the gym unlocks your phone?'],
   ['G1', 'Arrive at the gym', 'When should blocking be active?'],
+  ['G1', 'Be at the gym', 'When should blocking be active?'],
 ] as const;
 test.each(gymPaths)(
   'gym through %s / %s reaches the correct goal and a valid rule',
@@ -105,8 +106,9 @@ test.each(['W1', 'W2', 'W3'] as const)('%s previews the reviewer preset schedule
 test('activity defaults stay separate when answers switch between walking and gym', () => {
   const walking = draftFromAnswers({ activity: 'walking', stepGoal: '8000' });
   expect(walking.stepGoal).toBe(8000);
-  const gym = draftFromAnswers({ activity: 'gym', gymMode: 'arrival' });
+  const gym = draftFromAnswers({ activity: 'gym' });
   expect(gym.gymMode).toBe('arrival');
+  expect(draftFromAnswers({ activity: 'gym', gymMode: 'presence' }).gymMode).toBe('presence');
   const switched = draftFromAnswers({ activity: 'gym' }, walking);
   expect(switched.activity).toBe('gym');
   expect(switched.gymMinutes).toBe(30);
@@ -114,8 +116,9 @@ test('activity defaults stay separate when answers switch between walking and gy
 test('canceling an invalid step-goal edit restores the valid summary', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
+  const saved = { activity: 'walking', walkPlace: 'outside', walkingMode: 'steps', stepGoal: '5000' };
   onboardingStore.getState().patch({
-    answers: { activity: 'walking', walkPlace: 'outside', walkingMode: 'steps', stepGoal: '5000' },
+    answers: { ...saved, returnTo: 'S3', editBackup: JSON.stringify(saved) },
   });
   const r = renderRouter(
     {
@@ -126,15 +129,15 @@ test('canceling an invalid step-goal edit restores the valid summary', async () 
       ),
       'onboarding/[step]': OnboardingRoute,
     },
-    { initialUrl: '/onboarding/S3' },
+    { initialUrl: '/onboarding/W3?returnTo=S3' },
   );
   await r;
-  await userEvent.press(screen.getByRole('button', { name: 'Edit goal' }));
   await fireEvent.changeText(screen.getByLabelText('Daily step goal'), '');
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
   await userEvent.press(screen.getByRole('button', { name: 'Back' }));
   expect(screen.getByRole('header', { name: 'Your plan is ready' })).toBeTruthy();
-  expect(screen.getByText('Walk 5,000 steps')).toBeTruthy();
+  expect(screen.getByText(/Your apps are blocked until you walk 5,000 steps/)).toBeTruthy();
+  expect(onboardingStore.getState().data.answers.stepGoal).toBe('5000');
 });
 test('a retained summary route does not validate the active route’s incomplete input', async () => {
   const runtime = createRuntime();

@@ -4,6 +4,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
 import { nextStep, prevStep, progressFraction, resumeStep, type FlowOrder } from '../../onboarding/flow';
 import { createDraft } from '../rules/draft';
+import { draftFromAnswers } from '../rules/answersDraft';
+import { scenarioFor } from './condition-demo/model';
+import { profileStore } from '../../state/profileStore';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { Answers } from '../../onboarding/types';
 import { applyReviewPreset, isReviewPresetName } from './reviewPreset';
@@ -42,6 +45,12 @@ export function useOnboarding() {
         .patch({ answers: { ...current, ruleId: draft.id, ruleCreatedAt: draft.createdAt } });
     }
     runtime.analytics.screen(step);
+    if (step === 'S3b') {
+      const demo = scenarioFor(draftFromAnswers(current), profileStore.getState().data.walkPlaces.join(','));
+      runtime.analytics.track('onboarding_screen_viewed', {
+        screen: 'plan-demo', scenario: demo.kind, ...(demo.kind === 'walk-state' ? { place: demo.place } : {}),
+      });
+    }
     return () => { advanceEpoch.current += 1; };
   }, [step, runtime]);
   useEffect(() => {

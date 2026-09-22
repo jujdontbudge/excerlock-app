@@ -18,15 +18,15 @@ let postgres: Awaited<ReturnType<typeof createPgliteTestDatabase>>;
 
 beforeAll(async () => {
   postgres = await createPgliteTestDatabase();
-});
+}, 30_000);
 
 beforeEach(async () => {
   await postgres.reset();
-});
+}, 30_000);
 
 afterAll(async () => {
   await postgres.client.close();
-});
+}, 30_000);
 
 const events = [
   {

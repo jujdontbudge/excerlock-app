@@ -112,6 +112,16 @@ class CapabilityMap(unittest.TestCase):
 
 
 class PostHogSql(unittest.TestCase):
+    def test_live_query_forces_recalculation_instead_of_cached_partial_coverage(self):
+        from unittest.mock import patch, MagicMock
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = b'{"columns":["scenario"],"results":[["gym-minutes"]]}'
+        with patch.object(posthog, 'personal_key', return_value='test-key'), \
+             patch.object(posthog.urllib.request, 'urlopen', return_value=response) as request:
+            self.assertEqual(posthog.query('select scenario from events'), [{'scenario': 'gym-minutes'}])
+        payload = json.loads(request.call_args.args[0].data)
+        self.assertEqual(payload['refresh'], 'force_blocking')
+
     def test_sql_is_scoped_to_the_run_device_id(self):
         sql = posthog.device_events_sql('abc-123', '2026-09-16 22:00:00', events=('$screen', 'paywall_viewed'))
         self.assertIn("properties.$device_id = 'abc-123'", sql)
@@ -128,6 +138,10 @@ class PostHogSql(unittest.TestCase):
 
 
 class OnboardingIdentification(unittest.TestCase):
+    def test_condition_demo_is_a_distinct_observed_step(self):
+        self.assertEqual(identify(['Once you hit 10,000 steps, your apps will unlock.'])[0], 'S3b')
+        self.assertEqual(identify(['We want you to try ExcerLock Premium for free'])[0], 'S3c')
+
     def test_identifies_shared_title_by_body(self):
         self.assertEqual(identify(['Block apps. Exercise more.', 'Less scrolling. More time to move.'])[0], 'O01')
         self.assertEqual(identify(['Block apps. Exercise more.', 'Reduce your screen time and track your progress.'])[0],
@@ -172,11 +186,55 @@ class EnvResolution(unittest.TestCase):
                 harness._DOTENV = None
 
 
+class ConditionDemoState(unittest.TestCase):
+    def test_native_identifier_and_visible_status_must_both_match(self):
+        from scenarios.d1_condition_demo import matches_state
+        node = {'AXUniqueId': 'condition-demo-walk-state-outside-blocked-shield-locked',
+                'AXLabel': 'Apps are blocked. Stopped — walk to open them'}
+        self.assertTrue(matches_state(node, 'walk-state', 'outside', 'blocked', 'shield', True))
+        self.assertFalse(matches_state({**node, 'AXLabel': 'Unlocked while you walk'}, 'walk-state', 'outside', 'blocked', 'shield', True))
+        self.assertFalse(matches_state(node, 'walk-state', 'outside', 'walking', 'tiktok', False))
+
+
+class RemoteURLValidation(unittest.TestCase):
+    def test_rejects_non_https_and_file_urls(self):
+        for value in ('http://api.excerlock.com', 'file:///etc/passwd', 'https://user:pass@api.excerlock.com'):
+            with self.assertRaises(ValueError):
+                harness.validate_remote_url(value, 'service', allowed_hosts=('api.excerlock.com',))
+
+    def test_rejects_untrusted_hosts_and_nonstandard_ports(self):
+        with self.assertRaises(ValueError):
+            harness.validate_remote_url('https://attacker.example', 'service',
+                                        allowed_hosts=('api.excerlock.com',))
+        with self.assertRaises(ValueError):
+            harness.validate_remote_url('https://api.excerlock.com:8443', 'service',
+                                        allowed_hosts=('api.excerlock.com',))
+
+    def test_service_clients_use_trusted_host_allowlists(self):
+        import adapty
+        import posthog
+        import supabase
+
+        self.assertEqual(adapty.AdaptyServer(secret='test', base='https://api.adapty.io').base,
+                         'https://api.adapty.io')
+        with unittest.mock.patch.dict(os.environ, {'POSTHOG_API_HOST': 'https://eu.posthog.com'}):
+            self.assertEqual(posthog.api_host(), 'https://eu.posthog.com')
+        self.assertEqual(supabase.SupabaseAdmin(url='https://project.supabase.co', service_key='test').url,
+                         'https://project.supabase.co')
+        with self.assertRaises(ValueError):
+            adapty.AdaptyServer(secret='test', base='https://attacker.example')
+        with self.assertRaises(ValueError):
+            posthog.validate_remote_url('https://attacker.example', 'PostHog API host',
+                                        allowed_suffixes=('.posthog.com',))
+        with self.assertRaises(ValueError):
+            supabase.SupabaseAdmin(url='file:///etc/passwd', service_key='test')
+
+
 class ScenarioRegistry(unittest.TestCase):
     def test_expected_scenarios_are_registered(self):
         self.assertEqual(set(SCENARIOS),
                          {'E2E-N1', 'E2E-N4', 'E2E-N4W', 'E2E-E1', 'E2E-V1', 'E2E-S1', 'E2E-A3', 'E2E-A4', 'E2E-E2',
-                          'E2E-F1', 'E2E-F2'})
+                          'E2E-F1', 'E2E-F2', 'E2E-N1G', 'E2E-M1', 'E2E-R1', 'E2E-H1', 'E2E-D1'})
 
     def test_fixture_mint_precedes_its_consumers_in_the_all_order(self):
         from scenarios import SCENARIO_CLASSES
@@ -238,7 +296,7 @@ class FixtureContract(unittest.TestCase):
             storage = snapshot / 'Library' / 'RCTAsyncLocalStorage_V1'
             storage.mkdir(parents=True)
             (storage / 'manifest.json').write_text(json.dumps({'excerlock-next.onboarding.v1': None}))
-            (storage / hashlib.md5(b'excerlock-next.onboarding.v1').hexdigest()).write_text(
+            (storage / hashlib.md5(b'excerlock-next.onboarding.v1', usedforsecurity=False).hexdigest()).write_text(
                 json.dumps({'state': {'data': {'setupComplete': True}}, 'version': 0}))
             self.assertIs(fixture.persisted_setup_complete(snapshot)[0], True)
 
@@ -264,7 +322,7 @@ class FixtureContract(unittest.TestCase):
     def test_adapty_grant_readback_semantics(self):
         import adapty
 
-        server = adapty.AdaptyServer(secret='secret_test', base='https://example.invalid/api/v2/server-side-api')
+        server = adapty.AdaptyServer(secret='secret_test', base='https://api.adapty.io/api/v2/server-side-api')
         payload = {'data': {'access_levels': [
             {'access_level_id': 'premium', 'starts_at': '2020-01-01T00:00:00Z',
              'expires_at': '2030-01-01T00:00:00Z'}]}}

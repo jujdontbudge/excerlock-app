@@ -62,7 +62,7 @@ test('a validated onboarding_variant payload reorders the steps the flow walks',
   await userEvent.press(screen.getByRole('button', { name: 'Get started' }));
   await waitFor(() => expect(routed.getPathname()).toBe('/onboarding/O02'));
   await userEvent.press(screen.getByRole('button', { name: 'Get started' }));
-  await waitFor(() => expect(routed.getPathname()).toBe('/onboarding/O04'));
+  await waitFor(() => expect(routed.getPathname()).toBe('/onboarding/O07'));
   expect(screen.getByRole('button', { name: 'Continue' })).toBeTruthy();
 });
 

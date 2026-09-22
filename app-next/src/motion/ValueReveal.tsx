@@ -11,7 +11,7 @@ export function ValueReveal({
   const opacity = useSharedValue(0);
   useEffect(() => {
     opacity.set(0);
-    opacity.set(withTiming(1, { duration: t.motion.duration.fast, reduceMotion: ReduceMotion.Never }));
+    opacity.set(withTiming(1, { duration: t.motion.duration.standard, reduceMotion: ReduceMotion.Never }));
   }, [value, opacity]);
   const style = useAnimatedStyle(() => ({ opacity: opacity.get() }));
   return <Animated.View style={[containerStyle, style]}>{children}</Animated.View>;

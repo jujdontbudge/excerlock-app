@@ -20,7 +20,7 @@ import urllib.error
 import urllib.request
 from typing import Any, Callable, Iterable, Sequence
 
-from harness import POSTHOG_PROJECT, env_value
+from harness import POSTHOG_PROJECT, env_value, validate_remote_url
 
 #: The plan's §4.5 window for near-real-time screen events. PostHog ingestion for
 #: this project has been observed to take minutes for identify-driven events, so
@@ -30,7 +30,11 @@ POLL_INTERVAL = 4.0
 
 
 def api_host() -> str:
-    return (env_value('POSTHOG_API_HOST', 'https://us.posthog.com') or 'https://us.posthog.com').rstrip('/')
+    return validate_remote_url(
+        env_value('POSTHOG_API_HOST', 'https://us.posthog.com') or 'https://us.posthog.com',
+        'PostHog API host',
+        allowed_suffixes=('.posthog.com', '.posthog.dev'),
+    )
 
 
 def project_id() -> int:
@@ -52,14 +56,16 @@ def configured() -> bool:
 
 def query(hogql: str, *, timeout: float = 60.0) -> list[dict[str, Any]]:
     """Run one HogQL query, returning the raw result rows."""
-    body = json.dumps({'query': {'kind': 'HogQLQuery', 'query': hogql}}).encode()
+    # The default Query API response may cache the first partial result across
+    # every poll. Live-ingestion assertions must recalculate, not extend waits.
+    body = json.dumps({'query': {'kind': 'HogQLQuery', 'query': hogql}, 'refresh': 'force_blocking'}).encode()
     request = urllib.request.Request(
         f'{api_host()}/api/projects/{project_id()}/query/',
         data=body,
         headers={'Authorization': f'Bearer {personal_key()}', 'Content-Type': 'application/json'},
         method='POST',
     )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    with urllib.request.urlopen(request, timeout=timeout) as response:  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         payload = json.loads(response.read())
     if isinstance(payload, dict) and payload.get('error'):
         raise RuntimeError(f'posthog query failed: {payload["error"]}')

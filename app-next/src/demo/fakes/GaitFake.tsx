@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import { GaitPort } from '../../ports/GaitPort';
 import { FixtureGaitVisionProvider } from '../../features/unlock/gait/FixtureGaitVisionProvider';
 import fixture from '../../features/unlock/gait/real-walk-single.json';
-import { Icon } from '../../icons/Icon';
+import { Pictogram } from '../../design-system/Pictogram';
 import { tokens as t } from '../../design-system/tokens';
 import { permissionsStore } from '../../state/permissionsStore';
 export function GaitFake(preview = false): GaitPort & { set(value: 'none' | 'walking' | 'still'): void } {
@@ -44,7 +44,7 @@ export function GaitFake(preview = false): GaitPort & { set(value: 'none' | 'wal
       <View
         accessible={false}
         style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: t.surface.subtle }}>
-        <Icon name="walking" variant="utility" size={120} tint={t.brand.primary} />
+        <Pictogram name="walking" variant="utility" />
       </View>
     ),
   };

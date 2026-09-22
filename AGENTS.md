@@ -1,3 +1,36 @@
+<!-- firstmate:global-worker:start -->
+# Global worker instructions
+
+This is the canonical global behavior for ordinary workers and scouts.
+Its authoritative owner is `WORKER.md` in the Firstmate repository; edit that file, then run `bin/fm-ensure-agents-md.sh` for each project to refresh its managed copy.
+Do not edit the managed copy inside a project's `AGENTS.md` by hand.
+Project-owned instructions live outside the managed markers in that project's `AGENTS.md`.
+
+## Work safely
+
+- Follow the task instructions and the project's own instructions.
+- Keep changes within the requested scope and do not discard work you did not create.
+- Use the repository's existing build and test entry points when present; do not force irrelevant files or tools into a repository.
+- Never delete, skip, weaken, or narrow tests merely to make a change pass.
+- Prefer behavioral tests that exercise the user-visible or public contract.
+- For a bug fix, reproduce the failure end to end as an end user before fixing it, then prove the same path works afterward.
+- Before finishing, inspect the complete diff, confirm the full requested scope is covered, and remove unrelated changes.
+- Report failures truthfully and mention only meaningful risk, decisions, or follow-up.
+- Communicate in concise plain English.
+
+## Architecture decisions
+
+Projects may keep architecture decision records in `docs/adr/`.
+Use short records describing context, decision, and consequences, named like `0001-example-decision.md`.
+Preserve ADR history rather than rewriting an accepted decision in place.
+Remind the user when a consequential architectural decision deserves an ADR, but never author one without explicit `/adr-verbatim` authority.
+
+## Editing instruction layers
+
+There are exactly three instruction owners: Firstmate behavior in `FIRSTMATE.md`, global worker behavior in `WORKER.md`, and project-specific behavior outside the managed worker section of each project's `AGENTS.md`.
+Change the narrowest owner that applies.
+Never add supervisor identity, fleet operation, delegation, merge authority, or monitoring mechanics to `WORKER.md` or to a project's managed worker section.
+<!-- firstmate:global-worker:end -->
 # ExcerLock
 
 - Canonical source: `main` in `JohanSardar/excerlock-app`; the shipping iOS app is `app-next/`. Local checkouts and agent worktrees may live anywhere. Integrate completed task work into `main`. See `docs/agents/operations.md` for release scope and coordination.
@@ -18,17 +51,11 @@
 
 ## Verification loop (standing — do not wait to be told)
 
-Whenever you design a test harness, ship product, or build any feature that is not a pure visual/copy-only UI change, run this loop. It is project law for every agent. Do not wait for the captain to repeat it. Do not invent a new agent control plane (no extra Stop/PreToolUse harness in this repo); the existing gates are CI (`.github/workflows/ci.yml`) and `app-next/e2e-next/`.
+Purely visual UI work—copy, spacing, typography, color, imagery, layout, cosmetic animation, and other presentation-only changes that do not alter behavior—does not require E2E. Inspect the affected screen on a simulator/device and capture one screenshot. Interactive Studio/iteration work intended only to open a screen and receive feedback is likewise not release-grade E2E.
 
-1. **TDD + code checks.** Write a failing test first. Run it and confirm it fails for the right reason. Then write the code. Re-run that test plus the focused suite for the package you touched (`npm run test --workspace app-next`, `npm run test --workspace server`, package vitest, or the matching Python test) and the code checks CI already runs (`npm run typecheck`; `npm run lint --workspace app-next` when you touched app-next; `npm run test:guardrails` when architecture bounds move). Ban skip/delete/weaken: no `it.skip`, `test.skip`, `xit`, deleted failing tests, or loosened assertions to go green.
+New features and changes to business logic, state transitions, navigation or interaction behavior, persistence, native behavior, backend behavior, APIs, or other interface contracts require a failing test first, the applicable focused tests and code checks, and real-screen E2E before TestFlight. E2E must assert the visible result and the server/API effect where applicable; follow `app-next/e2e-next/README.md` and the existing CI gates (`.github/workflows/ci.yml`). Preserve the ban on Maestro, Detox, and additional iOS drivers.
 
-2. **E2E as close to a real user as this stack allows.** Assert the visible result **and** the server/API effect. iOS: `app-next/e2e-next/README.md` — one release-style build, one pinned `ExcerLock-Next` simulator, `xcrun simctl` + `idb`, a fail-closed `verdict.json` per scenario. Maestro is banned machine-wide (`e2e/README.md`, ADR 0008); do not add Maestro, Detox, or a second iOS driver. `E2E-F1` mints the entitled existing-user fixture (a real Adapty server-side `premium` grant, never a purchase) and `E2E-F2` tears it down; run scenarios only when no sibling lane is driving that simulator. Screen Time / Family Controls / canary cannot run on the simulator: say so, then still run the closest real path (SIM-lane UI + live preview API / PostHog / Supabase assertions). Web (`site/`): Playwright. Server-only: hit the running API and assert the persisted effect.
-
-3. **Screenshots** of every user-visible screen in that flow. The SIM-lane harness writes them under `app-next/e2e-next/out/<run>/<scenario>/`; for a UI-only round use `screenshot` in `app-next/scripts/sim.py`. A green test without the screen is not proof.
-
-4. **Loop until those tests pass.** If they fail, fix and re-run. Do not ship TestFlight, OTA, or `api.excerlock.com` on a red loop. Never treat harness `BLOCKED` as `PASS`.
-
-5. **Exempt:** pure visual/copy-only UI rounds skip full TDD+E2E; they still need a screenshot of the changed screen.
+No changed user-facing behavior reaches TestFlight without a simulated user exercising it and asserting the visible result. Loop until verification passes; never treat `BLOCKED` as `PASS`.
 
 Short citations (why this is encoded as law, not a prompt): [Claude Code verification loops](https://claude.com/blog/building-verification-loops-in-claude-code-with-skills) / [Stop hooks](https://docs.claude.com/en/docs/claude-code/hooks#stop); [Cursor test-generation loop](https://cursor.com/for/test-generation); [Spotify Honk hidden verifiers](https://engineering.atspotify.com/2025/12/feedback-loops-background-coding-agents-part-3); [Devin computer-use + assertions before click](https://cognition.ai/blog/testing-development); [Maestro MCP](https://maestro.dev/mcp) (agentic UI-test pattern; not used here); [Ken Imoto PreToolUse TDD hook](https://kenimoto.dev/blog/claude-code-tdd-test-after-code-six-of-ten/). On X/Grok: write the verifier first so proof sits outside the agent's narration; an external oracle is the score, not the transcript.
 
@@ -41,6 +68,7 @@ Read the matching skill before the relevant task; do not preload all guides. Fol
 - `log-pitfall` — A diagnosed cross-app iOS pitfall; follow the global ledger rule: `/Users/johansardar/.codex/plugins/cache/johan-skills/johan-skills/1.0.1/skills/log-pitfall/SKILL.md`.
 - `adapty-sdk-integration` — Adapty subscriptions, identity and paywalls: `/Users/johansardar/ExcerLock/.agents/skills/adapty-sdk-integration/SKILL.md`.
 - `mobile-app-ui-design` — Mobile screens, flows, components and UI improvements; follow the existing ExcerLock design system over generic style prescriptions: `/Users/johansardar/.codex/plugins/cache/johan-skills/johan-skills/1.0.1/skills/mobile-app-ui-design/SKILL.md`.
+- `excerlock-visual-design` — Every substantive ExcerLock visual-design task; automatically use GPT Image 2.5 Sunburst at low quality to spice up the design: `.agents/skills/excerlock-visual-design/SKILL.md`.
 - `asc-cli-usage` — App Store Connect, TestFlight, builds, signing and releases via the installed `asc` CLI: `/Users/johansardar/.agents/skills/asc-cli-usage/SKILL.md`. Check installed command help; see `docs/agents/app-store-connect.md`.
 
 <!-- agent-web:start -->
@@ -58,7 +86,7 @@ Pi and Hermes discover the kept skills in `.agents/skills/`: opensrc, Adapty int
 
 ## Text color
 
-- UI text must not be orange, except the single hero metric on a screen and one emphasis word inside an onboarding headline. Use neutral primary/secondary text on light surfaces and white text on orange fills; orange remains available for backgrounds, icons and non-text indicators.
+- UI text must not be orange, except the single hero metric on a screen, one emphasis word inside an onboarding headline, and the Analytics "Today" day caption (captain exception; pinned by `guardrails/design-system.test.ts`). Use neutral primary/secondary text on light surfaces and white text on orange fills; orange remains available for backgrounds, icons and non-text indicators.
 
 ## Maintaining this file
 

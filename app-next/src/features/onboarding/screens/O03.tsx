@@ -1,17 +1,20 @@
 import { View, useWindowDimensions } from 'react-native';
-import { Heading, Label, PressableScale } from '../../../design-system';
+import { Heading, Label } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
 import { Reveal } from '../../../motion/Reveal';
 import { ControlArtwork } from '../control/ControlArtwork';
 import { LockedAppsRow } from '../control/LockedAppsRow';
 import { Icon } from '../../../icons/Icon';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { welcomeCopy } from '../../../content/welcome';
 import { onboardingCopy as c } from '../../../content/onboarding';
-export function O03({ onBack }: { onBack?: () => void }) {
+export function O03() {
   const { fontScale } = useWindowDimensions();
   const dots = (
-    <View accessibilityLabel={welcomeCopy.controlPagination} style={{ flexDirection: 'row', gap: t.space.sm }}>
+    <View
+      accessible
+      accessibilityLabel={welcomeCopy.controlPagination}
+      style={{ flexDirection: 'row', gap: t.space.sm }}>
       {[0, 1, 2].map((i) => (
         <View
           key={i}
@@ -26,41 +29,32 @@ export function O03({ onBack }: { onBack?: () => void }) {
     </View>
   );
   return (
-    <View style={{ flexGrow: 1, paddingTop: w.headingTop / Math.max(1, fontScale) }}>
-      <Heading title={c.O03.title.replace('. ', '.\n')} centered variant="hero" />
+    <View style={{ flexGrow: 1, paddingTop: t.space.xl / Math.max(1, fontScale) }}>
+      <Heading title={c.O03.title.replace('. ', '.\n')} centered variant="display" />
       {/* Locked apps, an arrow down, then the activities that unlock them; caption and dots ride just above the button. */}
-      <View style={{ flex: 1, justifyContent: 'center', paddingTop: w.control.gap, gap: w.control.arrow.gap }}>
+      <View style={{ flex: 1, justifyContent: 'center', paddingTop: art.welcome.gap.control, gap: t.space.md }}>
         <LockedAppsRow />
         <Reveal index={1} style={{ alignItems: 'center' }}>
           <View style={{ transform: [{ rotate: '90deg' }] }}>
-            <Icon name="arrow" size={w.control.arrow.size} tint={w.control.orange} label={welcomeCopy.unlockArrow} />
+            <Icon name="arrow" size={t.icon.lg} label={welcomeCopy.unlockArrow} />
           </View>
         </Reveal>
         <ControlArtwork />
       </View>
-      <Reveal index={3} style={{ marginTop: w.control.captionGap, paddingHorizontal: t.space.lg }}>
+      <Reveal index={3} style={{ marginTop: t.space.xl, paddingHorizontal: t.space.lg }}>
         <Label
           style={{
-            ...w.control.caption,
+            ...t.type.section,
             color: t.text.primary,
             textAlign: 'center',
-            maxWidth: w.control.captionWidth,
+            maxWidth: t.layout.prompt,
             alignSelf: 'center',
           }}>
           {c.O03.body}
         </Label>
       </Reveal>
-      <Reveal index={4} style={{ marginTop: w.dotsGap, alignItems: 'center' }}>
-        {onBack ? (
-          <PressableScale
-            label={welcomeCopy.back}
-            onPress={onBack}
-            style={{ minWidth: t.layout.touch, alignItems: 'center' }}>
-            {dots}
-          </PressableScale>
-        ) : (
-          dots
-        )}
+      <Reveal index={4} style={{ marginTop: art.welcome.gap.dots, alignItems: 'center' }}>
+        {dots}
       </Reveal>
     </View>
   );

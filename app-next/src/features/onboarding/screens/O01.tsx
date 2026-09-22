@@ -4,22 +4,22 @@ import { tokens as t } from '../../../design-system/tokens';
 import { Reveal } from '../../../motion/Reveal';
 import { onboardingCopy } from '../../../content/onboarding';
 import { welcomeCopy } from '../../../content/welcome';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { WelcomeArtwork } from '../welcome/WelcomeArtwork';
 export function O01() {
   return (
-    <View style={{ flexGrow: 1, paddingTop: w.headingTop }}>
-      <Heading title={onboardingCopy.O01.title.replace('. ', '.\n')} centered variant="hero" />
+    <View style={{ flexGrow: 1, paddingTop: t.space.xl }}>
+      <Heading title={onboardingCopy.O01.title.replace('. ', '.\n')} centered variant="display" />
       {/* Artwork centres in the space under the heading; caption and dots ride just above the button. */}
-      <View style={{ flex: 1, justifyContent: 'center', paddingTop: w.headingGap }}>
+      <View style={{ flex: 1, justifyContent: 'center', paddingTop: art.welcome.gap.hero }}>
         <WelcomeArtwork />
       </View>
-      <Reveal index={3} style={{ marginTop: w.captionGap }}>
-        <Label variant="support" style={{ textAlign: 'center' }}>
+      <Reveal index={3} style={{ marginTop: t.space.xl }}>
+        <Label style={{ ...t.type.section, color: t.text.primary, textAlign: 'center' }}>
           {onboardingCopy.O01.body}
         </Label>
       </Reveal>
-      <Reveal index={4} style={{ marginTop: w.dotsGap, alignItems: 'center' }}>
+      <Reveal index={4} style={{ marginTop: art.welcome.gap.dots, alignItems: 'center' }}>
         <View accessible accessibilityLabel={welcomeCopy.pagination} style={{ flexDirection: 'row', gap: t.space.sm }}>
           {[0, 1, 2].map((i) => (
             <View

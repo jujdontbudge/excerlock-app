@@ -9,7 +9,7 @@ test('progress intro explains the illustrative screen-time reduction', async () 
   expect(screen.getByText('-3h 12m')).toBeTruthy();
   expect(screen.getByLabelText('Illustrative screen-time reduction of 3 hours and 12 minutes')).toBeTruthy();
   expect(screen.getByLabelText('Introduction, page 2 of 3')).toBeTruthy();
-  expect(screen.getByText('Reduce your screen time and track your progress.')).toBeTruthy();
+  expect(screen.getByText('Less scrolling. More moving.')).toBeTruthy();
 });
 test('third introduction shows the two activities and the final page marker', async () => {
   await render(<O03 />);
@@ -17,7 +17,7 @@ test('third introduction shows the two activities and the final page marker', as
   for (const name of ['Walking', 'Gym'])
     expect(screen.getByRole('image', { name })).toBeTruthy();
   expect(screen.getByLabelText('Introduction, page 3 of 3')).toBeTruthy();
-  expect(screen.getByText('Exercise more each week and stay consistent.')).toBeTruthy();
+  expect(screen.getByText('Less scrolling. More moving.')).toBeTruthy();
 });
 test('trend illustration exposes image semantics and its description', async () => {
   await render(<TrendHero />);

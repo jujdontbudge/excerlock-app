@@ -8,11 +8,12 @@ import time
 import posthog
 from harness import Scenario, RunContext
 
-from .onboarding import OnboardingWalk
+from .onboarding import OnboardingWalk, PAYWALL_TITLES
 
 
 class N1OnboardingPaywall(Scenario):
     id = 'E2E-N1'
+    activity = 'Walking'
     title = 'Fresh install → onboarding → paywall with live products'
     lane = 'SIM'
     users = 'NEW'
@@ -33,12 +34,15 @@ class N1OnboardingPaywall(Scenario):
                 return
             ctx.screenshot('O01-welcome')
 
-            walk = OnboardingWalk(ctx)
+            walk = OnboardingWalk(ctx, activity=self.activity)
             result = walk.run(stop_at='P')
             steps = result['steps']
-            expected = ['O01', 'O02', 'O03', 'O04', 'O05', 'O06', 'O08', 'O09', 'O10', 'O11', 'O12', 'O13',
-                        'O14', 'O15', 'O16', 'O17', 'O18', 'O20', 'W1', 'W2', 'W3', 'S1', 'S3', 'S4', 'T1',
+            expected = ['O01', 'O02', 'O03', 'O07', 'O04', 'O05', 'O06', 'O08', 'O22', 'O21', 'O09', 'O10', 'O11', 'O12', 'O13',
+                        'O14', 'O15', 'O16', 'O17', 'O18', 'O20', 'W0', 'W1', 'W2', 'W3', 'S1', 'S3', 'S4', 'T1',
                         'T2', 'T3', 'T4', 'P']
+            if self.activity == 'Gym':
+                start = expected.index('W0')
+                expected[start:start + 4] = ['G0F', 'G0H', 'G1']
             order = [step for step in expected if step in steps]
             in_order = order == [step for step in steps if step in expected]
             missing = [step for step in expected if step not in steps]
@@ -186,7 +190,7 @@ class N1OnboardingPaywall(Scenario):
                      if re.search(r'annual|monthly|weekly|lifetime|year|month|week', label, re.I)
                      and '$' not in label and len(label) < 60]
         cta = next((label for label in labels if label in {'Start free trial', 'Continue'}), '')
-        title = next((label for label in labels if label in {'Choose your plan'}), '')
+        title = next((label for label in labels if label in PAYWALL_TITLES), '')
         return {
             'title': title,
             'plans': plans,

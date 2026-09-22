@@ -10,15 +10,16 @@ import { ScheduleScreen } from '../rules/ScheduleScreen';
 import { TimeSheet } from '../rules/TimeSheet';
 import { scheduleDraft, reduceSchedule, scheduleAnswers, toSchedule, ScheduleAction } from '../rules/scheduleDraft';
 import { draftFromAnswers, commitPlan } from '../rules/plan';
-import { createDraft, toRule } from '../rules/draft';
+import { createDraft, toRule, RuleDraft } from '../rules/draft';
 import { PlanBuild } from '../rules/PlanBuild';
+import { PlanCelebration } from '../rules/PlanCelebration';
 import { PlanSummary } from '../rules/PlanSummary';
+import { ConditionDemo } from './condition-demo/ConditionDemo';
+import { PlanTrialPreview } from '../rules/PlanTrialPreview';
 import { ReviewWarmup } from '../rules/ReviewWarmup';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { planCopy as c } from '../../content/plan';
 import { useImpactPlayback } from './impact/useImpactPlayback';
-import { conditionSentence } from '../rules/conditionSentence';
-import { ConditionPreview } from '../rules/ConditionPreview';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { SchedulePlanError } from '../../domain/scheduleRepresentability';
 import { Label } from '../../design-system';
@@ -29,7 +30,8 @@ export function OnboardingRoute() {
   const flow = useOnboarding(),
     unit = useSettingsStore((s) => s.data.units),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null),
-    [scheduleError, setScheduleError] = useState(false);
+    [scheduleError, setScheduleError] = useState(false),
+    [celebrating, setCelebrating] = useState(false);
   const playback = useImpactPlayback(flow.step, flow.advance, focused);
   const base = useMemo(() => createDraft('walking'), []);
   const draft = draftFromAnswers(flow.answers, base),
@@ -66,23 +68,18 @@ export function OnboardingRoute() {
         draft={schedule}
         onAction={onSchedule}
         onChoose={setWheel}
-        preview={
-          <ConditionPreview
-            icon={draft.activity}
-            schedule={toSchedule(schedule)}
-            sentence={conditionSentence(flow.answers, draft, { schedule: toSchedule(schedule), goalChosen: true })}
-          />
-        }
       />
     );
-  if (flow.step === 'S2') body = <PlanBuild rule={toRule(draft, toSchedule(schedule))} onComplete={flow.advance} />;
+  if (flow.step === 'S2') body = <PlanBuild rule={toRule(draft, toSchedule(schedule))} onComplete={() => setCelebrating(true)} />;
   if (flow.step === 'S3')
     body = (
       <View style={{ gap: t.space.lg }}>
-        <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} />
+        <PlanSummary draft={draft} schedule={toSchedule(schedule)} onEdit={flow.edit} answers={flow.answers} />
         {scheduleError ? <Label style={{ color: t.text.secondary }}>{c.scheduleLimit}</Label> : null}
       </View>
     );
+  if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} onBack={flow.back} />;
+  if (flow.step === 'S3c') body = <PlanTrialPreview condition={previewCondition(draft)} />;
   if (flow.step === 'S4') body = <ReviewWarmup onSkip={flow.advance} />;
   return (
     <OnboardingShell
@@ -93,9 +90,11 @@ export function OnboardingRoute() {
       onContinue={advance}
       valid={canContinue(flow.step, flow.answers)}
       continuing={flow.isAdvancing}
-      continueLabel={flow.step === 'S3' ? c.use : undefined}
+      continueLabel={flow.step === 'S3' ? c.use : flow.step === 'S3c' ? 'Next' : undefined}
       hideContinue={flow.step === 'S2' || flow.step === 'T3' || playback.hideContinue}
       overlay={
+        <>
+        {celebrating ? <PlanCelebration onCovered={() => { if (flow.step === 'S2') void flow.advance(); }} onDone={() => setCelebrating(false)} /> : null}
         <TimeSheet
           which={wheel}
           value={wheel ? schedule[wheel] : schedule.start}
@@ -104,8 +103,20 @@ export function OnboardingRoute() {
           }}
           onDismiss={() => setWheel(null)}
         />
+        </>
       }>
       {body}
     </OnboardingShell>
   );
+}
+
+function previewCondition(draft: RuleDraft) {
+  if (draft.activity === 'walking') {
+    if (draft.walkingMode === 'steps') return `Walk ${draft.stepGoal.toLocaleString()} steps to unlock`;
+    if (draft.walkingMode === 'minutes') return `Walk for ${draft.walkMinutes} minutes to unlock`;
+    return 'Go for a walk to unlock';
+  }
+  if (draft.gymMode === 'time') return `Exercise for ${draft.gymMinutes} minutes to unlock`;
+  if (draft.gymMode === 'arrival') return 'Arrive at your gym to unlock';
+  return 'Complete a gym visit to unlock';
 }

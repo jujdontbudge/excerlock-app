@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icon, IconName } from '../../../icons/Icon';
 import Animated from 'react-native-reanimated';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { welcomeCopy as c } from '../../../content/welcome';
 import { useMotion } from '../../../motion/useMotion';
 import { Reveal } from '../../../motion/Reveal';
@@ -11,7 +11,7 @@ const activityNames: Record<string, IconName> = {
   dumbbell: 'gym',
 };
 export function ActivityTile({ index }: { index: number }) {
-  const p = w.control,
+  const p = art.welcome.control,
     tile = p.tiles[index],
     m = useMotion();
   return (
@@ -24,21 +24,20 @@ export function ActivityTile({ index }: { index: number }) {
             borderRadius: p.radius,
             boxShadow: p.shadow,
             transform: [{ rotate: tile.tilt }],
-            animationName: m.reduced
-              ? undefined
-              : {
-                  from: { transform: [{ rotate: tile.tilt }, { translateY: 0 }] },
-                  '50%': { transform: [{ rotate: tile.tilt }, { translateY: -m.distance.float }] },
-                  to: { transform: [{ rotate: tile.tilt }, { translateY: 0 }] },
-                },
-            animationDuration: m.duration.breathe + index * m.stagger.hero,
-            animationIterationCount: 'infinite',
-            animationTimingFunction: 'ease-in-out',
+            ...m.keyframes(
+              {
+                from: { transform: [{ rotate: tile.tilt }, { translateY: 0 }] },
+                '50%': { transform: [{ rotate: tile.tilt }, { translateY: -m.distance.float }] },
+                to: { transform: [{ rotate: tile.tilt }, { translateY: 0 }] },
+              },
+              'breathe',
+              { loop: true, spread: index * m.stagger.hero },
+            ),
           }}>
           <LinearGradient
-            colors={tile.peach ? [p.peach, p.peachEnd] : [w.brands.white, w.brands.white]}
+            colors={tile.peach ? [p.peach, p.peachEnd] : [art.welcome.brands.white, art.welcome.brands.white]}
             style={{ flex: 1, borderRadius: p.radius, justifyContent: 'center', alignItems: 'center' }}>
-            <Icon name={activityNames[tile.icon]} size={p.iconSize} tint={p.orange} label={c.activities[index]} />
+            <Icon name={activityNames[tile.icon]} size={p.iconSize} label={c.activities[index]} />
           </LinearGradient>
         </Animated.View>
       </Reveal>

@@ -3,10 +3,13 @@ export const preBranch = [
   'O01',
   'O02',
   'O03',
+  'O07',
   'O04',
   'O05',
   'O06',
   'O08',
+  'O22',
+  'O21',
   'O09',
   'O10',
   'O11',
@@ -19,7 +22,7 @@ export const preBranch = [
   'O18',
   'O20',
 ] as const;
-export const tail = ['S1', 'S2', 'S3', 'S4', 'T1', 'T2', 'T3', 'T4', 'P'] as const;
+export const tail = ['S1', 'S2', 'S3', 'S3b', 'S3c', 'S4', 'T1', 'T2', 'T3', 'T4', 'P'] as const;
 
 /**
  * A validated remote order for the two configurable groups (B8).
@@ -34,9 +37,9 @@ export type FlowOrder = { readonly preBranch: readonly string[]; readonly tail: 
 function branchFor(answers: Answers): string[] {
   switch (answers.activity) {
     case 'gym':
-      return answers.gymMode === 'arrival' ? ['G1'] : ['G1', 'G2'];
+      return answers.gymMode === 'time' ? ['G0F', 'G0H', 'G1', 'G2'] : ['G0F', 'G0H', 'G1'];
     default:
-      return answers.walkingMode === 'state' ? ['W1', 'W2'] : ['W1', 'W2', 'W3'];
+      return answers.walkingMode === 'state' ? ['W0', 'W1', 'W2'] : ['W0', 'W1', 'W2', 'W3'];
   }
 }
 

@@ -135,7 +135,7 @@ def app_source_revision() -> str:
     listing = subprocess.run(['git', 'ls-tree', '-r', 'HEAD', '--', 'app-next'], cwd=REPO,
                              capture_output=True, text=True).stdout
     entries = '\n'.join(line for line in listing.splitlines() if '/e2e-next/' not in line)
-    return hashlib.sha1(entries.encode()).hexdigest()[:12]
+    return hashlib.sha256(entries.encode()).hexdigest()[:12]
 
 
 def cache_matches(manifest: dict, app_revision: str) -> bool:

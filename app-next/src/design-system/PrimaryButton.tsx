@@ -44,11 +44,10 @@ export function PrimaryButton({
         style={[
           s.button,
           {
-            borderRadius: shape === 'rounded' ? t.radius.card : t.radius.cta,
+            borderRadius: shape === 'rounded' ? t.radius.card : t.radius.pill,
             backgroundColor: unavailable ? t.state.disabledFill : pressed ? t.brand.pressed : t.brand.primary,
             transform: [{ scale: pressed ? m.scale.pressed : 1 }],
-            transitionProperty: ['transform', 'backgroundColor'],
-            transitionDuration: m.duration.press,
+            ...m.transition(['transform', 'backgroundColor'], 'press'),
           },
         ]}>
         {loading ? (
@@ -71,8 +70,8 @@ export function PrimaryButton({
 }
 const s = StyleSheet.create({
   button: {
-    minHeight: t.layout.button,
-    borderRadius: t.radius.cta,
+    minHeight: t.control.full,
+    borderRadius: t.radius.pill,
     paddingHorizontal: t.space.xl,
     paddingVertical: t.space.md,
     justifyContent: 'center',

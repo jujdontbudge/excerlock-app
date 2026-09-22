@@ -1,5 +1,5 @@
 import type { PermissionStatus } from '../../domain/types';
-import type { StepsPort } from '../../ports/StepsPort';
+import type { PedometerMetrics, StepsPort } from '../../ports/StepsPort';
 import type { MotionProvider, Unsubscribe } from '../../engine/signals/motion/MotionProvider';
 export class StepsDetectionAdapter implements StepsPort {
   constructor(
@@ -16,6 +16,18 @@ export class StepsDetectionAdapter implements StepsPort {
   }
   async stepsSince(dayStart: string): Promise<number> {
     return (await this.motion.querySteps(Date.parse(dayStart), this.now())).steps;
+  }
+  async stepsBetween(from: string, to: string): Promise<number> {
+    return (await this.motion.querySteps(Date.parse(from), Date.parse(to))).steps;
+  }
+  async metricsBetween(from: string, to: string): Promise<PedometerMetrics> {
+    const value = await this.motion.querySteps(Date.parse(from), Date.parse(to));
+    return {
+      steps: value.steps,
+      distanceMeters: value.distanceMeters ?? null,
+      floorsAscended: value.floorsAscended ?? null,
+      activeMinutes: value.activeMinutes ?? null,
+    };
   }
   subscribe(callback: (steps: number) => void): Unsubscribe {
     return this.motion.on('cadence', (sample) => callback(sample.cumulativeSteps));

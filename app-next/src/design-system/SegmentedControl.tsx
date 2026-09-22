@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
@@ -29,8 +29,8 @@ export function SegmentedControl({
   const index = Math.max(0, options.indexOf(value));
   useEffect(() => {
     const target = (index * width) / options.length;
-    x.set(m.reduced ? target : withSpring(target, t.motion.spring.control));
-  }, [index, width, options.length, m.reduced, x]);
+    x.set(m.spring(target, 'control'));
+  }, [index, width, options.length, m, x]);
   const position = useAnimatedStyle(() => ({
     transform: [{ translateX: x.get() }],
   }));

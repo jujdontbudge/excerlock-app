@@ -47,7 +47,7 @@ export function O11({ answers }: AnswerProps) {
             }}>
             {index > 0 ? (
               <View style={{ transform: [{ rotate: '90deg' }] }}>
-                <Icon name="arrow" size={t.layout.glyph} tint={t.brand.primary} />
+                <Icon name="arrow" size={t.icon.md} />
               </View>
             ) : null}
             <TickingNumber

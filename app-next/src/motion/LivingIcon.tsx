@@ -1,32 +1,42 @@
-import Animated, { LinearTransition } from 'react-native-reanimated';
-import { Icon, IconName } from '../icons/Icon';
+import Animated from 'react-native-reanimated';
+import { Icon, IconName, IconTone } from '../icons/Icon';
 import { tokens as t } from '../design-system/tokens';
+import { illustrationTokens as art } from '../design-system/illustrationTokens';
 import { useMotion } from './useMotion';
-import { popIn, fadeOut, fadeIn } from './presets';
-export function LivingIcon({ name, size = t.layout.heroIcon, tint }: { name: IconName; size?: number; tint?: string }) {
+import { popIn, fadeOut, fadeIn, layoutTransition } from './presets';
+/** A floating glyph: a pictogram (`hero`, `card`) or, inline, a UI icon size. */
+export function LivingIcon({
+  name,
+  size = 'hero',
+  tone,
+}: {
+  name: IconName;
+  size?: keyof typeof art.pictogram | keyof typeof t.icon;
+  tone?: IconTone;
+}) {
   const m = useMotion();
+  const px = size === 'hero' || size === 'card' ? art.pictogram[size] : t.icon[size];
   return (
     <Animated.View
       entering={popIn(m.reduced)}
       exiting={fadeOut}
-      layout={LinearTransition.duration(m.reduced ? 0 : m.duration.standard)}
+      layout={layoutTransition(m.reduced)}
       style={{ alignSelf: 'center' }}>
       <Animated.View
         style={{
           alignSelf: 'center',
-          animationName: m.reduced
-            ? undefined
-            : {
-                from: { transform: [{ translateY: 0 }] },
-                '50%': { transform: [{ translateY: -m.distance.float }] },
-                to: { transform: [{ translateY: 0 }] },
-              },
-          animationDuration: m.duration.breathe,
-          animationIterationCount: 'infinite',
-          animationTimingFunction: 'ease-in-out',
+          ...m.keyframes(
+            {
+              from: { transform: [{ translateY: 0 }] },
+              '50%': { transform: [{ translateY: -m.distance.float }] },
+              to: { transform: [{ translateY: 0 }] },
+            },
+            'breathe',
+            { loop: true },
+          ),
         }}>
         <Animated.View key={name} entering={fadeIn} exiting={fadeOut}>
-          <Icon name={name} size={size} tint={tint} variant={tint ? 'utility' : 'color'} />
+          <Icon name={name} size={px} tone={tone} />
         </Animated.View>
       </Animated.View>
     </Animated.View>

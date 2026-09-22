@@ -22,7 +22,7 @@ export function PreviewContent({
         <UI.Heading
           title={c.heading}
           support={c.support}
-          variant={alternate ? 'hero' : 'question'}
+          variant={alternate ? 'section' : 'display'}
           centered={alternate}
         />
       );
@@ -55,11 +55,20 @@ export function PreviewContent({
           icon="walking"
           selected={s.flag}
           recommended
+          emphasis={alternate ? 'solid' : 'outline'}
           onPress={s.toggle}
         />
       );
     case 'ActivityCard':
-      return <UI.ActivityCard activity="walking" title={c.walk} selected={s.flag} onPress={s.toggle} />;
+      return (
+        <UI.ActivityCard
+          activity="walking"
+          title={c.walk}
+          selected={s.flag}
+          emphasis={alternate ? 'solid' : 'outline'}
+          onPress={s.toggle}
+        />
+      );
     case 'ChoiceGrid':
       return <UI.ChoiceGrid selected={s.activity} onChange={s.setActivity} />;
     case 'TextField':

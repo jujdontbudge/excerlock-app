@@ -118,6 +118,8 @@ describe("E2E build gate", () => {
         "The production export retained the E2E scenario surface",
       ).toBe(false);
     },
-    180_000,
+    // Each assertion exports a full iOS bundle; two sequential Expo exports
+    // can exceed three minutes on a cold Metro cache.
+    600_000,
   );
 });

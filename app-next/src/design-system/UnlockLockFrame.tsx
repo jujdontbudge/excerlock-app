@@ -1,18 +1,11 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { View, useWindowDimensions } from 'react-native';
-import Animated, {
-  SharedValue,
-  useSharedValue,
-  useAnimatedStyle,
-  withDelay,
-  withTiming,
-  withSequence,
-} from 'react-native-reanimated';
+import Animated, { SharedValue, useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LockShackle } from './LockShackle';
 import { UnlockRing } from './UnlockRing';
 import { tokens as t } from './tokens';
-import { welcomeTokens as w } from './welcomeTokens';
+import { illustrationTokens as art } from './illustrationTokens';
 import { useUnlockMotion } from '../features/unlock/useUnlockMotion';
 import { Confetti } from '../motion/Confetti';
 import { feedback } from '../motion/haptics';
@@ -32,7 +25,8 @@ export function UnlockLockFrame({
 }) {
   const { width: screenWidth } = useWindowDimensions(),
     width = Math.min(t.layout.maxWidth - 2 * t.layout.page, screenWidth - 2 * t.layout.page);
-  const { reduced } = useUnlockMotion(),
+  const m = useUnlockMotion(),
+    { reduced } = m,
     lift = useSharedValue(0),
     scale = useSharedValue(1),
     [burst, setBurst] = useState(false);
@@ -41,17 +35,18 @@ export function UnlockLockFrame({
       lift.value = 0;
       return;
     }
-    lift.value = withDelay(180, withTiming(1, { duration: 380 }));
-    if (!reduced) scale.value = withSequence(withTiming(0.97, { duration: 90 }), withTiming(1, { duration: 90 }));
-    const haptic = setTimeout(() => feedback('success'), 180);
+    // The shackle lifts a press after the hold completes, with the success haptic; confetti follows.
+    lift.value = m.delay(m.duration.press, m.timing(1, 'emphasized'));
+    scale.value = m.sequence(m.timing(m.scale.pressed, 'press'), m.timing(1, 'press'));
+    const haptic = setTimeout(() => feedback('success'), m.duration.press);
     const confetti = setTimeout(() => {
       if (!reduced && celebrate) setBurst(true);
-    }, 420);
+    }, m.duration.emphasized);
     return () => {
       clearTimeout(haptic);
       clearTimeout(confetti);
     };
-  }, [phase, reduced, celebrate, lift, scale]);
+  }, [phase, reduced, celebrate, lift, scale, m]);
   const shackle = useAnimatedStyle(() =>
     reduced
       ? { opacity: 1 - lift.value }
@@ -82,9 +77,9 @@ export function UnlockLockFrame({
           <LockShackle bodyWidth={width} />
         </Animated.View>
       ) : null}
-      <Animated.View style={[{ width, height: width, borderRadius: width * 0.13, boxShadow: w.card.shadow }, body]}>
-        <LinearGradient colors={[w.card.start, w.card.end]} style={{ flex: 1, borderRadius: width * 0.13, padding: 6 }}>
-          <View style={{ flex: 1, overflow: 'hidden', borderRadius: width * 0.13 - 6 }}>
+      <Animated.View style={[{ width, height: width, borderRadius: width * art.padlock.bodyRadius, boxShadow: t.shadow.status }, body]}>
+        <LinearGradient colors={t.surface.statusGradient} style={{ flex: 1, borderRadius: width * art.padlock.bodyRadius, padding: art.padlock.bodyInset }}>
+          <View style={{ flex: 1, overflow: 'hidden', borderRadius: width * art.padlock.bodyRadius - art.padlock.bodyInset }}>
             {surface}
             {overlay}
           </View>

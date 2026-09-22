@@ -14,3 +14,9 @@ test('shared header retains accessible close alongside the thicker progress bar'
   await userEvent.press(screen.getByRole('button', { name: 'Close' }));
   expect(close).toHaveBeenCalledTimes(1);
 });
+
+test('a step without a way back renders no invisible back control', async () => {
+  await render(<OnboardingHeader progress={0.1} />);
+  expect(screen.queryByRole('button', { name: 'Back' })).toBeNull();
+  expect(screen.queryByLabelText('Back')).toBeNull();
+});

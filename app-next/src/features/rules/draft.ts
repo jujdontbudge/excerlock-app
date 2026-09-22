@@ -9,13 +9,13 @@ export type RuleDraft = {
   walkingMode: 'steps' | 'minutes' | 'state';
   stepGoal: number;
   walkMinutes: number;
-  gymMode: 'time' | 'arrival';
+  gymMode: 'time' | 'arrival' | 'presence';
   gymMinutes: number;
 };
 export type DraftAction =
   | { type: 'setWalkingMode'; value: 'steps' | 'minutes' | 'state' }
   | { type: 'setStepGoal' | 'setWalkMinutes' | 'setGymMinutes'; value: number }
-  | { type: 'setGymMode'; value: 'time' | 'arrival' };
+  | { type: 'setGymMode'; value: 'time' | 'arrival' | 'presence' };
 export function createDraft(activity: Activity, now = new Date().toISOString()): RuleDraft {
   return {
     id: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -29,7 +29,7 @@ export function createDraft(activity: Activity, now = new Date().toISOString()):
     walkingMode: 'steps',
     stepGoal: 10000,
     walkMinutes: 20,
-    gymMode: 'time',
+    gymMode: 'arrival',
     gymMinutes: 30,
   };
 }
@@ -53,9 +53,9 @@ function mode(d: RuleDraft): RuleMode {
     return d.walkingMode === 'state'
       ? { kind: 'state', activity }
       : { kind: 'target', activity, metric: d.walkingMode, goal: d.walkingMode === 'steps' ? d.stepGoal : d.walkMinutes };
-  return d.gymMode === 'arrival'
-    ? { kind: 'event', activity, trigger: 'arrival' }
-    : { kind: 'target', activity, metric: 'minutes', goal: d.gymMinutes };
+  if (d.gymMode === 'arrival') return { kind: 'event', activity, trigger: 'arrival' };
+  if (d.gymMode === 'presence') return { kind: 'state', activity };
+  return { kind: 'target', activity, metric: 'minutes', goal: d.gymMinutes };
 }
 export function toRule(d: RuleDraft, schedule: Schedule): Rule {
   const rule: Rule = {
@@ -82,7 +82,7 @@ export function fromRule(rule: Rule): RuleDraft {
     });
   else
     Object.assign(d, {
-      gymMode: m.kind === 'event' ? 'arrival' : 'time',
+      gymMode: m.kind === 'event' ? 'arrival' : m.kind === 'state' ? 'presence' : 'time',
       ...(m.kind === 'target' ? { gymMinutes: m.goal } : {}),
     });
   return d;

@@ -4,6 +4,7 @@ import { TextField } from './TextField';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { ChoiceRow } from './ChoiceRow';
+import type { ChoiceEmphasis } from './ActivityCard';
 import { Reveal } from '../motion/Reveal';
 import { tokens as t } from './tokens';
 import { controls } from '../content/controls';
@@ -21,6 +22,7 @@ export function NumberField({
   labelTone = 'secondary',
   adjustValue,
   centered = false,
+  emphasis,
 }: {
   label: string;
   value: string;
@@ -36,6 +38,7 @@ export function NumberField({
   adjustValue?: (current: number, direction: 'increment' | 'decrement') => number;
   /** Field and unit share one centred column, for a screen whose number is the hero. */
   centered?: boolean;
+  emphasis?: ChoiceEmphasis;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -90,6 +93,7 @@ export function NumberField({
               key={u}
               title={u}
               selected={u === unit}
+              emphasis={emphasis}
               onPress={() => {
                 onUnitChange?.(u);
                 setOpen(false);

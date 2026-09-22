@@ -1,10 +1,10 @@
-import { render, screen, userEvent, fireEvent } from '@testing-library/react-native';
+import { render, screen, userEvent, fireEvent, waitFor } from '@testing-library/react-native';
 import { ConditionBuilder } from '../ConditionBuilder';
 import { ConditionsScreen } from '../ConditionsScreen';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { createRuntime } from '../../../runtime/createRuntime';
 import { rulesStore } from '../../../state/rulesStore';
-import { createDraft, toRule } from '../../rules/draft';
+import { createDraft, reduceDraft, toRule } from '../../rules/draft';
 import { scheduleDraft, toSchedule } from '../../rules/scheduleDraft';
 import { validateRule } from '../../../domain/validateRule';
 import type { Rule } from '../../../domain/types';
@@ -33,11 +33,12 @@ jest.mock('../../sheets/GymPicker', () => ({
     ) : null;
   },
 }));
+const gymTimeDraft = () => reduceDraft(createDraft('gym'), { type: 'setGymMode', value: 'time' });
 async function mount(id?: string) {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
   if (id)
-    rulesStore.getState().patch({ rules: [{ ...toRule(createDraft('gym'), toSchedule(scheduleDraft({}))), id }] });
+    rulesStore.getState().patch({ rules: [{ ...toRule(gymTimeDraft(), toSchedule(scheduleDraft({}))), id }] });
   await render(
     <AppRuntimeProvider runtime={runtime}>
       <ConditionBuilder id={id} onClose={leave} />
@@ -69,6 +70,8 @@ test.each([
 test('editing preserves identity and schedule; dirty cancel requires discard', async () => {
   await mount('edit-me');
   const before = rulesStore.getState().data.rules[0];
+  expect(screen.getByRole('header', { name: 'Edit condition' })).toBeTruthy();
+  expect(screen.getByText('Update the exercise goal, active days, or blocking times.')).toBeTruthy();
   await userEvent.press(screen.getByRole('button', { name: 'Edit goal' }));
   await fireEvent(screen.getByLabelText('Goal'), 'accessibilityAction', {
     nativeEvent: { actionName: 'increment' },
@@ -83,6 +86,15 @@ test('editing preserves identity and schedule; dirty cancel requires discard', a
   expect(after.schedule).toEqual(before.schedule);
   expect(after.mode).toMatchObject({ goal: 35 });
 });
+test('an existing condition opens its day and time editor from the summary', async () => {
+  await mount('edit-me');
+  await userEvent.press(screen.getByRole('button', { name: 'Edit schedule' }));
+  expect(screen.getByRole('header', { name: 'When should blocking be active?' })).toBeTruthy();
+  expect(screen.getByRole('checkbox', { name: 'Mon' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: /Start at:/ })).toBeTruthy();
+  expect(screen.getByRole('button', { name: /End at:/ })).toBeTruthy();
+});
+
 test('canceling a goal edit restores the summary', async () => {
   await mount('edit-me');
   await userEvent.press(screen.getByRole('button', { name: 'Edit goal' }));
@@ -106,7 +118,7 @@ test('two mounted builders own independent draft transactions', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('fresh-install');
   const first = { ...toRule(createDraft('walking'), toSchedule(scheduleDraft({}))), id: 'first' };
-  const second = { ...toRule(createDraft('gym'), toSchedule(scheduleDraft({}))), id: 'second' };
+  const second = { ...toRule(gymTimeDraft(), toSchedule(scheduleDraft({}))), id: 'second' };
   rulesStore.getState().patch({ rules: [first, second] });
   await render(
     <AppRuntimeProvider runtime={runtime}>
@@ -154,12 +166,11 @@ test('toggle rejection is visible and leaves a paused condition unchanged', asyn
     </AppRuntimeProvider>,
   );
 
-  const pausedSwitch = screen
-    .getAllByRole('switch', { name: 'Walk 5,000 steps' })
-    .find((candidate) => candidate.props.value === false);
-  expect(pausedSwitch).toBeTruthy();
-  await fireEvent(pausedSwitch!, 'valueChange', true);
+  expect(screen.getByLabelText('Inactive condition')).toBeTruthy();
+  const menus = screen.getAllByRole('button', { name: 'More actions for Walk 5,000 steps' });
+  await userEvent.press(menus[menus.length - 1]);
+  await userEvent.press(screen.getByRole('button', { name: 'Turn on' }));
 
-  expect(screen.getByText(/This schedule cannot be saved exactly/)).toBeTruthy();
+  await waitFor(() => expect(screen.getByText(/This schedule cannot be saved exactly/)).toBeTruthy());
   expect(rulesStore.getState().data.rules.find((rule) => rule.id === 'paused')?.enabled).toBe(false);
 });

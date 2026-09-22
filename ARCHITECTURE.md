@@ -271,6 +271,9 @@ manifests reference them by name.
   kebab-case named after the story they tell (`red-light`, not `fixture2`).
 - **Tests live beside code** (`__tests__/` per module), fixtures in `fixtures/` per module — everything an
   agent needs to understand a module is inside its directory.
+- **One token source.** `app-next/src/design-system/tokens.ts` is the only module that declares type, spacing,
+  radius, control, icon, colour and motion values; artwork-only values live in `illustrationTokens.ts`, which
+  UI chrome may not import. No satellite token files. `guardrails/design-system.test.ts` enforces it (#145).
 - **Never guess Expo APIs** — the Expo MCP is mandatory for docs/library operations (AGENTS.md law).
 
 ---

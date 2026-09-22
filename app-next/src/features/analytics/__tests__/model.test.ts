@@ -1,4 +1,6 @@
 import { analyticsModel } from '../analyticsModel';
+import { nearestEnabledTrendIndex, trendPoints } from '../trendModel';
+import { offsetAfterPeriodSwipe } from '../periodSwipe';
 import { HistoryDay } from '../../../ports/models';
 import { Rule, RuleMode } from '../../../domain/types';
 const makeRule = (id: string, mode: RuleMode): Rule => ({
@@ -17,12 +19,13 @@ const row = (day: string, usageMinutes: number | null, scheduled = true, met = t
   met,
   activity: { walking: 2000, gym: 30 },
 });
-test('all-time buckets average replaced minutes per calendar week after clamping each day', () => {
-  const model = analyticsModel([row('2026-09-01', 240), row('2026-09-02', 60)], '2026-09-07', 'All', 0, 180);
+test('month view shows one bucket per calendar day', () => {
+  const model = analyticsModel([row('2026-09-01', 240), row('2026-09-02', 60)], '2026-09-07', 'Month', 0, 180);
   expect(model.start).toBe('2026-09-01');
-  expect(model.series).toHaveLength(2);
-  expect(model.series[0].reclaimed).toBe(60);
-  expect(model.series[1].reclaimed).toBeNull();
+  expect(model.end).toBe('2026-09-30');
+  expect(model.series).toHaveLength(30);
+  expect(model.series[0].reclaimed).toBe(0);
+  expect(model.series[1].reclaimed).toBe(120);
 });
 test('partial weeks exclude unmeasured days from replaced math and future days from denominator', () => {
   const m = analyticsModel([row('2026-09-07', 60), row('2026-09-08', null)], '2026-09-09', 'Week', 0, 180);
@@ -58,6 +61,24 @@ test('unscheduled days do not break streak; previous period is independent', () 
   expect(m.delta).toBe(30);
   expect(m.activities.walking).toBe(2000);
 });
+test('trend points select exact days, weeks, and months without exposing future days', () => {
+  const history = [row('2026-09-07', 60), row('2026-09-08', 30)];
+  const days = trendPoints('Day', '2026-09-09', history, 'walking');
+  expect(days.map((point) => point.label)).toEqual(['THU', 'FRI', 'SAT', 'SUN', 'MON', 'TUE', 'WED']);
+  expect(days.map((point) => point.offset)).toEqual([-6, -5, -4, -3, -2, -1, 0]);
+  expect(nearestEnabledTrendIndex(days, 100, 100)).toBe(6);
+
+  expect(trendPoints('Week', '2026-09-09', history, 'walking').map((point) => point.offset)).toEqual([-7, -6, -5, -4, -3, -2, -1, 0]);
+  expect(trendPoints('Month', '2026-09-09', history, 'walking')).toHaveLength(12);
+});
+
+test('horizontal period swipes reveal older periods and cannot pass today', () => {
+  expect(offsetAfterPeriodSwipe(0, 80)).toBe(-1);
+  expect(offsetAfterPeriodSwipe(-2, -80)).toBe(-1);
+  expect(offsetAfterPeriodSwipe(0, -80)).toBe(0);
+  expect(offsetAfterPeriodSwipe(-1, 20)).toBe(-1);
+});
+
 test('history keeps a cross-midnight result on its supplied start day', () => {
   const m = analyticsModel([row('2026-09-06', 70)], '2026-09-07', 'Week', -1, 180);
   expect(m.series[6].value).toBe(70);
@@ -79,7 +100,7 @@ test('conditions drive arrivals and verified walking minutes inside the period',
   expect(week.arrivals).toBe(1);
   expect(week.walkingMinutes).toBe(25);
   expect(week.conditions).toMatchObject({ gymArrival: true, walking: true, gymMinutes: false, steps: false });
-  const all = analyticsModel([row('2026-08-30', 60)], '2026-09-07', 'All', 0, 180, { rules, ruleDays });
-  expect(all.arrivals).toBe(2);
-  expect(all.walkingMinutes).toBe(65);
+  const month = analyticsModel([row('2026-08-30', 60)], '2026-09-07', 'Month', 0, 180, { rules, ruleDays });
+  expect(month.arrivals).toBe(2);
+  expect(month.walkingMinutes).toBe(25);
 });

@@ -350,7 +350,7 @@ export type SemanticScreen = { name: string; props?: Record<string, string | num
 const callerScreens: Record<string, string> = { Home: 'home', P: 'paywall' };
 
 /** Onboarding step ids (`O01…O20`, then the S/T/W/G branches) from `src/onboarding/flow.ts`. */
-const onboardingStepPattern = /^(?:O\d{2}|[STWG]\d)$/;
+const onboardingStepPattern = /^(?:O\d{2}|[STWG]\d|G0[FH]|S3[bc])$/;
 /** Setup step ids `X1…X5` from `src/onboarding/setupFlow.ts`. */
 const setupStepPattern = /^X\d$/;
 

@@ -2,7 +2,9 @@
 
 Shared visual tokens and components. No domain or fake-data imports.
 
-CloseButton is the one dismiss control: a brand-orange stroked cross on a 44pt target, used by OnboardingHeader, BottomSheet and the unlock screens. OnboardingHeader is the single inline back/progress header for every onboarding question and branch. SolidChoices scopes the shared row and activity-card selection treatment to onboarding: orange surface, white labels, retained icons, and SelectionCheck's white badge with orange check.
+`tokens.ts` is the single source of type, spacing, radius, control geometry, icon sizing, colour and motion; `illustrationTokens.ts` holds artwork-only values (composition offsets, brand marks, decorative palettes, pictogram sizes) and UI chrome may not import it. There are no other token modules. `design/UI-STYLE.md` names the scales and roles; `guardrails/design-system.test.ts` fails on a raw literal, a clipping line height, a failing contrast pair, a dead token, a second back or close affordance, or an ungated animation.
+
+CloseButton is the one dismiss control: a brand-orange stroked cross on a 44pt target, used by OnboardingHeader, BottomSheet and the unlock screens. OnboardingHeader is the single inline back/progress header for every onboarding question and branch. Selection has one prop: `ChoiceRow` and `ActivityCard` take `emphasis` (`outline` by default, `solid` in onboarding and setup questions, which fills the selected choice orange with white label and glyph). SetupPresentation scopes the remaining setup layout to onboarding: centred labels and hidden heading support lines.
 
 All 36 contracted components have interactive default/alternate examples in `__previews__`, reachable through `/dev?component=Name`. Components accept copy and callbacks; they do not read stores or call services. SVG chart coordinates are local drawing geometry; UI layout and colors come from tokens. Native controls are limited to ordinary switches, inputs and the time wheel.
 

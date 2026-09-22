@@ -6,7 +6,6 @@ import { ProgressBar } from './ProgressBar';
 import { SecondaryButton } from './SecondaryButton';
 import { ValueReveal } from '../motion/ValueReveal';
 import { Reveal } from '../motion/Reveal';
-import { welcomeTokens as w } from './welcomeTokens';
 export function ProgressCard({
   title,
   icon,
@@ -29,18 +28,18 @@ export function ProgressCard({
     <Reveal>
       <View
         style={{
-          padding: inLock ? w.card.padding : t.space.lg,
+          padding: inLock ? t.space.lg : t.space.lg,
           paddingVertical: inLock ? t.space.md : t.space.lg,
-          borderRadius: inLock ? 0 : t.radius.card,
+          borderRadius: inLock ? undefined : t.radius.card,
           borderWidth: inLock ? 0 : t.stroke.hairline,
           borderTopWidth: inLock ? 0 : t.stroke.hairline,
-          borderColor: inLock ? 'rgba(255,255,255,0.4)' : t.border.default,
-          backgroundColor: inLock ? 'transparent' : t.surface.card,
+          borderColor: inLock ? t.border.onAccent : t.border.outline,
+          backgroundColor: inLock ? t.surface.transparent : t.surface.card,
           gap: t.space.lg,
         }}>
         {inLock ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: t.space.md }}>
-            <Icon name={icon} tint={t.text.onAccent} variant="utility" size={t.space.xxl} />
+            <Icon name={icon} tone="onAccent" variant="utility" size={t.icon.lg} />
             <View style={{ flexShrink: 1 }}>
               <ValueReveal value={detail}>
                 <Label variant="label" tone="onAccent">
@@ -56,7 +55,7 @@ export function ProgressCard({
               alignItems: 'center',
               gap: t.space.md,
             }}>
-            <Icon name={icon} tint={inLock ? t.text.onAccent : undefined} variant={inLock ? 'utility' : 'color'} />
+            <Icon name={icon} tone={inLock ? 'onAccent' : undefined} variant={inLock ? 'utility' : 'color'} />
             <Label variant="label" tone={inLock ? 'onAccent' : 'primary'} style={{ flex: 1 }}>
               {title}
             </Label>

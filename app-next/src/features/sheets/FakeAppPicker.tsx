@@ -6,7 +6,7 @@ import { tokens as t } from '../../design-system/tokens';
 import { pickerCopy as c } from '../../content/pickers';
 import { Reveal } from '../../motion/Reveal';
 import { finishSelection, restoreSelection, toggleSelection } from './selection';
-const colors = [t.icon.coral, t.icon.mint, t.icon.sky, t.icon.lilac, t.icon.yellow];
+const colors = [t.swatch.coral, t.swatch.mint, t.swatch.sky, t.swatch.lilac, t.swatch.yellow];
 export function FakeAppPicker({
   initial,
   onResolve,
@@ -39,8 +39,8 @@ export function FakeAppPicker({
                   leading={
                     <View
                       style={{
-                        width: t.layout.disc,
-                        height: t.layout.disc,
+                        width: t.icon.lg,
+                        height: t.icon.lg,
                         borderRadius: t.radius.field,
                         backgroundColor: colors[c.options.findIndex((x) => x.id === o.id) % colors.length],
                         alignItems: 'center',

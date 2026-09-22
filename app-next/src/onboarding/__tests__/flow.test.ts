@@ -1,8 +1,8 @@
 import { pathFor, nextStep, prevStep, progressFraction, resumeStep } from '../flow';
 const pre = Array.from({ length: 20 }, (_, i) => 'O' + String(i + 1).padStart(2, '0')).filter(
   (step) => step !== 'O07' && step !== 'O19',
-);
-const tail = ['S1', 'S2', 'S3', 'S4', 'T1', 'T2', 'T3', 'T4', 'P'];
+).flatMap(step => step === 'O03' ? [step, 'O07'] : step === 'O08' ? [step, 'O22', 'O21'] : [step]);
+const tail = ['S1', 'S2', 'S3', 'S3b', 'S3c', 'S4', 'T1', 'T2', 'T3', 'T4', 'P'];
 test.each([
   [{ activity: 'walking', walkingMode: 'steps' }, ['W1', 'W2', 'W3']],
   [{ activity: 'walking', walkingMode: 'state' }, ['W1', 'W2']],
@@ -11,7 +11,8 @@ test.each([
   [{ activity: 'gym', gymMode: 'time' }, ['G1', 'G2']],
   [{ activity: 'gym', gymMode: 'arrival' }, ['G1']],
 ] as const)('each branch walks forward, back and monotonically to P: %j', (answers, branch) => {
-  const expected = [...pre, ...branch, ...tail];
+  const baseline = answers.activity === 'gym' ? ['G0F', 'G0H'] : ['W0'];
+  const expected = [...pre, ...baseline, ...branch, ...tail];
   expect(pathFor(answers)).toEqual(expected);
   expected.forEach((step, i) => {
     const state = { step, answers };
@@ -31,7 +32,7 @@ const remote = { preBranch: ['O01', 'O03', 'O02', ...pre.filter((step) => !['O01
 
 test('a remote rail reorders the pre-branch and shortens the tail', () => {
   const answers = { activity: 'walking', walkingMode: 'steps' };
-  const path = [...remote.preBranch, 'W1', 'W2', 'W3', ...remote.tail];
+  const path = [...remote.preBranch, 'W0', 'W1', 'W2', 'W3', ...remote.tail];
   expect(pathFor(answers, remote)).toEqual(path);
   path.forEach((step, i) => {
     const state = { step, answers };

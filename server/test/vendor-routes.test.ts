@@ -4,8 +4,14 @@ import {
   createVendorProtectedRoutes,
   createVendorPublicRoutes,
 } from "../src/routes/vendors.js";
-import type { VendorOAuthService } from "../src/vendors/index.js";
-import type { VendorEventFeed } from "../src/webhooks/index.js";
+import {
+  VendorClientError,
+  type VendorOAuthService,
+} from "../src/vendors/index.js";
+import {
+  createVendorEventFeed,
+  type VendorEventFeed,
+} from "../src/webhooks/index.js";
 
 let app: FastifyInstance | undefined;
 
@@ -167,6 +173,143 @@ describe("vendor OAuth routes", () => {
 });
 
 describe("neutral identity and tombstones", () => {
+  it("reports a declined or replayed OAuth callback as a client error", async () => {
+    const completeConnection = vi.fn(async () => {
+      throw new VendorClientError(
+        "Strava authorization failed: access_denied (The athlete declined access)",
+      );
+    });
+    const service: VendorOAuthService = {
+      beginConnection: vi.fn(),
+      completeConnection,
+      disconnect: vi.fn(),
+      getAccessToken: vi.fn(),
+    };
+    app = Fastify({ logger: false });
+    await app.register(createVendorPublicRoutes({ service }), {
+      prefix: "/v1",
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/vendors/strava/callback?error=access_denied&error_description=The+athlete+declined+access&state=state-123",
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      error: {
+        code: "VENDOR_REQUEST_INVALID",
+        message: "Vendor request is invalid",
+      },
+    });
+  });
+
+  it("reports malformed pagination as a client error", async () => {
+    const listWebhookEvents = vi.fn(async () => []);
+    app = Fastify({ logger: false });
+    await app.register(
+      async (protectedScope) => {
+        protectedScope.addHook("onRequest", async (request) => {
+          request.clerkIdentity = { userId: "user_123", roles: [] };
+        });
+        await protectedScope.register(
+          createVendorProtectedRoutes({
+            eventFeed: createVendorEventFeed({ listWebhookEvents }),
+          }),
+        );
+      },
+      { prefix: "/v1" },
+    );
+
+    const badLimit = await app.inject({
+      method: "GET",
+      url: "/v1/vendors/events?limit=0",
+    });
+    const badCursor = await app.inject({
+      method: "GET",
+      url: "/v1/vendors/events?cursor=not-a-cursor",
+    });
+
+    expect([badLimit.statusCode, badCursor.statusCode]).toEqual([400, 400]);
+    expect(badLimit.json()).toEqual({
+      error: {
+        code: "VENDOR_REQUEST_INVALID",
+        message: "Vendor request is invalid",
+      },
+    });
+    expect(badCursor.json()).toEqual(badLimit.json());
+    expect(listWebhookEvents).not.toHaveBeenCalled();
+  });
+
+  it("does not disclose internal vendor errors to the authenticated caller", async () => {
+    const readSince = vi.fn(async () => {
+      throw new Error("database password=super-secret");
+    });
+    app = Fastify({ logger: false });
+    await app.register(
+      async (protectedScope) => {
+        protectedScope.addHook("onRequest", async (request) => {
+          request.clerkIdentity = { userId: "user_123", roles: [] };
+        });
+        await protectedScope.register(
+          createVendorProtectedRoutes({ eventFeed: { readSince } }),
+        );
+      },
+      { prefix: "/v1" },
+    );
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/vendors/events",
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toEqual({
+      error: {
+        code: "VENDOR_REQUEST_FAILED",
+        message: "Vendor request failed",
+      },
+    });
+  });
+
+  it("does not disclose missing vendor configuration details", async () => {
+    const readSince = vi.fn(async () => {
+      throw new Error(
+        "Strava OAuth is not configured; missing STRAVA_CLIENT_SECRET",
+      );
+    });
+    app = Fastify({ logger: false });
+    await app.register(
+      async (protectedScope) => {
+        protectedScope.addHook("onRequest", async (request) => {
+          request.authIdentity = {
+            userId: "550e8400-e29b-41d4-a716-446655440000",
+            roles: [],
+            provider: "supabase",
+            isAnonymous: true,
+          };
+        });
+        await protectedScope.register(
+          createVendorProtectedRoutes({ eventFeed: { readSince } }),
+        );
+      },
+      { prefix: "/v1" },
+    );
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/vendors/events",
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({
+      error: {
+        code: "VENDOR_NOT_CONFIGURED",
+        message: "Vendor integration is not configured",
+      },
+    });
+  });
+
   it("serves unrelated protected routes through neutral Supabase identity", async () => {
     const readSince = vi.fn(async () => ({ events: [], nextCursor: null }));
     app = Fastify({ logger: false });

@@ -3,6 +3,7 @@ import type {
   CadenceSample,
   MotionAuthStatus,
   MotionAvailability,
+  PedometerMeasurement,
 } from "./MotionProvider";
 
 export type ExcerlockMotionEvent = "onActivityChange" | "onCadence";
@@ -22,7 +23,7 @@ export interface ExcerlockMotionModuleClient {
     fromMs: number,
     toMs: number,
   ): Promise<readonly ActivitySample[]>;
-  querySteps(fromMs: number, toMs: number): Promise<{ readonly steps: number }>;
+  querySteps(fromMs: number, toMs: number): Promise<PedometerMeasurement>;
   addListener(
     event: "onActivityChange",
     callback: (sample: ActivitySample) => void,

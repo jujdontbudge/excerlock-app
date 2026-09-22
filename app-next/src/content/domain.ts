@@ -1,6 +1,7 @@
 export const domainCopy = {
   verbs: { walking: 'Walk', gym: 'Spend' },
   state: 'Unlock while walking',
+  gymPresence: 'Be at the gym',
   arrival: 'Arrive at the gym',
   atGym: 'at the gym',
   steps: 'steps',

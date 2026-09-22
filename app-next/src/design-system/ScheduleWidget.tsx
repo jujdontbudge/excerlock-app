@@ -25,7 +25,7 @@ export function ScheduleWidget({
           gap: t.space.xl,
           backgroundColor: t.surface.card,
           borderWidth: t.stroke.hairline,
-          borderColor: t.border.default,
+          borderColor: t.border.outline,
         }}>
         <View
           style={{
@@ -51,11 +51,11 @@ export function ScheduleWidget({
                 }}>
                 <Label variant="label">{time}</Label>
               </View>
-              {!i ? <Icon name="arrow" size={t.layout.glyph} variant="utility" tint={t.brand.primary} /> : null}
+              {!i ? <Icon name="arrow" size={t.icon.md} variant="utility" /> : null}
             </View>
           ))}
         </View>
-        <LivingIcon name={unlocked ? 'lock-open' : 'lock'} size={t.space.hero} />
+        <LivingIcon name={unlocked ? 'lock-open' : 'lock'} size="card" />
         <View
           style={{
             flexDirection: 'row',
@@ -68,12 +68,12 @@ export function ScheduleWidget({
                 accessible
                 accessibilityLabel={widgetCopy.apps[i]}
                 style={{
-                  width: t.layout.disc,
-                  height: t.layout.disc,
+                  width: t.control.indicator,
+                  height: t.control.indicator,
                   borderRadius: t.radius.field,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: [t.icon.lilac, t.icon.coral, t.icon.sky][i],
+                  backgroundColor: [t.swatch.lilac, t.swatch.coral, t.swatch.sky][i],
                 }}>
                 <Label variant="label">{initial}</Label>
               </View>

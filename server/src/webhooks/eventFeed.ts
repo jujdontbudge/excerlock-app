@@ -2,6 +2,7 @@ import type {
   VendorEventCursor,
   VendorEventFeedRepository,
 } from "./repository.js";
+import { VendorClientError } from "../vendors/errors.js";
 import type { Vendor } from "../vendors/types.js";
 
 const MAX_PAGE_SIZE = 100;
@@ -62,7 +63,7 @@ function decodeCursor(cursor: string | null): VendorEventCursor | null {
     }
     return { receivedAt, id: decoded.id };
   } catch {
-    throw new Error("Vendor event cursor is invalid");
+    throw new VendorClientError("Vendor event cursor is invalid");
   }
 }
 
@@ -72,7 +73,7 @@ export function createVendorEventFeed(
   return {
     async readSince(userId, cursor, limit) {
       if (!Number.isInteger(limit) || limit < 1 || limit > MAX_PAGE_SIZE) {
-        throw new Error(
+        throw new VendorClientError(
           `Vendor event page size must be between 1 and ${MAX_PAGE_SIZE}`,
         );
       }

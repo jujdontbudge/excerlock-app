@@ -71,7 +71,7 @@ function MinutesWheel({
             backgroundColor: t.surface.card,
             borderRadius: t.radius.field,
             borderWidth: t.stroke.hairline,
-            borderColor: t.border.default,
+            borderColor: t.border.outline,
           }}
         />
         <FlatList
@@ -93,12 +93,8 @@ function MinutesWheel({
               <PressableScale label={`${item} ${c.minutes}`} onPress={() => step(index - active)}>
                 <View style={{ height: ITEM, alignItems: 'center', justifyContent: 'center' }}>
                   <Label
-                    style={{
-                      fontSize: isActive ? 26 : 20,
-                      lineHeight: isActive ? 32 : 26,
-                      fontWeight: isActive ? '700' : '400',
-                      color: isActive ? t.text.primary : t.text.muted,
-                    }}>
+                    variant={isActive ? 'section' : 'body'}
+                    tone={isActive ? 'primary' : 'secondary'}>
                     {`${item} min`}
                   </Label>
                 </View>

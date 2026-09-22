@@ -32,7 +32,6 @@ import { Reveal } from '../../motion/Reveal';
 import { unlockKind } from '../unlock/entry';
 import { UnlockEntry } from '../unlock/UnlockEntry';
 import { WalkingCheckButton } from './WalkingCheckButton';
-import { HomeReport } from './HomeReport';
 import { useInteractiveHomeMarker } from '../../runtime/startup/useInteractiveHomeMarker';
 import { useLapsedWinbackOffer } from '../subscription/useLapsedWinbackOffer';
 import { useLockListPicker } from '../permissions/useLockListPicker';
@@ -81,19 +80,9 @@ export function HomeScreen() {
   const conditionCards = conditions.map(({ rule, row }) => {
     const model = progressContent(rule, row, permissions, session, auto);
     const kind = unlockKind(rule);
-    const active = decision.state === 'locked' && decision.activeRuleIds.includes(rule.id);
     const atGym = kind === 'gym' && !row.met ? presence : null;
     const walk = 'state' in model ? model.state : 'idle';
-    const status: { label: string; tone: 'success' | 'primary' | 'secondary' } = row.met
-      ? { label: c.complete, tone: 'success' }
-      : atGym
-        ? atGym.confirmedAt
-          ? { label: c.presentGym, tone: 'success' }
-          : { label: c.confirmingGym, tone: 'primary' }
-        : walk === 'active' || walk === 'grace'
-          ? { label: c.walkDetected, tone: 'success' }
-              : { label: active ? c.inProgress : c.scheduled, tone: 'primary' };
-    const detected = status.tone === 'success';
+    const detected = row.met || Boolean(atGym?.confirmedAt) || walk === 'active' || walk === 'grace';
     const onAction = () => {
       if (kind) router.push({ pathname: `/unlock/${kind}`, params: { ruleId: rule.id } });
     };
@@ -104,17 +93,11 @@ export function HomeScreen() {
         padding: t.space.lg, gap: t.space.md,
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
-          <Icon name={model.icon} variant="utility" size={32} tint={t.brand.primary} />
+          <Icon name={model.icon} variant="utility" size={t.icon.lg} />
           <View style={{ flex: 1, gap: t.space.xs }}>
             <Label variant="label">{model.title}</Label>
             <Label variant="support" tone="secondary">{scheduleLabel(rule.schedule)}</Label>
           </View>
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: t.space.md }}>
-          <Label variant="support" style={{ color: detected ? t.state.success : t.text.primary, fontWeight: detected ? '600' : '400' }}>
-            {status.label}
-          </Label>
-          {rule.mode.kind === 'state' ? null : <Label variant="support" tone="secondary">{`${Math.round(Math.max(0, Math.min(1, model.value)) * 100)}%`}</Label>}
         </View>
         <Label variant="label">{rule.mode.kind === 'state' && backgroundWalking.state !== 'ready' ? backgroundWalking.detail : model.detail}</Label>
         {rule.mode.kind === 'state' ? null : <ProgressBar value={Math.max(0, Math.min(1, model.value))} label={model.title} tone={detected ? 'success' : 'brand'} />}
@@ -146,7 +129,7 @@ export function HomeScreen() {
       >
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: t.space.md }}>
         <View style={{ flex: 1, gap: t.space.xs }}>
-          <Label variant="question" accessibilityRole="header">
+          <Label variant="display" accessibilityRole="header">
             {c.greeting(name)}
           </Label>
         </View>
@@ -170,7 +153,6 @@ export function HomeScreen() {
           {c.paused}
         </Label>
       ) : null}
-      <HomeReport lockState={decision.state} />
       <View style={{ gap: t.space.md }}>
         <Label variant="section" accessibilityRole="header">{c.today}</Label>
         {conditionCards}
@@ -186,7 +168,6 @@ export function HomeScreen() {
           <SettingsRow
             title={c.lockedApps}
             icon="lock"
-            iconTint={t.brand.primary}
             onPress={chooseApps}
           />
         </View>
@@ -202,7 +183,6 @@ export function HomeScreen() {
           <SettingsRow
             title={c.analytics}
             icon="chart"
-            iconTint={t.brand.primary}
             onPress={() => router.navigate('/analytics')}
           />
         </View>

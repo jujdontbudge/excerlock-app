@@ -1,5 +1,5 @@
 import Svg, { G, Path } from 'react-native-svg';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { brandPaths } from './brandPaths';
 export type Brand = keyof typeof brandPaths;
 /** Library geometry; app-tile background and motion are separate components. */
@@ -10,11 +10,11 @@ export function BrandMark({ brand }: { brand: Brand }) {
       <G transform="translate(13 13) scale(2.25)">
         {brand === 'tiktok' ? (
           <>
-            <Path d={path} fill={w.brands.cyan} transform="translate(-0.7 0.7)" />
-            <Path d={path} fill={w.brands.pink} transform="translate(0.7 -0.4)" />
+            <Path d={path} fill={art.welcome.brands.cyan} transform="translate(-0.7 0.7)" />
+            <Path d={path} fill={art.welcome.brands.pink} transform="translate(0.7 -0.4)" />
           </>
         ) : null}
-        <Path d={path} fill={brand === 'youtube' ? w.brands.youtube : w.brands.white} />
+        <Path d={path} fill={brand === 'youtube' ? art.welcome.brands.youtube : art.welcome.brands.white} />
       </G>
     </Svg>
   );

@@ -95,15 +95,17 @@ test('a failed send shows its reason in the sheet and Send stays for a retry', a
   expect(screen.getByRole('header', { name: i.sentTitle })).toBeTruthy();
 });
 
-test('Home shows the chips and Report without opening anything', async () => {
+test('Home keeps the diagnostic report controls off the primary screen', async () => {
   const runtime = createRuntime();
   await runtime.dev.load('home-locked-walking');
   await renderRouter({
     _layout: () => <AppRuntimeProvider runtime={runtime}><HomeScreen /></AppRuntimeProvider>,
     index: () => null,
   });
-  expect(screen.getByRole('button', { name: h.reportLabel })).toBeTruthy();
-  expect(screen.getByRole('button', { name: h.walking })).toBeTruthy();
-  expect(screen.getByRole('button', { name: h.treadmill })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: h.reportLabel })).toBeNull();
+  expect(screen.queryByRole('button', { name: h.walking })).toBeNull();
+  expect(screen.queryByRole('button', { name: h.treadmill })).toBeNull();
+  expect(screen.queryByText('Scheduled')).toBeNull();
+  expect(screen.queryByText('0%')).toBeNull();
   runtime.dispose();
 });

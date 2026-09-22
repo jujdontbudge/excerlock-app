@@ -5,13 +5,27 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppRuntimeProvider } from '../src/runtime/AppRuntimeProvider';
 import { markStartupStage } from '../modules/excerlock-startup';
+import { useFonts } from 'expo-font';
+import {
+  Baloo2_400Regular,
+  Baloo2_600SemiBold,
+  Baloo2_700Bold,
+  Baloo2_800ExtraBold,
+} from '@expo-google-fonts/baloo-2';
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Baloo2_400Regular,
+    Baloo2_600SemiBold,
+    Baloo2_700Bold,
+    Baloo2_800ExtraBold,
+  });
   // Diagnostic stage boundary. The runtime only starts after this commit, so
   // the mark always precedes HydrationDone/BootGateRedirect; the native
   // RCTContentDidAppearNotification usually wins the same stage first.
   useEffect(() => {
     markStartupStage('FirstReactRender');
   }, []);
+  if (!fontsLoaded) return null;
   return (
     <GestureHandlerRootView>
       <SafeAreaProvider>

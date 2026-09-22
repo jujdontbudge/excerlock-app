@@ -9,6 +9,7 @@ import type {
   MagnetometerOptions,
   MotionAuthStatus,
   MotionAvailability,
+  PedometerMeasurement,
   RecordedAccelerometerSample,
 } from "./ExcerlockMotion.types";
 
@@ -44,7 +45,7 @@ export class ExcerlockMotionModule extends NativeModule<ExcerlockMotionModuleEve
   public querySteps!: (
     fromMs: number,
     toMs: number,
-  ) => Promise<{ readonly steps: number }>;
+  ) => Promise<PedometerMeasurement>;
 }
 
 export default requireNativeModule<ExcerlockMotionModule>("ExcerlockMotion");

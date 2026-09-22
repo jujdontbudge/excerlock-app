@@ -7,7 +7,6 @@ import {
   SettingsRow,
   SettingsGroup,
   RuleCard,
-  PrimaryButton,
   PressableScale,
   EmptyState,
   Label,
@@ -50,7 +49,19 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
           }}
         />
       }>
-      <Heading title={c.title} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
+        <View style={{ flex: 1 }}><Heading title={c.title} /></View>
+        {ordered.length ? (
+          <PressableScale label={c.add} onPress={onAdd}
+            style={{ minHeight: t.control.inline, paddingHorizontal: t.space.lg,
+              flexDirection: 'row', alignItems: 'center', gap: t.space.sm,
+              borderRadius: t.radius.pill, backgroundColor: t.surface.card,
+              borderWidth: t.stroke.hairline, borderColor: t.border.divider }}>
+            <LivingIcon name="plus" size="md" />
+            <Label variant="label">{c.add}</Label>
+          </PressableScale>
+        ) : null}
+      </View>
       {scheduleIssue ? (
         <View
           style={{
@@ -82,21 +93,20 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
             borderRadius: t.radius.card,
             backgroundColor: t.surface.card,
             borderWidth: t.stroke.hairline,
-            borderColor: t.border.default,
+            borderColor: t.border.outline,
             gap: t.space.sm,
           }}>
           <Label>{migrationNote}</Label>
           <PressableScale
             label={c.dismissRetired}
             onPress={() => useRulesStore.getState().patch({ migrationNote: null })}
-            style={{ alignSelf: 'flex-start', minHeight: t.layout.touch, justifyContent: 'center' }}>
+            style={{ alignSelf: 'flex-start', minHeight: t.control.inline, justifyContent: 'center' }}>
             <Label variant="support" style={{ color: t.text.primary }}>
               {c.dismissRetired}
             </Label>
           </PressableScale>
         </View>
       ) : null}
-      {ordered.length ? <PrimaryButton label={c.add} onPress={onAdd} /> : null}
       {ordered.length ? (
         <>
           {ordered.map((rule, index) => (
@@ -128,7 +138,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
         <EmptyState icon="walking" title={c.empty} body={c.emptyBody} action={c.add} onAction={onAdd} />
       )}
       <View style={{ backgroundColor: t.surface.card, borderRadius: t.radius.pill, borderWidth: t.stroke.hairline, borderColor: t.border.outline }}>
-        <SettingsRow title="Lock list" icon="lock" iconTint={t.brand.primary} onPress={() => void openLockList()} />
+        <SettingsRow title="Lock list" icon="lock" onPress={() => void openLockList()} />
       </View>
     </ScreenShell>
   );

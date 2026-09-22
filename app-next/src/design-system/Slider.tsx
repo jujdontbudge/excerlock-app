@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import { useMotion } from '../motion/useMotion';
 import { scheduleOnRN } from 'react-native-worklets';
 import { feedback } from '../motion/haptics';
 import { tokens as t } from './tokens';
@@ -20,13 +21,14 @@ export function Slider({
   step?: number;
   onChange: (value: number) => void;
 }) {
+  const m = useMotion();
   const width = useSharedValue(1),
     ratio = useSharedValue((value - min) / (max - min)),
     last = useSharedValue(value);
   useEffect(() => {
-    ratio.set(withSpring((value - min) / (max - min), t.motion.spring.control));
+    ratio.set(m.spring((value - min) / (max - min), 'control'));
     last.set(value);
-  }, [value, min, max, ratio, last]);
+  }, [value, min, max, ratio, last, m]);
   const commit = useCallback(
     (next: number) => {
       feedback();
@@ -63,7 +65,7 @@ export function Slider({
         width.set(e.nativeEvent.layout.width);
       }}>
       <GestureDetector gesture={gesture}>
-        <Animated.View style={{ height: t.layout.touch, justifyContent: 'center' }}>
+        <Animated.View style={{ height: t.control.inline, justifyContent: 'center' }}>
           <View
             style={{
               height: t.layout.progress,
@@ -90,7 +92,7 @@ export function Slider({
                 borderRadius: t.radius.pill,
                 backgroundColor: t.brand.primary,
                 borderWidth: t.stroke.chart,
-                borderColor: t.surface.canvas,
+                borderColor: t.surface.card,
                 boxShadow: t.shadow.cta,
               },
               thumb,

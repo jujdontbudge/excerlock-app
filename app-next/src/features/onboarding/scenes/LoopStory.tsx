@@ -35,9 +35,7 @@ export function LoopStory({ step }: { step: (typeof steps)[number] }) {
               position: 'absolute',
               width: '100%',
               opacity: contentPhase === candidatePhase ? 1 : 0,
-              transitionProperty: 'opacity',
-              transitionDuration: m.reduced ? 0 : m.duration.slow,
-              transitionTimingFunction: 'ease-in-out',
+              ...m.transition('opacity', 'standard'),
             }}>
             <View
               onLayout={(e) => {
@@ -71,12 +69,12 @@ function LoopHeading({ step }: { step: 'O16' | 'O17' }) {
   return (
     <Reveal>
       <View style={{ gap: t.space.md }}>
-        <Label accessibilityRole="header" variant="question" style={{ textAlign: 'center' }}>
+        <Label accessibilityRole="header" variant="display" style={{ textAlign: 'center' }}>
           {onboardingCopy[step].title}
         </Label>
-        <Label accessibilityLabel={subhead} variant="question" style={{ textAlign: 'center' }}>
+        <Label accessibilityLabel={subhead} variant="display" style={{ textAlign: 'center' }}>
           {sub.before}
-          <Label variant="question" style={{ color: t.brand.primary }}>
+          <Label variant="display" style={{ color: t.brand.primary }}>
             {sub.emphasis}
           </Label>
           {sub.after}
@@ -91,10 +89,10 @@ function FinalLoopHeading() {
       <Label
         accessibilityLabel={onboardingCopy.O18.title}
         accessibilityRole="header"
-        variant="question"
+        variant="display"
         style={{ textAlign: 'center' }}>
         {finalLoopTitle.before}
-        <Label variant="question" style={{ color: t.brand.primary }}>
+        <Label variant="display" style={{ color: t.brand.primary }}>
           {finalLoopTitle.emphasis}
         </Label>
         {finalLoopTitle.after}

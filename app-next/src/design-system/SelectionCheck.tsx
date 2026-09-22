@@ -3,7 +3,7 @@ import { Icon } from '../icons/Icon';
 import { tokens as t } from './tokens';
 import { Reveal } from '../motion/Reveal';
 /** White badge and orange check remain legible against a solid selected surface. */
-export function SelectionCheck({ size = t.layout.choiceCheck }: { size?: number }) {
+export function SelectionCheck({ size = t.control.indicator }: { size?: number }) {
   return (
     <Reveal>
       <View
@@ -15,7 +15,7 @@ export function SelectionCheck({ size = t.layout.choiceCheck }: { size?: number 
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-        <Icon name="check" variant="utility" size={20} tint={t.brand.primary} />
+        <Icon name="check" variant="utility" size={t.icon.sm} />
       </View>
     </Reveal>
   );

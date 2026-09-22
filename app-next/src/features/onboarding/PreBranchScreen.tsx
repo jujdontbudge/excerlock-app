@@ -1,6 +1,7 @@
 import { OnboardingRuleScreen } from '../rules/OnboardingRuleScreen';
 import { BranchStep } from '../rules/RuleScreen';
-import { Label } from '../../design-system';
+import { Label, Heading, ChoiceRow } from '../../design-system';
+import { activityBaseline, BaselineStep } from '../../content/activityBaseline';
 import { AnswerProps } from './types';
 import { O01 } from './screens/O01';
 import { O02 } from './screens/O02';
@@ -16,10 +17,30 @@ import { O15 } from './screens/O15';
 import { O20 } from './screens/O20';
 import { DotGridReveal } from './scenes/DotGridReveal';
 import { LoopStory } from './scenes/LoopStory';
+import { ChoiceQuestion } from './scenes/ChoiceQuestion';
 const screens = { O01, O02, O03, O04, O05, O06, O08, O09, O10, O11, O15, O20 };
-export function PreBranchScreen({ step, back, ...props }: AnswerProps & { step: string; back?: () => void }) {
-  if (step === 'O02') return <O02 onBack={back} />;
-  if (step === 'O03') return <O03 onBack={back} />;
+/** Step bodies only; the shell header owns the back control. */
+export function PreBranchScreen({ step, ...props }: AnswerProps & { step: string; back?: () => void }) {
+  if (['O07', 'O21', 'O22'].includes(step)) return <ChoiceQuestion step={step} {...props} />;
+  if (step in activityBaseline) {
+    const question = activityBaseline[step as BaselineStep];
+    return (
+      <>
+        <Heading title={question.title} centered />
+        {question.options.map((option) => (
+          <ChoiceRow
+            emphasis="solid"
+            key={option.value}
+            title={option.label}
+            selected={props.answers[question.key] === option.value}
+            onPress={() => props.setAnswer(question.key, option.value)}
+          />
+        ))}
+      </>
+    );
+  }
+  if (step === 'O02') return <O02 />;
+  if (step === 'O03') return <O03 />;
   if (step === 'O12' || step === 'O13' || step === 'O14') return <DotGridReveal step={step} {...props} />;
   if (step === 'O16' || step === 'O17' || step === 'O18') return <LoopStory step={step} />;
   if (['W1', 'W2', 'W3', 'G1', 'G2', 'R1', 'R2', 'B1', 'B2', 'D'].includes(step))

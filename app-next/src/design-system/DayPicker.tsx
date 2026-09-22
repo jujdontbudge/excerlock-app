@@ -4,8 +4,10 @@ import { tokens as t } from './tokens';
 import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { controls } from '../content/controls';
+import { useMotion } from '../motion/useMotion';
 const order = [1, 2, 3, 4, 5, 6, 0];
 export function DayPicker({ days, onChange }: { days: number[]; onChange: (days: number[]) => void }) {
+  const m = useMotion();
   return (
     <View style={{ gap: t.space.md }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -18,19 +20,18 @@ export function DayPicker({ days, onChange }: { days: number[]; onChange: (days:
               accessibilityRole="checkbox"
               accessibilityState={{ checked: selected }}
               onPress={() => onChange(order.filter((day) => (day === d ? !selected : days.includes(day))))}
-              style={{ minWidth: t.layout.touch, alignItems: 'center' }}>
+              style={{ minWidth: t.control.inline, alignItems: 'center' }}>
               <Animated.View
                 style={{
-                  width: t.layout.disc,
-                  height: t.layout.disc,
+                  width: t.control.inline,
+                  height: t.control.inline,
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderRadius: t.radius.pill,
                   backgroundColor: selected ? t.brand.primary : t.surface.card,
                   borderWidth: selected ? 0 : t.stroke.hairline,
-                  borderColor: t.border.default,
-                  transitionProperty: 'backgroundColor',
-                  transitionDuration: t.motion.duration.standard,
+                  borderColor: t.border.outline,
+                  ...m.transition('backgroundColor', 'standard'),
                 }}>
                 <Label
                   variant="support"

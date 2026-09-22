@@ -6,6 +6,7 @@ import { Label } from './Label';
 import { PressableScale } from './PressableScale';
 import { controls } from '../content/controls';
 import { feedback } from '../motion/haptics';
+import { useMotion } from '../motion/useMotion';
 
 export function TimeRangeRow({
   start,
@@ -23,8 +24,9 @@ export function TimeRangeRow({
   compact?: boolean;
 }) {
   void compact;
+  const m = useMotion();
   return (
-    <Animated.View layout={layoutTransition} style={{ gap: t.space.sm }}>
+    <Animated.View layout={layoutTransition(m.reduced)} style={{ gap: t.space.sm }}>
       <Label variant="support" tone="secondary">
         {controls.timeOfUse}
       </Label>
@@ -33,7 +35,7 @@ export function TimeRangeRow({
           backgroundColor: t.surface.card,
           borderRadius: t.radius.field,
           borderWidth: t.stroke.hairline,
-          borderColor: t.border.default,
+          borderColor: t.border.outline,
           overflow: 'hidden',
         }}>
         <View

@@ -2,19 +2,20 @@ import { View } from 'react-native';
 import { Label } from './Label';
 import { tokens as t } from './tokens';
 import { Reveal } from '../motion/Reveal';
-import { useSolidChoices } from './ChoiceAppearance';
+import { useSetupPresentation } from './SetupPresentation';
 export function Heading({
   title,
   support,
-  variant = 'question',
+  variant = 'display',
   centered = false,
 }: {
   title: string;
   support?: string;
-  variant?: 'hero' | 'question' | 'section';
+  variant?: 'display' | 'section';
   centered?: boolean;
 }) {
-  const setupScreen = useSolidChoices();
+  const setupScreen = useSetupPresentation();
+  const alignCenter = centered;
   return (
     <Reveal>
       <View style={{ gap: t.space.xs }}>
@@ -22,11 +23,11 @@ export function Heading({
           accessibilityLabel={title.replace(/\s+/g, ' ')}
           accessibilityRole="header"
           variant={variant}
-          style={{ textAlign: centered ? 'center' : 'left' }}>
+          style={{ textAlign: alignCenter ? 'center' : 'left' }}>
           {title}
         </Label>
         {support && !setupScreen ? (
-          <Label tone="secondary" style={{ textAlign: centered ? 'center' : 'left' }}>
+          <Label style={{ textAlign: alignCenter ? 'center' : 'left' }}>
             {support}
           </Label>
         ) : null}

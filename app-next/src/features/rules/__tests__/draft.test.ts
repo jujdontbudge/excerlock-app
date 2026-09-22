@@ -15,11 +15,15 @@ test.each(['walking', 'gym'] as const)('%s defaults produce a valid rule', (acti
   expect(validateRule(toRule(createDraft(activity), schedule))).toEqual([]);
 });
 test('gym time and arrival modes serialize through a round trip', () => {
-  let gym = reduceDraft(createDraft('gym'), { type: 'setGymMinutes', value: 45 });
+  let gym = reduceDraft(createDraft('gym'), { type: 'setGymMode', value: 'time' });
+  gym = reduceDraft(gym, { type: 'setGymMinutes', value: 45 });
   expect(toRule(gym, schedule).mode).toMatchObject({ goal: 45 });
   expect(toRule(fromRule(toRule(gym, schedule)), schedule)).toEqual(toRule(gym, schedule));
   gym = reduceDraft(gym, { type: 'setGymMode', value: 'arrival' });
   expect(toRule(gym, schedule).mode.kind).toBe('event');
+  expect(toRule(fromRule(toRule(gym, schedule)), schedule)).toEqual(toRule(gym, schedule));
+  gym = reduceDraft(gym, { type: 'setGymMode', value: 'presence' });
+  expect(toRule(gym, schedule).mode).toEqual({ kind: 'state', activity: 'gym' });
   expect(toRule(fromRule(toRule(gym, schedule)), schedule)).toEqual(toRule(gym, schedule));
 });
 test('invalid goal and schedule cannot become saved rules', () => {

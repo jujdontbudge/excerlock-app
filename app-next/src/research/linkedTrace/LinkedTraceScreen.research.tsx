@@ -703,7 +703,7 @@ export function readinessStep({
 }
 
 const s = StyleSheet.create({
-  content: { gap: t.space.xl, paddingBottom: t.space.xxxl },
+  content: { gap: t.space.xl, paddingBottom: t.space.xxl },
   section: { gap: t.space.lg },
   step: { flexDirection: 'row', gap: t.space.lg, alignItems: 'flex-start' },
   stepText: { flex: 1 },

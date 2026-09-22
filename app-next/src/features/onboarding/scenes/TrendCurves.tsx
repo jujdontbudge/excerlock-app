@@ -1,6 +1,6 @@
 import { useEffect, useId } from 'react';
 import Svg, { Defs, ClipPath, Rect, Path, Line, G } from 'react-native-svg';
-import Animated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedProps, useSharedValue } from 'react-native-reanimated';
 import { tokens as t } from '../../../design-system/tokens';
 import { useMotion } from '../../../motion/useMotion';
 const Mask = Animated.createAnimatedComponent(Rect);
@@ -9,8 +9,8 @@ export function TrendCurves() {
     m = useMotion(),
     id = useId().replace(/:/g, '');
   useEffect(() => {
-    progress.set(m.reduced ? 1 : withTiming(1, { duration: m.duration.reveal * 2 }));
-  }, [progress, m.reduced, m.duration.reveal]);
+    progress.set(m.timing(1, 'emphasized', { stretch: 2 }));
+  }, [progress, m]);
   const clip = useAnimatedProps(() => ({ width: progress.get() * 320 }));
   return (
     <Svg width="100%" height="100%" viewBox="0 0 320 240" accessible={false}>
@@ -20,7 +20,7 @@ export function TrendCurves() {
         </ClipPath>
       </Defs>
       {[40, 120, 200, 232].map((y) => (
-        <Line key={y} x1={12} x2={308} y1={y} y2={y} stroke={t.chart.grid} strokeWidth={t.stroke.hairline} />
+        <Line key={y} x1={12} x2={308} y1={y} y2={y} stroke={t.border.divider} strokeWidth={t.stroke.selected} />
       ))}
       <G clipPath={`url(#${id})`}>
         <Path

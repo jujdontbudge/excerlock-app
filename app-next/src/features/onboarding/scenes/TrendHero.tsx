@@ -14,13 +14,7 @@ export function TrendHero() {
           accessible
           accessibilityRole="image"
           accessibilityLabel={trendCopy.description}
-          style={{
-            borderRadius: t.radius.sheet,
-            backgroundColor: t.surface.card,
-            borderWidth: t.stroke.hairline,
-            borderColor: t.border.outline,
-            padding: t.space.lg,
-          }}>
+          style={{ paddingVertical: t.space.lg }}>
           <View style={{ width: '100%', aspectRatio: 320 / 240 }}>
             <TrendCurves />
             <View
@@ -32,7 +26,7 @@ export function TrendHero() {
                 alignItems: 'center',
                 gap: t.space.xs,
               }}>
-              <Icon name="walking" size={t.space.xxl} tint={t.brand.primary} />
+              <Icon name="walking" size={t.icon.lg} />
               <Label variant="label" style={{ color: t.text.primary }}>
                 {c.exercise}
               </Label>
@@ -46,7 +40,7 @@ export function TrendHero() {
                 alignItems: 'center',
                 gap: t.space.xs,
               }}>
-              <Icon name="phone" size={t.layout.glyph} tint={t.text.secondary} />
+              <Icon name="phone" size={t.icon.md} tone="muted" />
               <Label variant="label" tone="secondary">
                 {c.screenTime}
               </Label>

@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useMotion } from '../../motion/useMotion';
 import { feedback } from '../../motion/haptics';
-import { tokens as t } from '../../design-system/tokens';
 export function useUnlockMoment(state: string) {
   const previous = useRef(state),
     scale = useSharedValue(1),
@@ -11,12 +10,9 @@ export function useUnlockMoment(state: string) {
     const lifted = (value: string) => value === 'unlockedMet' || value === 'unlockedAtGym';
     if (lifted(state) && !lifted(previous.current)) {
       feedback('success');
-      if (!m.reduced)
-        scale.set(
-          withSequence(withTiming(m.scale.pop, { duration: m.duration.fast }), withSpring(1, t.motion.spring.pop)),
-        );
+      if (!m.reduced) scale.set(m.sequence(m.timing(m.scale.pop, 'standard'), m.spring(1, 'pop')));
     }
     previous.current = state;
-  }, [state, m.reduced, m.scale.pop, m.duration.fast, scale]);
+  }, [state, m, scale]);
   return useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 }

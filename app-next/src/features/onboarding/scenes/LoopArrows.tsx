@@ -19,10 +19,7 @@ export function LoopArrows({ expanded }: { expanded: boolean }) {
               width: '100%',
               height: '100%',
               opacity: appears ? 1 : 0,
-              transitionProperty: 'opacity',
-              transitionDelay: m.reduced || !appears ? 0 : m.duration.planCheck,
-              transitionDuration: m.reduced ? 0 : appears ? m.duration.standard : m.duration.fast,
-              transitionTimingFunction: 'ease-out',
+              ...m.transition('opacity', 'standard', { delay: appears ? m.duration.emphasized : 0, curve: 'enter' }),
             }}>
             <Svg width="100%" height="100%" viewBox="0 0 360 500" accessible={false}>
               {Array.from({ length: count }, (_, index) => {

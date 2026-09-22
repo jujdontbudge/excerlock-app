@@ -33,10 +33,10 @@ export function BarChart({ data, label }: { data: readonly ChartDatum[]; label: 
               }}>
               <ChartBar value={d.value ?? 0} comparison={d.comparison} max={max} index={i} />
             </View>
-            <Label variant="badge" tone="secondary">
+            <Label variant="micro" tone="secondary">
               {d.label}
             </Label>
-            <Label variant="badge">{d.value === null ? chartCopy.dash : compactNumber(d.value)}</Label>
+            <Label variant="micro">{d.value === null ? chartCopy.dash : compactNumber(d.value)}</Label>
           </View>
         ))}
       </View>

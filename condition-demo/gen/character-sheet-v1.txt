@@ -1,0 +1,17 @@
+Use case: illustration-story
+Asset type: character animation sprite sheet for an app onboarding demo (frames will be cut out and animated)
+
+Primary request: a sprite sheet of ONE cute cartoon person, drawn 8 times in a strict grid of 2 rows and 4 columns (8 equal cells). Same character, same drawing size, same proportions, same colours in every cell. Full body visible in every cell, feet on the same ground line within each cell, nothing cropped. Side view, the character always faces to the RIGHT.
+
+Row 1, left to right, walking cycle part 1: cell 1 right foot forward heel contact, cell 2 right leg planted body lowest, cell 3 legs passing mid stride, cell 4 body highest pushing off.
+Row 2, left to right: cell 5 left foot forward heel contact, cell 6 legs passing mid stride the other way, cell 7 STANDING STILL feet together looking down at the phone, cell 8 STANDING STILL feet together holding the phone lower and looking straight ahead with raised eyebrows.
+
+Subject: a friendly young adult of unspecified gender, simple rounded cartoon proportions (large round head, small body), short dark brown hair, warm tan skin, cream white t-shirt, dark navy joggers, white sneakers. In every cell they hold a plain white smartphone in the right hand at chest height. Minimal face: two small dot eyes and a tiny smile, no other facial detail.
+
+Style/medium: flat vector cartoon illustration, playful and modern, everything softly rounded, no thin strokes, no black outlines, no gradients, flat fills only, no drop shadows, no ground shadow, no background scenery.
+
+Scene/backdrop: a perfectly flat solid magenta background (#FF00FF) filling the entire canvas and every cell. No grid lines, no cell borders, no numbers, no labels, no text anywhere.
+
+Composition/framing: square canvas, the 8 cells evenly spaced with generous magenta gaps between figures so no two figures touch. Each figure about 40 percent of the canvas height.
+
+Constraints: exactly 8 figures, identical character, phone always in hand, walking poses clearly different from each other, standing poses clearly still. Avoid: text, labels, outlines, shadows, extra objects, extra characters, faces with noses or ears, realistic rendering, 3D rendering.

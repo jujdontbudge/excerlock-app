@@ -6,9 +6,9 @@ import { Label } from './Label';
 import { Icon, IconName } from '../icons/Icon';
 import { PressableScale } from './PressableScale';
 import { Reveal } from '../motion/Reveal';
-
-import { useSolidChoices } from './ChoiceAppearance';
+import type { ChoiceEmphasis } from './ActivityCard';
 import { SelectionCheck } from './SelectionCheck';
+import { useMotion } from '../motion/useMotion';
 export function ChoiceRow({
   title,
   support,
@@ -19,6 +19,7 @@ export function ChoiceRow({
 
   multiple = false,
   compact = false,
+  emphasis = 'outline',
 }: {
   title: string;
   support?: string;
@@ -29,41 +30,39 @@ export function ChoiceRow({
   recommended?: boolean;
   multiple?: boolean;
   compact?: boolean;
+  emphasis?: ChoiceEmphasis;
 }) {
-  const solid = useSolidChoices() && selected;
+  const m = useMotion();
+  const solid = emphasis === 'solid' && selected;
   void compact; // sizing is universal — compact retained for API compat only
   return (
     <PressableScale
       label={title}
       accessibilityRole={multiple ? 'checkbox' : 'radio'}
-      accessibilityState={{ checked: selected }}
+      accessibilityState={{ checked: selected, selected }}
       onPress={onPress}>
       <Animated.View
         style={{
-          minHeight: t.layout.row,
+          minHeight: t.control.row,
           flexDirection: 'row',
           alignItems: 'center',
           gap: t.space.lg,
           paddingHorizontal: t.space.lg,
           paddingVertical: t.space.lg,
-          borderRadius: t.radius.choice,
+          borderRadius: t.radius.card,
           borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
-          borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.default,
+          borderColor: solid ? t.brand.primary : selected ? t.border.selected : t.border.outline,
           backgroundColor: solid ? t.brand.primary : selected ? t.surface.selected : t.surface.card,
-          transitionProperty: ['borderColor', 'backgroundColor'],
-          transitionDuration: t.motion.duration.standard,
+          ...m.transition(['borderColor', 'backgroundColor'], 'standard'),
         }}>
-        {leading ?? (icon ? <Icon name={icon} tint={solid ? t.text.onAccent : undefined} /> : null)}
+        {leading ?? (icon ? <Icon name={icon} tone={solid ? 'onAccent' : undefined} /> : null)}
         <View style={{ flex: 1, gap: t.space.xs }}>
           <Label variant="label" style={{ color: solid ? t.text.onAccent : t.text.primary }}>
             {title}
           </Label>
 
           {support ? (
-            <Label
-              variant="support"
-              tone="secondary"
-              style={solid ? { color: t.text.onAccent } : undefined}>
+            <Label variant="support" tone="secondary" style={solid ? { color: t.text.onAccent } : undefined}>
               {support}
             </Label>
           ) : null}
@@ -73,17 +72,17 @@ export function ChoiceRow({
         ) : (
           <View
             style={{
-              width: t.layout.choiceCheck,
-              height: t.layout.choiceCheck,
+              width: t.control.indicator,
+              height: t.control.indicator,
               borderRadius: t.radius.pill,
               borderWidth: t.stroke.selected,
-              borderColor: selected ? t.brand.primary : t.border.default,
+              borderColor: selected ? t.brand.primary : t.border.outline,
               alignItems: 'center',
               justifyContent: 'center',
             }}>
             {selected ? (
               <Reveal>
-                <Icon name="check" size={20} variant="utility" tint={t.brand.primary} />
+                <Icon name="check" size={t.icon.md} variant="utility" />
               </Reveal>
             ) : null}
           </View>

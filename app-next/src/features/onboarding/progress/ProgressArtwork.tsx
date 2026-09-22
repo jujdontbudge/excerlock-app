@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { View, useWindowDimensions } from 'react-native';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { welcomeCopy as c } from '../../../content/welcome';
 import { Reveal } from '../../../motion/Reveal';
 import { ProgressBars } from './ProgressBars';
 import { ProgressCurve } from './ProgressCurve';
 import { ProgressBadge } from './ProgressBadge';
-const p = w.progress;
+const p = art.welcome.progress;
 export function ProgressArtwork() {
   const [width, setWidth] = useState<number>(p.width),
     { fontScale } = useWindowDimensions();
@@ -37,7 +37,7 @@ export function ProgressArtwork() {
               height: p.point.size,
               borderRadius: p.point.size,
               borderWidth: p.point.border,
-              borderColor: w.brands.white,
+              borderColor: art.welcome.brands.white,
               backgroundColor: p.orange,
             }}
           />
