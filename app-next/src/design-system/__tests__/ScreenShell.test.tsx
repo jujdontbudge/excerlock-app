@@ -54,4 +54,3 @@ test.each([true, false])('the header stays put above the scrolling content (scro
     insets.mockRestore();
   }
 });
-
