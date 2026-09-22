@@ -1,7 +1,7 @@
 # How your plan works — S3b
 
 Presentation only. S3 commits the plan; this step reads the draft and the W1
-preference in `profileStore`, and Continue only advances to S4. No detector,
+preference in `profileStore`, and Continue only advances to the S3c trial preview. No detector,
 permission, entitlement, shielding, or server mutation is called by this scene.
 
 Source of visual truth: `condition-demo/IMPLEMENTATION-PROMPT.md`, approved HTML,

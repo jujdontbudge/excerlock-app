@@ -349,8 +349,8 @@ export type SemanticScreen = { name: string; props?: Record<string, string | num
 /** Bare ids the two step-level callers pass instead of a route path (HomeScreen, PaywallSlot). */
 const callerScreens: Record<string, string> = { Home: 'home', P: 'paywall' };
 
-/** Onboarding step ids (`O01…O20`, then the S/T/W/G branches) from `src/onboarding/flow.ts`. */
-const onboardingStepPattern = /^(?:O\d{2}|[STWG]\d|G0[FH]|S3[bc])$/;
+/** Onboarding step ids from `src/onboarding/flow.ts`, excluding `P` (which maps to paywall). */
+const onboardingStepPattern = /^(?:O(?:0[1-9]|1[0-9]|2[0-2])|W[0-3]|G(?:[12]|0[FH])|[RB][12]|D|S(?:[1-3]|3[bc])|T[1-4])$/;
 /** Setup step ids `X1…X5` from `src/onboarding/setupFlow.ts`. */
 const setupStepPattern = /^X\d$/;
 

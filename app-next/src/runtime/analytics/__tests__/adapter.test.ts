@@ -128,7 +128,7 @@ test('maps step ids, route paths and their dynamic params to semantic screens', 
 });
 
 test('rejects routes and ids outside the production vocabulary', () => {
-  const emitted = ['/', '/dev', '/linked-trace', '/users/uuid', '/onboarding/X1', '/onboarding/P', '/setup/O07', '/settings/legal/unknown', '/settings/permission/unknown', 'O07x']
+  const emitted = ['/', '/dev', '/linked-trace', '/users/uuid', '/onboarding/X1', '/onboarding/P', '/onboarding/S4', '/setup/O07', '/settings/legal/unknown', '/settings/permission/unknown', 'O07x', 'S4']
     .filter((path) => semanticScreenName(path) !== null);
   expect(emitted).toEqual([]);
 });

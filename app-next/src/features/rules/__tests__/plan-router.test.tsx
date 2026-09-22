@@ -1,4 +1,4 @@
-import { userEvent, fireEvent } from '@testing-library/react-native';
+import { userEvent, fireEvent, waitFor } from '@testing-library/react-native';
 import { Slot } from 'expo-router';
 import { renderRouter, screen } from 'expo-router/testing-library';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
@@ -37,14 +37,8 @@ test.each([
   expect(onboardingStore.getState().data.answers.name).toBe('Alex');
   await userEvent.press(screen.getByRole('button', { name: 'Use this plan' }));
   expect(route.getPathname()).toBe('/onboarding/S3b');
-  expect(screen.getByRole('header', { name: 'How your plan works' })).toBeTruthy();
-  const committed = rulesStore.getState().data.rules;
-  expect(committed).toHaveLength(1);
-  await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
-  expect(route.getPathname()).toBe('/onboarding/S4');
-  expect(rulesStore.getState().data.rules).toEqual(committed);
-  await userEvent.press(screen.getByRole('button', { name: 'Back' }));
-  expect(route.getPathname()).toBe('/onboarding/S3b');
+  expect(screen.getByText(/^Once you hit [\d,]+ steps, your apps will unlock\.$/)).toBeTruthy();
+  expect(rulesStore.getState().data.rules).toHaveLength(1);
   await userEvent.press(screen.getByRole('button', { name: 'Back' }));
   expect(route.getPathname()).toBe('/onboarding/S3');
 });
@@ -56,26 +50,29 @@ test('demo view reports selected scenario and treadmill preference without a sec
   const route = renderRouter({ ...routes, _layout: () => <AppRuntimeProvider runtime={runtime}><Slot /></AppRuntimeProvider> }, { initialUrl: '/onboarding/S3b' });
   await route;
   expect(track).toHaveBeenCalledWith('onboarding_screen_viewed', { screen: 'plan-demo', scenario: 'walk-state', place: 'treadmill' });
-  expect(screen.getByRole('header', { name: 'How your plan works' })).toBeTruthy();
+  expect(screen.getByText('Once you start walking, your apps will unlock.')).toBeTruthy();
   expect(rulesStore.getState().data.rules).toEqual([]);
 });
-test.each(['Continue', 'Not now'])('warm-up %s advances without a native review request', async (label) => {
-  const route = renderRouter(routes, { initialUrl: '/onboarding/S4' });
+test('plan completion skips the rejected custom rating screen and continues to trial onboarding', async () => {
+  const route = renderRouter(routes, { initialUrl: '/onboarding/S3' });
   await route;
-  if (label === 'Continue') {
-    await userEvent.press(screen.getByRole('radio', { name: '4 stars' }));
-    expect(profileStore.getState().data.warmupRating).toBe(4);
-  }
-  await userEvent.press(screen.getByRole('button', { name: label }));
+  await userEvent.press(screen.getByRole('button', { name: 'Use this plan' }));
+  expect(route.getPathname()).toBe('/onboarding/S3b');
+  await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  expect(route.getPathname()).toBe('/onboarding/S3c');
+  await userEvent.press(screen.getByRole('button', { name: 'Next' }));
   expect(route.getPathname()).toBe('/onboarding/T1');
+  expect(screen.queryByText('How does your plan feel so far?')).toBeNull();
 });
 
-test('all-day switch persists and enables an otherwise invalid window', async () => {
-  onboardingStore.getState().patch({ answers: { activity: 'walking', startMinute: 1260, endMinute: 1260 } });
+test('schedule dial persists an adjusted endpoint and enables an invalid window', async () => {
+  onboardingStore.getState().patch({ answers: { activity: 'walking', startMinute: 1260, endMinute: 1274 } });
   const route = renderRouter(routes, { initialUrl: '/onboarding/S1' });
   await route;
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-  await fireEvent(screen.getByRole('switch', { name: 'All day' }), 'valueChange', true);
-  expect(onboardingStore.getState().data.answers.allDay).toBe(true);
-  expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+  fireEvent(screen.getByRole('adjustable', { name: 'Blocking end time' }), 'accessibilityAction', {
+    nativeEvent: { actionName: 'increment' },
+  });
+  expect(onboardingStore.getState().data.answers.endMinute).toBe(1275);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled());
 });

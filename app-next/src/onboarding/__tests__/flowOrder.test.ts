@@ -37,6 +37,7 @@ test.each([
   [{ preBranch: ['O19'] }],
   [{ tail: ['O01'] }],
   [{ tail: ['S3', 'S1', 'P', 'P'] }],
+  [{ tail: ['S4', 'P'] }],
   [{ preBranch: swapped, extra: true }],
   [{ preBranch: swapped, tail: ['S1'] }],
 ] as const)('rejects a malformed payload: %j', (payload) => {
@@ -51,6 +52,7 @@ test('the parser and the persisted store share one step-id vocabulary', () => {
   expect(isOnboardingStepId('O21')).toBe(true);
   expect(isOnboardingStepId('O22')).toBe(true);
   expect(isOnboardingStepId('O23')).toBe(false);
+  expect(isOnboardingStepId('S4')).toBe(false);
   expect(isOnboardingStepId('X1')).toBe(false);
   expect(isOnboardingStepId('O1')).toBe(false);
   expect(isOnboardingStepId(7)).toBe(false);

@@ -51,7 +51,7 @@ with recording(out/(section+'.mp4')):
     capture(activity+'-'+choice.replace(' ','-')+'-'+step)
     tap('Continue');time.sleep(.8)
    find('When should blocking be active?')
-  for step in ['S1','S2','S3','S4','T1','T2','T3','T4']:
+  for step in ['S1','S2','S3','S3b','S3c','T1','T2','T3','T4']:
    go('onboarding/'+step,.2 if step=='S2' else 1);capture(step,step!='S2')
   go('onboarding/T4');tap('Continue');find('Choose your plan');capture('P')
  elif section=='setup':

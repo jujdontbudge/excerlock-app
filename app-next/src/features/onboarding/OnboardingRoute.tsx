@@ -16,7 +16,6 @@ import { PlanCelebration } from '../rules/PlanCelebration';
 import { PlanSummary } from '../rules/PlanSummary';
 import { ConditionDemo } from './condition-demo/ConditionDemo';
 import { PlanTrialPreview } from '../rules/PlanTrialPreview';
-import { ReviewWarmup } from '../rules/ReviewWarmup';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { planCopy as c } from '../../content/plan';
 import { useImpactPlayback } from './impact/useImpactPlayback';
@@ -80,7 +79,6 @@ export function OnboardingRoute() {
     );
   if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} onBack={flow.back} />;
   if (flow.step === 'S3c') body = <PlanTrialPreview condition={previewCondition(draft)} />;
-  if (flow.step === 'S4') body = <ReviewWarmup onSkip={flow.advance} />;
   return (
     <OnboardingShell
       step={flow.step}

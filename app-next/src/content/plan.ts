@@ -19,9 +19,4 @@ export const planCopy = {
   use: 'Use this plan',
   scheduleLimit:
     'This schedule cannot be saved exactly. Shorten its active times or pause another condition, then try again.',
-  S4: 'Help us make ExcerLock better',
-  ratingBody: 'How does your plan feel so far?',
-  ratingHelper: 'Your feedback helps us improve the experience.',
-  notNow: 'Not now',
-  star: (n: number) => `${n} ${n === 1 ? 'star' : 'stars'}`,
 } as const;

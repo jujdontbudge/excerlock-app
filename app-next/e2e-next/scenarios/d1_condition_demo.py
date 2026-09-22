@@ -59,7 +59,7 @@ class D1ConditionDemo(Scenario):
         ctx.launch()
         walk = OnboardingWalk(ctx)
         observed = walk.run(stop_at='S3b')
-        reached = ctx.wait_for('How your plan works')
+        reached = ctx.wait_for('Continue')
         ctx.verdict.check('navigation.after_plan', reached, f'Observed real onboarding to demo: {observed}')
         if not reached:
             return
@@ -80,13 +80,13 @@ class D1ConditionDemo(Scenario):
             if kind == 'walk-state' and place == 'outside':
                 self.hold_and_record(ctx)
             ctx.tap('Continue')
-            advanced = ctx.wait_for('Help us make ExcerLock better')
+            advanced = ctx.wait_for('We want you to try ExcerLock Premium for free')
             after, _ = fixture.persisted_store_state('excerlock-next.rules.v1', ctx.app_container())
             ctx.verdict.check(f'{kind}.{place}.continue_no_commit', advanced and after == before,
-                              'Continue reaches S4 and leaves persisted rule state byte-equivalent')
-            ctx.screenshot(f'{index + 1:02d}-S4', shrink=False)
+                              'Continue reaches the trial preview and leaves persisted rule state byte-equivalent')
+            ctx.screenshot(f'{index + 1:02d}-S3c', shrink=False)
             ctx.tap('Back')
-            back = ctx.wait_for('How your plan works')
+            back = ctx.wait_for('Continue')
             ctx.tap('Back')
             ctx.verdict.check(f'{kind}.{place}.back', back and ctx.wait_for('Your plan is ready'), 'Back returns through S3b to S3')
         device_id = ctx.posthog_device_id()
@@ -126,7 +126,7 @@ class D1ConditionDemo(Scenario):
                     return False
         if not ctx.wait_for('When should blocking be active?') or not ctx.tap('Continue'):
             return False
-        return ctx.wait_for('Your plan is ready', timeout=25) and ctx.tap('Use this plan') and ctx.wait_for('How your plan works')
+        return ctx.wait_for('Your plan is ready', timeout=25) and ctx.tap('Use this plan') and ctx.wait_for('Continue')
 
     def hold_and_record(self, ctx: RunContext) -> None:
         ctx.sim.open_url('excerlock://onboarding/S3b?demoTime=6&demoPause=1')

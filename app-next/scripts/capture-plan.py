@@ -1,4 +1,4 @@
-"""Exercise schedule, time wheel, summary edits, and the local review warm-up."""
+"""Exercise schedule, time wheel, summary edits, and the plan-to-trial transition."""
 from sim import *
 out=ROOT/'evidence/T06';out.mkdir(exist_ok=True)
 def capture(name):
@@ -26,10 +26,10 @@ with recording(out/'plan-flow.mp4'):
   if label=='Edit goal':tap('Add 500 steps')
   if label=='Edit place':tap('Either')
   tap('Continue');find('Your plan is ready');time.sleep(.7)
- capture('S3-edited');tap('Use this plan');find('Help us make ExcerLock better');tap('4 stars');capture('S4');tap('Continue');find('T1')
+ capture('S3-edited');tap('Use this plan');find('Continue');capture('S3b');tap('Continue');find('We want you to try ExcerLock Premium for free');capture('S3c');tap('Next');find('Try ExcerLock free')
 run('xcrun','simctl','ui',SIM,'content_size','accessibility-extra-extra-extra-large')
 run('xcrun','simctl','terminate',SIM,'com.johansardar.excerlock');open_url('excerlock://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8091');time.sleep(3)
 for step in ['S1','S3']:
  open_url('excerlock://onboarding/'+step);time.sleep(2);capture(step+'-xl');swipe(200,670,200,320);time.sleep(.6);capture(step+'-xl-scrolled')
 run('xcrun','simctl','ui',SIM,'content_size','large')
-print('Schedule, wheel, build, edit returns, save, rating and XL captured')
+print('Schedule, wheel, build, edit returns, save, trial transition and XL captured')

@@ -49,7 +49,6 @@ SCREENS: list[tuple[str, str, str]] = [
     ('S3', 'Your plan is ready', 'A little movement'),
     ('S3b', 'Once you', ''),
     ('S3c', 'We want you to try ExcerLock Premium for free', ''),
-    ('S4', 'Help us make ExcerLock better', 'How does your plan feel'),
     ('T1', 'Try ExcerLock free', 'things that matter'),
     ('T2', "We'll remind you before it ends", 'A heads-up'),
     ('T3', 'Want a trial reminder?', 'before your free trial ends'),
@@ -88,11 +87,11 @@ PREFERRED_CHOICE = {
 ADVANCE_LABEL = {
     'O01': 'Get started',
     'S3': 'Use this plan',
-    'S4': 'Not now',
+    'S3c': 'Next',
     'T3': 'Enable reminders',
 }
 
-DEFAULT_ADVANCE = ('Continue', 'Get started', 'Use this plan', 'Not now', 'Enable reminders')
+DEFAULT_ADVANCE = ('Continue', 'Get started', 'Use this plan', 'Next', 'Enable reminders')
 
 #: Explainer screens advance themselves through useImpactPlayback; the shell
 #: renders a spacer instead of a continue button for these steps.
