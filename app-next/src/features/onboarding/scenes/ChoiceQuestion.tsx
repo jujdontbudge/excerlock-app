@@ -16,7 +16,7 @@ export function ChoiceQuestion({ step, answers, setAnswer }: AnswerProps & { ste
   return (
     <>
       <Reveal>
-        <Heading title={step === 'O09' ? weeklyExerciseQuestion(answers.exercisePreference) : copy.title} />
+        <Heading title={step === 'O09' ? weeklyExerciseQuestion(answers.exercisePreference) : copy.title} centered />
       </Reveal>
       <View style={{ gap: t.space.md }}>
         {question.options.map((option, index) => (

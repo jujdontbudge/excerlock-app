@@ -16,7 +16,7 @@ export function ScheduleScreen({ draft: d, onAction, onChoose }: {
   const issues = scheduleIssues(d);
   return (
     <View style={{ gap: t.space.lg }}>
-      <Heading title={c.S1} />
+      <Heading title={c.S1} centered />
       <Reveal index={1}>
         <DayPicker days={d.days} onChange={(days) => onAction({ type: 'days', value: days as Weekday[] })} />
       </Reveal>

@@ -15,7 +15,7 @@ export function Heading({
   centered?: boolean;
 }) {
   const setupScreen = useSolidChoices();
-  const alignCenter = centered || title.trim().endsWith('?');
+  const alignCenter = centered;
   return (
     <Reveal>
       <View style={{ gap: t.space.xs }}>

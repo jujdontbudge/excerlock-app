@@ -34,6 +34,7 @@ export { EmptyState } from './EmptyState';
 export { BottomSheet } from './BottomSheet';
 export { OnboardingHeader } from './OnboardingHeader';
 export { CloseButton } from './CloseButton';
+export { BackButton } from './BackButton';
 export { TabBar } from './TabBar';
 export { FakeSystemPrompt } from './FakeSystemPrompt';
 export { Label } from './Label';

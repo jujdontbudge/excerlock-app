@@ -1,6 +1,5 @@
-import { Pressable, View } from 'react-native';
-import { ScreenShell, PrimaryButton, Label, OnboardingHeader } from '../../design-system';
-import { Icon } from '../../icons/Icon';
+import { View } from 'react-native';
+import { BackButton, ScreenShell, PrimaryButton, Label, OnboardingHeader } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { gymPickerCopy as c } from '../../content/gymPicker';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
@@ -36,21 +35,12 @@ export function GymPickerScreen({
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
-              paddingHorizontal: t.layout.page,
+              paddingHorizontal: t.layout.page - (t.layout.touch - t.layout.glyph) / 2,
             }}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={c.back}
-              onPress={p.back}
-              style={{
-                minHeight: t.layout.touch,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: t.space.sm,
-              }}>
-              <Icon name="back" variant="utility" size={t.layout.glyph} tint={t.brand.primary} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.xs }}>
+              <BackButton label={c.backToSearch} onPress={p.back} />
               <Label style={{ color: t.text.primary }}>{c.searchTitle}</Label>
-            </Pressable>
+            </View>
           </View>
         ) : onBack ? (
           <OnboardingHeader progress={0} showProgress={false} onBack={onBack} onClose={onClose} />

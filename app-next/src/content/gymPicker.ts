@@ -25,7 +25,7 @@ export const gymPickerCopy = {
   limit: 'You can save up to five gyms. Edit or remove an existing gym to add another.',
   nameError: 'Enter a name for this gym.',
   saveError: 'Could not save this gym. Please try again.',
-  back: 'Back to search',
+  backToSearch: 'Back to search',
   map: 'Gym location map',
   newName: 'My gym',
   builderTitle: 'Where is your gym?',

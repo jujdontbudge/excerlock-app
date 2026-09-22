@@ -120,7 +120,7 @@ export function PaywallScreen({
     <ScreenShell
       header={
         onClose ? (
-          <View style={{ paddingHorizontal: t.layout.page }}>
+          <View style={{ paddingHorizontal: t.layout.page, alignItems: 'flex-end' }}>
             <CloseButton label="Close" onPress={onClose} />
           </View>
         ) : undefined

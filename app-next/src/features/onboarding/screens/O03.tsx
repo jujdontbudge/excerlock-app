@@ -1,5 +1,5 @@
 import { View, useWindowDimensions } from 'react-native';
-import { Heading, Label, PressableScale } from '../../../design-system';
+import { Heading, Label } from '../../../design-system';
 import { tokens as t } from '../../../design-system/tokens';
 import { Reveal } from '../../../motion/Reveal';
 import { ControlArtwork } from '../control/ControlArtwork';
@@ -8,10 +8,10 @@ import { Icon } from '../../../icons/Icon';
 import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
 import { welcomeCopy } from '../../../content/welcome';
 import { onboardingCopy as c } from '../../../content/onboarding';
-export function O03({ onBack }: { onBack?: () => void }) {
+export function O03() {
   const { fontScale } = useWindowDimensions();
   const dots = (
-    <View accessibilityLabel={welcomeCopy.controlPagination} style={{ flexDirection: 'row', gap: t.space.sm }}>
+    <View accessible accessibilityLabel={welcomeCopy.controlPagination} style={{ flexDirection: 'row', gap: t.space.sm }}>
       {[0, 1, 2].map((i) => (
         <View
           key={i}
@@ -51,16 +51,7 @@ export function O03({ onBack }: { onBack?: () => void }) {
         </Label>
       </Reveal>
       <Reveal index={4} style={{ marginTop: w.dotsGap, alignItems: 'center' }}>
-        {onBack ? (
-          <PressableScale
-            label={welcomeCopy.back}
-            onPress={onBack}
-            style={{ minWidth: t.layout.touch, alignItems: 'center' }}>
-            {dots}
-          </PressableScale>
-        ) : (
-          dots
-        )}
+        {dots}
       </Reveal>
     </View>
   );

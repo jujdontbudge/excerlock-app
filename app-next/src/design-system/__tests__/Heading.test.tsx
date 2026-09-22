@@ -12,3 +12,10 @@ test('default heading preserves original question size and compact support spaci
   expect(screen.getByRole('header', { name: 'Move first' })).toHaveStyle(t.type.question);
   expect(screen.getByRole('header', { name: 'Move first' }).parent).toHaveStyle({ gap: t.space.xs });
 });
+
+test('alignment is an explicit prop: a question is not centred just because it ends in "?"', async () => {
+  await render(<Heading title="Where do you walk?" />);
+  expect(screen.getByRole('header', { name: 'Where do you walk?' })).toHaveStyle({ textAlign: 'left' });
+  await render(<Heading title="Where do you walk?" centered />);
+  expect(screen.getByRole('header', { name: 'Where do you walk?' })).toHaveStyle({ textAlign: 'center' });
+});

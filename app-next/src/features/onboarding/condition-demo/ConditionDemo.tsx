@@ -14,8 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { tokens as t } from '../../../design-system/tokens';
-import { PressableScale } from '../../../design-system/PressableScale';
-import { Icon } from '../../../icons/Icon';
+import { BackButton } from '../../../design-system/BackButton';
 import { conditionDemoTokens as c } from '../../../design-system/conditionDemoTokens';
 import { useMotion } from '../../../motion/useMotion';
 import { feedback } from '../../../motion/haptics';
@@ -193,9 +192,7 @@ function DemoScene({
           style={styles.liveRegion} />
         <View style={styles.promise}>
           <View style={styles.promiseBack}>
-            <PressableScale label="Back" onPress={onBack} style={styles.promiseBackHit}>
-              <Icon name="back" size={24} variant="utility" tint={t.brand.primary} />
-            </PressableScale>
+            <BackButton onPress={onBack} />
           </View>
           <Text maxFontSizeMultiplier={1} style={styles.promiseText}>{unlockPromise}</Text>
         </View>
@@ -347,7 +344,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 1,
   },
-  promiseBackHit: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   promiseText: { flex: 1, fontSize: 15, lineHeight: 20, fontFamily: t.font.bold, color: t.text.primary, textAlign: 'center' },
   info: {
     position: 'absolute',

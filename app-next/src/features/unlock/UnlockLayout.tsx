@@ -22,8 +22,8 @@ export function UnlockLayout({
     <ScreenShell
       header={
         <View style={{ paddingHorizontal: t.layout.page, flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flex: 1 }}>{preview ? <Label>{c.preview}</Label> : null}</View>
           <CloseButton label={c.close} onPress={close} />
-          {preview ? <Label tone="secondary">{c.preview}</Label> : null}
         </View>
       }
       footer={footer}

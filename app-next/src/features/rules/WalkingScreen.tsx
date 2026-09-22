@@ -37,7 +37,7 @@ export function WalkingScreen({
     <>
       {!contentOnly ? (
         <>
-          <Heading title={c[step].title} />
+          <Heading title={c[step].title} centered={step !== 'W3'} />
           <LivingIcon
             name={step === 'W2' && d.walkingMode === 'state' ? 'lock-open' : 'walking'}
             size={t.layout.ring}

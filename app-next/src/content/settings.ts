@@ -112,7 +112,6 @@ export const settingsCopy = {
   ],
   deleted: 'Your account has been deleted. Your on-device plan is still here.',
   close: 'Close',
-  back: 'Back',
   done: 'Done',
   version: (version: string, build: string) => `ExcerLock ${version} (${build})`,
 } as const;

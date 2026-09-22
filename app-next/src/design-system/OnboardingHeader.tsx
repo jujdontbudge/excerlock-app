@@ -1,12 +1,10 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { PressableScale } from './PressableScale';
+import { BackButton } from './BackButton';
 import { CloseButton } from './CloseButton';
 import { tokens as t } from './tokens';
 import { profileTokens as p } from './profileTokens';
-import { paths } from '../icons/paths';
 import { controls as c } from '../content/controls';
 import { useMotion } from '../motion/useMotion';
 export function OnboardingHeader({
@@ -27,18 +25,6 @@ export function OnboardingHeader({
     value.set(m.reduced ? amount : withTiming(amount, { duration: m.duration.standard }));
   }, [amount, value, m.reduced, m.duration.standard]);
   const fill = useAnimatedStyle(() => ({ width: `${value.get() * 100}%` }));
-  const arrow = (name: 'back') => (
-    <Svg accessible={false} width={p.header.arrow} height={p.header.arrow} viewBox="0 0 24 24">
-      <Path
-        d={paths[name]}
-        fill="none"
-        stroke={t.brand.primary}
-        strokeWidth={p.header.arrowStroke}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
   return (
     <View
       style={{
@@ -48,14 +34,7 @@ export function OnboardingHeader({
         alignItems: 'center',
         gap: t.space.sm,
       }}>
-      <PressableScale
-        label={c.back}
-        disabled={!onBack}
-        accessibilityState={{ disabled: !onBack }}
-        onPress={onBack}
-        style={{ width: t.layout.touch, alignItems: 'center', opacity: onBack ? 1 : 0 }}>
-        {arrow('back')}
-      </PressableScale>
+      {onBack ? <BackButton onPress={onBack} /> : <View style={{ width: t.layout.touch }} />}
       {showProgress ? <View
         accessible
         accessibilityRole="progressbar"

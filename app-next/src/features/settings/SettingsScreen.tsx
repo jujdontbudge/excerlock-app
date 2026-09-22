@@ -31,7 +31,7 @@ export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) =
   };
   const version = c.version(Constants.expoConfig?.version ?? '1.0.0', Constants.expoConfig?.ios?.buildNumber ?? '1');
   return (
-    <ScreenShell dock safeBottom={false} contentStyle={{ paddingHorizontal: 20, paddingTop: 4, gap: 8 }}>
+    <ScreenShell dock safeBottom={false} contentStyle={{ paddingHorizontal: 20, gap: 8 }}>
       <Label accessibilityRole="header" variant="hero" style={{ paddingHorizontal: 8 }}>
         {c.title}
       </Label>

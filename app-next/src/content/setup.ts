@@ -46,7 +46,7 @@ export const setupCopy = {
   codeError: 'That code did not work. Please try again.',
   emailError: 'Enter a valid email address.',
   cancelled: 'Sign-in was canceled. You can try again or skip for now.',
-  back: 'Back to sign-in options',
+  backToOptions: 'Back to sign-in options',
   X5: "You're all set",
   completeBody: 'Your plan is ready. You can finish any skipped steps in Settings.',
   home: 'Go to Home',

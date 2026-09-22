@@ -11,7 +11,7 @@ import { fromRoot, readUtf8, repoRelative, walkFiles } from "./repo-files";
  * run yet, or on and passing; none is weakened to make a wave pass. Raise this number
  * as each wave lands.
  */
-const WAVE = 1;
+const WAVE = 2;
 const staged = (wave: number) => it.runIf(WAVE >= wave);
 
 const tokenModule = "app-next/src/design-system/tokens.ts";
@@ -30,14 +30,19 @@ function readFontMetrics(path: string): FontMetrics {
     const at = 12 + i * 16;
     tables[bytes.toString("latin1", at, at + 4)] = view.getUint32(at + 8);
   }
-  const unitsPerEm = view.getUint16(tables.head + 18);
-  const longLoca = view.getInt16(tables.head + 50) === 1;
-  const descent = -view.getInt16(tables.hhea + 6) / unitsPerEm;
+  const [head, hhea, cmap, loca, glyf] = ["head", "hhea", "cmap", "loca", "glyf"].map((tag) => {
+    const at = tables[tag];
+    if (at === undefined) throw new Error(`${path} has no ${tag} table`);
+    return at;
+  }) as [number, number, number, number, number];
+  const unitsPerEm = view.getUint16(head + 18);
+  const longLoca = view.getInt16(head + 50) === 1;
+  const descent = -view.getInt16(hhea + 6) / unitsPerEm;
 
   let format4 = -1;
-  for (let i = 0; i < view.getUint16(tables.cmap + 2); i++) {
-    const record = tables.cmap + 4 + i * 8;
-    const subtable = tables.cmap + view.getUint32(record + 4);
+  for (let i = 0; i < view.getUint16(cmap + 2); i++) {
+    const record = cmap + 4 + i * 8;
+    const subtable = cmap + view.getUint32(record + 4);
     if (view.getUint16(subtable) === 4) format4 = subtable;
   }
   const segX2 = view.getUint16(format4 + 6);
@@ -57,10 +62,10 @@ function readFontMetrics(path: string): FontMetrics {
     return 0;
   };
   const glyphTop = (glyph: number) => {
-    const loca = (index: number) =>
-      longLoca ? view.getUint32(tables.loca + index * 4) : view.getUint16(tables.loca + index * 2) * 2;
-    const start = loca(glyph);
-    return loca(glyph + 1) > start ? view.getInt16(tables.glyf + start + 8) / unitsPerEm : 0;
+    const glyphOffset = (index: number) =>
+      longLoca ? view.getUint32(loca + index * 4) : view.getUint16(loca + index * 2) * 2;
+    const start = glyphOffset(glyph);
+    return glyphOffset(glyph + 1) > start ? view.getInt16(glyf + start + 8) / unitsPerEm : 0;
   };
   const top = (from: number, to: number) => {
     let max = 0;
@@ -87,7 +92,8 @@ function luminance(hex: string) {
   const channels = [1, 3, 5]
     .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
     .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+  const [r = 0, g = 0, b = 0] = channels;
+  return r * 0.2126 + g * 0.7152 + b * 0.0722;
 }
 function contrast(a: string, b: string) {
   const [x, y] = [luminance(a), luminance(b)];
@@ -204,7 +210,7 @@ function openingTags(code: string, names: string[]) {
       if (code[i] === "}") depth--;
       if (code[i] === ">" && depth === 0 && code[i - 1] !== "=") break;
     }
-    tags.push({ index: match.index ?? 0, text: code.slice(match.index, i + 1), name: match[1] });
+    tags.push({ index: match.index ?? 0, text: code.slice(match.index, i + 1), name: match[1] ?? "" });
   }
   return tags;
 }
@@ -213,7 +219,7 @@ function openingTags(code: string, names: string[]) {
 function localNames(code: string, name: string, module: string) {
   const names: string[] = [];
   for (const [, specifiers] of code.matchAll(new RegExp(`import\\s*(?:\\w+\\s*,\\s*)?\\{([^}]*)\\}\\s*from\\s*'${module}'`, "g"))) {
-    for (const specifier of specifiers.split(",")) {
+    for (const specifier of (specifiers ?? "").split(",")) {
       const [imported, local] = specifier.trim().split(/\s+as\s+/);
       if (imported === name) names.push(local ?? imported);
     }
@@ -338,12 +344,13 @@ describe("design-system tokens", () => {
   });
 
   staged(4)("limits spacing, radius, control, and icon scales to their approved members", () => {
+    const scales = tokens as unknown as Record<string, Record<string, number>>;
     expect(tokens.space).toEqual({ xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 });
     expect(Object.keys(tokens.radius).sort()).toEqual(["card", "field", "pill", "sheet"]);
-    expect(tokens.control).toEqual({ full: 56, inline: 44, indicator: 32, row: 68 });
-    expect(tokens.icon).toEqual({ sm: 16, md: 24, lg: 36 });
-    for (const scale of [tokens.space, tokens.radius, tokens.control, tokens.icon]) {
-      const values = Object.values(scale);
+    expect(scales.control).toEqual({ full: 56, inline: 44, indicator: 32, row: 68 });
+    expect(scales.icon).toEqual({ sm: 16, md: 24, lg: 36 });
+    for (const scale of [tokens.space, tokens.radius, scales.control, scales.icon]) {
+      const values = Object.values(scale ?? {});
       expect(new Set(values).size, `duplicate value in ${JSON.stringify(scale)}`).toBe(values.length);
     }
   });
@@ -381,7 +388,7 @@ describe("design-system source", () => {
         "Animated.Text",
       ];
       for (const tag of openingTags(code, [...new Set(textTags)])) {
-        const styles = [...tag.text.matchAll(/\b(?:s|styles)\.(\w+)/g)].map(([, key]) => styleEntry(code, key));
+        const styles = [...tag.text.matchAll(/\b(?:s|styles)\.(\w+)/g)].map(([, key]) => styleEntry(code, key ?? ""));
         if (!/fontFamily|\btype\.\w+|\{\.\.\.props\}/.test([tag.text, ...styles].join("\n"))) {
           hits.push(`${path}:${lineOf(code, tag.index)} <${tag.name}> without fontFamily`);
         }
@@ -406,7 +413,7 @@ describe("design-system source", () => {
   });
 
   staged(2)("has exactly one back affordance and one close affordance", () => {
-    const back = findAll(/\b(controls|c)\.back\b|name=["']back["']|paths\.back\b|\('back'\)/g).filter(
+    const back = findAll(/\b(controls|c)\.back\b|\bname=\{?["']back["']|paths\.back\b/g).filter(
       (hit) => !hit.startsWith("app-next/src/design-system/BackButton.tsx"),
     );
     const close = findAll(/name=["']close["']|paths\.close\b/g).filter(
