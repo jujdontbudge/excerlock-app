@@ -318,6 +318,9 @@ describe("design-system tokens", () => {
       "text.onAccent": { color: tokens.text.onAccent, floor: 4.5, on: { primary: tokens.brand.primary } },
       // The single hero metric (48pt bold) is large text; it never sits in the washed band.
       "brand.primary (hero metric)": { color: tokens.brand.primary, floor: 3, on: everywhere },
+      // Captain exception (issue #145 correction): the Analytics day caption stays orange, as in the
+      // accepted UI. It sits in the washed band, so its floor is its measured contrast, not AA.
+      "brand.primary (Analytics day caption)": { color: tokens.brand.primary, floor: 2.69, on: { top, ...everywhere } },
     };
     const failures = Object.entries(permitted).flatMap(([tone, { color, floor, on }]) =>
       Object.entries(on)
@@ -367,6 +370,23 @@ describe("design-system tokens", () => {
 });
 
 describe("design-system source", () => {
+  staged(1)("sets text orange only on a hero metric, an onboarding emphasis word, or the Analytics day caption", () => {
+    const approved: Record<string, number> = {
+      // The plan-build hero metric.
+      "app-next/src/features/rules/PlanBuild.tsx": 1,
+      // One emphasis word in each of the two loop-story onboarding headlines.
+      "app-next/src/features/onboarding/scenes/LoopStory.tsx": 2,
+      // Captain exception: the orange "Today" caption above the Analytics ring.
+      "app-next/src/features/analytics/DailyActivityRing.tsx": 1,
+    };
+    const counts: Record<string, number> = {};
+    for (const hit of findAll(/\bcolor:\s*(?:t|tokens)\.brand\.primary\b/g)) {
+      const file = hit.slice(0, hit.indexOf(":"));
+      counts[file] = (counts[file] ?? 0) + 1;
+    }
+    expect(counts).toEqual(approved);
+  });
+
   staged(1)("never sets fontWeight: Baloo 2 faces are named, so iOS cannot synthesize a weight", () => {
     const hits = findAll(/\bfontWeight\b[^,\n}]*/g, sources);
     expect(hits, report(hits)).toEqual([]);

@@ -91,7 +91,7 @@ Pi and Hermes discover the kept skills in `.agents/skills/`: opensrc, Adapty int
 
 ## Text color
 
-- UI text must not be orange, except the single hero metric on a screen and one emphasis word inside an onboarding headline. Use neutral primary/secondary text on light surfaces and white text on orange fills; orange remains available for backgrounds, icons and non-text indicators.
+- UI text must not be orange, except the single hero metric on a screen, one emphasis word inside an onboarding headline, and the Analytics "Today" day caption (captain exception; pinned by `guardrails/design-system.test.ts`). Use neutral primary/secondary text on light surfaces and white text on orange fills; orange remains available for backgrounds, icons and non-text indicators.
 
 ## Maintaining this file
 

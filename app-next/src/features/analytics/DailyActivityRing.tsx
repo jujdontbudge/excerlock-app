@@ -122,7 +122,7 @@ export function DailyActivityRing({ value, goal, unit, dayLabel }: {
           ) : null}
         </Svg>
         <View style={s.center}>
-          <Label variant="label" numberOfLines={1}>{dayLabel}</Label>
+          <Label variant="label" style={s.dayLabel} numberOfLines={1}>{dayLabel}</Label>
           <Label variant="metric" style={s.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
             {Math.round(value).toLocaleString('en-US')}
           </Label>
@@ -140,5 +140,7 @@ const s = StyleSheet.create({
   ring: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
   center: { position: 'absolute', top: STROKE, right: STROKE, bottom: STROKE, left: STROKE,
     alignItems: 'center', justifyContent: 'center' },
+  // Captain exception to the orange-text rule: the day caption stays orange (guardrails/design-system.test.ts).
+  dayLabel: { color: t.brand.primary },
   value: { marginTop: t.space.xs, marginBottom: -t.space.md },
 });
