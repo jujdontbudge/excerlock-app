@@ -5,7 +5,6 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import Animated, { useAnimatedProps, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
-import { gymPickerTokens as g } from '../../design-system/gymPickerTokens';
 import { gymPickerCopy as c } from '../../content/gymPicker';
 import { useMotion } from '../../motion/useMotion';
 import { feedback } from '../../motion/haptics';
@@ -59,7 +58,7 @@ export function PickerMap({
     return { d: `M0 0H${w}V${h}H0Z M${x - r} ${y}a${r} ${r} 0 1 0 ${r * 2} 0a${r} ${r} 0 1 0 ${-r * 2} 0` };
   });
   const pinStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: -lift.get() * g.pin.lift }, { scale: 1 + lift.get() * (g.pin.scale - 1) }],
+    transform: [{ translateY: -lift.get() * t.map.pin.lift }, { scale: 1 + lift.get() * (t.map.pin.scale - 1) }],
   }));
   const change = (next: MapRegion) => {
     region.set(next);
@@ -111,14 +110,14 @@ export function PickerMap({
       />
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         <Svg width="100%" height="100%">
-          <Mask animatedProps={mask} fill={g.ring.dim} fillRule="evenodd" />
+          <Mask animatedProps={mask} fill={t.map.ring.dim} fillRule="evenodd" />
           <Ring
             cx={size.width / 2}
             cy={size.height / 2}
             animatedProps={circle}
             stroke={t.brand.primary}
-            strokeWidth={g.ring.stroke}
-            fill={g.ring.fill}
+            strokeWidth={t.map.ring.stroke}
+            fill={t.map.ring.fill}
           />
         </Svg>
         <View
@@ -128,16 +127,16 @@ export function PickerMap({
             left: 0,
             right: 0,
             alignItems: 'center',
-            marginTop: -g.pin.size / 2,
+            marginTop: -t.map.pin.size / 2,
           }}>
           <Animated.View
             style={[
               {
-                width: g.pin.size,
-                height: g.pin.size,
+                width: t.map.pin.size,
+                height: t.map.pin.size,
                 borderRadius: t.radius.pill,
                 backgroundColor: t.brand.primary,
-                borderWidth: g.pin.border,
+                borderWidth: t.map.pin.border,
                 borderColor: t.surface.card,
                 boxShadow: t.shadow.cta,
               },

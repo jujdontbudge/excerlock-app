@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { tokens as t } from '../../../design-system/tokens';
 import { welcomeCopy as c } from '../../../content/welcome';
 import { Reveal } from '../../../motion/Reveal';
@@ -8,7 +8,7 @@ import { BrandMark } from '../welcome/BrandMark';
 import { BlockedBadge } from '../welcome/BlockedBadge';
 /** The social apps, locked, in a single row above the activities that unlock them. */
 export function LockedAppsRow() {
-  const p = w.control.locked;
+  const p = art.welcome.control.locked;
   return (
     <Reveal index={0}>
       <View
@@ -16,7 +16,7 @@ export function LockedAppsRow() {
         accessibilityRole="image"
         accessibilityLabel={c.lockedApps}
         style={{ flexDirection: 'row', justifyContent: 'center', gap: p.gap }}>
-        {w.tiles.map((tile) => (
+        {art.welcome.tiles.map((tile) => (
           <View
             key={tile.name}
             style={{
@@ -24,12 +24,12 @@ export function LockedAppsRow() {
               height: p.size,
               borderRadius: p.radius,
               backgroundColor:
-                tile.name === 'whatsapp' ? w.brands.whatsapp : tile.name === 'tiktok' ? w.brands.tiktok : t.surface.subtle,
-              boxShadow: w.tile.shadow,
+                tile.name === 'whatsapp' ? art.welcome.brands.whatsapp : tile.name === 'tiktok' ? art.welcome.brands.tiktok : t.surface.subtle,
+              boxShadow: art.welcome.tile.shadow,
             }}>
             {tile.name === 'instagram' ? (
               <LinearGradient
-                colors={w.brands.instagram}
+                colors={art.welcome.brands.instagram}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={{ position: 'absolute', inset: 0, borderRadius: p.radius }}

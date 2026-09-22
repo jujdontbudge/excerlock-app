@@ -14,7 +14,7 @@ export function BlockingTimeline({ start, end, window }: { start: string; end: s
         style={{
           height: window ? t.space.xs * 1.5 : t.space.xs,
           marginHorizontal: t.space.xs,
-          backgroundColor: window ? 'rgba(255,255,255,0.25)' : t.text.onAccent,
+          backgroundColor: window ? t.surface.onAccentTrack : t.text.onAccent,
           borderRadius: t.radius.pill,
           animationName: m.reduced
             ? undefined

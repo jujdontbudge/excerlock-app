@@ -10,7 +10,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { tokens as t } from '../../../design-system/tokens';
 import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
-import { conditionDemoTokens as c } from '../../../design-system/conditionDemoTokens';
 import { DemoState, Scenario, snapshot } from './model';
 const ScanArc = Animated.createAnimatedComponent(Circle);
 // The phone is a decorative miniature, not a second accessible interface.
@@ -21,8 +20,8 @@ const note = 'M42 4c1 9 6 14 15 15v12c-6 0-11-2-15-5v23c0 12-9 20-20 20S2 61 2 5
 function TikTokMark() {
   return (
     <Svg width={52} height={60} viewBox="-2 -2 66 74">
-      <Path d={note} fill={c.cyan} transform="translate(-2.2,-2.2)" />
-      <Path d={note} fill={c.red} transform="translate(2.2,2.2)" />
+      <Path d={note} fill={art.demo.cyan} transform="translate(-2.2,-2.2)" />
+      <Path d={note} fill={art.demo.red} transform="translate(2.2,2.2)" />
       <Path d={note} fill={t.text.onAccent} />
     </Svg>
   );
@@ -83,7 +82,7 @@ export function Phone({
   });
   return (
     <View style={styles.phone}>
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: c.video }]}>
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: art.demo.video }]}>
         <View style={styles.videoSubject} />
         <View style={styles.tabs}>
           <Text style={styles.tab}>Following</Text>
@@ -203,7 +202,7 @@ const styles = StyleSheet.create({
     borderRadius: art.corner.phone,
     backgroundColor: t.surface.card,
     overflow: 'hidden',
-    boxShadow: c.shadow,
+    boxShadow: art.demo.shadow,
   },
   time: { position: 'absolute', top: 8, alignSelf: 'center', ...art.miniature.status },
   home: { position: 'absolute', bottom: 6, alignSelf: 'center', width: 56, height: 4, borderRadius: t.radius.pill },
@@ -214,10 +213,10 @@ const styles = StyleSheet.create({
     top: '38%',
     bottom: '32%',
     borderRadius: art.corner.blob,
-    backgroundColor: c.videoSubject,
+    backgroundColor: art.demo.videoSubject,
   },
   tabs: { position: 'absolute', top: 32, alignSelf: 'center', flexDirection: 'row', gap: 8 },
-  tab: { ...art.miniature.status, color: c.tabInactive },
+  tab: { ...art.miniature.status, color: art.demo.tabInactive },
   rail: { position: 'absolute', bottom: 74, right: 10, gap: 8, alignItems: 'center' },
   avatar: {
     width: 24,
@@ -225,7 +224,7 @@ const styles = StyleSheet.create({
     borderRadius: t.radius.pill,
     borderWidth: 2,
     borderColor: t.text.onAccent,
-    backgroundColor: c.avatar,
+    backgroundColor: art.demo.avatar,
   },
   caption: { position: 'absolute', bottom: 44, left: 12, gap: 5 },
   bottomTabs: {
@@ -238,7 +237,7 @@ const styles = StyleSheet.create({
   },
   splash: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: c.black,
+    backgroundColor: art.demo.black,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,

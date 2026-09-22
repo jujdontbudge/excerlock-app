@@ -4,7 +4,6 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 import { BackButton } from './BackButton';
 import { CloseButton } from './CloseButton';
 import { tokens as t } from './tokens';
-import { profileTokens as p } from './profileTokens';
 import { controls as c } from '../content/controls';
 import { useMotion } from '../motion/useMotion';
 export function OnboardingHeader({
@@ -29,7 +28,7 @@ export function OnboardingHeader({
     <View
       style={{
         paddingHorizontal: t.layout.page,
-        height: p.header.height,
+        height: t.layout.header,
         flexDirection: 'row',
         alignItems: 'center',
         gap: t.space.sm,
@@ -42,8 +41,8 @@ export function OnboardingHeader({
         accessibilityValue={{ min: 0, max: 100, now: amount * 100 }}
         style={{
           flex: 1,
-          height: p.header.bar,
-          backgroundColor: p.colors.track,
+          height: t.layout.stepBar,
+          backgroundColor: t.brand.track,
           borderRadius: t.radius.pill,
           overflow: 'hidden',
         }}>

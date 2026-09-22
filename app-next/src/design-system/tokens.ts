@@ -7,19 +7,6 @@ const font = {
 } as const;
 /** Normative design values. Geometry for illustrations is in SVG viewBox coordinates. */
 export const tokens = {
-  /** Decorative palette of the captain-approved condition-demo illustration. */
-  conditionDemo: {
-    sky: ['#F2792C', '#F58E42', '#F9AE72'],
-    farHill: '#F9C79A', nearHill: '#F6B583', ground: '#FBDCC1', path: '#FFF1E3', pebble: '#F4C79E',
-    trunk: '#8A4A2B', tree: '#E8823F', treeLight: '#F0955B',
-    map: '#F3EBDF', block: '#EADFCC', building: '#E4D5BE', park: '#DDE8C9', parkTree: '#CFE0B4', gym: '#F0B98C',
-    location: '#2F7CF6', locationHalo: 'rgba(47,124,246,.18)', radius: 'rgba(201,71,16,.12)',
-    treadmill: '#2B2E3A', belt: '#3E4252', beltTick: '#5A5F72',
-    video: '#1b1b1f', videoSubject: '#3a3a44', avatar: '#6b6b73', black: '#000000',
-    cyan: '#69C9D0', red: '#EE1D52',
-    shadow: '0px 16px 36px rgba(120,50,10,.22)',
-    tabInactive: 'rgba(255,255,255,0.6)',
-  },
   surface: {
     orangeGradient: ['#F6B583', '#FBE2CF', '#FFF7F1'],
     tabBarGradient: ['rgba(255,247,241,0)', 'rgba(255,247,241,0.92)', '#FFF7F1'],
@@ -31,6 +18,12 @@ export const tokens = {
     well: '#F2F2F7',
     selected: '#FFF1E8',
     scrim: 'rgba(29,29,34,0.32)',
+    /** The orange status card and the lock body: one gradient, light to deep. */
+    statusGradient: ['#F24A00', '#DC3700'],
+    /** Veil over a screen that has just detected an unlock. */
+    detected: 'rgba(239,76,0,0.88)',
+    /** Progress tracks drawn on an orange fill. */
+    onAccentTrack: 'rgba(255,255,255,0.3)',
     transparent: 'transparent',
   },
   text: {
@@ -46,9 +39,18 @@ export const tokens = {
     pressed: '#AE380A',
     decorative: '#F47735',
     light: '#FFD6BD',
+    /** Unfilled part of the onboarding step bar. */
+    track: '#FCE5DA',
   },
   /** `mutedStroke` is for non-text strokes, dividers and inactive glyphs only; it fails AA as text. */
-  border: { divider: '#E5E5EA', selected: '#C94710', outline: '#1D1D22', mutedStroke: '#767680' },
+  border: {
+    divider: '#E5E5EA',
+    selected: '#C94710',
+    outline: '#1D1D22',
+    mutedStroke: '#767680',
+    /** Hairline on an orange fill. */
+    onAccent: 'rgba(255,255,255,0.4)',
+  },
   state: {
     switchOn: '#34C759',
     disabledFill: '#EEEEF1',
@@ -96,7 +98,7 @@ export const tokens = {
   /** full: full-width buttons and fields. inline: chips, segments, icon buttons, tab items. indicator: non-tappable badges. row: list rows only. */
   control: { full: 56, inline: 44, indicator: 32, row: 68 },
   icon: { sm: 16, md: 24, lg: 36 },
-  stroke: { hairline: 1, selected: 1.5, chart: 3 },
+  stroke: { hairline: 1, selected: 1.5, chart: 3, glyph: 3 },
   layout: {
     page: 24,
     logo: 140,
@@ -114,8 +116,21 @@ export const tokens = {
     dot: 8,
     maxWidth: 600,
     prompt: 300,
+    header: 60,
+    stepBar: 8,
+    statusCard: 154,
   },
-  shadow: { cta: '0px 4px 12px rgba(0,0,0,0.08)' },
+  shadow: {
+    cta: '0px 4px 12px rgba(0,0,0,0.08)',
+    status: '0px 14px 22px rgba(132,64,18,0.20)',
+    control: '0px 3px 10px rgba(0,0,0,0.13)',
+  },
+  /** Map overlays: the picker's pin and radius ring, and the unlock screen's geofence. */
+  map: {
+    pin: { size: 22, border: 4, lift: 6, scale: 1.05 },
+    ring: { stroke: 2, dim: 'rgba(29,29,34,0.16)', fill: 'rgba(244,119,53,0.08)' },
+    geofence: 'rgba(239,76,0,0.18)',
+  },
   a11y: { textScale: 2 },
   motion: {
     duration: {

@@ -1,8 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated from 'react-native-reanimated';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { useMotion } from '../../../motion/useMotion';
-const p = w.progress;
+const p = art.welcome.progress;
 export function ProgressBars() {
   const m = useMotion();
   return p.bars.map((height, i) => (
@@ -23,7 +23,7 @@ export function ProgressBars() {
         animationFillMode: 'both',
       }}>
       <LinearGradient
-        colors={[p.pale, p.pale, w.brands.white]}
+        colors={[p.pale, p.pale, art.welcome.brands.white]}
         locations={[0, 0.35, 1]}
         style={{ flex: 1, borderRadius: p.barRadius }}
       />

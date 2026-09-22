@@ -1,5 +1,4 @@
 import { View } from 'react-native';
-import { profileTokens as p } from '../../../design-system/profileTokens';
 import { choiceQuestions } from '../../../content/onboardingChoices';
 import { Reveal } from '../../../motion/Reveal';
 import { AnswerProps } from '../types';
@@ -7,13 +6,14 @@ import { ProfileHeading } from './ProfileHeading';
 import { ProfileChoiceRow } from './ProfileChoiceRow';
 import { ReferralIcon } from './ReferralIcon';
 import { SetupPresentation } from '../../../design-system/SetupPresentation';
+import { tokens as t } from '../../../design-system/tokens';
 export function ProfileQuestion({ step, answers, setAnswer }: AnswerProps & { step: 'O05' | 'O06' }) {
   const question = choiceQuestions[step];
   return (
     <>
       <ProfileHeading step={step} />
       <SetupPresentation>
-        <View style={{ gap: p.row.gap }}>
+        <View style={{ gap: t.space.md }}>
         {question.options.map((option, index) => (
           <Reveal key={option.id} index={index + 1}>
             <ProfileChoiceRow

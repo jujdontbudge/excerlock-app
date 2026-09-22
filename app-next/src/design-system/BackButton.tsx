@@ -1,7 +1,6 @@
 import Svg, { Path } from 'react-native-svg';
 import { PressableScale } from './PressableScale';
 import { tokens as t } from './tokens';
-import { profileTokens as p } from './profileTokens';
 import { paths } from '../icons/paths';
 import { controls as c } from '../content/controls';
 /** The one back affordance: a brand-orange chevron on a 44pt target, top left. */
@@ -25,12 +24,12 @@ export function BackButton({
       disabled={disabled}
       accessibilityState={{ disabled }}
       style={{ width: t.control.inline, height: t.control.inline, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg accessible={false} width={p.header.arrow} height={p.header.arrow} viewBox="0 0 24 24">
+      <Svg accessible={false} width={t.icon.md} height={t.icon.md} viewBox="0 0 24 24">
         <Path
           d={paths.back}
           fill="none"
           stroke={disabled ? t.state.disabledText : t.brand.primary}
-          strokeWidth={p.header.arrowStroke}
+          strokeWidth={t.stroke.glyph}
           strokeLinecap="round"
           strokeLinejoin="round"
         />

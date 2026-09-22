@@ -16,7 +16,6 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { tokens as t } from '../../../design-system/tokens';
 import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { BackButton } from '../../../design-system/BackButton';
-import { conditionDemoTokens as c } from '../../../design-system/conditionDemoTokens';
 import { useMotion } from '../../../motion/useMotion';
 import { feedback } from '../../../motion/haptics';
 import { Confetti } from '../../../motion/Confetti';
@@ -187,7 +186,7 @@ function DemoScene({
         testID={`condition-demo-${scenario.kind}-${scenario.place}-${frame.phase}-${frame.phone}-${frame.locked ? 'locked' : 'unlocked'}`}
         style={[styles.stage, { minHeight: windowHeight < 740 ? 520 : 650 }]}
         onLayout={(event) => setDimensions(event.nativeEvent.layout)}>
-        <LinearGradient colors={c.sky} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={art.demo.sky} style={StyleSheet.absoluteFill} />
         <View accessible accessibilityLiveRegion="polite"
           accessibilityLabel={`${unlockPromise} ${frame.title}. ${frame.caption}`}
           style={styles.liveRegion} />
@@ -332,7 +331,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: c.shadow,
+    boxShadow: art.demo.shadow,
     zIndex: 10,
   },
   promiseBack: {
@@ -353,7 +352,7 @@ const styles = StyleSheet.create({
     borderRadius: art.corner.info,
     padding: 12,
     backgroundColor: t.surface.card,
-    boxShadow: c.shadow,
+    boxShadow: art.demo.shadow,
   },
   small: { ...art.scene.caption, color: t.text.secondary },
   number: {

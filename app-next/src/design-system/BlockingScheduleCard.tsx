@@ -4,7 +4,6 @@ import { Schedule } from '../domain/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Label } from './Label';
 import { Icon, IconName } from '../icons/Icon';
-import { welcomeTokens as w } from './welcomeTokens';
 import { tokens as t } from './tokens';
 import { BlockingTimeline } from './BlockingTimeline';
 import { LockShackle } from './LockShackle';
@@ -29,16 +28,16 @@ export function BlockingScheduleCard({
   action?: ReactNode;
 }) {
   const [bodyWidth, setBodyWidth] = useState(0);
-  const bodyRadius = lock ? bodyWidth * 0.13 : w.card.radius;
+  const bodyRadius = lock ? bodyWidth * 0.13 : t.radius.card;
   return (
     <View>
       {lock ? <LockShackle bodyWidth={bodyWidth} /> : null}
       <View
         onLayout={lock ? (event) => setBodyWidth(event.nativeEvent.layout.width) : undefined}
-        style={{ borderRadius: bodyRadius, boxShadow: w.card.shadow }}>
+        style={{ borderRadius: bodyRadius, boxShadow: t.shadow.status }}>
         <LinearGradient
           testID={lock ? 'lock-body' : undefined}
-          colors={[w.card.start, w.card.end]}
+          colors={t.surface.statusGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{
@@ -50,9 +49,9 @@ export function BlockingScheduleCard({
           }}>
           <View
             style={{
-              padding: w.card.padding,
-              paddingVertical: lock ? t.space.md : w.card.padding,
-              minHeight: lock ? undefined : w.card.minHeight,
+              padding: t.space.lg,
+              paddingVertical: lock ? t.space.md : t.space.lg,
+              minHeight: lock ? undefined : t.layout.statusCard,
               justifyContent: 'space-between',
               gap: t.space.lg,
             }}>
@@ -70,7 +69,7 @@ export function BlockingScheduleCard({
             {!lock ? <BlockingTimeline start={start} end={end} window={window} /> : null}
           </View>
           {lock ? (
-            <View style={{ paddingHorizontal: w.card.padding, paddingVertical: t.space.md }}>
+            <View style={{ paddingHorizontal: t.space.lg, paddingVertical: t.space.md }}>
               <BlockingTimeline start={start} end={end} window={window} />
             </View>
           ) : null}

@@ -39,7 +39,7 @@ export function Detected({ title, body }: { title: string; body: string }) {
       style={{
         position: 'absolute',
         inset: 0,
-        backgroundColor: 'rgba(239,76,0,0.88)',
+        backgroundColor: t.surface.detected,
         justifyContent: 'center',
         padding: t.space.xl,
       }}>

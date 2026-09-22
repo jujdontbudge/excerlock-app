@@ -1,7 +1,6 @@
 import { PropsWithChildren, ReactNode } from 'react';
 import { View } from 'react-native';
 import { ScreenShell, BackButton } from '../../design-system';
-import { profileTokens as p } from '../../design-system/profileTokens';
 import { tokens as t } from '../../design-system/tokens';
 import { Reveal } from '../../motion/Reveal';
 export function SettingsPage({
@@ -20,7 +19,7 @@ export function SettingsPage({
     <ScreenShell
       scrollToEndOnKeyboard={scrollToEndOnKeyboard}
       header={
-        <View style={{ paddingHorizontal: t.layout.page - (t.control.inline - p.header.arrow) / 2 }}>
+        <View style={{ paddingHorizontal: t.layout.page - (t.control.inline - t.icon.md) / 2 }}>
           <BackButton onPress={onBack} />
         </View>
       }

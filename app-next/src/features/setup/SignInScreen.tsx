@@ -6,7 +6,6 @@ import {
   AppleAuthenticationButtonType,
 } from 'expo-apple-authentication';
 import { BackButton, Heading, Label, TextField, PrimaryButton, SecondaryButton } from '../../design-system';
-import { profileTokens as p } from '../../design-system/profileTokens';
 import { setupCopy as c } from '../../content/setup';
 import { tokens as t } from '../../design-system/tokens';
 import { LivingIcon } from '../../motion/LivingIcon';
@@ -122,7 +121,7 @@ export function SignInScreen({
   return (
     <Reveal key={phase} style={{ flexGrow: 1, gap: t.space.xl }}>
       {phase !== 'options' ? (
-        <View style={{ marginLeft: -(t.control.inline - p.header.arrow) / 2, marginBottom: -t.space.lg }}>
+        <View style={{ marginLeft: -(t.control.inline - t.icon.md) / 2, marginBottom: -t.space.lg }}>
           <BackButton
             label={c.backToOptions}
             disabled={busy}

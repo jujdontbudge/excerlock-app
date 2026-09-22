@@ -11,7 +11,7 @@ import { fromRoot, readUtf8, repoRelative, walkFiles } from "./repo-files";
  * run yet, or on and passing; none is weakened to make a wave pass. Raise this number
  * as each wave lands.
  */
-const WAVE = 4;
+const WAVE = 5;
 const staged = (wave: number) => it.runIf(WAVE >= wave);
 
 const tokenModule = "app-next/src/design-system/tokens.ts";
@@ -165,6 +165,8 @@ const illustrationFiles = [
   /^app-next\/src\/icons\//,
 ];
 const isIllustration = (path: string) => illustrationFiles.some((pattern) => pattern.test(path));
+/** The O01–O03 intro screens may read their approved composition gaps, and nothing else counts as artwork there. */
+const introCompositions = /^app-next\/src\/features\/onboarding\/screens\/O0[123]\.tsx$/;
 
 function lineOf(code: string, index: number) {
   return code.slice(0, index).split("\n").length;
@@ -490,8 +492,11 @@ describe("design-system source", () => {
     const importers = uiSources
       .filter(({ code }) => /from '[^']*illustrationTokens'/.test(code))
       .map(({ path }) => path)
-      .filter((path) => !isIllustration(path));
+      .filter((path) => !isIllustration(path) && !introCompositions.test(path));
     expect(importers, report(importers)).toEqual([]);
+    const intros = sources.filter(({ path }) => introCompositions.test(path));
+    const beyondGaps = findAll(/\bart\.(?!welcome\.gap\.)[\w.]+/g, intros);
+    expect(beyondGaps, report(beyondGaps)).toEqual([]);
   });
 
   staged(6)("reaches every animation call site through a reduced-motion gate", () => {

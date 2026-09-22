@@ -1,10 +1,10 @@
 import { useEffect, useId } from 'react';
 import Svg, { Defs, LinearGradient, Stop, Path } from 'react-native-svg';
 import Animated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { useMotion } from '../../../motion/useMotion';
 const Stroke = Animated.createAnimatedComponent(Path);
-const p = w.progress;
+const p = art.welcome.progress;
 export function ProgressCurve() {
   const m = useMotion(),
     drawn = useSharedValue(0),

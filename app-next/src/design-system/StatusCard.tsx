@@ -1,6 +1,5 @@
 import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { welcomeTokens as w } from './welcomeTokens';
 import { ReactNode } from 'react';
 import { tokens as t } from './tokens';
 import { Label } from './Label';
@@ -28,21 +27,21 @@ export function StatusCard({
       <View
         style={{
           padding: t.space.xl,
-          borderRadius: orange ? w.card.radius : t.radius.card,
+          borderRadius: orange ? t.radius.card : t.radius.card,
           borderWidth: orange ? 0 : t.stroke.hairline,
           borderColor: t.border.outline,
-          backgroundColor: orange ? w.card.start : t.surface.card,
-          minHeight: orange ? w.card.minHeight : undefined,
+          backgroundColor: orange ? t.surface.statusGradient[0] : t.surface.card,
+          minHeight: orange ? t.layout.statusCard : undefined,
           justifyContent: 'center',
-          boxShadow: orange ? w.card.shadow : undefined,
+          boxShadow: orange ? t.shadow.status : undefined,
           gap: t.space.lg,
         }}>
         {orange ? (
           <LinearGradient
-            colors={[w.card.start, w.card.end]}
+            colors={t.surface.statusGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderRadius: w.card.radius }}
+            style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderRadius: t.radius.card }}
           />
         ) : null}
         <View

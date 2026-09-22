@@ -38,7 +38,7 @@ export function ProgressBar({
       accessibilityValue={{ min: 0, max: 100, now: progress * 100 }}
       style={{
         height: inverse ? t.layout.progress * 1.4 : t.layout.progress,
-        backgroundColor: inverse ? 'rgba(255,255,255,0.3)' : t.chart.grid,
+        backgroundColor: inverse ? t.surface.onAccentTrack : t.chart.grid,
         borderRadius: t.radius.pill,
         overflow: 'hidden',
       }}>

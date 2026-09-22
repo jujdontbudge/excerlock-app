@@ -43,7 +43,7 @@ export function GymUnlockMap({
             <Circle
               center={gym}
               radius={gym.radiusMeters}
-              fillColor="rgba(239,76,0,0.18)"
+              fillColor={t.map.geofence}
               strokeColor={t.brand.primary}
               strokeWidth={1.5}
             />
@@ -84,9 +84,9 @@ const s = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: t.radius.pill,
-    backgroundColor: 'white',
+    backgroundColor: t.surface.card,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 3px 10px #0002',
+    boxShadow: t.shadow.control,
   },
 });

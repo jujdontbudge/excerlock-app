@@ -13,7 +13,6 @@ import { LockShackle } from './LockShackle';
 import { UnlockRing } from './UnlockRing';
 import { tokens as t } from './tokens';
 import { illustrationTokens as art } from './illustrationTokens';
-import { welcomeTokens as w } from './welcomeTokens';
 import { useUnlockMotion } from '../features/unlock/useUnlockMotion';
 import { Confetti } from '../motion/Confetti';
 import { feedback } from '../motion/haptics';
@@ -83,8 +82,8 @@ export function UnlockLockFrame({
           <LockShackle bodyWidth={width} />
         </Animated.View>
       ) : null}
-      <Animated.View style={[{ width, height: width, borderRadius: width * art.padlock.bodyRadius, boxShadow: w.card.shadow }, body]}>
-        <LinearGradient colors={[w.card.start, w.card.end]} style={{ flex: 1, borderRadius: width * art.padlock.bodyRadius, padding: art.padlock.bodyInset }}>
+      <Animated.View style={[{ width, height: width, borderRadius: width * art.padlock.bodyRadius, boxShadow: t.shadow.status }, body]}>
+        <LinearGradient colors={t.surface.statusGradient} style={{ flex: 1, borderRadius: width * art.padlock.bodyRadius, padding: art.padlock.bodyInset }}>
           <View style={{ flex: 1, overflow: 'hidden', borderRadius: width * art.padlock.bodyRadius - art.padlock.bodyInset }}>
             {surface}
             {overlay}

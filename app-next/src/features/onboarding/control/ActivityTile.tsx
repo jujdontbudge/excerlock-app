@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Icon, IconName } from '../../../icons/Icon';
 import Animated from 'react-native-reanimated';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { welcomeCopy as c } from '../../../content/welcome';
 import { useMotion } from '../../../motion/useMotion';
 import { Reveal } from '../../../motion/Reveal';
@@ -11,7 +11,7 @@ const activityNames: Record<string, IconName> = {
   dumbbell: 'gym',
 };
 export function ActivityTile({ index }: { index: number }) {
-  const p = w.control,
+  const p = art.welcome.control,
     tile = p.tiles[index],
     m = useMotion();
   return (
@@ -36,7 +36,7 @@ export function ActivityTile({ index }: { index: number }) {
             animationTimingFunction: 'ease-in-out',
           }}>
           <LinearGradient
-            colors={tile.peach ? [p.peach, p.peachEnd] : [w.brands.white, w.brands.white]}
+            colors={tile.peach ? [p.peach, p.peachEnd] : [art.welcome.brands.white, art.welcome.brands.white]}
             style={{ flex: 1, borderRadius: p.radius, justifyContent: 'center', alignItems: 'center' }}>
             <Icon name={activityNames[tile.icon]} size={p.iconSize} label={c.activities[index]} />
           </LinearGradient>

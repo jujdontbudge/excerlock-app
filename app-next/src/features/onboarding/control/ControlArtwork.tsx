@@ -1,21 +1,21 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { ActivityTile } from './ActivityTile';
 export function ControlArtwork() {
-  const [width, setWidth] = useState<number>(w.canvasWidth),
-    scale = Math.min(1, width / w.canvasWidth);
+  const [width, setWidth] = useState<number>(art.welcome.canvasWidth),
+    scale = Math.min(1, width / art.welcome.canvasWidth);
   return (
-    <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} style={{ height: w.control.height * scale }}>
+    <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} style={{ height: art.welcome.control.height * scale }}>
       <View
         style={{
-          width: w.canvasWidth,
-          height: w.control.height,
+          width: art.welcome.canvasWidth,
+          height: art.welcome.control.height,
           alignSelf: 'center',
           transformOrigin: 'top center',
           transform: [{ scale }],
         }}>
-        {w.control.tiles.map((tile, index) => (
+        {art.welcome.control.tiles.map((tile, index) => (
           <ActivityTile key={tile.icon} index={index} />
         ))}
       </View>

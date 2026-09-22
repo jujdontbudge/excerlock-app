@@ -5,7 +5,7 @@ import { Reveal } from '../../../motion/Reveal';
 import { ControlArtwork } from '../control/ControlArtwork';
 import { LockedAppsRow } from '../control/LockedAppsRow';
 import { Icon } from '../../../icons/Icon';
-import { welcomeTokens as w } from '../../../design-system/welcomeTokens';
+import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { welcomeCopy } from '../../../content/welcome';
 import { onboardingCopy as c } from '../../../content/onboarding';
 export function O03() {
@@ -29,10 +29,10 @@ export function O03() {
     </View>
   );
   return (
-    <View style={{ flexGrow: 1, paddingTop: w.headingTop / Math.max(1, fontScale) }}>
+    <View style={{ flexGrow: 1, paddingTop: t.space.xl / Math.max(1, fontScale) }}>
       <Heading title={c.O03.title.replace('. ', '.\n')} centered variant="display" />
       {/* Locked apps, an arrow down, then the activities that unlock them; caption and dots ride just above the button. */}
-      <View style={{ flex: 1, justifyContent: 'center', paddingTop: w.control.gap, gap: w.control.arrow.gap }}>
+      <View style={{ flex: 1, justifyContent: 'center', paddingTop: art.welcome.gap.control, gap: t.space.md }}>
         <LockedAppsRow />
         <Reveal index={1} style={{ alignItems: 'center' }}>
           <View style={{ transform: [{ rotate: '90deg' }] }}>
@@ -41,19 +41,19 @@ export function O03() {
         </Reveal>
         <ControlArtwork />
       </View>
-      <Reveal index={3} style={{ marginTop: w.control.captionGap, paddingHorizontal: t.space.lg }}>
+      <Reveal index={3} style={{ marginTop: t.space.xl, paddingHorizontal: t.space.lg }}>
         <Label
           style={{
             ...t.type.section,
             color: t.text.primary,
             textAlign: 'center',
-            maxWidth: w.control.captionWidth,
+            maxWidth: t.layout.prompt,
             alignSelf: 'center',
           }}>
           {c.O03.body}
         </Label>
       </Reveal>
-      <Reveal index={4} style={{ marginTop: w.dotsGap, alignItems: 'center' }}>
+      <Reveal index={4} style={{ marginTop: art.welcome.gap.dots, alignItems: 'center' }}>
         {dots}
       </Reveal>
     </View>
