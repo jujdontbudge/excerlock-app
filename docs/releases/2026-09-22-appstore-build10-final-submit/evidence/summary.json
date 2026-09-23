@@ -1,0 +1,164 @@
+{
+  "appId": "6787265352",
+  "appStoreVersion": {
+    "id": "c216ad37-5c79-4be8-9cdb-8eddef2fe6c8",
+    "versionString": "1.0",
+    "state": "WAITING_FOR_REVIEW",
+    "releaseType": "MANUAL",
+    "buildId": "56eb4180-c65f-4d04-afca-593f26db1f8c"
+  },
+  "build": {
+    "id": "56eb4180-c65f-4d04-afca-593f26db1f8c",
+    "version": "10",
+    "processingState": "VALID",
+    "buildAudienceType": "APP_STORE_ELIGIBLE",
+    "usesNonExemptEncryption": false
+  },
+  "reviewSubmission": {
+    "id": "55dc9a38-95dd-419f-a115-64f43bfd274a",
+    "state": "WAITING_FOR_REVIEW",
+    "submittedDate": "2026-09-23T00:53:57.521Z",
+    "previousRejectedSubmission": {
+      "id": "78e87f74-75d2-4bf7-b1b1-83fecb2d21ef",
+      "stateAfterCancel": "COMPLETE"
+    },
+    "items": [
+      {
+        "id": "NTVkYzlhMzgtOTVkZC00MTlmLWExMTUtNjRmNDNiZmQyNzRhfDZ8ODg3ODEyOTUz",
+        "state": "READY_FOR_REVIEW",
+        "appStoreVersion": "c216ad37-5c79-4be8-9cdb-8eddef2fe6c8",
+        "subscriptionVersion": null,
+        "subscriptionGroupVersion": null
+      },
+      {
+        "id": "NTVkYzlhMzgtOTVkZC00MTlmLWExMTUtNjRmNDNiZmQyNzRhfDE4fDMzMTE0OWNkLWIxZjQtNDY1Yy04MzNhLWJmYjE0ZjQxMDBjZA",
+        "state": "READY_FOR_REVIEW",
+        "appStoreVersion": null,
+        "subscriptionVersion": "331149cd-b1f4-465c-833a-bfb14f4100cd",
+        "subscriptionGroupVersion": null
+      },
+      {
+        "id": "NTVkYzlhMzgtOTVkZC00MTlmLWExMTUtNjRmNDNiZmQyNzRhfDE4fDA0YTY2ZDc4LTY3Y2ItNDM3ZC1iODJkLWU1MjZlZTVmZjJiYw",
+        "state": "READY_FOR_REVIEW",
+        "appStoreVersion": null,
+        "subscriptionVersion": "04a66d78-67cb-437d-b82d-e526ee5ff2bc",
+        "subscriptionGroupVersion": null
+      },
+      {
+        "id": "NTVkYzlhMzgtOTVkZC00MTlmLWExMTUtNjRmNDNiZmQyNzRhfDE5fGM4ZDQ3MGFhLWM5MTktNDlmNi05NTEwLWJlZmNlN2I0ZmFkMQ",
+        "state": "READY_FOR_REVIEW",
+        "appStoreVersion": null,
+        "subscriptionVersion": null,
+        "subscriptionGroupVersion": "c8d470aa-c919-49f6-9510-befce7b4fad1"
+      }
+    ]
+  },
+  "validation": {
+    "appVersion": {
+      "errors": 0,
+      "warnings": 105,
+      "infos": 60,
+      "blocking": 0
+    },
+    "subscriptions": {
+      "errors": 0,
+      "warnings": 105,
+      "infos": 52,
+      "blocking": 0
+    },
+    "reviewDoctor": {
+      "errors": 0,
+      "warnings": 58,
+      "infos": 278,
+      "blocking": 0,
+      "reviewState": "READY_FOR_REVIEW",
+      "nextAction": "No public-API submission blockers detected. Run `asc web apps declarations list --app \"6787265352\"` before submission."
+    },
+    "regulationsAndPermits": {
+      "pendingRequiredDeclarations": 0,
+      "traderStatusIdentified": true,
+      "regulatedMedicalDeviceDeclaration": "not a regulated medical device in any country or region",
+      "source": "app-information-browser.txt"
+    }
+  },
+  "screenshots": [
+    {
+      "id": "88712104-006d-4683-b555-4143a4aaca43",
+      "fileName": "01-hero.png",
+      "sourceFileChecksum": "fe3a449fc9be1049436b28053d936823",
+      "state": "COMPLETE"
+    },
+    {
+      "id": "aca9b3ae-8dfa-4600-8ee0-d1c923c20f9d",
+      "fileName": "02-block-apps.png",
+      "sourceFileChecksum": "e26d91ba5cba5efaba8f5a9d8768652d",
+      "state": "COMPLETE"
+    },
+    {
+      "id": "271cee6a-f0a9-4fc3-8a57-8cfd61432d4b",
+      "fileName": "03-exercise-to-unlock.png",
+      "sourceFileChecksum": "7b0e201028cf558f3b7cf2ee106fd2fc",
+      "state": "COMPLETE"
+    },
+    {
+      "id": "800dae87-b331-416c-97fb-00a038a5684c",
+      "fileName": "04-choose-your-rules.png",
+      "sourceFileChecksum": "ea2bf12a4b9e56bb6a227cd196662d0d",
+      "state": "COMPLETE"
+    },
+    {
+      "id": "91dba685-18b4-488f-85aa-a31cf1026b0e",
+      "fileName": "05-screen-time-down.png",
+      "sourceFileChecksum": "da51b4e881b8ee54bf12810286c7b903",
+      "state": "COMPLETE"
+    },
+    {
+      "id": "c5bf2b07-409c-4abf-ad2e-9cbeb40065bf",
+      "fileName": "06-reviews.png",
+      "sourceFileChecksum": "14d441c62e012ae356ba61de4abf34b8",
+      "state": "COMPLETE"
+    }
+  ],
+  "promotedPurchases": 0,
+  "subscriptions": {
+    "annual": {
+      "productId": "6796884321",
+      "versionId": "331149cd-b1f4-465c-833a-bfb14f4100cd",
+      "imageCount": 0,
+      "availableTerritories": 175,
+      "introductoryOffers": 175,
+      "promotionalOffers": 0,
+      "offerCodes": 0,
+      "winBackOffers": 0
+    },
+    "monthly": {
+      "productId": "6796884508",
+      "versionId": "04a66d78-67cb-437d-b82d-e526ee5ff2bc",
+      "imageCount": 0,
+      "availableTerritories": 175,
+      "introductoryOffers": 0,
+      "promotionalOffers": 0,
+      "offerCodes": 0,
+      "winBackOffers": 0
+    },
+    "optionalWinBackProducts": [
+      {
+        "productId": "6796884396",
+        "availableTerritories": 0
+      },
+      {
+        "productId": "6796884509",
+        "availableTerritories": 0
+      }
+    ]
+  },
+  "metadata": {
+    "healthDisclosure": "Apple Health data is optional and is used read-only to verify supported walking and step-goal activity.",
+    "serverReadbackMatchesCommittedFile": true
+  },
+  "acceptedRisk": {
+    "guideline": "5.2.1",
+    "screenshotId": "aca9b3ae-8dfa-4600-8ee0-d1c923c20f9d",
+    "mutated": false
+  }
+}

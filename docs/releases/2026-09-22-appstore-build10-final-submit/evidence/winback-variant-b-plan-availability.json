@@ -1,0 +1,40 @@
+{
+  "data": [
+    {
+      "type": "subscriptionPlanAvailabilities",
+      "id": "eyJhIjoiNjc5Njg4NDUwOSIsInAiOiIwIn0",
+      "attributes": {
+        "availableInNewTerritories": false,
+        "planType": "UPFRONT"
+      },
+      "relationships": {
+        "availableTerritories": {
+          "meta": {
+            "paging": {
+              "total": 0,
+              "limit": 50
+            }
+          },
+          "data": [],
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/subscriptionPlanAvailabilities/eyJhIjoiNjc5Njg4NDUwOSIsInAiOiIwIn0/relationships/availableTerritories",
+            "related": "https://api.appstoreconnect.apple.com/v1/subscriptionPlanAvailabilities/eyJhIjoiNjc5Njg4NDUwOSIsInAiOiIwIn0/availableTerritories"
+          }
+        }
+      },
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/subscriptionPlanAvailabilities/eyJhIjoiNjc5Njg4NDUwOSIsInAiOiIwIn0"
+      }
+    }
+  ],
+  "links": {
+    "self": "https://api.appstoreconnect.apple.com/v1/subscriptions/6796884509/planAvailabilities?include=availableTerritories\u0026limit%5BavailableTerritories%5D=50"
+  },
+  "included": [],
+  "meta": {
+    "paging": {
+      "total": 1,
+      "limit": 50
+    }
+  }
+}

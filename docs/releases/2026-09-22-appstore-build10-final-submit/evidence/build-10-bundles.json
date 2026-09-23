@@ -1,0 +1,108 @@
+{
+  "data": [
+    {
+      "type": "buildBundles",
+      "id": "e7385338-49b5-42bc-b591-eac025bd98d8",
+      "attributes": {
+        "bundleId": "com.johansardar.excerlock",
+        "bundleType": "APP",
+        "sdkBuild": "23E252",
+        "platformBuild": "23E252",
+        "fileName": "992f500d-2c5c-4fc4-8ef4-2a40af89163f.ipa",
+        "hasSirikit": false,
+        "hasOnDemandResources": false,
+        "hasPrerenderedIcon": true,
+        "usesLocationServices": true,
+        "isIosBuildMacAppStoreCompatible": true,
+        "includesSymbols": true,
+        "supportedArchitectures": [
+          "arm64"
+        ],
+        "requiredCapabilities": [
+          "arm64"
+        ],
+        "locales": [
+          "en"
+        ],
+        "entitlements": {
+          "ExcerLock.app/ExcerLock": {
+            "application-identifier": "AX3C2B78YD.com.johansardar.excerlock",
+            "aps-environment": "production",
+            "beta-reports-active": "true",
+            "com.apple.developer.applesignin": "( \"Default\" )",
+            "com.apple.developer.associated-domains": "( \"applinks:excerlock.com\" )",
+            "com.apple.developer.family-controls": "true",
+            "com.apple.developer.healthkit": "true",
+            "com.apple.developer.healthkit.background-delivery": "true",
+            "com.apple.developer.team-identifier": "AX3C2B78YD",
+            "com.apple.security.application-groups": "( \"group.com.johansardar.excerlock\" )",
+            "get-task-allow": "false"
+          },
+          "ExcerLock.app/Extensions/DeviceActivityReportExtension.appex/DeviceActivityReportExtension": {
+            "application-identifier": "AX3C2B78YD.com.johansardar.excerlock.report",
+            "beta-reports-active": "true",
+            "com.apple.developer.family-controls": "true",
+            "com.apple.developer.team-identifier": "AX3C2B78YD",
+            "com.apple.security.application-groups": "( \"group.com.johansardar.excerlock\" )",
+            "get-task-allow": "false"
+          },
+          "ExcerLock.app/PlugIns/DeviceActivityMonitorExtension.appex/DeviceActivityMonitorExtension": {
+            "application-identifier": "AX3C2B78YD.com.johansardar.excerlock.monitor",
+            "beta-reports-active": "true",
+            "com.apple.developer.family-controls": "true",
+            "com.apple.developer.team-identifier": "AX3C2B78YD",
+            "com.apple.security.application-groups": "( \"group.com.johansardar.excerlock\" )",
+            "get-task-allow": "false"
+          },
+          "ExcerLock.app/PlugIns/ShieldAction.appex/ShieldAction": {
+            "application-identifier": "AX3C2B78YD.com.johansardar.excerlock.shieldaction",
+            "beta-reports-active": "true",
+            "com.apple.developer.family-controls": "true",
+            "com.apple.developer.team-identifier": "AX3C2B78YD",
+            "com.apple.security.application-groups": "( \"group.com.johansardar.excerlock\" )",
+            "get-task-allow": "false"
+          },
+          "ExcerLock.app/PlugIns/ShieldConfiguration.appex/ShieldConfiguration": {
+            "application-identifier": "AX3C2B78YD.com.johansardar.excerlock.shield",
+            "beta-reports-active": "true",
+            "com.apple.developer.family-controls": "true",
+            "com.apple.developer.team-identifier": "AX3C2B78YD",
+            "com.apple.security.application-groups": "( \"group.com.johansardar.excerlock\" )",
+            "get-task-allow": "false"
+          }
+        },
+        "minimumOsVersion": "17.4"
+      },
+      "relationships": {
+        "appClipDomainCacheStatus": {
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/buildBundles/e7385338-49b5-42bc-b591-eac025bd98d8/relationships/appClipDomainCacheStatus",
+            "related": "https://api.appstoreconnect.apple.com/v1/buildBundles/e7385338-49b5-42bc-b591-eac025bd98d8/appClipDomainCacheStatus"
+          }
+        },
+        "appClipDomainDebugStatus": {
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/buildBundles/e7385338-49b5-42bc-b591-eac025bd98d8/relationships/appClipDomainDebugStatus",
+            "related": "https://api.appstoreconnect.apple.com/v1/buildBundles/e7385338-49b5-42bc-b591-eac025bd98d8/appClipDomainDebugStatus"
+          }
+        },
+        "betaAppClipInvocations": {
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/buildBundles/e7385338-49b5-42bc-b591-eac025bd98d8/relationships/betaAppClipInvocations",
+            "related": "https://api.appstoreconnect.apple.com/v1/buildBundles/e7385338-49b5-42bc-b591-eac025bd98d8/betaAppClipInvocations"
+          }
+        },
+        "buildBundleFileSizes": {
+          "links": {
+            "self": "https://api.appstoreconnect.apple.com/v1/buildBundles/e7385338-49b5-42bc-b591-eac025bd98d8/relationships/buildBundleFileSizes",
+            "related": "https://api.appstoreconnect.apple.com/v1/buildBundles/e7385338-49b5-42bc-b591-eac025bd98d8/buildBundleFileSizes"
+          }
+        }
+      },
+      "links": {
+        "self": "https://api.appstoreconnect.apple.com/v1/buildBundles/e7385338-49b5-42bc-b591-eac025bd98d8"
+      }
+    }
+  ],
+  "links": {}
+}
