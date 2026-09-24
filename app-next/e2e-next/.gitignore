@@ -1,5 +1,0 @@
-# Generated evidence, derived data and captured fixtures stay local; the
-# committed evidence for a proven run is added explicitly with `git add -f`.
-out/
-build/
-fixtures/

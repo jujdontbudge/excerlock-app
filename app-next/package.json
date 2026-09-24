@@ -53,13 +53,9 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@testing-library/react-native": "^14.0.1",
-    "@types/jest": "29.5.14",
     "@types/react": "~19.2.2",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.2",
-    "jest": "~29.7.0",
-    "jest-expo": "~57.0.5",
     "prettier": "^3.9.6",
     "tsx": "4.23.1",
     "typescript": "~6.0.3"
@@ -69,17 +65,12 @@
     "start": "NODE_OPTIONS=--dns-result-order=ipv4first expo start --localhost --port 8091",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
-    "test": "jest --runInBand",
     "lint": "expo lint",
-    "ios:storekit-harness": "node scripts/generate-storekit-harness.cjs",
-    "test:storekit-harness": "node --test scripts/storekit-harness.test.cjs",
     "catalog:drift": "python3 scripts/catalog-drift.py",
     "catalog:drift:report": "python3 scripts/catalog-drift.py --report-only",
     "catalog:metadata": "python3 scripts/subscription-metadata.py",
     "catalog:metadata:report": "python3 scripts/subscription-metadata.py --report-only",
-    "catalog:metadata:fill": "python3 scripts/subscription-metadata.py --fill",
-    "test:catalog-drift": "python3 scripts/test_catalog_drift.py",
-    "test:subscription-metadata": "python3 scripts/test_subscription_metadata.py"
+    "catalog:metadata:fill": "python3 scripts/subscription-metadata.py --fill"
   },
   "private": true
 }

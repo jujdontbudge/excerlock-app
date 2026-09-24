@@ -1,3 +1,0 @@
-#!/bin/sh
-# Compatibility launcher: inherit configured skills, plugins and MCP servers.
-exec claude "$@"

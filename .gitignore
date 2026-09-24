@@ -12,9 +12,6 @@ plans/sessions/
 __pycache__/
 
 # Expo generated state and native projects (Continuous Native Generation).
-app/.expo/
-app/android/
-app/ios/
 
 # Maestro output is local-only; baselines remain tracked.
 e2e/out/
@@ -23,17 +20,6 @@ e2e/out/
 # 2026-09-06 rebuild snapshot: agent worktrees, scratch, and regenerable multi-megabyte boards stay untracked
 .claude/worktrees/
 .cursor/
-excer-ui-mock/.maestro/
 work/
-excer-ui-mock/work/
 plans/sessions/
-design/research/**/replay.mp4
-design/research/competitor-onboarding/contact-sheets/
-design/research/competitor-onboarding/selected-onboarding-flow/*.svg
-design/research/competitor-onboarding/selected-onboarding-flow/*.excalidraw
 app-next/evidence/
-# competitor screenshots are refetched by design/research/competitor-onboarding/download-screens.sh
-design/research/competitor-onboarding/fitness/**/*.png
-design/research/competitor-onboarding/fitness-lock/**/*.png
-design/research/competitor-onboarding/screen-time/**/*.png
-design/research/competitor-onboarding/horizontal-review/

@@ -1,15 +1,12 @@
 {
   "app_id": "excerlock",
   "build_caches": [
-    "app-next/ios/build",
-    "excer-ui-mock/ios/build"
+    "app-next/ios/build"
   ],
   "build_days": 14,
   "worktree_days": 7,
   "merge_targets": [
     "refs/heads/main",
-    "refs/remotes/origin/main",
-    "refs/heads/rebuild/phase-1",
-    "refs/heads/rebuild/phase-2"
+    "refs/remotes/origin/main"
   ]
 }

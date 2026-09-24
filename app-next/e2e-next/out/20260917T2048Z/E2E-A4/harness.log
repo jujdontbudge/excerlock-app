@@ -1,5 +1,0 @@
-[15:48:47] idb describe-all failed; restarting the companion and retrying once
-[15:48:50] saw "Home"
-[15:48:51] tapped "Delete account"
-[15:48:53] tapped "Delete account forever"
-[15:49:23] none of ['Block apps. Exercise more.', 'Get started'] appeared in 30s

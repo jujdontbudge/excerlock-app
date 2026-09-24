@@ -1,1 +1,0 @@
-Inspect the image at /Users/johansardar/ExcerLock/design/motion/reference/strips/unrot-UN00-S002.png using your image viewing capability (not OCR alone). In at most 100 words state the dominant background colors and exact primary button color. If no image viewing capability is available, explicitly state that rather than inferring from text. Do not write scripts or modify files.

@@ -11,7 +11,7 @@
       "@sentry-capture": ["./src/runtime/observability/SentryCapture"]
     },
     "types": [
-      "jest",
+      
       "node"
     ]
   },

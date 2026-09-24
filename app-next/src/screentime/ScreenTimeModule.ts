@@ -1,4 +1,4 @@
-import type { DesiredOsState } from "@excerlock/ledger";
+export type DesiredOsState = { shields: "up" | "down"; drainThresholds: number[] };
 
 export type ScreenTimeAuthorizationStatus =
   | "notDetermined"
