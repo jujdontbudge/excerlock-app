@@ -1,8 +1,7 @@
 import { HomeLockStatus } from './HomeLockStatus';
-import { ProgressBar } from '../../design-system/ProgressBar';
+import { HomeConditionCard } from './HomeConditionCard';
 import { scheduleLabel } from '../../domain/scheduleLabel';
 import { dayKey } from '../../domain/calendar';
-import { Icon } from '../../icons/Icon';
 import { useDemoProgress } from './useDemoProgress';
 import { useEffect } from 'react';
 import { View } from 'react-native';
@@ -19,7 +18,6 @@ import { tokens as t } from '../../design-system/tokens';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { useRuntimeStatus, useLockDecision, useTodayProgress, useStreak, useWalkingStatus } from '../../state/selectors';
 import { useHomeClock } from '../../state/homeClock';
-import { profileStore as useProfileStore } from '../../state/profileStore';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
@@ -35,7 +33,7 @@ import { WalkingCheckButton } from './WalkingCheckButton';
 import { useInteractiveHomeMarker } from '../../runtime/startup/useInteractiveHomeMarker';
 import { useLapsedWinbackOffer } from '../subscription/useLapsedWinbackOffer';
 import { useLockListPicker } from '../permissions/useLockListPicker';
-import { useBackgroundWalkingSetup } from './useBackgroundWalkingSetup';
+import { SetupReminder } from './SetupReminder';
 export function HomeScreen() {
   useDemoProgress();
   useLapsedWinbackOffer();
@@ -48,7 +46,6 @@ export function HomeScreen() {
     streak = useStreak(now);
   const { scheduleIssue, loading, hydrated } = useRuntimeStatus();
   const markHomeLayout = useInteractiveHomeMarker(runtime, !loading && hydrated);
-  const name = useProfileStore((s) => s.data.name);
   const { rules, lockedApps } = useRulesStore((s) => s.data),
     permissions = usePermissionsStore((s) => s.data),
     auto = useSettingsStore((s) => s.data.gymAutoDetect),
@@ -64,7 +61,6 @@ export function HomeScreen() {
     }),
     glyph = useUnlockMoment(status.state);
   const { open: chooseApps } = useLockListPicker();
-  const backgroundWalking = useBackgroundWalkingSetup(runtime);
   const add = () => router.push('/builder');
   useEffect(() => {
     runtime.analytics.screen('Home');
@@ -87,23 +83,16 @@ export function HomeScreen() {
       if (kind) router.push({ pathname: `/unlock/${kind}`, params: { ruleId: rule.id } });
     };
     return (
-      <View key={rule.id} testID={`home-condition-${rule.id}`} style={{
-        backgroundColor: t.surface.card, borderRadius: t.radius.card,
-        borderWidth: t.stroke.hairline, borderColor: t.border.outline,
-        padding: t.space.lg, gap: t.space.md,
-      }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
-          <Icon name={model.icon} variant="utility" size={t.icon.lg} />
-          <View style={{ flex: 1, gap: t.space.xs }}>
-            <Label variant="label">{model.title}</Label>
-            <Label variant="support" tone="secondary">{scheduleLabel(rule.schedule)}</Label>
-          </View>
-        </View>
-        <Label variant="label">{rule.mode.kind === 'state' && backgroundWalking.state !== 'ready' ? backgroundWalking.detail : model.detail}</Label>
-        {rule.mode.kind === 'state' ? null : <ProgressBar value={Math.max(0, Math.min(1, model.value))} label={model.title} tone={detected ? 'success' : 'brand'} />}
-        {row.met ? null : rule.mode.kind === 'state' ? (
+      <HomeConditionCard
+        key={rule.id}
+        testID={`home-condition-${rule.id}`}
+        icon={model.icon}
+        title={model.title}
+        schedule={scheduleLabel(rule.schedule)}
+        detail={model.detail}
+        progress={rule.mode.kind === 'state' ? null : { value: model.value, tone: detected ? 'success' : 'brand' }}>
+        {row.met ? null : model.action === 'walk' ? (
           <>
-            {backgroundWalking.state === 'ready' ? null : <SecondaryButton label={backgroundWalking.label} onPress={backgroundWalking.onPress} />}
             <WalkingCheckButton rule={rule} checkWalking={(target) => runtime.walking.check(target)} />
             {walk === 'idle' ? <UnlockEntry kind="treadmill" label={c.treadmillEntry} onPress={() => router.push({ pathname: '/unlock/treadmill', params: { ruleId: rule.id } })} /> : null}
           </>
@@ -117,7 +106,7 @@ export function HomeScreen() {
         ) : 'label' in model && model.label ? (
           <SecondaryButton label={model.label} onPress={onAction} />
         ) : null}
-      </View>
+      </HomeConditionCard>
     );
   });
   return (
@@ -127,14 +116,17 @@ export function HomeScreen() {
       safeBottom={false}
       scrollUnderStatusBar={false}
       >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: t.space.md }}>
-        <View style={{ flex: 1, gap: t.space.xs }}>
-          <Label variant="display" accessibilityRole="header">
-            {c.greeting(name)}
-          </Label>
+      {/* The app name sits in the middle of the screen; the streak badge keeps the right edge. */}
+      <View style={{ justifyContent: 'center' }}>
+        <Label variant="display" accessibilityRole="header" style={{ textAlign: 'center' }}>
+          {c.title}
+        </Label>
+        <View style={{ position: 'absolute', right: 0 }}>
+          <StreakBadge count={streak.current} />
         </View>
-        <StreakBadge count={streak.current} />
       </View>
+      {/* Anything a condition still needs gets one card here, above everything else (ADR 0043). */}
+      <SetupReminder />
       {scheduleIssue ? (
         <View accessibilityRole="alert" style={{ padding: t.space.md, gap: t.space.md,
           backgroundColor: t.surface.card, borderRadius: t.radius.card,
@@ -154,7 +146,6 @@ export function HomeScreen() {
         </Label>
       ) : null}
       <View style={{ gap: t.space.md }}>
-        <Label variant="section" accessibilityRole="header">{c.today}</Label>
         {conditionCards}
       </View>
       <Reveal>

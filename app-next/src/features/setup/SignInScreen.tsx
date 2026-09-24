@@ -191,7 +191,9 @@ export function SignInScreen({
           )}
           {error ? (
             <Reveal>
-              <Label accessibilityRole="alert" style={{ color: t.state.error }}>{error}</Label>
+              <Label accessibilityRole="alert" style={{ color: t.state.error }}>
+                {error}
+              </Label>
             </Reveal>
           ) : null}
           {recoveryProvider ? (
@@ -202,9 +204,7 @@ export function SignInScreen({
                 setBusy(true);
                 setError('');
                 const recovery =
-                  recoveryProvider === 'apple'
-                    ? runtime.auth.recoverWithApple()
-                    : runtime.auth.recoverWithGoogle();
+                  recoveryProvider === 'apple' ? runtime.auth.recoverWithApple() : runtime.auth.recoverWithGoogle();
                 void recovery
                   .then((result) => {
                     if (result.kind === 'signedIn') onContinue();
@@ -233,7 +233,9 @@ export function SignInScreen({
         </>
       )}
       <View style={{ flexGrow: 1 }} />
-      {required === false ? <SecondaryButton label={c.skip} disabled={busy} variant="tertiary" onPress={onContinue} /> : null}
+      {required === false ? (
+        <SecondaryButton label={c.skip} disabled={busy} variant="tertiary" onPress={onContinue} />
+      ) : null}
     </Reveal>
   );
 }

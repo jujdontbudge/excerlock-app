@@ -330,10 +330,11 @@ def detect_capabilities() -> dict[str, dict[str, Any]]:
             (APP_NEXT / 'assets/adapty-fallback.json').exists() and 'setFallback' in app_source,
             'assets/adapty-fallback.json exists and the SDK fallback is wired',
         ),
-        # B7: signInRequired flag consumers (SetupRoute X4 / footer / sign-in route).
+        # B7: signInRequired flag consumers (welcome footer / sign-in route); the post-paywall X4
+        # sign-in step is gone, as the paywall now leads straight home.
         'B7.signin_required_flag': (
-            'signInRequired' in _read(APP_NEXT / 'src/features/setup/SetupRoute.tsx')
-            or 'signInRequired' in _read(APP_NEXT / 'src/features/onboarding/welcome/WelcomeFooter.tsx'),
+            'signInRequired' in _read(APP_NEXT / 'src/features/onboarding/welcome/WelcomeFooter.tsx')
+            or 'signInRequired' in _read(APP_NEXT / 'app/sign-in.tsx'),
             'SignInScreen mounts receive a flag-backed signInRequired source',
         ),
         # B10: os_signpost stage marks beyond delegate/content/home.

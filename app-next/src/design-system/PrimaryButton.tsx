@@ -61,6 +61,7 @@ export function PrimaryButton({
             color: unavailable ? t.state.disabledText : t.text.onAccent,
             textAlign: 'center',
             flexShrink: 1,
+            transform: [{ translateY: t.type.label.fontSize * t.optical.centre }],
           }}>
           {label}
         </Label>

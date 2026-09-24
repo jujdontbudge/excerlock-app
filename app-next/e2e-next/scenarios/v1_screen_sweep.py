@@ -70,7 +70,7 @@ STATE_GATED = {'/setup/X4'}
 #: Marker-evaluated routes that render on a plain fresh install.
 FRESH_RENDERABLE = {'/gym-picker', '/paywall'}
 
-ONBOARDING_ROUTE_STEPS = ['O01', 'O20', 'W1', 'S1', 'T1', 'P']
+ONBOARDING_ROUTE_STEPS = ['O01', 'O20', 'W1', 'S1', 'S3d', 'P']
 
 
 class V1ScreenSweep(Scenario):

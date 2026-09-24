@@ -8,6 +8,8 @@ const product = (handle: string, recommended: boolean): PaywallProduct => ({
   detail: '',
   localizedPrice: '$1.00',
   localizedPeriod: 'month',
+  localizedMonthlyPrice: null,
+  periodUnit: 'month',
   offerLabel: null,
   recommended,
 });

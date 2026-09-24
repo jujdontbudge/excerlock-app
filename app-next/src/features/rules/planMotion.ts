@@ -7,10 +7,11 @@ export const PLAN_MOTION = {
   buildDone: 6270,
   gap: 70,
   badgeIn: 280,
-  burst: 950,
-  covered: 1250,
-  reveal: 1420,
-  done: 1720,
+  // The burst starts soon after the badge lands, so the screen is never idle for long.
+  burst: 600,
+  covered: 900,
+  reveal: 1070,
+  done: 1370,
 } as const;
 /** Loading-ring geometry on the build screen. */
 export const PLAN_RING = { size: 224, radius: 96, stroke: 16, topFraction: 0.14 } as const;

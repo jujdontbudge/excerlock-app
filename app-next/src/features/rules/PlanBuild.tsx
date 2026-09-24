@@ -16,24 +16,24 @@ const Counter = Animated.createAnimatedComponent(TextInput);
 const RADIUS = PLAN_RING.radius;
 const LENGTH = 2 * Math.PI * RADIUS;
 
-function Task({ title, index, elapsed, checked, working, reduced, rowHeight }: {
-  title: string; index: number; elapsed: SharedValue<number>; checked: boolean; working: boolean; reduced: boolean; rowHeight: number;
+function Task({ title, index, elapsed, checked, reduced, rowHeight }: {
+  title: string; index: number; elapsed: SharedValue<number>; checked: boolean; reduced: boolean; rowHeight: number;
 }) {
   const style = useAnimatedStyle(() => {
     const m = taskMotion(index, elapsed.get());
-    // The closing pill never resolves: it fades with the rest of the screen at 100%.
-    const exit = working ? 0 : m.exit;
-    const fill = working ? 0 : Math.max(0, Math.min(1, (elapsed.get() - Math.max(index * 1000, 150)) / 140));
+    // Every pill, the closing one included, fills, checks and swipes away in turn.
+    const exit = m.exit;
+    const fill = Math.max(0, Math.min(1, (elapsed.get() - Math.max(index * 1000, 150)) / 140));
     return {
       backgroundColor: interpolateColor(fill, [0, 1], [t.surface.card, t.brand.primary]),
       borderColor: interpolateColor(fill, [0, 1], [t.border.outline, t.brand.primary]),
       opacity: reduced ? 1 : (1 - exit) * Math.max(0, Math.min(1, 3 - m.slot)) * (1 - Math.min(2, m.slot) * 0.24),
-      transform: reduced ? [] : [{ translateY: m.slot * (rowHeight + 12) }, { translateX: working ? 0 : m.swipeX }],
+      transform: reduced ? [] : [{ translateY: m.slot * (rowHeight + 12) }, { translateX: m.swipeX }],
     };
   });
   const titleStyle = useAnimatedStyle(() => ({
     // Keep readable dark text until the fill has become dark enough for white.
-    color: !working && elapsed.get() >= Math.max(index * 1000, 150) + 105 ? t.text.onAccent : t.text.primary,
+    color: elapsed.get() >= Math.max(index * 1000, 150) + 105 ? t.text.onAccent : t.text.primary,
   }));
   return <Animated.View accessible accessibilityRole="checkbox" accessibilityLabel={title} accessibilityState={{ checked }}
     style={[{ position: 'absolute', left: 0, right: 0, top: reduced ? index * (rowHeight + 12) : 0, height: rowHeight, borderWidth: t.stroke.hairline,
@@ -58,7 +58,8 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
   const elapsed = useSharedValue(0);
   const rowHeight = Math.max(64, 48 * Math.min(fontScale, t.a11y.textScale));
   const tasks = [activities.find((a) => a.id === rule.activity)!.title, ruleName(rule), scheduleLabel(rule.schedule),
-    'Personalizing your routine', 'Preparing your weekly goals', 'Putting your plan together'];
+    'Personalizing your routine', 'Preparing your goals', 'Putting your plan together'];
+  const taskCount = tasks.length;
   useEffect(() => { callback.current = onComplete; }, [onComplete]);
   useEffect(() => {
     // Continue through the post-100% hold and fade; stopping at `ready` leaves the loading UI stranded onscreen.
@@ -67,14 +68,14 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
   }, [elapsed, m.duration.standard, m.reduced]);
   useEffect(() => {
     const timers = m.reduced ? [
-      setTimeout(() => setCompleted(5), m.duration.standard),
+      setTimeout(() => setCompleted(taskCount), m.duration.standard),
       setTimeout(() => callback.current(), m.duration.emphasized),
     ] : [
-      ...[0, 1, 2, 3, 4].map((n) => setTimeout(() => setCompleted(n + 1), Math.max(n * 1000, 150))),
+      ...Array.from({ length: taskCount }, (_, n) => setTimeout(() => setCompleted(n + 1), Math.max(n * 1000, 150))),
       setTimeout(() => callback.current(), PLAN_MOTION.buildDone),
     ];
     return () => timers.forEach(clearTimeout);
-  }, [m.duration.standard, m.duration.emphasized, m.reduced]);
+  }, [taskCount, m.duration.standard, m.duration.emphasized, m.reduced]);
   const arc = useAnimatedProps(() => ({ strokeDashoffset: LENGTH * (1 - Math.min(1, elapsed.get() / PLAN_MOTION.count)) }));
   const counter = useAnimatedProps(() => {
     const pct = Math.min(100, Math.round(elapsed.get() / PLAN_MOTION.count * 100));
@@ -87,7 +88,7 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
   const ring = PLAN_RING.size, middle = ring / 2;
   return <Animated.View style={[{ flex: 1, paddingTop: height * PLAN_RING.topFraction, alignItems: 'center', gap: 32 }, content]}>
     <View accessible accessibilityRole="progressbar" accessibilityLabel="Preparing your plan"
-      accessibilityValue={{ min: 0, max: 100, now: Math.round(Math.min(completed, 5) / 5 * 100) }}
+      accessibilityValue={{ min: 0, max: 100, now: Math.round(completed / tasks.length * 100) }}
       style={{ width: ring, height: ring, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={ring} height={ring} style={{ position: 'absolute' }}>
         <Circle cx={middle} cy={middle} r={RADIUS} stroke={t.border.divider} strokeWidth={PLAN_RING.stroke} fill="none" />
@@ -95,11 +96,13 @@ export function PlanBuild({ rule, onComplete }: { rule: Rule; onComplete: () => 
           strokeLinecap="round" strokeDasharray={`${LENGTH} ${LENGTH}`} rotation={-90} origin={`${middle},${middle}`} animatedProps={arc} />
       </Svg>
       <Counter editable={false} accessible={false} pointerEvents="none" defaultValue="0%" animatedProps={counter}
-        style={[t.type.metric, { color: t.brand.primary, padding: 0, textAlign: 'center', width: 180, fontVariant: ['tabular-nums'] }]} />
+        style={[t.type.metric, { color: t.brand.primary, padding: 0, textAlign: 'center', width: 180, fontVariant: ['tabular-nums'],
+          // The native field adds its own lift on top of Baloo's descent; together they need the extra step.
+          transform: [{ translateY: t.type.metric.fontSize * t.optical.centre + t.space.sm }] }]} />
     </View>
     <View style={{ width: '100%', height: m.reduced ? (rowHeight + 12) * tasks.length : (rowHeight + 12) * 3 }}>
       {tasks.map((title, index) => <Task key={title} title={title} index={index} elapsed={elapsed}
-        checked={index < 5 && completed > index} working={index === 5} reduced={m.reduced} rowHeight={rowHeight} />)}
+        checked={completed > index} reduced={m.reduced} rowHeight={rowHeight} />)}
     </View>
   </Animated.View>;
 }

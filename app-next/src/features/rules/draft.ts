@@ -29,7 +29,7 @@ export function createDraft(activity: Activity, now = new Date().toISOString()):
     walkingMode: 'steps',
     stepGoal: 10000,
     walkMinutes: 20,
-    gymMode: 'arrival',
+    gymMode: 'presence',
     gymMinutes: 30,
   };
 }

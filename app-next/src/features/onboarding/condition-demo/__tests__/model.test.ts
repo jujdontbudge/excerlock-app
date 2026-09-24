@@ -13,6 +13,17 @@ test('maps every shipping draft mode and selected thresholds', () => {
   expect(scenarioFor({ ...d, walkingMode: 'state' }, 'treadmill')).toEqual(treadmill);
   expect(scenarioFor({ ...d, activity: 'gym', gymMode: 'arrival' }, '')).toMatchObject({ kind: 'gym-arrival' });
   expect(scenarioFor({ ...d, activity: 'gym', gymMode: 'time', gymMinutes: 45 }, '')).toMatchObject({ kind: 'gym-minutes', goal: 45 });
+  expect(scenarioFor({ ...d, activity: 'gym', gymMode: 'presence', gymMinutes: 30 }, '')).toEqual({ kind: 'gym-presence', place: 'outside', goal: 0 });
+});
+test('"Be at the gym" unlocks only while there and locks again on leaving, with no timer', () => {
+  const presence = { kind: 'gym-presence', place: 'outside', goal: 0 } as const;
+  expect(phasesFor(presence).map((p) => p.name)).toEqual(['approach', 'confirming', 'unlocked', 'leave']);
+  expect(snapshot({ ...initialDemo(), time: 8 }, presence)).toMatchObject({
+    phase: 'unlocked', locked: false, phone: 'tiktok', title: 'Unlocked while at the gym',
+  });
+  expect(snapshot({ ...initialDemo(), time: 12 }, presence)).toMatchObject({
+    phase: 'leave', locked: true, phone: 'shield', goalMet: false, title: 'Apps are blocked',
+  });
 });
 test.each([
   [outside, 8],
@@ -21,6 +32,7 @@ test.each([
   [{ kind: 'walk-minutes', place: 'outside', goal: 30 }, 11],
   [{ kind: 'gym-arrival', place: 'outside', goal: 0 }, 13],
   [{ kind: 'gym-minutes', place: 'outside', goal: 45 }, 18],
+  [{ kind: 'gym-presence', place: 'outside', goal: 0 }, 14],
 ] as const)('phase durations match the accepted storyboard: %j', (scenario, duration) => {
   expect(phasesFor(scenario).reduce((n, p) => n + p.duration, 0)).toBe(duration);
 });

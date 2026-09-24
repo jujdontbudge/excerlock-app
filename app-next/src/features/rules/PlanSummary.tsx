@@ -10,11 +10,11 @@ import { Reveal } from '../../motion/Reveal';
 import { RuleDraft, toRule } from './draft';
 import { goalStep } from './plan';
 import { Answers } from '../../onboarding/types';
-import { weeklyTargets } from './weeklyTargets';
+import { planGoals } from './planGoals';
 import { ConditionPreview } from './ConditionPreview';
 import { conditionSentence } from './conditionSentence';
 import { conditionsCopy } from '../../content/conditions';
-import { Icon, IconName } from '../../icons/Icon';
+import { Icon } from '../../icons/Icon';
 export function PlanSummary({
   draft,
   schedule,
@@ -29,22 +29,17 @@ export function PlanSummary({
   editing?: boolean;
 }) {
   const rule = toRule(draft, schedule);
-  const targets = answers ? weeklyTargets(answers) : null;
-  if (answers && targets) {
-    const metrics: { id: string; text: string; icon: IconName }[] = [
-      { id: 'screen', text: `${targets.screenHours} hours less screen time per week`, icon: 'clock' },
-      ...(targets.movement ? [{ id: 'movement', text: `${targets.movement.amount.toLocaleString('en-US')} ${targets.movement.unit} per week`, icon: draft.activity as IconName }] : []),
-    ];
+  if (answers) {
+    const goals = planGoals(answers);
     return <>
       <Heading title={c.S3} />
       <ConditionPreview icon={draft.activity} schedule={schedule} sentence={conditionSentence(answers, draft, { schedule, goalChosen: true })} />
-      <Label variant="label" style={{ textAlign: 'center' }}>Weekly goals</Label>
       <View style={{ gap: t.space.md }}>
-        {metrics.map((metric, index) => <Reveal key={metric.id} index={index}>
+        {goals.map((goal, index) => <Reveal key={goal.id} index={index}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.lg, padding: t.space.lg,
             borderWidth: t.stroke.hairline, borderColor: t.border.outline, borderRadius: t.radius.card, backgroundColor: t.surface.card }}>
-            <View testID={`weekly-target-icon-${metric.id}`}><Icon name={metric.icon} size={t.icon.md} /></View>
-            <Label variant="label" style={{ flex: 1 }}>{metric.text}</Label>
+            <View testID={`plan-goal-icon-${goal.id}`}><Icon name={goal.icon} size={t.icon.md} /></View>
+            <Label variant="label" style={{ flex: 1 }}>{goal.text}</Label>
           </View>
         </Reveal>)}
       </View>

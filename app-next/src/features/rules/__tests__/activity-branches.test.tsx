@@ -107,8 +107,8 @@ test('activity defaults stay separate when answers switch between walking and gy
   const walking = draftFromAnswers({ activity: 'walking', stepGoal: '8000' });
   expect(walking.stepGoal).toBe(8000);
   const gym = draftFromAnswers({ activity: 'gym' });
-  expect(gym.gymMode).toBe('arrival');
-  expect(draftFromAnswers({ activity: 'gym', gymMode: 'presence' }).gymMode).toBe('presence');
+  expect(gym.gymMode).toBe('presence');
+  expect(draftFromAnswers({ activity: 'gym', gymMode: 'arrival' }).gymMode).toBe('arrival');
   const switched = draftFromAnswers({ activity: 'gym' }, walking);
   expect(switched.activity).toBe('gym');
   expect(switched.gymMinutes).toBe(30);

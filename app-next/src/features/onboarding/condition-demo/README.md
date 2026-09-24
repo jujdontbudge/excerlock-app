@@ -10,8 +10,8 @@ illustrated palette deliberately follow that approval instead of normal app
 chrome. Assets are copied unchanged; no frames were regenerated.
 
 `model.ts` is the deterministic storyboard/hold reducer. It covers walking state
-(outside 8 s; treadmill 13 s), step/minute targets (11 s), gym arrival (13 s), and
-gym time (18 s). Step/minute values come from the actual draft, including small
+(outside 8 s; treadmill 13 s), step/minute targets (11 s), gym arrival (13 s), gym presence
+(14 s: unlocked while there, locked again on leaving) and gym time (18 s). Step/minute values come from the actual draft, including small
 reviewer targets. Saved gym name/radius come from settings. Timings compress the
 explanation and never replace the domain's real verification/grace timers.
 
@@ -39,7 +39,7 @@ onboarding questions. A paused scene still accepts the hold interaction. The
 status card's native accessibility identifier exposes scenario/place/phase/phone/
 locked state without adding diagnostic text to the user-facing copy.
 
-`E2E-D1` in the existing SIM harness selects all six variants, commits through S3,
+`E2E-D1` in the existing SIM harness selects all seven variants, commits through S3,
 seeks/captures every phase, tests a real sustained touch and release, records a
 10-second walking cycle, checks persisted rules after Continue/Back, and asserts
 live PostHog `onboarding_screen_viewed` rows (`screen='plan-demo'`) for each scenario/place. It does not

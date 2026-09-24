@@ -1,3 +1,4 @@
+import { draftFromAnswers } from '../answersDraft';
 import { createDraft, reduceDraft, toRule, fromRule } from '../draft';
 import { validateRule } from '../../../domain/validateRule';
 import { Schedule } from '../../../domain/types';
@@ -30,4 +31,10 @@ test('invalid goal and schedule cannot become saved rules', () => {
   const d = reduceDraft(createDraft('walking'), { type: 'setStepGoal', value: 125 });
   expect(() => toRule(d, schedule)).toThrow('goal');
   expect(() => toRule(createDraft('walking'), { ...schedule, days: [] })).toThrow('days');
+});
+test('a new gym rule starts on "Be at the gym" unless the user picks another mode', () => {
+  expect(createDraft('gym').gymMode).toBe('presence');
+  expect(draftFromAnswers({ activity: 'gym' }).gymMode).toBe('presence');
+  expect(draftFromAnswers({ activity: 'gym', gymMode: 'arrival' }).gymMode).toBe('arrival');
+  expect(draftFromAnswers({ activity: 'gym', gymMode: 'time' }).gymMode).toBe('time');
 });

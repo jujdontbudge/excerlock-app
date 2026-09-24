@@ -1,0 +1,9 @@
+Use the reference image only as the character model: the same cute cartoon person, same drawing style, same colours, same proportions and same size (large round head, small body, short dark brown hair, warm tan skin, cream white t-shirt, dark navy joggers, white sneakers, plain white smartphone). Flat vector cartoon, no outlines, no gradients, no shadows.
+
+Draw a new sprite sheet of exactly 2 figures side by side on a perfectly flat solid magenta background (#FF00FF), 1 row and 2 columns, generous magenta gap between them, feet on the same ground line, full body visible, nothing cropped. Side view, the character faces to the RIGHT, same size as in the reference.
+
+Both figures show the same pose: the person is stuck scrolling on their phone and looks helpless and drained. Shoulders slumped and rounded, back hunched forward, head bowed and pushed toward the phone, the phone held up close to the face in the right hand, left arm hanging limp, feet together standing still. Face: tired half-closed droopy eyes staring at the screen and a small flat sad mouth, no smile.
+
+The only difference between the two figures is the right thumb on the phone screen: left figure thumb raised high on the screen, right figure thumb swiped low on the screen (a scrolling flick). Everything else identical so the two can be crossfaded as an animation.
+
+No text, no labels, no grid lines, no extra objects, no extra characters, no background scenery, no ground shadow.

@@ -49,10 +49,7 @@ SCREENS: list[tuple[str, str, str]] = [
     ('S3', 'Your plan is ready', 'A little movement'),
     ('S3b', 'Once you', ''),
     ('S3c', 'We want you to try ExcerLock Premium for free', ''),
-    ('T1', 'Try ExcerLock free', 'things that matter'),
-    ('T2', "We'll remind you before it ends", 'A heads-up'),
-    ('T3', 'Want a trial reminder?', 'before your free trial ends'),
-    ('T4', 'How your free trial works', ''),
+    ('S3d', "We'll send you a reminder before your trial ends", 'No payment due now'),
     ('P', 'Choose your plan', ''),
 ]
 
@@ -86,12 +83,11 @@ PREFERRED_CHOICE = {
 #: Steps whose advance control is not the standard Continue button.
 ADVANCE_LABEL = {
     'O01': 'Get started',
-    'S3': 'Use this plan',
-    'S3c': 'Next',
-    'T3': 'Enable reminders',
+    'S3': 'Import',
+    'S3c': 'Try for $0.00',
 }
 
-DEFAULT_ADVANCE = ('Continue', 'Get started', 'Use this plan', 'Next', 'Enable reminders')
+DEFAULT_ADVANCE = ('Continue', 'Get started', 'Import', 'Next', 'Try for $0.00', 'Enable reminders')
 
 #: Explainer screens advance themselves through useImpactPlayback; the shell
 #: renders a spacer instead of a continue button for these steps.

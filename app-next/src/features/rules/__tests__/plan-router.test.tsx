@@ -7,13 +7,16 @@ import { onboardingStore } from '../../../state/onboardingStore';
 import { rulesStore } from '../../../state/rulesStore';
 import { profileStore } from '../../../state/profileStore';
 import { createRuntime } from '../../../runtime/createRuntime';
+import { FakePromptHost } from '../../permissions/FakePromptHost';
 const routes = {
   _layout: () => (
     <AppRuntimeProvider>
       <Slot />
+      <FakePromptHost />
     </AppRuntimeProvider>
   ),
   'onboarding/[step]': OnboardingRoute,
+  paywall: () => null,
 };
 beforeEach(() => {
   onboardingStore.getState().reset();
@@ -35,7 +38,7 @@ test.each([
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   expect(route.getPathname()).toBe('/onboarding/S3');
   expect(onboardingStore.getState().data.answers.name).toBe('Alex');
-  await userEvent.press(screen.getByRole('button', { name: 'Use this plan' }));
+  await userEvent.press(screen.getByRole('button', { name: 'Import' }));
   expect(route.getPathname()).toBe('/onboarding/S3b');
   expect(screen.getByText(/^Once you hit [\d,]+ steps, your apps will unlock\.$/)).toBeTruthy();
   expect(rulesStore.getState().data.rules).toHaveLength(1);
@@ -53,15 +56,29 @@ test('demo view reports selected scenario and treadmill preference without a sec
   expect(screen.getByText('Once you start walking, your apps will unlock.')).toBeTruthy();
   expect(rulesStore.getState().data.rules).toEqual([]);
 });
-test('plan completion skips the rejected custom rating screen and continues to trial onboarding', async () => {
+test('plan completion skips the rejected custom rating screen and ends at the paywall', async () => {
   const route = renderRouter(routes, { initialUrl: '/onboarding/S3' });
   await route;
-  await userEvent.press(screen.getByRole('button', { name: 'Use this plan' }));
+  await userEvent.press(screen.getByRole('button', { name: 'Import' }));
   expect(route.getPathname()).toBe('/onboarding/S3b');
   await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
   expect(route.getPathname()).toBe('/onboarding/S3c');
-  await userEvent.press(screen.getByRole('button', { name: 'Next' }));
-  expect(route.getPathname()).toBe('/onboarding/T1');
+  await fireEvent(screen.getByTestId('trial-phone-box'), 'layout', { nativeEvent: { layout: { width: 354, height: 520 } } });
+  expect(screen.getByText('ExcerLock', { includeHiddenElements: true })).toBeTruthy();
+  expect(screen.getByText('Walk 5,000 steps', { includeHiddenElements: true })).toBeTruthy();
+  await userEvent.press(screen.getByRole('button', { name: 'Try for $0.00' }));
+  expect(route.getPathname()).toBe('/onboarding/S3d');
+  expect(screen.getByRole('header', { name: "We'll send you a reminder before your trial ends" })).toBeTruthy();
+  expect(screen.getByRole('image', { name: 'A notification bell with one reminder' })).toBeTruthy();
+  expect(screen.getByText('No payment due now')).toBeTruthy();
+  await userEvent.press(screen.getByRole('button', { name: 'Back' }));
+  expect(route.getPathname()).toBe('/onboarding/S3c');
+  await userEvent.press(screen.getByRole('button', { name: 'Try for $0.00' }));
+  expect(route.getPathname()).toBe('/onboarding/S3d');
+  await userEvent.press(screen.getByRole('button', { name: 'Continue' }));
+  // Continue asks iOS for notifications before the trial screens.
+  await userEvent.press(await screen.findByRole('button', { name: 'Allow' }));
+  await waitFor(() => expect(route.getPathname()).toBe('/paywall'));
   expect(screen.queryByText('How does your plan feel so far?')).toBeNull();
 });
 

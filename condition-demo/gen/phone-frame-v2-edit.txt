@@ -1,0 +1,8 @@
+Turn this flat scaffold into a photorealistic Apple iPhone 17 Pro in Silver, photographed perfectly straight-on from the front like an official Apple product render.
+
+Keep EXACTLY the same position, size, proportions, corner radii and silhouette. Do not move, rotate, tilt, crop or resize the phone.
+
+Make it indistinguishable from a real iPhone 17 Pro: a brushed silver aluminum frame whose rounded edge catches crisp, realistic specular highlights and soft reflections; a thin, perfectly even black glass border around the display; the black Dynamic Island pill exactly where the black pill is, with the faint front camera lens inside it; the Action button and the volume buttons on the left edge and the side button and Camera Control on the right edge, as real machined silver buttons exactly where the scaffold shows them. Premium, clean, soft studio lighting.
+
+Keep the app screen content inside the display exactly as it is: same layout, same text, same colors. Do not redraw, restyle or change it.
+The background outside the phone must stay a perfectly flat, solid, uniform magenta #FF00FF with no shadow, floor, gradient or reflection. No logo, no text outside the screen.

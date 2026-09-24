@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { DotGridReveal } from '../scenes/DotGridReveal';
 import { LoopStory } from '../scenes/LoopStory';
 test('year grid retains its accessible identity as free and scrolling time are revealed', async () => {
@@ -8,40 +8,29 @@ test('year grid retains its accessible identity as free and scrolling time are r
   await view.rerender(<DotGridReveal {...props} step="O13" />);
   expect(screen.getByLabelText('122 days of free-time equivalent remain')).toBeTruthy();
   await view.rerender(<DotGridReveal {...props} step="O14" />);
-  expect(screen.getByText('38%')).toBeTruthy();
+  // The percentage counts up visually; its accessible value is always the final figure.
+  expect(screen.getByLabelText('38%')).toBeTruthy();
   expect(screen.getByText('of your free time spent on your phone')).toBeTruthy();
   expect(screen.getByLabelText('46 of 122 free-time equivalent days spent scrolling')).toBeTruthy();
 });
-test('loop story changes the cue-to-reward path without losing its diagram', async () => {
+test('loop story keeps its headings and one illustrated scene through all three phases', async () => {
   const view = await render(<LoopStory step="O16" />);
   expect(screen.getByTestId('loop-heading-O16')).toBeTruthy();
   expect(screen.getByTestId('loop-heading-O17', { includeHiddenElements: true })).toBeTruthy();
   expect(screen.getByTestId('loop-heading-O18', { includeHiddenElements: true })).toBeTruthy();
   expect(screen.getByLabelText('Scrolling is the habit')).toBeTruthy();
-  expect(screen.getByText('The urge')).toBeTruthy();
-  expect(screen.getByTestId('habit-loop-canvas').props.style.aspectRatio).toBeCloseTo(360 / 500);
-  expect(screen.getByTestId('loop-stage-0').props.style.left).toBe('50%');
-  expect(parseFloat(screen.getByTestId('loop-stage-0').props.style.top)).toBeCloseTo(14.4);
-  expect(screen.getByText('The reward')).toBeTruthy();
-  expect(screen.getByText('Reinforcement')).toBeTruthy();
-  expect(screen.getByText('Becomes a habit')).toBeTruthy();
-  const urge = screen.getByTestId('loop-stage-0');
+  // The scene waits for the space under the heading, then fills it.
+  await fireEvent(screen.getByTestId('loop-scene-box'), 'layout', {
+    nativeEvent: { layout: { width: 360, height: 420 } },
+  });
+  const scene = screen.getByTestId('loop-scene');
+  expect(scene.props.accessibilityLabel).toBe('A person hunched over their phone, pulled in by an endless feed.');
   await view.rerender(<LoopStory step="O17" />);
-  expect(screen.getByTestId('loop-stage-0')).toBe(urge);
-  expect(screen.getByTestId('loop-stage-1').props.style.left).toBe('50%');
-  expect(screen.getByTestId('loop-insert-runner').props.style.left).toBe(`${(304 / 360) * 100}%`);
-  expect(screen.getByText('ExcerLock')).toBeTruthy();
-  expect(screen.getByText('Exercise first')).toBeTruthy();
-  expect(screen.getByText('“Exercise first”')).toBeTruthy();
-  expect(screen.queryByText('Move first')).toBeNull();
-  expect(screen.queryByText('“Movement first”')).toBeNull();
-  expect(screen.getByText('Reinforcement')).toBeTruthy();
+  expect(screen.getByTestId('loop-scene')).toBe(scene);
   expect(screen.getByLabelText('Exercise becomes the habit')).toBeTruthy();
+  expect(scene.props.accessibilityLabel).toBe('ExcerLock locks the phone and the person looks up, free of the feed.');
   await view.rerender(<LoopStory step="O18" />);
-  expect(screen.getByText('Exercise first')).toBeTruthy();
-  expect(screen.getByText('Unlock screentime')).toBeTruthy();
   expect(screen.getByRole('header', { name: 'You become ADDICTED to exercise' })).toBeTruthy();
   expect(screen.getByText('ADDICTED')).toHaveStyle({ color: '#C94710' });
-  expect(screen.queryByText('Want to scroll? Move first. Unlock your apps and enjoy.')).toBeNull();
-  expect(screen.queryByText('The movement loop')).toBeNull();
+  expect(screen.getByTestId('loop-scene').props.accessibilityLabel).toBe('The phone is put away and the person walks.');
 });

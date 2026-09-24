@@ -12,6 +12,7 @@ import { tokens as t } from '../../../design-system/tokens';
 import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { motionFor } from '../../../motion/useMotion';
 import { DemoState, Scenario, snapshot } from './model';
+import { demoRows } from './layout';
 const ScanArc = Animated.createAnimatedComponent(Circle);
 // The phone is a decorative miniature, not a second accessible interface.
 function Text(props: TextProps) {
@@ -27,7 +28,7 @@ function TikTokMark() {
     </Svg>
   );
 }
-function ClayLock() {
+export function ClayLock() {
   return (
     <Svg width={34} height={34} viewBox="0 0 256 256">
       <Path
@@ -196,9 +197,9 @@ const styles = StyleSheet.create({
   phone: {
     position: 'absolute',
     right: 14,
-    top: 150,
+    top: demoRows.column,
     width: 170,
-    height: 312,
+    height: demoRows.columnHeight,
     borderRadius: art.corner.phone,
     backgroundColor: t.surface.card,
     overflow: 'hidden',

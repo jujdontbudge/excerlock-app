@@ -8,6 +8,6 @@ test.each([
 ])('chart labels keep %s readable in narrow columns', (value, expected) => {
   expect(compactNumber(Number(value))).toBe(expected);
 });
-test('named Home greeting uses the OTA proof word', () => {
-  expect(homeCopy.greeting('Alex')).toBe('Hello, Alex');
+test('Home is always headed with the app name, never a greeting', () => {
+  expect(homeCopy.title).toBe('ExcerLock');
 });

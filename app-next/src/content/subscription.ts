@@ -23,12 +23,31 @@ export const subscriptionCopy = {
   ],
   title: 'Choose your plan',
   body: 'Build a healthier relationship with your phone.',
+  /** The paywall sells what the user said they want, never what the app does. */
+  promises: {
+    body: {
+      lose: 'Lose the body fat and feel light again',
+      gain: "Build the muscle you've always wanted",
+      maintain: 'Stay fit, strong and healthy for life',
+      fallback: 'Feel stronger and healthier every week',
+    },
+    dream: {
+      exercise: 'Become someone who loves to move',
+      screenTime: 'Break free from endless scrolling',
+      wellness: 'Feel calmer, sharper and full of energy',
+      other: 'Become the best version of yourself',
+    },
+    time: (days: number) => `Win back ${days} days a year for what matters`,
+  },
+  noPayment: 'No payment due now',
+  trialBadge: (offer: string) => `${offer} trial`,
+  restoreShort: 'Restore',
   plans: [
     { id: 'annual', title: 'Annual', price: '$–.–– / year · 7-day free trial' },
     { id: 'monthly', title: 'Monthly', price: '$–.–– / month' },
     { id: 'lifetime', title: 'Lifetime', price: '$–.–– once' },
   ],
-  start: 'Start free trial',
+  start: 'Start for free',
   continue: 'Continue',
   decline: 'Not now',
   restore: 'Restore purchases',
@@ -54,21 +73,18 @@ export const subscriptionCopy = {
 export const appStoreSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';
 
 /**
- * Guideline 3.1.2(c): the billed renewal price is the most prominent pricing
- * element. The footer and the plan-row title lead with it; the trial offer
- * follows in smaller support text. `offerLabel` is the adapter's
- * "<numberOfPeriods> <unit> free" label, so "after your 7 day free trial"
- * reads as one sentence.
+ * On Johan's call (September 23, 2026) the paywall carries no billed-price line or legal links under
+ * its button: the plan cards compare per month, the billed amount stays in each card's spoken label,
+ * the App Store purchase sheet states the price and renewal before any charge, and the Privacy Policy
+ * and Terms of Use stay in Settings → Legal.
  */
-export function priceFirstFooterLabel(product: {
-  localizedPrice: string;
-  localizedPeriod: string;
-  offerLabel: string | null;
-}): string {
-  return product.offerLabel
-    ? `${product.localizedPrice} / ${product.localizedPeriod} after your ${product.offerLabel} trial. Cancel anytime.`
-    : `${product.localizedPrice} / ${product.localizedPeriod}. Cancel anytime.`;
-}
+/** A price per month, as the plan cards show it. */
+export const perMonth = (price: string) => `${price}/mo`;
+
+const planNames: Record<string, string> = { year: 'Yearly', month: 'Monthly', week: 'Weekly', day: 'Daily' };
+/** A plan card names the plan by how often it bills, falling back to the store's own title. */
+export const planName = (product: { title: string; periodUnit: string | null }) =>
+  (product.periodUnit && planNames[product.periodUnit]) || product.title;
 
 /** Plan-row title line: the plan name and the billed renewal price, one string. */
 export function planRowTitle(product: { title: string; localizedPrice: string; localizedPeriod: string }): string {

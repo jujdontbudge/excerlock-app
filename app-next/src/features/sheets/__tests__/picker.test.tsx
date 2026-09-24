@@ -4,7 +4,7 @@ test('generic picker searches, keeps selections across filtering and returns agg
   const onResolve = jest.fn();
   await render(<FakeAppPicker initial={{ handle: null, isEmpty: true }} onResolve={onResolve} />);
   await userEvent.press(screen.getByRole('checkbox', { name: 'Social' }));
-  await userEvent.type(screen.getByLabelText('Search apps and categories'), 'App F');
+  await userEvent.type(screen.getByLabelText('Search'), 'App F');
   await userEvent.press(screen.getByRole('checkbox', { name: 'App F' }));
   await userEvent.press(screen.getByRole('button', { name: 'Done' }));
   expect(onResolve).toHaveBeenCalledWith(expect.objectContaining({ isEmpty: false }));

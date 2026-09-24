@@ -1,9 +1,9 @@
-import { Linking } from 'react-native';
 import { act, render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import { AppRuntimeProvider } from '../../../runtime/AppRuntimeProvider';
 import { createRuntime } from '../../../runtime/createRuntime';
 import type { PurchaseResult, SubscriptionPaywall } from '../../../ports/SubscriptionPort';
 import { PaywallScreen } from '../PaywallScreen';
+import { onboardingStore } from '../../../state/onboardingStore';
 
 const paywall: SubscriptionPaywall = {
   placement: 'onboarding',
@@ -19,6 +19,8 @@ const paywall: SubscriptionPaywall = {
       detail: 'Monthly access',
       localizedPrice: '9,99 €',
       localizedPeriod: 'Monat',
+      localizedMonthlyPrice: '9,99 €',
+      periodUnit: 'month',
       offerLabel: null,
       recommended: false,
     },
@@ -29,6 +31,8 @@ const paywall: SubscriptionPaywall = {
       detail: 'Annual access',
       localizedPrice: '79,99 €',
       localizedPeriod: 'Jahr',
+      localizedMonthlyPrice: '6,67 €',
+      periodUnit: 'year',
       // Realistic adapter output: `${numberOfPeriods} ${unit} free` (English, unlike
       // the store-localized price/period which may be any locale).
       offerLabel: '7 day free',
@@ -37,10 +41,9 @@ const paywall: SubscriptionPaywall = {
   ],
 };
 
-test('renders fetched product order and localized offer copy and opens legal links', async () => {
+test('renders fetched product order and localized offer copy', async () => {
   const runtime = createRuntime();
   runtime.subscription.loadPaywall = jest.fn(async () => paywall);
-  const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   await render(
     <AppRuntimeProvider runtime={runtime}>
       <PaywallScreen placement="onboarding" reportError={jest.fn()} />
@@ -52,17 +55,12 @@ test('renders fetched product order and localized offer copy and opens legal lin
     'Flexible · 9,99 € / Monat',
     'Committed · 79,99 € / Jahr',
   ]);
-  // The renewal price sits on the plan-row title line; the trial label is the
-  // smaller support line beneath it (3.1.2(c)).
-  expect(screen.getByText('Flexible · 9,99 € / Monat')).toBeTruthy();
-  expect(screen.getByText('Committed · 79,99 € / Jahr')).toBeTruthy();
-  expect(screen.getByText('7 day free')).toBeTruthy();
-
-  await userEvent.press(screen.getByRole('button', { name: 'Terms of Use' }));
-  await userEvent.press(screen.getByRole('button', { name: 'Privacy Policy' }));
-  expect(open).toHaveBeenNthCalledWith(1, 'https://excerlock.com/terms');
-  expect(open).toHaveBeenNthCalledWith(2, 'https://excerlock.com/privacy');
-  open.mockRestore();
+  // Both plan cards compare per month and are named by how often they bill; the trial is a badge.
+  expect(screen.getByText('Monthly')).toBeTruthy();
+  expect(screen.getByText('9,99 €/mo')).toBeTruthy();
+  expect(screen.getByText('Yearly')).toBeTruthy();
+  expect(screen.getByText('6,67 €/mo')).toBeTruthy();
+  expect(screen.getByText('7 day free trial')).toBeTruthy();
 });
 
 test('shows, reports, and retries a paywall load failure', async () => {
@@ -87,7 +85,10 @@ test('shows progress while a purchase is pending instead of a frozen call to act
   runtime.subscription.loadPaywall = jest.fn(async () => paywall);
   let finish!: (value: PurchaseResult) => void;
   runtime.subscription.purchase = jest.fn(
-    () => new Promise<PurchaseResult>((resolve) => { finish = resolve; }),
+    () =>
+      new Promise<PurchaseResult>((resolve) => {
+        finish = resolve;
+      }),
   );
   await render(
     <AppRuntimeProvider runtime={runtime}>
@@ -118,17 +119,77 @@ test('emits the client purchase-funnel events for the loaded placement and the C
   );
 
   await userEvent.press(await screen.findByRole('radio', { name: 'Committed · 79,99 € / Jahr' }));
-  await userEvent.press(screen.getByRole('button', { name: 'Start free trial' }));
+  await userEvent.press(screen.getByRole('button', { name: 'Start for free' }));
   await waitFor(() => expect(runtime.subscription.purchase).toHaveBeenCalledWith('9:best.annual'));
 
-  const funnel = runtime.dev.snapshot().events.filter((event) => event.event.startsWith('paywall_viewed') || event.event === 'purchase_started');
+  const funnel = runtime.dev
+    .snapshot()
+    .events.filter((event) => event.event.startsWith('paywall_viewed') || event.event === 'purchase_started');
   expect(funnel.map((event) => [event.event, event.props])).toEqual([
     ['paywall_viewed', { placement: 'onboarding', has_trial: true, variation_id: 'variation-b' }],
     ['purchase_started', { placement: 'onboarding', plan_id: 'best.annual' }],
   ]);
 });
 
-test('the billed renewal price leads the footer and the plan row ahead of the trial offer (3.1.2(c))', async () => {
+test('nothing under the button: no billed-price line and no legal links, on any placement', async () => {
+  for (const placement of ['onboarding', 'winback'] as const) {
+    const runtime = createRuntime();
+    runtime.subscription.loadPaywall = jest.fn(async () => ({ ...paywall, placement }));
+    await render(
+      <AppRuntimeProvider runtime={runtime}>
+        <PaywallScreen placement={placement} reportError={jest.fn()} />
+      </AppRuntimeProvider>,
+    );
+    await screen.findAllByRole('radio');
+    await userEvent.press(screen.getByRole('radio', { name: 'Committed · 79,99 € / Jahr' }));
+    expect(screen.queryByText(/after 7 day free trial|Cancel anytime/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Terms of Use' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Privacy Policy' })).toBeNull();
+    // The billed amount stays in the plan's spoken label.
+    expect(screen.getByRole('radio', { name: 'Committed · 79,99 € / Jahr' })).toBeTruthy();
+  }
+});
+
+test('when both plans carry a trial, both show the badge and the no-payment promise stays on either', async () => {
+  const runtime = createRuntime();
+  runtime.subscription.loadPaywall = jest.fn(async () => ({
+    ...paywall,
+    products: paywall.products.map((product) => ({ ...product, offerLabel: '7 day free' })),
+  }));
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <PaywallScreen placement="onboarding" reportError={jest.fn()} />
+    </AppRuntimeProvider>,
+  );
+
+  await screen.findAllByRole('radio');
+  expect(screen.getAllByText('7 day free trial')).toHaveLength(2);
+  for (const name of ['Flexible · 9,99 € / Monat', 'Committed · 79,99 € / Jahr']) {
+    await userEvent.press(screen.getByRole('radio', { name }));
+    expect(screen.getByText('No payment due now')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start for free' })).toBeTruthy();
+  }
+});
+
+test('the header carries only back and Restore: no app name over the paywall', async () => {
+  const runtime = createRuntime();
+  runtime.subscription.loadPaywall = jest.fn(async () => paywall);
+  await render(
+    <AppRuntimeProvider runtime={runtime}>
+      <PaywallScreen placement="onboarding" reportError={jest.fn()} onBack={jest.fn()} />
+    </AppRuntimeProvider>,
+  );
+  await screen.findAllByRole('radio');
+  expect(screen.getByRole('button', { name: 'Back' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Restore purchases' })).toBeTruthy();
+  expect(screen.queryByText('ExcerLock')).toBeNull();
+  expect(screen.queryByRole('header', { name: 'ExcerLock' })).toBeNull();
+});
+
+test('sells the dreams the user chose in onboarding and promises no payment today on a trial', async () => {
+  onboardingStore
+    .getState()
+    .patch({ answers: { bodyGoal: 'lose', improveFirst: 'screenTime', estimatedDailyMinutes: 180 } });
   const runtime = createRuntime();
   runtime.subscription.loadPaywall = jest.fn(async () => paywall);
   await render(
@@ -138,28 +199,13 @@ test('the billed renewal price leads the footer and the plan row ahead of the tr
   );
 
   await screen.findAllByRole('radio');
-  // The preselected monthly plan has no offer: the billed price still leads.
-  expect(screen.getByText('9,99 € / Monat. Cancel anytime.')).toBeTruthy();
-  // Selecting the annual plan: billed price first, then the trial offer, then
-  // plain renewal terms.
+  expect(screen.getByText('Lose the body fat and feel light again')).toBeTruthy();
+  expect(screen.getByText('Break free from endless scrolling')).toBeTruthy();
+  expect(screen.getByText('Win back 46 days a year for what matters')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Restore purchases' })).toBeTruthy();
+  // No trial on the monthly plan, so no promise that nothing is charged today.
+  expect(screen.queryByText('No payment due now')).toBeNull();
   await userEvent.press(screen.getByRole('radio', { name: 'Committed · 79,99 € / Jahr' }));
-  expect(screen.getByText('79,99 € / Jahr after your 7 day free trial. Cancel anytime.')).toBeTruthy();
-  // The offer never leads the pricing sentence.
-  expect(screen.queryByText('7 day free, then 79,99 € / Jahr. Cancel anytime.')).toBeNull();
-  // The renewal price sits on the plan-row title line, ahead of the trial label.
-  expect(screen.getByText('Committed · 79,99 € / Jahr')).toBeTruthy();
-});
-
-test('the price-first footer also renders on the winback placement (3.1.2(c))', async () => {
-  const runtime = createRuntime();
-  runtime.subscription.loadPaywall = jest.fn(async () => ({ ...paywall, placement: 'winback' as const }));
-  await render(
-    <AppRuntimeProvider runtime={runtime}>
-      <PaywallScreen placement="winback" reportError={jest.fn()} />
-    </AppRuntimeProvider>,
-  );
-
-  await screen.findAllByRole('radio');
-  await userEvent.press(screen.getByRole('radio', { name: 'Committed · 79,99 € / Jahr' }));
-  expect(screen.getByText('79,99 € / Jahr after your 7 day free trial. Cancel anytime.')).toBeTruthy();
+  expect(screen.getByText('No payment due now')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Start for free' })).toBeTruthy();
 });

@@ -9,7 +9,7 @@ test.each([
   [{ preBranch: swapped }, swapped, [...tail]],
   [{ preBranch: dropped }, dropped, [...tail]],
   [{ tail: ['S1', 'P'] }, [...preBranch], ['S1', 'P']],
-  [{ preBranch: dropped, tail: ['T4', 'S2', 'P'] }, dropped, ['T4', 'S2', 'P']],
+  [{ preBranch: dropped, tail: ['S3d', 'S2', 'P'] }, dropped, ['S3d', 'S2', 'P']],
 ] as const)('accepts a reordered or reduced rail: %j', (payload, expectedPre, expectedTail) => {
   expect(parseOnboardingFlowOrder(payload)).toEqual({ preBranch: expectedPre, tail: expectedTail });
 });
@@ -47,6 +47,7 @@ test.each([
 test('the parser and the persisted store share one step-id vocabulary', () => {
   expect(isOnboardingStepId('O01')).toBe(true);
   expect(isOnboardingStepId('O20')).toBe(true);
+  expect(isOnboardingStepId('S3d')).toBe(true);
   expect(isOnboardingStepId('P')).toBe(true);
   expect(isOnboardingStepId('O07')).toBe(true);
   expect(isOnboardingStepId('O21')).toBe(true);

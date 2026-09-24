@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, AppState, Pressable, StyleSheet, Text as NativeText, TextProps, View, useWindowDimensions } from 'react-native';
-import Svg, { Circle } from 'react-native-svg';
+import { AccessibilityInfo, AppState, StyleSheet, Text as NativeText, TextProps, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Constants from 'expo-constants';
 import { useLocalSearchParams } from 'expo-router';
 import { diagnosticsRoutesEnabled } from '../../../runtime/diagnosticsRoutes';
 import { demoTestControl, DemoTestQuery } from './testingPort';
 import Animated, {
-  useAnimatedProps,
   useAnimatedStyle,
   useFrameCallback,
   useSharedValue,
@@ -24,18 +22,17 @@ import { Schedule } from '../../../domain/types';
 import { Answers } from '../../../onboarding/types';
 import { profileStore as useProfileStore } from '../../../state/profileStore';
 import { settingsStore as useSettingsStore } from '../../../state/settingsStore';
-import { advanceDemo, beginHold, endHold, initialDemo, phasesFor, scenarioFor, snapshot } from './model';
+import { advanceDemo, initialDemo, phasesFor, scenarioFor, snapshot } from './model';
 import { Character } from './Character';
 import { World, Treadmill } from './World';
 import { GymMap } from './GymMap';
 import { Phone } from './Phone';
-import { sceneGeometry } from './layout';
+import { demoRows, promiseCard, sceneGeometry } from './layout';
 
 function Text(props: TextProps) {
   return <NativeText {...props} style={[{ fontFamily: t.font.regular }, props.style]} />;
 }
 
-const HoldArc = Animated.createAnimatedComponent(Circle);
 /** An illustration only: never starts detection, changes permission state or grants access. */
 export function ConditionDemo({
   draft,
@@ -88,9 +85,7 @@ function DemoScene({
   const [frame, setFrame] = useState(() => snapshot(initial, scenario));
   const [dimensions, setDimensions] = useState({ width: 354, height: 430 });
   const [burst, setBurst] = useState(0);
-  const [holdFocused, setHoldFocused] = useState(false);
   const loaded = useRef(0);
-  const accessibilityRelease = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gym = useSettingsStore((s) => s.data.gymPlaces[0]);
   const gymName = gym?.name ?? 'West Loop Fitness';
   const publish = useCallback((next: ReturnType<typeof snapshot>, celebrate: boolean) => {
@@ -110,38 +105,21 @@ function DemoScene({
       scheduleOnRN(publish, next, !before.goalMet && next.goalMet);
     }
   });
-  const release = useCallback(() => {
-    if (accessibilityRelease.current) clearTimeout(accessibilityRelease.current);
-    accessibilityRelease.current = null;
-    clock.set(endHold(clock.get()));
-    setFrame(snapshot(clock.value, scenario));
-    feedback('selection');
-  }, [clock, scenario]);
-  const hold = () => {
-    const before = snapshot(clock.value, scenario);
-    clock.set(beginHold(clock.get(), scenario));
-    publish(snapshot(clock.value, scenario), before.locked);
-    feedback('press');
-  };
   useEffect(() => {
     animation.setActive(true);
     const subscription = AppState.addEventListener('change', (state) => {
       running.value = state === 'active';
-      if (state !== 'active') release();
     });
     return () => {
       subscription.remove();
       animation.setActive(false);
-      if (accessibilityRelease.current) clearTimeout(accessibilityRelease.current);
     };
-  }, [animation, release, running]);
+  }, [animation, running]);
   const onLoad = useCallback(() => {
     loaded.current += 1;
     if (loaded.current >= 8) ready.set(true);
   }, [ready]);
-  const holdFill = useAnimatedStyle(() => ({ width: clock.value.manual === 'walking' ? '100%' : '0%' }));
   const goalFill = useAnimatedStyle(() => ({ width: `${snapshot(clock.value, scenario).progressFraction * 100}%` }));
-  const holdArc = useAnimatedProps(() => ({ strokeDashoffset: clock.value.manual === 'walking' ? 0 : 69.12 }));
   const isGym = scenario.kind.startsWith('gym');
   const unlockPromise = scenario.kind === 'walk-steps'
     ? `Once you hit ${scenario.goal.toLocaleString('en-US')} steps, your apps will unlock.`
@@ -151,7 +129,9 @@ function DemoScene({
         ? 'Once you start walking, your apps will unlock.'
         : scenario.kind === 'gym-minutes'
           ? `Once you spend ${scenario.goal} minutes at the gym, your apps will unlock.`
-          : 'Once you arrive at the gym, your apps will unlock.';
+          : scenario.kind === 'gym-presence'
+            ? "While you're at the gym, your apps stay unlocked."
+            : 'Once you arrive at the gym, your apps will unlock.';
   const goalCard =
     scenario.kind === 'walk-steps' ||
     scenario.kind === 'walk-minutes' ||
@@ -169,7 +149,9 @@ function DemoScene({
           ? 'Your gym time is counting'
           : frame.phase === 'leave'
             ? 'Leaving the gym'
-            : 'Location detected at the gym';
+            : scenario.kind === 'gym-presence'
+              ? "Unlocked while you're here"
+              : 'Location detected at the gym';
   const mapBody =
     frame.phase === 'approach'
       ? `Arrival radius: ${gym?.radiusMeters ?? 100} m around ${gymName}`
@@ -178,7 +160,9 @@ function DemoScene({
         : frame.phase === 'counting'
           ? `Leaving before ${scenario.goal} min locks your apps again`
           : frame.phase === 'leave'
-            ? 'Today stays unlocked'
+            ? scenario.kind === 'gym-presence'
+              ? 'Your apps lock again'
+              : 'Today stays unlocked'
             : `You're at ${gymName}.`;
   return (
     <View key={fontScale} style={styles.root} testID="condition-demo">
@@ -216,7 +200,7 @@ function DemoScene({
             {isGym ? <GymMap {...{ clock, scenario }} /> : <Character {...{ clock, scenario, reduced, onLoad }} />}
             <Phone {...{ clock, scenario, reduced, frame }} />
             {goalCard ? (
-              <View style={[styles.info, { top: 150 }]}>
+              <View style={[styles.info, isGym ? { top: demoRows.below, right: 14 } : { top: demoRows.column, left: 14 }]}>
                 <Text maxFontSizeMultiplier={1} style={styles.small}>{frame.goalMet ? 'GOAL REACHED' : isGym ? 'AT THE GYM' : 'TODAY'}</Text>
                 <Text maxFontSizeMultiplier={1} style={styles.number}>
                   {frame.progress.toLocaleString('en-US')}
@@ -240,78 +224,6 @@ function DemoScene({
         </View>
         {burst > 0 && !reduced ? <Confetti key={burst} width={dimensions.width} /> : null}
       </View>
-      {scenario.kind === 'walk-state' ? (
-        <Pressable
-          testID="condition-demo-hold"
-          accessibilityRole="button"
-          accessibilityLabel="Continue walking. Press and hold to walk. Release to stop."
-          accessibilityValue={{
-            text:
-              frame.manual === 'walking'
-                ? 'Walking. Apps open.'
-                : frame.manual === 'blocked'
-                  ? 'Stopped. Apps blocked.'
-                  : 'Hold to try walking.',
-          }}
-          accessibilityActions={[{ name: 'activate' }]}
-          onAccessibilityAction={() => {
-            if (clock.value.manual === 'walking') release();
-            else {
-              hold();
-              accessibilityRelease.current = setTimeout(release, 3000);
-            }
-          }}
-          onPressIn={hold}
-          onPressOut={release}
-          onFocus={() => setHoldFocused(true)}
-          onBlur={() => {
-            setHoldFocused(false);
-            release();
-          }}
-          style={[
-            styles.hold,
-            {
-              backgroundColor: frame.manual === 'walking' ? t.brand.primary : t.surface.card,
-              outlineColor: t.brand.primary,
-              outlineOffset: 2,
-              outlineWidth: holdFocused ? 3 : 0,
-            },
-          ]}>
-          <Animated.View testID="condition-demo-hold-fill" pointerEvents="none" style={[styles.holdProgress, holdFill]} />
-          <View style={styles.holdRing}>
-            <Svg width={26} height={26} viewBox="0 0 26 26">
-              <Circle cx={13} cy={13} r={11} stroke={t.border.divider} strokeWidth={4} fill={t.surface.card} />
-              <HoldArc
-                animatedProps={holdArc}
-                cx={13}
-                cy={13}
-                r={11}
-                stroke={t.brand.primary}
-                strokeWidth={4}
-                fill="none"
-                strokeDasharray={69.12}
-                transform="rotate(-90 13 13)"
-              />
-            </Svg>
-          </View>
-          <View style={{ flexDirection: fontScale > 1.3 ? 'column' : 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.holdTitle, { color: frame.manual === 'walking' ? t.text.onAccent : t.text.primary }]}>
-              {frame.manual === 'walking'
-                ? 'Walking · apps open'
-                : frame.manual === 'blocked'
-                  ? 'Stopped · blocked'
-                  : 'Continue walking'}
-            </Text>
-            <Text style={[styles.holdHint, { color: frame.manual === 'walking' ? t.text.onAccent : t.text.secondary }]}>
-              {frame.manual === 'walking'
-                ? `${Math.floor(frame.local)} s`
-                : frame.manual === 'blocked'
-                  ? 'hold to walk again'
-                  : 'hold to walk'}
-            </Text>
-          </View>
-        </Pressable>
-      ) : null}
     </View>
   );
 }
@@ -321,10 +233,10 @@ const styles = StyleSheet.create({
   liveRegion: { position: 'absolute', width: 1, height: 1, opacity: 0 },
   promise: {
     position: 'absolute',
-    top: 70,
+    top: promiseCard.top,
     left: 14,
     right: 14,
-    height: 72,
+    height: promiseCard.height,
     borderRadius: t.radius.card,
     paddingHorizontal: 58,
     backgroundColor: t.surface.card,
@@ -347,7 +259,6 @@ const styles = StyleSheet.create({
   promiseText: { flex: 1, ...t.type.label, color: t.text.primary, textAlign: 'center' },
   info: {
     position: 'absolute',
-    left: 14,
     width: 170,
     borderRadius: art.corner.info,
     padding: 12,
@@ -366,7 +277,7 @@ const styles = StyleSheet.create({
   mapCaption: {
     position: 'absolute',
     left: 14,
-    bottom: 50,
+    top: demoRows.below,
     width: 170,
     borderRadius: art.corner.caption,
     paddingVertical: 8,
@@ -375,30 +286,4 @@ const styles = StyleSheet.create({
   },
   mapTitle: { ...art.scene.title, color: t.text.primary },
   mapBody: { ...art.scene.body, color: t.text.secondary },
-  hold: {
-    minHeight: 54,
-    paddingVertical: 12,
-    paddingHorizontal: 42,
-    borderRadius: t.radius.pill,
-    borderWidth: 1,
-    borderColor: t.border.outline,
-    overflow: 'hidden',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  holdTitle: { ...t.type.label, textAlign: 'center' },
-  holdHint: { ...t.type.support, textAlign: 'center' },
-  holdProgress: { position: 'absolute', top: 0, bottom: 0, left: 0, backgroundColor: t.brand.primary },
-  holdRing: {
-    position: 'absolute',
-    left: 12,
-    width: 26,
-    height: 26,
-    borderRadius: t.radius.pill,
-    backgroundColor: t.surface.transparent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

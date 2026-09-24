@@ -41,6 +41,8 @@ Alternatives considered:
 
 ## References
 
+- The Home walking-card button is replaced by the post-paywall permission screens and Home's reminder card in [ADR 0043](0043-sign-in-and-permissions-after-the-paywall.md).
+
 - Issue #140 — walking setup never requests the Always Location permission required by its background keep-alive (addressed here).
 - Issue #143 — keep-alive cannot arm for a window that starts while ExcerLock is suspended (open gap).
 - Issue #144 — standing-still unlock right after a walk (unverified hypothesis).

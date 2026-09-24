@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Label } from '../../../design-system';
@@ -6,7 +6,7 @@ import { tokens as t } from '../../../design-system/tokens';
 import { Reveal } from '../../../motion/Reveal';
 import { useMotion } from '../../../motion/useMotion';
 import { finalLoopTitle, loopSubheads, onboardingCopy } from '../../../content/onboarding';
-import { HabitLoop } from './HabitLoop';
+import { LOOP_SCENE, LoopScene } from './LoopScene';
 
 const steps = ['O16', 'O17', 'O18'] as const;
 /** Two heading lines at default type; measurement takes over once the real headings report in. */
@@ -14,13 +14,12 @@ const minHeadingHeight = 76;
 export function LoopStory({ step }: { step: (typeof steps)[number] }) {
   const phase = steps.indexOf(step),
     m = useMotion(),
-    contentPhase = useDelayedPhase(phase, m.reduced),
     [box, setBox] = useState({ width: 0, height: 0 }),
     [headings, setHeadings] = useState<Partial<Record<(typeof steps)[number], number>>>({}),
     // The heading box reserves only what the tallest of the three crossfading headings actually needs.
     headingHeight = Math.max(minHeadingHeight, ...Object.values(headings).map((v) => v ?? 0)),
-    // Fit the diagram to the shorter of the two axes so it centres whole instead of overflowing the button.
-    canvasWidth = box.width && box.height ? Math.min(box.width, (box.height * 360) / 500) : undefined;
+    // Fit the scene to the shorter of the two axes so it centres whole instead of overflowing the button.
+    canvasWidth = box.width && box.height ? Math.min(box.width, (box.height * LOOP_SCENE.width) / LOOP_SCENE.height) : 0;
   return (
     <>
       <View style={{ minHeight: headingHeight, position: 'relative' }}>
@@ -29,13 +28,13 @@ export function LoopStory({ step }: { step: (typeof steps)[number] }) {
             key={candidate}
             testID={`loop-heading-${candidate}`}
             pointerEvents="none"
-            accessibilityElementsHidden={contentPhase !== candidatePhase}
-            importantForAccessibility={contentPhase === candidatePhase ? 'auto' : 'no-hide-descendants'}
+            accessibilityElementsHidden={phase !== candidatePhase}
+            importantForAccessibility={phase === candidatePhase ? 'auto' : 'no-hide-descendants'}
             style={{
               position: 'absolute',
               width: '100%',
-              opacity: contentPhase === candidatePhase ? 1 : 0,
-              ...m.transition('opacity', 'standard'),
+              opacity: phase === candidatePhase ? 1 : 0,
+              ...m.transition('opacity', 'emphasized'),
             }}>
             <View
               onLayout={(e) => {
@@ -49,14 +48,15 @@ export function LoopStory({ step }: { step: (typeof steps)[number] }) {
           </Animated.View>
         ))}
       </View>
-      {/* The diagram is sized to the space left under the heading so it centres instead of overflowing the button. */}
+      {/* The scene is sized to the space left under the heading so it centres instead of overflowing the button. */}
       <View
+        testID="loop-scene-box"
         style={{ flex: 1, justifyContent: 'center' }}
         onLayout={(e) => {
           const { width, height } = e.nativeEvent.layout;
           setBox((current) => (current.width === width && current.height === height ? current : { width, height }));
         }}>
-        <HabitLoop phase={phase} contentPhase={contentPhase} width={canvasWidth} />
+        {canvasWidth > 0 ? <LoopScene phase={phase} width={canvasWidth} /> : null}
       </View>
     </>
   );
@@ -101,12 +101,3 @@ function FinalLoopHeading() {
   );
 }
 
-function useDelayedPhase(phase: number, reduced: boolean) {
-  const [visible, setVisible] = useState(phase);
-  useEffect(() => {
-    if (reduced) return;
-    const timeout = setTimeout(() => setVisible(phase), t.motion.duration.press);
-    return () => clearTimeout(timeout);
-  }, [phase, reduced]);
-  return reduced ? phase : visible;
-}

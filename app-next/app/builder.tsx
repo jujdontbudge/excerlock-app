@@ -1,6 +1,7 @@
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { permissionsHref } from '../src/features/setup/useSetupNeeds';
 import { ConditionBuilder } from '../src/features/conditions/ConditionBuilder';
 export default function BuilderRoute() {
   const { id } = useLocalSearchParams<{ id?: string }>(),
@@ -12,6 +13,7 @@ export default function BuilderRoute() {
           key={id ?? 'new'}
           id={id}
           onClose={() => (router.canGoBack() ? router.back() : router.replace('/conditions'))}
+          onNeeds={() => router.replace(permissionsHref())}
         />
       </GestureHandlerRootView>
     </SafeAreaProvider>

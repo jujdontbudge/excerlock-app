@@ -9,7 +9,7 @@ def label_start(prefix):return next(n['AXLabel'] for n in tree() if n.get('AXLab
 with recording(out/'edge-acceptance.mp4'):
  go('dev?scenario=trial-expired&restore=notFound');find('Choose your plan');go('home');find('Choose your plan');assert not any(n.get('AXLabel')=='Home' for n in tree());capture('hard-paywall-blocks-deep-link')
  tap('Restore purchases');find('No active purchase was found.');capture('restore-not-found')
- go('dev?scenario=billing-issue&outcome=error');tap('Start free trial');find('Something went wrong. Please try again.');capture('billing-error')
+ go('dev?scenario=billing-issue&outcome=error');tap('Start for free');find('Something went wrong. Please try again.');capture('billing-error')
  go('dev?scenario=trial-expired&restore=restored');tap('Restore purchases');find('Hi, Alex');capture('restore-home')
  go('dev?scenario=window-crosses-midnight');find('Apps are blocked');capture('overnight-0100-locked')
  go('dev?scenario=runner-distance');go('settings');tap('Manage subscription');find('This preview keeps you in ExcerLock. Subscription management will open your App Store account in the connected app.');capture('manage-local-feedback')

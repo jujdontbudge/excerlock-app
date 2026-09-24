@@ -1,7 +1,7 @@
 import type { RuleDraft } from '../../rules/draft';
 
 export type Scenario = {
-  kind: 'walk-state' | 'walk-steps' | 'walk-minutes' | 'gym-arrival' | 'gym-minutes';
+  kind: 'walk-state' | 'walk-steps' | 'walk-minutes' | 'gym-arrival' | 'gym-presence' | 'gym-minutes';
   place: 'outside' | 'treadmill';
   goal: number;
 };
@@ -19,7 +19,9 @@ export function scenarioFor(draft: RuleDraft, places: string): Scenario {
       draft.activity === 'gym'
         ? draft.gymMode === 'arrival'
           ? 'gym-arrival'
-          : 'gym-minutes'
+          : draft.gymMode === 'presence'
+            ? 'gym-presence'
+            : 'gym-minutes'
         : `walk-${draft.walkingMode}`,
     place:
       draft.activity === 'walking' && draft.walkingMode === 'state' && places.includes('treadmill')
@@ -27,9 +29,9 @@ export function scenarioFor(draft: RuleDraft, places: string): Scenario {
         : 'outside',
     goal:
       draft.activity === 'gym'
-        ? draft.gymMode === 'arrival'
-          ? 0
-          : draft.gymMinutes
+        ? draft.gymMode === 'time'
+          ? draft.gymMinutes
+          : 0
         : draft.walkingMode === 'steps'
           ? draft.stepGoal
           : draft.walkingMode === 'minutes'
@@ -64,7 +66,8 @@ export function phasesFor(s: Scenario): Phase[] {
           { name: 'unlocked', duration: 3 },
         ]
       : [{ name: 'unlocked', duration: 4 }]),
-    { name: 'leave', duration: 2 },
+    // Leaving is the point of "Be at the gym": give the relock a beat longer.
+    { name: 'leave', duration: s.kind === 'gym-presence' ? 3 : 2 },
   ];
 }
 export function initialDemo(): DemoState {
@@ -101,9 +104,10 @@ export function snapshot(state: DemoState, s: Scenario) {
     phase === 'blocked' ||
     phase === 'approach' ||
     phase === 'confirming' ||
+    (phase === 'leave' && s.kind === 'gym-presence') ||
     (phase === 'walking' && s.kind !== 'walk-state');
   const phone = phase === 'prop' || phase === 'scan' ? 'excerlock' : locked ? 'shield' : 'tiktok';
-  const goalMet = phase === 'unlocked' || phase === 'leave';
+  const goalMet = phase === 'unlocked' || (phase === 'leave' && s.kind !== 'gym-presence');
   const increment = s.kind === 'walk-steps' && s.goal >= 50 ? 50 : 1;
   const fraction = s.kind.startsWith('walk') ? ease(p) : p;
   const progress = goalMet
@@ -115,7 +119,9 @@ export function snapshot(state: DemoState, s: Scenario) {
     ? 'Apps are blocked'
     : s.kind === 'walk-state'
       ? 'Unlocked while you walk'
-      : 'Unlocked for the rest of today';
+      : s.kind === 'gym-presence'
+        ? 'Unlocked while at the gym'
+        : 'Unlocked for the rest of today';
   let caption = '';
   if (phase === 'prop') {
     title = 'Phone propped on the console';
@@ -146,7 +152,9 @@ export function snapshot(state: DemoState, s: Scenario) {
       phase === 'approach'
         ? 'Walking to the gym'
         : phase === 'leave'
-          ? 'Today stays unlocked'
+          ? s.kind === 'gym-presence'
+            ? 'Leaving the gym locks your apps again'
+            : 'Today stays unlocked'
           : 'Location detected at the gym';
   const mapFraction = phase === 'approach' ? ease(p) * 0.995 : phase === 'leave' ? 1 - ease(p) * 0.6 : 1;
   return {

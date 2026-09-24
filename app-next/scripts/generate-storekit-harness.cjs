@@ -12,7 +12,7 @@ const SOURCE_FILES = ['ExcerLock.storekit', `${TARGET}.swift`, `${TARGET}-Info.p
 // price in cents and the trial as `<period>.<cents>.<t0|t3|t7>`, so the contract is derived
 // from that naming and any catalog typo in price, period or trial fails validation.
 const expected = new Map([
-  ['com.johansardar.excerlock.premium.a.monthly', ['9.99', 'P1M', null]],
+  ['com.johansardar.excerlock.premium.a.monthly', ['9.99', 'P1M', 'P1W']],
   ['com.johansardar.excerlock.premium.a.annual', ['59.99', 'P1Y', 'P1W']],
   ['com.johansardar.excerlock.premium.a.winback.annual', ['29.99', 'P1Y', 'P1W']],
   ['com.johansardar.excerlock.premium.b.monthly', ['12.99', 'P1M', null]],

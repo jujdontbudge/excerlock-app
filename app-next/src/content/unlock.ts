@@ -29,6 +29,7 @@ export const unlockCopy = {
     detected: 'Location detected at the gym',
     detectedUntil: (end: string) => `Unlocked until ${end}`,
     detectedTime: 'Your gym time is counting',
+    detectedWhileHere: "Unlocked while you're at the gym",
     noGym: 'Save a gym first',
     chooseGym: 'Choose a gym',
     denied: 'Location access is off',

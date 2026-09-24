@@ -38,5 +38,6 @@ export { CloseButton } from './CloseButton';
 export { BackButton } from './BackButton';
 export { TabBar } from './TabBar';
 export { FakeSystemPrompt } from './FakeSystemPrompt';
+export { SystemAlert, type SystemAlertCopy } from './SystemAlert';
 export { Label } from './Label';
 export { Pictogram } from './Pictogram';

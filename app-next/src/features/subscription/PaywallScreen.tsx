@@ -1,24 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Linking, View } from 'react-native';
-import { ChoiceRow, CloseButton, Heading, Label, PressableScale, PrimaryButton, ScreenShell, SecondaryButton } from '../../design-system';
+import { View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { BackButton, CloseButton, Label, PressableScale, PrimaryButton, ScreenShell } from '../../design-system';
+import { useMotion } from '../../motion/useMotion';
 import { tokens as t } from '../../design-system/tokens';
 import { Icon } from '../../icons/Icon';
 import { Reveal } from '../../motion/Reveal';
-import type { SubscriptionPaywall } from '../../ports/SubscriptionPort';
+import type { PaywallProduct, SubscriptionPaywall } from '../../ports/SubscriptionPort';
 import type { PaywallErrorOperation } from '../../runtime/observability/paywallErrors';
 import type { PaywallVariant } from '../../runtime/analytics/PostHogAnalyticsAdapter';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
-import { subscriptionCopy, priceFirstFooterLabel, planRowTitle } from '../../content/subscription';
+import { subscriptionCopy, planRowTitle, planName, perMonth } from '../../content/subscription';
+import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
+import { rulesStore as useRulesStore } from '../../state/rulesStore';
 import { defaultPlanHandle } from './paywallVariant';
-const TERMS_URL = 'https://excerlock.com/terms';
-const PRIVACY_URL = 'https://excerlock.com/privacy';
+import { paywallPromises } from './paywallPromises';
+import { PaywallHero } from './PaywallHero';
 export function PaywallScreen({
   placement,
   reportError,
   variantKey = 'control',
   onClose,
-  onDecline,
+  onBack,
   onLoaded,
 }: {
   placement: SubscriptionPaywall['placement'];
@@ -26,16 +30,15 @@ export function PaywallScreen({
   /** B7 UI variation; `control` leaves the remote catalog order in charge. */
   variantKey?: PaywallVariant;
   onClose?: () => void;
-  /**
-   * The onboarding hard wall cannot be closed, so the slot supplies an explicit
-   * decline here; it hands the user the win-back offer instead of leaving.
-   */
-  onDecline?: () => void;
+  /** Onboarding only: back to the reminder screen before the paywall. */
+  onBack?: () => void;
   /** Reports the mounted placement so the slot can expose the variant it rendered. */
   onLoaded?: (paywall: SubscriptionPaywall) => void;
 }) {
   const runtime = useRuntime(),
     status = useEntitlementStore((state) => state.data.entitlement.status),
+    answers = useOnboardingStore((state) => state.data.answers),
+    rule = useRulesStore((state) => state.data.rules[0]),
     [paywall, setPaywall] = useState<SubscriptionPaywall | null>(null),
     [selected, setSelected] = useState(''),
     [busy, setBusy] = useState<'load' | 'purchase' | 'restore' | null>('load'),
@@ -116,93 +119,161 @@ export function PaywallScreen({
     }
   };
   const product = paywall?.products.find((item) => item.handle === selected);
+  const choose = (handle: string) => {
+    if (busy) return;
+    chosen.current = true;
+    setSelected(handle);
+  };
   return (
     <ScreenShell
+      contentStyle={{ gap: t.space.md, paddingTop: 0 }}
       header={
-        onClose ? (
-          <View style={{ paddingHorizontal: t.layout.page, alignItems: 'flex-end' }}>
-            <CloseButton label="Close" onPress={onClose} />
+        // Back on the left and a quiet Restore on the right; nothing between them.
+        <View
+          style={{
+            paddingHorizontal: t.layout.page,
+            height: t.layout.header,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}>
+          <View style={{ width: t.control.row }}>
+            {onClose ? (
+              <CloseButton label="Close" onPress={onClose} />
+            ) : onBack ? (
+              <BackButton onPress={onBack} />
+            ) : null}
           </View>
-        ) : undefined
-      }
-      footer={
-        <>
-          {product ? (
-            <Label variant="support" style={{ textAlign: 'center' }}>
-              {priceFirstFooterLabel(product)}
-            </Label>
-          ) : null}
-          <PrimaryButton
-            label={product?.offerLabel ? 'Start free trial' : 'Continue'}
-            loading={busy === 'purchase'}
-            disabled={!product || busy === 'restore' || busy === 'load'}
-            onPress={() => void purchase()}
-          />
-          {/* The onboarding decline is a quiet outlined button under the CTA, never
-              orange text, and disabled while a store call is in flight. */}
-          {onDecline ? (
-            <SecondaryButton label={subscriptionCopy.decline} disabled={busy !== null} onPress={onDecline} />
-          ) : null}
-          {/* One quiet row of legal links under the button, as every reference paywall does. */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: t.space.sm }}>
+          <View style={{ flex: 1 }} />
+          <View style={{ width: t.control.row, alignItems: 'flex-end' }}>
             <PressableScale
-              label="Restore purchases"
+              label={subscriptionCopy.restore}
               accessibilityState={{ disabled: busy !== null }}
               onPress={() => {
                 if (busy === null) void restore();
               }}>
-              <Label variant="support" tone="secondary">Restore purchases</Label>
-            </PressableScale>
-            <Label variant="support" tone="secondary" accessible={false}>·</Label>
-            <PressableScale label="Terms of Use" onPress={() => void Linking.openURL(TERMS_URL)}>
-              <Label variant="support" tone="secondary">Terms of Use</Label>
-            </PressableScale>
-            <Label variant="support" tone="secondary" accessible={false}>·</Label>
-            <PressableScale label="Privacy Policy" onPress={() => void Linking.openURL(PRIVACY_URL)}>
-              <Label variant="support" tone="secondary">Privacy Policy</Label>
+              <Label variant="support" tone="secondary">
+                {subscriptionCopy.restoreShort}
+              </Label>
             </PressableScale>
           </View>
+        </View>
+      }
+      footer={
+        // One tight block, as successful paywalls do: the promise that nothing is charged today, the
+        // plans, and the button, in the same place as every other screen's.
+        <>
+          {product?.offerLabel ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: t.space.sm }}>
+              <Icon name="check" size={t.icon.md} variant="utility" />
+              <Label variant="label">{subscriptionCopy.noPayment}</Label>
+            </View>
+          ) : null}
+          {paywall ? (
+            <View style={{ flexDirection: 'row', gap: t.space.md, paddingTop: t.space.md }}>
+              {paywall.products.map((item, index) => (
+                <Reveal key={item.handle} index={index + 4} style={{ flex: 1 }}>
+                  <PlanCard product={item} selected={selected === item.handle} onPress={() => choose(item.handle)} />
+                </Reveal>
+              ))}
+            </View>
+          ) : null}
+          <PrimaryButton
+            label={product?.offerLabel ? subscriptionCopy.start : 'Continue'}
+            loading={busy === 'purchase'}
+            disabled={!product || busy === 'restore' || busy === 'load'}
+            onPress={() => void purchase()}
+          />
         </>
       }>
-      <Heading title={paywall?.title ?? 'Choose your plan'} variant="display" centered />
-      <View style={{ gap: t.space.md }}>
-        {subscriptionCopy.benefits.map((b, index) => (
-          <Reveal key={b.text} index={index + 1} style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.lg }}>
-            <Icon name={b.icon} size={t.icon.md} variant="utility" />
-            <Label variant="label" style={{ flex: 1 }}>
-              {b.text}
+      {rule ? <PaywallHero rule={rule} /> : <View style={{ flex: 1 }} />}
+      {/* Sell what they told us they want, in their own goals; never what the app does. */}
+      <View style={{ gap: t.space.sm, alignItems: 'center', marginBottom: -t.space.md }}>
+        {paywallPromises(answers).map((promise, index) => (
+          <Reveal
+            key={promise}
+            index={index + 1}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.sm }}>
+            <View
+              style={{
+                width: t.icon.md,
+                height: t.icon.md,
+                borderRadius: t.radius.pill,
+                backgroundColor: t.brand.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+              <Icon name="check" size={t.icon.sm} tone="onAccent" variant="utility" />
+            </View>
+            <Label variant="body" style={{ flexShrink: 1, textAlign: 'center' }}>
+              {promise}
             </Label>
           </Reveal>
         ))}
       </View>
       {message || status === 'expired' || status === 'billingIssue' ? (
-        <Label accessibilityRole="alert" style={{ color: t.state.error }}>
+        <Label accessibilityRole="alert" style={{ color: t.state.error, textAlign: 'center' }}>
           {message || (status === 'expired' ? subscriptionCopy.expired : subscriptionCopy.billingIssue)}
         </Label>
       ) : null}
       {busy === 'purchase' || busy === 'restore' ? (
-        <Label accessibilityRole="alert" tone="secondary">
+        <Label accessibilityRole="alert" tone="secondary" style={{ textAlign: 'center' }}>
           {busy === 'purchase' ? subscriptionCopy.purchasing : subscriptionCopy.restoring}
         </Label>
       ) : null}
       {!paywall && busy !== 'load' ? <PrimaryButton label="Retry loading plans" onPress={() => void load()} /> : null}
-      {/* Plans sit just above the button; the benefits keep the top. */}
-      <View style={{ flex: 1 }} />
-      {paywall?.products.map((item) => (
-        <ChoiceRow
-          key={item.handle}
-          title={planRowTitle(item)}
-          support={item.offerLabel ?? undefined}
-          selected={selected === item.handle}
-          recommended={item.recommended}
-          onPress={() => {
-            if (!busy) {
-              chosen.current = true;
-              setSelected(item.handle);
-            }
-          }}
-        />
-      ))}
     </ScreenShell>
+  );
+}
+
+/**
+ * One plan, side by side with the others and priced per month so they compare at a glance; the
+ * billed amount is in the card's accessibility label and in the terms under the button.
+ */
+function PlanCard({ product, selected, onPress }: { product: PaywallProduct; selected: boolean; onPress: () => void }) {
+  const m = useMotion(),
+    ink = selected ? t.text.onAccent : t.text.primary,
+    price = product.localizedMonthlyPrice
+      ? perMonth(product.localizedMonthlyPrice)
+      : `${product.localizedPrice} / ${product.localizedPeriod}`;
+  return (
+    <PressableScale
+      label={planRowTitle(product)}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected, selected }}
+      onPress={onPress}>
+      <Animated.View
+        style={{
+          alignItems: 'center',
+          paddingVertical: t.space.md,
+          paddingHorizontal: t.space.lg,
+          borderRadius: t.radius.card,
+          borderWidth: selected ? t.stroke.selected : t.stroke.hairline,
+          borderColor: selected ? t.brand.primary : t.border.outline,
+          backgroundColor: selected ? t.brand.primary : t.surface.card,
+          ...m.transition(['borderColor', 'backgroundColor'], 'standard'),
+        }}>
+        <Label variant="body" style={{ color: ink, textAlign: 'center' }}>
+          {planName(product)}
+        </Label>
+        <Label variant="label" style={{ color: ink, textAlign: 'center' }}>
+          {price}
+        </Label>
+      </Animated.View>
+      {product.offerLabel ? (
+        <View style={{ position: 'absolute', top: -t.space.md, left: 0, right: 0, alignItems: 'center' }}>
+          <View
+            style={{
+              paddingHorizontal: t.space.md,
+              paddingVertical: t.space.xs,
+              borderRadius: t.radius.pill,
+              backgroundColor: t.text.primary,
+            }}>
+            <Label variant="micro" style={{ color: t.text.onAccent }}>
+              {subscriptionCopy.trialBadge(product.offerLabel)}
+            </Label>
+          </View>
+        </View>
+      ) : null}
+    </PressableScale>
   );
 }

@@ -77,6 +77,7 @@ export function RootNavigator() {
           </Stack.Protected>
           <Stack.Protected guard={loading || onboarding.setupComplete}>
             <Stack.Screen name="builder" options={{ presentation: 'fullScreenModal' }} />
+            <Stack.Screen name="permissions/[step]" options={{ presentation: 'fullScreenModal' }} />
           </Stack.Protected>
           <Stack.Protected guard={loading || (entitled && onboarding.setupComplete)}>
             <Stack.Screen name="unlock/gym" options={{ presentation: 'fullScreenModal' }} />

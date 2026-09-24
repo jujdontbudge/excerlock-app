@@ -122,13 +122,18 @@ test('maps step ids, route paths and their dynamic params to semantic screens', 
   expect(semanticScreenName('/onboarding/G2')).toEqual({ name: 'onboarding', props: { step: 'G2' } });
   expect(semanticScreenName('X4')).toEqual({ name: 'setup', props: { step: 'X4' } });
   expect(semanticScreenName('/setup/X4')).toEqual({ name: 'setup', props: { step: 'X4' } });
+  // Each screen after the paywall reports its own step, and finishing reports `done` (ADR 0043).
+  for (const step of ['account', 'apps', 'motion', 'location', 'gym', 'done'])
+    expect(semanticScreenName(`/setup/${step}`)).toEqual({ name: 'setup', props: { step } });
+  for (const step of ['apps', 'motion', 'location', 'gym'])
+    expect(semanticScreenName(`/permissions/${step}`)).toEqual({ name: 'permissions', props: { step } });
   expect(semanticScreenName('/settings/account')).toEqual({ name: 'settings_account' });
   expect(semanticScreenName('/settings/legal/privacy')).toEqual({ name: 'settings_legal', props: { doc: 'privacy' } });
   expect(semanticScreenName('/settings/permission/screenTime')).toEqual({ name: 'settings_permission', props: { permission: 'screenTime' } });
 });
 
 test('rejects routes and ids outside the production vocabulary', () => {
-  const emitted = ['/', '/dev', '/linked-trace', '/users/uuid', '/onboarding/X1', '/onboarding/P', '/onboarding/S4', '/setup/O07', '/settings/legal/unknown', '/settings/permission/unknown', 'O07x', 'S4']
+  const emitted = ['/', '/dev', '/linked-trace', '/users/uuid', '/onboarding/X1', '/onboarding/P', '/onboarding/S4', '/setup/O07', '/permissions/account', '/permissions/done', '/permissions/camera', '/permissions', '/settings/legal/unknown', '/settings/permission/unknown', 'O07x', 'S4']
     .filter((path) => semanticScreenName(path) !== null);
   expect(emitted).toEqual([]);
 });

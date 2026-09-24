@@ -1,7 +1,7 @@
 import { pathFor } from '../../../onboarding/flow';
 import { canContinue } from '../../../onboarding/validation';
 import { onboardingStore } from '../../../state/onboardingStore';
-import { weeklyTargets } from '../weeklyTargets';
+import { planGoals } from '../planGoals';
 
 test('gym asks frequency and session length before condition setup', () => {
   const path = pathFor({ activity: 'gym' });
@@ -18,10 +18,11 @@ test('baseline answers and route survive persisted-store validation', () => {
   expect(onboardingStore.getState().data.step).toBe('G0H');
   expect(onboardingStore.getState().data.answers.gymSessionHours).toBe(1.5);
 });
-test('weekly suggestions use the selected baseline without inventing a forecast', () => {
-  expect(weeklyTargets({ activity: 'walking', currentDailySteps: 7500 }).movement?.baseline).toBe('From your 5,000–10,000 steps per day baseline');
-  expect(weeklyTargets({ activity: 'gym', gymSessionsPerWeek: 2, gymSessionHours: 1.5 }).movement?.baseline).toBe('3 → 4.5 hours per week');
-  expect(weeklyTargets({ activity: 'gym' }).movement).toBeNull();
+test('plan goals follow the chosen activity and body goal, always halving screen time', () => {
+  const text = (answers: Parameters<typeof planGoals>[0]) => planGoals(answers).map((goal) => goal.text);
+  expect(text({ activity: 'walking', bodyGoal: 'lose' })).toEqual(['150% more steps', 'Lose body fat', '50% less screen time']);
+  expect(text({ activity: 'gym', bodyGoal: 'gain' })).toEqual(['150% more time at the gym', 'Build muscle', '50% less screen time']);
+  expect(text({ activity: 'gym' })).toEqual(['150% more time at the gym', '50% less screen time']);
 });
 test('walking asks current daily steps before condition setup', () => {
   const path = pathFor({ activity: 'walking' });

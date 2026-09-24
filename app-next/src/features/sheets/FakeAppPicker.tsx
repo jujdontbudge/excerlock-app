@@ -1,12 +1,21 @@
 import { useState } from 'react';
-import { View } from 'react-native';
-import { BottomSheet, TextField, Label, ChoiceRow, PrimaryButton } from '../../design-system';
+import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { LockedApps } from '../../domain/types';
+import { illustrationTokens as art } from '../../design-system/illustrationTokens';
 import { tokens as t } from '../../design-system/tokens';
 import { pickerCopy as c } from '../../content/pickers';
-import { Reveal } from '../../motion/Reveal';
 import { finishSelection, restoreSelection, toggleSelection } from './selection';
-const colors = [t.swatch.coral, t.swatch.mint, t.swatch.sky, t.swatch.lilac, t.swatch.yellow];
+
+const appPicker = art.appPicker,
+  p = appPicker;
+
+/**
+ * The simulator demo's stand-in for Apple's Screen Time app picker, which only a real iPhone can
+ * show. It copies Apple's sheet: Cancel, the title and Done across the top, a search field, and
+ * the categories in an inset list with round checkboxes; searching also finds single apps. It
+ * exists only in development builds on the fake runtime and never ships.
+ */
 export function FakeAppPicker({
   initial,
   onResolve,
@@ -15,50 +24,157 @@ export function FakeAppPicker({
   onResolve: (result: boolean | LockedApps) => void;
 }) {
   const [query, setQuery] = useState(''),
-    [selected, setSelected] = useState(() => restoreSelection(initial));
-  const options = c.options.filter((o) => o.title.toLowerCase().includes(query.trim().toLowerCase()));
+    [selected, setSelected] = useState(() => restoreSelection(initial)),
+    search = query.trim().toLowerCase(),
+    categories = c.options.filter((o) => o.kind === 'category'),
+    options = search ? c.options.filter((o) => o.title.toLowerCase().includes(search)) : categories,
+    everything = categories.every((o) => selected.includes(o.id));
+  const toggleAll = () => setSelected(everything ? [] : [...new Set([...selected, ...categories.map((o) => o.id)])]);
   return (
-    <BottomSheet
-      open
-      title={c.title}
-      onDismiss={() => onResolve(false)}
-      footer={<PrimaryButton label={c.done} onPress={() => onResolve(finishSelection(selected))} />}>
-      <TextField label={c.search} value={query} onChangeText={setQuery} />
-      {(['category', 'app'] as const).map((kind) => (
-        <View key={kind} style={{ gap: t.space.md }}>
-          <Label variant="section">{kind === 'app' ? c.apps : c.categories}</Label>
-          {options
-            .filter((o) => o.kind === kind)
-            .map((o, index) => (
-              <Reveal key={o.id} index={index}>
-                <ChoiceRow
-                  title={o.title}
-                  multiple
-                  selected={selected.includes(o.id)}
-                  onPress={() => setSelected(toggleSelection(selected, o.id))}
-                  leading={
-                    <View
-                      style={{
-                        width: t.icon.lg,
-                        height: t.icon.lg,
-                        borderRadius: t.radius.field,
-                        backgroundColor: colors[c.options.findIndex((x) => x.id === o.id) % colors.length],
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                      <Label variant="label">{kind === 'app' ? o.title.slice(-1) : o.title.charAt(0)}</Label>
-                    </View>
-                  }
-                />
-              </Reveal>
-            ))}
+    <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={() => onResolve(false)}>
+      <View style={{ flex: 1, backgroundColor: p.background }}>
+        <View
+          style={{
+            height: t.control.full,
+            paddingHorizontal: t.space.md,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+          <NavButton label={c.cancel} onPress={() => onResolve(false)} />
+          <Text accessibilityRole="header" style={[appPicker.navTitle, { color: p.text }]}>
+            {c.title}
+          </Text>
+          <NavButton label={c.done} strong onPress={() => onResolve(finishSelection(selected))} />
         </View>
-      ))}
-      {!options.length ? (
-        <Reveal>
-          <Label tone="secondary">{c.noResults}</Label>
-        </Reveal>
-      ) : null}
-    </BottomSheet>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ padding: t.space.md, gap: t.space.md }}>
+          <TextInput
+            accessibilityLabel={c.search}
+            placeholder={c.search}
+            placeholderTextColor={p.secondary}
+            value={query}
+            onChangeText={setQuery}
+            autoCorrect={false}
+            style={[
+              appPicker.label,
+              {
+                height: p.searchHeight,
+                borderRadius: p.searchRadius,
+                paddingHorizontal: t.space.md,
+                backgroundColor: p.search,
+                color: p.text,
+              },
+            ]}
+          />
+          <View
+            style={{ backgroundColor: p.row, borderRadius: p.radius, borderCurve: 'continuous', overflow: 'hidden' }}>
+            {search ? null : <Row title={c.all} checked={everything} onPress={toggleAll} first />}
+            {options.map((o, index) => (
+              <Row
+                key={o.id}
+                title={o.title}
+                checked={selected.includes(o.id)}
+                onPress={() => setSelected(toggleSelection(selected, o.id))}
+                chevron={o.kind === 'category'}
+                first={Boolean(search) && index === 0}
+              />
+            ))}
+            {options.length ? null : (
+              <View style={{ height: p.rowHeight, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={[appPicker.label, { color: p.secondary }]}>{c.noResults}</Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
+function NavButton({ label, strong = false, onPress }: { label: string; strong?: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      hitSlop={t.space.sm}
+      style={{ minHeight: t.control.inline, justifyContent: 'center' }}>
+      <Text style={[strong ? appPicker.navTitle : appPicker.nav, { color: p.tint }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function Row({
+  title,
+  checked,
+  onPress,
+  chevron = false,
+  first = false,
+}: {
+  title: string;
+  checked: boolean;
+  onPress: () => void;
+  chevron?: boolean;
+  first?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityLabel={title}
+      accessibilityState={{ checked }}
+      onPress={onPress}
+      style={{
+        height: p.rowHeight,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingLeft: t.space.md,
+        gap: t.space.md,
+      }}>
+      <Svg width={p.circleSize} height={p.circleSize} viewBox="0 0 24 24">
+        {checked ? (
+          <>
+            <Path d="M12 0 a12 12 0 1 0 0.01 0 Z" fill={p.tint} />
+            <Path
+              d={p.checkPath}
+              stroke={p.check}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </>
+        ) : (
+          <Path d="M12 0.75 a11.25 11.25 0 1 0 0.01 0 Z" stroke={p.circle} strokeWidth={p.circleStroke} fill="none" />
+        )}
+      </Svg>
+      <View
+        style={{
+          flex: 1,
+          alignSelf: 'stretch',
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingRight: t.space.md,
+          borderTopWidth: first ? 0 : t.stroke.hairline,
+          borderColor: p.separator,
+        }}>
+        <Text numberOfLines={1} style={[appPicker.label, { flex: 1, color: p.text }]}>
+          {title}
+        </Text>
+        {chevron ? (
+          <Svg width={p.chevron.width} height={p.chevron.height} viewBox="0 0 8 13">
+            <Path
+              d={p.chevronPath}
+              stroke={p.circle}
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </Svg>
+        ) : null}
+      </View>
+    </Pressable>
   );
 }

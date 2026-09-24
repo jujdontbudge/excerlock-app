@@ -11,17 +11,12 @@ import { markWinbackShown, winbackPaywallRequested } from './winbackSession';
 export function PaywallSlot() {
   const runtime = useRuntime();
   const router = useRouter();
-  const { setupComplete, setupStep, winbackDeclined } = useOnboardingStore((state) => state.data);
+  const setupComplete = useOnboardingStore((state) => state.data.setupComplete);
   const status = useEntitlementStore((state) => state.data.entitlement.status);
   // The win-back placement is a swap on top of the placement this mount would
-  // otherwise request: Home asks for it when a lapsed entitlement returns, and
-  // the onboarding decline asks for it once per install.
+  // otherwise request: Home asks for it when a lapsed entitlement returns.
   const [winback, setWinback] = useState(winbackPaywallRequested);
-  const placement: SubscriptionPaywall['placement'] = winback
-    ? 'winback'
-    : setupComplete
-      ? 'in_app'
-      : 'onboarding';
+  const placement: SubscriptionPaywall['placement'] = winback ? 'winback' : setupComplete ? 'in_app' : 'onboarding';
   const experiments = runtime.experiments;
   const [assignment, setAssignment] = useState<{ variant: PaywallVariant; generation: number } | null>(null);
   const [loaded, setLoaded] = useState<SubscriptionPaywall | null>(null);
@@ -36,10 +31,6 @@ export function PaywallSlot() {
     },
     [runtime],
   );
-  const decline = useCallback(() => {
-    useOnboardingStore.getState().patch({ winbackDeclined: true });
-    setWinback(true);
-  }, []);
   // Resolve the variant alongside the placement load so the paywall never waits
   // on PostHog: the screen paints control until (and unless) the rail answers.
   useEffect(() => {
@@ -76,24 +67,33 @@ export function PaywallSlot() {
   useEffect(() => {
     if (placement === 'winback') markWinbackShown();
   }, [placement]);
+  // The onboarding wall keeps no history, so its back button reopens the reminder screen by name.
+  const backToReminder = useCallback(() => {
+    useOnboardingStore.getState().patch({ step: 'S3d', complete: false });
+    router.replace('/onboarding/S3d');
+  }, [router]);
   useEffect(() => {
     useOnboardingStore.getState().patch({ step: 'P', complete: true });
     runtime.analytics.screen('P');
   }, [runtime]);
+  // Being entitled opens sign-in and the permissions the conditions need (ADR 0043); a subscriber
+  // who reopened the paywall from the app goes back home.
   useEffect(() => {
     if (status !== 'trial' && status !== 'active') return;
-    router.replace(setupComplete ? '/home' : (`/setup/${setupStep}` as never));
-  }, [router, setupComplete, setupStep, status]);
+    if (setupComplete) router.replace('/home');
+    else {
+      useOnboardingStore.getState().patch({ complete: true, setupStep: 'X1' });
+      router.replace('/setup/X1');
+    }
+  }, [router, setupComplete, status]);
   return (
     <PaywallScreen
       placement={placement}
       variantKey={assignment?.variant ?? 'control'}
       onLoaded={setLoaded}
       reportError={reportError}
-      /* The decline rule: only the onboarding placement without a close action,
-         and only until this install has spent its one decline. */
-      onDecline={placement === 'onboarding' && !winbackDeclined ? decline : undefined}
       onClose={setupComplete ? () => (router.canGoBack() ? router.back() : router.replace('/home')) : undefined}
+      onBack={placement === 'onboarding' && !setupComplete ? backToReminder : undefined}
     />
   );
 }

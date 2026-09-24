@@ -8,6 +8,7 @@ import { rulesStore as useRulesStore } from '../../state/rulesStore';
 import { unlockCopy as c } from '../../content/unlock';
 import { useGymUnlock } from './useGymUnlock';
 import { useCeremony } from './useCeremony';
+import { gymUnlockSubline } from './entry';
 import { UnlockLayout, Detected } from './UnlockLayout';
 import { GymUnlockMap } from './GymUnlockMap';
 import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';
@@ -28,8 +29,7 @@ export function GymUnlockScreen({ ruleId, preview = false }: { ruleId?: string; 
   const window = rule?.schedule.window;
   const minute = window?.kind === 'range' ? window.endMinute : 1439;
   const end = `${Math.floor(minute / 60) % 12 || 12}${minute % 60 ? ':' + String(minute % 60).padStart(2, '0') : ''} ${minute < 720 ? 'AM' : 'PM'}`;
-  const subline =
-    rule?.mode.kind === 'target' ? c.gym.detectedTime : c.gym.detectedUntil(preview && !rule ? '9 PM' : end);
+  const subline = gymUnlockSubline(rule, preview && !rule ? '9 PM' : end);
   const ceremony = useCeremony(state.value, state.lifted, c.gym.detected);
   const close = () => {
     runtime.analytics.track('unlock_ceremony_done', { kind: 'gym', preview });

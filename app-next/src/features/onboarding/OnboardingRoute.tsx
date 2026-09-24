@@ -1,7 +1,6 @@
 import { useIsFocused } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
-import { TrialScreen } from '../subscription/TrialScreen';
 import { OnboardingShell } from './OnboardingShell';
 import { useOnboarding } from './useOnboarding';
 import { canContinue } from '../../onboarding/validation';
@@ -10,12 +9,13 @@ import { ScheduleScreen } from '../rules/ScheduleScreen';
 import { TimeSheet } from '../rules/TimeSheet';
 import { scheduleDraft, reduceSchedule, scheduleAnswers, toSchedule, ScheduleAction } from '../rules/scheduleDraft';
 import { draftFromAnswers, commitPlan } from '../rules/plan';
-import { createDraft, toRule, RuleDraft } from '../rules/draft';
+import { createDraft, toRule } from '../rules/draft';
 import { PlanBuild } from '../rules/PlanBuild';
 import { PlanCelebration } from '../rules/PlanCelebration';
 import { PlanSummary } from '../rules/PlanSummary';
 import { ConditionDemo } from './condition-demo/ConditionDemo';
 import { PlanTrialPreview } from '../rules/PlanTrialPreview';
+import { TrialReminder } from '../rules/TrialReminder';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { planCopy as c } from '../../content/plan';
 import { useImpactPlayback } from './impact/useImpactPlayback';
@@ -30,7 +30,8 @@ export function OnboardingRoute() {
     unit = useSettingsStore((s) => s.data.units),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null),
     [scheduleError, setScheduleError] = useState(false),
-    [celebrating, setCelebrating] = useState(false);
+    [celebrating, setCelebrating] = useState(false),
+    [asking, setAsking] = useState(false);
   const playback = useImpactPlayback(flow.step, flow.advance, focused);
   const base = useMemo(() => createDraft('walking'), []);
   const draft = draftFromAnswers(flow.answers, base),
@@ -39,7 +40,19 @@ export function OnboardingRoute() {
     Object.entries(scheduleAnswers(reduceSchedule(schedule, action))).forEach(([key, value]) =>
       flow.setAnswer(key, value),
     );
-  const advance = () => {
+  const advance = async () => {
+    // The reminder promise is kept by asking iOS for notifications right here, once.
+    if (flow.step === 'S3d') {
+      if (asking) return;
+      if (runtime.notifications.status() === 'notDetermined') {
+        setAsking(true);
+        try {
+          await runtime.notifications.request();
+        } finally {
+          setAsking(false);
+        }
+      }
+    }
     if (flow.step === 'S3') {
       try {
         commitPlan(flow.answers, unit, draft, {
@@ -58,8 +71,6 @@ export function OnboardingRoute() {
   // A pushed route can retain an earlier summary while this shared draft is incomplete.
   if (!focused) return null;
   let body = <PreBranchScreen {...flow} />;
-  if (flow.step === 'T1' || flow.step === 'T2' || flow.step === 'T3' || flow.step === 'T4')
-    body = <TrialScreen step={flow.step} onContinue={flow.advance} />;
   if (flow.step === 'S1')
     body = (
       <ScheduleScreen
@@ -78,18 +89,19 @@ export function OnboardingRoute() {
       </View>
     );
   if (flow.step === 'S3b') body = <ConditionDemo draft={draft} schedule={toSchedule(schedule)} answers={flow.answers} onBack={flow.back} />;
-  if (flow.step === 'S3c') body = <PlanTrialPreview condition={previewCondition(draft)} />;
+  if (flow.step === 'S3c') body = <PlanTrialPreview rule={toRule(draft, toSchedule(schedule))} />;
+  if (flow.step === 'S3d') body = <TrialReminder />;
   return (
     <OnboardingShell
       step={flow.step}
       progress={flow.progress}
       direction={flow.direction}
       onBack={flow.back}
-      onContinue={advance}
+      onContinue={() => void advance()}
       valid={canContinue(flow.step, flow.answers)}
-      continuing={flow.isAdvancing}
-      continueLabel={flow.step === 'S3' ? c.use : flow.step === 'S3c' ? 'Next' : undefined}
-      hideContinue={flow.step === 'S2' || flow.step === 'T3' || playback.hideContinue}
+      continuing={flow.isAdvancing || asking}
+      continueLabel={flow.step === 'S3' ? c.use : flow.step === 'S3c' ? c.trialCta : undefined}
+      hideContinue={flow.step === 'S2' || playback.hideContinue}
       overlay={
         <>
         {celebrating ? <PlanCelebration onCovered={() => { if (flow.step === 'S2') void flow.advance(); }} onDone={() => setCelebrating(false)} /> : null}
@@ -108,13 +120,3 @@ export function OnboardingRoute() {
   );
 }
 
-function previewCondition(draft: RuleDraft) {
-  if (draft.activity === 'walking') {
-    if (draft.walkingMode === 'steps') return `Walk ${draft.stepGoal.toLocaleString()} steps to unlock`;
-    if (draft.walkingMode === 'minutes') return `Walk for ${draft.walkMinutes} minutes to unlock`;
-    return 'Go for a walk to unlock';
-  }
-  if (draft.gymMode === 'time') return `Exercise for ${draft.gymMinutes} minutes to unlock`;
-  if (draft.gymMode === 'arrival') return 'Arrive at your gym to unlock';
-  return 'Complete a gym visit to unlock';
-}

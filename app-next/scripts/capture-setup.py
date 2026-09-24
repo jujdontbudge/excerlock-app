@@ -13,7 +13,7 @@ def enter(label,value,clear=0):
 def scenario(name,step):
  open_url('excerlock://dev?scenario='+name+'&setup='+step);time.sleep(2)
 run('xcrun','simctl','terminate',SIM,'com.johansardar.excerlock');open_url('excerlock://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8091');time.sleep(3)
-open_url('excerlock://dev?scenario=fresh-install');time.sleep(2);open_url('excerlock://onboarding/T4');find('How your free trial works');tap('Continue');find('Choose your plan');tap('Start free trial');find('Let ExcerLock block your apps')
+open_url('excerlock://dev?scenario=fresh-install');time.sleep(2);open_url('excerlock://onboarding/S3d');find('No payment due now');tap('Continue');find('Allow ExcerLock to send notifications?');tap('Allow');find('Choose your plan');tap('Start for free');find('Let ExcerLock block your apps')
 with recording(out/'setup-walking-email.mp4'):
  capture('X1');tap('Allow Screen Time');find('Let ExcerLock manage Screen Time?');capture('screen-time-prompt');tap('Allow');find('Access is on');capture('X1-granted');tap('Continue');find('Which apps should wait?');capture('X2-empty');assert not find('Continue')['enabled']
  tap('Choose apps');find('Choose apps to block');capture('app-picker');tap('Social');enter('Search apps and categories','App A');find('App A');tap('App A');capture('app-picker-selected');tap('Done');find('1 app · 1 category');capture('X2-selected');tap('Continue');find('Let ExcerLock count your steps');capture('X3-walking');tap('Allow Motion & Fitness');find('Let ExcerLock use Motion & Fitness?');capture('motion-prompt');tap('Don’t allow');find('Continue anyway');capture('X3-motion-denied');tap('Continue anyway');find('Save your progress');capture('X4')

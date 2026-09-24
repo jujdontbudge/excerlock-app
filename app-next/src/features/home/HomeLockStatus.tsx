@@ -11,13 +11,13 @@ export function HomeLockStatus({ unlocked }: { unlocked: boolean }) {
   const [width, setWidth] = useState(0);
   const stroke = width * 0.11;
   return (
-    <View style={{ alignItems: 'center', gap: t.space.lg }}>
+    <View style={{ alignItems: 'center', gap: t.space.md }}>
       <View
         accessible
         accessibilityRole="image"
         accessibilityLabel={unlocked ? 'Unlocked' : 'Locked'}
         onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
-        style={{ width: '58%', alignSelf: 'center', alignItems: 'center', paddingTop: t.space.sm }}>
+        style={{ width: '42%', alignSelf: 'center', alignItems: 'center' }}>
         <View style={{
           width: width * 0.62,
           height: width * 0.48,

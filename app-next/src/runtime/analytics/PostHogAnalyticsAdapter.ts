@@ -350,9 +350,12 @@ export type SemanticScreen = { name: string; props?: Record<string, string | num
 const callerScreens: Record<string, string> = { Home: 'home', P: 'paywall' };
 
 /** Onboarding step ids from `src/onboarding/flow.ts`, excluding `P` (which maps to paywall). */
-const onboardingStepPattern = /^(?:O(?:0[1-9]|1[0-9]|2[0-2])|W[0-3]|G(?:[12]|0[FH])|[RB][12]|D|S(?:[1-3]|3[bc])|T[1-4])$/;
-/** Setup step ids `X1…X5` from `src/onboarding/setupFlow.ts`. */
-const setupStepPattern = /^X\d$/;
+const onboardingStepPattern = /^(?:O(?:0[1-9]|1[0-9]|2[0-2])|W[0-3]|G(?:[12]|0[FH])|[RB][12]|D|S(?:[1-3]|3[b-d])|T[1-4])$/;
+/**
+ * Setup steps: `X1` is where the paywall lands, then each screen after it reports what it asks for,
+ * and `done` marks finishing (ADR 0043). `X2`–`X5` are older installs' saved steps.
+ */
+const setupStepPattern = /^(?:X\d|account|apps|motion|location|gym|done)$/;
 
 /** Static production routes, keyed by exactly what `usePathname()` returns. */
 const routes: Record<string, string> = {
@@ -385,6 +388,7 @@ const routes: Record<string, string> = {
 const dynamicRoutes: readonly { prefix: string; param: string; name: string; test: RegExp }[] = [
   { prefix: '/onboarding/', param: 'step', name: 'onboarding', test: onboardingStepPattern },
   { prefix: '/setup/', param: 'step', name: 'setup', test: setupStepPattern },
+  { prefix: '/permissions/', param: 'step', name: 'permissions', test: /^(?:apps|motion|location|gym)$/ },
   { prefix: '/settings/legal/', param: 'doc', name: 'settings_legal', test: /^(?:terms|privacy)$/ },
   { prefix: '/settings/permission/', param: 'permission', name: 'settings_permission', test: /^(?:screenTime|motion|location|camera|notifications)$/ },
 ];

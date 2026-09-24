@@ -3,11 +3,16 @@ import { ScreenTimePort } from '../../ports/ScreenTimePort';
 import { permissionsStore } from '../../state/permissionsStore';
 import { rulesStore } from '../../state/rulesStore';
 import { FakeContext } from '../FakeContext';
+import { ScreenTimeAuthorizationError } from '../../screentime/ScreenTimeAuthorizationError';
 export function ScreenTimeFake(ctx: FakeContext): ScreenTimePort {
   return {
     authorizationStatus: () => permissionsStore.getState().data.screenTime,
     requestAuthorization: () => ctx.request('screenTime'),
     presentAppPicker: async () => {
+      // Like the native port, the picker asks for Screen Time while undecided and refuses without it.
+      let status = permissionsStore.getState().data.screenTime;
+      if (status === 'notDetermined') status = await ctx.request('screenTime');
+      if (status !== 'granted') throw new ScreenTimeAuthorizationError(status);
       const initial = rulesStore.getState().data.lockedApps;
       const result = await ctx.prompt({ kind: 'picker', initial });
       const selected = typeof result === 'boolean' ? initial : result;

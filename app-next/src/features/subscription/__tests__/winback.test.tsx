@@ -10,7 +10,7 @@ import { BootGate } from '../../launch/BootGate';
 import { onboardingStore } from '../../../state/onboardingStore';
 import { entitlementStore } from '../../../state/entitlementStore';
 import type { SubscriptionPaywall } from '../../../ports/SubscriptionPort';
-import { resetWinbackSession, winbackShownThisSession } from '../winbackSession';
+import { requestWinbackPaywall, resetWinbackSession, winbackShownThisSession } from '../winbackSession';
 
 function paywall(placement: SubscriptionPaywall['placement']): SubscriptionPaywall {
   return {
@@ -27,6 +27,8 @@ function paywall(placement: SubscriptionPaywall['placement']): SubscriptionPaywa
         detail: '',
         localizedPrice: '$29.99',
         localizedPeriod: 'year',
+        localizedMonthlyPrice: null,
+        periodUnit: 'year',
         offerLabel: '7 days free',
         recommended: true,
       },
@@ -50,10 +52,10 @@ function viewedPlacements(runtime: Runtime): unknown[] {
     .map((event) => event.props);
 }
 
-async function mountPaywall(winbackDeclined = false) {
+async function mountPaywall() {
   const runtime = createRuntime();
   await runtime.dev!.load('fresh-install');
-  onboardingStore.getState().patch({ step: 'P', complete: true, setupComplete: false, winbackDeclined });
+  onboardingStore.getState().patch({ step: 'P', complete: true, setupComplete: false });
   entitlementStore.getState().patch({ entitlement: { status: 'none', renewsAt: null } });
   const loadPaywall = jest.fn(async (placement: SubscriptionPaywall['placement']) => paywall(placement));
   runtime.subscription.loadPaywall = loadPaywall;
@@ -64,32 +66,11 @@ async function mountPaywall(winbackDeclined = false) {
 
 beforeEach(() => resetWinbackSession());
 
-test('the onboarding hard paywall declines into the win-back placement once', async () => {
-  const { runtime, loadPaywall } = await mountPaywall();
-  const decline = await screen.findByRole('button', { name: 'Not now' });
-  await screen.findByRole('radio', { name: 'Annual · $29.99 / year' });
-  expect(viewedPlacements(runtime)).toEqual([
-    { placement: 'onboarding', has_trial: true, variation_id: 'onboarding-variation' },
-  ]);
-  await waitFor(() => expect(decline).toBeEnabled());
-  await userEvent.press(decline);
-  await waitFor(() => expect(loadPaywall).toHaveBeenCalledWith('winback'));
-  await waitFor(() =>
-    expect(viewedPlacements(runtime)).toEqual([
-      { placement: 'onboarding', has_trial: true, variation_id: 'onboarding-variation' },
-      { placement: 'winback', has_trial: true, variation_id: 'winback-variation' },
-    ]),
-  );
-  expect(onboardingStore.getState().data.winbackDeclined).toBe(true);
-  // One decline per install: the action is spent, and the hard wall has no close.
-  await waitFor(() => expect(screen.queryByRole('button', { name: 'Not now' })).toBeNull());
-  expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
-});
-
-test('an install that already spent its decline never offers it again', async () => {
-  const { loadPaywall } = await mountPaywall(true);
+test('the onboarding hard paywall offers no decline and no close', async () => {
+  const { loadPaywall } = await mountPaywall();
   await screen.findByRole('radio', { name: 'Annual · $29.99 / year' });
   expect(screen.queryByRole('button', { name: 'Not now' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
   expect(loadPaywall).toHaveBeenCalledTimes(1);
   expect(loadPaywall).toHaveBeenCalledWith('onboarding');
 });
@@ -97,29 +78,25 @@ test('an install that already spent its decline never offers it again', async ()
 test('a win-back placement that cannot load falls back to the original paywall', async () => {
   const runtime = createRuntime();
   await runtime.dev!.load('fresh-install');
-  onboardingStore.getState().patch({ step: 'P', complete: true, setupComplete: false, winbackDeclined: false });
+  onboardingStore.getState().patch({ step: 'P', complete: true, setupComplete: false });
   entitlementStore.getState().patch({ entitlement: { status: 'none', renewsAt: null } });
   const loadPaywall = jest.fn(async (placement: SubscriptionPaywall['placement']) => {
     if (placement === 'winback') throw new Error('winback offline');
     return paywall(placement);
   });
   runtime.subscription.loadPaywall = loadPaywall;
+  requestWinbackPaywall();
   const routed = renderRouter({ _layout: layout(runtime), paywall: PaywallSlot }, { initialUrl: '/paywall' });
   await routed;
 
-  const decline = await screen.findByRole('button', { name: 'Not now' });
-  await waitFor(() => expect(decline).toBeEnabled());
-  await userEvent.press(decline);
-
   await waitFor(() =>
-    expect(loadPaywall.mock.calls.map(([placement]) => placement)).toEqual(['onboarding', 'winback', 'onboarding']),
+    expect(loadPaywall.mock.calls.map(([placement]) => placement)).toEqual(['winback', 'onboarding']),
   );
-  // The failed placement never reports a view; the user is back on the paywall.
+  // The failed placement never reports a view; the user is on the paywall they would have seen.
   expect(viewedPlacements(runtime).every((props) => (props as { placement: string }).placement === 'onboarding')).toBe(
     true,
   );
   expect(await screen.findByRole('radio', { name: 'Annual · $29.99 / year' })).toBeTruthy();
-  expect(screen.queryByRole('button', { name: 'Not now' })).toBeNull();
   expect(
     runtime.dev!.snapshot().events.some((event) => event.event === 'paywall_error' && event.props.operation === 'load'),
   ).toBe(true);

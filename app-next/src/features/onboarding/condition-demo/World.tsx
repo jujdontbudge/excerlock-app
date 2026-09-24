@@ -71,8 +71,9 @@ export function World({ clock }: { clock: SharedValue<DemoState> }) {
 }
 export function Treadmill({ clock }: { clock: SharedValue<DemoState> }) {
   const props = useAnimatedProps(() => ({ matrix: [1, 0, 0, 1, -clock.value.distance % 30, 0] }));
+  // The belt's top edge meets the walker's feet (Character stands 112 above the scene floor).
   return (
-    <Svg width={190} height={120} style={{ position: 'absolute', left: 0, bottom: 40 }} viewBox="0 0 190 120">
+    <Svg width={190} height={120} style={{ position: 'absolute', left: 0, bottom: 86 }} viewBox="0 0 190 120">
       <Rect x={6} y={88} width={178} height={22} rx={11} fill={art.demo.treadmill} />
       <Rect x={18} y={94} width={154} height={9} rx={4.5} fill={art.demo.belt} />
       <Group animatedProps={props}>

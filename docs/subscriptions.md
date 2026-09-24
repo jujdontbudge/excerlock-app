@@ -7,6 +7,18 @@ plans with Apple prorating the difference.
 Cleared for sale in the United States only. Prices are equalized across all 175 territories, so
 opening a new market is an availability change rather than a pricing change.
 
+## Launch plans
+
+The paywall sells `com.johansardar.excerlock.premium.a.monthly` (`6796884508`) and
+`com.johansardar.excerlock.premium.a.annual` (`6796884321`). Both carry a one-week free-trial
+introductory offer (`ONE_WEEK`, `FREE_TRIAL`, one period) in all 175 territories. Annual has had it
+since launch. Monthly got it on September 23, 2026, on Johan's call, so the onboarding paywall can
+show the trial badge on both plans and keep "No payment due now" whichever plan is picked. It was
+created with `asc subscriptions offers introductory create --subscription-id 6796884508
+--all-territories --offer-duration ONE_WEEK --offer-mode FREE_TRIAL --number-of-periods 1`, with
+175/175 created, while both products were `WAITING_FOR_REVIEW` in the build 10 submission. The
+local StoreKit harness catalog and the demo fake match.
+
 | Product ID | Period | US price | Free trial | ASC ID |
 |---|---|---|---|---|
 | `com.johansardar.excerlock.premium.weekly.599.t0` | weekly | $5.99 | none | 6810461585 |

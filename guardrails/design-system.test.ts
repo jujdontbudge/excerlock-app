@@ -156,13 +156,18 @@ const illustrationFiles = [
   /^app-next\/src\/features\/onboarding\/progress\/(ProgressArtwork|ProgressBars|ProgressBadge|ProgressCurve)\.tsx$/,
   /^app-next\/src\/features\/onboarding\/control\/(ControlArtwork|ActivityTile|LockedAppsRow)\.tsx$/,
   /^app-next\/src\/features\/onboarding\/profile\/ReferralIcon\.tsx$/,
+  /^app-next\/src\/features\/onboarding\/scenes\/LoopScene\.tsx$/,
   // Pictograms and padlock artwork are drawn to their own proportions, above the UI icon scale.
   /^app-next\/src\/design-system\/(Pictogram|UnlockLockFrame)\.tsx$/,
   /^app-next\/src\/motion\/LivingIcon\.tsx$/,
   /^app-next\/src\/features\/home\/HomeLockStatus\.tsx$/,
   /^app-next\/src\/features\/rules\/PlanCelebration\.tsx$/,
-  /^app-next\/src\/features\/rules\/PlanTrialPreview\.tsx$/,
+  /^app-next\/src\/features\/rules\/(PlanTrialPreview|TrialReminder)\.tsx$/,
+  /^app-next\/src\/features\/subscription\/(PaywallHero|LockedAppField)\.tsx$/,
   /^app-next\/src\/icons\//,
+  // The copy of the iOS permission alert and the guide drawn around it (ADR 0043).
+  /^app-next\/src\/design-system\/SystemAlert\.tsx$/,
+  /^app-next\/src\/features\/sheets\/FakeAppPicker\.tsx$/,
 ];
 const isIllustration = (path: string) => illustrationFiles.some((pattern) => pattern.test(path));
 /**
@@ -416,7 +421,13 @@ describe("design-system source", () => {
   });
 
   staged(1)("never sets fontWeight: Baloo 2 faces are named, so iOS cannot synthesize a weight", () => {
-    const hits = findAll(/\bfontWeight\b[^,\n}]*/g, sources);
+    // The one exception is the copy of an iOS system alert, lettered in Apple's system font.
+    const systemLettering = sources.map((source) =>
+      source.path === illustrationModule
+        ? { ...source, code: source.code.replace(/\{[^{}\n]*fontFamily: 'System', fontWeight: '\d00' \}/g, "{}") }
+        : source,
+    );
+    const hits = findAll(/\bfontWeight\b[^,\n}]*/g, systemLettering);
     expect(hits, report(hits)).toEqual([]);
   });
 
@@ -437,7 +448,7 @@ describe("design-system source", () => {
       ];
       for (const tag of openingTags(code, [...new Set(textTags)])) {
         const styles = [...tag.text.matchAll(/\b(?:s|styles)\.(\w+)/g)].map(([, key]) => styleEntry(code, key ?? ""));
-        if (!/fontFamily|\btype\.\w+|\b(?:miniature|scene)\.\w+|\{\.\.\.props\}/.test([tag.text, ...styles].join("\n"))) {
+        if (!/fontFamily|\btype\.\w+|\b(?:miniature|scene|systemAlert|appPicker)\.\w+|\{\.\.\.props\}/.test([tag.text, ...styles].join("\n"))) {
           hits.push(`${path}:${lineOf(code, tag.index)} <${tag.name}> without fontFamily`);
         }
       }

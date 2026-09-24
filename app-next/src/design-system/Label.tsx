@@ -18,7 +18,8 @@ export function Label({
         t.type[variant],
         { color: t.text[tone], fontVariant: ['tabular-nums'] },
         style,
-        onboarding ? { width: '100%', textAlign: 'center' } : null,
+        // Stretch fills a column but leaves a label in a row (badge, chart legend) its own width.
+        onboarding ? { alignSelf: 'stretch', textAlign: 'center' } : null,
       ]}
     />
   );

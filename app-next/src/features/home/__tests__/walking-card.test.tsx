@@ -48,3 +48,4 @@ test('state walking card has no percentage, progress bar, or detecting copy', as
   expect(screen.queryByRole('progressbar')).toBeNull();
   runtime.dispose();
 });
+

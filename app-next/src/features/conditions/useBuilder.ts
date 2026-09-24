@@ -11,7 +11,8 @@ import { builderPath, builderValid } from './builderFlow';
 import { saveRule } from './mutations';
 import { useRuntime } from '../../runtime/AppRuntimeProvider';
 import { SchedulePlanError } from '../../domain/scheduleRepresentability';
-export function useBuilder(id: string | undefined, onClose: () => void) {
+import { ruleNeedsSetup } from '../setup/useSetupNeeds';
+export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?: () => void) {
   const runtime = useRuntime();
   const gymCount = useSettingsStore((s) => s.data.gymPlaces.length);
   const [initial] = useState(() => {
@@ -84,12 +85,15 @@ export function useBuilder(id: string | undefined, onClose: () => void) {
     next: () => {
       if (step === 'S3') {
         try {
-          saveRule(toRule({ ...draft, updatedAt: runtime.clock.now() }, toSchedule(schedule)), {
+          const rule = toRule({ ...draft, updatedAt: runtime.clock.now() }, toSchedule(schedule));
+          saveRule(rule, {
             now: runtime.clock.now(),
             timezone: runtime.clock.timezone(),
           });
           setScheduleError(false);
-          onClose();
+          // A condition that needs a permission it does not have asks for it right away (ADR 0043).
+          if (onNeeds && ruleNeedsSetup(rule)) onNeeds();
+          else onClose();
         } catch (error) {
           if (!(error instanceof SchedulePlanError)) throw error;
           setScheduleError(true);

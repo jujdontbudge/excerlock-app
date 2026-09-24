@@ -22,7 +22,7 @@ export const preBranch = [
   'O18',
   'O20',
 ] as const;
-export const tail = ['S1', 'S2', 'S3', 'S3b', 'S3c', 'T1', 'T2', 'T3', 'T4', 'P'] as const;
+export const tail = ['S1', 'S2', 'S3', 'S3b', 'S3c', 'S3d', 'P'] as const;
 
 /**
  * A validated remote order for the two configurable groups (B8).
@@ -73,6 +73,8 @@ export function resumeStep(persisted: unknown, order?: FlowOrder | null): string
   if (typeof persisted !== 'object' || persisted === null) return 'O01';
   const state = persisted as Partial<FlowState>;
   if (typeof state.step !== 'string' || !state.answers) return 'O01';
+  // The retired trial screens (T1–T4) sat right before the paywall, so an install saved there resumes at it.
+  if (/^T[1-4]$/.test(state.step)) return 'P';
   const path = pathFor(state.answers, applicableOrder({ step: state.step, answers: state.answers }, order));
   return path.includes(state.step) ? state.step : path[0] ?? 'O01';
 }

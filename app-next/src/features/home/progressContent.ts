@@ -21,8 +21,8 @@ export function progressContent(
       title,
       icon: rule.activity,
       value: live ? 1 : 0,
-      detail: permissions.motion === 'denied' ? c.walkReadyDenied : c.walkReady,
-      action: 'walk',
+      detail: rule.activity === 'gym' ? c.gymReady : permissions.motion === 'denied' ? c.walkReadyDenied : c.walkReady,
+      action: rule.activity === 'gym' ? 'checkin' : 'walk',
       label: state === 'active' || state === 'grace' ? c.walkDetected : c.walkingEntry,
       state,
     } as const;

@@ -10,6 +10,10 @@ export type PaywallProduct = {
   detail: string;
   localizedPrice: string;
   localizedPeriod: string;
+  /** The same plan priced per month, for comparing plans; null when the store gives no amount. */
+  localizedMonthlyPrice: string | null;
+  /** The store's billing unit (`year`, `month`, `week`, `day`), naming the plan by how often it bills. */
+  periodUnit: string | null;
   offerLabel: string | null;
   recommended: boolean;
 };

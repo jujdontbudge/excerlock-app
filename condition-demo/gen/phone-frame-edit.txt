@@ -1,0 +1,8 @@
+Edit this flat scaffold into a photorealistic studio product photo of a modern premium smartphone seen perfectly straight-on from the front.
+
+Keep EXACTLY the same position, size, proportions, corner radii and silhouette as the scaffold; do not move, rotate, tilt or resize the phone.
+
+Phone: dark black-titanium frame with a thin polished metal rim that catches soft realistic highlights along the rounded edges, a thin even black glass bezel around the screen, a black pill-shaped camera cutout at the top centre exactly where the black pill is, and the side buttons as subtle realistic metal buttons exactly where the scaffold shows them. Soft, even studio lighting. No logo, no text, no brand marks.
+
+The screen area inside the bezel must stay a perfectly flat, solid, uniform magenta #FF00FF from edge to edge, with no reflection, glare, gradient, noise or content on it.
+The background outside the phone must stay a perfectly flat, solid, uniform magenta #FF00FF with no shadow, floor, gradient or vignette.

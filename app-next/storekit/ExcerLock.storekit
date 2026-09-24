@@ -39,7 +39,13 @@
           "referenceName": "Premium A Monthly",
           "subscriptionGroupID": "F4940C00-B55C-5659-95AB-DEA21BB0482C",
           "type": "RecurringSubscription",
-          "winBackOffers": []
+          "winBackOffers": [],
+          "introductoryOffer": {
+            "internalID": "79DCC0D8-360F-5279-982B-B68D8FCD5189",
+            "numberOfPeriods": 1,
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          }
         },
         {
           "adHocOffers": [],

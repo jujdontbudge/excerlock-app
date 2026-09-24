@@ -132,6 +132,8 @@ export const tokens = {
     geofence: 'rgba(239,76,0,0.18)',
   },
   a11y: { textScale: 2 },
+  /** Baloo 2's deep descent (0.524em) lifts a single centred line; nudge it down by this share of its size. */
+  optical: { centre: 0.27 },
   motion: {
     /** Four durations: press feedback, UI change, emphasized entrance, and the ambient breathing loop. */
     duration: { press: 100, standard: 240, emphasized: 480, breathe: 3600 },

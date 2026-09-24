@@ -16,7 +16,21 @@ export const planCopy = {
   editSchedule: 'Edit schedule',
   targetSupport: 'Unlocks your apps for the rest of the day',
   stateSupport: 'Apps stay open while you walk',
-  use: 'Use this plan',
+  use: 'Import',
+  trialTitle: 'We want you to try ExcerLock Premium for free',
+  trialCta: 'Try for $0.00',
+  trialPreview: 'Your ExcerLock Home screen',
+  reminderTitle: "We'll send you a reminder before your trial ends",
+  reminderArt: 'A notification bell with one reminder',
+  noPayment: 'No payment due now',
+  goals: {
+    walking: '150% more steps',
+    gym: '150% more time at the gym',
+    lose: 'Lose body fat',
+    gain: 'Build muscle',
+    maintain: 'Stay fit and healthy',
+    screen: '50% less screen time',
+  },
   scheduleLimit:
     'This schedule cannot be saved exactly. Shorten its active times or pause another condition, then try again.',
 } as const;

@@ -24,7 +24,17 @@ import { toggleRule, deleteRule } from './mutations';
 import { SchedulePlanError } from '../../domain/scheduleRepresentability';
 import { useRuntimeStatus } from '../../state/selectors';
 import { useLockListPicker } from '../permissions/useLockListPicker';
-export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit: (id: string) => void }) {
+import { ruleNeedsSetup } from '../setup/useSetupNeeds';
+export function ConditionsScreen({
+  onAdd,
+  onEdit,
+  onNeeds,
+}: {
+  onAdd: () => void;
+  onEdit: (id: string) => void;
+  /** Opens the permission screens when a condition turned on is missing something it needs. */
+  onNeeds?: () => void;
+}) {
   const { rules, lockedApps, migrationNote } = useRulesStore((s) => s.data),
     runtime = useRuntime(),
     { open: openLockList } = useLockListPicker(),
@@ -124,6 +134,7 @@ export function ConditionsScreen({ onAdd, onEdit }: { onAdd: () => void; onEdit:
                       timezone: runtime.clock.timezone(),
                     });
                     setScheduleError(false);
+                    if (value && ruleNeedsSetup({ ...rule, enabled: true })) onNeeds?.();
                   } catch (error) {
                     if (!(error instanceof SchedulePlanError)) throw error;
                     setScheduleError(true);

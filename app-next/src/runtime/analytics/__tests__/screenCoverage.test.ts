@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { preBranch, tail } from '../../../onboarding/flow';
-import { setupSteps } from '../../../onboarding/setupFlow';
 import { semanticScreenName, scrubAnalyticsProps } from '../PostHogAnalyticsAdapter';
 import { createAnalyticsFixture, flushAdapter } from './analyticsFixture';
 
@@ -16,6 +15,10 @@ const appDir = path.resolve(__dirname, '../../../../app');
 const notScreens = new Set(['index', 'dev', 'linked-trace', '_layout']);
 /** Harness-only routes (`RootNavigator` closes them in a prod build); never a `$screen`. */
 const notScreenDirectories = new Set(['diagnostics']);
+
+/** The paywall lands on X1; each screen after it names its step; older installs may still name X3–X5. */
+const setupSteps = ['X1', 'account', 'apps', 'motion', 'location', 'gym', 'X3', 'X4', 'X5'];
+const permissionSteps = ['apps', 'motion', 'location', 'gym'];
 
 const onboardingSteps = [...preBranch, ...tail.filter((step) => step !== 'P'), 'W0', 'W1', 'W2', 'W3', 'G0F', 'G0H', 'G1', 'G2'];
 
@@ -40,7 +43,7 @@ function routeSegments(file: string): string[] {
 
 /** Values a dynamic segment can actually take, from the app's own vocabulary. */
 function valuesFor(segments: string[], param: string): string[] {
-  if (param === 'step') return segments[0] === 'setup' ? [...setupSteps] : onboardingSteps;
+  if (param === 'step') return segments[0] === 'setup' ? setupSteps : segments[0] === 'permissions' ? permissionSteps : onboardingSteps;
   if (param === 'doc') return ['terms', 'privacy'];
   if (param === 'name') return ['screenTime', 'motion', 'location', 'camera', 'notifications'];
   throw new Error(`Add a production value for the new dynamic route segment [${param}]`);

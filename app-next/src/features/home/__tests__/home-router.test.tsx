@@ -34,7 +34,7 @@ test('entitled boot opens Home, tabs navigate and selected apps open the shared 
   );
   const rendered = await r;
   expect(r.getPathname()).toBe('/home');
-  expect(screen.getByRole('header', { name: 'Conditions' })).toBeTruthy();
+  expect(screen.queryByRole('header', { name: 'Conditions' })).toBeNull();
   expect(screen.getByText('Walk 5,000 steps')).toBeTruthy();
   expect(screen.getByLabelText('Locked')).toBeTruthy();
   expect(screen.getByRole('header', { name: /Apps blocked until/ })).toBeTruthy();

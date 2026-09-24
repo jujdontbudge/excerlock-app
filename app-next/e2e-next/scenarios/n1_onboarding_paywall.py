@@ -38,8 +38,7 @@ class N1OnboardingPaywall(Scenario):
             result = walk.run(stop_at='P')
             steps = result['steps']
             expected = ['O01', 'O02', 'O03', 'O07', 'O04', 'O05', 'O06', 'O08', 'O22', 'O21', 'O09', 'O10', 'O11', 'O12', 'O13',
-                        'O14', 'O15', 'O16', 'O17', 'O18', 'O20', 'W0', 'W1', 'W2', 'W3', 'S1', 'S3', 'S3b', 'S3c', 'T1',
-                        'T2', 'T3', 'T4', 'P']
+                        'O14', 'O15', 'O16', 'O17', 'O18', 'O20', 'W0', 'W1', 'W2', 'W3', 'S1', 'S3', 'S3b', 'S3c', 'S3d', 'P']
             if self.activity == 'Gym':
                 start = expected.index('W0')
                 expected[start:start + 4] = ['G0F', 'G0H', 'G1']
@@ -189,7 +188,7 @@ class N1OnboardingPaywall(Scenario):
             plans = [label for label in labels
                      if re.search(r'annual|monthly|weekly|lifetime|year|month|week', label, re.I)
                      and '$' not in label and len(label) < 60]
-        cta = next((label for label in labels if label in {'Start free trial', 'Continue'}), '')
+        cta = next((label for label in labels if label in {'Start for free', 'Continue'}), '')
         title = next((label for label in labels if label in PAYWALL_TITLES), '')
         return {
             'title': title,

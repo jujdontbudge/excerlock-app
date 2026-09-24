@@ -15,3 +15,14 @@ Upstream [license](https://github.com/simple-icons/simple-icons/blob/develop/LIC
 App tiles, gradient backgrounds, hourglass badges, native schedule text/card, gym glyph and timeline remain independent components. This implements the explicitly approved onboarding mockup composition; no raster image or whole-screen screenshot is used by the app. No image-generation prompt was used. Geometry/colors are recorded in `illustrationTokens.welcome` (`src/design-system/illustrationTokens.ts`).
 
 Validation: native rendering at the target iPhone size, motion recording, local sign-in/legal interactions, large-text and Reduced Motion checks are recorded in `app-next/evidence/O01-reference/`.
+
+## Paywall locked-app field
+
+On September 23, 2026 Johan asked for the onboarding paywall's phone to sit on "a bunch of app icons locked like in the first onboarding screen but many more of them, basically any addiction or social app". Eleven more paths were copied verbatim from Simple Icons into `brandPaths.ts` the same day, with the same license and brand disclaimer:
+
+- snapchat, x, facebook, reddit, netflix, twitch, discord, pinterest, threads, tinder, roblox
+- from `https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/<name>.svg`
+
+Later that day Johan asked that no app appear twice on the wall, so ten more were copied the same way: bereal, spotify, kick, tumblr, hbomax, playstation, steam, epicgames, 9gag (stored as `ninegag`), crunchyroll.
+
+Messaging apps (WhatsApp, Telegram) are left out of that wall on Johan's direction. Tile fills and glyph colours are recorded in `illustrationTokens.paywall.brands`; `LockedAppField` (in `features/subscription/`) lays them out.

@@ -2,7 +2,7 @@ import { pathFor, nextStep, prevStep, progressFraction, resumeStep } from '../fl
 const pre = Array.from({ length: 20 }, (_, i) => 'O' + String(i + 1).padStart(2, '0')).filter(
   (step) => step !== 'O07' && step !== 'O19',
 ).flatMap(step => step === 'O03' ? [step, 'O07'] : step === 'O08' ? [step, 'O22', 'O21'] : [step]);
-const tail = ['S1', 'S2', 'S3', 'S3b', 'S3c', 'T1', 'T2', 'T3', 'T4', 'P'];
+const tail = ['S1', 'S2', 'S3', 'S3b', 'S3c', 'S3d', 'P'];
 test.each([
   [{ activity: 'walking', walkingMode: 'steps' }, ['W1', 'W2', 'W3']],
   [{ activity: 'walking', walkingMode: 'state' }, ['W1', 'W2']],
@@ -22,6 +22,9 @@ test.each([
     if (i) expect(progressFraction(state)).toBeGreaterThan(progressFraction({ step: expected[i - 1], answers }));
   });
   expect(progressFraction({ step: 'P', answers })).toBe(1);
+});
+test('an install saved on a retired trial screen resumes at the paywall', () => {
+  expect(resumeStep({ step: 'T3', answers: { activity: 'walking' } })).toBe('P');
 });
 test('corrupt resume state falls back safely to O01', () => {
   expect(resumeStep(null)).toBe('O01');

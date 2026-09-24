@@ -137,6 +137,9 @@ exports[`the functional orange and supporting text meet WCAG AA on the canvas 1`
       "dismiss": 800,
     },
   },
+  "optical": {
+    "centre": 0.27,
+  },
   "radius": {
     "card": 20,
     "field": 16,

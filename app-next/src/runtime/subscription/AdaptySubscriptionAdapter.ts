@@ -14,6 +14,7 @@ import type { RunIdentityOperation } from '../auth/identityBarrier';
 import { mapEntitlement, reduceEntitlement, type ProfileSource } from './entitlementMapping';
 import { ADAPTY_FALLBACK_FILE_NAME } from './fallbackPaywall';
 import { deviceLocale, pickRemoteConfig } from './remoteConfig';
+import { monthlyPrice } from './monthlyPrice';
 import type { AdaptyFlow, AdaptyPaywallProduct, AdaptyProfile, AdaptySdkPort } from './adaptySdk';
 
 const INTEGRATION_KEY = 'posthog_distinct_user_id';
@@ -276,6 +277,8 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
       detail: product.localizedDescription,
       localizedPrice: product.price?.localizedString ?? '',
       localizedPeriod: period,
+      localizedMonthlyPrice: monthlyPrice(product.price, product.subscription?.subscriptionPeriod, deviceLocale()),
+      periodUnit: product.subscription?.subscriptionPeriod?.unit ?? null,
       offerLabel: free ? `${free.numberOfPeriods} ${free.subscriptionPeriod.unit} free` : null,
       recommended: recommendedProductId === product.vendorProductId,
     };

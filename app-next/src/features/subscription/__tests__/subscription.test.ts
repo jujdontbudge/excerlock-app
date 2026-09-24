@@ -14,12 +14,12 @@ test('fake offer and restore outcomes are explicit and controllable', async () =
   expect(entitlementStore.getState().data.entitlement.status).toBe('active');
   r.dispose();
 });
-test('entitled users resume setup until it is complete', () => {
-  expect(bootDestination(false, 'P', 'trial', false, 'X2')).toBe('/setup/X2');
-  expect(bootDestination(true, 'P', 'active', true, 'done')).toBe('/(tabs)/home');
-  expect(bootDestination(true, 'P', 'expired', true, 'done')).toBe('/(tabs)/home');
-  expect(bootDestination(true, 'P', 'billingIssue', true, 'done')).toBe('/(tabs)/home');
-  expect(bootDestination(true, 'P', 'unknown', true, 'done')).toBe('/(tabs)/home');
-  expect(bootDestination(true, 'P', 'expired', false, 'X2')).toBe('/paywall');
-  expect(bootDestination(true, 'P', 'active', false, 'X2')).toBe('/setup/X2');
+test('entitled users go home; one who has not finished setup goes to sign-in and permissions', () => {
+  expect(bootDestination(false, 'P', 'trial', false)).toBe('/setup/X1');
+  expect(bootDestination(true, 'P', 'active', false)).toBe('/setup/X1');
+  expect(bootDestination(true, 'P', 'active', true)).toBe('/(tabs)/home');
+  expect(bootDestination(true, 'P', 'expired', true)).toBe('/(tabs)/home');
+  expect(bootDestination(true, 'P', 'billingIssue', true)).toBe('/(tabs)/home');
+  expect(bootDestination(true, 'P', 'unknown', true)).toBe('/(tabs)/home');
+  expect(bootDestination(true, 'P', 'expired', false)).toBe('/paywall');
 });

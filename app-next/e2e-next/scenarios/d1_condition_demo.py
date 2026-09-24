@@ -1,4 +1,4 @@
-"""E2E-D1: actual plan commit -> illustrated demo; six variants and every phase.
+"""E2E-D1: actual plan commit -> illustrated demo; seven variants and every phase.
 
 No entitlement/purchase fixture: this is pre-paywall onboarding. The presentation
 seek port is accepted only in preview/dev builds. It cannot mutate a rule or
@@ -21,6 +21,7 @@ CASES = [
     ('walk-state', 'outside', 'Unlock while walking (Recommended)', [(0.4, 'walking', 'tiktok', False), (1.4, 'walking', 'tiktok', False), (2.2, 'walking', 'tiktok', False), (6, 'blocked', 'shield', True)]),
     ('walk-state', 'treadmill', 'Unlock while walking (Recommended)', [(1, 'prop', 'excerlock', True), (3.5, 'scan', 'excerlock', True), (6, 'walking', 'tiktok', False), (11, 'blocked', 'shield', True)]),
     ('walk-minutes', 'outside', 'Walk for a set time', [(3, 'walking', 'shield', True), (8, 'unlocked', 'tiktok', False)]),
+    ('gym-presence', 'outside', 'Be at the gym', [(2, 'approach', 'shield', True), (5, 'confirming', 'shield', True), (8, 'unlocked', 'tiktok', False), (12, 'leave', 'shield', True)]),
     ('gym-arrival', 'outside', 'Arrive at the gym', [(2, 'approach', 'shield', True), (5, 'confirming', 'shield', True), (8, 'unlocked', 'tiktok', False), (12, 'leave', 'tiktok', False)]),
     ('gym-minutes', 'outside', 'Spend time at the gym', [(2, 'approach', 'shield', True), (5, 'confirming', 'shield', True), (10, 'counting', 'tiktok', False), (14, 'unlocked', 'tiktok', False), (17, 'leave', 'tiktok', False)]),
 ]
@@ -33,7 +34,8 @@ def matches_state(node: dict, kind: str, place: str, phase: str, phone: str, loc
         'walking': 'Unlocked while you walk' if kind == 'walk-state' else 'Apps are blocked',
         'blocked': 'Apps are blocked', 'approach': 'Apps are blocked',
         'confirming': "Confirming you're here", 'counting': 'Unlocked while at the gym',
-        'unlocked': 'Unlocked for the rest of today', 'leave': 'Unlocked for the rest of today',
+        'unlocked': 'Unlocked while at the gym' if kind == 'gym-presence' else 'Unlocked for the rest of today',
+        'leave': 'Apps are blocked' if kind == 'gym-presence' else 'Unlocked for the rest of today',
     }[phase]
     return (node.get('AXIdentifier') or node.get('AXUniqueId')) == wanted and (node.get('AXLabel') or '').startswith(title)
 
@@ -49,7 +51,7 @@ def has_state(ctx: RunContext, kind: str, place: str, phase: str, phone: str, lo
 
 class D1ConditionDemo(Scenario):
     id = 'E2E-D1'
-    title = 'Every selected condition: plan commit, demo states, hold and live view analytics'
+    title = 'Every selected condition: plan commit, demo states, no hold control and live view analytics'
     lane = 'SIM'
     users = 'NEW'
     fixture = 'fresh-install'
@@ -69,7 +71,7 @@ class D1ConditionDemo(Scenario):
                 continue
             before, source = fixture.persisted_store_state('excerlock-next.rules.v1', ctx.app_container())
             rules = (before or {}).get('rules', [])
-            expected_kind = 'state' if kind == 'walk-state' else 'event' if kind == 'gym-arrival' else 'target'
+            expected_kind = 'state' if kind in ('walk-state', 'gym-presence') else 'event' if kind == 'gym-arrival' else 'target'
             ctx.verdict.check(f'{kind}.{place}.persisted_plan', len(rules) == 1 and rules[0].get('mode', {}).get('kind') == expected_kind,
                               f'Actual S3 commit, source={source}, rule modes={[r.get("mode") for r in rules]}')
             for at, phase, phone, locked in phases:
@@ -78,7 +80,7 @@ class D1ConditionDemo(Scenario):
                 image = ctx.screenshot(f'{index + 1:02d}-{kind}-{place}-{phase}-{at}s', shrink=False)
                 ctx.verdict.check(f'{kind}.{place}.{phase}.{at}s', ok, f'Visible phase={phase}, phone={phone}, locked={locked}', evidence=[str(image)])
             if kind == 'walk-state' and place == 'outside':
-                self.hold_and_record(ctx)
+                self.check_no_hold_and_record(ctx)
             ctx.tap('Continue')
             advanced = ctx.wait_for('We want you to try ExcerLock Premium for free')
             after, _ = fixture.persisted_store_state('excerlock-next.rules.v1', ctx.app_container())
@@ -119,43 +121,23 @@ class D1ConditionDemo(Scenario):
                 if not ctx.wait_for('Set your walking goal') or not ctx.tap('Continue'):
                     return False
         else:
-            if not ctx.wait_for('What counts at the gym?') or not ctx.tap(mode) or not ctx.tap('Continue'):
+            if not ctx.wait_for('What unlocks your screen time?') or not ctx.tap(mode) or not ctx.tap('Continue'):
                 return False
             if kind == 'gym-minutes':
                 if not ctx.wait_for('How long at the gym unlocks your phone?') or not ctx.tap('Continue'):
                     return False
         if not ctx.wait_for('When should blocking be active?') or not ctx.tap('Continue'):
             return False
-        return ctx.wait_for('Your plan is ready', timeout=25) and ctx.tap('Use this plan') and ctx.wait_for('Continue')
+        return ctx.wait_for('Your plan is ready', timeout=25) and ctx.tap('Import') and ctx.wait_for('Continue')
 
-    def hold_and_record(self, ctx: RunContext) -> None:
+    def check_no_hold_and_record(self, ctx: RunContext) -> None:
+        # The walking demo plays by itself; there is no manual hold control under Continue.
         ctx.sim.open_url('excerlock://onboarding/S3b?demoTime=6&demoPause=1')
         if not has_state(ctx, 'walk-state', 'outside', 'blocked', 'shield', True):
-            ctx.verdict.check('hold.precondition', False, 'Stopped shield was not visible')
+            ctx.verdict.check('demo.precondition', False, 'Stopped shield was not visible')
             return
-        node = ctx.find('Continue walking. Press and hold to walk. Release to stop.')
-        if not node:
-            ctx.verdict.check('hold.control', False, 'Accessible hold control not found')
-            return
-        frame = node['frame']
-        process = subprocess.Popen(['idb', 'ui', 'tap', '--udid', ctx.udid, '--duration', '3.5',
-                                    str(round(frame['x'] + frame['width'] / 2)), str(round(frame['y'] + frame['height'] / 2))],
-                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        try:
-            time.sleep(0.5)
-            held = has_state(ctx, 'walk-state', 'outside', 'walking', 'tiktok', False)
-            ctx.screenshot('hold-walking', shrink=False)
-            ctx.verdict.check('hold.press_unlocks', held, 'A real sustained native touch shows walking and TikTok')
-            process.wait(timeout=10)
-            released = has_state(ctx, 'walk-state', 'outside', 'blocked', 'shield', True)
-            ctx.screenshot('hold-released', shrink=False)
-            ctx.verdict.check('hold.release_locks', released, 'Touch-up shows stopped character and shield')
-            time.sleep(3.2)
-            ctx.verdict.check('hold.auto_resume', has_state(ctx, 'walk-state', 'outside', 'walking', 'tiktok', False), 'After three stopped seconds, auto walking resumes')
-        finally:
-            if process.poll() is None:
-                process.terminate()
-                process.wait(timeout=5)
+        ctx.verdict.check('demo.no_hold_control', ctx.find('Continue walking. Press and hold to walk. Release to stop.', timeout=1.5) is None,
+                          'The hold-to-walk control is gone')
         ctx.sim.open_url('excerlock://onboarding/S3b?demoTime=0&demoPause=0')
         with ctx.recording('walking-10s'):
             time.sleep(10)

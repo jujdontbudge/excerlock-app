@@ -41,8 +41,6 @@ export const previewCopy = {
   empty: 'Your first condition',
   emptyBody: 'Choose an activity to start your plan.',
   add: 'Add condition',
-  promptTitle: 'Allow Health access?',
-  promptBody: 'This preview changes local fake data only.',
   shellBody: 'Scroll this content while the footer stays within reach.',
   chart: 'Steps this week',
   trend: 'Screen time trend',

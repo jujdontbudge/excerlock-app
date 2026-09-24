@@ -1,0 +1,18 @@
+import { planCopy as c } from '../../content/plan';
+import { choiceQuestions } from '../../content/onboardingChoices';
+import { IconName } from '../../icons/Icon';
+import { Answers } from '../../onboarding/types';
+
+export type PlanGoal = { id: 'movement' | 'body' | 'screen'; text: string; icon: IconName };
+
+/** Motivating goals mirrored from the user's own onboarding answers; screen time is always halved. */
+export function planGoals(answers: Answers): PlanGoal[] {
+  const activity = answers.activity === 'gym' ? 'gym' : 'walking';
+  const body = answers.bodyGoal === 'lose' || answers.bodyGoal === 'gain' || answers.bodyGoal === 'maintain' ? answers.bodyGoal : null;
+  const bodyIcon = choiceQuestions.O22.options.find((option) => option.id === body)?.icon as IconName;
+  return [
+    { id: 'movement', text: c.goals[activity], icon: activity },
+    ...(body ? [{ id: 'body' as const, text: c.goals[body], icon: bodyIcon }] : []),
+    { id: 'screen', text: c.goals.screen, icon: 'clock' },
+  ];
+}

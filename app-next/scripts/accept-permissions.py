@@ -5,7 +5,7 @@ out=ROOT/'evidence/T16'
 def go(path):open_url('excerlock://'+path);time.sleep(1.2)
 def capture(name):time.sleep(.7);screenshot(out/(name+'.png'));(out/(name+'.json')).write_text(json.dumps(tree()));print('PASS',name,flush=True)
 def start(activity):
- go('dev?scenario=fresh-install');go('onboarding/O20');tap(activity);go('onboarding/T4');tap('Continue');find('Choose your plan');tap('Start free trial');find('Let ExcerLock block your apps')
+ go('dev?scenario=fresh-install');go('onboarding/O20');tap(activity);go('onboarding/T4');tap('Continue');find('Choose your plan');tap('Start for free');find('Let ExcerLock block your apps')
 with recording(out/'permission-choices.mp4'):
  for activity,kind,label,prompt in [('Walking','screenTime','Allow Screen Time','Let ExcerLock manage Screen Time?'),('Walking','motion','Allow Motion & Fitness','Let ExcerLock use Motion & Fitness?'),('Running','health','Allow Health access','Let ExcerLock read your workouts?'),('Gym','location','Allow location while using the app','Let ExcerLock use your location?')]:
   for choice in ['Don’t allow','Allow']:

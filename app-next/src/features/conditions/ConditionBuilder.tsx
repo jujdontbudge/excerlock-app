@@ -16,8 +16,8 @@ import { SetupPresentation } from '../../design-system/SetupPresentation';
 import { ConfirmSheet } from './ConfirmSheet';
 import { useBuilder } from './useBuilder';
 import { BuilderGymStep } from '../gym-picker/BuilderGymStep';
-export function ConditionBuilder({ id, onClose }: { id?: string; onClose: () => void }) {
-  const f = useBuilder(id, onClose),
+export function ConditionBuilder({ id, onClose, onNeeds }: { id?: string; onClose: () => void; onNeeds?: () => void }) {
+  const f = useBuilder(id, onClose, onNeeds),
     m = useMotion(),
     [wheel, setWheel] = useState<'start' | 'end' | null>(null);
   const branch = !['O20', 'S1', 'S3', 'GPlace'].includes(f.step);

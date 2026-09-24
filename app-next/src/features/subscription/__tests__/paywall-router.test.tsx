@@ -41,9 +41,10 @@ async function mount(scenario = 'fresh-install', initialUrl = '/paywall') {
 }
 afterEach(() => jest.useRealTimers());
 test('hard paywall removes onboarding history and refuses back navigation', async () => {
-  const { result } = await mount('fresh-install', '/onboarding/T4');
+  const { result } = await mount('fresh-install', '/onboarding/S3d');
   await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
-  expect(result.getPathname()).toBe('/paywall');
+  await fireEvent.press(await screen.findByRole('button', { name: 'Allow' }));
+  await waitFor(() => expect(result.getPathname()).toBe('/paywall'));
   expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
   expect(router.canGoBack()).toBe(false);
   try {
@@ -55,6 +56,12 @@ test('hard paywall removes onboarding history and refuses back navigation', asyn
     expect(String(error)).toContain('GO_BACK');
   }
   expect(result.getPathname()).toBe('/paywall');
+});
+test('the onboarding paywall back button returns to the trial reminder', async () => {
+  const { result } = await mount('fresh-install', '/paywall');
+  await userEvent.press(await screen.findByRole('button', { name: 'Back' }));
+  await waitFor(() => expect(result.getPathname()).toBe('/onboarding/S3d'));
+  expect(onboardingStore.getState().data).toMatchObject({ step: 'S3d', complete: false });
 });
 test.each(['expired', 'billingIssue', 'unknown'] as const)(
   'completed setup with %s entitlement boots home and keeps account deletion reachable',
@@ -146,12 +153,14 @@ test.each(['expired', 'billingIssue', 'unknown'] as const)(
     await waitFor(() => expect(routed.getPathname()).toBe('/home'));
   },
 );
-test('purchase uses the selected fetched product, grants trial and resumes setup', async () => {
+test('purchase uses the selected fetched product, grants trial and leads to sign-in and permissions', async () => {
   const { result } = await mount();
-  await fireEvent.press(await screen.findByRole('button', { name: 'Start free trial' }));
+  await fireEvent.press(await screen.findByRole('button', { name: 'Start for free' }));
   await act(async () => {});
   expect(entitlementStore.getState().data.entitlement.status).toBe('trial');
-  expect(result.getPathname()).toBe('/setup/X1');
+  await waitFor(() => expect(result.getPathname()).toBe('/setup/X1'));
+  expect(screen.getByText('Setup')).toBeTruthy();
+  expect(onboardingStore.getState().data).toMatchObject({ complete: true, setupComplete: false });
 });
 test.each(['restored', 'notFound'] as const)('restore handles %s without real purchases', async (outcome) => {
   const { result, runtime } = await mount('trial-expired');
@@ -172,7 +181,7 @@ test('billing errors stay on the paywall and can retry', async () => {
   expect(
     screen.getByText('There is a billing issue with your subscription. Restore access or choose a plan.'),
   ).toBeTruthy();
-  await userEvent.press(await screen.findByRole('button', { name: 'Start free trial' }));
+  await userEvent.press(await screen.findByRole('button', { name: 'Start for free' }));
   await act(async () => {});
   expect(screen.getByText('Purchase could not finish. Please retry.')).toBeTruthy();
   expect(result.getPathname()).toBe('/paywall');

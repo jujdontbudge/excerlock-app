@@ -4,6 +4,7 @@ import Animated, { SharedValue, useAnimatedProps } from 'react-native-reanimated
 import { tokens as t } from '../../../design-system/tokens';
 import { illustrationTokens as art } from '../../../design-system/illustrationTokens';
 import { DemoState, Scenario, snapshot } from './model';
+import { demoRows } from './layout';
 // G's generic extension exposes the native Fabric matrix prop to Reanimated.
 const Group = Animated.createAnimatedComponent(G<{ matrix?: number[] }>);
 const Ring = Animated.createAnimatedComponent(Circle);
@@ -27,7 +28,7 @@ export function GymMap({ clock, scenario }: { clock: SharedValue<DemoState>; sce
   }));
   return (
     <View style={styles.map}>
-      <Svg width={170} height={312} viewBox="0 0 170 328">
+      <Svg width={170} height={demoRows.columnHeight} viewBox="0 0 170 328">
         <Rect width={170} height={328} fill={art.demo.map} />
         {[12, 132, 236].map((y) => (
           <G key={y}>
@@ -86,9 +87,9 @@ const styles = StyleSheet.create({
   map: {
     position: 'absolute',
     left: 14,
-    top: 76,
+    top: demoRows.column,
     width: 170,
-    height: 312,
+    height: demoRows.columnHeight,
     borderRadius: art.corner.phone,
     overflow: 'hidden',
     backgroundColor: art.demo.map,

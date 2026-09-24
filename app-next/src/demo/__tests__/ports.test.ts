@@ -11,6 +11,9 @@ test('fake permission and app-picker prompts resolve through local controls', as
   expect(await permission).toBe('denied');
   runtime.dev.setPromptMode('grant');
   expect(await runtime.steps.request()).toBe('granted');
+  // The picker refuses while Screen Time is off, as the native port does.
+  await expect(runtime.screenTime.presentAppPicker()).rejects.toThrow('Screen Time access is off');
+  expect(await runtime.screenTime.requestAuthorization()).toBe('granted');
   const picker = runtime.screenTime.presentAppPicker();
   const selection = { handle: { token: 'opaque-fake' }, isEmpty: false };
   runtime.dev.resolvePrompt(selection);

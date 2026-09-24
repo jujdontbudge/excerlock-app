@@ -6,37 +6,10 @@ skill_search = true
 
 [skills]
 
-[mcp_servers."openaiDeveloperDocs"]
-enabled = true
-
 [mcp_servers."node_repl"]
 enabled = true
 
-[mcp_servers."mac-computer-use"]
-enabled = true
-
-[mcp_servers."open-computer-use"]
-enabled = true
-
 [mcp_servers."computer-use"]
-enabled = true
-
-[mcp_servers."expo"]
-enabled = false
-
-[mcp_servers."xcodebuildmcp"]
-enabled = true
-
-[mcp_servers."screensdesign"]
-enabled = true
-
-[mcp_servers."playwright-headless"]
-enabled = true
-
-[mcp_servers."playwright-youtube"]
-enabled = true
-
-[mcp_servers."figma"]
 enabled = true
 
 [[skills.config]]
@@ -126,3 +99,28 @@ enabled = false
 [[skills.config]]
 path = "/Users/johansardar/.agents/skills/clerk-webhooks"
 enabled = false
+
+# Research MCPs + local Mem0 (added 2026-09-23)
+[mcp_servers."firecrawl"]
+command = "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3"
+args = ["/Users/johansardar/.local/share/agent-capabilities/mcp-launch.py", "firecrawl"]
+
+[mcp_servers."apify"]
+command = "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3"
+args = ["/Users/johansardar/.local/share/agent-capabilities/mcp-launch.py", "apify"]
+
+[mcp_servers."youtube-transcript"]
+command = "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3"
+args = ["/Users/johansardar/.local/share/agent-capabilities/mcp-launch.py", "youtube-transcript"]
+
+[mcp_servers."playwright-headless"]
+command = "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3"
+args = ["/Users/johansardar/.local/share/agent-capabilities/mcp-launch.py", "playwright-headless"]
+
+[mcp_servers."exa"]
+url = "https://mcp.exa.ai/mcp"
+
+[mcp_servers."mem0"]
+command = "/Users/johansardar/.local/share/firstmate-projects/mem0/.venv/bin/python"
+args = ["/Users/johansardar/.local/share/firstmate-projects/mem0/mcp_server.py"]
+env = { MEM0_CLIENT = "codex", PYTHONUNBUFFERED = "1" }

@@ -154,8 +154,8 @@ class OnboardingIdentification(unittest.TestCase):
         self.assertEqual(identify(['How should walking unlock your apps?', 'Choose the kind of nudge you need.'])[0],
                          'W2')
         self.assertEqual(identify(['Your plan is ready', 'A little movement. More room for your life.'])[0], 'S3')
-        self.assertEqual(identify(["We'll remind you before it ends", 'A heads-up, so you can decide what comes next.'])[0],
-                         'T2')
+        self.assertEqual(identify(["We'll send you a reminder before your trial ends", 'No payment due now'])[0],
+                         'S3d')
         self.assertEqual(identify(['Choose your plan', 'Build a healthier relationship with your phone.'])[0], 'P')
 
     def test_unknown_screen_is_not_guessed(self):
