@@ -24,7 +24,7 @@ and DNS now points at GCE. `deploy/deploy.sh` is host-agnostic: it only needs
 The same box serves the public site; `deploy/site.sh` and `deploy/deploy.sh`
 both install `deploy/Caddyfile` over `/etc/caddy/Caddyfile`, so every vhost must
 live in that one file. `/etc/excerlock/env` carries the Supabase identity
-variables (`SUPABASE_URL`, `SUPABASE_JWT_JWKS_URL`, `SUPABASE_SERVICE_ROLE_KEY`)
+variables (`SUPABASE_URL`, `SUPABASE_JWKS_URL`, `SUPABASE_SERVICE_ROLE_KEY`)
 in addition to the baseline below; `RESEND_API_KEY` is unset, so incident-report
 emails are skipped while persistence still succeeds (`server/src/incidents/notify.ts`).
 

@@ -2,6 +2,8 @@
 
 ## Index
 
+- [0045: Verify through the real app and static checks; no tests, no comments](0045-verification-over-tests-and-no-comments.md) — **accepted**.
+- [0044: One lean agent context shared by Claude Code, Pi and Hermes](0044-lean-cross-harness-agent-context.md) — **accepted**.
 - [0043: Sign-in and each condition's permissions follow the paywall; Home keeps one reminder card](0043-sign-in-and-permissions-after-the-paywall.md) — **accepted**.
 - [0042: The first App Store binary carries an OTA-ready sensor surface and a JS-callable review sheet](0042-ota-ready-native-sensor-surface-and-review-port.md) — **accepted**.
 - [0041: The raw stream corroborates Apple's walking legs and confirms stops](0041-raw-stream-corroborates-apple-and-confirms-stops.md) — **accepted**.
@@ -22,14 +24,14 @@
 - [0026: Isolate the phone motion recorder from the shipping app](0026-isolate-phone-motion-recorder.md) — **accepted**.
 - [0025: Main is the release source](0025-main-is-the-release-source.md) — **accepted**.
 
-- [0008: Share installed agent capability inventory](0008-share-installed-agent-capability-inventory.md) — **accepted**.
+- [0008: Share installed agent capability inventory](0008-share-installed-agent-capability-inventory.md) — **superseded** by 0044.
 
-- [0007: Restore kept capabilities across coding agents](0007-restore-kept-agent-capabilities.md) — **accepted**.
+- [0007: Restore kept capabilities across coding agents](0007-restore-kept-agent-capabilities.md) — **superseded** by 0044.
 
 - [0001: Coordinate releases and retire agent work conservatively](0001-coordinate-releases-and-retire-agent-work.md) — **accepted**.
 - [0002: Minimal default agent context](0002-minimal-agent-context.md) — **superseded** by 0007.
 - [0003: Four explicit on-demand skills](0003-four-on-demand-skills.md) — **superseded** by 0004.
-- [0004: Share core skills across agent CLIs](0004-share-core-skills-across-agent-clis.md) — **accepted**.
+- [0004: Share core skills across agent CLIs](0004-share-core-skills-across-agent-clis.md) — **superseded** by 0044.
 - [0005: Prefer CLIs for iOS and service operations](0005-cli-first-ios-and-service-tooling.md) — **accepted**.
 - [0006: Route web extraction by source type](0006-route-web-extraction-by-source-type.md) — **accepted**.
 - [0023: Honest release reviewer preset](0023-reviewer-preset.md) — **accepted**.

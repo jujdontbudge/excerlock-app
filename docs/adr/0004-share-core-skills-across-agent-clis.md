@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-09-09
 ---
 
@@ -26,3 +26,5 @@ A shared package avoids diverging copies, while descriptions still consume some 
 - [Agent context](../agents/context.md)
 - [Repository instructions](../../AGENTS.md)
 - [Shared skill directory](../../.agents/skills/)
+
+Superseded by [ADR 0044](0044-lean-cross-harness-agent-context.md).

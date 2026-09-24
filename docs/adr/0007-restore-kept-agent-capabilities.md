@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-09-09
 ---
 
@@ -22,3 +22,5 @@ Skill descriptions and enabled integration schemas can increase startup context.
 - [0002: superseded](0002-minimal-agent-context.md)
 - [0004: amended](0004-share-core-skills-across-agent-clis.md)
 - [Agent context](../agents/context.md)
+
+Superseded by [ADR 0044](0044-lean-cross-harness-agent-context.md).

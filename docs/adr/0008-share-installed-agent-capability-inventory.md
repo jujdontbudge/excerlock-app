@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-09-09
 ---
 
@@ -25,3 +25,5 @@ More available descriptions and MCP tools can increase context and startup work.
 ## Amendment: prevent unsolicited authentication tabs (2026-09-09)
 
 Enabling unauthenticated Higgsfield and SideShift transports caused repeated browser login tabs. Remove both from automatic MCP startup in all configured clients and block their names in the shared launcher so stale sessions cannot reopen login flows. Terminated the observed matching transport process. Availability must not imply automatic interactive authentication; these services require deliberate opt-in before reconnecting. The remaining shared inventory is 22 configured MCP services.
+
+Superseded by [ADR 0044](0044-lean-cross-harness-agent-context.md).

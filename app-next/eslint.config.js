@@ -4,14 +4,12 @@ module.exports = defineConfig([
   expo,
   {
     files: ['src/**/*.tsx'],
-    ignores: ['**/__tests__/**'],
     plugins: { a11y: require('./eslint-a11y.cjs') },
     rules: { 'a11y/named-controls': 'error' },
   },
   { ignores: ['ios/**', 'build/**', 'evidence/**', 'coverage/**', 'dist/**'] },
   {
     files: ['src/**/*.{ts,tsx}'],
-    ignores: ['**/__tests__/**'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -26,7 +24,7 @@ module.exports = defineConfig([
   },
   {
     files: ['src/features/**/*.{ts,tsx}', 'src/design-system/**/*.{ts,tsx}'],
-    ignores: ['**/tokens.ts', 'src/design-system/illustrationTokens.ts', '**/__tests__/**'],
+    ignores: ['**/tokens.ts', 'src/design-system/illustrationTokens.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',

@@ -1,18 +1,6 @@
 {
   "version": 1,
   "skills": {
-    "adapty-sdk-integration": {
-      "source": "adaptyteam/adapty-sdk-integration-skill",
-      "sourceType": "github",
-      "skillPath": "skills/adapty-sdk-integration/SKILL.md",
-      "computedHash": "8ae8eecccf4b25b7bf28b9f4e0e20ed40561c00d506da67bd588bf6cac6eb5a1"
-    },
-    "ads-manager": {
-      "source": "adaptyteam/adapty-sdk-integration-skill",
-      "sourceType": "github",
-      "skillPath": "skills/ads-manager/SKILL.md",
-      "computedHash": "0a5c51e9b44223f003773045983bb74853169fb7e03de772c895a37cc6a1e9b8"
-    },
     "screensdesign-data": {
       "source": "screensdesign-com/screensdesign-agent-skill",
       "sourceType": "github",

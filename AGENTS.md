@@ -1,28 +1,52 @@
 # ExcerLock
 
-ExcerLock is an iOS app that helps people earn access to distracting apps through movement and healthy routines. The shipping app is the Expo/React Native project in `app-next/` (not legacy `app/`). Product scope: `excerlock-app-prd.md`. `main` in `JohanSardar/excerlock-app` is the canonical integration and release branch; see `docs/agents/operations.md` for worktree ownership, release scope, and coordination. Do not overwrite other agents' uncommitted work.
+ExcerLock is an iOS app: people set Conditions (walk, go to the gym) that must be met before their distracting apps unlock. Screen Time enforces the lock on-device.
 
-## Expo and headless iOS development
+- Product words: `CONTEXT.md`. Use them in code, copy, commits and replies.
+- Code shape and import rules: `ARCHITECTURE.md`. Read it before adding or moving code.
+- Decisions: `docs/adr/`. Read the relevant ADR before changing a decided area; record new core decisions from `docs/adr/TEMPLATE.md`.
 
-Read `app-next/package.json`, `app-next/app.config.ts`, and the relevant installed-version Expo documentation at https://docs.expo.dev/ before changing Expo APIs, native configuration, dependencies, or builds. Use the workspace scripts and installed Expo/EAS CLI; do not upgrade Expo or regenerate native projects casually. Discover Xcode schemes, destinations, and simulator IDs rather than guessing. Keep Simulator.app closed; use `xcrun simctl` to boot an available simulator, install and launch an existing app build, capture screenshots, and shut down only your own simulator. Use `idb` for accessibility-driven interaction. **Opening or booting a simulator is not a reason to rebuild.** Reuse an already installed app or existing build artifact; build only if the required app/artifact is missing, incompatible with the change, or tests require a new binary. Prefer incremental builds and preserve caches. Never use Maestro or Detox. See `app-next/e2e-next/README.md` for project E2E recipes and `~/.local/share/agent-ios/GUIDE.md` for headless Xcode commands.
+## Layout
 
-For behavior changes, write a failing test first, run focused tests/checks, and exercise the visible behavior on a simulator before TestFlight; assert server effects where relevant. For presentation-only changes, inspect the affected screen and capture a screenshot. Never report blocked verification as passed.
+| Path | What |
+|---|---|
+| `app-next/` | The shipping app: Expo SDK 57, React Native 0.86, Expo Router, Swift targets and modules. |
+| `server/` | Fastify API at `https://api.excerlock.com`: identity, subscription webhooks, support and incidents. Earning and lock logic stay on-device. |
+| `packages/` | Shared workspace packages: `analytics-events`, `eslint-plugin-excerlock`. |
+| `deploy/` | Production VM, Caddy and the deploy script. |
+| `tools/` | Research recorders and image generation. Not shipped. |
 
-## UI design principles
+## Verify
 
-Use `app-next/src/design-system/tokens.ts` as the UI token source and reuse existing design-system components. Artwork uses `illustrationTokens.ts`; do not import illustration tokens into UI chrome. Light, warm, orange-to-ivory gradient screens (`ScreenShell`), never dark or flat-white screens. Cards and controls have black outlines, white fills and rounded corners; avoid grey card borders and card shadows. Orange is for primary actions, selected fills and icon accents. UI text is near-black or secondary grey on light surfaces, white on orange. Orange text is reserved for one hero metric per screen, one onboarding-headline emphasis word, or the Analytics “Today” caption. No emoji or multicolour illustration in UI chrome.
+1. `npm run typecheck` and `npm run lint --workspace app-next` from the repo root. The repo has no tests by design (`ARCHITECTURE.md` rule 7).
+2. Behavior or UI change: run the app on a simulator, reach the screen the way a user would, and capture a screenshot.
+3. Server change: exercise the route locally and assert its effect in the database.
+4. Say exactly what you verified. Report blocked verification as blocked.
 
-Use the existing type roles (`metric`, `display`, `metricSmall`, `section`, `body`, `label`, `support`, `micro`), spacing tokens (4/8/12/16/24/32), 24-point page gutters, 56-point primary controls and 44-point minimum inline touch targets. Prefer one centred hero number followed by tiles, chart, and lists. Reuse `PrimaryButton`, `SecondaryButton`, `TextField`, `SegmentedControl`, `SettingsGroup`/`SettingsRow`, `ChoiceRow`/`ActivityCard`, `BackButton`, and `CloseButton` instead of restyling them. Selection uses orange outline on app surfaces and solid orange with white text for onboarding/setup choices. Route motion through `app-next/src/motion` so Reduce Motion is respected. The design guardrail is `guardrails/design-system.test.ts`. For new visuals, follow established patterns in the app; ask before inventing a conflicting style.
+## iOS simulator
 
-## Architecture and server
+Work headless. Keep Simulator.app closed and drive everything with `xcrun simctl` (boot, install, launch, screenshot) and `idb` (accessibility taps and text). Reuse the installed app or an existing build. Build only when the binary is missing or native code changed, and keep caches. Discover schemes and simulator IDs rather than guessing them. Shut down only simulators you booted. Headless Xcode commands: `~/.local/share/agent-ios/GUIDE.md`.
 
-Before architectural changes, read relevant `docs/adr/` decisions; record new core decisions with `docs/adr/TEMPLATE.md`, preserving superseded records. The Fastify API lives in `server/` at `https://api.excerlock.com`; the app's earning and screen-time balance logic stays on-device. The server handles identity, subscription webhooks/mirroring, support/incidents and other API workflows. Inspect routes and migrations in `server/` before altering contracts. Do not put credentials in the repository or send health/location/screen-time details to analytics.
+## UI
 
-**Production VPS is Google Compute Engine, not Azure or AWS:** instance `excerlock-api` in `us-central1-a`, at `34.134.201.129` as last documented in `deploy/README.md`. Azure was the retired original VM; re-check DNS and current host before connecting. Connect with `ssh -i ~/.ssh/google_compute_engine johansardar@34.134.201.129` after verifying the host key. Debian, Node, local PostgreSQL, systemd and Caddy run the API; the public site shares the box and `deploy/Caddyfile`. Read `deploy/README.md` before editing the VPS or deploying. Deploy from source with `DEPLOY_HOST=johansardar@34.134.201.129 DEPLOY_SSH_KEY=~/.ssh/google_compute_engine ./deploy/deploy.sh --dry-run`, then `./deploy/deploy.sh` with the same environment only when authorized. The script builds locally, rsyncs artifacts, applies migrations, restarts the service and checks health/readiness; do not hot-edit production source. Check both `/v1/health` and `/v1/ready` locally and at the public URL; health alone does not establish DB readiness. Never expose `/etc/excerlock/env` secrets. For a release, follow `docs/agents/operations.md`: wrap the entire authorized merge-to-health-check sequence in `python3 scripts/agent-ops.py run -- <command>`; the lock is not release authorization.
+Read `app-next/src/design-system/UI-STYLE.md` before touching a screen. Take every value from `app-next/src/design-system/tokens.ts`, and reuse the design-system components. Screens are light orange-to-ivory gradients with black-outlined white cards. Motion goes through `app-next/src/motion`.
 
-## GitHub, integrations and research
+## Authority
 
-GitHub repository: `JohanSardar/excerlock-app`; use `gh` and `docs/agents/issue-tracker.md` for issues and PRs. CI rules: `.github/workflows/ci.yml`. Git push to `main` does not itself deploy or publish.
+These need the user's explicit go-ahead in the current conversation: pushing, merging to `main`, deploying the server, publishing an OTA update, uploading to TestFlight, submitting to App Review, sending email, and changing production data or third-party dashboards. `main` in `JohanSardar/excerlock-app` is the release source. Run authorized releases under the release lock described in `docs/agents/operations.md`. Leave other agents' uncommitted work untouched.
 
-- Supabase: identity/JWT and related server configuration; https://supabase.com/docs. Adapty: subscriptions, entitlements, remote paywalls and webhooks; https://adapty.io/docs. PostHog: analytics/feature flags; https://posthog.com/docs. Sentry: errors/diagnostics; https://docs.sentry.io. Resend: transactional email; https://resend.com/docs. Google Cloud: production VM; https://cloud.google.com/compute/docs. Prefer installed-version documentation, local code/configuration, and `docs/agents/service-cli.md` for CLI usage; service access and CLI installation are separate.
-- Research app/market/UI references with the ScreensDesign skill/MCP when useful; use repository research and `docs/adr/` for existing decisions. For known web URLs use `~/.local/bin/agent-web` (guide: `~/.local/share/agent-web/GUIDE.md`); use search for discovery and verify source freshness. Inspect actual dependency source when docs or types cannot explain behavior. Do not assume a configured MCP server or CLI is authenticated.
+## Production
+
+The API runs on Google Compute Engine: instance `excerlock-api` in `us-central1-a` (Debian, Node, local PostgreSQL, systemd, Caddy). Read `deploy/README.md` before touching it, and deploy only through `deploy/deploy.sh`, dry run first. After a deploy, check both `/v1/health` and `/v1/ready`, locally and at the public URL.
+
+## Privacy and secrets
+
+Keep health, location, step, gym and Screen Time details out of analytics, logs and the server. Keep credentials out of the repository. Refer to secrets by variable name only; never print `/etc/excerlock/env` or `~/.excerlock/env`.
+
+## Services
+
+Use the vendor CLIs listed in `docs/agents/services.md` (Supabase, Sentry, PostHog, EAS, Adapty, `asc`, Resend, `gcloud`, `gh`). Having a CLI installed does not mean you are logged in; check first. Issues and PRs: `docs/agents/issue-tracker.md`. For a known URL use `~/.local/bin/agent-web`. When docs and types do not explain a dependency's behavior, read its source in `node_modules`.
+
+## Skills
+
+`.agents/skills/` holds this repo's skills (`.claude/skills` links to it): `asc` for App Store Connect, `react-native-best-practices` for Reanimated, gestures, SVG and worklets, and `screensdesign-data` for app and UI research.
