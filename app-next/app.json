@@ -12,7 +12,7 @@
       "bundleIdentifier": "com.johansardar.excerlock",
       "appleTeamId": "AX3C2B78YD",
       "supportsTablet": false,
-      "buildNumber": "10"
+      "buildNumber": "11"
     },
     "experiments": {
       "typedRoutes": true,

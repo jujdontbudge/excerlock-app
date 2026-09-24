@@ -58,6 +58,13 @@ class SignedManifestTests(unittest.TestCase):
             ent[key] = True
             with self.assertRaises(ValueError): module.verify_entitlements(bundle, ent, profile, main=False)
 
+    def test_main_healthkit_rejected(self):
+        for key in ['com.apple.developer.healthkit', 'com.apple.developer.healthkit.background-delivery']:
+            bundle, ent, profile = self.fixture()
+            ent[key] = True
+            profile['Entitlements'][key] = True
+            with self.assertRaises(ValueError): module.verify_entitlements(bundle, ent, profile, main=True)
+
     def test_profile_push_mode_and_debug_must_match(self):
         for key, value in [('aps-environment', 'development'), ('get-task-allow', True)]:
             bundle, ent, profile = self.fixture()

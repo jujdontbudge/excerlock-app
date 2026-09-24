@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0044: Ship without HealthKit](0044-ship-without-healthkit.md) — **accepted**.
 - [0042: The first App Store binary carries an OTA-ready sensor surface and a JS-callable review sheet](0042-ota-ready-native-sensor-surface-and-review-port.md) — **accepted**.
 - [0041: The raw stream corroborates Apple's walking legs and confirms stops](0041-raw-stream-corroborates-apple-and-confirms-stops.md) — **accepted**.
 - [0040: Background walking asks for its grants on Home and reports every shield move](0040-background-walking-grants-at-point-of-need.md) — **accepted**.

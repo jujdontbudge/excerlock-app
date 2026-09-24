@@ -40,11 +40,11 @@ pass "ordinary prebuild excludes Linked Recorder research markers"
 # Info.plist keys (§3 step 3) from the generated plist, not app.json.
 # No NSUserTrackingUsageDescription (no ATT prompt) and no
 # CFBundleAlternateIcons (no alternate assets) — their absence is asserted.
-for key in NSMotionUsageDescription NSCameraUsageDescription NSLocationWhenInUseUsageDescription NSLocationAlwaysAndWhenInUseUsageDescription NSLocationAlwaysUsageDescription NSHealthShareUsageDescription NSHealthUpdateUsageDescription NSFaceIDUsageDescription NSPhotoLibraryUsageDescription UIBackgroundModes CFBundleLocalizations; do
+for key in NSMotionUsageDescription NSCameraUsageDescription NSLocationWhenInUseUsageDescription NSLocationAlwaysAndWhenInUseUsageDescription NSLocationAlwaysUsageDescription NSFaceIDUsageDescription NSPhotoLibraryUsageDescription UIBackgroundModes CFBundleLocalizations; do
   count=$(grep -c "<key>$key</key>" "$IOS_DIR/ExcerLock/Info.plist" || true)
   [[ "$count" == "1" ]] || fail "Info.plist key $key count=$count (want 1)"
 done
-for absent in NSUserTrackingUsageDescription CFBundleAlternateIcons; do
+for absent in NSUserTrackingUsageDescription CFBundleAlternateIcons NSHealthShareUsageDescription NSHealthUpdateUsageDescription; do
   count=$(grep -c "<key>$absent</key>" "$IOS_DIR/ExcerLock/Info.plist" || true)
   [[ "$count" == "0" ]] || fail "Info.plist key $absent count=$count (want 0)"
 done
@@ -81,11 +81,13 @@ python3 "$(cd "$(dirname "$0")" && pwd)/verify_signed_manifest.py" "${manifest_a
 check_main() {
   local dump
   dump=$(codesign -d --entitlements :- "$APP" 2>/dev/null) || fail "codesign main failed"
-  for key in com.apple.developer.family-controls com.apple.developer.healthkit com.apple.developer.healthkit.background-delivery com.apple.security.application-groups com.apple.developer.applesignin aps-environment com.apple.developer.associated-domains; do
+  for key in com.apple.developer.family-controls com.apple.security.application-groups com.apple.developer.applesignin aps-environment com.apple.developer.associated-domains; do
     echo "$dump" | grep -q "$key" || fail "main signature missing $key"
   done
   echo "$dump" | grep -q "group.com.johansardar.excerlock" || fail "main signature missing app group value"
-  pass "main signature carries every §1 entitlement"
+  echo "$dump" | grep -q "com.apple.developer.healthkit" && fail "main signature must not carry HealthKit (ADR 0044)"
+  otool -L "$APP/ExcerLock" | grep -q "HealthKit.framework" && fail "main executable must not link HealthKit (ADR 0044)"
+  pass "main signature carries every §1 entitlement and no HealthKit"
 }
 check_appex() {
   local found_plugins=0

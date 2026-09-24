@@ -37,14 +37,12 @@ describe("T01 plugin-order guardrail (app-next)", () => {
     expect(() => readFileSync(join(appNextRoot, "plugins", "withNoPush.js"))).toThrow();
   });
 
-  it("keeps vendor HealthKit immediately before the bootstrap", () => {
-    const config = readJson(join(appNextRoot, "app.json"));
-    const plugins = config.expo?.plugins ?? [];
-    const names = plugins.map(pluginName);
-    const vendor = names.indexOf("@kingstinct/react-native-healthkit");
-    const bootstrap = names.indexOf("./plugins/withHealthKitBackgroundBootstrap");
-    expect(vendor).toBeGreaterThanOrEqual(0);
-    expect(bootstrap).toBe(vendor + 1);
+  it("keeps HealthKit out of the app (App Review Guideline 2.5.1)", () => {
+    const nativeSource = readFileSync(join(appNextRoot, "config", "native.ts"), "utf8");
+    const packageJson = readJson(join(appNextRoot, "package.json"));
+    expect(nativeSource).not.toMatch(/healthkit/i);
+    expect(packageJson.dependencies).not.toHaveProperty("@kingstinct/react-native-healthkit");
+    expect(() => readFileSync(join(appNextRoot, "plugins", "withHealthKitBackgroundBootstrap.js"))).toThrow();
   });
 
   it("mirrors app.json plugin order in config/native.ts", () => {
@@ -55,7 +53,6 @@ describe("T01 plugin-order guardrail (app-next)", () => {
       "./plugins/withMainAppEntitlements",
       "./plugins/withPrivacyManifest",
       "./plugins/withMainAppIntent",
-      "./plugins/withHealthKitBackgroundBootstrap",
       "react-native-device-activity",
       "./modules/excerlock-motion/app.plugin",
       "./modules/excerlock-gait-vision/app.plugin",

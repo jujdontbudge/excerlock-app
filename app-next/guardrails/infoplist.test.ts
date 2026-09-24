@@ -22,8 +22,6 @@ describe("T01 Info.plist guardrail (generated ios/, not config source)", () => {
       "NSLocationWhenInUseUsageDescription",
       "NSLocationAlwaysAndWhenInUseUsageDescription",
       "NSLocationAlwaysUsageDescription",
-      "NSHealthShareUsageDescription",
-      "NSHealthUpdateUsageDescription",
       "NSFaceIDUsageDescription",
       "NSPhotoLibraryUsageDescription",
       "UIBackgroundModes",
@@ -41,6 +39,10 @@ describe("T01 Info.plist guardrail (generated ios/, not config source)", () => {
     // (NSPrivacyTracking=false). No CFBundleAlternateIcons: v1 bundles no
     // alternate icon assets, so any declaration would be phantom.
     expect(count("NSUserTrackingUsageDescription")).toBe(0);
+    // No HealthKit (App Review Guideline 2.5.1): steps come from Core Motion, so
+    // the app declares no Health purpose strings.
+    expect(count("NSHealthShareUsageDescription")).toBe(0);
+    expect(count("NSHealthUpdateUsageDescription")).toBe(0);
     expect(count("CFBundleAlternateIcons")).toBe(0);
     for (const mode of ["location", "fetch"]) {
       expect(text).toContain(`<string>${mode}</string>`);

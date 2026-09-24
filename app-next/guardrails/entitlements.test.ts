@@ -14,8 +14,6 @@ const appNextRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const MAIN_KEYS = [
   "com.apple.developer.family-controls",
-  "com.apple.developer.healthkit",
-  "com.apple.developer.healthkit.background-delivery",
   "com.apple.security.application-groups",
   "com.apple.developer.applesignin",
   "aps-environment",
