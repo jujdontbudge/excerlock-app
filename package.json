@@ -9,7 +9,8 @@
   "workspaces": [
     "server",
     "packages/*",
-    "app-next"
+    "app-next",
+    "tools/excer"
   ],
   "scripts": {
     "postinstall": "patch-package --patch-dir app-next/patches",

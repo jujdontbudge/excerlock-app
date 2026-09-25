@@ -23,3 +23,6 @@ e2e/out/
 work/
 plans/sessions/
 app-next/evidence/
+
+# excer CLI state: proofs, screenshots, Metro log
+/.excer/

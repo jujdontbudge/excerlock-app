@@ -1,0 +1,182 @@
+import { existsSync, statSync } from 'node:fs';
+import { basename, join } from 'node:path';
+import { appRoot, fromRoot, rel, serverRoot } from '../lib/paths.ts';
+import { importsModule, read, walk } from '../lib/files.ts';
+import { verdict, type Check } from './types.ts';
+
+const appSources = () => [...walk(join(appRoot, 'src')), ...walk(join(appRoot, 'app'))];
+
+function onlyOwners(files: string[], module: RegExp, owners: string[]): string[] {
+  return files
+    .filter((file) => importsModule(read(file), module))
+    .map(rel)
+    .filter((file) => !owners.includes(file))
+    .map((file) => `${file} imports ${module.source}; only ${owners.join(', ')} may`);
+}
+
+export const noTests: Check = {
+  name: 'no-tests',
+  why: 'The repository verifies through ./excer, not test suites (ADR 0045).',
+  tier: 'static',
+  run() {
+    const roots = ['app-next', 'server', 'packages', 'tools'].map((dir) => fromRoot(dir));
+    const offenders = roots
+      .flatMap((root) => walk(root))
+      .filter((file) => /\.(test|spec)\.[cm]?[jt]sx?$/.test(file) || file.includes('/__tests__/'))
+      .map(rel);
+    const configs = ['vitest.config.ts', 'jest.config.js', 'app-next/jest.config.js', 'server/vitest.config.ts']
+      .filter((path) => existsSync(fromRoot(path)))
+      .map((path) => `${path} is a test runner config`);
+    return verdict([...offenders.map((file) => `${file} is a test file`), ...configs]);
+  },
+};
+
+export const updatesOwner: Check = {
+  name: 'updates-owner',
+  why: 'Only src/runtime/updates.ts talks to expo-updates, and never through ON_ERROR_RECOVERY (docs/ota.md).',
+  tier: 'static',
+  run() {
+    const owner = 'app-next/src/runtime/updates.ts';
+    const problems = onlyOwners(appSources(), /expo-updates/, [owner]);
+    const source = existsSync(fromRoot(owner)) ? read(fromRoot(owner)) : '';
+    if (!importsModule(source, /expo-updates/)) problems.push(`${owner} must own the expo-updates import`);
+    if (/ON_ERROR_RECOVERY/.test(source)) problems.push(`${owner} uses ON_ERROR_RECOVERY`);
+    if (/import[^;]*(onboarding|paywall|subscriptionport)/i.test(source))
+      problems.push(`${owner} imports paywall or onboarding state; the OTA coordinator takes primitives only`);
+    return verdict(problems);
+  },
+};
+
+export const analyticsEmitter: Check = {
+  name: 'analytics-emitter',
+  why: 'One PostHog emitter per side, so every event passes the registry and privacy filter.',
+  tier: 'static',
+  run() {
+    return verdict([
+      ...onlyOwners(appSources(), /posthog-react-native/, ['app-next/src/runtime/analytics/createPostHogRuntime.ts']),
+      ...onlyOwners(walk(join(serverRoot, 'src')), /posthog-node/, ['server/src/services/analytics.ts']),
+    ]);
+  },
+};
+
+const reviewedFlags = ['paywall_variant', 'review_preset', 'signInRequired'];
+
+export const flagRegistry: Check = {
+  name: 'flag-registry',
+  why: 'PostHog flags an OTA can move are the reviewed set; a new flag is new-submission material (docs/ota.md).',
+  tier: 'static',
+  run() {
+    const adapter = 'app-next/src/runtime/analytics/PostHogAnalyticsAdapter.ts';
+    const union = /export type FlagName =([^;]+);/.exec(read(fromRoot(adapter)))?.[1] ?? '';
+    const flags = [...union.matchAll(/'([^']+)'/g)].map((match) => match[1] ?? '').sort();
+    const problems: string[] = [];
+    if (flags.length === 0) problems.push(`${adapter} no longer declares FlagName`);
+    else if (flags.join() !== reviewedFlags.join())
+      problems.push(
+        `FlagName is [${flags.join(', ')}], reviewed set is [${reviewedFlags.join(', ')}]. Adding a flag needs a new App Store submission; update tools/excer/checks/boundaries.ts only with that release.`,
+      );
+    return verdict(problems);
+  },
+};
+
+export const shieldCopyParity: Check = {
+  name: 'shield-copy-parity',
+  why: 'Swift extension, native writer and TypeScript agree on the shield copy App Group key and causes.',
+  tier: 'static',
+  run() {
+    const reader = read(fromRoot('app-next/targets/ShieldConfiguration/ShieldContent.swift'));
+    const writer = read(fromRoot('app-next/modules/excerlock-enforcement/ios/ShieldCopyOverrides.swift'));
+    const ts = read(fromRoot('app-next/src/runtime/shield/shieldCopyOverrides.ts'));
+    const readerKey = /copyOverridesKey = "([^"]+)"/.exec(reader)?.[1];
+    const writerKey = /excerlockShieldCopyOverridesDefaultsKey = "([^"]+)"/.exec(writer)?.[1];
+    const tsKey = /SHIELD_COPY_OVERRIDES_KEY = '([^']+)'/.exec(ts)?.[1];
+    const problems: string[] = [];
+    if (readerKey !== 'excerlock.shield.copy-overrides.v1') problems.push(`ShieldContent.swift key is ${readerKey}; it is a shipped invariant`);
+    if (writerKey !== readerKey) problems.push(`ShieldCopyOverrides.swift key ${writerKey} differs from ${readerKey}`);
+    if (tsKey !== readerKey) problems.push(`shieldCopyOverrides.ts key ${tsKey} differs from ${readerKey}`);
+    const swiftCauses = [...(/enum ShieldCause[^{]*\{([^}]*)\}/.exec(reader)?.[1] ?? '').matchAll(/case\s+(\w+)/g)]
+      .map((match) => match[1])
+      .sort();
+    const tsCauses = [...(/SHIELD_COPY_CAUSES = \[([^\]]*)\]/.exec(ts)?.[1] ?? '').matchAll(/'(\w+)'/g)]
+      .map((match) => match[1])
+      .sort();
+    if (swiftCauses.length === 0 || swiftCauses.join() !== tsCauses.join())
+      problems.push(`ShieldCause [${swiftCauses.join(', ')}] differs from SHIELD_COPY_CAUSES [${tsCauses.join(', ')}]`);
+    return verdict(problems);
+  },
+};
+
+export const researchIsolation: Check = {
+  name: 'research-isolation',
+  why: 'Recorder and lab research never ship in the App Store app (ADRs 0026–0028).',
+  tier: 'static',
+  run() {
+    const problems: string[] = [];
+    const appJson = JSON.parse(read(fromRoot('app-next/app.json'))) as { expo?: { ios?: { bundleIdentifier?: string } } };
+    if (appJson.expo?.ios?.bundleIdentifier !== 'com.johansardar.excerlock')
+      problems.push('app-next/app.json bundle identifier must stay com.johansardar.excerlock');
+    const eas = JSON.parse(read(fromRoot('app-next/eas.json'))) as { build?: Record<string, unknown> };
+    for (const profile of Object.keys(eas.build ?? {}))
+      if (/research|recorder|lab/i.test(profile)) problems.push(`eas.json has research profile ${profile}`);
+    for (const file of appSources()) {
+      const source = read(file);
+      if (/\.research(\.tsx?)?['"]/.test(source) && !/\.research\.tsx?$/.test(file) && !/research\//.test(rel(file)))
+        problems.push(`${rel(file)} imports a .research module outside the research boundary`);
+      if (/['"][./]*tools\/(phone|linked)/.test(source)) problems.push(`${rel(file)} imports a recorder from tools/`);
+    }
+    return verdict(problems);
+  },
+};
+
+export const ciPinned: Check = {
+  name: 'ci-pinned',
+  why: 'CI actions run at reviewed immutable commits.',
+  tier: 'static',
+  run() {
+    const dir = fromRoot('.github', 'workflows');
+    const problems: string[] = [];
+    for (const file of walk(dir, ['.yml', '.yaml'])) {
+      for (const match of read(file).matchAll(/uses:\s*([^\s#]+)/g)) {
+        const ref = match[1] ?? '';
+        if (!ref.startsWith('./') && !/@[0-9a-f]{40}$/.test(ref)) problems.push(`${rel(file)}: ${ref} is not pinned to a commit`);
+      }
+    }
+    return verdict(problems);
+  },
+};
+
+export const deployHostKey: Check = {
+  name: 'deploy-host-key',
+  why: 'Production deploys only reach a host whose SSH key was verified beforehand.',
+  tier: 'static',
+  run() {
+    const script = read(fromRoot('deploy', 'deploy.sh'));
+    const problems: string[] = [];
+    if (!/StrictHostKeyChecking=yes/.test(script)) problems.push('deploy/deploy.sh must pass StrictHostKeyChecking=yes');
+    if (/StrictHostKeyChecking=(no|accept-new)/.test(script)) problems.push('deploy/deploy.sh must not accept unknown host keys');
+    return verdict(problems);
+  },
+};
+
+export const agentLayout: Check = {
+  name: 'agent-layout',
+  why: 'One instruction file and one skills folder serve Claude Code, Pi, Hermes and Codex (ADR 0044).',
+  tier: 'static',
+  run() {
+    const problems: string[] = [];
+    for (const file of ['CLAUDE.md', 'GEMINI.md'])
+      if (read(fromRoot(file)).trim() !== '@AGENTS.md') problems.push(`${file} must be exactly @AGENTS.md`);
+    if (/^@/m.test(read(fromRoot('AGENTS.md')))) problems.push('AGENTS.md must not use @imports; Pi and Hermes do not expand them');
+    if (existsSync(fromRoot('.hermes.md'))) problems.push('.hermes.md would shadow AGENTS.md in Hermes');
+    if (existsSync(fromRoot('.mcp.json'))) problems.push('.mcp.json is not used; configure MCP at user level');
+    const skills = fromRoot('.claude', 'skills');
+    if (!existsSync(skills) || !statSync(skills).isDirectory()) problems.push('.claude/skills must link to ../.agents/skills');
+    for (const skill of walk(fromRoot('.agents', 'skills'), ['.md']).filter((file) => basename(file) === 'SKILL.md')) {
+      const name = /^name:\s*(\S+)/m.exec(read(skill))?.[1];
+      const folder = basename(join(skill, '..'));
+      if (rel(skill).split('/').length !== 4) problems.push(`${rel(skill)} is nested; only .agents/skills/<name>/SKILL.md is a skill`);
+      else if (name !== folder) problems.push(`${rel(skill)} name ${name} must equal its folder ${folder}`);
+    }
+    return verdict(problems);
+  },
+};
