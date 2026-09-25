@@ -10,6 +10,7 @@ export function saveRule(rule: Rule, context?: SchedulePlanContext) {
   const proposed = [...rules.filter((r) => r.id !== rule.id), rule];
   assertScheduleRepresentable(proposed, context);
   rulesStore.getState().patch({ rules: proposed });
+  return rules.some((r) => r.id === rule.id) ? 'edited' : 'created';
 }
 export function toggleRule(id: string, enabled: boolean, context?: SchedulePlanContext) {
   const rules = rulesStore.getState().data.rules;

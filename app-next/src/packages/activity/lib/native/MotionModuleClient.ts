@@ -34,6 +34,7 @@ export interface ExcerlockMotionModuleClient {
 }
 
 export function createExcerlockMotionModuleClient(): ExcerlockMotionModuleClient {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so fake runtimes never touch the native module
   const moduleSurface = require("../../../../../modules/excerlock-motion") as {
     getExcerlockMotionModule(): ExcerlockMotionModuleClient;
   };

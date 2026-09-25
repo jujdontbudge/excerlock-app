@@ -51,7 +51,13 @@ Proof fields:
 - `open`: a route or URL.
 - `prompt`: `grant` (the default), `deny` or `ask`.
 - `relaunch: true`: cold-launch again after the load, for behavior that happens only at startup.
+- `tap`: labels to tap in order after `open`, separated by `|`. Use it to change state without a deep link, because opening a URL rebuilds navigation and remounts screens.
 - `wait`: how many seconds to wait. The default is 15.
+- `then-open` and `then-expect`: after `expect` is met, open another route and expect more labels. Use it to read a side effect, such as the fake analytics events on `dev`. The first screen is saved as `<name>.before.png`.
+
+Metro runs without a file watcher. Before driving the app, `excer` restarts Metro whenever a file under `app-next/src`, `app` or `modules` is newer than Metro's start, and it refuses to continue if the bundle does not build. Without this, the dev client silently runs its last cached bundle and a proof passes against old code. If you drive Metro some other way, check the bundle yourself.
+
+A proof of a fix should fail against the old code. Put the old file back, run the proof, and confirm the served bundle contains the old code (`curl` the bundle and `grep`). Then restore the fix and run it again.
 
 `./excer feature check` fails when a route belongs to no feature, or when a feature names a route, scenario, endpoint, event or dependency that does not exist. `./excer check` runs it too. When you add a screen, add it to a feature in the same change.
 

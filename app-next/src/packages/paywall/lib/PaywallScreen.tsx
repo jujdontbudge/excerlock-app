@@ -1,3 +1,4 @@
+import { restorePurchases } from '../../subscription/restorePurchases';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -87,8 +88,12 @@ export function PaywallScreen({
     try {
       const result = await runtime.subscription.purchase(selected);
       if (result.type === 'pending') setMessage('Your purchase is pending approval. Access will update when approved.');
-      else if (result.type === 'user_cancelled') setMessage('Choose a plan to continue.');
+      else if (result.type === 'user_cancelled') {
+        runtime.analytics.track('purchase_failed', { reason_class: 'cancelled' });
+        setMessage('Choose a plan to continue.');
+      }
     } catch (error) {
+      runtime.analytics.track('purchase_failed', { reason_class: 'unknown' });
       reportError(error, 'purchase');
       setMessage('Purchase could not finish. Please retry.');
     } finally {
@@ -100,8 +105,7 @@ export function PaywallScreen({
     setBusy('restore');
     setMessage('');
     try {
-      const result = await runtime.subscription.restore();
-      if (!['trial', 'active'].includes(result.status)) setMessage('No active purchase was found.');
+      if ((await restorePurchases(runtime.subscription, runtime.analytics)) === 'notFound') setMessage('No active purchase was found.');
     } catch (error) {
       reportError(error, 'restore');
       setMessage('Restore could not finish. Please retry.');

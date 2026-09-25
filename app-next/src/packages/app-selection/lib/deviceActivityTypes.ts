@@ -24,10 +24,10 @@ export type DeviceActivityApi = Readonly<{
       | "intervalDidEnd"
       | "eventDidReachThreshold";
     eventName?: string;
-    actions: Array<{
+    actions: {
       type: "blockSelection" | "unblockSelection";
       familyActivitySelectionId: string;
-    }>;
+    }[];
   }): void;
   startMonitoring(
     activityName: string,

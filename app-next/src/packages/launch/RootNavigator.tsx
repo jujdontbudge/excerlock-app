@@ -1,3 +1,4 @@
+import { sessionLapseCount } from '../subscription/winbackSession';
 import { useMotion } from '../ui/useMotion';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
@@ -21,17 +22,12 @@ export function RootNavigator() {
   const status = useEntitlementStore((s) => s.data.entitlement.status),
     onboarding = useOnboardingStore((s) => s.data),
     entitled = status === 'trial' || status === 'active';
-  const previousSettledStatus = useRef(status);
+  const handledLapses = useRef(sessionLapseCount());
   useEffect(() => {
-    const previous = previousSettledStatus.current;
-    if (status !== 'unknown') previousSettledStatus.current = status;
-    if (
-      onboarding.setupComplete &&
-      (previous === 'trial' || previous === 'active') &&
-      (status === 'expired' || status === 'billingIssue')
-    ) {
-      if (pathname !== '/paywall') router.push('/paywall');
-    }
+    const lapses = sessionLapseCount();
+    if (lapses === handledLapses.current || !onboarding.setupComplete) return;
+    handledLapses.current = lapses;
+    if (pathname !== '/paywall') router.push('/paywall');
   }, [onboarding.setupComplete, pathname, router, status]);
   return (
     <>

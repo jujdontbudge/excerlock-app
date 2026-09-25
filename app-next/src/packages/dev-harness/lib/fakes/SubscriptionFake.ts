@@ -1,3 +1,4 @@
+import { noteObservedEntitlement } from '../../../subscription/winbackSession';
 import { fakeOffer } from '../../../subscription/subscriptionCopy';
 import { SubscriptionPort } from '../../../ports/SubscriptionPort';
 import { entitlementStore } from '../../../subscription/entitlementStore';
@@ -14,6 +15,7 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
         renewsAt: new Date(Date.parse(ctx.clock.now()) + 7 * 86400000).toISOString(),
       };
       entitlementStore.getState().patch({ entitlement: next });
+      noteObservedEntitlement(next.status);
       ctx.log('paywall_completed', { placement });
       return next;
     },
@@ -25,6 +27,7 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
           ? { status: 'active' as const, renewsAt: new Date(Date.parse(ctx.clock.now()) + 30 * 86400000).toISOString() }
           : { status: 'none' as const, renewsAt: null };
       entitlementStore.getState().patch({ entitlement: next });
+      noteObservedEntitlement(next.status);
       return entitlement();
     },
     identify: async (id) => {
@@ -77,6 +80,7 @@ export function SubscriptionFake(ctx: FakeContext): SubscriptionPort {
           renewsAt: new Date(Date.parse(ctx.clock.now()) + 7 * 86400000).toISOString(),
         };
         entitlementStore.getState().patch({ entitlement: next });
+      noteObservedEntitlement(next.status);
         return { type: 'success' as const, entitlement: next };
       } finally {
         operation = { ...operation, busy: false };

@@ -5,7 +5,7 @@ import { read, walk } from './files.ts';
 
 export const requiredSections = ['Sub-features', 'How to get to it (user POV)', 'Driving it with excer', 'Gotchas'];
 
-export type Proof = { name: string; scenario?: string; open?: string; prompt?: string; relaunch?: boolean; expect: string[]; wait: number };
+export type Proof = { name: string; scenario?: string; open?: string; prompt?: string; relaunch?: boolean; tap?: string[]; expect: string[]; wait: number; thenOpen?: string; thenExpect?: string[] };
 
 export type Feature = {
   id: string;
@@ -61,6 +61,9 @@ function parseProofs(body: string): Proof[] {
     if (fields.open) proof.open = fields.open;
     if (fields.prompt) proof.prompt = fields.prompt;
     if (fields.relaunch === 'true') proof.relaunch = true;
+    if (fields['then-open']) proof.thenOpen = fields['then-open'];
+    if (fields['then-expect']) proof.thenExpect = fields['then-expect'].split('|').map((item) => item.trim()).filter(Boolean);
+    if (fields.tap) proof.tap = fields.tap.split('|').map((item) => item.trim()).filter(Boolean);
     return proof;
   });
 }

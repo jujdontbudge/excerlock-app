@@ -22,6 +22,8 @@ import { scenario21 } from './analytics-no-measurement';
 import { scenario22 } from './dynamic-type-xl';
 import { scenario23 } from './reduce-motion';
 import { scenario24 } from './walk-state-ready';
+import { scenario25 } from './trial-lapsed-while-closed';
+import { scenario26 } from './trial-lapses-in-session';
 export const scenarios = [
   scenario0,
   scenario1,
@@ -46,5 +48,7 @@ export const scenarios = [
   scenario22,
   scenario23,
   scenario24,
+  scenario25,
+  scenario26,
   ...unlockScenarios,
 ];

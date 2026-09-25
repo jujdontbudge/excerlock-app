@@ -1,4 +1,6 @@
 import { Answers, FlowState } from '../../model/answers';
+
+import type { FlowOrder } from '../../ports/OnboardingFlowPort';
 export const preBranch = [
   'O01',
   'O02',
@@ -23,8 +25,6 @@ export const preBranch = [
   'O20',
 ] as const;
 export const tail = ['S1', 'S2', 'S3', 'S3b', 'S3c', 'S3d', 'P'] as const;
-
-import type { FlowOrder } from '../../ports/OnboardingFlowPort';
 export type { FlowOrder };
 
 function branchFor(answers: Answers): string[] {

@@ -9,6 +9,7 @@ import type {
   SubscriptionPort,
 } from '../ports/SubscriptionPort';
 import type { Unsubscribe } from '../model/models';
+import { forgetObservedEntitlement, noteObservedEntitlement } from './winbackSession';
 import { entitlementStore } from './entitlementStore';
 import type { RunIdentityOperation } from '../identity/identityBarrier';
 import { mapEntitlement, reduceEntitlement, type ProfileSource } from './lib/entitlementMapping';
@@ -96,6 +97,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     if (after.kind !== 'canonical' || after.userId !== userId || after.generation !== identity.generation)
       throw new Error('Identity changed during Adapty identify');
     this.expected = { userId, generation: identity.generation };
+    forgetObservedEntitlement();
     entitlementStore.getState().patch({ entitlement: { status: 'unknown', renewsAt: null } });
   }
   async reset(): Promise<void> {
@@ -252,6 +254,7 @@ export class AdaptySubscriptionAdapter implements SubscriptionPort {
     const current = entitlementStore.getState().data.entitlement;
     const next = reduceEntitlement(current, mapEntitlement(profile), source);
     entitlementStore.getState().patch({ entitlement: next });
+    noteObservedEntitlement(next.status);
     return next;
   }
   private mapProduct(

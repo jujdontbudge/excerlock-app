@@ -100,6 +100,7 @@ export function NativeScreenTimePickerHost({
     return null;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded lazily so fake runtimes never touch the native module
   const { DeviceActivitySelectionSheetViewPersisted: Picker } = require(
     "react-native-device-activity",
   ) as {

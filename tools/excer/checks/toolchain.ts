@@ -15,10 +15,10 @@ export const typecheck: Check = {
 
 export const lint: Check = {
   name: 'lint',
-  why: 'app-next passes its ESLint config (errors only; warnings are reported by `npm run lint`).',
+  why: 'app-next passes its ESLint config with zero warnings.',
   tier: 'static',
   run() {
-    const result = run('npx', ['expo', 'lint', '--quiet'], { cwd: appRoot, env: { ...process.env, CI: '1' } });
+    const result = run('npx', ['expo', 'lint', '--max-warnings', '0'], { cwd: appRoot, env: { ...process.env, CI: '1' } });
     return verdict(result.code === 0 ? [] : [tail(result.stdout + result.stderr, 40)]);
   },
 };

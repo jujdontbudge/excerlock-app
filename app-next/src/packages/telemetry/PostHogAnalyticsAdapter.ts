@@ -1,7 +1,7 @@
 import type { PaywallExperimentPort, PaywallVariant, PaywallVariantExposure, SignInRequiredPort } from '../ports/ExperimentPorts';
-export type { PaywallExperimentPort, PaywallVariant, PaywallVariantExposure, SignInRequiredPort };
 import { eventsOwnedBy } from '@excerlock/analytics-events';
 import type { AnalyticsPort } from '../ports/AnalyticsPort';
+export type { PaywallExperimentPort, PaywallVariant, PaywallVariantExposure, SignInRequiredPort };
 
 export type CanonicalIdentity = { userId: string | null; generation: number; ready: boolean };
 export type WalkPlaces = 'outside' | 'treadmill' | 'outside_and_treadmill' | 'none';
@@ -168,8 +168,7 @@ export function createPostHogAnalyticsAdapter(options: {
 }
 
 export type FlagName = 'paywall_variant' | 'signInRequired' | 'review_preset';
-const allowedPayloadFlags = { shield_copy: true, onboarding_variant: true, stride_gate_config: true } as const;
-export type PayloadFlagName = keyof typeof allowedPayloadFlags;
+export type PayloadFlagName = 'shield_copy' | 'onboarding_variant' | 'stride_gate_config';
 const allowedFlags: Record<FlagName, readonly (string | boolean)[]> = { paywall_variant: ['control', 'variant_b'], signInRequired: [false, true], review_preset: [false, true] };
 type FlagValue = string | boolean;
 type FlagOrigin = { userId: string; generation: number };

@@ -57,7 +57,7 @@ export type Profile = {
   mainReason: string;
   estimatedDailyMinutes: number;
   units: 'km' | 'mi';
-  walkPlaces: Array<'treadmill' | 'outside'>;
+  walkPlaces: ('treadmill' | 'outside')[];
 };
 
 export type Entitlement = {

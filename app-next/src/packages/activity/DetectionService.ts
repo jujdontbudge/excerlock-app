@@ -7,12 +7,12 @@ import type { GymVisitLog } from './lib/location/GymVisitLog';
 import type { MotionAdapter, MotionEvidence } from './lib/detection/MotionAdapter';
 import type { PlacementAdapter } from './lib/detection/PlacementAdapter';
 import type { HistoryCredit, HistoryCreditLedger, HistoryLedger, InstanceStepMeasurement } from './lib/detection/HistoryCreditLedger';
-export type { HistoryCredit };
 import { addDays, dayKey, localDayStart } from '../schedule/calendar';
 import type { DetectionData, PendingHistoryCredit } from './detectionStore';
 import type { WalkingDurationLedger } from './WalkingDurationLedger';
 import { runCleanups } from './lib/detection/runCleanups';
 import { linkedTrace } from '@linked-trace';
+export type { HistoryCredit };
 export const MAX_HISTORY_SEGMENTS_PER_WAKE = 8;
 export type DetectionWake = {
   now: number;

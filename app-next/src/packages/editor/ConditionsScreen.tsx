@@ -5,14 +5,12 @@ import {
   ScreenShell,
   Heading,
   SettingsRow,
-  SettingsGroup,
   RuleCard,
   PressableScale,
   EmptyState,
   Label,
 } from '../ui';
 import { conditionsCopy as c } from '../conditions/conditionsCopy';
-import { pickerCopy } from '../conditions/pickersCopy';
 import { rulesStore as useRulesStore } from '../conditions/rulesStore';
 import { ruleName } from '../conditions/ruleName';
 import { scheduleLabel } from '../schedule/scheduleLabel';
@@ -34,7 +32,7 @@ export function ConditionsScreen({
   onEdit: (id: string) => void;
   onNeeds?: () => void;
 }) {
-  const { rules, lockedApps, migrationNote } = useRulesStore((s) => s.data),
+  const { rules, migrationNote } = useRulesStore((s) => s.data),
     runtime = useRuntime(),
     { open: openLockList } = useLockListPicker(),
     { scheduleIssue } = useRuntimeStatus(),
@@ -53,7 +51,10 @@ export function ConditionsScreen({
           cancel={c.keepRule}
           onCancel={() => setDeleting(null)}
           onConfirm={() => {
-            if (deleting) deleteRule(deleting);
+            if (deleting) {
+              deleteRule(deleting);
+              runtime.analytics.track('condition_deleted');
+            }
             setDeleting(null);
           }}
         />

@@ -1,3 +1,4 @@
+import { noteObservedEntitlement } from '../subscription/winbackSession';
 import { activityHistory } from './lib/activityHistory';
 import { stores } from '../launch/stores';
 import { SupportFake } from './lib/fakes/SupportFake';
@@ -47,13 +48,18 @@ export function FakeRuntime(): FakeRuntimeInstance {
       walking.resume();
       gait.set(ctx.scenario.gait ?? 'none');
       activity.refresh();
+      launchEntitlements = (ctx.scenario.entitlementTimeline ?? []).map(({ status, afterMs }) =>
+        setTimeout(() => dev.setEntitlement(status), afterMs),
+      );
     });
+  let launchEntitlements: ReturnType<typeof setTimeout>[] = [];
   const dev: FakeRuntimeInstance['dev'] = {
       ready: () => ready,
       flush: persistence.flush,
       scenarios: scenarios.map(({ id, title }) => ({ id, title })),
       load: async (id, keepEdits = false) => {
         await ready;
+        launchEntitlements.forEach(clearTimeout);
         const scenario = scenarios.find((s) => s.id === id);
         if (!scenario) throw new Error('Unknown scenario');
         ctx.update({ loading: true });
@@ -81,7 +87,10 @@ export function FakeRuntime(): FakeRuntimeInstance {
       },
       setTime: ctx.clock.set, setPromptMode: (promptMode) => ctx.update({ promptMode }),
       setPermission: (name, status) => permissionsStore.getState().patch({ [name]: status }),
-      setEntitlement: (status) => entitlementStore.getState().patch({ entitlement: { status, renewsAt: entitlementStore.getState().data.entitlement.renewsAt } }),
+      setEntitlement: (status) => {
+        entitlementStore.getState().patch({ entitlement: { status, renewsAt: entitlementStore.getState().data.entitlement.renewsAt } });
+        noteObservedEntitlement(status);
+      },
       setSession: (session) => sessionStore.getState().patch({ session }),
       setRestoreOutcome: (restoreOutcome) => ctx.update({ restoreOutcome }), setOutcome: (outcome) => ctx.update({ outcome }),
       resolvePrompt: ctx.resolve, snapshot: ctx.snapshot, subscribe: ctx.subscribe,

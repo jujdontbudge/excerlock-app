@@ -1,10 +1,10 @@
 import { preBranch, tail, type FlowOrder } from './lib/flow';
 import { isOnboardingStepId } from './lib/stepId';
 
+import type { OnboardingFlowPort } from '../ports/OnboardingFlowPort';
+
 const knownPreBranch: ReadonlySet<string> = new Set(preBranch);
 const knownTail: ReadonlySet<string> = new Set(tail);
-
-import type { OnboardingFlowPort } from '../ports/OnboardingFlowPort';
 export type { OnboardingFlowPort };
 
 export interface OnboardingFlowPortDeps {

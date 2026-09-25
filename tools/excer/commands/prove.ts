@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { findFeature, type Proof } from '../lib/features.ts';
 import { rel, stateDir, timestamp } from '../lib/paths.ts';
 import { option, out, run, UsageError } from '../lib/shell.ts';
-import { ensureApp, labels, openUrl, screenshot, waitForLabels } from '../lib/sim.ts';
+import { ensureApp, labels, openUrl, screenshot, tap, waitForLabels } from '../lib/sim.ts';
 import { sleep } from '../lib/shell.ts';
 import { loadScenario } from './sim.ts';
 
@@ -25,7 +25,26 @@ async function runProof(feature: string, proof: Proof, dir: string): Promise<Out
     if (proof.open) openUrl(udid, proof.open);
     await sleep(1500);
   }
-  const result = await waitForLabels(udid, proof.expect, proof.wait);
+  const failedTaps: string[] = [];
+  for (const label of proof.tap ?? []) {
+    try {
+      await tap(udid, label);
+    } catch {
+      failedTaps.push(`tap "${label}"`);
+      break;
+    }
+    await sleep(1000);
+  }
+  const result = await waitForLabels(udid, proof.expect, failedTaps.length > 0 ? 1 : proof.wait);
+  result.missing = [...failedTaps, ...result.missing];
+  if (proof.thenOpen && result.missing.length === 0) {
+    screenshot(udid, join(dir, `${proof.name}.before.png`));
+    openUrl(udid, proof.thenOpen);
+    await sleep(1500);
+    const then = await waitForLabels(udid, proof.thenExpect ?? [], proof.wait);
+    result.missing = then.missing;
+    result.nodes = then.nodes;
+  }
   const shot = screenshot(udid, join(dir, `${proof.name}.png`));
   const treePath = join(dir, `${proof.name}.labels.txt`);
   writeFileSync(treePath, labels(result.nodes).join('\n'));

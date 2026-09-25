@@ -72,6 +72,19 @@ export const rawColours: Check = {
   },
 };
 
+export const unemittedEvents: Check = {
+  name: 'unemitted-events',
+  why: 'Every client or server event in the analytics registry has an emitter; adapty events come from the Adapty integration. Count may only fall.',
+  tier: 'static',
+  run() {
+    const registry = walk(fromRoot('packages', 'analytics-events', 'src', 'events')).map((file) => read(file)).join('\n');
+    const owned = [...registry.matchAll(/^\s{2}([a-z][a-z0-9_]+):\s*\{\s*owner:\s*'(client|server)'/gm)].map((match) => match[1] ?? '');
+    const sources = [...walk(join(appRoot, 'src')), ...walk(join(appRoot, 'app')), ...walk(join(serverRoot, 'src'))].map((file) => read(file)).join('\n');
+    const hits = owned.filter((name) => !new RegExp(`['"\`]${name}['"\`]`).test(sources)).map((name) => `${name} is registered but never emitted`);
+    return { kind: 'count', ratchet: 'unemitted-events', value: hits.length, samples: hits };
+  },
+};
+
 export const rawType: Check = {
   name: 'raw-type',
   why: 'Text uses type roles; no numeric fontSize, lineHeight or fontWeight literals. Count may only fall.',

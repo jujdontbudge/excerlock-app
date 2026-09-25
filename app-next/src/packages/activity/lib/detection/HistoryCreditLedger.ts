@@ -1,5 +1,5 @@
-export type HistoryCredit = { idempotencyKey: string; from: number; to: number; steps: number };
 import { dayKey } from '../../../schedule/calendar';
+export type HistoryCredit = { idempotencyKey: string; from: number; to: number; steps: number };
 export type InstanceStepMeasurement = { from: number; through: number; steps: number; timezone: string };
 export type HistoryLedger = {
   version: 1;

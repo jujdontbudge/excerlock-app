@@ -28,17 +28,27 @@ expect: Subscription | Billing issue | Manage in App Store | Restore purchases
 
 ```proof
 name: winback-after-trial
-scenario: trial-expired
-open: /
+scenario: trial-lapsed-while-closed
 relaunch: true
 expect: Your trial has ended | Start for free
-wait: 25
+wait: 45
+then-open: dev
+then-expect: "placement":"winback"
+```
+
+```proof
+name: lapse-in-session
+scenario: trial-lapses-in-session
+relaunch: true
+expect: Your trial has ended | Start for free
+wait: 45
+then-open: dev
+then-expect: "placement":"in_app"
 ```
 
 ## Gotchas
 - The app uses Adapty, not RevenueCat.
 - In a dev build the paywall is a local stand-in with dash prices. Seeing real prices means the real runtime is running (see the launch Gotchas).
 - A new PostHog flag, or a new consumer of `paywall_variant`, is App Store submission material, never an OTA (`docs/ota.md`, `excer check` `flag-registry`).
-- The win-back paywall should appear on a cold start that is already expired (`useLapsedWinbackOffer`). A lapse during a session uses the in-app placement instead, which is why that proof sets `relaunch: true`.
-- **Open finding (2026-09-24):** `winback-after-trial` fails. After a cold launch into `trial-expired`, Home shows Locked and no paywall appears. It could be a real bug or a demo-hydration artifact (the entitlement passing through `active` before `expired` would skip the offer). Investigate before changing the proof.
+- The win-back paywall appears when the first live entitlement of a launch is `expired`, even though the persisted store still says `trial` from the last run (the real app hydrates `trial`, then Adapty's first profile says `expired`). `trial-lapsed-while-closed` reproduces it: Home mounts on the hydrated `trial`, and the fake publishes `expired` 20 s after launch (`entitlementTimeline`). `trial-lapses-in-session` publishes a live `trial` at 1 s and `expired` at 20 s, which must show the in-app placement instead. Both proofs read the placement from the fake `paywall_viewed` event on `dev`. A lapse observed live after a live `trial`/`active` in the same session (`subscription/winbackSession.ts`) does not trigger it. Do not deep-link after the relaunch: opening a URL rebuilds navigation and remounts Home.
 - Account access survives a subscription lapse (ADR 0024).

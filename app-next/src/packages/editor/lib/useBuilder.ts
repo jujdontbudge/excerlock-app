@@ -86,10 +86,11 @@ export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?
       if (step === 'S3') {
         try {
           const rule = toRule({ ...draft, updatedAt: runtime.clock.now() }, toSchedule(schedule));
-          saveRule(rule, {
+          const saved = saveRule(rule, {
             now: runtime.clock.now(),
             timezone: runtime.clock.timezone(),
           });
+          runtime.analytics.track(saved === 'created' ? 'condition_created' : 'condition_edited');
           setScheduleError(false);
           if (onNeeds && ruleNeedsSetup(rule)) onNeeds();
           else onClose();

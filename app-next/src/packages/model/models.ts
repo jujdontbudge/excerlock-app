@@ -38,10 +38,11 @@ export type Scenario = {
   permissions: Permissions;
   session: Session;
   entitlement: Entitlement;
+  entitlementTimeline?: { status: Entitlement['status']; afterMs: number }[];
   usageMinutesToday: number | null;
   history: HistoryDay[];
   steps: { today: number; autoIncrementPerSecond?: number };
-  walking?: { script: Array<'walking' | 'still' | 'unknown'>; stepMs: number };
+  walking?: { script: ('walking' | 'still' | 'unknown')[]; stepMs: number };
   gym?: { places: SavedPlace[]; presence: 'inside' | 'outside' };
   fakeSystemPrompts: 'grant' | 'deny' | 'ask';
   accessibility?: 'xl' | 'reduceMotion';

@@ -1,4 +1,3 @@
-import { View } from 'react-native';
 import { Heading, ChoiceRow, NumberField } from '../../ui';
 import { tokens as t } from '../../ui/tokens';
 import { walkingCopy as c } from './rulesCopy';

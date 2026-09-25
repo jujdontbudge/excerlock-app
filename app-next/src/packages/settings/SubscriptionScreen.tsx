@@ -1,3 +1,4 @@
+import { restorePurchases } from '../subscription/restorePurchases';
 import { useState } from 'react';
 import { Heading, Label, SettingsGroup, SettingsRow } from '../ui';
 import { settingsCopy as c } from './lib/settingsCopy';
@@ -15,8 +16,7 @@ export function SubscriptionScreen({ onBack }: { onBack: () => void }) {
     if (busy) return;
     setBusy(true);
     try {
-      const result = await runtime.subscription.restore();
-      setNote(['trial', 'active'].includes(result.status) ? c.restored : c.noRestore);
+      setNote((await restorePurchases(runtime.subscription, runtime.analytics)) === 'restored' ? c.restored : c.noRestore);
     } catch {
       setNote(c.error);
     } finally {
@@ -25,11 +25,7 @@ export function SubscriptionScreen({ onBack }: { onBack: () => void }) {
   };
   const manage = async () => {
     try {
-      const action = (runtime.subscription as typeof runtime.subscription & {
-        manageSubscription?: () => Promise<void>;
-      }).manageSubscription;
-      if (!action) throw new Error('Subscription management unavailable');
-      await action.call(runtime.subscription);
+      await runtime.subscription.manageSubscription();
     } catch {
       setNote(subscriptionCopy.manageFallback);
     }

@@ -2,6 +2,7 @@ import { closeSync, existsSync, openSync, readFileSync, statSync, writeFileSync 
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { appRoot, stateDir, timestamp } from './paths.ts';
+import { walk } from './files.ts';
 import { must, run, sleep } from './shell.ts';
 
 export const bundleId = 'com.johansardar.excerlock';
@@ -96,6 +97,36 @@ export async function startMetro(): Promise<string> {
   throw new Error(`Metro did not start within 90 s; see ${metroLog()}`);
 }
 
+function newestSourceChange(): number {
+  let newest = 0;
+  for (const entry of ['src', 'app', 'modules']) for (const file of walk(join(appRoot, entry))) newest = Math.max(newest, statSync(file).mtimeMs);
+  return newest;
+}
+
+async function bundleError(): Promise<string | null> {
+  try {
+    const response = await fetch(`http://127.0.0.1:${metroPort}/app-next/index.bundle?platform=ios&dev=true&minify=false`, { signal: AbortSignal.timeout(300_000) });
+    const body = await response.text();
+    if (response.ok && !body.startsWith('{"type"')) return null;
+    return (JSON.parse(body) as { message?: string }).message?.split('\n')[0] ?? `HTTP ${response.status}`;
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+}
+
+export async function ensureFreshMetro(): Promise<void> {
+  const started = join(stateDir(), 'metro.started');
+  const stale = !existsSync(started) || Number(readFileSync(started, 'utf8')) < newestSourceChange();
+  if (stale && (await metroRunning())) {
+    stopMetro();
+    for (let attempt = 0; attempt < 30 && (await metroRunning()); attempt += 1) await sleep(500);
+  }
+  if (!(await metroRunning())) writeFileSync(started, String(Date.now()));
+  await startMetro();
+  const error = await bundleError();
+  if (error) throw new Error(`The app bundle does not build, so a proof would run stale code: ${error}`);
+}
+
 export function stopMetro(): string {
   const pidFile = join(stateDir(), 'metro.pid');
   if (!existsSync(pidFile)) return 'No Metro started by excer';
@@ -152,7 +183,8 @@ export async function tap(udid: string, label: string): Promise<string> {
   const { missing, nodes } = await waitForLabels(udid, [label], 8);
   if (missing.length > 0) throw new Error(`No accessible element labelled "${label}"`);
   const matches = nodes.filter((node) => labels([node])[0]?.includes(normalise(label)));
-  matches.sort((a, b) => Number(a.type !== 'Button') - Number(b.type !== 'Button'));
+  const exact = (node: AxNode) => Number(labels([node])[0] !== normalise(label));
+  matches.sort((a, b) => exact(a) - exact(b) || Number(a.type !== 'Button') - Number(b.type !== 'Button'));
   const frame = matches[0]?.frame;
   if (!frame) throw new Error(`"${label}" has no frame`);
   const x = Math.round(frame.x + frame.width / 2);
@@ -184,7 +216,7 @@ export async function ensureApp(options: { reinstall?: boolean } = {}): Promise<
   const device = await boot();
   if (options.reinstall || !installed(device.udid)) install(device.udid);
   else grantPermissions(device.udid);
-  await startMetro();
+  await ensureFreshMetro();
   if ((await metroClients()) === 0 && !(await connect(device.udid))) {
     run('xcrun', ['simctl', 'uninstall', device.udid, bundleId]);
     install(device.udid);

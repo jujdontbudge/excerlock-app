@@ -1,5 +1,5 @@
+import { PRESENCE_CONFIRM_MS } from './presence';
 import type { GymTransitionRecord } from './lib/location/GymVisitLog';
-export const GYM_CONFIRM_MS = 10_000;
 export type GymInterval = {
   id: string;
   regionId: string;
@@ -107,8 +107,8 @@ function applyCoverageDue(
 const transitionRank = (type: GymTransitionRecord['type']) => (type === 'enter' ? 0 : 1);
 function confirmDue(regions: Record<string, GymRegionState>, intervals: GymInterval[], at: number): void {
   for (const [regionId, region] of Object.entries(regions))
-    if (region.pendingEnterAt !== null && at >= region.pendingEnterAt + GYM_CONFIRM_MS) {
-      const confirmedAt = region.pendingEnterAt + GYM_CONFIRM_MS;
+    if (region.pendingEnterAt !== null && at >= region.pendingEnterAt + PRESENCE_CONFIRM_MS) {
+      const confirmedAt = region.pendingEnterAt + PRESENCE_CONFIRM_MS;
       region.confirmedSince = confirmedAt;
       intervals.push({
         id: `${regionId}:${region.pendingEnterAt}`,

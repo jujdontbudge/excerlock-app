@@ -1,6 +1,5 @@
 import type { GymTransitionRecord, GymVisitLog } from './GymVisitLog';
 import type { RegionTransition } from './LocationProvider';
-export const PRESENCE_CONFIRMATION_MS = 30_000;
 type Options = {
   readonly log: GymVisitLog;
   readonly onPresence: (transition: RegionTransition) => void;
