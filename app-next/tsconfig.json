@@ -3,12 +3,12 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@client-services": ["./src/runtime/createClientServices"],
-      "@linked-trace": ["./src/research/linkedTrace/LinkedTrace.disabled"],
-      "@linked-trace-screen": ["./src/research/linkedTrace/LinkedTraceScreen.disabled"],
-      "@posthog-runtime": ["./src/runtime/analytics/createPostHogRuntime"],
-      "@sentry-binding": ["./src/runtime/observability/SentryBinding"],
-      "@sentry-capture": ["./src/runtime/observability/SentryCapture"]
+      "@client-services": ["./src/packages/runtime/createClientServices"],
+      "@linked-trace": ["./src/packages/trace/LinkedTrace.disabled"],
+      "@linked-trace-screen": ["./src/packages/research/LinkedTraceScreen.disabled"],
+      "@posthog-runtime": ["./src/packages/telemetry/createPostHogRuntime"],
+      "@sentry-binding": ["./src/packages/telemetry/SentryBinding"],
+      "@sentry-capture": ["./src/packages/telemetry/SentryCapture"]
     },
     "types": [
       

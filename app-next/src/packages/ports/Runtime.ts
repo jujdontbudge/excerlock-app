@@ -1,0 +1,57 @@
+import { SupportPort } from './SupportPort';
+import { StoreReviewPort } from './StoreReviewPort';
+import { IncidentReportPort } from './IncidentReportPort';
+import { ScreenTimePort } from './ScreenTimePort';
+import { StepsPort } from './StepsPort';
+import { WalkingPort } from './WalkingPort';
+import { GymPort } from './GymPort';
+import { AuthPort } from './AuthPort';
+import { SubscriptionPort } from './SubscriptionPort';
+import { AnalyticsPort } from './AnalyticsPort';
+import { NotificationsPort } from './NotificationsPort';
+import { SyncPort } from './SyncPort';
+import { ClockPort } from './ClockPort';
+import { RuntimeControls } from './RuntimeControls';
+import { GaitPort } from './GaitPort';
+import { ExportPort } from './ExportPort';
+import { RuntimeStatusPort } from './RuntimeStatusPort';
+import { ReviewPresetPort } from './lib/ReviewPresetPort';
+import { ShieldCopyPort } from './ShieldCopyPort';
+import type { StrideGatePort } from './lib/StrideGatePort';
+import type { SensorStreamModuleClient } from './SensorStreamPort';
+import type { OnboardingFlowPort } from './OnboardingFlowPort';
+import type { PaywallExperimentPort, SignInRequiredPort } from './ExperimentPorts';
+export type Runtime = {
+  readonly kind: 'fake' | 'real';
+  screenTime: ScreenTimePort;
+  steps: StepsPort;
+  walking: WalkingPort;
+  gait: GaitPort;
+  gym: GymPort;
+  auth: AuthPort;
+  subscription: SubscriptionPort;
+  analytics: AnalyticsPort;
+  notifications: NotificationsPort;
+  sync: SyncPort;
+  support: SupportPort;
+  incidentReports: IncidentReportPort;
+  review: StoreReviewPort;
+  dataExport: ExportPort;
+  clock: ClockPort;
+  status: RuntimeStatusPort;
+  reviewPreset?: ReviewPresetPort;
+  experiments?: PaywallExperimentPort;
+  signInRequired?: SignInRequiredPort;
+  onboardingFlow?: OnboardingFlowPort;
+  shieldCopy?: ShieldCopyPort;
+  strideGate?: StrideGatePort;
+  safety?: () => { permissionPromptPending: boolean; cameraActive: boolean };
+  sensors?: SensorStreamModuleClient;
+  dev?: RuntimeControls;
+  dispose: () => void;
+};
+
+export function requireRuntimeControls(runtime: Runtime): RuntimeControls {
+  if (!__DEV__ || runtime.kind !== 'fake' || !runtime.dev) throw new Error('Development controls are unavailable');
+  return runtime.dev;
+}

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
-import { permissionsHref } from '../../src/features/setup/useSetupNeeds';
-import { ConditionsScreen } from '../../src/features/conditions/ConditionsScreen';
+import { permissionsHref } from '../../src/packages/permissions/useSetupNeeds';
+import { ConditionsScreen } from '../../src/packages/editor/ConditionsScreen';
 export default function ConditionsRoute() {
   const router = useRouter();
   return (

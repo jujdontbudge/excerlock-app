@@ -1,10 +1,10 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
-import { finishPickerSession } from '../src/features/gym-picker/pickerSession';
+import { finishPickerSession } from '../src/packages/gyms/pickerSession';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 const GymPickerScreen = lazy(() =>
-  import('../src/features/gym-picker/GymPickerScreen').then((module) => ({ default: module.GymPickerScreen })),
+  import('../src/packages/gyms/GymPickerScreen').then((module) => ({ default: module.GymPickerScreen })),
 );
 export default function GymPickerRoute() {
   const { session, placeId } = useLocalSearchParams<{ session?: string; placeId?: string }>();

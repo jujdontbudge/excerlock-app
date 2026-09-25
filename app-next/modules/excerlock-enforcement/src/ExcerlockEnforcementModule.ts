@@ -1,7 +1,7 @@
 import { NativeModule, requireNativeModule } from 'expo';
-import type { EnforcementSnapshot } from '../../../src/runtime/enforcement/EnforcementHost';
-import type { ShieldCopyOverridesJson } from '../../../src/runtime/shield/shieldCopyOverrides';
-import type { WatchdogRegistration } from '../../../src/domain/watchdog';
+import type { EnforcementSnapshot } from '../../../src/packages/enforcement/EnforcementHost';
+import type { ShieldCopyOverridesJson } from '../../../src/packages/enforcement/shieldCopyOverrides';
+import type { WatchdogRegistration } from '../../../src/packages/ports/watchdog';
 
 export class ExcerlockEnforcementModule extends NativeModule {
   getPolicyRevision!: () => number;

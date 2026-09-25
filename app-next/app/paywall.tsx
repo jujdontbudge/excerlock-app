@@ -1,1 +1,1 @@
-export { PaywallSlot as default } from '../src/features/subscription/PaywallSlot';
+export { PaywallSlot as default } from '../src/packages/paywall/PaywallSlot';

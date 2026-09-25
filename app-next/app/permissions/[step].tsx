@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { SetupFlow } from '../../src/features/setup/SetupFlow';
+import { SetupFlow } from '../../src/packages/setup/SetupFlow';
 export default function PermissionsRoute() {
   const router = useRouter(),
     { step } = useLocalSearchParams<{ step?: string }>();

@@ -59,8 +59,8 @@ All event streams use one monotonically increasing `sequence`. Every event inclu
 
 The shipping logic stays in:
 
-- `app-next/src/runtime/detection/MotionAdapter.ts`
-- `app-next/src/domain/walkingMachine.ts`
+- `app-next/src/packages/activity/lib/detection/MotionAdapter.ts`
+- `app-next/src/packages/activity/walkingMachine.ts`
 
 This standalone SwiftUI binary cannot safely execute that TypeScript, so `Sources/ProductionWalkingDetector.swift` is an explicit equivalent port, not a new classifier. It keeps the current policy unchanged: fresh medium/high walking/running **or** cadence at least 80 steps/minute, 5-second freshness, 3-second qualification and 30-second default grace. The shared `Fixtures/production-path.json` replay proves both implementations classify stationary/high cadence as active and then enter grace.
 

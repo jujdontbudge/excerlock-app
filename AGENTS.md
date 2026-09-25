@@ -32,7 +32,7 @@ Work headless. Keep Simulator.app closed. `./excer sim` drives the one simulator
 
 ## UI
 
-Read `app-next/src/design-system/UI-STYLE.md` before touching a screen. Take every value from `app-next/src/design-system/tokens.ts`, and reuse the design-system components. Screens are light orange-to-ivory gradients with black-outlined white cards. Motion goes through `app-next/src/motion`.
+Read `app-next/src/packages/ui/UI-STYLE.md` before touching a screen. Take every value from `app-next/src/packages/ui/tokens.ts`, and reuse the `ui` components. Screens are light orange-to-ivory gradients with black-outlined white cards. Motion goes through the `ui` motion hooks (`useMotion`, `Reveal`, `presets`).
 
 ## Authority
 

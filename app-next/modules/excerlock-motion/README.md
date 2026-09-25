@@ -17,7 +17,7 @@ adds `NSMotionUsageDescription`, so `expo prebuild --clean` regenerates all requ
 ### Collect-only streams (ADR 0042, runtime version 3)
 
 The binary also exposes streams nothing in the unlock gate reads. They exist so an OTA JS bundle can
-collect richer sensor evidence without a new App Store binary; `src/runtime/detection/sensorStreams.ts`
+collect richer sensor evidence without a new App Store binary; `src/packages/activity/sensorStreams.ts`
 catalogues them and `runSensorStreamSmoke` is the JS-side proof.
 
 | Surface | Native source | Availability flag(s) | Motion & Fitness |

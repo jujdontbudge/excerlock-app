@@ -35,7 +35,7 @@ and only the next one is orange:
    permission state (S14–S16 exist to be judged); the current state is under
    **More → Permissions**.
 2. **Set the gym** — the same picker ExcerLock uses, in native MapKit
-   (`Sources/GymPickerView.swift` mirrors `app-next/src/features/gym-picker/`):
+   (`Sources/GymPickerView.swift` mirrors `app-next/src/packages/gyms`):
    search a gym name or address, or tap **I'm here** to drop the pin on your
    current fix (20 s accuracy-weighted average, fixes worse than 65 m rejected,
    stopped as soon as you pan), then drag the map under the pin, set the
@@ -104,7 +104,7 @@ on the way out, **Finish**.
 Numeric expectations live in `Fixtures/EXPECTED.json` (also shipped in the app
 bundle), so the phone and the validator read one file. The constants the app must
 mirror are in `Sources/RecorderModels.swift` and the production reducer in
-`app-next/src/domain/gymMachine.ts`.
+`app-next/src/packages/activity/gymMachine.ts`.
 
 ## Capture archive
 

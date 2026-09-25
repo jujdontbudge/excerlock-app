@@ -1,1 +1,1 @@
-export { OnboardingRoute as default } from '../../src/features/onboarding/OnboardingRoute';
+export { OnboardingRoute as default } from '../../src/packages/onboarding/OnboardingRoute';

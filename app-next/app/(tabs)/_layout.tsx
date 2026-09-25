@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
-import { useRuntime } from '../../src/ports/useRuntime';
-import { startProgressSync } from '../../src/features/home/progressSync';
-import { startGymPresenceSync } from '../../src/features/home/gymPresenceSync';
-import { startWalkingSync } from '../../src/features/home/walkingSync';
+import { useRuntime } from '../../src/packages/ports/useRuntime';
+import { startProgressSync } from '../../src/packages/home/progressSync';
+import { startGymPresenceSync } from '../../src/packages/home/gymPresenceSync';
+import { startWalkingSync } from '../../src/packages/home/walkingSync';
 import { Tabs } from 'expo-router';
-import { TabBar } from '../../src/design-system';
-import { TabId, tabItems } from '../../src/content/tabs';
-import { tokens as t } from '../../src/design-system/tokens';
-import { useMotion } from '../../src/motion/useMotion';
+import { TabBar } from '../../src/packages/ui';
+import { TabId, tabItems } from '../../src/packages/ui/tabsCopy';
+import { tokens as t } from '../../src/packages/ui/tokens';
+import { useMotion } from '../../src/packages/ui/useMotion';
 export default function TabLayout() {
   const motion = useMotion(),
     runtime = useRuntime();

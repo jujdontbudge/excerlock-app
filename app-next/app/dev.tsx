@@ -1,1 +1,1 @@
-export { DevRoute as default } from '../src/features/dev/DevRoute';
+export { DevRoute as default } from '../src/packages/dev-harness/DevRoute';

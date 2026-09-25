@@ -1,7 +1,0 @@
-# Analytics
-
-`period` offers `Day`, `Week` (Monday start) and `All` (first history day through today). `analyticsModel` consumes HistoryDay facts without changing their day attribution, excludes missing measurements from screen-time-replaced math, and calculates streaks over scheduled days. Day totals cover one day but the series is the surrounding week for the dot row; Week series is daily; All series buckets calendar weeks and averages measured daily values, clamping replaced time per day before averaging. Missing usage remains a gap. Given `rules` and `ruleDays`, the model also reports confirmed gym arrivals (met days of arrival rules), verified walking minutes (state-rule progress) and which condition kinds are enabled.
-
-`AnalyticsScreen` preserves period/navigation state while mounted in tabs. Layout copies the Befit weekly-progress structure (segmented control, range nav, stat pills, chart card) in ExcerLock colours: orange gradient canvas, translucent cards with the black `border.outline` hairline, orange bars and glyph discs, neutral text. `SegmentedControl` `variant="outline"` renders the black-outlined track with a full-height orange pill. Tiles come from `statsFor`: gym minutes, gym arrivals, steps and walking minutes appear only for enabled conditions (B38: no running/biking tiles); streak always shows.
-
-Tests cover period boundaries, day/week/all-time bucketing, missing data, partial weeks, condition-driven arrivals and walking minutes, transparent unscheduled days, empty states and condition-driven tiles.

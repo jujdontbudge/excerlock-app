@@ -37,38 +37,38 @@ const aliases = {
   '@client-services': path.resolve(
     __dirname,
     linkedRecorderResearch
-      ? 'src/research/linkedTrace/createClientServices.research.ts'
-      : 'src/runtime/createClientServices.ts',
+      ? 'src/packages/research/createClientServices.research.ts'
+      : 'src/packages/runtime/createClientServices.ts',
   ),
   '@linked-trace': path.resolve(
     __dirname,
     linkedRecorderResearch
-      ? 'src/research/linkedTrace/LinkedTrace.research.ts'
-      : 'src/research/linkedTrace/LinkedTrace.disabled.ts',
+      ? 'src/packages/trace/LinkedTrace.research.ts'
+      : 'src/packages/trace/LinkedTrace.disabled.ts',
   ),
   '@linked-trace-screen': path.resolve(
     __dirname,
     linkedRecorderResearch
-      ? 'src/research/linkedTrace/LinkedTraceScreen.research.tsx'
-      : 'src/research/linkedTrace/LinkedTraceScreen.disabled.tsx',
+      ? 'src/packages/research/LinkedTraceScreen.research.tsx'
+      : 'src/packages/research/LinkedTraceScreen.disabled.tsx',
   ),
   '@posthog-runtime': path.resolve(
     __dirname,
     linkedRecorderResearch
-      ? 'src/research/linkedTrace/createPostHogRuntime.research.ts'
-      : 'src/runtime/analytics/createPostHogRuntime.ts',
+      ? 'src/packages/research/createPostHogRuntime.research.ts'
+      : 'src/packages/telemetry/createPostHogRuntime.ts',
   ),
   '@sentry-binding': path.resolve(
     __dirname,
     linkedRecorderResearch
-      ? 'src/research/linkedTrace/SentryBinding.research.ts'
-      : 'src/runtime/observability/SentryBinding.ts',
+      ? 'src/packages/research/SentryBinding.research.ts'
+      : 'src/packages/telemetry/SentryBinding.ts',
   ),
   '@sentry-capture': path.resolve(
     __dirname,
     linkedRecorderResearch
-      ? 'src/research/linkedTrace/SentryCapture.research.ts'
-      : 'src/runtime/observability/SentryCapture.ts',
+      ? 'src/packages/research/SentryCapture.research.ts'
+      : 'src/packages/telemetry/SentryCapture.ts',
   ),
 };
 // Metro does not resolve `resolver.alias` itself. Resolve these exact virtual

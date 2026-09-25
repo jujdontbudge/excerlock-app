@@ -1,6 +1,7 @@
 import { checkCommand, help as checkHelp } from './commands/check.ts';
 import { featureCommand, help as featureHelp } from './commands/feature.ts';
 import { doctorCommand, doctorHelp, newCommand, newHelp, serverCommand, serverHelp } from './commands/misc.ts';
+import { moveCommand, moveHelp } from './commands/move.ts';
 import { help as proveHelp, proveCommand } from './commands/prove.ts';
 import { demoCommand, demoHelp, simCommand, simHelp } from './commands/sim.ts';
 import { UsageError } from './lib/shell.ts';
@@ -16,6 +17,8 @@ const usage = `excer: control and verification for ExcerLock
   excer prove <feature>             run a feature's proofs on the simulator and save evidence
   excer server health|ready [--prod]
   excer new package <name>
+  excer move <source...> <destination>
+                                    move app files and rewrite their imports
 
 Run excer <command> --help for details. Words: CONTEXT.md. Shape: ARCHITECTURE.md.`;
 
@@ -28,6 +31,7 @@ const helps: Record<string, string> = {
   server: serverHelp,
   doctor: doctorHelp,
   new: newHelp,
+  move: moveHelp,
 };
 
 async function main(argv: string[]): Promise<number> {
@@ -57,6 +61,8 @@ async function main(argv: string[]): Promise<number> {
       return doctorCommand();
     case 'new':
       return newCommand(args);
+    case 'move':
+      return moveCommand(args);
     default:
       throw new UsageError(`unknown command "${command}"\n\n${usage}`);
   }

@@ -1,1 +1,1 @@
-export { AppRoot as default } from '../src/runtime/AppRoot';
+export { AppRoot as default } from '../src/packages/runtime/AppRoot';

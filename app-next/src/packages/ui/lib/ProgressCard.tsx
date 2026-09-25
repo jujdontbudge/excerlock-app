@@ -1,0 +1,76 @@
+import { View } from 'react-native';
+import { tokens as t } from '../tokens';
+import { Label } from '../Label';
+import { Icon, IconName } from '../Icon';
+import { ProgressBar } from '../ProgressBar';
+import { SecondaryButton } from '../SecondaryButton';
+import { ValueReveal } from './ValueReveal';
+import { Reveal } from '../Reveal';
+export function ProgressCard({
+  title,
+  icon,
+  value,
+  detail,
+  action,
+  onAction,
+  appearance = 'card',
+}: {
+  title: string;
+  icon: IconName;
+  value: number;
+  detail: string;
+  action?: string;
+  onAction?: () => void;
+  appearance?: 'card' | 'lock';
+}) {
+  const inLock = appearance === 'lock';
+  return (
+    <Reveal>
+      <View
+        style={{
+          padding: inLock ? t.space.lg : t.space.lg,
+          paddingVertical: inLock ? t.space.md : t.space.lg,
+          borderRadius: inLock ? undefined : t.radius.card,
+          borderWidth: inLock ? 0 : t.stroke.hairline,
+          borderTopWidth: inLock ? 0 : t.stroke.hairline,
+          borderColor: inLock ? t.border.onAccent : t.border.outline,
+          backgroundColor: inLock ? t.surface.transparent : t.surface.card,
+          gap: t.space.lg,
+        }}>
+        {inLock ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: t.space.md }}>
+            <Icon name={icon} tone="onAccent" variant="utility" size={t.icon.lg} />
+            <View style={{ flexShrink: 1 }}>
+              <ValueReveal value={detail}>
+                <Label variant="label" tone="onAccent">
+                  {detail}
+                </Label>
+              </ValueReveal>
+            </View>
+          </View>
+        ) : (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: t.space.md,
+            }}>
+            <Icon name={icon} tone={inLock ? 'onAccent' : undefined} variant={inLock ? 'utility' : 'color'} />
+            <Label variant="label" tone={inLock ? 'onAccent' : 'primary'} style={{ flex: 1 }}>
+              {title}
+            </Label>
+          </View>
+        )}
+        <ProgressBar value={value} label={title} inverse={inLock} />
+        {!inLock ? (
+          <ValueReveal value={detail}>
+            <Label variant="support" tone={inLock ? 'onAccent' : 'secondary'}>
+              {detail}
+            </Label>
+          </ValueReveal>
+        ) : null}
+        {action && onAction ? <SecondaryButton label={action} onPress={onAction} /> : null}
+      </View>
+    </Reveal>
+  );
+}

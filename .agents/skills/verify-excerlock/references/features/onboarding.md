@@ -8,7 +8,7 @@ depends: [conditions]
 ---
 ## Sub-features
 - Welcome (the Introduction pager with Get started and Sign in).
-- Profile questions `O01`–`O22`, in the order given by `src/onboarding/flow.ts` `preBranch`.
+- Profile questions `O01`–`O22`, in the order given by `app-next/src/packages/onboarding/lib/flow.ts` `preBranch`.
 - The answer-driven branch: walking (`W*`) or gym (`G*`, including `GPlace` for the gym location). The goal and schedule steps show a live lock preview.
 - Tail steps `S1`–`S3d`: summary, plan build, trial preview and the reminder (which asks for notifications), then `P`, the paywall.
 - The PostHog `onboarding_variant` payload may reorder or drop steps within `preBranch` and `tail`. It never changes the branch.

@@ -1,1 +1,1 @@
-export { BootGate as default } from '../src/features/launch/BootGate';
+export { BootGate as default } from '../src/packages/launch/BootGate';

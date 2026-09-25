@@ -5,7 +5,7 @@ import Foundation
 /// `targets/ShieldConfiguration/ShieldContent.swift`.
 ///
 /// Keep the literal identical on all three sides (`ShieldContent.swift`, this
-/// file, and `src/runtime/shield/shieldCopyOverrides.ts`);
+/// file, and `src/packages/enforcement/shieldCopyOverrides.ts`);
 /// `guardrails/shield-copy.test.ts` fails when they drift.
 let excerlockShieldCopyOverridesDefaultsKey = "excerlock.shield.copy-overrides.v1"
 

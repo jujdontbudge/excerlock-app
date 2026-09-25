@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
-import { TreadmillUnlockScreen } from '../../src/features/unlock/TreadmillUnlockScreen';
-import { UnlockModal } from '../../src/features/unlock/UnlockModal';
+import { TreadmillUnlockScreen } from '../../src/packages/unlock/TreadmillUnlockScreen';
+import { UnlockModal } from '../../src/packages/unlock/UnlockModal';
 export default function TreadmillUnlockRoute() {
   const { ruleId, preview } = useLocalSearchParams<{ ruleId?: string; preview?: string }>();
   return (

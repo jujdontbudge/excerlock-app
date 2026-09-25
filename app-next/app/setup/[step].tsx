@@ -1,1 +1,1 @@
-export { SetupRoute as default } from '../../src/features/setup/SetupRoute';
+export { SetupRoute as default } from '../../src/packages/setup/SetupRoute';

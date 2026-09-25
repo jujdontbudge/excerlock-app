@@ -33,4 +33,4 @@ expect: Privacy Policy | Terms of Use
 
 ## Gotchas
 - Changing units relabels saved distance goals but does not convert them. An out-of-range goal blocks the change.
-- The legal documents are placeholders (`src/content/legal.ts`).
+- The legal documents are placeholders (`app-next/src/packages/settings/lib/legalCopy.ts`).

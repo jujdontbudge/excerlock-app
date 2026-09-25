@@ -2,6 +2,7 @@
 
 ## Index
 
+- [0046: Concept packages in strict layers](0046-concept-packages-in-strict-layers.md) — **accepted**.
 - [0045: Verify through the real app and static checks; no tests, no comments](0045-verification-over-tests-and-no-comments.md) — **accepted**.
 - [0044: One lean agent context shared by Claude Code, Pi and Hermes](0044-lean-cross-harness-agent-context.md) — **accepted**.
 - [0043: Sign-in and each condition's permissions follow the paywall; Home keeps one reminder card](0043-sign-in-and-permissions-after-the-paywall.md) — **accepted**.

@@ -25,4 +25,4 @@ expect: Developer menu | Local scenarios and component previews.
 
 ## Gotchas
 - `/dev` exists only in `__DEV__` builds. "Unmatched Route" means the app is not running a Metro dev bundle.
-- The demo fakes are dev-only (`src/demo`). Features must never import them.
+- The demo fakes are dev-only and live in the `dev-harness` package; the layer rules stop any product package from importing them.

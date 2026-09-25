@@ -1,7 +1,7 @@
 # OTA updates
 
 
-Single owner: `app-next/src/runtime/updates.ts` owns every `expo-updates` call.
+Single owner: `app-next/src/packages/updates/updates.ts` owns every `expo-updates` call.
 No other source file may import `expo-updates` (enforced by `./excer check`). Config
 (`runtimeVersion`, `updates` block), `eas.json`, dependency manifests,
 `createRuntime`, and root mounting remain root-owned; T03 does not edit them.

@@ -1086,8 +1086,8 @@ final class CaptureController: NSObject, ObservableObject {
             "productionParity": [
                 "kind": "equivalent Swift port; production TypeScript is not embedded in this standalone native target",
                 "sourceFiles": [
-                    "app-next/src/runtime/detection/MotionAdapter.ts",
-                    "app-next/src/domain/walkingMachine.ts"
+                    "app-next/src/packages/activity/lib/detection/MotionAdapter.ts",
+                    "app-next/src/packages/activity/walkingMachine.ts"
                 ],
                 "constants": [
                     "motionFreshnessMs": productionMotionFreshnessMs,

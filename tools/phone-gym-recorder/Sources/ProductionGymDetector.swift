@@ -1,6 +1,6 @@
 import Foundation
 
-/// A faithful Swift port of `app-next/src/domain/gymMachine.ts`.
+/// A faithful Swift port of `app-next/src/packages/activity/gymMachine.ts`.
 ///
 /// The production reducer is the reference: `scripts/verify-production-parity.ts`
 /// replays the shared fixtures through the real TypeScript reducer and
@@ -260,7 +260,7 @@ func validateGymState(_ state: GymDetectionState) throws {
 
 // MARK: - Geometry mirror
 
-/// Port of `app-next/src/engine/signals/location/regionPresence.ts`, including
+/// Port of `app-next/src/packages/activity/lib/location/regionPresence.ts`, including
 /// its single earth radius constant, so `sampled_presence` and the production
 /// distance test cannot drift.
 enum GymGeometry {

@@ -828,7 +828,7 @@ final class CaptureController: ObservableObject {
                 "radiusStepMeters": gymRadiusStepMeters,
                 "radiusDefaultMeters": gymRadiusDefaultMeters,
                 "maxGyms": maximumGyms,
-                "reducer": "app-next/src/domain/gymMachine.ts"
+                "reducer": "app-next/src/packages/activity/gymMachine.ts"
             ],
             "streams": [
                 "locationSuspensionThresholdSeconds": locationSuspensionThresholdSeconds,

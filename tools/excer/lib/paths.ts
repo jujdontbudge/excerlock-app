@@ -6,7 +6,7 @@ export const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '
 export const appRoot = join(repoRoot, 'app-next');
 export const serverRoot = join(repoRoot, 'server');
 export const featuresDir = join(repoRoot, '.agents', 'skills', 'verify-excerlock', 'references', 'features');
-export const scenariosDir = join(appRoot, 'src', 'demo', 'scenarios');
+export const scenariosDir = join(appRoot, 'src', 'packages', 'dev-harness', 'lib', 'scenarios');
 export const routesDir = join(appRoot, 'app');
 
 export const fromRoot = (...parts: string[]) => join(repoRoot, ...parts);

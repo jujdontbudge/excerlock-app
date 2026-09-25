@@ -1,0 +1,155 @@
+import { useState } from 'react';
+import { View } from 'react-native';
+import { tokens as t } from '../ui/tokens';
+import {
+  ScreenShell,
+  Heading,
+  SettingsRow,
+  SettingsGroup,
+  RuleCard,
+  PressableScale,
+  EmptyState,
+  Label,
+} from '../ui';
+import { conditionsCopy as c } from '../conditions/conditionsCopy';
+import { pickerCopy } from '../conditions/pickersCopy';
+import { rulesStore as useRulesStore } from '../conditions/rulesStore';
+import { ruleName } from '../conditions/ruleName';
+import { scheduleLabel } from '../schedule/scheduleLabel';
+import { useRuntime } from '../ports/useRuntime';
+import { LivingIcon } from '../ui/LivingIcon';
+import { Reveal } from '../ui/Reveal';
+import { ConfirmSheet } from '../ui/ConfirmSheet';
+import { toggleRule, deleteRule } from './lib/mutations';
+import { SchedulePlanError } from '../schedule/scheduleRepresentability';
+import { useRuntimeStatus } from '../lock/selectors';
+import { useLockListPicker } from '../app-selection/useLockListPicker';
+import { ruleNeedsSetup } from '../permissions/useSetupNeeds';
+export function ConditionsScreen({
+  onAdd,
+  onEdit,
+  onNeeds,
+}: {
+  onAdd: () => void;
+  onEdit: (id: string) => void;
+  onNeeds?: () => void;
+}) {
+  const { rules, lockedApps, migrationNote } = useRulesStore((s) => s.data),
+    runtime = useRuntime(),
+    { open: openLockList } = useLockListPicker(),
+    { scheduleIssue } = useRuntimeStatus(),
+    [deleting, setDeleting] = useState<string | null>(null),
+    [scheduleError, setScheduleError] = useState(false);
+  const ordered = [...rules].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return (
+    <ScreenShell dock
+      safeBottom={false}
+      overlay={
+        <ConfirmSheet
+          open={deleting !== null}
+          title={c.deleteTitle}
+          body={c.deleteBody}
+          confirm={c.delete}
+          cancel={c.keepRule}
+          onCancel={() => setDeleting(null)}
+          onConfirm={() => {
+            if (deleting) deleteRule(deleting);
+            setDeleting(null);
+          }}
+        />
+      }>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space.md }}>
+        <View style={{ flex: 1 }}><Heading title={c.title} /></View>
+        {ordered.length ? (
+          <PressableScale label={c.add} onPress={onAdd}
+            style={{ minHeight: t.control.inline, paddingHorizontal: t.space.lg,
+              flexDirection: 'row', alignItems: 'center', gap: t.space.sm,
+              borderRadius: t.radius.pill, backgroundColor: t.surface.card,
+              borderWidth: t.stroke.hairline, borderColor: t.border.divider }}>
+            <LivingIcon name="plus" size="md" />
+            <Label variant="label">{c.add}</Label>
+          </PressableScale>
+        ) : null}
+      </View>
+      {scheduleIssue ? (
+        <View
+          style={{
+            padding: t.space.lg,
+            borderRadius: t.radius.card,
+            backgroundColor: t.surface.card,
+            borderWidth: t.stroke.hairline,
+            borderColor: t.border.outline,
+          }}>
+          <Label style={{ color: t.text.secondary }}>{c.scheduleRecovery}</Label>
+        </View>
+      ) : null}
+      {scheduleError ? (
+        <View
+          style={{
+            padding: t.space.lg,
+            borderRadius: t.radius.card,
+            backgroundColor: t.surface.card,
+            borderWidth: t.stroke.hairline,
+            borderColor: t.border.outline,
+          }}>
+          <Label style={{ color: t.text.secondary }}>{c.scheduleLimit}</Label>
+        </View>
+      ) : null}
+      {migrationNote ? (
+        <View
+          style={{
+            padding: t.space.lg,
+            borderRadius: t.radius.card,
+            backgroundColor: t.surface.card,
+            borderWidth: t.stroke.hairline,
+            borderColor: t.border.outline,
+            gap: t.space.sm,
+          }}>
+          <Label>{migrationNote}</Label>
+          <PressableScale
+            label={c.dismissRetired}
+            onPress={() => useRulesStore.getState().patch({ migrationNote: null })}
+            style={{ alignSelf: 'flex-start', minHeight: t.control.inline, justifyContent: 'center' }}>
+            <Label variant="support" style={{ color: t.text.primary }}>
+              {c.dismissRetired}
+            </Label>
+          </PressableScale>
+        </View>
+      ) : null}
+      {ordered.length ? (
+        <>
+          {ordered.map((rule, index) => (
+            <Reveal key={rule.id} index={index}>
+              <RuleCard
+                title={ruleName(rule)}
+                schedule={scheduleLabel(rule.schedule)}
+                icon={rule.activity}
+                enabled={rule.enabled}
+                onOpen={() => onEdit(rule.id)}
+                onToggle={(value) => {
+                  try {
+                    toggleRule(rule.id, value, {
+                      now: runtime.clock.now(),
+                      timezone: runtime.clock.timezone(),
+                    });
+                    setScheduleError(false);
+                    if (value && ruleNeedsSetup({ ...rule, enabled: true })) onNeeds?.();
+                  } catch (error) {
+                    if (!(error instanceof SchedulePlanError)) throw error;
+                    setScheduleError(true);
+                  }
+                }}
+                onDelete={() => setDeleting(rule.id)}
+              />
+            </Reveal>
+          ))}
+        </>
+      ) : (
+        <EmptyState icon="walking" title={c.empty} body={c.emptyBody} action={c.add} onAction={onAdd} />
+      )}
+      <View style={{ backgroundColor: t.surface.card, borderRadius: t.radius.pill, borderWidth: t.stroke.hairline, borderColor: t.border.outline }}>
+        <SettingsRow title="Lock list" icon="lock" onPress={() => void openLockList()} />
+      </View>
+    </ScreenShell>
+  );
+}

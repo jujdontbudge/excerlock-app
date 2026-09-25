@@ -33,10 +33,10 @@ export const noTests: Check = {
 
 export const updatesOwner: Check = {
   name: 'updates-owner',
-  why: 'Only src/runtime/updates.ts talks to expo-updates, and never through ON_ERROR_RECOVERY (docs/ota.md).',
+  why: 'Only src/packages/updates/updates.ts talks to expo-updates, and never through ON_ERROR_RECOVERY (docs/ota.md).',
   tier: 'static',
   run() {
-    const owner = 'app-next/src/runtime/updates.ts';
+    const owner = 'app-next/src/packages/updates/updates.ts';
     const problems = onlyOwners(appSources(), /expo-updates/, [owner]);
     const source = existsSync(fromRoot(owner)) ? read(fromRoot(owner)) : '';
     if (!importsModule(source, /expo-updates/)) problems.push(`${owner} must own the expo-updates import`);
@@ -53,7 +53,7 @@ export const analyticsEmitter: Check = {
   tier: 'static',
   run() {
     return verdict([
-      ...onlyOwners(appSources(), /posthog-react-native/, ['app-next/src/runtime/analytics/createPostHogRuntime.ts']),
+      ...onlyOwners(appSources(), /posthog-react-native/, ['app-next/src/packages/telemetry/createPostHogRuntime.ts']),
       ...onlyOwners(walk(join(serverRoot, 'src')), /posthog-node/, ['server/src/services/analytics.ts']),
     ]);
   },
@@ -66,7 +66,7 @@ export const flagRegistry: Check = {
   why: 'PostHog flags an OTA can move are the reviewed set; a new flag is new-submission material (docs/ota.md).',
   tier: 'static',
   run() {
-    const adapter = 'app-next/src/runtime/analytics/PostHogAnalyticsAdapter.ts';
+    const adapter = 'app-next/src/packages/telemetry/PostHogAnalyticsAdapter.ts';
     const union = /export type FlagName =([^;]+);/.exec(read(fromRoot(adapter)))?.[1] ?? '';
     const flags = [...union.matchAll(/'([^']+)'/g)].map((match) => match[1] ?? '').sort();
     const problems: string[] = [];
@@ -86,7 +86,7 @@ export const shieldCopyParity: Check = {
   run() {
     const reader = read(fromRoot('app-next/targets/ShieldConfiguration/ShieldContent.swift'));
     const writer = read(fromRoot('app-next/modules/excerlock-enforcement/ios/ShieldCopyOverrides.swift'));
-    const ts = read(fromRoot('app-next/src/runtime/shield/shieldCopyOverrides.ts'));
+    const ts = read(fromRoot('app-next/src/packages/enforcement/shieldCopyOverrides.ts'));
     const readerKey = /copyOverridesKey = "([^"]+)"/.exec(reader)?.[1];
     const writerKey = /excerlockShieldCopyOverridesDefaultsKey = "([^"]+)"/.exec(writer)?.[1];
     const tsKey = /SHIELD_COPY_OVERRIDES_KEY = '([^']+)'/.exec(ts)?.[1];
@@ -120,7 +120,7 @@ export const researchIsolation: Check = {
       if (/research|recorder|lab/i.test(profile)) problems.push(`eas.json has research profile ${profile}`);
     for (const file of appSources()) {
       const source = read(file);
-      if (/\.research(\.tsx?)?['"]/.test(source) && !/\.research\.tsx?$/.test(file) && !/research\//.test(rel(file)))
+      if (/\.research(\.tsx?)?['"]/.test(source) && !/\.research\.tsx?$/.test(file) && !/packages\/(research|trace)\//.test(rel(file)))
         problems.push(`${rel(file)} imports a .research module outside the research boundary`);
       if (/['"][./]*tools\/(phone|linked)/.test(source)) problems.push(`${rel(file)} imports a recorder from tools/`);
     }

@@ -1,1 +1,1 @@
-export { AnalyticsScreen as default } from '../../src/features/analytics/AnalyticsScreen';
+export { AnalyticsScreen as default } from '../../src/packages/insights/AnalyticsScreen';

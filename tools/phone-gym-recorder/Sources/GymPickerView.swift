@@ -3,7 +3,7 @@ import CoreLocation
 import MapKit
 import SwiftUI
 
-/// The native mirror of `app-next/src/features/gym-picker`: find a place by
+/// The native mirror of `app-next/src/packages/gyms`: find a place by
 /// search or the current fix, then a map that pans under a fixed centre pin
 /// with the orange ring, the outside dimmed, and a 50–200 m radius slider.
 /// Save stores the actual coordinate and radius as the circle under test.

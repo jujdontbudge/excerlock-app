@@ -28,8 +28,8 @@ module.exports = defineConfig([
     },
   },
   {
-    files: ['src/features/**/*.{ts,tsx}', 'src/design-system/**/*.{ts,tsx}'],
-    ignores: ['**/tokens.ts', 'src/design-system/illustrationTokens.ts'],
+    files: ['src/packages/**/*.{ts,tsx}'],
+    ignores: ['src/packages/ui/tokens.ts', 'src/packages/ui/illustrationTokens.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -46,13 +46,25 @@ module.exports = defineConfig([
     },
   },
   {
-    files: ['src/domain/**/*.{ts,tsx}', 'src/onboarding/**/*.{ts,tsx}'],
+    files: [
+      'src/packages/model/**',
+      'src/packages/schedule/{calendar,schedule,scheduleLabel,scheduleRepresentability,scheduleWindowPlan}.ts',
+      'src/packages/activity/{gymMachine,presence,proppedMachine,walkingMachine}.ts',
+      'src/packages/conditions/{ruleName,stepGoal,validateRule}.ts',
+      'src/packages/progress/{progress,projectInstanceProgress,projectMeasuredHistory,reclaimed,sealDay,streak}.ts',
+      'src/packages/progress/lib/{progressDay,projectGymHistory}.ts',
+      'src/packages/lock/resolveLock.ts',
+      'src/packages/lock/lib/unlockHint.ts',
+      'src/packages/onboarding/flowOrder.ts',
+      'src/packages/onboarding/lib/{flow,stepId,validation}.ts',
+      'src/packages/enforcement/lib/shieldContent.ts',
+      'src/packages/launch/lib/bootDestination.ts',
+      'src/packages/notifications/notificationPlan.ts',
+      'src/packages/permissions/setupNeeds.ts',
+      'src/packages/ports/watchdog.ts',
+    ],
     rules: {
       'no-restricted-imports': ['error', { patterns: ['react', 'react-native', 'react-native-*'] }],
     },
-  },
-  {
-    files: ['src/features/**/*.{ts,tsx}'],
-    rules: { 'no-restricted-imports': ['error', { patterns: ['**/demo/**'] }] },
   },
 ]);

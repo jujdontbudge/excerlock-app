@@ -52,7 +52,7 @@ export const comments: Check = {
 
 const uiSources = () =>
   [...walk(join(appRoot, 'src')), ...walk(join(appRoot, 'app'))].filter(
-    (file) => /\.tsx?$/.test(file) && !/design-system\/(tokens|illustrationTokens)\.ts$/.test(file),
+    (file) => /\.tsx?$/.test(file) && !/packages\/ui\/(tokens|illustrationTokens)\.ts$/.test(file),
   );
 
 function scan(pattern: RegExp, files: string[]): string[] {
@@ -88,7 +88,7 @@ export const illustrationTokens: Check = {
   tier: 'static',
   run() {
     const hits = uiSources()
-      .filter((file) => importsModule(read(file), /[./]*(?:design-system\/)?illustrationTokens/))
+      .filter((file) => importsModule(read(file), /[./]*(?:ui\/)?illustrationTokens/))
       .map(rel);
     return { kind: 'count', ratchet: 'illustration-token-importers', value: hits.length, samples: hits };
   },

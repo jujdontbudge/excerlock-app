@@ -1,8 +1,8 @@
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { SettingsPage } from '../../../src/features/settings/SettingsPage';
-import { PermissionDetail } from '../../../src/features/settings/PermissionDetail';
-import { Permissions } from '../../../src/domain/types';
-import { permissionDetailCopy } from '../../../src/content/permissionDetails';
+import { SettingsPage } from '../../../src/packages/ui/SettingsPage';
+import { PermissionDetail } from '../../../src/packages/permissions/PermissionDetail';
+import { Permissions } from '../../../src/packages/model/types';
+import { permissionDetailCopy } from '../../../src/packages/permissions/permissionDetailsCopy';
 export default function PermissionRoute() {
   const r = useRouter(),
     { name } = useLocalSearchParams<{ name: string }>();
