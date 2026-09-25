@@ -7,9 +7,9 @@ import Fastify, {
   type FastifyServerOptions,
 } from "fastify";
 import { pathToFileURL } from "node:url";
-import { requireAuth } from "./auth.js";
+import { requireAuth } from "./packages/auth/auth.js";
 import { adaptyWebhookRoutes } from "./routes/adaptyWebhook.js";
-import { config } from "./config.js";
+import { config } from "./packages/config/config.js";
 import { healthRoutes } from "./routes/health.js";
 import { incidentReportRoutes } from "./routes/incidentReports.js";
 import { supportRoutes } from "./routes/support.js";
@@ -23,7 +23,7 @@ import { vendorWebhookRoutes } from "./routes/vendorWebhooks.js";
 import {
   createDeletionRetryWorker,
   type DeletionRetryWorker,
-} from "./userDeletion/index.js";
+} from "./packages/user-deletion/index.js";
 
 declare module "fastify" {
   interface FastifyInstance {

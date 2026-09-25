@@ -26,7 +26,7 @@ both install `deploy/Caddyfile` over `/etc/caddy/Caddyfile`, so every vhost must
 live in that one file. `/etc/excerlock/env` carries the Supabase identity
 variables (`SUPABASE_URL`, `SUPABASE_JWKS_URL`, `SUPABASE_SERVICE_ROLE_KEY`)
 in addition to the baseline below; `RESEND_API_KEY` is unset, so incident-report
-emails are skipped while persistence still succeeds (`server/src/incidents/notify.ts`).
+emails are skipped while persistence still succeeds (`server/src/packages/incidents/lib/notify.ts`).
 
 Latest API deploy: `docs/releases/2026-09-18-api-incident-reports.md`
 (migration `0010_incident-reports.sql`, `POST /v1/incident-reports`).
@@ -53,7 +53,7 @@ changing either. `VM_SIZE` and `IMAGE` must always agree on CPU architecture.
 that hostname and cannot mint a certificate until an A record points at the IP
 above. Until then the service is reachable publicly only as a `308` redirect,
 and `/etc/excerlock/env` holds the non-secret baseline (`NODE_ENV`, `HOST`,
-`PORT`, `DATABASE_URL`) with every vendor secret still absent — `server/src/env.ts`
+`PORT`, `DATABASE_URL`) with every vendor secret still absent — `server/src/packages/config/env.ts`
 makes them all optional, which is why the API boots and answers health anyway.
 
 ## 1. Provision the VM

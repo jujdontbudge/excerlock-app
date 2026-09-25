@@ -54,7 +54,7 @@ export const analyticsEmitter: Check = {
   run() {
     return verdict([
       ...onlyOwners(appSources(), /posthog-react-native/, ['app-next/src/packages/telemetry/createPostHogRuntime.ts']),
-      ...onlyOwners(walk(join(serverRoot, 'src')), /posthog-node/, ['server/src/services/analytics.ts']),
+      ...onlyOwners(walk(join(serverRoot, 'src')), /posthog-node/, ['server/src/packages/analytics/analytics.ts']),
     ]);
   },
 };

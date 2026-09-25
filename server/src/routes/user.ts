@@ -3,13 +3,13 @@ import {
   createDrizzleIdentityRepository,
   DeletedIdentityError,
   type IdentityRepository,
-} from "../identity/index.js";
+} from "../packages/identity/index.js";
 import {
   createConfiguredUserDeletionService,
   IdentityErasureRequestError,
   type UserDeletionService,
   UserDeletionConfigurationError,
-} from "../userDeletion/index.js";
+} from "../packages/user-deletion/index.js";
 import {
   sendNotImplemented,
   type NotImplementedResponse,

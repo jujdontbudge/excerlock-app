@@ -3,17 +3,22 @@ import { join } from 'node:path';
 import { appRoot, rel } from '../lib/paths.ts';
 import { flag, has, option, out, run, UsageError } from '../lib/shell.ts';
 import { appCandidates, devices, metroRunning } from '../lib/sim.ts';
+import { serverSmokeCommand, serverSmokeHelp } from './serverSmoke.ts';
 
 export const serverHelp = `excer server health|ready [--prod] [--url <base>]
+excer server smoke [--keep]
 
 Calls GET /v1/health (process up) or /v1/ready (database reachable). Health alone
 does not prove readiness. Default base http://127.0.0.1:3000; --prod uses
-https://api.excerlock.com. Start a local server with: npm run dev -w server`;
+https://api.excerlock.com. Start a local server with: npm run dev -w server
+
+${serverSmokeHelp}`;
 
 export async function serverCommand(args: string[]): Promise<number> {
   const prod = flag(args, 'prod');
   const base = option(args, 'url') ?? (prod ? 'https://api.excerlock.com' : 'http://127.0.0.1:3000');
   const [probe] = args;
+  if (probe === 'smoke') return serverSmokeCommand(args.slice(1));
   if (probe !== 'health' && probe !== 'ready') throw new UsageError(serverHelp);
   try {
     const response = await fetch(`${base}/v1/${probe}`, { signal: AbortSignal.timeout(10_000) });

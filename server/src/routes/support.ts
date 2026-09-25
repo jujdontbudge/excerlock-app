@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
-import { analytics } from "../services/analytics.js";
+import { analytics } from "../packages/analytics/analytics.js";
 import {
   createDrizzleFeatureRequestRepository,
   createDrizzleFeatureRequestVoteRepository,
@@ -9,12 +9,12 @@ import {
   createFeatureRequestVoteService,
   createSupportSubmissionService,
   sendSupportEmail,
-} from "../support/index.js";
+} from "../packages/support/index.js";
 import type {
   FeatureRequestService,
   FeatureRequestVoteService,
   SupportSubmissionService,
-} from "../support/index.js";
+} from "../packages/support/index.js";
 import { requireActiveRouteUserId } from "./vendorRouteSupport.js";
 import { sendSupportRouteError } from "./supportRouteError.js";
 

@@ -213,7 +213,7 @@ run_command rsync "${RSYNC_OPTIONS[@]}" --delete \
   "${SERVER_DIR}/dist/" "${DEPLOY_HOST}:${REMOTE_DIR}/dist/"
 
 # The migration SQL is data, not build output, so it never lands in dist/.
-# dist/migrate.js resolves it at ../../drizzle relative to dist/db/, which is
+# dist/migrate.js resolves it at ../../../drizzle relative to dist/packages/db/, which is
 # why it must sit beside dist/ rather than inside it.
 run_command rsync "${RSYNC_OPTIONS[@]}" --delete \
   "${SERVER_DIR}/drizzle/" "${DEPLOY_HOST}:${REMOTE_DIR}/drizzle/"

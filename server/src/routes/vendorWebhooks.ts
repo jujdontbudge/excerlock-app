@@ -3,12 +3,12 @@ import type {
   FastifyReply,
   FastifyRequest,
 } from "fastify";
-import { config } from "../config.js";
-import type { Environment } from "../env.js";
+import { config } from "../packages/config/config.js";
+import type { Environment } from "../packages/config/env.js";
 import {
   createDrizzleVendorRepository,
   type Vendor,
-} from "../vendors/index.js";
+} from "../packages/vendors/index.js";
 import {
   createVendorWebhookService,
   requireVendorWebhookConfiguration,
@@ -19,7 +19,7 @@ import {
   verifyWhoopWebhook,
   type VendorWebhookConfiguration,
   type VendorWebhookService,
-} from "../webhooks/index.js";
+} from "../packages/webhooks/index.js";
 import {
   requireRouteVendor,
   sendVendorRouteError,

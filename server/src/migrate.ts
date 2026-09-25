@@ -1,4 +1,4 @@
-import { runMigrations } from "./db/migrator.js";
+import { runMigrations } from "./packages/db/migrator.js";
 
 async function main(): Promise<void> {
   const { migrationsFolder } = await runMigrations();

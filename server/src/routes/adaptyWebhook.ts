@@ -1,13 +1,13 @@
 import type { FastifyPluginAsync } from "fastify";
 import { ZodError } from "zod";
-import { config } from "../config.js";
-import type { Environment } from "../env.js";
+import { config } from "../packages/config/config.js";
+import type { Environment } from "../packages/config/env.js";
 import {
   createAdaptyWebhookService,
   createDrizzleAdaptyWebhookRepository,
   type AdaptyWebhookService,
-} from "../subscriptions/index.js";
-import { verifyWebhookAuthorization } from "../webhooks/index.js";
+} from "../packages/subscriptions/index.js";
+import { verifyWebhookAuthorization } from "../packages/webhooks/index.js";
 
 interface AdaptyWebhookRouteDependencies {
   environment?: Environment;

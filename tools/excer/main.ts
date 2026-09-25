@@ -16,9 +16,10 @@ const usage = `excer: control and verification for ExcerLock
   excer sim <command>               drive the owned simulator (status, start, open, tap, shot, tree)
   excer prove <feature>             run a feature's proofs on the simulator and save evidence
   excer server health|ready [--prod]
+  excer server smoke                real API + Postgres, one account from sign-up to erasure
   excer new package <name>
   excer move <source...> <destination>
-                                    move app files and rewrite their imports
+                                    move app or server files and rewrite their imports
 
 Run excer <command> --help for details. Words: CONTEXT.md. Shape: ARCHITECTURE.md.`;
 

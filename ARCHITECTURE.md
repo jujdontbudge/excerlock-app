@@ -14,7 +14,7 @@ ExcerLock has one shape everywhere: five nouns, each with one folder and one job
 
 `ports` holds the contracts: every port interface, the `Runtime` type that bundles them, and `useRuntime()`. Packages talk to the device only through `useRuntime()`; `runtime` decides what stands behind it.
 
-The server uses the same shape: `server/src/packages/<name>/` for packages, thin route files that validate, call one package and respond, and `server/src/app.ts` as the composition root.
+The server uses the same shape. `server/src/packages/<name>/` holds packages in four layers (`config`, `model` → `analytics`, `db` → `auth`, `identity`, `incidents`, `subscriptions`, `support`, `user-deletion`, `webhooks` → `vendors`), enforced by `server/.dependency-cruiser.cjs`. `server/src/routes/` holds thin transport files that validate, call one package entry and respond. `server/src/index.ts` is the composition root. `./excer server smoke` proves the API end to end against real Postgres.
 
 ## Package shape
 
@@ -66,7 +66,7 @@ A package imports only packages from a lower layer, never from its own layer, so
 4. Routes import only package entry points and never `Native*` adapters.
 5. Native code: only `runtime`, `<package>/lib/native/**` and `Native*` entry files import `app-next/modules`. Another package reaches a `Native*` entry only from `runtime`, `research` or another adapter.
 6. No comments in TypeScript or JavaScript (`excerlock/no-comments`). Allowed: `eslint-disable-next-line <rule> -- <reason>`, `@ts-expect-error <reason>`, `/// <reference …>`. Put knowledge in names, types, `CONTEXT.md`, a package README or an ADR. Swift is exempt.
-7. No tests. Verification is `./excer check` (static) plus `./excer prove <feature>` (drives the real app on a simulator and captures evidence).
+7. No tests. Verification is `./excer check` (static), `./excer prove <feature>` (drives the real app on a simulator and captures evidence) and `./excer server smoke` (real API and Postgres, stubbed vendors).
 8. Words come from `CONTEXT.md`. The product noun is Condition, not Rule.
 
 ## Invariants

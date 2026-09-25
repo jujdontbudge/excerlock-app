@@ -1,15 +1,15 @@
 import type { FastifyPluginAsync } from "fastify";
-import { config } from "../config.js";
+import { config } from "../packages/config/config.js";
 import {
   createDrizzleVendorRepository,
   createVendorOAuthService,
   type VendorOAuthCallback,
   type VendorOAuthService,
-} from "../vendors/index.js";
+} from "../packages/vendors/index.js";
 import {
   createVendorEventFeed,
   type VendorEventFeed,
-} from "../webhooks/index.js";
+} from "../packages/webhooks/index.js";
 import {
   sendNotImplemented,
   type NotImplementedResponse,

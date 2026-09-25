@@ -11,5 +11,5 @@ against the walking/gym phases; null when nothing fresh was held.
 per apply whose decision changed, so a report can say when the last lock and unlock happened.
 
 Never put in a snapshot: coordinates, place names, addresses, emails, tokens, Screen Time app names. The server
-rejects such keys outright (`server/src/incidents/diagnostics.ts`).
+rejects such keys outright (`server/src/packages/incidents/lib/diagnostics.ts`).
 

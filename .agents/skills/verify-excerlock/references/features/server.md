@@ -14,9 +14,13 @@ depends: [account, paywall, support]
 Indirectly: sign-in, purchases, feedback and incident reports.
 
 ## Driving it with excer
-Start the server locally with `npm run dev -w server`, then run `./excer server health` and `./excer server ready`. `--prod` checks production, which is read-only.
+`./excer server smoke` builds the server, runs it against a throwaway Postgres container with stubbed Adapty, PostHog and Supabase admin, and walks one account from provisioning through a support request, an incident report, Adapty webhooks and deletion. It asserts HTTP statuses and the rows left behind. Run it after any server change.
+
+For a manual session, start the server with `npm run dev -w server`, then run `./excer server health` and `./excer server ready`. `--prod` checks production, which is read-only.
 
 ## Gotchas
 - Health alone does not prove readiness. Check both.
-- Vendor routes (`/v1/vendors/*`, `/v1/feature-requests`) have no caller in the app. They are candidates for removal in the server rebuild.
+- Vendor routes (`/v1/vendors/*`, `/v1/webhooks/<vendor>`) and `/v1/feature-requests` have no caller in the app. They are kept on purpose (PRD §3.5c: reviving a rail is configuration, not redesign).
+- A raw `Date` inside a drizzle `sql` template fails in postgres-js. Bind values through column operators (`lt`, `eq`) so the column type serializes them.
+- Account deletion keeps the `users` row as a tombstone, so `onDelete: cascade` never fires. Every user-owned table needs an explicit delete in `user-deletion`'s transaction, and the smoke asserts each one.
 - Never print `/etc/excerlock/env`. Deploy only through `deploy/deploy.sh`, and only with authorization.

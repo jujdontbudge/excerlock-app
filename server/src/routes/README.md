@@ -141,9 +141,3 @@ Vendor route boundaries:
 configured Authorization value is compared through fixed-width SHA-256 digests
 before an empty verification request or subscription event is accepted. The
 route never logs the header, customer id, or payload.
-
-Route fixtures use `fastify.inject()`:
-
-```sh
-npm run test:server
-```

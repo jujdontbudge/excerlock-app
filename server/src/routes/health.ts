@@ -1,9 +1,9 @@
 import type { FastifyPluginAsync } from "fastify";
-import { config } from "../config.js";
-import { getDb } from "../db/index.js";
-import { checkSchemaReady, type ReadinessResult } from "../db/readiness.js";
-import type { Environment } from "../env.js";
-import { isUserDeletionConfigured } from "../userDeletion/configuration.js";
+import { config } from "../packages/config/config.js";
+import { getDb } from "../packages/db/index.js";
+import { checkSchemaReady, type ReadinessResult } from "../packages/db/readiness.js";
+import type { Environment } from "../packages/config/env.js";
+import { isUserDeletionConfigured } from "../packages/user-deletion/configuration.js";
 
 export interface HealthResponse {
   ok: true;

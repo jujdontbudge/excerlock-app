@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { and, eq, isNull } from "drizzle-orm";
-import { getDb, users } from "../db/index.js";
-import { isVendor, VendorClientError, type Vendor } from "../vendors/index.js";
+import { getDb, users } from "../packages/db/index.js";
+import { isVendor, VendorClientError, type Vendor } from "../packages/vendors/index.js";
 
 export function verifiedRouteUserId(request: FastifyRequest): string | null {
   return request.authIdentity?.userId ?? request.clerkIdentity?.userId ?? null;

@@ -2,7 +2,7 @@ import type { FastifyReply } from "fastify";
 import {
   FeatureRequestNotFoundError,
   SupportUserNotFoundError,
-} from "../support/index.js";
+} from "../packages/support/index.js";
 
 function isDeletedIdentityError(error: unknown): boolean {
   if (!error || typeof error !== "object") {

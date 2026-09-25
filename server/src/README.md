@@ -1,7 +1,8 @@
-# Server composition root
+# Server
 
-Contract: future Sentry-first instrumentation, environment, configuration, and auth files compose the
-neighboring server modules. Invariants: business rules remain behind those public module boundaries.
+- `index.ts` is the composition root: it builds Fastify, registers `routes/` and starts the deletion worker.
+- `instrument.ts` starts Sentry before anything else loads; `migrate.ts` applies the Drizzle journal.
+- `routes/` holds thin transport files: validate, call one package entry, respond.
+- `packages/<name>/` holds the concepts in strict layers (`server/.dependency-cruiser.cjs`): root files are public, `lib/` is private.
 
-Fixtures: none; integration fixtures belong to the called module or `server/test`. Test with
-`npm run test:server` from the repository root.
+Verify with `./excer check` (static) and `./excer server smoke` (real Postgres, real HTTP, stubbed vendors).

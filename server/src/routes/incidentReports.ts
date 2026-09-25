@@ -6,8 +6,8 @@ import {
   IncidentDiagnosticsRejectedError,
   IncidentUserNotFoundError,
   sendIncidentEmail,
-} from "../incidents/index.js";
-import type { IncidentReportService } from "../incidents/index.js";
+} from "../packages/incidents/index.js";
+import type { IncidentReportService } from "../packages/incidents/index.js";
 import { requireActiveRouteUserId } from "./vendorRouteSupport.js";
 import { sendSupportRouteError } from "./supportRouteError.js";
 
