@@ -116,8 +116,6 @@ export async function serverSmokeCommand(args: string[]): Promise<number> {
       RESEND_API_KEY: '',
       POSTHOG_API_KEY: '',
       SENTRY_DSN: '',
-      CLERK_SECRET_KEY: '',
-      CLERK_ISSUER: '',
     };
     const cwd = mkdtempSync(join(tmpdir(), 'excer-smoke-'));
     must('node', [join(root, 'dist', 'migrate.js')], { cwd, env: environment });

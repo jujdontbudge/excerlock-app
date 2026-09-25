@@ -35,7 +35,6 @@ const stateSelection = {
   deletedAt: users.deletedAt,
   adaptyErasedAt: users.adaptyErasedAt,
   posthogErasedAt: users.posthogErasedAt,
-  clerkDeletedAt: users.clerkDeletedAt,
   authProvider: users.authProvider,
   authDeletedAt: users.authDeletedAt,
   deletionAttempts: users.deletionAttempts,
@@ -108,7 +107,6 @@ export function createDrizzleUserDeletionRepository(
           deletedAt: state.deletedAt,
           adaptyErasedAt: state.adaptyErasedAt,
           posthogErasedAt: state.posthogErasedAt,
-          clerkDeletedAt: state.clerkDeletedAt,
           authProvider: state.authProvider,
           authDeletedAt: state.authDeletedAt,
           deletionAttempts: state.deletionAttempts ?? 0,
@@ -128,13 +126,6 @@ export function createDrizzleUserDeletionRepository(
       await database
         .update(users)
         .set({ posthogErasedAt: erasedAt })
-        .where(eq(users.id, userId));
-    },
-
-    async markClerkDeleted(userId, deletedAt) {
-      await database
-        .update(users)
-        .set({ clerkDeletedAt: deletedAt, authProvider: "clerk" })
         .where(eq(users.id, userId));
     },
 

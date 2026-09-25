@@ -11,7 +11,6 @@ export interface IdentityErasureConfiguration {
   posthogApiHost: string;
   supabaseUrl: string;
   supabaseServiceRoleKey: string;
-  clerkSecretKey?: string;
   fetch?: Fetch;
   timeoutMs?: number;
 }
@@ -25,13 +24,12 @@ export function erasureConfigurationFrom(environment: Environment): IdentityEras
     posthogApiHost: environment.posthogApiHost,
     supabaseUrl: environment.supabaseUrl as string,
     supabaseServiceRoleKey: environment.supabaseServiceRoleKey as string,
-    ...(environment.clerkSecretKey ? { clerkSecretKey: environment.clerkSecretKey } : {}),
     timeoutMs: environment.deletionGatewayTimeoutMs,
   };
 }
 
 export class IdentityErasureRequestError extends Error {
-  constructor(readonly processor: "Adapty" | "PostHog" | "Supabase" | "Clerk") {
+  constructor(readonly processor: "Adapty" | "PostHog" | "Supabase") {
     super(`${processor} identity erasure did not succeed`);
     this.name = "IdentityErasureRequestError";
   }
@@ -141,25 +139,6 @@ export function createIdentityErasureGateway(
     },
 
     async deleteAuthUser(userId) {
-      await deleteSupabaseUser(userId);
-    },
-
-    async deleteClerkUser(userId) {
-      if (configuration.clerkSecretKey) {
-        const response = await fetchWithTimeout(
-          fetch,
-          `https://api.clerk.com/v1/users/${encodeURIComponent(userId)}`,
-          {
-            method: "DELETE",
-            headers: {
-              authorization: `Bearer ${configuration.clerkSecretKey}`,
-            },
-          },
-          timeoutMs,
-        );
-        requireSuccess(response, "Clerk", true);
-        return;
-      }
       await deleteSupabaseUser(userId);
     },
   };

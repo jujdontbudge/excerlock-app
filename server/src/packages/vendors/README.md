@@ -19,11 +19,11 @@ durably recorded. It does not mean that the server awarded anything.
 ## HTTP routes
 
 - `GET /v1/vendors/:vendor/connect` creates a one-use, ten-minute OAuth state
-  record and redirects to the provider. It requires Clerk authentication.
+  record and redirects to the provider. It requires authentication.
 - `GET /v1/vendors/:vendor/callback` consumes the state before exchanging the
   authorization code. It is public because the provider redirects to it.
 - `DELETE /v1/vendors/:vendor` revokes provider access, deletes the encrypted
-  local connection, and emits `vendor_disconnected`. It requires Clerk
+  local connection, and emits `vendor_disconnected`. It requires
   authentication.
 - `GET /v1/vendors/events?cursor=...&limit=...` returns the authenticated
   user's recorded notifications in stable receive-time/id order. The opaque

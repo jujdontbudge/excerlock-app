@@ -42,7 +42,7 @@ unique index on `(vendor, delivery_key)` makes replay insertion atomic.
 notification kinds and notifications that cannot be mapped to a connection
 are acknowledged but are not recorded.
 
-The device reads `GET /v1/vendors/events`. Rows are scoped by Clerk user id and
+The device reads `GET /v1/vendors/events`. Rows are scoped by user id and
 ordered by `(received_at, id)`. The response cursor encodes that pair so two
 events with the same timestamp cannot be skipped.
 

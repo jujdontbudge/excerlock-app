@@ -45,8 +45,6 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65_535).default(3000).catch(3000),
   DATABASE_URL: optionalString,
   SENTRY_DSN: optionalString,
-  CLERK_SECRET_KEY: optionalString,
-  CLERK_ISSUER: optionalUrl,
   SUPABASE_URL: optionalUrl,
   SUPABASE_JWKS_URL: optionalUrl,
   SUPABASE_JWT_SECRET: optionalString,
@@ -136,7 +134,6 @@ function requireProductionHttps(
   ][] = [
     ["SUPABASE_URL", parsed.SUPABASE_URL, false],
     ["SUPABASE_JWKS_URL", parsed.SUPABASE_JWKS_URL, false],
-    ["CLERK_ISSUER", parsed.CLERK_ISSUER, false],
     [
       "VENDOR_OAUTH_CALLBACK_BASE_URL",
       parsed.VENDOR_OAUTH_CALLBACK_BASE_URL,
@@ -174,8 +171,6 @@ export interface Environment {
   port: number;
   databaseUrl: string | undefined;
   sentryDsn: string | undefined;
-  clerkSecretKey: string | undefined;
-  clerkIssuer: string | undefined;
   supabaseUrl: string | undefined;
   supabaseJwksUrl: string | undefined;
   supabaseJwtSecret: string | undefined;
@@ -228,8 +223,6 @@ export function parseEnv(
     port: parsed.PORT,
     databaseUrl: parsed.DATABASE_URL,
     sentryDsn: parsed.SENTRY_DSN,
-    clerkSecretKey: parsed.CLERK_SECRET_KEY,
-    clerkIssuer: parsed.CLERK_ISSUER,
     supabaseUrl: parsed.SUPABASE_URL,
     supabaseJwksUrl: parsed.SUPABASE_JWKS_URL,
     supabaseJwtSecret: parsed.SUPABASE_JWT_SECRET,

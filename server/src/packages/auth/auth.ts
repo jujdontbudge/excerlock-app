@@ -1,35 +1,20 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import {
-  createRemoteJWKSet,
-  decodeJwt,
-  decodeProtectedHeader,
-  jwtVerify,
-} from "jose";
+import { createRemoteJWKSet, decodeProtectedHeader, jwtVerify } from "jose";
 import { config } from "../config/config.js";
 import type { Environment } from "../config/env.js";
-
-export type AuthProvider = "supabase" | "clerk";
 
 export interface VerifiedIdentity {
   userId: string;
   roles: readonly string[];
-  provider: AuthProvider;
   isAnonymous: boolean;
-}
-
-export interface ClerkIdentity {
-  userId: string;
-  roles: readonly string[];
 }
 
 declare module "fastify" {
   interface FastifyRequest {
     authIdentity?: VerifiedIdentity;
-    clerkIdentity?: ClerkIdentity;
   }
 }
 
-const CLERK_JWKS_URL = new URL("https://api.clerk.com/v1/jwks");
 const SUPABASE_AUDIENCE = "authenticated";
 const DEFAULT_SUPABASE_RS_ALGORITHMS = ["RS256", "ES256"] as const;
 const SUPABASE_HS_ALGORITHMS = ["HS256"] as const;
@@ -38,26 +23,16 @@ const UUID_RE =
 
 type RemoteJwks = ReturnType<typeof createRemoteJWKSet>;
 
-const jwksCache = new Map<string, { authHeader?: string; jwks: RemoteJwks }>();
+const jwksCache = new Map<string, RemoteJwks>();
 
-function remoteJwksFor(url: string, authHeader?: string): RemoteJwks {
+function remoteJwksFor(url: string): RemoteJwks {
   const cached = jwksCache.get(url);
-  if (cached && cached.authHeader === authHeader) {
-    return cached.jwks;
+  if (cached) {
+    return cached;
   }
-  const jwks = createRemoteJWKSet(new URL(url), {
-    ...(authHeader ? { headers: { authorization: authHeader } } : {}),
-  });
-  if (authHeader === undefined) {
-    jwksCache.set(url, { jwks });
-  } else {
-    jwksCache.set(url, { authHeader, jwks });
-  }
+  const jwks = createRemoteJWKSet(new URL(url));
+  jwksCache.set(url, jwks);
   return jwks;
-}
-
-export function clearAuthJwksCache(): void {
-  jwksCache.clear();
 }
 
 export interface SupabaseJwtConfig {
@@ -135,26 +110,6 @@ export function supabaseJwtConfigFromEnv(
   };
 }
 
-export interface ClerkJwtConfig {
-  secretKey: string;
-  issuer: string | undefined;
-}
-
-export function clerkJwtConfigFromEnv(
-  env: Pick<Environment, "clerkSecretKey" | "clerkIssuer">,
-): ClerkJwtConfig | null {
-  const secretKey = env.clerkSecretKey?.trim();
-  if (!secretKey) {
-    return null;
-  }
-  const issuer = env.clerkIssuer?.trim() || undefined;
-  return { secretKey, issuer };
-}
-
-function clerkJwksFor(secretKey: string): RemoteJwks {
-  return remoteJwksFor(CLERK_JWKS_URL.href, `Bearer ${secretKey}`);
-}
-
 function supabaseJwksFor(jwksUrl: string): RemoteJwks {
   return remoteJwksFor(jwksUrl);
 }
@@ -189,7 +144,6 @@ function verifiedIdentityFromSupabasePayload(payload: {
   return Object.freeze({
     userId,
     roles: Object.freeze(roles),
-    provider: "supabase" as const,
     isAnonymous,
   });
 }
@@ -235,126 +189,29 @@ export async function verifySupabaseJwt(
   return verifiedIdentityFromSupabasePayload(payload);
 }
 
-export async function verifyClerkJwt(
-  token: string,
-  secretKey: string,
-  options: { issuer?: string } = {},
-): Promise<ClerkIdentity> {
-  const issuer = options.issuer?.trim() || undefined;
-  const { payload } = await jwtVerify(token, clerkJwksFor(secretKey), {
-    algorithms: ["RS256"],
-    ...(issuer ? { issuer } : {}),
-  });
-
-  if (typeof payload.sub !== "string" || payload.sub.trim().length === 0) {
-    throw new Error("Clerk JWT is missing its subject");
-  }
-
-  const roles = Array.isArray(payload.roles)
-    ? payload.roles.filter((role): role is string => typeof role === "string")
-    : [];
-
-  return Object.freeze({
-    userId: payload.sub,
-    roles: Object.freeze(roles),
-  });
-}
-
-export function peekUnverifiedIssuer(token: string): string | null {
-  try {
-    const payload = decodeJwt(token);
-    return typeof payload.iss === "string" ? payload.iss : null;
-  } catch {
-    return null;
-  }
-}
-
 export type AuthMode =
   | { kind: "supabase"; supabase: SupabaseJwtConfig }
-  | { kind: "clerk"; clerk: ClerkJwtConfig }
-  | {
-      kind: "dual";
-      supabase: SupabaseJwtConfig;
-      clerk: ClerkJwtConfig & { issuer: string };
-    }
   | { kind: "unconfigured" };
 
-export function resolveAuthMode(
-  env: Pick<
-    Environment,
-    | "supabaseUrl"
-    | "supabaseJwksUrl"
-    | "supabaseJwtSecret"
-    | "supabaseJwtAlgorithms"
-    | "clerkSecretKey"
-    | "clerkIssuer"
-  > = config,
-): AuthMode {
+type AuthEnvironment = Pick<
+  Environment,
+  "supabaseUrl" | "supabaseJwksUrl" | "supabaseJwtSecret" | "supabaseJwtAlgorithms"
+>;
+
+export function resolveAuthMode(env: AuthEnvironment = config): AuthMode {
   const supabase = supabaseJwtConfigFromEnv(env);
-  const clerk = clerkJwtConfigFromEnv(env);
-  if (supabase && clerk) {
-    if (clerk.issuer) {
-      return {
-        kind: "dual",
-        supabase,
-        clerk: { secretKey: clerk.secretKey, issuer: clerk.issuer },
-      };
-    }
-    return { kind: "supabase", supabase };
-  }
-  if (supabase) {
-    return { kind: "supabase", supabase };
-  }
-  if (clerk) {
-    return { kind: "clerk", clerk };
-  }
-  return { kind: "unconfigured" };
+  return supabase ? { kind: "supabase", supabase } : { kind: "unconfigured" };
 }
 
 export async function verifyAuthToken(
   token: string,
-  env: Pick<
-    Environment,
-    | "supabaseUrl"
-    | "supabaseJwksUrl"
-    | "supabaseJwtSecret"
-    | "supabaseJwtAlgorithms"
-    | "clerkSecretKey"
-    | "clerkIssuer"
-  > = config,
+  env: AuthEnvironment = config,
 ): Promise<VerifiedIdentity> {
   const mode = resolveAuthMode(env);
   if (mode.kind === "unconfigured") {
     throw new Error("Authentication is not configured");
   }
-  if (mode.kind === "supabase") {
-    return verifySupabaseJwt(token, mode.supabase);
-  }
-  if (mode.kind === "clerk") {
-    const clerk = await verifyClerkJwt(token, mode.clerk.secretKey, {
-      ...(mode.clerk.issuer ? { issuer: mode.clerk.issuer } : {}),
-    });
-    return Object.freeze({
-      ...clerk,
-      provider: "clerk" as const,
-      isAnonymous: false,
-    });
-  }
-  const issuer = peekUnverifiedIssuer(token);
-  if (issuer === mode.supabase.issuer) {
-    return verifySupabaseJwt(token, mode.supabase);
-  }
-  if (issuer === mode.clerk.issuer) {
-    const clerk = await verifyClerkJwt(token, mode.clerk.secretKey, {
-      issuer: mode.clerk.issuer,
-    });
-    return Object.freeze({
-      ...clerk,
-      provider: "clerk" as const,
-      isAnonymous: false,
-    });
-  }
-  throw new Error("JWT issuer is not recognized");
+  return verifySupabaseJwt(token, mode.supabase);
 }
 
 async function authUnavailableReply(reply: FastifyReply): Promise<void> {
@@ -370,8 +227,7 @@ export async function requireAuth(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
-  const mode = resolveAuthMode(config);
-  if (mode.kind === "unconfigured") {
+  if (resolveAuthMode(config).kind === "unconfigured") {
     await authUnavailableReply(reply);
     return;
   }
@@ -399,21 +255,12 @@ export async function requireAuth(
   }
 
   try {
-    const identity = await verifyAuthToken(token, config);
-    request.authIdentity = identity;
-    request.clerkIdentity = Object.freeze({
-      userId: identity.userId,
-      roles: identity.roles,
-    });
+    request.authIdentity = await verifyAuthToken(token, config);
   } catch {
-    const message =
-      mode.kind === "clerk"
-        ? "Invalid or expired Clerk session"
-        : "Invalid or expired session";
     await reply.code(401).send({
       error: {
         code: "UNAUTHORIZED",
-        message,
+        message: "Invalid or expired session",
       },
     });
   }

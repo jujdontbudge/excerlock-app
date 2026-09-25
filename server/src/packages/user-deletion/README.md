@@ -20,10 +20,9 @@ Routes depend on `UserDeletionService`; database and vendor details stay here.
 The worker is fenced and idempotent **at least once**, not exactly once. Lease
 TTL covers the configured processor timeouts plus margin; a stalled database
 can still cause a replay after expiry, so every downstream operation must stay
-idempotent. Legacy Clerk deletion is deliberately unsupported at runtime and
-returns 409 before tombstoning; migrate/sign in to the canonical Supabase
-identity before deletion. Historic Clerk tombstones are retained for audit and
-are never sent to the Supabase admin deletion endpoint.
+idempotent. Clerk authentication was removed (production had no Clerk ids);
+historic Clerk tombstone columns remain in the schema for audit and are never
+sent to the Supabase admin deletion endpoint.
 
 Support submissions are deliberately deleted even though they are the sole
 copy. A deletion request is treated as withdrawal of consent to retain that

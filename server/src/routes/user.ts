@@ -64,15 +64,6 @@ export function createUserRoutes(
       if (!userId) {
         return;
       }
-      if (request.authIdentity?.provider === "clerk") {
-        return reply.code(409).send({
-          error: {
-            code: "ACCOUNT_DELETION_PROVIDER_UNSUPPORTED",
-            message: "Legacy Clerk account deletion is unsupported; migrate to Supabase before deleting this account",
-          },
-        });
-      }
-
       try {
         await dependencies.deletion.deleteAccount(userId);
         return reply.code(204).send();

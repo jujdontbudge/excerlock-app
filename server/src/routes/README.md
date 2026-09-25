@@ -4,14 +4,14 @@ This module owns the `/v1/*` Fastify transport for health, support, user, and
 vendor endpoints. Handlers validate transport data and delegate; they contain
 no earning, ledger, shield, or lock decisions.
 
-`PUT /v1/user` idempotently provisions the authenticated Clerk subject as the
+`PUT /v1/user` idempotently provisions the authenticated Supabase subject as the
 minimal Postgres identity-spine row. It never accepts an id from the request
 body and never reactivates a deletion tombstone. `DELETE /v1/user` may revisit
 a tombstone only to resume downstream erasure checkpoints.
 
 ## Support and feature requests
 
-All support and feature-request routes are Clerk protected.
+All support and feature-request routes are Authenticated.
 
 ### `POST /v1/support`
 
@@ -123,14 +123,14 @@ decision; handler memory is not.
 ### Defined support errors
 
 - `400 INVALID_SUPPORT_REQUEST` — malformed or out-of-bounds support body.
-- `401 UNAUTHORIZED` — no verified Clerk identity.
+- `401 UNAUTHORIZED` — no verified Supabase identity.
 - `404 USER_NOT_FOUND` — verified identity has no `users` row.
 - `404 FEATURE_REQUEST_NOT_FOUND` — vote target does not exist.
 
 Vendor route boundaries:
 
 - Public: OAuth callbacks and verified webhook challenge/delivery endpoints.
-- Clerk protected: connect, disconnect, and device event-feed endpoints.
+- Authenticated: connect, disconnect, and device event-feed endpoints.
 - The webhook plugin alone replaces Fastify's JSON parser so signature checks
   receive the exact request bytes. That parser is encapsulated and cannot
   alter unrelated API routes.

@@ -7,7 +7,6 @@ export interface IdentityErasureGateway {
   eraseAdaptyProfile(userId: string): Promise<void>;
   erasePosthogPerson(userId: string): Promise<void>;
   deleteAuthUser(userId: string): Promise<void>;
-  deleteClerkUser?(userId: string): Promise<void>;
 }
 
 export interface UserDeletionService {
@@ -21,28 +20,9 @@ export interface UserDeletionServiceOptions {
   now?: () => Date;
 }
 
-function resolveDeleteAuthUser(
-  downstream: IdentityErasureGateway,
-): (userId: string) => Promise<void> {
-  if (typeof downstream.deleteAuthUser === "function") {
-    return (userId) => downstream.deleteAuthUser(userId);
-  }
-  const legacy = downstream.deleteClerkUser;
-  if (typeof legacy === "function") {
-    return (userId) => legacy.call(downstream, userId);
-  }
-  throw new Error("Identity erasure gateway is missing deleteAuthUser");
-}
-
-export function createUserDeletionService(options: {
-  repository: UserDeletionRepository;
-  downstream: IdentityErasureGateway;
-  authProvider?: AuthErasureProvider | string;
-  now?: () => Date;
-}): UserDeletionService {
+export function createUserDeletionService(options: UserDeletionServiceOptions): UserDeletionService {
   const now = options.now ?? (() => new Date());
   const authProvider = options.authProvider ?? "supabase";
-  const deleteAuthUser = resolveDeleteAuthUser(options.downstream);
 
   return {
     async deleteAccount(userId) {
@@ -59,7 +39,7 @@ export function createUserDeletionService(options: {
       }
 
       if (!state.authDeletedAt || state.authProvider !== authProvider) {
-        await deleteAuthUser(userId);
+        await options.downstream.deleteAuthUser(userId);
         await options.repository.markAuthDeleted(userId, now(), authProvider);
       }
     },
