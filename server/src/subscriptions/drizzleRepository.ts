@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 import { adaptySubscriptionStates, adaptyWebhookEvents, getDb, users, type DatabaseSchema } from "../db/index.js";
 import type { AdaptyWebhookRepository, EnvironmentObservation } from "./repository.js";
@@ -11,7 +11,7 @@ export function createDrizzleAdaptyWebhookRepository(configuredDatabase: Subscri
     const [written] = await transaction.insert(adaptySubscriptionStates).values({ userId, environment: observation.environment, hasAccess: observation.hasAccess, eventType, eventOccurredAt: observation.observedAt, expiresAt: observation.expiresAt, updatedAt, status: observation.status, isInGracePeriod: observation.isInGracePeriod, source: observation.source, syncState: observation.syncState, lastDeliveryKey: orderingKey }).onConflictDoUpdate({
       target: [adaptySubscriptionStates.userId, adaptySubscriptionStates.environment],
       set: { hasAccess: observation.hasAccess, eventType, eventOccurredAt: observation.observedAt, expiresAt: observation.expiresAt, updatedAt, status: observation.status, isInGracePeriod: observation.isInGracePeriod, source: observation.source, syncState: observation.syncState, lastDeliveryKey: orderingKey },
-      setWhere: sql`${adaptySubscriptionStates.eventOccurredAt} < ${observation.observedAt} OR (${adaptySubscriptionStates.eventOccurredAt} = ${observation.observedAt} AND ${adaptySubscriptionStates.lastDeliveryKey} < ${orderingKey})`,
+      setWhere: sql`${lt(adaptySubscriptionStates.eventOccurredAt, observation.observedAt)} OR (${eq(adaptySubscriptionStates.eventOccurredAt, observation.observedAt)} AND ${lt(adaptySubscriptionStates.lastDeliveryKey, orderingKey)})`,
     }).returning({ userId: adaptySubscriptionStates.userId });
     return Boolean(written);
   }

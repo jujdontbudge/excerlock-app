@@ -5,6 +5,7 @@ import {
   adaptyWebhookEvents,
   featureRequestVotes,
   getDb,
+  incidentReports,
   supportRequests,
   users,
   vendorConnections,
@@ -81,6 +82,9 @@ export function createDrizzleUserDeletionRepository(
         await transaction
           .delete(supportRequests)
           .where(eq(supportRequests.userId, userId));
+        await transaction
+          .delete(incidentReports)
+          .where(eq(incidentReports.userId, userId));
         await transaction
           .delete(vendorOAuthStates)
           .where(eq(vendorOAuthStates.userId, userId));
