@@ -4,11 +4,11 @@ import { mkdtempSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { serverRoot } from '../lib/paths.ts';
-import { must, out, run, sleep } from '../lib/shell.ts';
+import { must, option, out, run, sleep } from '../lib/shell.ts';
 
-export const serverSmokeHelp = `excer server smoke [--keep]
+export const serverSmokeHelp = `excer server smoke [--keep] [--root <server dir>]
 
 Builds the server and runs it against a throwaway Postgres 16 container on
 127.0.0.1:55432 with stubbed Adapty, PostHog and Supabase admin endpoints.
@@ -16,7 +16,8 @@ It walks one account through the real HTTP API: auth refusal, provisioning,
 a support request, an incident report, deletion, and the tombstone, and asserts
 every row the account owned is gone. The server runs in an empty directory
 with a minimal environment, so no local .env or real key is ever loaded.
-Needs Docker. --keep leaves the container running for inspection.`;
+Needs Docker. --keep leaves the container running for inspection. --root smokes
+another checkout's server directory (for example main before a deploy).`;
 
 const container = 'excer-smoke-postgres';
 const databasePort = 55432;
@@ -74,6 +75,7 @@ async function waitForHealth(base: string, server: ChildProcess): Promise<void> 
 
 export async function serverSmokeCommand(args: string[]): Promise<number> {
   const keep = args.includes('--keep');
+  const root = resolve(option(args, 'root') ?? serverRoot);
   const calls: StubCall[] = [];
   const stub = startVendorStub(calls);
   let server: ChildProcess | undefined;
@@ -87,7 +89,7 @@ export async function serverSmokeCommand(args: string[]): Promise<number> {
   };
   try {
     const stubUrl = `http://127.0.0.1:${await listen(stub)}`;
-    must('npm', ['run', '-s', 'build'], { cwd: serverRoot });
+    must('npm', ['run', '-s', 'build'], { cwd: root });
     await startDatabase();
     out.ok(`postgres:16-alpine on 127.0.0.1:${databasePort}`);
     const secret = randomBytes(32).toString('hex');
@@ -118,9 +120,9 @@ export async function serverSmokeCommand(args: string[]): Promise<number> {
       CLERK_ISSUER: '',
     };
     const cwd = mkdtempSync(join(tmpdir(), 'excer-smoke-'));
-    must('node', [join(serverRoot, 'dist', 'migrate.js')], { cwd, env: environment });
+    must('node', [join(root, 'dist', 'migrate.js')], { cwd, env: environment });
     out.ok('migrations applied');
-    server = spawn('node', [join(serverRoot, 'dist', 'index.js')], { cwd, env: environment, stdio: 'ignore' });
+    server = spawn('node', [join(root, 'dist', 'index.js')], { cwd, env: environment, stdio: 'ignore' });
     const base = `http://127.0.0.1:${apiPort}`;
     await waitForHealth(base, server);
 
