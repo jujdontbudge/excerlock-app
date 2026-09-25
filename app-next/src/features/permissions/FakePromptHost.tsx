@@ -2,7 +2,7 @@ import { FakeAppPicker } from '../sheets/FakeAppPicker';
 import { FakeSystemPrompt } from '../../design-system';
 import { useDevSnapshot } from '../../state/selectors';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { systemAlert } from './systemAlerts';
 export function FakePromptHost() {
   const { prompt } = useDevSnapshot(),

@@ -3,11 +3,10 @@ import { useState } from 'react';
 import { SettingsPage } from './SettingsPage';
 import { Heading, Label, TextField, PrimaryButton } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
-import { settingsCopy as c } from '../../content/settings';
 import { incidentCopy as i } from '../../content/incident';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { useLockDecision } from '../../state/selectors';
 import { activityTruthStore as useActivityTruthStore } from '../../state/activityTruthStore';
 
@@ -50,7 +49,7 @@ export function ReportProblemScreen({ onBack = () => {} }: { onBack?: () => void
   };
   if (state === 'sent')
     return (
-      <SettingsPage onBack={onBack} footer={<PrimaryButton label={c.done} onPress={onBack} />}>
+      <SettingsPage onBack={onBack} footer={<PrimaryButton label={i.done} onPress={onBack} />}>
         <Heading title={i.sentTitle} support={i.sentBody} />
         <LivingIcon name="check" />
       </SettingsPage>

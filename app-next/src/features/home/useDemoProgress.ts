@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 export function useDemoProgress() {
   const { steps, advance, presence, placement } = useLocalSearchParams<{
       steps?: string;

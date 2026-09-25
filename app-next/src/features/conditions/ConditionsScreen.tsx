@@ -16,7 +16,7 @@ import { pickerCopy } from '../../content/pickers';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
 import { ruleName } from '../../domain/ruleName';
 import { scheduleLabel } from '../../domain/scheduleLabel';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { ConfirmSheet } from './ConfirmSheet';

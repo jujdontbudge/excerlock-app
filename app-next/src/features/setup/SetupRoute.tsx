@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { SetupFlow, type SetupStep } from './SetupFlow';
 export function SetupRoute() {
   const router = useRouter(),

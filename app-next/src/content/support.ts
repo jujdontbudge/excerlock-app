@@ -9,6 +9,7 @@ export const supportSubject = (category: keyof typeof supportServerCategory) => 
 export const supportDeviceFooter = (version: string, build: string, ios: string | number) =>
   `ExcerLock ${version} (${build}) · iOS ${ios}`;
 export const supportCopy = {
+  done: 'Done',
   replyEmail: 'Reply email',
   replyEmailPlaceholder: 'you@example.com',
   replyEmailInvalid: 'Enter an email address so we can reply.',

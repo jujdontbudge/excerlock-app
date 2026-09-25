@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Href, useRouter } from 'expo-router';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { requireRuntimeControls } from '../../runtime/Runtime';
 import { useDevSnapshot } from '../../state/selectors';
 import { ScreenShell, Heading, SettingsGroup, SettingsRow, SecondaryButton, Label } from '../../design-system';

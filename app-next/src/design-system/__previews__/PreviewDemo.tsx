@@ -11,7 +11,7 @@ import {
   Label,
 } from '../index';
 import { previewCopy as c } from '../../content/previews';
-import { setupCopy } from '../../content/setup';
+import { systemAlertCopy } from '../../content/systemAlerts';
 import { controls } from '../../content/controls';
 import { PreviewContent } from './PreviewContent';
 import { usePreviewState } from './usePreviewState';
@@ -24,7 +24,7 @@ export function PreviewDemo({ name, alternate }: { name: (typeof previewNames)[n
   const overlay = state.open ? (
     name === 'FakeSystemPrompt' ? (
       <FakeSystemPrompt
-        alert={setupCopy.alerts.motion}
+        alert={systemAlertCopy.motion}
         onResolve={(granted) => {
           state.setFlag(granted);
           state.setOpen(false);

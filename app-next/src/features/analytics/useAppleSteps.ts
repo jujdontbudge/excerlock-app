@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { addDays, localDayStart } from '../../domain/calendar';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 
 type FallbackPoint = { day: string; value: number | null };
 export type ApplePedometerPoint = FallbackPoint & {

@@ -1,5 +1,5 @@
 import { Heading, TextField, PrimaryButton, SecondaryButton, Label } from '../../design-system';
-import { setupCopy as c } from '../../content/setup';
+import { signInCopy as c } from '../../content/signIn';
 import { tokens as t } from '../../design-system/tokens';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';

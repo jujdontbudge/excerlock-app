@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Heading, Label, PrimaryButton, SecondaryButton, BottomSheet } from '../../design-system';
 import { settingsCopy as c } from '../../content/settings';
 import { sessionStore as useSessionStore } from '../../state/sessionStore';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 export function AccountScreen({ onSignIn, onBack }: { onSignIn: () => void; onBack: () => void }) {

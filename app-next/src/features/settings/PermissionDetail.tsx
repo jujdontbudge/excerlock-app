@@ -1,7 +1,7 @@
 import { Linking } from 'react-native';
 import { Heading, Label, PrimaryButton } from '../../design-system';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';
-import { settingsCopy as c } from '../../content/settings';
+import { permissionDetailCopy as c } from '../../content/permissionDetails';
 import { Permissions } from '../../domain/types';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { IconName } from '../../icons/Icon';

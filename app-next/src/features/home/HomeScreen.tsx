@@ -15,7 +15,7 @@ import {
   Label,
 } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { useRuntimeStatus, useLockDecision, useTodayProgress, useStreak, useWalkingStatus } from '../../state/selectors';
 import { useHomeClock } from '../../state/homeClock';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';

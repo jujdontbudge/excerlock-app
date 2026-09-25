@@ -1,4 +1,5 @@
 export const incidentCopy = {
+  done: 'Done',
   row: 'Something not working?',
   rowBody: 'Tell us in two sentences',
   title: 'Something not working?',

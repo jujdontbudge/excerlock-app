@@ -7,7 +7,7 @@ import Animated, { runOnJS } from 'react-native-reanimated';
 import { fadeIn } from '../../motion/presets';
 import { tokens as t } from '../../design-system/tokens';
 import { useClock, useHistory } from '../../state/selectors';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { profileStore as useProfileStore } from '../../state/profileStore';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
 import { ruleDaysStore as useRuleDaysStore } from '../../state/ruleDaysStore';

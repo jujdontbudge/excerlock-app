@@ -2,7 +2,7 @@ import { sessionCopy } from '../../content/sessions';
 import { rulesStore } from '../../state/rulesStore';
 import { subscriptionCopy } from '../../content/subscription';
 import { useState } from 'react';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { requireRuntimeControls } from '../../runtime/Runtime';
 import { useClock, useDevSnapshot } from '../../state/selectors';
 import { permissionsStore as usePermissionsStore } from '../../state/permissionsStore';

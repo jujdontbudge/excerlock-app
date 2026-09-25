@@ -10,7 +10,7 @@ import { settingsCopy as c } from '../../content/settings';
 import { supportCopy as s } from '../../content/support';
 import { incidentCopy as i } from '../../content/incident';
 import { openSupportEmail } from '../../runtime/SupportDelivery';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 
 export function SettingsScreen({ navigate, onDev }: { navigate: (path: string) => void; onDev?: () => void }) {
   const name = useProfileStore((s) => s.data.name),

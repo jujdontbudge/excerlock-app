@@ -1,5 +1,5 @@
 import { useMemo, useSyncExternalStore } from 'react';
-import { useOptionalRuntime } from '../../runtime/AppRuntimeProvider';
+import { useOptionalRuntime } from '../../ports/useRuntime';
 import { motionFor, useMotion } from '../../motion/useMotion';
 const noop = () => () => {};
 export function useUnlockMotion() {

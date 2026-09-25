@@ -5,7 +5,7 @@ import { entitlementStore as useEntitlementStore } from '../../state/entitlement
 import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
 import { tokens as t } from '../../design-system/tokens';
 import { FakePromptHost } from '../permissions/FakePromptHost';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { useRuntimeStatus } from '../../state/selectors';
 import { useScreenTracking } from '../../runtime/analytics/useScreenTracking';
 import { linkedTrace } from '@linked-trace';

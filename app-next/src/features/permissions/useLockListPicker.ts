@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Alert, Linking } from 'react-native';
 import { lockListCopy as c } from '../../content/permissions';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { ScreenTimeAuthorizationError } from '../../screentime/ScreenTimeAuthorizationError';
 
 export function useLockListPicker() {

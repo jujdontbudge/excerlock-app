@@ -1,6 +1,6 @@
 import { usePathname } from 'expo-router';
 import { useEffect } from 'react';
-import { useRuntime } from '../AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { semanticScreenName } from './PostHogAnalyticsAdapter';
 
 export function useScreenTracking(): void {

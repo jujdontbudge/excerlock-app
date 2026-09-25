@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { Coordinates } from '../../ports/PlaceSearch';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { distanceMetres } from '../gym-picker/geometry';

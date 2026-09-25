@@ -1,4 +1,5 @@
-import { Heading, DayPicker, ScheduleDial, Label } from '../../design-system';
+import { Heading, DayPicker, Label } from '../../design-system';
+import { ScheduleDial } from '../../design-system/ScheduleDial';
 import { View } from 'react-native';
 import { RuleDraft } from './draft';
 import { Reveal } from '../../motion/Reveal';

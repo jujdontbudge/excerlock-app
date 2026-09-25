@@ -3,7 +3,7 @@ import { Linking, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Heading, Label, PrimaryButton } from '../../design-system';
 import { UnlockLockFrame } from '../../design-system/UnlockLockFrame';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { rulesStore as useRulesStore } from '../../state/rulesStore';
 import { unlockCopy as c } from '../../content/unlock';
 import { useGymUnlock } from './useGymUnlock';

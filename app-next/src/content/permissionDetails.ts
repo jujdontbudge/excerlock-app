@@ -1,0 +1,32 @@
+export const permissionDetailCopy = {
+  openSettings: 'Open Settings',
+  permissionNames: {
+    screenTime: 'Screen Time',
+    motion: 'Motion & Fitness',
+    location: 'Location',
+    camera: 'Camera',
+    notifications: 'Notifications',
+  },
+  why: {
+    screenTime: 'Blocks your selected apps while a condition is unmet.',
+    motion: 'Detects walking and counts steps from your phone.',
+    location: 'Keeps walk detection running while ExcerLock is closed and recognizes visits to your saved gyms.',
+    camera: 'Checks walking movement when your phone is propped on a treadmill.',
+    notifications: 'Reminds you before the trial ends and when a condition needs attention.',
+  },
+  without: {
+    screenTime: 'Your selected apps cannot be blocked without access.',
+    motion: 'Walking cannot be detected or counted without access.',
+    location: 'Without Always access, walks cannot open your apps while ExcerLock is closed and automatic gym detection is off.',
+    camera: 'Treadmill camera verification is unavailable without access.',
+    notifications: 'You will not receive trial or condition reminders.',
+  },
+  statuses: {
+    granted: 'Granted',
+    always: 'Always allowed',
+    whenInUse: 'While using the app',
+    denied: 'Off',
+    restricted: 'Restricted',
+    notDetermined: 'Not requested',
+  },
+} as const;

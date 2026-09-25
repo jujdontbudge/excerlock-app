@@ -4,11 +4,8 @@ import { isOnboardingStepId } from './stepId';
 const knownPreBranch: ReadonlySet<string> = new Set(preBranch);
 const knownTail: ReadonlySet<string> = new Set(tail);
 
-export interface OnboardingFlowPort {
-  order(): FlowOrder | null;
-  load(): Promise<FlowOrder | null>;
-  subscribe(listener: (order: FlowOrder | null) => void): () => void;
-}
+import type { OnboardingFlowPort } from '../ports/OnboardingFlowPort';
+export type { OnboardingFlowPort };
 
 export interface OnboardingFlowPortDeps {
   readPayload(): Promise<unknown>;

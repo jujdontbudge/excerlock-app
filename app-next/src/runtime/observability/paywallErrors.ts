@@ -1,6 +1,6 @@
 import type { PaywallOperation } from '@excerlock/analytics-events';
 import type { Runtime } from '../Runtime';
-import { reportRuntimeError } from '../productionRuntime';
+import { reportRuntimeError } from './reportRuntimeError';
 
 export type PaywallErrorOperation = PaywallOperation;
 

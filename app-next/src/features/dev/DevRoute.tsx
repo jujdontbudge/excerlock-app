@@ -2,7 +2,7 @@ import { ShieldPreview } from '../sessions/ShieldPreview';
 import { applyDevControls } from './applyDevControls';
 import { useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { PreviewGallery } from './PreviewGallery';
 import { DevMenu } from './DevMenu';
 import { requireRuntimeControls } from '../../runtime/Runtime';

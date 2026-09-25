@@ -19,7 +19,7 @@ import { TrialReminder } from '../rules/TrialReminder';
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { planCopy as c } from '../../content/plan';
 import { useImpactPlayback } from './impact/useImpactPlayback';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { SchedulePlanError } from '../../domain/scheduleRepresentability';
 import { Label } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';

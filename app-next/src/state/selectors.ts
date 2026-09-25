@@ -1,6 +1,6 @@
 import { todayHistory } from './todayHistory';
 import { useMemo, useSyncExternalStore } from 'react';
-import { useRuntime } from '../runtime/AppRuntimeProvider';
+import { useRuntime } from '../ports/useRuntime';
 import { resolveLock } from '../domain/resolveLock';
 import { currentInstances, dayKey, windowInstances } from '../domain/schedule';
 import { rulesStore as useRulesStore } from './rulesStore';

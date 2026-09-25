@@ -17,10 +17,10 @@ import { ExportPort } from '../ports/ExportPort';
 import { RuntimeStatusPort } from '../ports/RuntimeStatusPort';
 import { ReviewPresetPort } from '../ports/ReviewPresetPort';
 import { ShieldCopyPort } from '../ports/ShieldCopyPort';
-import type { StrideGateConfigPort } from './detection/createStrideGateConfigPort';
-import type { SensorStreamModuleClient } from './detection/sensorStreams';
-import type { OnboardingFlowPort } from '../onboarding/flowOrder';
-import type { PaywallExperimentPort, SignInRequiredPort } from './analytics/PostHogAnalyticsAdapter';
+import type { StrideGatePort } from '../ports/StrideGatePort';
+import type { SensorStreamModuleClient } from '../ports/SensorStreamPort';
+import type { OnboardingFlowPort } from '../ports/OnboardingFlowPort';
+import type { PaywallExperimentPort, SignInRequiredPort } from '../ports/ExperimentPorts';
 export type Runtime = {
   readonly kind: 'fake' | 'real';
   screenTime: ScreenTimePort;
@@ -44,7 +44,7 @@ export type Runtime = {
   signInRequired?: SignInRequiredPort;
   onboardingFlow?: OnboardingFlowPort;
   shieldCopy?: ShieldCopyPort;
-  strideGate?: StrideGateConfigPort;
+  strideGate?: StrideGatePort;
   safety?: () => { permissionPromptPending: boolean; cameraActive: boolean };
   sensors?: SensorStreamModuleClient;
   dev?: RuntimeControls;

@@ -2,7 +2,7 @@ import { View } from 'react-native';
 import { BackButton, ScreenShell, PrimaryButton, Label, OnboardingHeader } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
 import { gymPickerCopy as c } from '../../content/gymPicker';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { usePicker } from './usePicker';
 import { FindStep } from './FindStep';
 import { PlaceStep } from './PlaceStep';

@@ -1,14 +1,14 @@
-import { createContext, PropsWithChildren, useContext, useState, useEffect } from 'react';
+import { PropsWithChildren, useState, useEffect } from 'react';
 import { ActivityIndicator } from 'react-native';
 import Constants from 'expo-constants';
 import { createRuntime, Runtime } from './createRuntime';
 import { runtimeMode } from './environment';
-import { reportRuntimeError } from './productionRuntime';
+import { reportRuntimeError } from './observability/reportRuntimeError';
 import { ScreenShell } from '../design-system/ScreenShell';
 import { Label } from '../design-system/Label';
 import { PrimaryButton } from '../design-system/PrimaryButton';
 import { tokens } from '../design-system/tokens';
-const Context = createContext<Runtime | null>(null);
+import { RuntimeContext } from '../ports/useRuntime';
 export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChildren<{ runtime?: Runtime }>) {
   const [runtime, setRuntime] = useState<Runtime | null>(
     () =>
@@ -63,19 +63,11 @@ export function AppRuntimeProvider({ children, runtime: provided }: PropsWithChi
       </ScreenShell>
     );
   return (
-    <Context.Provider value={runtime}>
+    <RuntimeContext.Provider value={runtime}>
       {children}
       {runtime.kind === 'real' ? <NativePickerHost /> : null}
-    </Context.Provider>
+    </RuntimeContext.Provider>
   );
-}
-export function useOptionalRuntime() {
-  return useContext(Context);
-}
-export function useRuntime() {
-  const value = useOptionalRuntime();
-  if (!value) throw new Error('AppRuntimeProvider is required');
-  return value;
 }
 
 function NativePickerHost() {

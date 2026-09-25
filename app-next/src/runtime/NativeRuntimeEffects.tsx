@@ -2,13 +2,13 @@ import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { usePathname, useRootNavigationState, useRouter } from 'expo-router';
 import * as Notifications from 'expo-notifications';
-import { useRuntime } from './AppRuntimeProvider';
+import { useRuntime } from '../ports/useRuntime';
 import { useRuntimeStatus } from '../state/selectors';
 import { getOtaObservabilityContext, useOtaCoordinator } from './updates';
 import { notificationLanding, trialReminderPlan } from '../domain/notificationPlan';
 import { expoLocalNotifications } from './notifications/ExpoLocalNotifications';
 import { permissionsStore } from '../state/permissionsStore';
-import { reportRuntimeError } from './productionRuntime';
+import { reportRuntimeError } from './observability/reportRuntimeError';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({

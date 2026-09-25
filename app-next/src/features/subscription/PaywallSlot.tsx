@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { reportPaywallError, type PaywallErrorOperation } from '../../runtime/observability/paywallErrors';
 import type { PaywallVariant } from '../../runtime/analytics/PostHogAnalyticsAdapter';
 import type { SubscriptionPaywall } from '../../ports/SubscriptionPort';

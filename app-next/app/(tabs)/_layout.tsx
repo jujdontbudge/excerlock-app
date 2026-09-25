@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useRuntime } from '../../src/runtime/AppRuntimeProvider';
+import { useRuntime } from '../../src/ports/useRuntime';
 import { startProgressSync } from '../../src/features/home/progressSync';
 import { startGymPresenceSync } from '../../src/features/home/gymPresenceSync';
 import { startWalkingSync } from '../../src/features/home/walkingSync';

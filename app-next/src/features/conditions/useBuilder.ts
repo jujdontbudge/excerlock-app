@@ -9,7 +9,7 @@ import { createRuleDraftStore } from '../rules/RuleDraftStore';
 import { scheduleDraft, reduceSchedule, toSchedule, ScheduleAction } from '../rules/scheduleDraft';
 import { builderPath, builderValid } from './builderFlow';
 import { saveRule } from './mutations';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { SchedulePlanError } from '../../domain/scheduleRepresentability';
 import { ruleNeedsSetup } from '../setup/useSetupNeeds';
 export function useBuilder(id: string | undefined, onClose: () => void, onNeeds?: () => void) {

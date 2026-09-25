@@ -1,3 +1,5 @@
+import type { PaywallExperimentPort, PaywallVariant, PaywallVariantExposure, SignInRequiredPort } from '../../ports/ExperimentPorts';
+export type { PaywallExperimentPort, PaywallVariant, PaywallVariantExposure, SignInRequiredPort };
 import { eventsOwnedBy } from '@excerlock/analytics-events';
 import type { AnalyticsPort } from '../../ports/AnalyticsPort';
 
@@ -168,7 +170,6 @@ export function createPostHogAnalyticsAdapter(options: {
 export type FlagName = 'paywall_variant' | 'signInRequired' | 'review_preset';
 const allowedPayloadFlags = { shield_copy: true, onboarding_variant: true, stride_gate_config: true } as const;
 export type PayloadFlagName = keyof typeof allowedPayloadFlags;
-export type PaywallVariant = 'control' | 'variant_b';
 const allowedFlags: Record<FlagName, readonly (string | boolean)[]> = { paywall_variant: ['control', 'variant_b'], signInRequired: [false, true], review_preset: [false, true] };
 type FlagValue = string | boolean;
 type FlagOrigin = { userId: string; generation: number };
@@ -279,11 +280,6 @@ export class PostHogFlagsController {
   }
 }
 
-export type PaywallVariantExposure = { variant: PaywallVariant; placement: string; flowVariationId: string; generation: number };
-export interface PaywallExperimentPort {
-  getPaywallVariant(): Promise<PaywallVariant>;
-  trackPaywallVariantExposure(input: PaywallVariantExposure): void;
-}
 export function createPaywallExperimentPort(flags: PostHogFlagsController): PaywallExperimentPort {
   return {
     async getPaywallVariant() { return await flags.get('paywall_variant') as PaywallVariant; },
@@ -297,9 +293,6 @@ export function createReviewPresetPort(flags: PostHogFlagsController) {
   };
 }
 
-export interface SignInRequiredPort {
-  isRequired(): Promise<boolean>;
-}
 export function createSignInRequiredPort(flags: PostHogFlagsController): SignInRequiredPort {
   return { async isRequired() { return await flags.get('signInRequired') === true; } };
 }

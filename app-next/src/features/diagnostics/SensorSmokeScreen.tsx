@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { SettingsPage } from '../settings/SettingsPage';
 import { Heading, Label, SecondaryButton, SettingsGroup, SettingsRow } from '../../design-system';
 import { sensorSmokeCopy as c } from '../../content/diagnostics';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import {
   runSensorStreamSmoke,
   type SensorRecorderSmokeResult,

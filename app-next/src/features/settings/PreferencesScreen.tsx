@@ -4,7 +4,7 @@ import { Heading, SettingsGroup, SettingsRow, BottomSheet, ChoiceRow, Label } fr
 import { settingsStore as useSettingsStore } from '../../state/settingsStore';
 import { profileStore as useProfileStore } from '../../state/profileStore';
 import { settingsCopy as c } from '../../content/settings';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { SettingsPage } from './SettingsPage';
 import { tokens as t } from '../../design-system/tokens';
 import { useLockListPicker } from '../permissions/useLockListPicker';

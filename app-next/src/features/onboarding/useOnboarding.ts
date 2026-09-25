@@ -7,7 +7,7 @@ import { createDraft } from '../rules/draft';
 import { draftFromAnswers } from '../rules/answersDraft';
 import { scenarioFor } from './condition-demo/model';
 import { profileStore } from '../../state/profileStore';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { Answers } from '../../onboarding/types';
 import { applyReviewPreset, isReviewPresetName } from './reviewPreset';
 export function useOnboarding() {

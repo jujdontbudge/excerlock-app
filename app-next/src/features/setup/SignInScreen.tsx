@@ -6,11 +6,11 @@ import {
   AppleAuthenticationButtonType,
 } from 'expo-apple-authentication';
 import { BackButton, Heading, Label, TextField, PrimaryButton, SecondaryButton } from '../../design-system';
-import { setupCopy as c } from '../../content/setup';
+import { signInCopy as c } from '../../content/signIn';
 import { tokens as t } from '../../design-system/tokens';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { sessionStore as useSessionStore } from '../../state/sessionStore';
 import { EmailCodeScreen } from './EmailCodeScreen';
 import { isAuthCancelled, isAuthRecoveryRequired } from '../../ports/AuthPort';

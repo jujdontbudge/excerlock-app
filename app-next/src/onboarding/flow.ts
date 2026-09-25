@@ -24,7 +24,8 @@ export const preBranch = [
 ] as const;
 export const tail = ['S1', 'S2', 'S3', 'S3b', 'S3c', 'S3d', 'P'] as const;
 
-export type FlowOrder = { readonly preBranch: readonly string[]; readonly tail: readonly string[] };
+import type { FlowOrder } from '../ports/OnboardingFlowPort';
+export type { FlowOrder };
 
 function branchFor(answers: Answers): string[] {
   switch (answers.activity) {

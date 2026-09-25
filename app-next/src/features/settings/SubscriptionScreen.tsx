@@ -3,7 +3,7 @@ import { Heading, Label, SettingsGroup, SettingsRow } from '../../design-system'
 import { settingsCopy as c } from '../../content/settings';
 import { subscriptionCopy } from '../../content/subscription';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { Reveal } from '../../motion/Reveal';
 import { SettingsPage } from './SettingsPage';
 export function SubscriptionScreen({ onBack }: { onBack: () => void }) {

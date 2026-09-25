@@ -7,7 +7,7 @@ import { tokens as t } from '../../design-system/tokens';
 import { setupCopy as c } from '../../content/setup';
 import { needBlocked, type SetupNeed } from '../../domain/setupNeeds';
 import { LivingIcon } from '../../motion/LivingIcon';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { ScreenTimeAuthorizationError } from '../../screentime/ScreenTimeAuthorizationError';
 import { permissionsStore } from '../../state/permissionsStore';
 import { sessionStore as useSessionStore } from '../../state/sessionStore';

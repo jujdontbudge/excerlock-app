@@ -5,7 +5,7 @@ import { useHydrated } from '../../state/useHydrated';
 import { bootDestination } from '../../onboarding/bootDestination';
 import { BootScreen } from './BootScreen';
 import { useRuntimeStatus } from '../../state/selectors';
-import { markStartupStage } from '../../../modules/excerlock-startup';
+import { markStartupStage } from './startupMarks';
 export function BootGate() {
   const hydrated = useHydrated(),
     runtimeState = useRuntimeStatus(),

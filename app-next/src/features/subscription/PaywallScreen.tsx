@@ -9,7 +9,7 @@ import { Reveal } from '../../motion/Reveal';
 import type { PaywallProduct, SubscriptionPaywall } from '../../ports/SubscriptionPort';
 import type { PaywallErrorOperation } from '../../runtime/observability/paywallErrors';
 import type { PaywallVariant } from '../../runtime/analytics/PostHogAnalyticsAdapter';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 import { subscriptionCopy, planRowTitle, planName, perMonth } from '../../content/subscription';
 import { onboardingStore as useOnboardingStore } from '../../state/onboardingStore';

@@ -6,7 +6,7 @@ import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
 import { RuleDraft, DraftAction } from './draft';
 import { profileStore as useProfileStore } from '../../state/profileStore';
-import { useOptionalRuntime } from '../../runtime/AppRuntimeProvider';
+import { useOptionalRuntime } from '../../ports/useRuntime';
 import {
   isValidStepGoal,
   MAX_STEP_GOAL,

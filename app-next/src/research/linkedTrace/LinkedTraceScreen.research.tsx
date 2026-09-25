@@ -18,7 +18,7 @@ import {
   StatusCard,
 } from '../../design-system';
 import { tokens as t } from '../../design-system/tokens';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { entitlementStore as useEntitlementStore } from '../../state/entitlementStore';
 import {
   LINK_PROTOCOL_VERSION,

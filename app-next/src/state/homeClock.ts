@@ -3,7 +3,7 @@ import { addDays, dayKey, localDayStart } from '../domain/calendar';
 import { windowInstances } from '../domain/schedule';
 import type { Rule, RuleDay } from '../domain/types';
 import type { ClockPort } from '../ports/ClockPort';
-import { useRuntime } from '../runtime/AppRuntimeProvider';
+import { useRuntime } from '../ports/useRuntime';
 import { ruleDaysStore as useRuleDaysStore } from './ruleDaysStore';
 import { rulesStore as useRulesStore } from './rulesStore';
 

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 
 export function useSignInRequiredSource(): () => Promise<boolean> {
   const gate = useRuntime().signInRequired;

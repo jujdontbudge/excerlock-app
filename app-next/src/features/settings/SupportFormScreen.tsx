@@ -2,11 +2,10 @@ import { Keyboard } from 'react-native';
 import { useState } from 'react';
 import { SettingsPage } from './SettingsPage';
 import { Heading, Label, TextField, PrimaryButton, SecondaryButton } from '../../design-system';
-import { settingsCopy as c } from '../../content/settings';
 import { supportCopy as s } from '../../content/support';
 import { LivingIcon } from '../../motion/LivingIcon';
 import { Reveal } from '../../motion/Reveal';
-import { useRuntime } from '../../runtime/AppRuntimeProvider';
+import { useRuntime } from '../../ports/useRuntime';
 import { openSupportEmail } from '../../runtime/SupportDelivery';
 import { SupportCategory } from '../../ports/SupportPort';
 import { IconName } from '../../icons/Icon';
@@ -59,7 +58,7 @@ export function SupportFormScreen({
     return (
       <SettingsPage
         onBack={onBack}
-        footer={<PrimaryButton label={c.done} onPress={onBack} />}>
+        footer={<PrimaryButton label={s.done} onPress={onBack} />}>
         <Heading
           title={state === 'handedOff' ? s.handedOff : sent}
           support={state === 'handedOff' ? s.handedOffBody : s.sentBody}

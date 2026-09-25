@@ -17,7 +17,7 @@ import { GymRegionAdapter } from './GymRegionAdapter';
 import { HistoryCreditLedger } from './HistoryCreditLedger';
 import { WalkingDurationLedger } from './WalkingDurationLedger';
 import { runCleanups } from './runCleanups';
-import { createSensorStreamModuleClient } from './sensorStreams';
+import { createSensorStreamModuleClient } from './createSensorStreamModuleClient';
 export type NativeDetectionFactoryOptions = {
   getWakeContext(): Omit<DetectionWake, 'now' | 'source'>;
   onError?(error: unknown): void;
