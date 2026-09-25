@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { appRoot, fromRoot, rel, repoRoot } from '../lib/paths.ts';
 import { importsModule, lineOf, read, walk } from '../lib/files.ts';
+import { run, tail } from '../lib/shell.ts';
 import type { Check, CheckResult } from './types.ts';
 
 const require = createRequire(join(repoRoot, 'package.json'));
@@ -90,5 +91,19 @@ export const illustrationTokens: Check = {
       .filter((file) => importsModule(read(file), /[./]*(?:design-system\/)?illustrationTokens/))
       .map(rel);
     return { kind: 'count', ratchet: 'illustration-token-importers', value: hits.length, samples: hits };
+  },
+};
+
+type Cruise = { summary: { violations: { rule: { name: string }; from: string; to: string }[] } };
+
+export const dependencyRules: Check = {
+  name: 'dependency-rules',
+  why: 'Imports follow the ARCHITECTURE.md layers and package boundaries (app-next/.dependency-cruiser.cjs). Count may only fall.',
+  tier: 'static',
+  run(): CheckResult {
+    const result = run('npx', ['depcruise', 'src', 'app', '--config', '.dependency-cruiser.cjs', '--output-type', 'json'], { cwd: appRoot });
+    if (!result.stdout.trim().startsWith('{')) return { kind: 'fail', problems: [tail(result.stdout + result.stderr, 20)] };
+    const hits = (JSON.parse(result.stdout) as Cruise).summary.violations.map((violation) => `${violation.rule.name}: ${violation.from} -> ${violation.to}`);
+    return { kind: 'count', ratchet: 'dependency-rules', value: hits.length, samples: hits };
   },
 };

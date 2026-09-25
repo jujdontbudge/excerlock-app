@@ -33,7 +33,7 @@ src/packages/<name>/
 
 ## Rules
 
-1. Import other packages only through their entry points (dependency-cruiser).
+1. Import other packages only through their entry points (`app-next/.dependency-cruiser.cjs`, enforced by `./excer check`).
 2. No dependency cycles.
 3. Layers, bottom to top. A package may import only packages in its own layer or below:
    `calendar, persistence, ui` → `conditions, telemetry, remote-config` → `activity, identity, subscription, app-selection, gyms, treadmill-scan` → `progress, lock, enforcement, notifications, setup, diagnostics, support, preferences` → `reconciler, journey, onboarding` → `home, insights` → `runtime, dev-harness` → routes.

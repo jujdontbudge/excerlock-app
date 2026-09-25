@@ -17,6 +17,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
+    "dependency-cruiser": "18.4.0",
     "patch-package": "^8.0.1",
     "typescript": "~6.0.3"
   },

@@ -63,7 +63,7 @@ export const newHelp = `excer new package <name>
 
 Creates app-next/src/packages/<name>/ with index.ts and lib/, the package shape in
 ARCHITECTURE.md. Then add the package to its layer in ARCHITECTURE.md and
-.dependency-cruiser.cjs.`;
+app-next/.dependency-cruiser.cjs.`;
 
 export function newCommand(args: string[]): number {
   const [kind, name] = args;
@@ -75,6 +75,6 @@ export function newCommand(args: string[]): number {
   writeFileSync(join(dir, 'index.ts'), 'export {};\n');
   writeFileSync(join(dir, 'lib', '.gitkeep'), '');
   out.ok(`created ${rel(dir)}/index.ts and lib/`);
-  out.info('next: add it to a layer in ARCHITECTURE.md and .dependency-cruiser.cjs');
+  out.info('next: add it to a layer in ARCHITECTURE.md and app-next/.dependency-cruiser.cjs');
   return 0;
 }
